@@ -481,6 +481,10 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
         sendMessage(null, null, null, null, null, null, user, null, null, null, peer, false, null);
     }
 
+    public void sendMessage(ArrayList<MessageObject> messages) {
+
+    }
+
     public void sendMessage(MessageObject message) {
         sendMessage(null, null, null, null, null, message, null, null, null, null, message.getDialogId(), true, message.messageOwner.attachPath);
     }
@@ -1610,6 +1614,7 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                 try {
                     Bitmap bitmap = ImageLoader.loadBitmap(f.getAbsolutePath(), null, 90, 90, true);
                     if (bitmap != null) {
+                        fileName.file_name = "animation.gif";
                         document.thumb = ImageLoader.scaleAndSaveImage(bitmap, 90, 90, 55, isEncrypted);
                     }
                 } catch (Exception e) {
@@ -1744,7 +1749,7 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                             document.id = 0;
                             document.date = ConnectionsManager.getInstance().getCurrentTime();
                             TLRPC.TL_documentAttributeFilename fileName = new TLRPC.TL_documentAttributeFilename();
-                            fileName.file_name = md5;
+                            fileName.file_name = "animation.gif";
                             document.attributes.add(fileName);
                             document.size = searchImage.size;
                             document.dc_id = 0;
@@ -1940,112 +1945,116 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
         new Thread(new Runnable() {
             @Override
             public void run() {
+
                 boolean isEncrypted = (int)dialog_id == 0;
 
-                String path = videoPath;
-                String originalPath = videoPath;
-                File temp = new File(originalPath);
-                originalPath += temp.length() + "_" + temp.lastModified();
-                if (videoEditedInfo != null) {
-                    originalPath += duration + "_" + videoEditedInfo.startTime + "_" + videoEditedInfo.endTime;
-                }
-                TLRPC.TL_video video = null;
-                if (!isEncrypted) {
-                    video = (TLRPC.TL_video) MessagesStorage.getInstance().getSentFile(originalPath, !isEncrypted ? 2 : 5);
-                }
-                if (video == null) {
-                    Bitmap thumb = ThumbnailUtils.createVideoThumbnail(videoPath, MediaStore.Video.Thumbnails.MINI_KIND);
-                    TLRPC.PhotoSize size = ImageLoader.scaleAndSaveImage(thumb, 90, 90, 55, isEncrypted);
-                    video = new TLRPC.TL_video();
-                    video.thumb = size;
-                    if (video.thumb == null) {
-                        video.thumb = new TLRPC.TL_photoSizeEmpty();
-                        video.thumb.type = "s";
-                    } else {
-                        video.thumb.type = "s";
-                    }
-                    video.caption = "";
-                    video.mime_type = "video/mp4";
-                    video.id = 0;
-                    UserConfig.saveConfig(false);
-
+                if (videoEditedInfo != null || videoPath.endsWith("mp4")) {
+                    String path = videoPath;
+                    String originalPath = videoPath;
+                    File temp = new File(originalPath);
+                    originalPath += temp.length() + "_" + temp.lastModified();
                     if (videoEditedInfo != null) {
-                        video.duration = (int)(duration / 1000);
-                        if (videoEditedInfo.rotationValue == 90 || videoEditedInfo.rotationValue == 270) {
-                            video.w = height;
-                            video.h = width;
+                        originalPath += duration + "_" + videoEditedInfo.startTime + "_" + videoEditedInfo.endTime;
+                    }
+                    TLRPC.TL_video video = null;
+                    if (!isEncrypted) {
+                        video = (TLRPC.TL_video) MessagesStorage.getInstance().getSentFile(originalPath, !isEncrypted ? 2 : 5);
+                    }
+                    if (video == null) {
+                        Bitmap thumb = ThumbnailUtils.createVideoThumbnail(videoPath, MediaStore.Video.Thumbnails.MINI_KIND);
+                        TLRPC.PhotoSize size = ImageLoader.scaleAndSaveImage(thumb, 90, 90, 55, isEncrypted);
+                        video = new TLRPC.TL_video();
+                        video.thumb = size;
+                        if (video.thumb == null) {
+                            video.thumb = new TLRPC.TL_photoSizeEmpty();
+                            video.thumb.type = "s";
                         } else {
-                            video.w = width;
-                            video.h = height;
+                            video.thumb.type = "s";
                         }
-                        video.size = (int)estimatedSize;
-                        video.videoEditedInfo = videoEditedInfo;
-                        String fileName = Integer.MIN_VALUE + "_" + UserConfig.lastLocalId + ".mp4";
-                        UserConfig.lastLocalId--;
-                        File cacheFile = new File(FileLoader.getInstance().getDirectory(FileLoader.MEDIA_DIR_CACHE), fileName);
+                        video.caption = "";
+                        video.mime_type = "video/mp4";
+                        video.id = 0;
                         UserConfig.saveConfig(false);
-                        path = cacheFile.getAbsolutePath();
-                    } else {
-                        if (temp != null && temp.exists()) {
-                            video.size = (int) temp.length();
-                        }
-                        boolean infoObtained = false;
-                        if (Build.VERSION.SDK_INT >= 14) {
-                            MediaMetadataRetriever mediaMetadataRetriever = null;
-                            try {
-                                mediaMetadataRetriever = new MediaMetadataRetriever();
-                                mediaMetadataRetriever.setDataSource(videoPath);
-                                String width = mediaMetadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH);
-                                if (width != null) {
-                                    video.w = Integer.parseInt(width);
-                                }
-                                String height = mediaMetadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT);
-                                if (height != null) {
-                                    video.h = Integer.parseInt(height);
-                                }
-                                String duration = mediaMetadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION);
-                                if (duration != null) {
-                                    video.duration = (int) Math.ceil(Long.parseLong(duration) / 1000.0f);
-                                }
-                                infoObtained = true;
-                            } catch (Exception e) {
-                                FileLog.e("tmessages", e);
-                            } finally {
+
+                        if (videoEditedInfo != null) {
+                            video.duration = (int) (duration / 1000);
+                            if (videoEditedInfo.rotationValue == 90 || videoEditedInfo.rotationValue == 270) {
+                                video.w = height;
+                                video.h = width;
+                            } else {
+                                video.w = width;
+                                video.h = height;
+                            }
+                            video.size = (int) estimatedSize;
+                            video.videoEditedInfo = videoEditedInfo;
+                            String fileName = Integer.MIN_VALUE + "_" + UserConfig.lastLocalId + ".mp4";
+                            UserConfig.lastLocalId--;
+                            File cacheFile = new File(FileLoader.getInstance().getDirectory(FileLoader.MEDIA_DIR_CACHE), fileName);
+                            UserConfig.saveConfig(false);
+                            path = cacheFile.getAbsolutePath();
+                        } else {
+                            if (temp != null && temp.exists()) {
+                                video.size = (int) temp.length();
+                            }
+                            boolean infoObtained = false;
+                            if (Build.VERSION.SDK_INT >= 14) {
+                                MediaMetadataRetriever mediaMetadataRetriever = null;
                                 try {
-                                    if (mediaMetadataRetriever != null) {
-                                        mediaMetadataRetriever.release();
-                                        mediaMetadataRetriever = null;
+                                    mediaMetadataRetriever = new MediaMetadataRetriever();
+                                    mediaMetadataRetriever.setDataSource(videoPath);
+                                    String width = mediaMetadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH);
+                                    if (width != null) {
+                                        video.w = Integer.parseInt(width);
+                                    }
+                                    String height = mediaMetadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT);
+                                    if (height != null) {
+                                        video.h = Integer.parseInt(height);
+                                    }
+                                    String duration = mediaMetadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION);
+                                    if (duration != null) {
+                                        video.duration = (int) Math.ceil(Long.parseLong(duration) / 1000.0f);
+                                    }
+                                    infoObtained = true;
+                                } catch (Exception e) {
+                                    FileLog.e("tmessages", e);
+                                } finally {
+                                    try {
+                                        if (mediaMetadataRetriever != null) {
+                                            mediaMetadataRetriever.release();
+                                            mediaMetadataRetriever = null;
+                                        }
+                                    } catch (Exception e) {
+                                        FileLog.e("tmessages", e);
+                                    }
+                                }
+                            }
+                            if (!infoObtained) {
+                                try {
+                                    MediaPlayer mp = MediaPlayer.create(ApplicationLoader.applicationContext, Uri.fromFile(new File(videoPath)));
+                                    if (mp != null) {
+                                        video.duration = (int) Math.ceil(mp.getDuration() / 1000.0f);
+                                        video.w = mp.getVideoWidth();
+                                        video.h = mp.getVideoHeight();
+                                        mp.release();
                                     }
                                 } catch (Exception e) {
                                     FileLog.e("tmessages", e);
                                 }
                             }
                         }
-                        if (!infoObtained) {
-                            try {
-                                MediaPlayer mp = MediaPlayer.create(ApplicationLoader.applicationContext, Uri.fromFile(new File(videoPath)));
-                                if (mp != null) {
-                                    video.duration = (int) Math.ceil(mp.getDuration() / 1000.0f);
-                                    video.w = mp.getVideoWidth();
-                                    video.h = mp.getVideoHeight();
-                                    mp.release();
-                                }
-                            } catch (Exception e) {
-                                FileLog.e("tmessages", e);
-                            }
+                    }
+                    final TLRPC.TL_video videoFinal = video;
+                    final String originalPathFinal = originalPath;
+                    final String finalPath = path;
+                    AndroidUtilities.runOnUIThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            SendMessagesHelper.getInstance().sendMessage(videoFinal, originalPathFinal, finalPath, dialog_id);
                         }
-                    }
+                    });
+                } else {
+                    prepareSendingDocumentInternal(videoPath, videoPath, null, null, dialog_id);
                 }
-
-                final TLRPC.TL_video videoFinal = video;
-                final String originalPathFinal = originalPath;
-                final String finalPath = path;
-                AndroidUtilities.runOnUIThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        SendMessagesHelper.getInstance().sendMessage(videoFinal, originalPathFinal, finalPath, dialog_id);
-                    }
-                });
             }
         }).start();
     }

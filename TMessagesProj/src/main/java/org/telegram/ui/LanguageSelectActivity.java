@@ -52,7 +52,7 @@ public class LanguageSelectActivity extends BaseFragment {
     public ArrayList<LocaleController.LocaleInfo> searchResult;
 
     @Override
-    public View createView(LayoutInflater inflater, ViewGroup container) {
+    public View createView(LayoutInflater inflater) {
         if (fragmentView == null) {
             searching = false;
             searchWas = false;
@@ -285,7 +285,7 @@ public class LanguageSelectActivity extends BaseFragment {
                     return;
                 }
                 long time = System.currentTimeMillis();
-                ArrayList<LocaleController.LocaleInfo> resultArray = new ArrayList<LocaleController.LocaleInfo>();
+                ArrayList<LocaleController.LocaleInfo> resultArray = new ArrayList<>();
 
                 for (LocaleController.LocaleInfo c : LocaleController.getInstance().sortedLanguages) {
                     if (c.name.toLowerCase().startsWith(query) || c.nameEnglish.toLowerCase().startsWith(query)) {

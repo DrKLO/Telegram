@@ -203,6 +203,9 @@ public class StickersAdapter extends RecyclerView.Adapter implements Notificatio
                     }
                     HashMap<Long, TLRPC.Document> documents = new HashMap<>();
                     for (TLRPC.Document document : res.documents) {
+                        if (document == null) {
+                            continue;
+                        }
                         documents.put(document.id, document);
                         if (document.thumb != null && document.thumb.location != null) {
                             document.thumb.location.ext = "webp";

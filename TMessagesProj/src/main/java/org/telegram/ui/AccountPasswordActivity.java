@@ -95,7 +95,7 @@ public class AccountPasswordActivity extends BaseFragment {
     }
 
     @Override
-    public View createView(LayoutInflater inflater, ViewGroup container) {
+    public View createView(LayoutInflater inflater) {
         if (fragmentView == null) {
             if (type == 0) {
                 actionBar.setBackButtonImage(R.drawable.ic_ab_back);
@@ -272,7 +272,7 @@ public class AccountPasswordActivity extends BaseFragment {
         listAdapter.notifyDataSetChanged();
     }
 
-    private void needShowAlert(final String text) {
+    private void ShowAlert(final String text) {
         if (text == null || getParentActivity() == null) {
             return;
         }
@@ -356,20 +356,20 @@ public class AccountPasswordActivity extends BaseFragment {
             String hint = hintPasswordCell.getFieldText();
             if (hasPassword) {
                 if (oldPassword.length() == 0) {
-                    needShowAlert(LocaleController.getString("PasswordOldIncorrect", R.string.PasswordOldIncorrect));
+                    ShowAlert(LocaleController.getString("PasswordOldIncorrect", R.string.PasswordOldIncorrect));
                     return;
                 }
             }
             if (newPassword.length() == 0) {
-                needShowAlert(LocaleController.getString("PasswordNewIncorrect", R.string.PasswordNewIncorrect));
+                ShowAlert(LocaleController.getString("PasswordNewIncorrect", R.string.PasswordNewIncorrect));
                 return;
             }
             if (!newPassword.equals(verifyPasswrod)) {
-                needShowAlert(LocaleController.getString("PasswordDoNotMatch", R.string.PasswordDoNotMatch));
+                ShowAlert(LocaleController.getString("PasswordDoNotMatch", R.string.PasswordDoNotMatch));
                 return;
             }
             if (hint.toLowerCase().contains(newPassword.toLowerCase())) {
-                needShowAlert(LocaleController.getString("HintIncorrect", R.string.HintIncorrect));
+                ShowAlert(LocaleController.getString("HintIncorrect", R.string.HintIncorrect));
                 return;
             }
             byte[] oldPasswordBytes = null;
@@ -419,13 +419,13 @@ public class AccountPasswordActivity extends BaseFragment {
                                 finishFragment();
                             } else {
                                 if (error.text.contains("PASSWORD_HASH_INVALID")) {
-                                    needShowAlert(LocaleController.getString("PasswordOldIncorrect", R.string.PasswordOldIncorrect));
+                                    ShowAlert(LocaleController.getString("PasswordOldIncorrect", R.string.PasswordOldIncorrect));
                                 } else if (error.text.contains("NEW_PASSWORD_BAD")) {
-                                    needShowAlert(LocaleController.getString("PasswordNewIncorrect", R.string.PasswordNewIncorrect));
+                                    ShowAlert(LocaleController.getString("PasswordNewIncorrect", R.string.PasswordNewIncorrect));
                                 } else if (error.text.startsWith("FLOOD_WAIT")) {
-                                    needShowAlert(LocaleController.getString("FloodWait", R.string.FloodWait));
+                                    ShowAlert(LocaleController.getString("FloodWait", R.string.FloodWait));
                                 } else {
-                                    needShowAlert(error.text);
+                                    ShowAlert(error.text);
                                 }
                             }
                         }
@@ -435,7 +435,7 @@ public class AccountPasswordActivity extends BaseFragment {
         } else if (type == 1) {
             String oldPassword = oldPasswordCell.getFieldText();
             if (oldPassword.length() == 0) {
-                needShowAlert(LocaleController.getString("PasswordIncorrect", R.string.PasswordIncorrect));
+                ShowAlert(LocaleController.getString("PasswordIncorrect", R.string.PasswordIncorrect));
                 return;
             }
             byte[] oldPasswordBytes = null;
@@ -487,11 +487,11 @@ public class AccountPasswordActivity extends BaseFragment {
                                 }
                             } else {
                                 if (error.text.contains("PASSWORD_HASH_INVALID")) {
-                                    needShowAlert(LocaleController.getString("PasswordOldIncorrect", R.string.PasswordOldIncorrect));
+                                    ShowAlert(LocaleController.getString("PasswordOldIncorrect", R.string.PasswordOldIncorrect));
                                 } else if (error.text.startsWith("FLOOD_WAIT")) {
-                                    needShowAlert(LocaleController.getString("FloodWait", R.string.FloodWait));
+                                    ShowAlert(LocaleController.getString("FloodWait", R.string.FloodWait));
                                 } else {
-                                    needShowAlert(error.text);
+                                    ShowAlert(error.text);
                                 }
                             }
                         }

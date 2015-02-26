@@ -452,7 +452,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
 
                 datacenter = new Datacenter();
                 datacenter.datacenterId = 3;
-                datacenter.addAddressAndPort("174.140.142.6", 443);
+                datacenter.addAddressAndPort("149.154.175.100", 443);
                 datacenters.put(datacenter.datacenterId, datacenter);
 
                 datacenter = new Datacenter();
@@ -488,7 +488,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
 
             datacenter = new Datacenter();
             datacenter.datacenterId = 3;
-            datacenter.addAddressAndPort("174.140.142.6", 443);
+            datacenter.addAddressAndPort("149.154.175.100", 443);
             datacenters.put(datacenter.datacenterId, datacenter);
 
             datacenter = new Datacenter();
@@ -1406,6 +1406,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                     if (rawRequest != null && (rawRequest instanceof TLRPC.TL_messages_sendMessage ||
                             rawRequest instanceof TLRPC.TL_messages_sendMedia ||
                             rawRequest instanceof TLRPC.TL_messages_forwardMessages ||
+                            rawRequest instanceof TLRPC.TL_messages_forwardMessage ||
                             rawRequest instanceof TLRPC.TL_messages_sendEncrypted ||
                             rawRequest instanceof TLRPC.TL_messages_sendEncryptedFile ||
                             rawRequest instanceof TLRPC.TL_messages_sendEncryptedService)) {
@@ -1426,6 +1427,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                                 if (currentRawRequest instanceof TLRPC.TL_messages_sendMessage ||
                                         currentRawRequest instanceof TLRPC.TL_messages_sendMedia ||
                                         currentRawRequest instanceof TLRPC.TL_messages_forwardMessages ||
+                                        currentRawRequest instanceof TLRPC.TL_messages_forwardMessage ||
                                         currentRawRequest instanceof TLRPC.TL_messages_sendEncrypted ||
                                         currentRawRequest instanceof TLRPC.TL_messages_sendEncryptedFile ||
                                         currentRawRequest instanceof TLRPC.TL_messages_sendEncryptedService) {
@@ -1438,6 +1440,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                                 if (request.rawRequest instanceof TLRPC.TL_messages_sendMessage ||
                                         request.rawRequest instanceof TLRPC.TL_messages_sendMedia ||
                                         request.rawRequest instanceof TLRPC.TL_messages_forwardMessages ||
+                                        request.rawRequest instanceof TLRPC.TL_messages_forwardMessage ||
                                         request.rawRequest instanceof TLRPC.TL_messages_sendEncrypted ||
                                         request.rawRequest instanceof TLRPC.TL_messages_sendEncryptedFile ||
                                         request.rawRequest instanceof TLRPC.TL_messages_sendEncryptedService) {

@@ -9,6 +9,7 @@
 package org.telegram.ui.Cells;
 
 import android.content.Context;
+import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.widget.ImageView;
@@ -32,28 +33,54 @@ public class PhotoEditToolCell extends FrameLayoutFixed {
         LayoutParams layoutParams = (LayoutParams) iconImage.getLayoutParams();
         layoutParams.width = LayoutParams.MATCH_PARENT;
         layoutParams.height = LayoutParams.MATCH_PARENT;
-        layoutParams.bottomMargin = AndroidUtilities.dp(20);
+        layoutParams.bottomMargin = AndroidUtilities.dp(12);
         iconImage.setLayoutParams(layoutParams);
 
         nameTextView = new TextView(context);
         nameTextView.setGravity(Gravity.CENTER);
         nameTextView.setTextColor(0xffffffff);
-        nameTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
+        nameTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 10);
+        nameTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        nameTextView.setMaxLines(1);
+        nameTextView.setSingleLine(true);
+        nameTextView.setEllipsize(TextUtils.TruncateAt.END);
         addView(nameTextView);
         layoutParams = (LayoutParams) nameTextView.getLayoutParams();
         layoutParams.width = LayoutParams.MATCH_PARENT;
-        layoutParams.height = AndroidUtilities.dp(20);
+        layoutParams.height = LayoutParams.WRAP_CONTENT;
         layoutParams.gravity = Gravity.LEFT | Gravity.BOTTOM;
+        layoutParams.leftMargin = AndroidUtilities.dp(4);
+        layoutParams.rightMargin = AndroidUtilities.dp(4);
         nameTextView.setLayoutParams(layoutParams);
+
+        valueTextView = new TextView(context);
+        valueTextView.setTextColor(0xff6cc3ff);
+        valueTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 11);
+        valueTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        addView(valueTextView);
+        layoutParams = (LayoutParams) valueTextView.getLayoutParams();
+        layoutParams.width = LayoutParams.WRAP_CONTENT;
+        layoutParams.height = LayoutParams.WRAP_CONTENT;
+        layoutParams.gravity = Gravity.LEFT | Gravity.TOP;
+        layoutParams.leftMargin = AndroidUtilities.dp(57);
+        layoutParams.topMargin = AndroidUtilities.dp(3);
+        valueTextView.setLayoutParams(layoutParams);
     }
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        super.onMeasure(MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(80), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(60), MeasureSpec.EXACTLY));
+        super.onMeasure(MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(86), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(60), MeasureSpec.EXACTLY));
     }
 
-    public void setIconAndText(int resId, String text) {
+    public void setIconAndTextAndValue(int resId, String text, float value) {
         iconImage.setImageResource(resId);
-        nameTextView.setText(text);
+        nameTextView.setText(text.toUpperCase());
+        if (value == 0) {
+            valueTextView.setText("");
+        } else if (value > 0) {
+            valueTextView.setText("+" + (int) value);
+        } else {
+            valueTextView.setText("" + (int) value);
+        }
     }
 }

@@ -25,10 +25,10 @@ import java.util.List;
 
 public final class AnimatorSet10 extends Animator10 {
 
-    private ArrayList<Animator10> mPlayingSet = new ArrayList<Animator10>();
-    private HashMap<Animator10, Node> mNodeMap = new HashMap<Animator10, Node>();
-    private ArrayList<Node> mNodes = new ArrayList<Node>();
-    private ArrayList<Node> mSortedNodes = new ArrayList<Node>();
+    private ArrayList<Animator10> mPlayingSet = new ArrayList<>();
+    private HashMap<Animator10, Node> mNodeMap = new HashMap<>();
+    private ArrayList<Node> mNodes = new ArrayList<>();
+    private ArrayList<Node> mSortedNodes = new ArrayList<>();
     private boolean mNeedsSort = true;
     private AnimatorSetListener mSetListener = null;
     boolean mTerminated = false;
@@ -89,7 +89,7 @@ public final class AnimatorSet10 extends Animator10 {
     }
 
     public ArrayList<Animator10> getChildAnimations() {
-        ArrayList<Animator10> childList = new ArrayList<Animator10>();
+        ArrayList<Animator10> childList = new ArrayList<>();
         for (Node node : mNodes) {
             childList.add(node.animation);
         }
@@ -295,7 +295,7 @@ public final class AnimatorSet10 extends Animator10 {
             ArrayList<AnimatorListener> oldListeners = node.animation.getListeners();
             if (oldListeners != null && oldListeners.size() > 0) {
                 final ArrayList<AnimatorListener> clonedListeners = new
-                        ArrayList<AnimatorListener>(oldListeners);
+                        ArrayList<>(oldListeners);
 
                 for (AnimatorListener listener : clonedListeners) {
                     if (listener instanceof DependencyListener ||
@@ -306,7 +306,7 @@ public final class AnimatorSet10 extends Animator10 {
             }
         }
 
-        final ArrayList<Node> nodesToStart = new ArrayList<Node>();
+        final ArrayList<Node> nodesToStart = new ArrayList<>();
         for (Node node : mSortedNodes) {
             if (mSetListener == null) {
                 mSetListener = new AnimatorSetListener(this);
@@ -379,12 +379,12 @@ public final class AnimatorSet10 extends Animator10 {
         anim.mNeedsSort = true;
         anim.mTerminated = false;
         anim.mStarted = false;
-        anim.mPlayingSet = new ArrayList<Animator10>();
-        anim.mNodeMap = new HashMap<Animator10, Node>();
-        anim.mNodes = new ArrayList<Node>();
-        anim.mSortedNodes = new ArrayList<Node>();
+        anim.mPlayingSet = new ArrayList<>();
+        anim.mNodeMap = new HashMap<>();
+        anim.mNodes = new ArrayList<>();
+        anim.mSortedNodes = new ArrayList<>();
 
-        HashMap<Node, Node> nodeCloneMap = new HashMap<Node, Node>();
+        HashMap<Node, Node> nodeCloneMap = new HashMap<>();
         for (Node node : mNodes) {
             Node nodeClone = node.clone();
             nodeCloneMap.put(node, nodeClone);
@@ -400,7 +400,7 @@ public final class AnimatorSet10 extends Animator10 {
                 for (AnimatorListener listener : cloneListeners) {
                     if (listener instanceof AnimatorSetListener) {
                         if (listenersToRemove == null) {
-                            listenersToRemove = new ArrayList<AnimatorListener>();
+                            listenersToRemove = new ArrayList<>();
                         }
                         listenersToRemove.add(listener);
                     }
@@ -543,14 +543,14 @@ public final class AnimatorSet10 extends Animator10 {
     private void sortNodes() {
         if (mNeedsSort) {
             mSortedNodes.clear();
-            ArrayList<Node> roots = new ArrayList<Node>();
+            ArrayList<Node> roots = new ArrayList<>();
             int numNodes = mNodes.size();
             for (Node node : mNodes) {
                 if (node.dependencies == null || node.dependencies.size() == 0) {
                     roots.add(node);
                 }
             }
-            ArrayList<Node> tmpRoots = new ArrayList<Node>();
+            ArrayList<Node> tmpRoots = new ArrayList<>();
             while (roots.size() > 0) {
                 int numRoots = roots.size();
                 for (Node root : roots) {
@@ -582,7 +582,7 @@ public final class AnimatorSet10 extends Animator10 {
                     for (int j = 0; j < numDependencies; ++j) {
                         Dependency dependency = node.dependencies.get(j);
                         if (node.nodeDependencies == null) {
-                            node.nodeDependencies = new ArrayList<Node>();
+                            node.nodeDependencies = new ArrayList<>();
                         }
                         if (!node.nodeDependencies.contains(dependency.node)) {
                             node.nodeDependencies.add(dependency.node);
@@ -620,8 +620,8 @@ public final class AnimatorSet10 extends Animator10 {
 
         public void addDependency(Dependency dependency) {
             if (dependencies == null) {
-                dependencies = new ArrayList<Dependency>();
-                nodeDependencies = new ArrayList<Node>();
+                dependencies = new ArrayList<>();
+                nodeDependencies = new ArrayList<>();
             }
             dependencies.add(dependency);
             if (!nodeDependencies.contains(dependency.node)) {
@@ -629,7 +629,7 @@ public final class AnimatorSet10 extends Animator10 {
             }
             Node dependencyNode = dependency.node;
             if (dependencyNode.nodeDependents == null) {
-                dependencyNode.nodeDependents = new ArrayList<Node>();
+                dependencyNode.nodeDependents = new ArrayList<>();
             }
             dependencyNode.nodeDependents.add(this);
         }

@@ -348,6 +348,10 @@ public class ActionBarMenuItem extends FrameLayoutFixed {
         }
     }
 
+    public void setIcon(int resId) {
+        iconView.setImageResource(resId);
+    }
+
     public EditText getSearchField() {
         return searchField;
     }
@@ -399,7 +403,7 @@ public class ActionBarMenuItem extends FrameLayoutFixed {
             searchField.setOnEditorActionListener(new TextView.OnEditorActionListener() {
                 @Override
                 public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
-                    if (actionId == EditorInfo.IME_ACTION_SEARCH || event != null && event.getAction() == KeyEvent.ACTION_UP && event.getKeyCode() == KeyEvent.KEYCODE_SEARCH) {
+                    if (actionId == EditorInfo.IME_ACTION_SEARCH || event != null && (event.getAction() == KeyEvent.ACTION_UP && event.getKeyCode() == KeyEvent.KEYCODE_SEARCH || event.getAction() == KeyEvent.ACTION_DOWN && event.getKeyCode() == KeyEvent.KEYCODE_ENTER)) {
                         AndroidUtilities.hideKeyboard(searchField);
                         if (listener != null) {
                             listener.onSearchPressed(searchField);

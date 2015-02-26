@@ -32,7 +32,7 @@ import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.ActionBar.BaseFragment;
-import org.telegram.ui.Components.SectionsListView;
+import org.telegram.ui.Components.LetterSectionsListView;
 
 public class CountrySelectActivity extends BaseFragment {
 
@@ -40,7 +40,7 @@ public class CountrySelectActivity extends BaseFragment {
         public abstract void didSelectCountry(String name);
     }
 
-    private SectionsListView listView;
+    private LetterSectionsListView listView;
     private TextView emptyTextView;
     private CountryAdapter listViewAdapter;
     private CountrySearchAdapter searchListViewAdapter;
@@ -61,7 +61,7 @@ public class CountrySelectActivity extends BaseFragment {
     }
 
     @Override
-    public View createView(LayoutInflater inflater, final ViewGroup container) {
+    public View createView(LayoutInflater inflater) {
         if (fragmentView == null) {
             actionBar.setBackButtonImage(R.drawable.ic_ab_back);
             actionBar.setAllowOverlayTitle(true);
@@ -88,7 +88,6 @@ public class CountrySelectActivity extends BaseFragment {
                     searchListViewAdapter.search(null);
                     searching = false;
                     searchWas = false;
-                    ViewGroup group = (ViewGroup) listView.getParent();
                     listView.setAdapter(listViewAdapter);
                     if (android.os.Build.VERSION.SDK_INT >= 11) {
                         listView.setFastScrollAlwaysVisible(true);
@@ -165,7 +164,7 @@ public class CountrySelectActivity extends BaseFragment {
             layoutParams1.weight = 0.5f;
             frameLayout.setLayoutParams(layoutParams1);
 
-            listView = new SectionsListView(getParentActivity());
+            listView = new LetterSectionsListView(getParentActivity());
             listView.setEmptyView(emptyTextLayout);
             listView.setVerticalScrollBarEnabled(false);
             listView.setDivider(null);
