@@ -1447,6 +1447,9 @@ public class PhotoFilterView extends FrameLayout {
     }
 
     public Bitmap getBitmap() {
+        if(eglThread == null){
+            return null;
+        }
         return eglThread.getTexture();
     }
 
