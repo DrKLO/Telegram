@@ -574,9 +574,9 @@ public class ChatBaseCell extends BaseCell {
                     if (drawCheck2) {
                         if (!media) {
                             if (drawCheck1) {
-                                setDrawableBounds(checkDrawable, layoutWidth - AndroidUtilities.dp(22.5f) - checkDrawable.getIntrinsicWidth(), layoutHeight - AndroidUtilities.dp(8.5f) - checkDrawable.getIntrinsicHeight());
+                                setDrawableBounds(checkDrawable, layoutWidth - AndroidUtilities.dp(22.5f) - checkDrawable.getIntrinsicWidth(), layoutHeight - AndroidUtilities.dp(8.0f) - checkDrawable.getIntrinsicHeight());
                             } else {
-                                setDrawableBounds(checkDrawable, layoutWidth - AndroidUtilities.dp(18.5f) - checkDrawable.getIntrinsicWidth(), layoutHeight - AndroidUtilities.dp(8.5f) - checkDrawable.getIntrinsicHeight());
+                                setDrawableBounds(checkDrawable, layoutWidth - AndroidUtilities.dp(18.5f) - checkDrawable.getIntrinsicWidth(), layoutHeight - AndroidUtilities.dp(8.0f) - checkDrawable.getIntrinsicHeight());
                             }
                             checkDrawable.draw(canvas);
                         } else {
@@ -590,7 +590,7 @@ public class ChatBaseCell extends BaseCell {
                     }
                     if (drawCheck1) {
                         if (!media) {
-                            setDrawableBounds(halfCheckDrawable, layoutWidth - AndroidUtilities.dp(18) - halfCheckDrawable.getIntrinsicWidth(), layoutHeight - AndroidUtilities.dp(8.5f) - halfCheckDrawable.getIntrinsicHeight());
+                            setDrawableBounds(halfCheckDrawable, layoutWidth - AndroidUtilities.dp(18) - halfCheckDrawable.getIntrinsicWidth(), layoutHeight - AndroidUtilities.dp(8.0f) - halfCheckDrawable.getIntrinsicHeight());
                             halfCheckDrawable.draw(canvas);
                         } else {
                             setDrawableBounds(halfCheckMediaDrawable, layoutWidth - AndroidUtilities.dp(20.5f) - halfCheckMediaDrawable.getIntrinsicWidth(), layoutHeight - AndroidUtilities.dp(13.0f) - halfCheckMediaDrawable.getIntrinsicHeight());

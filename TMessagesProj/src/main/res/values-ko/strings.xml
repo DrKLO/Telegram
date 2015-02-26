@@ -57,6 +57,7 @@
     <string name="MuteFor">%1$s 동안 음소거</string>
     <string name="UnmuteNotifications">음소거 해제</string>
     <string name="WillUnmuteIn">%1$s 후</string>
+    <string name="MuteDisable">비활성화</string>
     <!--broadcasts-->
     <string name="NewBroadcastList">새 단체 메시지 리스트</string>
     <string name="EnterListName">리스트 이름을 입력하세요</string>
@@ -143,6 +144,7 @@
     <string name="NotificationEditedGroupName">%1$s님이 그룹 이름을 %2$s 그룹으로 변경했습니다</string>
     <string name="NotificationEditedGroupPhoto">%1$s님이 %2$s 그룹 사진을 변경했습니다</string>
     <string name="NotificationGroupAddMember">%1$s님이 %3$s님을 %2$s 그룹에 초대했습니다</string>
+    <string name="NotificationGroupAddSelf">%1$s 님이 %2$s 그룹으로 되돌아왔습니다</string>
     <string name="NotificationGroupKickMember">%1$s님이 %3$s님을 %2$s 그룹에서 추방했습니다</string>
     <string name="NotificationGroupKickYou">%1$s님이 %2$s 그룹에서 추방했습니다</string>
     <string name="NotificationGroupLeftMember">%1$s님이 %2$s 그룹을 떠났습니다</string>
@@ -296,9 +298,27 @@
     <string name="ChangePhoneHelp">인증코드 메시지를 새 번호로 전송하겠습니다.</string>
     <string name="ChangePhoneNumberOccupied">그 번호는 이미 텔레그램 계정에 연결되어 있습니다. 새 번호로 이동하기 전에 %1$s 계정에서 탈퇴해 주세요.</string>
     <string name="NotificationsOther">기타</string>
+    <!--passcode view-->
+    <string name="Passcode">잠금번호</string>
+    <string name="ChangePasscode">잠금번호 변경</string>
+    <string name="ChangePasscodeInfo">잠금코드를 설정하셨을 경우, 대화방에 잠금 아이콘이 표시됩니다. 해당 아이콘을 클릭하여 텔레그램 잠금 설정을 할 수 있습니다.\n\n주의: 잠금코드를 잊어버렸을 경우 앱 삭제후 재설치를 해주셔야합니다. 이 경우 비밀대화 내용은 삭제가 됩니다.</string>
+    <string name="ChangePasscodeAlert">대화방에 잠금아이콘이 표시가 됩니다. 해당 아이콘을 클릭하여 새로운 잠금코드를 설정하여 텔레그램을 잠글수 있습니다.</string>
+    <string name="PasscodePIN">핀코드</string>
+    <string name="PasscodePassword">잠금번호</string>
+    <string name="EnterCurrentPasscode">현재 잠금코드 입력</string>
+    <string name="EnterNewPasscode">새로운 잠금코드 입력</string>
+    <string name="EnterYourPasscode">잠금코드를 입력해주세요</string>
+    <string name="ReEnterYourPasscode">잠금코드 재입력</string>
+    <string name="InvalidPasscode">올바르지 않은 잠금코드</string>
+    <string name="PasscodeDoNotMatch">잠금코드가 정확하지 않습니다</string>
+    <string name="AutoLock">자동 잠금</string>
+    <string name="AutoLockInfo">일정 시간 후에 잠금코드 활성화</string>
+    <string name="AutoLockInTime">%1$s 후에</string>
+    <string name="AutoLockDisabled">비활성화됨</string>
     <!--media view-->
     <string name="NoMedia">이 채팅방에서 사진이나 동영상을 공유하면 다른 기기에서도 보실 수 있습니다.</string>
     <string name="DocumentsTitle">파일</string>
+    <string name="SharedMediaTitle">공유된 미디어</string>
     <string name="NoSharedFiles">이 채팅방에서 파일이나 문서를 공유하면 다른 기기에서도 보실 수 있습니다.</string>
     <!--map view-->
     <string name="Map">지도</string>
@@ -318,12 +338,27 @@
     <string name="PleaseDownload">사진/동영상을 먼저 다운로드하세요</string>
     <string name="NoRecentPhotos">최근 사진 없음</string>
     <string name="NoRecentGIFs">최근에 검색한 GIF</string>
-    <string name="SearchImages">웹 검색</string>
+    <string name="SearchImages">이미지 검색</string>
+    <string name="SearchImagesInfo">웹 검색</string>
     <string name="SearchGifs">GIF 검색</string>
     <string name="SearchImagesTitle">웹 검색</string>
     <string name="SearchGifsTitle">GIF 검색</string>
     <string name="CropImage">사진 자르기</string>
     <string name="EditImage">이미지 편집</string>
+    <string name="Enhance">향상</string>
+    <string name="Highlights">하이라이트</string>
+    <string name="Contrast">대비</string>
+    <string name="Exposure">노출</string>
+    <string name="Warmth">온기</string>
+    <string name="Saturation">채도</string>
+    <string name="Vignette">비네팅</string>
+    <string name="Shadows">그림자</string>
+    <string name="Grain">그레인</string>
+    <string name="Sharpen">선명</string>
+    <string name="Blur">흐림</string>
+    <string name="AreYouSureDeletePhoto">이 사진을 삭제하시겠습니까?</string>
+    <string name="AreYouSureDeleteVideo">이 동영상을 삭제하시겠습니까?</string>
+    <string name="DiscardChanges">변경을 취소하시겠습니까?</string>
     <!--password view-->
     <string name="Password">Password</string>
     <string name="ChangePassword">Change password</string>
@@ -405,6 +440,7 @@
     <string name="DeletePhoto">사진 삭제</string>
     <string name="Set">설정</string>
     <string name="OK">확인</string>
+    <string name="Crop">자르기</string>
     <!--messages-->
     <string name="ActionKickUser">un1님이 un2님을 추방했습니다</string>
     <string name="ActionLeftUser">un1님이 퇴장했습니다</string>
@@ -422,6 +458,7 @@
     <string name="ActionYouCreateGroup">그룹을 만들었습니다</string>
     <string name="ActionKickUserYou">un1님이 추방했습니다</string>
     <string name="ActionAddUserYou">un1님이 그룹에 초대했습니다</string>
+    <string name="ActionAddUserSelf">un1 님께서 그룹에 돌아오셨습니다</string>
     <string name="UnsuppotedMedia">이 메시지는 사용 중인 텔레그램의 버전이 낮아 지원하지 않습니다. 앱을 업데이트 하세요: http://telegram.org/update</string>
     <string name="AttachPhoto">사진</string>
     <string name="AttachVideo">동영상</string>
@@ -511,18 +548,24 @@
     <string name="messages_few">메시지 %1$d건</string>
     <string name="messages_many">메시지 %1$d건</string>
     <string name="messages_other">메시지 %1$d건</string>
-    <string name="files_zero">파일 없음</string>
-    <string name="files_one">파일 %1$d개</string>
-    <string name="files_two">파일 %1$d개</string>
-    <string name="files_few">파일 %1$d개</string>
-    <string name="files_many">파일 %1$d개</string>
-    <string name="files_other">파일 %1$d개</string>
+    <string name="items_zero">아이템이 없습니다.</string>
+    <string name="items_one">%1$d개 아이템</string>
+    <string name="items_two">%1$d개 아이템</string>
+    <string name="items_few">%1$d개 아이템</string>
+    <string name="items_many">%1$d개 아이템</string>
+    <string name="items_other">%1$d개 아이템</string>
     <string name="FromContacts_zero">보낸곳 없음 -</string>
     <string name="FromContacts_one">채팅방 %1$d개에서</string>
     <string name="FromContacts_two">채팅방 %1$d개에서</string>
     <string name="FromContacts_few">채팅방 %1$d개에서</string>
     <string name="FromContacts_many">채팅방 %1$d개에서</string>
     <string name="FromContacts_other">채팅방 %1$d개에서</string>
+    <string name="FromChats_zero">받은 대화 없음</string>
+    <string name="FromChats_one">%1$d개의 대화로부터 받음</string>
+    <string name="FromChats_two">%1$d개의 대화로부터 받음</string>
+    <string name="FromChats_few">%1$d개의 대화로부터 받음</string>
+    <string name="FromChats_many">%1$d개의 대화로부터 받음</string>
+    <string name="FromChats_other">%1$d개의 대화로부터 받음</string>
     <string name="Seconds_zero">%1$d초</string>
     <string name="Seconds_one">%1$d초</string>
     <string name="Seconds_two">%1$d초</string>
@@ -572,6 +615,7 @@
     <string name="Users_many">%1$d명의 대화상대</string>
     <string name="Users_other">%1$d명의 대화상대</string>
     <!--date formatters-->
+    <string name="formatterMonthYear">MMMM yyyy</string>
     <string name="formatterMonth">M\'월\' d\'일\'</string>
     <string name="formatterYear">yyyy.MM.dd.</string>
     <string name="formatterYearMax">yyyy. MM. dd.</string>

@@ -165,6 +165,8 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
         public int size;
         public int type;
         public int date;
+        public String thumbPath;
+        public String imagePath;
     }
 
     public final static String MIME_TYPE = "video/avc";

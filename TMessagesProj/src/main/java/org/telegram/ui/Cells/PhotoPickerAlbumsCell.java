@@ -15,7 +15,7 @@ import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
-import android.widget.FrameLayout;
+import android.view.ViewGroup;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -23,8 +23,9 @@ import org.telegram.android.AndroidUtilities;
 import org.telegram.android.MediaController;
 import org.telegram.messenger.R;
 import org.telegram.ui.Components.BackupImageView;
+import org.telegram.ui.Components.FrameLayoutFixed;
 
-public class PhotoPickerAlbumsCell extends FrameLayout {
+public class PhotoPickerAlbumsCell extends FrameLayoutFixed {
 
     public static interface PhotoPickerAlbumsCellDelegate {
         public abstract void didSelectAlbum(MediaController.AlbumEntry albumEntry);
@@ -35,7 +36,7 @@ public class PhotoPickerAlbumsCell extends FrameLayout {
     private int albumsCount;
     private PhotoPickerAlbumsCellDelegate delegate;
 
-    private class AlbumView extends FrameLayout {
+    private class AlbumView extends FrameLayoutFixed {
 
         private BackupImageView imageView;
         private TextView nameTextView;
@@ -146,7 +147,9 @@ public class PhotoPickerAlbumsCell extends FrameLayout {
 
         if (albumEntry != null) {
             AlbumView albumView = albumViews[a];
+            albumView.imageView.setOrientation(0, true);
             if (albumEntry.coverPhoto != null && albumEntry.coverPhoto.path != null) {
+                albumView.imageView.setOrientation(albumEntry.coverPhoto.orientation, true);
                 albumView.imageView.setImage("thumb://" + albumEntry.coverPhoto.imageId + ":" + albumEntry.coverPhoto.path, null, getContext().getResources().getDrawable(R.drawable.nophotos));
             } else {
                 albumView.imageView.setImageResource(R.drawable.nophotos);
@@ -167,16 +170,21 @@ public class PhotoPickerAlbumsCell extends FrameLayout {
             itemWidth = (AndroidUtilities.displaySize.x - ((albumsCount + 1) * AndroidUtilities.dp(4))) / albumsCount;
         }
 
-        setMeasuredDimension(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(4) + itemWidth, MeasureSpec.EXACTLY));
-
         for (int a = 0; a < albumsCount; a++) {
             LayoutParams layoutParams = (LayoutParams) albumViews[a].getLayoutParams();
             layoutParams.topMargin = AndroidUtilities.dp(4);
             layoutParams.leftMargin = (itemWidth + AndroidUtilities.dp(4)) * a;
             layoutParams.width = itemWidth;
             layoutParams.height = itemWidth;
+            layoutParams.gravity = Gravity.LEFT | Gravity.TOP;
             albumViews[a].setLayoutParams(layoutParams);
-            albumViews[a].measure(MeasureSpec.makeMeasureSpec(itemWidth, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(itemWidth, MeasureSpec.EXACTLY));
         }
+
+        ViewGroup.LayoutParams layoutParams = getLayoutParams();
+        if (layoutParams != null) {
+            layoutParams.height = AndroidUtilities.dp(4) + itemWidth;
+            setLayoutParams(layoutParams);
+        }
+        super.onMeasure(widthMeasureSpec, heightMeasureSpec);
     }
 }

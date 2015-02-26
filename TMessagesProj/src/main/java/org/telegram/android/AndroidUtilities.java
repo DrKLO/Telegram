@@ -23,6 +23,7 @@ import android.os.Environment;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
+import android.util.DisplayMetrics;
 import android.util.StateSet;
 import android.view.Display;
 import android.view.Surface;
@@ -33,12 +34,16 @@ import android.widget.AbsListView;
 import android.widget.EdgeEffect;
 import android.widget.EditText;
 import android.widget.ListView;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 
+import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.ApplicationLoader;
+import org.telegram.messenger.UserConfig;
+import org.telegram.ui.Components.ForegroundDetector;
 import org.telegram.ui.Components.NumberPicker;
 import org.telegram.ui.Components.TypefaceSpan;
 
@@ -59,6 +64,7 @@ public class AndroidUtilities {
     public static float density = 1;
     public static Point displaySize = new Point();
     public static Integer photoSize = null;
+    public static DisplayMetrics displayMetrics = new DisplayMetrics();
     private static Boolean isTablet = null;
 
     static {
@@ -67,7 +73,7 @@ public class AndroidUtilities {
     }
 
     public static void lockOrientation(Activity activity) {
-        if (activity == null || prevOrientation != -10) {
+        if (activity == null || prevOrientation != -10 || Build.VERSION.SDK_INT < 9) {
             return;
         }
         try {
@@ -115,7 +121,7 @@ public class AndroidUtilities {
     }
 
     public static void unlockOrientation(Activity activity) {
-        if (activity == null) {
+        if (activity == null || Build.VERSION.SDK_INT < 9) {
             return;
         }
         try {
@@ -228,17 +234,22 @@ public class AndroidUtilities {
             if (manager != null) {
                 Display display = manager.getDefaultDisplay();
                 if (display != null) {
+                    display.getMetrics(displayMetrics);
                     if(android.os.Build.VERSION.SDK_INT < 13) {
                         displaySize.set(display.getWidth(), display.getHeight());
                     } else {
                         display.getSize(displaySize);
                     }
-                    FileLog.e("tmessages", "display size = " + displaySize.x + " " + displaySize.y);
+                    FileLog.e("tmessages", "display size = " + displaySize.x + " " + displaySize.y + " " + displayMetrics.xdpi + "x" + displayMetrics.ydpi);
                 }
             }
         } catch (Exception e) {
             FileLog.e("tmessages", e);
         }
+    }
+
+    public static float getPixelsInCM(float cm, boolean isX) {
+        return (cm / 2.54f) * (isX ? displayMetrics.xdpi : displayMetrics.ydpi);
     }
 
     public static long makeBroadcastId(int id) {
@@ -421,6 +432,19 @@ public class AndroidUtilities {
         }
     }
 
+    public static void setProgressBarAnimationDuration(ProgressBar progressBar, int duration) {
+        if (progressBar == null) {
+            return;
+        }
+        try {
+            Field mCursorDrawableRes = ProgressBar.class.getDeclaredField("mDuration");
+            mCursorDrawableRes.setAccessible(true);
+            mCursorDrawableRes.setInt(progressBar, duration);
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
+    }
+
     public static int getViewInset(View view) {
         if (view == null || Build.VERSION.SDK_INT < 21) {
             return 0;
@@ -529,5 +553,19 @@ public class AndroidUtilities {
             stringBuilder.setSpan(span, bolds.get(a * 2), bolds.get(a * 2 + 1), Spanned.SPAN_INCLUSIVE_INCLUSIVE);
         }
         return stringBuilder;
+    }
+
+    public static boolean needShowPasscode(boolean reset) {
+        boolean wasInBackground;
+        if (Build.VERSION.SDK_INT >= 14) {
+            wasInBackground = ForegroundDetector.getInstance().isWasInBackground(reset);
+            if (reset) {
+                ForegroundDetector.getInstance().resetBackgroundVar();
+            }
+        } else {
+            wasInBackground = UserConfig.lastPauseTime != 0;
+        }
+        return UserConfig.passcodeHash.length() > 0 && wasInBackground &&
+                (UserConfig.appLocked || UserConfig.autoLockIn != 0 && UserConfig.lastPauseTime != 0 && !UserConfig.appLocked && (UserConfig.lastPauseTime + UserConfig.autoLockIn) <= ConnectionsManager.getInstance().getCurrentTime());
     }
 }

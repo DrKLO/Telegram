@@ -53,6 +53,7 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
     private int securitySectionRow;
     private int terminateSessionsRow;
     private int passwordRow;
+    private int passcodeRow;
     private int terminateSessionsDetailRow;
     private int deleteAccountSectionRow;
     private int deleteAccountRow;
@@ -71,6 +72,7 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
         lastSeenRow = rowCount++;
         lastSeenDetailRow = rowCount++;
         securitySectionRow = rowCount++;
+        passcodeRow = rowCount++;
         terminateSessionsRow = rowCount++;
         terminateSessionsDetailRow = rowCount++;
         deleteAccountSectionRow = rowCount++;
@@ -90,7 +92,7 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
     }
 
     @Override
-    public View createView(LayoutInflater inflater, ViewGroup container) {
+    public View createView(LayoutInflater inflater) {
         if (fragmentView == null) {
             actionBar.setBackButtonImage(R.drawable.ic_ab_back);
             actionBar.setAllowOverlayTitle(true);
@@ -227,6 +229,12 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                         presentFragment(new LastSeenActivity());
                     } else if (i == passwordRow) {
                         presentFragment(new AccountPasswordActivity(0));
+                    } else if (i == passcodeRow) {
+                        if (UserConfig.passcodeHash.length() > 0) {
+                            presentFragment(new PasscodeActivity(2));
+                        } else {
+                            presentFragment(new PasscodeActivity(0));
+                        }
                     }
                 }
             });
@@ -319,7 +327,7 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
 
         @Override
         public boolean isEnabled(int i) {
-            return i == passwordRow || i == blockedRow || i == terminateSessionsRow || i == lastSeenRow && !ContactsController.getInstance().getLoadingLastSeenInfo() || i == deleteAccountRow && !ContactsController.getInstance().getLoadingDeleteInfo();
+            return i == passcodeRow || i == passwordRow || i == blockedRow || i == terminateSessionsRow || i == lastSeenRow && !ContactsController.getInstance().getLoadingLastSeenInfo() || i == deleteAccountRow && !ContactsController.getInstance().getLoadingDeleteInfo();
         }
 
         @Override
@@ -357,6 +365,8 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                     textCell.setText(LocaleController.getString("TerminateAllSessions", R.string.TerminateAllSessions), false);
                 } else if (i == passwordRow) {
                     textCell.setText(LocaleController.getString("Password", R.string.Password), true);
+                } else if (i == passcodeRow) {
+                    textCell.setText(LocaleController.getString("Passcode", R.string.Passcode), true);
                 } else if (i == lastSeenRow) {
                     String value;
                     if (ContactsController.getInstance().getLoadingLastSeenInfo()) {
@@ -413,7 +423,7 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
 
         @Override
         public int getItemViewType(int i) {
-            if (i == lastSeenRow || i == blockedRow || i == deleteAccountRow || i == terminateSessionsRow || i == passwordRow) {
+            if (i == lastSeenRow || i == blockedRow || i == deleteAccountRow || i == terminateSessionsRow || i == passwordRow || i == passcodeRow) {
                 return 0;
             } else if (i == deleteAccountDetailRow || i == lastSeenDetailRow || i == terminateSessionsDetailRow) {
                 return 1;

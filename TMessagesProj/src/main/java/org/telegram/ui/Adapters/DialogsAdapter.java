@@ -13,7 +13,6 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import org.telegram.android.AndroidUtilities;
-import org.telegram.android.MessageObject;
 import org.telegram.android.MessagesController;
 import org.telegram.messenger.TLRPC;
 import org.telegram.ui.Cells.DialogCell;
@@ -24,6 +23,7 @@ public class DialogsAdapter extends BaseFragmentAdapter {
     private Context mContext;
     private boolean serverOnly;
     private long openedDialogId;
+    private int currentCount;
 
     public DialogsAdapter(Context context, boolean onlyFromServer) {
         mContext = context;
@@ -32,6 +32,11 @@ public class DialogsAdapter extends BaseFragmentAdapter {
 
     public void setOpenedDialogId(long id) {
         openedDialogId = id;
+    }
+
+    public boolean isDataSetChanged() {
+        int current = currentCount;
+        return current != getCount();
     }
 
     @Override
@@ -58,6 +63,7 @@ public class DialogsAdapter extends BaseFragmentAdapter {
         if (!MessagesController.getInstance().dialogsEndReached) {
             count++;
         }
+        currentCount = count;
         return count;
     }
 
@@ -97,22 +103,23 @@ public class DialogsAdapter extends BaseFragmentAdapter {
             if (view == null) {
                 view = new DialogCell(mContext);
             }
-            ((DialogCell) view).useSeparator = (i != getCount() - 1);
-            TLRPC.TL_dialog dialog = null;
-            if (serverOnly) {
-                dialog = MessagesController.getInstance().dialogsServerOnly.get(i);
-            } else {
-                dialog = MessagesController.getInstance().dialogs.get(i);
-                if (AndroidUtilities.isTablet()) {
-                    if (dialog.id == openedDialogId) {
-                        view.setBackgroundColor(0x0f000000);
-                    } else {
-                        view.setBackgroundColor(0);
+            if (view instanceof DialogCell) { //TODO finally i need to find this crash
+                ((DialogCell) view).useSeparator = (i != getCount() - 1);
+                TLRPC.TL_dialog dialog = null;
+                if (serverOnly) {
+                    dialog = MessagesController.getInstance().dialogsServerOnly.get(i);
+                } else {
+                    dialog = MessagesController.getInstance().dialogs.get(i);
+                    if (AndroidUtilities.isTablet()) {
+                        if (dialog.id == openedDialogId) {
+                            view.setBackgroundColor(0x0f000000);
+                        } else {
+                            view.setBackgroundColor(0);
+                        }
                     }
                 }
+                ((DialogCell) view).setDialog(dialog, i, serverOnly);
             }
-            MessageObject message = MessagesController.getInstance().dialogMessage.get(dialog.top_message);
-            ((DialogCell) view).setDialog(dialog.id, message, true, dialog.last_message_date, dialog.unread_count, MessagesController.getInstance().isDialogMuted(dialog.id));
         }
 
         return view;
@@ -133,9 +140,6 @@ public class DialogsAdapter extends BaseFragmentAdapter {
 
     @Override
     public boolean isEmpty() {
-        if (MessagesController.getInstance().loadingDialogs && MessagesController.getInstance().dialogs.isEmpty()) {
-            return true;
-        }
         int count;
         if (serverOnly) {
             count = MessagesController.getInstance().dialogsServerOnly.size();

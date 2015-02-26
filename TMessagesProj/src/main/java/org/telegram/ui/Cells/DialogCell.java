@@ -55,12 +55,15 @@ public class DialogCell extends BaseCell {
     private static Paint linePaint;
 
     private long currentDialogId;
-    private boolean allowPrintStrings;
+    private boolean isDialogCell;
     private int lastMessageDate;
     private int unreadCount;
     private boolean lastUnreadState;
+    private int lastSendState;
     private boolean dialogMuted;
     private MessageObject message;
+    private int index;
+    private boolean isServerOnly;
 
     private ImageReceiver avatarImage;
     private AvatarDrawable avatarDrawable;
@@ -166,14 +169,24 @@ public class DialogCell extends BaseCell {
         avatarDrawable = new AvatarDrawable();
     }
 
-    public void setDialog(long dialog_id, MessageObject messageObject, boolean usePrintStrings, int date, int unread, boolean muted) {
+    public void setDialog(TLRPC.TL_dialog dialog, int i, boolean server) {
+        currentDialogId = dialog.id;
+        isDialogCell = true;
+        index = i;
+        isServerOnly = server;
+        update(0);
+    }
+
+    public void setDialog(long dialog_id, MessageObject messageObject, int date) {
         currentDialogId = dialog_id;
         message = messageObject;
-        allowPrintStrings = usePrintStrings;
+        isDialogCell = false;
         lastMessageDate = date;
-        unreadCount = unread;
-        dialogMuted = muted;
+        unreadCount = 0;
         lastUnreadState = messageObject != null && messageObject.isUnread();
+        if (message != null) {
+            lastSendState = message.messageOwner.send_state;
+        }
         update(0);
     }
 
@@ -211,7 +224,7 @@ public class DialogCell extends BaseCell {
         String countString = null;
         CharSequence messageString = "";
         CharSequence printingString = null;
-        if (allowPrintStrings) {
+        if (isDialogCell) {
             printingString = MessagesController.getInstance().printingStrings.get(currentDialogId);
         }
         TextPaint currentNamePaint = namePaint;
@@ -543,14 +556,14 @@ public class DialogCell extends BaseCell {
         if (LocaleController.isRTL) {
             if (nameLayout != null && nameLayout.getLineCount() > 0) {
                 left = nameLayout.getLineLeft(0);
+                widthpx = Math.ceil(nameLayout.getLineWidth(0));
+                if (dialogMuted) {
+                    nameMuteLeft = (int) (nameLeft + (nameWidth - widthpx) - AndroidUtilities.dp(6) - muteDrawable.getIntrinsicWidth());
+                }
                 if (left == 0) {
-                    widthpx = Math.ceil(nameLayout.getLineWidth(0));
                     if (widthpx < nameWidth) {
                         nameLeft += (nameWidth - widthpx);
                     }
-                }
-                if (dialogMuted) {
-                    nameMuteLeft = (nameLeft - AndroidUtilities.dp(6) - muteDrawable.getIntrinsicWidth());
                 }
             }
             if (messageLayout != null && messageLayout.getLineCount() > 0) {
@@ -587,10 +600,37 @@ public class DialogCell extends BaseCell {
         }
     }
 
+    public void checkCurrentDialogIndex() {
+        TLRPC.TL_dialog dialog = null;
+        if (isServerOnly) {
+            dialog = MessagesController.getInstance().dialogsServerOnly.get(index);
+        } else {
+            dialog = MessagesController.getInstance().dialogs.get(index);
+        }
+        boolean update = true;
+        if (currentDialogId != dialog.id || message != null && message.messageOwner.id != dialog.top_message || unreadCount != dialog.unread_count) {
+            currentDialogId = dialog.id;
+            update(0);
+        }
+    }
+
     public void update(int mask) {
+        if (isDialogCell) {
+            TLRPC.TL_dialog dialog = MessagesController.getInstance().dialogs_dict.get(currentDialogId);
+            if (dialog != null && mask == 0) {
+                message = MessagesController.getInstance().dialogMessage.get(dialog.top_message);
+                lastUnreadState = message != null && message.isUnread();
+                unreadCount = dialog.unread_count;
+                lastMessageDate = dialog.last_message_date;
+                if (message != null) {
+                    lastSendState = message.messageOwner.send_state;
+                }
+            }
+        }
+
         if (mask != 0) {
             boolean continueUpdate = false;
-            if (allowPrintStrings && (mask & MessagesController.UPDATE_MASK_USER_PRINT) != 0) {
+            if (isDialogCell && (mask & MessagesController.UPDATE_MASK_USER_PRINT) != 0) {
                 CharSequence printString = MessagesController.getInstance().printingStrings.get(currentDialogId);
                 if (lastPrintString != null && printString == null || lastPrintString == null && printString != null || lastPrintString != null && printString != null && !lastPrintString.equals(printString)) {
                     continueUpdate = true;
@@ -618,8 +658,9 @@ public class DialogCell extends BaseCell {
             }
             if (!continueUpdate && (mask & MessagesController.UPDATE_MASK_READ_DIALOG_MESSAGE) != 0) {
                 if (message != null && lastUnreadState != message.isUnread()) {
+                    lastUnreadState = message.isUnread();
                     continueUpdate = true;
-                } else if (allowPrintStrings) {
+                } else if (isDialogCell) {
                     TLRPC.TL_dialog dialog = MessagesController.getInstance().dialogs_dict.get(currentDialogId);
                     if (dialog != null && unreadCount != dialog.unread_count) {
                         unreadCount = dialog.unread_count;
@@ -627,11 +668,19 @@ public class DialogCell extends BaseCell {
                     }
                 }
             }
+            if (!continueUpdate && (mask & MessagesController.UPDATE_MASK_SEND_STATE) != 0) {
+                if (message != null && lastSendState != message.messageOwner.send_state) {
+                    lastSendState = message.messageOwner.send_state;
+                    continueUpdate = true;
+                }
+            }
 
             if (!continueUpdate) {
                 return;
             }
         }
+
+        dialogMuted = isDialogCell && MessagesController.getInstance().isDialogMuted(currentDialogId);
         user = null;
         chat = null;
         encryptedChat = null;

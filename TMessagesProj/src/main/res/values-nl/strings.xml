@@ -57,6 +57,7 @@
     <string name="MuteFor">%1$s stil</string>
     <string name="UnmuteNotifications">Stil uitschakelen</string>
     <string name="WillUnmuteIn">Over %1$s</string>
+    <string name="MuteDisable">Uitschakelen</string>
     <!--broadcasts-->
     <string name="NewBroadcastList">Nieuwe verzendlijst</string>
     <string name="EnterListName">Naam van lijst</string>
@@ -143,6 +144,7 @@
     <string name="NotificationEditedGroupName">%1$s heeft de naam van de groep %2$s gewijzigd</string>
     <string name="NotificationEditedGroupPhoto">%1$s heeft de afbeelding van de groep %2$s gewijzigd</string>
     <string name="NotificationGroupAddMember">%1$s heeft %3$s uitgenodigd voor de groep %2$s</string>
+    <string name="NotificationGroupAddSelf">%1$s is terug in de groep %2$s</string>
     <string name="NotificationGroupKickMember">%1$s heeft %3$s verwijderd uit de groep %2$s</string>
     <string name="NotificationGroupKickYou">%1$s heeft je verwijderd uit de groep %2$s</string>
     <string name="NotificationGroupLeftMember">%1$s heeft de groep %2$s verlaten</string>
@@ -221,7 +223,7 @@
     <string name="AskAQuestion">Een vraag stellen</string>
     <string name="EnableAnimations">Animaties</string>
     <string name="Unblock">Deblokkeer</string>
-    <string name="UnblockText">Houd een gebruiker ingedrukt om hem/haar te deblokkeren.</string>
+    <string name="UnblockText">Gebruiker vasthouden om te deblokkeren.</string>
     <string name="NoBlocked">Geen geblokkeerde gebruikers</string>
     <string name="MessageNotifications">Berichtmeldingen</string>
     <string name="Alert">Waarschuwing</string>
@@ -296,9 +298,27 @@
     <string name="ChangePhoneHelp">We sturen een sms-bericht met verificatiecode naar je nieuwe nummer.</string>
     <string name="ChangePhoneNumberOccupied">Aan telefoonnummer %1$s is al een Telegram-account gekoppeld. Verwijder het account om te kunnen migreren naar het nieuwe nummer.</string>
     <string name="NotificationsOther">Overig</string>
+    <!--passcode view-->
+    <string name="Passcode">Toegangscode</string>
+    <string name="ChangePasscode">Toegangscode wijzigen</string>
+    <string name="ChangePasscodeInfo">Als je een toegangscode instelt verschijnt er een slotje op de chatspagina. Tik erop om Telegram te vergrendelen of te ontgrendelen.\n\nLet op: vergeet je de toegangscode dan zul je de app moeten verwijderen en herinstalleren. Alle geheime chats gaan daarbij verloren.</string>
+    <string name="ChangePasscodeAlert">Je zult nu een slotje op de chatspagina zien. Tik erop om Telegram te vergrendelen met je nieuwe toegangscode.</string>
+    <string name="PasscodePIN">PIN</string>
+    <string name="PasscodePassword">Wachtwoord</string>
+    <string name="EnterCurrentPasscode">Huidige toegangscode invoeren</string>
+    <string name="EnterNewPasscode">Nieuwe toegangscode invoeren</string>
+    <string name="EnterYourPasscode">Toegangscode invoeren</string>
+    <string name="ReEnterYourPasscode">Nieuwe toegangscode opnieuw invoeren</string>
+    <string name="InvalidPasscode">Ongeldige toegangscode</string>
+    <string name="PasscodeDoNotMatch">Toegangscodes komen niet overeen</string>
+    <string name="AutoLock">Automatisch vergrendelen</string>
+    <string name="AutoLockInfo">Vraag om toegangscode indien afwezig</string>
+    <string name="AutoLockInTime">over %1$s</string>
+    <string name="AutoLockDisabled">Uitgeschakeld</string>
     <!--media view-->
     <string name="NoMedia">Deel foto\'s en video\'s in deze chat om ze op al je apparaten te kunnen benaderen.</string>
     <string name="DocumentsTitle">Bestanden</string>
+    <string name="SharedMediaTitle">Gedeelde media</string>
     <string name="NoSharedFiles">Deel bestanden en documenten in deze chat om ze op al je apparaten te kunnen benaderen.</string>
     <!--map view-->
     <string name="Map">Kaart</string>
@@ -319,11 +339,26 @@
     <string name="NoRecentPhotos">Niets recents</string>
     <string name="NoRecentGIFs">Niets recents</string>
     <string name="SearchImages">ONLINE ZOEKEN</string>
-    <string name="SearchGifs">GIF\'S ZOEKEN</string>
+    <string name="SearchImagesInfo">ZOEK OP HET WEB</string>
+    <string name="SearchGifs">GIF\'S ZOEKEN </string>
     <string name="SearchImagesTitle">Online zoeken</string>
     <string name="SearchGifsTitle">GIF\'s zoeken</string>
     <string name="CropImage">Foto bijsnijden</string>
     <string name="EditImage">Foto bewerken</string>
+    <string name="Enhance">Verbeteren</string>
+    <string name="Highlights">Accent</string>
+    <string name="Contrast">Contrast</string>
+    <string name="Exposure">Belichting</string>
+    <string name="Warmth">Warmte</string>
+    <string name="Saturation">Verzadiging</string>
+    <string name="Vignette">Vignet</string>
+    <string name="Shadows">Schaduwen</string>
+    <string name="Grain">Korrel</string>
+    <string name="Sharpen">Scherper</string>
+    <string name="Blur">Vager</string>
+    <string name="AreYouSureDeletePhoto">Foto echt verwijderen?</string>
+    <string name="AreYouSureDeleteVideo">Video echt verwijderen?</string>
+    <string name="DiscardChanges">Wijzigingen negeren?</string>
     <!--password view-->
     <string name="Password">Password</string>
     <string name="ChangePassword">Change password</string>
@@ -405,6 +440,7 @@
     <string name="DeletePhoto">Foto verwijderen</string>
     <string name="Set">Stel in</string>
     <string name="OK">OK</string>
+    <string name="Crop">BIJSNIJDEN</string>
     <!--messages-->
     <string name="ActionKickUser">un1 heeft un2 verwijderd</string>
     <string name="ActionLeftUser">un1 heeft de groep verlaten</string>
@@ -422,6 +458,7 @@
     <string name="ActionYouCreateGroup">Je hebt de groep gemaakt</string>
     <string name="ActionKickUserYou">un1 heeft je verwijderd</string>
     <string name="ActionAddUserYou">un1 heeft je toegevoegd</string>
+    <string name="ActionAddUserSelf">un1 is terug in de groep</string>
     <string name="UnsuppotedMedia">Dit bericht wordt niet ondersteund door jouw versie van Telegram. Werk Telegram bij om dit bericht te bekijken: http://telegram.org/update</string>
     <string name="AttachPhoto">Foto</string>
     <string name="AttachVideo">Video</string>
@@ -511,18 +548,24 @@
     <string name="messages_few">%1$d berichten</string>
     <string name="messages_many">%1$d berichten</string>
     <string name="messages_other">%1$d berichten</string>
-    <string name="files_zero">geen bestanden</string>
-    <string name="files_one">%1$d bestand</string>
-    <string name="files_two">%1$d bestanden</string>
-    <string name="files_few">%1$d bestanden</string>
-    <string name="files_many">%1$d bestanden</string>
-    <string name="files_other">%1$d bestanden</string>
+    <string name="items_zero">geen items</string>
+    <string name="items_one">%1$d item</string>
+    <string name="items_two">%1$d items</string>
+    <string name="items_few">%1$d items</string>
+    <string name="items_many">%1$d items</string>
+    <string name="items_other">%1$d items</string>
     <string name="FromContacts_zero">van geen enkel contact</string>
     <string name="FromContacts_one">van %1$d contacten</string>
     <string name="FromContacts_two">van %1$d contacten</string>
     <string name="FromContacts_few">van %1$d contacten</string>
     <string name="FromContacts_many">van %1$d contacten</string>
     <string name="FromContacts_other">van %1$d contacten</string>
+    <string name="FromChats_zero">van geen chats</string>
+    <string name="FromChats_one">van %1$d chat</string>
+    <string name="FromChats_two">van %1$d chats</string>
+    <string name="FromChats_few">van %1$d chats</string>
+    <string name="FromChats_many">van %1$d chats</string>
+    <string name="FromChats_other">van %1$d chats</string>
     <string name="Seconds_zero">%1$d seconden</string>
     <string name="Seconds_one">%1$d seconde</string>
     <string name="Seconds_two">%1$d seconden</string>
@@ -572,6 +615,7 @@
     <string name="Users_many">%1$d gebruikers</string>
     <string name="Users_other">%1$d gebruikers</string>
     <!--date formatters-->
+    <string name="formatterMonthYear">MMMM yyyy</string>
     <string name="formatterMonth">dd MMM</string>
     <string name="formatterYear">dd-MM-yy</string>
     <string name="formatterYearMax">dd-MM-yyyy</string>

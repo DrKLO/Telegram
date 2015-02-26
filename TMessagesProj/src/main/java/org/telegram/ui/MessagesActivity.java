@@ -26,7 +26,6 @@ import android.view.ViewTreeObserver;
 import android.view.animation.AccelerateDecelerateInterpolator;
 import android.widget.AbsListView;
 import android.widget.AdapterView;
-import android.widget.BaseAdapter;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.FrameLayout;
@@ -67,6 +66,7 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
     private View searchEmptyView;
     private View progressView;
     private View emptyView;
+    private ActionBarMenuItem passcodeItem;
     private ImageView floatingButton;
     private int prevPosition;
     private int prevTop;
@@ -88,6 +88,8 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
 
     private long openedDialogId = 0;
 
+    private static final int passcode_menu_item = 1;
+
     public static interface MessagesActivityDelegate {
         public abstract void didSelectDialog(MessagesActivity fragment, long dialog_id, boolean param);
     }
@@ -107,6 +109,10 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
         NotificationCenter.getInstance().addObserver(this, NotificationCenter.appDidLogout);
         NotificationCenter.getInstance().addObserver(this, NotificationCenter.openedChatChanged);
         NotificationCenter.getInstance().addObserver(this, NotificationCenter.notificationsSettingsUpdated);
+        NotificationCenter.getInstance().addObserver(this, NotificationCenter.messageReceivedByAck);
+        NotificationCenter.getInstance().addObserver(this, NotificationCenter.messageReceivedByServer);
+        NotificationCenter.getInstance().addObserver(this, NotificationCenter.messageSendError);
+        NotificationCenter.getInstance().addObserver(this, NotificationCenter.didSetPasscode);
 
         if (getArguments() != null) {
             onlySelect = arguments.getBoolean("onlySelect", false);
@@ -133,25 +139,37 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.appDidLogout);
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.openedChatChanged);
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.notificationsSettingsUpdated);
+        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.messageReceivedByAck);
+        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.messageReceivedByServer);
+        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.messageSendError);
+        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.didSetPasscode);
         delegate = null;
     }
 
     @Override
-    public View createView(LayoutInflater inflater, ViewGroup container) {
+    public View createView(LayoutInflater inflater) {
         if (fragmentView == null) {
+            searching = false;
+            searchWas = false;
+
             ActionBarMenu menu = actionBar.createMenu();
+            if (!onlySelect) {
+                passcodeItem = menu.addItem(passcode_menu_item, R.drawable.lock_close);
+                updatePasscodeButton();
+            }
             ActionBarMenuItem item = menu.addItem(0, R.drawable.ic_ab_search).setIsSearchField(true).setActionBarMenuItemSearchListener(new ActionBarMenuItem.ActionBarMenuItemSearchListener() {
                 @Override
                 public void onSearchExpand() {
                     searching = true;
                     if (messagesListView != null) {
                         messagesListView.setEmptyView(searchEmptyView);
-                        emptyView.setVisibility(View.GONE);
-                        progressView.setVisibility(View.GONE);
+                        emptyView.setVisibility(View.INVISIBLE);
+                        progressView.setVisibility(View.INVISIBLE);
                         if (!onlySelect) {
                             floatingButton.setVisibility(View.GONE);
                         }
                     }
+                    updatePasscodeButton();
                 }
 
                 @Override
@@ -160,14 +178,14 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                     searchWas = false;
                     if (messagesListView != null) {
                         if (MessagesController.getInstance().loadingDialogs && MessagesController.getInstance().dialogs.isEmpty()) {
-                            searchEmptyView.setVisibility(View.GONE);
-                            emptyView.setVisibility(View.GONE);
+                            searchEmptyView.setVisibility(View.INVISIBLE);
+                            emptyView.setVisibility(View.INVISIBLE);
                             progressView.setVisibility(View.VISIBLE);
                             messagesListView.setEmptyView(progressView);
                         } else {
                             messagesListView.setEmptyView(emptyView);
-                            searchEmptyView.setVisibility(View.GONE);
-                            progressView.setVisibility(View.GONE);
+                            searchEmptyView.setVisibility(View.INVISIBLE);
+                            progressView.setVisibility(View.INVISIBLE);
                         }
                         if (!onlySelect) {
                             floatingButton.setVisibility(View.VISIBLE);
@@ -183,6 +201,7 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                     if (dialogsSearchAdapter != null) {
                         dialogsSearchAdapter.searchDialogs(null, false);
                     }
+                    updatePasscodeButton();
                 }
 
                 @Override
@@ -196,8 +215,8 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                         }
                         if (searchEmptyView != null && messagesListView.getEmptyView() == emptyView) {
                             messagesListView.setEmptyView(searchEmptyView);
-                            emptyView.setVisibility(View.GONE);
-                            progressView.setVisibility(View.GONE);
+                            emptyView.setVisibility(View.INVISIBLE);
+                            progressView.setVisibility(View.INVISIBLE);
                         }
                     }
                     if (dialogsSearchAdapter != null) {
@@ -224,14 +243,15 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                         } else if (parentLayout != null) {
                             parentLayout.getDrawerLayoutContainer().openDrawer(false);
                         }
+                    } else if (id == passcode_menu_item) {
+                        UserConfig.appLocked = !UserConfig.appLocked;
+                        UserConfig.saveConfig(false);
+                        updatePasscodeButton();
                     }
                 }
             });
 
-            searching = false;
-            searchWas = false;
-
-            fragmentView = inflater.inflate(R.layout.messages_list, container, false);
+            fragmentView = inflater.inflate(R.layout.messages_list, null, false);
 
             dialogsAdapter = new DialogsAdapter(getParentActivity(), serverOnly);
             if (AndroidUtilities.isTablet() && openedDialogId != 0) {
@@ -242,8 +262,8 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                 @Override
                 public void searchStateChanged(boolean search) {
                     if (searching && searchWas && messagesListView != null) {
-                        progressView.setVisibility(search ? View.VISIBLE : View.GONE);
-                        searchEmptyView.setVisibility(search ? View.GONE : View.VISIBLE);
+                        progressView.setVisibility(search ? View.VISIBLE : View.INVISIBLE);
+                        searchEmptyView.setVisibility(search ? View.INVISIBLE : View.VISIBLE);
                         messagesListView.setEmptyView(search ? progressView : searchEmptyView);
                     }
                 }
@@ -309,14 +329,14 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
             });
 
             if (MessagesController.getInstance().loadingDialogs && MessagesController.getInstance().dialogs.isEmpty()) {
-                searchEmptyView.setVisibility(View.GONE);
-                emptyView.setVisibility(View.GONE);
+                searchEmptyView.setVisibility(View.INVISIBLE);
+                emptyView.setVisibility(View.INVISIBLE);
                 progressView.setVisibility(View.VISIBLE);
                 messagesListView.setEmptyView(progressView);
             } else {
                 messagesListView.setEmptyView(emptyView);
-                searchEmptyView.setVisibility(View.GONE);
-                progressView.setVisibility(View.GONE);
+                searchEmptyView.setVisibility(View.INVISIBLE);
+                progressView.setVisibility(View.INVISIBLE);
             }
 
             messagesListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
@@ -559,29 +579,30 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
     public void didReceivedNotification(int id, Object... args) {
         if (id == NotificationCenter.dialogsNeedReload) {
             if (dialogsAdapter != null) {
-                dialogsAdapter.notifyDataSetChanged();
+                if (dialogsAdapter.isDataSetChanged()) {
+                    dialogsAdapter.notifyDataSetChanged();
+                } else {
+                    updateVisibleRows(MessagesController.UPDATE_MASK_NEW_MESSAGE);
+                }
             }
             if (dialogsSearchAdapter != null) {
                 dialogsSearchAdapter.notifyDataSetChanged();
             }
             if (messagesListView != null) {
                 try {
-                    if (messagesListView.getAdapter() != null && messagesListView.getAdapter() instanceof BaseAdapter) {
-                        ((BaseAdapter) messagesListView.getAdapter()).notifyDataSetChanged();
-                    }
                     if (MessagesController.getInstance().loadingDialogs && MessagesController.getInstance().dialogs.isEmpty()) {
-                        searchEmptyView.setVisibility(View.GONE);
-                        emptyView.setVisibility(View.GONE);
+                        searchEmptyView.setVisibility(View.INVISIBLE);
+                        emptyView.setVisibility(View.INVISIBLE);
                         messagesListView.setEmptyView(progressView);
                     } else {
                         if (searching && searchWas) {
                             messagesListView.setEmptyView(searchEmptyView);
-                            emptyView.setVisibility(View.GONE);
+                            emptyView.setVisibility(View.INVISIBLE);
                         } else {
                             messagesListView.setEmptyView(emptyView);
-                            searchEmptyView.setVisibility(View.GONE);
+                            searchEmptyView.setVisibility(View.INVISIBLE);
                         }
-                        progressView.setVisibility(View.GONE);
+                        progressView.setVisibility(View.INVISIBLE);
                     }
                 } catch (Exception e) {
                     FileLog.e("tmessages", e); //TODO fix it in other way?
@@ -616,9 +637,27 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                 updateVisibleRows(MessagesController.UPDATE_MASK_SELECT_DIALOG);
             }
         } else if (id == NotificationCenter.notificationsSettingsUpdated) {
-            if (messagesListView != null) {
-                updateVisibleRows(0);
+            updateVisibleRows(0);
+        } else if (id == NotificationCenter.messageReceivedByAck || id == NotificationCenter.messageReceivedByServer || id == NotificationCenter.messageSendError) {
+            updateVisibleRows(MessagesController.UPDATE_MASK_SEND_STATE);
+        } else if (id == NotificationCenter.didSetPasscode) {
+            updatePasscodeButton();
+        }
+    }
+
+    private void updatePasscodeButton() {
+        if (passcodeItem == null) {
+            return;
+        }
+        if (UserConfig.passcodeHash.length() != 0 && !searching) {
+            passcodeItem.setVisibility(View.VISIBLE);
+            if (UserConfig.appLocked) {
+                passcodeItem.setIcon(R.drawable.lock_close);
+            } else {
+                passcodeItem.setIcon(R.drawable.lock_open);
             }
+        } else {
+            passcodeItem.setVisibility(View.GONE);
         }
     }
 
@@ -642,13 +681,14 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
             View child = messagesListView.getChildAt(a);
             if (child instanceof DialogCell) {
                 DialogCell cell = (DialogCell) child;
-                if ((mask & MessagesController.UPDATE_MASK_SELECT_DIALOG) != 0) {
+                if ((mask & MessagesController.UPDATE_MASK_NEW_MESSAGE) != 0) {
+                    cell.checkCurrentDialogIndex();
                     if (!serverOnly && AndroidUtilities.isTablet()) {
-                        if (cell.getDialogId() == openedDialogId) {
-                            child.setBackgroundColor(0x0f000000);
-                        } else {
-                            child.setBackgroundColor(0);
-                        }
+                        child.setBackgroundColor(cell.getDialogId() == openedDialogId ? 0x0f000000 : 0);
+                    }
+                } else if ((mask & MessagesController.UPDATE_MASK_SELECT_DIALOG) != 0) {
+                    if (!serverOnly && AndroidUtilities.isTablet()) {
+                        child.setBackgroundColor(cell.getDialogId() == openedDialogId ? 0x0f000000 : 0);
                     }
                 } else {
                     cell.update(mask);

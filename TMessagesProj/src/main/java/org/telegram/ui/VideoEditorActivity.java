@@ -221,7 +221,7 @@ public class VideoEditorActivity extends BaseFragment implements TextureView.Sur
     }
 
     @Override
-    public View createView(LayoutInflater inflater, ViewGroup container) {
+    public View createView(LayoutInflater inflater) {
         if (fragmentView == null) {
             actionBar.setBackgroundColor(0xff333333);
             actionBar.setItemsBackground(R.drawable.bar_selector_white);
@@ -259,7 +259,7 @@ public class VideoEditorActivity extends BaseFragment implements TextureView.Sur
             ActionBarMenu menu = actionBar.createMenu();
             menu.addItemWithWidth(1, R.drawable.ic_done, AndroidUtilities.dp(56));
 
-            fragmentView = inflater.inflate(R.layout.video_editor_layout, container, false);
+            fragmentView = inflater.inflate(R.layout.video_editor_layout, null, false);
             originalSizeTextView = (TextView) fragmentView.findViewById(R.id.original_size);
             editedSizeTextView = (TextView) fragmentView.findViewById(R.id.edited_size);
             videoContainerView = fragmentView.findViewById(R.id.video_container);
@@ -578,6 +578,9 @@ public class VideoEditorActivity extends BaseFragment implements TextureView.Sur
     }
 
     private void fixLayoutInternal() {
+        if (getParentActivity() == null) {
+            return;
+        }
         if (!AndroidUtilities.isTablet() && getParentActivity().getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
             FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) videoContainerView.getLayoutParams();
             layoutParams.topMargin = AndroidUtilities.dp(16);

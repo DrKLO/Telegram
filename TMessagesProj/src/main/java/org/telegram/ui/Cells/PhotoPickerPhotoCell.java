@@ -11,7 +11,6 @@ package org.telegram.ui.Cells;
 import android.content.Context;
 import android.view.Gravity;
 import android.widget.FrameLayout;
-import android.widget.ImageView;
 
 import org.telegram.android.AndroidUtilities;
 import org.telegram.messenger.R;
@@ -23,7 +22,6 @@ public class PhotoPickerPhotoCell extends FrameLayout {
     public BackupImageView photoImage;
     public FrameLayout checkFrame;
     public CheckBox checkBox;
-    public ImageView editedImage;
     public int itemWidth;
 
     public PhotoPickerPhotoCell(Context context) {
@@ -57,16 +55,6 @@ public class PhotoPickerPhotoCell extends FrameLayout {
         layoutParams.topMargin = AndroidUtilities.dp(6);
         layoutParams.rightMargin = AndroidUtilities.dp(6);
         checkBox.setLayoutParams(layoutParams);
-
-        editedImage = new ImageView(context);
-        editedImage.setImageResource(R.drawable.photo_edit);
-        editedImage.setScaleType(ImageView.ScaleType.CENTER);
-        addView(editedImage);
-        layoutParams = (LayoutParams) editedImage.getLayoutParams();
-        layoutParams.width = AndroidUtilities.dp(42);
-        layoutParams.height = AndroidUtilities.dp(42);
-        layoutParams.gravity = Gravity.LEFT | Gravity.TOP;
-        editedImage.setLayoutParams(layoutParams);
     }
 
     @Override

@@ -530,19 +530,14 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
                         break;
                     }
                 }
-                float maxWidth;
-                if (AndroidUtilities.isTablet()) {
-                    maxWidth = (int) (AndroidUtilities.getMinTabletSide() * 0.5f);
-                } else {
-                    maxWidth = (int) (Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y) * 0.5f);
-                }
+                float maxHeight = AndroidUtilities.displaySize.y * 0.4f;
                 if (photoWidth == 0) {
-                    photoWidth = (int)maxWidth;
-                    photoHeight = photoWidth + AndroidUtilities.dp(100);
+                    photoHeight = (int) maxHeight;
+                    photoWidth = photoHeight + AndroidUtilities.dp(100);
                 }
-                if (photoWidth > maxWidth) {
-                    photoHeight *= maxWidth / photoWidth;
-                    photoWidth = (int)maxWidth;
+                if (photoHeight > maxHeight) {
+                    photoWidth *= maxHeight / photoHeight;
+                    photoHeight = (int)maxHeight;
                 }
                 backgroundWidth = photoWidth + AndroidUtilities.dp(12);
                 currentPhotoObjectThumb = FileLoader.getClosestPhotoSizeWithSize(messageObject.photoThumbs, 80);
@@ -870,8 +865,8 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
         if (currentMessageObject.type == 9) {
             Drawable menuDrawable = null;
             if (currentMessageObject.isOut()) {
-                infoPaint.setColor(0xff75b166);
-                docBackPaint.setColor(0xffd0f3b3);
+                infoPaint.setColor(0xff70b15c);
+                docBackPaint.setColor(0xffdaf5c3);
                 menuDrawable = docMenuOutDrawable;
             } else {
                 infoPaint.setColor(0xffa1adbb);

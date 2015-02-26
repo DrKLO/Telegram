@@ -15,6 +15,7 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.text.InputType;
+import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
@@ -47,7 +48,7 @@ import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.ActionBar.BaseFragment;
-import org.telegram.ui.Components.SectionsListView;
+import org.telegram.ui.Components.LetterSectionsListView;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -56,7 +57,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
 
     private BaseSectionsAdapter listViewAdapter;
     private TextView emptyTextView;
-    private SectionsListView listView;
+    private LetterSectionsListView listView;
     private ContactsSearchAdapter searchListViewAdapter;
 
     private boolean searchWas;
@@ -87,6 +88,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
         NotificationCenter.getInstance().addObserver(this, NotificationCenter.contactsDidLoaded);
         NotificationCenter.getInstance().addObserver(this, NotificationCenter.updateInterfaces);
         NotificationCenter.getInstance().addObserver(this, NotificationCenter.encryptedChatCreated);
+        NotificationCenter.getInstance().addObserver(this, NotificationCenter.closeChats);
         if (arguments != null) {
             onlyUsers = getArguments().getBoolean("onlyUsers", false);
             destroyAfterSelect = arguments.getBoolean("destroyAfterSelect", false);
@@ -109,11 +111,12 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.contactsDidLoaded);
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.updateInterfaces);
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.encryptedChatCreated);
+        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.closeChats);
         delegate = null;
     }
 
     @Override
-    public View createView(LayoutInflater inflater, ViewGroup container) {
+    public View createView(LayoutInflater inflater) {
         if (fragmentView == null) {
             searching = false;
             searchWas = false;
@@ -124,7 +127,11 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                 if (returnAsResult) {
                     actionBar.setTitle(LocaleController.getString("SelectContact", R.string.SelectContact));
                 } else {
-                    actionBar.setTitle(LocaleController.getString("NewMessageTitle", R.string.NewMessageTitle));
+                    if (createSecretChat) {
+                        actionBar.setTitle(LocaleController.getString("NewSecretChat", R.string.NewSecretChat));
+                    } else {
+                        actionBar.setTitle(LocaleController.getString("NewMessageTitle", R.string.NewMessageTitle));
+                    }
                 }
             } else {
                 actionBar.setTitle(LocaleController.getString("Contacts", R.string.Contacts));
@@ -151,7 +158,6 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                     searchListViewAdapter.searchDialogs(null);
                     searching = false;
                     searchWas = false;
-                    ViewGroup group = (ViewGroup) listView.getParent();
                     listView.setAdapter(listViewAdapter);
                     listViewAdapter.notifyDataSetChanged();
                     if (android.os.Build.VERSION.SDK_INT >= 11) {
@@ -211,7 +217,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
 
             emptyTextView = new TextView(getParentActivity());
             emptyTextView.setTextColor(0xff808080);
-            emptyTextView.setTextSize(20);
+            emptyTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
             emptyTextView.setGravity(Gravity.CENTER);
             emptyTextView.setText(LocaleController.getString("NoContacts", R.string.NoContacts));
             emptyTextLayout.addView(emptyTextView);
@@ -229,7 +235,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
             layoutParams1.weight = 0.5f;
             frameLayout.setLayoutParams(layoutParams1);
 
-            listView = new SectionsListView(getParentActivity());
+            listView = new LetterSectionsListView(getParentActivity());
             listView.setEmptyView(emptyTextLayout);
             listView.setVerticalScrollBarEnabled(false);
             listView.setDivider(null);
@@ -289,24 +295,24 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                                         Intent intent = new Intent(Intent.ACTION_SEND);
                                         intent.setType("text/plain");
                                         intent.putExtra(Intent.EXTRA_TEXT, ContactsController.getInstance().getInviteText());
-                                        getParentActivity().startActivity(Intent.createChooser(intent, ""));
+                                        getParentActivity().startActivityForResult(Intent.createChooser(intent, LocaleController.getString("InviteFriends", R.string.InviteFriends)), 500);
                                     } catch (Exception e) {
                                         FileLog.e("tmessages", e);
                                     }
                                 }
                             } else {
                                 if (row == 0) {
-                                    presentFragment(new GroupCreateActivity(), true);
+                                    presentFragment(new GroupCreateActivity(), false);
                                 } else if (row == 1) {
                                     Bundle args = new Bundle();
                                     args.putBoolean("onlyUsers", true);
                                     args.putBoolean("destroyAfterSelect", true);
                                     args.putBoolean("createSecretChat", true);
-                                    presentFragment(new ContactsActivity(args), true);
+                                    presentFragment(new ContactsActivity(args), false);
                                 } else if (row == 2) {
                                     Bundle args = new Bundle();
                                     args.putBoolean("broadcast", true);
-                                    presentFragment(new GroupCreateActivity(args), true);
+                                    presentFragment(new GroupCreateActivity(args), false);
                                 }
                             }
                         } else {
@@ -348,7 +354,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                                         try {
                                             Intent intent = new Intent(Intent.ACTION_VIEW, Uri.fromParts("sms", arg1, null));
                                             intent.putExtra("sms_body", LocaleController.getString("InviteText", R.string.InviteText));
-                                            getParentActivity().startActivity(intent);
+                                            getParentActivity().startActivityForResult(intent, 500);
                                         } catch (Exception e) {
                                             FileLog.e("tmessages", e);
                                         }
@@ -462,7 +468,12 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                 TLRPC.EncryptedChat encryptedChat = (TLRPC.EncryptedChat)args[0];
                 Bundle args2 = new Bundle();
                 args2.putInt("enc_id", encryptedChat.id);
+                NotificationCenter.getInstance().postNotificationName(NotificationCenter.closeChats);
                 presentFragment(new ChatActivity(args2), true);
+            }
+        } else if (id == NotificationCenter.closeChats) {
+            if (!creatingChat) {
+                removeSelfFromStack();
             }
         }
     }

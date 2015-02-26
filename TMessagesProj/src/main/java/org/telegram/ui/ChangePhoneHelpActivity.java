@@ -35,7 +35,7 @@ import org.telegram.ui.ActionBar.BaseFragment;
 public class ChangePhoneHelpActivity extends BaseFragment {
 
     @Override
-    public View createView(LayoutInflater inflater, ViewGroup container) {
+    public View createView(LayoutInflater inflater) {
         if (fragmentView == null) {
             actionBar.setBackButtonImage(R.drawable.ic_ab_back);
             actionBar.setAllowOverlayTitle(true);

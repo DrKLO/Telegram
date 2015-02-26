@@ -20,51 +20,42 @@ import org.telegram.android.AndroidUtilities;
 import org.telegram.android.LocaleController;
 import org.telegram.messenger.R;
 
-public class PhotoPickerBottomLayout extends LinearLayout {
+public class PhotoPickerBottomLayout extends FrameLayout {
 
-    public FrameLayout doneButton;
+    public LinearLayout doneButton;
     public TextView cancelButton;
     public TextView doneButtonTextView;
     public TextView doneButtonBadgeTextView;
 
     public PhotoPickerBottomLayout(Context context) {
         super(context);
-        setBackgroundColor(0xff333333);
-        setOrientation(HORIZONTAL);
+        setBackgroundColor(0xff1a1a1a);
 
         cancelButton = new TextView(context);
         cancelButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         cancelButton.setTextColor(0xffffffff);
         cancelButton.setGravity(Gravity.CENTER);
         cancelButton.setBackgroundResource(R.drawable.bar_selector_picker);
-        cancelButton.setPadding(AndroidUtilities.dp(3), 0, 0, 0);
+        cancelButton.setPadding(AndroidUtilities.dp(29), 0, AndroidUtilities.dp(29), 0);
         cancelButton.setText(LocaleController.getString("Cancel", R.string.Cancel).toUpperCase());
         cancelButton.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         addView(cancelButton);
         LayoutParams layoutParams = (LayoutParams) cancelButton.getLayoutParams();
-        layoutParams.width = 0;
+        layoutParams.width = LayoutParams.WRAP_CONTENT;
         layoutParams.height = LayoutParams.MATCH_PARENT;
-        layoutParams.weight = 1;
+        layoutParams.gravity = Gravity.TOP | Gravity.LEFT;
         cancelButton.setLayoutParams(layoutParams);
 
-        doneButton = new FrameLayout(context);
+        doneButton = new LinearLayout(context);
+        doneButton.setOrientation(LinearLayout.HORIZONTAL);
         doneButton.setBackgroundResource(R.drawable.bar_selector_picker);
-        doneButton.setPadding(0, 0, AndroidUtilities.dp(3), 0);
+        doneButton.setPadding(AndroidUtilities.dp(29), 0, AndroidUtilities.dp(29), 0);
         addView(doneButton);
         layoutParams = (LayoutParams) doneButton.getLayoutParams();
-        layoutParams.width = 0;
+        layoutParams.width = LayoutParams.WRAP_CONTENT;
         layoutParams.height = LayoutParams.MATCH_PARENT;
-        layoutParams.weight = 1;
+        layoutParams.gravity = Gravity.TOP | Gravity.RIGHT;
         doneButton.setLayoutParams(layoutParams);
-
-        LinearLayout linearLayout = new LinearLayout(context);
-        linearLayout.setOrientation(HORIZONTAL);
-        doneButton.addView(linearLayout);
-        FrameLayout.LayoutParams layoutParams1 = (FrameLayout.LayoutParams) linearLayout.getLayoutParams();
-        layoutParams1.width = FrameLayout.LayoutParams.WRAP_CONTENT;
-        layoutParams1.height = FrameLayout.LayoutParams.WRAP_CONTENT;
-        layoutParams1.gravity = Gravity.CENTER;
-        linearLayout.setLayoutParams(layoutParams1);
 
         doneButtonBadgeTextView = new TextView(context);
         doneButtonBadgeTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
@@ -74,28 +65,27 @@ public class PhotoPickerBottomLayout extends LinearLayout {
         doneButtonBadgeTextView.setBackgroundResource(R.drawable.photobadge);
         doneButtonBadgeTextView.setMinWidth(AndroidUtilities.dp(23));
         doneButtonBadgeTextView.setPadding(AndroidUtilities.dp(8), 0, AndroidUtilities.dp(8), AndroidUtilities.dp(1));
-        linearLayout.addView(doneButtonBadgeTextView);
-        layoutParams = (LayoutParams) doneButtonBadgeTextView.getLayoutParams();
-        layoutParams.width = LayoutParams.WRAP_CONTENT;
-        layoutParams.height = AndroidUtilities.dp(23);
-        layoutParams.rightMargin = AndroidUtilities.dp(10);
-        doneButtonBadgeTextView.setLayoutParams(layoutParams);
+        doneButton.addView(doneButtonBadgeTextView);
+        LinearLayout.LayoutParams layoutParams1 = (LinearLayout.LayoutParams) doneButtonBadgeTextView.getLayoutParams();
+        layoutParams1.width = LayoutParams.WRAP_CONTENT;
+        layoutParams1.height = AndroidUtilities.dp(23);
+        layoutParams1.rightMargin = AndroidUtilities.dp(10);
+        layoutParams1.gravity = Gravity.CENTER_VERTICAL;
+        doneButtonBadgeTextView.setLayoutParams(layoutParams1);
 
         doneButtonTextView = new TextView(context);
         doneButtonTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         doneButtonTextView.setTextColor(0xffffffff);
         doneButtonTextView.setGravity(Gravity.CENTER);
         doneButtonTextView.setCompoundDrawablePadding(AndroidUtilities.dp(8));
-        doneButtonTextView.setBackgroundResource(R.drawable.bar_selector_picker);
-        doneButtonTextView.setPadding(AndroidUtilities.dp(3), 0, 0, 0);
         doneButtonTextView.setText(LocaleController.getString("Send", R.string.Send).toUpperCase());
         doneButtonTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
-        linearLayout.addView(doneButtonTextView);
-        layoutParams = (LayoutParams) doneButtonTextView.getLayoutParams();
-        layoutParams.width = LayoutParams.WRAP_CONTENT;
-        layoutParams.gravity = Gravity.CENTER_VERTICAL;
-        layoutParams.height = LayoutParams.WRAP_CONTENT;
-        doneButtonTextView.setLayoutParams(layoutParams);
+        doneButton.addView(doneButtonTextView);
+        layoutParams1 = (LinearLayout.LayoutParams) doneButtonTextView.getLayoutParams();
+        layoutParams1.width = LayoutParams.WRAP_CONTENT;
+        layoutParams1.gravity = Gravity.CENTER_VERTICAL;
+        layoutParams1.height = LayoutParams.WRAP_CONTENT;
+        doneButtonTextView.setLayoutParams(layoutParams1);
     }
 
     public void updateSelectedCount(int count, boolean disable) {
@@ -103,12 +93,10 @@ public class PhotoPickerBottomLayout extends LinearLayout {
             doneButtonBadgeTextView.setVisibility(View.GONE);
 
             if (disable) {
-                doneButtonTextView.setCompoundDrawablesWithIntrinsicBounds(R.drawable.selectphoto_small_grey, 0, 0, 0);
                 doneButtonTextView.setTextColor(0xff999999);
                 doneButton.setEnabled(false);
             } else {
                 doneButtonTextView.setTextColor(0xffffffff);
-                doneButtonTextView.setCompoundDrawablesWithIntrinsicBounds(R.drawable.selectphoto_small_active, 0, 0, 0);
             }
         } else {
             doneButtonTextView.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0);

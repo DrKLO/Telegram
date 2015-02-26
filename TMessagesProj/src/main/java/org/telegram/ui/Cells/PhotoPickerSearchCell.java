@@ -10,6 +10,7 @@ package org.telegram.ui.Cells;
 
 import android.content.Context;
 import android.os.Build;
+import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.MotionEvent;
@@ -39,62 +40,57 @@ public class PhotoPickerSearchCell extends LinearLayout {
         public SearchButton(Context context) {
             super(context);
 
-            setBackgroundColor(0xff292929);
+            setBackgroundColor(0xff1a1a1a);
 
             selector = new View(context);
             selector.setBackgroundResource(R.drawable.list_selector);
             addView(selector);
             FrameLayout.LayoutParams layoutParams1 = (FrameLayout.LayoutParams) selector.getLayoutParams();
-            layoutParams1.width = FrameLayout.LayoutParams.MATCH_PARENT;
-            layoutParams1.height = FrameLayout.LayoutParams.MATCH_PARENT;
+            layoutParams1.width = LayoutParams.MATCH_PARENT;
+            layoutParams1.height = LayoutParams.MATCH_PARENT;
             selector.setLayoutParams(layoutParams1);
 
-            LinearLayout linearLayout = new LinearLayout(context);
-            linearLayout.setOrientation(HORIZONTAL);
-            addView(linearLayout);
-            layoutParams1 = (FrameLayout.LayoutParams) linearLayout.getLayoutParams();
-            layoutParams1.width = FrameLayout.LayoutParams.WRAP_CONTENT;
-            layoutParams1.height = FrameLayout.LayoutParams.MATCH_PARENT;
-            layoutParams1.gravity = Gravity.CENTER;
-            linearLayout.setLayoutParams(layoutParams1);
-
             imageView = new ImageView(context);
-            linearLayout.addView(imageView);
-            LinearLayout.LayoutParams layoutParams = (LinearLayout.LayoutParams) imageView.getLayoutParams();
-            layoutParams.height = LinearLayout.LayoutParams.WRAP_CONTENT;
-            layoutParams.width = LinearLayout.LayoutParams.WRAP_CONTENT;
+            imageView.setScaleType(ImageView.ScaleType.CENTER);
+            addView(imageView);
+            FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) imageView.getLayoutParams();
+            layoutParams.height = AndroidUtilities.dp(48);
+            layoutParams.width = AndroidUtilities.dp(48);
+            layoutParams1.gravity = Gravity.LEFT | Gravity.TOP;
             imageView.setLayoutParams(layoutParams);
-
-            FrameLayout frameLayout = new FrameLayout(context);
-            frameLayout.setPadding(AndroidUtilities.dp(4), 0, 0, 0);
-            linearLayout.addView(frameLayout);
-            layoutParams = (LinearLayout.LayoutParams) frameLayout.getLayoutParams();
-            layoutParams.height = LinearLayout.LayoutParams.MATCH_PARENT;
-            layoutParams.width = LinearLayout.LayoutParams.WRAP_CONTENT;
-            frameLayout.setLayoutParams(layoutParams);
 
             textView1 = new TextView(context);
             textView1.setGravity(Gravity.CENTER_VERTICAL);
-            textView1.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
-            textView1.setPadding(0, 0, AndroidUtilities.dp(8), 0);
+            textView1.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             textView1.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
             textView1.setTextColor(0xffffffff);
-            frameLayout.addView(textView1);
+            textView1.setSingleLine(true);
+            textView1.setEllipsize(TextUtils.TruncateAt.END);
+            addView(textView1);
             layoutParams1 = (FrameLayout.LayoutParams) textView1.getLayoutParams();
-            layoutParams1.width = FrameLayout.LayoutParams.WRAP_CONTENT;
-            layoutParams1.height = FrameLayout.LayoutParams.MATCH_PARENT;
+            layoutParams1.width = LayoutParams.MATCH_PARENT;
+            layoutParams1.height = LayoutParams.WRAP_CONTENT;
+            layoutParams1.gravity = Gravity.TOP | Gravity.LEFT;
+            layoutParams1.rightMargin = AndroidUtilities.dp(4);
+            layoutParams1.leftMargin = AndroidUtilities.dp(51);
+            layoutParams1.topMargin = AndroidUtilities.dp(8);
             textView1.setLayoutParams(layoutParams1);
 
             textView2 = new TextView(context);
             textView2.setGravity(Gravity.CENTER_VERTICAL);
-            textView2.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 9);
-            textView2.setPadding(0, AndroidUtilities.dp(24), AndroidUtilities.dp(8), 0);
+            textView2.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 10);
             textView2.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
-            textView2.setTextColor(0xff464646);
-            frameLayout.addView(textView2);
+            textView2.setTextColor(0xff666666);
+            textView2.setSingleLine(true);
+            textView2.setEllipsize(TextUtils.TruncateAt.END);
+            addView(textView2);
             layoutParams1 = (FrameLayout.LayoutParams) textView2.getLayoutParams();
-            layoutParams1.width = FrameLayout.LayoutParams.WRAP_CONTENT;
-            layoutParams1.height = FrameLayout.LayoutParams.MATCH_PARENT;
+            layoutParams1.width = LayoutParams.MATCH_PARENT;
+            layoutParams1.height = LayoutParams.WRAP_CONTENT;
+            layoutParams1.gravity = Gravity.TOP | Gravity.LEFT;
+            layoutParams1.leftMargin = AndroidUtilities.dp(51);
+            layoutParams1.rightMargin = AndroidUtilities.dp(4);
+            layoutParams1.topMargin = AndroidUtilities.dp(26);
             textView2.setLayoutParams(layoutParams1);
         }
 
@@ -115,7 +111,8 @@ public class PhotoPickerSearchCell extends LinearLayout {
 
         SearchButton searchButton = new SearchButton(context);
         searchButton.textView1.setText(LocaleController.getString("SearchImages", R.string.SearchImages));
-        searchButton.imageView.setImageResource(R.drawable.web_search);
+        searchButton.textView2.setText(LocaleController.getString("SearchImagesInfo", R.string.SearchImagesInfo));
+        searchButton.imageView.setImageResource(R.drawable.search_web);
         addView(searchButton);
         LayoutParams layoutParams = (LayoutParams) searchButton.getLayoutParams();
         layoutParams.weight = 0.5f;
@@ -144,7 +141,7 @@ public class PhotoPickerSearchCell extends LinearLayout {
         searchButton = new SearchButton(context);
         searchButton.textView1.setText(LocaleController.getString("SearchGifs", R.string.SearchGifs));
         searchButton.textView2.setText("GIPHY");
-        searchButton.imageView.setImageResource(R.drawable.gif_search);
+        searchButton.imageView.setImageResource(R.drawable.search_gif);
         addView(searchButton);
         layoutParams = (LayoutParams) searchButton.getLayoutParams();
         layoutParams.weight = 0.5f;

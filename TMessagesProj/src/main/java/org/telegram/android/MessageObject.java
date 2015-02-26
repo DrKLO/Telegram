@@ -42,6 +42,7 @@ public class MessageObject {
     public int type;
     public int contentType;
     public String dateKey;
+    public String monthKey;
     public boolean deleted = false;
     public float audioProgress;
     public int audioProgressSec;
@@ -199,7 +200,7 @@ public class MessageObject {
                         }
                     }
                 } else if (message.action instanceof TLRPC.TL_messageActionLoginUnknownLocation) {
-                    String date = LocaleController.formatString("formatDateAtTime", R.string.formatDateAtTime, LocaleController.formatterYear.format(((long)message.date) * 1000), LocaleController.formatterDay.format(((long)message.date) * 1000));
+                    String date = LocaleController.formatString("formatDateAtTime", R.string.formatDateAtTime, LocaleController.formatterYear.format(((long) message.date) * 1000), LocaleController.formatterDay.format(((long) message.date) * 1000));
                     TLRPC.User to_user = UserConfig.getCurrentUser();
                     if (to_user == null) {
                         if (users != null) {
@@ -346,11 +347,14 @@ public class MessageObject {
         }
 
         Calendar rightNow = new GregorianCalendar();
-        rightNow.setTimeInMillis((long)(messageOwner.date) * 1000);
+        rightNow.setTimeInMillis((long) (messageOwner.date) * 1000);
         int dateDay = rightNow.get(Calendar.DAY_OF_YEAR);
         int dateYear = rightNow.get(Calendar.YEAR);
         int dateMonth = rightNow.get(Calendar.MONTH);
         dateKey = String.format("%d_%02d_%02d", dateYear, dateMonth, dateDay);
+        if (contentType == 1 || contentType == 2) {
+            monthKey = String.format("%d_%02d", dateYear, dateMonth);
+        }
 
         if (generateLayout) {
             generateLayout();
@@ -556,7 +560,7 @@ public class MessageObject {
         textHeight = textLayout.getHeight();
         int linesCount = textLayout.getLineCount();
 
-        int blocksCount = (int)Math.ceil((float)linesCount / LINES_PER_BLOCK);
+        int blocksCount = (int) Math.ceil((float) linesCount / LINES_PER_BLOCK);
         int linesOffset = 0;
         float prevOffset = 0;
 
@@ -581,7 +585,7 @@ public class MessageObject {
                     block.textLayout = new StaticLayout(str, textPaint, maxWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
                     block.textYOffset = textLayout.getLineTop(linesOffset);
                     if (a != 0) {
-                        blockHeight = Math.min(blockHeight, (int)(block.textYOffset - prevOffset));
+                        blockHeight = Math.min(blockHeight, (int) (block.textYOffset - prevOffset));
                     }
                     prevOffset = block.textYOffset;
                     /*if (a != blocksCount - 1) {
@@ -613,7 +617,7 @@ public class MessageObject {
                 FileLog.e("tmessages", e);
             }
 
-            int linesMaxWidth = (int)Math.ceil(lastLine);
+            int linesMaxWidth = (int) Math.ceil(lastLine);
             int lastLineWidthWithLeft;
             int linesMaxWidthWithLeft;
             boolean hasNonRTL = false;
@@ -622,7 +626,7 @@ public class MessageObject {
                 lastLineWidth = linesMaxWidth;
             }
 
-            linesMaxWidthWithLeft = lastLineWidthWithLeft = (int)Math.ceil(lastLine + lastLeft);
+            linesMaxWidthWithLeft = lastLineWidthWithLeft = (int) Math.ceil(lastLine + lastLeft);
             if (lastLeft == 0) {
                 hasNonRTL = true;
             }
@@ -655,8 +659,8 @@ public class MessageObject {
                     }
                     textRealMaxWidth = Math.max(textRealMaxWidth, lineWidth);
                     textRealMaxWidthWithLeft = Math.max(textRealMaxWidthWithLeft, lineWidth + lineLeft);
-                    linesMaxWidth = Math.max(linesMaxWidth, (int)Math.ceil(lineWidth));
-                    linesMaxWidthWithLeft = Math.max(linesMaxWidthWithLeft, (int)Math.ceil(lineWidth + lineLeft));
+                    linesMaxWidth = Math.max(linesMaxWidth, (int) Math.ceil(lineWidth));
+                    linesMaxWidthWithLeft = Math.max(linesMaxWidthWithLeft, (int) Math.ceil(lineWidth + lineLeft));
                 }
                 if (hasNonRTL) {
                     textRealMaxWidth = textRealMaxWidthWithLeft;
@@ -667,7 +671,7 @@ public class MessageObject {
                 } else if (a == blocksCount - 1) {
                     lastLineWidth = linesMaxWidth;
                 }
-                textWidth = Math.max(textWidth, (int)Math.ceil(textRealMaxWidth));
+                textWidth = Math.max(textWidth, (int) Math.ceil(textRealMaxWidth));
             } else {
                 textWidth = Math.max(textWidth, Math.min(maxWidth, linesMaxWidth));
             }
@@ -696,7 +700,7 @@ public class MessageObject {
     }
 
     public void setIsRead() {
-        messageOwner.flags &=~ TLRPC.MESSAGE_FLAG_UNREAD;
+        messageOwner.flags &= ~TLRPC.MESSAGE_FLAG_UNREAD;
     }
 
     public boolean isSecretPhoto() {
@@ -706,15 +710,15 @@ public class MessageObject {
     public boolean isSecretMedia() {
         return messageOwner instanceof TLRPC.TL_message_secret &&
                 (messageOwner.media instanceof TLRPC.TL_messageMediaPhoto && messageOwner.ttl != 0 && messageOwner.ttl <= 60 ||
-                messageOwner.media instanceof TLRPC.TL_messageMediaAudio ||
-                messageOwner.media instanceof TLRPC.TL_messageMediaVideo);
+                        messageOwner.media instanceof TLRPC.TL_messageMediaAudio ||
+                        messageOwner.media instanceof TLRPC.TL_messageMediaVideo);
     }
 
     public static void setIsUnread(TLRPC.Message message, boolean unread) {
         if (unread) {
             message.flags |= TLRPC.MESSAGE_FLAG_UNREAD;
         } else {
-            message.flags &=~ TLRPC.MESSAGE_FLAG_UNREAD;
+            message.flags &= ~TLRPC.MESSAGE_FLAG_UNREAD;
         }
     }
 

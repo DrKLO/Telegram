@@ -53,6 +53,7 @@ import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.ChatActivityEnterView;
 import org.telegram.ui.Components.FrameLayoutFixed;
 import org.telegram.ui.Components.PopupAudioView;
+import org.telegram.ui.Components.SizeNotifierRelativeLayout;
 import org.telegram.ui.Components.TypingDotsDrawable;
 
 import java.io.File;
@@ -159,7 +160,38 @@ public class PopupNotificationActivity extends Activity implements NotificationC
 
         typingDotsDrawable = new TypingDotsDrawable();
 
-        chatActivityEnterView = new ChatActivityEnterView();
+        SizeNotifierRelativeLayout contentView = new SizeNotifierRelativeLayout(this);
+        setContentView(contentView);
+        contentView.setBackgroundColor(0x99000000);
+
+        RelativeLayout relativeLayout = new RelativeLayout(this);
+        contentView.addView(relativeLayout);
+        RelativeLayout.LayoutParams layoutParams3 = (RelativeLayout.LayoutParams) relativeLayout.getLayoutParams();
+        layoutParams3.width = RelativeLayout.LayoutParams.MATCH_PARENT;
+        layoutParams3.height = RelativeLayout.LayoutParams.MATCH_PARENT;
+        relativeLayout.setLayoutParams(layoutParams3);
+
+        RelativeLayout popupContainer = new RelativeLayout(this);
+        popupContainer.setBackgroundColor(0xffffffff);
+        relativeLayout.addView(popupContainer);
+        layoutParams3 = (RelativeLayout.LayoutParams) popupContainer.getLayoutParams();
+        layoutParams3.width = RelativeLayout.LayoutParams.MATCH_PARENT;
+        layoutParams3.height = AndroidUtilities.dp(240);
+        layoutParams3.leftMargin = AndroidUtilities.dp(12);
+        layoutParams3.rightMargin = AndroidUtilities.dp(12);
+        layoutParams3.addRule(RelativeLayout.CENTER_IN_PARENT);
+        popupContainer.setLayoutParams(layoutParams3);
+
+        if (chatActivityEnterView != null) {
+            chatActivityEnterView.onDestroy();
+        }
+        chatActivityEnterView = new ChatActivityEnterView(this, contentView, true);
+        popupContainer.addView(chatActivityEnterView);
+        layoutParams3 = (RelativeLayout.LayoutParams) chatActivityEnterView.getLayoutParams();
+        layoutParams3.width = RelativeLayout.LayoutParams.MATCH_PARENT;
+        layoutParams3.height = RelativeLayout.LayoutParams.WRAP_CONTENT;
+        layoutParams3.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
+        chatActivityEnterView.setLayoutParams(layoutParams3);
         chatActivityEnterView.setDelegate(new ChatActivityEnterView.ChatActivityEnterViewDelegate() {
             @Override
             public void onMessageSend() {
@@ -202,15 +234,13 @@ public class PopupNotificationActivity extends Activity implements NotificationC
             }
         });
 
-        setContentView(R.layout.popup_notification_layout);
-        RelativeLayout popupContainer = (RelativeLayout) findViewById(R.id.popup_container);
         messageContainer = new FrameLayoutTouch(this);
         popupContainer.addView(messageContainer, 0);
 
         actionBar = new ActionBar(this);
         actionBar.setOccupyStatusBar(false);
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
-        actionBar.setBackgroundResource(R.color.header);
+        actionBar.setBackgroundColor(0xff54759e);
         actionBar.setItemsBackground(R.drawable.bar_selector);
         popupContainer.addView(actionBar);
         ViewGroup.LayoutParams layoutParams = actionBar.getLayoutParams();
@@ -291,8 +321,6 @@ public class PopupNotificationActivity extends Activity implements NotificationC
                 }
             }
         });
-
-        chatActivityEnterView.setContainerView(this, findViewById(R.id.chat_layout));
 
         PowerManager pm = (PowerManager) ApplicationLoader.applicationContext.getSystemService(Context.POWER_SERVICE);
         wakeLock = pm.newWakeLock(PowerManager.SCREEN_DIM_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP, "screen");

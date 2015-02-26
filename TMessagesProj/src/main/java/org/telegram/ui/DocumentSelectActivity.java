@@ -65,7 +65,7 @@ public class DocumentSelectActivity extends BaseFragment {
     private ArrayList<ListItem> items = new ArrayList<>();
     private boolean receiverRegistered = false;
     private ArrayList<HistoryEntry> history = new ArrayList<>();
-    private long sizeLimit = 1024 * 1024 * 1024;
+    private long sizeLimit = 1024 * 1024 * 1536;
     private DocumentSelectActivityDelegate delegate;
     private HashMap<String, ListItem> selectedFiles = new HashMap<>();
     private ArrayList<View> actionModeViews = new ArrayList<>();
@@ -125,7 +125,7 @@ public class DocumentSelectActivity extends BaseFragment {
     }
 
     @Override
-    public View createView(LayoutInflater inflater, ViewGroup container) {
+    public View createView(LayoutInflater inflater) {
         if (!receiverRegistered) {
             receiverRegistered = true;
             IntentFilter filter = new IntentFilter();
@@ -194,7 +194,7 @@ public class DocumentSelectActivity extends BaseFragment {
 
             actionModeViews.add(actionMode.addItem(done, R.drawable.ic_ab_done_gray, R.drawable.bar_selector_mode, null, AndroidUtilities.dp(54)));
 
-            fragmentView = inflater.inflate(R.layout.document_select_layout, container, false);
+            fragmentView = inflater.inflate(R.layout.document_select_layout, null, false);
             listAdapter = new ListAdapter(getParentActivity());
             emptyView = (TextView)fragmentView.findViewById(R.id.searchEmptyView);
             emptyView.setOnTouchListener(new View.OnTouchListener() {

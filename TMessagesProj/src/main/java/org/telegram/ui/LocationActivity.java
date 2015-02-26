@@ -91,7 +91,7 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
     }
 
     @Override
-    public View createView(LayoutInflater inflater, ViewGroup container) {
+    public View createView(LayoutInflater inflater) {
         if (fragmentView == null) {
             actionBar.setBackButtonImage(R.drawable.ic_ab_back);
             actionBar.setAllowOverlayTitle(true);
@@ -139,9 +139,9 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
             item.addSubItem(map_list_menu_hybrid, LocaleController.getString("Hybrid", R.string.Hybrid), 0);
 
             if (messageObject != null) {
-                fragmentView = inflater.inflate(R.layout.location_view_layout, container, false);
+                fragmentView = inflater.inflate(R.layout.location_view_layout, null, false);
             } else {
-                fragmentView = inflater.inflate(R.layout.location_attach_layout, container, false);
+                fragmentView = inflater.inflate(R.layout.location_attach_layout, null, false);
             }
 
             avatarImageView = (BackupImageView)fragmentView.findViewById(R.id.location_avatar_view);

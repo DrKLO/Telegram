@@ -48,6 +48,9 @@ public class NotificationCenter {
     public static final int updateMessageMedia = totalEvents++;
     public static final int recentImagesDidLoaded = totalEvents++;
     public static final int replaceMessagesObjects = totalEvents++;
+    public static final int didSetPasscode = totalEvents++;
+    public static final int screenStateChanged = totalEvents++;
+    public static final int appSwitchedToForeground = totalEvents++;
 
     public static final int httpFileDidLoaded = totalEvents++;
     public static final int httpFileDidFailedLoad = totalEvents++;

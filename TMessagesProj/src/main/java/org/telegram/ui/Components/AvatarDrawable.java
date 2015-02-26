@@ -13,6 +13,7 @@ import android.graphics.ColorFilter;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
+import android.os.Build;
 import android.text.Layout;
 import android.text.StaticLayout;
 import android.text.TextPaint;
@@ -164,6 +165,11 @@ public class AvatarDrawable extends Drawable {
 
         drawBrodcast = isBroadcast;
 
+        if (firstName == null || firstName.length() == 0) {
+            firstName = lastName;
+            lastName = null;
+        }
+
         String text = "";
         if (firstName != null && firstName.length() > 0) {
             text += firstName.substring(0, 1);
@@ -176,8 +182,26 @@ public class AvatarDrawable extends Drawable {
                 }
                 lastch = lastName.substring(a, a + 1);
             }
-            text += lastch;
+            if (Build.VERSION.SDK_INT >= 14) {
+                text += "\u200C" + lastch;
+            } else {
+                text += lastch;
+            }
+        } else if (firstName != null && firstName.length() > 0) {
+            for (int a = firstName.length() - 1; a >= 0; a--) {
+                if (firstName.charAt(a) == ' ') {
+                    if (a != firstName.length() - 1 && firstName.charAt(a + 1) != ' ') {
+                        if (Build.VERSION.SDK_INT >= 14) {
+                            text += "\u200C" + firstName.substring(a + 1, a + 2);
+                        } else {
+                            text += firstName.substring(a + 1, a + 2);
+                        }
+                        break;
+                    }
+                }
+            }
         }
+
         if (text.length() > 0) {
             text = text.toUpperCase();
             try {

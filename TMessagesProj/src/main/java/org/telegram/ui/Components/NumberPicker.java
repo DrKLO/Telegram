@@ -73,7 +73,7 @@ public class NumberPicker extends LinearLayout {
     private OnScrollListener mOnScrollListener;
     private Formatter mFormatter;
     private long mLongPressUpdateInterval = DEFAULT_LONG_PRESS_UPDATE_INTERVAL;
-    private final SparseArray<String> mSelectorIndexToStringCache = new SparseArray<String>();
+    private final SparseArray<String> mSelectorIndexToStringCache = new SparseArray<>();
     private final int[] mSelectorIndices = new int[SELECTOR_WHEEL_ITEM_COUNT];
     private Paint mSelectorWheelPaint;
     private Drawable mVirtualButtonPressedDrawable;
