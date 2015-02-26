@@ -61,7 +61,7 @@ public class ChangeUsernameActivity extends BaseFragment {
     private final static int done_button = 1;
 
     @Override
-    public View createView(LayoutInflater inflater, ViewGroup container) {
+    public View createView(LayoutInflater inflater) {
         if (fragmentView == null) {
             actionBar.setBackButtonImage(R.drawable.ic_ab_back);
             actionBar.setAllowOverlayTitle(true);
@@ -205,14 +205,19 @@ public class ChangeUsernameActivity extends BaseFragment {
         }
         AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
         builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
-        if (error.equals("USERNAME_INVALID")) {
-            builder.setMessage(LocaleController.getString("UsernameInvalid", R.string.UsernameInvalid));
-        } else if (error.equals("USERNAME_OCCUPIED")) {
-            builder.setMessage(LocaleController.getString("UsernameInUse", R.string.UsernameInUse));
-        } else if (error.equals("USERNAMES_UNAVAILABLE")) {
-            builder.setMessage(LocaleController.getString("FeatureUnavailable", R.string.FeatureUnavailable));
-        } else {
-            builder.setMessage(LocaleController.getString("ErrorOccurred", R.string.ErrorOccurred));
+        switch (error) {
+            case "USERNAME_INVALID":
+                builder.setMessage(LocaleController.getString("UsernameInvalid", R.string.UsernameInvalid));
+                break;
+            case "USERNAME_OCCUPIED":
+                builder.setMessage(LocaleController.getString("UsernameInUse", R.string.UsernameInUse));
+                break;
+            case "USERNAMES_UNAVAILABLE":
+                builder.setMessage(LocaleController.getString("FeatureUnavailable", R.string.FeatureUnavailable));
+                break;
+            default:
+                builder.setMessage(LocaleController.getString("ErrorOccurred", R.string.ErrorOccurred));
+                break;
         }
         builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), null);
         showAlertDialog(builder);

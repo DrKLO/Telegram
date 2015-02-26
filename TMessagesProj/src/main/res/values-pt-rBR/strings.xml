@@ -5,7 +5,7 @@
 <resources>
     <string name="AppName">Telegram Aniways</string>
     <string name="LanguageName">Português (Brasil)</string>
-    <string name="LanguageNameInEnglish">Portuguese (Brazil)</string>
+    <string name="LanguageNameInEnglish">Português (Brasil)</string>
     <string name="LanguageCode">pt_BR</string>
     <!--signin view-->
     <string name="YourPhone">Seu número</string>
@@ -57,6 +57,7 @@
     <string name="MuteFor">Silenciar por %1$s</string>
     <string name="UnmuteNotifications">Restaurar Som</string>
     <string name="WillUnmuteIn">Em %1$s</string>
+    <string name="MuteDisable">Desativar</string>
     <!--broadcasts-->
     <string name="NewBroadcastList">Nova Lista de Transmissão</string>
     <string name="EnterListName">Digite o nome da lista</string>
@@ -143,6 +144,7 @@
     <string name="NotificationEditedGroupName">%1$s editou o nome do grupo %2$s</string>
     <string name="NotificationEditedGroupPhoto">%1$s editou a foto do grupo %2$s</string>
     <string name="NotificationGroupAddMember">%1$s convidou %3$s para o grupo %2$s</string>
+    <string name="NotificationGroupAddSelf">%1$s retornou ao grupo %2$s</string>
     <string name="NotificationGroupKickMember">%1$s removeu %3$s do grupo %2$s</string>
     <string name="NotificationGroupKickYou">%1$s removeu você do grupo %2$s</string>
     <string name="NotificationGroupLeftMember">%1$s saiu do grupo %2$s</string>
@@ -175,7 +177,7 @@
     <string name="GroupName">Nome do grupo</string>
     <string name="MembersCount">%1$d/%2$d membros</string>
     <!--group info view-->
-    <string name="SharedMedia">Mídia compartilhada</string>
+    <string name="SharedMedia">Mídia Compartilhada</string>
     <string name="SETTINGS">Configurações</string>
     <string name="AddMember">Adicionar membro</string>
     <string name="DeleteAndExit">Apagar e sair do grupo</string>
@@ -270,7 +272,7 @@
     <string name="OnlyWhenScreenOn">Somente com a tela ligada</string>
     <string name="OnlyWhenScreenOff">Somente com a tela desligada</string>
     <string name="AlwaysShowPopup">Sempre mostrar pop-up</string>
-    <string name="BadgeNumber">Contador de medalhas</string>
+    <string name="BadgeNumber">Contador no Ícone</string>
     <string name="Short">Curta</string>
     <string name="Long">Longa</string>
     <string name="SystemDefault">Padrão do sistema</string>
@@ -294,11 +296,29 @@
     <string name="PhoneNumberChange">ALTERAR NÚMERO</string>
     <string name="ChangePhoneNewNumber">Novo número</string>
     <string name="ChangePhoneHelp">Vamos enviar uma SMS com um código de confirmação para o seu novo número.</string>
-    <string name="ChangePhoneNumberOccupied">O número %1$s já possui uma conta do Telegram. Por favor, delete esta conta antes de migrar para o novo número.</string>
+    <string name="ChangePhoneNumberOccupied">O número %1$s já possui uma conta do Telegram. Por favor, exclua esta conta antes de migrar para o novo número.</string>
     <string name="NotificationsOther">Outro</string>
+    <!--passcode view-->
+    <string name="Passcode">Senha</string>
+    <string name="ChangePasscode">Alterar Senha</string>
+    <string name="ChangePasscodeInfo">Quando você define uma senha adicional, um ícone de cadeado aparece na página de chats. Clique para bloquear e desbloquear o app.\n\nNota: se você esquecer a sua senha, terá de excluir e reinstalar o app. Todos os chats secretos serão perdidos.</string>
+    <string name="ChangePasscodeAlert">Você verá o ícone do cadeado na página de chats. Clique para bloquear seu app do Telegram com a sua nova senha.</string>
+    <string name="PasscodePIN">PIN</string>
+    <string name="PasscodePassword">Senha</string>
+    <string name="EnterCurrentPasscode">Insira sua senha atual</string>
+    <string name="EnterNewPasscode">Insira sua nova senha</string>
+    <string name="EnterYourPasscode">Insira sua senha</string>
+    <string name="ReEnterYourPasscode">Re-insira sua nova senha</string>
+    <string name="InvalidPasscode">Senha inválida</string>
+    <string name="PasscodeDoNotMatch">As senhas não são iguais</string>
+    <string name="AutoLock">Auto-bloquear</string>
+    <string name="AutoLockInfo">Requisitar senha se estiver ausente por muito tempo.</string>
+    <string name="AutoLockInTime">em %1$s</string>
+    <string name="AutoLockDisabled">Desativado</string>
     <!--media view-->
     <string name="NoMedia">Compartilhar fotos e vídeos no chat e acessá-los em qualquer um de seus dispositivos.</string>
     <string name="DocumentsTitle">Arquivos</string>
+    <string name="SharedMediaTitle">Mídia Compartilhada</string>
     <string name="NoSharedFiles">Compartilhar arquivos e documentos no chat e acessá-los de qualquer um de seus dispositivos.</string>
     <!--map view-->
     <string name="Map">Mapa</string>
@@ -318,12 +338,27 @@
     <string name="PleaseDownload">Baixar o vídeo primeiro</string>
     <string name="NoRecentPhotos">Nenhuma foto recente</string>
     <string name="NoRecentGIFs">Nenhum GIF recente</string>
-    <string name="SearchImages">PROCURAR NA INTERNET</string>
-    <string name="SearchGifs">PROCURAR GIFS</string>
+    <string name="SearchImages">BUSCAR IMAGENS</string>
+    <string name="SearchImagesInfo">BUSCA GLOBAL</string>
+    <string name="SearchGifs">BUSCAR GIFS</string>
     <string name="SearchImagesTitle">Procurar na web</string>
     <string name="SearchGifsTitle">Procurar GIFs</string>
     <string name="CropImage">Recortar imagem</string>
     <string name="EditImage">Editar imagem</string>
+    <string name="Enhance">Aumentar</string>
+    <string name="Highlights">Realce</string>
+    <string name="Contrast">Contraste</string>
+    <string name="Exposure">Exposição</string>
+    <string name="Warmth">Calor</string>
+    <string name="Saturation">Saturação</string>
+    <string name="Vignette">Vignette</string>
+    <string name="Shadows">Sombras</string>
+    <string name="Grain">Granulado</string>
+    <string name="Sharpen">Nitidez</string>
+    <string name="Blur">Desfoque</string>
+    <string name="AreYouSureDeletePhoto">Você tem certeza que deseja apagar esta foto?</string>
+    <string name="AreYouSureDeleteVideo">Você tem certeza que deseja apagar este vídeo?</string>
+    <string name="DiscardChanges">Descartar mudanças?</string>
     <!--password view-->
     <string name="Password">Password</string>
     <string name="ChangePassword">Change password</string>
@@ -379,7 +414,7 @@
     <string name="EmpryUsersPlaceholder">Adicionar Usuários</string>
     <string name="PrivacyFloodControlError">Desculpe, muitas solicitações. Impossível alterar os ajustes de privacidade agora, por favor aguarde.</string>
     <string name="ClearOtherSessionsHelp">Sair de todos os dispositivos, exceto este.</string>
-    <string name="RemoveFromListText">Toque e segure no usuário para deletar.</string>
+    <string name="RemoveFromListText">Toque e segure no usuário para remover.</string>
     <!--edit video view-->
     <string name="EditVideo">Editar Vídeo</string>
     <string name="OriginalVideo">Vídeo Original</string>
@@ -405,6 +440,7 @@
     <string name="DeletePhoto">Apagar foto</string>
     <string name="Set">Aplicar</string>
     <string name="OK">OK</string>
+    <string name="Crop">CORTAR</string>
     <!--messages-->
     <string name="ActionKickUser">un1 removeu un2</string>
     <string name="ActionLeftUser">un1 saiu do grupo</string>
@@ -422,6 +458,7 @@
     <string name="ActionYouCreateGroup">Você criou o grupo</string>
     <string name="ActionKickUserYou">un1 removeu você</string>
     <string name="ActionAddUserYou">un1 adicionou você</string>
+    <string name="ActionAddUserSelf">un1 retornou ao grupo</string>
     <string name="UnsuppotedMedia">Esta mensagem não é suportada na sua versão do Telegram. Para visualiza-la atualize seu aplicativo em http://telegram.org/update</string>
     <string name="AttachPhoto">Foto</string>
     <string name="AttachVideo">Vídeo</string>
@@ -451,16 +488,16 @@
     <string name="SendMessagesTo">Enviar mensagens para %1$s?</string>
     <string name="AreYouSureLogout">Você tem certeza que desejar sair?\n\nSaiba que você pode usar o Telegram em vários dispositivos de uma vez.\n\nLembre-se, sair apaga todos os seus Chats Secretos.</string>
     <string name="AreYouSureSessions">Você tem certeza que deseja terminar todas as outras sessões?</string>
-    <string name="AreYouSureDeleteAndExit">Você tem certeza que deseja deletar e sair do grupo?</string>
-    <string name="AreYouSureDeleteThisChat">Você tem certeza que deseja deletar esta conversa?</string>
+    <string name="AreYouSureDeleteAndExit">Você tem certeza que apagar e sair do grupo?</string>
+    <string name="AreYouSureDeleteThisChat">Você tem certeza que deseja apagar esta conversa?</string>
     <string name="AreYouSureShareMyContactInfo">Você tem certeza que deseja compartilhar suas informações de contato?</string>
     <string name="AreYouSureBlockContact">Você tem certeza que deseja bloquear este contato?</string>
     <string name="AreYouSureUnblockContact">Você tem certeza que deseja desbloquear este contato?</string>
-    <string name="AreYouSureDeleteContact">Você tem certeza que deseja deletar este contato?</string>
+    <string name="AreYouSureDeleteContact">Você tem certeza que deseja apagar este contato?</string>
     <string name="AreYouSureSecretChat">Você tem certeza que deseja começar um chat secreto?</string>
     <string name="AreYouSureRegistration">Você tem certeza que deseja cancelar o registro?</string>
     <string name="AreYouSureClearHistory">Você tem certeza que deseja limpar o histórico?</string>
-    <string name="AreYouSureDeleteMessages">Você tem certeza que deseja deletar %1$s?</string>
+    <string name="AreYouSureDeleteMessages">Você tem certeza que deseja apagar %1$s?</string>
     <string name="SendMessagesToGroup">Enviar mensagens para %1$s?</string>
     <string name="ForwardMessagesToGroup">Encaminhar mensagem para %1$s?</string>
     <string name="FeatureUnavailable">Desculpe, esta funcionalidade não está disponível para seu país.</string>
@@ -511,18 +548,24 @@
     <string name="messages_few">%1$d mensagens</string>
     <string name="messages_many">%1$d mensagens</string>
     <string name="messages_other">%1$d mensagens</string>
-    <string name="files_zero">nenhum arquivo</string>
-    <string name="files_one">%1$d arquivo</string>
-    <string name="files_two">%1$d arquivos</string>
-    <string name="files_few">%1$d arquivos</string>
-    <string name="files_many">%1$d arquivos</string>
-    <string name="files_other">%1$d arquivos</string>
+    <string name="items_zero">nenhum item</string>
+    <string name="items_one">%1$d item</string>
+    <string name="items_two">%1$d itens</string>
+    <string name="items_few">%1$d itens</string>
+    <string name="items_many">%1$d itens</string>
+    <string name="items_other">%1$d itens</string>
     <string name="FromContacts_zero">de nenhum contato</string>
     <string name="FromContacts_one">de %1$d contato</string>
     <string name="FromContacts_two">de %1$d contatos</string>
     <string name="FromContacts_few">de %1$d contatos</string>
     <string name="FromContacts_many">de %1$d contatos</string>
     <string name="FromContacts_other">de %1$d contatos</string>
+    <string name="FromChats_zero">de nenhum chat</string>
+    <string name="FromChats_one">de %1$d chat</string>
+    <string name="FromChats_two">de %1$d chats</string>
+    <string name="FromChats_few">de %1$d chats</string>
+    <string name="FromChats_many">de %1$d chats</string>
+    <string name="FromChats_other">de %1$d chats</string>
     <string name="Seconds_zero">%1$d segundos</string>
     <string name="Seconds_one">%1$d segundo</string>
     <string name="Seconds_two">%1$d segundos</string>
@@ -572,6 +615,7 @@
     <string name="Users_many">%1$d usuários</string>
     <string name="Users_other">%1$d usuários</string>
     <!--date formatters-->
+    <string name="formatterMonthYear">MMMM yyyy</string>
     <string name="formatterMonth">dd MMM</string>
     <string name="formatterYear">dd.MM.yy</string>
     <string name="formatterYearMax">dd.MM.yyyy</string>

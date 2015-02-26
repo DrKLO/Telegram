@@ -109,7 +109,7 @@ public class LoginActivity extends BaseFragment {
     }
 
     @Override
-    public View createView(LayoutInflater inflater, ViewGroup container) {
+    public View createView(LayoutInflater inflater) {
         if (fragmentView == null) {
             actionBar.setTitle(LocaleController.getString("AppName", R.string.AppName));
 
@@ -856,9 +856,6 @@ public class LoginActivity extends BaseFragment {
                                     final TLRPC.TL_auth_sentCode res = (TLRPC.TL_auth_sentCode) response;
                                     params.putString("phoneHash", res.phone_code_hash);
                                     params.putInt("calltime", res.send_call_timeout * 1000);
-                                    if (res.phone_registered) {
-                                        params.putString("registered", "true");
-                                    }
                                     setPage(1, true, params, false);
                                 } else {
                                     if (error.text != null) {
@@ -966,7 +963,6 @@ public class LoginActivity extends BaseFragment {
         private boolean requestInprogress = false;
         private String phoneHash;
         private String requestPhone;
-        private String registered;
         private EditText codeField;
         private TextView confirmTextView;
         private TextView timeText;
@@ -1135,7 +1131,6 @@ public class LoginActivity extends BaseFragment {
             String phone = params.getString("phone");
             requestPhone = params.getString("phoneFormated");
             phoneHash = params.getString("phoneHash");
-            registered = params.getString("registered");
             time = params.getInt("calltime");
 
             if (phone == null) {
@@ -1312,7 +1307,7 @@ public class LoginActivity extends BaseFragment {
                                 } else {
                                     lastError = error.text;
 
-                                    if (error.text.contains("PHONE_NUMBER_UNOCCUPIED") && registered == null) {
+                                    if (error.text.contains("PHONE_NUMBER_UNOCCUPIED")) {
                                         Bundle params = new Bundle();
                                         params.putString("phoneFormated", requestPhone);
                                         params.putString("phoneHash", phoneHash);
@@ -1325,29 +1320,17 @@ public class LoginActivity extends BaseFragment {
                                         destroyTimer();
                                         destroyCodeTimer();
                                     } else {
-                                        lastError = error.text;
-
-                                        if (error.text.contains("PHONE_NUMBER_UNOCCUPIED") && registered == null) {
-                                            Bundle params = new Bundle();
-                                            params.putString("phoneFormated", requestPhone);
-                                            params.putString("phoneHash", phoneHash);
-                                            params.putString("code", req.phone_code);
-                                            setPage(2, true, params, false);
-                                            destroyTimer();
-                                            destroyCodeTimer();
+                                        createTimer();
+                                        if (error.text.contains("PHONE_NUMBER_INVALID")) {
+                                            needShowAlert(LocaleController.getString("InvalidPhoneNumber", R.string.InvalidPhoneNumber));
+                                        } else if (error.text.contains("PHONE_CODE_EMPTY") || error.text.contains("PHONE_CODE_INVALID")) {
+                                            needShowAlert(LocaleController.getString("InvalidCode", R.string.InvalidCode));
+                                        } else if (error.text.contains("PHONE_CODE_EXPIRED")) {
+                                            needShowAlert(LocaleController.getString("CodeExpired", R.string.CodeExpired));
+                                        } else if (error.text.startsWith("FLOOD_WAIT")) {
+                                            needShowAlert(LocaleController.getString("FloodWait", R.string.FloodWait));
                                         } else {
-                                            createTimer();
-                                            if (error.text.contains("PHONE_NUMBER_INVALID")) {
-                                                needShowAlert(LocaleController.getString("InvalidPhoneNumber", R.string.InvalidPhoneNumber));
-                                            } else if (error.text.contains("PHONE_CODE_EMPTY") || error.text.contains("PHONE_CODE_INVALID")) {
-                                                needShowAlert(LocaleController.getString("InvalidCode", R.string.InvalidCode));
-                                            } else if (error.text.contains("PHONE_CODE_EXPIRED")) {
-                                                needShowAlert(LocaleController.getString("CodeExpired", R.string.CodeExpired));
-                                            } else if (error.text.startsWith("FLOOD_WAIT")) {
-                                                needShowAlert(LocaleController.getString("FloodWait", R.string.FloodWait));
-                                            } else {
-                                                needShowAlert(error.text);
-                                            }
+                                            needShowAlert(error.text);
                                         }
                                     }
                                 }

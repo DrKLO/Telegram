@@ -68,6 +68,10 @@ public class BackupImageView extends View {
         setImage(null, path, filter, thumb, null, null, null, 0);
     }
 
+    public void setOrientation(int angle, boolean center) {
+        imageReceiver.setOrientation(angle, center);
+    }
+
     public void setImage(TLObject path, String httpUrl, String filter, Drawable thumb, Bitmap thumbBitmap, TLRPC.FileLocation thumbLocation, String thumbFilter, int size) {
         if (thumbBitmap != null) {
             thumb = new BitmapDrawable(null, thumbBitmap);

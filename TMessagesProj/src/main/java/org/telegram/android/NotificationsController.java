@@ -11,6 +11,7 @@ package org.telegram.android;
 import android.app.Activity;
 import android.app.AlarmManager;
 import android.app.PendingIntent;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -30,6 +31,7 @@ import android.text.TextUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.telegram.messenger.ConnectionsManager;
+import org.telegram.messenger.DispatchQueue;
 import org.telegram.messenger.FileLog;
 
 import com.aniways.Aniways;
@@ -52,6 +54,7 @@ public class NotificationsController {
 
     public static final String EXTRA_VOICE_REPLY = "extra_voice_reply";
 
+    private DispatchQueue notificationsQueue = new DispatchQueue("notificationsQueue");
     private ArrayList<MessageObject> pushMessages = new ArrayList<>();
     private HashMap<Integer, MessageObject> pushMessagesDict = new HashMap<>();
     private NotificationManagerCompat notificationManager = null;
@@ -134,7 +137,9 @@ public class NotificationsController {
         }
 
         CharSequence msg = null;
-        if ((int)dialog_id != 0) {
+        if ((int)dialog_id == 0 || AndroidUtilities.needShowPasscode(false) || UserConfig.isWaitingForPasscodeEnter) {
+            msg = LocaleController.getString("YouHaveNewMessage", R.string.YouHaveNewMessage);
+        } else {
             if (chat_id == 0 && user_id != 0) {
                 SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Context.MODE_PRIVATE);
                 if (preferences.getBoolean("EnablePreviewAll", true)) {
@@ -241,8 +246,6 @@ public class NotificationsController {
                     msg = LocaleController.formatString("NotificationMessageGroupNoText", R.string.NotificationMessageGroupNoText, ContactsController.formatName(user.first_name, user.last_name), chat.title);
                 }
             }
-        } else {
-            msg = LocaleController.getString("YouHaveNewMessage", R.string.YouHaveNewMessage);
         }
         msg = Aniways.getDecodedMessageWithEmojiFallbacksForIcons(msg);
         return msg;
@@ -255,7 +258,7 @@ public class NotificationsController {
             SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
             int minutes = preferences.getInt("repeat_messages", 60);
             if (minutes > 0 && personal_count > 0) {
-                alarm.set(AlarmManager.RTC_WAKEUP, System.currentTimeMillis() + minutes * 60 * 1000, pintent);
+                alarm.set(AlarmManager.ELAPSED_REALTIME_WAKEUP, SystemClock.elapsedRealtime() + minutes * 60 * 1000, pintent);
             } else {
                 alarm.cancel(pintent);
             }
@@ -271,9 +274,9 @@ public class NotificationsController {
             PendingIntent pintent = PendingIntent.getService(ApplicationLoader.applicationContext, 0, new Intent(ApplicationLoader.applicationContext, NotificationDelay.class), 0);
             SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
             if (onlineReason) {
-                alarm.set(AlarmManager.RTC_WAKEUP, System.currentTimeMillis() + 3 * 1000, pintent);
+                alarm.set(AlarmManager.ELAPSED_REALTIME_WAKEUP, SystemClock.elapsedRealtime() + 3 * 1000, pintent);
             } else {
-                alarm.set(AlarmManager.RTC_WAKEUP, System.currentTimeMillis() + 500, pintent);
+                alarm.set(AlarmManager.ELAPSED_REALTIME_WAKEUP, SystemClock.elapsedRealtime() + 500, pintent);
             }
         } catch (Exception e) {
             FileLog.e("tmessages", e);
@@ -421,14 +424,18 @@ public class NotificationsController {
                         intent.putExtra("userId", user_id);
                     }
                 }
-                if (pushDialogs.size() == 1) {
-                    if (chat != null) {
-                        if (chat.photo != null && chat.photo.photo_small != null && chat.photo.photo_small.volume_id != 0 && chat.photo.photo_small.local_id != 0) {
-                            photoPath = chat.photo.photo_small;
-                        }
-                    } else {
-                        if (user.photo != null && user.photo.photo_small != null && user.photo.photo_small.volume_id != 0 && user.photo.photo_small.local_id != 0) {
-                            photoPath = user.photo.photo_small;
+                if (AndroidUtilities.needShowPasscode(false) || UserConfig.isWaitingForPasscodeEnter) {
+                    photoPath = null;
+                } else {
+                    if (pushDialogs.size() == 1) {
+                        if (chat != null) {
+                            if (chat.photo != null && chat.photo.photo_small != null && chat.photo.photo_small.volume_id != 0 && chat.photo.photo_small.local_id != 0) {
+                                photoPath = chat.photo.photo_small;
+                            }
+                        } else {
+                            if (user.photo != null && user.photo.photo_small != null && user.photo.photo_small.volume_id != 0 && user.photo.photo_small.local_id != 0) {
+                                photoPath = user.photo.photo_small;
+                            }
                         }
                     }
                 }
@@ -441,7 +448,7 @@ public class NotificationsController {
 
             String name = null;
             boolean replace = true;
-            if ((int)dialog_id == 0 || pushDialogs.size() > 1) {
+            if ((int)dialog_id == 0 || pushDialogs.size() > 1 || AndroidUtilities.needShowPasscode(false) || UserConfig.isWaitingForPasscodeEnter) {
                 name = LocaleController.getString("AppName", R.string.AppName);
                 replace = false;
             } else {
@@ -456,7 +463,7 @@ public class NotificationsController {
             if (pushDialogs.size() == 1) {
                 detailText = LocaleController.formatPluralString("NewMessages", total_unread_count);
             } else {
-                detailText = LocaleController.formatString("NotificationMessagesPeopleDisplayOrder", R.string.NotificationMessagesPeopleDisplayOrder, LocaleController.formatPluralString("NewMessages", total_unread_count), LocaleController.formatPluralString("FromContacts", pushDialogs.size()));
+                detailText = LocaleController.formatString("NotificationMessagesPeopleDisplayOrder", R.string.NotificationMessagesPeopleDisplayOrder, LocaleController.formatPluralString("NewMessages", total_unread_count), LocaleController.formatPluralString("FromChats", pushDialogs.size()));
             }
 
             NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(ApplicationLoader.applicationContext)
@@ -842,7 +849,7 @@ public class NotificationsController {
             notifyCheck = isLast;
         }
 
-        if (!popupMessages.isEmpty() && oldCount != popupMessages.size()) {
+        if (!popupMessages.isEmpty() && oldCount != popupMessages.size() && !AndroidUtilities.needShowPasscode(false)) {
             if (ApplicationLoader.mainInterfacePaused || !ApplicationLoader.isScreenOn) {
                 MessageObject messageObject = messageObjects.get(0);
                 if (popup == 3 || popup == 1 && ApplicationLoader.isScreenOn || popup == 2 && !ApplicationLoader.isScreenOn) {
@@ -996,20 +1003,33 @@ public class NotificationsController {
         setBadge(ApplicationLoader.applicationContext, enabled ? total_unread_count : 0);
     }
 
-    private void setBadge(Context context, int count) {
-        try {
-            String launcherClassName = getLauncherClassName(context);
-            if (launcherClassName == null) {
-                return;
+    private void setBadge(final Context context, final int count) {
+        notificationsQueue.postRunnable(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    ContentValues cv = new ContentValues();
+                    cv.put("tag", "org.telegram.messenger/org.telegram.ui.LaunchActivity");
+                    cv.put("count", count);
+                    context.getContentResolver().insert(Uri.parse("content://com.teslacoilsw.notifier/unread_count"), cv);
+                } catch (Throwable e) {
+                     //ignore
+                }
+                try {
+                    String launcherClassName = getLauncherClassName(context);
+                    if (launcherClassName == null) {
+                        return;
+                    }
+                    Intent intent = new Intent("android.intent.action.BADGE_COUNT_UPDATE");
+                    intent.putExtra("badge_count", count);
+                    intent.putExtra("badge_count_package_name", context.getPackageName());
+                    intent.putExtra("badge_count_class_name", launcherClassName);
+                    context.sendBroadcast(intent);
+                } catch (Throwable e) {
+                    FileLog.e("tmessages", e);
+                }
             }
-            Intent intent = new Intent("android.intent.action.BADGE_COUNT_UPDATE");
-            intent.putExtra("badge_count", count);
-            intent.putExtra("badge_count_package_name", context.getPackageName());
-            intent.putExtra("badge_count_class_name", launcherClassName);
-            context.sendBroadcast(intent);
-        } catch (Throwable e) {
-            FileLog.e("tmessages", e);
-        }
+        });
     }
 
     public static String getLauncherClassName(Context context) {

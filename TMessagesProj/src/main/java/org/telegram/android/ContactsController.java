@@ -55,6 +55,7 @@ public class ContactsController {
     private ArrayList<Integer> delayedContactsUpdate = new ArrayList<>();
     private String inviteText;
     private boolean updatingInviteText = false;
+    private HashMap<String, String> sectionsToReplace = new HashMap<>();
 
     private int loadingDeleteInfo = 0;
     private int deleteAccountTTL;
@@ -115,6 +116,28 @@ public class ContactsController {
         if (preferences.getBoolean("needGetStatuses", false)) {
             reloadContactsStatuses();
         }
+
+        sectionsToReplace.put("À", "A");
+        sectionsToReplace.put("Á", "A");
+        sectionsToReplace.put("Ä", "A");
+        sectionsToReplace.put("Ù", "U");
+        sectionsToReplace.put("Ú", "U");
+        sectionsToReplace.put("Ü", "U");
+        sectionsToReplace.put("Ì", "I");
+        sectionsToReplace.put("Í", "I");
+        sectionsToReplace.put("Ï", "I");
+        sectionsToReplace.put("È", "E");
+        sectionsToReplace.put("É", "E");
+        sectionsToReplace.put("Ê", "E");
+        sectionsToReplace.put("Ë", "E");
+        sectionsToReplace.put("Ò", "O");
+        sectionsToReplace.put("Ó", "O");
+        sectionsToReplace.put("Ö", "O");
+        sectionsToReplace.put("Ç", "C");
+        sectionsToReplace.put("Ñ", "N");
+        sectionsToReplace.put("Ÿ", "Y");
+        sectionsToReplace.put("Ý", "Y");
+        sectionsToReplace.put("Ţ", "Y");
     }
 
     public void cleanup() {
@@ -515,10 +538,10 @@ public class ContactsController {
                     checkContactsInternal();
                 }
                 final HashMap<Integer, Contact> contactsMap = readContactsFromPhoneBook();
-                final HashMap<String, Contact> contactsBookShort = new HashMap<String, Contact>();
+                final HashMap<String, Contact> contactsBookShort = new HashMap<>();
                 int oldCount = contactHashMap.size();
 
-                ArrayList<TLRPC.TL_inputPhoneContact> toImport = new ArrayList<TLRPC.TL_inputPhoneContact>();
+                ArrayList<TLRPC.TL_inputPhoneContact> toImport = new ArrayList<>();
                 if (!contactHashMap.isEmpty()) {
                     for (HashMap.Entry<Integer, Contact> pair : contactsMap.entrySet()) {
                         Integer id = pair.getKey();
@@ -620,10 +643,10 @@ public class ContactsController {
                                         }
                                     }
 
-                                    final ArrayList<TLRPC.User> toDelete = new ArrayList<TLRPC.User>();
+                                    final ArrayList<TLRPC.User> toDelete = new ArrayList<>();
                                     if (contactHashMap != null && !contactHashMap.isEmpty()) {
                                         try {
-                                            final HashMap<String, TLRPC.User> contactsPhonesShort = new HashMap<String, TLRPC.User>();
+                                            final HashMap<String, TLRPC.User> contactsPhonesShort = new HashMap<>();
 
                                             for (TLRPC.TL_contact value : contacts) {
                                                 TLRPC.User user = MessagesController.getInstance().getUser(value.user_id);
@@ -693,7 +716,7 @@ public class ContactsController {
                         }
                         final int count = (int)Math.ceil(toImport.size() / 500.0f);
                         for (int a = 0; a < count; a++) {
-                            ArrayList<TLRPC.TL_inputPhoneContact> finalToImport = new ArrayList<TLRPC.TL_inputPhoneContact>();
+                            ArrayList<TLRPC.TL_inputPhoneContact> finalToImport = new ArrayList<>();
                             finalToImport.addAll(toImport.subList(a * 500, Math.min((a + 1) * 500, toImport.size())));
                             TLRPC.TL_contacts_importContacts req = new TLRPC.TL_contacts_importContacts();
                             req.contacts = finalToImport;
@@ -714,7 +737,7 @@ public class ContactsController {
 //                                            }
                                         }
                                         MessagesStorage.getInstance().putUsersAndChats(res.users, null, true, true);
-                                        ArrayList<TLRPC.TL_contact> cArr = new ArrayList<TLRPC.TL_contact>();
+                                        ArrayList<TLRPC.TL_contact> cArr = new ArrayList<>();
                                         for (TLRPC.TL_importedContact c : res.imported) {
                                             TLRPC.TL_contact contact = new TLRPC.TL_contact();
                                             contact.user_id = c.user_id;
@@ -849,7 +872,7 @@ public class ContactsController {
             public void run() {
                 MessagesController.getInstance().putUsers(usersArr, from == 1);
 
-                final HashMap<Integer, TLRPC.User> usersDict = new HashMap<Integer, TLRPC.User>();
+                final HashMap<Integer, TLRPC.User> usersDict = new HashMap<>();
 
                 final boolean isEmpty = contactsArr.isEmpty();
 
@@ -934,9 +957,9 @@ public class ContactsController {
                             }
                         });
 
-                        final SparseArray<TLRPC.TL_contact> contactsDictionary = new SparseArray<TLRPC.TL_contact>();
-                        final HashMap<String, ArrayList<TLRPC.TL_contact>> sectionsDict = new HashMap<String, ArrayList<TLRPC.TL_contact>>();
-                        final ArrayList<String> sortedSectionsArray = new ArrayList<String>();
+                        final SparseArray<TLRPC.TL_contact> contactsDictionary = new SparseArray<>();
+                        final HashMap<String, ArrayList<TLRPC.TL_contact>> sectionsDict = new HashMap<>();
+                        final ArrayList<String> sortedSectionsArray = new ArrayList<>();
                         HashMap<String, TLRPC.TL_contact> contactsByPhonesDict = null;
 
                         if (!contactsBookLoaded) {
@@ -959,13 +982,17 @@ public class ContactsController {
                             if (key == null || key.length() == 0) {
                                 key = user.last_name;
                             }
+                            if (key.length() > 1) {
+                                key = key.substring(0, 1);
+                            }
                             if (key.length() == 0) {
                                 key = "#";
                             } else {
                                 key = key.toUpperCase();
                             }
-                            if (key.length() > 1) {
-                                key = key.substring(0, 1);
+                            String replace = sectionsToReplace.get(key);
+                            if (replace != null) {
+                                key = replace;
                             }
                             ArrayList<TLRPC.TL_contact> arr = sectionsDict.get(key);
                             if (arr == null) {
@@ -1068,7 +1095,7 @@ public class ContactsController {
     }
 
     private void updateUnregisteredContacts(final ArrayList<TLRPC.TL_contact> contactsArr) {
-        final HashMap<String, TLRPC.TL_contact> contactsPhonesShort = new HashMap<String, TLRPC.TL_contact>();
+        final HashMap<String, TLRPC.TL_contact> contactsPhonesShort = new HashMap<>();
 
         for (TLRPC.TL_contact value : contactsArr) {
             TLRPC.User user = MessagesController.getInstance().getUser(value.user_id);
@@ -1078,7 +1105,7 @@ public class ContactsController {
             contactsPhonesShort.put(user.phone, value);
         }
 
-        final ArrayList<Contact> sortedPhoneBookContacts = new ArrayList<Contact>();
+        final ArrayList<Contact> sortedPhoneBookContacts = new ArrayList<>();
         for (HashMap.Entry<Integer, Contact> pair : contactsBook.entrySet()) {
             Contact value = pair.getValue();
             int id = pair.getKey();
@@ -1136,8 +1163,8 @@ public class ContactsController {
         }
 
         StringBuilder ids = new StringBuilder();
-        final HashMap<String, ArrayList<TLRPC.TL_contact>> sectionsDict = new HashMap<String, ArrayList<TLRPC.TL_contact>>();
-        final ArrayList<String> sortedSectionsArray = new ArrayList<String>();
+        final HashMap<String, ArrayList<TLRPC.TL_contact>> sectionsDict = new HashMap<>();
+        final ArrayList<String> sortedSectionsArray = new ArrayList<>();
 
         for (TLRPC.TL_contact value : contacts) {
             TLRPC.User user = MessagesController.getInstance().getUser(value.user_id);
@@ -1149,17 +1176,21 @@ public class ContactsController {
             if (key == null || key.length() == 0) {
                 key = user.last_name;
             }
+            if (key.length() > 1) {
+                key = key.substring(0, 1);
+            }
             if (key.length() == 0) {
                 key = "#";
             } else {
                 key = key.toUpperCase();
             }
-            if (key.length() > 1) {
-                key = key.substring(0, 1);
+            String replace = sectionsToReplace.get(key);
+            if (replace != null) {
+                key = replace;
             }
             ArrayList<TLRPC.TL_contact> arr = sectionsDict.get(key);
             if (arr == null) {
-                arr = new ArrayList<TLRPC.TL_contact>();
+                arr = new ArrayList<>();
                 sectionsDict.put(key, arr);
                 sortedSectionsArray.add(key);
             }
@@ -1194,7 +1225,7 @@ public class ContactsController {
         try {
             Uri rawContactUri = ContactsContract.RawContacts.CONTENT_URI.buildUpon().appendQueryParameter(ContactsContract.RawContacts.ACCOUNT_NAME, currentAccount.name).appendQueryParameter(ContactsContract.RawContacts.ACCOUNT_TYPE, currentAccount.type).build();
             Cursor c1 = ApplicationLoader.applicationContext.getContentResolver().query(rawContactUri, new String[]{BaseColumns._ID, ContactsContract.RawContacts.SYNC2}, null, null, null);
-            HashMap<Integer, Long> bookContacts = new HashMap<Integer, Long>();
+            HashMap<Integer, Long> bookContacts = new HashMap<>();
             if (c1 != null) {
                 while (c1.moveToNext()) {
                     bookContacts.put(c1.getInt(1), c1.getLong(0));
@@ -1214,7 +1245,7 @@ public class ContactsController {
     }
 
     private void performWriteContactsToPhoneBook() {
-        final ArrayList<TLRPC.TL_contact> contactsArray = new ArrayList<TLRPC.TL_contact>();
+        final ArrayList<TLRPC.TL_contact> contactsArray = new ArrayList<>();
         contactsArray.addAll(contacts);
         Utilities.photoBookQueue.postRunnable(new Runnable() {
             @Override
@@ -1226,8 +1257,8 @@ public class ContactsController {
 
     private void applyContactsUpdates(ArrayList<Integer> ids, ConcurrentHashMap<Integer, TLRPC.User> userDict, ArrayList<TLRPC.TL_contact> newC, ArrayList<Integer> contactsTD) {
         if (newC == null || contactsTD == null) {
-            newC = new ArrayList<TLRPC.TL_contact>();
-            contactsTD = new ArrayList<Integer>();
+            newC = new ArrayList<>();
+            contactsTD = new ArrayList<>();
             for (Integer uid : ids) {
                 if (uid > 0) {
                     TLRPC.TL_contact contact = new TLRPC.TL_contact();
@@ -1352,8 +1383,8 @@ public class ContactsController {
     }
 
     public void processContactsUpdates(ArrayList<Integer> ids, ConcurrentHashMap<Integer, TLRPC.User> userDict) {
-        final ArrayList<TLRPC.TL_contact> newContacts = new ArrayList<TLRPC.TL_contact>();
-        final ArrayList<Integer> contactsToDelete = new ArrayList<Integer>();
+        final ArrayList<TLRPC.TL_contact> newContacts = new ArrayList<>();
+        final ArrayList<Integer> contactsToDelete = new ArrayList<>();
         for (Integer uid : ids) {
             if (uid > 0) {
                 TLRPC.TL_contact contact = new TLRPC.TL_contact();
@@ -1407,7 +1438,7 @@ public class ContactsController {
             }
         }
 
-        ArrayList<ContentProviderOperation> query = new ArrayList<ContentProviderOperation>();
+        ArrayList<ContentProviderOperation> query = new ArrayList<>();
 
         ContentProviderOperation.Builder builder = ContentProviderOperation.newInsert(ContactsContract.RawContacts.CONTENT_URI);
         builder.withValue(ContactsContract.RawContacts.ACCOUNT_NAME, currentAccount.name);
@@ -1472,7 +1503,7 @@ public class ContactsController {
         }
 
         TLRPC.TL_contacts_importContacts req = new TLRPC.TL_contacts_importContacts();
-        ArrayList<TLRPC.TL_inputPhoneContact> contactsParams = new ArrayList<TLRPC.TL_inputPhoneContact>();
+        ArrayList<TLRPC.TL_inputPhoneContact> contactsParams = new ArrayList<>();
         TLRPC.TL_inputPhoneContact c = new TLRPC.TL_inputPhoneContact();
         c.phone = user.phone;
         if (!c.phone.startsWith("+")) {
@@ -1511,7 +1542,7 @@ public class ContactsController {
                     });
                     TLRPC.TL_contact newContact = new TLRPC.TL_contact();
                     newContact.user_id = u.id;
-                    ArrayList<TLRPC.TL_contact> arrayList = new ArrayList<TLRPC.TL_contact>();
+                    ArrayList<TLRPC.TL_contact> arrayList = new ArrayList<>();
                     arrayList.add(newContact);
                     MessagesStorage.getInstance().putContacts(arrayList, false);
 
@@ -1553,7 +1584,7 @@ public class ContactsController {
             return;
         }
         TLRPC.TL_contacts_deleteContacts req = new TLRPC.TL_contacts_deleteContacts();
-        final ArrayList<Integer> uids = new ArrayList<Integer>();
+        final ArrayList<Integer> uids = new ArrayList<>();
         for (TLRPC.User user : users) {
             TLRPC.InputUser inputUser = MessagesController.getInputUser(user);
             if (inputUser == null) {
@@ -1632,7 +1663,7 @@ public class ContactsController {
                             editor.remove("needGetStatuses").commit();
                             TLRPC.Vector vector = (TLRPC.Vector) response;
                             if (!vector.objects.isEmpty()) {
-                                ArrayList<TLRPC.User> dbUsersStatus = new ArrayList<TLRPC.User>();
+                                ArrayList<TLRPC.User> dbUsersStatus = new ArrayList<>();
                                 for (Object object : vector.objects) {
                                     TLRPC.User toDbUser = new TLRPC.User();
                                     TLRPC.TL_contactStatus status = (TLRPC.TL_contactStatus) object;

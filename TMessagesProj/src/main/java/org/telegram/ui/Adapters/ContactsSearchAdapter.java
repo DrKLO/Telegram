@@ -124,10 +124,14 @@ public class ContactsSearchAdapter extends BaseContactsSearchAdapter {
                             }
 
                             String name = ContactsController.formatName(user.first_name, user.last_name).toLowerCase();
+                            String tName = LocaleController.getInstance().getTranslitString(name);
+                            if (name.equals(tName)) {
+                                tName = null;
+                            }
 
                             int found = 0;
                             for (String q : search) {
-                                if (name.startsWith(q) || name.contains(" " + q)) {
+                                if (name.startsWith(q) || name.contains(" " + q) || tName != null && (tName.startsWith(q) || tName.contains(" " + q))) {
                                     found = 1;
                                 } else if (user.username != null && user.username.startsWith(q)) {
                                     found = 2;

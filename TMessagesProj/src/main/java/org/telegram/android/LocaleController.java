@@ -54,6 +54,7 @@ public class LocaleController {
     public static FastDateFormat formatterWeek;
     public static FastDateFormat formatterMonth;
     public static FastDateFormat formatterYear;
+    public static FastDateFormat formatterMonthYear;
     public static FastDateFormat formatterYearMax;
     public static FastDateFormat chatDate;
     public static FastDateFormat chatFullDate;
@@ -135,7 +136,7 @@ public class LocaleController {
         addRules(new String[]{"bem", "brx", "da", "de", "el", "en", "eo", "es", "et", "fi", "fo", "gl", "he", "iw", "it", "nb",
                 "nl", "nn", "no", "sv", "af", "bg", "bn", "ca", "eu", "fur", "fy", "gu", "ha", "is", "ku",
                 "lb", "ml", "mr", "nah", "ne", "om", "or", "pa", "pap", "ps", "so", "sq", "sw", "ta", "te",
-                "tk", "ur", "zu", "mn", "gsw", "chr", "rm", "pt"}, new PluralRules_One());
+                "tk", "ur", "zu", "mn", "gsw", "chr", "rm", "pt", "an", "ast"}, new PluralRules_One());
         addRules(new String[]{"cs", "sk"}, new PluralRules_Czech());
         addRules(new String[]{"ff", "fr", "kab"}, new PluralRules_French());
         addRules(new String[]{"hr", "ru", "sr", "uk", "be", "bs", "sh"}, new PluralRules_Balkan());
@@ -544,6 +545,9 @@ public class LocaleController {
                 currentLocale = newLocale;
                 currentLocaleInfo = localeInfo;
                 currentPluralRules = allRules.get(currentLocale.getLanguage());
+                if (currentPluralRules == null) {
+                    currentPluralRules = allRules.get("en");
+                }
                 changingConfiguration = true;
                 Locale.setDefault(currentLocale);
                 android.content.res.Configuration config = new android.content.res.Configuration();
@@ -570,6 +574,9 @@ public class LocaleController {
         String value = localeValues.get(key);
         if (value == null) {
             value = ApplicationLoader.applicationContext.getString(res);
+        }
+        if (value == null) {
+            value = "LOC_ERR:" + key;
         }
         return value;
     }
@@ -638,6 +645,9 @@ public class LocaleController {
                 }
                 currentLocale = newLocale;
                 currentPluralRules = allRules.get(currentLocale.getLanguage());
+                if (currentPluralRules == null) {
+                    currentPluralRules = allRules.get("en");
+                }
             }
         }
     }
@@ -695,6 +705,20 @@ public class LocaleController {
         }
     }
 
+    private FastDateFormat createFormatter(Locale locale, String format, String defaultFormat) {
+        if (format == null || format.length() == 0) {
+            format = defaultFormat;
+        }
+        FastDateFormat formatter = null;
+        try {
+            formatter = FastDateFormat.getInstance(format, locale);
+        } catch (Exception e) {
+            format = defaultFormat;
+            formatter = FastDateFormat.getInstance(format, locale);
+        }
+        return formatter;
+    }
+
     public void recreateFormatters() {
         Locale locale = currentLocale;
         if (locale == null) {
@@ -706,59 +730,15 @@ public class LocaleController {
         }
         isRTL = lang.toLowerCase().equals("ar");
         nameDisplayOrder = lang.toLowerCase().equals("ko") ? 2 : 1;
-        String formatString = getStringInternal("formatterMonth", R.string.formatterMonth);
-        if (formatString == null || formatString.length() == 0) {
-            formatString = "dd MMM";
-        }
-        formatterMonth = FastDateFormat.getInstance(formatString, locale);
 
-        formatString = getStringInternal("formatterYear", R.string.formatterYear);
-        if (formatString == null || formatString.length() == 0) {
-            formatString = "dd.MM.yy";
-        }
-        formatterYear = FastDateFormat.getInstance(formatString, locale);
-
-        formatString = getStringInternal("formatterYearMax", R.string.formatterYearMax);
-        if (formatString == null || formatString.length() == 0) {
-            formatString = "dd.MM.yyyy";
-        }
-        formatterYearMax = FastDateFormat.getInstance(formatString, locale);
-
-        formatString = getStringInternal("chatDate", R.string.chatDate);
-        if (formatString == null || formatString.length() == 0) {
-            formatString = "d MMMM";
-        }
-        chatDate = FastDateFormat.getInstance(formatString, locale);
-
-        formatString = getStringInternal("chatFullDate", R.string.chatFullDate);
-        if (formatString == null || formatString.length() == 0) {
-            formatString = "d MMMM yyyy";
-        }
-        chatFullDate = FastDateFormat.getInstance(formatString, locale);
-
-        formatString = getStringInternal("formatterWeek", R.string.formatterWeek);
-        if (formatString == null || formatString.length() == 0) {
-            formatString = "EEE";
-        }
-        formatterWeek = FastDateFormat.getInstance(formatString, locale);
-
-        if (is24HourFormat) {
-            formatString = getStringInternal("formatterDay24H", R.string.formatterDay24H);
-        } else {
-            formatString = getStringInternal("formatterDay12H", R.string.formatterDay12H);
-        }
-        if (formatString == null || formatString.length() == 0) {
-            if (is24HourFormat) {
-                formatString = "HH:mm";
-            } else {
-                formatString = "h:mm a";
-            }
-        }
-        if (lang.toLowerCase().equals("ar") || lang.toLowerCase().equals("ko")) {
-            formatterDay = FastDateFormat.getInstance(formatString, locale);
-        } else {
-            formatterDay = FastDateFormat.getInstance(formatString, Locale.US);
-        }
+        formatterMonth = createFormatter(locale, getStringInternal("formatterMonth", R.string.formatterMonth), "dd MMM");
+        formatterYear = createFormatter(locale, getStringInternal("formatterYear", R.string.formatterYear), "dd.MM.yy");
+        formatterYearMax = createFormatter(locale, getStringInternal("formatterYearMax", R.string.formatterYearMax), "dd.MM.yyyy");
+        chatDate = createFormatter(locale, getStringInternal("chatDate", R.string.chatDate), "d MMMM");
+        chatFullDate = createFormatter(locale, getStringInternal("chatFullDate", R.string.chatFullDate), "d MMMM yyyy");
+        formatterWeek = createFormatter(locale, getStringInternal("formatterWeek", R.string.formatterWeek), "EEE");
+        formatterMonthYear = createFormatter(locale, getStringInternal("formatterMonthYear", R.string.formatterMonthYear), "MMMM yyyy");
+        formatterDay = createFormatter(lang.toLowerCase().equals("ar") || lang.toLowerCase().equals("ko") ? locale : Locale.US, is24HourFormat ? getStringInternal("formatterDay24H", R.string.formatterDay24H) : getStringInternal("formatterDay12H", R.string.formatterDay12H), is24HourFormat ? "HH:mm" : "h:mm a");
     }
 
     public static String stringForMessageListDate(long date) {

@@ -41,7 +41,7 @@ public class BaseFragment {
         classGuid = ConnectionsManager.getInstance().generateClassGuid();
     }
 
-    public View createView(LayoutInflater inflater, ViewGroup container) {
+    public View createView(LayoutInflater inflater) {
         return null;
     }
 
@@ -76,7 +76,7 @@ public class BaseFragment {
             if (parentLayout != null) {
                 actionBar = new ActionBar(parentLayout.getContext());
                 actionBar.parentFragment = this;
-                actionBar.setBackgroundResource(R.color.header);
+                actionBar.setBackgroundColor(0xff54759e);
                 actionBar.setItemsBackground(R.drawable.bar_selector);
             }
         }

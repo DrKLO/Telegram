@@ -101,7 +101,7 @@ public class ChangePhoneActivity extends BaseFragment {
     }
 
     @Override
-    public View createView(LayoutInflater inflater, ViewGroup container) {
+    public View createView(LayoutInflater inflater) {
         if (fragmentView == null) {
             actionBar.setTitle(LocaleController.getString("AppName", R.string.AppName));
             actionBar.setBackButtonImage(R.drawable.ic_ab_back);
@@ -289,9 +289,9 @@ public class ChangePhoneActivity extends BaseFragment {
 
         private int countryState = 0;
 
-        private ArrayList<String> countriesArray = new ArrayList<String>();
-        private HashMap<String, String> countriesMap = new HashMap<String, String>();
-        private HashMap<String, String> codesMap = new HashMap<String, String>();
+        private ArrayList<String> countriesArray = new ArrayList<>();
+        private HashMap<String, String> countriesMap = new HashMap<>();
+        private HashMap<String, String> codesMap = new HashMap<>();
 
         private boolean ignoreSelection = false;
         private boolean ignoreOnTextChange = false;
@@ -533,7 +533,7 @@ public class ChangePhoneActivity extends BaseFragment {
             layoutParams.gravity = Gravity.LEFT;
             textView.setLayoutParams(layoutParams);
 
-            HashMap<String, String> languageMap = new HashMap<String, String>();
+            HashMap<String, String> languageMap = new HashMap<>();
             try {
                 BufferedReader reader = new BufferedReader(new InputStreamReader(getResources().getAssets().open("countries.txt")));
                 String line;
@@ -1013,7 +1013,7 @@ public class ChangePhoneActivity extends BaseFragment {
                                 destroyCodeTimer();
                                 UserConfig.setCurrentUser(user);
                                 UserConfig.saveConfig(true);
-                                ArrayList<TLRPC.User> users = new ArrayList<TLRPC.User>();
+                                ArrayList<TLRPC.User> users = new ArrayList<>();
                                 users.add(user);
                                 MessagesStorage.getInstance().putUsersAndChats(users, null, true, true);
                                 MessagesController.getInstance().putUser(user, false);

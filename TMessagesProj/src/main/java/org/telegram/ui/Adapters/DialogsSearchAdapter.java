@@ -215,6 +215,10 @@ public class DialogsSearchAdapter extends BaseContactsSearchAdapter {
                         cursor = MessagesStorage.getInstance().getDatabase().queryFinalized(String.format(Locale.US, "SELECT data, status, name FROM users WHERE uid IN(%s)", TextUtils.join(",", usersToLoad)));
                         while (cursor.next()) {
                             String name = cursor.stringValue(2);
+                            String tName = LocaleController.getInstance().getTranslitString(name);
+                            if (name.equals(tName)) {
+                                tName = null;
+                            }
                             String username = null;
                             int usernamePos = name.lastIndexOf(";;;");
                             if (usernamePos != -1) {
@@ -222,7 +226,7 @@ public class DialogsSearchAdapter extends BaseContactsSearchAdapter {
                             }
                             int found = 0;
                             for (String q : search) {
-                                if (name.startsWith(q) || name.contains(" " + q)) {
+                                if (name.startsWith(q) || name.contains(" " + q) || tName != null && (tName.startsWith(q) || tName.contains(" " + q))) {
                                     found = 1;
                                 } else if (username != null && username.startsWith(q)) {
                                     found = 2;
@@ -257,8 +261,12 @@ public class DialogsSearchAdapter extends BaseContactsSearchAdapter {
                         cursor = MessagesStorage.getInstance().getDatabase().queryFinalized(String.format(Locale.US, "SELECT data, name FROM chats WHERE uid IN(%s)", TextUtils.join(",", chatsToLoad)));
                         while (cursor.next()) {
                             String name = cursor.stringValue(1);
+                            String tName = LocaleController.getInstance().getTranslitString(name);
+                            if (name.equals(tName)) {
+                                tName = null;
+                            }
                             for (String q : search) {
-                                if (name.startsWith(q) || name.contains(" " + q)) {
+                                if (name.startsWith(q) || name.contains(" " + q) || tName != null && (tName.startsWith(q) || tName.contains(" " + q))) {
                                     ByteBufferDesc data = MessagesStorage.getInstance().getBuffersStorage().getFreeBuffer(cursor.byteArrayLength(0));
                                     if (data != null && cursor.byteBufferValue(0, data.buffer) != 0) {
                                         TLRPC.Chat chat = (TLRPC.Chat) TLClassStore.Instance().TLdeserialize(data, data.readInt32());
@@ -285,6 +293,10 @@ public class DialogsSearchAdapter extends BaseContactsSearchAdapter {
                         cursor = MessagesStorage.getInstance().getDatabase().queryFinalized(String.format(Locale.US, "SELECT q.data, u.name, q.user, q.g, q.authkey, q.ttl, u.data, u.status, q.layer, q.seq_in, q.seq_out, q.use_count, q.exchange_id, q.key_date, q.fprint, q.fauthkey, q.khash FROM enc_chats as q INNER JOIN users as u ON q.user = u.uid WHERE q.uid IN(%s)", TextUtils.join(",", encryptedToLoad)));
                         while (cursor.next()) {
                             String name = cursor.stringValue(1);
+                            String tName = LocaleController.getInstance().getTranslitString(name);
+                            if (name.equals(tName)) {
+                                tName = null;
+                            }
 
                             String username = null;
                             int usernamePos = name.lastIndexOf(";;;");
@@ -293,7 +305,7 @@ public class DialogsSearchAdapter extends BaseContactsSearchAdapter {
                             }
                             int found = 0;
                             for (String q : search) {
-                                if (name.startsWith(q) || name.contains(" " + q)) {
+                                if (name.startsWith(q) || name.contains(" " + q) || tName != null && (tName.startsWith(q) || tName.contains(" " + q))) {
                                     found = 1;
                                 } else if (username != null && username.startsWith(q)) {
                                     found = 2;
@@ -378,6 +390,10 @@ public class DialogsSearchAdapter extends BaseContactsSearchAdapter {
                             continue;
                         }
                         String name = cursor.stringValue(2);
+                        String tName = LocaleController.getInstance().getTranslitString(name);
+                        if (name.equals(tName)) {
+                            tName = null;
+                        }
                         String username = null;
                         int usernamePos = name.lastIndexOf(";;;");
                         if (usernamePos != -1) {
@@ -385,7 +401,7 @@ public class DialogsSearchAdapter extends BaseContactsSearchAdapter {
                         }
                         int found = 0;
                         for (String q : search) {
-                            if (name.startsWith(q) || name.contains(" " + q)) {
+                            if (name.startsWith(q) || name.contains(" " + q) || tName != null && (tName.startsWith(q) || tName.contains(" " + q))) {
                                 found = 1;
                             } else if (username != null && username.startsWith(q)) {
                                 found = 2;
@@ -618,7 +634,7 @@ public class DialogsSearchAdapter extends BaseContactsSearchAdapter {
             }
             ((DialogCell) view).useSeparator = (i != getCount() - 1);
             MessageObject messageObject = (MessageObject)getItem(i);
-            ((DialogCell) view).setDialog(messageObject.getDialogId(), messageObject, false, messageObject.messageOwner.date, 0, false);
+            ((DialogCell) view).setDialog(messageObject.getDialogId(), messageObject, messageObject.messageOwner.date);
         } else if (type == 3) {
             if (view == null) {
                 view = new LoadingCell(mContext);

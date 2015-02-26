@@ -303,6 +303,12 @@ public class PhotoCropActivity extends BaseFragment {
             int y = (int)(percY * imageToCrop.getHeight());
             int sizeX = (int)(percSizeX * imageToCrop.getWidth());
             int sizeY = (int)(percSizeY * imageToCrop.getWidth());
+            if (x < 0) {
+                x = 0;
+            }
+            if (y < 0) {
+                y = 0;
+            }
             if (x + sizeX > imageToCrop.getWidth()) {
                 sizeX = imageToCrop.getWidth() - x;
             }
@@ -426,7 +432,7 @@ public class PhotoCropActivity extends BaseFragment {
     }
 
     @Override
-    public View createView(LayoutInflater inflater, ViewGroup container) {
+    public View createView(LayoutInflater inflater) {
         if (fragmentView == null) {
             actionBar.setBackgroundColor(0xff333333);
             actionBar.setItemsBackground(R.drawable.bar_selector_picker);
