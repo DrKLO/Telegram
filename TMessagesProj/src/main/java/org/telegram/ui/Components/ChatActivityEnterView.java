@@ -144,20 +144,20 @@ public class ChatActivityEnterView extends LinearLayout implements NotificationC
         layoutParams.weight = 1;
         frameLayout.setLayoutParams(layoutParams);
 
-        /*
+
         emojiButton = new ImageView(context);
         emojiButton.setImageResource(R.drawable.ic_msg_panel_smiles);
         emojiButton.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
         emojiButton.setPadding(AndroidUtilities.dp(4), AndroidUtilities.dp(1), 0, 0);
         frameLayout.addView(emojiButton);
-        */
+
         FrameLayout.LayoutParams layoutParams1 = (FrameLayout.LayoutParams) emojiButton.getLayoutParams();
         layoutParams1.width = AndroidUtilities.dp(48);
         layoutParams1.height = AndroidUtilities.dp(48);
         layoutParams1.gravity = Gravity.BOTTOM;
         layoutParams1.topMargin = AndroidUtilities.dp(2);
-        /*
         emojiButton.setLayoutParams(layoutParams1);
+        /*
         emojiButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {

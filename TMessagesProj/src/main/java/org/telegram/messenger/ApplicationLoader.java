@@ -29,6 +29,7 @@ import android.os.PowerManager;
 
 import com.aniways.Aniways;
 import com.aniways.Utils;
+import com.aniways.anigram.messenger.R;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GooglePlayServicesUtil;
 import com.google.android.gms.gcm.GoogleCloudMessaging;
