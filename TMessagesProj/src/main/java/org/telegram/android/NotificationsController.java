@@ -849,7 +849,7 @@ public class NotificationsController {
             notifyCheck = isLast;
         }
 
-        if (!popupMessages.isEmpty() && oldCount != popupMessages.size() && !AndroidUtilities.needShowPasscode(false)) {
+        if (!popupMessages.isEmpty() && oldCount != popupMessages.size() && !AndroidUtilities.needShowPasscode(false) && !UserConfig.isWaitingForPasscodeEnter) {
             if (ApplicationLoader.mainInterfacePaused || !ApplicationLoader.isScreenOn) {
                 MessageObject messageObject = messageObjects.get(0);
                 if (popup == 3 || popup == 1 && ApplicationLoader.isScreenOn || popup == 2 && !ApplicationLoader.isScreenOn) {

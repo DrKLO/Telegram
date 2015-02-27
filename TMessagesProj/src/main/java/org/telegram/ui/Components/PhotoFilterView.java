@@ -72,6 +72,7 @@ public class PhotoFilterView extends FrameLayout {
     private int shadowsTool = 6;
     private int vignetteTool = 7;
     private int grainTool = 8;
+    private int blurTool = -1;
     private int sharpenTool = 9;
 
     private float highlightsValue = 0; //0 100
@@ -1029,6 +1030,10 @@ public class PhotoFilterView extends FrameLayout {
         orientation = rotation;
 
         textureView = new TextureView(context);
+        if (Build.VERSION.SDK_INT == 14 || Build.VERSION.SDK_INT == 15) {
+            //setLayerType(LAYER_TYPE_HARDWARE, null);
+            //textureView.setLayerType(LAYER_TYPE_HARDWARE, null);
+        }
         addView(textureView);
         textureView.setVisibility(INVISIBLE);
         LayoutParams layoutParams = (LayoutParams) textureView.getLayoutParams();
@@ -1177,10 +1182,12 @@ public class PhotoFilterView extends FrameLayout {
                     previousValue = grainValue;
                     valueSeekBar.setMinMax(0, 100);
                     paramTextView.setText(LocaleController.getString("Grain", R.string.Grain));
-                }  else if (i == sharpenTool) {
+                } else if (i == sharpenTool) {
                     previousValue = sharpenValue;
                     valueSeekBar.setMinMax(0, 100);
                     paramTextView.setText(LocaleController.getString("Sharpen", R.string.Sharpen));
+                } else if (i == blurTool) {
+
                 }
                 valueSeekBar.setProgress((int) previousValue, false);
                 updateValueTextView();
@@ -1240,7 +1247,9 @@ public class PhotoFilterView extends FrameLayout {
                 } else if (selectedTool == sharpenTool) {
                     sharpenValue = previousValue;
                 }
-                eglThread.requestRender();
+                if (eglThread != null) {
+                    eglThread.requestRender();
+                }
                 switchToOrFromEditMode();
             }
         });
@@ -1447,10 +1456,7 @@ public class PhotoFilterView extends FrameLayout {
     }
 
     public Bitmap getBitmap() {
-        if(eglThread == null){
-            return null;
-        }
-        return eglThread.getTexture();
+        return eglThread != null ? eglThread.getTexture() : null;
     }
 
     private void fixLayout(int viewWidth, int viewHeight) {
@@ -1645,6 +1651,8 @@ public class PhotoFilterView extends FrameLayout {
                 ((PhotoEditToolCell) holder.itemView).setIconAndTextAndValue(R.drawable.tool_grain, LocaleController.getString("Grain", R.string.Grain), grainValue);
             } else if (i == sharpenTool) {
                 ((PhotoEditToolCell) holder.itemView).setIconAndTextAndValue(R.drawable.tool_details, LocaleController.getString("Sharpen", R.string.Sharpen), sharpenValue);
+            } else if (i == blurTool) {
+                ((PhotoEditToolCell) holder.itemView).setIconAndTextAndValue(R.drawable.tool_details, LocaleController.getString("Blur", R.string.Blur), 0); //TODO add value
             }
         }
     }

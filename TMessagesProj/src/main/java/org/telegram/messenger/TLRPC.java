@@ -16,7 +16,7 @@ public class TLRPC {
 
     public static final int MESSAGE_FLAG_UNREAD = 1;
     public static final int MESSAGE_FLAG_OUT = 2;
-    public static final int LAYER = 22;
+    public static final int LAYER = 23;
 
     public static class ChatPhoto extends TLObject {
         public FileLocation photo_small;
@@ -3743,6 +3743,24 @@ public class TLRPC {
         }
     }
 
+    public static class TL_disabledFeature extends TLObject {
+        public static int constructor = 0xae636f24;
+
+        public String feature;
+        public String description;
+
+        public void readParams(AbsSerializedData stream) {
+            feature = stream.readString();
+            description = stream.readString();
+        }
+
+        public void serializeToStream(AbsSerializedData stream) {
+            stream.writeInt32(constructor);
+            stream.writeString(feature);
+            stream.writeString(description);
+        }
+    }
+
     public static class TL_futureSalt extends TLObject {
         public static int constructor = 0x0949d9dc;
 
@@ -5023,17 +5041,21 @@ public class TLRPC {
     }
 
     public static class TL_config extends TLObject {
-        public static int constructor = 0x2e54dd74;
+        public static int constructor = 0x7dae33e0;
 
         public int date;
+        public int expires;
         public boolean test_mode;
         public int this_dc;
         public ArrayList<TL_dcOption> dc_options = new ArrayList<>();
+        public int chat_big_size;
         public int chat_size_max;
         public int broadcast_size_max;
+        public ArrayList<TL_disabledFeature> disabled_features = new ArrayList<>();
 
         public void readParams(AbsSerializedData stream) {
             date = stream.readInt32();
+            expires = stream.readInt32();
             test_mode = stream.readBool();
             this_dc = stream.readInt32();
             stream.readInt32();
@@ -5041,23 +5063,37 @@ public class TLRPC {
             for (int a = 0; a < count; a++) {
                 dc_options.add((TL_dcOption)TLClassStore.Instance().TLdeserialize(stream, stream.readInt32()));
             }
+            chat_big_size = stream.readInt32();
             chat_size_max = stream.readInt32();
             broadcast_size_max = stream.readInt32();
+            stream.readInt32();
+            count = stream.readInt32();
+            for (int a = 0; a < count; a++) {
+                disabled_features.add((TL_disabledFeature)TLClassStore.Instance().TLdeserialize(stream, stream.readInt32()));
+            }
         }
 
         public void serializeToStream(AbsSerializedData stream) {
             stream.writeInt32(constructor);
             stream.writeInt32(date);
+            stream.writeInt32(expires);
             stream.writeBool(test_mode);
             stream.writeInt32(this_dc);
             stream.writeInt32(0x1cb5c415);
             int count = dc_options.size();
             stream.writeInt32(count);
-            for (TL_dcOption dc_option : dc_options) {
-                dc_option.serializeToStream(stream);
+            for (int a = 0; a < count; a++) {
+                dc_options.get(a).serializeToStream(stream);
             }
+            stream.writeInt32(chat_big_size);
             stream.writeInt32(chat_size_max);
             stream.writeInt32(broadcast_size_max);
+            stream.writeInt32(0x1cb5c415);
+            count = disabled_features.size();
+            stream.writeInt32(count);
+            for (int a = 0; a < count; a++) {
+                disabled_features.get(a).serializeToStream(stream);
+            }
         }
     }
 
@@ -9297,6 +9333,40 @@ public class TLRPC {
     }
 
     //manually created
+
+    public static class TL_config_old extends TL_config {
+        public static int constructor = 0x2e54dd74;
+
+        public void readParams(AbsSerializedData stream) {
+            date = stream.readInt32();
+            test_mode = stream.readBool();
+            this_dc = stream.readInt32();
+            stream.readInt32();
+            int count = stream.readInt32();
+            for (int a = 0; a < count; a++) {
+                dc_options.add((TL_dcOption) TLClassStore.Instance().TLdeserialize(stream, stream.readInt32()));
+            }
+            chat_size_max = stream.readInt32();
+            broadcast_size_max = stream.readInt32();
+            expires = (int) (System.currentTimeMillis() / 1000) + 3600;
+            chat_big_size = 10;
+        }
+
+        public void serializeToStream(AbsSerializedData stream) {
+            stream.writeInt32(constructor);
+            stream.writeInt32(date);
+            stream.writeBool(test_mode);
+            stream.writeInt32(this_dc);
+            stream.writeInt32(0x1cb5c415);
+            int count = dc_options.size();
+            stream.writeInt32(count);
+            for (TL_dcOption dc_option : dc_options) {
+                dc_option.serializeToStream(stream);
+            }
+            stream.writeInt32(chat_size_max);
+            stream.writeInt32(broadcast_size_max);
+        }
+    }
 
     public static class TL_document_old extends TL_document {
         public static int constructor = 0x9efc6326;

@@ -1875,7 +1875,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             canShowBottom = false;
             Object obj = imagesArrLocals.get(index);
             cropItem.setVisibility(obj instanceof MediaController.PhotoEntry || obj instanceof MediaController.SearchImage && ((MediaController.SearchImage) obj).type == 0 ? View.VISIBLE : View.GONE);
-            if (Build.VERSION.SDK_INT >= 14) {
+            if (Build.VERSION.SDK_INT >= 16) {
                 tuneItem.setVisibility(cropItem.getVisibility());
             }
             updateSelectedCount();
@@ -2313,12 +2313,10 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         }
 
         try {
-            if (windowView.getParent() != null) {
-                WindowManager wm = (WindowManager) parentActivity.getSystemService(Context.WINDOW_SERVICE);
-                wm.removeView(windowView);
-            }
+            WindowManager wm = (WindowManager) parentActivity.getSystemService(Context.WINDOW_SERVICE);
+            wm.removeView(windowView);
         } catch (Exception e) {
-            FileLog.e("tmessages", e);
+            //don't promt
         }
 
         WindowManager wm = (WindowManager) parentActivity.getSystemService(Context.WINDOW_SERVICE);

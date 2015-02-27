@@ -544,6 +544,7 @@ public class ChangePhoneActivity extends BaseFragment {
                     codesMap.put(args[0], args[2]);
                     languageMap.put(args[1], args[2]);
                 }
+                reader.close();
             } catch (Exception e) {
                 FileLog.e("tmessages", e);
             }

@@ -568,4 +568,18 @@ public class AndroidUtilities {
         return UserConfig.passcodeHash.length() > 0 && wasInBackground &&
                 (UserConfig.appLocked || UserConfig.autoLockIn != 0 && UserConfig.lastPauseTime != 0 && !UserConfig.appLocked && (UserConfig.lastPauseTime + UserConfig.autoLockIn) <= ConnectionsManager.getInstance().getCurrentTime());
     }
+
+    /*public static void turnOffHardwareAcceleration(Window window) {
+        if (window == null || Build.MODEL == null || Build.VERSION.SDK_INT < 11) {
+            return;
+        }
+        if (Build.MODEL.contains("GT-S5301") ||
+                Build.MODEL.contains("GT-S5303") ||
+                Build.MODEL.contains("GT-B5330") ||
+                Build.MODEL.contains("GT-S5302") ||
+                Build.MODEL.contains("GT-S6012B") ||
+                Build.MODEL.contains("MegaFon_SP-AI")) {
+            window.clearFlags(WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED);
+        }
+    }*/
 }

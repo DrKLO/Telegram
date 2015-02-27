@@ -64,6 +64,7 @@ import org.telegram.messenger.RPCRequest;
 import org.telegram.messenger.TLObject;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.UserConfig;
+import org.telegram.messenger.Utilities;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.BaseFragment;
@@ -709,6 +710,7 @@ public class LoginActivity extends BaseFragment {
                     codesMap.put(args[0], args[2]);
                     languageMap.put(args[1], args[2]);
                 }
+                reader.close();
             } catch (Exception e) {
                 FileLog.e("tmessages", e);
             }
@@ -1304,6 +1306,12 @@ public class LoginActivity extends BaseFragment {
                                     MessagesController.getInstance().getBlockedUsers(true);
                                     needFinishActivity();
                                     ConnectionsManager.getInstance().initPushConnection();
+                                    Utilities.stageQueue.postRunnable(new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            ConnectionsManager.getInstance().updateDcSettings(0);
+                                        }
+                                    });
                                 } else {
                                     lastError = error.text;
 
@@ -1649,6 +1657,12 @@ public class LoginActivity extends BaseFragment {
                                     MessagesController.getInstance().getBlockedUsers(true);
                                     needFinishActivity();
                                     ConnectionsManager.getInstance().initPushConnection();
+                                    Utilities.stageQueue.postRunnable(new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            ConnectionsManager.getInstance().updateDcSettings(0);
+                                        }
+                                    });
                                 } else {
                                     if (error.text.contains("PHONE_NUMBER_INVALID")) {
                                         needShowAlert(LocaleController.getString("InvalidPhoneNumber", R.string.InvalidPhoneNumber));

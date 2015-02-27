@@ -488,7 +488,7 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
             filterArray[0] = new InputFilter.LengthFilter(4);
             passwordEditText.setFilters(filterArray);
             passwordEditText.setInputType(InputType.TYPE_CLASS_PHONE);
-            passwordEditText.setKeyListener(DigitsKeyListener.getInstance("123456789"));
+            passwordEditText.setKeyListener(DigitsKeyListener.getInstance("1234567890"));
         } else if (type == 1 && currentPasswordType == 1 || type == 2 && UserConfig.passcodeType == 1) {
             passwordEditText.setFilters(new InputFilter[0]);
             passwordEditText.setKeyListener(null);

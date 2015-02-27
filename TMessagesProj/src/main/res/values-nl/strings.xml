@@ -298,6 +298,8 @@
     <string name="ChangePhoneHelp">We sturen een sms-bericht met verificatiecode naar je nieuwe nummer.</string>
     <string name="ChangePhoneNumberOccupied">Aan telefoonnummer %1$s is al een Telegram-account gekoppeld. Verwijder het account om te kunnen migreren naar het nieuwe nummer.</string>
     <string name="NotificationsOther">Overig</string>
+    <string name="NotificationsDisabled">Uitgeschakeld</string>
+    <string name="VibrationDisabled">Uitgeschakeld</string>
     <!--passcode view-->
     <string name="Passcode">Toegangscode</string>
     <string name="ChangePasscode">Toegangscode wijzigen</string>
