@@ -267,6 +267,9 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 if (position == 2) {
+                    if (!MessagesController.isFeatureEnabled("chat_create", actionBarLayout.fragmentsStack.get(actionBarLayout.fragmentsStack.size() - 1))) {
+                        return;
+                    }
                     presentFragment(new GroupCreateActivity());
                     drawerLayoutContainer.closeDrawer(false);
                 } else if (position == 3) {
@@ -277,6 +280,9 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                     presentFragment(new ContactsActivity(args));
                     drawerLayoutContainer.closeDrawer(false);
                 } else if (position == 4) {
+                    if (!MessagesController.isFeatureEnabled("broadcast_create", actionBarLayout.fragmentsStack.get(actionBarLayout.fragmentsStack.size() - 1))) {
+                        return;
+                    }
                     Bundle args = new Bundle();
                     args.putBoolean("broadcast", true);
                     presentFragment(new GroupCreateActivity(args));
@@ -546,6 +552,12 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                                                 phones.add(phone);
                                             }
                                         }
+                                    }
+                                    try {
+                                        bufferedReader.close();
+                                        stream.close();
+                                    } catch (Exception e) {
+                                        FileLog.e("tmessages", e);
                                     }
                                     if (name != null && !phones.isEmpty()) {
                                         contactsToSend = new ArrayList<>();

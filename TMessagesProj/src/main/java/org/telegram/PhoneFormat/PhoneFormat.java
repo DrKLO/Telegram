@@ -25,6 +25,7 @@
 package org.telegram.PhoneFormat;
 
 import org.telegram.messenger.ApplicationLoader;
+import org.telegram.messenger.FileLog;
 
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
@@ -97,9 +98,11 @@ public class PhoneFormat {
     }
 
     public void init(String countryCode) {
+        InputStream stream = null;
+        ByteArrayOutputStream bos = null;
         try {
-            InputStream stream = ApplicationLoader.applicationContext.getAssets().open("PhoneFormats.dat");
-            ByteArrayOutputStream bos = new ByteArrayOutputStream();
+            stream = ApplicationLoader.applicationContext.getAssets().open("PhoneFormats.dat");
+            bos = new ByteArrayOutputStream();
             byte[] buf = new byte[1024];
             int len;
             while ((len = stream.read(buf, 0, 1024)) != -1) {
@@ -111,6 +114,21 @@ public class PhoneFormat {
         } catch (Exception e) {
             e.printStackTrace();
             return;
+        } finally {
+            try {
+                if (bos != null) {
+                    bos.close();
+                }
+            } catch (Exception e) {
+                FileLog.e("tmessages", e);
+            }
+            try {
+                if (stream != null) {
+                    stream.close();
+                }
+            } catch (Exception e) {
+                FileLog.e("tmessages", e);
+            }
         }
 
         if (countryCode != null && countryCode.length() != 0) {
@@ -119,10 +137,10 @@ public class PhoneFormat {
             Locale loc = Locale.getDefault();
             defaultCountry = loc.getCountry().toLowerCase();
         }
-        callingCodeOffsets = new HashMap<String, Integer>(255);
-        callingCodeCountries = new HashMap<String, ArrayList<String>>(255);
-        callingCodeData = new HashMap<String, CallingCodeInfo>(10);
-        countryCallingCode = new HashMap<String, String>(255);
+        callingCodeOffsets = new HashMap<>(255);
+        callingCodeCountries = new HashMap<>(255);
+        callingCodeData = new HashMap<>(10);
+        countryCallingCode = new HashMap<>(255);
 
         parseDataHeader();
         initialzed = true;
@@ -293,7 +311,7 @@ public class PhoneFormat {
 
                 offset += 2;
 
-                ArrayList<String> strs = new ArrayList<String>(5);
+                ArrayList<String> strs = new ArrayList<>(5);
                 String str;
                 while ((str = valueString(offset)).length() != 0) {
                     strs.add(str);
@@ -302,14 +320,14 @@ public class PhoneFormat {
                 res.trunkPrefixes = strs;
                 offset++;
 
-                strs = new ArrayList<String>(5);
+                strs = new ArrayList<>(5);
                 while ((str = valueString(offset)).length() != 0) {
                     strs.add(str);
                     offset += str.length() + 1;
                 }
                 res.intlPrefixes = strs;
 
-                ArrayList<RuleSet> ruleSets = new ArrayList<RuleSet>(setCnt);
+                ArrayList<RuleSet> ruleSets = new ArrayList<>(setCnt);
                 offset = start + block1Len;
                 for (int s = 0; s < setCnt; s++) {
                     RuleSet ruleSet = new RuleSet();
@@ -317,7 +335,7 @@ public class PhoneFormat {
                     offset += 2;
                     int ruleCnt = value16(offset);
                     offset += 2;
-                    ArrayList<PhoneRule> rules = new ArrayList<PhoneRule>(ruleCnt);
+                    ArrayList<PhoneRule> rules = new ArrayList<>(ruleCnt);
                     for (int r = 0; r < ruleCnt; r++) {
                         PhoneRule rule = new PhoneRule();
                         rule.minVal = value32(offset);
@@ -380,7 +398,7 @@ public class PhoneFormat {
             callingCodeOffsets.put(callingCode, offset);
             ArrayList<String> countries = callingCodeCountries.get(callingCode);
             if (countries == null) {
-                countries = new ArrayList<String>();
+                countries = new ArrayList<>();
                 callingCodeCountries.put(callingCode, countries);
             }
             countries.add(country);

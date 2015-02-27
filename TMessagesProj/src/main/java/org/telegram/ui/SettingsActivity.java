@@ -791,6 +791,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                             if (supportUser != null && supportUser.id == 333000) {
                                 supportUser = null;
                             }
+                            data.cleanup();
                         }
                     } catch (Exception e) {
                         FileLog.e("tmessages", e);
@@ -821,6 +822,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                                 res.user.serializeToStream(data);
                                 editor.putString("support_user", Base64.encodeToString(data.toByteArray(), Base64.DEFAULT));
                                 editor.commit();
+                                data.cleanup();
                                 try {
                                     progressDialog.dismiss();
                                 } catch (Exception e) {
@@ -1001,13 +1003,15 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         }
         AvatarDrawable avatarDrawable = new AvatarDrawable(user, true);
         avatarDrawable.setColor(0xff5c98cd);
-        avatarImage.setImage(photo, "50_50", avatarDrawable);
-        avatarImage.imageReceiver.setVisible(!PhotoViewer.getInstance().isShowingImage(photoBig), false);
+        if (avatarImage != null) {
+            avatarImage.setImage(photo, "50_50", avatarDrawable);
+            avatarImage.imageReceiver.setVisible(!PhotoViewer.getInstance().isShowingImage(photoBig), false);
 
-        nameTextView.setText(ContactsController.formatName(user.first_name, user.last_name));
-        onlineTextView.setText(LocaleController.getString("Online", R.string.Online));
+            nameTextView.setText(ContactsController.formatName(user.first_name, user.last_name));
+            onlineTextView.setText(LocaleController.getString("Online", R.string.Online));
 
-        avatarImage.imageReceiver.setVisible(!PhotoViewer.getInstance().isShowingImage(photoBig), false);
+            avatarImage.imageReceiver.setVisible(!PhotoViewer.getInstance().isShowingImage(photoBig), false);
+        }
     }
 
     private void sendLogs() {

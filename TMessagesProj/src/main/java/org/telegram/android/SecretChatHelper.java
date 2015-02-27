@@ -1777,6 +1777,10 @@ public class SecretChatHelper {
                 }
             }
         });
-        progressDialog.show();
+        try {
+            progressDialog.show();
+        } catch (Exception e) {
+            //don't promt
+        }
     }
 }

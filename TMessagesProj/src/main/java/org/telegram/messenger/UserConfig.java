@@ -80,6 +80,7 @@ public class UserConfig {
                         currentUser.serializeToStream(data);
                         String userString = Base64.encodeToString(data.toByteArray(), Base64.DEFAULT);
                         editor.putString("user", userString);
+                        data.cleanup();
                     }
                 } else {
                     editor.remove("user");
@@ -184,6 +185,7 @@ public class UserConfig {
                     if (lastSendMessageId > -210000) {
                         lastSendMessageId = -210000;
                     }
+                    data.cleanup();
                     Utilities.stageQueue.postRunnable(new Runnable() {
                         @Override
                         public void run() {
@@ -218,6 +220,7 @@ public class UserConfig {
                     if (userBytes != null) {
                         SerializedData data = new SerializedData(userBytes);
                         currentUser = (TLRPC.TL_userSelf)TLClassStore.Instance().TLdeserialize(data, data.readInt32());
+                        data.cleanup();
                     }
                 }
             }

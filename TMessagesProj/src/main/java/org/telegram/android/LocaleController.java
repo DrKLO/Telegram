@@ -444,10 +444,12 @@ public class LocaleController {
     }
 
     private HashMap<String, String> getLocaleFileStrings(File file) {
+        FileInputStream stream = null;
         try {
             HashMap<String, String> stringMap = new HashMap<>();
             XmlPullParser parser = Xml.newPullParser();
-            parser.setInput(new FileInputStream(file), "UTF-8");
+            stream = new FileInputStream(file);
+            parser.setInput(stream, "UTF-8");
             int eventType = parser.getEventType();
             String name = null;
             String value = null;
@@ -484,6 +486,15 @@ public class LocaleController {
             return stringMap;
         } catch (Exception e) {
             FileLog.e("tmessages", e);
+        } finally {
+            try {
+                if (stream != null) {
+                    stream.close();
+                    stream = null;
+                }
+            } catch (Exception e) {
+                FileLog.e("tmessages", e);
+            }
         }
         return null;
     }
