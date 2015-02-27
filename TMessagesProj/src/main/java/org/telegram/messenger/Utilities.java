@@ -39,7 +39,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.security.KeyFactory;
 import java.security.MessageDigest;
 import java.security.PublicKey;
@@ -97,6 +96,7 @@ public class Utilities {
                     for (int a = 0; a < count; a++) {
                         goodPrimes.add(data.readString());
                     }
+                    data.cleanup();
                 }
             } catch (Exception e) {
                 FileLog.e("tmessages", e);
@@ -229,6 +229,7 @@ public class Utilities {
                         data.writeString(pr);
                     }
                     byte[] bytes = data.toByteArray();
+                    data.cleanup();
                     SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("primes", Context.MODE_PRIVATE);
                     SharedPreferences.Editor editor = preferences.edit();
                     editor.putString("primes", Base64.encodeToString(bytes, Base64.DEFAULT));
@@ -364,35 +365,41 @@ public class Utilities {
         data.writeRaw(messageKey);
         data.writeRaw(authKey, x, 32);
         byte[] sha1_a = Utilities.computeSHA1(data.toByteArray());
+        data.cleanup();
 
         data = new SerializedData();
         data.writeRaw(authKey, 32 + x, 16);
         data.writeRaw(messageKey);
         data.writeRaw(authKey, 48 + x, 16);
         byte[] sha1_b = Utilities.computeSHA1(data.toByteArray());
+        data.cleanup();
 
         data = new SerializedData();
         data.writeRaw(authKey, 64 + x, 32);
         data.writeRaw(messageKey);
         byte[] sha1_c = Utilities.computeSHA1(data.toByteArray());
+        data.cleanup();
 
         data = new SerializedData();
         data.writeRaw(messageKey);
         data.writeRaw(authKey, 96 + x, 32);
         byte[] sha1_d = Utilities.computeSHA1(data.toByteArray());
+        data.cleanup();
 
-        SerializedData aesKey = new SerializedData();
-        aesKey.writeRaw(sha1_a, 0, 8);
-        aesKey.writeRaw(sha1_b, 8, 12);
-        aesKey.writeRaw(sha1_c, 4, 12);
-        keyData.aesKey = aesKey.toByteArray();
+        data = new SerializedData();
+        data.writeRaw(sha1_a, 0, 8);
+        data.writeRaw(sha1_b, 8, 12);
+        data.writeRaw(sha1_c, 4, 12);
+        keyData.aesKey = data.toByteArray();
+        data.cleanup();
 
-        SerializedData aesIv = new SerializedData();
-        aesIv.writeRaw(sha1_a, 8, 12);
-        aesIv.writeRaw(sha1_b, 0, 8);
-        aesIv.writeRaw(sha1_c, 16, 4);
-        aesIv.writeRaw(sha1_d, 0, 8);
-        keyData.aesIv = aesIv.toByteArray();
+        data = new SerializedData();
+        data.writeRaw(sha1_a, 8, 12);
+        data.writeRaw(sha1_b, 0, 8);
+        data.writeRaw(sha1_c, 16, 4);
+        data.writeRaw(sha1_d, 0, 8);
+        keyData.aesIv = data.toByteArray();
+        data.cleanup();
 
         return keyData;
     }
@@ -409,10 +416,25 @@ public class Utilities {
             while ((bytesRead = gis.read(data)) != -1) {
                 bytesOutput.write(data, 0, bytesRead);
             }
-            gis.close();
-            is.close();
+            try {
+                gis.close();
+            } catch (Exception e) {
+                FileLog.e("tmessages", e);
+            }
+            try {
+                is.close();
+            } catch (Exception e) {
+                FileLog.e("tmessages", e);
+            }
             SerializedData stream = new SerializedData(bytesOutput.toByteArray());
-            return TLClassStore.Instance().TLdeserialize(stream, stream.readInt32(), parentObject);
+            try {
+                bytesOutput.close();
+            } catch (Exception e) {
+                FileLog.e("tmessages", e);
+            }
+            TLObject object = TLClassStore.Instance().TLdeserialize(stream, stream.readInt32(), parentObject);
+            stream.cleanup();
+            return object;
         } catch (IOException e) {
             FileLog.e("tmessages", e);
         }
@@ -433,6 +455,12 @@ public class Utilities {
             packedData = bytesStream.toByteArray();
         } catch (IOException e) {
             FileLog.e("tmessages", e);
+        } finally {
+            try {
+                bytesStream.close();
+            } catch (Exception e) {
+                FileLog.e("tmessages", e);
+            }
         }
         return packedData;
     }
@@ -450,23 +478,23 @@ public class Utilities {
     }
 
     public static boolean copyFile(File sourceFile, File destFile) throws IOException {
-        if(!destFile.exists()) {
+        if (!destFile.exists()) {
             destFile.createNewFile();
         }
-        FileChannel source = null;
-        FileChannel destination = null;
+        FileInputStream source = null;
+        FileOutputStream destination = null;
         try {
-            source = new FileInputStream(sourceFile).getChannel();
-            destination = new FileOutputStream(destFile).getChannel();
-            destination.transferFrom(source, 0, source.size());
+            source = new FileInputStream(sourceFile);
+            destination = new FileOutputStream(destFile);
+            destination.getChannel().transferFrom(source.getChannel(), 0, source.getChannel().size());
         } catch (Exception e) {
             FileLog.e("tmessages", e);
             return false;
         } finally {
-            if(source != null) {
+            if (source != null) {
                 source.close();
             }
-            if(destination != null) {
+            if (destination != null) {
                 destination.close();
             }
         }
@@ -712,7 +740,13 @@ public class Utilities {
                 buffer.write(b);
             }
         }
-        return buffer.toByteArray();
+        byte[] array = buffer.toByteArray();
+        try {
+            buffer.close();
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
+        return array;
     }
 
     public static void checkForCrashes(Activity context) {

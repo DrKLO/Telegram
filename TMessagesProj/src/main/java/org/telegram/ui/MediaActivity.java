@@ -793,7 +793,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
             emptyImageView.setVisibility(View.VISIBLE);
             if (selectedMode == 0) {
                 listView.setAdapter(photoVideoAdapter);
-                dropDown.setText(LocaleController.getString("SharedMedia", R.string.SharedMedia));
+                dropDown.setText(LocaleController.getString("SharedMediaTitle", R.string.SharedMediaTitle));
                 emptyImageView.setImageResource(R.drawable.tip1);
                 emptyTextView.setText(LocaleController.getString("NoMedia", R.string.NoMedia));
                 searchItem.setVisibility(View.GONE);

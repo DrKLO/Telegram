@@ -47,6 +47,7 @@ import org.telegram.android.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.UserConfig;
+import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.AnimationCompat.AnimatorListenerAdapterProxy;
 import org.telegram.ui.AnimationCompat.AnimatorSetProxy;
 import org.telegram.ui.AnimationCompat.ObjectAnimatorProxy;
@@ -96,11 +97,12 @@ public class ChatActivityEnterView extends LinearLayout implements NotificationC
     private boolean recordingAudio;
 
     private Activity parentActivity;
+    private BaseFragment parentFragment;
     private long dialog_id;
     private boolean ignoreTextChange;
     private ChatActivityEnterViewDelegate delegate;
 
-    public ChatActivityEnterView(Activity context, SizeNotifierRelativeLayout parent, boolean isChat) {
+    public ChatActivityEnterView(Activity context, SizeNotifierRelativeLayout parent, BaseFragment fragment, boolean isChat) {
         super(context);
         setOrientation(HORIZONTAL);
         setBackgroundResource(R.drawable.compose_panel);
@@ -117,6 +119,7 @@ public class ChatActivityEnterView extends LinearLayout implements NotificationC
         NotificationCenter.getInstance().addObserver(this, NotificationCenter.hideEmojiKeyboard);
         NotificationCenter.getInstance().addObserver(this, NotificationCenter.audioRouteChanged);
         parentActivity = context;
+        parentFragment = fragment;
         sizeNotifierRelativeLayout = parent;
         sizeNotifierRelativeLayout.setDelegate(this);
         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
@@ -147,20 +150,6 @@ public class ChatActivityEnterView extends LinearLayout implements NotificationC
                 showEmojiPopup(emojiPopup == null || !emojiPopup.isShowing());
             }
         });
-
-        /*
-        <EditText
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_gravity="bottom"
-                android:id="@+id/chat_text_edit"
-                android:maxLines="4"
-                android:textSize="18dp"
-                android:textColorHint="#b2b2b2"
-                android:imeOptions="flagNoExtractUi"
-                android:inputType="textCapSentences|textMultiLine"
-                />
-         */
 
         messsageEditText = new EditText(context);
         messsageEditText.setHint(LocaleController.getString("TypeMessage", R.string.TypeMessage));
@@ -383,6 +372,23 @@ public class ChatActivityEnterView extends LinearLayout implements NotificationC
             @Override
             public boolean onTouch(View view, MotionEvent motionEvent) {
                 if (motionEvent.getAction() == MotionEvent.ACTION_DOWN) {
+                    if (parentFragment != null) {
+                        String action = null;
+                        TLRPC.Chat currentChat = null;
+                        if ((int) dialog_id < 0) {
+                            currentChat = MessagesController.getInstance().getChat(-(int) dialog_id);
+                            if (currentChat != null && currentChat.participants_count > MessagesController.getInstance().groupBigSize) {
+                                action = "bigchat_upload_audio";
+                            } else {
+                                action = "chat_upload_audio";
+                            }
+                        } else {
+                            action = "pm_upload_audio";
+                        }
+                        if (!MessagesController.isFeatureEnabled(action, parentFragment)) {
+                            return false;
+                        }
+                    }
                     startedDraggingX = -1;
                     MediaController.getInstance().startRecording(dialog_id);
                     updateAudioRecordIntefrace();
@@ -488,6 +494,23 @@ public class ChatActivityEnterView extends LinearLayout implements NotificationC
     }
 
     private void sendMessage() {
+        if (parentFragment != null) {
+            String action = null;
+            TLRPC.Chat currentChat = null;
+            if ((int) dialog_id < 0) {
+                currentChat = MessagesController.getInstance().getChat(-(int) dialog_id);
+                if (currentChat != null && currentChat.participants_count > MessagesController.getInstance().groupBigSize) {
+                    action = "bigchat_message";
+                } else {
+                    action = "chat_message";
+                }
+            } else {
+                action = "pm_message";
+            }
+            if (!MessagesController.isFeatureEnabled(action, parentFragment)) {
+                return;
+            }
+        }
         if (processSendingText(messsageEditText.getText().toString())) {
             messsageEditText.setText("");
             lastTypingTimeSend = 0;

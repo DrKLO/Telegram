@@ -223,17 +223,26 @@ public class WallpapersActivity extends BaseFragment implements NotificationCent
         if (resultCode == Activity.RESULT_OK) {
             if (requestCode == 10) {
                 Utilities.addMediaToGallery(currentPicturePath);
+                FileOutputStream stream = null;
                 try {
                     Point screenSize = AndroidUtilities.getRealScreenSize();
                     Bitmap bitmap = ImageLoader.loadBitmap(currentPicturePath, null, screenSize.x, screenSize.y, true);
                     File toFile = new File(ApplicationLoader.applicationContext.getFilesDir(), "wallpaper-temp.jpg");
-                    FileOutputStream stream = new FileOutputStream(toFile);
+                    stream = new FileOutputStream(toFile);
                     bitmap.compress(Bitmap.CompressFormat.JPEG, 87, stream);
                     selectedBackground = -1;
                     selectedColor = 0;
                     backgroundImage.setImageBitmap(bitmap);
                 } catch (Exception e) {
                     FileLog.e("tmessages", e);
+                } finally {
+                    try {
+                        if (stream != null) {
+                            stream.close();
+                        }
+                    } catch (Exception e) {
+                        FileLog.e("tmessages", e);
+                    }
                 }
                 currentPicturePath = null;
             } else if (requestCode == 11) {

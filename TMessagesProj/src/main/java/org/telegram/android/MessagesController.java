@@ -9,10 +9,12 @@
 package org.telegram.android;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.os.Build;
 import android.text.Html;
+import android.util.Base64;
 import android.util.SparseArray;
 
 import org.telegram.messenger.ConnectionsManager;
@@ -20,11 +22,14 @@ import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
 import org.telegram.messenger.RPCRequest;
+import org.telegram.messenger.SerializedData;
+import org.telegram.messenger.TLClassStore;
 import org.telegram.messenger.TLObject;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.ApplicationLoader;
+import org.telegram.ui.ActionBar.BaseFragment;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -86,6 +91,8 @@ public class MessagesController implements NotificationCenter.NotificationCenter
     public int fontSize = AndroidUtilities.dp(16);
     public int maxGroupCount = 200;
     public int maxBroadcastCount = 100;
+    public int groupBigSize;
+    private ArrayList<TLRPC.TL_disabledFeature> disabledFeatures = new ArrayList<>();
 
     private class UserActionUpdates extends TLRPC.Updates {
 
@@ -140,7 +147,26 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
         maxGroupCount = preferences.getInt("maxGroupCount", 200);
         maxBroadcastCount = preferences.getInt("maxBroadcastCount", 100);
+        groupBigSize = preferences.getInt("groupBigSize", 10);
         fontSize = preferences.getInt("fons_size", AndroidUtilities.isTablet() ? 18 : 16);
+        String disabledFeaturesString = preferences.getString("disabledFeatures", null);
+        if (disabledFeaturesString != null && disabledFeaturesString.length() != 0) {
+            try {
+                byte[] bytes = Base64.decode(disabledFeaturesString, Base64.DEFAULT);
+                if (bytes != null) {
+                    SerializedData data = new SerializedData(bytes);
+                    int count = data.readInt32();
+                    for (int a = 0; a < count; a++) {
+                        TLRPC.TL_disabledFeature feature = (TLRPC.TL_disabledFeature) TLClassStore.Instance().TLdeserialize(data, data.readInt32());
+                        if (feature != null && feature.feature != null && feature.description != null) {
+                            disabledFeatures.add(feature);
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                FileLog.e("tmessages", e);
+            }
+        }
     }
 
     public void updateConfig(final TLRPC.TL_config config) {
@@ -149,13 +175,50 @@ public class MessagesController implements NotificationCenter.NotificationCenter
             public void run() {
                 maxBroadcastCount = config.broadcast_size_max;
                 maxGroupCount = config.chat_size_max;
+                groupBigSize = config.chat_big_size;
+                disabledFeatures = config.disabled_features;
+
                 SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
                 SharedPreferences.Editor editor = preferences.edit();
                 editor.putInt("maxGroupCount", maxGroupCount);
                 editor.putInt("maxBroadcastCount", maxBroadcastCount);
+                editor.putInt("groupBigSize", groupBigSize);
+                try {
+                    SerializedData data = new SerializedData();
+                    data.writeInt32(disabledFeatures.size());
+                    for (TLRPC.TL_disabledFeature disabledFeature : disabledFeatures) {
+                        disabledFeature.serializeToStream(data);
+                    }
+                    String string = Base64.encodeToString(data.toByteArray(), Base64.DEFAULT);
+                    if (string != null && string.length() != 0) {
+                        editor.putString("disabledFeatures", string);
+                    }
+                } catch (Exception e) {
+                    editor.remove("disabledFeatures");
+                    FileLog.e("tmessages", e);
+                }
                 editor.commit();
             }
         });
+    }
+
+    public static boolean isFeatureEnabled(String feature, BaseFragment fragment) {
+        if (feature == null || feature.length() == 0 || getInstance().disabledFeatures.isEmpty() || fragment == null) {
+            return true;
+        }
+        for (TLRPC.TL_disabledFeature disabledFeature : getInstance().disabledFeatures) {
+            if (disabledFeature.feature.equals(feature)) {
+                if (fragment.getParentActivity() != null) {
+                    AlertDialog.Builder builder = new AlertDialog.Builder(fragment.getParentActivity());
+                    builder.setTitle("Oops!");
+                    builder.setPositiveButton(R.string.OK, null);
+                    builder.setMessage(disabledFeature.description);
+                    fragment.showAlertDialog(builder);
+                }
+                return false;
+            }
+        }
+        return true;
     }
 
     public void addSupportUser() {
@@ -3582,4 +3645,6 @@ public class MessagesController implements NotificationCenter.NotificationCenter
             }
         }
     }
+
+
 }

@@ -481,6 +481,33 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
                 @Override
                 public void onItemClick(final int id) {
+                    if (id == attach_photo || id == attach_gallery || id == attach_document || id == attach_video) {
+                        String action = null;
+                        if (currentChat != null) {
+                            if (currentChat.participants_count > MessagesController.getInstance().groupBigSize) {
+                                if (id == attach_photo || id == attach_gallery) {
+                                    action = "bigchat_upload_photo";
+                                } else {
+                                    action = "bigchat_upload_document";
+                                }
+                            } else {
+                                if (id == attach_photo || id == attach_gallery) {
+                                    action = "chat_upload_photo";
+                                } else {
+                                    action = "chat_upload_document";
+                                }
+                            }
+                        } else {
+                            if (id == attach_photo || id == attach_gallery) {
+                                action = "pm_upload_photo";
+                            } else {
+                                action = "pm_upload_document";
+                            }
+                        }
+                        if (action != null && !MessagesController.isFeatureEnabled(action, ChatActivity.this)) {
+                            return;
+                        }
+                    }
                     if (id == -1) {
                         finishFragment();
                     } else if (id == -2) {
@@ -1001,7 +1028,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
 
             if (currentEncryptedChat == null) {
                 TextView emptyView = new TextView(getParentActivity());
-                if (currentUser != null && (currentUser.id / 1000 == 333 || currentUser.id % 1000 == 0)) {
+                if (currentUser != null && currentUser.id != 777000 && (currentUser.id / 1000 == 333 || currentUser.id % 1000 == 0)) {
                     emptyView.setText(LocaleController.getString("GotAQuestion", R.string.GotAQuestion));
                 } else {
                     emptyView.setText(LocaleController.getString("NoMessages", R.string.NoMessages));
@@ -1324,7 +1351,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             if (chatActivityEnterView != null) {
                 chatActivityEnterView.onDestroy();
             }
-            chatActivityEnterView = new ChatActivityEnterView(getParentActivity(), contentView, true);
+            chatActivityEnterView = new ChatActivityEnterView(getParentActivity(), contentView, this, true);
             chatActivityEnterView.setDialogId(dialog_id);
             chatActivityEnterView.addToAttachLayout(menuItem);
             chatActivityEnterView.setId(id_chat_compose_panel);

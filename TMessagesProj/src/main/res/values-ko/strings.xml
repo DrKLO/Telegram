@@ -298,6 +298,8 @@
     <string name="ChangePhoneHelp">인증코드 메시지를 새 번호로 전송하겠습니다.</string>
     <string name="ChangePhoneNumberOccupied">그 번호는 이미 텔레그램 계정에 연결되어 있습니다. 새 번호로 이동하기 전에 %1$s 계정에서 탈퇴해 주세요.</string>
     <string name="NotificationsOther">기타</string>
+    <string name="NotificationsDisabled">끄기</string>
+    <string name="VibrationDisabled">끄기</string>
     <!--passcode view-->
     <string name="Passcode">잠금번호</string>
     <string name="ChangePasscode">잠금번호 변경</string>

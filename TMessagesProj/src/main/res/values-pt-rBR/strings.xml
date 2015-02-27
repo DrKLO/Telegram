@@ -298,6 +298,8 @@
     <string name="ChangePhoneHelp">Vamos enviar uma SMS com um código de confirmação para o seu novo número.</string>
     <string name="ChangePhoneNumberOccupied">O número %1$s já possui uma conta do Telegram. Por favor, exclua esta conta antes de migrar para o novo número.</string>
     <string name="NotificationsOther">Outro</string>
+    <string name="NotificationsDisabled">Desativado</string>
+    <string name="VibrationDisabled">Desativado</string>
     <!--passcode view-->
     <string name="Passcode">Senha</string>
     <string name="ChangePasscode">Alterar Senha</string>

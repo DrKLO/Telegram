@@ -182,7 +182,7 @@ public class AvatarDrawable extends Drawable {
                 }
                 lastch = lastName.substring(a, a + 1);
             }
-            if (Build.VERSION.SDK_INT >= 14) {
+            if (Build.VERSION.SDK_INT >= 16) {
                 text += "\u200C" + lastch;
             } else {
                 text += lastch;
@@ -191,7 +191,7 @@ public class AvatarDrawable extends Drawable {
             for (int a = firstName.length() - 1; a >= 0; a--) {
                 if (firstName.charAt(a) == ' ') {
                     if (a != firstName.length() - 1 && firstName.charAt(a + 1) != ' ') {
-                        if (Build.VERSION.SDK_INT >= 14) {
+                        if (Build.VERSION.SDK_INT >= 16) {
                             text += "\u200C" + firstName.substring(a + 1, a + 2);
                         } else {
                             text += firstName.substring(a + 1, a + 2);

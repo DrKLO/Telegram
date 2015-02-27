@@ -216,6 +216,7 @@ public class TLClassStore {
         classStore.put(TLRPC.TL_userStatusRecently.constructor, TLRPC.TL_userStatusRecently.class);
         classStore.put(TLRPC.TL_msg_copy.constructor, TLRPC.TL_msg_copy.class);
         classStore.put(TLRPC.TL_contacts_importedContacts.constructor, TLRPC.TL_contacts_importedContacts.class);
+        classStore.put(TLRPC.TL_disabledFeature.constructor, TLRPC.TL_disabledFeature.class);
         classStore.put(TLRPC.TL_futureSalt.constructor, TLRPC.TL_futureSalt.class);
         classStore.put(TLRPC.TL_updateEncryptedMessagesRead.constructor, TLRPC.TL_updateEncryptedMessagesRead.class);
         classStore.put(TLRPC.TL_updateContactLink.constructor, TLRPC.TL_updateContactLink.class);
@@ -413,6 +414,7 @@ public class TLClassStore {
         classStore.put(TLRPC.TL_decryptedMessageHolder.constructor, TLRPC.TL_decryptedMessageHolder.class);
         classStore.put(TLRPC.TL_documentEncrypted_old.constructor, TLRPC.TL_documentEncrypted_old.class);
         classStore.put(TLRPC.TL_document_old.constructor, TLRPC.TL_document_old.class);
+        classStore.put(TLRPC.TL_config_old.constructor, TLRPC.TL_config_old.class);
     }
 
     static TLClassStore store = null;

@@ -302,6 +302,9 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                                 }
                             } else {
                                 if (row == 0) {
+                                    if (!MessagesController.isFeatureEnabled("chat_create", ContactsActivity.this)) {
+                                        return;
+                                    }
                                     presentFragment(new GroupCreateActivity(), false);
                                 } else if (row == 1) {
                                     Bundle args = new Bundle();
@@ -310,6 +313,9 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                                     args.putBoolean("createSecretChat", true);
                                     presentFragment(new ContactsActivity(args), false);
                                 } else if (row == 2) {
+                                    if (!MessagesController.isFeatureEnabled("broadcast_create", ContactsActivity.this)) {
+                                        return;
+                                    }
                                     Bundle args = new Bundle();
                                     args.putBoolean("broadcast", true);
                                     presentFragment(new GroupCreateActivity(args), false);

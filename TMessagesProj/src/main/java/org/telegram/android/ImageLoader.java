@@ -449,6 +449,11 @@ public class ImageLoader {
                 originalBitmap = scaledBitmap;
                 FileOutputStream stream = new FileOutputStream(thumbFile);
                 originalBitmap.compress(Bitmap.CompressFormat.JPEG, 60, stream);
+                try {
+                    stream.close();
+                } catch (Exception e) {
+                    FileLog.e("tmessages", e);
+                }
                 final BitmapDrawable bitmapDrawable = new BitmapDrawable(originalBitmap);
                 AndroidUtilities.runOnUIThread(new Runnable() {
                     @Override
@@ -615,7 +620,9 @@ public class ImageLoader {
                         if (mediaId != null) {
                             MediaStore.Images.Thumbnails.getThumbnail(ApplicationLoader.applicationContext.getContentResolver(), mediaId, MediaStore.Images.Thumbnails.MINI_KIND, opts);
                         } else {
-                            BitmapFactory.decodeFile(cacheImage.finalFilePath.getAbsolutePath(), opts);
+                            FileInputStream is = new FileInputStream(cacheFileFinal);
+                            image = BitmapFactory.decodeStream(is, null, opts);
+                            is.close();
                         }
 
                         float photoW = opts.outWidth;

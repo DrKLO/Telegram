@@ -185,7 +185,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
         if (chatActivityEnterView != null) {
             chatActivityEnterView.onDestroy();
         }
-        chatActivityEnterView = new ChatActivityEnterView(this, contentView, true);
+        chatActivityEnterView = new ChatActivityEnterView(this, contentView, null, true);
         popupContainer.addView(chatActivityEnterView);
         layoutParams3 = (RelativeLayout.LayoutParams) chatActivityEnterView.getLayoutParams();
         layoutParams3.width = RelativeLayout.LayoutParams.MATCH_PARENT;

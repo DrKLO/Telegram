@@ -1698,10 +1698,10 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                             FileLog.e("tmessages", e);
                             result = false;
                         } finally {
-                            if(source != null) {
+                            if (source != null) {
                                 source.close();
                             }
-                            if(destination != null) {
+                            if (destination != null) {
                                 destination.close();
                             }
                         }
