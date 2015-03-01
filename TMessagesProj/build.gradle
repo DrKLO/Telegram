@@ -106,7 +106,7 @@ android {
         targetSdkVersion 21
         renderscriptTargetApi 21
         renderscriptSupportModeEnabled true
-        versionCode 254
-        versionName "1.7.4"
+        versionCode 255
+        versionName "1.7.5"
     }
 }
