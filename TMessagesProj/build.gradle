@@ -79,11 +79,6 @@ android {
         manifest.srcFile 'config/foss/AndroidManifest.xml'
     }
 
-    lintOptions {
-        checkReleaseBuilds false
-        abortOnError false
-    }
-
     defaultConfig {
         minSdkVersion 8
         targetSdkVersion 21
