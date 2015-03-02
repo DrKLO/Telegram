@@ -52,7 +52,7 @@ android {
         release {
             debuggable false
             jniDebuggable false
-            signingConfig signingConfigs.release
+            //signingConfig signingConfigs.release
         }
 
         foss {
@@ -79,7 +79,13 @@ android {
         manifest.srcFile 'config/foss/AndroidManifest.xml'
     }
 
+    lintOptions {
+        checkReleaseBuilds false
+        abortOnError false
+    }
+
     defaultConfig {
+        applicationId "org.telegram.plus"
         minSdkVersion 8
         targetSdkVersion 21
         versionCode 458
