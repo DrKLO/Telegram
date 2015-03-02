@@ -6,15 +6,19 @@ This repo contains the source code for [Telegram+ App for Android](https://play.
 
 It adds some extra features to the official Telegram app:
 
-**THEMING:** Change colors and sizes of many objects as texts, icons, headers... and create your own theme
-             Save your theme and share it easily with your friends
-             Apply themes shared by other users
+**THEMING**
+Change colors and sizes of many objects as texts, icons, headers... and create your own theme
+Save your theme and share it easily with your friends
+Apply themes shared by other users
 
-**MEDIA:** - Audio files can be shared easily from Chat Screen
+**MEDIA**
+Audio files can be shared easily from Chat Screen
 
-**PRIVACY:** - Mobile number can be hidden from Menu Drawer and Settings menu
+**PRIVACY**
+Mobile number can be hidden from Menu Drawer and Settings menu
 
-**SOCIAL:** - Get in touch with other Telegram+ users trough [our Google+ community](https://plus.google.com/communities/106927015963860485525)
+**SOCIAL:**
+Get in touch with other Telegram+ users trough [our Google+ community](https://plus.google.com/communities/106927015963860485525)
 
 ### USAGE
 **Beware of using the dev branch and uploading it to any markets, in many cases it not will work as expected**.
