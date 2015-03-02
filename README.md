@@ -2,8 +2,6 @@
 
 This is an UNOFFICIAL app that uses [Telegram's API](https://core.telegram.org/api)
 
-This repo contains the source code for [Telegram+ App for Android](https://play.google.com/store/apps/details?id=org.telegram.plus).
-
 It adds some extra features to the official Telegram app:
 
 **THEMING:**
@@ -13,9 +11,11 @@ Apply themes shared by other users
 
 **MEDIA:** Audio files can be shared easily from Chat Screen
 
-**PRIVACY** Mobile number can be hidden from Menu Drawer and Settings menu
+**PRIVACY:** Mobile number can be hidden from Menu Drawer and Settings menu
 
 **SOCIAL:** Get in touch with other Telegram+ users trough [our Google+ community](https://plus.google.com/communities/106927015963860485525)
+
+This repo contains the source code for [Telegram+ App for Android](https://play.google.com/store/apps/details?id=org.telegram.plus).
 
 ### USAGE
 **Beware of using the dev branch and uploading it to any markets, in many cases it not will work as expected**.
