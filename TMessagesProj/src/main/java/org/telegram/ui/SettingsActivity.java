@@ -43,6 +43,7 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import org.telegram.android.AndroidUtilities;
 import org.telegram.android.ContactsController;
@@ -212,8 +213,10 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         rowCount = 0;
         overscrollRow = rowCount++;
         emptyRow = rowCount++;
-        numberSectionRow = rowCount++;
-        numberRow = rowCount++;
+        if(!AndroidUtilities.getBoolMain("hideMobile")){
+            numberSectionRow = rowCount++;
+            numberRow = rowCount++;
+        }
         usernameRow = rowCount++;
         settingsSectionRow = rowCount++;
         settingsSectionRow2 = rowCount++;
@@ -236,12 +239,13 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         supportSectionRow2 = rowCount++;
         askQuestionRow = rowCount++;
         telegramFaqRow = rowCount++;
+        sendLogsRow = rowCount++;
         if (BuildVars.DEBUG_VERSION) {
-            sendLogsRow = rowCount++;
+            //sendLogsRow = rowCount++;
             clearLogsRow = rowCount++;
             switchBackendButtonRow = rowCount++;
         }
-        versionRow = rowCount++;
+        //versionRow = rowCount++;
         //contactsSectionRow = rowCount++;
         //contactsReimportRow = rowCount++;
         //contactsSortRow = rowCount++;
@@ -265,7 +269,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
     }
 
     @Override
-    public View createView(LayoutInflater inflater, ViewGroup container) {
+    public View createView(LayoutInflater inflater) {
         if (fragmentView == null) {
             actionBar.setBackgroundColor(AvatarDrawable.getProfileBackColorForId(5));
             actionBar.setItemsBackground(AvatarDrawable.getButtonColorForId(5));
@@ -361,7 +365,9 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             nameTextView.setLayoutParams(layoutParams);
 
             onlineTextView = new TextView(getParentActivity());
-            onlineTextView.setTextColor(AvatarDrawable.getProfileTextColorForId(5));
+            //onlineTextView.setTextColor(AvatarDrawable.getProfileTextColorForId(5));
+            onlineTextView.setTextColor(AndroidUtilities.getIntDarkerColor("themeColor",-0x40));
+            
             onlineTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             onlineTextView.setLines(1);
             onlineTextView.setMaxLines(1);
@@ -412,6 +418,11 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                                 editor.putInt("fons_size", numberPicker.getValue());
                                 MessagesController.getInstance().fontSize = numberPicker.getValue();
                                 editor.commit();
+                                //
+                                SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, Activity.MODE_PRIVATE);
+                                SharedPreferences.Editor edit = themePrefs.edit();
+                                edit.putInt("chatTextSize", numberPicker.getValue());
+                                edit.commit();
                                 if (listView != null) {
                                     listView.invalidateViews();
                                 }
@@ -491,7 +502,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                     } else if (i == telegramFaqRow) {
                         try {
                             Intent pickIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(LocaleController.getString("TelegramFaqUrl", R.string.TelegramFaqUrl)));
-                            getParentActivity().startActivity(pickIntent);
+                            getParentActivity().startActivityForResult(pickIntent, 500);
                         } catch (Exception e) {
                             FileLog.e("tmessages", e);
                         }
@@ -707,6 +718,11 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
     }
 
     @Override
+    public void updatePhotoAtIndex(int index) {
+
+    }
+
+    @Override
     public PhotoViewer.PlaceProviderObject getPlaceForPhoto(MessageObject messageObject, TLRPC.FileLocation fileLocation, int index) {
         if (fileLocation == null) {
             return null;
@@ -777,6 +793,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                             if (supportUser != null && supportUser.id == 333000) {
                                 supportUser = null;
                             }
+                            data.cleanup();
                         }
                     } catch (Exception e) {
                         FileLog.e("tmessages", e);
@@ -807,6 +824,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                                 res.user.serializeToStream(data);
                                 editor.putString("support_user", Base64.encodeToString(data.toByteArray(), Base64.DEFAULT));
                                 editor.commit();
+                                data.cleanup();
                                 try {
                                     progressDialog.dismiss();
                                 } catch (Exception e) {
@@ -966,7 +984,9 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             photoBig = user.photo.photo_big;
         }
         AvatarDrawable avatarDrawable = new AvatarDrawable(user, true);
-        avatarDrawable.setColor(0xff5c98cd);
+        //avatarDrawable.setColor(0xff5c98cd);
+        avatarDrawable.setColor(AndroidUtilities.getIntDarkerColor("themeColor",0x10));
+        if (avatarImage != null) {
         avatarImage.setImage(photo, "50_50", avatarDrawable);
         avatarImage.imageReceiver.setVisible(!PhotoViewer.getInstance().isShowingImage(photoBig), false);
 
@@ -974,6 +994,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         onlineTextView.setText(LocaleController.getString("Online", R.string.Online));
 
         avatarImage.imageReceiver.setVisible(!PhotoViewer.getInstance().isShowingImage(photoBig), false);
+        }
     }
 
     private void sendLogs() {
@@ -994,9 +1015,18 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             i.putExtra(Intent.EXTRA_EMAIL, new String[]{BuildVars.SEND_LOGS_EMAIL});
             i.putExtra(Intent.EXTRA_SUBJECT, "last logs");
             i.putParcelableArrayListExtra(Intent.EXTRA_STREAM, uris);
-            getParentActivity().startActivity(Intent.createChooser(i, "Select email application."));
+            getParentActivity().startActivityForResult(Intent.createChooser(i, "Select email application."), 500);
         } catch (Exception e) {
             e.printStackTrace();
+            AndroidUtilities.runOnUIThread(new Runnable() {
+                @Override
+                public void run() {
+                    if (getParentActivity() != null) {
+                        Toast toast = Toast.makeText(getParentActivity(), LocaleController.getString("SendLogsEmpty", R.string.SendLogsEmpty), Toast.LENGTH_SHORT);
+                        toast.show();
+                    }
+                }
+            });
         }
     }
 
@@ -1084,7 +1114,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 } else if (i == backgroundRow) {
                     textCell.setText(LocaleController.getString("ChatBackground", R.string.ChatBackground), true);
                 } else if (i == sendLogsRow) {
-                    textCell.setText("Send Logs", true);
+                    textCell.setText(LocaleController.getString("SendLogs", R.string.SendLogs), true);
                 } else if (i == clearLogsRow) {
                     textCell.setText("Clear Logs", true);
                 } else if (i == askQuestionRow) {

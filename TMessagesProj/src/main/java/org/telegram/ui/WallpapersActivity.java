@@ -63,8 +63,8 @@ public class WallpapersActivity extends BaseFragment implements NotificationCent
     private ProgressBar progressBar;
     private int selectedBackground;
     private int selectedColor;
-    private ArrayList<TLRPC.WallPaper> wallPapers = new ArrayList<TLRPC.WallPaper>();
-    private HashMap<Integer, TLRPC.WallPaper> wallpappersByIds = new HashMap<Integer, TLRPC.WallPaper>();
+    private ArrayList<TLRPC.WallPaper> wallPapers = new ArrayList<>();
+    private HashMap<Integer, TLRPC.WallPaper> wallpappersByIds = new HashMap<>();
     private View doneButton;
     private String loadingFile = null;
     private File loadingFileObject = null;
@@ -101,7 +101,7 @@ public class WallpapersActivity extends BaseFragment implements NotificationCent
     }
 
     @Override
-    public View createView(LayoutInflater inflater, ViewGroup container) {
+    public View createView(LayoutInflater inflater) {
         if (fragmentView == null) {
             actionBar.setBackButtonImage(R.drawable.ic_ab_back);
             actionBar.setAllowOverlayTitle(true);
@@ -148,7 +148,7 @@ public class WallpapersActivity extends BaseFragment implements NotificationCent
                             editor.putInt("selectedBackground", selectedBackground);
                             editor.putInt("selectedColor", selectedColor);
                             editor.commit();
-                            ApplicationLoader.cachedWallpaper = null;
+                            ApplicationLoader.reloadWallpaper();
                         }
                         finishFragment();
                     }
@@ -158,7 +158,7 @@ public class WallpapersActivity extends BaseFragment implements NotificationCent
             ActionBarMenu menu = actionBar.createMenu();
             doneButton = menu.addItemWithWidth(done_button, R.drawable.ic_done, AndroidUtilities.dp(56));
 
-            fragmentView = inflater.inflate(R.layout.settings_wallpapers_layout, container, false);
+            fragmentView = inflater.inflate(R.layout.settings_wallpapers_layout, null, false);
             listAdapter = new ListAdapter(getParentActivity());
 
             progressBar = (ProgressBar)fragmentView.findViewById(R.id.action_progress);
@@ -223,17 +223,26 @@ public class WallpapersActivity extends BaseFragment implements NotificationCent
         if (resultCode == Activity.RESULT_OK) {
             if (requestCode == 10) {
                 Utilities.addMediaToGallery(currentPicturePath);
+                FileOutputStream stream = null;
                 try {
                     Point screenSize = AndroidUtilities.getRealScreenSize();
                     Bitmap bitmap = ImageLoader.loadBitmap(currentPicturePath, null, screenSize.x, screenSize.y, true);
                     File toFile = new File(ApplicationLoader.applicationContext.getFilesDir(), "wallpaper-temp.jpg");
-                    FileOutputStream stream = new FileOutputStream(toFile);
+                    stream = new FileOutputStream(toFile);
                     bitmap.compress(Bitmap.CompressFormat.JPEG, 87, stream);
                     selectedBackground = -1;
                     selectedColor = 0;
                     backgroundImage.setImageBitmap(bitmap);
                 } catch (Exception e) {
                     FileLog.e("tmessages", e);
+                } finally {
+                    try {
+                        if (stream != null) {
+                            stream.close();
+                        }
+                    } catch (Exception e) {
+                        FileLog.e("tmessages", e);
+                    }
                 }
                 currentPicturePath = null;
             } else if (requestCode == 11) {
@@ -419,7 +428,9 @@ public class WallpapersActivity extends BaseFragment implements NotificationCent
                             wallPapers.add((TLRPC.WallPaper)obj);
                             wallpappersByIds.put(((TLRPC.WallPaper)obj).id, (TLRPC.WallPaper)obj);
                         }
-                        listAdapter.notifyDataSetChanged();
+                        if (listAdapter != null) {
+                            listAdapter.notifyDataSetChanged();
+                        }
                         if (backgroundImage != null) {
                             processSelectedBackground();
                         }

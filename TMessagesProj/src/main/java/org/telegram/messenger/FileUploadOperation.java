@@ -91,6 +91,14 @@ public class FileUploadOperation {
                 remove(fileKey + "_iv").
                 remove(fileKey + "_key").
                 remove(fileKey + "_ivc").commit();
+        try {
+            if (stream != null) {
+                stream.close();
+                stream = null;
+            }
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
     }
 
     protected void checkNewDataAvailable(final long finalSize) {

@@ -45,7 +45,7 @@ public class IdenticonActivity extends BaseFragment {
     }
 
     @Override
-    public View createView(LayoutInflater inflater, ViewGroup container) {
+    public View createView(LayoutInflater inflater) {
         if (fragmentView == null) {
             actionBar.setBackButtonImage(R.drawable.ic_ab_back);
             actionBar.setAllowOverlayTitle(true);
@@ -60,7 +60,7 @@ public class IdenticonActivity extends BaseFragment {
                 }
             });
 
-            fragmentView = inflater.inflate(R.layout.identicon_layout, container, false);
+            fragmentView = inflater.inflate(R.layout.identicon_layout, null, false);
             ImageView identiconView = (ImageView) fragmentView.findViewById(R.id.identicon_view);
             TextView textView = (TextView)fragmentView.findViewById(R.id.identicon_text);
             TLRPC.EncryptedChat encryptedChat = MessagesController.getInstance().getEncryptedChat(chat_id);

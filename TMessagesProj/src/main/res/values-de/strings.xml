@@ -3,7 +3,7 @@
 <!--Translation by iLLogical2007, DanielGroeger and everyone from https://github.com/DrKLO/Telegram/pull/129 whom I didn't notice -->
 
 <resources>
-    <string name="AppName">Telegram</string>
+    <string name="AppName">Telegram+</string>
     <string name="LanguageName">Deutsch</string>
     <string name="LanguageNameInEnglish">German</string>
     <string name="LanguageCode">de</string>
@@ -34,13 +34,13 @@
     <string name="Yesterday">gestern</string>
     <string name="NoResult">Keine Ergebnisse</string>
     <string name="NoChats">Noch keine Chats…</string>
-    <string name="NoChatsHelp">Tippe unten auf den Sift für deine erste\nChatnachricht oder auf den Menüknopf\num die restlichen Optionen zu öffnen.</string>
+    <string name="NoChatsHelp">Tippe unten auf den Stift für deine erste\nChatnachricht oder auf den Menüknopf\num die restlichen Optionen zu öffnen.</string>
     <string name="WaitingForNetwork">Warte auf Netzwerk...</string>
     <string name="Connecting">Verbinde…</string>
     <string name="Updating">Aktualisiere…</string>
     <string name="NewSecretChat">Neuer Geheimer Chat</string>
     <string name="AwaitingEncryption">Warte, bis %s online geht…</string>
-    <string name="EncryptionRejected">Geheimen Chat abgebrochen</string>
+    <string name="EncryptionRejected">Geheimen Chat beendet</string>
     <string name="EncryptionProcessing">Tausche Schlüssel aus…</string>
     <string name="EncryptedChatStartedOutgoing">%s ist deinem geheimen Chat beigetreten.</string>
     <string name="EncryptedChatStartedIncoming">Du bist dem geheimen Chat beigetreten.</string>
@@ -57,6 +57,7 @@
     <string name="MuteFor">Stumm für %1$s</string>
     <string name="UnmuteNotifications">Stumm aus</string>
     <string name="WillUnmuteIn">In %1$s</string>
+    <string name="MuteDisable">Stumm aus</string>
     <!--broadcasts-->
     <string name="NewBroadcastList">Neue Broadcast Liste</string>
     <string name="EnterListName">Listenname</string>
@@ -143,6 +144,7 @@
     <string name="NotificationEditedGroupName">%1$s hat den Namen der Gruppe %2$s geändert</string>
     <string name="NotificationEditedGroupPhoto">%1$s hat das Bild der Gruppe %2$s geändert</string>
     <string name="NotificationGroupAddMember">%1$s hat %3$s in die Gruppe %2$s eingeladen</string>
+    <string name="NotificationGroupAddSelf">%1$s ist in die Gruppe %2$s zurückgekehrt</string>
     <string name="NotificationGroupKickMember">%1$s hat %3$s aus der Gruppe %2$s entfernt</string>
     <string name="NotificationGroupKickYou">%1$s hat dich aus der Gruppe %2$s entfernt</string>
     <string name="NotificationGroupLeftMember">%1$s hat die Gruppe %2$s verlassen</string>
@@ -296,10 +298,30 @@
     <string name="ChangePhoneHelp">Der Bestätigungscode kommt per SMS an deine neue Nummer.</string>
     <string name="ChangePhoneNumberOccupied">Die Telefonnummer %1$s ist bereits ein Telegram Konto. Bitte lösche es, bevor du mit der Übertragung auf das neue Konto startest.</string>
     <string name="NotificationsOther">Sonstige</string>
+    <string name="NotificationsDisabled">Deaktiviert</string>
+    <string name="VibrationDisabled">Deaktiviert</string>
+    <!--passcode view-->
+    <string name="Passcode">Pincode</string>
+    <string name="ChangePasscode">Pincode ändern</string>
+    <string name="ChangePasscodeInfo">Wenn du die Code-Sperre aktivierst, erscheint ein Schloss ganz oben über der Chatliste. Tippe auf das Schloss, um deine Chats zu sperren und zu entsperren.\n\nÜbrigens: Wenn du den Pincode vergisst, musst du Telegram löschen und neu installieren. Dadurch verlierst du alle Geheimen Chats.</string>
+    <string name="ChangePasscodeAlert">Du wirst nun ein Schloss über der Chatliste sehen. Tippe darauf um deine Chats mit dem neuen Pincode zu sperren.</string>
+    <string name="PasscodePIN">Pincode</string>
+    <string name="PasscodePassword">Kennwort</string>
+    <string name="EnterCurrentPasscode">Aktuellen Pincode eingeben</string>
+    <string name="EnterNewPasscode">Neuen Pincode eingeben</string>
+    <string name="EnterYourPasscode">Deinen Pincode eingeben</string>
+    <string name="ReEnterYourPasscode">Neuen Pincode erneut eingben</string>
+    <string name="InvalidPasscode">Ungültiger Pincode</string>
+    <string name="PasscodeDoNotMatch">Pincode falsch</string>
+    <string name="AutoLock">Auto-Sperre</string>
+    <string name="AutoLockInfo">Benötigt Pincode wenn lange inaktiv.</string>
+    <string name="AutoLockInTime">in %1$s</string>
+    <string name="AutoLockDisabled">Deaktiviert</string>
     <!--media view-->
     <string name="NoMedia">Die hier geteilten Bilder und Videos kannst du von jedem deiner Geräte aufrufen.</string>
     <string name="DocumentsTitle">Dateien</string>
-    <string name="NoSharedFiles">Die hier geteilten Bilder und Videos kannst du von jedem deiner Geräte aufrufen.</string>
+    <string name="SharedMediaTitle">Geteilte Medien</string>
+    <string name="NoSharedFiles">Die hier geteilten Dateien kannst du von jedem deiner Geräte aufrufen.</string>
     <!--map view-->
     <string name="Map">Karte</string>
     <string name="Satellite">Satellit</string>
@@ -319,11 +341,26 @@
     <string name="NoRecentPhotos">Suchverlauf</string>
     <string name="NoRecentGIFs">Suchverlauf</string>
     <string name="SearchImages">BILDERSUCHE</string>
+    <string name="SearchImagesInfo">BILDERSUCHE</string>
     <string name="SearchGifs">GIF-SUCHE</string>
     <string name="SearchImagesTitle">Suche Bilder</string>
     <string name="SearchGifsTitle">Suche GIFs</string>
     <string name="CropImage">Bild zuschneiden</string>
     <string name="EditImage">Bild bearbeiten</string>
+    <string name="Enhance">Verbessern</string>
+    <string name="Highlights">Highlights</string>
+    <string name="Contrast">Kontrast</string>
+    <string name="Exposure">Belichtung</string>
+    <string name="Warmth">Wärme</string>
+    <string name="Saturation">Sättigung</string>
+    <string name="Vignette">Vignette</string>
+    <string name="Shadows">Schatten</string>
+    <string name="Grain">Körnung</string>
+    <string name="Sharpen">Schärfe</string>
+    <string name="Blur">Unschärfe</string>
+    <string name="AreYouSureDeletePhoto">Möchtest du wirklich dieses Bild löschen?</string>
+    <string name="AreYouSureDeleteVideo">Möchtest du wirklich dieses Video löschen?</string>
+    <string name="DiscardChanges">Änderungen verwerfen?</string>
     <!--password view-->
     <string name="Password">Password</string>
     <string name="ChangePassword">Change password</string>
@@ -405,6 +442,7 @@
     <string name="DeletePhoto">Foto löschen</string>
     <string name="Set">Wählen</string>
     <string name="OK">OK</string>
+    <string name="Crop">SCHNEIDEN</string>
     <!--messages-->
     <string name="ActionKickUser">un1 hat un2 aus der Gruppe entfernt</string>
     <string name="ActionLeftUser">un1 hat die Gruppe verlassen</string>
@@ -422,6 +460,7 @@
     <string name="ActionYouCreateGroup">Du hast die Gruppe erstellt</string>
     <string name="ActionKickUserYou">un1 hat dich aus der Gruppe entfernt</string>
     <string name="ActionAddUserYou">un1 hat dich hinzugefügt</string>
+    <string name="ActionAddUserSelf">un1 ist in die Gruppe zurückgekehrt</string>
     <string name="UnsuppotedMedia">Diese Nachricht wird von deiner Telegram-Version nicht unterstützt. Bitte aktualisiere die App um sie zu sehen: http://telegram.org/update</string>
     <string name="AttachPhoto">Foto</string>
     <string name="AttachVideo">Video</string>
@@ -473,12 +512,12 @@
     <string name="Page6Title">Cloud-Basiert</string>
     <string name="Page7Title">Vertraulich</string>
     <string name="Page1Message">Die <![CDATA[<b>schnellste</b>]]> Messaging App der Welt.<![CDATA[<br/><b>Kostenlos</b>]]> und <![CDATA[<b>sicher</b>]]>.</string>
-    <string name="Page2Message"><![CDATA[<b>Telegram</b>]]> stellt Nachrichten schneller<![CDATA[<br/>]]>zu als andere Anwendungen.</string>
-    <string name="Page3Message"><![CDATA[<b>Telegram</b>]]> ist für immer kostenlos.<![CDATA[<br/>]]>Keine Werbung. Keine Abo-Gebühr.</string>
-    <string name="Page4Message"><![CDATA[<b>Telegram</b>]]> schützt deine Nachrichten <![CDATA[<br/>]]>vor Hacker-Angriffen.</string>
-    <string name="Page5Message"><![CDATA[<b>Telegram</b>]]> unterstützt unbegrenzt große <![CDATA[<br/>]]>Chats und Mediendateien.</string>
-    <string name="Page6Message"><![CDATA[<b>Telegram</b>]]> lässt sich von verschiedenen Geräten<![CDATA[<br/>]]>gleichzeitig nutzen.</string>
-    <string name="Page7Message"><![CDATA[<b>Telegram</b>]]>-Nachrichten sind stark verschlüsselt<![CDATA[<br/>]]>und können sich selbst zerstören.</string>
+    <string name="Page2Message"><![CDATA[<b>Telegram+</b>]]> stellt Nachrichten schneller<![CDATA[<br/>]]>zu als andere Anwendungen.</string>
+    <string name="Page3Message"><![CDATA[<b>Telegram+</b>]]> ist für immer kostenlos.<![CDATA[<br/>]]>Keine Werbung. Keine Abo-Gebühr.</string>
+    <string name="Page4Message"><![CDATA[<b>Telegram+</b>]]> schützt deine Nachrichten <![CDATA[<br/>]]>vor Hacker-Angriffen.</string>
+    <string name="Page5Message"><![CDATA[<b>Telegram+</b>]]> unterstützt unbegrenzt große <![CDATA[<br/>]]>Chats und Mediendateien.</string>
+    <string name="Page6Message"><![CDATA[<b>Telegram+</b>]]> lässt sich von verschiedenen Geräten<![CDATA[<br/>]]>gleichzeitig nutzen.</string>
+    <string name="Page7Message"><![CDATA[<b>Telegram+</b>]]>-Nachrichten sind stark verschlüsselt<![CDATA[<br/>]]>und können sich selbst zerstören.</string>
     <string name="StartMessaging">Jetzt beginnen</string>
     <!--plural-->
     <string name="Online_zero">%1$d online</string>
@@ -511,18 +550,24 @@
     <string name="messages_few">%1$d Nachrichten</string>
     <string name="messages_many">%1$d Nachrichten</string>
     <string name="messages_other">%1$d Nachrichten</string>
-    <string name="files_zero">keine Dateien</string>
-    <string name="files_one">%1$d Datei</string>
-    <string name="files_two">%1$d Dateien</string>
-    <string name="files_few">%1$d Dateien</string>
-    <string name="files_many">%1$d Dateien</string>
-    <string name="files_other">%1$d Dateien</string>
+    <string name="items_zero">keine Objekte</string>
+    <string name="items_one">%1$d Objekt</string>
+    <string name="items_two">%1$d Objekte</string>
+    <string name="items_few">%1$d Objekte</string>
+    <string name="items_many">%1$d Objekte</string>
+    <string name="items_other">%1$d Objekte</string>
     <string name="FromContacts_zero">von keinem Kontakt</string>
     <string name="FromContacts_one">von %1$d Kontakt</string>
     <string name="FromContacts_two">von %1$d Kontakten</string>
     <string name="FromContacts_few">von %1$d Kontakten</string>
     <string name="FromContacts_many">von %1$d Kontakten</string>
     <string name="FromContacts_other">von %1$d Kontakten</string>
+    <string name="FromChats_zero">von keinen Chats</string>
+    <string name="FromChats_one">von %1$d Chat</string>
+    <string name="FromChats_two">von %1$d Chats</string>
+    <string name="FromChats_few">von %1$d Chats</string>
+    <string name="FromChats_many">von %1$d Chats</string>
+    <string name="FromChats_other">von %1$d Chats</string>
     <string name="Seconds_zero">%1$d Sekunden</string>
     <string name="Seconds_one">%1$d Sekunde</string>
     <string name="Seconds_two">%1$d Sekunden</string>
@@ -572,6 +617,7 @@
     <string name="Users_many">%1$d Nutzer</string>
     <string name="Users_other">%1$d Nutzer</string>
     <!--date formatters-->
+    <string name="formatterMonthYear">MMMM yyyy</string>
     <string name="formatterMonth">dd MMM</string>
     <string name="formatterYear">dd.MM.yy</string>
     <string name="formatterYearMax">dd.MM.yyyy</string>

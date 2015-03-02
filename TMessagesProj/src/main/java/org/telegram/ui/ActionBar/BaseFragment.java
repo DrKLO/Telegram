@@ -41,7 +41,7 @@ public class BaseFragment {
         classGuid = ConnectionsManager.getInstance().generateClassGuid();
     }
 
-    public View createView(LayoutInflater inflater, ViewGroup container) {
+    public View createView(LayoutInflater inflater) {
         return null;
     }
 
@@ -201,7 +201,7 @@ public class BaseFragment {
         return true;
     }
 
-    protected void showAlertDialog(AlertDialog.Builder builder) {
+    public void showAlertDialog(AlertDialog.Builder builder) {
         if (parentLayout == null || parentLayout.checkTransitionAnimation() || parentLayout.animationInProgress || parentLayout.startedTracking) {
             return;
         }

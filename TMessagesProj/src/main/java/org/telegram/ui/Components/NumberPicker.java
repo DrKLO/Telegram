@@ -22,6 +22,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Paint.Align;
+import android.graphics.PorterDuff;
 import android.graphics.drawable.Drawable;
 import android.text.TextUtils;
 import android.util.AttributeSet;
@@ -39,6 +40,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import org.telegram.messenger.R;
+import org.telegram.android.AndroidUtilities;
 
 import java.util.Locale;
 
@@ -73,7 +75,7 @@ public class NumberPicker extends LinearLayout {
     private OnScrollListener mOnScrollListener;
     private Formatter mFormatter;
     private long mLongPressUpdateInterval = DEFAULT_LONG_PRESS_UPDATE_INTERVAL;
-    private final SparseArray<String> mSelectorIndexToStringCache = new SparseArray<String>();
+    private final SparseArray<String> mSelectorIndexToStringCache = new SparseArray<>();
     private final int[] mSelectorIndices = new int[SELECTOR_WHEEL_ITEM_COUNT];
     private Paint mSelectorWheelPaint;
     private Drawable mVirtualButtonPressedDrawable;
@@ -123,7 +125,9 @@ public class NumberPicker extends LinearLayout {
 
     private void init() {
         mSolidColor = 0;
-        mSelectionDivider = getResources().getDrawable(R.drawable.numberpicker_selection_divider);
+        //mSelectionDivider = getResources().getDrawable(R.drawable.numberpicker_selection_divider);
+        mSelectionDivider = getResources().getDrawable(R.drawable.numberpicker_selection_divider_white);
+        mSelectionDivider.setColorFilter(AndroidUtilities.getIntColor("themeColor"), PorterDuff.Mode.MULTIPLY);
 
         mSelectionDividerHeight = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, UNSCALED_DEFAULT_SELECTION_DIVIDER_HEIGHT, getResources().getDisplayMetrics());
         mSelectionDividersDistance = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, UNSCALED_DEFAULT_SELECTION_DIVIDERS_DISTANCE, getResources().getDisplayMetrics());

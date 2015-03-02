@@ -31,7 +31,7 @@ public class View10 extends Animation {
 
     public static boolean NEED_PROXY = Build.VERSION.SDK_INT < 11;
 
-    private static final WeakHashMap<View, View10> PROXIES = new WeakHashMap<View, View10>();
+    private static final WeakHashMap<View, View10> PROXIES = new WeakHashMap<>();
 
     public static View10 wrap(View view) {
         View10 proxy = PROXIES.get(view);
@@ -68,7 +68,7 @@ public class View10 extends Animation {
         setDuration(0);
         setFillAfter(true);
         view.setAnimation(this);
-        mView = new WeakReference<View>(view);
+        mView = new WeakReference<>(view);
     }
 
     public float getAlpha() {

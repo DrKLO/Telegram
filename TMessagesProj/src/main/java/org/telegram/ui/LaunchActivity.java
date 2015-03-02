@@ -59,11 +59,13 @@ import org.telegram.ui.Adapters.DrawerLayoutAdapter;
 import org.telegram.ui.ActionBar.ActionBarLayout;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.DrawerLayoutContainer;
+import org.telegram.ui.Components.PasscodeView;
 
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.Locale;
 import java.util.Map;
 
 public class LaunchActivity extends Activity implements ActionBarLayout.ActionBarLayoutDelegate, NotificationCenter.NotificationCenterDelegate, MessagesActivity.MessagesActivityDelegate {
@@ -89,8 +91,18 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
     private ImageView backgroundTablet;
     private DrawerLayoutContainer drawerLayoutContainer;
     private DrawerLayoutAdapter drawerLayoutAdapter;
+    private PasscodeView passcodeView;
+
+    private Intent passcodeSaveIntent;
+    private boolean passcodeSaveIntentIsNew;
+    private boolean passcodeSaveIntentIsRestore;
 
     private boolean tabletFullSize;
+
+    private Runnable lockRunnable;
+
+    private int themingRow = 7;
+    private int communityRow = 9;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -121,6 +133,10 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
         getWindow().setBackgroundDrawableResource(R.drawable.transparent);
 
         super.onCreate(savedInstanceState);
+
+        if (UserConfig.passcodeHash.length() != 0 && UserConfig.appLocked) {
+            UserConfig.lastPauseTime = ConnectionsManager.getInstance().getCurrentTime();
+        }
 
         int resourceId = getResources().getIdentifier("status_bar_height", "dimen", "android");
         if (resourceId > 0) {
@@ -254,6 +270,9 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 if (position == 2) {
+                    if (!MessagesController.isFeatureEnabled("chat_create", actionBarLayout.fragmentsStack.get(actionBarLayout.fragmentsStack.size() - 1))) {
+                        return;
+                    }
                     presentFragment(new GroupCreateActivity());
                     drawerLayoutContainer.closeDrawer(false);
                 } else if (position == 3) {
@@ -264,6 +283,9 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                     presentFragment(new ContactsActivity(args));
                     drawerLayoutContainer.closeDrawer(false);
                 } else if (position == 4) {
+                    if (!MessagesController.isFeatureEnabled("broadcast_create", actionBarLayout.fragmentsStack.get(actionBarLayout.fragmentsStack.size() - 1))) {
+                        return;
+                    }
                     Bundle args = new Bundle();
                     args.putBoolean("broadcast", true);
                     presentFragment(new GroupCreateActivity(args));
@@ -271,23 +293,36 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                 } else if (position == 6) {
                     presentFragment(new ContactsActivity(null));
                     drawerLayoutContainer.closeDrawer(false);
-                } else if (position == 7) {
+                } else if (position == themingRow) {
+                    /*
                     try {
                         Intent intent = new Intent(Intent.ACTION_SEND);
                         intent.setType("text/plain");
                         intent.putExtra(Intent.EXTRA_TEXT, ContactsController.getInstance().getInviteText());
-                        startActivity(Intent.createChooser(intent, ""));
+                        startActivityForResult(Intent.createChooser(intent, LocaleController.getString("InviteFriends", R.string.InviteFriends)), 500);
                     } catch (Exception e) {
                         FileLog.e("tmessages", e);
-                    }
+                    }*/
+                    presentFragment(new ThemingActivity());
                     drawerLayoutContainer.closeDrawer(false);
                 } else if (position == 8) {
                     presentFragment(new SettingsActivity());
                     drawerLayoutContainer.closeDrawer(false);
-                } else if (position == 9) {
+                } else if (position == 10) {
                     try {
                         Intent pickIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(LocaleController.getString("TelegramFaqUrl", R.string.TelegramFaqUrl)));
-                        startActivity(pickIntent);
+                        startActivityForResult(pickIntent, 500);
+                    } catch (Exception e) {
+                        FileLog.e("tmessages", e);
+                    }
+                    drawerLayoutContainer.closeDrawer(false);
+                } else if (position == communityRow) {
+                    try {
+                        String link = "https://plus.google.com/communities/106927015963860485525";//https://plus.google.com/101839105638971401281/posts"
+                        if(Locale.getDefault().getLanguage().contains("es")){
+                            link = "https://plus.google.com/communities/111922519175849600270";
+                        }
+                        startActivityForResult(new Intent(Intent.ACTION_VIEW, Uri.parse(link)), 500);
                     } catch (Exception e) {
                         FileLog.e("tmessages", e);
                     }
@@ -301,6 +336,15 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
         actionBarLayout.init(mainFragmentsStack);
         actionBarLayout.setDelegate(this);
 
+        ApplicationLoader.loadWallpaper();
+
+        passcodeView = new PasscodeView(this);
+        drawerLayoutContainer.addView(passcodeView);
+        FrameLayout.LayoutParams layoutParams1 = (FrameLayout.LayoutParams) passcodeView.getLayoutParams();
+        layoutParams1.width = FrameLayout.LayoutParams.MATCH_PARENT;
+        layoutParams1.height = FrameLayout.LayoutParams.MATCH_PARENT;
+        passcodeView.setLayoutParams(layoutParams1);
+
         NotificationCenter.getInstance().postNotificationName(NotificationCenter.closeOtherAppActivities, this);
         currentConnectionState = ConnectionsManager.getInstance().getConnectionState();
 
@@ -309,6 +353,11 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
         NotificationCenter.getInstance().addObserver(this, NotificationCenter.closeOtherAppActivities);
         NotificationCenter.getInstance().addObserver(this, NotificationCenter.didUpdatedConnectionState);
         NotificationCenter.getInstance().addObserver(this, NotificationCenter.needPasswordEnter);
+        if (Build.VERSION.SDK_INT < 14) {
+            NotificationCenter.getInstance().addObserver(this, NotificationCenter.screenStateChanged);
+        } else {
+            NotificationCenter.getInstance().addObserver(this, NotificationCenter.appSwitchedToForeground);
+        }
 
         if (actionBarLayout.fragmentsStack.isEmpty()) {
             if (!UserConfig.isClientActivated() && !UserConfig.isWaitingForPasswordEnter()) {
@@ -385,11 +434,48 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
             drawerLayoutContainer.setAllowOpenDrawer(allowOpen);
         }
 
-        handleIntent(getIntent(), false, savedInstanceState != null);
+        handleIntent(getIntent(), false, savedInstanceState != null, false);
         needLayout();
     }
 
-    private void handleIntent(Intent intent, boolean isNew, boolean restore) {
+    private void showPasscodeActivity() {
+        if (passcodeView == null) {
+            return;
+        }
+        UserConfig.appLocked = true;
+        if (PhotoViewer.getInstance().isVisible()) {
+            PhotoViewer.getInstance().closePhoto(false, true);
+        }
+        passcodeView.onShow();
+        UserConfig.isWaitingForPasscodeEnter = true;
+        drawerLayoutContainer.setAllowOpenDrawer(false);
+        passcodeView.setDelegate(new PasscodeView.PasscodeViewDelegate() {
+            @Override
+            public void didAcceptedPassword() {
+                UserConfig.isWaitingForPasscodeEnter = false;
+                if (passcodeSaveIntent != null) {
+                    handleIntent(passcodeSaveIntent, passcodeSaveIntentIsNew, passcodeSaveIntentIsRestore, true);
+                    passcodeSaveIntent = null;
+                }
+                drawerLayoutContainer.setAllowOpenDrawer(true);
+                actionBarLayout.showLastFragment();
+                if (AndroidUtilities.isTablet()) {
+                    layersActionBarLayout.showLastFragment();
+                    rightActionBarLayout.showLastFragment();
+                }
+            }
+        });
+    }
+
+    private boolean handleIntent(Intent intent, boolean isNew, boolean restore, boolean fromPassword) {
+        int flags = intent.getFlags();
+        if (!fromPassword && (AndroidUtilities.needShowPasscode(true) || UserConfig.isWaitingForPasscodeEnter)) {
+            showPasscodeActivity();
+            passcodeSaveIntent = intent;
+            passcodeSaveIntentIsNew = isNew;
+            passcodeSaveIntentIsRestore = restore;
+            UserConfig.saveConfig(false);
+        } else {
         boolean pushOpened = false;
 
         Integer push_user_id = 0;
@@ -407,7 +493,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
         documentsUrisArray = null;
         contactsToSend = null;
 
-        if (UserConfig.isClientActivated() && !UserConfig.isWaitingForPasswordEnter() && (intent.getFlags() & Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY) == 0) {
+            if (UserConfig.isClientActivated() && !UserConfig.isWaitingForPasswordEnter() && (flags & Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY) == 0) {
             if (intent != null && intent.getAction() != null && !restore) {
                 if (Intent.ACTION_SEND.equals(intent.getAction())) {
                     boolean error = false;
@@ -483,6 +569,12 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                                         }
                                     }
                                 }
+                                    try {
+                                        bufferedReader.close();
+                                        stream.close();
+                                    } catch (Exception e) {
+                                        FileLog.e("tmessages", e);
+                                    }
                                 if (name != null && !phones.isEmpty()) {
                                     contactsToSend = new ArrayList<>();
                                     for (String phone : phones) {
@@ -765,7 +857,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
             actionBarLayout.presentFragment(fragment, removeLast, true, true);
             pushOpened = true;
             if (PhotoViewer.getInstance().isVisible()) {
-                PhotoViewer.getInstance().closePhoto(false);
+                    PhotoViewer.getInstance().closePhoto(false, true);
             }
 
             if (AndroidUtilities.isTablet()) {
@@ -782,6 +874,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
             }
             pushOpened = true;
         }
+
         if (!pushOpened && !isNew) {
             if (AndroidUtilities.isTablet()) {
                 if (!UserConfig.isClientActivated() && !UserConfig.isWaitingForPasswordEnter()) {
@@ -824,12 +917,15 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
         }
 
         intent.setAction(null);
+            return pushOpened;
+        }
+        return false;
     }
 
     @Override
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
-        handleIntent(intent, true, false);
+        handleIntent(intent, true, false, false);
     }
 
     @Override
@@ -910,11 +1006,20 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
             return;
         }
         finished = true;
+        if (lockRunnable != null) {
+            AndroidUtilities.cancelRunOnUIThread(lockRunnable);
+            lockRunnable = null;
+        }
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.appDidLogout);
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.mainUserInfoChanged);
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.closeOtherAppActivities);
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.didUpdatedConnectionState);
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.needPasswordEnter);
+        if (Build.VERSION.SDK_INT < 14) {
+            NotificationCenter.getInstance().removeObserver(this, NotificationCenter.screenStateChanged);
+        } else {
+            NotificationCenter.getInstance().removeObserver(this, NotificationCenter.appSwitchedToForeground);
+        }
     }
 
     public void presentFragment(BaseFragment fragment) {
@@ -960,9 +1065,11 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                     BaseFragment chatFragment = actionBarLayout.fragmentsStack.get(1);
                     chatFragment.onPause();
                     actionBarLayout.fragmentsStack.remove(1);
-                    actionBarLayout.showLastFragment();
                     rightActionBarLayout.fragmentsStack.add(chatFragment);
-                    rightActionBarLayout.showLastFragment();
+                    if (passcodeView.getVisibility() != View.VISIBLE) {
+                        actionBarLayout.showLastFragment();
+                        rightActionBarLayout.showLastFragment();
+                    }
                 }
 
                 rightActionBarLayout.setVisibility(rightActionBarLayout.fragmentsStack.isEmpty() ? View.GONE : View.VISIBLE);
@@ -984,7 +1091,10 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                     BaseFragment chatFragment = rightActionBarLayout.fragmentsStack.get(0);
                     chatFragment.onPause();
                     rightActionBarLayout.fragmentsStack.remove(0);
-                    actionBarLayout.presentFragment(chatFragment, false, true, false);
+                    actionBarLayout.addFragmentToStack(chatFragment);
+                    if (passcodeView.getVisibility() != View.VISIBLE) {
+                        actionBarLayout.showLastFragment();
+                    }
                 }
             }
         }
@@ -1013,6 +1123,10 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (UserConfig.passcodeHash.length() != 0 && UserConfig.lastPauseTime != 0) {
+            UserConfig.lastPauseTime = 0;
+            UserConfig.saveConfig(false);
+        }
         super.onActivityResult(requestCode, resultCode, data);
         if (actionBarLayout.fragmentsStack.size() != 0) {
             BaseFragment fragment = actionBarLayout.fragmentsStack.get(actionBarLayout.fragmentsStack.size() - 1);
@@ -1033,6 +1147,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
     @Override
     protected void onPause() {
         super.onPause();
+        onPasscodePause();
         actionBarLayout.onPause();
         if (AndroidUtilities.isTablet()) {
             rightActionBarLayout.onPause();
@@ -1053,10 +1168,15 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
     @Override
     protected void onResume() {
         super.onResume();
+        onPasscodeResume();
+        if (passcodeView.getVisibility() != View.VISIBLE) {
         actionBarLayout.onResume();
         if (AndroidUtilities.isTablet()) {
             rightActionBarLayout.onResume();
             layersActionBarLayout.onResume();
+        }
+        } else {
+            passcodeView.onResume();
         }
         Utilities.checkForCrashes(this);
         Utilities.checkForUpdates(this);
@@ -1100,6 +1220,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
         } else if (id == NotificationCenter.closeOtherAppActivities) {
             if (args[0] != this) {
                 onFinish();
+                finish();
             }
         } else if (id == NotificationCenter.didUpdatedConnectionState) {
             int state = (Integer)args[0];
@@ -1132,6 +1253,62 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                 actionBarLayout.presentFragment(new AccountPasswordActivity(1), true);
                 drawerLayoutContainer.setAllowOpenDrawer(false);
             }
+        } else if (id == NotificationCenter.screenStateChanged) {
+            if (!ApplicationLoader.mainInterfacePaused) {
+                if (!ApplicationLoader.isScreenOn) {
+                    onPasscodePause();
+                } else {
+                    onPasscodeResume();
+                }
+            }
+        } else if (id == NotificationCenter.appSwitchedToForeground) {
+            onPasscodeResume();
+        }
+    }
+
+    private void onPasscodePause() {
+        if (lockRunnable != null) {
+            AndroidUtilities.cancelRunOnUIThread(lockRunnable);
+            lockRunnable = null;
+        }
+        if (UserConfig.passcodeHash.length() != 0) {
+            UserConfig.lastPauseTime = ConnectionsManager.getInstance().getCurrentTime();
+            lockRunnable = new Runnable() {
+                @Override
+                public void run() {
+                    if (lockRunnable == this) {
+                        if (AndroidUtilities.needShowPasscode(true)) {
+                            FileLog.e("tmessages", "lock app");
+                            showPasscodeActivity();
+                        } else {
+                            FileLog.e("tmessages", "didn't pass lock check");
+                        }
+                        lockRunnable = null;
+                    }
+                }
+            };
+            if (UserConfig.appLocked) {
+                AndroidUtilities.runOnUIThread(lockRunnable, 1000);
+            } else if (UserConfig.autoLockIn != 0) {
+                AndroidUtilities.runOnUIThread(lockRunnable, (long) UserConfig.autoLockIn * 1000 + 1000);
+            }
+        } else {
+            UserConfig.lastPauseTime = 0;
+        }
+        UserConfig.saveConfig(false);
+    }
+
+    private void onPasscodeResume() {
+        if (lockRunnable != null) {
+            AndroidUtilities.cancelRunOnUIThread(lockRunnable);
+            lockRunnable = null;
+        }
+        if (AndroidUtilities.needShowPasscode(true)) {
+            showPasscodeActivity();
+        }
+        if (UserConfig.lastPauseTime != 0) {
+            UserConfig.lastPauseTime = 0;
+            UserConfig.saveConfig(false);
         }
     }
 
@@ -1191,8 +1368,12 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
 
     @Override
     public void onBackPressed() {
+        if (passcodeView.getVisibility() == View.VISIBLE) {
+            finish();
+            return;
+        }
         if (PhotoViewer.getInstance().isVisible()) {
-            PhotoViewer.getInstance().closePhoto(true);
+            PhotoViewer.getInstance().closePhoto(true, false);
         } else if (drawerLayoutContainer.isDrawerOpened()) {
             drawerLayoutContainer.closeDrawer(false);
         } else if (AndroidUtilities.isTablet()) {
@@ -1246,7 +1427,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
     @Override
     public boolean onPreIme() {
         if (PhotoViewer.getInstance().isVisible()) {
-            PhotoViewer.getInstance().closePhoto(true);
+            PhotoViewer.getInstance().closePhoto(true, false);
             return true;
         }
         return false;
@@ -1266,6 +1447,9 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
             } else {
                 if (actionBarLayout.fragmentsStack.size() == 1) {
                     if (!drawerLayoutContainer.isDrawerOpened()) {
+                        if (getCurrentFocus() != null) {
+                            AndroidUtilities.hideKeyboard(getCurrentFocus());
+                        }
                         drawerLayoutContainer.openDrawer(false);
                     } else {
                         drawerLayoutContainer.closeDrawer(false);

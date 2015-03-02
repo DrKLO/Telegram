@@ -85,7 +85,7 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
         avatarUpdater.parentFragment = this;
         avatarUpdater.delegate = this;
         selectedContacts = getArguments().getIntegerArrayList("result");
-        final ArrayList<Integer> usersToLoad = new ArrayList<Integer>();
+        final ArrayList<Integer> usersToLoad = new ArrayList<>();
         for (Integer uid : selectedContacts) {
             if (MessagesController.getInstance().getUser(uid) == null) {
                 usersToLoad.add(uid);
@@ -93,7 +93,7 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
         }
         if (!usersToLoad.isEmpty()) {
             final Semaphore semaphore = new Semaphore(0);
-            final ArrayList<TLRPC.User> users = new ArrayList<TLRPC.User>();
+            final ArrayList<TLRPC.User> users = new ArrayList<>();
             MessagesStorage.getInstance().getStorageQueue().postRunnable(new Runnable() {
                 @Override
                 public void run() {
@@ -138,7 +138,7 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
     }
 
     @Override
-    public View createView(LayoutInflater inflater, ViewGroup container) {
+    public View createView(LayoutInflater inflater) {
         if (fragmentView == null) {
             actionBar.setBackButtonImage(R.drawable.ic_ab_back);
             actionBar.setAllowOverlayTitle(true);
@@ -402,6 +402,7 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
                             FileLog.e("tmessages", e);
                         }
                     }
+                    NotificationCenter.getInstance().postNotificationName(NotificationCenter.closeChats);
                     Bundle args2 = new Bundle();
                     args2.putInt("chat_id", (Integer)args[0]);
                     presentFragment(new ChatActivity(args2), true);

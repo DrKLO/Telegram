@@ -35,7 +35,7 @@ import org.telegram.ui.ActionBar.BaseFragment;
 public class ChangePhoneHelpActivity extends BaseFragment {
 
     @Override
-    public View createView(LayoutInflater inflater, ViewGroup container) {
+    public View createView(LayoutInflater inflater) {
         if (fragmentView == null) {
             actionBar.setBackButtonImage(R.drawable.ic_ab_back);
             actionBar.setAllowOverlayTitle(true);
@@ -118,7 +118,8 @@ public class ChangePhoneHelpActivity extends BaseFragment {
             textView = new TextView(getParentActivity());
             textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
             textView.setGravity(Gravity.CENTER_HORIZONTAL);
-            textView.setTextColor(0xff4d83b3);
+            //textView.setTextColor(0xff4d83b3);
+            textView.setTextColor(AndroidUtilities.getIntColor("themeColor"));
             textView.setText(LocaleController.getString("PhoneNumberChange", R.string.PhoneNumberChange));
             textView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
             textView.setPadding(0, AndroidUtilities.dp(10), 0, AndroidUtilities.dp(10));

@@ -3,7 +3,7 @@
 <!--https://www.transifex.com/projects/p/telegram/language/it/members/-->
 
 <resources>
-    <string name="AppName">Telegram</string>
+    <string name="AppName">Telegram+</string>
     <string name="LanguageName">Italiano</string>
     <string name="LanguageNameInEnglish">Italian</string>
     <string name="LanguageCode">it</string>
@@ -37,7 +37,7 @@
     <string name="NoChatsHelp">Inizia a scrivere premendo il tasto\nnuovo messaggio nell\'angolo in basso a destra\no apri il menu per avere più opzioni.</string>
     <string name="WaitingForNetwork">Attendo la rete...</string>
     <string name="Connecting">Connessione in corso…</string>
-    <string name="Updating">Aggiornamento in corso…</string>
+    <string name="Updating">Aggiornamento…</string>
     <string name="NewSecretChat">Nuova chat segreta</string>
     <string name="AwaitingEncryption">In attesa che %s si colleghi…</string>
     <string name="EncryptionRejected">Chat segreta annullata</string>
@@ -57,6 +57,7 @@
     <string name="MuteFor">Silenzia per %1$s</string>
     <string name="UnmuteNotifications">Suona</string>
     <string name="WillUnmuteIn">Tra %1$s</string>
+    <string name="MuteDisable">Disabilita</string>
     <!--broadcasts-->
     <string name="NewBroadcastList">Nuova lista broadcast</string>
     <string name="EnterListName">Immetti il nome della lista</string>
@@ -143,6 +144,7 @@
     <string name="NotificationEditedGroupName">%1$s ha modificato il nome del gruppo %2$s</string>
     <string name="NotificationEditedGroupPhoto">%1$s ha modificato la foto del gruppo %2$s</string>
     <string name="NotificationGroupAddMember">%1$s ha invitato %3$s nel gruppo %2$s</string>
+    <string name="NotificationGroupAddSelf">%1$s è rientrato nel gruppo %2$s</string>
     <string name="NotificationGroupKickMember">%1$s ha espulso %3$s dal gruppo %2$s</string>
     <string name="NotificationGroupKickYou">%1$s ti ha espulso dal gruppo %2$s</string>
     <string name="NotificationGroupLeftMember">%1$s ha lasciato il gruppo %2$s</string>
@@ -210,7 +212,7 @@
     <string name="UsernameInvalidShort">Il minimo per un username è 5 caratteri.</string>
     <string name="UsernameInvalidLong">Il massimo per un username è 32 caratteri.</string>
     <string name="UsernameInvalidStartNumber">Un username non può iniziare con numeri.</string>
-    <string name="UsernameHelp">Puoi scegliere un username su <![CDATA[<b>]]>Telegram<![CDATA[</b>]]>. Se lo fai, le altre persone potranno trovarti tramite questo nome utente e contattarti senza conoscere il tuo numero di telefono.<![CDATA[<br><br>]]>Puoi usare <![CDATA[<b>]]>a–z<![CDATA[</b>]]>, <![CDATA[<b>]]>0–9<![CDATA[</b>]]> e underscore. La lunghezza minima è di <![CDATA[<b>]]>5<![CDATA[</b>]]>  caratteri.</string>
+    <string name="UsernameHelp">Puoi scegliere un username su <![CDATA[<b>]]>Telegram+<![CDATA[</b>]]>. Se lo fai, le altre persone potranno trovarti tramite questo nome utente e contattarti senza conoscere il tuo numero di telefono.<![CDATA[<br><br>]]>Puoi usare <![CDATA[<b>]]>a–z<![CDATA[</b>]]>, <![CDATA[<b>]]>0–9<![CDATA[</b>]]> e underscore. La lunghezza minima è di <![CDATA[<b>]]>5<![CDATA[</b>]]>  caratteri.</string>
     <string name="UsernameChecking">Controllando l\'username...</string>
     <string name="UsernameAvailable">%1$s è disponibile.</string>
     <string name="UsernameEmpty">Nessuno</string>
@@ -240,7 +242,7 @@
     <string name="BlockedUsers">Utenti bloccati</string>
     <string name="LogOut">Disconnetti</string>
     <string name="NoSound">Nessun suono</string>
-    <string name="Default">Predefinito</string>
+    <string name="Default">Default</string>
     <string name="Support">Supporto</string>
     <string name="ChatBackground">Sfondo chat</string>
     <string name="MessagesSettings">Messaggi</string>
@@ -256,8 +258,8 @@
     <string name="TelegramFaqUrl">https://telegram.org/faq/it</string>
     <string name="DeleteLocalization">Eliminare la localizzazione?</string>
     <string name="IncorrectLocalization">File della localizzazione non valido</string>
-    <string name="Enabled">Abilitato</string>
-    <string name="Disabled">Disabilitato</string>
+    <string name="Enabled">Abilitate</string>
+    <string name="Disabled">Disabilitate</string>
     <string name="NotificationsService">Servizio notifiche</string>
     <string name="NotificationsServiceDisableInfo">Se i servizi di Google Play sono sufficienti per ricevere le notifiche, è possibile disabilitare il Servizio notifiche. Ti raccomandiamo comunque di lasciarlo abilitato per lasciare l\'app attiva in background e ricevere le notifiche istantanee.</string>
     <string name="SortBy">Ordina per</string>
@@ -296,9 +298,29 @@
     <string name="ChangePhoneHelp">Invieremo un SMS con un codice di conferma al tuo nuovo numero.</string>
     <string name="ChangePhoneNumberOccupied">Il numero %1$s è già connesso a un account Telegram. Per favore elimina quell\'account prima di migrare ad un nuovo numero.</string>
     <string name="NotificationsOther">Altro</string>
+    <string name="NotificationsDisabled">Disabilitate</string>
+    <string name="VibrationDisabled">Disabilitata</string>
+    <!--passcode view-->
+    <string name="Passcode">Codice</string>
+    <string name="ChangePasscode">Cambia codice</string>
+    <string name="ChangePasscodeInfo">Quando imposti un codice, un\'icona col lucchetto apparirà nella pagina delle chat. Premi su di essa per bloccare e sbloccare l\'app.\n\nNota: se ti dimentichi il codice, dovrai disinstallare e reinstallare l\'app. Tutte le chat segrete verranno perse.</string>
+    <string name="ChangePasscodeAlert">Ora visualizzerai un\'icona col lucchetto nella pagina delle chat. Premi su di essa per bloccare la tua app Telegram con il codice.</string>
+    <string name="PasscodePIN">PIN</string>
+    <string name="PasscodePassword">Password</string>
+    <string name="EnterCurrentPasscode">Inserisci il tuo codice</string>
+    <string name="EnterNewPasscode">Inserisci il nuovo codice</string>
+    <string name="EnterYourPasscode">Inserisci il tuo codice</string>
+    <string name="ReEnterYourPasscode">Reinserisci il nuovo codice</string>
+    <string name="InvalidPasscode">Codice non valido</string>
+    <string name="PasscodeDoNotMatch">I codici non corrispondono</string>
+    <string name="AutoLock">Blocco automatico</string>
+    <string name="AutoLockInfo">Richiede il codice se lontano per del tempo.</string>
+    <string name="AutoLockInTime">tra %1$s</string>
+    <string name="AutoLockDisabled">Disabilitato</string>
     <!--media view-->
     <string name="NoMedia">Condividi foto e video in questa chat e accedi ad essi da ogni tuo dispositivo.</string>
     <string name="DocumentsTitle">File</string>
+    <string name="SharedMediaTitle">Media condivisi</string>
     <string name="NoSharedFiles">Condividi file e documenti in questa chat e accedi ad essi da ogni tuo dispositivo.</string>
     <!--map view-->
     <string name="Map">Mappa</string>
@@ -318,12 +340,27 @@
     <string name="PleaseDownload">Scarica prima il file</string>
     <string name="NoRecentPhotos">Nessuna foto recente</string>
     <string name="NoRecentGIFs">Nessuna GIF recente</string>
-    <string name="SearchImages">RICERCA WEB</string>
-    <string name="SearchGifs">RICERCA GIF</string>
+    <string name="SearchImages">CERCA IMMAGINI</string>
+    <string name="SearchImagesInfo">RICERCA WEB</string>
+    <string name="SearchGifs">CERCA GIF</string>
     <string name="SearchImagesTitle">Cerca su web</string>
     <string name="SearchGifsTitle">Cerca GIF</string>
     <string name="CropImage">Ritaglia immagine</string>
     <string name="EditImage">Modifica immagine</string>
+    <string name="Enhance">Migliora</string>
+    <string name="Highlights">Alte luci</string>
+    <string name="Contrast">Contrasto</string>
+    <string name="Exposure">Esposizione</string>
+    <string name="Warmth">Calore</string>
+    <string name="Saturation">Saturazione</string>
+    <string name="Vignette">Vignettatura</string>
+    <string name="Shadows">Ombre</string>
+    <string name="Grain">Grana</string>
+    <string name="Sharpen">Nitidezza</string>
+    <string name="Blur">Sfocatura</string>
+    <string name="AreYouSureDeletePhoto">Sei sicuro di voler eliminare questa foto?</string>
+    <string name="AreYouSureDeleteVideo">Sei sicuro di voler eliminare questo video?</string>
+    <string name="DiscardChanges">Annullare le modifiche?</string>
     <!--password view-->
     <string name="Password">Password</string>
     <string name="ChangePassword">Change password</string>
@@ -405,6 +442,7 @@
     <string name="DeletePhoto">Elimina foto</string>
     <string name="Set">Imposta</string>
     <string name="OK">OK</string>
+    <string name="Crop">RITAGLIA</string>
     <!--messages-->
     <string name="ActionKickUser">un1 ha espulso un2</string>
     <string name="ActionLeftUser">un1 ha lasciato il gruppo</string>
@@ -422,6 +460,7 @@
     <string name="ActionYouCreateGroup">Hai creato il gruppo</string>
     <string name="ActionKickUserYou">un1 ti ha espulso</string>
     <string name="ActionAddUserYou">un1 ti ha aggiunto</string>
+    <string name="ActionAddUserSelf">un1 è ritentrato nel gruppo</string>
     <string name="UnsuppotedMedia">Questo messaggio non è supportato sulla tua versione di Telegram. Aggiorna l\'applicazione per visualizzarlo: http://telegram.org/update</string>
     <string name="AttachPhoto">Foto</string>
     <string name="AttachVideo">Video</string>
@@ -465,7 +504,7 @@
     <string name="ForwardMessagesToGroup">Inoltra messaggi a %1$s?</string>
     <string name="FeatureUnavailable">Ci spiace, questa funzione non è disponibile nel tuo paese.</string>
     <!--Intro view-->
-    <string name="Page1Title">Telegram</string>
+    <string name="Page1Title">Telegram+</string>
     <string name="Page2Title">Veloce</string>
     <string name="Page3Title">Gratuito</string>
     <string name="Page4Title">Sicuro</string>
@@ -473,12 +512,12 @@
     <string name="Page6Title">Basato sul cloud</string>
     <string name="Page7Title">Privato</string>
     <string name="Page1Message">L\'app di messaggi <![CDATA[<b>più veloce</b>]]> al mondo.<![CDATA[<br/>]]>È <![CDATA[<b>gratuita</b>]]> e <![CDATA[<b>sicura</b>]]>.</string>
-    <string name="Page2Message"><![CDATA[<b>Telegram</b>]]> consegna i messaggi più<![CDATA[<br/>]]>velocemente di qualsiasi altra app.</string>
-    <string name="Page3Message"><![CDATA[<b>Telegram</b>]]> sarà sempre gratuito.<![CDATA[<br/>]]>Nessuna pubblicità. Nessun abbonamento.</string>
-    <string name="Page4Message"><![CDATA[<b>Telegram</b>]]> protegge i tuoi messaggi<![CDATA[<br/>]]>dagli attacchi degli hacker.</string>
-    <string name="Page5Message"><![CDATA[<b>Telegram</b>]]> non ha limiti sulle dimensioni<![CDATA[<br/>]]>dei tuoi file multimediali e delle chat.</string>
-    <string name="Page6Message"><![CDATA[<b>Telegram</b>]]> ti consente di accedere<![CDATA[<br/>]]>ai messaggi da più dispositivi.</string>
-    <string name="Page7Message"><![CDATA[<b>Telegram</b>]]> cifra in maniera sicura i messaggi<![CDATA[<br/>]]>e può far sì che si autodistruggano.</string>
+    <string name="Page2Message"><![CDATA[<b>Telegram+</b>]]> consegna i messaggi più<![CDATA[<br/>]]>velocemente di qualsiasi altra app.</string>
+    <string name="Page3Message"><![CDATA[<b>Telegram+</b>]]> sarà sempre gratuito.<![CDATA[<br/>]]>Nessuna pubblicità. Nessun abbonamento.</string>
+    <string name="Page4Message"><![CDATA[<b>Telegram+</b>]]> protegge i tuoi messaggi<![CDATA[<br/>]]>dagli attacchi degli hacker.</string>
+    <string name="Page5Message"><![CDATA[<b>Telegram+</b>]]> non ha limiti sulle dimensioni<![CDATA[<br/>]]>dei tuoi file multimediali e delle chat.</string>
+    <string name="Page6Message"><![CDATA[<b>Telegram+</b>]]> ti consente di accedere<![CDATA[<br/>]]>ai messaggi da più dispositivi.</string>
+    <string name="Page7Message"><![CDATA[<b>Telegram+</b>]]> cifra in maniera sicura i messaggi<![CDATA[<br/>]]>e può far sì che si autodistruggano.</string>
     <string name="StartMessaging">Inizia a inviare messaggi</string>
     <!--plural-->
     <string name="Online_zero">%1$d in linea</string>
@@ -511,18 +550,24 @@
     <string name="messages_few">%1$d messaggi</string>
     <string name="messages_many">%1$d messaggi</string>
     <string name="messages_other">%1$d messaggi</string>
-    <string name="files_zero">nessun file</string>
-    <string name="files_one">%1$d file</string>
-    <string name="files_two">%1$d file</string>
-    <string name="files_few">%1$d file</string>
-    <string name="files_many">%1$d file</string>
-    <string name="files_other">%1$d file</string>
+    <string name="items_zero">nessun oggetto</string>
+    <string name="items_one">%1$d oggetto</string>
+    <string name="items_two">%1$d oggetti</string>
+    <string name="items_few">%1$d oggetti</string>
+    <string name="items_many">%1$d oggetti</string>
+    <string name="items_other">%1$d oggetti</string>
     <string name="FromContacts_zero">da nessun contatto</string>
     <string name="FromContacts_one">da %1$d contatto</string>
     <string name="FromContacts_two">da %1$d contatti</string>
     <string name="FromContacts_few">da %1$d contatti</string>
     <string name="FromContacts_many">da %1$d contatti</string>
     <string name="FromContacts_other">da %1$d contatti</string>
+    <string name="FromChats_zero">in nessuna chat</string>
+    <string name="FromChats_one">in %1$d chat</string>
+    <string name="FromChats_two">in %1$d chat</string>
+    <string name="FromChats_few">in %1$d chat</string>
+    <string name="FromChats_many">in %1$d chat</string>
+    <string name="FromChats_other">in %1$d chat</string>
     <string name="Seconds_zero">%1$d secondi</string>
     <string name="Seconds_one">%1$d secondo</string>
     <string name="Seconds_two">%1$d secondi</string>
@@ -572,6 +617,7 @@
     <string name="Users_many">%1$d utenti</string>
     <string name="Users_other">%1$d utenti</string>
     <!--date formatters-->
+    <string name="formatterMonthYear">MMMM yyyy</string>
     <string name="formatterMonth">dd MMM</string>
     <string name="formatterYear">dd.MM.yy</string>
     <string name="formatterYearMax">dd.MM.yyyy</string>

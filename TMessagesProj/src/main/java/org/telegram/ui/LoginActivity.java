@@ -58,6 +58,7 @@ import org.telegram.messenger.RPCRequest;
 import org.telegram.messenger.TLObject;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.UserConfig;
+import org.telegram.messenger.Utilities;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.BaseFragment;
@@ -103,7 +104,7 @@ public class LoginActivity extends BaseFragment {
     }
 
     @Override
-    public View createView(LayoutInflater inflater, ViewGroup container) {
+    public View createView(LayoutInflater inflater) {
         if (fragmentView == null) {
             actionBar.setTitle(LocaleController.getString("AppName", R.string.AppName));
 
@@ -685,6 +686,7 @@ public class LoginActivity extends BaseFragment {
                     codesMap.put(args[0], args[2]);
                     languageMap.put(args[1], args[2]);
                 }
+                reader.close();
             } catch (Exception e) {
                 FileLog.e("tmessages", e);
             }
@@ -829,9 +831,6 @@ public class LoginActivity extends BaseFragment {
                                 final TLRPC.TL_auth_sentCode res = (TLRPC.TL_auth_sentCode)response;
                                 params.putString("phoneHash", res.phone_code_hash);
                                 params.putInt("calltime", res.send_call_timeout * 1000);
-                                if (res.phone_registered) {
-                                    params.putString("registered", "true");
-                                }
                                 setPage(1, true, params, false);
                             } else {
                                 if (error.text != null) {
@@ -898,7 +897,6 @@ public class LoginActivity extends BaseFragment {
 
         private String phoneHash;
         private String requestPhone;
-        private String registered;
         private EditText codeField;
         private TextView confirmTextView;
         private TextView timeText;
@@ -985,7 +983,8 @@ public class LoginActivity extends BaseFragment {
             problemText.setVisibility(time < 1000 ? VISIBLE : GONE);
             problemText.setGravity(Gravity.LEFT);
             problemText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-            problemText.setTextColor(0xff4d83b3);
+            //problemText.setTextColor(0xff4d83b3);
+            problemText.setTextColor(AndroidUtilities.getIntColor("themeColor"));
             problemText.setLineSpacing(AndroidUtilities.dp(2), 1.0f);
             problemText.setPadding(0, AndroidUtilities.dp(2), 0, AndroidUtilities.dp(12));
             addView(problemText);
@@ -1026,7 +1025,8 @@ public class LoginActivity extends BaseFragment {
 
             TextView wrongNumber = new TextView(context);
             wrongNumber.setGravity(Gravity.LEFT | Gravity.CENTER_HORIZONTAL);
-            wrongNumber.setTextColor(0xff4d83b3);
+            //wrongNumber.setTextColor(0xff4d83b3);
+            wrongNumber.setTextColor(AndroidUtilities.getIntColor("themeColor"));
             wrongNumber.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             wrongNumber.setLineSpacing(AndroidUtilities.dp(2), 1.0f);
             wrongNumber.setPadding(0, AndroidUtilities.dp(24), 0, 0);
@@ -1067,7 +1067,6 @@ public class LoginActivity extends BaseFragment {
             String phone = params.getString("phone");
             requestPhone = params.getString("phoneFormated");
             phoneHash = params.getString("phoneHash");
-            registered = params.getString("registered");
             time = params.getInt("calltime");
 
             if (phone == null) {
@@ -1238,10 +1237,16 @@ public class LoginActivity extends BaseFragment {
                                 MessagesController.getInstance().getBlockedUsers(true);
                                 needFinishActivity();
                                 ConnectionsManager.getInstance().initPushConnection();
+                                Utilities.stageQueue.postRunnable(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        ConnectionsManager.getInstance().updateDcSettings(0);
+                                    }
+                                });
                             } else {
                                 lastError = error.text;
 
-                                if (error.text.contains("PHONE_NUMBER_UNOCCUPIED") && registered == null) {
+                                if (error.text.contains("PHONE_NUMBER_UNOCCUPIED")) {
                                     Bundle params = new Bundle();
                                     params.putString("phoneFormated", requestPhone);
                                     params.putString("phoneHash", phoneHash);
@@ -1439,7 +1444,8 @@ public class LoginActivity extends BaseFragment {
             TextView wrongNumber = new TextView(context);
             wrongNumber.setText(LocaleController.getString("CancelRegistration", R.string.CancelRegistration));
             wrongNumber.setGravity(Gravity.LEFT | Gravity.CENTER_HORIZONTAL);
-            wrongNumber.setTextColor(0xff4d83b3);
+            //wrongNumber.setTextColor(0xff4d83b3);
+            wrongNumber.setTextColor(AndroidUtilities.getIntColor("themeColor"));
             wrongNumber.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             wrongNumber.setLineSpacing(AndroidUtilities.dp(2), 1.0f);
             wrongNumber.setPadding(0, AndroidUtilities.dp(24), 0, 0);
@@ -1541,6 +1547,12 @@ public class LoginActivity extends BaseFragment {
                                 MessagesController.getInstance().getBlockedUsers(true);
                                 needFinishActivity();
                                 ConnectionsManager.getInstance().initPushConnection();
+                                Utilities.stageQueue.postRunnable(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        ConnectionsManager.getInstance().updateDcSettings(0);
+                                    }
+                                });
                             } else {
                                 if (error.text.contains("PHONE_NUMBER_INVALID")) {
                                     needShowAlert(LocaleController.getString("InvalidPhoneNumber", R.string.InvalidPhoneNumber));

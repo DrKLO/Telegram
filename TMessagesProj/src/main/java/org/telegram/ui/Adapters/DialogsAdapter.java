@@ -8,13 +8,17 @@
 
 package org.telegram.ui.Adapters;
 
+import android.app.Activity;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.view.View;
 import android.view.ViewGroup;
 
 import org.telegram.android.AndroidUtilities;
 import org.telegram.android.MessageObject;
 import org.telegram.android.MessagesController;
+import org.telegram.messenger.ApplicationLoader;
+import org.telegram.messenger.R;
 import org.telegram.messenger.TLRPC;
 import org.telegram.ui.Cells.DialogCell;
 import org.telegram.ui.Cells.LoadingCell;
@@ -24,6 +28,7 @@ public class DialogsAdapter extends BaseFragmentAdapter {
     private Context mContext;
     private boolean serverOnly;
     private long openedDialogId;
+    private int currentCount;
 
     public DialogsAdapter(Context context, boolean onlyFromServer) {
         mContext = context;
@@ -32,6 +37,11 @@ public class DialogsAdapter extends BaseFragmentAdapter {
 
     public void setOpenedDialogId(long id) {
         openedDialogId = id;
+    }
+
+    public boolean isDataSetChanged() {
+        int current = currentCount;
+        return current != getCount();
     }
 
     @Override
@@ -58,6 +68,7 @@ public class DialogsAdapter extends BaseFragmentAdapter {
         if (!MessagesController.getInstance().dialogsEndReached) {
             count++;
         }
+        currentCount = count;
         return count;
     }
 
@@ -97,6 +108,7 @@ public class DialogsAdapter extends BaseFragmentAdapter {
             if (view == null) {
                 view = new DialogCell(mContext);
             }
+            if (view instanceof DialogCell) { //TODO finally i need to find this crash
             ((DialogCell) view).useSeparator = (i != getCount() - 1);
             TLRPC.TL_dialog dialog = null;
             if (serverOnly) {
@@ -111,11 +123,16 @@ public class DialogsAdapter extends BaseFragmentAdapter {
                     }
                 }
             }
-            MessageObject message = MessagesController.getInstance().dialogMessage.get(dialog.top_message);
-            ((DialogCell) view).setDialog(dialog.id, message, true, dialog.last_message_date, dialog.unread_count, MessagesController.getInstance().isDialogMuted(dialog.id));
+                ((DialogCell) view).setDialog(dialog, i, serverOnly);
+            }
         }
-
+        updateColors(viewGroup);
         return view;
+    }
+
+    private void updateColors(ViewGroup viewGroup){
+        SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, Activity.MODE_PRIVATE);
+        viewGroup.setBackgroundColor(themePrefs.getInt("chatsRowColor", 0xffffffff));
     }
 
     @Override
@@ -133,9 +150,6 @@ public class DialogsAdapter extends BaseFragmentAdapter {
 
     @Override
     public boolean isEmpty() {
-        if (MessagesController.getInstance().loadingDialogs && MessagesController.getInstance().dialogs.isEmpty()) {
-            return true;
-        }
         int count;
         if (serverOnly) {
             count = MessagesController.getInstance().dialogsServerOnly.size();

@@ -48,7 +48,9 @@ public class UserCell extends FrameLayout {
     private TLRPC.FileLocation lastAvatar = null;
 
     private int statusColor = 0xffa8a8a8;
-    private int statusOnlineColor = 0xff3b84c0;
+    private int statusOnlineColor = AndroidUtilities.getIntDarkerColor("themeColor",0x15);//0xff3b84c0;
+
+    private int nameColor = 0xff000000;
 
     public UserCell(Context context, int padding) {
         super(context);
@@ -67,6 +69,7 @@ public class UserCell extends FrameLayout {
         avatarDrawable = new AvatarDrawable();
 
         nameTextView = new TextView(context);
+        //ContactsNamesColor
         nameTextView.setTextColor(0xff212121);
         nameTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 17);
         nameTextView.setLines(1);
@@ -165,6 +168,10 @@ public class UserCell extends FrameLayout {
         statusOnlineColor = onlineColor;
     }
 
+    public void setNameColor(int color) {
+        nameColor = color;
+    }
+
     public void update(int mask) {
         if (currentUser == null) {
             return;
@@ -214,6 +221,8 @@ public class UserCell extends FrameLayout {
             nameTextView.setText(currentName);
         } else {
             nameTextView.setText(ContactsController.formatName(currentUser.first_name, currentUser.last_name));
+            nameTextView.setTextColor(nameColor);
+            nameTextView.setTextSize(AndroidUtilities.getIntDef("contactsNameSize", 17));
         }
         if (currrntStatus != null) {
             statusTextView.setText(currrntStatus);
@@ -227,7 +236,7 @@ public class UserCell extends FrameLayout {
                 statusTextView.setTextColor(statusColor);
             }
         }
-
+        statusTextView.setTextSize(AndroidUtilities.getIntDef("contactsStatusSize", 14));
         imageView.setVisibility(currentDrawable == 0 ? GONE : VISIBLE);
         imageView.setImageResource(currentDrawable);
         avatarImageView.setImage(photo, "50_50", avatarDrawable);

@@ -124,10 +124,14 @@ public class ContactsSearchAdapter extends BaseContactsSearchAdapter {
                             }
 
                             String name = ContactsController.formatName(user.first_name, user.last_name).toLowerCase();
+                            String tName = LocaleController.getInstance().getTranslitString(name);
+                            if (name.equals(tName)) {
+                                tName = null;
+                            }
 
                             int found = 0;
                             for (String q : search) {
-                                if (name.startsWith(q) || name.contains(" " + q)) {
+                                if (name.startsWith(q) || name.contains(" " + q) || tName != null && (tName.startsWith(q) || tName.contains(" " + q))) {
                                     found = 1;
                                 } else if (user.username != null && user.username.startsWith(q)) {
                                     found = 2;
@@ -234,7 +238,7 @@ public class ContactsSearchAdapter extends BaseContactsSearchAdapter {
                     view = new ProfileSearchCell(mContext);
                 }
             }
-
+            String hexDarkColor = String.format("#%06X", (0xFFFFFF & AndroidUtilities.getIntDarkerColor("themeColor", 0x15)));
             TLRPC.User user = getItem(i);
             if (user != null) {
                 CharSequence username = null;
@@ -253,7 +257,8 @@ public class ContactsSearchAdapter extends BaseContactsSearchAdapter {
                         foundUserName = foundUserName.substring(1);
                     }
                     try {
-                        username = Html.fromHtml(String.format("<font color=\"#4d83b3\">@%s</font>%s", user.username.substring(0, foundUserName.length()), user.username.substring(foundUserName.length())));
+                        username = Html.fromHtml(String.format("<font color="+ hexDarkColor +">@%s</font>%s", user.username.substring(0, foundUserName.length()), user.username.substring(foundUserName.length())));
+                        //username = Html.fromHtml(String.format("<font color=\"#4d83b3\">@%s</font>%s", user.username.substring(0, foundUserName.length()), user.username.substring(foundUserName.length())));
                     } catch (Exception e) {
                         username = user.username;
                         FileLog.e("tmessages", e);

@@ -3,7 +3,7 @@
 
 
 <resources>
-    <string name="AppName">Telegram</string>
+    <string name="AppName">Telegram+</string>
     <string name="LanguageName">English</string>
     <string name="LanguageNameInEnglish">English</string>
     <string name="LanguageCode">en</string>
@@ -57,6 +57,7 @@
     <string name="MuteFor">Mute for %1$s</string>
     <string name="UnmuteNotifications">Unmute</string>
     <string name="WillUnmuteIn">In %1$s</string>
+    <string name="MuteDisable">Disable</string>
     <!--broadcasts-->
     <string name="NewBroadcastList">New Broadcast List</string>
     <string name="EnterListName">Enter list name</string>
@@ -143,6 +144,7 @@
     <string name="NotificationEditedGroupName">%1$s edited the group\'s %2$s name</string>
     <string name="NotificationEditedGroupPhoto">%1$s edited the group\'s %2$s photo</string>
     <string name="NotificationGroupAddMember">%1$s invited %3$s to the group %2$s</string>
+    <string name="NotificationGroupAddSelf">%1$s returned to the group %2$s</string>
     <string name="NotificationGroupKickMember">%1$s removed %3$s from the group %2$s</string>
     <string name="NotificationGroupKickYou">%1$s removed you from the group %2$s</string>
     <string name="NotificationGroupLeftMember">%1$s has left the group %2$s</string>
@@ -210,7 +212,7 @@
     <string name="UsernameInvalidShort">A username must have at least 5 characters.</string>
     <string name="UsernameInvalidLong">The username must not exceed 32 characters.</string>
     <string name="UsernameInvalidStartNumber">Sorry, a username can\'t start with a number.</string>
-    <string name="UsernameHelp">You can choose a username on <![CDATA[<b>]]>Telegram<![CDATA[</b>]]>. If you do, other people will be able to find you by this username and contact you without knowing your phone number.<![CDATA[<br><br>]]>You can use <![CDATA[<b>]]>a–z<![CDATA[</b>]]>, <![CDATA[<b>]]>0–9<![CDATA[</b>]]> and underscores. Minimum length is <![CDATA[<b>]]>5<![CDATA[</b>]]> characters.</string>
+    <string name="UsernameHelp">You can choose a username on <![CDATA[<b>]]>Telegram+<![CDATA[</b>]]>. If you do, other people will be able to find you by this username and contact you without knowing your phone number.<![CDATA[<br><br>]]>You can use <![CDATA[<b>]]>a–z<![CDATA[</b>]]>, <![CDATA[<b>]]>0–9<![CDATA[</b>]]> and underscores. Minimum length is <![CDATA[<b>]]>5<![CDATA[</b>]]> characters.</string>
     <string name="UsernameChecking">Checking username...</string>
     <string name="UsernameAvailable">%1$s is available.</string>
     <string name="UsernameEmpty">None</string>
@@ -296,9 +298,29 @@
     <string name="ChangePhoneHelp">We will send an SMS with a confirmation code to your new number.</string>
     <string name="ChangePhoneNumberOccupied">The number %1$s is already connected to a Telegram account. Please delete that account before migrating to the new number.</string>
     <string name="NotificationsOther">Other</string>
+    <string name="NotificationsDisabled">Disabled</string>
+    <string name="VibrationDisabled">Disabled</string>
+    <!--passcode view-->
+    <string name="Passcode">Passcode</string>
+    <string name="ChangePasscode">Change Passcode</string>
+    <string name="ChangePasscodeInfo">When you set up an additional passcode, a lock icon will appear on the chats page. Tap it to lock and unlock your Telegram app.\n\nNote: if you forget the passcode, you\'ll need to delete and reinstall the app. All secret chats will be lost.</string>
+    <string name="ChangePasscodeAlert">You will now see a lock icon on the chats page. Tap it to lock your Telegram app with your new passcode.</string>
+    <string name="PasscodePIN">PIN</string>
+    <string name="PasscodePassword">Password</string>
+    <string name="EnterCurrentPasscode">Enter your current passcode</string>
+    <string name="EnterNewPasscode">Enter your new passcode</string>
+    <string name="EnterYourPasscode">Enter your passcode</string>
+    <string name="ReEnterYourPasscode">Re-enter your new passcode</string>
+    <string name="InvalidPasscode">Invalid passcode</string>
+    <string name="PasscodeDoNotMatch">Passcodes do not match</string>
+    <string name="AutoLock">Auto-lock</string>
+    <string name="AutoLockInfo">Require passcode if away for a time.</string>
+    <string name="AutoLockInTime">in %1$s</string>
+    <string name="AutoLockDisabled">Disabled</string>
     <!--media view-->
     <string name="NoMedia">Share photos and videos in this chat and access them on any of your devices.</string>
     <string name="DocumentsTitle">Files</string>
+    <string name="SharedMediaTitle">Shared Media</string>
     <string name="NoSharedFiles">Share files and documents in this chat and access them on any of your devices.</string>
     <!--map view-->
     <string name="Map">Map</string>
@@ -318,12 +340,27 @@
     <string name="PleaseDownload">Please download media first</string>
     <string name="NoRecentPhotos">No recent photos</string>
     <string name="NoRecentGIFs">No recent GIFs</string>
-    <string name="SearchImages">SEARCH WEB</string>
-    <string name="SearchGifs">SEARCH GIFS</string>
+    <string name="SearchImages">FIND IMAGES</string>
+    <string name="SearchImagesInfo">WEB SEARCH</string>
+    <string name="SearchGifs">FIND GIFS</string>
     <string name="SearchImagesTitle">Search web</string>
     <string name="SearchGifsTitle">Search GIFs</string>
     <string name="CropImage">Crop image</string>
     <string name="EditImage">Edit image</string>
+    <string name="Enhance">Enhance</string>
+    <string name="Highlights">Highlights</string>
+    <string name="Contrast">Contrast</string>
+    <string name="Exposure">Exposure</string>
+    <string name="Warmth">Warmth</string>
+    <string name="Saturation">Saturation</string>
+    <string name="Vignette">Vignette</string>
+    <string name="Shadows">Shadows</string>
+    <string name="Grain">Grain</string>
+    <string name="Sharpen">Sharpen</string>
+    <string name="Blur">Blur</string>
+    <string name="AreYouSureDeletePhoto">Are you sure you want to delete this photo?</string>
+    <string name="AreYouSureDeleteVideo">Are you sure you want to delete this video?</string>
+    <string name="DiscardChanges">Discard changes?</string>
     <!--password view-->
     <string name="Password">Password</string>
     <string name="ChangePassword">Change password</string>
@@ -405,6 +442,7 @@
     <string name="DeletePhoto">Delete photo</string>
     <string name="Set">Set</string>
     <string name="OK">OK</string>
+    <string name="Crop">CROP</string>
     <!--messages-->
     <string name="ActionKickUser">un1 removed un2</string>
     <string name="ActionLeftUser">un1 left group</string>
@@ -422,6 +460,7 @@
     <string name="ActionYouCreateGroup">You created the group</string>
     <string name="ActionKickUserYou">un1 removed you</string>
     <string name="ActionAddUserYou">un1 added you</string>
+    <string name="ActionAddUserSelf">un1 returned to the group</string>
     <string name="UnsuppotedMedia">This message is not supported on your version of Telegram. Update the app to view: http://telegram.org/update</string>
     <string name="AttachPhoto">Photo</string>
     <string name="AttachVideo">Video</string>
@@ -465,20 +504,20 @@
     <string name="ForwardMessagesToGroup">Forward messages to %1$s?</string>
     <string name="FeatureUnavailable">Sorry, this feature is currently not available in your country.</string>
     <!--Intro view-->
-    <string name="Page1Title">Telegram</string>
+    <string name="Page1Title">Telegram+</string>
     <string name="Page2Title">Fast</string>
     <string name="Page3Title">Free</string>
     <string name="Page4Title">Secure</string>
     <string name="Page5Title">Powerful</string>
     <string name="Page6Title">Cloud-Based</string>
     <string name="Page7Title">Private</string>
-    <string name="Page1Message">The world\'s <![CDATA[<b>fastest</b>]]> messaging app.<![CDATA[<br/>]]>It is <![CDATA[<b>free</b>]]> and <![CDATA[<b>secure</b>]]>.</string>
-    <string name="Page2Message"><![CDATA[<b>Telegram</b>]]> delivers messages faster than<![CDATA[<br/>]]>any other application.</string>
-    <string name="Page3Message"><![CDATA[<b>Telegram</b>]]> is free forever. No ads.<![CDATA[<br/>]]>No subscription fees.</string>
-    <string name="Page4Message"><![CDATA[<b>Telegram</b>]]> keeps your messages safe<![CDATA[<br/>]]>from hacker attacks.</string>
-    <string name="Page5Message"><![CDATA[<b>Telegram</b>]]> has no limits on the size of<![CDATA[<br/>]]>your media and chats.</string>
-    <string name="Page6Message"><![CDATA[<b>Telegram</b>]]> lets you access your messages<![CDATA[<br/>]]>from multiple devices.</string>
-    <string name="Page7Message"><![CDATA[<b>Telegram</b>]]> messages are heavily encrypted<![CDATA[<br/>]]>and can self-destruct.</string>
+    <string name="Page1Message">The world\'s <![CDATA[<b>fastest</b>]]> messaging app.<![CDATA[<br/>]]>It is <![CDATA[<b>free</b>]]> and <![CDATA[<b>secure</b>]]>.<![CDATA[<br/>]]>And also <![CDATA[<b>themeable</b>]]>! </string>
+    <string name="Page2Message"><![CDATA[<b>Telegram+</b>]]> delivers messages faster than<![CDATA[<br/>]]>any other application.</string>
+    <string name="Page3Message"><![CDATA[<b>Telegram+</b>]]> is free forever. No ads.<![CDATA[<br/>]]>No subscription fees.</string>
+    <string name="Page4Message"><![CDATA[<b>Telegram+</b>]]> keeps your messages safe<![CDATA[<br/>]]>from hacker attacks.</string>
+    <string name="Page5Message"><![CDATA[<b>Telegram+</b>]]> has no limits on the size of<![CDATA[<br/>]]>your media and chats.</string>
+    <string name="Page6Message"><![CDATA[<b>Telegram+</b>]]> lets you access your messages<![CDATA[<br/>]]>from multiple devices.</string>
+    <string name="Page7Message"><![CDATA[<b>Telegram+</b>]]> messages are heavily encrypted<![CDATA[<br/>]]>and can self-destruct.</string>
     <string name="StartMessaging">Start Messaging</string>
     <!--plural-->
     <string name="Online_zero">%1$d online</string>
@@ -511,18 +550,24 @@
     <string name="messages_few">%1$d messages</string>
     <string name="messages_many">%1$d messages</string>
     <string name="messages_other">%1$d messages</string>
-    <string name="files_zero">no files</string>
-    <string name="files_one">%1$d file</string>
-    <string name="files_two">%1$d files</string>
-    <string name="files_few">%1$d files</string>
-    <string name="files_many">%1$d files</string>
-    <string name="files_other">%1$d files</string>
+    <string name="items_zero">no items</string>
+    <string name="items_one">%1$d item</string>
+    <string name="items_two">%1$d items</string>
+    <string name="items_few">%1$d items</string>
+    <string name="items_many">%1$d items</string>
+    <string name="items_other">%1$d items</string>
     <string name="FromContacts_zero">from no contacts</string>
     <string name="FromContacts_one">from %1$d contact</string>
     <string name="FromContacts_two">from %1$d contacts</string>
     <string name="FromContacts_few">from %1$d contacts</string>
     <string name="FromContacts_many">from %1$d contacts</string>
     <string name="FromContacts_other">from %1$d contacts</string>
+    <string name="FromChats_zero">from no chats</string>
+    <string name="FromChats_one">from %1$d chat</string>
+    <string name="FromChats_two">from %1$d chats</string>
+    <string name="FromChats_few">from %1$d chats</string>
+    <string name="FromChats_many">from %1$d chats</string>
+    <string name="FromChats_other">from %1$d chats</string>
     <string name="Seconds_zero">%1$d seconds</string>
     <string name="Seconds_one">%1$d second</string>
     <string name="Seconds_two">%1$d seconds</string>
@@ -572,6 +617,7 @@
     <string name="Users_many">%1$d users</string>
     <string name="Users_other">%1$d users</string>
     <!--date formatters-->
+    <string name="formatterMonthYear">MMMM yyyy</string>
     <string name="formatterMonth">MMM dd</string>
     <string name="formatterYear">dd.MM.yy</string>
     <string name="formatterYearMax">dd.MM.yyyy</string>
@@ -581,4 +627,75 @@
     <string name="formatterDay24H">HH:mm</string>
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s at %2$s</string>
+    <!-- NEW -->
+    <string name="TelegramForAndroid">Telegram+ for Android</string>
+    <string name="Theming">Theming</string>
+    <string name="colorHexInvalid">Invalid color hex code!</string>
+    <string name="themeColor">Theme Color</string>
+    <string name="ResetThemeSettings">Reset Theme Settings</string>
+    <string name="ResetThemeSettingsSum">Undo all theme settings</string>
+    <string name="ResetThemeToastText">Reset theme settings to default!!</string>
+    <string name="General">General</string>
+    <string name="Screens">Screens</string>
+    <string name="MainScreen">Main Screen</string>
+    <string name="ChatScreen">Chat Screen</string>
+    <string name="ContactsScreen">Contacts Screen</string>
+    <string name="Header">Header</string>
+    <string name="Rows">Rows</string>
+    <string name="ChatList">Chat List</string>
+    <string name="ChatsList">Chats List</string>
+    <string name="ContactsList">Contacts List</string>
+    <string name="HeaderColor">Header Color</string>
+    <string name="NameColor">Contact Name Color</string>
+    <string name="NameSize">Contact Name Size</string>
+    <string name="MessageColor">Message Color</string>
+    <string name="MessageSize">Message Size</string>
+    <string name="TimeDateColor">Time/Date Color</string>
+    <string name="TimeDateSize">Time/Date Size</string>
+    <string name="CountColor">Count Color</string>
+    <string name="CountSize">Count Size</string>
+    <string name="RowColor">Row Color</string>
+    <string name="CountBGColor">Count Background Color</string>
+    <string name="StatusColor">Status Color</string>
+    <string name="StatusSize">Status Size</string>
+    <string name="RBubbleColor">Right Bubble Color</string>
+    <string name="LBubbleColor">Left Bubble Color</string>
+    <string name="DateColor">Date Color</string>
+    <string name="DateSize">Date Size</string>
+    <string name="DateBubbleColor">Date Bubble Color</string>
+    <string name="RTextColor">Text Color</string>
+    <string name="LTextColor">Left Text Color</string>
+    <string name="RTimeColor">Right Time Color</string>
+    <string name="LTimeColor">Left Time Color</string>
+    <string name="TimeSize">Time Size</string>
+    <string name="EditTextColor">Text Input Color</string>
+    <string name="EditTextSize">Text Input Size</string>
+    <string name="EditTextBGColor">Text Input Background Color</string>
+    <string name="EmojiViewBGColor">Emoji Background Color</string>
+    <string name="EmojiViewTabColor">Emoji Tab Color</string>
+    <string name="OnlineColor">Online Color</string>
+    <string name="ChatMusic">Music</string>
+    <string name="SecretChat">Secret Chat</string>
+    <string name="SaveTheme">Save Theme</string>
+    <string name="SaveThemeSum">Save your theme to Telegram/Themes folder</string>
+    <string name="SaveThemeToastText">Theme Saved!!</string>
+    <string name="SavedTo">%1$s saved to %2$s</string>
+    <string name="SaveErrorMsg0">Theme not created yet. Apply any Telegram+ MOD first, please</string>
+    <string name="restoreOkMsg">Preferences restored from sdcard</string>
+    <string name="restoreErrorMsg">No preferences file found in %s</string>
+    <string name="NoMediaMessage">No SD card found.</string>
+    <string name="EnterName">Enter Name</string>
+    <string name="Themes">Themes</string>
+    <string name="ApplyTheme">Apply Theme</string>
+    <string name="ApplyThemeSum">Apply xml theme from local folder</string>
+    <string name="ParticipantColor">Participant Color</string>
+    <string name="ChecksColor">Ticks Color</string>
+    <string name="MuteColor">Mute Color</string>
+    <string name="SendLogs">Send Logs</string>
+    <string name="SendLogsEmpty">"There aren't logs"</string>
+    <string name="SendIcon">Send Icon</string>
+    <string name="HideMobile">Hide Mobile Number</string>
+    <string name="FloatingPencilColor">Floating Pencil Color</string>
+    <string name="FloatingBGColor">Floating Background Color</string>
+    <string name="Community">G+ Community</string>
 </resources>

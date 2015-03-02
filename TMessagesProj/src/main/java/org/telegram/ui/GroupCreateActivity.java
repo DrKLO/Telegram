@@ -54,7 +54,7 @@ import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.Cells.UserCell;
-import org.telegram.ui.Components.SectionsListView;
+import org.telegram.ui.Components.LetterSectionsListView;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -93,7 +93,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
     private ContactsAdapter listViewAdapter;
     private TextView emptyTextView;
     private EditText userSelectEditText;
-    private SectionsListView listView;
+    private LetterSectionsListView listView;
     private ContactsSearchAdapter searchListViewAdapter;
 
     private GroupCreateActivityDelegate delegate;
@@ -141,7 +141,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
     }
 
     @Override
-    public View createView(LayoutInflater inflater, ViewGroup container) {
+    public View createView(LayoutInflater inflater) {
         if (fragmentView == null) {
             searching = false;
             searchWas = false;
@@ -307,7 +307,6 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                                 searchListViewAdapter.searchDialogs(null);
                                 searching = false;
                                 searchWas = false;
-                                ViewGroup group = (ViewGroup) listView.getParent();
                                 listView.setAdapter(listViewAdapter);
                                 listViewAdapter.notifyDataSetChanged();
                                 if (android.os.Build.VERSION.SDK_INT >= 11) {
@@ -357,7 +356,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
             layoutParams.weight = 0.5f;
             frameLayout2.setLayoutParams(layoutParams);
 
-            listView = new SectionsListView(getParentActivity());
+            listView = new LetterSectionsListView(getParentActivity());
             listView.setEmptyView(emptyTextLayout);
             listView.setVerticalScrollBarEnabled(false);
             listView.setDivider(null);
@@ -434,7 +433,6 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                         searchListViewAdapter.searchDialogs(null);
                         searching = false;
                         searchWas = false;
-                        ViewGroup group = (ViewGroup) listView.getParent();
                         listView.setAdapter(listViewAdapter);
                         listViewAdapter.notifyDataSetChanged();
                         if (android.os.Build.VERSION.SDK_INT >= 11) {

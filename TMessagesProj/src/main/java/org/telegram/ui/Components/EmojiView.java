@@ -158,6 +158,13 @@ public class EmojiView extends LinearLayout {
         if (Emoji.data[0] == null || Emoji.data[0].length == 0) {
             pager.setCurrentItem(1);
         }
+
+        updateColors(tabs);
+    }
+
+    private void updateColors(PagerSlidingTabStrip tabs) {
+        setBackgroundColor(AndroidUtilities.getIntDef("chatEmojiViewBGColor",0xff222222));
+        tabs.setIndicatorColor(AndroidUtilities.getIntDef("chatEmojiViewTabColor",AndroidUtilities.getIntDarkerColor("themeColor",0x15)));//0xff33b5e5
     }
 
     private void saveRecents() {

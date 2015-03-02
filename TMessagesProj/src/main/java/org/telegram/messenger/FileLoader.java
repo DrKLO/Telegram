@@ -638,7 +638,7 @@ public class FileLoader {
                 continue;
             }
             int currentSide = obj.w >= obj.h ? obj.w : obj.h;
-            if (closestObject == null || obj instanceof TLRPC.TL_photoCachedSize || currentSide <= side && lastSide < currentSide) {
+            if (closestObject == null || side > 100 && closestObject.location != null && closestObject.location.dc_id == Integer.MIN_VALUE || obj instanceof TLRPC.TL_photoCachedSize || currentSide <= side && lastSide < currentSide) {
                 closestObject = obj;
                 lastSide = currentSide;
             }

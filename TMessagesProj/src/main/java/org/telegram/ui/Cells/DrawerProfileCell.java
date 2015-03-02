@@ -8,7 +8,11 @@
 
 package org.telegram.ui.Cells;
 
+import android.app.Activity;
 import android.content.Context;
+import android.content.SharedPreferences;
+import android.graphics.PorterDuff;
+import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -18,7 +22,9 @@ import android.widget.TextView;
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.android.AndroidUtilities;
 import org.telegram.android.ContactsController;
+import org.telegram.android.MessagesController;
 import org.telegram.messenger.TLRPC;
+import org.telegram.messenger.UserConfig;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
 
@@ -86,6 +92,7 @@ public class DrawerProfileCell extends FrameLayout {
         } else {
             super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(148), MeasureSpec.EXACTLY));
         }
+        updateColors();
     }
 
     public void setUser(TLRPC.User user) {
@@ -101,5 +108,24 @@ public class DrawerProfileCell extends FrameLayout {
         AvatarDrawable avatarDrawable = new AvatarDrawable(user);
         avatarDrawable.setColor(0xff5c98cd);
         avatarImageView.setImage(photo, "50_50", avatarDrawable);
+    }
+
+    private void updateColors(){
+        setBackgroundColor(AndroidUtilities.getIntColor("themeColor"));
+        phoneTextView.setTextColor(AndroidUtilities.getIntDarkerColor("themeColor",-0x40));
+        TLRPC.User user = MessagesController.getInstance().getUser(UserConfig.getClientUserId());
+        TLRPC.FileLocation photo = null;
+        if (user.photo != null) {
+            photo = user.photo.photo_small;
+        }
+        AvatarDrawable avatarDrawable = new AvatarDrawable(user);
+        avatarDrawable.setColor(AndroidUtilities.getIntDarkerColor("themeColor",0x15));
+        avatarImageView.setImage(photo, "50_50", avatarDrawable);
+
+        if(AndroidUtilities.getBoolMain("hideMobile")){
+            phoneTextView.setVisibility(GONE);
+        }else{
+            phoneTextView.setVisibility(VISIBLE);
+        }
     }
 }

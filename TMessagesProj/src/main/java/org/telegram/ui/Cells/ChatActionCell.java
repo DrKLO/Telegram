@@ -12,6 +12,7 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.graphics.PorterDuff;
 import android.graphics.drawable.Drawable;
 import android.text.Layout;
 import android.text.Spannable;
@@ -45,6 +46,8 @@ public class ChatActionCell extends BaseCell {
     private static Drawable backgroundBlue;
     private static TextPaint textPaint;
 
+    private static Drawable backgroundWhite;
+
     private URLSpan pressedLink;
 
     private ImageReceiver imageReceiver;
@@ -68,6 +71,9 @@ public class ChatActionCell extends BaseCell {
         if (backgroundBlack == null) {
             backgroundBlack = getResources().getDrawable(R.drawable.system_black);
             backgroundBlue = getResources().getDrawable(R.drawable.system_blue);
+
+            backgroundWhite = getResources().getDrawable(R.drawable.system_white);
+            backgroundBlue = backgroundWhite;
 
             textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
             textPaint.setColor(0xffffffff);
@@ -220,6 +226,7 @@ public class ChatActionCell extends BaseCell {
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        updateColor();
         if (currentMessageObject == null) {
             setMeasuredDimension(MeasureSpec.getSize(widthMeasureSpec), textHeight + AndroidUtilities.dp(14));
             return;
@@ -285,5 +292,15 @@ public class ChatActionCell extends BaseCell {
             textLayout.draw(canvas);
             canvas.restore();
         }
+    }
+
+    private void updateColor(){
+        int color = AndroidUtilities.getIntDef("chatDateColor", 0xffffffff);
+        textPaint.setColor(color);
+        if(color != 0xffffffff){
+            textPaint.linkColor = AndroidUtilities.getIntDarkerColor("chatDateColor", -0x50);
+        }
+        textPaint.setTextSize(AndroidUtilities.dp(AndroidUtilities.getIntDef("chatDateSize",16)));//16
+        backgroundWhite.setColorFilter(AndroidUtilities.getIntDef("chatDateBubbleColor",0x59000000), PorterDuff.Mode.MULTIPLY);
     }
 }

@@ -366,6 +366,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                             datacenters.put(datacenter.datacenterId, datacenter);
                         }
                         currentDatacenterId = data.readInt32();
+                        data.cleanup();
                     } catch (Exception e) {
                         UserConfig.clearConfig();
                     }
@@ -388,6 +389,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                                 for (int a = 0; a < count; a++) {
                                     sessionsToDestroy.add(data.readInt64());
                                 }
+                                data.cleanup();
                             }
                         }
                     } catch (Exception e) {
@@ -405,6 +407,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                                     Datacenter datacenter = new Datacenter(data, 1);
                                     datacenters.put(datacenter.datacenterId, datacenter);
                                 }
+                                data.cleanup();
                             }
                         }
                     } catch (Exception e) {
@@ -452,7 +455,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
 
                 datacenter = new Datacenter();
                 datacenter.datacenterId = 3;
-                datacenter.addAddressAndPort("174.140.142.6", 443);
+                datacenter.addAddressAndPort("149.154.175.100", 443);
                 datacenters.put(datacenter.datacenterId, datacenter);
 
                 datacenter = new Datacenter();
@@ -488,7 +491,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
 
             datacenter = new Datacenter();
             datacenter.datacenterId = 3;
-            datacenter.addAddressAndPort("174.140.142.6", 443);
+            datacenter.addAddressAndPort("149.154.175.100", 443);
             datacenters.put(datacenter.datacenterId, datacenter);
 
             datacenter = new Datacenter();
@@ -528,6 +531,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                                 data.writeInt64(session);
                             }
                             editor.putString("sessionsToDestroy", Base64.encodeToString(data.toByteArray(), Base64.DEFAULT));
+                            data.cleanup();
                         } else {
                             editor.remove("sessionsToDestroy");
                         }
@@ -539,6 +543,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                                 datacenter.SerializeToStream(data);
                             }
                             editor.putString("datacenters", Base64.encodeToString(data.toByteArray(), Base64.DEFAULT));
+                            data.cleanup();
                         } else {
                             editor.remove("datacenters");
                         }
@@ -763,8 +768,12 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                     return;
                 }
                 if (error == null) {
-                    lastDcUpdateTime = (int)(System.currentTimeMillis() / 1000);
                     TLRPC.TL_config config = (TLRPC.TL_config)response;
+                    int updateIn = config.expires - getCurrentTime();
+                    if (updateIn <= 0) {
+                        updateIn = 120;
+                    }
+                    lastDcUpdateTime = (int)(System.currentTimeMillis() / 1000) - DC_UPDATE_TIME + updateIn;
                     ArrayList<Datacenter> datacentersArr = new ArrayList<>();
                     HashMap<Integer, Datacenter> datacenterMap = new HashMap<>();
                     for (TLRPC.TL_dcOption datacenterDesc : config.dc_options) {
@@ -1338,6 +1347,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                 if (canCompress) {
                     try {
                         byte[] data = Utilities.compress(os.toByteArray());
+                        os.cleanup();
                         if (data.length < requestLength) {
                             TLRPC.TL_gzip_packed packed = new TLRPC.TL_gzip_packed();
                             packed.packed_data = data;
@@ -1345,6 +1355,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                             os = new SerializedData(true);
                             packed.serializeToStream(os);
                             requestLength = os.length();
+                            os.cleanup();
                         }
                     } catch (Exception e) {
                         FileLog.e("tmessages", e);
@@ -1406,6 +1417,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                     if (rawRequest != null && (rawRequest instanceof TLRPC.TL_messages_sendMessage ||
                             rawRequest instanceof TLRPC.TL_messages_sendMedia ||
                             rawRequest instanceof TLRPC.TL_messages_forwardMessages ||
+                            rawRequest instanceof TLRPC.TL_messages_forwardMessage ||
                             rawRequest instanceof TLRPC.TL_messages_sendEncrypted ||
                             rawRequest instanceof TLRPC.TL_messages_sendEncryptedFile ||
                             rawRequest instanceof TLRPC.TL_messages_sendEncryptedService)) {
@@ -1426,6 +1438,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                                 if (currentRawRequest instanceof TLRPC.TL_messages_sendMessage ||
                                         currentRawRequest instanceof TLRPC.TL_messages_sendMedia ||
                                         currentRawRequest instanceof TLRPC.TL_messages_forwardMessages ||
+                                        currentRawRequest instanceof TLRPC.TL_messages_forwardMessage ||
                                         currentRawRequest instanceof TLRPC.TL_messages_sendEncrypted ||
                                         currentRawRequest instanceof TLRPC.TL_messages_sendEncryptedFile ||
                                         currentRawRequest instanceof TLRPC.TL_messages_sendEncryptedService) {
@@ -1438,6 +1451,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                                 if (request.rawRequest instanceof TLRPC.TL_messages_sendMessage ||
                                         request.rawRequest instanceof TLRPC.TL_messages_sendMedia ||
                                         request.rawRequest instanceof TLRPC.TL_messages_forwardMessages ||
+                                        request.rawRequest instanceof TLRPC.TL_messages_forwardMessage ||
                                         request.rawRequest instanceof TLRPC.TL_messages_sendEncrypted ||
                                         request.rawRequest instanceof TLRPC.TL_messages_sendEncryptedFile ||
                                         request.rawRequest instanceof TLRPC.TL_messages_sendEncryptedService) {
@@ -1720,6 +1734,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
         if (quickAckId != null) {
             SerializedData data = new SerializedData(messageKeyFull);
             quickAckId.add(data.readInt32() & 0x7fffffff);
+            data.cleanup();
         }
 
         MessageKeyData keyData = Utilities.generateMessageKeyData(datacenter.authKey, messageKey, false);

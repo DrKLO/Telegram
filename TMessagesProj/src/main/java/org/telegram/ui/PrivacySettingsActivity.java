@@ -8,10 +8,12 @@
 
 package org.telegram.ui;
 
+import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.SharedPreferences;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -24,8 +26,10 @@ import android.widget.Toast;
 import org.telegram.android.AndroidUtilities;
 import org.telegram.android.ContactsController;
 import org.telegram.android.LocaleController;
+import org.telegram.android.MediaController;
 import org.telegram.android.MessagesController;
 import org.telegram.android.NotificationCenter;
+import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
@@ -37,6 +41,7 @@ import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.Adapters.BaseFragmentAdapter;
 import org.telegram.ui.Cells.HeaderCell;
+import org.telegram.ui.Cells.TextCheckCell;
 import org.telegram.ui.Cells.TextInfoPrivacyCell;
 import org.telegram.ui.Cells.TextSettingsCell;
 
@@ -53,10 +58,12 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
     private int securitySectionRow;
     private int terminateSessionsRow;
     private int passwordRow;
+    private int passcodeRow;
     private int terminateSessionsDetailRow;
     private int deleteAccountSectionRow;
     private int deleteAccountRow;
     private int deleteAccountDetailRow;
+    private int hideMobileNumberRow;
     private int rowCount;
 
     @Override
@@ -67,10 +74,12 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
 
         rowCount = 0;
         privacySectionRow = rowCount++;
+        hideMobileNumberRow  = rowCount++;
         blockedRow = rowCount++;
         lastSeenRow = rowCount++;
         lastSeenDetailRow = rowCount++;
         securitySectionRow = rowCount++;
+        passcodeRow = rowCount++;
         terminateSessionsRow = rowCount++;
         terminateSessionsDetailRow = rowCount++;
         deleteAccountSectionRow = rowCount++;
@@ -90,7 +99,7 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
     }
 
     @Override
-    public View createView(LayoutInflater inflater, ViewGroup container) {
+    public View createView(LayoutInflater inflater) {
         if (fragmentView == null) {
             actionBar.setBackButtonImage(R.drawable.ic_ab_back);
             actionBar.setAllowOverlayTitle(true);
@@ -227,6 +236,22 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                         presentFragment(new LastSeenActivity());
                     } else if (i == passwordRow) {
                         presentFragment(new AccountPasswordActivity(0));
+                    } else if (i == passcodeRow) {
+                        if (UserConfig.passcodeHash.length() > 0) {
+                            presentFragment(new PasscodeActivity(2));
+                        } else {
+                            presentFragment(new PasscodeActivity(0));
+                        }
+                    } else if (i == hideMobileNumberRow) {
+                        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+                        boolean scr = preferences.getBoolean("hideMobile", false);
+                        SharedPreferences.Editor editor = preferences.edit();
+                        editor.putBoolean("hideMobile", !scr);
+                        editor.commit();
+                        //AndroidUtilities.hideMobile = !scr;
+                        if (view instanceof TextCheckCell) {
+                            ((TextCheckCell) view).setChecked(!scr);
+                        }
                     }
                 }
             });
@@ -319,7 +344,8 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
 
         @Override
         public boolean isEnabled(int i) {
-            return i == passwordRow || i == blockedRow || i == terminateSessionsRow || i == lastSeenRow && !ContactsController.getInstance().getLoadingLastSeenInfo() || i == deleteAccountRow && !ContactsController.getInstance().getLoadingDeleteInfo();
+            return i == passcodeRow || i == passwordRow || i == blockedRow || i == terminateSessionsRow || i == lastSeenRow && !ContactsController.getInstance().getLoadingLastSeenInfo() || i == deleteAccountRow && !ContactsController.getInstance().getLoadingDeleteInfo() ||
+                   i == hideMobileNumberRow;
         }
 
         @Override
@@ -357,6 +383,8 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                     textCell.setText(LocaleController.getString("TerminateAllSessions", R.string.TerminateAllSessions), false);
                 } else if (i == passwordRow) {
                     textCell.setText(LocaleController.getString("Password", R.string.Password), true);
+                } else if (i == passcodeRow) {
+                    textCell.setText(LocaleController.getString("Passcode", R.string.Passcode), true);
                 } else if (i == lastSeenRow) {
                     String value;
                     if (ContactsController.getInstance().getLoadingLastSeenInfo()) {
@@ -407,25 +435,38 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                 } else if (i == deleteAccountSectionRow) {
                     ((HeaderCell) view).setText(LocaleController.getString("DeleteAccountTitle", R.string.DeleteAccountTitle));
                 }
+            }  else if (type == 3) {
+                if (view == null) {
+                    view = new TextCheckCell(mContext);
+                    view.setBackgroundColor(0xffffffff);
+                }
+                TextCheckCell textCell = (TextCheckCell) view;
+
+                SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+                if (i == hideMobileNumberRow) {
+                    textCell.setTextAndCheck(LocaleController.getString("HideMobile", R.string.HideMobile), preferences.getBoolean("hideMobile", false), false);
+                }
             }
             return view;
         }
 
         @Override
         public int getItemViewType(int i) {
-            if (i == lastSeenRow || i == blockedRow || i == deleteAccountRow || i == terminateSessionsRow || i == passwordRow) {
+            if (i == lastSeenRow || i == blockedRow || i == deleteAccountRow || i == terminateSessionsRow || i == passwordRow || i == passcodeRow) {
                 return 0;
             } else if (i == deleteAccountDetailRow || i == lastSeenDetailRow || i == terminateSessionsDetailRow) {
                 return 1;
-            } else if (i == securitySectionRow || i == deleteAccountSectionRow || i == privacySectionRow) {
+            } else if (i == securitySectionRow || i == deleteAccountSectionRow || i == privacySectionRow ) {
                 return 2;
+            }  else if (i == hideMobileNumberRow) {
+                return 3;
             }
             return 0;
         }
 
         @Override
         public int getViewTypeCount() {
-            return 3;
+            return 4;
         }
 
         @Override

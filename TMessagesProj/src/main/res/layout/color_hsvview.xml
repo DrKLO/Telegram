@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout android:orientation="vertical" android:layout_width="fill_parent" android:layout_height="fill_parent" android:minWidth="300.0dip" android:minHeight="200.0dip"
+  xmlns:android="http://schemas.android.com/apk/res/android">
+    <LinearLayout android:orientation="horizontal" android:gravity="center" android:padding="10.0dip" android:layout_width="fill_parent" android:layout_height="fill_parent">
+        <org.telegram.ui.Components.HsvAlphaSelectorView android:id="@+id/color_hsv_alpha" android:layout_width="30.0dip" android:layout_height="fill_parent" android:layout_weight="0.0" />
+        <org.telegram.ui.Components.HsvColorValueView android:id="@+id/color_hsv_value" android:layout_width="fill_parent" android:layout_height="fill_parent" android:layout_marginLeft="10.0dip" android:layout_marginRight="5.0dip" android:layout_weight="1.0" />
+        <org.telegram.ui.Components.HsvHueSelectorView android:id="@+id/color_hsv_hue" android:layout_width="30.0dip" android:layout_height="fill_parent" android:layout_weight="0.0" />
+    </LinearLayout>
+</LinearLayout>

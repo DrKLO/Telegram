@@ -12,7 +12,9 @@ import android.graphics.Canvas;
 import android.graphics.ColorFilter;
 import android.graphics.Paint;
 import android.graphics.Rect;
+import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
+import android.os.Build;
 import android.text.Layout;
 import android.text.StaticLayout;
 import android.text.TextPaint;
@@ -51,6 +53,7 @@ public class AvatarDrawable extends Drawable {
     private boolean isProfile;
     private boolean drawBrodcast;
     private boolean drawPhoto;
+    private int radius;
 
     public AvatarDrawable() {
         super();
@@ -62,6 +65,7 @@ public class AvatarDrawable extends Drawable {
 
             broadcastDrawable = ApplicationLoader.applicationContext.getResources().getDrawable(R.drawable.broadcast_w);
         }
+        radius = 26;
     }
 
     public AvatarDrawable(TLRPC.User user) {
@@ -155,6 +159,10 @@ public class AvatarDrawable extends Drawable {
         color = value;
     }
 
+    public void setRadius(int value) {
+        radius = value;
+    }
+
     public void setInfo(int id, String firstName, String lastName, boolean isBroadcast) {
         if (isProfile) {
             color = arrColorsProfiles[getColorIndex(id)];
@@ -163,6 +171,11 @@ public class AvatarDrawable extends Drawable {
         }
 
         drawBrodcast = isBroadcast;
+
+        if (firstName == null || firstName.length() == 0) {
+            firstName = lastName;
+            lastName = null;
+        }
 
         String text = "";
         if (firstName != null && firstName.length() > 0) {
@@ -176,8 +189,26 @@ public class AvatarDrawable extends Drawable {
                 }
                 lastch = lastName.substring(a, a + 1);
             }
+            if (Build.VERSION.SDK_INT >= 16) {
+                text += "\u200C" + lastch;
+            } else {
             text += lastch;
         }
+        } else if (firstName != null && firstName.length() > 0) {
+            for (int a = firstName.length() - 1; a >= 0; a--) {
+                if (firstName.charAt(a) == ' ') {
+                    if (a != firstName.length() - 1 && firstName.charAt(a + 1) != ' ') {
+                        if (Build.VERSION.SDK_INT >= 16) {
+                            text += "\u200C" + firstName.substring(a + 1, a + 2);
+                        } else {
+                            text += firstName.substring(a + 1, a + 2);
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+
         if (text.length() > 0) {
             text = text.toUpperCase();
             try {
@@ -213,6 +244,9 @@ public class AvatarDrawable extends Drawable {
         canvas.save();
         canvas.translate(bounds.left, bounds.top);
         canvas.drawCircle(size / 2, size / 2, size / 2, paint);
+        //Rect rect = new Rect(0, 0, size, size);
+        //RectF rectF = new RectF(rect);
+        //canvas.drawRoundRect( rectF, AndroidUtilities.dp(26), AndroidUtilities.dp(26), paint);
 
         if (drawBrodcast && broadcastDrawable != null) {
             int x = (size - broadcastDrawable.getIntrinsicWidth()) / 2;

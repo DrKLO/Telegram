@@ -249,6 +249,12 @@ public class SharedDocumentCell extends FrameLayout  implements MediaController.
         }
     }
 
+    @Override
+    protected void onDetachedFromWindow() {
+        super.onDetachedFromWindow();
+        MediaController.getInstance().removeLoadingFileObserver(this);
+    }
+
     public void setChecked(boolean checked, boolean animated) {
         if (checkBox.getVisibility() != VISIBLE) {
             checkBox.setVisibility(VISIBLE);
@@ -262,30 +268,40 @@ public class SharedDocumentCell extends FrameLayout  implements MediaController.
         loaded = false;
         loading = false;
 
-        int idx = -1;
-        String name = FileLoader.getDocumentFileName(document.messageOwner.media.document);
-        placeholderImabeView.setVisibility(VISIBLE);
-        extTextView.setVisibility(VISIBLE);
-        placeholderImabeView.setImageResource(getThumbForNameOrMime(name, document.messageOwner.media.document.mime_type));
-        nameTextView.setText(name);
-        extTextView.setText((idx = name.lastIndexOf(".")) == -1 ? "" : name.substring(idx + 1).toLowerCase());
-        if (document.messageOwner.media.document.thumb instanceof TLRPC.TL_photoSizeEmpty) {
+        if (document != null && document.messageOwner.media != null) {
+            int idx = -1;
+            String name = FileLoader.getDocumentFileName(document.messageOwner.media.document);
+            placeholderImabeView.setVisibility(VISIBLE);
+            extTextView.setVisibility(VISIBLE);
+            placeholderImabeView.setImageResource(getThumbForNameOrMime(name, document.messageOwner.media.document.mime_type));
+            nameTextView.setText(name);
+            extTextView.setText((idx = name.lastIndexOf(".")) == -1 ? "" : name.substring(idx + 1).toLowerCase());
+            if (document.messageOwner.media.document.thumb instanceof TLRPC.TL_photoSizeEmpty) {
+                thumbImageView.setVisibility(GONE);
+                thumbImageView.setImageBitmap(null);
+            } else {
+                thumbImageView.setVisibility(VISIBLE);
+                thumbImageView.setImage(document.messageOwner.media.document.thumb.location, "40_40", (Drawable) null);
+            }
+            long date = (long) document.messageOwner.date * 1000;
+            dateTextView.setText(String.format("%s, %s", Utilities.formatFileSize(document.messageOwner.media.document.size), LocaleController.formatString("formatDateAtTime", R.string.formatDateAtTime, LocaleController.formatterYear.format(new Date(date)), LocaleController.formatterDay.format(new Date(date)))));
+        } else {
+            nameTextView.setText("");
+            extTextView.setText("");
+            dateTextView.setText("");
+            placeholderImabeView.setVisibility(VISIBLE);
+            extTextView.setVisibility(VISIBLE);
             thumbImageView.setVisibility(GONE);
             thumbImageView.setImageBitmap(null);
-        } else {
-            thumbImageView.setVisibility(VISIBLE);
-            thumbImageView.setImage(document.messageOwner.media.document.thumb.location, "40_40", (Drawable) null);
         }
-        long date = (long) document.messageOwner.date * 1000;
-        dateTextView.setText(String.format("%s, %s", Utilities.formatFileSize(document.messageOwner.media.document.size), LocaleController.formatString("formatDateAtTime", R.string.formatDateAtTime, LocaleController.formatterYear.format(new Date(date)), LocaleController.formatterDay.format(new Date(date)))));
+
         setWillNotDraw(!needDivider);
         progressView.setProgress(0, false);
-
         updateFileExistIcon();
     }
 
     public void updateFileExistIcon() {
-        if (message != null) {
+        if (message != null && message.messageOwner.media != null) {
             String fileName = null;
             File cacheFile = null;
             if (message.messageOwner.attachPath == null || message.messageOwner.attachPath.length() == 0 || !(new File(message.messageOwner.attachPath).exists())) {

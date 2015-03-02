@@ -67,8 +67,14 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
     private TextView emptyView;
     private PhotoPickerBottomLayout photoPickerBottomLayout;
     private boolean sendPressed = false;
+    private boolean singlePhoto = false;
 
     private PhotoAlbumPickerActivityDelegate delegate;
+
+    public PhotoAlbumPickerActivity(boolean onlyOnePhoto) {
+        super();
+        singlePhoto = onlyOnePhoto;
+    }
 
     @Override
     public boolean onFragmentCreate() {
@@ -90,7 +96,7 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
 
     @SuppressWarnings("unchecked")
     @Override
-    public View createView(LayoutInflater inflater, ViewGroup container) {
+    public View createView(LayoutInflater inflater) {
         if (fragmentView == null) {
             actionBar.setBackgroundColor(0xff333333);
             actionBar.setItemsBackground(R.drawable.bar_selector_picker);
@@ -292,7 +298,11 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
         boolean webChange = false;
         for (HashMap.Entry<String, MediaController.SearchImage> entry : selectedWebPhotos.entrySet()) {
             MediaController.SearchImage searchImage = entry.getValue();
-            webPhotos.add(searchImage);
+            if (searchImage.imagePath != null) {
+                photos.add(searchImage.imagePath);
+            } else {
+                webPhotos.add(searchImage);
+            }
             searchImage.date = (int) (System.currentTimeMillis() / 1000);
 
             if (searchImage.type == 0) {
@@ -364,7 +374,7 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
                 recentImages = recentGifImages;
             }
         }
-        PhotoPickerActivity fragment = new PhotoPickerActivity(type, albumEntry, selectedPhotos, selectedWebPhotos, recentImages);
+        PhotoPickerActivity fragment = new PhotoPickerActivity(type, albumEntry, selectedPhotos, selectedWebPhotos, recentImages, singlePhoto);
         fragment.setDelegate(new PhotoPickerActivity.PhotoPickerActivityDelegate() {
             @Override
             public void selectedPhotosChanged() {
@@ -403,6 +413,9 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
 
         @Override
         public int getCount() {
+            if (singlePhoto) {
+                return albumsSorted != null ? (int) Math.ceil(albumsSorted.size() / (float) columnsCount) : 0;
+            }
             return 1 + (albumsSorted != null ? (int) Math.ceil(albumsSorted.size() / (float) columnsCount) : 0);
         }
 
@@ -440,7 +453,12 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
                 }
                 photoPickerAlbumsCell.setAlbumsCount(columnsCount);
                 for (int a = 0; a < columnsCount; a++) {
-                    int index = (i - 1) * columnsCount + a;
+                    int index;
+                    if (singlePhoto) {
+                        index = i * columnsCount + a;
+                    } else {
+                        index = (i - 1) * columnsCount + a;
+                    }
                     if (index < albumsSorted.size()) {
                         MediaController.AlbumEntry albumEntry = albumsSorted.get(index);
                         photoPickerAlbumsCell.setAlbum(a, albumEntry);
@@ -464,6 +482,9 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
 
         @Override
         public int getItemViewType(int i) {
+            if (singlePhoto) {
+                return 0;
+            }
             if (i == 0) {
                 return 1;
             }
@@ -472,6 +493,9 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
 
         @Override
         public int getViewTypeCount() {
+            if (singlePhoto) {
+                return 1;
+            }
             return 2;
         }
 

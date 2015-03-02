@@ -165,6 +165,8 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
         public int size;
         public int type;
         public int date;
+        public String thumbPath;
+        public String imagePath;
     }
 
     public final static String MIME_TYPE = "video/avc";
@@ -1696,10 +1698,10 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                             FileLog.e("tmessages", e);
                             result = false;
                         } finally {
-                            if(source != null) {
+                            if (source != null) {
                                 source.close();
                             }
-                            if(destination != null) {
+                            if (destination != null) {
                                 destination.close();
                             }
                         }

@@ -65,13 +65,15 @@ public class DocumentSelectActivity extends BaseFragment {
     private ArrayList<ListItem> items = new ArrayList<>();
     private boolean receiverRegistered = false;
     private ArrayList<HistoryEntry> history = new ArrayList<>();
-    private long sizeLimit = 1024 * 1024 * 1024;
+    private long sizeLimit = 1024 * 1024 * 1536;
     private DocumentSelectActivityDelegate delegate;
     private HashMap<String, ListItem> selectedFiles = new HashMap<>();
     private ArrayList<View> actionModeViews = new ArrayList<>();
     private boolean scrolling;
 
     private final static int done = 3;
+
+    public String fileFilter = "*";
 
     private class ListItem {
         int icon;
@@ -122,10 +124,11 @@ public class DocumentSelectActivity extends BaseFragment {
             FileLog.e("tmessages", e);
         }
         super.onFragmentDestroy();
+        fileFilter = "*";
     }
 
     @Override
-    public View createView(LayoutInflater inflater, ViewGroup container) {
+    public View createView(LayoutInflater inflater) {
         if (!receiverRegistered) {
             receiverRegistered = true;
             IntentFilter filter = new IntentFilter();
@@ -194,7 +197,7 @@ public class DocumentSelectActivity extends BaseFragment {
 
             actionModeViews.add(actionMode.addItem(done, R.drawable.ic_ab_done_gray, R.drawable.bar_selector_mode, null, AndroidUtilities.dp(54)));
 
-            fragmentView = inflater.inflate(R.layout.document_select_layout, container, false);
+            fragmentView = inflater.inflate(R.layout.document_select_layout, null, false);
             listAdapter = new ListAdapter(getParentActivity());
             emptyView = (TextView)fragmentView.findViewById(R.id.searchEmptyView);
             emptyView.setOnTouchListener(new View.OnTouchListener() {
@@ -452,6 +455,9 @@ public class DocumentSelectActivity extends BaseFragment {
                 item.subtitle = LocaleController.getString("Folder", R.string.Folder);
             } else {
                 String fname = file.getName();
+                if (!fileFilter.equals("*") && !fname.toLowerCase().endsWith(fileFilter)) {
+                    continue;
+                }
                 String[] sp = fname.split("\\.");
                 item.ext = sp.length > 1 ? sp[sp.length - 1] : "?";
                 item.subtitle = Utilities.formatFileSize(file.length());
@@ -573,7 +579,7 @@ public class DocumentSelectActivity extends BaseFragment {
         fs.subtitle = LocaleController.getString("GalleryInfo", R.string.GalleryInfo);
         fs.icon = R.drawable.ic_storage_gallery;
         fs.file = null;
-        items.add(fs);
+        if(fileFilter.equals("*"))items.add(fs);
 
         AndroidUtilities.clearDrawableAnimation(listView);
         scrolling = true;

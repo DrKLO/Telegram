@@ -101,7 +101,7 @@ public class ChangePhoneActivity extends BaseFragment {
     }
 
     @Override
-    public View createView(LayoutInflater inflater, ViewGroup container) {
+    public View createView(LayoutInflater inflater) {
         if (fragmentView == null) {
             actionBar.setTitle(LocaleController.getString("AppName", R.string.AppName));
             actionBar.setBackButtonImage(R.drawable.ic_ab_back);
@@ -289,9 +289,9 @@ public class ChangePhoneActivity extends BaseFragment {
 
         private int countryState = 0;
 
-        private ArrayList<String> countriesArray = new ArrayList<String>();
-        private HashMap<String, String> countriesMap = new HashMap<String, String>();
-        private HashMap<String, String> codesMap = new HashMap<String, String>();
+        private ArrayList<String> countriesArray = new ArrayList<>();
+        private HashMap<String, String> countriesMap = new HashMap<>();
+        private HashMap<String, String> codesMap = new HashMap<>();
 
         private boolean ignoreSelection = false;
         private boolean ignoreOnTextChange = false;
@@ -533,7 +533,7 @@ public class ChangePhoneActivity extends BaseFragment {
             layoutParams.gravity = Gravity.LEFT;
             textView.setLayoutParams(layoutParams);
 
-            HashMap<String, String> languageMap = new HashMap<String, String>();
+            HashMap<String, String> languageMap = new HashMap<>();
             try {
                 BufferedReader reader = new BufferedReader(new InputStreamReader(getResources().getAssets().open("countries.txt")));
                 String line;
@@ -544,6 +544,7 @@ public class ChangePhoneActivity extends BaseFragment {
                     codesMap.put(args[0], args[2]);
                     languageMap.put(args[1], args[2]);
                 }
+                reader.close();
             } catch (Exception e) {
                 FileLog.e("tmessages", e);
             }
@@ -815,7 +816,8 @@ public class ChangePhoneActivity extends BaseFragment {
 
             TextView wrongNumber = new TextView(context);
             wrongNumber.setGravity(Gravity.LEFT | Gravity.CENTER_HORIZONTAL);
-            wrongNumber.setTextColor(0xff4d83b3);
+            //wrongNumber.setTextColor(0xff4d83b3);
+            wrongNumber.setTextColor(AndroidUtilities.getIntColor("themeColor"));
             wrongNumber.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             wrongNumber.setLineSpacing(AndroidUtilities.dp(2), 1.0f);
             wrongNumber.setPadding(0, AndroidUtilities.dp(24), 0, 0);
@@ -1013,7 +1015,7 @@ public class ChangePhoneActivity extends BaseFragment {
                                 destroyCodeTimer();
                                 UserConfig.setCurrentUser(user);
                                 UserConfig.saveConfig(true);
-                                ArrayList<TLRPC.User> users = new ArrayList<TLRPC.User>();
+                                ArrayList<TLRPC.User> users = new ArrayList<>();
                                 users.add(user);
                                 MessagesStorage.getInstance().putUsersAndChats(users, null, true, true);
                                 MessagesController.getInstance().putUser(user, false);

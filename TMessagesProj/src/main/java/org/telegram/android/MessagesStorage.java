@@ -838,6 +838,59 @@ public class MessagesStorage {
                             //database.executeFast("DELETE FROM secret_holes WHERE uid = " + high_id).stepThis().dispose();
                         }
                     }
+
+                    if ((int) did == 0) {
+                        SQLiteCursor cursor = database.queryFinalized(String.format(Locale.US, "SELECT data FROM messages WHERE uid = " + did));
+                        ArrayList<File> filesToDelete = new ArrayList<>();
+                        try {
+                            while (cursor.next()) {
+                                ByteBufferDesc data = buffersStorage.getFreeBuffer(cursor.byteArrayLength(0));
+                                if (data != null && cursor.byteBufferValue(0, data.buffer) != 0) {
+                                    TLRPC.Message message = (TLRPC.Message) TLClassStore.Instance().TLdeserialize(data, data.readInt32());
+                                    if (message == null || message.media == null) {
+                                        continue;
+                                    }
+                                    if (message.media instanceof TLRPC.TL_messageMediaAudio) {
+                                        File file = FileLoader.getPathToAttach(message.media.audio);
+                                        if (file != null && file.toString().length() > 0) {
+                                            filesToDelete.add(file);
+                                        }
+                                    } else if (message.media instanceof TLRPC.TL_messageMediaPhoto) {
+                                        for (TLRPC.PhotoSize photoSize : message.media.photo.sizes) {
+                                            File file = FileLoader.getPathToAttach(photoSize);
+                                            if (file != null && file.toString().length() > 0) {
+                                                filesToDelete.add(file);
+                                            }
+                                        }
+                                    } else if (message.media instanceof TLRPC.TL_messageMediaVideo) {
+                                        File file = FileLoader.getPathToAttach(message.media.video);
+                                        if (file != null && file.toString().length() > 0) {
+                                            filesToDelete.add(file);
+                                        }
+                                        file = FileLoader.getPathToAttach(message.media.video.thumb);
+                                        if (file != null && file.toString().length() > 0) {
+                                            filesToDelete.add(file);
+                                        }
+                                    } else if (message.media instanceof TLRPC.TL_messageMediaDocument) {
+                                        File file = FileLoader.getPathToAttach(message.media.document);
+                                        if (file != null && file.toString().length() > 0) {
+                                            filesToDelete.add(file);
+                                        }
+                                        file = FileLoader.getPathToAttach(message.media.document.thumb);
+                                        if (file != null && file.toString().length() > 0) {
+                                            filesToDelete.add(file);
+                                        }
+                                    }
+                                }
+                                buffersStorage.reuseFreeBuffer(data);
+                            }
+                        } catch (Exception e) {
+                            FileLog.e("tmessages", e);
+                        }
+                        cursor.dispose();
+                        FileLoader.getInstance().deleteFiles(filesToDelete);
+                    }
+
                     database.executeFast("UPDATE dialogs SET unread_count = 0 WHERE did = " + did).stepThis().dispose();
                     database.executeFast("DELETE FROM messages WHERE uid = " + did).stepThis().dispose();
                     database.executeFast("DELETE FROM media_counts_v2 WHERE uid = " + did).stepThis().dispose();
@@ -3178,6 +3231,7 @@ public class MessagesStorage {
                                 NotificationCenter.getInstance().postNotificationName(NotificationCenter.messagesDeleted, mids);
                             }
                         });
+                        MessagesStorage.getInstance().updateDialogsWithReadedMessagesInternal(mids);
                         MessagesStorage.getInstance().markMessagesAsDeletedInternal(mids);
                         MessagesStorage.getInstance().updateDialogsWithDeletedMessagesInternal(mids);
                     }
@@ -3189,9 +3243,6 @@ public class MessagesStorage {
     }
 
     private void markMessagesAsDeletedInternal(final ArrayList<Integer> messages) {
-        if (Thread.currentThread().getId() != storageQueue.getId()) {
-            throw new RuntimeException("wrong db thread");
-        }
         try {
             String ids = TextUtils.join(",", messages);
             SQLiteCursor cursor = database.queryFinalized(String.format(Locale.US, "SELECT uid, data FROM messages WHERE mid IN(%s)", ids));
@@ -3287,7 +3338,7 @@ public class MessagesStorage {
             ArrayList<Integer> usersToLoad = new ArrayList<>();
             ArrayList<Integer> chatsToLoad = new ArrayList<>();
             ArrayList<Integer> encryptedToLoad = new ArrayList<>();
-            cursor = database.queryFinalized(String.format(Locale.US, "SELECT d.did, d.last_mid, d.unread_count, d.date, m.data, m.read_state, m.mid, m.send_state FROM dialogs as d LEFT JOIN messages as m ON d.last_mid = m.mid WHERE d.did IN(%s)", ids));
+            cursor = database.queryFinalized(String.format(Locale.US, "SELECT d.did, d.last_mid, d.unread_count, d.date, m.data, m.read_state, m.mid, m.send_state, m.date FROM dialogs as d LEFT JOIN messages as m ON d.last_mid = m.mid WHERE d.did IN(%s)", ids));
             while (cursor.next()) {
                 TLRPC.TL_dialog dialog = new TLRPC.TL_dialog();
                 dialog.id = cursor.longValue(0);
@@ -3302,6 +3353,10 @@ public class MessagesStorage {
                     MessageObject.setIsUnread(message, cursor.intValue(5) != 1);
                     message.id = cursor.intValue(6);
                     message.send_state = cursor.intValue(7);
+                    int date = cursor.intValue(8);
+                    if (date != 0) {
+                        dialog.last_message_date = date;
+                    }
                     dialogs.messages.add(message);
 
                     if (!usersToLoad.contains(message.from_id)) {
@@ -3471,7 +3526,7 @@ public class MessagesStorage {
                     usersToLoad.add(UserConfig.getClientUserId());
                     ArrayList<Integer> chatsToLoad = new ArrayList<>();
                     ArrayList<Integer> encryptedToLoad = new ArrayList<>();
-                    SQLiteCursor cursor = database.queryFinalized(String.format(Locale.US, "SELECT d.did, d.last_mid, d.unread_count, d.date, m.data, m.read_state, m.mid, m.send_state, s.flags FROM dialogs as d LEFT JOIN messages as m ON d.last_mid = m.mid LEFT JOIN dialog_settings as s ON d.did = s.did ORDER BY d.date DESC LIMIT %d,%d", offset, count));
+                    SQLiteCursor cursor = database.queryFinalized(String.format(Locale.US, "SELECT d.did, d.last_mid, d.unread_count, d.date, m.data, m.read_state, m.mid, m.send_state, s.flags, m.date FROM dialogs as d LEFT JOIN messages as m ON d.last_mid = m.mid LEFT JOIN dialog_settings as s ON d.did = s.did ORDER BY d.date DESC LIMIT %d,%d", offset, count));
                     while (cursor.next()) {
                         TLRPC.TL_dialog dialog = new TLRPC.TL_dialog();
                         dialog.id = cursor.longValue(0);
@@ -3495,6 +3550,10 @@ public class MessagesStorage {
                             if (message != null) {
                                 MessageObject.setIsUnread(message, cursor.intValue(5) != 1);
                                 message.id = cursor.intValue(6);
+                                int date = cursor.intValue(9);
+                                if (date != 0) {
+                                    dialog.last_message_date = date;
+                                }
                                 message.send_state = cursor.intValue(7);
                                 dialogs.messages.add(message);
 

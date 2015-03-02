@@ -224,7 +224,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     }
 
     @Override
-    public View createView(LayoutInflater inflater, ViewGroup container) {
+    public View createView(LayoutInflater inflater) {
         if (fragmentView == null) {
             actionBar.setBackgroundColor(AvatarDrawable.getProfileBackColorForId(user_id != 0 ? 5 : chat_id));
             actionBar.setItemsBackground(AvatarDrawable.getButtonColorForId(user_id != 0 ? 5 : chat_id));
@@ -397,7 +397,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             nameTextView.setLayoutParams(layoutParams);
 
             onlineTextView = new TextView(getParentActivity());
-            onlineTextView.setTextColor(AvatarDrawable.getProfileTextColorForId(user_id != 0 ? 5 : chat_id));
+            //onlineTextView.setTextColor(AvatarDrawable.getProfileTextColorForId(user_id != 0 ? 5 : chat_id));
+            onlineTextView.setTextColor(AndroidUtilities.getIntDarkerColor("themeColor",-0x40));
             onlineTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             onlineTextView.setLines(1);
             onlineTextView.setMaxLines(1);
@@ -485,7 +486,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                                     try {
                                         Intent intent = new Intent(Intent.ACTION_DIAL, Uri.parse("tel:+" + user.phone));
                                         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                                        getParentActivity().startActivity(intent);
+                                        getParentActivity().startActivityForResult(intent, 500);
                                     } catch (Exception e) {
                                         FileLog.e("tmessages", e);
                                     }
@@ -800,6 +801,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     updateProfileData();
                 }
                 if ((mask & MessagesController.UPDATE_MASK_AVATAR) != 0 || (mask & MessagesController.UPDATE_MASK_NAME) != 0 || (mask & MessagesController.UPDATE_MASK_STATUS) != 0) {
+                    if (listView != null) {
                     int count = listView.getChildCount();
                     for (int a = 0; a < count; a++) {
                         View child = listView.getChildAt(a);
@@ -808,6 +810,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         }
                     }
                 }
+            }
             }
         } else if (id == NotificationCenter.contactsDidLoaded) {
             createActionBarMenu();
@@ -882,6 +885,11 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             listAdapter.notifyDataSetChanged();
         }
         fixLayout();
+    }
+
+    @Override
+    public void updatePhotoAtIndex(int index) {
+
     }
 
     @Override
@@ -1323,7 +1331,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     textCell.setTextAndIcon(LocaleController.getString("NotificationsAndSounds", R.string.NotificationsAndSounds), R.drawable.profile_list);
                 } else if (i == startSecretChatRow) {
                     textCell.setText(LocaleController.getString("StartEncryptedChat", R.string.StartEncryptedChat));
-                    textCell.setTextColor(0xff37a919);
+                    //textCell.setTextColor(0xff37a919);
+                    textCell.setTextColor(AndroidUtilities.getIntDarkerColor("themeColor",0x15));
                 } else if (i == settingsKeyRow) {
                     IdenticonDrawable identiconDrawable = new IdenticonDrawable();
                     TLRPC.EncryptedChat encryptedChat = MessagesController.getInstance().getEncryptedChat((int)(dialog_id >> 32));

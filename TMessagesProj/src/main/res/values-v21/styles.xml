@@ -15,9 +15,11 @@
         <item name="android:actionBarStyle">@style/ActionBar.Transparent.TMessages.Start</item>
         <item name="android:colorBackground">@android:color/white</item>
         <item name="android:windowBackground">@android:color/white</item>
-        <item name="android:windowContentOverlay">@null</item>
+        <item name="android:windowContentOverlay">@null</item><!--
         <item name="android:colorPrimaryDark">#435e7e</item>
-        <item name="android:colorPrimary">#54759e</item>
+        <item name="android:colorPrimary">#54759e</item>-->
+        <item name="android:colorPrimaryDark">@color/primary_dark</item>
+        <item name="android:colorPrimary">@color/header</item>
     </style>
 
     <style name="Theme.TMessages" parent="@android:style/Theme.Material.Light">
@@ -32,10 +34,12 @@
         <item name="android:listChoiceBackgroundIndicator">@drawable/list_selector</item>
         <item name="android:editTextStyle">@style/Theme.TMessages.EditText</item>
         <item name="android:actionBarItemBackground">@drawable/bar_selector_style</item>
-        <item name="android:colorPrimaryDark">#33000000</item>
-        <item name="android:colorPrimary">#54759e</item>
-        <item name="android:alertDialogTheme">@style/Theme.TMessages.Dialog.Alert</item>
-        <item name="android:colorControlActivated">#4d83b3</item>
+        <item name="android:colorPrimaryDark">#33000000</item><!--
+        <item name="android:colorPrimary">#54759e</item>-->
+        <item name="android:colorPrimary">@color/header</item>
+        <item name="android:alertDialogTheme">@style/Theme.TMessages.Dialog.Alert</item><!--
+        <item name="android:colorControlActivated">#4d83b3</item>-->
+        <item name="android:colorControlActivated">@color/primary_light</item>
     </style>
 
     <style name="Theme.TMessages.PopupNotification" parent="Theme.TMessages">
@@ -47,8 +51,9 @@
         <item name="android:colorPrimaryDark">#99000000</item>
     </style>
 
-    <style name="Theme.TMessages.Dialog.Alert" parent="android:style/Theme.Material.Light.Dialog.Alert">
-        <item name="android:colorAccent">#4d83b3</item>
+    <style name="Theme.TMessages.Dialog.Alert" parent="android:style/Theme.Material.Light.Dialog.Alert"><!--
+        <item name="android:colorAccent">#4d83b3</item>-->
+        <item name="android:colorAccent">@color/primary_light</item>
     </style>
 
     <!--ACTION BAR-->
@@ -68,8 +73,9 @@
 
     <!--BORDERLESS BUTTON-->
 
-    <style name="Theme.TMessages.BorderLessButton" parent="android:Widget.Material.Light.ButtonBar.AlertDialog">
-        <item name="android:textColor">#54759e</item>
+    <style name="Theme.TMessages.BorderLessButton" parent="android:Widget.Material.Light.ButtonBar.AlertDialog"><!--
+        <item name="android:textColor">#54759e</item>-->
+        <item name="android:textColor">@color/primary_dark</item>
     </style>
 
     <!--LIST VIEW-->
