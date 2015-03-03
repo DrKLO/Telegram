@@ -23,7 +23,6 @@ import android.graphics.Point;
 import android.graphics.PorterDuff;
 import android.graphics.Rect;
 import android.graphics.Typeface;
-import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Build;
@@ -53,24 +52,19 @@ import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.UserConfig;
-import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.Components.ForegroundDetector;
 import org.telegram.ui.Components.NumberPicker;
 import org.telegram.ui.Components.TypefaceSpan;
 import org.telegram.ui.LaunchActivity;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.FileReader;
-import java.io.PrintWriter;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.Hashtable;
-import java.util.List;
 
 public class AndroidUtilities {
 
@@ -87,14 +81,11 @@ public class AndroidUtilities {
     private static Boolean isTablet = null;
 
     public static final String THEME_PREFS = "theme";
-    private static final String TAG = "AndroidUtilities";
+
     public static final int defColor = 0xff58BCD5;//0xff43C3DB;//0xff2f8cc9;58BCD5//0xff55abd2
     public static int themeColor = getIntColor("themeColor");
 
     public static boolean needRestart = false;
-
-    //public static boolean hideScreenshot = false;
-    //public static boolean hideMobile = false;
 
     static {
         density = ApplicationLoader.applicationContext.getResources().getDisplayMetrics().density;
@@ -611,7 +602,7 @@ public class AndroidUtilities {
             window.clearFlags(WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED);
         }
     }*/
-    //NEW
+    //PLUS
     public static int getIntColor(String key){
         SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(THEME_PREFS, Activity.MODE_PRIVATE);
         return themePrefs.getInt(key, defColor);
@@ -713,7 +704,7 @@ public class AndroidUtilities {
             i = context.getSharedPreferences(THEME_PREFS, 0).getInt(key.replace("_check", "_picker"), def);
         }
         return i;
-    }*/
+    }
 
     public static void setTVTextColor(Context ctx, TextView tv, String key, int def){
         if(tv==null)return;
@@ -741,7 +732,7 @@ public class AndroidUtilities {
                 Log.e(TAG, e.toString());
             }
         }
-    }
+    }*/
 
     public static Drawable paintGradient(Context c, int mainColor, String gColor, String g){
         GradientDrawable gd = null;
