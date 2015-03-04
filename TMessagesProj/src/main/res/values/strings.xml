@@ -266,6 +266,15 @@
     <string name="ImportContacts">Import Contacts</string>
     <string name="SortFirstName">First name</string>
     <string name="SortLastName">Last name</string>
+    <string name="SmartNotification">Smart Notification</string>
+    <string name="TimeUnitSeconds">Seconds</string>
+    <string name="TimeUnitMinutes">Minutes</string>
+    <string name="TimeUnitHours">Hours</string>
+    <string name="TimeUnitDays">Days</string>
+    <string name="settings_smart_notify_begin">Sound at most</string>
+    <string name="settings_smart_notify_mid1">times</string>
+    <string name="settings_smart_notify_mid2">within</string>
+    <string name="settings_smart_notify_end">period.</string>
     <string name="LedColor">LED Color</string>
     <string name="PopupNotification">Popup Notifications</string>
     <string name="NoPopup">No popup</string>

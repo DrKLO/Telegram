@@ -276,6 +276,10 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     return false;
                 }
             }
+            if (chatId > 0){
+                if (currentChat.sound_timestamps != null)
+                    currentChat.sound_timestamps.clear();
+            }
             if (chatId > 0) {
                 dialog_id = -chatId;
             } else {

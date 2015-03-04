@@ -9,7 +9,10 @@
 package org.telegram.messenger;
 
 import java.util.ArrayList;
+import java.util.Date;
+import java.util.LinkedList;
 import java.util.Locale;
+import java.util.Queue;
 
 @SuppressWarnings("unchecked")
 public class TLRPC {
@@ -5857,6 +5860,7 @@ public class TLRPC {
         public boolean checked_in;
         public int version;
         public boolean left;
+        public java.util.Queue<java.util.Date> sound_timestamps = null;
     }
 
     public static class TL_chatForbidden extends Chat {

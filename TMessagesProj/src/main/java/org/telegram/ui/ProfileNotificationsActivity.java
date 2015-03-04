@@ -24,8 +24,12 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.FrameLayout;
 import android.widget.ListView;
+import android.widget.NumberPicker;
+import android.widget.Spinner;
+import android.widget.Toast;
 
 import org.telegram.android.AndroidUtilities;
 import org.telegram.android.MessagesController;
@@ -55,6 +59,7 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
     private int settingsVibrateRow;
     private int settingsSoundRow;
     private int settingsPriorityRow;
+    private int settingsSmartNotifyRow;
     private int settingsLedRow;
     private int rowCount = 0;
 
@@ -72,6 +77,12 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
             settingsPriorityRow = rowCount++;
         } else {
             settingsPriorityRow = -1;
+        }
+        if (dialog_id < 0) {
+            settingsSmartNotifyRow = rowCount++;
+        }
+        else {
+            settingsSmartNotifyRow = -1;
         }
         settingsLedRow = rowCount++;
         NotificationCenter.getInstance().addObserver(this, NotificationCenter.notificationsSettingsUpdated);
@@ -155,31 +166,67 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
                         }
                         AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                         builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
-                        builder.setItems(new CharSequence[] {
-                                LocaleController.getString("Default", R.string.Default),
-                                LocaleController.getString("Enabled", R.string.Enabled),
-                                LocaleController.getString("NotificationsDisabled", R.string.NotificationsDisabled)
-                        }, new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface d, int which) {
-                                SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
-                                SharedPreferences.Editor editor = preferences.edit();
-                                editor.putInt("notify2_" + dialog_id, which);
-                                MessagesStorage.getInstance().setDialogFlags(dialog_id, which == 2 ? 1 : 0);
-                                editor.commit();
-                                TLRPC.TL_dialog dialog = MessagesController.getInstance().dialogs_dict.get(dialog_id);
-                                if (dialog != null) {
-                                    dialog.notify_settings = new TLRPC.TL_peerNotifySettings();
-                                    if (which == 2) {
-                                        dialog.notify_settings.mute_until = Integer.MAX_VALUE;
+                        if (dialog_id < 0) {
+                            builder.setItems(new CharSequence[]{
+                                    LocaleController.getString("Default", R.string.Default),
+                                    LocaleController.getString("Enabled", R.string.Enabled),
+                                    LocaleController.getString("NotificationsDisabled", R.string.NotificationsDisabled),
+                                    LocaleController.getString("Smart Notification", R.string.SmartNotification)
+                            }, new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+                                    SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+                                    SharedPreferences.Editor editor = preferences.edit();
+                                    if (which == 3) {
+                                        which = 4;  //Leave space for "Mute group for D duration"
+                                        editor.putBoolean("smart_notify_" + dialog_id, true);
+                                    } else {
+                                        editor.putBoolean("smart_notify_" + dialog_id, false);
                                     }
+                                    editor.putInt("notify2_" + dialog_id, which);
+                                    MessagesStorage.getInstance().setDialogFlags(dialog_id, which == 2 ? 1 : 0);
+                                    editor.commit();
+                                    TLRPC.TL_dialog tl_dialog = MessagesController.getInstance().dialogs_dict.get(dialog_id);
+                                    if (tl_dialog != null) {
+                                        tl_dialog.notify_settings = new TLRPC.TL_peerNotifySettings();
+                                        if (which == 2) {
+                                            tl_dialog.notify_settings.mute_until = Integer.MAX_VALUE;
+                                        }
+                                    }
+                                    if (listView != null) {
+                                        listView.invalidateViews();
+                                    }
+                                    NotificationsController.updateServerNotificationsSettings(dialog_id);
                                 }
-                                if (listView != null) {
-                                    listView.invalidateViews();
+                            });
+                        }
+                        else {
+                            builder.setItems(new CharSequence[]{
+                                    LocaleController.getString("Default", R.string.Default),
+                                    LocaleController.getString("Enabled", R.string.Enabled),
+                                    LocaleController.getString("NotificationsDisabled", R.string.NotificationsDisabled),
+                            }, new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+                                    SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+                                    SharedPreferences.Editor editor = preferences.edit();
+                                    editor.putInt("notify2_" + dialog_id, which);
+                                    MessagesStorage.getInstance().setDialogFlags(dialog_id, which == 2 ? 1 : 0);
+                                    editor.commit();
+                                    TLRPC.TL_dialog tl_dialog = MessagesController.getInstance().dialogs_dict.get(dialog_id);
+                                    if (tl_dialog != null) {
+                                        tl_dialog.notify_settings = new TLRPC.TL_peerNotifySettings();
+                                        if (which == 2) {
+                                            tl_dialog.notify_settings.mute_until = Integer.MAX_VALUE;
+                                        }
+                                    }
+                                    if (listView != null) {
+                                        listView.invalidateViews();
+                                    }
+                                    NotificationsController.updateServerNotificationsSettings(dialog_id);
                                 }
-                                NotificationsController.updateServerNotificationsSettings(dialog_id);
-                            }
-                        });
+                            });
+                        }
                         builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
                         showAlertDialog(builder);
                     } else if (i == settingsSoundRow) {
@@ -290,6 +337,70 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
                         });
                         builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
                         showAlertDialog(builder);
+                    } else if (i == settingsSmartNotifyRow) {
+                        if (getParentActivity() == null) {
+                            return;
+                        }
+
+                        LayoutInflater li = (LayoutInflater)getParentActivity().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+                        view = li.inflate(R.layout.settings_smart_notify, null, false);
+
+                        String[] timeUnits = {
+                                LocaleController.getString("Seconds", R.string.TimeUnitSeconds),
+                                LocaleController.getString("Minutes", R.string.TimeUnitMinutes),
+                                LocaleController.getString("Hours", R.string.TimeUnitHours),
+                                LocaleController.getString("Days", R.string.TimeUnitDays)
+                        };
+                        final Spinner timeframeUnitSpinner = (Spinner) view.findViewById(R.id.timeframeunitSpinner);
+                        ArrayAdapter<String> adapter = new ArrayAdapter<String> (li.getContext(), android.R.layout.simple_spinner_item, timeUnits);
+                        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+                        timeframeUnitSpinner.setAdapter(adapter);
+
+                        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+
+                        final NumberPicker maxcountNumberPicker = (NumberPicker) view.findViewById(R.id.maxcountNumberPicker);
+                        maxcountNumberPicker.setMinValue(1);
+                        maxcountNumberPicker.setMaxValue(10);
+                        maxcountNumberPicker.setValue(preferences.getInt ("smart_notify_max_count_" + dialog_id, 1));
+
+                        final NumberPicker timeframeNumberPicker = (NumberPicker) view.findViewById(R.id.timeframeNumberPicker);
+                        timeframeNumberPicker.setMinValue(1);
+                        timeframeNumberPicker.setMaxValue(100);
+
+                        long timeframe = preferences.getLong("smart_notify_timeframe_" + dialog_id, 1);
+                        long multiplier = (timeframe % 86400L == 0L) ? 86400L : ((timeframe % 3600L == 0L) ? 3600L : ((timeframe % 60L == 0L) ? 60L : 1L));
+                        timeframe = timeframe / multiplier;
+                        timeframeUnitSpinner.setSelection((multiplier == 1L) ? 0 : ((multiplier == 60L) ? 1 : (multiplier == 3600L) ? 2 : 3));
+                        timeframeNumberPicker.setValue((int)timeframe);
+
+                        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                        builder.setTitle(LocaleController.getString("Smart Notification", R.string.SmartNotification));
+                        builder.setView(view);
+                        builder.setPositiveButton(LocaleController.getString("Set", R.string.Set), new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialogInterface, int which) {
+                                final SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+                                SharedPreferences.Editor editor = preferences.edit();
+                                int unit = timeframeUnitSpinner.getSelectedItemPosition();
+                                long multiplier = (unit == 0) ? 1L : ((unit == 1) ? 60L : ((unit == 2) ? 3600L : 86400L));
+                                editor.putInt("smart_notify_max_count_" + dialog_id, maxcountNumberPicker.getValue());
+                                editor.putLong("smart_notify_timeframe_" + dialog_id, timeframeNumberPicker.getValue() * multiplier);
+                                editor.commit();
+                                listView.invalidateViews();
+                            }
+                        });
+                        builder.setNegativeButton(LocaleController.getString("Default", R.string.Default), new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                final SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+                                SharedPreferences.Editor editor = preferences.edit();
+                                editor.putInt("smart_notify_max_count_" + dialog_id, 1);
+                                editor.putLong("smart_notify_timeframe_" + dialog_id, 1);
+                                editor.commit();
+                                listView.invalidateViews();
+                            }
+                        });
+                        showAlertDialog(builder);
                     }
                 }
             });
@@ -355,11 +466,18 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
 
         @Override
         public boolean areAllItemsEnabled() {
-            return true;
+            return false;
         }
 
         @Override
         public boolean isEnabled(int i) {
+            if (i < 0)
+                return false;
+            if (i == settingsSmartNotifyRow) {
+                SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+                if (!preferences.getBoolean("smart_notify_" + dialog_id, false))
+                    return false;
+            }
             return true;
         }
 
@@ -435,6 +553,8 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
                         } else {
                             textCell.setTextAndValue(LocaleController.getString("Notifications", R.string.Notifications), LocaleController.getString("NotificationsDisabled", R.string.NotificationsDisabled), true);
                         }
+                    } else if (value == 4) {
+                        textCell.setTextAndValue(LocaleController.getString("Notifications", R.string.Notifications), LocaleController.getString("Smart Notification", R.string.SmartNotification), true);
                     }
                 } else if (i == settingsSoundRow) {
                     String value = preferences.getString("sound_" + dialog_id, LocaleController.getString("Default", R.string.Default));
@@ -453,6 +573,33 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
                     } else if (value == 3) {
                         textCell.setTextAndValue(LocaleController.getString("NotificationsPriority", R.string.NotificationsPriority), LocaleController.getString("SettingsDefault", R.string.SettingsDefault), true);
                     }
+                } else if (i == settingsSmartNotifyRow) {
+                    String value = LocaleController.getString("Disabled", R.string.Disabled);
+                    if (preferences.getBoolean("smart_notify_" + dialog_id, false)) {
+                        long timeframe = preferences.getLong("smart_notify_timeframe_" + dialog_id, 1);
+                        long multiplier = (timeframe % 86400L == 0L) ? 86400L : ((timeframe % 3600L == 0L) ? 3600L : ((timeframe % 60L == 0L) ? 60L : 1L));
+                        timeframe = timeframe / multiplier;
+                        String[] timeUnits = {
+                                LocaleController.getString("Seconds", R.string.TimeUnitSeconds),
+                                LocaleController.getString("Minutes", R.string.TimeUnitMinutes),
+                                LocaleController.getString("Hours", R.string.TimeUnitHours),
+                                LocaleController.getString("Days", R.string.TimeUnitDays)
+                        };
+                        value = LocaleController.getString("Sound at most", R.string.settings_smart_notify_begin);
+                        value += " ";
+                        value += preferences.getInt("smart_notify_max_count_" + dialog_id, 1);
+                        value += " ";
+                        value += LocaleController.getString("time(s)", R.string.settings_smart_notify_mid1);
+                        value += " ";
+                        value += LocaleController.getString("within", R.string.settings_smart_notify_mid2);
+                        value += " ";
+                        value += timeframe;
+                        value += " ";
+                        value += timeUnits [((multiplier == 1L)? 0: (multiplier == 60L)? 1 : (multiplier == 3600L)? 2 : 3)];
+                        value += " ";
+                        value += LocaleController.getString(".", R.string.settings_smart_notify_end);
+                    }
+                    textCell.setTextAndValue(LocaleController.getString("Smart Notification", R.string.SmartNotification), value, true);
                 }
             } else if (type == 1) {
                 if (view == null) {
