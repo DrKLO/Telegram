@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical" android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:gravity="center">
+
+    <LinearLayout
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:weightSum="1"
+        android:gravity="center">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/settings_smart_notify_begin"
+            android:id="@+id/beginTextView"
+            android:layout_gravity="center"
+            android:autoText="false"
+            android:enabled="true"
+            android:focusable="false"
+            android:inputType="none"
+            android:singleLine="true"
+            android:textStyle="normal"
+            android:visibility="visible"
+            android:gravity="center"
+            android:layout_margin="5dp" />
+
+        <NumberPicker
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/maxcountNumberPicker"
+            android:clickable="true"
+            android:gravity="center" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/settings_smart_notify_mid1"
+            android:id="@+id/midTextView1"
+            android:layout_gravity="center"
+            android:autoText="false"
+            android:enabled="true"
+            android:focusable="false"
+            android:inputType="none"
+            android:singleLine="true"
+            android:textStyle="normal"
+            android:visibility="visible"
+            android:editable="true"
+            android:gravity="center"
+            android:layout_margin="5dp" />
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:weightSum="1"
+        android:gravity="center">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/settings_smart_notify_mid2"
+            android:id="@+id/midTextView2"
+            android:layout_gravity="center"
+            android:autoText="false"
+            android:enabled="true"
+            android:focusable="false"
+            android:inputType="none"
+            android:singleLine="true"
+            android:textStyle="normal"
+            android:visibility="visible"
+            android:editable="true"
+            android:gravity="center"
+            android:layout_margin="5dp" />
+
+        <NumberPicker
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/timeframeNumberPicker"
+            android:gravity="center" />
+
+        <Spinner
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/timeframeunitSpinner"
+            android:spinnerMode="dropdown"
+            android:clickable="true"
+            android:gravity="center"
+            android:layout_gravity="center"
+            android:dropDownWidth="fill_parent" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/settings_smart_notify_end"
+            android:id="@+id/endTextView"
+            android:layout_gravity="center"
+            android:autoText="false"
+            android:enabled="true"
+            android:focusable="false"
+            android:inputType="none"
+            android:singleLine="true"
+            android:textStyle="normal"
+            android:visibility="visible"
+            android:gravity="center"
+            android:layout_margin="5dp" />
+
+    </LinearLayout>
+
+</LinearLayout>
