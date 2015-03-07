@@ -43,7 +43,9 @@ import org.telegram.ui.PopupNotificationActivity;
 
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 
 public class NotificationsController {
@@ -352,7 +354,32 @@ public class NotificationsController {
             if (!notifyAboutLast || notify_override == 2 || (!preferences.getBoolean("EnableAll", true) || chat_id != 0 && !preferences.getBoolean("EnableGroup", true)) && notify_override == 0) {
                 notifyDisabled = true;
             }
-
+            //Smart notifications
+            boolean use_smart_notify = preferences.getBoolean("smart_notify_" + dialog_id, false);
+            Long smart_notify_timeframe = preferences.getLong("smart_notify_timeframe_" + dialog_id, 1);
+            int smart_notify_max_count = preferences.getInt("smart_notify_max_count_" + dialog_id, 1);
+            if (chat_id != 0 && use_smart_notify)
+            {
+                if (chat.sound_timestamps == null)
+                    chat.sound_timestamps = new LinkedList<>();
+                boolean shouldAdd = true;
+                Date firstNotification = chat.sound_timestamps.peek();
+                Date currentDate = new Date();
+                if (firstNotification != null) {
+                    if (currentDate.getTime() - firstNotification.getTime() < smart_notify_timeframe * 1000 && chat.sound_timestamps.size () >= smart_notify_max_count) {
+                        shouldAdd = false;
+                    }
+                }
+                if (!shouldAdd) {
+                    notifyDisabled = true;
+                }
+                else {
+                    if (chat.sound_timestamps.size() >= smart_notify_max_count)
+                        chat.sound_timestamps.poll();
+                    chat.sound_timestamps.add(currentDate);
+                }
+            }
+            //
             String defaultPath = Settings.System.DEFAULT_NOTIFICATION_URI.getPath();
             if (!notifyDisabled) {
                 inAppSounds = preferences.getBoolean("EnableInAppSounds", true);

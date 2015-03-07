@@ -239,6 +239,9 @@ public class UserCell extends FrameLayout {
         statusTextView.setTextSize(AndroidUtilities.getIntDef("contactsStatusSize", 14));
         imageView.setVisibility(currentDrawable == 0 ? GONE : VISIBLE);
         imageView.setImageResource(currentDrawable);
+        //int radius = AndroidUtilities.dp(AndroidUtilities.getIntDef("contactsAvatarRadius", 32));
+        //avatarImageView.imageReceiver.setRoundRadius(radius);
+        //avatarDrawable.setRadius(radius/3);
         avatarImageView.setImage(photo, "50_50", avatarDrawable);
     }
 }

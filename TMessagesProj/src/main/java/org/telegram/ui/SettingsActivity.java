@@ -341,6 +341,30 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                     if (user.photo != null && user.photo.photo_big != null) {
                         PhotoViewer.getInstance().setParentActivity(getParentActivity());
                         PhotoViewer.getInstance().openPhoto(user.photo.photo_big, SettingsActivity.this);
+                    } else{
+                        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                        CharSequence[] items;
+                        boolean fullMenu = false;
+                        if (user.photo != null && user.photo.photo_big != null && !(user.photo instanceof TLRPC.TL_userProfilePhotoEmpty)) {
+                            items = new CharSequence[] {LocaleController.getString("FromCamera", R.string.FromCamera), LocaleController.getString("FromGalley", R.string.FromGalley), LocaleController.getString("DeletePhoto", R.string.DeletePhoto)};
+                            fullMenu = true;
+                        } else {
+                            items = new CharSequence[] {LocaleController.getString("FromCamera", R.string.FromCamera), LocaleController.getString("FromGalley", R.string.FromGalley)};
+                        }
+
+                        builder.setItems(items, new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialogInterface, int i) {
+                                if (i == 0) {
+                                    avatarUpdater.openCamera();
+                                } else if (i == 1) {
+                                    avatarUpdater.openGallery();
+                                } else if (i == 2) {
+                                    MessagesController.getInstance().deleteUserPhoto(null);
+                                }
+                            }
+                        });
+                        showAlertDialog(builder);
                     }
                 }
             });

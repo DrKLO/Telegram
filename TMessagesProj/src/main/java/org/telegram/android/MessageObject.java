@@ -49,6 +49,8 @@ public class MessageObject {
     public ArrayList<TLRPC.PhotoSize> photoThumbs;
 
     private static TextPaint textPaint;
+    private static TextPaint textPaintRight = new TextPaint(Paint.ANTI_ALIAS_FLAG);
+    private static TextPaint textPaintLeft = new TextPaint(Paint.ANTI_ALIAS_FLAG);
     public int lastLineWidth;
     public int textWidth;
     public int textHeight;
@@ -72,16 +74,21 @@ public class MessageObject {
             textPaint.linkColor = 0xff316f9f;
         }
 
-        int color = AndroidUtilities.getIntDef("chatRTextColor", 0xff000000);
-        textPaint.setColor(color);
-        if(color != 0xff000000){
-            textPaint.linkColor = AndroidUtilities.getIntDarkerColor("chatRTextColor", -0x50);
-        }
-
         textPaint.setTextSize(AndroidUtilities.dp(MessagesController.getInstance().fontSize));
 
-        messageOwner = message;
+        textPaintLeft.setColor(AndroidUtilities.getIntDef("chatLTextColor", 0xff000000));
+        textPaintLeft.linkColor = AndroidUtilities.getIntDarkerColor("chatLTextColor", -0x10);
+        textPaintLeft.setTextSize(AndroidUtilities.dp(MessagesController.getInstance().fontSize));
+        textPaint = textPaintLeft;
 
+        textPaintRight.setColor(AndroidUtilities.getIntDef("chatRTextColor", 0xff000000));
+        textPaintRight.linkColor = AndroidUtilities.getIntDarkerColor("chatRTextColor", -0x10);
+        textPaintRight.setTextSize(AndroidUtilities.dp(MessagesController.getInstance().fontSize));
+
+        messageOwner = message;
+        if(isOut()){
+            textPaint = textPaintRight;
+        }
         if (message instanceof TLRPC.TL_messageService) {
             if (message.action != null) {
                 TLRPC.User fromUser = null;

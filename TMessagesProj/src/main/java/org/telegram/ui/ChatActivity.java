@@ -18,7 +18,9 @@ import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
+import android.graphics.PorterDuff;
 import android.graphics.Rect;
+import android.graphics.drawable.Drawable;
 import android.media.ExifInterface;
 import android.net.Uri;
 import android.os.Build;
@@ -276,6 +278,12 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     return false;
                 }
             }
+            //Smart Notifications
+            if (chatId > 0){
+                if (currentChat.sound_timestamps != null)
+                    currentChat.sound_timestamps.clear();
+            }
+            //
             if (chatId > 0) {
                 dialog_id = -chatId;
             } else {
@@ -968,7 +976,10 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             attachItem.addSubItem(attach_location, LocaleController.getString("ChatLocation", R.string.ChatLocation), R.drawable.ic_attach_location);
             attachItem.setVisibility(View.INVISIBLE);
 
-            menuItem = menu.addItem(chat_menu_attach, R.drawable.ic_ab_attach);
+            Drawable clip = getParentActivity().getResources().getDrawable(R.drawable.ic_ab_attach_white);
+            clip.setColorFilter(AndroidUtilities.getIntDef("chatEditTextIconsColor", 0xffadadad), PorterDuff.Mode.MULTIPLY);
+            menuItem = menu.addItem(chat_menu_attach, clip);
+            //menuItem = menu.addItem(chat_menu_attach, R.drawable.ic_ab_attach);
             menuItem.addSubItem(attach_photo, LocaleController.getString("ChatTakePhoto", R.string.ChatTakePhoto), R.drawable.ic_attach_photo);
             menuItem.addSubItem(attach_gallery, LocaleController.getString("ChatGallery", R.string.ChatGallery), R.drawable.ic_attach_gallery);
             menuItem.addSubItem(attach_music, LocaleController.getString("ChatMusic", R.string.ChatMusic), R.drawable.ic_attach_music);
@@ -3179,10 +3190,10 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         chatListView.setOnItemLongClickListener(onItemLongClickListener);
         chatListView.setOnItemClickListener(onItemClickListener);
         chatListView.setLongClickable(true);
-        updateColors();
+        updateTheme();
     }
 
-    private void updateColors(){
+    private void updateTheme(){
         actionBar.setBackgroundColor(AndroidUtilities.getIntDef("chatHeaderColor", AndroidUtilities.getIntColor("themeColor")));
         nameTextView.setTextColor(AndroidUtilities.getIntDef("chatNameColor", 0xffffffff));
         nameTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, AndroidUtilities.getIntDef("chatNameSize", 18));

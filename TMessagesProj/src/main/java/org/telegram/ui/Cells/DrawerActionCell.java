@@ -9,12 +9,15 @@
 package org.telegram.ui.Cells;
 
 import android.content.Context;
+import android.graphics.PorterDuff;
+import android.graphics.drawable.Drawable;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.widget.FrameLayout;
 import android.widget.TextView;
 
 import org.telegram.android.AndroidUtilities;
+import org.telegram.messenger.R;
 
 public class DrawerActionCell extends FrameLayout {
 
@@ -45,10 +48,32 @@ public class DrawerActionCell extends FrameLayout {
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(48), MeasureSpec.EXACTLY));
+        updateTheme();
     }
 
     public void setTextAndIcon(String text, int resId) {
         textView.setText(text);
-        textView.setCompoundDrawablesWithIntrinsicBounds(resId, 0, 0, 0);
+        //textView.setCompoundDrawablesWithIntrinsicBounds(resId, 0, 0, 0);
+        textView.setCompoundDrawablesWithIntrinsicBounds(getResources().getDrawable(resId), null, null, null);
+    }
+
+    private void updateTheme(){
+        textView.setTextColor(AndroidUtilities.getIntDef("drawerOptionColor", 0xff444444));
+        textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, AndroidUtilities.getIntDef("drawerOptionSize", 15));
+        int color = AndroidUtilities.getIntDef("drawerIconColor", 0xff737373);
+        Drawable icon = getResources().getDrawable(R.drawable.menu_newgroup_white);
+        icon.setColorFilter(color, PorterDuff.Mode.MULTIPLY);
+        icon = getResources().getDrawable(R.drawable.menu_secret_white);
+        icon.setColorFilter(color, PorterDuff.Mode.MULTIPLY);
+        icon = getResources().getDrawable(R.drawable.menu_broadcast_white);
+        icon.setColorFilter(color, PorterDuff.Mode.MULTIPLY);
+        icon = getResources().getDrawable(R.drawable.menu_contacts_white);
+        icon.setColorFilter(color, PorterDuff.Mode.MULTIPLY);
+        icon = getResources().getDrawable(R.drawable.menu_theming_white);
+        icon.setColorFilter(color, PorterDuff.Mode.MULTIPLY);
+        icon = getResources().getDrawable(R.drawable.menu_settings_white);
+        icon.setColorFilter(color, PorterDuff.Mode.MULTIPLY);
+        icon = getResources().getDrawable(R.drawable.menu_forum_white);
+        icon.setColorFilter(color, PorterDuff.Mode.MULTIPLY);
     }
 }

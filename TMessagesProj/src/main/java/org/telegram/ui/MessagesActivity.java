@@ -15,9 +15,11 @@ import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
+import android.content.res.Resources;
 import android.graphics.Color;
 import android.graphics.Outline;
 import android.graphics.PorterDuff;
+import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
@@ -164,7 +166,9 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                 passcodeItem = menu.addItem(passcode_menu_item, R.drawable.lock_close);
                 updatePasscodeButton();
             }
-            ActionBarMenuItem item = menu.addItem(0, R.drawable.ic_ab_search).setIsSearchField(true).setActionBarMenuItemSearchListener(new ActionBarMenuItem.ActionBarMenuItemSearchListener() {
+            //ActionBarMenuItem item = menu.addItem(0, R.drawable.ic_ab_search).setIsSearchField(true).setActionBarMenuItemSearchListener(new ActionBarMenuItem.ActionBarMenuItemSearchListener() {
+            Drawable search = getParentActivity().getResources().getDrawable(R.drawable.ic_ab_search);
+            ActionBarMenuItem item = menu.addItem(0, search).setIsSearchField(true).setActionBarMenuItemSearchListener(new ActionBarMenuItem.ActionBarMenuItemSearchListener() {
                 @Override
                 public void onSearchExpand() {
                     searching = true;
@@ -232,8 +236,12 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                 }
             });
             item.getSearchField().setHint(LocaleController.getString("Search", R.string.Search));
+            item.getSearchField().setTextColor(AndroidUtilities.getIntDef("chatsHeaderTitleColor", 0xffffffff));
             if (onlySelect) {
-                actionBar.setBackButtonImage(R.drawable.ic_ab_back);
+                //actionBar.setBackButtonImage(R.drawable.ic_ab_back);
+                Drawable back = getParentActivity().getResources().getDrawable(R.drawable.ic_ab_back);
+                back.setColorFilter(AndroidUtilities.getIntDef("chatsHeaderIconsColor", 0xffffffff), PorterDuff.Mode.MULTIPLY);
+                actionBar.setBackButtonDrawable(back);
                 actionBar.setTitle(LocaleController.getString("SelectChat", R.string.SelectChat));
             } else {
                 actionBar.setBackButtonDrawable(new MenuDrawable());
@@ -558,10 +566,11 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
         if (dialogsSearchAdapter != null) {
             dialogsSearchAdapter.notifyDataSetChanged();
         }
-        updateColors();
+        updateTheme();
     }
 
-    private void updateColors(){
+    private void updateTheme(){
+        updateActionBarTitle();
         actionBar.setBackgroundColor(AndroidUtilities.getIntDef("chatsHeaderColor", AndroidUtilities.getIntColor("themeColor")));
         Drawable floatingDrawableWhite = fragmentView.getResources().getDrawable(R.drawable.floating_white);
         floatingDrawableWhite.setColorFilter(AndroidUtilities.getIntDef("chatsFloatingBGColor", AndroidUtilities.getIntColor("themeColor")), PorterDuff.Mode.MULTIPLY);
@@ -569,6 +578,20 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
         Drawable pencilDrawableWhite = fragmentView.getResources().getDrawable(R.drawable.floating_pencil);
         pencilDrawableWhite.setColorFilter(AndroidUtilities.getIntDef("chatsFloatingPencilColor", 0xffffffff), PorterDuff.Mode.MULTIPLY);
         floatingButton.setImageDrawable(pencilDrawableWhite);
+        Drawable search = getParentActivity().getResources().getDrawable(R.drawable.ic_ab_search);
+        search.setColorFilter(AndroidUtilities.getIntDef("chatsHeaderIconsColor", 0xffffffff), PorterDuff.Mode.MULTIPLY);
+    }
+    
+    private void updateActionBarTitle(){
+        String value = LocaleController.getString("AppName", R.string.AppName);
+        if(AndroidUtilities.getBoolPref("chatsUsernameTitle")){
+            TLRPC.User user = UserConfig.getCurrentUser();
+            if (user != null && user.username != null && user.username.length() != 0) {
+                value = user.username;
+            }
+        }
+        actionBar.setTitle(value);
+        actionBar.setTitleColor(AndroidUtilities.getIntDef("chatsHeaderTitleColor", 0xffffffff));
     }
 
     @Override

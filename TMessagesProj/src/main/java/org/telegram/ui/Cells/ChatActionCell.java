@@ -73,7 +73,6 @@ public class ChatActionCell extends BaseCell {
             backgroundBlue = getResources().getDrawable(R.drawable.system_blue);
 
             backgroundWhite = getResources().getDrawable(R.drawable.system_white);
-            backgroundBlue = backgroundWhite;
 
             textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
             textPaint.setColor(0xffffffff);
@@ -226,7 +225,7 @@ public class ChatActionCell extends BaseCell {
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        updateColor();
+        updateTheme();
         if (currentMessageObject == null) {
             setMeasuredDimension(MeasureSpec.getSize(widthMeasureSpec), textHeight + AndroidUtilities.dp(14));
             return;
@@ -275,9 +274,9 @@ public class ChatActionCell extends BaseCell {
 
         Drawable backgroundDrawable = null;
         if (useBlackBackground) {
-            backgroundDrawable = backgroundBlack;
+            backgroundDrawable = backgroundWhite;//backgroundBlack;
         } else {
-            backgroundDrawable = backgroundBlue;
+            backgroundDrawable = backgroundWhite;//backgroundBlue;
         }
         backgroundDrawable.setBounds(textX - AndroidUtilities.dp(5), AndroidUtilities.dp(5), textX + textWidth + AndroidUtilities.dp(5), AndroidUtilities.dp(9) + textHeight);
         backgroundDrawable.draw(canvas);
@@ -294,13 +293,13 @@ public class ChatActionCell extends BaseCell {
         }
     }
 
-    private void updateColor(){
+    private void updateTheme(){
         int color = AndroidUtilities.getIntDef("chatDateColor", 0xffffffff);
         textPaint.setColor(color);
         if(color != 0xffffffff){
             textPaint.linkColor = AndroidUtilities.getIntDarkerColor("chatDateColor", -0x50);
         }
-        textPaint.setTextSize(AndroidUtilities.dp(AndroidUtilities.getIntDef("chatDateSize",16)));//16
-        backgroundWhite.setColorFilter(AndroidUtilities.getIntDef("chatDateBubbleColor",0x59000000), PorterDuff.Mode.MULTIPLY);
+        textPaint.setTextSize(AndroidUtilities.dp(AndroidUtilities.getIntDef("chatDateSize", 16)));//16
+        backgroundWhite.setColorFilter(AndroidUtilities.getIntDef("chatDateBubbleColor", 0x59000000), PorterDuff.Mode.MULTIPLY);
     }
 }

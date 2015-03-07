@@ -5857,6 +5857,9 @@ public class TLRPC {
         public boolean checked_in;
         public int version;
         public boolean left;
+        //Smart Notifications
+        public java.util.Queue<java.util.Date> sound_timestamps = null;
+        //
     }
 
     public static class TL_chatForbidden extends Chat {

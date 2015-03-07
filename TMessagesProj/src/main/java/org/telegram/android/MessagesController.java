@@ -3399,7 +3399,13 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                                     if (dialog != null) {
                                         dialog.notify_settings.mute_until = 0;
                                     }
-                                    editor.remove("notify2_" + dialog_id);
+                                    //editor.remove("notify2_" + dialog_id);
+                                    //Smart Notifications
+                                    SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+                                    if (preferences.getInt("notify2_" + dialog_id, 0) != 4) {
+                                        editor.remove("notify2_" + dialog_id);
+                                    }
+                                    //
                                     MessagesStorage.getInstance().setDialogFlags(dialog_id, 0);
                                 }
 

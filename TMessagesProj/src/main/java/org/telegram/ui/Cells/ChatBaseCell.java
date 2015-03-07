@@ -179,7 +179,7 @@ public class ChatBaseCell extends BaseCell {
         avatarDrawable = new AvatarDrawable();
     }
 
-    private void updateColors(){
+    private void updateTheme(){
         int tColor = AndroidUtilities.getIntColor("themeColor");
         int lColor = AndroidUtilities.getIntDarkerColor("themeColor",-0x80);
         int dColor = AndroidUtilities.getIntDarkerColor("themeColor",0x15);
@@ -465,7 +465,7 @@ public class ChatBaseCell extends BaseCell {
 
     @Override
     protected void onDraw(Canvas canvas) {
-        updateColors();
+        updateTheme();
         if (currentMessageObject == null) {
             return;
         }
@@ -524,7 +524,11 @@ public class ChatBaseCell extends BaseCell {
         if (drawName && nameLayout != null) {
             canvas.save();
             canvas.translate(currentBackgroundDrawable.getBounds().left + AndroidUtilities.dp(19) - nameOffsetX, AndroidUtilities.dp(10));
-            namePaint.setColor(AvatarDrawable.getNameColorForId(currentUser.id));
+            if(AndroidUtilities.getBoolPref("chatMemberColorCheck")){
+                namePaint.setColor(AndroidUtilities.getIntDef("chatMemberColor", AndroidUtilities.getIntDarkerColor("themeColor", 0x15)));
+            }else{
+                namePaint.setColor(AvatarDrawable.getNameColorForId(currentUser.id));
+            }
             nameLayout.draw(canvas);
             canvas.restore();
         }
@@ -532,11 +536,13 @@ public class ChatBaseCell extends BaseCell {
         if (drawForwardedName && forwardedNameLayout != null) {
             canvas.save();
             if (currentMessageObject.isOut()) {
-                forwardNamePaint.setColor(0xff4a923c);
+                //forwardNamePaint.setColor(0xff4a923c);
+                forwardNamePaint.setColor(AndroidUtilities.getIntDef("chatForwardColor", 0xff4a923c));
                 forwardNameX = currentBackgroundDrawable.getBounds().left + AndroidUtilities.dp(10);
                 forwardNameY = AndroidUtilities.dp(10 + (drawName ? 18 : 0));
             } else {
-                forwardNamePaint.setColor(0xff006fc8);
+                //forwardNamePaint.setColor(0xff006fc8);
+                forwardNamePaint.setColor(AndroidUtilities.getIntDef("chatForwardColor", 0xff006fc8));
                 forwardNameX = currentBackgroundDrawable.getBounds().left + AndroidUtilities.dp(19);
                 forwardNameY = AndroidUtilities.dp(10 + (drawName ? 18 : 0));
             }

@@ -33,6 +33,7 @@ import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.Adapters.BaseFragmentAdapter;
 import org.telegram.ui.Cells.HeaderCell;
 import org.telegram.ui.Cells.ShadowSectionCell;
+import org.telegram.ui.Cells.TextCheckCell;
 import org.telegram.ui.Cells.TextColorCell;
 import org.telegram.ui.Cells.TextSettingsCell;
 import org.telegram.ui.Components.AvatarDrawable;
@@ -46,9 +47,8 @@ public class ThemingChatActivity extends BaseFragment {
     private ListView listView;
     private ListAdapter listAdapter;
 
-    private static final String TAG = "ThemingChatsActivity";
-
     private int headerSection2Row;
+    private int muteColorRow;
     private int headerColorRow;
     private int rowsSectionRow;
     private int rowsSection2Row;
@@ -71,9 +71,13 @@ public class ThemingChatActivity extends BaseFragment {
     private int editTextColorRow;
     private int editTextSizeRow;
     private int editTextBGColorRow;
+    private int editTextIconsColorRow;
     private int emojiViewBGColorRow;
     private int emojiViewTabColorRow;
     private int sendColorRow;
+    private int memberColorCheckRow;
+    private int memberColorRow;
+    private int forwardNameColorRow;
 
     private int rowCount;
 
@@ -86,6 +90,7 @@ public class ThemingChatActivity extends BaseFragment {
         rowCount = 0;
         headerSection2Row = rowCount++;
         headerColorRow = rowCount++;
+        //muteColorRow = rowCount++;
 
         nameSizeRow = rowCount++;
         nameColorRow = rowCount++;
@@ -97,7 +102,7 @@ public class ThemingChatActivity extends BaseFragment {
 
         textSizeRow = rowCount++;
         rTextColorRow = rowCount++;
-        //lTextColorRow = rowCount++;
+        lTextColorRow = rowCount++;
 
         timeSizeRow = rowCount++;
         rTimeColorRow = rowCount++;
@@ -111,10 +116,15 @@ public class ThemingChatActivity extends BaseFragment {
         lBubbleColorRow = rowCount++;
         dateBubbleColorRow = rowCount++;
 
+        memberColorCheckRow = rowCount++;
+        memberColorRow = rowCount++;
+        forwardNameColorRow = rowCount++;
+
         sendColorRow = rowCount++;
         editTextSizeRow = rowCount++;
         editTextColorRow = rowCount++;
         editTextBGColorRow = rowCount++;
+        editTextIconsColorRow = rowCount++;
 
         emojiViewBGColorRow = rowCount++;
         emojiViewTabColorRow = rowCount++;
@@ -172,6 +182,7 @@ public class ThemingChatActivity extends BaseFragment {
                 public void onItemClick(AdapterView<?> adapterView, View view, final int i, long l) {
 
                     SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, Activity.MODE_PRIVATE);
+                    final String key = view.getTag() != null ? view.getTag().toString() : "";
 
                     if (i == headerColorRow) {
                         if (getParentActivity() == null) {
@@ -180,7 +191,7 @@ public class ThemingChatActivity extends BaseFragment {
 
                         LayoutInflater li = (LayoutInflater)getParentActivity().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
 
-                        view = li.inflate(R.layout.colordialog, null, false);
+                        li.inflate(R.layout.colordialog, null, false);
 
                         ColorSelectorDialog colorDialog = new ColorSelectorDialog(getParentActivity(), new OnColorChangedListener() {
                             @Override
@@ -191,6 +202,59 @@ public class ThemingChatActivity extends BaseFragment {
                         },themePrefs.getInt("chatHeaderColor", AndroidUtilities.getIntColor("themeColor")), CENTER, 0, false);
 
                         colorDialog.show();
+                    }  else if (i == memberColorCheckRow) {
+                        boolean b = themePrefs.getBoolean( key, true);
+                        SharedPreferences.Editor editor = themePrefs.edit();
+                        editor.putBoolean( key, !b);
+                        editor.commit();
+                        if (view instanceof TextCheckCell) {
+                            ((TextCheckCell) view).setChecked(!b);
+                        }
+                        if (listView != null) {
+                            listView.invalidateViews();
+                        }
+                    } else if (i == memberColorRow) {
+                        if (getParentActivity() == null) {
+                            return;
+                        }
+                        LayoutInflater li = (LayoutInflater)getParentActivity().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+                        li.inflate(R.layout.colordialog, null, false);
+                        ColorSelectorDialog colorDialog = new ColorSelectorDialog(getParentActivity(), new OnColorChangedListener() {
+                            @Override
+                            public void colorChanged(int color) {
+                                commitInt("chatMemberColor", color);
+                            }
+
+                        },themePrefs.getInt("chatMemberColor", AndroidUtilities.getIntDarkerColor("themeColor", 0x15)), CENTER, 0, true);
+                        colorDialog.show();
+                    } else if (i == forwardNameColorRow) {
+                        if (getParentActivity() == null) {
+                            return;
+                        }
+                        LayoutInflater li = (LayoutInflater)getParentActivity().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+                        li.inflate(R.layout.colordialog, null, false);
+                        ColorSelectorDialog colorDialog = new ColorSelectorDialog(getParentActivity(), new OnColorChangedListener() {
+                            @Override
+                            public void colorChanged(int color) {
+                                commitInt(key, color);
+                            }
+
+                        },themePrefs.getInt(key, 0xff4a923c), CENTER, 0, true);
+                        colorDialog.show();
+                    } else if (i == muteColorRow) {
+                        if (getParentActivity() == null) {
+                            return;
+                        }
+                        LayoutInflater li = (LayoutInflater)getParentActivity().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+                        li.inflate(R.layout.colordialog, null, false);
+                        ColorSelectorDialog colorDialog = new ColorSelectorDialog(getParentActivity(), new OnColorChangedListener() {
+                            @Override
+                            public void colorChanged(int color) {
+                                commitInt( key, color);
+                            }
+
+                        },themePrefs.getInt( key, 0xffffffff), CENTER, 0, true);
+                        colorDialog.show();
                     } else if (i == rBubbleColorRow) {
                         if (getParentActivity() == null) {
                             return;
@@ -198,7 +262,7 @@ public class ThemingChatActivity extends BaseFragment {
 
                         LayoutInflater li = (LayoutInflater)getParentActivity().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
 
-                        view = li.inflate(R.layout.colordialog, null, false);
+                        li.inflate(R.layout.colordialog, null, false);
 
                         ColorSelectorDialog colorDialog = new ColorSelectorDialog(getParentActivity(), new OnColorChangedListener() {
                             @Override
@@ -216,7 +280,7 @@ public class ThemingChatActivity extends BaseFragment {
 
                         LayoutInflater li = (LayoutInflater)getParentActivity().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
 
-                        view = li.inflate(R.layout.colordialog, null, false);
+                        li.inflate(R.layout.colordialog, null, false);
 
                         ColorSelectorDialog colorDialog = new ColorSelectorDialog(getParentActivity(), new OnColorChangedListener() {
                             @Override
@@ -231,11 +295,8 @@ public class ThemingChatActivity extends BaseFragment {
                         if (getParentActivity() == null) {
                             return;
                         }
-
                         LayoutInflater li = (LayoutInflater)getParentActivity().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-
-                        view = li.inflate(R.layout.colordialog, null, false);
-
+                        li.inflate(R.layout.colordialog, null, false);
                         ColorSelectorDialog colorDialog = new ColorSelectorDialog(getParentActivity(), new OnColorChangedListener() {
                             @Override
                             public void colorChanged(int color) {
@@ -243,7 +304,6 @@ public class ThemingChatActivity extends BaseFragment {
                             }
 
                         },themePrefs.getInt("chatRTextColor", 0xff000000), CENTER, 0, true);
-
                         colorDialog.show();
                     } else if (i == lTextColorRow) {
                         if (getParentActivity() == null) {
@@ -252,7 +312,7 @@ public class ThemingChatActivity extends BaseFragment {
 
                         LayoutInflater li = (LayoutInflater)getParentActivity().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
 
-                        view = li.inflate(R.layout.colordialog, null, false);
+                        li.inflate(R.layout.colordialog, null, false);
 
                         ColorSelectorDialog colorDialog = new ColorSelectorDialog(getParentActivity(), new OnColorChangedListener() {
                             @Override
@@ -270,7 +330,7 @@ public class ThemingChatActivity extends BaseFragment {
 
                         LayoutInflater li = (LayoutInflater)getParentActivity().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
 
-                        view = li.inflate(R.layout.colordialog, null, false);
+                        li.inflate(R.layout.colordialog, null, false);
 
                         ColorSelectorDialog colorDialog = new ColorSelectorDialog(getParentActivity(), new OnColorChangedListener() {
                             @Override
@@ -288,7 +348,7 @@ public class ThemingChatActivity extends BaseFragment {
 
                         LayoutInflater li = (LayoutInflater)getParentActivity().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
 
-                        view = li.inflate(R.layout.colordialog, null, false);
+                        li.inflate(R.layout.colordialog, null, false);
 
                         ColorSelectorDialog colorDialog = new ColorSelectorDialog(getParentActivity(), new OnColorChangedListener() {
                             @Override
@@ -306,7 +366,7 @@ public class ThemingChatActivity extends BaseFragment {
 
                         LayoutInflater li = (LayoutInflater)getParentActivity().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
 
-                        view = li.inflate(R.layout.colordialog, null, false);
+                        li.inflate(R.layout.colordialog, null, false);
 
                         ColorSelectorDialog colorDialog = new ColorSelectorDialog(getParentActivity(), new OnColorChangedListener() {
                             @Override
@@ -324,7 +384,7 @@ public class ThemingChatActivity extends BaseFragment {
 
                         LayoutInflater li = (LayoutInflater)getParentActivity().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
 
-                        view = li.inflate(R.layout.colordialog, null, false);
+                        li.inflate(R.layout.colordialog, null, false);
 
                         ColorSelectorDialog colorDialog = new ColorSelectorDialog(getParentActivity(), new OnColorChangedListener() {
                             @Override
@@ -342,7 +402,7 @@ public class ThemingChatActivity extends BaseFragment {
 
                         LayoutInflater li = (LayoutInflater)getParentActivity().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
 
-                        view = li.inflate(R.layout.colordialog, null, false);
+                        li.inflate(R.layout.colordialog, null, false);
 
                         ColorSelectorDialog colorDialog = new ColorSelectorDialog(getParentActivity(), new OnColorChangedListener() {
                             @Override
@@ -360,7 +420,7 @@ public class ThemingChatActivity extends BaseFragment {
 
                         LayoutInflater li = (LayoutInflater)getParentActivity().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
 
-                        view = li.inflate(R.layout.colordialog, null, false);
+                        li.inflate(R.layout.colordialog, null, false);
 
                         ColorSelectorDialog colorDialog = new ColorSelectorDialog(getParentActivity(), new OnColorChangedListener() {
                             @Override
@@ -378,7 +438,7 @@ public class ThemingChatActivity extends BaseFragment {
 
                         LayoutInflater li = (LayoutInflater)getParentActivity().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
 
-                        view = li.inflate(R.layout.colordialog, null, false);
+                        li.inflate(R.layout.colordialog, null, false);
 
                         ColorSelectorDialog colorDialog = new ColorSelectorDialog(getParentActivity(), new OnColorChangedListener() {
                             @Override
@@ -388,6 +448,21 @@ public class ThemingChatActivity extends BaseFragment {
 
                         },themePrefs.getInt("chatEditTextBGColor", 0xffffffff), CENTER, 0, true);
 
+                        colorDialog.show();
+                    } else if (i == editTextIconsColorRow) {
+                        if (getParentActivity() == null) {
+                            return;
+                        }
+                        LayoutInflater li = (LayoutInflater)getParentActivity().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+                        li.inflate(R.layout.colordialog, null, false);
+
+                        ColorSelectorDialog colorDialog = new ColorSelectorDialog(getParentActivity(), new OnColorChangedListener() {
+                            @Override
+                            public void colorChanged(int color) {
+                                commitInt( key, color);
+                            }
+
+                        },themePrefs.getInt( key, 0xffadadad), CENTER, 0, false);
                         colorDialog.show();
                     } else if (i == emojiViewBGColorRow) {
                         if (getParentActivity() == null) {
@@ -609,52 +684,59 @@ public class ThemingChatActivity extends BaseFragment {
                     if (getParentActivity() == null) {
                         return false;
                     }
+                    if(view.getTag() != null)resetPref(view.getTag().toString());
                     if (i == headerColorRow) {
-                        resetInt("chatHeaderColor", AndroidUtilities.getIntColor("themeColor"));
+                        resetPref("chatHeaderColor");
+                    } else if (i == memberColorRow) {
+                        resetPref("chatMemberColor");
                     } else if (i == rBubbleColorRow) {
-                        resetInt("chatRBubbleColor", AndroidUtilities.getIntDarkerColor("themeColor",-0x80));
+                        resetPref("chatRBubbleColor");
                     } else if (i == lBubbleColorRow) {
-                        resetInt("chatLBubbleColor", 0xffffffff);
+                        resetPref("chatLBubbleColor");
                     } else if (i == rTextColorRow) {
-                        resetInt("chatRTextColor", 0xff000000);
+                        resetPref("chatRTextColor");
                     } else if (i == lTextColorRow) {
-                        resetInt("chatLTextColor", 0xff000000);
+                        resetPref("chatLTextColor");
                     } else if (i == nameColorRow) {
-                        resetInt("chatNameColor", 0xffffffff);
+                        resetPref("chatNameColor");
                     } else if (i == nameSizeRow) {
-                        resetInt("chatNameSize", 17);
+                        resetPref("chatNameSize");
                     } else if (i == statusColorRow) {
-                        resetInt("chatStatusColor", AndroidUtilities.getIntDarkerColor("themeColor",-0x40));
+                        resetPref("chatStatusColor");
                     } else if (i == statusSizeRow) {
-                        resetInt("chatStatusSize", 14);
+                        resetPref("chatStatusSize");
                     } else if (i == rTimeColorRow) {
-                        resetInt("chatRTimeColor", AndroidUtilities.getIntDarkerColor("themeColor",0x15));
+                        resetPref("chatRTimeColor");
                     } else if (i == lTimeColorRow) {
-                        resetInt("chatLTimeColor", 0xffa1aab3);
+                        resetPref("chatLTimeColor");
                     } else if (i == dateColorRow) {
-                        resetInt("chatDateColor", 0xffffffff);
+                        resetPref("chatDateColor");
                     } else if (i == checksColorRow) {
-                        resetInt("chatChecksColor", AndroidUtilities.getIntColor("themeColor"));
+                        resetPref("chatChecksColor");
                     } else if (i == textSizeRow) {
                         resetInt("chatTextSize", 16);
                     } else if (i == timeSizeRow) {
-                        resetInt("chatTimeSize", 12);
+                        resetPref("chatTimeSize");
                     } else if (i == dateSizeRow) {
-                        resetInt("chatDateSize", 16);
+                        resetPref("chatDateSize");
                     } else if (i == dateBubbleColorRow) {
-                        resetInt("chatDateBubbleColor", 0x59000000);
+                        resetPref("chatDateBubbleColor");
                     } else if (i == sendColorRow) {
-                        resetInt("chatSendIconColor", AndroidUtilities.getIntColor("themeColor"));
+                        resetPref("chatSendIconColor");
                     } else if (i == editTextColorRow) {
-                        resetInt("chatEditTextColor", 0xff000000);
+                        resetPref("chatEditTextColor");
                     } else if (i == editTextSizeRow) {
-                        resetInt("chatEditTextSize", 18);
+                        resetPref("chatEditTextSize");
                     } else if (i == editTextBGColorRow) {
-                        resetInt("chatEditTextBGColor", 0xffffffff);
+                        resetPref("chatEditTextBGColor");
                     } else if (i == emojiViewBGColorRow) {
-                        resetInt("chatEmojiViewBGColor", 0xff222222);
+                        resetPref("chatEmojiViewBGColor");
                     } else if (i == emojiViewTabColorRow) {
-                        resetInt("chatEmojiViewTabColor", AndroidUtilities.getIntDarkerColor("themeColor",0x15));
+                        resetPref("chatEmojiViewTabColor");
+                    } else{
+                        if(view.getTag() != null){
+                            resetPref(view.getTag().toString());
+                        }
                     }
                     return true;
                 }
@@ -670,20 +752,24 @@ public class ThemingChatActivity extends BaseFragment {
         return fragmentView;
     }
 
-    private void resetInt(String key, int value){
+    private void resetPref(String key){
         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, Activity.MODE_PRIVATE);
         SharedPreferences.Editor editor = preferences.edit();
         editor.remove(key);
         editor.commit();
+        if (listView != null) {
+            listView.invalidateViews();
+        }
+    }
+    
+    private void resetInt(String key, int value){
+        resetPref(key);
         if(key.equals("chatTextSize")){
-            preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
-            editor = preferences.edit();
+            SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+            SharedPreferences.Editor editor = preferences.edit();
             editor.putInt("fons_size", value);
             MessagesController.getInstance().fontSize = value;
             editor.commit();
-        }
-        if (listView != null) {
-            listView.invalidateViews();
         }
     }
 
@@ -744,9 +830,10 @@ public class ThemingChatActivity extends BaseFragment {
 
         @Override
         public boolean isEnabled(int i) {
-            return  i == headerColorRow || i == rBubbleColorRow || i == lBubbleColorRow || i == nameColorRow || i == nameSizeRow || i == statusColorRow || i == statusSizeRow ||
+            return  i == headerColorRow || i == muteColorRow || i == rBubbleColorRow || i == lBubbleColorRow || i == nameColorRow || i == nameSizeRow || i == statusColorRow || i == statusSizeRow ||
                     i == textSizeRow || i == timeSizeRow || i == dateColorRow || i == dateSizeRow || i == dateBubbleColorRow || i == rTextColorRow || i == lTextColorRow ||
-                    i == rTimeColorRow|| i == lTimeColorRow || i == checksColorRow || i == editTextSizeRow || i == editTextColorRow || i == sendColorRow || i == editTextBGColorRow ||
+                    i == rTimeColorRow|| i == lTimeColorRow || i == checksColorRow || i == memberColorCheckRow || AndroidUtilities.getBoolPref("chatMemberColorCheck") && i == memberColorRow || i == forwardNameColorRow ||
+                    i == editTextSizeRow || i == editTextColorRow || i == editTextIconsColorRow || i == sendColorRow || i == editTextBGColorRow ||
                     i == emojiViewBGColorRow || i == emojiViewTabColorRow;
         }
 
@@ -814,6 +901,15 @@ public class ThemingChatActivity extends BaseFragment {
                     int size = themePrefs.getInt("chatEditTextSize", AndroidUtilities.isTablet() ? 20 : 18);
                     textCell.setTextAndValue(LocaleController.getString("EditTextSize", R.string.EditTextSize), String.format("%d", size), true);
                 }
+            } else if (type == 4) {
+                if (view == null) {
+                    view = new TextCheckCell(mContext);
+                }
+                TextCheckCell textCell = (TextCheckCell) view;
+                if (i == memberColorCheckRow) {
+                    textCell.setTag("chatMemberColorCheck");
+                    textCell.setTextAndCheck(LocaleController.getString("SetMemberColor", R.string.SetMemberColor), themePrefs.getBoolean("chatMemberColorCheck", false), false);
+                }
             }
             else if (type == 3){
                 if (view == null) {
@@ -824,6 +920,14 @@ public class ThemingChatActivity extends BaseFragment {
 
                 if (i == headerColorRow) {
                     textCell.setTextAndColor(LocaleController.getString("HeaderColor", R.string.HeaderColor), themePrefs.getInt("chatHeaderColor", AndroidUtilities.getIntColor("themeColor")), true);
+                } else if (i == memberColorRow) {
+                    textCell.setTextAndColor(LocaleController.getString("MemberColor", R.string.MemberColor), AndroidUtilities.getBoolPref("chatMemberColorCheck") ? themePrefs.getInt("chatMemberColor", AndroidUtilities.getIntDarkerColor("themeColor", 0x15)) : 0x00000000, true);
+                } else if (i == forwardNameColorRow) {
+                    textCell.setTag("chatForwardColor");
+                    textCell.setTextAndColor(LocaleController.getString("ForwardNameColor", R.string.ForwardNameColor), themePrefs.getInt("chatForwardColor", 0xff4a923c), true);
+                } else if (i == muteColorRow) {
+                    textCell.setTag("chatMuteColor");
+                    textCell.setTextAndColor(LocaleController.getString("MuteColor", R.string.MuteColor), themePrefs.getInt("chatMuteColor", 0xffffffff), true);
                 } else if (i == rBubbleColorRow) {
                     textCell.setTextAndColor(LocaleController.getString("RBubbleColor", R.string.RBubbleColor), themePrefs.getInt("chatRBubbleColor", AndroidUtilities.getIntDarkerColor("themeColor",-0x80)), true);
                 } else if (i == lBubbleColorRow) {
@@ -852,6 +956,9 @@ public class ThemingChatActivity extends BaseFragment {
                     textCell.setTextAndColor(LocaleController.getString("EditTextColor", R.string.EditTextColor), themePrefs.getInt("chatEditTextColor", 0xff000000), true);
                 } else if (i == editTextBGColorRow) {
                     textCell.setTextAndColor(LocaleController.getString("EditTextBGColor", R.string.EditTextBGColor), themePrefs.getInt("chatEditTextBGColor", 0xffffffff), true);
+                } else if (i == editTextIconsColorRow) {
+                    textCell.setTag("chatEditTextIconsColor");
+                    textCell.setTextAndColor(LocaleController.getString("EditTextIconsColor", R.string.EditTextIconsColor), themePrefs.getInt("chatEditTextIconsColor", 0xffadadad), true);
                 } else if (i == emojiViewBGColorRow) {
                     textCell.setTextAndColor(LocaleController.getString("EmojiViewBGColor", R.string.EmojiViewBGColor), themePrefs.getInt("chatEmojiViewBGColor", 0xff222222), true);
                 } else if (i == emojiViewTabColorRow) {
@@ -873,10 +980,14 @@ public class ThemingChatActivity extends BaseFragment {
                 return 2;
             }
 
-            else if ( i == headerColorRow || i == rBubbleColorRow || i == lBubbleColorRow || i == nameColorRow || i == statusColorRow || i == dateColorRow || i == dateBubbleColorRow ||
-                    i == rTextColorRow || i == lTextColorRow || i == rTimeColorRow || i == lTimeColorRow || i == checksColorRow || i == sendColorRow || i == editTextColorRow || i == editTextBGColorRow ||
+            else if ( i == headerColorRow  || i == muteColorRow ||
+                    i == rBubbleColorRow || i == lBubbleColorRow || i == nameColorRow || i == statusColorRow || i == dateColorRow || i == dateBubbleColorRow ||
+                    i == rTextColorRow || i == lTextColorRow || i == rTimeColorRow || i == lTimeColorRow || i == checksColorRow || i == memberColorRow || i == forwardNameColorRow ||
+                    i == sendColorRow || i == editTextColorRow || i == editTextBGColorRow || i == editTextIconsColorRow ||
                     i == emojiViewBGColorRow || i == emojiViewTabColorRow) {
                 return 3;
+            } else if (i == memberColorCheckRow) {
+                return 4;
             }
             else {
                 return 2;
@@ -885,7 +996,7 @@ public class ThemingChatActivity extends BaseFragment {
 
         @Override
         public int getViewTypeCount() {
-            return 4;
+            return 5;
         }
 
         @Override

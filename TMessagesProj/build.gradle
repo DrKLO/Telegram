@@ -88,7 +88,7 @@ android {
         applicationId "org.telegram.plus"
         minSdkVersion 8
         targetSdkVersion 21
-        versionCode 458
-        versionName "2.5.2.1"
+        versionCode 459
+        versionName "2.5.2.2"
     }
 }

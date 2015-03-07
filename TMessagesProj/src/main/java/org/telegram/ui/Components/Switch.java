@@ -419,7 +419,7 @@ public class Switch extends CompoundButton {
 
         if (mTrackDrawable != null) {
             //mTrackDrawable.setColorFilter(new PorterDuffColorFilter(checked ? 0xffa0d6fa : 0xffc7c7c7, PorterDuff.Mode.MULTIPLY));
-            mTrackDrawable.setColorFilter(new PorterDuffColorFilter(checked ? AndroidUtilities.getIntAlphaColor("themeColor",0.5f) : 0xffc7c7c7, PorterDuff.Mode.MULTIPLY));
+            mTrackDrawable.setColorFilter(new PorterDuffColorFilter(checked ? AndroidUtilities.getIntAlphaColor("themeColor", AndroidUtilities.defColor, 0.5f) : 0xffc7c7c7, PorterDuff.Mode.MULTIPLY));
         }
         if (mThumbDrawable != null) {
             //mThumbDrawable.setColorFilter(new PorterDuffColorFilter(checked ? 0xff45abef : 0xffededed, PorterDuff.Mode.MULTIPLY));

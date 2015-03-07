@@ -294,6 +294,15 @@ public class ActionBar extends FrameLayout {
         titleTextView.setCompoundDrawablePadding(padding);
     }
 
+    public void setTitleColor(int color) {
+        if (titleTextView == null) {
+            createTitleTextView();
+        }
+        if (titleTextView != null) {
+            titleTextView.setTextColor(color);
+        }
+    }
+
     public Drawable getSubTitleIcon() {
         return subTitleTextView.getCompoundDrawables()[0];
     }

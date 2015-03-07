@@ -126,11 +126,11 @@ public class DialogsAdapter extends BaseFragmentAdapter {
                 ((DialogCell) view).setDialog(dialog, i, serverOnly);
             }
         }
-        updateColors(viewGroup);
+        updateTheme(viewGroup);
         return view;
     }
 
-    private void updateColors(ViewGroup viewGroup){
+    private void updateTheme(ViewGroup viewGroup){
         SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, Activity.MODE_PRIVATE);
         viewGroup.setBackgroundColor(themePrefs.getInt("chatsRowColor", 0xffffffff));
     }

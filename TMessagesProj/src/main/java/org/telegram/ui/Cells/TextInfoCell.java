@@ -9,12 +9,18 @@
 package org.telegram.ui.Cells;
 
 import android.content.Context;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.widget.FrameLayout;
 import android.widget.TextView;
 
 import org.telegram.android.AndroidUtilities;
+import org.telegram.android.LocaleController;
+import org.telegram.messenger.R;
+import org.telegram.ui.LaunchActivity;
+
+import java.util.Locale;
 
 public class TextInfoCell extends FrameLayout {
 
@@ -41,9 +47,21 @@ public class TextInfoCell extends FrameLayout {
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED));
+        if( textView.getContext() instanceof LaunchActivity ){
+            textView.setTextColor(AndroidUtilities.getIntDef("drawerVersionColor", 0xffa3a3a3));
+            textView.setTextSize(AndroidUtilities.getIntDef("drawerVersionSize", 13));
+        }
     }
 
     public void setText(String text) {
         textView.setText(text);
     }
+/*
+    public void setTextColor(int color) {
+        textView.setTextColor(color);
+    }
+
+    public void setTextSize(int size) {
+        textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP,size);
+    }*/
 }

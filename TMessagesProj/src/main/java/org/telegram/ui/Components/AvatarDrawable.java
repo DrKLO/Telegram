@@ -53,7 +53,7 @@ public class AvatarDrawable extends Drawable {
     private boolean isProfile;
     private boolean drawBrodcast;
     private boolean drawPhoto;
-    private int radius;
+    //private int radius;
 
     public AvatarDrawable() {
         super();
@@ -65,7 +65,7 @@ public class AvatarDrawable extends Drawable {
 
             broadcastDrawable = ApplicationLoader.applicationContext.getResources().getDrawable(R.drawable.broadcast_w);
         }
-        radius = 26;
+        //radius = 32;
     }
 
     public AvatarDrawable(TLRPC.User user) {
@@ -158,11 +158,15 @@ public class AvatarDrawable extends Drawable {
     public void setColor(int value) {
         color = value;
     }
-
+/*
     public void setRadius(int value) {
         radius = value;
     }
 
+    public int getRadius() {
+        return radius;
+    }
+*/
     public void setInfo(int id, String firstName, String lastName, boolean isBroadcast) {
         if (isProfile) {
             color = arrColorsProfiles[getColorIndex(id)];
@@ -244,9 +248,10 @@ public class AvatarDrawable extends Drawable {
         canvas.save();
         canvas.translate(bounds.left, bounds.top);
         canvas.drawCircle(size / 2, size / 2, size / 2, paint);
-        //Rect rect = new Rect(0, 0, size, size);
-        //RectF rectF = new RectF(rect);
-        //canvas.drawRoundRect( rectF, AndroidUtilities.dp(26), AndroidUtilities.dp(26), paint);
+        /*Rect rect = new Rect(0, 0, size, size);
+        RectF rectF = new RectF(rect);
+        int r = getRadius();
+        canvas.drawRoundRect( rectF, AndroidUtilities.dp(r), AndroidUtilities.dp(r), paint);*/
 
         if (drawBrodcast && broadcastDrawable != null) {
             int x = (size - broadcastDrawable.getIntrinsicWidth()) / 2;

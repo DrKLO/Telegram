@@ -450,10 +450,10 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
         if (listViewAdapter != null) {
             listViewAdapter.notifyDataSetChanged();
         }
-        updateColors();
+        updateTheme();
     }
 
-    private void updateColors(){
+    private void updateTheme(){
         actionBar.setBackgroundColor(AndroidUtilities.getIntDef("contactsHeaderColor", AndroidUtilities.getIntColor("themeColor")));
 
     }

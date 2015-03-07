@@ -136,7 +136,10 @@ public class ChatActivityEnterView extends LinearLayout implements NotificationC
         frameLayout.setLayoutParams(layoutParams);
 
         emojiButton = new ImageView(context);
-        emojiButton.setImageResource(R.drawable.ic_msg_panel_smiles);
+        //emojiButton.setImageResource(R.drawable.ic_msg_panel_smiles);
+        Drawable emoji = parentActivity.getResources().getDrawable(R.drawable.ic_msg_panel_smiles_white);
+        emoji.setColorFilter(AndroidUtilities.getIntDef("chatEditTextIconsColor", 0xffadadad), PorterDuff.Mode.MULTIPLY);
+        emojiButton.setImageDrawable(emoji);
         emojiButton.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
         emojiButton.setPadding(AndroidUtilities.dp(4), AndroidUtilities.dp(1), 0, 0);
         frameLayout.addView(emojiButton);
@@ -362,8 +365,12 @@ public class ChatActivityEnterView extends LinearLayout implements NotificationC
 
         audioSendButton = new ImageView(context);
         audioSendButton.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
-        audioSendButton.setImageResource(R.drawable.mic_button_states);
-        audioSendButton.setBackgroundColor(0xffffffff);
+        //audioSendButton.setImageResource(R.drawable.mic_button_states);
+        //audioSendButton.setBackgroundColor(0xffffffff);
+        Drawable mic = parentActivity.getResources().getDrawable(R.drawable.mic_white);
+        mic.setColorFilter(AndroidUtilities.getIntDef("chatEditTextIconsColor", 0xffadadad), PorterDuff.Mode.MULTIPLY);
+        audioSendButton.setImageDrawable(mic);
+        audioSendButton.setBackgroundColor(0x00000000);
         audioSendButton.setPadding(0, 0, AndroidUtilities.dp(4), 0);
         frameLayout1.addView(audioSendButton);
         layoutParams1 = (FrameLayout.LayoutParams) audioSendButton.getLayoutParams();
@@ -373,7 +380,11 @@ public class ChatActivityEnterView extends LinearLayout implements NotificationC
         audioSendButton.setOnTouchListener(new View.OnTouchListener() {
             @Override
             public boolean onTouch(View view, MotionEvent motionEvent) {
+                Drawable mic = parentActivity.getResources().getDrawable(R.drawable.mic_white);
+                
                 if (motionEvent.getAction() == MotionEvent.ACTION_DOWN) {
+                    mic.setColorFilter(0xffda564d, PorterDuff.Mode.MULTIPLY);
+                    audioSendButton.setImageDrawable(mic);
                     if (parentFragment != null) {
                         String action = null;
                         TLRPC.Chat currentChat = null;
@@ -396,6 +407,8 @@ public class ChatActivityEnterView extends LinearLayout implements NotificationC
                     updateAudioRecordIntefrace();
                     audioSendButton.getParent().requestDisallowInterceptTouchEvent(true);
                 } else if (motionEvent.getAction() == MotionEvent.ACTION_UP || motionEvent.getAction() == MotionEvent.ACTION_CANCEL) {
+                    mic.setColorFilter(AndroidUtilities.getIntDef("chatEditTextIconsColor", 0xffadadad), PorterDuff.Mode.MULTIPLY);
+                    audioSendButton.setImageDrawable(mic);
                     startedDraggingX = -1;
                     MediaController.getInstance().stopRecording(true);
                     recordingAudio = false;
@@ -467,18 +480,18 @@ public class ChatActivityEnterView extends LinearLayout implements NotificationC
 
         checkSendButton(false);
 
-        updateColors();
+        updateTheme();
     }
 
-    private void updateColors() {
+    private void updateTheme() {
         Drawable send = parentActivity.getResources().getDrawable(R.drawable.ic_send_white);
         send.setColorFilter(AndroidUtilities.getIntDef("chatSendIconColor", AndroidUtilities.getIntColor("themeColor")), PorterDuff.Mode.MULTIPLY);
         sendButton.setImageDrawable(send);
         messsageEditText.setTextColor(AndroidUtilities.getIntDef("chatEditTextColor",0xff000000));
+        messsageEditText.setHintTextColor(AndroidUtilities.getIntAlphaColor("chatEditTextColor", 0xff000000, 0.35f));
         messsageEditText.setTextSize(AndroidUtilities.getIntDef("chatEditTextSize",18));
         int color = AndroidUtilities.getIntDef("chatEditTextBGColor", 0xffffffff);
         setBackgroundColor(color);
-        audioSendButton.setBackgroundColor(0x00000000);
     }
 
     public void onDestroy() {
@@ -878,18 +891,27 @@ public class ChatActivityEnterView extends LinearLayout implements NotificationC
             if (!keyboardVisible) {
                 if (sizeNotifierRelativeLayout != null) {
                     sizeNotifierRelativeLayout.setPadding(0, 0, 0, currentHeight);
-                    emojiButton.setImageResource(R.drawable.ic_msg_panel_hide);
+                    //emojiButton.setImageResource(R.drawable.ic_msg_panel_hide);
+                    Drawable hide = parentActivity.getResources().getDrawable(R.drawable.ic_msg_panel_hide_white);
+                    hide.setColorFilter(AndroidUtilities.getIntDef("chatEditTextIconsColor", 0xffadadad), PorterDuff.Mode.MULTIPLY);
+                    emojiButton.setImageDrawable(hide);
                     if (delegate != null) {
                         delegate.onWindowSizeChanged(sizeNotifierRelativeLayout.getHeight() - sizeNotifierRelativeLayout.getPaddingBottom());
                     }
                 }
                 return;
             }
-            emojiButton.setImageResource(R.drawable.ic_msg_panel_kb);
+            //emojiButton.setImageResource(R.drawable.ic_msg_panel_kb);
+            Drawable kb = parentActivity.getResources().getDrawable(R.drawable.ic_msg_panel_kb_white);
+            kb.setColorFilter(AndroidUtilities.getIntDef("chatEditTextIconsColor", 0xffadadad), PorterDuff.Mode.MULTIPLY);
+            emojiButton.setImageDrawable(kb);
             return;
         }
         if (emojiButton != null) {
-            emojiButton.setImageResource(R.drawable.ic_msg_panel_smiles);
+            //emojiButton.setImageResource(R.drawable.ic_msg_panel_smiles);
+            Drawable emoji = parentActivity.getResources().getDrawable(R.drawable.ic_msg_panel_smiles_white);
+            emoji.setColorFilter(AndroidUtilities.getIntDef("chatEditTextIconsColor", 0xffadadad), PorterDuff.Mode.MULTIPLY);
+            emojiButton.setImageDrawable(emoji);
         }
         if (emojiPopup != null) {
             try {

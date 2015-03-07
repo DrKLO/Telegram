@@ -9,7 +9,9 @@
 package org.telegram.ui.ActionBar;
 
 import android.content.Context;
+import android.graphics.PorterDuff;
 import android.graphics.Rect;
+import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -496,6 +498,11 @@ public class ActionBarMenuItem extends FrameLayoutFixed {
             } else {
                 popupWindow.update(this, -AndroidUtilities.dp(8), getOffsetY(), -1, -1);
             }
+        }
+        if(clearButton!=null){
+            Drawable clear = getResources().getDrawable(R.drawable.ic_close_white);
+            clear.setColorFilter(AndroidUtilities.getIntDef("chatsHeaderIconsColor", 0xffffffff), PorterDuff.Mode.MULTIPLY);
+            clearButton.setImageDrawable(clear);
         }
     }
 

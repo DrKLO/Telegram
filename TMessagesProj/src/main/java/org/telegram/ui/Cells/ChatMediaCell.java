@@ -12,6 +12,7 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.graphics.PorterDuff;
 import android.graphics.RectF;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
@@ -53,6 +54,7 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
     private static Drawable videoIconDrawable;
     private static Drawable docMenuInDrawable;
     private static Drawable docMenuOutDrawable;
+    private static Drawable docMenuWhiteDrawable;
     private static Drawable[] buttonStatesDrawables = new Drawable[8];
     private static Drawable[][] buttonStatesDrawablesDoc = new Drawable[3][2];
     private static TextPaint infoPaint;
@@ -121,11 +123,15 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
             docMenuInDrawable = getResources().getDrawable(R.drawable.doc_actions_b);
             docMenuOutDrawable = getResources().getDrawable(R.drawable.doc_actions_g);
 
+            docMenuWhiteDrawable = getResources().getDrawable(R.drawable.doc_actions_w);
+            docMenuWhiteDrawable.setColorFilter(AndroidUtilities.getIntDef("chatFileInfoColor", 0xff70b15c), PorterDuff.Mode.MULTIPLY);
+
             infoPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
             infoPaint.setTextSize(AndroidUtilities.dp(12));
 
             namePaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
-            namePaint.setColor(0xff212121);
+            //namePaint.setColor(0xff212121);
+            namePaint.setColor(AndroidUtilities.getIntDef("chatFileInfoColor", 0xff212121));
             namePaint.setTextSize(AndroidUtilities.dp(16));
 
             docBackPaint = new Paint();
@@ -864,14 +870,22 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
 
         if (currentMessageObject.type == 9) {
             Drawable menuDrawable = null;
+            int color = AndroidUtilities.getIntDef("chatRTextColor", 0xff000000);
             if (currentMessageObject.isOut()) {
-                infoPaint.setColor(0xff70b15c);
+                //infoPaint.setColor(0xff70b15c);
+                infoPaint.setColor(color);
                 docBackPaint.setColor(0xffdaf5c3);
-                menuDrawable = docMenuOutDrawable;
+                docMenuWhiteDrawable.setColorFilter(AndroidUtilities.getIntDef("chatRTimeColor", AndroidUtilities.getIntDarkerColor("themeColor",0x15)), PorterDuff.Mode.MULTIPLY);
+                menuDrawable = docMenuOutDrawable = docMenuWhiteDrawable;
+                namePaint.setColor(color);
             } else {
-                infoPaint.setColor(0xffa1adbb);
+                color = AndroidUtilities.getIntDef("chatLTextColor", 0xff000000);
+                //infoPaint.setColor(0xffa1adbb);
+                infoPaint.setColor(color);
                 docBackPaint.setColor(0xffebf0f5);
-                menuDrawable = docMenuInDrawable;
+                docMenuWhiteDrawable.setColorFilter(AndroidUtilities.getIntDef("chatLTimeColor", 0xffa1adbb), PorterDuff.Mode.MULTIPLY);
+                menuDrawable = docMenuInDrawable = docMenuWhiteDrawable;
+                namePaint.setColor(color);
             }
 
             setDrawableBounds(menuDrawable, photoImage.getImageX() + backgroundWidth - AndroidUtilities.dp(44), AndroidUtilities.dp(10));

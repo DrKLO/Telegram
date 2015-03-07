@@ -613,9 +613,9 @@ public class AndroidUtilities {
         return themePrefs.getInt(key, def);
     }
 
-    public static int getIntAlphaColor(String key, float factor){
+    public static int getIntAlphaColor(String key, int def, float factor){
         SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(THEME_PREFS, Activity.MODE_PRIVATE);
-        int color = themePrefs.getInt(key, defColor);
+        int color = themePrefs.getInt(key, def);
         int alpha = Math.round(Color.alpha(color) * factor);
         int red = Color.red(color);
         int green = Color.green(color);
@@ -677,9 +677,9 @@ public class AndroidUtilities {
         e.commit();
     }
 
-    public static boolean getBoolPref(Context context,String key){
+    public static boolean getBoolPref(String key){
         boolean s = false;
-        if (context.getSharedPreferences(THEME_PREFS, 0).getBoolean(key, false)) s=true;
+        if (ApplicationLoader.applicationContext.getSharedPreferences(THEME_PREFS, 0).getBoolean(key, false)) s=true;
         return s;
     }
 
@@ -746,7 +746,7 @@ public class AndroidUtilities {
     public static Drawable paintDrawable(Context c, int resId, int resIdW, String color){
         Drawable d = c.getResources().getDrawable(resId);
         if(color.contains("_check")){
-            if(getBoolPref(c, color)){
+            if(getBoolPref(color)){
                 d = c.getResources().getDrawable(resIdW);
                 d.setColorFilter(getIntPref(c, color.replace("_check", "_picker")), PorterDuff.Mode.MULTIPLY);
             }

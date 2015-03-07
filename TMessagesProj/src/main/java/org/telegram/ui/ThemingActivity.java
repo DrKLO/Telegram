@@ -62,6 +62,7 @@ public class ThemingActivity extends BaseFragment {
     private int chatsRow;
     private int chatRow;
     private int contactsRow;
+    private int drawerRow;
 
     private int themesSectionRow;
     private int themesSection2Row;
@@ -86,6 +87,7 @@ public class ThemingActivity extends BaseFragment {
         chatsRow = rowCount++;
         chatRow = rowCount++;
         contactsRow = rowCount++;
+        drawerRow = rowCount++;
 
         themesSectionRow = rowCount++;
         themesSection2Row = rowCount++;
@@ -311,6 +313,8 @@ public class ThemingActivity extends BaseFragment {
                         presentFragment(new ThemingChatActivity());
                     } else if (i == contactsRow) {
                         presentFragment(new ThemingContactsActivity());
+                    } else if (i == drawerRow) {
+                        presentFragment(new ThemingDrawerActivity());
                     }
                 }
             });
@@ -411,7 +415,7 @@ public class ThemingActivity extends BaseFragment {
         editor.putInt("chatsHeaderColor", i);
         editor.putInt("chatsCountBGColor", i);
         editor.putInt("chatsChecksColor", i);
-        editor.putInt("chatsParticipantColor", AndroidUtilities.setDarkColor(i, 0x15));
+        editor.putInt("chatsMemberColor", AndroidUtilities.setDarkColor(i, 0x15));
         editor.putInt("chatsFloatingBGColor", i);
 
         editor.putInt("chatHeaderColor", i);
@@ -421,6 +425,7 @@ public class ThemingActivity extends BaseFragment {
         editor.putInt("chatEmojiViewTabColor", AndroidUtilities.setDarkColor(i, 0x15));
         editor.putInt("chatChecksColor", i);
         editor.putInt("chatSendIconColor", i);
+        editor.putInt("chatMemberColor", AndroidUtilities.setDarkColor(i, 0x15));
 
         editor.putInt("contactsHeaderColor", i);
         editor.putInt("contactsOnlineColor", AndroidUtilities.setDarkColor(i, 0x15));
@@ -478,7 +483,7 @@ public class ThemingActivity extends BaseFragment {
 
         @Override
         public boolean isEnabled(int i) {
-            return  i == themeColorRow || i == chatsRow || i == chatRow || i == contactsRow || i == resetThemeRow || i == saveThemeRow || i == applyThemeRow;
+            return  i == themeColorRow || i == chatsRow || i == chatRow || i == contactsRow || i == drawerRow || i == resetThemeRow || i == saveThemeRow || i == applyThemeRow;
         }
 
         @Override
@@ -533,6 +538,8 @@ public class ThemingActivity extends BaseFragment {
                     textCell.setText(LocaleController.getString("ChatScreen", R.string.ChatScreen), true);
                 } else if (i == contactsRow) {
                     textCell.setText(LocaleController.getString("ContactsScreen", R.string.ContactsScreen), true);
+                } else if (i == drawerRow) {
+                    textCell.setText(LocaleController.getString("NavigationDrawer", R.string.NavigationDrawer), true);
                 }
 
             }

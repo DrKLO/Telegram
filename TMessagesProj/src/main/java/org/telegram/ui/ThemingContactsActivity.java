@@ -45,19 +45,17 @@ public class ThemingContactsActivity extends BaseFragment {
     private ListView listView;
     private ListAdapter listAdapter;
 
-    //private static final String TAG = "ThemingContactsActivity";
-
     private int headerSection2Row;
     private int headerColorRow;
     private int rowsSectionRow;
     private int rowsSection2Row;
     private int rowColorRow;
+    private int avatarRadiusRow;
     private int nameColorRow;
     private int nameSizeRow;
     private int statusColorRow;
     private int statusSizeRow;
     private int onlineColorRow;
-
 
     private int rowCount;
 
@@ -74,6 +72,7 @@ public class ThemingContactsActivity extends BaseFragment {
         rowsSectionRow = rowCount++;
         rowsSection2Row = rowCount++;
         rowColorRow = rowCount++;
+        //avatarRadiusRow  = rowCount++;
         nameColorRow = rowCount++;
         nameSizeRow = rowCount++;
         statusColorRow = rowCount++;
@@ -99,7 +98,7 @@ public class ThemingContactsActivity extends BaseFragment {
             if (AndroidUtilities.isTablet()) {
                 actionBar.setOccupyStatusBar(false);
             }
-            actionBar.setTitle(LocaleController.getString("MainScreen", R.string.MainScreen));
+            actionBar.setTitle(LocaleController.getString("ContactsScreen", R.string.ContactsScreen));
 
             actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
                 @Override
@@ -217,6 +216,27 @@ public class ThemingContactsActivity extends BaseFragment {
 
                         },themePrefs.getInt("contactsOnlineColor", AndroidUtilities.getIntDarkerColor("themeColor",0x15)), CENTER, 0, false);
                         colorDialog.show();
+                    } else if (i == avatarRadiusRow) {
+                        if (getParentActivity() == null) {
+                            return;
+                        }
+                        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                        builder.setTitle(LocaleController.getString("AvatarRadius", R.string.AvatarRadius));
+                        final NumberPicker numberPicker = new NumberPicker(getParentActivity());
+                        final int currentValue = themePrefs.getInt("contactsAvatarRadius", 32);
+                        numberPicker.setMinValue(0);
+                        numberPicker.setMaxValue(32);
+                        numberPicker.setValue(currentValue);
+                        builder.setView(numberPicker);
+                        builder.setNegativeButton(LocaleController.getString("Done", R.string.Done), new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                if (numberPicker.getValue() != currentValue) {
+                                    commitInt("contactsAvatarRadius", numberPicker.getValue());
+                                }
+                            }
+                        });
+                        showAlertDialog(builder);
                     } else if (i == nameSizeRow) {
                         if (getParentActivity() == null) {
                             return;
@@ -270,19 +290,21 @@ public class ThemingContactsActivity extends BaseFragment {
                         return false;
                     }
                     if (i == headerColorRow) {
-                        resetInt("contactsHeaderColor", AndroidUtilities.getIntColor("themeColor"));
+                        resetInt("contactsHeaderColor");
                     } else if (i == rowColorRow) {
-                        resetInt("contactsRowColor", 0xffffffff);
+                        resetInt("contactsRowColor");
+                    } else if (i == avatarRadiusRow) {
+                        resetInt("contactsAvatarSize");
                     } else if (i == nameColorRow) {
-                        resetInt("contactsNameColor", 0xff000000);
+                        resetInt("contactsNameColor");
                     } else if (i == nameSizeRow) {
-                        resetInt("contactsNameSize", 17);
+                        resetInt("contactsNameSize");
                     } else if (i == statusColorRow) {
-                        resetInt("contactsStatusColor", 0xffa8a8a8);
+                        resetInt("contactsStatusColor");
                     } else if (i == statusSizeRow) {
-                        resetInt("contactsStatusSize", 14);
+                        resetInt("contactsStatusSize");
                     } else if (i == onlineColorRow) {
-                        resetInt("contactsOnlineColor", AndroidUtilities.getIntDarkerColor("themeColor",0x15));
+                        resetInt("contactsOnlineColor");
                     }
                     return true;
                 }
@@ -298,7 +320,7 @@ public class ThemingContactsActivity extends BaseFragment {
         return fragmentView;
     }
 
-    private void resetInt(String key, int value){
+    private void resetInt(String key){
         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, Activity.MODE_PRIVATE);
         SharedPreferences.Editor editor = preferences.edit();
         editor.remove(key);
@@ -365,7 +387,7 @@ public class ThemingContactsActivity extends BaseFragment {
 
         @Override
         public boolean isEnabled(int i) {
-            return  i == headerColorRow || i == rowColorRow || i == nameColorRow || i == nameSizeRow || i == statusColorRow || i == statusSizeRow ||
+            return  i == headerColorRow || i == rowColorRow || i == avatarRadiusRow || i == nameColorRow || i == nameSizeRow || i == statusColorRow || i == statusSizeRow ||
                     i == onlineColorRow ;
         }
 
@@ -414,7 +436,10 @@ public class ThemingContactsActivity extends BaseFragment {
                     view = new TextSettingsCell(mContext);
                 }
                 TextSettingsCell textCell = (TextSettingsCell) view;
-                if (i == nameSizeRow) {
+                if (i == avatarRadiusRow) {
+                    int size = themePrefs.getInt("contactsAvatarRadius", AndroidUtilities.isTablet() ? 35 : 32);
+                    textCell.setTextAndValue(LocaleController.getString("AvatarRadius", R.string.AvatarRadius), String.format("%d", size), true);
+                } else if (i == nameSizeRow) {
                     int size = themePrefs.getInt("contactsNameSize", AndroidUtilities.isTablet() ? 19 : 17);
                     textCell.setTextAndValue(LocaleController.getString("NameSize", R.string.NameSize), String.format("%d", size), true);
                 } else if (i == statusSizeRow) {
@@ -453,7 +478,7 @@ public class ThemingContactsActivity extends BaseFragment {
             else if ( i == headerSection2Row || i == rowsSection2Row ) {
                 return 1;
             }
-            else if ( i == nameSizeRow ||  i == statusSizeRow ) {
+            else if ( i == avatarRadiusRow || i == nameSizeRow ||  i == statusSizeRow ) {
                 return 2;
             }
 
