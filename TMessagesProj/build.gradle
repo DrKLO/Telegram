@@ -34,8 +34,8 @@ dependencies {
 }
 
 android {
-    compileSdkVersion 21
-    buildToolsVersion '21.1.2'
+    compileSdkVersion 22
+    buildToolsVersion '22'
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_7
@@ -103,8 +103,8 @@ android {
 
     defaultConfig {
         minSdkVersion 9
-        targetSdkVersion 21
-        renderscriptTargetApi 21
+        targetSdkVersion 22
+        renderscriptTargetApi 22
         renderscriptSupportModeEnabled true
         versionCode 255
         versionName "1.7.5"

@@ -30,20 +30,17 @@ import org.telegram.android.MessageObject;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.TLRPC;
 import org.telegram.android.ContactsController;
-import org.telegram.android.Emoji;
 import org.telegram.android.MessagesController;
 import org.telegram.messenger.UserConfig;
 import org.telegram.android.ImageReceiver;
 import org.telegram.ui.Components.AvatarDrawable;
 
-import com.aniways.AniwaysLoadingImageSpan;
 import com.aniways.AniwaysDynamicImageSpansContainer;
 import com.aniways.AniwaysMessageListViewItemWrapperLayout;
 import com.aniways.IAniwaysTextContainer;
 import com.aniways.IIconInfoDisplayer;
 import com.aniways.Log;
 import com.aniways.anigram.messenger.R;
-import com.aniways.volley.toolbox.IResponseListener;
 
 import java.util.HashSet;
 
