@@ -110,15 +110,15 @@ public class NumberPicker extends LinearLayout {
     }
 
     public interface OnScrollListener {
-        public static int SCROLL_STATE_IDLE = 0;
-        public static int SCROLL_STATE_TOUCH_SCROLL = 1;
-        public static int SCROLL_STATE_FLING = 2;
+        int SCROLL_STATE_IDLE = 0;
+        int SCROLL_STATE_TOUCH_SCROLL = 1;
+        int SCROLL_STATE_FLING = 2;
 
-        public void onScrollStateChange(NumberPicker view, int scrollState);
+        void onScrollStateChange(NumberPicker view, int scrollState);
     }
 
     public interface Formatter {
-        public String format(int value);
+        String format(int value);
     }
 
     private void init() {

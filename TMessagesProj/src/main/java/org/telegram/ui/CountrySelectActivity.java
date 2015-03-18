@@ -36,8 +36,8 @@ import org.telegram.ui.Components.LetterSectionsListView;
 
 public class CountrySelectActivity extends BaseFragment {
 
-    public static interface CountrySelectActivityDelegate {
-        public abstract void didSelectCountry(String name);
+    public interface CountrySelectActivityDelegate {
+        void didSelectCountry(String name);
     }
 
     private LetterSectionsListView listView;
@@ -84,7 +84,7 @@ public class CountrySelectActivity extends BaseFragment {
                 }
 
                 @Override
-                public void onSearchCollapse() {
+                public boolean onSearchCollapse() {
                     searchListViewAdapter.search(null);
                     searching = false;
                     searchWas = false;
@@ -96,6 +96,8 @@ public class CountrySelectActivity extends BaseFragment {
                     listView.setVerticalScrollBarEnabled(false);
 
                     emptyTextView.setText(LocaleController.getString("ChooseCountry", R.string.ChooseCountry));
+
+                    return true;
                 }
 
                 @Override

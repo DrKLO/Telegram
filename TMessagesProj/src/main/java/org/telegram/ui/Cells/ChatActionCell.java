@@ -25,6 +25,7 @@ import org.telegram.android.AndroidUtilities;
 import org.telegram.android.ImageReceiver;
 import org.telegram.android.MessageObject;
 import org.telegram.android.MessagesController;
+import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
@@ -35,10 +36,10 @@ import org.telegram.ui.Components.AvatarDrawable;
 
 public class ChatActionCell extends BaseCell {
 
-    public static interface ChatActionCellDelegate {
-        public abstract void didClickedImage(ChatActionCell cell);
-        public abstract void didLongPressed(ChatActionCell cell);
-        public abstract void needOpenUserProfile(int uid);
+    public interface ChatActionCellDelegate {
+        void didClickedImage(ChatActionCell cell);
+        void didLongPressed(ChatActionCell cell);
+        void needOpenUserProfile(int uid);
     }
 
     private static Drawable backgroundBlack;
@@ -55,7 +56,6 @@ public class ChatActionCell extends BaseCell {
     private int textX = 0;
     private int textY = 0;
     private int textXLeft = 0;
-    private boolean useBlackBackground = false;
     private int previousWidth = 0;
     private boolean imagePressed = false;
 
@@ -117,10 +117,6 @@ public class ChatActionCell extends BaseCell {
             imageReceiver.setImageBitmap((Bitmap)null);
         }
         requestLayout();
-    }
-
-    public void setUseBlackBackground(boolean value) {
-        useBlackBackground = value;
     }
 
     public MessageObject getMessageObject() {
@@ -267,7 +263,7 @@ public class ChatActionCell extends BaseCell {
         }
 
         Drawable backgroundDrawable = null;
-        if (useBlackBackground) {
+        if (ApplicationLoader.isCustomTheme()) {
             backgroundDrawable = backgroundBlack;
         } else {
             backgroundDrawable = backgroundBlue;

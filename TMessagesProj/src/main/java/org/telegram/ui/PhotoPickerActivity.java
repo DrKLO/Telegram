@@ -67,9 +67,9 @@ import java.util.Map;
 
 public class PhotoPickerActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate, PhotoViewer.PhotoViewerProvider {
 
-    public static interface PhotoPickerActivityDelegate {
-        public abstract void selectedPhotosChanged();
-        public abstract void actionButtonPressed(boolean canceled);
+    public interface PhotoPickerActivityDelegate {
+        void selectedPhotosChanged();
+        void actionButtonPressed(boolean canceled);
     }
 
     private RequestQueue requestQueue;
@@ -175,8 +175,9 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
                     }
 
                     @Override
-                    public void onSearchCollapse() {
+                    public boolean onSearchCollapse() {
                         finishFragment();
+                        return false;
                     }
 
                     @Override

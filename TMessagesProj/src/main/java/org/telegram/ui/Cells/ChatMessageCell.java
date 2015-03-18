@@ -17,6 +17,7 @@ import android.view.MotionEvent;
 import org.telegram.android.AndroidUtilities;
 import org.telegram.messenger.FileLog;
 import org.telegram.android.MessageObject;
+import org.telegram.ui.Components.URLSpanNoUnderline;
 
 public class ChatMessageCell extends ChatBaseCell {
 
@@ -62,7 +63,16 @@ public class ChatMessageCell extends ChatBaseCell {
                                     } else {
                                         if (link[0] == pressedLink) {
                                             try {
-                                                pressedLink.onClick(this);
+                                                if (pressedLink instanceof URLSpanNoUnderline) {
+                                                    String url = ((URLSpanNoUnderline) pressedLink).getURL();
+                                                    if (url.startsWith("@") || url.startsWith("#")) {
+                                                        if (delegate != null) {
+                                                            delegate.didPressUrl(url);
+                                                        }
+                                                    }
+                                                } else {
+                                                    pressedLink.onClick(this);
+                                                }
                                             } catch (Exception e) {
                                                 FileLog.e("tmessages", e);
                                             }
@@ -164,6 +174,8 @@ public class ChatMessageCell extends ChatBaseCell {
 
             int maxChildWidth = Math.max(backgroundWidth, nameWidth);
             maxChildWidth = Math.max(maxChildWidth, forwardedNameWidth);
+            maxChildWidth = Math.max(maxChildWidth, replyNameWidth);
+            maxChildWidth = Math.max(maxChildWidth, replyTextWidth);
 
             int timeMore = timeWidth + AndroidUtilities.dp(6);
             if (messageObject.isOut()) {

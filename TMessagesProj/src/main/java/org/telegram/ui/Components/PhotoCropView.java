@@ -22,8 +22,8 @@ import org.telegram.messenger.FileLog;
 
 public class PhotoCropView extends FrameLayout {
 
-    public static interface PhotoCropViewDelegate {
-        public abstract void needMoveImageTo(float x, float y, float s, boolean animated);
+    public interface PhotoCropViewDelegate {
+        void needMoveImageTo(float x, float y, float s, boolean animated);
     }
 
     private boolean freeformCrop = true;

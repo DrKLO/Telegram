@@ -208,6 +208,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     @Override
     public void onFragmentDestroy() {
         super.onFragmentDestroy();
+        if (avatarImage != null) {
+            avatarImage.setImageDrawable(null);
+        }
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.mediaCountDidLoaded);
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.updateInterfaces);
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.closeChats);
@@ -1213,7 +1216,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             presentFragment(new ChatActivity(args), true);
             removeSelfFromStack();
             TLRPC.User user = MessagesController.getInstance().getUser(user_id);
-            SendMessagesHelper.getInstance().sendMessage(user, dialog_id);
+            SendMessagesHelper.getInstance().sendMessage(user, dialog_id, null);
         }
     }
 

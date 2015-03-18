@@ -87,12 +87,12 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
 
     public static int[] readArgs = new int[3];
 
-    public static interface FileDownloadProgressListener {
-        public void onFailedDownload(String fileName);
-        public void onSuccessDownload(String fileName);
-        public void onProgressDownload(String fileName, float progress);
-        public void onProgressUpload(String fileName, float progress, boolean isEncrypted);
-        public int getObserverTag();
+    public interface FileDownloadProgressListener {
+        void onFailedDownload(String fileName);
+        void onSuccessDownload(String fileName);
+        void onProgressDownload(String fileName, float progress);
+        void onProgressUpload(String fileName, float progress, boolean isEncrypted);
+        int getObserverTag();
     }
 
     private class AudioBuffer {
@@ -234,6 +234,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
     private long recordStartTime;
     private long recordTimeCount;
     private long recordDialogId;
+    private MessageObject recordReplyingMessageObject;
     private DispatchQueue fileDecodingQueue;
     private DispatchQueue playerQueue;
     private ArrayList<AudioBuffer> usedPlayerBuffers = new ArrayList<>();
@@ -509,7 +510,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                                         lastProgress = progress;
                                         playingMessageObject.audioProgress = value;
                                         playingMessageObject.audioProgressSec = lastProgress / 1000;
-                                        NotificationCenter.getInstance().postNotificationName(NotificationCenter.audioProgressDidChanged, playingMessageObject.messageOwner.id, value);
+                                        NotificationCenter.getInstance().postNotificationName(NotificationCenter.audioProgressDidChanged, playingMessageObject.getId(), value);
                                     } catch (Exception e) {
                                         FileLog.e("tmessages", e);
                                     }
@@ -977,7 +978,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
         } else if (id == NotificationCenter.messagesDeleted) {
             if (playingMessageObject != null) {
                 ArrayList<Integer> markAsDeletedMessages = (ArrayList<Integer>)args[0];
-                if (markAsDeletedMessages.contains(playingMessageObject.messageOwner.id)) {
+                if (markAsDeletedMessages.contains(playingMessageObject.getId())) {
                     clenupPlayer(false);
                 }
             }
@@ -1187,7 +1188,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
             playingMessageObject.audioProgressSec = 0;
             playingMessageObject = null;
             if (notify) {
-                NotificationCenter.getInstance().postNotificationName(NotificationCenter.audioDidReset, lastFile.messageOwner.id);
+                NotificationCenter.getInstance().postNotificationName(NotificationCenter.audioDidReset, lastFile.getId());
             }
         }
     }
@@ -1227,7 +1228,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
     }
 
     public boolean seekToProgress(MessageObject messageObject, float progress) {
-        if (audioTrackPlayer == null && audioPlayer == null || messageObject == null || playingMessageObject == null || playingMessageObject != null && playingMessageObject.messageOwner.id != messageObject.messageOwner.id) {
+        if (audioTrackPlayer == null && audioPlayer == null || messageObject == null || playingMessageObject == null || playingMessageObject != null && playingMessageObject.getId() != messageObject.getId()) {
             return false;
         }
         try {
@@ -1249,7 +1250,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
         if (messageObject == null) {
             return false;
         }
-        if ((audioTrackPlayer != null || audioPlayer != null) && playingMessageObject != null && messageObject.messageOwner.id == playingMessageObject.messageOwner.id) {
+        if ((audioTrackPlayer != null || audioPlayer != null) && playingMessageObject != null && messageObject.getId() == playingMessageObject.getId()) {
             if (isPaused) {
                 resumeAudio(messageObject);
             }
@@ -1412,7 +1413,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
 
     public boolean pauseAudio(MessageObject messageObject) {
         stopProximitySensor();
-        if (audioTrackPlayer == null && audioPlayer == null || messageObject == null || playingMessageObject == null || playingMessageObject != null && playingMessageObject.messageOwner.id != messageObject.messageOwner.id) {
+        if (audioTrackPlayer == null && audioPlayer == null || messageObject == null || playingMessageObject == null || playingMessageObject != null && playingMessageObject.getId() != messageObject.getId()) {
             return false;
         }
         try {
@@ -1432,7 +1433,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
 
     public boolean resumeAudio(MessageObject messageObject) {
         startProximitySensor();
-        if (audioTrackPlayer == null && audioPlayer == null || messageObject == null || playingMessageObject == null || playingMessageObject != null && playingMessageObject.messageOwner.id != messageObject.messageOwner.id) {
+        if (audioTrackPlayer == null && audioPlayer == null || messageObject == null || playingMessageObject == null || playingMessageObject != null && playingMessageObject.getId() != messageObject.getId()) {
             return false;
         }
         try {
@@ -1451,14 +1452,14 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
     }
 
     public boolean isPlayingAudio(MessageObject messageObject) {
-        return !(audioTrackPlayer == null && audioPlayer == null || messageObject == null || playingMessageObject == null || playingMessageObject != null && playingMessageObject.messageOwner.id != messageObject.messageOwner.id);
+        return !(audioTrackPlayer == null && audioPlayer == null || messageObject == null || playingMessageObject == null || playingMessageObject != null && playingMessageObject.getId() != messageObject.getId());
     }
 
     public boolean isAudioPaused() {
         return isPaused;
     }
 
-    public void startRecording(final long dialog_id) {
+    public void startRecording(final long dialog_id, final MessageObject reply_to_msg) {
         clenupPlayer(true);
 
         try {
@@ -1505,6 +1506,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                     recordStartTime = System.currentTimeMillis();
                     recordTimeCount = 0;
                     recordDialogId = dialog_id;
+                    recordReplyingMessageObject = reply_to_msg;
                     fileBuffer.rewind();
 
                     audioRecorder.startRecording();
@@ -1557,11 +1559,11 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                             long duration = recordTimeCount;
                             audioToSend.duration = (int) (duration / 1000);
                             if (duration > 700) {
-                                SendMessagesHelper.getInstance().sendMessage(audioToSend, recordingAudioFileToSend.getAbsolutePath(), recordDialogId);
+                                SendMessagesHelper.getInstance().sendMessage(audioToSend, recordingAudioFileToSend.getAbsolutePath(), recordDialogId, recordReplyingMessageObject);
+                                NotificationCenter.getInstance().postNotificationName(NotificationCenter.audioDidSent);
                             } else {
                                 recordingAudioFileToSend.delete();
                             }
-                            NotificationCenter.getInstance().postNotificationName(NotificationCenter.audioDidSent);
                         }
                     });
                 }
@@ -1739,7 +1741,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
             return null;
         }
 
-        if (currentGifDrawable != null && currentGifMessageObject != null && messageObject.messageOwner.id == currentGifMessageObject.messageOwner.id) {
+        if (currentGifDrawable != null && currentGifMessageObject != null && messageObject.getId() == currentGifMessageObject.getId()) {
             currentMediaCell = cell;
             currentGifDrawable.parentView = new WeakReference<View>(cell);
             return currentGifDrawable;
@@ -1788,7 +1790,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
             return;
         }
 
-        if (currentGifMessageObject != null && messageObject.messageOwner.id == currentGifMessageObject.messageOwner.id) {
+        if (currentGifMessageObject != null && messageObject.getId() == currentGifMessageObject.getId()) {
             if (currentGifDrawable != null) {
                 currentGifDrawable.stop();
                 currentGifDrawable.recycle();

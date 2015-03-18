@@ -40,8 +40,8 @@ import java.util.ArrayList;
 
 public class LastSeenUsersActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
 
-    public static interface LastSeenUsersActivityDelegate {
-        public abstract void didUpdatedUserList(ArrayList<Integer> ids, boolean added);
+    public interface LastSeenUsersActivityDelegate {
+        void didUpdatedUserList(ArrayList<Integer> ids, boolean added);
     }
 
     private ListView listView;

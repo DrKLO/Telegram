@@ -73,8 +73,8 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
     private boolean allowUsernameSearch = true;
     private ContactsActivityDelegate delegate;
 
-    public static interface ContactsActivityDelegate {
-        public abstract void didSelectContact(TLRPC.User user, String param);
+    public interface ContactsActivityDelegate {
+        void didSelectContact(TLRPC.User user, String param);
     }
 
     public ContactsActivity(Bundle args) {
@@ -154,7 +154,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                 }
 
                 @Override
-                public void onSearchCollapse() {
+                public boolean onSearchCollapse() {
                     searchListViewAdapter.searchDialogs(null);
                     searching = false;
                     searchWas = false;
@@ -166,6 +166,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                     listView.setFastScrollEnabled(true);
                     listView.setVerticalScrollBarEnabled(false);
                     emptyTextView.setText(LocaleController.getString("NoContacts", R.string.NoContacts));
+                    return true;
                 }
 
                 @Override
@@ -416,13 +417,13 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
             editText.setInputType(InputType.TYPE_CLASS_NUMBER);
             editText.setImeOptions(EditorInfo.IME_ACTION_DONE);
             builder.setView(editText);
-            builder.setPositiveButton(R.string.OK, new DialogInterface.OnClickListener() {
+            builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), new DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(DialogInterface dialogInterface, int i) {
                     didSelectResult(user, false, editText.getText().toString());
                 }
             });
-            builder.setNegativeButton(R.string.Cancel, null);
+            builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
             showAlertDialog(builder);
             ViewGroup.MarginLayoutParams layoutParams = (ViewGroup.MarginLayoutParams)editText.getLayoutParams();
             if (layoutParams != null) {

@@ -177,14 +177,14 @@ public abstract class Animator10 implements Cloneable {
 
     }
 
-    public static interface AnimatorListener {
+    public interface AnimatorListener {
         void onAnimationStart(Animator10 animation);
         void onAnimationEnd(Animator10 animation);
         void onAnimationCancel(Animator10 animation);
         void onAnimationRepeat(Animator10 animation);
     }
 
-    public static interface AnimatorPauseListener {
+    public interface AnimatorPauseListener {
         void onAnimationPause(Animator10 animation);
         void onAnimationResume(Animator10 animation);
     }

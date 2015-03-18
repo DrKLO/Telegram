@@ -83,6 +83,7 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
     private boolean searchWas = false;
     private boolean onlySelect = false;
     private long selectedDialog;
+    private String searchString;
 
     private MessagesActivityDelegate delegate;
 
@@ -90,8 +91,8 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
 
     private static final int passcode_menu_item = 1;
 
-    public static interface MessagesActivityDelegate {
-        public abstract void didSelectDialog(MessagesActivity fragment, long dialog_id, boolean param);
+    public interface MessagesActivityDelegate {
+        void didSelectDialog(MessagesActivity fragment, long dialog_id, boolean param);
     }
 
     public MessagesActivity(Bundle args) {
@@ -101,18 +102,6 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
     @Override
     public boolean onFragmentCreate() {
         super.onFragmentCreate();
-        NotificationCenter.getInstance().addObserver(this, NotificationCenter.dialogsNeedReload);
-        NotificationCenter.getInstance().addObserver(this, NotificationCenter.emojiDidLoaded);
-        NotificationCenter.getInstance().addObserver(this, NotificationCenter.updateInterfaces);
-        NotificationCenter.getInstance().addObserver(this, NotificationCenter.encryptedChatUpdated);
-        NotificationCenter.getInstance().addObserver(this, NotificationCenter.contactsDidLoaded);
-        NotificationCenter.getInstance().addObserver(this, NotificationCenter.appDidLogout);
-        NotificationCenter.getInstance().addObserver(this, NotificationCenter.openedChatChanged);
-        NotificationCenter.getInstance().addObserver(this, NotificationCenter.notificationsSettingsUpdated);
-        NotificationCenter.getInstance().addObserver(this, NotificationCenter.messageReceivedByAck);
-        NotificationCenter.getInstance().addObserver(this, NotificationCenter.messageReceivedByServer);
-        NotificationCenter.getInstance().addObserver(this, NotificationCenter.messageSendError);
-        NotificationCenter.getInstance().addObserver(this, NotificationCenter.didSetPasscode);
 
         if (getArguments() != null) {
             onlySelect = arguments.getBoolean("onlySelect", false);
@@ -120,6 +109,23 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
             selectAlertString = arguments.getString("selectAlertString");
             selectAlertStringGroup = arguments.getString("selectAlertStringGroup");
         }
+
+        if (searchString == null) {
+            NotificationCenter.getInstance().addObserver(this, NotificationCenter.dialogsNeedReload);
+            NotificationCenter.getInstance().addObserver(this, NotificationCenter.emojiDidLoaded);
+            NotificationCenter.getInstance().addObserver(this, NotificationCenter.updateInterfaces);
+            NotificationCenter.getInstance().addObserver(this, NotificationCenter.encryptedChatUpdated);
+            NotificationCenter.getInstance().addObserver(this, NotificationCenter.contactsDidLoaded);
+            NotificationCenter.getInstance().addObserver(this, NotificationCenter.appDidLogout);
+            NotificationCenter.getInstance().addObserver(this, NotificationCenter.openedChatChanged);
+            NotificationCenter.getInstance().addObserver(this, NotificationCenter.notificationsSettingsUpdated);
+            NotificationCenter.getInstance().addObserver(this, NotificationCenter.messageReceivedByAck);
+            NotificationCenter.getInstance().addObserver(this, NotificationCenter.messageReceivedByServer);
+            NotificationCenter.getInstance().addObserver(this, NotificationCenter.messageSendError);
+            NotificationCenter.getInstance().addObserver(this, NotificationCenter.didSetPasscode);
+        }
+
+
         if (!dialogsLoaded) {
             MessagesController.getInstance().loadDialogs(0, 0, 100, true);
             ContactsController.getInstance().checkInviteText();
@@ -131,18 +137,20 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
     @Override
     public void onFragmentDestroy() {
         super.onFragmentDestroy();
-        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.dialogsNeedReload);
-        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.emojiDidLoaded);
-        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.updateInterfaces);
-        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.encryptedChatUpdated);
-        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.contactsDidLoaded);
-        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.appDidLogout);
-        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.openedChatChanged);
-        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.notificationsSettingsUpdated);
-        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.messageReceivedByAck);
-        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.messageReceivedByServer);
-        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.messageSendError);
-        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.didSetPasscode);
+        if (searchString == null) {
+            NotificationCenter.getInstance().removeObserver(this, NotificationCenter.dialogsNeedReload);
+            NotificationCenter.getInstance().removeObserver(this, NotificationCenter.emojiDidLoaded);
+            NotificationCenter.getInstance().removeObserver(this, NotificationCenter.updateInterfaces);
+            NotificationCenter.getInstance().removeObserver(this, NotificationCenter.encryptedChatUpdated);
+            NotificationCenter.getInstance().removeObserver(this, NotificationCenter.contactsDidLoaded);
+            NotificationCenter.getInstance().removeObserver(this, NotificationCenter.appDidLogout);
+            NotificationCenter.getInstance().removeObserver(this, NotificationCenter.openedChatChanged);
+            NotificationCenter.getInstance().removeObserver(this, NotificationCenter.notificationsSettingsUpdated);
+            NotificationCenter.getInstance().removeObserver(this, NotificationCenter.messageReceivedByAck);
+            NotificationCenter.getInstance().removeObserver(this, NotificationCenter.messageReceivedByServer);
+            NotificationCenter.getInstance().removeObserver(this, NotificationCenter.messageSendError);
+            NotificationCenter.getInstance().removeObserver(this, NotificationCenter.didSetPasscode);
+        }
         delegate = null;
     }
 
@@ -153,7 +161,7 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
             searchWas = false;
 
             ActionBarMenu menu = actionBar.createMenu();
-            if (!onlySelect) {
+            if (!onlySelect && searchString == null) {
                 passcodeItem = menu.addItem(passcode_menu_item, R.drawable.lock_close);
                 updatePasscodeButton();
             }
@@ -162,9 +170,14 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                 public void onSearchExpand() {
                     searching = true;
                     if (messagesListView != null) {
-                        messagesListView.setEmptyView(searchEmptyView);
+                        if (searchString != null) {
+                            messagesListView.setEmptyView(progressView);
+                            searchEmptyView.setVisibility(View.INVISIBLE);
+                        } else {
+                            messagesListView.setEmptyView(searchEmptyView);
+                            progressView.setVisibility(View.INVISIBLE);
+                        }
                         emptyView.setVisibility(View.INVISIBLE);
-                        progressView.setVisibility(View.INVISIBLE);
                         if (!onlySelect) {
                             floatingButton.setVisibility(View.GONE);
                         }
@@ -173,7 +186,11 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                 }
 
                 @Override
-                public void onSearchCollapse() {
+                public boolean onSearchCollapse() {
+                    if (searchString != null) {
+                        finishFragment();
+                        return false;
+                    }
                     searching = false;
                     searchWas = false;
                     if (messagesListView != null) {
@@ -202,6 +219,7 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                         dialogsSearchAdapter.searchDialogs(null, false);
                     }
                     updatePasscodeButton();
+                    return true;
                 }
 
                 @Override
@@ -229,7 +247,11 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                 actionBar.setBackButtonImage(R.drawable.ic_ab_back);
                 actionBar.setTitle(LocaleController.getString("SelectChat", R.string.SelectChat));
             } else {
-                actionBar.setBackButtonDrawable(new MenuDrawable());
+                if (searchString != null) {
+                    actionBar.setBackButtonImage(R.drawable.ic_ab_back);
+                } else {
+                    actionBar.setBackButtonDrawable(new MenuDrawable());
+                }
                 actionBar.setTitle(LocaleController.getString("AppName", R.string.AppName));
             }
             actionBar.setAllowOverlayTitle(true);
@@ -253,11 +275,19 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
 
             fragmentView = inflater.inflate(R.layout.messages_list, null, false);
 
-            dialogsAdapter = new DialogsAdapter(getParentActivity(), serverOnly);
-            if (AndroidUtilities.isTablet() && openedDialogId != 0) {
-                dialogsAdapter.setOpenedDialogId(openedDialogId);
+            if (searchString == null) {
+                dialogsAdapter = new DialogsAdapter(getParentActivity(), serverOnly);
+                if (AndroidUtilities.isTablet() && openedDialogId != 0) {
+                    dialogsAdapter.setOpenedDialogId(openedDialogId);
+                }
             }
-            dialogsSearchAdapter = new DialogsSearchAdapter(getParentActivity(), !onlySelect);
+            int type = 0;
+            if (searchString != null) {
+                type = 2;
+            } else if (!onlySelect) {
+                type = 1;
+            }
+            dialogsSearchAdapter = new DialogsSearchAdapter(getParentActivity(), type);
             dialogsSearchAdapter.setDelegate(new DialogsSearchAdapter.MessagesActivitySearchAdapterDelegate() {
                 @Override
                 public void searchStateChanged(boolean search) {
@@ -270,13 +300,14 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
             });
 
             messagesListView = (ListView)fragmentView.findViewById(R.id.messages_list_view);
-            messagesListView.setAdapter(dialogsAdapter);
+            if (dialogsAdapter != null) {
+                messagesListView.setAdapter(dialogsAdapter);
+            }
             if (Build.VERSION.SDK_INT >= 11) {
                 messagesListView.setVerticalScrollbarPosition(LocaleController.isRTL ? ListView.SCROLLBAR_POSITION_LEFT : ListView.SCROLLBAR_POSITION_RIGHT);
             }
 
             progressView = fragmentView.findViewById(R.id.progressLayout);
-            dialogsAdapter.notifyDataSetChanged();
             searchEmptyView = fragmentView.findViewById(R.id.search_empty_view);
             searchEmptyView.setOnTouchListener(new View.OnTouchListener() {
                 @Override
@@ -296,7 +327,11 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
             TextView textView = (TextView)fragmentView.findViewById(R.id.list_empty_view_text1);
             textView.setText(LocaleController.getString("NoChats", R.string.NoChats));
             textView = (TextView)fragmentView.findViewById(R.id.list_empty_view_text2);
-            textView.setText(LocaleController.getString("NoChatsHelp", R.string.NoChatsHelp));
+            String help = LocaleController.getString("NoChatsHelp", R.string.NoChatsHelp);
+            if (AndroidUtilities.isTablet() && !AndroidUtilities.isSmallTablet()) {
+                help = help.replace("\n", " ");
+            }
+            textView.setText(help);
             textView = (TextView)fragmentView.findViewById(R.id.search_empty_text);
             textView.setText(LocaleController.getString("NoResult", R.string.NoResult));
 
@@ -375,7 +410,7 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                         } else if (obj instanceof MessageObject) {
                             MessageObject messageObject = (MessageObject)obj;
                             dialog_id = messageObject.getDialogId();
-                            message_id = messageObject.messageOwner.id;
+                            message_id = messageObject.getId();
                         }
                     }
 
@@ -413,10 +448,17 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                             if (openedDialogId == dialog_id) {
                                 return;
                             }
-                            dialogsAdapter.setOpenedDialogId(openedDialogId = dialog_id);
-                            updateVisibleRows(MessagesController.UPDATE_MASK_SELECT_DIALOG);
+                            if (dialogsAdapter != null) {
+                                dialogsAdapter.setOpenedDialogId(openedDialogId = dialog_id);
+                                updateVisibleRows(MessagesController.UPDATE_MASK_SELECT_DIALOG);
+                            }
                         }
-                        presentFragment(new ChatActivity(args));
+                        if (searchString != null) {
+                            NotificationCenter.getInstance().postNotificationName(NotificationCenter.closeChats);
+                            presentFragment(new ChatActivity(args));
+                        } else {
+                            presentFragment(new ChatActivity(args));
+                        }
                     }
                 }
             });
@@ -533,6 +575,10 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                     }
                 }
             });
+
+            if (searchString != null) {
+                actionBar.openSearchField(searchString);
+            }
         } else {
             ViewGroup parent = (ViewGroup)fragmentView.getParent();
             if (parent != null) {
@@ -703,8 +749,12 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
         this.delegate = delegate;
     }
 
-    public MessagesActivityDelegate getDelegate() {
-        return delegate;
+    public void setSearchString(String string) {
+        searchString = string;
+    }
+
+    public boolean isMainDialogList() {
+        return delegate == null && searchString == null;
     }
 
     private void didSelectResult(final long dialog_id, boolean useAlert, final boolean param) {
@@ -754,13 +804,13 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                 builder.setView(checkBox);
             }*/
             final CheckBox checkBoxFinal = checkBox;
-            builder.setPositiveButton(R.string.OK, new DialogInterface.OnClickListener() {
+            builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), new DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(DialogInterface dialogInterface, int i) {
                     didSelectResult(dialog_id, false, checkBoxFinal != null && checkBoxFinal.isChecked());
                 }
             });
-            builder.setNegativeButton(R.string.Cancel, null);
+            builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
             showAlertDialog(builder);
             if (checkBox != null) {
                 ViewGroup.MarginLayoutParams layoutParams = (ViewGroup.MarginLayoutParams)checkBox.getLayoutParams();

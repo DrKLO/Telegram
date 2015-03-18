@@ -15,7 +15,6 @@ import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -27,8 +26,8 @@ import org.telegram.ui.Components.FrameLayoutFixed;
 
 public class PhotoPickerAlbumsCell extends FrameLayoutFixed {
 
-    public static interface PhotoPickerAlbumsCellDelegate {
-        public abstract void didSelectAlbum(MediaController.AlbumEntry albumEntry);
+    public interface PhotoPickerAlbumsCellDelegate {
+        void didSelectAlbum(MediaController.AlbumEntry albumEntry);
     }
 
     private AlbumView[] albumViews;
@@ -180,11 +179,6 @@ public class PhotoPickerAlbumsCell extends FrameLayoutFixed {
             albumViews[a].setLayoutParams(layoutParams);
         }
 
-        ViewGroup.LayoutParams layoutParams = getLayoutParams();
-        if (layoutParams != null) {
-            layoutParams.height = AndroidUtilities.dp(4) + itemWidth;
-            setLayoutParams(layoutParams);
-        }
-        super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+        super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(4) + itemWidth, MeasureSpec.EXACTLY));
     }
 }

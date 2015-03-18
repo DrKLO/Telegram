@@ -83,4 +83,10 @@ public class PhotoEditToolCell extends FrameLayoutFixed {
             valueTextView.setText("" + (int) value);
         }
     }
+
+    public void setIconAndTextAndValue(int resId, String text, String value) {
+        iconImage.setImageResource(resId);
+        nameTextView.setText(text.toUpperCase());
+        valueTextView.setText(value);
+    }
 }

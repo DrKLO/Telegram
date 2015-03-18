@@ -8,6 +8,7 @@
 
 package org.telegram.ui.Components;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
@@ -16,12 +17,13 @@ import android.widget.ListView;
 
 public class LayoutListView extends ListView {
 
-    public static interface OnInterceptTouchEventListener {
-        public abstract boolean onInterceptTouchEvent(MotionEvent event);
+    public interface OnInterceptTouchEventListener {
+        boolean onInterceptTouchEvent(MotionEvent event);
     }
 
     private OnInterceptTouchEventListener onInterceptTouchEventListener;
     private int height = -1;
+    private int forceTop = Integer.MIN_VALUE;
 
     public LayoutListView(Context context) {
         super(context);
@@ -39,6 +41,10 @@ public class LayoutListView extends ListView {
         onInterceptTouchEventListener = listener;
     }
 
+    public void setForceTop(int value) {
+        forceTop = value;
+    }
+
     @Override
     public boolean onInterceptTouchEvent(MotionEvent ev) {
         if (onInterceptTouchEventListener != null) {
@@ -47,25 +53,32 @@ public class LayoutListView extends ListView {
         return super.onInterceptTouchEvent(ev);
     }
 
+    @SuppressLint("DrawAllocation")
     @Override
     protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
         View v = getChildAt(getChildCount() - 1);
+        int scrollTo = getLastVisiblePosition();
         if (v != null && height > 0 && changed && ((bottom - top) < height)) {
-            int b = height - v.getTop();
-            final int scrollTo = getLastVisiblePosition();
+            int lastTop = forceTop == Integer.MIN_VALUE ? (bottom - top) - (height - v.getTop()) - getPaddingTop() : forceTop;
+            forceTop = Integer.MIN_VALUE;
+            setSelectionFromTop(scrollTo, lastTop);
             super.onLayout(changed, left, top, right, bottom);
-            final int offset = (bottom - top) - b;
-            post(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        setSelectionFromTop(scrollTo, offset - getPaddingTop());
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                }
-            });
+
+//            post(new Runnable() {
+//                @Override
+//                public void run() {
+//                    try {
+//                        setSelectionFromTop(scrollTo, lastTop);
+//                    } catch (Exception e) {
+//                        e.printStackTrace();
+//                    }
+//                }
+//            });
         } else {
+            if (forceTop != Integer.MIN_VALUE) {
+                setSelectionFromTop(scrollTo, forceTop);
+                forceTop = Integer.MIN_VALUE;
+            }
             try {
                 super.onLayout(changed, left, top, right, bottom);
             } catch (Exception e) {

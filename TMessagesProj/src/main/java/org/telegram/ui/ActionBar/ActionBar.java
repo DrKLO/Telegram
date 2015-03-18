@@ -48,7 +48,6 @@ public class ActionBar extends FrameLayout {
 
     private boolean allowOverlayTitle;
     private CharSequence lastTitle;
-    private boolean showingOverlayTitle;
     private boolean castShadows = true;
 
     protected boolean isSearchFieldVisible;
@@ -419,6 +418,13 @@ public class ActionBar extends FrameLayout {
         menu.closeSearchField();
     }
 
+    public void openSearchField(String text) {
+        if (isSearchFieldVisible || menu == null) {
+            return;
+        }
+        menu.openSearchField(text);
+    }
+
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         int actionBarHeight = AndroidUtilities.getCurrentActionBarHeight();
@@ -446,10 +452,9 @@ public class ActionBar extends FrameLayout {
     }
 
     public void setTitleOverlayText(String text) {
-        if (showingOverlayTitle == (text != null) || !allowOverlayTitle || parentFragment.parentLayout == null) {
+        if (!allowOverlayTitle || parentFragment.parentLayout == null) {
             return;
         }
-        showingOverlayTitle = text != null;
         CharSequence textToSet = text != null ? text : lastTitle;
         if (textToSet != null && titleTextView == null) {
             createTitleTextView();

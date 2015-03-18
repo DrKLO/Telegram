@@ -169,8 +169,6 @@ public class AndroidUtilities {
         }
         InputMethodManager inputManager = (InputMethodManager)view.getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
         inputManager.showSoftInput(view, InputMethodManager.SHOW_IMPLICIT);
-
-        ((InputMethodManager) view.getContext().getSystemService(Context.INPUT_METHOD_SERVICE)).showSoftInput(view, 0);
     }
 
     public static boolean isKeyboardShowed(View view) {

@@ -254,6 +254,9 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
     @Override
     public void onFragmentDestroy() {
         super.onFragmentDestroy();
+        if (avatarImage != null) {
+            avatarImage.setImageDrawable(null);
+        }
         MessagesController.getInstance().cancelLoadFullUser(UserConfig.getClientUserId());
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.updateInterfaces);
         avatarUpdater.clear();

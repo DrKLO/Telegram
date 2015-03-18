@@ -45,10 +45,10 @@ public class FileUploadOperation {
     private MessageDigest mdEnc = null;
     private boolean started = false;
 
-    public static interface FileUploadOperationDelegate {
-        public abstract void didFinishUploadingFile(FileUploadOperation operation, TLRPC.InputFile inputFile, TLRPC.InputEncryptedFile inputEncryptedFile);
-        public abstract void didFailedUploadingFile(FileUploadOperation operation);
-        public abstract void didChangedUploadProgress(FileUploadOperation operation, float progress);
+    public interface FileUploadOperationDelegate {
+        void didFinishUploadingFile(FileUploadOperation operation, TLRPC.InputFile inputFile, TLRPC.InputEncryptedFile inputEncryptedFile);
+        void didFailedUploadingFile(FileUploadOperation operation);
+        void didChangedUploadProgress(FileUploadOperation operation, float progress);
     }
 
     public FileUploadOperation(String location, boolean encrypted, int estimated) {

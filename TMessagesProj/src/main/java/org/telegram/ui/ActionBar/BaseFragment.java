@@ -23,7 +23,7 @@ import org.telegram.messenger.R;
 
 public class BaseFragment {
     private boolean isFinished = false;
-    private AlertDialog visibleDialog = null;
+    protected AlertDialog visibleDialog = null;
 
     protected View fragmentView;
     protected ActionBarLayout parentLayout;

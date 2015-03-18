@@ -43,9 +43,9 @@ import java.util.Locale;
 
 public class ChatMediaCell extends ChatBaseCell implements MediaController.FileDownloadProgressListener {
 
-    public static interface ChatMediaCellDelegate {
-        public abstract void didClickedImage(ChatMediaCell cell);
-        public abstract void didPressedOther(ChatMediaCell cell);
+    public interface ChatMediaCellDelegate {
+        void didClickedImage(ChatMediaCell cell);
+        void didPressedOther(ChatMediaCell cell);
     }
 
     private static Drawable placeholderDocInDrawable;
@@ -191,7 +191,7 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
                             otherPressed = true;
                             result = true;
                         }
-                    } else {
+                    } else if (currentMessageObject.type != 13) {
                         if (x >= photoImage.getImageX() && x <= photoImage.getImageX() + backgroundWidth && y >= photoImage.getImageY() && y <= photoImage.getImageY() + photoImage.getImageHeight()) {
                             imagePressed = true;
                             result = true;
@@ -359,7 +359,7 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
                     photoImage.cancelLoadImage();
                 } else if (currentMessageObject.type == 8 || currentMessageObject.type == 9) {
                     FileLoader.getInstance().cancelLoadFile(currentMessageObject.messageOwner.media.document);
-                    if (lastDownloadedGifMessage != null && lastDownloadedGifMessage.messageOwner.id == currentMessageObject.messageOwner.id) {
+                    if (lastDownloadedGifMessage != null && lastDownloadedGifMessage.getId() == currentMessageObject.getId()) {
                         lastDownloadedGifMessage = null;
                     }
                 } else if (currentMessageObject.type == 3) {
@@ -413,7 +413,6 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
         media = messageObject.type != 9;
         boolean dataChanged = currentMessageObject == messageObject && (isUserDataChanged() || photoNotSet);
         if (currentMessageObject != messageObject || isPhotoDataChanged(messageObject) || dataChanged) {
-            super.setMessageObject(messageObject);
             cancelLoading = false;
 
             buttonState = -1;
@@ -510,13 +509,13 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
                     photoImage.setImageBitmap((BitmapDrawable) null);
                 }
             } else if (messageObject.type == 4) { //geo
-                photoWidth = AndroidUtilities.dp(100);
+                photoWidth = AndroidUtilities.dp(200);
                 photoHeight = AndroidUtilities.dp(100);
                 backgroundWidth = photoWidth + AndroidUtilities.dp(12);
 
                 double lat = messageObject.messageOwner.media.geo.lat;
                 double lon = messageObject.messageOwner.media.geo._long;
-                currentUrl = String.format(Locale.US, "https://maps.googleapis.com/maps/api/staticmap?center=%f,%f&zoom=13&size=100x100&maptype=roadmap&scale=%d&markers=color:red|size:big|%f,%f&sensor=false", lat, lon, Math.min(2, (int)Math.ceil(AndroidUtilities.density)), lat, lon);
+                currentUrl = String.format(Locale.US, "https://maps.googleapis.com/maps/api/staticmap?center=%f,%f&zoom=13&size=200x100&maptype=roadmap&scale=%d&markers=color:red|size:big|%f,%f&sensor=false", lat, lon, Math.min(2, (int)Math.ceil(AndroidUtilities.density)), lat, lon);
                 photoImage.setNeedsQualityThumb(false);
                 photoImage.setShouldGenerateQualityThumb(false);
                 photoImage.setParentMessageObject(null);
@@ -531,6 +530,12 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
                     }
                 }
                 float maxHeight = AndroidUtilities.displaySize.y * 0.4f;
+                float maxWidth;
+                if (AndroidUtilities.isTablet()) {
+                    maxWidth = AndroidUtilities.getMinTabletSide() * 0.5f;
+                } else {
+                    maxWidth = AndroidUtilities.displaySize.x * 0.5f;
+                }
                 if (photoWidth == 0) {
                     photoHeight = (int) maxHeight;
                     photoWidth = photoHeight + AndroidUtilities.dp(100);
@@ -539,28 +544,32 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
                     photoWidth *= maxHeight / photoHeight;
                     photoHeight = (int)maxHeight;
                 }
+                if (photoWidth > maxWidth) {
+                    photoHeight *= maxWidth / photoWidth;
+                    photoWidth = (int)maxWidth;
+                }
                 backgroundWidth = photoWidth + AndroidUtilities.dp(12);
                 currentPhotoObjectThumb = FileLoader.getClosestPhotoSizeWithSize(messageObject.photoThumbs, 80);
                 photoImage.setNeedsQualityThumb(false);
                 photoImage.setShouldGenerateQualityThumb(false);
                 photoImage.setParentMessageObject(null);
-                if (currentMessageObject.messageOwner.attachPath != null && currentMessageObject.messageOwner.attachPath.length() > 0) {
-                    File f = new File(currentMessageObject.messageOwner.attachPath);
+                if (messageObject.messageOwner.attachPath != null && messageObject.messageOwner.attachPath.length() > 0) {
+                    File f = new File(messageObject.messageOwner.attachPath);
                     if (f.exists()) {
-                        photoImage.setImage(null, currentMessageObject.messageOwner.attachPath,
+                        photoImage.setImage(null, messageObject.messageOwner.attachPath,
                                 String.format(Locale.US, "%d_%d", photoWidth, photoHeight),
                                 null,
                                 currentPhotoObjectThumb != null ? currentPhotoObjectThumb.location : null,
                                 "b1",
-                                currentMessageObject.messageOwner.media.document.size, true);
+                                messageObject.messageOwner.media.document.size, true);
                     }
-                } else if (currentMessageObject.messageOwner.media.document.id != 0) {
-                    photoImage.setImage(currentMessageObject.messageOwner.media.document, null,
+                } else if (messageObject.messageOwner.media.document.id != 0) {
+                    photoImage.setImage(messageObject.messageOwner.media.document, null,
                             String.format(Locale.US, "%d_%d", photoWidth, photoHeight),
                             null,
                             currentPhotoObjectThumb != null ? currentPhotoObjectThumb.location : null,
                             "b1",
-                            currentMessageObject.messageOwner.media.document.size, true);
+                            messageObject.messageOwner.media.document.size, true);
                 }
             } else {
                 if (AndroidUtilities.isTablet()) {
@@ -598,7 +607,7 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
 
                 if (currentPhotoObject != null) {
                     boolean noSize = false;
-                    if (currentMessageObject.type == 3 || currentMessageObject.type == 8) {
+                    if (messageObject.type == 3 || messageObject.type == 8) {
                         noSize = true;
                     }
                     float scale = (float) currentPhotoObject.w / (float) photoWidth;
@@ -631,12 +640,12 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
                             w = (int) (currentPhotoObject.w / hScale);
                         }
                     }
-                    int timeWidthTotal = timeWidth + AndroidUtilities.dp(14 + (currentMessageObject.isOut() ? 20 : 0));
+                    int timeWidthTotal = timeWidth + AndroidUtilities.dp(14 + (messageObject.isOut() ? 20 : 0));
                     if (w < timeWidthTotal) {
                         w = timeWidthTotal;
                     }
 
-                    if (currentMessageObject.isSecretPhoto()) {
+                    if (messageObject.isSecretPhoto()) {
                         if (AndroidUtilities.isTablet()) {
                             w = h = (int) (AndroidUtilities.getMinTabletSide() * 0.5f);
                         } else {
@@ -660,7 +669,7 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
                     String fileName = FileLoader.getAttachFileName(currentPhotoObject);
                     if (messageObject.type == 1) {
                         boolean photoExist = true;
-                        File cacheFile = FileLoader.getPathToMessage(currentMessageObject.messageOwner);
+                        File cacheFile = FileLoader.getPathToMessage(messageObject.messageOwner);
                         if (!cacheFile.exists()) {
                             photoExist = false;
                         } else {
@@ -691,6 +700,7 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
                     photoImage.setImageBitmap((Bitmap)null);
                 }
             }
+            super.setMessageObject(messageObject);
 
             invalidate();
         }
@@ -733,7 +743,7 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
                 buttonState = 1;
                 radialProgress.setBackground(getDrawableForCurrentState(), true, animated);
                 Float progress = ImageLoader.getInstance().getFileProgress(currentMessageObject.messageOwner.attachPath);
-                if (progress == null && SendMessagesHelper.getInstance().isSendingMessage(currentMessageObject.messageOwner.id)) {
+                if (progress == null && SendMessagesHelper.getInstance().isSendingMessage(currentMessageObject.getId())) {
                     progress = 1.0f;
                 }
                 radialProgress.setProgress(progress != null ? progress : 0, false);
@@ -783,7 +793,7 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        setMeasuredDimension(MeasureSpec.getSize(widthMeasureSpec), photoHeight + AndroidUtilities.dp(14));
+        setMeasuredDimension(MeasureSpec.getSize(widthMeasureSpec), photoHeight + AndroidUtilities.dp(14) + namesOffset);
     }
 
     @Override
@@ -804,10 +814,10 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
                 x = AndroidUtilities.dp(15);
             }
         }
-        photoImage.setImageCoords(x, AndroidUtilities.dp(7), photoWidth, photoHeight);
+        photoImage.setImageCoords(x, AndroidUtilities.dp(7) + namesOffset, photoWidth, photoHeight);
         int size = AndroidUtilities.dp(48);
         buttonX = (int)(x + (photoWidth - size) / 2.0f);
-        buttonY = (int)(AndroidUtilities.dp(7) + (photoHeight - size) / 2.0f);
+        buttonY = (int)(AndroidUtilities.dp(7) + (photoHeight - size) / 2.0f) + namesOffset;
 
         radialProgress.setProgressRect(buttonX, buttonY, buttonX + AndroidUtilities.dp(48), buttonY + AndroidUtilities.dp(48));
         deleteProgressRect.set(buttonX + AndroidUtilities.dp(3), buttonY + AndroidUtilities.dp(3), buttonX + AndroidUtilities.dp(45), buttonY + AndroidUtilities.dp(45));
@@ -854,7 +864,7 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
             gifDrawable.draw(canvas);
             canvas.restore();
         } else {
-            photoImage.setPressed(isPressed() && isCheckPressed || !isCheckPressed && isPressed);
+            photoImage.setPressed(isPressed() && isCheckPressed || !isCheckPressed && isPressed || isHighlighted);
             photoImage.setVisible(!PhotoViewer.getInstance().isShowingImage(currentMessageObject), false);
             imageDrawn = photoImage.draw(canvas);
             drawTime = photoImage.getVisible();
@@ -874,7 +884,7 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
                 menuDrawable = docMenuInDrawable;
             }
 
-            setDrawableBounds(menuDrawable, photoImage.getImageX() + backgroundWidth - AndroidUtilities.dp(44), AndroidUtilities.dp(10));
+            setDrawableBounds(menuDrawable, photoImage.getImageX() + backgroundWidth - AndroidUtilities.dp(44), AndroidUtilities.dp(10) + namesOffset);
             menuDrawable.draw(canvas);
 
             if (buttonState >= 0 && buttonState < 4) {
@@ -973,7 +983,7 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
     @Override
     public void onSuccessDownload(String fileName) {
         radialProgress.setProgress(1, true);
-        if (currentMessageObject.type == 8 && lastDownloadedGifMessage != null && lastDownloadedGifMessage.messageOwner.id == currentMessageObject.messageOwner.id) {
+        if (currentMessageObject.type == 8 && lastDownloadedGifMessage != null && lastDownloadedGifMessage.getId() == currentMessageObject.getId()) {
             buttonState = 2;
             didPressedButton(true);
         } else if (!photoNotSet) {

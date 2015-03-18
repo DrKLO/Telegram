@@ -51,6 +51,7 @@ public class NotificationCenter {
     public static final int didSetPasscode = totalEvents++;
     public static final int screenStateChanged = totalEvents++;
     public static final int appSwitchedToForeground = totalEvents++;
+    public static final int didLoadedReplyMessages = totalEvents++;
 
     public static final int httpFileDidLoaded = totalEvents++;
     public static final int httpFileDidFailedLoad = totalEvents++;
@@ -109,7 +110,7 @@ public class NotificationCenter {
     }
 
     public interface NotificationCenterDelegate {
-        public abstract void didReceivedNotification(int id, Object... args);
+        void didReceivedNotification(int id, Object... args);
     }
 
     public void postNotificationName(int id, Object... args) {

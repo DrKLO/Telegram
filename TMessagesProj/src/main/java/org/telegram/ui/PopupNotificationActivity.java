@@ -185,7 +185,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
         if (chatActivityEnterView != null) {
             chatActivityEnterView.onDestroy();
         }
-        chatActivityEnterView = new ChatActivityEnterView(this, contentView, null, true);
+        chatActivityEnterView = new ChatActivityEnterView(this, contentView, null, false);
         popupContainer.addView(chatActivityEnterView);
         layoutParams3 = (RelativeLayout.LayoutParams) chatActivityEnterView.getLayoutParams();
         layoutParams3.width = RelativeLayout.LayoutParams.MATCH_PARENT;
@@ -201,7 +201,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
                 if (currentMessageNum >= 0 && currentMessageNum < NotificationsController.getInstance().popupMessages.size()) {
                     NotificationsController.getInstance().popupMessages.remove(currentMessageNum);
                 }
-                MessagesController.getInstance().markDialogAsRead(currentMessageObject.getDialogId(), currentMessageObject.messageOwner.id, Math.max(0, currentMessageObject.messageOwner.id), 0, currentMessageObject.messageOwner.date, true, true);
+                MessagesController.getInstance().markDialogAsRead(currentMessageObject.getDialogId(), currentMessageObject.getId(), Math.max(0, currentMessageObject.getId()), 0, currentMessageObject.messageOwner.date, true, true);
                 currentMessageObject = null;
                 getNewMessage();
             }
@@ -802,7 +802,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
         boolean found = false;
         if ((currentMessageNum != 0 || chatActivityEnterView.hasText() || startedMoving) && currentMessageObject != null) {
             for (int a = 0; a < NotificationsController.getInstance().popupMessages.size(); a++) {
-                if (NotificationsController.getInstance().popupMessages.get(a).messageOwner.id == currentMessageObject.messageOwner.id) {
+                if (NotificationsController.getInstance().popupMessages.get(a).getId() == currentMessageObject.getId()) {
                     currentMessageNum = a;
                     found = true;
                     break;
@@ -1032,7 +1032,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
                     View view = messageContainer.getChildAt(a);
                     if ((Integer)view.getTag() == 3) {
                         PopupAudioView cell = (PopupAudioView)view.findViewWithTag(300);
-                        if (cell.getMessageObject() != null && cell.getMessageObject().messageOwner.id == mid) {
+                        if (cell.getMessageObject() != null && cell.getMessageObject().getId() == mid) {
                             cell.updateButtonState();
                             break;
                         }
@@ -1047,7 +1047,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
                     View view = messageContainer.getChildAt(a);
                     if ((Integer)view.getTag() == 3) {
                         PopupAudioView cell = (PopupAudioView)view.findViewWithTag(300);
-                        if (cell.getMessageObject() != null && cell.getMessageObject().messageOwner.id == mid) {
+                        if (cell.getMessageObject() != null && cell.getMessageObject().getId() == mid) {
                             cell.updateProgress();
                             break;
                         }
@@ -1078,6 +1078,9 @@ public class PopupNotificationActivity extends Activity implements NotificationC
         onFinish();
         if (wakeLock.isHeld()) {
             wakeLock.release();
+        }
+        if (avatarImageView != null) {
+            avatarImageView.setImageDrawable(null);
         }
     }
 

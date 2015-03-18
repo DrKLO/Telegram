@@ -480,7 +480,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
 
                 datacenter = new Datacenter();
                 datacenter.datacenterId = 3;
-                datacenter.addAddressAndPort("174.140.142.5", 443);
+                datacenter.addAddressAndPort("149.154.175.117", 443);
                 datacenters.put(datacenter.datacenterId, datacenter);
             }
         } else if (datacenters.size() == 1) {
@@ -646,8 +646,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
     int lastClassGuid = 1;
     public int generateClassGuid() {
         int guid = lastClassGuid++;
-        ArrayList<Long> requests = new ArrayList<>();
-        requestsByGuids.put(guid, requests);
+        requestsByGuids.put(guid, new ArrayList<Long>());
         return guid;
     }
 
