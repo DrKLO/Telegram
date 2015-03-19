@@ -1895,10 +1895,10 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         if (arrayList == null || arrayList.isEmpty()) {
             return;
         }
-        for (MessageObject object : arrayList) {
-            if (!fromMyName) {
-                SendMessagesHelper.getInstance().sendMessage(object, dialog_id);
-            } else {
+        if (!fromMyName) {
+            SendMessagesHelper.getInstance().sendMessage(arrayList, dialog_id);
+        } else {
+            for (MessageObject object : arrayList) {
                 SendMessagesHelper.getInstance().processForwardFromMyName(object, dialog_id);
             }
         }

@@ -82,7 +82,7 @@ android {
     defaultConfig {
         minSdkVersion 8
         targetSdkVersion 22
-        versionCode 468
+        versionCode 469
         versionName "2.6.0"
     }
 }

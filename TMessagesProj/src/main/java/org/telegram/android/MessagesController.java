@@ -687,17 +687,21 @@ public class MessagesController implements NotificationCenter.NotificationCenter
     }
 
     protected void processNewDifferenceParams(int seq, int pts, int date, int pts_count) {
+        FileLog.e("tmessages", "processNewDifferenceParams seq = " + seq + " pts = " + pts + " date = " + date + " pts_count = " + pts_count);
         if (pts != -1) {
             if (MessagesStorage.lastPtsValue + pts_count == pts) {
+                FileLog.e("tmessages", "APPLY PTS");
                 MessagesStorage.lastPtsValue = pts;
                 MessagesStorage.getInstance().saveDiffParams(MessagesStorage.lastSeqValue, MessagesStorage.lastPtsValue, MessagesStorage.lastDateValue, MessagesStorage.lastQtsValue);
-            } else if (MessagesStorage.lastPtsValue == pts) {
+            } else if (MessagesStorage.lastPtsValue != pts) {
                 if (gettingDifference || updatesStartWaitTimePts == 0 || updatesStartWaitTimePts != 0 && updatesStartWaitTimePts + 1500 > System.currentTimeMillis()) {
+                    FileLog.e("tmessages", "ADD UPDATE TO QUEUE pts = " + pts + " pts_count = " + pts_count);
                     if (updatesStartWaitTimePts == 0) {
                         updatesStartWaitTimePts = System.currentTimeMillis();
                     }
                     UserActionUpdatesPts updates = new UserActionUpdatesPts();
-                    updates.seq = seq;
+                    updates.pts = pts;
+                    updates.pts_count = pts_count;
                     updatesQueuePts.add(updates);
                 } else {
                     getDifference();
@@ -706,6 +710,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         }
         if (seq != -1) {
             if (MessagesStorage.lastSeqValue + 1 == seq) {
+                FileLog.e("tmessages", "APPLY SEQ");
                 MessagesStorage.lastSeqValue = seq;
                 if (date != -1) {
                     MessagesStorage.lastDateValue = date;
@@ -713,6 +718,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                 MessagesStorage.getInstance().saveDiffParams(MessagesStorage.lastSeqValue, MessagesStorage.lastPtsValue, MessagesStorage.lastDateValue, MessagesStorage.lastQtsValue);
             } else if (MessagesStorage.lastSeqValue != seq) {
                 if (gettingDifference || updatesStartWaitTimeSeq == 0 || updatesStartWaitTimeSeq != 0 && updatesStartWaitTimeSeq + 1500 > System.currentTimeMillis()) {
+                    FileLog.e("tmessages", "ADD UPDATE TO QUEUE seq = " + seq);
                     if (updatesStartWaitTimeSeq == 0) {
                         updatesStartWaitTimeSeq = System.currentTimeMillis();
                     }
