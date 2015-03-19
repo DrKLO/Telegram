@@ -2154,7 +2154,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                                 implicitError.code = ((TLRPC.RpcError)resultContainer.result).error_code;
                                 implicitError.text = ((TLRPC.RpcError)resultContainer.result).error_message;
                             } else if (!(resultContainer.result instanceof TLRPC.TL_error)) {
-                                if (request.rawRequest == null || !request.rawRequest.responseClass().isAssignableFrom(resultContainer.result.getClass())) {
+                                if (request.rawRequest == null || resultContainer.result == null || !request.rawRequest.responseClass().isAssignableFrom(resultContainer.result.getClass())) {
                                     if (request.rawRequest == null) {
                                         FileLog.e("tmessages", "rawRequest is null");
                                     } else {

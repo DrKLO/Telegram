@@ -4120,17 +4120,20 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         args.putInt("chat_id", -lower_part);
                     }
                     ChatActivity chatActivity = new ChatActivity(args);
-                    presentFragment(chatActivity, true);
-                    chatActivity.showReplyForMessageObjectOrForward(true, null, fmessages, false);
-                    if (!AndroidUtilities.isTablet()) {
-                        removeSelfFromStack();
-                        Activity parentActivity = getParentActivity();
-                        if (parentActivity == null) {
-                            parentActivity = chatActivity.getParentActivity();
+                    if (presentFragment(chatActivity, true)) {
+                        chatActivity.showReplyForMessageObjectOrForward(true, null, fmessages, false);
+                        if (!AndroidUtilities.isTablet()) {
+                            removeSelfFromStack();
+                            Activity parentActivity = getParentActivity();
+                            if (parentActivity == null) {
+                                parentActivity = chatActivity.getParentActivity();
+                            }
+                            if (parentActivity != null) {
+                                parentActivity.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+                            }
                         }
-                        if (parentActivity != null) {
-                            parentActivity.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
-                        }
+                    } else {
+                        activity.finishFragment();
                     }
                 } else {
                     activity.finishFragment();

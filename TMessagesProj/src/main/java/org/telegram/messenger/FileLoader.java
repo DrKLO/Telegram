@@ -132,6 +132,9 @@ public class FileLoader {
     }
 
     public void uploadFile(final String location, final boolean encrypted, final boolean small, final int estimatedSize) {
+        if (location == null) {
+            return;
+        }
         fileLoaderQueue.postRunnable(new Runnable() {
             @Override
             public void run() {

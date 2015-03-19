@@ -27,6 +27,7 @@ import org.telegram.android.Emoji;
 import org.telegram.android.LocaleController;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLoader;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.TLRPC;
 import org.telegram.android.MessagesController;
 import org.telegram.messenger.R;
@@ -447,17 +448,25 @@ public class ChatBaseCell extends BaseCell {
             if (stringFinalName == null) {
                 stringFinalName = LocaleController.getString("Loading", R.string.Loading);
             }
-            replyNameLayout = new StaticLayout(stringFinalName, replyNamePaint, maxWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
-            if (replyNameLayout.getLineCount() > 0) {
-                replyNameWidth = (int)Math.ceil(replyNameLayout.getLineWidth(0)) + AndroidUtilities.dp(12 + (needReplyImage ? 44 : 0));
-                replyNameOffset = replyNameLayout.getLineLeft(0);
-            }
-            if (stringFinalText != null) {
-                replyTextLayout = new StaticLayout(stringFinalText, replyTextPaint, maxWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
-                if (replyTextLayout.getLineCount() > 0) {
-                    replyTextWidth = (int) Math.ceil(replyTextLayout.getLineWidth(0)) + AndroidUtilities.dp(12 + (needReplyImage ? 44 : 0));
-                    replyTextOffset = replyTextLayout.getLineLeft(0);
+            try {
+                replyNameLayout = new StaticLayout(stringFinalName, replyNamePaint, maxWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+                if (replyNameLayout.getLineCount() > 0) {
+                    replyNameWidth = (int)Math.ceil(replyNameLayout.getLineWidth(0)) + AndroidUtilities.dp(12 + (needReplyImage ? 44 : 0));
+                    replyNameOffset = replyNameLayout.getLineLeft(0);
                 }
+            } catch (Exception e) {
+                FileLog.e("tmessages", e);
+            }
+            try {
+                if (stringFinalText != null) {
+                    replyTextLayout = new StaticLayout(stringFinalText, replyTextPaint, maxWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+                    if (replyTextLayout.getLineCount() > 0) {
+                        replyTextWidth = (int) Math.ceil(replyTextLayout.getLineWidth(0)) + AndroidUtilities.dp(12 + (needReplyImage ? 44 : 0));
+                        replyTextOffset = replyTextLayout.getLineLeft(0);
+                    }
+                }
+            } catch (Exception e) {
+                FileLog.e("tmessages", e);
             }
         }
 

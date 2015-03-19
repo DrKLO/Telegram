@@ -504,7 +504,7 @@ public class MessageObject {
             } else if (!(c != ' ' && digitsInRow > 0)) {
                 digitsInRow = 0;
             }
-            if ((c == '@' || c == '#') && i == 0 || i != 0 && message.charAt(i - 1) == ' ') {
+            if ((c == '@' || c == '#') && i == 0 || i != 0 && (message.charAt(i - 1) == ' ' || message.charAt(i - 1) == '\n')) {
                 return true;
             }
             if (c == ':') {

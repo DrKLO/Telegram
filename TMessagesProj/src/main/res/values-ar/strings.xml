@@ -664,12 +664,12 @@
     <string name="ForwardedSticker_few">%1$d ملصق معاد توجيهه</string>
     <string name="ForwardedSticker_many">%1$d ملصق معاد توجيهه</string>
     <string name="ForwardedSticker_other">%1$d ملصق معاد توجيهه</string>
-    <string name="AndOther_zero">and %1$d others</string>
-    <string name="AndOther_one">and %1$d other</string>
-    <string name="AndOther_two">and %1$d others</string>
-    <string name="AndOther_few">and %1$d others</string>
-    <string name="AndOther_many">and %1$d others</string>
-    <string name="AndOther_other">and %1$d others</string>
+    <string name="AndOther_zero">و %1$d غيرهم</string>
+    <string name="AndOther_one">و %1$d غيره</string>
+    <string name="AndOther_two">و %1$d غيرهم</string>
+    <string name="AndOther_few">و %1$d غيرهم</string>
+    <string name="AndOther_many">و %1$d غيرهم</string>
+    <string name="AndOther_other">و %1$d غيرهم</string>
     <!--date formatters-->
     <string name="formatterMonthYear">MMMM yyyy</string>
     <string name="formatterMonth">MMM dd</string>

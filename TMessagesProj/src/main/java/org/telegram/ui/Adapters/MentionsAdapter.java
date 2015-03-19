@@ -70,7 +70,7 @@ public class MentionsAdapter extends BaseFragmentAdapter {
                 continue;
             }
             char ch = text.charAt(a);
-            if (ch == '@' && (a == 0 || text.charAt(a - 1) == ' ')) {
+            if (ch == '@' && (a == 0 || text.charAt(a - 1) == ' ' || text.charAt(a - 1) == '\n')) {
                 found = true;
                 usernameStartPosition = a;
                 usernameLength = username.length() + 1;
