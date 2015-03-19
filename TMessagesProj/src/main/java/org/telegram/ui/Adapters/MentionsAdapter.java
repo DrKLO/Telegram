@@ -111,7 +111,7 @@ public class MentionsAdapter extends BaseFragmentAdapter {
                 int lhsNum = users.indexOf(lhs.id);
                 int rhsNum = users.indexOf(rhs.id);
                 if (lhsNum != -1 && rhsNum != -1) {
-                    return Integer.compare(lhsNum, rhsNum);
+                    return lhsNum < rhsNum ? -1 : (lhsNum == rhsNum ? 0 : 1);
                 } else if (lhsNum != -1 && rhsNum == -1) {
                     return -1;
                 } else if (lhsNum == -1 && rhsNum != -1) {
