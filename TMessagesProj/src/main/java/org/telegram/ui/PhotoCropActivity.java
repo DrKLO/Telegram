@@ -36,7 +36,7 @@ import java.io.File;
 public class PhotoCropActivity extends BaseFragment {
 
     public interface PhotoEditActivityDelegate {
-        public abstract void didFinishEdit(Bitmap bitmap, Bundle args);
+        void didFinishEdit(Bitmap bitmap, Bundle args);
     }
 
     private class PhotoCropView extends FrameLayout {

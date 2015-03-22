@@ -480,7 +480,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
 
                 datacenter = new Datacenter();
                 datacenter.datacenterId = 3;
-                datacenter.addAddressAndPort("174.140.142.5", 443);
+                datacenter.addAddressAndPort("149.154.175.117", 443);
                 datacenters.put(datacenter.datacenterId, datacenter);
             }
         } else if (datacenters.size() == 1) {
@@ -646,8 +646,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
     int lastClassGuid = 1;
     public int generateClassGuid() {
         int guid = lastClassGuid++;
-        ArrayList<Long> requests = new ArrayList<>();
-        requestsByGuids.put(guid, requests);
+        requestsByGuids.put(guid, new ArrayList<Long>());
         return guid;
     }
 
@@ -2155,7 +2154,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                                 implicitError.code = ((TLRPC.RpcError)resultContainer.result).error_code;
                                 implicitError.text = ((TLRPC.RpcError)resultContainer.result).error_message;
                             } else if (!(resultContainer.result instanceof TLRPC.TL_error)) {
-                                if (request.rawRequest == null || !request.rawRequest.responseClass().isAssignableFrom(resultContainer.result.getClass())) {
+                                if (request.rawRequest == null || resultContainer.result == null || !request.rawRequest.responseClass().isAssignableFrom(resultContainer.result.getClass())) {
                                     if (request.rawRequest == null) {
                                         FileLog.e("tmessages", "rawRequest is null");
                                     } else {

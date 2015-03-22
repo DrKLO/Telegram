@@ -61,8 +61,8 @@ import java.util.HashMap;
 
 public class GroupCreateActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
 
-    public static interface GroupCreateActivityDelegate {
-        public abstract void didSelectUsers(ArrayList<Integer> ids);
+    public interface GroupCreateActivityDelegate {
+        void didSelectUsers(ArrayList<Integer> ids);
     }
 
     private class XImageSpan extends ImageSpan {

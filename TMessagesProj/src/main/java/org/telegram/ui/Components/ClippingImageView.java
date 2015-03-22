@@ -41,8 +41,8 @@ public class ClippingImageView extends View {
     private RectF bitmapRect;
     private Matrix shaderMatrix;
 
-    public static interface onDrawListener {
-        public abstract void onDraw();
+    public interface onDrawListener {
+        void onDraw();
     }
 
     public ClippingImageView(Context context) {

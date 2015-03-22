@@ -48,9 +48,9 @@ public class VideoTimelineView extends View {
     private int framesToLoad = 0;
     private Drawable pickDrawable = null;
 
-    public abstract interface VideoTimelineViewDelegate {
-        public void onLeftProgressChanged(float progress);
-        public void onRifhtProgressChanged(float progress);
+    public interface VideoTimelineViewDelegate {
+        void onLeftProgressChanged(float progress);
+        void onRifhtProgressChanged(float progress);
     }
 
     private void init(Context context) {

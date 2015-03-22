@@ -59,8 +59,8 @@ import java.util.Locale;
 
 public class PasscodeView extends FrameLayout {
 
-    public static interface PasscodeViewDelegate {
-        public abstract void didAcceptedPassword();
+    public interface PasscodeViewDelegate {
+        void didAcceptedPassword();
     }
 
     private class AnimatingTextView extends FrameLayout {

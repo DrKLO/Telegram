@@ -42,7 +42,7 @@ public class ActionBarMenuItem extends FrameLayoutFixed {
 
     public static class ActionBarMenuItemSearchListener {
         public void onSearchExpand() { }
-        public void onSearchCollapse() { }
+        public boolean onSearchCollapse() { return true; }
         public void onTextChanged(EditText editText) { }
         public void onSearchPressed(EditText editText) { }
     }
@@ -322,11 +322,10 @@ public class ActionBarMenuItem extends FrameLayoutFixed {
             return false;
         }
         if (searchContainer.getVisibility() == VISIBLE) {
-            searchContainer.setVisibility(GONE);
-            setVisibility(VISIBLE);
-            AndroidUtilities.hideKeyboard(searchField);
-            if (listener != null) {
-                listener.onSearchCollapse();
+            if (listener == null || listener != null && listener.onSearchCollapse()) {
+                searchContainer.setVisibility(GONE);
+                setVisibility(VISIBLE);
+                AndroidUtilities.hideKeyboard(searchField);
             }
             return false;
         } else {

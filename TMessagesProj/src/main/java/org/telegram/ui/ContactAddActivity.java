@@ -74,6 +74,9 @@ public class ContactAddActivity extends BaseFragment implements NotificationCent
     @Override
     public void onFragmentDestroy() {
         super.onFragmentDestroy();
+        if (avatarImage != null) {
+            avatarImage.setImageDrawable(null);
+        }
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.updateInterfaces);
     }
 

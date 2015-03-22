@@ -51,11 +51,11 @@ public class SmsListener extends BroadcastReceiver {
                                 NotificationCenter.getInstance().postNotificationName(NotificationCenter.didReceiveSmsCode, matcher.group(0));
                             }
                         }
-                    } catch (Exception e) {
+                    } catch (Throwable e) {
                         FileLog.e("tmessages", e);
                     }
 
-                } catch(Exception e) {
+                } catch(Throwable e) {
                     FileLog.e("tmessages", e);
                 }
             }

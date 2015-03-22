@@ -346,14 +346,14 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
         if (actionBarLayout.fragmentsStack.isEmpty()) {
             if (!UserConfig.isClientActivated() && !UserConfig.isWaitingForPasswordEnter()) {
                 actionBarLayout.addFragmentToStack(new LoginActivity());
-                drawerLayoutContainer.setAllowOpenDrawer(false);
+                drawerLayoutContainer.setAllowOpenDrawer(false, false);
             } else {
                 if (UserConfig.isWaitingForPasswordEnter()) {
                     actionBarLayout.addFragmentToStack(new AccountPasswordActivity(1));
-                    drawerLayoutContainer.setAllowOpenDrawer(false);
+                    drawerLayoutContainer.setAllowOpenDrawer(false, false);
                 } else {
                     actionBarLayout.addFragmentToStack(new MessagesActivity(null));
-                    drawerLayoutContainer.setAllowOpenDrawer(true);
+                    drawerLayoutContainer.setAllowOpenDrawer(true, false);
                 }
             }
 
@@ -415,7 +415,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
             if (actionBarLayout.fragmentsStack.size() == 1 && (actionBarLayout.fragmentsStack.get(0) instanceof LoginActivity || actionBarLayout.fragmentsStack.get(0) instanceof AccountPasswordActivity)) {
                 allowOpen = false;
             }
-            drawerLayoutContainer.setAllowOpenDrawer(allowOpen);
+            drawerLayoutContainer.setAllowOpenDrawer(allowOpen, false);
         }
 
         handleIntent(getIntent(), false, savedInstanceState != null, false);
@@ -432,7 +432,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
         }
         passcodeView.onShow();
         UserConfig.isWaitingForPasscodeEnter = true;
-        drawerLayoutContainer.setAllowOpenDrawer(false);
+        drawerLayoutContainer.setAllowOpenDrawer(false, false);
         passcodeView.setDelegate(new PasscodeView.PasscodeViewDelegate() {
             @Override
             public void didAcceptedPassword() {
@@ -441,7 +441,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                     handleIntent(passcodeSaveIntent, passcodeSaveIntentIsNew, passcodeSaveIntentIsRestore, true);
                     passcodeSaveIntent = null;
                 }
-                drawerLayoutContainer.setAllowOpenDrawer(true);
+                drawerLayoutContainer.setAllowOpenDrawer(true, false);
                 actionBarLayout.showLastFragment();
                 if (AndroidUtilities.isTablet()) {
                     layersActionBarLayout.showLastFragment();
@@ -848,10 +848,10 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                     actionBarLayout.showLastFragment();
                     rightActionBarLayout.showLastFragment();
                 }
-                drawerLayoutContainer.setAllowOpenDrawer(false);
+                drawerLayoutContainer.setAllowOpenDrawer(false, false);
             } else if (open_settings != 0) {
                 actionBarLayout.presentFragment(new SettingsActivity(), false, true, true);
-                drawerLayoutContainer.setAllowOpenDrawer(false);
+                drawerLayoutContainer.setAllowOpenDrawer(false, false);
                 if (AndroidUtilities.isTablet()) {
                     actionBarLayout.showLastFragment();
                     rightActionBarLayout.showLastFragment();
@@ -864,16 +864,16 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                     if (!UserConfig.isClientActivated() && !UserConfig.isWaitingForPasswordEnter()) {
                         if (layersActionBarLayout.fragmentsStack.isEmpty()) {
                             layersActionBarLayout.addFragmentToStack(new LoginActivity());
-                            drawerLayoutContainer.setAllowOpenDrawer(false);
+                            drawerLayoutContainer.setAllowOpenDrawer(false, false);
                         }
                     } else {
                         if (actionBarLayout.fragmentsStack.isEmpty()) {
                             if (UserConfig.isWaitingForPasswordEnter()) {
                                 layersActionBarLayout.addFragmentToStack(new AccountPasswordActivity(1));
-                                drawerLayoutContainer.setAllowOpenDrawer(false);
+                                drawerLayoutContainer.setAllowOpenDrawer(false, false);
                             } else {
                                 actionBarLayout.addFragmentToStack(new MessagesActivity(null));
-                                drawerLayoutContainer.setAllowOpenDrawer(true);
+                                drawerLayoutContainer.setAllowOpenDrawer(true, false);
                             }
                         }
                     }
@@ -881,14 +881,14 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                     if (actionBarLayout.fragmentsStack.isEmpty()) {
                         if (!UserConfig.isClientActivated() && !UserConfig.isWaitingForPasswordEnter()) {
                             actionBarLayout.addFragmentToStack(new LoginActivity());
-                            drawerLayoutContainer.setAllowOpenDrawer(false);
+                            drawerLayoutContainer.setAllowOpenDrawer(false, false);
                         } else {
                             if (UserConfig.isWaitingForPasswordEnter()) {
                                 actionBarLayout.addFragmentToStack(new AccountPasswordActivity(1));
-                                drawerLayoutContainer.setAllowOpenDrawer(false);
+                                drawerLayoutContainer.setAllowOpenDrawer(false, false);
                             } else {
                                 actionBarLayout.addFragmentToStack(new MessagesActivity(null));
-                                drawerLayoutContainer.setAllowOpenDrawer(true);
+                                drawerLayoutContainer.setAllowOpenDrawer(true, false);
                             }
                         }
                     }
@@ -955,7 +955,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                     }
                 } else {
                     actionBarLayout.presentFragment(fragment, true);
-                    SendMessagesHelper.prepareSendingVideo(videoPath, 0, 0, 0, 0, null, dialog_id);
+                    SendMessagesHelper.prepareSendingVideo(videoPath, 0, 0, 0, 0, null, dialog_id, null);
                 }
             } else {
                 actionBarLayout.presentFragment(fragment, true);
@@ -964,14 +964,14 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                     fragment.processSendingText(sendingText);
                 }
                 if (photoPathsArray != null) {
-                    SendMessagesHelper.prepareSendingPhotos(null, photoPathsArray, dialog_id);
+                    SendMessagesHelper.prepareSendingPhotos(null, photoPathsArray, dialog_id, null);
                 }
                 if (documentsPathsArray != null || documentsUrisArray != null) {
-                    SendMessagesHelper.prepareSendingDocuments(documentsPathsArray, documentsOriginalPathsArray, documentsUrisArray, documentsMimeType, dialog_id);
+                    SendMessagesHelper.prepareSendingDocuments(documentsPathsArray, documentsOriginalPathsArray, documentsUrisArray, documentsMimeType, dialog_id, null);
                 }
                 if (contactsToSend != null && !contactsToSend.isEmpty()) {
                     for (TLRPC.User user : contactsToSend) {
-                        SendMessagesHelper.getInstance().sendMessage(user, dialog_id);
+                        SendMessagesHelper.getInstance().sendMessage(user, dialog_id, null);
                     }
                 }
             }
@@ -1228,14 +1228,14 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                 rightActionBarLayout.closeLastFragment(false);
                 actionBarLayout.closeLastFragment(false);
                 layersActionBarLayout.presentFragment(new AccountPasswordActivity(1), false, true, true);
-                drawerLayoutContainer.setAllowOpenDrawer(false);
+                drawerLayoutContainer.setAllowOpenDrawer(false, false);
             } else {
                 for (int a = 0; a < actionBarLayout.fragmentsStack.size() - 1; a++) {
                     actionBarLayout.removeFragmentFromStack(actionBarLayout.fragmentsStack.get(0));
                     a--;
                 }
                 actionBarLayout.presentFragment(new AccountPasswordActivity(1), true);
-                drawerLayoutContainer.setAllowOpenDrawer(false);
+                drawerLayoutContainer.setAllowOpenDrawer(false, false);
             }
         } else if (id == NotificationCenter.screenStateChanged) {
             if (!ApplicationLoader.mainInterfacePaused) {
@@ -1449,15 +1449,15 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
     @Override
     public boolean needPresentFragment(BaseFragment fragment, boolean removeLast, boolean forceWithoutAnimation, ActionBarLayout layout) {
         if (AndroidUtilities.isTablet()) {
-            drawerLayoutContainer.setAllowOpenDrawer(!(fragment instanceof AccountPasswordActivity) && !(fragment instanceof LoginActivity) && layersActionBarLayout.getVisibility() != View.VISIBLE);
+            drawerLayoutContainer.setAllowOpenDrawer(!(fragment instanceof AccountPasswordActivity) && !(fragment instanceof LoginActivity) && layersActionBarLayout.getVisibility() != View.VISIBLE, true);
             if (fragment instanceof MessagesActivity) {
                 MessagesActivity messagesActivity = (MessagesActivity)fragment;
-                if (messagesActivity.getDelegate() == null && layout != actionBarLayout) {
+                if (messagesActivity.isMainDialogList() && layout != actionBarLayout) {
                     actionBarLayout.removeAllFragments();
                     actionBarLayout.presentFragment(fragment, removeLast, forceWithoutAnimation, false);
                     layersActionBarLayout.removeAllFragments();
                     layersActionBarLayout.setVisibility(View.GONE);
-                    drawerLayoutContainer.setAllowOpenDrawer(true);
+                    drawerLayoutContainer.setAllowOpenDrawer(true, false);
                     if (!tabletFullSize) {
                         shadowTabletSide.setVisibility(View.VISIBLE);
                         if (rightActionBarLayout.fragmentsStack.isEmpty()) {
@@ -1517,7 +1517,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                 }
             } else if (layout != layersActionBarLayout) {
                 layersActionBarLayout.setVisibility(View.VISIBLE);
-                drawerLayoutContainer.setAllowOpenDrawer(false);
+                drawerLayoutContainer.setAllowOpenDrawer(false, true);
                 if (fragment instanceof LoginActivity || fragment instanceof AccountPasswordActivity) {
                     backgroundTablet.setVisibility(View.VISIBLE);
                     shadowTabletSide.setVisibility(View.GONE);
@@ -1530,7 +1530,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
             }
             return true;
         } else {
-            drawerLayoutContainer.setAllowOpenDrawer(!(fragment instanceof LoginActivity) && !(fragment instanceof AccountPasswordActivity));
+            drawerLayoutContainer.setAllowOpenDrawer(!(fragment instanceof LoginActivity) && !(fragment instanceof AccountPasswordActivity), false);
             return true;
         }
     }
@@ -1538,15 +1538,15 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
     @Override
     public boolean needAddFragmentToStack(BaseFragment fragment, ActionBarLayout layout) {
         if (AndroidUtilities.isTablet()) {
-            drawerLayoutContainer.setAllowOpenDrawer(!(fragment instanceof LoginActivity) && !(fragment instanceof AccountPasswordActivity) && layersActionBarLayout.getVisibility() != View.VISIBLE);
+            drawerLayoutContainer.setAllowOpenDrawer(!(fragment instanceof LoginActivity) && !(fragment instanceof AccountPasswordActivity) && layersActionBarLayout.getVisibility() != View.VISIBLE, true);
             if (fragment instanceof MessagesActivity) {
                 MessagesActivity messagesActivity = (MessagesActivity)fragment;
-                if (messagesActivity.getDelegate() == null && layout != actionBarLayout) {
+                if (messagesActivity.isMainDialogList() && layout != actionBarLayout) {
                     actionBarLayout.removeAllFragments();
                     actionBarLayout.addFragmentToStack(fragment);
                     layersActionBarLayout.removeAllFragments();
                     layersActionBarLayout.setVisibility(View.GONE);
-                    drawerLayoutContainer.setAllowOpenDrawer(true);
+                    drawerLayoutContainer.setAllowOpenDrawer(true, false);
                     if (!tabletFullSize) {
                         shadowTabletSide.setVisibility(View.VISIBLE);
                         if (rightActionBarLayout.fragmentsStack.isEmpty()) {
@@ -1582,7 +1582,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                 }
             } else if (layout != layersActionBarLayout) {
                 layersActionBarLayout.setVisibility(View.VISIBLE);
-                drawerLayoutContainer.setAllowOpenDrawer(false);
+                drawerLayoutContainer.setAllowOpenDrawer(false, true);
                 if (fragment instanceof LoginActivity || fragment instanceof AccountPasswordActivity) {
                     backgroundTablet.setVisibility(View.VISIBLE);
                     shadowTabletSide.setVisibility(View.GONE);
@@ -1595,7 +1595,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
             }
             return true;
         } else {
-            drawerLayoutContainer.setAllowOpenDrawer(!(fragment instanceof LoginActivity) && !(fragment instanceof AccountPasswordActivity));
+            drawerLayoutContainer.setAllowOpenDrawer(!(fragment instanceof LoginActivity) && !(fragment instanceof AccountPasswordActivity), false);
             return true;
         }
     }

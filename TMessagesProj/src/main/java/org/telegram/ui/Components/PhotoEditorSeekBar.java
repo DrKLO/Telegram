@@ -28,8 +28,8 @@ public class PhotoEditorSeekBar extends View {
     private int maxValue;
     private PhotoEditorSeekBarDelegate delegate;
 
-    public abstract interface PhotoEditorSeekBarDelegate {
-        public void onProgressChanged();
+    public interface PhotoEditorSeekBarDelegate {
+        void onProgressChanged();
     }
 
     public PhotoEditorSeekBar(Context context) {
