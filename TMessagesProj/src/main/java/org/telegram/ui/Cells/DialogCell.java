@@ -657,7 +657,7 @@ public class DialogCell extends BaseCell implements IAniwaysTextContainer {
             }
         }
         if (dialog != null) {
-            if (currentDialogId != dialog.id || message != null && message.messageOwner.id != dialog.top_message || unreadCount != dialog.unread_count) {
+            if (currentDialogId != dialog.id || message != null && message.getId() != dialog.top_message || unreadCount != dialog.unread_count) {
                 currentDialogId = dialog.id;
                 update(0);
             }

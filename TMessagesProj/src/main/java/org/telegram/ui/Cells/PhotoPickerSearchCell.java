@@ -26,8 +26,8 @@ import com.aniways.anigram.messenger.R;
 
 public class PhotoPickerSearchCell extends LinearLayout {
 
-    public static interface PhotoPickerSearchCellDelegate {
-        public abstract void didPressedSearchButton(int index);
+    public interface PhotoPickerSearchCellDelegate {
+        void didPressedSearchButton(int index);
     }
 
     private class SearchButton extends FrameLayout {

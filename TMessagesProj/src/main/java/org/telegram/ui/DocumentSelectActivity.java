@@ -51,9 +51,9 @@ import java.util.HashMap;
 
 public class DocumentSelectActivity extends BaseFragment {
 
-    public static abstract interface DocumentSelectActivityDelegate {
-        public void didSelectFiles(DocumentSelectActivity activity, ArrayList<String> files);
-        public void startDocumentSelectActivity();
+    public interface DocumentSelectActivityDelegate {
+        void didSelectFiles(DocumentSelectActivity activity, ArrayList<String> files);
+        void startDocumentSelectActivity();
     }
 
     private ListView listView;
@@ -487,7 +487,7 @@ public class DocumentSelectActivity extends BaseFragment {
         if (getParentActivity() == null) {
             return;
         }
-        new AlertDialog.Builder(getParentActivity()).setTitle(LocaleController.getString("AppName", R.string.AppName)).setMessage(error).setPositiveButton(R.string.OK, null).show();
+        new AlertDialog.Builder(getParentActivity()).setTitle(LocaleController.getString("AppName", R.string.AppName)).setMessage(error).setPositiveButton(LocaleController.getString("OK", R.string.OK), null).show();
     }
 
     private void listRoots() {

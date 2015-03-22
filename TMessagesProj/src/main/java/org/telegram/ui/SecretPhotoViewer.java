@@ -176,7 +176,7 @@ public class SecretPhotoViewer implements NotificationCenter.NotificationCenterD
                 return;
             }
             ArrayList<Integer> markAsDeletedMessages = (ArrayList<Integer>)args[0];
-            if (markAsDeletedMessages.contains(currentMessageObject.messageOwner.id)) {
+            if (markAsDeletedMessages.contains(currentMessageObject.getId())) {
                 closePhoto();
             }
         } else if (id == NotificationCenter.didCreatedNewDeleteTask) {
@@ -188,7 +188,7 @@ public class SecretPhotoViewer implements NotificationCenter.NotificationCenterD
                 int key = mids.keyAt(i);
                 ArrayList<Integer> arr = mids.get(key);
                 for (Integer mid : arr) {
-                    if (currentMessageObject.messageOwner.id == mid) {
+                    if (currentMessageObject.getId() == mid) {
                         currentMessageObject.messageOwner.destroyTime = key;
                         secretDeleteTimer.invalidate();
                         return;

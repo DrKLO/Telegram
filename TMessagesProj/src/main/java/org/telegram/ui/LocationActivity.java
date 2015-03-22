@@ -65,8 +65,8 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
     private final static int map_list_menu_satellite = 3;
     private final static int map_list_menu_hybrid = 4;
 
-    public static interface LocationActivityDelegate {
-        public abstract void didSelectLocation(double latitude, double longitude);
+    public interface LocationActivityDelegate {
+        void didSelectLocation(double latitude, double longitude);
     }
 
     @Override
@@ -87,6 +87,9 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.closeChats);
         if (mapView != null) {
             mapView.onDestroy();
+        }
+        if (avatarImageView != null) {
+            avatarImageView.setImageDrawable(null);
         }
     }
 
@@ -268,7 +271,7 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
     private void updateUserData() {
         if (messageObject != null && avatarImageView != null) {
             int fromId = messageObject.messageOwner.from_id;
-            if (messageObject.messageOwner instanceof TLRPC.TL_messageForwarded) {
+            if (messageObject.isForwarded()) {
                 fromId = messageObject.messageOwner.fwd_from_id;
             }
             TLRPC.User user = MessagesController.getInstance().getUser(fromId);
@@ -279,6 +282,8 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
                 }
                 avatarImageView.setImage(photo, null, new AvatarDrawable(user));
                 nameTextView.setText(ContactsController.formatName(user.first_name, user.last_name));
+            } else {
+                avatarImageView.setImageDrawable(null);
             }
         }
     }

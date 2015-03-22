@@ -37,7 +37,7 @@ public class HorizontalListView extends AdapterView<ListAdapter> {
     private int mDisplayOffset = 0;
     protected Scroller mScroller;
     private GestureDetector mGesture;
-    private HashMap<Integer, LinkedList<View>> mRemovedViewQueue = new HashMap<Integer, LinkedList<View>>();
+    private HashMap<Integer, LinkedList<View>> mRemovedViewQueue = new HashMap<>();
     private OnItemSelectedListener mOnItemSelected;
     private OnItemClickListener mOnItemClicked;
     private OnItemLongClickListener mOnItemLongClicked;
@@ -253,7 +253,7 @@ public class HorizontalListView extends AdapterView<ListAdapter> {
             int type = (Integer) child.getTag();
             LinkedList<View> list = mRemovedViewQueue.get(type);
             if (list == null) {
-                list = new LinkedList<View>();
+                list = new LinkedList<>();
                 mRemovedViewQueue.put(type, list);
             }
             list.add(child);
@@ -268,7 +268,7 @@ public class HorizontalListView extends AdapterView<ListAdapter> {
             int type = (Integer) child.getTag();
             LinkedList<View> list = mRemovedViewQueue.get(type);
             if (list == null) {
-                list = new LinkedList<View>();
+                list = new LinkedList<>();
                 mRemovedViewQueue.put(type, list);
             }
             list.add(child);

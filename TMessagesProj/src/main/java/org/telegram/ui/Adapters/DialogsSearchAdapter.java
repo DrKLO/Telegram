@@ -55,7 +55,7 @@ public class DialogsSearchAdapter extends BaseContactsSearchAdapter {
     private long reqId = 0;
     private int lastReqId;
     private MessagesActivitySearchAdapterDelegate delegate;
-    private boolean needMessagesSearch;
+    private int needMessagesSearch;
     private boolean messagesSearchEndReached;
     private String lastMessagesSearchString;
     private int lastSearchId = 0;
@@ -66,11 +66,11 @@ public class DialogsSearchAdapter extends BaseContactsSearchAdapter {
         public CharSequence name;
     }
 
-    public static interface MessagesActivitySearchAdapterDelegate {
-        public abstract void searchStateChanged(boolean searching);
+    public interface MessagesActivitySearchAdapterDelegate {
+        void searchStateChanged(boolean searching);
     }
 
-    public DialogsSearchAdapter(Context context, boolean messagesSearch) {
+    public DialogsSearchAdapter(Context context, int messagesSearch) {
         mContext = context;
         needMessagesSearch = messagesSearch;
     }
@@ -88,7 +88,7 @@ public class DialogsSearchAdapter extends BaseContactsSearchAdapter {
     }
 
     private void searchMessagesInternal(final String query) {
-        if (!needMessagesSearch) {
+        if (needMessagesSearch == 0) {
             return;
         }
         if (reqId != 0) {
@@ -110,7 +110,7 @@ public class DialogsSearchAdapter extends BaseContactsSearchAdapter {
         req.peer = new TLRPC.TL_inputPeerEmpty();
         req.q = query;
         if (lastMessagesSearchString != null && query.equals(lastMessagesSearchString) && !searchResultMessages.isEmpty()) {
-            req.max_id = searchResultMessages.get(searchResultMessages.size() - 1).messageOwner.id;
+            req.max_id = searchResultMessages.get(searchResultMessages.size() - 1).getId();
         }
         lastMessagesSearchString = query;
         req.filter = new TLRPC.TL_inputMessagesFilterEmpty();
@@ -151,6 +151,9 @@ public class DialogsSearchAdapter extends BaseContactsSearchAdapter {
     }
 
     private void searchDialogsInternal(final String query, final boolean serverOnly, final int searchId) {
+        if (needMessagesSearch == 2) {
+            return;
+        }
         MessagesStorage.getInstance().getStorageQueue().postRunnable(new Runnable() {
             @Override
             public void run() {
@@ -178,7 +181,7 @@ public class DialogsSearchAdapter extends BaseContactsSearchAdapter {
                     int resultCount = 0;
 
                     HashMap<Long, DialogSearchResult> dialogsResult = new HashMap<>();
-                    SQLiteCursor cursor = MessagesStorage.getInstance().getDatabase().queryFinalized(String.format(Locale.US, "SELECT did, date FROM dialogs ORDER BY date DESC LIMIT 200"));
+                    SQLiteCursor cursor = MessagesStorage.getInstance().getDatabase().queryFinalized("SELECT did, date FROM dialogs ORDER BY date DESC LIMIT 200");
                     while (cursor.next()) {
                         long id = cursor.longValue(0);
                         DialogSearchResult dialogSearchResult = new DialogSearchResult();
@@ -488,8 +491,10 @@ public class DialogsSearchAdapter extends BaseContactsSearchAdapter {
         if (query == null || query.length() == 0) {
             searchResult.clear();
             searchResultNames.clear();
+            if (needMessagesSearch != 2) {
+                queryServerSearch(null);
+            }
             searchMessagesInternal(null);
-            queryServerSearch(null);
             notifyDataSetChanged();
         } else {
             final int searchId = ++lastSearchId;
@@ -507,7 +512,9 @@ public class DialogsSearchAdapter extends BaseContactsSearchAdapter {
                     AndroidUtilities.runOnUIThread(new Runnable() {
                         @Override
                         public void run() {
-                            queryServerSearch(query);
+                            if (needMessagesSearch != 2) {
+                                queryServerSearch(query);
+                            }
                             searchMessagesInternal(query);
                         }
                     });
