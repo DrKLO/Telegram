@@ -106,7 +106,7 @@ android {
         targetSdkVersion 22
         renderscriptTargetApi 22
         renderscriptSupportModeEnabled true
-        versionCode 255
-        versionName "1.7.5"
+        versionCode 256
+        versionName "1.7.6"
     }
 }
