@@ -611,11 +611,26 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                                     }
                                 }
                             } else if (scheme.equals("tg")) {
-                                String url = data.toString().toLowerCase();
-                                if (url.startsWith("tg:resolve") || url.startsWith("tg://resolve")) {
-                                    url = url.replace("tg:resolve", "tg://telegram.org").replace("tg://resolve", "tg://telegram.org");
-                                    data = Uri.parse(url);
-                                    username = data.getQueryParameter("domain");
+                                String url = data.toString(); // toLowerCase is a bad idea
+                                if(url.length() < 4) // Invalid url no matter what
+                                    return;
+                                // Normalize url to tg://
+                                if(url.indexOf(":") == 2 && !url.substring(3, 5).equals("//"))
+                                   url = url.replaceFirst(":", "://");
+                                // Get the part after tg:// and before query
+                                data = Uri.parse(url);
+                                switch(data.getHost().toLowerCase()) {
+                                    case "resolve": // Open a contact
+                                        username = data.getQueryParameter("domain");
+                                        break;
+                                    case "msg": // Send a message
+                                    case "message":
+                                    case "send":
+                                        username = data.getQueryParameter("domain");
+                                        sendingText = data.getQueryParameter("text");
+                                        break;
+                                    default:
+                                        return;
                                 }
                             }
                         }
@@ -650,6 +665,9 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                                                     ChatActivity fragment = new ChatActivity(args);
                                                     NotificationCenter.getInstance().postNotificationName(NotificationCenter.closeChats);
                                                     actionBarLayout.presentFragment(fragment, false, true, true);
+                                                    if (sendingText != null) {
+                                                        fragment.setFieldText(sendingText);
+                                                    }
                                                 }
                                             }
                                         }

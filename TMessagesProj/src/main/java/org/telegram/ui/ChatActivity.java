@@ -2060,6 +2060,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     public boolean processSendingText(String text) {
         return chatActivityEnterView.processSendingText(text);
     }
+    public void setFieldText(String text) {
+        chatActivityEnterView.setFieldText(text);
+    }
 
     @SuppressWarnings("unchecked")
     @Override
