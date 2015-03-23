@@ -65,7 +65,7 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
         public abstract void onWindowSizeChanged(int size);
     }
 
-    private EditText messsageEditText;
+    private EditText messageEditText;
     private ImageButton sendButton;
     private PopupWindow emojiPopup;
     private ImageView emojiButton;
@@ -141,15 +141,15 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
         sizeNotifierRelativeLayout = (SizeNotifierRelativeLayout) containerView.findViewById(R.id.chat_layout);
         sizeNotifierRelativeLayout.delegate = this;
 
-        messsageEditText = (EditText) containerView.findViewById(R.id.chat_text_edit);
-        messsageEditText.setHint(LocaleController.getString("TypeMessage", R.string.TypeMessage));
+        messageEditText = (EditText) containerView.findViewById(R.id.chat_text_edit);
+        messageEditText.setHint(LocaleController.getString("TypeMessage", R.string.TypeMessage));
 
         attachButton = (FrameLayout) containerView.findViewById(R.id.chat_attach_button);
         if (attachButton != null) {
             ViewProxy.setPivotX(attachButton, AndroidUtilities.dp(48));
-            FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) messsageEditText.getLayoutParams();
+            FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) messageEditText.getLayoutParams();
             layoutParams.rightMargin = AndroidUtilities.dp(50);
-            messsageEditText.setLayoutParams(layoutParams);
+            messageEditText.setLayoutParams(layoutParams);
         }
 
         sendButton = (ImageButton) containerView.findViewById(R.id.chat_send_button);
@@ -173,7 +173,7 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
             }
         });
 
-        messsageEditText.setOnKeyListener(new View.OnKeyListener() {
+        messageEditText.setOnKeyListener(new View.OnKeyListener() {
             @Override
             public boolean onKey(View view, int i, KeyEvent keyEvent) {
                 if (i == 4 && !keyboardVisible && emojiPopup != null && emojiPopup.isShowing()) {
@@ -189,7 +189,7 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
             }
         });
 
-        messsageEditText.setOnClickListener(new View.OnClickListener() {
+        messageEditText.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 if (emojiPopup != null && emojiPopup.isShowing()) {
@@ -198,7 +198,7 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
             }
         });
 
-        messsageEditText.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+        messageEditText.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             @Override
             public boolean onEditorAction(TextView textView, int i, KeyEvent keyEvent) {
                 if (i == EditorInfo.IME_ACTION_SEND) {
@@ -279,7 +279,7 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
             }
         });
 
-        messsageEditText.addTextChangedListener(new TextWatcher() {
+        messageEditText.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence charSequence, int i, int i2, int i3) {
 
@@ -320,7 +320,8 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
                 int j = arrayOfImageSpan.length;
                 while (true) {
                     if (i >= j) {
-                        Emoji.replaceEmoji(editable, messsageEditText.getPaint().getFontMetricsInt(), AndroidUtilities.dp(20));
+                        Emoji.replaceEmoji(editable, messageEditText.getPaint().getFontMetricsInt(), AndroidUtilities.dp(20))
+                        ;
                         return;
                     }
                     editable.removeSpan(arrayOfImageSpan[i]);
@@ -333,8 +334,8 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
     }
 
     private void sendMessage() {
-        if (processSendingText(messsageEditText.getText().toString())) {
-            messsageEditText.setText("");
+        if (processSendingText(messageEditText.getText().toString())) {
+            messageEditText.setText("");
             lastTypingTimeSend = 0;
             if (delegate != null) {
                 delegate.onMessageSend();
@@ -370,7 +371,7 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
     }
 
     private void checkSendButton(final boolean animated) {
-        String message = getTrimmedString(messsageEditText.getText().toString());
+        String message = getTrimmedString(messageEditText.getText().toString());
         if (message.length() > 0) {
             if (audioSendButton.getVisibility() == View.VISIBLE) {
                 if (animated) {
@@ -404,10 +405,10 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
                         });
                         runningAnimation2.start();
 
-                        if (messsageEditText != null) {
-                            FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) messsageEditText.getLayoutParams();
+                        if (messageEditText != null) {
+                            FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) messageEditText.getLayoutParams();
                             layoutParams.rightMargin = AndroidUtilities.dp(0);
-                            messsageEditText.setLayoutParams(layoutParams);
+                            messageEditText.setLayoutParams(layoutParams);
                         }
 
                         delegate.onAttachButtonHidden();
@@ -454,9 +455,9 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
                         attachButton.setVisibility(View.GONE);
                         attachButton.clearAnimation();
 
-                        FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) messsageEditText.getLayoutParams();
+                        FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) messageEditText.getLayoutParams();
                         layoutParams.rightMargin = AndroidUtilities.dp(0);
-                        messsageEditText.setLayoutParams(layoutParams);
+                        messageEditText.setLayoutParams(layoutParams);
                     }
                 }
             }
@@ -485,10 +486,10 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
                     runningAnimation2.setDuration(100);
                     runningAnimation2.start();
 
-                    if (messsageEditText != null) {
-                        FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) messsageEditText.getLayoutParams();
+                    if (messageEditText != null) {
+                        FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) messageEditText.getLayoutParams();
                         layoutParams.rightMargin = AndroidUtilities.dp(50);
-                        messsageEditText.setLayoutParams(layoutParams);
+                        messageEditText.setLayoutParams(layoutParams);
                     }
 
                     delegate.onAttachButtonShow();
@@ -533,9 +534,9 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
                 audioSendButton.setVisibility(View.VISIBLE);
                 if (attachButton != null) {
                     attachButton.setVisibility(View.VISIBLE);
-                    FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) messsageEditText.getLayoutParams();
+                    FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) messageEditText.getLayoutParams();
                     layoutParams.rightMargin = AndroidUtilities.dp(50);
-                    messsageEditText.setLayoutParams(layoutParams);
+                    messageEditText.setLayoutParams(layoutParams);
                 }
             }
         }
@@ -626,19 +627,19 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
                 emojiView = new EmojiView(parentActivity);
                 emojiView.setListener(new EmojiView.Listener() {
                     public void onBackspace() {
-                        messsageEditText.dispatchKeyEvent(new KeyEvent(0, 67));
+                        messageEditText.dispatchKeyEvent(new KeyEvent(0, 67));
                     }
 
                     public void onEmojiSelected(String symbol) {
-                        int i = messsageEditText.getSelectionEnd();
+                        int i = messageEditText.getSelectionEnd();
                         if (i < 0) {
                             i = 0;
                         }
                         try {
-                            CharSequence localCharSequence = Emoji.replaceEmoji(symbol, messsageEditText.getPaint().getFontMetricsInt(), AndroidUtilities.dp(20));
-                            messsageEditText.setText(messsageEditText.getText().insert(i, localCharSequence));
+                            CharSequence localCharSequence = Emoji.replaceEmoji(symbol, messageEditText.getPaint().getFontMetricsInt(), AndroidUtilities.dp(20));
+                            messageEditText.setText(messageEditText.getText().insert(i, localCharSequence));
                             int j = i + localCharSequence.length();
-                            messsageEditText.setSelection(j, j);
+                            messageEditText.setSelection(j, j);
                         } catch (Exception e) {
                             FileLog.e("tmessages", e);
                         }
@@ -730,27 +731,27 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
     }
 
     public void setFieldText(String text) {
-        if (messsageEditText == null) {
+        if (messageEditText == null) {
             return;
         }
         ignoreTextChange = true;
-        messsageEditText.setText(text);
-        messsageEditText.setSelection(messsageEditText.getText().length());
+        messageEditText.setText(text);
+        messageEditText.setSelection(messageEditText.getText().length());
         ignoreTextChange = false;
     }
 
     public void setFieldFocused(boolean focus) {
-        if (messsageEditText == null) {
+        if (messageEditText == null) {
             return;
         }
         if (focus) {
-            if (!messsageEditText.isFocused()) {
-                messsageEditText.postDelayed(new Runnable() {
+            if (!messageEditText.isFocused()) {
+                messageEditText.postDelayed(new Runnable() {
                     @Override
                     public void run() {
-                        if (messsageEditText != null) {
+                        if (messageEditText != null) {
                             try {
-                                messsageEditText.requestFocus();
+                                messageEditText.requestFocus();
                             } catch (Exception e) {
                                 FileLog.e("tmessages", e);
                             }
@@ -759,19 +760,19 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
                 }, 600);
             }
         } else {
-            if (messsageEditText.isFocused() && !keyboardVisible) {
-                messsageEditText.clearFocus();
+            if (messageEditText.isFocused() && !keyboardVisible) {
+                messageEditText.clearFocus();
             }
         }
     }
 
     public boolean hasText() {
-        return messsageEditText != null && messsageEditText.length() > 0;
+        return messageEditText != null && messageEditText.length() > 0;
     }
 
     public String getFieldText() {
-        if (messsageEditText != null && messsageEditText.length() > 0) {
-            return messsageEditText.getText().toString();
+        if (messageEditText != null && messageEditText.length() > 0) {
+            return messageEditText.getText().toString();
         }
         return null;
     }
@@ -873,8 +874,8 @@ public class ChatActivityEnterView implements NotificationCenter.NotificationCen
                 }
             }
         } else if (id == NotificationCenter.closeChats) {
-            if (messsageEditText != null && messsageEditText.isFocused()) {
-                AndroidUtilities.hideKeyboard(messsageEditText);
+            if (messageEditText != null && messageEditText.isFocused()) {
+                AndroidUtilities.hideKeyboard(messageEditText);
             }
         } else if (id == NotificationCenter.recordStartError || id == NotificationCenter.recordStopped) {
             if (recordingAudio) {
