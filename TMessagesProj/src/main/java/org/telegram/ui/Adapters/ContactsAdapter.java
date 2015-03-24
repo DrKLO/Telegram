@@ -8,20 +8,19 @@
 
 package org.telegram.ui.Adapters;
 
-import android.app.Activity;
 import android.content.Context;
-import android.content.SharedPreferences;
+import android.graphics.PorterDuff;
+import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.view.View;
 import android.view.ViewGroup;
 
 import org.telegram.android.AndroidUtilities;
-import org.telegram.android.LocaleController;
-import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.TLRPC;
 import org.telegram.android.ContactsController;
+import org.telegram.android.LocaleController;
 import org.telegram.android.MessagesController;
 import org.telegram.messenger.R;
+import org.telegram.messenger.TLRPC;
 import org.telegram.ui.AnimationCompat.ViewProxy;
 import org.telegram.ui.Cells.DividerCell;
 import org.telegram.ui.Cells.GreySectionCell;
@@ -31,7 +30,6 @@ import org.telegram.ui.Cells.UserCell;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Locale;
 
 public class ContactsAdapter extends BaseSectionsAdapter {
 
@@ -176,6 +174,7 @@ public class ContactsAdapter extends BaseSectionsAdapter {
                 ((LetterSectionCell) convertView).setLetter("");
             }
         }
+        ((LetterSectionCell) convertView).setLetterColor(AndroidUtilities.getIntDef("contactsNameColor", 0xff808080));
         return convertView;
     }
 
@@ -186,6 +185,7 @@ public class ContactsAdapter extends BaseSectionsAdapter {
             if (convertView == null) {
                 convertView = new DividerCell(mContext);
                 convertView.setPadding(AndroidUtilities.dp(LocaleController.isRTL ? 28 : 72), 0, AndroidUtilities.dp(LocaleController.isRTL ? 72 : 28), 0);
+                convertView.setTag("contactsRowColor");
             }
         } else if (type == 3) {
             if (convertView == null) {
@@ -193,6 +193,7 @@ public class ContactsAdapter extends BaseSectionsAdapter {
                 ((GreySectionCell) convertView).setText(LocaleController.getString("Contacts", R.string.Contacts).toUpperCase());
                 //((GreySectionCell) convertView).setText(String.format(Locale.US, " %d " + LocaleController.getString("Contacts", R.string.Contacts).toUpperCase(), arr0.size()));
                 ((GreySectionCell) convertView).setBackgroundColor(AndroidUtilities.getIntDef("contactsRowColor", 0xffffffff));
+                ((GreySectionCell) convertView).setTextColor(AndroidUtilities.getIntDef("contactsNameColor", 0xff737373));
             }
         } else if (type == 2) {
             if (convertView == null) {
@@ -201,14 +202,26 @@ public class ContactsAdapter extends BaseSectionsAdapter {
             TextCell actionCell = (TextCell) convertView;
             actionCell.setTextColor(AndroidUtilities.getIntDef("contactsNameColor", 0xff000000));
             if (needPhonebook) {
-                actionCell.setTextAndIcon(LocaleController.getString("InviteFriends", R.string.InviteFriends), R.drawable.menu_invite);
+                //actionCell.setTextAndIcon(LocaleController.getString("InviteFriends", R.string.InviteFriends), R.drawable.menu_invite);
+                Drawable invite = mContext.getResources().getDrawable(R.drawable.menu_invite);
+                invite.setColorFilter(AndroidUtilities.getIntDef("contactsNameColor", 0xff737373), PorterDuff.Mode.SRC_IN);
+                actionCell.setTextAndIcon(LocaleController.getString("InviteFriends", R.string.InviteFriends), invite);
             } else {
                 if (position == 0) {
-                    actionCell.setTextAndIcon(LocaleController.getString("NewGroup", R.string.NewGroup), R.drawable.menu_newgroup);
+                    //actionCell.setTextAndIcon(LocaleController.getString("NewGroup", R.string.NewGroup), R.drawable.menu_newgroup);
+                    Drawable newGroup = mContext.getResources().getDrawable(R.drawable.menu_newgroup);
+                    newGroup.setColorFilter(AndroidUtilities.getIntDef("contactsNameColor", 0xff737373), PorterDuff.Mode.SRC_IN);
+                    actionCell.setTextAndIcon(LocaleController.getString("NewGroup", R.string.NewGroup), newGroup);
                 } else if (position == 1) {
-                    actionCell.setTextAndIcon(LocaleController.getString("NewSecretChat", R.string.NewSecretChat), R.drawable.menu_secret);
+                    //actionCell.setTextAndIcon(LocaleController.getString("NewSecretChat", R.string.NewSecretChat), R.drawable.menu_secret);
+                    Drawable secret = mContext.getResources().getDrawable(R.drawable.menu_secret);
+                    secret.setColorFilter(AndroidUtilities.getIntDef("contactsNameColor", 0xff737373), PorterDuff.Mode.SRC_IN);
+                    actionCell.setTextAndIcon(LocaleController.getString("NewSecretChat", R.string.NewSecretChat), secret);
                 } else if (position == 2) {
-                    actionCell.setTextAndIcon(LocaleController.getString("NewBroadcastList", R.string.NewBroadcastList), R.drawable.menu_broadcast);
+                    //actionCell.setTextAndIcon(LocaleController.getString("NewBroadcastList", R.string.NewBroadcastList), R.drawable.menu_broadcast);
+                    Drawable broadcast = mContext.getResources().getDrawable(R.drawable.menu_broadcast);
+                    broadcast.setColorFilter(AndroidUtilities.getIntDef("contactsNameColor", 0xff737373), PorterDuff.Mode.SRC_IN);
+                    actionCell.setTextAndIcon(LocaleController.getString("NewBroadcastList", R.string.NewBroadcastList), broadcast);
                 }
             }
         } else if (type == 1) {
@@ -231,6 +244,7 @@ public class ContactsAdapter extends BaseSectionsAdapter {
                 //((UserCell) convertView).setStatusColors(0xffa8a8a8, 0xff3b84c0);
                 ((UserCell) convertView).setStatusColors(AndroidUtilities.getIntDef("contactsStatusColor", 0xffa8a8a8), AndroidUtilities.getIntDef("contactsOnlineColor", AndroidUtilities.getIntDarkerColor("themeColor",0x15)));
                 ((UserCell) convertView).setNameColor(AndroidUtilities.getIntDef("contactsNameColor", 0xff000000));
+                ((UserCell) convertView).setAvatarRadius(AndroidUtilities.getIntDef("contactsAvatarRadius", 32));
             }
 
             ArrayList<TLRPC.TL_contact> arr = ContactsController.getInstance().usersSectionsDict.get(ContactsController.getInstance().sortedUsersSectionsArray.get(section - (onlyUsers ? 0 : 1)));

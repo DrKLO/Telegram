@@ -39,12 +39,12 @@ import java.util.ArrayList;
 
 public class ActionBarLayout extends FrameLayout {
 
-    public static interface ActionBarLayoutDelegate {
-        public abstract boolean onPreIme();
-        public abstract boolean needPresentFragment(BaseFragment fragment, boolean removeLast, boolean forceWithoutAnimation, ActionBarLayout layout);
-        public abstract boolean needAddFragmentToStack(BaseFragment fragment, ActionBarLayout layout);
-        public abstract boolean needCloseLastFragment(ActionBarLayout layout);
-        public abstract void onRebuildAllFragments(ActionBarLayout layout);
+    public interface ActionBarLayoutDelegate {
+        boolean onPreIme();
+        boolean needPresentFragment(BaseFragment fragment, boolean removeLast, boolean forceWithoutAnimation, ActionBarLayout layout);
+        boolean needAddFragmentToStack(BaseFragment fragment, ActionBarLayout layout);
+        boolean needCloseLastFragment(ActionBarLayout layout);
+        void onRebuildAllFragments(ActionBarLayout layout);
     }
 
     public class LinearLayoutContainer extends LinearLayout {
@@ -809,7 +809,7 @@ public class ActionBarLayout extends FrameLayout {
                             backgroundView.setVisibility(GONE);
                         }
                         if (drawerLayoutContainer != null) {
-                            drawerLayoutContainer.setAllowOpenDrawer(true);
+                            drawerLayoutContainer.setAllowOpenDrawer(true, false);
                         }
                     }
                 };

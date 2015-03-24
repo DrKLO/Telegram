@@ -158,9 +158,33 @@ public class LocaleController {
                 "tr", "vi", "wo", "yo", "zh", "bo", "dz", "id", "jv", "ka", "km", "kn", "ms", "th"}, new PluralRules_None());
 
         LocaleInfo localeInfo = new LocaleInfo();
+        localeInfo.name = "العربية";
+        localeInfo.nameEnglish = "Arabic";
+        localeInfo.shortName = "ar";
+        localeInfo.pathToFile = null;
+        sortedLanguages.add(localeInfo);
+        languagesDict.put(localeInfo.shortName, localeInfo);
+
+        localeInfo = new LocaleInfo();
         localeInfo.name = "Català";
         localeInfo.nameEnglish = "Catalan";
         localeInfo.shortName = "ca";
+        localeInfo.pathToFile = null;
+        sortedLanguages.add(localeInfo);
+        languagesDict.put(localeInfo.shortName, localeInfo);
+
+        localeInfo = new LocaleInfo();
+        localeInfo.name = "正體中文（台灣）";
+        localeInfo.nameEnglish = "Chinese Traditional (Taiwan)";
+        localeInfo.shortName = "zh_TW";
+        localeInfo.pathToFile = null;
+        sortedLanguages.add(localeInfo);
+        languagesDict.put(localeInfo.shortName, localeInfo);
+
+        localeInfo = new LocaleInfo();
+        localeInfo.name = "Hrvatski";
+        localeInfo.nameEnglish = "Croatian";
+        localeInfo.shortName = "hr";
         localeInfo.pathToFile = null;
         sortedLanguages.add(localeInfo);
         languagesDict.put(localeInfo.shortName, localeInfo);
@@ -182,16 +206,16 @@ public class LocaleController {
         languagesDict.put(localeInfo.shortName, localeInfo);
 
         localeInfo = new LocaleInfo();
-        localeInfo.name = "Français";
-        localeInfo.nameEnglish = "French";
-        localeInfo.shortName = "fr";
+        localeInfo.name = "Español";
+        localeInfo.nameEnglish = "Spanish";
+        localeInfo.shortName = "es";
         sortedLanguages.add(localeInfo);
         languagesDict.put(localeInfo.shortName, localeInfo);
 
         localeInfo = new LocaleInfo();
-        localeInfo.name = "Español";
-        localeInfo.nameEnglish = "Spanish";
-        localeInfo.shortName = "es";
+        localeInfo.name = "Français";
+        localeInfo.nameEnglish = "French";
+        localeInfo.shortName = "fr";
         sortedLanguages.add(localeInfo);
         languagesDict.put(localeInfo.shortName, localeInfo);
 
@@ -219,9 +243,9 @@ public class LocaleController {
         languagesDict.put(localeInfo.shortName, localeInfo);
 
         localeInfo = new LocaleInfo();
-        localeInfo.name = "العربية";
-        localeInfo.nameEnglish = "Arabic";
-        localeInfo.shortName = "ar";
+        localeInfo.name = "Polski";
+        localeInfo.nameEnglish = "Polish";
+        localeInfo.shortName = "pl";
         localeInfo.pathToFile = null;
         sortedLanguages.add(localeInfo);
         languagesDict.put(localeInfo.shortName, localeInfo);
@@ -243,7 +267,7 @@ public class LocaleController {
         languagesDict.put(localeInfo.shortName, localeInfo);
 
         localeInfo = new LocaleInfo();
-        localeInfo.name = "русский";
+        localeInfo.name = "Русский";
         localeInfo.nameEnglish = "Russian";
         localeInfo.shortName = "ru";
         sortedLanguages.add(localeInfo);

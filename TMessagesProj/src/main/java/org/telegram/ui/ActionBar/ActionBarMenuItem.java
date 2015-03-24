@@ -44,7 +44,7 @@ public class ActionBarMenuItem extends FrameLayoutFixed {
 
     public static class ActionBarMenuItemSearchListener {
         public void onSearchExpand() { }
-        public void onSearchCollapse() { }
+        public boolean onSearchCollapse() { return true; }
         public void onTextChanged(EditText editText) { }
         public void onSearchPressed(EditText editText) { }
     }
@@ -324,11 +324,10 @@ public class ActionBarMenuItem extends FrameLayoutFixed {
             return false;
         }
         if (searchContainer.getVisibility() == VISIBLE) {
+            if (listener == null || listener != null && listener.onSearchCollapse()) {
             searchContainer.setVisibility(GONE);
             setVisibility(VISIBLE);
             AndroidUtilities.hideKeyboard(searchField);
-            if (listener != null) {
-                listener.onSearchCollapse();
             }
             return false;
         } else {
@@ -352,6 +351,10 @@ public class ActionBarMenuItem extends FrameLayoutFixed {
 
     public void setIcon(int resId) {
         iconView.setImageResource(resId);
+    }
+
+    public void setIcon(Drawable drawable) {
+        iconView.setImageDrawable(drawable);
     }
 
     public EditText getSearchField() {

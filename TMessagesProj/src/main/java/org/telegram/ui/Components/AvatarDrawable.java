@@ -9,6 +9,7 @@
 package org.telegram.ui.Components;
 
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.ColorFilter;
 import android.graphics.Paint;
 import android.graphics.Rect;
@@ -32,15 +33,36 @@ public class AvatarDrawable extends Drawable {
 
     private static Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private static TextPaint namePaint;
+    private static TextPaint namePaintSmall;
     private static int[] arrColors = {0xffe56555, 0xfff28c48, 0xffeec764, 0xff76c84d, 0xff5fbed5, 0xff549cdd, 0xff8e85ee, 0xfff2749a};
     private static int[] arrColorsProfiles = {0xffd86f65, 0xfff69d61, 0xfffabb3c, 0xff67b35d, 0xff56a2bb, 0xff5c98cd, 0xff8c79d2, 0xfff37fa6};
     private static int[] arrColorsProfilesBack = {0xffca6056, 0xfff18944, 0xff7d6ac4, 0xff56a14c, 0xff4492ac, 0xff4c84b6, 0xff7d6ac4, 0xff4c84b6};
     private static int[] arrColorsProfilesText = {0xfff9cbc5, 0xfffdddc8, 0xffcdc4ed, 0xffc0edba, 0xffb8e2f0, 0xffb3d7f7, 0xffcdc4ed, 0xffb3d7f7};
-    private static int[] arrColorsNames = {0xffca5650, 0xffd87b29, 0xff4e92cc, 0xff50b232, 0xff42b1a8, 0xff4e92cc, 0xff4e92cc, 0xff4e92cc};
+    //private static int[] arrColorsNames = {0xffca5650, 0xffd87b29, 0xff4e92cc, 0xff50b232, 0xff42b1a8, 0xff4e92cc, 0xff4e92cc, 0xff4e92cc};
+    private static int[] arrColorsNames = {
+            0xFFF44336, //RED
+            0xFFE91E63, //PINK
+            0xFF9C27B0, //PURPLE
+            0xFF673AB7, //DEEP PURPLE
+            0xFF3F51B5, //INDIGO
+            0xFF2196F3, //BLUE
+            0xFF03A9F4, //LIGHT BLUE
+            0xFF00BCD4, //CYAN
+            0xFF009688, //TEAL
+            0xFF4CAF50, //GREEN
+            0xFF8BC34A, //LIGHT GREEN
+            0xFFCDDC39, //LIME
+            0xFFFFEB3B, //YELLOW
+            0xFFFFC107, //AMBER
+            0xFFFF9800, //ORANGE
+            0xFFFF5722, //DEEP ORANGE
+            0xFF795548, //BROWN
+            0xFF9E9E9E, //GREY
+            0xFF607D8B  //BLUE GREY
+    };
+
     private static int[] arrColorsButtons = {R.drawable.bar_selector_red, R.drawable.bar_selector_orange, R.drawable.bar_selector_violet,
             R.drawable.bar_selector_green, R.drawable.bar_selector_cyan, R.drawable.bar_selector_blue, R.drawable.bar_selector_violet, R.drawable.bar_selector_blue};
-
-
 
     private static Drawable broadcastDrawable;
     private static Drawable photoDrawable;
@@ -53,7 +75,8 @@ public class AvatarDrawable extends Drawable {
     private boolean isProfile;
     private boolean drawBrodcast;
     private boolean drawPhoto;
-    //private int radius;
+    private boolean smallStyle;
+    private int radius;
 
     public AvatarDrawable() {
         super();
@@ -63,9 +86,13 @@ public class AvatarDrawable extends Drawable {
             namePaint.setColor(0xffffffff);
             namePaint.setTextSize(AndroidUtilities.dp(20));
 
+            namePaintSmall = new TextPaint(Paint.ANTI_ALIAS_FLAG);
+            namePaintSmall.setColor(0xffffffff);
+            namePaintSmall.setTextSize(AndroidUtilities.dp(14));
+
             broadcastDrawable = ApplicationLoader.applicationContext.getResources().getDrawable(R.drawable.broadcast_w);
         }
-        //radius = 32;
+        radius = 32;
     }
 
     public AvatarDrawable(TLRPC.User user) {
@@ -92,8 +119,13 @@ public class AvatarDrawable extends Drawable {
         }
     }
 
+    public void setSmallStyle(boolean value) {
+        smallStyle = value;
+    }
+
     public static int getColorIndex(int id) {
-        if (id >= 0 && id < 8) {
+        //To avoid too similar member colors
+        if (id >= 0 && id < arrColors.length){//8) {
             return id;
         }
         try {
@@ -119,6 +151,30 @@ public class AvatarDrawable extends Drawable {
         return id % arrColors.length;
     }
 
+    public static int getColorNameIndex(int id) {
+        try {
+            String str;
+            if (id >= 0) {
+                str = String.format(Locale.US, "%d%d", id, UserConfig.getClientUserId());
+            } else {
+                str = String.format(Locale.US, "%d", id);
+            }
+            if (str.length() > 15) {
+                str = str.substring(0, 15);
+            }
+            java.security.MessageDigest md = java.security.MessageDigest.getInstance("MD5");
+            byte[] digest = md.digest(str.getBytes());
+            int b = digest[Math.abs(id % 16)];
+            if (b < 0) {
+                b += 256;
+            }
+            return Math.abs(b) % arrColorsNames.length;
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
+        return id % arrColorsNames.length;
+    }
+
     public static int getColorForId(int id) {
         return arrColors[getColorIndex(id)];
     }
@@ -138,9 +194,12 @@ public class AvatarDrawable extends Drawable {
     public static int getProfileBackColorForId(int id) {
         return arrColorsProfilesBack[getColorIndex(id)];
     }
-
+    /*
     public static int getNameColorForId(int id) {
         return arrColorsNames[getColorIndex(id)];
+    }*/
+    public static int getNameColorForId(int id) {
+        return arrColorsNames[getColorNameIndex(id)];
     }
 
     public void setInfo(TLRPC.User user) {
@@ -158,7 +217,7 @@ public class AvatarDrawable extends Drawable {
     public void setColor(int value) {
         color = value;
     }
-/*
+
     public void setRadius(int value) {
         radius = value;
     }
@@ -166,7 +225,7 @@ public class AvatarDrawable extends Drawable {
     public int getRadius() {
         return radius;
     }
-*/
+
     public void setInfo(int id, String firstName, String lastName, boolean isBroadcast) {
         if (isProfile) {
             color = arrColorsProfiles[getColorIndex(id)];
@@ -216,7 +275,7 @@ public class AvatarDrawable extends Drawable {
         if (text.length() > 0) {
             text = text.toUpperCase();
             try {
-                textLayout = new StaticLayout(text, namePaint, AndroidUtilities.dp(100), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+                textLayout = new StaticLayout(text, (smallStyle ? namePaintSmall : namePaint), AndroidUtilities.dp(100), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
                 if (textLayout.getLineCount() > 0) {
                     textLeft = textLayout.getLineLeft(0);
                     textWidth = textLayout.getLineWidth(0);
@@ -247,11 +306,12 @@ public class AvatarDrawable extends Drawable {
         paint.setColor(color);
         canvas.save();
         canvas.translate(bounds.left, bounds.top);
-        canvas.drawCircle(size / 2, size / 2, size / 2, paint);
-        /*Rect rect = new Rect(0, 0, size, size);
+        //canvas.drawCircle(size / 2, size / 2, size / 2, paint);
+
+        Rect rect = new Rect(0, 0, size, size);
         RectF rectF = new RectF(rect);
         int r = getRadius();
-        canvas.drawRoundRect( rectF, AndroidUtilities.dp(r), AndroidUtilities.dp(r), paint);*/
+        canvas.drawRoundRect( rectF, r, r, paint);
 
         if (drawBrodcast && broadcastDrawable != null) {
             int x = (size - broadcastDrawable.getIntrinsicWidth()) / 2;

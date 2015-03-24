@@ -54,10 +54,10 @@ public class FileLoadOperation {
     private File tempPath = null;
     private boolean isForceRequest = false;
 
-    public static interface FileLoadOperationDelegate {
-        public abstract void didFinishLoadingFile(FileLoadOperation operation, File finalFile);
-        public abstract void didFailedLoadingFile(FileLoadOperation operation, int state);
-        public abstract void didChangedLoadProgress(FileLoadOperation operation, float progress);
+    public interface FileLoadOperationDelegate {
+        void didFinishLoadingFile(FileLoadOperation operation, File finalFile);
+        void didFailedLoadingFile(FileLoadOperation operation, int state);
+        void didChangedLoadProgress(FileLoadOperation operation, float progress);
     }
 
     public FileLoadOperation(TLRPC.FileLocation photoLocation, int size) {

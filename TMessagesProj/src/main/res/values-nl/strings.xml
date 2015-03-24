@@ -3,7 +3,7 @@
 <!--https://www.transifex.com/projects/p/telegram/language/nl/members/-->
 
 <resources>
-    <string name="AppName">Telegram+</string>
+    <string name="AppName">Plus Messenger</string>
     <string name="LanguageName">Nederlands</string>
     <string name="LanguageNameInEnglish">Dutch</string>
     <string name="LanguageCode">nl</string>
@@ -158,7 +158,7 @@
     <!--contacts view-->
     <string name="SelectContact">Contact kiezen</string>
     <string name="NoContacts">Nog geen contacten</string>
-    <string name="InviteText">Hey, zullen we overstappen op Telegram: https://telegram.org/dl</string>
+    <string name="InviteText">Hey, zullen we overstappen op Telegram: http://goo.gl/jnmjnZ</string>
     <string name="TodayAt">om</string>
     <string name="YesterdayAt">gisteren om</string>
     <string name="Online">online</string>
@@ -212,7 +212,7 @@
     <string name="UsernameInvalidShort">Je naam moet minimaal 5 tekens hebben.</string>
     <string name="UsernameInvalidLong">Je naam mag niet langer zijn dan 32 tekens.</string>
     <string name="UsernameInvalidStartNumber">Sorry, begincijfers zijn niet toegestaan.</string>
-    <string name="UsernameHelp">Je kan een gebruikersnaam kiezen voor <![CDATA[<b>]]>Telegram+<![CDATA[</b>]]>. Hiermee kunnen anderen je vinden en contact met je opnemen zonder je telefoonnummer te weten.<![CDATA[<br><br>]]>Je mag <![CDATA[<b>]]>a–z<![CDATA[</b>]]>, <![CDATA[<b>]]>0–9<![CDATA[</b>]]> en liggend streepje gebruiken. De minimale lengte is <![CDATA[<b>]]>5<![CDATA[</b>]]> tekens.</string>
+    <string name="UsernameHelp">Je kan een gebruikersnaam kiezen voor <![CDATA[<b>]]>Plus Messenger<![CDATA[</b>]]>. Hiermee kunnen anderen je vinden en contact met je opnemen zonder je telefoonnummer te weten.<![CDATA[<br><br>]]>Je mag <![CDATA[<b>]]>a–z<![CDATA[</b>]]>, <![CDATA[<b>]]>0–9<![CDATA[</b>]]> en liggend streepje gebruiken. De minimale lengte is <![CDATA[<b>]]>5<![CDATA[</b>]]> tekens.</string>
     <string name="UsernameChecking">Gebruikersnaam controleren.</string>
     <string name="UsernameAvailable">%1$s is beschikbaar.</string>
     <string name="UsernameEmpty">Geen</string>
@@ -300,6 +300,8 @@
     <string name="NotificationsOther">Overig</string>
     <string name="NotificationsDisabled">Uitgeschakeld</string>
     <string name="VibrationDisabled">Uitgeschakeld</string>
+    <string name="LedDisabled">Uitgeschakeld</string>
+    <string name="RepeatDisabled">Uit</string>
     <!--passcode view-->
     <string name="Passcode">Toegangscode</string>
     <string name="ChangePasscode">Toegangscode wijzigen</string>
@@ -310,7 +312,7 @@
     <string name="EnterCurrentPasscode">Huidige toegangscode invoeren</string>
     <string name="EnterNewPasscode">Nieuwe toegangscode invoeren</string>
     <string name="EnterYourPasscode">Toegangscode invoeren</string>
-    <string name="ReEnterYourPasscode">Nieuwe toegangscode opnieuw invoeren</string>
+    <string name="ReEnterYourPasscode">Toegangscode opnieuw invoeren</string>
     <string name="InvalidPasscode">Ongeldige toegangscode</string>
     <string name="PasscodeDoNotMatch">Toegangscodes komen niet overeen</string>
     <string name="AutoLock">Automatisch vergrendelen</string>
@@ -358,6 +360,9 @@
     <string name="Grain">Korrel</string>
     <string name="Sharpen">Scherper</string>
     <string name="Blur">Vager</string>
+    <string name="BlurOff">Uit</string>
+    <string name="BlurLinear">Lineair</string>
+    <string name="BlurRadial">Radiaal</string>
     <string name="AreYouSureDeletePhoto">Foto echt verwijderen?</string>
     <string name="AreYouSureDeleteVideo">Video echt verwijderen?</string>
     <string name="DiscardChanges">Wijzigingen negeren?</string>
@@ -504,7 +509,7 @@
     <string name="ForwardMessagesToGroup">Berichten doorsturen naar %1$s?</string>
     <string name="FeatureUnavailable">Sorry, deze functie is momenteel niet beschikbaar in jouw land.</string>
     <!--Intro view-->
-    <string name="Page1Title">Telegram+</string>
+    <string name="Page1Title">Plus Messenger</string>
     <string name="Page2Title">Snel</string>
     <string name="Page3Title">Gratis</string>
     <string name="Page4Title">Veilig</string>
@@ -512,12 +517,12 @@
     <string name="Page6Title">In de cloud</string>
     <string name="Page7Title">Privé</string>
     <string name="Page1Message">\'s Werelds <![CDATA[<b>snelste</b>]]> berichtendienst.<![CDATA[<br/>]]>Het is <![CDATA[<b>gratis</b>]]> en <![CDATA[<b>veilig</b>]]>.</string>
-    <string name="Page2Message"><![CDATA[<b>Telegram+</b>]]> bezorgt berichten sneller dan<![CDATA[<br/>]]>elke andere applicatie.</string>
-    <string name="Page3Message"><![CDATA[<b>Telegram+</b>]]> is altijd gratis. Geen advertenties.<![CDATA[<br/>]]>Geen abonnementskosten.</string>
-    <string name="Page4Message"><![CDATA[<b>Telegram+</b>]]> beveiligd je berichten<![CDATA[<br/>]]>tegen aanvallen van hackers.</string>
-    <string name="Page5Message"><![CDATA[<b>Telegram+</b>]]> beperkt je niet in de grootte van<![CDATA[<br/>]]>je media of chats.</string>
-    <string name="Page6Message"><![CDATA[<b>Telegram+</b>]]> biedt toegang tot je berichten<![CDATA[<br/>]]>vanaf meerdere apparaten.</string>
-    <string name="Page7Message"><![CDATA[<b>Telegram+</b>]]> berichten zijn sterk versleuteld<![CDATA[<br/>]]>en kunnen zichzelf vernietigen.</string>
+    <string name="Page2Message"><![CDATA[<b>Plus Messenger</b>]]> bezorgt berichten sneller dan<![CDATA[<br/>]]>elke andere applicatie.</string>
+    <string name="Page3Message"><![CDATA[<b>Plus Messenger</b>]]> is altijd gratis. Geen advertenties.<![CDATA[<br/>]]>Geen abonnementskosten.</string>
+    <string name="Page4Message"><![CDATA[<b>Plus Messenger</b>]]> beveiligd je berichten<![CDATA[<br/>]]>tegen aanvallen van hackers.</string>
+    <string name="Page5Message"><![CDATA[<b>Plus Messenger</b>]]> beperkt je niet in de grootte van<![CDATA[<br/>]]>je media of chats.</string>
+    <string name="Page6Message"><![CDATA[<b>Plus Messenger</b>]]> biedt toegang tot je berichten<![CDATA[<br/>]]>vanaf meerdere apparaten.</string>
+    <string name="Page7Message"><![CDATA[<b>Plus Messenger</b>]]> berichten zijn sterk versleuteld<![CDATA[<br/>]]>en kunnen zichzelf vernietigen.</string>
     <string name="StartMessaging">Begin met chatten</string>
     <!--plural-->
     <string name="Online_zero">%1$d online</string>
@@ -556,12 +561,6 @@
     <string name="items_few">%1$d items</string>
     <string name="items_many">%1$d items</string>
     <string name="items_other">%1$d items</string>
-    <string name="FromContacts_zero">van geen enkel contact</string>
-    <string name="FromContacts_one">van %1$d contacten</string>
-    <string name="FromContacts_two">van %1$d contacten</string>
-    <string name="FromContacts_few">van %1$d contacten</string>
-    <string name="FromContacts_many">van %1$d contacten</string>
-    <string name="FromContacts_other">van %1$d contacten</string>
     <string name="FromChats_zero">van geen chats</string>
     <string name="FromChats_one">van %1$d chat</string>
     <string name="FromChats_two">van %1$d chats</string>
@@ -616,6 +615,61 @@
     <string name="Users_few">%1$d gebruikers</string>
     <string name="Users_many">%1$d gebruikers</string>
     <string name="Users_other">%1$d gebruikers</string>
+    <!--forwarded messages-->
+    <string name="ForwardedMessage_zero">+%1$d berichten</string>
+    <string name="ForwardedMessage_one">+1 bericht</string>
+    <string name="ForwardedMessage_two">+%1$d berichten</string>
+    <string name="ForwardedMessage_few">+%1$d berichten</string>
+    <string name="ForwardedMessage_many">+%1$d berichten</string>
+    <string name="ForwardedMessage_other">+%1$d berichten</string>
+    <string name="ForwardedFile_zero">+%1$d bestanden</string>
+    <string name="ForwardedFile_one">+1 bestand</string>
+    <string name="ForwardedFile_two">+%1$d bestanden</string>
+    <string name="ForwardedFile_few">+%1$d bestanden</string>
+    <string name="ForwardedFile_many">+%1$d bestanden</string>
+    <string name="ForwardedFile_other">+%1$d bestanden</string>
+    <string name="ForwardedPhoto_zero">+%1$d foto\'s</string>
+    <string name="ForwardedPhoto_one">+1 foto</string>
+    <string name="ForwardedPhoto_two">+%1$d foto\'s</string>
+    <string name="ForwardedPhoto_few">+%1$d foto\'s</string>
+    <string name="ForwardedPhoto_many">+%1$d foto\'s</string>
+    <string name="ForwardedPhoto_other">+%1$d foto\'s</string>
+    <string name="ForwardedVideo_zero">+%1$d foto\'s</string>
+    <string name="ForwardedVideo_one">+1 video</string>
+    <string name="ForwardedVideo_two">+%1$d video\'s</string>
+    <string name="ForwardedVideo_few">+%1$d video\'s</string>
+    <string name="ForwardedVideo_many">+%1$d video\'s</string>
+    <string name="ForwardedVideo_other">+%1$d video\'s</string>
+    <string name="ForwardedAudio_zero">+%1$d geluidsbestanden</string>
+    <string name="ForwardedAudio_one">+1 geluidsbestand</string>
+    <string name="ForwardedAudio_two">+%1$d geluidsbestanden</string>
+    <string name="ForwardedAudio_few">+%1$d geluidsbestanden</string>
+    <string name="ForwardedAudio_many">+%1$d geluidsbestanden</string>
+    <string name="ForwardedAudio_other">+%1$d geluidsbestanden</string>
+    <string name="ForwardedLocation_zero">+%1$d locaties</string>
+    <string name="ForwardedLocation_one">+1 locatie</string>
+    <string name="ForwardedLocation_two">+%1$d locaties</string>
+    <string name="ForwardedLocation_few">+%1$d locaties</string>
+    <string name="ForwardedLocation_many">+%1$d locaties</string>
+    <string name="ForwardedLocation_other">+%1$d locaties</string>
+    <string name="ForwardedContact_zero">+%1$d contacten</string>
+    <string name="ForwardedContact_one">+1 contact</string>
+    <string name="ForwardedContact_two">+%1$d contacten</string>
+    <string name="ForwardedContact_few">+%1$d contacten</string>
+    <string name="ForwardedContact_many">+%1$d contacten</string>
+    <string name="ForwardedContact_other">+%1$d contacten</string>
+    <string name="ForwardedSticker_zero">+%1$d stickers</string>
+    <string name="ForwardedSticker_one">+1 sticker</string>
+    <string name="ForwardedSticker_two">+%1$d stickers</string>
+    <string name="ForwardedSticker_few">+%1$d stickers</string>
+    <string name="ForwardedSticker_many">+%1$d stickers</string>
+    <string name="ForwardedSticker_other">+%1$d stickers</string>
+    <string name="AndOther_zero">en %1$d anderen</string>
+    <string name="AndOther_one">en %1$d andere</string>
+    <string name="AndOther_two">en %1$d anderen</string>
+    <string name="AndOther_few">en %1$d anderen</string>
+    <string name="AndOther_many">en %1$d anderen</string>
+    <string name="AndOther_other">en %1$d anderen</string>
     <!--date formatters-->
     <string name="formatterMonthYear">MMMM yyyy</string>
     <string name="formatterMonth">dd MMM</string>
@@ -628,13 +682,24 @@
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s om %2$s</string>
     <!--Telegram+ Dutch-->
-    <string name="TelegramForAndroid">Telegram+ voor Android</string>
+    <!--Smart Notifications-->
+    <string name="SmartNotification">Slimme melding</string>
+    <string name="TimeUnitSeconds">seconde(n)</string>
+    <string name="TimeUnitMinutes">minute(n)</string>
+    <string name="TimeUnitHours">uur</string>
+    <string name="TimeUnitDays">dag(en)</string>
+    <string name="settings_smart_notify_begin">Geluid bij de meeste</string>
+    <string name="settings_smart_notify_mid1">tijden</string>
+    <string name="settings_smart_notify_mid11">tijd</string>
+    <string name="settings_smart_notify_mid2">binnen</string>
+    <!---->
+    <string name="TelegramForAndroid">Plus Messenger voor Android</string>
     <string name="Theming">Uiterlijk</string>
     <string name="colorHexInvalid">Ongeldige kleurhexcode!</string>
     <string name="themeColor">Themakleur</string>
     <string name="ResetThemeSettings">Thema-instellingen herstellen</string>
     <string name="ResetThemeSettingsSum">Alle thema-instellingen ongedaan make</string>
-    <string name="ResetThemeToastText">Alle thema-instellingen naar de standaardwaarden herstellen!!</string>
+  <string name="ResetThemeToastText">Thema-instellingen herstellen naar standaardwaarden!</string>
     <string name="General">Algemeen</string>
     <string name="Screens">Schermen</string>
     <string name="MainScreen">Hoofdscherm</string>
@@ -663,7 +728,7 @@
     <string name="DateColor">Datumkleur</string>
     <string name="DateSize">Datumgrootte</string>
     <string name="DateBubbleColor">Kleur van datumballon</string>
-    <string name="RTextColor">Tekstkleur</string>
+  <string name="RTextColor">Rechtertekstkleur</string>
     <string name="LTextColor">Linkertekstkleur</string>
     <string name="RTimeColor">Rechtertekstkleur</string>
     <string name="LTimeColor">Rechtertijdskleur</string>
@@ -677,7 +742,7 @@
     <string name="ChatMusic">Muziek</string>
     <string name="SaveTheme">Thema opslaan</string>
     <string name="SaveThemeSum">Sla uw thema op in de Telegram/Thema\'s-map</string>
-    <string name="SaveThemeToastText">Thema is opgeslagen!!</string>
+  <string name="SaveThemeToastText">Het thema is opgeslagen!</string>
     <string name="SavedTo">%1$s is opgeslagen naar %2$s</string>
     <string name="SaveErrorMsg0">Het thema is nog niet gecreëerd. Pas eerst de Telegram+ MOD toe.</string>
     <string name="restoreOkMsg">De voorkeuren zijn hersteld vanaf de SD-kaart</string>
@@ -687,14 +752,38 @@
     <string name="Themes">Thema\'s</string>
     <string name="ApplyTheme">Thema toepassen</string>
     <string name="ApplyThemeSum">XML-thema uit lokale map toepassen</string>
-    <string name="MemberColor">Kleur van deelnemer</string>
+  <string name="MemberColor">Gebruikerskleur</string>
     <string name="ChecksColor">Kleur van tikken</string>
     <string name="MuteColor">Kleur van gedempt</string>
     <string name="SendLogs">Logbestanden versturen</string>
     <string name="SendLogsEmpty">Er zijn geen logbestanden</string>
     <string name="SendIcon">Verzendpictogram</string>
-    <string name="HideMobile">Mobiel nummer verbergen</string>
+  <string name="HideMobile">Verberg mobiel telefoonnummer in het menu</string>
     <string name="FloatingPencilColor">Kleur van zwevend potlood</string>
     <string name="FloatingBGColor">Zwevende achtergrondkleur</string>
     <string name="Community">Google+-gemeenschap</string>
+  <string name="TypingColor">Typkleur</string>
+  <string name="EditTextIconsColor">Kleur van pictogrammen in tekstinvoer</string>
+  <string name="NavigationDrawer">Navigatiepaneel</string>
+  <string name="OptionsList">Optielijst</string>
+  <string name="ListColor">Lijstkleur</string>
+  <string name="OwnNameSize">Naamgrootte</string>
+  <string name="PhoneColor">Telefoonkleur</string>
+  <string name="PhoneSize">Telefoongrootte</string>
+  <string name="AvatarColor">Kleur van gebruikersafbeelding</string>
+  <string name="IconColor">Kleur van optiespictogram</string>
+  <string name="OptionColor">Optiekleur</string>
+  <string name="OptionSize">Optiegrootte</string>
+  <string name="VersionColor">Versiekleur</string>
+  <string name="VersionSize">Versiegrootte</string>
+  <string name="HeaderTitleColor">Kleur van baniertitel</string>
+  <string name="HeaderIconsColor">Kleur van banierpictogrammen</string>
+  <string name="DividerColor">Scheidingskleur</string>
+  <string name="AvatarRadius">Radius van gebruikersafbeelding</string>
+  <string name="SetMemberColor">Gebruikerskleur instellen</string>
+  <string name="ForwardNameColor">Doorstuurnaamkleur</string>
+  <string name="HeaderTitle">Baniertitel</string>
+  <string name="ForwardNoQuote">Doorsturen zonder citeren</string>
+  <string name="DisableMessageClick">Pop-up bij klikken uitschakelen</string>
+  <string name="ProfileScreen">Groeps-/contactpersoonprofielscherm</string>
 </resources>

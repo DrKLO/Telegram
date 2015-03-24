@@ -1,9 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 
-
-
 <resources>
-    <string name="AppName">Telegram+</string>
+    <string name="AppName">Plus</string>
     <string name="LanguageName">English</string>
     <string name="LanguageNameInEnglish">English</string>
     <string name="LanguageCode">en</string>
@@ -158,7 +156,7 @@
     <!--contacts view-->
     <string name="SelectContact">Select Contact</string>
     <string name="NoContacts">No contacts yet</string>
-    <string name="InviteText">Hey, let\'s switch to Telegram: https://telegram.org/dl</string>
+    <string name="InviteText">Hey, let\'s switch to Telegram: http://goo.gl/jnmjnZ</string>
     <string name="TodayAt">at</string>
     <string name="YesterdayAt">yesterday at</string>
     <string name="Online">online</string>
@@ -212,7 +210,7 @@
     <string name="UsernameInvalidShort">A username must have at least 5 characters.</string>
     <string name="UsernameInvalidLong">The username must not exceed 32 characters.</string>
     <string name="UsernameInvalidStartNumber">Sorry, a username can\'t start with a number.</string>
-    <string name="UsernameHelp">You can choose a username on <![CDATA[<b>]]>Telegram+<![CDATA[</b>]]>. If you do, other people will be able to find you by this username and contact you without knowing your phone number.<![CDATA[<br><br>]]>You can use <![CDATA[<b>]]>a–z<![CDATA[</b>]]>, <![CDATA[<b>]]>0–9<![CDATA[</b>]]> and underscores. Minimum length is <![CDATA[<b>]]>5<![CDATA[</b>]]> characters.</string>
+    <string name="UsernameHelp">You can choose a username on <![CDATA[<b>]]>Plus Messenger<![CDATA[</b>]]>. If you do, other people will be able to find you by this username and contact you without knowing your phone number.<![CDATA[<br><br>]]>You can use <![CDATA[<b>]]>a–z<![CDATA[</b>]]>, <![CDATA[<b>]]>0–9<![CDATA[</b>]]> and underscores. Minimum length is <![CDATA[<b>]]>5<![CDATA[</b>]]> characters.</string>
     <string name="UsernameChecking">Checking username...</string>
     <string name="UsernameAvailable">%1$s is available.</string>
     <string name="UsernameEmpty">None</string>
@@ -300,6 +298,8 @@
     <string name="NotificationsOther">Other</string>
     <string name="NotificationsDisabled">Disabled</string>
     <string name="VibrationDisabled">Disabled</string>
+    <string name="LedDisabled">Disabled</string>
+    <string name="RepeatDisabled">Off</string>
     <!--passcode view-->
     <string name="Passcode">Passcode</string>
     <string name="ChangePasscode">Change Passcode</string>
@@ -358,6 +358,9 @@
     <string name="Grain">Grain</string>
     <string name="Sharpen">Sharpen</string>
     <string name="Blur">Blur</string>
+    <string name="BlurOff">Off</string>
+    <string name="BlurLinear">Linear</string>
+    <string name="BlurRadial">Radial</string>
     <string name="AreYouSureDeletePhoto">Are you sure you want to delete this photo?</string>
     <string name="AreYouSureDeleteVideo">Are you sure you want to delete this video?</string>
     <string name="DiscardChanges">Discard changes?</string>
@@ -504,7 +507,7 @@
     <string name="ForwardMessagesToGroup">Forward messages to %1$s?</string>
     <string name="FeatureUnavailable">Sorry, this feature is currently not available in your country.</string>
     <!--Intro view-->
-    <string name="Page1Title">Telegram+</string>
+    <string name="Page1Title">Plus Messenger</string>
     <string name="Page2Title">Fast</string>
     <string name="Page3Title">Free</string>
     <string name="Page4Title">Secure</string>
@@ -512,12 +515,12 @@
     <string name="Page6Title">Cloud-Based</string>
     <string name="Page7Title">Private</string>
     <string name="Page1Message">The world\'s <![CDATA[<b>fastest</b>]]> messaging app.<![CDATA[<br/>]]>It is <![CDATA[<b>free</b>]]> and <![CDATA[<b>secure</b>]]>.<![CDATA[<br/>]]>And also <![CDATA[<b>themeable</b>]]>! </string>
-    <string name="Page2Message"><![CDATA[<b>Telegram+</b>]]> delivers messages faster than<![CDATA[<br/>]]>any other application.</string>
-    <string name="Page3Message"><![CDATA[<b>Telegram+</b>]]> is free forever. No ads.<![CDATA[<br/>]]>No subscription fees.</string>
-    <string name="Page4Message"><![CDATA[<b>Telegram+</b>]]> keeps your messages safe<![CDATA[<br/>]]>from hacker attacks.</string>
-    <string name="Page5Message"><![CDATA[<b>Telegram+</b>]]> has no limits on the size of<![CDATA[<br/>]]>your media and chats.</string>
-    <string name="Page6Message"><![CDATA[<b>Telegram+</b>]]> lets you access your messages<![CDATA[<br/>]]>from multiple devices.</string>
-    <string name="Page7Message"><![CDATA[<b>Telegram+</b>]]> messages are heavily encrypted<![CDATA[<br/>]]>and can self-destruct.</string>
+    <string name="Page2Message"><![CDATA[<b>Plus Messenger</b>]]> delivers messages faster than<![CDATA[<br/>]]>any other application.</string>
+    <string name="Page3Message"><![CDATA[<b>Plus Messenger</b>]]> is free forever. No ads.<![CDATA[<br/>]]>No subscription fees.</string>
+    <string name="Page4Message"><![CDATA[<b>Plus Messenger</b>]]> keeps your messages safe<![CDATA[<br/>]]>from hacker attacks.</string>
+    <string name="Page5Message"><![CDATA[<b>Plus Messenger</b>]]> has no limits on the size of<![CDATA[<br/>]]>your media and chats.</string>
+    <string name="Page6Message"><![CDATA[<b>Plus Messenger</b>]]> lets you access your messages<![CDATA[<br/>]]>from multiple devices.</string>
+    <string name="Page7Message"><![CDATA[<b>Plus Messenger</b>]]> messages are heavily encrypted<![CDATA[<br/>]]>and can self-destruct.</string>
     <string name="StartMessaging">Start Messaging</string>
     <!--plural-->
     <string name="Online_zero">%1$d online</string>
@@ -556,12 +559,6 @@
     <string name="items_few">%1$d items</string>
     <string name="items_many">%1$d items</string>
     <string name="items_other">%1$d items</string>
-    <string name="FromContacts_zero">from no contacts</string>
-    <string name="FromContacts_one">from %1$d contact</string>
-    <string name="FromContacts_two">from %1$d contacts</string>
-    <string name="FromContacts_few">from %1$d contacts</string>
-    <string name="FromContacts_many">from %1$d contacts</string>
-    <string name="FromContacts_other">from %1$d contacts</string>
     <string name="FromChats_zero">from no chats</string>
     <string name="FromChats_one">from %1$d chat</string>
     <string name="FromChats_two">from %1$d chats</string>
@@ -616,6 +613,61 @@
     <string name="Users_few">%1$d users</string>
     <string name="Users_many">%1$d users</string>
     <string name="Users_other">%1$d users</string>
+    <!--forwarded messages-->
+    <string name="ForwardedMessage_zero">%1$d forwarded messages</string>
+    <string name="ForwardedMessage_one">Forwarded message</string>
+    <string name="ForwardedMessage_two">%1$d forwarded messages</string>
+    <string name="ForwardedMessage_few">%1$d forwarded messages</string>
+    <string name="ForwardedMessage_many">%1$d forwarded messages</string>
+    <string name="ForwardedMessage_other">%1$d forwarded messages</string>
+    <string name="ForwardedFile_zero">%1$d forwarded files</string>
+    <string name="ForwardedFile_one">Forwarded file</string>
+    <string name="ForwardedFile_two">%1$d forwarded files</string>
+    <string name="ForwardedFile_few">%1$d forwarded files</string>
+    <string name="ForwardedFile_many">%1$d forwarded files</string>
+    <string name="ForwardedFile_other">%1$d forwarded files</string>
+    <string name="ForwardedPhoto_zero">%1$d forwarded photos</string>
+    <string name="ForwardedPhoto_one">Forwarded photo</string>
+    <string name="ForwardedPhoto_two">%1$d forwarded photos</string>
+    <string name="ForwardedPhoto_few">%1$d forwarded photos</string>
+    <string name="ForwardedPhoto_many">%1$d forwarded photos</string>
+    <string name="ForwardedPhoto_other">%1$d forwarded photos</string>
+    <string name="ForwardedVideo_zero">%1$d forwarded videos</string>
+    <string name="ForwardedVideo_one">Forwarded video</string>
+    <string name="ForwardedVideo_two">%1$d forwarded videos</string>
+    <string name="ForwardedVideo_few">%1$d forwarded videos</string>
+    <string name="ForwardedVideo_many">%1$d forwarded videos</string>
+    <string name="ForwardedVideo_other">%1$d forwarded videos</string>
+    <string name="ForwardedAudio_zero">%1$d forwarded audios</string>
+    <string name="ForwardedAudio_one">Forwarded audio</string>
+    <string name="ForwardedAudio_two">%1$d forwarded audios</string>
+    <string name="ForwardedAudio_few">%1$d forwarded audios</string>
+    <string name="ForwardedAudio_many">%1$d forwarded audios</string>
+    <string name="ForwardedAudio_other">%1$d forwarded audios</string>
+    <string name="ForwardedLocation_zero">%1$d forwarded locations</string>
+    <string name="ForwardedLocation_one">Forwarded location</string>
+    <string name="ForwardedLocation_two">%1$d forwarded locations</string>
+    <string name="ForwardedLocation_few">%1$d forwarded locations</string>
+    <string name="ForwardedLocation_many">%1$d forwarded locations</string>
+    <string name="ForwardedLocation_other">%1$d forwarded locations</string>
+    <string name="ForwardedContact_zero">%1$d forwarded contacts</string>
+    <string name="ForwardedContact_one">Forwarded contact</string>
+    <string name="ForwardedContact_two">%1$d forwarded contacts</string>
+    <string name="ForwardedContact_few">%1$d forwarded contacts</string>
+    <string name="ForwardedContact_many">%1$d forwarded contacts</string>
+    <string name="ForwardedContact_other">%1$d forwarded contacts</string>
+    <string name="ForwardedSticker_zero">%1$d forwarded stickers</string>
+    <string name="ForwardedSticker_one">Forwarded sticker</string>
+    <string name="ForwardedSticker_two">%1$d forwarded stickers</string>
+    <string name="ForwardedSticker_few">%1$d forwarded stickers</string>
+    <string name="ForwardedSticker_many">%1$d forwarded stickers</string>
+    <string name="ForwardedSticker_other">%1$d forwarded stickers</string>
+    <string name="AndOther_zero">and %1$d others</string>
+    <string name="AndOther_one">and %1$d other</string>
+    <string name="AndOther_two">and %1$d others</string>
+    <string name="AndOther_few">and %1$d others</string>
+    <string name="AndOther_many">and %1$d others</string>
+    <string name="AndOther_other">and %1$d others</string>
     <!--date formatters-->
     <string name="formatterMonthYear">MMMM yyyy</string>
     <string name="formatterMonth">MMM dd</string>
@@ -628,13 +680,24 @@
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s at %2$s</string>
     <!--Telegram+ English-->
-    <string name="TelegramForAndroid">Telegram+ for Android</string>
+    <!--Smart Notifications-->
+    <string name="SmartNotification">Smart notification</string>
+    <string name="TimeUnitSeconds">second(s)</string>
+    <string name="TimeUnitMinutes">minute(s)</string>
+    <string name="TimeUnitHours">hour(s)</string>
+    <string name="TimeUnitDays">day(s)</string>
+    <string name="settings_smart_notify_begin">Sound at most</string>
+    <string name="settings_smart_notify_mid1">times</string>
+    <string name="settings_smart_notify_mid11">time</string>
+    <string name="settings_smart_notify_mid2">within</string>
+    <!---->
+    <string name="TelegramForAndroid">Plus Messenger for Android</string>
     <string name="Theming">Theming</string>
     <string name="colorHexInvalid">Invalid color hex code!</string>
     <string name="themeColor">Theme color</string>
     <string name="ResetThemeSettings">Reset theme settings</string>
     <string name="ResetThemeSettingsSum">Undo all theme settings</string>
-    <string name="ResetThemeToastText">Reset theme settings to default!!</string>
+    <string name="ResetThemeToastText">Reset theme settings to default!</string>
     <string name="General">General</string>
     <string name="Screens">Screens</string>
     <string name="MainScreen">Main screen</string>
@@ -691,13 +754,12 @@
     <string name="ChecksColor">Ticks color</string>
     <string name="MuteColor">Mute color</string>
     <string name="SendLogs">Send logs</string>
-  <string name="SendLogsEmpty">There aren\'t logs</string>
+    <string name="SendLogsEmpty">There aren\'t logs</string>
     <string name="SendIcon">Send Icon</string>
-    <string name="HideMobile">Hide mobile number</string>
+    <string name="HideMobile">Hide mobile number from menu</string>
     <string name="FloatingPencilColor">Floating pencil color</string>
     <string name="FloatingBGColor">Floating background color</string>
     <string name="Community">G+ community</string>
-    <string name="UsernameTitle">Show username on header title</string>
     <string name="TypingColor">Typing color</string>
     <string name="EditTextIconsColor">Text input icons color</string>
     <string name="NavigationDrawer">Navigation drawer</string>
@@ -718,15 +780,8 @@
     <string name="AvatarRadius">Avatar radius</string>
     <string name="SetMemberColor">Set member color</string>
     <string name="ForwardNameColor">Forward name color</string>
-    <!--Smart Notifications-->
-    <string name="SmartNotification">Smart notification</string>
-    <string name="TimeUnitSeconds">second(s)</string>
-    <string name="TimeUnitMinutes">minute(s)</string>
-    <string name="TimeUnitHours">hour(s)</string>
-    <string name="TimeUnitDays">day(s)</string>
-    <string name="settings_smart_notify_begin">Sound at most</string>
-    <string name="settings_smart_notify_mid1">times</string>
-    <string name="settings_smart_notify_mid11">time</string>
-    <string name="settings_smart_notify_mid2">within</string><!--
-    <string name="settings_smart_notify_end">period.</string>-->
+    <string name="HeaderTitle">Header title</string>
+    <string name="ForwardNoQuote">Forward without quoting</string>
+    <string name="DisableMessageClick">Disable pop-up on click</string>
+    <string name="ProfileScreen">Group/Contact Profile screen</string>
 </resources>

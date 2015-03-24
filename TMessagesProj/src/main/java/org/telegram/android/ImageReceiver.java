@@ -29,8 +29,8 @@ import org.telegram.messenger.Utilities;
 
 public class ImageReceiver implements NotificationCenter.NotificationCenterDelegate {
 
-    public static interface ImageReceiverDelegate {
-        public void didSetImage(ImageReceiver imageReceiver, boolean set, boolean thumb);
+    public interface ImageReceiverDelegate {
+        void didSetImage(ImageReceiver imageReceiver, boolean set, boolean thumb);
     }
 
     private View parentView;

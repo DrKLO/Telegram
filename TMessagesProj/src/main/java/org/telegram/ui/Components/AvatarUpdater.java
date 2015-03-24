@@ -45,8 +45,8 @@ public class AvatarUpdater implements NotificationCenter.NotificationCenterDeleg
     private boolean clearAfterUpdate = false;
     public boolean returnOnly = false;
 
-    public static abstract interface AvatarUpdaterDelegate {
-        public abstract void didUploadedPhoto(TLRPC.InputFile file, TLRPC.PhotoSize small, TLRPC.PhotoSize big);
+    public interface AvatarUpdaterDelegate {
+        void didUploadedPhoto(TLRPC.InputFile file, TLRPC.PhotoSize small, TLRPC.PhotoSize big);
     }
 
     public void clear() {
@@ -76,16 +76,11 @@ public class AvatarUpdater implements NotificationCenter.NotificationCenterDeleg
         PhotoAlbumPickerActivity fragment = new PhotoAlbumPickerActivity(true);
         fragment.setDelegate(new PhotoAlbumPickerActivity.PhotoAlbumPickerActivityDelegate() {
             @Override
-            public void didSelectPhotos(ArrayList<String> photos) {
+            public void didSelectPhotos(ArrayList<String> photos, ArrayList<MediaController.SearchImage> webPhotos) {
                 if (!photos.isEmpty()) {
                     Bitmap bitmap = ImageLoader.loadBitmap(photos.get(0), null, 800, 800, true);
                     processBitmap(bitmap);
                 }
-            }
-
-            @Override
-            public void didSelectWebPhotos(ArrayList<MediaController.SearchImage> photos) {
-
             }
 
             @Override

@@ -14,7 +14,6 @@ import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -39,9 +38,9 @@ public class SharedPhotoVideoCell extends FrameLayoutFixed {
     private int itemsCount;
     private boolean isFirst;
 
-    public static interface SharedPhotoVideoCellDelegate {
-        public abstract void didClickItem(SharedPhotoVideoCell cell, int index, MessageObject messageObject, int a);
-        public abstract boolean didLongClickItem(SharedPhotoVideoCell cell, int index, MessageObject messageObject, int a);
+    public interface SharedPhotoVideoCellDelegate {
+        void didClickItem(SharedPhotoVideoCell cell, int index, MessageObject messageObject, int a);
+        boolean didLongClickItem(SharedPhotoVideoCell cell, int index, MessageObject messageObject, int a);
     }
 
     private class PhotoVideoView extends FrameLayoutFixed {

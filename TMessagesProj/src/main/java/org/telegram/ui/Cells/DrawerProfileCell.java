@@ -197,9 +197,9 @@ public class DrawerProfileCell extends FrameLayout implements PhotoViewer.PhotoV
         }
         AvatarDrawable avatarDrawable = new AvatarDrawable(user);
         avatarDrawable.setColor(AndroidUtilities.getIntDef("drawerAvatarColor",AndroidUtilities.getIntDarkerColor("themeColor", 0x15)));
-        //int radius = AndroidUtilities.dp(AndroidUtilities.getIntDef("drawerAvatarRadius", 32));
-        //avatarDrawable.setRadius(radius/2);
-        //avatarImageView.imageReceiver.setRoundRadius(AndroidUtilities.dp(radius));
+        int radius = AndroidUtilities.dp(AndroidUtilities.getIntDef("drawerAvatarRadius", 32));
+        avatarDrawable.setRadius(radius);
+        avatarImageView.imageReceiver.setRoundRadius(radius);
         avatarImageView.setImage(photo, "50_50", avatarDrawable);
         if(AndroidUtilities.getBoolMain("hideMobile")){
             phoneTextView.setVisibility(GONE);

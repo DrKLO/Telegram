@@ -16,14 +16,17 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.TextView;
 
+import org.telegram.android.AndroidUtilities;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
 
 public class BaseFragment {
     private boolean isFinished = false;
-    private AlertDialog visibleDialog = null;
+    protected AlertDialog visibleDialog = null;
 
     protected View fragmentView;
     protected ActionBarLayout parentLayout;
@@ -76,6 +79,7 @@ public class BaseFragment {
             if (parentLayout != null) {
                 actionBar = new ActionBar(parentLayout.getContext());
                 actionBar.parentFragment = this;
+                //actionBar.setBackgroundColor(0xff54759e);
                 actionBar.setBackgroundResource(R.color.header);
                 actionBar.setItemsBackground(R.drawable.bar_selector);
             }
@@ -215,6 +219,21 @@ public class BaseFragment {
         }
         try {
             visibleDialog = builder.show();
+            //
+            int color = AndroidUtilities.getIntColor("themeColor");
+            int id = visibleDialog.getContext().getResources().getIdentifier("android:id/alertTitle", null, null);
+            TextView tv = (TextView) visibleDialog.findViewById(id);
+            tv.setTextColor(color);
+            id = visibleDialog.getContext().getResources().getIdentifier("android:id/titleDivider", null, null);
+            View divider = visibleDialog.findViewById(id);
+            if(divider != null)divider.setBackgroundColor(color);
+            Button btn = visibleDialog.getButton(DialogInterface.BUTTON_NEGATIVE);
+            if(btn != null)btn.setTextColor(color);
+            btn = visibleDialog.getButton(DialogInterface.BUTTON_POSITIVE);
+            if(btn != null)btn.setTextColor(color);
+            btn = visibleDialog.getButton(DialogInterface.BUTTON_NEUTRAL);
+            if(btn != null)btn.setTextColor(color);
+            //
             visibleDialog.setCanceledOnTouchOutside(true);
             visibleDialog.setOnDismissListener(new DialogInterface.OnDismissListener() {
                 @Override

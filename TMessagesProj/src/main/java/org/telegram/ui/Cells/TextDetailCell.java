@@ -9,6 +9,7 @@
 package org.telegram.ui.Cells;
 
 import android.content.Context;
+import android.graphics.drawable.Drawable;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
@@ -90,5 +91,20 @@ public class TextDetailCell extends FrameLayout {
         valueTextView.setText(value);
         imageView.setVisibility(VISIBLE);
         imageView.setImageResource(resId);
+    }
+
+    public void setTextAndValueAndIcon(String text, String value, Drawable drawable) {
+        textView.setText(text);
+        valueTextView.setText(value);
+        imageView.setVisibility(VISIBLE);
+        imageView.setImageDrawable(drawable);
+    }
+
+    public void setTextColor(int color) {
+        textView.setTextColor(color);
+    }
+
+    public void setValueColor(int color) {
+        valueTextView.setTextColor(color);
     }
 }

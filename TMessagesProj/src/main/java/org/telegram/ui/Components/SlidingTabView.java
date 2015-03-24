@@ -25,8 +25,8 @@ import org.telegram.messenger.R;
 
 public class SlidingTabView extends LinearLayout {
 
-    public static interface SlidingTabViewDelegate {
-        public abstract void didSelectTab(int tab);
+    public interface SlidingTabViewDelegate {
+        void didSelectTab(int tab);
     }
 
     private SlidingTabViewDelegate delegate;

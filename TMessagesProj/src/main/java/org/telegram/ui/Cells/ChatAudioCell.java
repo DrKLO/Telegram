@@ -71,7 +71,11 @@ public class ChatAudioCell extends ChatBaseCell implements SeekBar.SeekBarDelega
         seekBar.delegate = this;
         progressView = new ProgressView();
         avatarDrawable = new AvatarDrawable();
-
+        //Chat Audio Photo
+        int radius = AndroidUtilities.dp(AndroidUtilities.getIntDef("chatAvatarRadius", 32));
+        avatarImage.setRoundRadius(radius);
+        avatarDrawable.setRadius(radius);
+        //
         if (timePaint == null) {
             statesDrawable[0][0] = getResources().getDrawable(R.drawable.play1);
             statesDrawable[0][1] = getResources().getDrawable(R.drawable.play1_pressed);
@@ -183,10 +187,16 @@ public class ChatAudioCell extends ChatBaseCell implements SeekBar.SeekBarDelega
             buttonState = 3;
             invalidate();
         } else if (buttonState == 3) {
+            if (currentMessageObject.isOut() && currentMessageObject.isSending()) {
+                if (delegate != null) {
+                    delegate.didPressedCancelSendButton(this);
+                }
+            } else {
             FileLoader.getInstance().cancelLoadFile(currentMessageObject.messageOwner.media.audio);
             buttonState = 2;
             invalidate();
         }
+    }
     }
 
     public void updateProgress() {
@@ -291,12 +301,7 @@ public class ChatAudioCell extends ChatBaseCell implements SeekBar.SeekBarDelega
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         int width = MeasureSpec.getSize(widthMeasureSpec);
-        setMeasuredDimension(width, AndroidUtilities.dp(68));
-        if (isChat) {
-            backgroundWidth = Math.min(width - AndroidUtilities.dp(102), AndroidUtilities.dp(300));
-        } else {
-            backgroundWidth = Math.min(width - AndroidUtilities.dp(50), AndroidUtilities.dp(300));
-        }
+        setMeasuredDimension(width, AndroidUtilities.dp(68) + namesOffset);
     }
 
     @Override
@@ -325,7 +330,7 @@ public class ChatAudioCell extends ChatBaseCell implements SeekBar.SeekBarDelega
         }
         int diff = 0;
         if (needAvatarImage) {
-            avatarImage.setImageCoords(x, AndroidUtilities.dp(9), AndroidUtilities.dp(50), AndroidUtilities.dp(50));
+            avatarImage.setImageCoords(x, AndroidUtilities.dp(9) + namesOffset, AndroidUtilities.dp(50), AndroidUtilities.dp(50));
         } else {
             diff = AndroidUtilities.dp(56);
             seekBarX -= diff;
@@ -337,8 +342,8 @@ public class ChatAudioCell extends ChatBaseCell implements SeekBar.SeekBarDelega
         seekBar.height = AndroidUtilities.dp(30);
         progressView.width = backgroundWidth - AndroidUtilities.dp(136) + diff;
         progressView.height = AndroidUtilities.dp(30);
-        seekBarY = AndroidUtilities.dp(13);
-        buttonY = AndroidUtilities.dp(10);
+        seekBarY = AndroidUtilities.dp(13) + namesOffset;
+        buttonY = AndroidUtilities.dp(10) + namesOffset;
 
         updateProgress();
     }
@@ -358,6 +363,12 @@ public class ChatAudioCell extends ChatBaseCell implements SeekBar.SeekBarDelega
     @Override
     public void setMessageObject(MessageObject messageObject) {
         if (currentMessageObject != messageObject || isUserDataChanged()) {
+            if (AndroidUtilities.isTablet()) {
+                backgroundWidth = Math.min(AndroidUtilities.getMinTabletSide() - AndroidUtilities.dp(isChat ? 102 : 50), AndroidUtilities.dp(300));
+            } else {
+                backgroundWidth = Math.min(AndroidUtilities.displaySize.x - AndroidUtilities.dp(isChat ? 102 : 50), AndroidUtilities.dp(300));
+            }
+
             int uid = messageObject.messageOwner.media.audio.user_id;
             if (uid == 0) {
                 uid = messageObject.messageOwner.from_id;
@@ -430,7 +441,7 @@ public class ChatAudioCell extends ChatBaseCell implements SeekBar.SeekBarDelega
         buttonDrawable.draw(canvas);
 
         canvas.save();
-        canvas.translate(timeX, AndroidUtilities.dp(45));
+        canvas.translate(timeX, AndroidUtilities.dp(45) + namesOffset);
         timeLayout.draw(canvas);
         canvas.restore();
     }

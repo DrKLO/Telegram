@@ -14,7 +14,6 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
-import android.util.Log;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.VelocityTracker;
@@ -252,11 +251,15 @@ public class DrawerLayoutContainer extends FrameLayout {
         parentActionBarLayout = layout;
     }
 
-    public void setAllowOpenDrawer(boolean value) {
+    public void setAllowOpenDrawer(boolean value, boolean animated) {
         allowOpenDrawer = value;
         if (!allowOpenDrawer && drawerPosition != 0) {
+            if (!animated) {
             setDrawerPosition(0);
             onDrawerAnimationEnd(false);
+            } else {
+                closeDrawer(true);
+            }
         }
     }
 

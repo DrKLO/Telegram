@@ -103,7 +103,7 @@ public class MessagesStorage {
             database.executeFast("PRAGMA temp_store = 1").stepThis().dispose();
             if (createTable) {
                 database.executeFast("CREATE TABLE users(uid INTEGER PRIMARY KEY, name TEXT, status INTEGER, data BLOB)").stepThis().dispose();
-                database.executeFast("CREATE TABLE messages(mid INTEGER PRIMARY KEY, uid INTEGER, read_state INTEGER, send_state INTEGER, date INTEGER, data BLOB, out INTEGER, ttl INTEGER, media INTEGER)").stepThis().dispose();
+                database.executeFast("CREATE TABLE messages(mid INTEGER PRIMARY KEY, uid INTEGER, read_state INTEGER, send_state INTEGER, date INTEGER, data BLOB, out INTEGER, ttl INTEGER, media INTEGER, replydata BLOB)").stepThis().dispose();
                 database.executeFast("CREATE TABLE chats(uid INTEGER PRIMARY KEY, name TEXT, data BLOB)").stepThis().dispose();
                 database.executeFast("CREATE TABLE enc_chats(uid INTEGER PRIMARY KEY, user INTEGER, name TEXT, data BLOB, g BLOB, authkey BLOB, ttl INTEGER, layer INTEGER, seq_in INTEGER, seq_out INTEGER, use_count INTEGER, exchange_id INTEGER, key_date INTEGER, fprint INTEGER, fauthkey BLOB, khash BLOB)").stepThis().dispose();
                 database.executeFast("CREATE TABLE dialogs(did INTEGER PRIMARY KEY, date INTEGER, unread_count INTEGER, last_mid INTEGER)").stepThis().dispose();
@@ -162,7 +162,7 @@ public class MessagesStorage {
                 database.executeFast("CREATE TABLE keyvalue(id TEXT PRIMARY KEY, value TEXT)").stepThis().dispose();
 
                 //version
-                database.executeFast("PRAGMA user_version = 13").stepThis().dispose();
+                database.executeFast("PRAGMA user_version = 14").stepThis().dispose();
             } else {
                 try {
                     SQLiteCursor cursor = database.queryFinalized("SELECT seq, pts, date, qts, lsv, sg, pbytes FROM params WHERE id = 1");
@@ -193,7 +193,7 @@ public class MessagesStorage {
                     }
                 }
                 int version = database.executeInt("PRAGMA user_version");
-                if (version < 13) {
+                if (version < 14) {
                     updateDbToLastVersion(version);
                 }
             }
@@ -367,6 +367,11 @@ public class MessagesStorage {
 
                         database.executeFast("PRAGMA user_version = 13").stepThis().dispose();
                         version = 13;
+                    }
+                    if (version == 13 && version < 14) {
+                        database.executeFast("ALTER TABLE messages ADD COLUMN replydata BLOB default NULL").stepThis().dispose();
+                        database.executeFast("PRAGMA user_version = 14").stepThis().dispose();
+                        version = 14;
                     }
                 } catch (Exception e) {
                     FileLog.e("tmessages", e);
@@ -753,7 +758,7 @@ public class MessagesStorage {
                 try {
                     ArrayList<Integer> ids = new ArrayList<>();
                     ArrayList<TLRPC.User> users = new ArrayList<>();
-                    SQLiteCursor cursor = database.queryFinalized(String.format(Locale.US, "SELECT * FROM blocked_users WHERE 1"));
+                    SQLiteCursor cursor = database.queryFinalized("SELECT * FROM blocked_users WHERE 1");
                     StringBuilder usersToLoad = new StringBuilder();
                     while (cursor.next()) {
                         int user_id = cursor.intValue(0);
@@ -840,7 +845,7 @@ public class MessagesStorage {
                     }
 
                     if ((int) did == 0) {
-                        SQLiteCursor cursor = database.queryFinalized(String.format(Locale.US, "SELECT data FROM messages WHERE uid = " + did));
+                        SQLiteCursor cursor = database.queryFinalized("SELECT data FROM messages WHERE uid = " + did);
                         ArrayList<File> filesToDelete = new ArrayList<>();
                         try {
                             while (cursor.next()) {
@@ -1085,20 +1090,16 @@ public class MessagesStorage {
         });
     }
 
-    private void updateDialogsWithReadedMessagesInternal(final ArrayList<Integer> messages) {
-        if (Thread.currentThread().getId() != storageQueue.getId()) {
-            throw new RuntimeException("wrong db thread");
-        }
+    private void updateDialogsWithReadedMessagesInternal(final ArrayList<Integer> messages, final HashMap<Integer, Integer> inbox) {
         try {
             HashMap<Long, Integer> dialogsToUpdate = new HashMap<>();
+            StringBuilder dialogsToReload = new StringBuilder();
+
             if (messages != null && !messages.isEmpty()) {
-                StringBuilder dialogsToReload = new StringBuilder();
                 String ids = TextUtils.join(",", messages);
-                int totalCount = 0;
                 SQLiteCursor cursor = database.queryFinalized(String.format(Locale.US, "SELECT uid, read_state, out FROM messages WHERE mid IN(%s)", ids));
                 while (cursor.next()) {
                     int out = cursor.intValue(2);
-                    totalCount++;
                     if (out != 0) {
                         continue;
                     }
@@ -1119,8 +1120,26 @@ public class MessagesStorage {
                     }
                 }
                 cursor.dispose();
+            } else if (inbox != null && !inbox.isEmpty()) {
+                for (HashMap.Entry<Integer, Integer> entry : inbox.entrySet()) {
+                    SQLiteCursor cursor = database.queryFinalized(String.format(Locale.US, "SELECT COUNT(mid) FROM messages WHERE uid = %d AND mid <= %d AND read_state = 0 AND out = 0", entry.getKey(), entry.getValue()));
+                    if (cursor.next()) {
+                        int count = cursor.intValue(0);
+                        if (count == 0) {
+                            continue;
+                        }
+                        dialogsToUpdate.put((long) entry.getKey(), count);
+                        if (dialogsToReload.length() != 0) {
+                            dialogsToReload.append(",");
+                        }
+                        dialogsToReload.append(entry.getKey());
+                    }
+                    cursor.dispose();
+                }
+            }
 
-                cursor = database.queryFinalized(String.format(Locale.US, "SELECT did, unread_count FROM dialogs WHERE did IN(%s)", dialogsToReload.toString()));
+            if (dialogsToReload.length() > 0) {
+                SQLiteCursor cursor = database.queryFinalized(String.format(Locale.US, "SELECT did, unread_count FROM dialogs WHERE did IN(%s)", dialogsToReload.toString()));
                 while (cursor.next()) {
                     long did = cursor.longValue(0);
                     int count = cursor.intValue(1);
@@ -1153,19 +1172,19 @@ public class MessagesStorage {
         }
     }
 
-    public void updateDialogsWithReadedMessages(final ArrayList<Integer> messages, boolean useQueue) {
-        if (messages.isEmpty()) {
+    public void updateDialogsWithReadedMessages(final HashMap<Integer, Integer> inbox, boolean useQueue) {
+        if (inbox.isEmpty()) {
             return;
         }
         if (useQueue) {
             storageQueue.postRunnable(new Runnable() {
                 @Override
                 public void run() {
-                    updateDialogsWithReadedMessagesInternal(messages);
+                    updateDialogsWithReadedMessagesInternal(null, inbox);
                 }
             });
         } else {
-            updateDialogsWithReadedMessagesInternal(messages);
+            updateDialogsWithReadedMessagesInternal(null, inbox);
         }
     }
 
@@ -1710,6 +1729,8 @@ public class MessagesStorage {
                 try {
                     ArrayList<Integer> loadedUsers = new ArrayList<>();
                     ArrayList<Integer> fromUser = new ArrayList<>();
+                    ArrayList<Integer> replyMessages = new ArrayList<>();
+                    HashMap<Integer, ArrayList<TLRPC.Message>> replyMessageOwners = new HashMap<>();
 
                     SQLiteCursor cursor = null;
                     int lower_id = (int)dialog_id;
@@ -1731,18 +1752,18 @@ public class MessagesStorage {
                             cursor.dispose();
 
                             if (containMessage) {
-                                cursor = database.queryFinalized(String.format(Locale.US, "SELECT * FROM (SELECT m.read_state, m.data, m.send_state, m.mid, m.date, r.random_id FROM messages as m LEFT JOIN randoms as r ON r.mid = m.mid WHERE m.uid = %d AND m.mid <= %d ORDER BY m.date DESC, m.mid DESC LIMIT %d) UNION " +
-                                        "SELECT * FROM (SELECT m.read_state, m.data, m.send_state, m.mid, m.date, r.random_id FROM messages as m LEFT JOIN randoms as r ON r.mid = m.mid WHERE m.uid = %d AND m.mid > %d ORDER BY m.date ASC, m.mid ASC LIMIT %d)", dialog_id, max_id, count_query / 2, dialog_id, max_id, count_query / 2 - 1));
+                                cursor = database.queryFinalized(String.format(Locale.US, "SELECT * FROM (SELECT m.read_state, m.data, m.send_state, m.mid, m.date, r.random_id, m.replydata FROM messages as m LEFT JOIN randoms as r ON r.mid = m.mid WHERE m.uid = %d AND m.mid <= %d ORDER BY m.date DESC, m.mid DESC LIMIT %d) UNION " +
+                                        "SELECT * FROM (SELECT m.read_state, m.data, m.send_state, m.mid, m.date, r.random_id, m.replydata FROM messages as m LEFT JOIN randoms as r ON r.mid = m.mid WHERE m.uid = %d AND m.mid > %d ORDER BY m.date ASC, m.mid ASC LIMIT %d)", dialog_id, max_id, count_query / 2, dialog_id, max_id, count_query / 2 - 1));
                             } else {
                                 cursor = null;
                             }
                         } else if (load_type == 1) {
-                            cursor = database.queryFinalized(String.format(Locale.US, "SELECT m.read_state, m.data, m.send_state, m.mid, m.date, r.random_id FROM messages as m LEFT JOIN randoms as r ON r.mid = m.mid WHERE m.uid = %d AND m.date >= %d AND m.mid > %d ORDER BY m.date ASC, m.mid ASC LIMIT %d", dialog_id, minDate, max_id, count_query));
+                            cursor = database.queryFinalized(String.format(Locale.US, "SELECT m.read_state, m.data, m.send_state, m.mid, m.date, r.random_id, m.replydata FROM messages as m LEFT JOIN randoms as r ON r.mid = m.mid WHERE m.uid = %d AND m.date >= %d AND m.mid > %d ORDER BY m.date ASC, m.mid ASC LIMIT %d", dialog_id, minDate, max_id, count_query));
                         } else if (minDate != 0) {
                             if (max_id != 0) {
-                                cursor = database.queryFinalized(String.format(Locale.US, "SELECT m.read_state, m.data, m.send_state, m.mid, m.date, r.random_id FROM messages as m LEFT JOIN randoms as r ON r.mid = m.mid WHERE m.uid = %d AND m.date <= %d AND m.mid < %d ORDER BY m.date DESC, m.mid DESC LIMIT %d", dialog_id, minDate, max_id, count_query));
+                                cursor = database.queryFinalized(String.format(Locale.US, "SELECT m.read_state, m.data, m.send_state, m.mid, m.date, r.random_id, m.replydata FROM messages as m LEFT JOIN randoms as r ON r.mid = m.mid WHERE m.uid = %d AND m.date <= %d AND m.mid < %d ORDER BY m.date DESC, m.mid DESC LIMIT %d", dialog_id, minDate, max_id, count_query));
                             } else {
-                                cursor = database.queryFinalized(String.format(Locale.US, "SELECT m.read_state, m.data, m.send_state, m.mid, m.date, r.random_id FROM messages as m LEFT JOIN randoms as r ON r.mid = m.mid WHERE m.uid = %d AND m.date <= %d ORDER BY m.date DESC, m.mid DESC LIMIT %d,%d", dialog_id, minDate, offset_query, count_query));
+                                cursor = database.queryFinalized(String.format(Locale.US, "SELECT m.read_state, m.data, m.send_state, m.mid, m.date, r.random_id, m.replydata FROM messages as m LEFT JOIN randoms as r ON r.mid = m.mid WHERE m.uid = %d AND m.date <= %d ORDER BY m.date DESC, m.mid DESC LIMIT %d,%d", dialog_id, minDate, offset_query, count_query));
                             }
                         } else {
                             if (load_type == 2) {
@@ -1778,16 +1799,16 @@ public class MessagesStorage {
                                 offset_query = count_unread - count_query;
                                 count_query += 10;
                             }
-                            cursor = database.queryFinalized(String.format(Locale.US, "SELECT m.read_state, m.data, m.send_state, m.mid, m.date, r.random_id FROM messages as m LEFT JOIN randoms as r ON r.mid = m.mid WHERE m.uid = %d ORDER BY m.date DESC, m.mid DESC LIMIT %d,%d", dialog_id, offset_query, count_query));
+                            cursor = database.queryFinalized(String.format(Locale.US, "SELECT m.read_state, m.data, m.send_state, m.mid, m.date, r.random_id, m.replydata FROM messages as m LEFT JOIN randoms as r ON r.mid = m.mid WHERE m.uid = %d ORDER BY m.date DESC, m.mid DESC LIMIT %d,%d", dialog_id, offset_query, count_query));
                         }
                     } else {
                         if (load_type == 1) {
-                            cursor = database.queryFinalized(String.format(Locale.US, "SELECT m.read_state, m.data, m.send_state, m.mid, m.date, r.random_id FROM messages as m LEFT JOIN randoms as r ON r.mid = m.mid WHERE m.uid = %d AND m.mid < %d ORDER BY m.mid DESC LIMIT %d", dialog_id, max_id, count_query));
+                            cursor = database.queryFinalized(String.format(Locale.US, "SELECT m.read_state, m.data, m.send_state, m.mid, m.date, r.random_id, m.replydata FROM messages as m LEFT JOIN randoms as r ON r.mid = m.mid WHERE m.uid = %d AND m.mid < %d ORDER BY m.mid DESC LIMIT %d", dialog_id, max_id, count_query));
                         } else if (minDate != 0) {
                             if (max_id != 0) {
-                                cursor = database.queryFinalized(String.format(Locale.US, "SELECT m.read_state, m.data, m.send_state, m.mid, m.date, r.random_id FROM messages as m LEFT JOIN randoms as r ON r.mid = m.mid WHERE m.uid = %d AND m.mid > %d ORDER BY m.mid ASC LIMIT %d", dialog_id, max_id, count_query));
+                                cursor = database.queryFinalized(String.format(Locale.US, "SELECT m.read_state, m.data, m.send_state, m.mid, m.date, r.random_id, m.replydata FROM messages as m LEFT JOIN randoms as r ON r.mid = m.mid WHERE m.uid = %d AND m.mid > %d ORDER BY m.mid ASC LIMIT %d", dialog_id, max_id, count_query));
                             } else {
-                                cursor = database.queryFinalized(String.format(Locale.US, "SELECT m.read_state, m.data, m.send_state, m.mid, m.date, r.random_id FROM messages as m LEFT JOIN randoms as r ON r.mid = m.mid WHERE m.uid = %d AND m.date <= %d ORDER BY m.mid ASC LIMIT %d,%d", dialog_id, minDate, offset_query, count_query));
+                                cursor = database.queryFinalized(String.format(Locale.US, "SELECT m.read_state, m.data, m.send_state, m.mid, m.date, r.random_id, m.replydata FROM messages as m LEFT JOIN randoms as r ON r.mid = m.mid WHERE m.uid = %d AND m.date <= %d ORDER BY m.mid ASC LIMIT %d,%d", dialog_id, minDate, offset_query, count_query));
                             }
                         } else {
                             if (load_type == 2) {
@@ -1823,7 +1844,7 @@ public class MessagesStorage {
                                 offset_query = count_unread - count_query;
                                 count_query += 10;
                             }
-                            cursor = database.queryFinalized(String.format(Locale.US, "SELECT m.read_state, m.data, m.send_state, m.mid, m.date, r.random_id FROM messages as m LEFT JOIN randoms as r ON r.mid = m.mid WHERE m.uid = %d ORDER BY m.mid ASC LIMIT %d,%d", dialog_id, offset_query, count_query));
+                            cursor = database.queryFinalized(String.format(Locale.US, "SELECT m.read_state, m.data, m.send_state, m.mid, m.date, r.random_id, m.replydata FROM messages as m LEFT JOIN randoms as r ON r.mid = m.mid WHERE m.uid = %d ORDER BY m.mid ASC LIMIT %d,%d", dialog_id, offset_query, count_query));
                         }
                     }
                     if (cursor != null) {
@@ -1848,6 +1869,43 @@ public class MessagesStorage {
                                 }
                                 if (message.fwd_from_id != 0) {
                                     fromUser.add(message.fwd_from_id);
+                                }
+                                if (message.reply_to_msg_id != 0) {
+                                    boolean ok = false;
+                                    if (!cursor.isNull(6)) {
+                                        ByteBufferDesc data2 = buffersStorage.getFreeBuffer(cursor.byteArrayLength(6));
+                                        if (data2 != null && cursor.byteBufferValue(6, data2.buffer) != 0) {
+                                            message.replyMessage = (TLRPC.Message) TLClassStore.Instance().TLdeserialize(data2, data2.readInt32());
+                                            if (message.replyMessage != null) {
+                                                fromUser.add(message.replyMessage.from_id);
+                                                if (message.replyMessage.action != null && message.replyMessage.action.user_id != 0) {
+                                                    fromUser.add(message.replyMessage.action.user_id);
+                                                }
+                                                if (message.replyMessage.media != null && message.replyMessage.media.user_id != 0) {
+                                                    fromUser.add(message.replyMessage.media.user_id);
+                                                }
+                                                if (message.replyMessage.media != null && message.replyMessage.media.audio != null && message.replyMessage.media.audio.user_id != 0) {
+                                                    fromUser.add(message.replyMessage.media.audio.user_id);
+                                                }
+                                                if (message.replyMessage.fwd_from_id != 0) {
+                                                    fromUser.add(message.replyMessage.fwd_from_id);
+                                                }
+                                                ok = true;
+                                            }
+                                        }
+                                        buffersStorage.reuseFreeBuffer(data2);
+                                    }
+                                    if (!ok) {
+                                        if (!replyMessages.contains(message.reply_to_msg_id)) {
+                                            replyMessages.add(message.reply_to_msg_id);
+                                        }
+                                        ArrayList<TLRPC.Message> messages = replyMessageOwners.get(message.reply_to_msg_id);
+                                        if (messages == null) {
+                                            messages = new ArrayList<>();
+                                            replyMessageOwners.put(message.reply_to_msg_id, messages);
+                                        }
+                                        messages.add(message);
+                                    }
                                 }
                                 message.send_state = cursor.intValue(2);
                                 if (!MessageObject.isUnread(message) && lower_id != 0 || message.id > 0) {
@@ -1899,33 +1957,39 @@ public class MessagesStorage {
                         }
                     });
 
-                    /*ArrayList<Range<Integer>> holes = getHoles(dialog_id);
-                    if (holes != null && !res.messages.isEmpty()) {
-                        int start = res.messages.get(res.messages.size() - 1).id;
-                        int end = res.messages.get(0).id;
-                        for (Range<Integer> range : holes) {
-                            if (range.contains(start) && range.contains(end)) {
-                                res.messages.clear();
-                            } else if (range.contains(start)) {
-                                while (!res.messages.isEmpty() && range.contains(res.messages.get(res.messages.size() - 1).id)) {
-                                    res.messages.remove(res.messages.size() - 1);
+                    if (!replyMessages.isEmpty()) {
+                        cursor = database.queryFinalized(String.format(Locale.US, "SELECT data, mid, date FROM messages WHERE mid IN(%s)", TextUtils.join(",", replyMessages)));
+                        while (cursor.next()) {
+                            ByteBufferDesc data = buffersStorage.getFreeBuffer(cursor.byteArrayLength(0));
+                            if (data != null && cursor.byteBufferValue(0, data.buffer) != 0) {
+                                TLRPC.Message message = (TLRPC.Message) TLClassStore.Instance().TLdeserialize(data, data.readInt32());
+                                message.id = cursor.intValue(1);
+                                message.date = cursor.intValue(2);
+                                message.dialog_id = dialog_id;
+                                fromUser.add(message.from_id);
+                                if (message.action != null && message.action.user_id != 0) {
+                                    fromUser.add(message.action.user_id);
                                 }
-                                if (!res.messages.isEmpty()) {
-                                    start = res.messages.get(res.messages.size() - 1).id;
+                                if (message.media != null && message.media.user_id != 0) {
+                                    fromUser.add(message.media.user_id);
                                 }
-                            } else if (range.contains(end)) {
-                                while (!res.messages.isEmpty() && range.contains(res.messages.get(0).id)) {
-                                    res.messages.remove(0);
+                                if (message.media != null && message.media.audio != null && message.media.audio.user_id != 0) {
+                                    fromUser.add(message.media.audio.user_id);
                                 }
-                                if (!res.messages.isEmpty()) {
-                                    end = res.messages.get(0).id;
+                                if (message.fwd_from_id != 0) {
+                                    fromUser.add(message.fwd_from_id);
                                 }
-                            } else if (start >= )
-                            if (res.messages.isEmpty()) {
-                                break;
+                                ArrayList<TLRPC.Message> arrayList = replyMessageOwners.get(message.id);
+                                if (arrayList != null) {
+                                    for (TLRPC.Message m : arrayList) {
+                                        m.replyMessage = message;
+                                    }
+                                }
                             }
+                            buffersStorage.reuseFreeBuffer(data);
                         }
-                    }*/
+                        cursor.dispose();
+                    }
 
                     StringBuilder usersToLoad = new StringBuilder();
                     for (int uid : fromUser) {
@@ -2590,7 +2654,7 @@ public class MessagesStorage {
             HashMap<Integer, Long> messagesMediaIdsMap = new HashMap<>();
             StringBuilder messageIds = new StringBuilder();
             StringBuilder messageMediaIds = new StringBuilder();
-            SQLitePreparedStatement state = database.executeFast("REPLACE INTO messages VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            SQLitePreparedStatement state = database.executeFast("REPLACE INTO messages VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)");
             SQLitePreparedStatement state2 = database.executeFast("REPLACE INTO media_v2 VALUES(?, ?, ?, ?, ?)");
             SQLitePreparedStatement state3 = database.executeFast("REPLACE INTO randoms VALUES(?, ?)");
             SQLitePreparedStatement state4 = database.executeFast("REPLACE INTO download_queue VALUES(?, ?, ?, ?)");
@@ -3164,14 +3228,20 @@ public class MessagesStorage {
         }
     }
 
-    private void markMessagesAsReadInternal(final ArrayList<Integer> messages, HashMap<Integer, Integer> encryptedMessages) {
+    private void markMessagesAsReadInternal(HashMap<Integer, Integer> inbox, HashMap<Integer, Integer> outbox, HashMap<Integer, Integer> encryptedMessages) {
         if (Thread.currentThread().getId() != storageQueue.getId()) {
             throw new RuntimeException("wrong db thread");
         }
         try {
-            if (messages != null && !messages.isEmpty()) {
-                String ids = TextUtils.join(",", messages);
-                database.executeFast(String.format(Locale.US, "UPDATE messages SET read_state = 1 WHERE mid IN(%s)", ids)).stepThis().dispose();
+            if (inbox != null) {
+                for (HashMap.Entry<Integer, Integer> entry : inbox.entrySet()) {
+                    database.executeFast(String.format(Locale.US, "UPDATE messages SET read_state = 1 WHERE uid = %d AND mid <= %d AND read_state = 0 AND out = 0", entry.getKey(), entry.getValue())).stepThis().dispose();
+                }
+            }
+            if (outbox != null) {
+                for (HashMap.Entry<Integer, Integer> entry : outbox.entrySet()) {
+                    database.executeFast(String.format(Locale.US, "UPDATE messages SET read_state = 1 WHERE uid = %d AND mid <= %d AND read_state = 0 AND out = 1", entry.getKey(), entry.getValue())).stepThis().dispose();
+                }
             }
             if (encryptedMessages != null && !encryptedMessages.isEmpty()) {
                 for (HashMap.Entry<Integer, Integer> entry : encryptedMessages.entrySet()) {
@@ -3190,16 +3260,16 @@ public class MessagesStorage {
         }
     }
 
-    public void markMessagesAsRead(final ArrayList<Integer> messages, final HashMap<Integer, Integer> encryptedMessages, boolean useQueue) {
+    public void markMessagesAsRead(final HashMap<Integer, Integer> inbox, final HashMap<Integer, Integer> outbox, final HashMap<Integer, Integer> encryptedMessages, boolean useQueue) {
         if (useQueue) {
             storageQueue.postRunnable(new Runnable() {
                 @Override
                 public void run() {
-                    markMessagesAsReadInternal(messages, encryptedMessages);
+                    markMessagesAsReadInternal(inbox, outbox, encryptedMessages);
                 }
             });
         } else {
-            markMessagesAsReadInternal(messages, encryptedMessages);
+            markMessagesAsReadInternal(inbox, outbox, encryptedMessages);
         }
     }
 
@@ -3231,7 +3301,7 @@ public class MessagesStorage {
                                 NotificationCenter.getInstance().postNotificationName(NotificationCenter.messagesDeleted, mids);
                             }
                         });
-                        MessagesStorage.getInstance().updateDialogsWithReadedMessagesInternal(mids);
+                        MessagesStorage.getInstance().updateDialogsWithReadedMessagesInternal(mids, null);
                         MessagesStorage.getInstance().markMessagesAsDeletedInternal(mids);
                         MessagesStorage.getInstance().updateDialogsWithDeletedMessagesInternal(mids);
                     }
@@ -3472,7 +3542,7 @@ public class MessagesStorage {
                 try {
                     database.beginTransaction();
                     if (!messages.messages.isEmpty()) {
-                        SQLitePreparedStatement state = database.executeFast("REPLACE INTO messages VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                        SQLitePreparedStatement state = database.executeFast("REPLACE INTO messages VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)");
                         SQLitePreparedStatement state2 = database.executeFast("REPLACE INTO media_v2 VALUES(?, ?, ?, ?, ?)");
                         for (TLRPC.Message message : messages.messages) {
                             fixUnsupportedMedia(message);
@@ -3644,7 +3714,7 @@ public class MessagesStorage {
                     }
 
                     if (!dialogs.dialogs.isEmpty()) {
-                        SQLitePreparedStatement state = database.executeFast("REPLACE INTO messages VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                        SQLitePreparedStatement state = database.executeFast("REPLACE INTO messages VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)");
                         SQLitePreparedStatement state2 = database.executeFast("REPLACE INTO dialogs(did, date, unread_count, last_mid) VALUES(?, ?, ?, ?)");
                         SQLitePreparedStatement state3 = database.executeFast("REPLACE INTO media_v2 VALUES(?, ?, ?, ?, ?)");
                         SQLitePreparedStatement state4 = database.executeFast("REPLACE INTO dialog_settings VALUES(?, ?)");

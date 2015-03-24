@@ -14,12 +14,14 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
+import android.graphics.PorterDuff;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
 import android.widget.AdapterView;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ListView;
@@ -63,6 +65,7 @@ public class ThemingActivity extends BaseFragment {
     private int chatRow;
     private int contactsRow;
     private int drawerRow;
+    private int profileRow;
 
     private int themesSectionRow;
     private int themesSection2Row;
@@ -88,6 +91,7 @@ public class ThemingActivity extends BaseFragment {
         chatRow = rowCount++;
         contactsRow = rowCount++;
         drawerRow = rowCount++;
+        profileRow = rowCount++;
 
         themesSectionRow = rowCount++;
         themesSection2Row = rowCount++;
@@ -110,25 +114,18 @@ public class ThemingActivity extends BaseFragment {
     @Override
     public View createView(LayoutInflater inflater) {
         if (fragmentView == null) {
-            //SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(THEME_PREFS, Activity.MODE_PRIVATE);
-            //themeColor = themePrefs.getInt("themeColor", defThemeColor);
-            //actionBar.setBackgroundColor(AvatarDrawable.getProfileBackColorForId(5));
-            //actionBar.setBackgroundColor(themeColor);
+
 
             actionBar.setItemsBackground(AvatarDrawable.getButtonColorForId(5));
             actionBar.setBackButtonImage(R.drawable.ic_ab_back);
 
-            //actionBar.setExtraHeight(AndroidUtilities.dp(88), false);
+
             if (AndroidUtilities.isTablet()) {
                 actionBar.setOccupyStatusBar(false);
             }
             actionBar.setTitle(LocaleController.getString("Theming", R.string.Theming));
 
-            //plus
-            //TextView title = (TextView)getParentActivity().findViewById(R.id.action_bar_title);
-            //AndroidUtilities.paintActionBarHeader(getParentActivity(),actionBar,"chatsHeaderBackgroundColorCheck","");
-            //AndroidUtilities.setTVTextColor(getParentActivity(),title,"plus_header_title_color_check", Color.WHITE);
-            //plus*
+
             actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
                 @Override
                 public void onItemClick(int id) {
@@ -137,12 +134,7 @@ public class ThemingActivity extends BaseFragment {
                     }
                 }
             });
-            /*
-            ActionBarMenu menu = actionBar.createMenu();
-            ActionBarMenuItem item = menu.addItem(0, R.drawable.ic_ab_other);
-            item.addSubItem(edit_name, LocaleController.getString("EditName", R.string.EditName), 0);
-            item.addSubItem(logout, LocaleController.getString("LogOut", R.string.LogOut), 0);
-            */
+
             listAdapter = new ListAdapter(getParentActivity());
 
             fragmentView = new FrameLayout(getParentActivity());
@@ -172,7 +164,7 @@ public class ThemingActivity extends BaseFragment {
                         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, Activity.MODE_PRIVATE);
                         LayoutInflater li = (LayoutInflater)getParentActivity().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
 
-                        view = li.inflate(R.layout.colordialog, null, false);
+                        li.inflate(R.layout.colordialog, null, false);
 
                         ColorSelectorDialog colorDialog = new ColorSelectorDialog(getParentActivity(), new OnColorChangedListener() {
                             @Override
@@ -189,8 +181,12 @@ public class ThemingActivity extends BaseFragment {
                         AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                         builder.setView(promptsView);
                         final EditText userInput = (EditText) promptsView.findViewById(R.id.editTextDialogUserInput);
-                        builder.setMessage(LocaleController.getString("EnterName", R.string.EnterName));
-                        //builder.setTitle(LocaleController.getString("SaveTheme", R.string.SaveTheme));
+                        userInput.setHint(LocaleController.getString("EnterName", R.string.EnterName));
+                        userInput.setHintTextColor(0xff979797);
+                        userInput.getBackground().setColorFilter(AndroidUtilities.getIntColor("themeColor"), PorterDuff.Mode.SRC_IN);
+                        AndroidUtilities.clearCursorDrawable(userInput);
+                        //builder.setMessage(LocaleController.getString("EnterName", R.string.EnterName));
+                        builder.setTitle(LocaleController.getString("SaveTheme", R.string.SaveTheme));
                         builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), new DialogInterface.OnClickListener() {
                             @Override
                             public void onClick(DialogInterface dialogInterface, int i) {
@@ -214,8 +210,10 @@ public class ThemingActivity extends BaseFragment {
                                 });
                             }
                         });
+
                         builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
                         showAlertDialog(builder);
+
                     }  else if (i == applyThemeRow) {
                         DocumentSelectActivity fragment = new DocumentSelectActivity();
                         fragment.fileFilter = ".xml";
@@ -315,6 +313,8 @@ public class ThemingActivity extends BaseFragment {
                         presentFragment(new ThemingContactsActivity());
                     } else if (i == drawerRow) {
                         presentFragment(new ThemingDrawerActivity());
+                    } else if (i == profileRow) {
+                        presentFragment(new ThemingProfileActivity());
                     }
                 }
             });
@@ -411,6 +411,8 @@ public class ThemingActivity extends BaseFragment {
         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, Activity.MODE_PRIVATE);
         SharedPreferences.Editor editor = preferences.edit();
         editor.putInt("themeColor", i);
+        AndroidUtilities.themeColor = i;
+        editor.commit();
         //Reset Theme Colors
         editor.putInt("chatsHeaderColor", i);
         editor.putInt("chatsCountBGColor", i);
@@ -419,13 +421,14 @@ public class ThemingActivity extends BaseFragment {
         editor.putInt("chatsFloatingBGColor", i);
 
         editor.putInt("chatHeaderColor", i);
-        editor.putInt("chatRBubbleColor", AndroidUtilities.setDarkColor(i, -0x80));
+        editor.putInt("chatRBubbleColor", AndroidUtilities.getDefBubbleColor());
         editor.putInt("chatStatusColor", AndroidUtilities.setDarkColor(i, -0x40));
         editor.putInt("chatRTimeColor", AndroidUtilities.setDarkColor(i, 0x15));
         editor.putInt("chatEmojiViewTabColor", AndroidUtilities.setDarkColor(i, 0x15));
         editor.putInt("chatChecksColor", i);
         editor.putInt("chatSendIconColor", i);
         editor.putInt("chatMemberColor", AndroidUtilities.setDarkColor(i, 0x15));
+        editor.putInt("chatForwardColor", AndroidUtilities.setDarkColor(i, 0x15));
 
         editor.putInt("contactsHeaderColor", i);
         editor.putInt("contactsOnlineColor", AndroidUtilities.setDarkColor(i, 0x15));
@@ -483,7 +486,7 @@ public class ThemingActivity extends BaseFragment {
 
         @Override
         public boolean isEnabled(int i) {
-            return  i == themeColorRow || i == chatsRow || i == chatRow || i == contactsRow || i == drawerRow || i == resetThemeRow || i == saveThemeRow || i == applyThemeRow;
+            return  i == themeColorRow || i == chatsRow || i == chatRow || i == contactsRow || i == drawerRow || i == profileRow || i == resetThemeRow || i == saveThemeRow || i == applyThemeRow;
         }
 
         @Override
@@ -540,8 +543,9 @@ public class ThemingActivity extends BaseFragment {
                     textCell.setText(LocaleController.getString("ContactsScreen", R.string.ContactsScreen), true);
                 } else if (i == drawerRow) {
                     textCell.setText(LocaleController.getString("NavigationDrawer", R.string.NavigationDrawer), true);
+                } else if (i == profileRow) {
+                    textCell.setText(LocaleController.getString("ProfileScreen", R.string.ProfileScreen), true);
                 }
-
             }
             else if (type == 3) {
                 if (view == null) {

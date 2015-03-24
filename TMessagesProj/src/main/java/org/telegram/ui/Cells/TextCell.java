@@ -96,10 +96,6 @@ public class TextCell extends FrameLayout {
         textView.setTextColor(color);
     }
 
-    public void setTextSize(int size) {
-        textView.setTextSize(size);
-    }
-
     public void setText(String text) {
         textView.setText(text);
         imageView.setVisibility(GONE);
@@ -113,6 +109,22 @@ public class TextCell extends FrameLayout {
         imageView.setVisibility(VISIBLE);
         valueTextView.setVisibility(GONE);
         valueImageView.setVisibility(GONE);
+    }
+
+    public void setTextSize(int size) {
+        textView.setTextSize(size);
+    }
+
+    public void setTextAndIcon(String text, Drawable drawable) {
+        textView.setText(text);
+        imageView.setImageDrawable(drawable);
+        imageView.setVisibility(VISIBLE);
+        valueTextView.setVisibility(GONE);
+        valueImageView.setVisibility(GONE);
+    }
+
+    public void setValueColor(int color) {
+        valueTextView.setTextColor(color);
     }
 
     public void setTextAndValue(String text, String value) {

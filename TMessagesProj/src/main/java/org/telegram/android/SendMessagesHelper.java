@@ -174,12 +174,12 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                         for (int a = 0; a < arr.size(); a++) {
                             DelayedMessage obj = arr.get(a);
                             if (enc && obj.sendEncryptedRequest != null || !enc && obj.sendRequest != null) {
-                                MessagesStorage.getInstance().markMessageAsSendError(obj.obj.messageOwner.id);
+                                MessagesStorage.getInstance().markMessageAsSendError(obj.obj.getId());
                                 obj.obj.messageOwner.send_state = MessageObject.MESSAGE_SEND_STATE_SEND_ERROR;
                                 arr.remove(a);
                                 a--;
-                                NotificationCenter.getInstance().postNotificationName(NotificationCenter.messageSendError, obj.obj.messageOwner.id);
-                                processSentMessage(obj.obj.messageOwner.id);
+                                NotificationCenter.getInstance().postNotificationName(NotificationCenter.messageSendError, obj.obj.getId());
+                                processSentMessage(obj.obj.getId());
                             }
                         }
                         if (arr.isEmpty()) {
@@ -244,12 +244,12 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                 for (int a = 0; a < arr.size(); a++) {
                     DelayedMessage message = arr.get(a);
                     if (message.obj == messageObject) {
-                        MessagesStorage.getInstance().markMessageAsSendError(message.obj.messageOwner.id);
+                        MessagesStorage.getInstance().markMessageAsSendError(message.obj.getId());
                         message.obj.messageOwner.send_state = MessageObject.MESSAGE_SEND_STATE_SEND_ERROR;
                         arr.remove(a);
                         a--;
-                        NotificationCenter.getInstance().postNotificationName(NotificationCenter.messageSendError, message.obj.messageOwner.id);
-                        processSentMessage(message.obj.messageOwner.id);
+                        NotificationCenter.getInstance().postNotificationName(NotificationCenter.messageSendError, message.obj.getId());
+                        processSentMessage(message.obj.getId());
                     }
                 }
                 if (arr.isEmpty()) {
@@ -284,10 +284,10 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                                             NotificationCenter.getInstance().postNotificationName(NotificationCenter.updateMessageMedia, message.obj);
                                         } else {
                                             FileLog.e("tmessages", "can't load image " + message.httpLocation + " to file " + cacheFile.toString());
-                                            MessagesStorage.getInstance().markMessageAsSendError(message.obj.messageOwner.id);
+                                            MessagesStorage.getInstance().markMessageAsSendError(message.obj.getId());
                                             message.obj.messageOwner.send_state = MessageObject.MESSAGE_SEND_STATE_SEND_ERROR;
-                                            NotificationCenter.getInstance().postNotificationName(NotificationCenter.messageSendError, message.obj.messageOwner.id);
-                                            processSentMessage(message.obj.messageOwner.id);
+                                            NotificationCenter.getInstance().postNotificationName(NotificationCenter.messageSendError, message.obj.getId());
+                                            processSentMessage(message.obj.getId());
                                         }
                                     }
                                 });
@@ -339,10 +339,10 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
             ArrayList<DelayedMessage> arr = delayedMessages.get(path);
             if (arr != null) {
                 for (DelayedMessage message : arr) {
-                    MessagesStorage.getInstance().markMessageAsSendError(message.obj.messageOwner.id);
+                    MessagesStorage.getInstance().markMessageAsSendError(message.obj.getId());
                     message.obj.messageOwner.send_state = MessageObject.MESSAGE_SEND_STATE_SEND_ERROR;
-                    NotificationCenter.getInstance().postNotificationName(NotificationCenter.messageSendError, message.obj.messageOwner.id);
-                    processSentMessage(message.obj.messageOwner.id);
+                    NotificationCenter.getInstance().postNotificationName(NotificationCenter.messageSendError, message.obj.getId());
+                    processSentMessage(message.obj.getId());
                 }
                 delayedMessages.remove(path);
             }
@@ -356,7 +356,7 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
             ArrayList<DelayedMessage> messages = entry.getValue();
             for (int a = 0; a < messages.size(); a++) {
                 DelayedMessage message = messages.get(a);
-                if (message.obj.messageOwner.id == object.messageOwner.id) {
+                if (message.obj.getId() == object.getId()) {
                     messages.remove(a);
                     MediaController.getInstance().cancelVideoConvert(message.obj);
                     if (messages.size() == 0) {
@@ -378,22 +378,22 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
             stopVideoService(keyToRemvoe);
         }
         ArrayList<Integer> messages = new ArrayList<>();
-        messages.add(object.messageOwner.id);
+        messages.add(object.getId());
         MessagesController.getInstance().deleteMessages(messages, null, null);
     }
 
     public boolean retrySendMessage(MessageObject messageObject, boolean unsent) {
-        if (messageObject.messageOwner.id >= 0) {
+        if (messageObject.getId() >= 0) {
             return false;
         }
         if (messageObject.messageOwner.action instanceof TLRPC.TL_messageEncryptedAction) {
             int enc_id = (int) (messageObject.getDialogId() >> 32);
             TLRPC.EncryptedChat encryptedChat = MessagesController.getInstance().getEncryptedChat(enc_id);
             if (encryptedChat == null) {
-                MessagesStorage.getInstance().markMessageAsSendError(messageObject.messageOwner.id);
+                MessagesStorage.getInstance().markMessageAsSendError(messageObject.getId());
                 messageObject.messageOwner.send_state = MessageObject.MESSAGE_SEND_STATE_SEND_ERROR;
-                NotificationCenter.getInstance().postNotificationName(NotificationCenter.messageSendError, messageObject.messageOwner.id);
-                processSentMessage(messageObject.messageOwner.id);
+                NotificationCenter.getInstance().postNotificationName(NotificationCenter.messageSendError, messageObject.getId());
+                processSentMessage(messageObject.getId());
                 return false;
             }
             if (messageObject.messageOwner.random_id == 0) {
@@ -429,7 +429,7 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
             return true;
         }
         if (unsent) {
-            unsentMessages.put(messageObject.messageOwner.id, messageObject);
+            unsentMessages.put(messageObject.getId(), messageObject);
         }
         sendMessage(messageObject);
         return true;
@@ -449,75 +449,233 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
         }
         if (messageObject.messageOwner.media != null && !(messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaEmpty)) {
             if (messageObject.messageOwner.media.photo instanceof TLRPC.TL_photo) {
-                sendMessage((TLRPC.TL_photo) messageObject.messageOwner.media.photo, null, null, did);
+                sendMessage((TLRPC.TL_photo) messageObject.messageOwner.media.photo, null, null, did, messageObject.replyMessageObject);
             } else if (messageObject.messageOwner.media.audio instanceof TLRPC.TL_audio) {
-                sendMessage((TLRPC.TL_audio) messageObject.messageOwner.media.audio, messageObject.messageOwner.attachPath, did);
+                sendMessage((TLRPC.TL_audio) messageObject.messageOwner.media.audio, messageObject.messageOwner.attachPath, did, messageObject.replyMessageObject);
             } else if (messageObject.messageOwner.media.video instanceof TLRPC.TL_video) {
                 TLRPC.TL_video video = (TLRPC.TL_video) messageObject.messageOwner.media.video;
                 video.videoEditedInfo = messageObject.messageOwner.videoEditedInfo;
-                sendMessage(video, null, messageObject.messageOwner.attachPath, did);
+                sendMessage(video, null, messageObject.messageOwner.attachPath, did, messageObject.replyMessageObject);
             } else if (messageObject.messageOwner.media.document instanceof TLRPC.TL_document) {
-                sendMessage((TLRPC.TL_document) messageObject.messageOwner.media.document, null, messageObject.messageOwner.attachPath, did);
+                sendMessage((TLRPC.TL_document) messageObject.messageOwner.media.document, null, messageObject.messageOwner.attachPath, did, messageObject.replyMessageObject);
             } else if (messageObject.messageOwner.media.geo instanceof TLRPC.TL_geoPoint) {
-                sendMessage(messageObject.messageOwner.media.geo.lat, messageObject.messageOwner.media.geo._long, did);
+                sendMessage(messageObject.messageOwner.media.geo.lat, messageObject.messageOwner.media.geo._long, did, messageObject.replyMessageObject);
             } else if (messageObject.messageOwner.media.phone_number != null) {
                 TLRPC.User user = new TLRPC.TL_userContact();
                 user.phone = messageObject.messageOwner.media.phone_number;
                 user.first_name = messageObject.messageOwner.media.first_name;
                 user.last_name = messageObject.messageOwner.media.last_name;
                 user.id = messageObject.messageOwner.media.user_id;
-                sendMessage(user, did);
+                sendMessage(user, did, messageObject.replyMessageObject);
             } else {
                 sendMessage(messageObject, did);
             }
         } else if (messageObject.messageOwner.message != null) {
-            sendMessage(messageObject.messageOwner.message, did);
+            sendMessage(messageObject.messageOwner.message, did, messageObject.replyMessageObject);
         } else {
             sendMessage(messageObject, did);
         }
     }
 
-    public void sendMessage(TLRPC.User user, long peer) {
-        sendMessage(null, null, null, null, null, null, user, null, null, null, peer, false, null);
+    public void sendMessage(TLRPC.User user, long peer, MessageObject reply_to_msg) {
+        sendMessage(null, null, null, null, null, null, user, null, null, null, peer, false, null, reply_to_msg);
     }
 
-    public void sendMessage(ArrayList<MessageObject> messages) {
+    public void sendMessage(ArrayList<MessageObject> messages, long peer) {
+        if ((int) peer == 0 || messages == null || messages.isEmpty()) {
+            return;
+        }
+        int lower_id = (int) peer;
+        TLRPC.Peer to_id;
+        TLRPC.InputPeer sendToPeer;
+        if (lower_id < 0) {
+            to_id = new TLRPC.TL_peerChat();
+            to_id.chat_id = -lower_id;
+            sendToPeer = new TLRPC.TL_inputPeerChat();
+            sendToPeer.chat_id = -lower_id;
+        } else {
+            to_id = new TLRPC.TL_peerUser();
+            to_id.user_id = lower_id;
+            TLRPC.User sendToUser = MessagesController.getInstance().getUser(lower_id);
+            if (sendToUser == null) {
+                return;
+            }
+            if (sendToUser instanceof TLRPC.TL_userForeign || sendToUser instanceof TLRPC.TL_userRequest) {
+                sendToPeer = new TLRPC.TL_inputPeerForeign();
+                sendToPeer.user_id = sendToUser.id;
+                sendToPeer.access_hash = sendToUser.access_hash;
+            } else {
+                sendToPeer = new TLRPC.TL_inputPeerContact();
+                sendToPeer.user_id = sendToUser.id;
+            }
+        }
 
+        ArrayList<MessageObject> objArr = new ArrayList<>();
+        ArrayList<TLRPC.Message> arr = new ArrayList<>();
+        ArrayList<Long> randomIds = new ArrayList<>();
+        ArrayList<Integer> ids = new ArrayList<>();
+        HashMap<Long, TLRPC.Message> messagesByRandomIds = new HashMap<>();
+
+        for (int a = 0; a < messages.size(); a++) {
+            MessageObject msgObj = messages.get(a);
+
+            final TLRPC.Message newMsg = new TLRPC.TL_message();
+            newMsg.flags |= TLRPC.MESSAGE_FLAG_FWD;
+            if (msgObj.isForwarded()) {
+                newMsg.fwd_from_id = msgObj.messageOwner.fwd_from_id;
+                newMsg.fwd_date = msgObj.messageOwner.fwd_date;
+            } else {
+                newMsg.fwd_from_id = msgObj.messageOwner.from_id;
+                newMsg.fwd_date = msgObj.messageOwner.date;
+            }
+            newMsg.media = msgObj.messageOwner.media;
+            newMsg.message = msgObj.messageOwner.message;
+            newMsg.fwd_msg_id = msgObj.getId();
+            newMsg.attachPath = msgObj.messageOwner.attachPath;
+            if (newMsg.attachPath == null) {
+                newMsg.attachPath = "";
+            }
+            newMsg.local_id = newMsg.id = UserConfig.getNewMessageId();
+            newMsg.from_id = UserConfig.getClientUserId();
+            newMsg.flags |= TLRPC.MESSAGE_FLAG_OUT;
+            if (newMsg.random_id == 0) {
+                newMsg.random_id = getNextRandomId();
+            }
+            randomIds.add(newMsg.random_id);
+            messagesByRandomIds.put(newMsg.random_id, newMsg);
+            ids.add(newMsg.fwd_msg_id);
+            newMsg.date = ConnectionsManager.getInstance().getCurrentTime();
+            newMsg.flags |= TLRPC.MESSAGE_FLAG_UNREAD;
+            newMsg.dialog_id = peer;
+            newMsg.to_id = to_id;
+            MessageObject newMsgObj = new MessageObject(newMsg, null, true);
+            newMsgObj.messageOwner.send_state = MessageObject.MESSAGE_SEND_STATE_SENDING;
+            objArr.add(newMsgObj);
+            arr.add(newMsg);
+
+            putToSendingMessages(newMsg);
+
+            if (arr.size() == 100 || a == messages.size() - 1) {
+                MessagesStorage.getInstance().putMessages(arr, false, true, false, 0);
+                MessagesController.getInstance().updateInterfaceWithMessages(peer, objArr);
+                NotificationCenter.getInstance().postNotificationName(NotificationCenter.dialogsNeedReload);
+                UserConfig.saveConfig(false);
+
+                TLRPC.TL_messages_forwardMessages req = new TLRPC.TL_messages_forwardMessages();
+                req.peer = sendToPeer;
+                req.random_id = randomIds;
+                req.id = ids;
+
+                final ArrayList<TLRPC.Message> newMsgObjArr = arr;
+                ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
+                    @Override
+                    public void run(TLObject response, TLRPC.TL_error error) {
+                        if (error == null) {
+                            final TLRPC.messages_StatedMessages res = (TLRPC.messages_StatedMessages) response;
+                            if (newMsgObjArr.size() != res.messages.size()) {
+                                MessagesController.getInstance().getDifference();
+                                return;
+                            }
+                            if (res instanceof TLRPC.TL_messages_statedMessages) {
+                                MessagesController.getInstance().processNewDifferenceParams(-1, res.pts, -1, res.pts_count);
+                            } else if (res instanceof TLRPC.TL_messages_statedMessagesLinks) {
+                                MessagesController.getInstance().processNewDifferenceParams(res.seq, res.pts, -1, res.pts_count);
+                            }
+                            for (int a = 0; a < res.messages.size(); a++) {
+                                TLRPC.Message message = res.messages.get(a);
+                                final TLRPC.Message newMsgObj = newMsgObjArr.get(a);
+                                if (newMsgObj == null) {
+                                    continue;
+                                }
+                                final int oldId = newMsgObj.id;
+                                final ArrayList<TLRPC.Message> sentMessages = new ArrayList<>();
+                                sentMessages.add(message);
+                                newMsgObj.id = message.id;
+                                processSentMessage(newMsgObj, message, null);
+                                MessagesStorage.getInstance().getStorageQueue().postRunnable(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        MessagesStorage.getInstance().updateMessageStateAndId(newMsgObj.random_id, oldId, newMsgObj.id, 0, false);
+                                        MessagesStorage.getInstance().putMessages(sentMessages, true, false, false, 0);
+                                        AndroidUtilities.runOnUIThread(new Runnable() {
+                                            @Override
+                                            public void run() {
+                                                newMsgObj.send_state = MessageObject.MESSAGE_SEND_STATE_SENT;
+                                                NotificationCenter.getInstance().postNotificationName(NotificationCenter.messageReceivedByServer, oldId, newMsgObj.id, newMsgObj);
+                                                processSentMessage(oldId);
+                                                removeFromSendingMessages(oldId);
+                                            }
+                                        });
+                                        if (newMsgObj.media instanceof TLRPC.TL_messageMediaVideo) {
+                                            stopVideoService(newMsgObj.attachPath);
+                                        }
+                                    }
+                                });
+                            }
+                        } else {
+                            for (final TLRPC.Message newMsgObj : newMsgObjArr) {
+                                MessagesStorage.getInstance().markMessageAsSendError(newMsgObj.id);
+                                AndroidUtilities.runOnUIThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        newMsgObj.send_state = MessageObject.MESSAGE_SEND_STATE_SEND_ERROR;
+                                        NotificationCenter.getInstance().postNotificationName(NotificationCenter.messageSendError, newMsgObj.id);
+                                        processSentMessage(newMsgObj.id);
+                                        if (newMsgObj.media instanceof TLRPC.TL_messageMediaVideo) {
+                                            stopVideoService(newMsgObj.attachPath);
+                                        }
+                                        removeFromSendingMessages(newMsgObj.id);
+                                    }
+                                });
+                            }
+                        }
+                    }
+                }, null, true, RPCRequest.RPCRequestClassGeneric | RPCRequest.RPCRequestClassCanCompress, ConnectionsManager.DEFAULT_DATACENTER_ID);
+
+                if (a != messages.size() - 1) {
+                    objArr = new ArrayList<>();
+                    arr = new ArrayList<>();
+                    randomIds = new ArrayList<>();
+                    ids = new ArrayList<>();
+                    messagesByRandomIds = new HashMap<>();
+                }
+            }
+        }
     }
 
     public void sendMessage(MessageObject message) {
-        sendMessage(null, null, null, null, null, message, null, null, null, null, message.getDialogId(), true, message.messageOwner.attachPath);
+        sendMessage(null, null, null, null, null, message, null, null, null, null, message.getDialogId(), true, message.messageOwner.attachPath, null);
     }
 
     public void sendMessage(MessageObject message, long peer) {
-        sendMessage(null, null, null, null, null, message, null, null, null, null, peer, false, message.messageOwner.attachPath);
+        sendMessage(null, null, null, null, null, message, null, null, null, null, peer, false, message.messageOwner.attachPath, null);
     }
 
-    public void sendMessage(TLRPC.TL_document document, String originalPath, String path, long peer) {
-        sendMessage(null, null, null, null, null, null, null, document, null, originalPath, peer, false, path);
+    public void sendMessage(TLRPC.TL_document document, String originalPath, String path, long peer, MessageObject reply_to_msg) {
+        sendMessage(null, null, null, null, null, null, null, document, null, originalPath, peer, false, path, reply_to_msg);
     }
 
-    public void sendMessage(String message, long peer) {
-        sendMessage(message, null, null, null, null, null, null, null, null, null, peer, false, null);
+    public void sendMessage(String message, long peer, MessageObject reply_to_msg) {
+        sendMessage(message, null, null, null, null, null, null, null, null, null, peer, false, null, reply_to_msg);
     }
 
-    public void sendMessage(double lat, double lon, long peer) {
-        sendMessage(null, lat, lon, null, null, null, null, null, null, null, peer, false, null);
+    public void sendMessage(double lat, double lon, long peer, MessageObject reply_to_msg) {
+        sendMessage(null, lat, lon, null, null, null, null, null, null, null, peer, false, null, reply_to_msg);
     }
 
-    public void sendMessage(TLRPC.TL_photo photo, String originalPath, String path, long peer) {
-        sendMessage(null, null, null, photo, null, null, null, null, null, originalPath, peer, false, path);
+    public void sendMessage(TLRPC.TL_photo photo, String originalPath, String path, long peer, MessageObject reply_to_msg) {
+        sendMessage(null, null, null, photo, null, null, null, null, null, originalPath, peer, false, path, reply_to_msg);
     }
 
-    public void sendMessage(TLRPC.TL_video video, String originalPath, String path, long peer) {
-        sendMessage(null, null, null, null, video, null, null, null, null, originalPath, peer, false, path);
+    public void sendMessage(TLRPC.TL_video video, String originalPath, String path, long peer, MessageObject reply_to_msg) {
+        sendMessage(null, null, null, null, video, null, null, null, null, originalPath, peer, false, path, reply_to_msg);
     }
 
-    public void sendMessage(TLRPC.TL_audio audio, String path, long peer) {
-        sendMessage(null, null, null, null, null, null, null, null, audio, null, peer, false, path);
+    public void sendMessage(TLRPC.TL_audio audio, String path, long peer, MessageObject reply_to_msg) {
+        sendMessage(null, null, null, null, null, null, null, null, audio, null, peer, false, path, reply_to_msg);
     }
 
-    private void sendMessage(String message, Double lat, Double lon, TLRPC.TL_photo photo, TLRPC.TL_video video, MessageObject msgObj, TLRPC.User user, TLRPC.TL_document document, TLRPC.TL_audio audio, String originalPath, long peer, boolean retry, String path) {
+    private void sendMessage(String message, Double lat, Double lon, TLRPC.TL_photo photo, TLRPC.TL_video video, MessageObject msgObj, TLRPC.User user, TLRPC.TL_document document, TLRPC.TL_audio audio, String originalPath, long peer, boolean retry, String path, MessageObject reply_to_msg) {
         if (peer == 0) {
             return;
         }
@@ -537,7 +695,7 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
             newMsg = msgObj.messageOwner;
 
             if (msgObj.type == 0) {
-                if (msgObj.messageOwner instanceof TLRPC.TL_messageForwarded) {
+                if (msgObj.isForwarded()) {
                     type = 4;
                 } else {
                     message = newMsg.message;
@@ -548,14 +706,14 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                 lon = newMsg.media.geo._long;
                 type = 1;
             } else if (msgObj.type == 1) {
-                if (msgObj.messageOwner instanceof TLRPC.TL_messageForwarded) {
+                if (msgObj.isForwarded()) {
                     type = 4;
                 } else {
                     photo = (TLRPC.TL_photo) newMsg.media.photo;
                     type = 2;
                 }
             } else if (msgObj.type == 3) {
-                if (msgObj.messageOwner instanceof TLRPC.TL_messageForwarded) {
+                if (msgObj.isForwarded()) {
                     type = 4;
                 } else {
                     type = 3;
@@ -631,24 +789,20 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                 }
                 newMsg.attachPath = path;
             } else if (msgObj != null) {
-                newMsg = new TLRPC.TL_messageForwarded();
-                if (msgObj.messageOwner instanceof TLRPC.TL_messageForwarded) {
+                newMsg = new TLRPC.TL_message();
+                newMsg.flags |= TLRPC.MESSAGE_FLAG_FWD;
+                if (msgObj.isForwarded()) {
                     newMsg.fwd_from_id = msgObj.messageOwner.fwd_from_id;
                     newMsg.fwd_date = msgObj.messageOwner.fwd_date;
-                    newMsg.media = msgObj.messageOwner.media;
-                    newMsg.message = msgObj.messageOwner.message;
-                    newMsg.fwd_msg_id = msgObj.messageOwner.id;
-                    newMsg.attachPath = msgObj.messageOwner.attachPath;
-                    type = 4;
                 } else {
                     newMsg.fwd_from_id = msgObj.messageOwner.from_id;
                     newMsg.fwd_date = msgObj.messageOwner.date;
-                    newMsg.media = msgObj.messageOwner.media;
-                    newMsg.message = msgObj.messageOwner.message;
-                    newMsg.fwd_msg_id = msgObj.messageOwner.id;
-                    newMsg.attachPath = msgObj.messageOwner.attachPath;
-                    type = 4;
                 }
+                newMsg.media = msgObj.messageOwner.media;
+                newMsg.message = msgObj.messageOwner.message;
+                newMsg.fwd_msg_id = msgObj.getId();
+                newMsg.attachPath = msgObj.messageOwner.attachPath;
+                type = 4;
             } else if (user != null) {
                 if (encryptedChat != null && AndroidUtilities.getPeerLayerVersion(encryptedChat.layer) >= 17) {
                     newMsg = new TLRPC.TL_message_secret();
@@ -699,6 +853,10 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
         newMsg.date = ConnectionsManager.getInstance().getCurrentTime();
         newMsg.flags |= TLRPC.MESSAGE_FLAG_UNREAD;
         newMsg.dialog_id = peer;
+        if (reply_to_msg != null) {
+            newMsg.flags |= TLRPC.MESSAGE_FLAG_REPLY;
+            newMsg.reply_to_msg_id = reply_to_msg.getId();
+        }
         if (lower_id != 0) {
             if (high_id == 1) {
                 if (currentChatInfo == null) {
@@ -758,6 +916,7 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
         }
 
         MessageObject newMsgObj = new MessageObject(newMsg, null, true);
+        newMsgObj.replyMessageObject = reply_to_msg;
         newMsgObj.messageOwner.send_state = MessageObject.MESSAGE_SEND_STATE_SENDING;
 
         ArrayList<MessageObject> objArr = new ArrayList<>();
@@ -782,6 +941,9 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                         reqSend.message = message;
                         reqSend.peer = sendToPeer;
                         reqSend.random_id = newMsg.random_id;
+                        if (reply_to_msg != null) {
+                            reqSend.reply_to_msg_id = reply_to_msg.getId();
+                        }
                         performSendMessageRequest(reqSend, newMsgObj.messageOwner, null);
                     }
                 } else {
@@ -915,6 +1077,9 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                         request.peer = sendToPeer;
                         request.random_id = newMsg.random_id;
                         request.media = inputMedia;
+                        if (reply_to_msg != null) {
+                            request.reply_to_msg_id = reply_to_msg.getId();
+                        }
                         if (delayedMessage != null) {
                             delayedMessage.sendRequest = request;
                         }
@@ -1111,8 +1276,8 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                 TLRPC.TL_messages_forwardMessage reqSend = new TLRPC.TL_messages_forwardMessage();
                 reqSend.peer = sendToPeer;
                 reqSend.random_id = newMsg.random_id;
-                if (msgObj.messageOwner.id >= 0) {
-                    reqSend.id = msgObj.messageOwner.id;
+                if (msgObj.getId() >= 0) {
+                    reqSend.id = msgObj.getId();
                 } else {
                     reqSend.id = msgObj.messageOwner.fwd_msg_id;
                 }
@@ -1120,10 +1285,10 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
             }
         } catch (Exception e) {
             FileLog.e("tmessages", e);
-            MessagesStorage.getInstance().markMessageAsSendError(newMsgObj.messageOwner.id);
+            MessagesStorage.getInstance().markMessageAsSendError(newMsgObj.getId());
             newMsgObj.messageOwner.send_state = MessageObject.MESSAGE_SEND_STATE_SEND_ERROR;
-            NotificationCenter.getInstance().postNotificationName(NotificationCenter.messageSendError, newMsgObj.messageOwner.id);
-            processSentMessage(newMsgObj.messageOwner.id);
+            NotificationCenter.getInstance().postNotificationName(NotificationCenter.messageSendError, newMsgObj.getId());
+            processSentMessage(newMsgObj.getId());
         }
     }
 
@@ -1269,13 +1434,21 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                         TLRPC.messages_SentMessage res = (TLRPC.messages_SentMessage) response;
                         newMsgObj.id = res.id;
                         newMsgObj.date = res.date;
-                        MessagesController.getInstance().processNewDifferenceParams(res.seq, res.pts, res.date);
+                        if (res instanceof TLRPC.TL_messages_sentMessage) {
+                            MessagesController.getInstance().processNewDifferenceParams(-1, res.pts, res.date, res.pts_count);
+                        } else if (res instanceof TLRPC.TL_messages_sentMessageLink) {
+                            MessagesController.getInstance().processNewDifferenceParams(res.seq, res.pts, res.date, res.pts_count);
+                        }
                     } else if (response instanceof TLRPC.messages_StatedMessage) {
                         TLRPC.messages_StatedMessage res = (TLRPC.messages_StatedMessage) response;
                         sentMessages.add(res.message);
                         newMsgObj.id = res.message.id;
                         processSentMessage(newMsgObj, res.message, originalPath);
-                        MessagesController.getInstance().processNewDifferenceParams(res.seq, res.pts, res.message.date);
+                        if (res instanceof TLRPC.TL_messages_statedMessage) {
+                            MessagesController.getInstance().processNewDifferenceParams(-1, res.pts, res.message.date, res.pts_count);
+                        } else if (res instanceof TLRPC.TL_messages_statedMessageLink) {
+                            MessagesController.getInstance().processNewDifferenceParams(res.seq, res.pts, res.message.date, res.pts_count);
+                        }
                     } else if (response instanceof TLRPC.messages_StatedMessages) {
                         TLRPC.messages_StatedMessages res = (TLRPC.messages_StatedMessages) response;
                         if (!res.messages.isEmpty()) {
@@ -1286,7 +1459,11 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                             }
                             processSentMessage(newMsgObj, message, originalPath);
                         }
-                        MessagesController.getInstance().processNewDifferenceParams(res.seq, res.pts, -1);
+                        if (res instanceof TLRPC.TL_messages_statedMessages) {
+                            MessagesController.getInstance().processNewDifferenceParams(-1, res.pts, -1, res.pts_count);
+                        } else if (res instanceof TLRPC.TL_messages_statedMessagesLinks) {
+                            MessagesController.getInstance().processNewDifferenceParams(res.seq, res.pts, -1, res.pts_count);
+                        }
                     }
                     MessagesStorage.getInstance().getStorageQueue().postRunnable(new Runnable() {
                         @Override
@@ -1545,7 +1722,7 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
         }
     }
 
-    private static boolean prepareSendingDocumentInternal(String path, String originalPath, Uri uri, String mime, final long dialog_id) {
+    private static boolean prepareSendingDocumentInternal(String path, String originalPath, Uri uri, String mime, final long dialog_id, final MessageObject reply_to_msg) {
         if ((path == null || path.length() == 0) && uri == null) {
             return false;
         }
@@ -1653,13 +1830,13 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
         AndroidUtilities.runOnUIThread(new Runnable() {
             @Override
             public void run() {
-                SendMessagesHelper.getInstance().sendMessage(documentFinal, originalPathFinal, pathFinal, dialog_id);
+                SendMessagesHelper.getInstance().sendMessage(documentFinal, originalPathFinal, pathFinal, dialog_id, reply_to_msg);
             }
         });
         return true;
     }
 
-    public static void prepareSendingDocument(String path, String originalPath, Uri uri, String mine, long dialog_id) {
+    public static void prepareSendingDocument(String path, String originalPath, Uri uri, String mine, long dialog_id, MessageObject reply_to_msg) {
         if ((path == null || originalPath == null) && uri == null) {
             return;
         }
@@ -1671,10 +1848,10 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
         }
         paths.add(path);
         originalPaths.add(originalPath);
-        prepareSendingDocuments(paths, originalPaths, uris, mine, dialog_id);
+        prepareSendingDocuments(paths, originalPaths, uris, mine, dialog_id, reply_to_msg);
     }
 
-    public static void prepareSendingDocuments(final ArrayList<String> paths, final ArrayList<String> originalPaths, final ArrayList<Uri> uris, final String mime, final long dialog_id) {
+    public static void prepareSendingDocuments(final ArrayList<String> paths, final ArrayList<String> originalPaths, final ArrayList<Uri> uris, final String mime, final long dialog_id, final MessageObject reply_to_msg) {
         if (paths == null && originalPaths == null && uris == null || paths != null && originalPaths != null && paths.size() != originalPaths.size()) {
             return;
         }
@@ -1684,14 +1861,14 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                 boolean error = false;
                 if (paths != null) {
                     for (int a = 0; a < paths.size(); a++) {
-                        if (!prepareSendingDocumentInternal(paths.get(a), originalPaths.get(a), null, mime, dialog_id)) {
+                        if (!prepareSendingDocumentInternal(paths.get(a), originalPaths.get(a), null, mime, dialog_id, reply_to_msg)) {
                             error = true;
                         }
                     }
                 }
                 if (uris != null) {
                     for (int a = 0; a < uris.size(); a++) {
-                        if (!prepareSendingDocumentInternal(null, null, uris.get(a), mime, dialog_id)) {
+                        if (!prepareSendingDocumentInternal(null, null, uris.get(a), mime, dialog_id, reply_to_msg)) {
                             error = true;
                         }
                     }
@@ -1713,7 +1890,7 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
         }).start();
     }
 
-    public static void prepareSendingPhoto(String imageFilePath, Uri imageUri, long dialog_id) {
+    public static void prepareSendingPhoto(String imageFilePath, Uri imageUri, long dialog_id, MessageObject reply_to_msg) {
         ArrayList<String> paths = null;
         ArrayList<Uri> uris = null;
         if (imageFilePath != null && imageFilePath.length() != 0) {
@@ -1724,10 +1901,10 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
             uris = new ArrayList<>();
             uris.add(imageUri);
         }
-        prepareSendingPhotos(paths, uris, dialog_id);
+        prepareSendingPhotos(paths, uris, dialog_id, reply_to_msg);
     }
 
-    public static void prepareSendingPhotosSearch(final ArrayList<MediaController.SearchImage> photos, final long dialog_id) {
+    public static void prepareSendingPhotosSearch(final ArrayList<MediaController.SearchImage> photos, final long dialog_id, final MessageObject reply_to_msg) {
         if (photos == null || photos.isEmpty()) {
             return;
         }
@@ -1789,7 +1966,7 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                         AndroidUtilities.runOnUIThread(new Runnable() {
                             @Override
                             public void run() {
-                                SendMessagesHelper.getInstance().sendMessage(documentFinal, originalPathFinal, pathFinal, dialog_id);
+                                SendMessagesHelper.getInstance().sendMessage(documentFinal, originalPathFinal, pathFinal, dialog_id, reply_to_msg);
                             }
                         });
                     } else {
@@ -1832,7 +2009,7 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                             AndroidUtilities.runOnUIThread(new Runnable() {
                                 @Override
                                 public void run() {
-                                    SendMessagesHelper.getInstance().sendMessage(photoFinal, originalPathFinal, needDownloadHttpFinal ? searchImage.imageUrl : null, dialog_id);
+                                    SendMessagesHelper.getInstance().sendMessage(photoFinal, originalPathFinal, needDownloadHttpFinal ? searchImage.imageUrl : null, dialog_id, reply_to_msg);
                                 }
                             });
                         }
@@ -1842,7 +2019,7 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
         }).start();
     }
 
-    public static void prepareSendingPhotos(ArrayList<String> paths, ArrayList<Uri> uris, final long dialog_id) {
+    public static void prepareSendingPhotos(ArrayList<String> paths, ArrayList<Uri> uris, final long dialog_id, final MessageObject reply_to_msg) {
         if (paths == null && uris == null || paths != null && paths.isEmpty() || uris != null && uris.isEmpty()) {
             return;
         }
@@ -1923,7 +2100,7 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                             AndroidUtilities.runOnUIThread(new Runnable() {
                                 @Override
                                 public void run() {
-                                    SendMessagesHelper.getInstance().sendMessage(photoFinal, originalPathFinal, null, dialog_id);
+                                    SendMessagesHelper.getInstance().sendMessage(photoFinal, originalPathFinal, null, dialog_id, reply_to_msg);
                                 }
                             });
                         }
@@ -1931,14 +2108,14 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                 }
                 if (sendAsDocuments != null && !sendAsDocuments.isEmpty()) {
                     for (int a = 0; a < sendAsDocuments.size(); a++) {
-                        prepareSendingDocumentInternal(sendAsDocuments.get(a), sendAsDocumentsOriginal.get(a), null, "gif", dialog_id);
+                        prepareSendingDocumentInternal(sendAsDocuments.get(a), sendAsDocumentsOriginal.get(a), null, "gif", dialog_id, reply_to_msg);
                     }
                 }
             }
         }).start();
     }
 
-    public static void prepareSendingVideo(final String videoPath, final long estimatedSize, final long duration, final int width, final int height, final TLRPC.VideoEditedInfo videoEditedInfo, final long dialog_id) {
+    public static void prepareSendingVideo(final String videoPath, final long estimatedSize, final long duration, final int width, final int height, final TLRPC.VideoEditedInfo videoEditedInfo, final long dialog_id, final MessageObject reply_to_msg) {
         if (videoPath == null || videoPath.length() == 0) {
             return;
         }
@@ -1955,6 +2132,9 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                     originalPath += temp.length() + "_" + temp.lastModified();
                     if (videoEditedInfo != null) {
                         originalPath += duration + "_" + videoEditedInfo.startTime + "_" + videoEditedInfo.endTime;
+                        if (videoEditedInfo.resultWidth == videoEditedInfo.originalWidth) {
+                            originalPath += "_" + videoEditedInfo.resultWidth;
+                        }
                     }
                     TLRPC.TL_video video = null;
                     if (!isEncrypted) {
@@ -2049,11 +2229,11 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                     AndroidUtilities.runOnUIThread(new Runnable() {
                         @Override
                         public void run() {
-                            SendMessagesHelper.getInstance().sendMessage(videoFinal, originalPathFinal, finalPath, dialog_id);
+                            SendMessagesHelper.getInstance().sendMessage(videoFinal, originalPathFinal, finalPath, dialog_id, reply_to_msg);
                         }
                     });
                 } else {
-                    prepareSendingDocumentInternal(videoPath, videoPath, null, null, dialog_id);
+                    prepareSendingDocumentInternal(videoPath, videoPath, null, null, dialog_id, reply_to_msg);
                 }
             }
         }).start();

@@ -3,7 +3,7 @@
     <color name="background_tab_pressed">#6633B5E5</color>
     <color name="divider">#dcdcdc</color><!--
     <color name="header">#ff54759e</color>-->
-    <color name="header">#ff58BCD5</color><!--55ABD2-->
-    <color name="primary_dark">#ff2C90A9</color>
-    <color name="primary_light">#ff6ED2E9</color>
+    <color name="header">#ff009688</color><!--58BCD5-->
+    <color name="primary_dark">#ff00695C</color><!--2C90A9-->
+    <color name="primary_light">#ff26A69A</color><!--6ED2E9-->
 </resources>

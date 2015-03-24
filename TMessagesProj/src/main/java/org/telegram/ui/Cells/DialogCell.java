@@ -20,7 +20,6 @@ import android.text.Layout;
 import android.text.StaticLayout;
 import android.text.TextPaint;
 import android.text.TextUtils;
-import android.util.Log;
 
 import org.telegram.android.AndroidUtilities;
 import org.telegram.PhoneFormat.PhoneFormat;
@@ -653,7 +652,7 @@ public class DialogCell extends BaseCell {
         }
         }
         if (dialog != null) {
-        if (currentDialogId != dialog.id || message != null && message.messageOwner.id != dialog.top_message || unreadCount != dialog.unread_count) {
+            if (currentDialogId != dialog.id || message != null && message.getId() != dialog.top_message || unreadCount != dialog.unread_count) {
             currentDialogId = dialog.id;
             update(0);
         }
@@ -774,6 +773,57 @@ public class DialogCell extends BaseCell {
         invalidate();
     }
 
+    private void updateTheme(){
+        SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, Activity.MODE_PRIVATE);
+        int tColor = AndroidUtilities.getIntColor("themeColor");
+        int dColor = AndroidUtilities.getIntDarkerColor("themeColor",0x15);
+
+        namePaint.setTextSize(AndroidUtilities.dp(themePrefs.getInt("chatsNameSize", 17)));
+        namePaint.setColor(themePrefs.getInt("chatsNameColor", 0xff212121));
+
+        nameEncryptedPaint.setTextSize(AndroidUtilities.dp(themePrefs.getInt("chatsNameSize", 17)));
+        nameEncryptedPaint.setColor(themePrefs.getInt("chatsNameColor", dColor));//0xff00a60e
+
+        nameUnknownPaint.setTextSize(AndroidUtilities.dp(themePrefs.getInt("chatsNameSize", 17)));
+        nameUnknownPaint.setColor(themePrefs.getInt("chatsNameColor", 0xff000000));//0xff4d83b3
+
+        messagePaint.setTextSize(AndroidUtilities.dp(themePrefs.getInt("chatsMessageSize", 16)));
+        messagePaint.setColor(themePrefs.getInt("chatsMessageColor", 0xff8f8f8f));
+        
+        messagePrintingPaint.setTextSize(AndroidUtilities.dp(themePrefs.getInt("chatsMessageSize", 16)));
+        messagePrintingPaint.setColor(AndroidUtilities.getIntDef("chatsMessageColor", tColor));
+
+        messageTypingPaint.setTextSize(AndroidUtilities.dp(themePrefs.getInt("chatsMessageSize", 16)));
+        messageTypingPaint.setColor(AndroidUtilities.getIntDef("chatsTypingColor", tColor));
+
+        timePaint.setTextSize(AndroidUtilities.dp(themePrefs.getInt("chatsTimeSize", 13)));
+        timePaint.setColor(themePrefs.getInt("chatsTimeColor", 0xff999999));
+
+        countPaint.setTextSize(AndroidUtilities.dp(themePrefs.getInt("chatsCountSize", 13)));
+        countPaint.setColor(themePrefs.getInt("chatsCountColor", 0xffffffff));
+
+        checkWhiteDrawable.setColorFilter(AndroidUtilities.getIntDef("chatsChecksColor",AndroidUtilities.getIntColor("themeColor")), PorterDuff.Mode.MULTIPLY);
+        halfCheckWhiteDrawable.setColorFilter(AndroidUtilities.getIntDef("chatsChecksColor",AndroidUtilities.getIntColor("themeColor")), PorterDuff.Mode.MULTIPLY);
+        clockDrawable.setColorFilter(AndroidUtilities.getIntDef("chatsChecksColor",AndroidUtilities.getIntColor("themeColor")), PorterDuff.Mode.SRC_IN);
+
+        countWhiteDrawable.setColorFilter(themePrefs.getInt("chatsCountBGColor", tColor), PorterDuff.Mode.MULTIPLY);
+        lockWhiteDrawable.setColorFilter(dColor, PorterDuff.Mode.MULTIPLY);
+
+        int nColor = themePrefs.getInt("chatsNameColor", 0xff000000);
+        groupWhiteDrawable.setColorFilter(nColor, PorterDuff.Mode.MULTIPLY);
+        broadcastWhiteDrawable.setColorFilter(nColor, PorterDuff.Mode.MULTIPLY);
+
+        int mColor = themePrefs.getInt("chatsMuteColor", 0xffa8a8a8);
+        muteWhiteDrawable.setColorFilter(mColor, PorterDuff.Mode.MULTIPLY);
+
+        linePaint.setColor(themePrefs.getInt("chatsDividerColor", 0xffdcdcdc));
+
+        int radius = AndroidUtilities.dp(AndroidUtilities.getIntDef("chatsAvatarRadius", 32));
+        if(avatarImage != null)avatarImage.setRoundRadius(radius);
+        if(avatarDrawable != null)avatarDrawable.setRadius(radius);
+
+    }
+
     @Override
     protected void onDraw(Canvas canvas) {
         if (currentDialogId == 0) {
@@ -851,54 +901,5 @@ public class DialogCell extends BaseCell {
         }
 
         avatarImage.draw(canvas);
-    }
-
-    private void updateTheme(){
-        SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, Activity.MODE_PRIVATE);
-        int tColor = AndroidUtilities.getIntColor("themeColor");
-        int dColor = AndroidUtilities.getIntDarkerColor("themeColor",0x15);
-
-        namePaint.setTextSize(AndroidUtilities.dp(themePrefs.getInt("chatsNameSize", 17)));
-        namePaint.setColor(themePrefs.getInt("chatsNameColor", 0xff212121));
-
-        nameEncryptedPaint.setTextSize(AndroidUtilities.dp(themePrefs.getInt("chatsNameSize", 17)));
-        nameEncryptedPaint.setColor(themePrefs.getInt("chatsNameColor", dColor));//0xff00a60e
-
-        nameUnknownPaint.setTextSize(AndroidUtilities.dp(themePrefs.getInt("chatsNameSize", 17)));
-        nameUnknownPaint.setColor(themePrefs.getInt("chatsNameColor", 0xff000000));//0xff4d83b3
-
-        messagePaint.setTextSize(AndroidUtilities.dp(themePrefs.getInt("chatsMessageSize", 16)));
-        messagePaint.setColor(themePrefs.getInt("chatsMessageColor", 0xff8f8f8f));
-        
-        messagePrintingPaint.setTextSize(AndroidUtilities.dp(themePrefs.getInt("chatsMessageSize", 16)));
-        messagePrintingPaint.setColor(AndroidUtilities.getIntDef("chatsMessageColor", tColor));
-
-        messageTypingPaint.setTextSize(AndroidUtilities.dp(themePrefs.getInt("chatsMessageSize", 16)));
-        messageTypingPaint.setColor(AndroidUtilities.getIntDef("chatsTypingColor", tColor));
-
-        timePaint.setTextSize(AndroidUtilities.dp(themePrefs.getInt("chatsTimeSize", 13)));
-        timePaint.setColor(themePrefs.getInt("chatsTimeColor", 0xff999999));
-
-        countPaint.setTextSize(AndroidUtilities.dp(themePrefs.getInt("chatsCountSize", 13)));
-        countPaint.setColor(themePrefs.getInt("chatsCountColor", 0xffffffff));
-
-        checkWhiteDrawable.setColorFilter(AndroidUtilities.getIntDef("chatsChecksColor",AndroidUtilities.getIntColor("themeColor")), PorterDuff.Mode.MULTIPLY);
-        halfCheckWhiteDrawable.setColorFilter(AndroidUtilities.getIntDef("chatsChecksColor",AndroidUtilities.getIntColor("themeColor")), PorterDuff.Mode.MULTIPLY);
-
-        countWhiteDrawable.setColorFilter(themePrefs.getInt("chatsCountBGColor", tColor), PorterDuff.Mode.MULTIPLY);
-        lockWhiteDrawable.setColorFilter(dColor, PorterDuff.Mode.MULTIPLY);
-
-        int nColor = themePrefs.getInt("chatsNameColor", 0xff000000);
-        groupWhiteDrawable.setColorFilter(nColor, PorterDuff.Mode.MULTIPLY);
-        broadcastWhiteDrawable.setColorFilter(nColor, PorterDuff.Mode.MULTIPLY);
-
-        int mColor = themePrefs.getInt("chatsMuteColor", 0xffa8a8a8);
-        muteWhiteDrawable.setColorFilter(mColor, PorterDuff.Mode.MULTIPLY);
-
-        linePaint.setColor(themePrefs.getInt("chatsDividerColor", 0xffdcdcdc));
-
-        //int radius = AndroidUtilities.dp(AndroidUtilities.getIntDef("chatsAvatarRadius", 32));
-        //if(avatarImage != null)avatarImage.setRoundRadius(radius);
-        //if(avatarDrawable != null)avatarDrawable.setRadius(radius/3);
     }
 }

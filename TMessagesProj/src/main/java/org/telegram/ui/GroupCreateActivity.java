@@ -12,6 +12,7 @@ import android.app.Activity;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.graphics.PorterDuff;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
@@ -61,8 +62,8 @@ import java.util.HashMap;
 
 public class GroupCreateActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
 
-    public static interface GroupCreateActivityDelegate {
-        public abstract void didSelectUsers(ArrayList<Integer> ids);
+    public interface GroupCreateActivityDelegate {
+        void didSelectUsers(ArrayList<Integer> ids);
     }
 
     private class XImageSpan extends ImageSpan {
@@ -207,6 +208,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
             userSelectEditText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
             userSelectEditText.setHintTextColor(0xff979797);
             userSelectEditText.setTextColor(0xff212121);
+            userSelectEditText.getBackground().setColorFilter(AndroidUtilities.getIntColor("themeColor"), PorterDuff.Mode.SRC_IN);
             userSelectEditText.setInputType(InputType.TYPE_TEXT_VARIATION_FILTER | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS | InputType.TYPE_TEXT_FLAG_MULTI_LINE);
             userSelectEditText.setMinimumHeight(AndroidUtilities.dp(54));
             userSelectEditText.setSingleLine(false);

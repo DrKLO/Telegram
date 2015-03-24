@@ -30,6 +30,8 @@ import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class MessageObject {
 
@@ -39,6 +41,7 @@ public class MessageObject {
 
     public TLRPC.Message messageOwner;
     public CharSequence messageText;
+    public MessageObject replyMessageObject;
     public int type;
     public int contentType;
     public String dateKey;
@@ -86,9 +89,15 @@ public class MessageObject {
         textPaintRight.setTextSize(AndroidUtilities.dp(MessagesController.getInstance().fontSize));
 
         messageOwner = message;
+
+        if (message.replyMessage != null) {
+            replyMessageObject = new MessageObject(message.replyMessage, users, false);
+        }
+        
         if(isOut()){
             textPaint = textPaintRight;
         }
+
         if (message instanceof TLRPC.TL_messageService) {
             if (message.action != null) {
                 TLRPC.User fromUser = null;
@@ -292,9 +301,19 @@ public class MessageObject {
                 messageText = LocaleController.getString("UnsuppotedMedia", R.string.UnsuppotedMedia);
             } else if (message.media instanceof TLRPC.TL_messageMediaDocument) {
                 if (isSticker()) {
+                    String sch = getStrickerChar();
+                    if (sch != null && sch.length() > 0) {
+                        messageText = String.format("%s %s", sch, LocaleController.getString("AttachSticker", R.string.AttachSticker));
+                    } else {
                     messageText = LocaleController.getString("AttachSticker", R.string.AttachSticker);
+                    }
+                } else {
+                    String name = FileLoader.getDocumentFileName(message.media.document);
+                    if (name != null && name.length() > 0) {
+                        messageText = name;
                 } else {
                     messageText = LocaleController.getString("AttachDocument", R.string.AttachDocument);
+                }
                 }
             } else if (message.media instanceof TLRPC.TL_messageMediaAudio) {
                 messageText = LocaleController.getString("AttachAudio", R.string.AttachAudio);
@@ -304,7 +323,7 @@ public class MessageObject {
         }
         messageText = Emoji.replaceEmoji(messageText, textPaint.getFontMetricsInt(), AndroidUtilities.dp(20));
 
-        if (message instanceof TLRPC.TL_message || message instanceof TLRPC.TL_messageForwarded) {
+        if (message instanceof TLRPC.TL_message || message instanceof TLRPC.TL_messageForwarded_old2) {
             if (message.media == null || message.media instanceof TLRPC.TL_messageMediaEmpty) {
                 contentType = type = 0;
             } else if (message.media != null && message.media instanceof TLRPC.TL_messageMediaPhoto) {
@@ -500,6 +519,9 @@ public class MessageObject {
             } else if (!(c != ' ' && digitsInRow > 0)) {
                 digitsInRow = 0;
             }
+            if ((c == '@' || c == '#') && i == 0 || i != 0 && (message.charAt(i - 1) == ' ' || message.charAt(i - 1) == '\n')) {
+                return true;
+            }
             if (c == ':') {
                 if (schemeSequence == 0) {
                     schemeSequence = 1;
@@ -543,6 +565,22 @@ public class MessageObject {
                 Linkify.addLinks((Spannable) messageText, Linkify.WEB_URLS | Linkify.PHONE_NUMBERS);
             } else {
                 Linkify.addLinks((Spannable) messageText, Linkify.WEB_URLS);
+            }
+
+            try {
+                Pattern pattern = Pattern.compile("(^|\\s)@[a-zA-Z\\d_]{5,32}|(^|\\s)#[\\w@\\.]+");
+                Matcher matcher = pattern.matcher(messageText);
+                while (matcher.find()) {
+                    int start = matcher.start();
+                    int end = matcher.end();
+                    if (messageText.charAt(start) != '@' && messageText.charAt(start) != '#') {
+                        start++;
+                    }
+                    URLSpanNoUnderline url = new URLSpanNoUnderline(messageText.subSequence(start, end).toString());
+                    ((Spannable) messageText).setSpan(url, start, end, 0);
+                }
+            } catch (Exception e) {
+                FileLog.e("tmessages", e);
             }
         }
 
@@ -716,6 +754,10 @@ public class MessageObject {
         messageOwner.flags &= ~TLRPC.MESSAGE_FLAG_UNREAD;
     }
 
+    public int getId() {
+        return messageOwner.id;
+    }
+
     public boolean isSecretPhoto() {
         return messageOwner instanceof TLRPC.TL_message_secret && messageOwner.media instanceof TLRPC.TL_messageMediaPhoto && messageOwner.ttl != 0 && messageOwner.ttl <= 60;
     }
@@ -804,7 +846,121 @@ public class MessageObject {
         return false;
     }
 
+    public String getStrickerChar() {
+        if (messageOwner.media != null && messageOwner.media.document != null) {
+            for (TLRPC.DocumentAttribute attribute : messageOwner.media.document.attributes) {
+                if (attribute instanceof TLRPC.TL_documentAttributeSticker) {
+                    return attribute.alt;
+                }
+            }
+        }
+        return null;
+    }
+
+    public int getApproximateHeight() {
+        if (type == 0) {
+            return textHeight;
+        } else if (contentType == 2) {
+            return AndroidUtilities.dp(68);
+        } else if (contentType == 3) {
+            return AndroidUtilities.dp(71);
+        } else if (type == 9) {
+            return AndroidUtilities.dp(100);
+        } else if (type == 4) {
+            return AndroidUtilities.dp(114);
+        } else if (type == 13) {
+            float maxHeight = AndroidUtilities.displaySize.y * 0.4f;
+            float maxWidth;
+            if (AndroidUtilities.isTablet()) {
+                maxWidth = AndroidUtilities.getMinTabletSide() * 0.5f;
+            } else {
+                maxWidth = AndroidUtilities.displaySize.x * 0.5f;
+            }
+            int photoHeight = 0;
+            int photoWidth = 0;
+            for (TLRPC.DocumentAttribute attribute : messageOwner.media.document.attributes) {
+                if (attribute instanceof TLRPC.TL_documentAttributeImageSize) {
+                    photoWidth = attribute.w;
+                    photoHeight = attribute.h;
+                    break;
+                }
+            }
+            if (photoWidth == 0) {
+                photoHeight = (int) maxHeight;
+                photoWidth = photoHeight + AndroidUtilities.dp(100);
+            }
+            if (photoHeight > maxHeight) {
+                photoWidth *= maxHeight / photoHeight;
+                photoHeight = (int)maxHeight;
+            }
+            if (photoWidth > maxWidth) {
+                photoHeight *= maxWidth / photoWidth;
+            }
+            return photoHeight + AndroidUtilities.dp(14);
+        } else {
+            int photoHeight = 0;
+            int photoWidth = 0;
+
+            if (AndroidUtilities.isTablet()) {
+                photoWidth = (int) (AndroidUtilities.getMinTabletSide() * 0.7f);
+            } else {
+                photoWidth = (int) (Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y) * 0.7f);
+            }
+            photoHeight = photoWidth + AndroidUtilities.dp(100);
+            if (photoWidth > AndroidUtilities.getPhotoSize()) {
+                photoWidth = AndroidUtilities.getPhotoSize();
+            }
+            if (photoHeight > AndroidUtilities.getPhotoSize()) {
+                photoHeight = AndroidUtilities.getPhotoSize();
+            }
+            TLRPC.PhotoSize currentPhotoObject = FileLoader.getClosestPhotoSizeWithSize(photoThumbs, AndroidUtilities.getPhotoSize());
+
+            if (currentPhotoObject != null) {
+                float scale = (float) currentPhotoObject.w / (float) photoWidth;
+                int w = (int) (currentPhotoObject.w / scale);
+                int h = (int) (currentPhotoObject.h / scale);
+                if (w == 0) {
+                    w = AndroidUtilities.dp(100);
+                }
+                if (h == 0) {
+                    h = AndroidUtilities.dp(100);
+                }
+                if (h > photoHeight) {
+                    float scale2 = h;
+                    h = photoHeight;
+                    scale2 /= h;
+                    w = (int) (w / scale2);
+                } else if (h < AndroidUtilities.dp(120)) {
+                    h = AndroidUtilities.dp(120);
+                    float hScale = (float) currentPhotoObject.h / h;
+                    if (currentPhotoObject.w / hScale < photoWidth) {
+                        w = (int) (currentPhotoObject.w / hScale);
+                    }
+                }
+                if (isSecretPhoto()) {
+                    if (AndroidUtilities.isTablet()) {
+                        w = h = (int) (AndroidUtilities.getMinTabletSide() * 0.5f);
+                    } else {
+                        w = h = (int) (Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y) * 0.5f);
+                    }
+                }
+
+                photoWidth = w;
+                photoHeight = h;
+            }
+            return photoHeight + AndroidUtilities.dp(14);
+        }
+    }
+
     public boolean isSticker() {
         return isStickerMessage(messageOwner);
+    }
+
+    public boolean isForwarded() {
+        return (messageOwner.flags & TLRPC.MESSAGE_FLAG_FWD) != 0;
+    }
+
+    public boolean isReply() {
+        return !(replyMessageObject != null && replyMessageObject.messageOwner instanceof TLRPC.TL_messageEmpty) && messageOwner.reply_to_msg_id != 0 && (messageOwner.flags & TLRPC.MESSAGE_FLAG_REPLY) != 0;
     }
 }

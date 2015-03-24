@@ -14,6 +14,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -22,23 +23,29 @@ import android.view.ViewTreeObserver;
 import android.widget.AdapterView;
 import android.widget.FrameLayout;
 import android.widget.ListView;
-import android.widget.Toast;
 
 import org.telegram.android.AndroidUtilities;
+import org.telegram.android.ContactsController;
 import org.telegram.android.LocaleController;
+import org.telegram.android.MessagesController;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.R;
+import org.telegram.messenger.TLRPC;
+import org.telegram.messenger.UserConfig;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.Adapters.BaseFragmentAdapter;
 import org.telegram.ui.Cells.HeaderCell;
 import org.telegram.ui.Cells.ShadowSectionCell;
-import org.telegram.ui.Cells.TextCheckCell;
 import org.telegram.ui.Cells.TextColorCell;
+import org.telegram.ui.Cells.TextDetailSettingsCell;
 import org.telegram.ui.Cells.TextSettingsCell;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.ColorSelectorDialog;
 import org.telegram.ui.Components.NumberPicker;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.telegram.ui.Components.ColorSelectorDialog.OnColorChangedListener;
 
@@ -50,12 +57,13 @@ public class ThemingChatsActivity extends BaseFragment {
     private int headerSection2Row;
     private int headerColorRow;
     private int headerTitleColorRow;
+    private int headerTitleRow;
     private int headerIconsColorRow;
+
     private int rowsSectionRow;
     private int rowsSection2Row;
     private int rowColorRow;
     private int dividerColorRow;
-    private int usernameTitleRow;
     private int nameSizeRow;
     private int nameColorRow;
     private int checksColorRow;
@@ -85,7 +93,7 @@ public class ThemingChatsActivity extends BaseFragment {
         headerSection2Row = rowCount++;
         headerColorRow = rowCount++;
         headerTitleColorRow = rowCount++;
-        usernameTitleRow = rowCount++;
+        headerTitleRow = rowCount++;
         headerIconsColorRow = rowCount++;
 
         rowsSectionRow = rowCount++;
@@ -93,7 +101,7 @@ public class ThemingChatsActivity extends BaseFragment {
         rowColorRow = rowCount++;
         dividerColorRow = rowCount++;
 
-        //avatarRadiusRow  = rowCount++;
+        avatarRadiusRow  = rowCount++;
         nameColorRow = rowCount++;
         nameSizeRow = rowCount++;
         muteColorRow = rowCount++;
@@ -165,7 +173,7 @@ public class ThemingChatsActivity extends BaseFragment {
                 public void onItemClick(AdapterView<?> adapterView, View view, final int i, long l) {
 
                     SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, Activity.MODE_PRIVATE);
-                    final String key = view.getTag().toString();
+                    final String key = view.getTag() != null ? view.getTag().toString() : "";
 
                     if (i == headerColorRow) {
                         if (getParentActivity() == null) {
@@ -235,7 +243,7 @@ public class ThemingChatsActivity extends BaseFragment {
 
                         },themePrefs.getInt( key, 0xffdcdcdc), CENTER, 0, false);
                         colorDialog.show();
-                    } else if (i == usernameTitleRow) {
+                    } /*else if (i == usernameTitleRow) {
                         boolean b = themePrefs.getBoolean( key, true);
                         SharedPreferences.Editor editor = themePrefs.edit();
                         editor.putBoolean( key, !b);
@@ -243,6 +251,37 @@ public class ThemingChatsActivity extends BaseFragment {
                         if (view instanceof TextCheckCell) {
                             ((TextCheckCell) view).setChecked(!b);
                         }
+                    }*/ else if (i == headerTitleRow) {
+                        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                        builder.setTitle(LocaleController.getString("HeaderTitle", R.string.HeaderTitle));
+                        int user_id = UserConfig.getClientUserId();
+                        TLRPC.User user = MessagesController.getInstance().getUser(user_id);
+                        List<CharSequence> array = new ArrayList<>();
+                        array.add( LocaleController.getString("AppName", R.string.AppName) + " Messenger" );
+                        array.add( LocaleController.getString("AppName", R.string.AppName) );
+                        String usr = "";
+                        if (user != null && (user.first_name != null || user.last_name != null)) {
+                            usr = ContactsController.formatName(user.first_name, user.last_name);
+                            array.add(usr);
+                        }
+                        if (user != null && user.username != null && user.username.length() != 0) {
+                            usr = "@" + user.username;
+                            array.add(usr);
+                        }
+                        String[] simpleArray = new String[ array.size() ];
+                        array.toArray( new String[ array.size() ]);
+                        builder.setItems(array.toArray(simpleArray), new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, Activity.MODE_PRIVATE);
+                                themePrefs.edit().putInt("chatsHeaderTitle", which).commit();
+                                if (listView != null) {
+                                    listView.invalidateViews();
+                                }
+                            }
+                        });
+                        builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+                        showAlertDialog(builder);
                     } else if (i == nameColorRow) {
                         if (getParentActivity() == null) {
                             return;
@@ -384,10 +423,11 @@ public class ThemingChatsActivity extends BaseFragment {
                         builder.setTitle(LocaleController.getString("AvatarRadius", R.string.AvatarRadius));
                         final NumberPicker numberPicker = new NumberPicker(getParentActivity());
                         final int currentValue = themePrefs.getInt( key, 32);
-                        numberPicker.setMinValue(0);
+                        numberPicker.setMinValue(1);
                         numberPicker.setMaxValue(32);
                         numberPicker.setValue(currentValue);
                         builder.setView(numberPicker);
+
                         builder.setNegativeButton(LocaleController.getString("Done", R.string.Done), new DialogInterface.OnClickListener() {
                             @Override
                             public void onClick(DialogInterface dialog, int which) {
@@ -396,6 +436,7 @@ public class ThemingChatsActivity extends BaseFragment {
                                 }
                             }
                         });
+
                         showAlertDialog(builder);
                     } else if (i == nameSizeRow) {
                         if (getParentActivity() == null) {
@@ -409,15 +450,20 @@ public class ThemingChatsActivity extends BaseFragment {
                         numberPicker.setMaxValue(30);
                         numberPicker.setValue(currentValue);
                         builder.setView(numberPicker);
-                        builder.setNegativeButton(LocaleController.getString("Done", R.string.Done), new DialogInterface.OnClickListener() {
+                        AlertDialog dialog = builder.setNegativeButton(LocaleController.getString("Done", R.string.Done), new DialogInterface.OnClickListener() {
                             @Override
                             public void onClick(DialogInterface dialog, int which) {
                                 if (numberPicker.getValue() != currentValue) {
                                     commitInt( key, numberPicker.getValue());
                                 }
                             }
-                        });
+                        }).create();
+
+                        //dialog.show();
+                        //Button btn = dialog.getButton(DialogInterface.BUTTON_NEGATIVE);
+                        //btn.setTextColor(0xff0000ff);
                         showAlertDialog(builder);
+
                     } else if (i == messageSizeRow) {
                         if (getParentActivity() == null) {
                             return;
@@ -601,7 +647,7 @@ public class ThemingChatsActivity extends BaseFragment {
 
         @Override
         public boolean isEnabled(int i) {
-            return  i == headerColorRow || i == headerTitleColorRow || i == headerIconsColorRow || i == usernameTitleRow ||
+            return  i == headerColorRow || i == headerTitleColorRow || i == headerIconsColorRow || i == headerTitleRow ||
                     i == rowColorRow || i == dividerColorRow || i == avatarRadiusRow ||
                     i == nameColorRow || i == muteColorRow || i == checksColorRow || i == nameSizeRow || i == messageColorRow || i == memberColorRow || i == typingColorRow || i == messageSizeRow ||
                     i == timeColorRow || i == timeSizeRow || i == countColorRow || i == countSizeRow || i == countBGColorRow || i == floatingPencilColorRow || i == floatingBGColorRow;
@@ -687,7 +733,7 @@ public class ThemingChatsActivity extends BaseFragment {
                     textCell.setTextAndColor(LocaleController.getString("HeaderTitleColor", R.string.HeaderTitleColor), themePrefs.getInt(textCell.getTag().toString(), 0xffffffff), true);
                 } else if (i == headerIconsColorRow) {
                     textCell.setTag("chatsHeaderIconsColor");
-                    textCell.setTextAndColor(LocaleController.getString("HeaderTitleColor", R.string.HeaderIconsColor), themePrefs.getInt(textCell.getTag().toString(), 0xffffffff), true);
+                    textCell.setTextAndColor(LocaleController.getString("HeaderIconsColor", R.string.HeaderIconsColor), themePrefs.getInt(textCell.getTag().toString(), 0xffffffff), true);
                 } else if (i == rowColorRow) {
                     textCell.setTag("chatsRowColor");
                     textCell.setTextAndColor(LocaleController.getString("RowColor", R.string.RowColor), themePrefs.getInt("chatsRowColor", 0xffffffff), true);
@@ -728,7 +774,7 @@ public class ThemingChatsActivity extends BaseFragment {
                     textCell.setTag("chatsFloatingBGColor");
                     textCell.setTextAndColor(LocaleController.getString("FloatingBGColor", R.string.FloatingBGColor), themePrefs.getInt("chatsFloatingBGColor", AndroidUtilities.getIntColor("themeColor")), true);
                 }
-            } else if (type == 4) {
+            } /*else if (type == 4) {
                 if (view == null) {
                     view = new TextCheckCell(mContext);
                 }
@@ -737,6 +783,36 @@ public class ThemingChatsActivity extends BaseFragment {
                 if (i == usernameTitleRow) {
                     textCell.setTag("chatsUsernameTitle");
                     textCell.setTextAndCheck(LocaleController.getString("UsernameTitle", R.string.UsernameTitle), themePrefs.getBoolean("chatsUsernameTitle", false), false);
+                }
+            }*/ else if (type == 5) {
+                if (view == null) {
+                    view = new TextDetailSettingsCell(mContext);
+                }
+
+                TextDetailSettingsCell textCell = (TextDetailSettingsCell) view;
+                if (i == headerTitleRow) {
+                    textCell.setTag("chatsHeaderTitle");
+                    textCell.setMultilineDetail(false);
+                    int value = 0;
+                    value = themePrefs.getInt("chatsHeaderTitle", 0);
+                    Log.e("chatsHeaderTitle", "" + value);
+                    int user_id = UserConfig.getClientUserId();
+                    TLRPC.User user = MessagesController.getInstance().getUser(user_id);
+                    String text;
+                    if (user != null && user.username != null && user.username.length() != 0) {
+                        text = "@" + user.username;
+                    } else {
+                        text = "-";
+                    }
+                    if (value == 0) {
+                        textCell.setTextAndValue(LocaleController.getString("HeaderTitle", R.string.HeaderTitle), LocaleController.getString("AppName", R.string.AppName) + " Messenger", false);
+                    } else if (value == 1) {
+                        textCell.setTextAndValue(LocaleController.getString("HeaderTitle", R.string.HeaderTitle), LocaleController.getString("AppName", R.string.AppName), false);
+                    } else if (value == 2) {
+                        textCell.setTextAndValue(LocaleController.getString("HeaderTitle", R.string.HeaderTitle), ContactsController.formatName(user.first_name, user.last_name), false);
+                    } else if (value == 3) {
+                        textCell.setTextAndValue(LocaleController.getString("HeaderTitle", R.string.HeaderTitle), text, false);
+                    }
                 }
             }
             return view;
@@ -754,8 +830,10 @@ public class ThemingChatsActivity extends BaseFragment {
                         i == rowColorRow || i == dividerColorRow || i == nameColorRow || i == muteColorRow || i == checksColorRow || i == messageColorRow  || i == memberColorRow || i == typingColorRow || i == timeColorRow || i == countColorRow ||
                         i == countBGColorRow || i == floatingPencilColorRow || i == floatingBGColorRow) {
                 return 3;
-            } else if (i == usernameTitleRow) {
+            }/* else if (i == usernameTitleRow) {
                 return 4;
+            }*/ else if (i == headerTitleRow) {
+                return 5;
             } else {
                 return 2;
             }
@@ -763,7 +841,7 @@ public class ThemingChatsActivity extends BaseFragment {
 
         @Override
         public int getViewTypeCount() {
-            return 5;
+            return 6;
         }
 
         @Override

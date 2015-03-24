@@ -45,10 +45,9 @@ import java.util.HashMap;
 
 public class PhotoAlbumPickerActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
 
-    public static interface PhotoAlbumPickerActivityDelegate {
-        public abstract void didSelectPhotos(ArrayList<String> photos);
-        public abstract void didSelectWebPhotos(ArrayList<MediaController.SearchImage> photos);
-        public abstract void startPhotoSelectActivity();
+    public interface PhotoAlbumPickerActivityDelegate {
+        void didSelectPhotos(ArrayList<String> photos, ArrayList<MediaController.SearchImage> webPhotos);
+        void startPhotoSelectActivity();
     }
 
     private ArrayList<MediaController.AlbumEntry> albumsSorted = null;
@@ -332,8 +331,7 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
             MessagesStorage.getInstance().putWebRecent(recentGifImages);
         }
 
-        delegate.didSelectPhotos(photos);
-        delegate.didSelectWebPhotos(webPhotos);
+        delegate.didSelectPhotos(photos, webPhotos);
     }
 
     private void fixLayout() {
@@ -466,6 +464,7 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
                         photoPickerAlbumsCell.setAlbum(a, null);
                     }
                 }
+                photoPickerAlbumsCell.requestLayout();
             } else if (type == 1) {
                 if (view == null) {
                     view = new PhotoPickerSearchCell(mContext);

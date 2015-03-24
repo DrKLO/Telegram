@@ -89,6 +89,7 @@ public class DrawerLayoutAdapter extends BaseAdapter {
         } else if (type == 2) {
             if (view == null) {
                 view = new DividerCell(mContext);
+                view.setTag("drawerListColor");
             }
         } else if (type == 3) {
             if (view == null) {
@@ -156,5 +157,4 @@ public class DrawerLayoutAdapter extends BaseAdapter {
     public boolean isEmpty() {
         return !UserConfig.isClientActivated();
     }
-
 }

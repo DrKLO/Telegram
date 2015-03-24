@@ -9,6 +9,7 @@
 package org.telegram.ui.Cells;
 
 import android.content.Context;
+import android.graphics.PorterDuff;
 import android.graphics.Typeface;
 import android.text.InputType;
 import android.util.TypedValue;
@@ -47,6 +48,7 @@ public class TextFieldCell extends LinearLayout {
         editText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         editText.setHintTextColor(0xffbebebe);
         editText.setTextColor(0xff212121);
+        editText.getBackground().setColorFilter(AndroidUtilities.defColor, PorterDuff.Mode.SRC_IN);
         editText.setMaxLines(1);
         editText.setLines(1);
         editText.setSingleLine(true);

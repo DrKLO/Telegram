@@ -19,13 +19,13 @@ import java.util.concurrent.Semaphore;
 
 public class FileLoader {
 
-    public static interface FileLoaderDelegate {
-        public abstract void fileUploadProgressChanged(String location, float progress, boolean isEncrypted);
-        public abstract void fileDidUploaded(String location, TLRPC.InputFile inputFile, TLRPC.InputEncryptedFile inputEncryptedFile);
-        public abstract void fileDidFailedUpload(String location, boolean isEncrypted);
-        public abstract void fileDidLoaded(String location, File finalFile, int type);
-        public abstract void fileDidFailedLoad(String location, int state);
-        public abstract void fileLoadProgressChanged(String location, float progress);
+    public interface FileLoaderDelegate {
+        void fileUploadProgressChanged(String location, float progress, boolean isEncrypted);
+        void fileDidUploaded(String location, TLRPC.InputFile inputFile, TLRPC.InputEncryptedFile inputEncryptedFile);
+        void fileDidFailedUpload(String location, boolean isEncrypted);
+        void fileDidLoaded(String location, File finalFile, int type);
+        void fileDidFailedLoad(String location, int state);
+        void fileLoadProgressChanged(String location, float progress);
     }
 
     public static final int MEDIA_DIR_IMAGE = 0;
@@ -132,6 +132,9 @@ public class FileLoader {
     }
 
     public void uploadFile(final String location, final boolean encrypted, final boolean small, final int estimatedSize) {
+        if (location == null) {
+            return;
+        }
         fileLoaderQueue.postRunnable(new Runnable() {
             @Override
             public void run() {
@@ -628,7 +631,7 @@ public class FileLoader {
     }
 
     public static TLRPC.PhotoSize getClosestPhotoSizeWithSize(ArrayList<TLRPC.PhotoSize> sizes, int side) {
-        if (sizes == null) {
+        if (sizes == null || sizes.isEmpty()) {
             return null;
         }
         int lastSide = 0;

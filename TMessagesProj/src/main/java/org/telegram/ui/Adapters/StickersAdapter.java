@@ -47,8 +47,8 @@ public class StickersAdapter extends RecyclerView.Adapter implements Notificatio
     private String lastSticker;
     private boolean visible;
 
-    public static interface StickersAdapterDelegate {
-        public abstract void needChangePanelVisibility(boolean show);
+    public interface StickersAdapterDelegate {
+        void needChangePanelVisibility(boolean show);
     }
 
     private class Holder extends RecyclerView.ViewHolder {
@@ -80,7 +80,7 @@ public class StickersAdapter extends RecyclerView.Adapter implements Notificatio
                 @Override
                 public void run() {
                     if (stickers != null && !stickers.isEmpty() && !stickersToLoad.isEmpty() && visible) {
-                        String fileName = (String)args[0];
+                        String fileName = (String) args[0];
                         stickersToLoad.remove(fileName);
                         if (stickersToLoad.isEmpty()) {
                             delegate.needChangePanelVisibility(stickers != null && !stickers.isEmpty() && stickersToLoad.isEmpty());
@@ -214,6 +214,7 @@ public class StickersAdapter extends RecyclerView.Adapter implements Notificatio
                     final HashMap<String, ArrayList<TLRPC.Document>> result = new HashMap<>();
                     for (TLRPC.TL_stickerPack stickerPack : res.packs) {
                         if (stickerPack != null && stickerPack.emoticon != null) {
+                            stickerPack.emoticon = stickerPack.emoticon.replace("\uFE0F", "");
                             ArrayList<TLRPC.Document> arrayList = result.get(stickerPack.emoticon);
                             for (Long id : stickerPack.documents) {
                                 TLRPC.Document document = documents.get(id);

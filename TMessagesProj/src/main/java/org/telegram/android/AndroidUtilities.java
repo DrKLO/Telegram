@@ -82,7 +82,7 @@ public class AndroidUtilities {
 
     public static final String THEME_PREFS = "theme";
 
-    public static final int defColor = 0xff58BCD5;//0xff43C3DB;//0xff2f8cc9;58BCD5//0xff55abd2
+    public static final int defColor = 0xff009688;//0xff58BCD5;//0xff43C3DB;//0xff2f8cc9;58BCD5//0xff55abd2
     public static int themeColor = getIntColor("themeColor");
 
     public static boolean needRestart = false;
@@ -189,8 +189,6 @@ public class AndroidUtilities {
         }
         InputMethodManager inputManager = (InputMethodManager)view.getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
         inputManager.showSoftInput(view, InputMethodManager.SHOW_IMPLICIT);
-
-        ((InputMethodManager) view.getContext().getSystemService(Context.INPUT_METHOD_SERVICE)).showSoftInput(view, 0);
     }
 
     public static boolean isKeyboardShowed(View view) {
@@ -908,6 +906,14 @@ public class AndroidUtilities {
             }
         }
         return Integer.parseInt(s);
+    }
+
+    public static int getDefBubbleColor(){
+        int color = 0xffb2dfdb;//0xff80cbc4;
+        if(getIntColor("themeColor") != 0xff009688){
+            color = AndroidUtilities.getIntDarkerColor("themeColor", -0x50);
+        }
+        return color;
     }
 /*
     static void modifyXMLfile(File preffile,String sname){

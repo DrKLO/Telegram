@@ -8,6 +8,7 @@
 
 package org.telegram.ui.Components;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Rect;
@@ -26,8 +27,8 @@ public class SizeNotifierRelativeLayout extends RelativeLayout {
     private int keyboardHeight;
     private SizeNotifierRelativeLayoutDelegate delegate;
 
-    public abstract interface SizeNotifierRelativeLayoutDelegate {
-        public abstract void onSizeChanged(int keyboardHeight);
+    public interface SizeNotifierRelativeLayoutDelegate {
+        void onSizeChanged(int keyboardHeight);
     }
 
     public SizeNotifierRelativeLayout(Context context) {
@@ -62,16 +63,24 @@ public class SizeNotifierRelativeLayout extends RelativeLayout {
         this.delegate = delegate;
     }
 
+    @SuppressLint("DrawAllocation")
     @Override
     protected void onLayout(boolean changed, int l, int t, int r, int b) {
-        super.onLayout(changed, l, t, r, b);
-        if (delegate != null) {
+        if (changed && delegate != null) {
             View rootView = this.getRootView();
             int usableViewHeight = rootView.getHeight() - AndroidUtilities.statusBarHeight - AndroidUtilities.getViewInset(rootView);
             this.getWindowVisibleDisplayFrame(rect);
             keyboardHeight = usableViewHeight - (rect.bottom - rect.top);
-            delegate.onSizeChanged(keyboardHeight);
+            post(new Runnable() {
+                @Override
+                public void run() {
+                    if (delegate != null) {
+                        delegate.onSizeChanged(keyboardHeight);
+                    }
+                }
+            });
         }
+        super.onLayout(changed, l, t, r, b);
     }
 
     @Override

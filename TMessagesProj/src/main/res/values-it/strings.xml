@@ -3,7 +3,7 @@
 <!--https://www.transifex.com/projects/p/telegram/language/it/members/-->
 
 <resources>
-    <string name="AppName">Telegram+</string>
+    <string name="AppName">Plus Messenger</string>
     <string name="LanguageName">Italiano</string>
     <string name="LanguageNameInEnglish">Italian</string>
     <string name="LanguageCode">it</string>
@@ -36,7 +36,7 @@
     <string name="NoChats">Ancora nessuna chat…</string>
     <string name="NoChatsHelp">Inizia a scrivere premendo il tasto\nnuovo messaggio nell\'angolo in basso a destra\no apri il menu per avere più opzioni.</string>
     <string name="WaitingForNetwork">Attendo la rete...</string>
-    <string name="Connecting">Connessione in corso…</string>
+    <string name="Connecting">Connessione…</string>
     <string name="Updating">Aggiornamento…</string>
     <string name="NewSecretChat">Nuova chat segreta</string>
     <string name="AwaitingEncryption">In attesa che %s si colleghi…</string>
@@ -149,7 +149,7 @@
     <string name="NotificationGroupKickYou">%1$s ti ha espulso dal gruppo %2$s</string>
     <string name="NotificationGroupLeftMember">%1$s ha lasciato il gruppo %2$s</string>
     <string name="NotificationContactJoined">%1$s ha iniziato a usare Telegram!</string>
-    <string name="NotificationUnrecognizedDevice">%1$s,\nAbbiamo rilevato un accesso al tuo account da un nuovo dispositivo %2$s\n\nDispositivo: %3$s\nPosizione: %4$s\n\nSe non sei stato tu, puoi andare su Impostazioni - Privacy e Sicurezza - Termina tutte le sessioni.\n\nGrazie,\nil team di Telegram</string>
+    <string name="NotificationUnrecognizedDevice">%1$s,\nAbbiamo rilevato un accesso al tuo account da un nuovo dispositivo il %2$s\n\nDispositivo: %3$s\nPosizione: %4$s\n\nSe non sei stato tu, puoi andare su Impostazioni - Privacy e Sicurezza - Termina tutte le sessioni.\n\nGrazie,\nil team di Telegram</string>
     <string name="NotificationContactNewPhoto">%1$s ha aggiornato la foto del profilo</string>
     <string name="Reply">Rispondi</string>
     <string name="ReplyToGroup">Rispondi a %1$s</string>
@@ -158,7 +158,7 @@
     <!--contacts view-->
     <string name="SelectContact">Seleziona contatto</string>
     <string name="NoContacts">Ancora nessun contatto</string>
-    <string name="InviteText">Ehi, è il momento di passare a Telegram: https://telegram.org/dl</string>
+    <string name="InviteText">Ehi, è il momento di passare a Telegram: http://goo.gl/jnmjnZ</string>
     <string name="TodayAt">alle</string>
     <string name="YesterdayAt">ieri alle</string>
     <string name="Online">in linea</string>
@@ -212,7 +212,7 @@
     <string name="UsernameInvalidShort">Il minimo per un username è 5 caratteri.</string>
     <string name="UsernameInvalidLong">Il massimo per un username è 32 caratteri.</string>
     <string name="UsernameInvalidStartNumber">Un username non può iniziare con numeri.</string>
-    <string name="UsernameHelp">Puoi scegliere un username su <![CDATA[<b>]]>Telegram+<![CDATA[</b>]]>. Se lo fai, le altre persone potranno trovarti tramite questo nome utente e contattarti senza conoscere il tuo numero di telefono.<![CDATA[<br><br>]]>Puoi usare <![CDATA[<b>]]>a–z<![CDATA[</b>]]>, <![CDATA[<b>]]>0–9<![CDATA[</b>]]> e underscore. La lunghezza minima è di <![CDATA[<b>]]>5<![CDATA[</b>]]>  caratteri.</string>
+    <string name="UsernameHelp">Puoi scegliere un username su <![CDATA[<b>]]>Plus Messenger<![CDATA[</b>]]>. Se lo fai, le altre persone potranno trovarti tramite questo nome utente e contattarti senza conoscere il tuo numero di telefono.<![CDATA[<br><br>]]>Puoi usare <![CDATA[<b>]]>a–z<![CDATA[</b>]]>, <![CDATA[<b>]]>0–9<![CDATA[</b>]]> e underscore. La lunghezza minima è di <![CDATA[<b>]]>5<![CDATA[</b>]]>  caratteri.</string>
     <string name="UsernameChecking">Controllando l\'username...</string>
     <string name="UsernameAvailable">%1$s è disponibile.</string>
     <string name="UsernameEmpty">Nessuno</string>
@@ -259,7 +259,7 @@
     <string name="DeleteLocalization">Eliminare la localizzazione?</string>
     <string name="IncorrectLocalization">File della localizzazione non valido</string>
     <string name="Enabled">Abilitate</string>
-    <string name="Disabled">Disabilitate</string>
+    <string name="Disabled">Disabilitata</string>
     <string name="NotificationsService">Servizio notifiche</string>
     <string name="NotificationsServiceDisableInfo">Se i servizi di Google Play sono sufficienti per ricevere le notifiche, è possibile disabilitare il Servizio notifiche. Ti raccomandiamo comunque di lasciarlo abilitato per lasciare l\'app attiva in background e ricevere le notifiche istantanee.</string>
     <string name="SortBy">Ordina per</string>
@@ -274,7 +274,7 @@
     <string name="AlwaysShowPopup">Mostra sempre i popup</string>
     <string name="BadgeNumber">Contatore Badge</string>
     <string name="Short">Breve</string>
-    <string name="Long">Lungo</string>
+    <string name="Long">Lunga</string>
     <string name="SystemDefault">Predefinito di sistema</string>
     <string name="SettingsDefault">Impostazioni predefinite</string>
     <string name="AutomaticMediaDownload">Download automatico media</string>
@@ -300,6 +300,8 @@
     <string name="NotificationsOther">Altro</string>
     <string name="NotificationsDisabled">Disabilitate</string>
     <string name="VibrationDisabled">Disabilitata</string>
+    <string name="LedDisabled">Disabilitato</string>
+    <string name="RepeatDisabled">No</string>
     <!--passcode view-->
     <string name="Passcode">Codice</string>
     <string name="ChangePasscode">Cambia codice</string>
@@ -358,6 +360,9 @@
     <string name="Grain">Grana</string>
     <string name="Sharpen">Nitidezza</string>
     <string name="Blur">Sfocatura</string>
+    <string name="BlurOff">No</string>
+    <string name="BlurLinear">Lineare</string>
+    <string name="BlurRadial">Radiale</string>
     <string name="AreYouSureDeletePhoto">Sei sicuro di voler eliminare questa foto?</string>
     <string name="AreYouSureDeleteVideo">Sei sicuro di voler eliminare questo video?</string>
     <string name="DiscardChanges">Annullare le modifiche?</string>
@@ -504,7 +509,7 @@
     <string name="ForwardMessagesToGroup">Inoltra messaggi a %1$s?</string>
     <string name="FeatureUnavailable">Ci spiace, questa funzione non è disponibile nel tuo paese.</string>
     <!--Intro view-->
-    <string name="Page1Title">Telegram+</string>
+    <string name="Page1Title">Plus Messenger</string>
     <string name="Page2Title">Veloce</string>
     <string name="Page3Title">Gratuito</string>
     <string name="Page4Title">Sicuro</string>
@@ -512,12 +517,12 @@
     <string name="Page6Title">Basato sul cloud</string>
     <string name="Page7Title">Privato</string>
     <string name="Page1Message">L\'app di messaggi <![CDATA[<b>più veloce</b>]]> al mondo.<![CDATA[<br/>]]>È <![CDATA[<b>gratuita</b>]]> e <![CDATA[<b>sicura</b>]]>.</string>
-    <string name="Page2Message"><![CDATA[<b>Telegram+</b>]]> consegna i messaggi più<![CDATA[<br/>]]>velocemente di qualsiasi altra app.</string>
-    <string name="Page3Message"><![CDATA[<b>Telegram+</b>]]> sarà sempre gratuito.<![CDATA[<br/>]]>Nessuna pubblicità. Nessun abbonamento.</string>
-    <string name="Page4Message"><![CDATA[<b>Telegram+</b>]]> protegge i tuoi messaggi<![CDATA[<br/>]]>dagli attacchi degli hacker.</string>
-    <string name="Page5Message"><![CDATA[<b>Telegram+</b>]]> non ha limiti sulle dimensioni<![CDATA[<br/>]]>dei tuoi file multimediali e delle chat.</string>
-    <string name="Page6Message"><![CDATA[<b>Telegram+</b>]]> ti consente di accedere<![CDATA[<br/>]]>ai messaggi da più dispositivi.</string>
-    <string name="Page7Message"><![CDATA[<b>Telegram+</b>]]> cifra in maniera sicura i messaggi<![CDATA[<br/>]]>e può far sì che si autodistruggano.</string>
+    <string name="Page2Message"><![CDATA[<b>Plus Messenger</b>]]> consegna i messaggi più<![CDATA[<br/>]]>velocemente di qualsiasi altra app.</string>
+    <string name="Page3Message"><![CDATA[<b>Plus Messenger</b>]]> sarà sempre gratuito.<![CDATA[<br/>]]>Nessuna pubblicità. Nessun abbonamento.</string>
+    <string name="Page4Message"><![CDATA[<b>Plus Messenger</b>]]> protegge i tuoi messaggi<![CDATA[<br/>]]>dagli attacchi degli hacker.</string>
+    <string name="Page5Message"><![CDATA[<b>Plus Messenger</b>]]> non ha limiti sulle dimensioni<![CDATA[<br/>]]>dei tuoi file multimediali e delle chat.</string>
+    <string name="Page6Message"><![CDATA[<b>Plus Messenger</b>]]> ti consente di accedere<![CDATA[<br/>]]>ai messaggi da più dispositivi.</string>
+    <string name="Page7Message"><![CDATA[<b>Plus Messenger</b>]]> cifra in maniera sicura i messaggi<![CDATA[<br/>]]>e può far sì che si autodistruggano.</string>
     <string name="StartMessaging">Inizia a inviare messaggi</string>
     <!--plural-->
     <string name="Online_zero">%1$d in linea</string>
@@ -556,12 +561,6 @@
     <string name="items_few">%1$d oggetti</string>
     <string name="items_many">%1$d oggetti</string>
     <string name="items_other">%1$d oggetti</string>
-    <string name="FromContacts_zero">da nessun contatto</string>
-    <string name="FromContacts_one">da %1$d contatto</string>
-    <string name="FromContacts_two">da %1$d contatti</string>
-    <string name="FromContacts_few">da %1$d contatti</string>
-    <string name="FromContacts_many">da %1$d contatti</string>
-    <string name="FromContacts_other">da %1$d contatti</string>
     <string name="FromChats_zero">in nessuna chat</string>
     <string name="FromChats_one">in %1$d chat</string>
     <string name="FromChats_two">in %1$d chat</string>
@@ -616,6 +615,61 @@
     <string name="Users_few">%1$d utenti</string>
     <string name="Users_many">%1$d utenti</string>
     <string name="Users_other">%1$d utenti</string>
+    <!--forwarded messages-->
+    <string name="ForwardedMessage_zero">%1$d messaggi inoltrati</string>
+    <string name="ForwardedMessage_one">Messaggio inoltrato</string>
+    <string name="ForwardedMessage_two">%1$d messaggi inoltrati</string>
+    <string name="ForwardedMessage_few">%1$d messaggi inoltrati</string>
+    <string name="ForwardedMessage_many">%1$d messaggi inoltrati</string>
+    <string name="ForwardedMessage_other">%1$d messaggi inoltrati</string>
+    <string name="ForwardedFile_zero">%1$d file inoltrati</string>
+    <string name="ForwardedFile_one">FIle inoltrato</string>
+    <string name="ForwardedFile_two">%1$d file inoltrati</string>
+    <string name="ForwardedFile_few">%1$d file inoltrati</string>
+    <string name="ForwardedFile_many">%1$d file inoltrati</string>
+    <string name="ForwardedFile_other">%1$d file inoltrati</string>
+    <string name="ForwardedPhoto_zero">%1$d foto inoltrate</string>
+    <string name="ForwardedPhoto_one">Foto inoltrata</string>
+    <string name="ForwardedPhoto_two">%1$d foto inoltrate</string>
+    <string name="ForwardedPhoto_few">%1$d foto inoltrate</string>
+    <string name="ForwardedPhoto_many">%1$d foto inoltrate</string>
+    <string name="ForwardedPhoto_other">%1$d foto inoltrate</string>
+    <string name="ForwardedVideo_zero">%1$d video inoltrati</string>
+    <string name="ForwardedVideo_one">Video inoltrato</string>
+    <string name="ForwardedVideo_two">%1$d video inoltrati</string>
+    <string name="ForwardedVideo_few">%1$d video inoltrati</string>
+    <string name="ForwardedVideo_many">%1$d video inoltrati</string>
+    <string name="ForwardedVideo_other">%1$d video inoltrati</string>
+    <string name="ForwardedAudio_zero">%1$d audio inoltrati</string>
+    <string name="ForwardedAudio_one">Audio inoltrato</string>
+    <string name="ForwardedAudio_two">%1$d audio inoltrati</string>
+    <string name="ForwardedAudio_few">%1$d audio inoltrati</string>
+    <string name="ForwardedAudio_many">%1$d audio inoltrati</string>
+    <string name="ForwardedAudio_other">%1$d audio inoltrati</string>
+    <string name="ForwardedLocation_zero">%1$d posizioni inoltrate</string>
+    <string name="ForwardedLocation_one">Posizione inoltrata</string>
+    <string name="ForwardedLocation_two">%1$d posizione inoltrate</string>
+    <string name="ForwardedLocation_few">%1$d posizione inoltrate</string>
+    <string name="ForwardedLocation_many">%1$d posizione inoltrate</string>
+    <string name="ForwardedLocation_other">%1$d posizione inoltrate</string>
+    <string name="ForwardedContact_zero">%1$d contatti inoltrati</string>
+    <string name="ForwardedContact_one">Contatto inoltrato</string>
+    <string name="ForwardedContact_two">%1$d contatti inoltrati</string>
+    <string name="ForwardedContact_few">%1$d contatti inoltrati</string>
+    <string name="ForwardedContact_many">%1$d contatti inoltrati</string>
+    <string name="ForwardedContact_other">%1$d contatti inoltrati</string>
+    <string name="ForwardedSticker_zero">%1$d sticker inoltrati</string>
+    <string name="ForwardedSticker_one">Sticker inoltrato</string>
+    <string name="ForwardedSticker_two">%1$d sticker inoltrati</string>
+    <string name="ForwardedSticker_few">%1$d sticker inoltrati</string>
+    <string name="ForwardedSticker_many">%1$d sticker inoltrati</string>
+    <string name="ForwardedSticker_other">%1$d sticker inoltrati</string>
+    <string name="AndOther_zero">e altri %1$d</string>
+    <string name="AndOther_one">e %1$d altro</string>
+    <string name="AndOther_two">e altri %1$d</string>
+    <string name="AndOther_few">e altri %1$d</string>
+    <string name="AndOther_many">e altri %1$d</string>
+    <string name="AndOther_other">e altri %1$d</string>
     <!--date formatters-->
     <string name="formatterMonthYear">MMMM yyyy</string>
     <string name="formatterMonth">dd MMM</string>
@@ -628,8 +682,19 @@
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s alle %2$s</string>
     <!--Telegra+ Italian-->
-    <string name="TelegramForAndroid">Telegram+ per Android</string>
-    <string name="Theming">Theming</string>
+    <!--Smart Notifications-->
+    <string name="SmartNotification">Notifica intelligente</string>
+    <string name="TimeUnitSeconds">secondo(i)</string>
+    <string name="TimeUnitMinutes">minuto(i)</string>
+    <string name="TimeUnitHours">ora(e)</string>
+    <string name="TimeUnitDays">giorno(i)</string>
+    <string name="settings_smart_notify_begin">Suona massimo</string>
+    <string name="settings_smart_notify_mid1">volte</string>
+    <string name="settings_smart_notify_mid11">volta</string>
+    <string name="settings_smart_notify_mid2">entro</string>
+    <!---->
+    <string name="TelegramForAndroid">Plus Messenger per Android</string>
+  <string name="Theming">Personalizzazione</string>
     <string name="colorHexInvalid">Codice del colore esadecimale non valido!</string>
     <string name="themeColor">Colore del tema</string>
     <string name="ResetThemeSettings">Resetta le impostazioni del tema</string>
@@ -640,12 +705,12 @@
     <string name="MainScreen">Schermata principale</string>
     <string name="ChatScreen">Schermata chat</string>
     <string name="ContactsScreen">Schermata contatti</string>
-    <string name="Header">Testata</string>
+  <string name="Header">Intestazione</string>
     <string name="Rows">Righe</string>
     <string name="ChatList">Chat</string>
     <string name="ChatsList">Lista delle chat</string>
     <string name="ContactsList">Lista contatti</string>
-    <string name="HeaderColor">Colore della testata</string>
+  <string name="HeaderColor">Colore dell\'intestazione</string>
     <string name="NameColor">Colore del nome del contatto</string>
     <string name="NameSize">Dimensione del nome del contatto</string>
     <string name="MessageColor">Colore del messaggio</string>
@@ -665,8 +730,8 @@
     <string name="DateBubbleColor">Colore nuvoletta della data</string>
   <string name="RTextColor">Colore del testo a destra</string>
     <string name="LTextColor">Colore del testo a sinistra</string>
-    <string name="RTimeColor">Colore dell\'ora a destra</string>
-    <string name="LTimeColor">Colore dell\'ora a sinistra</string>
+  <string name="RTimeColor">Colore dell\'orario a destra</string>
+  <string name="LTimeColor">Colore dell\'orario a sinistra</string>
     <string name="TimeSize">Dimensione orario</string>
     <string name="EditTextColor">Colore del testo immesso</string>
     <string name="EditTextSize">Dimensione del testo immesso</string>
@@ -676,41 +741,49 @@
     <string name="OnlineColor">Colore dello stato Online</string>
     <string name="ChatMusic">Musica</string>
     <string name="SaveTheme">Salva il tema</string>
-    <string name="SaveThemeSum">Salva il tuo tema nella cartella \"Telegram/Themes\".</string>
+    <string name="SaveThemeSum">Salva il tuo tema nella cartella Telegram/Themes</string>
     <string name="SaveThemeToastText">Tema salvato!</string>
     <string name="SavedTo">%1$s salvato in %2$s</string>
-    <string name="SaveErrorMsg0">Tema non ancora creato. Prima applica una MOD di Telegram+, per favore.</string>
-    <string name="restoreOkMsg">Preferenze ripristinate dalla scheda SD.</string>
-    <string name="restoreErrorMsg">Nessun file di preferenze trovato in %s.</string>
+  <string name="SaveErrorMsg0">Tema non ancora creato. Prima applica una MOD di Telegram+, per favore</string>
+  <string name="restoreOkMsg">Preferenze ripristinate dalla scheda SD</string>
+  <string name="restoreErrorMsg">Nessun file di preferenze trovato in %s</string>
     <string name="NoMediaMessage">Scheda SD non trovata.</string>
     <string name="EnterName">Inserisci il nome</string>
     <string name="Themes">Temi</string>
     <string name="ApplyTheme">Applica tema</string>
-    <string name="ApplyThemeSum">Applica un tema xml dalla cartella locale.</string>
+  <string name="ApplyThemeSum">Applica un tema xml da una cartella locale</string>
   <string name="MemberColor">Colore del partecipante</string>
     <string name="ChecksColor">Colore delle spunte</string>
     <string name="MuteColor">Colore dell\'icona \"Muto\"</string>
     <string name="SendLogs">Invia log</string>
     <string name="SendLogsEmpty">Non ci sono log</string>
     <string name="SendIcon">Icona di invio</string>
-    <string name="HideMobile">Nascondi il numero di telefono</string>
-    <string name="FloatingPencilColor">Colore della matita flottante</string>
-    <string name="FloatingBGColor">Colore di sfondo del pulsante flottante</string>
+  <string name="HideMobile">Nascondi numero di telefono dal menu</string>
+  <string name="FloatingPencilColor">Colore della matita fluttuante</string>
+  <string name="FloatingBGColor">Colore di sfondo del pulsante fluttuante</string>
     <string name="Community">Community G+</string>
-  <string name="UsernameTitle">Mostra il nome utente nella barra del titolo</string>
-  <string name="TypingColor">Colore di digitazione</string>
+  <string name="TypingColor">Colore di \"sta scrivendo\"</string>
+  <string name="EditTextIconsColor">Colore delle icone del campo di testo</string>
+  <string name="NavigationDrawer">Menu di navigazione</string>
+  <string name="OptionsList">Lista delle opzioni</string>
+  <string name="ListColor">Colore della lista</string>
   <string name="OwnNameSize">Dimensione del nome</string>
-  <string name="PhoneColor">Colore del telefono</string>
-  <string name="PhoneSize">Dimensione del telefono</string>
+  <string name="PhoneColor">Colore del numero di telefono</string>
+  <string name="PhoneSize">Dimensione del numero di telefono</string>
   <string name="AvatarColor">Colore dell\'avatar</string>
   <string name="IconColor">Colore dell\'icona delle opzioni</string>
-  <string name="OptionColor">Colore opzioni</string>
-  <string name="OptionSize">Dimensione opzioni</string>
+  <string name="OptionColor">Colore delle opzioni</string>
+  <string name="OptionSize">Dimensione delle opzioni</string>
   <string name="VersionColor">Colore della versione</string>
   <string name="VersionSize">Dimensione della versione</string>
-  <string name="HeaderTitleColor">Colore dell\'header del titolo</string>
-  <string name="HeaderIconsColor">Colore delle icone della testata</string>
+  <string name="HeaderTitleColor">Colore del titolo dell\'intestazione</string>
+  <string name="HeaderIconsColor">Colore delle icone dell\'intestazione</string>
   <string name="DividerColor">Colore del divisore</string>
   <string name="AvatarRadius">Raggio dell\'avatar</string>
-  <!--Smart Notifications-->
+  <string name="SetMemberColor">Imposta colore del partecipante</string>
+  <string name="ForwardNameColor">Colore del nome inoltrato</string>
+  <string name="HeaderTitle">Titolo dell\'intestazione</string>
+  <string name="ForwardNoQuote">Inoltra senza citare</string>
+  <string name="DisableMessageClick">Disabilita il pop-up al click</string>
+  <string name="ProfileScreen">Schermata Gruppo/Profilo del contatto</string>
 </resources>

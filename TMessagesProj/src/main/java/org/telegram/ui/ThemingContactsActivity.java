@@ -72,7 +72,7 @@ public class ThemingContactsActivity extends BaseFragment {
         rowsSectionRow = rowCount++;
         rowsSection2Row = rowCount++;
         rowColorRow = rowCount++;
-        //avatarRadiusRow  = rowCount++;
+        avatarRadiusRow  = rowCount++;
         nameColorRow = rowCount++;
         nameSizeRow = rowCount++;
         statusColorRow = rowCount++;
@@ -224,7 +224,7 @@ public class ThemingContactsActivity extends BaseFragment {
                         builder.setTitle(LocaleController.getString("AvatarRadius", R.string.AvatarRadius));
                         final NumberPicker numberPicker = new NumberPicker(getParentActivity());
                         final int currentValue = themePrefs.getInt("contactsAvatarRadius", 32);
-                        numberPicker.setMinValue(0);
+                        numberPicker.setMinValue(1);
                         numberPicker.setMaxValue(32);
                         numberPicker.setValue(currentValue);
                         builder.setView(numberPicker);

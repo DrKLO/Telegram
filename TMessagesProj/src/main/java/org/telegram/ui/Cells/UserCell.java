@@ -9,6 +9,7 @@
 package org.telegram.ui.Cells;
 
 import android.content.Context;
+import android.graphics.drawable.Drawable;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -52,6 +53,10 @@ public class UserCell extends FrameLayout {
 
     private int nameColor = 0xff000000;
 
+    private Drawable curDrawable = null;
+
+    private int radius = 32;
+
     public UserCell(Context context, int padding) {
         super(context);
 
@@ -69,7 +74,6 @@ public class UserCell extends FrameLayout {
         avatarDrawable = new AvatarDrawable();
 
         nameTextView = new TextView(context);
-        //ContactsNamesColor
         nameTextView.setTextColor(0xff212121);
         nameTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 17);
         nameTextView.setLines(1);
@@ -168,10 +172,6 @@ public class UserCell extends FrameLayout {
         statusOnlineColor = onlineColor;
     }
 
-    public void setNameColor(int color) {
-        nameColor = color;
-    }
-
     public void update(int mask) {
         if (currentUser == null) {
             return;
@@ -239,9 +239,24 @@ public class UserCell extends FrameLayout {
         statusTextView.setTextSize(AndroidUtilities.getIntDef("contactsStatusSize", 14));
         imageView.setVisibility(currentDrawable == 0 ? GONE : VISIBLE);
         imageView.setImageResource(currentDrawable);
+        if(curDrawable != null)imageView.setImageDrawable(curDrawable);
+
         //int radius = AndroidUtilities.dp(AndroidUtilities.getIntDef("contactsAvatarRadius", 32));
-        //avatarImageView.imageReceiver.setRoundRadius(radius);
-        //avatarDrawable.setRadius(radius/3);
+        avatarImageView.imageReceiver.setRoundRadius(AndroidUtilities.dp(radius));
+        avatarDrawable.setRadius(AndroidUtilities.dp(radius));
+
         avatarImageView.setImage(photo, "50_50", avatarDrawable);
+    }
+
+    public void setNameColor(int color) {
+        nameColor = color;
+    }
+
+    public void setImageDrawable(Drawable drawable){
+        curDrawable = drawable;
+    }
+
+    public void setAvatarRadius(int value){
+        radius = value;
     }
 }

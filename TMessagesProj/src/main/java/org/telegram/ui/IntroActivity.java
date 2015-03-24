@@ -273,7 +273,7 @@ public class IntroActivity extends Activity {
                 View child = bottomPages.getChildAt(a);
                 if (a == position) {
                     //child.setBackgroundColor(0xff2ca5e0);
-                    child.setBackgroundColor(0xff58BCD5);
+                    child.setBackgroundColor(AndroidUtilities.defColor);
                 } else {
                     child.setBackgroundColor(0xffbbbbbb);
                 }

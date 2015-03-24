@@ -132,6 +132,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
     private int contactsReimportRow;
     private int contactsSortRow;
     private int rowCount;
+    private int disableMessageClickRow;
 
     private final static int edit_name = 1;
     private final static int logout = 2;
@@ -235,15 +236,15 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         messagesSectionRow2 = rowCount++;
         textSizeRow = rowCount++;
         sendByEnterRow = rowCount++;
+        disableMessageClickRow = rowCount++;
         supportSectionRow = rowCount++;
         supportSectionRow2 = rowCount++;
         askQuestionRow = rowCount++;
         telegramFaqRow = rowCount++;
-        sendLogsRow = rowCount++;
         if (BuildVars.DEBUG_VERSION) {
-            //sendLogsRow = rowCount++;
+        sendLogsRow = rowCount++;
             clearLogsRow = rowCount++;
-            switchBackendButtonRow = rowCount++;
+            //switchBackendButtonRow = rowCount++;
         }
         //versionRow = rowCount++;
         //contactsSectionRow = rowCount++;
@@ -258,6 +259,9 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
     @Override
     public void onFragmentDestroy() {
         super.onFragmentDestroy();
+        if (avatarImage != null) {
+            avatarImage.setImageDrawable(null);
+        }
         MessagesController.getInstance().cancelLoadFullUser(UserConfig.getClientUserId());
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.updateInterfaces);
         avatarUpdater.clear();
@@ -495,6 +499,15 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                         boolean send = preferences.getBoolean("send_by_enter", false);
                         SharedPreferences.Editor editor = preferences.edit();
                         editor.putBoolean("send_by_enter", !send);
+                        editor.commit();
+                        if (view instanceof TextCheckCell) {
+                            ((TextCheckCell) view).setChecked(!send);
+                        }
+                    } else if (i == disableMessageClickRow) {
+                        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+                        boolean send = preferences.getBoolean("disableMessageClick", false);
+                        SharedPreferences.Editor editor = preferences.edit();
+                        editor.putBoolean("disableMessageClick", !send);
                         editor.commit();
                         if (view instanceof TextCheckCell) {
                             ((TextCheckCell) view).setChecked(!send);
@@ -1010,6 +1023,8 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         AvatarDrawable avatarDrawable = new AvatarDrawable(user, true);
         //avatarDrawable.setColor(0xff5c98cd);
         avatarDrawable.setColor(AndroidUtilities.getIntDarkerColor("themeColor",0x10));
+        int radius = AndroidUtilities.dp(AndroidUtilities.getIntDef("drawerAvatarRadius", 32));
+        avatarDrawable.setRadius(radius);
         if (avatarImage != null) {
         avatarImage.setImage(photo, "50_50", avatarDrawable);
         avatarImage.imageReceiver.setVisible(!PhotoViewer.getInstance().isShowingImage(photoBig), false);
@@ -1069,7 +1084,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         @Override
         public boolean isEnabled(int i) {
             return i == textSizeRow || i == enableAnimationsRow || i == notificationRow || i == backgroundRow || i == numberRow ||
-                    i == askQuestionRow || i == sendLogsRow || i == sendByEnterRow || i == privacyRow || i == wifiDownloadRow ||
+                    i == askQuestionRow || i == sendLogsRow || i == sendByEnterRow || i == disableMessageClickRow || i == privacyRow || i == wifiDownloadRow ||
                     i == mobileDownloadRow || i == clearLogsRow || i == roamingDownloadRow || i == languageRow || i == usernameRow ||
                     i == switchBackendButtonRow || i == telegramFaqRow || i == contactsSortRow || i == contactsReimportRow || i == saveToGalleryRow;
         }
@@ -1163,6 +1178,8 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                     textCell.setTextAndCheck(LocaleController.getString("EnableAnimations", R.string.EnableAnimations), preferences.getBoolean("view_animations", true), false);
                 } else if (i == sendByEnterRow) {
                     textCell.setTextAndCheck(LocaleController.getString("SendByEnter", R.string.SendByEnter), preferences.getBoolean("send_by_enter", false), false);
+                } else if (i == disableMessageClickRow) {
+                    textCell.setTextAndCheck(LocaleController.getString("DisableMessageClick", R.string.DisableMessageClick), preferences.getBoolean("disableMessageClick", false), false);
                 } else if (i == saveToGalleryRow) {
                     textCell.setTextAndCheck(LocaleController.getString("SaveToGallerySettings", R.string.SaveToGallerySettings), MediaController.getInstance().canSaveToGallery(), false);
                 }
@@ -1266,7 +1283,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 return 0;
             } if (i == settingsSectionRow || i == supportSectionRow || i == messagesSectionRow || i == mediaDownloadSection || i == contactsSectionRow) {
                 return 1;
-            } else if (i == enableAnimationsRow || i == sendByEnterRow || i == saveToGalleryRow) {
+            } else if (i == enableAnimationsRow || i == sendByEnterRow || i == disableMessageClickRow || i == saveToGalleryRow) {
                 return 3;
             } else if (i == notificationRow || i == backgroundRow || i == askQuestionRow || i == sendLogsRow || i == privacyRow || i == clearLogsRow || i == switchBackendButtonRow || i == telegramFaqRow || i == contactsReimportRow || i == textSizeRow || i == languageRow || i == contactsSortRow) {
                 return 2;

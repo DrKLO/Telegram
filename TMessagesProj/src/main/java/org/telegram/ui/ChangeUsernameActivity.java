@@ -13,6 +13,7 @@ import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.content.SharedPreferences;
+import android.graphics.PorterDuff;
 import android.text.Editable;
 import android.text.Html;
 import android.text.InputType;
@@ -99,6 +100,7 @@ public class ChangeUsernameActivity extends BaseFragment {
             firstNameField.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
             firstNameField.setHintTextColor(0xff979797);
             firstNameField.setTextColor(0xff212121);
+            firstNameField.getBackground().setColorFilter(AndroidUtilities.getIntColor("themeColor"), PorterDuff.Mode.SRC_IN);
             firstNameField.setMaxLines(1);
             firstNameField.setLines(1);
             firstNameField.setPadding(0, 0, 0, 0);

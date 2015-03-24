@@ -181,7 +181,7 @@ public class FileLog {
     }
 
     public static void cleanupLogs() {
-        ArrayList<Uri> uris = new ArrayList<Uri>();
+        ArrayList<Uri> uris = new ArrayList<>();
         File sdCard = ApplicationLoader.applicationContext.getExternalFilesDir(null);
         File dir = new File (sdCard.getAbsolutePath() + "/logs");
         File[] files = dir.listFiles();

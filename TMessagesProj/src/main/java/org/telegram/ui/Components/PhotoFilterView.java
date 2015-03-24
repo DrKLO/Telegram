@@ -71,8 +71,8 @@ public class PhotoFilterView extends FrameLayout {
     private int shadowsTool = 6;
     private int vignetteTool = 7;
     private int grainTool = 8;
-    private int blurTool = -1;
-    private int sharpenTool = 9;
+    private int blurTool = 9;
+    private int sharpenTool = 10;
 
     private float highlightsValue = 0; //0 100
     private float contrastValue = 0; //-100 100
@@ -84,18 +84,29 @@ public class PhotoFilterView extends FrameLayout {
     private float vignetteValue = 0; //0 100
     private float grainValue = 0; //0 100
     private float sharpenValue = 0; //0 100
+    private int blurType = 0; //0 none, 1 radial, 2 linear
+    private float blurExcludeSize = 0.35f;
+    private Point blurExcludePoint = new Point(0.5f, 0.5f);
+    private float blurExcludeBlurSize = 0.15f;
+    private float blurAngle = (float) Math.PI / 2.0f;
 
     private ToolsAdapter toolsAdapter;
     private PhotoEditorSeekBar valueSeekBar;
     private FrameLayout toolsView;
     private FrameLayout editView;
     private TextView paramTextView;
+    private TextView blurTextView;
     private TextView valueTextView;
     private TextView doneTextView;
     private TextView cancelTextView;
     private TextureView textureView;
     private EGLThread eglThread;
     private RecyclerListView recyclerListView;
+    private FrameLayout blurLayout;
+    private PhotoFilterBlurControl blurControl;
+    private TextView blurOffButton;
+    private TextView blurRadialButton;
+    private TextView blurLinearButton;
 
     private Bitmap bitmapToEdit;
     private int orientation;
@@ -112,6 +123,7 @@ public class PhotoFilterView extends FrameLayout {
         private EGLSurface eglSurface;
         private GL gl;
         private boolean initied;
+        private boolean needUpdateBlurTexture = true;
 
         private Bitmap currentBitmap;
 
@@ -142,6 +154,34 @@ public class PhotoFilterView extends FrameLayout {
         private int widthHandle;
         private int heightHandle;
 
+        private int blurShaderProgram;
+        private int blurPositionHandle;
+        private int blurInputTexCoordHandle;
+        private int blurSourceImageHandle;
+        private int blurWidthHandle;
+        private int blurHeightHandle;
+
+        private int linearBlurShaderProgram;
+        private int linearBlurPositionHandle;
+        private int linearBlurInputTexCoordHandle;
+        private int linearBlurSourceImageHandle;
+        private int linearBlurSourceImage2Handle;
+        private int linearBlurExcludeSizeHandle;
+        private int linearBlurExcludePointHandle;
+        private int linearBlurExcludeBlurSizeHandle;
+        private int linearBlurAngleHandle;
+        private int linearBlurAspectRatioHandle;
+
+        private int radialBlurShaderProgram;
+        private int radialBlurPositionHandle;
+        private int radialBlurInputTexCoordHandle;
+        private int radialBlurSourceImageHandle;
+        private int radialBlurSourceImage2Handle;
+        private int radialBlurExcludeSizeHandle;
+        private int radialBlurExcludePointHandle;
+        private int radialBlurExcludeBlurSizeHandle;
+        private int radialBlurAspectRatioHandle;
+
         private int sharpenShaderProgram;
         private int sharpenHandle;
         private int sharpenWidthHandle;
@@ -156,8 +196,8 @@ public class PhotoFilterView extends FrameLayout {
         private int simpleSourceImageHandle;
 
         private int[] enhanceTextures = new int[2];
-        private int[] renderTexture = new int[2];
-        private int[] renderFrameBuffer = new int[2];
+        private int[] renderTexture = new int[3];
+        private int[] renderFrameBuffer = new int[3];
         private boolean hsvGenerated;
         private int renderBufferWidth;
         private int renderBufferHeight;
@@ -168,8 +208,80 @@ public class PhotoFilterView extends FrameLayout {
         private FloatBuffer textureBuffer;
         private FloatBuffer vertexInvertBuffer;
 
+        private boolean blured;
+
         private final static int PGPhotoEnhanceHistogramBins = 256;
         private final static int PGPhotoEnhanceSegments = 4;
+
+        private static final String radialBlurFragmentShaderCode =
+                "varying highp vec2 texCoord;" +
+                "uniform sampler2D sourceImage;" +
+                "uniform sampler2D inputImageTexture2;" +
+                "uniform lowp float excludeSize;" +
+                "uniform lowp vec2 excludePoint;" +
+                "uniform lowp float excludeBlurSize;" +
+                "uniform highp float aspectRatio;" +
+                "void main() {" +
+                    "lowp vec4 sharpImageColor = texture2D(sourceImage, texCoord);" +
+                    "lowp vec4 blurredImageColor = texture2D(inputImageTexture2, texCoord);" +
+                    "highp vec2 texCoordToUse = vec2(texCoord.x, (texCoord.y * aspectRatio + 0.5 - 0.5 * aspectRatio));" +
+                    "highp float distanceFromCenter = distance(excludePoint, texCoordToUse);" +
+                    "gl_FragColor = mix(sharpImageColor, blurredImageColor, smoothstep(excludeSize - excludeBlurSize, excludeSize, distanceFromCenter));" +
+                "}";
+
+        private static final String linearBlurFragmentShaderCode =
+                "varying highp vec2 texCoord;" +
+                "uniform sampler2D sourceImage;" +
+                "uniform sampler2D inputImageTexture2;" +
+                "uniform lowp float excludeSize;" +
+                "uniform lowp vec2 excludePoint;" +
+                "uniform lowp float excludeBlurSize;" +
+                "uniform highp float angle;" +
+                "uniform highp float aspectRatio;" +
+                "void main() {" +
+                    "lowp vec4 sharpImageColor = texture2D(sourceImage, texCoord);" +
+                    "lowp vec4 blurredImageColor = texture2D(inputImageTexture2, texCoord);" +
+                    "highp vec2 texCoordToUse = vec2(texCoord.x, (texCoord.y * aspectRatio + 0.5 - 0.5 * aspectRatio));" +
+                    "highp float distanceFromCenter = abs((texCoordToUse.x - excludePoint.x) * aspectRatio * cos(angle) + (texCoordToUse.y - excludePoint.y) * sin(angle));" +
+                    "gl_FragColor = mix(sharpImageColor, blurredImageColor, smoothstep(excludeSize - excludeBlurSize, excludeSize, distanceFromCenter));" +
+                "}";
+
+        private static final String blurVertexShaderCode =
+                "attribute vec4 position;" +
+                "attribute vec4 inputTexCoord;" +
+                "uniform highp float texelWidthOffset;" +
+                "uniform highp float texelHeightOffset;" +
+                "varying vec2 blurCoordinates[9];" +
+                "void main() {" +
+                    "gl_Position = position;" +
+                    "vec2 singleStepOffset = vec2(texelWidthOffset, texelHeightOffset);" +
+                    "blurCoordinates[0] = inputTexCoord.xy;" +
+                    "blurCoordinates[1] = inputTexCoord.xy + singleStepOffset * 1.458430;" +
+                    "blurCoordinates[2] = inputTexCoord.xy - singleStepOffset * 1.458430;" +
+                    "blurCoordinates[3] = inputTexCoord.xy + singleStepOffset * 3.403985;" +
+                    "blurCoordinates[4] = inputTexCoord.xy - singleStepOffset * 3.403985;" +
+                    "blurCoordinates[5] = inputTexCoord.xy + singleStepOffset * 5.351806;" +
+                    "blurCoordinates[6] = inputTexCoord.xy - singleStepOffset * 5.351806;" +
+                    "blurCoordinates[7] = inputTexCoord.xy + singleStepOffset * 7.302940;" +
+                    "blurCoordinates[8] = inputTexCoord.xy - singleStepOffset * 7.302940;" +
+                "}";
+
+        private static final String blurFragmentShaderCode =
+                "uniform sampler2D sourceImage;" +
+                "varying highp vec2 blurCoordinates[9];" +
+                "void main() {" +
+                    "lowp vec4 sum = vec4(0.0);" +
+                    "sum += texture2D(sourceImage, blurCoordinates[0]) * 0.133571;" +
+                    "sum += texture2D(sourceImage, blurCoordinates[1]) * 0.233308;" +
+                    "sum += texture2D(sourceImage, blurCoordinates[2]) * 0.233308;" +
+                    "sum += texture2D(sourceImage, blurCoordinates[3]) * 0.135928;" +
+                    "sum += texture2D(sourceImage, blurCoordinates[4]) * 0.135928;" +
+                    "sum += texture2D(sourceImage, blurCoordinates[5]) * 0.051383;" +
+                    "sum += texture2D(sourceImage, blurCoordinates[6]) * 0.051383;" +
+                    "sum += texture2D(sourceImage, blurCoordinates[7]) * 0.012595;" +
+                    "sum += texture2D(sourceImage, blurCoordinates[8]) * 0.012595;" +
+                    "gl_FragColor = sum;" +
+                "}";
 
         private static final String rgbToHsvFragmentShaderCode =
                 "precision highp float;" +
@@ -628,6 +740,97 @@ public class PhotoFilterView extends FrameLayout {
                 return false;
             }
 
+            vertexShader = loadShader(GLES20.GL_VERTEX_SHADER, blurVertexShaderCode);
+            fragmentShader = loadShader(GLES20.GL_FRAGMENT_SHADER, blurFragmentShaderCode);
+
+            if (vertexShader != 0 && fragmentShader != 0) {
+                blurShaderProgram = GLES20.glCreateProgram();
+                GLES20.glAttachShader(blurShaderProgram, vertexShader);
+                GLES20.glAttachShader(blurShaderProgram, fragmentShader);
+                GLES20.glBindAttribLocation(blurShaderProgram, 0, "position");
+                GLES20.glBindAttribLocation(blurShaderProgram, 1, "inputTexCoord");
+
+                GLES20.glLinkProgram(blurShaderProgram);
+                int[] linkStatus = new int[1];
+                GLES20.glGetProgramiv(blurShaderProgram, GLES20.GL_LINK_STATUS, linkStatus, 0);
+                if (linkStatus[0] == 0) {
+                    GLES20.glDeleteProgram(blurShaderProgram);
+                    blurShaderProgram = 0;
+                } else {
+                    blurPositionHandle = GLES20.glGetAttribLocation(blurShaderProgram, "position");
+                    blurInputTexCoordHandle = GLES20.glGetAttribLocation(blurShaderProgram, "inputTexCoord");
+                    blurSourceImageHandle = GLES20.glGetUniformLocation(blurShaderProgram, "sourceImage");
+                    blurWidthHandle = GLES20.glGetUniformLocation(blurShaderProgram, "texelWidthOffset");
+                    blurHeightHandle = GLES20.glGetUniformLocation(blurShaderProgram, "texelHeightOffset");
+                }
+            } else {
+                finish();
+                return false;
+            }
+
+            vertexShader = loadShader(GLES20.GL_VERTEX_SHADER, simpleVertexShaderCode);
+            fragmentShader = loadShader(GLES20.GL_FRAGMENT_SHADER, linearBlurFragmentShaderCode);
+
+            if (vertexShader != 0 && fragmentShader != 0) {
+                linearBlurShaderProgram = GLES20.glCreateProgram();
+                GLES20.glAttachShader(linearBlurShaderProgram, vertexShader);
+                GLES20.glAttachShader(linearBlurShaderProgram, fragmentShader);
+                GLES20.glBindAttribLocation(linearBlurShaderProgram, 0, "position");
+                GLES20.glBindAttribLocation(linearBlurShaderProgram, 1, "inputTexCoord");
+
+                GLES20.glLinkProgram(linearBlurShaderProgram);
+                int[] linkStatus = new int[1];
+                GLES20.glGetProgramiv(linearBlurShaderProgram, GLES20.GL_LINK_STATUS, linkStatus, 0);
+                if (linkStatus[0] == 0) {
+                    GLES20.glDeleteProgram(linearBlurShaderProgram);
+                    linearBlurShaderProgram = 0;
+                } else {
+                    linearBlurPositionHandle = GLES20.glGetAttribLocation(linearBlurShaderProgram, "position");
+                    linearBlurInputTexCoordHandle = GLES20.glGetAttribLocation(linearBlurShaderProgram, "inputTexCoord");
+                    linearBlurSourceImageHandle = GLES20.glGetUniformLocation(linearBlurShaderProgram, "sourceImage");
+                    linearBlurSourceImage2Handle = GLES20.glGetUniformLocation(linearBlurShaderProgram, "inputImageTexture2");
+                    linearBlurExcludeSizeHandle = GLES20.glGetUniformLocation(linearBlurShaderProgram, "excludeSize");
+                    linearBlurExcludePointHandle = GLES20.glGetUniformLocation(linearBlurShaderProgram, "excludePoint");
+                    linearBlurExcludeBlurSizeHandle = GLES20.glGetUniformLocation(linearBlurShaderProgram, "excludeBlurSize");
+                    linearBlurAngleHandle = GLES20.glGetUniformLocation(linearBlurShaderProgram, "angle");
+                    linearBlurAspectRatioHandle = GLES20.glGetUniformLocation(linearBlurShaderProgram, "aspectRatio");
+                }
+            } else {
+                finish();
+                return false;
+            }
+
+            vertexShader = loadShader(GLES20.GL_VERTEX_SHADER, simpleVertexShaderCode);
+            fragmentShader = loadShader(GLES20.GL_FRAGMENT_SHADER, radialBlurFragmentShaderCode);
+
+            if (vertexShader != 0 && fragmentShader != 0) {
+                radialBlurShaderProgram = GLES20.glCreateProgram();
+                GLES20.glAttachShader(radialBlurShaderProgram, vertexShader);
+                GLES20.glAttachShader(radialBlurShaderProgram, fragmentShader);
+                GLES20.glBindAttribLocation(radialBlurShaderProgram, 0, "position");
+                GLES20.glBindAttribLocation(radialBlurShaderProgram, 1, "inputTexCoord");
+
+                GLES20.glLinkProgram(radialBlurShaderProgram);
+                int[] linkStatus = new int[1];
+                GLES20.glGetProgramiv(radialBlurShaderProgram, GLES20.GL_LINK_STATUS, linkStatus, 0);
+                if (linkStatus[0] == 0) {
+                    GLES20.glDeleteProgram(radialBlurShaderProgram);
+                    radialBlurShaderProgram = 0;
+                } else {
+                    radialBlurPositionHandle = GLES20.glGetAttribLocation(radialBlurShaderProgram, "position");
+                    radialBlurInputTexCoordHandle = GLES20.glGetAttribLocation(radialBlurShaderProgram, "inputTexCoord");
+                    radialBlurSourceImageHandle = GLES20.glGetUniformLocation(radialBlurShaderProgram, "sourceImage");
+                    radialBlurSourceImage2Handle = GLES20.glGetUniformLocation(radialBlurShaderProgram, "inputImageTexture2");
+                    radialBlurExcludeSizeHandle = GLES20.glGetUniformLocation(radialBlurShaderProgram, "excludeSize");
+                    radialBlurExcludePointHandle = GLES20.glGetUniformLocation(radialBlurShaderProgram, "excludePoint");
+                    radialBlurExcludeBlurSizeHandle = GLES20.glGetUniformLocation(radialBlurShaderProgram, "excludeBlurSize");
+                    radialBlurAspectRatioHandle = GLES20.glGetUniformLocation(radialBlurShaderProgram, "aspectRatio");
+                }
+            } else {
+                finish();
+                return false;
+            }
+
             vertexShader = loadShader(GLES20.GL_VERTEX_SHADER, simpleVertexShaderCode);
             fragmentShader = loadShader(GLES20.GL_FRAGMENT_SHADER, rgbToHsvFragmentShaderCode);
             if (vertexShader != 0 && fragmentShader != 0) {
@@ -728,6 +931,205 @@ public class PhotoFilterView extends FrameLayout {
             }
         }
 
+        private void drawEnhancePass() {
+            if (!hsvGenerated) {
+                GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, renderFrameBuffer[0]);
+                GLES20.glFramebufferTexture2D(GLES20.GL_FRAMEBUFFER, GLES20.GL_COLOR_ATTACHMENT0, GLES20.GL_TEXTURE_2D, renderTexture[0], 0);
+                GLES20.glClear(0);
+
+                GLES20.glUseProgram(rgbToHsvShaderProgram);
+                GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
+                GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, renderTexture[1]);
+                GLES20.glUniform1i(rgbToHsvSourceImageHandle, 0);
+                GLES20.glEnableVertexAttribArray(rgbToHsvInputTexCoordHandle);
+                GLES20.glVertexAttribPointer(rgbToHsvInputTexCoordHandle, 2, GLES20.GL_FLOAT, false, 8, textureBuffer);
+                GLES20.glEnableVertexAttribArray(rgbToHsvPositionHandle);
+                GLES20.glVertexAttribPointer(rgbToHsvPositionHandle, 2, GLES20.GL_FLOAT, false, 8, vertexBuffer);
+                GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4);
+
+                ByteBuffer hsvBuffer = ByteBuffer.allocateDirect(renderBufferWidth * renderBufferHeight * 4);
+                GLES20.glReadPixels(0, 0, renderBufferWidth, renderBufferHeight, GLES20.GL_RGBA, GLES20.GL_UNSIGNED_BYTE, hsvBuffer);
+
+                GLES20.glBindTexture(GL10.GL_TEXTURE_2D, enhanceTextures[0]);
+                GLES20.glTexParameteri(GL10.GL_TEXTURE_2D, GL10.GL_TEXTURE_MIN_FILTER, GL10.GL_LINEAR);
+                GLES20.glTexParameteri(GL10.GL_TEXTURE_2D, GL10.GL_TEXTURE_MAG_FILTER, GL10.GL_LINEAR);
+                GLES20.glTexParameteri(GL10.GL_TEXTURE_2D, GL10.GL_TEXTURE_WRAP_S, GL10.GL_CLAMP_TO_EDGE);
+                GLES20.glTexParameteri(GL10.GL_TEXTURE_2D, GL10.GL_TEXTURE_WRAP_T, GL10.GL_CLAMP_TO_EDGE);
+                GLES20.glTexImage2D(GLES20.GL_TEXTURE_2D, 0, GLES20.GL_RGBA, renderBufferWidth, renderBufferHeight, 0, GLES20.GL_RGBA, GLES20.GL_UNSIGNED_BYTE, hsvBuffer);
+
+                ByteBuffer buffer = null;
+                try {
+                    buffer = ByteBuffer.allocateDirect(PGPhotoEnhanceSegments * PGPhotoEnhanceSegments * PGPhotoEnhanceHistogramBins * 4);
+                    Utilities.calcCDT(hsvBuffer, renderBufferWidth, renderBufferHeight, buffer);
+                } catch (Exception e) {
+                    FileLog.e("tmessages", e);
+                }
+
+                GLES20.glBindTexture(GL10.GL_TEXTURE_2D, enhanceTextures[1]);
+                GLES20.glTexParameteri(GL10.GL_TEXTURE_2D, GL10.GL_TEXTURE_MIN_FILTER, GL10.GL_LINEAR);
+                GLES20.glTexParameteri(GL10.GL_TEXTURE_2D, GL10.GL_TEXTURE_MAG_FILTER, GL10.GL_LINEAR);
+                GLES20.glTexParameteri(GL10.GL_TEXTURE_2D, GL10.GL_TEXTURE_WRAP_S, GL10.GL_CLAMP_TO_EDGE);
+                GLES20.glTexParameteri(GL10.GL_TEXTURE_2D, GL10.GL_TEXTURE_WRAP_T, GL10.GL_CLAMP_TO_EDGE);
+                GLES20.glTexImage2D(GLES20.GL_TEXTURE_2D, 0, GLES20.GL_RGBA, 256, 16, 0, GLES20.GL_RGBA, GLES20.GL_UNSIGNED_BYTE, buffer);
+
+                hsvGenerated = true;
+            }
+
+            GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, renderFrameBuffer[1]);
+            GLES20.glFramebufferTexture2D(GLES20.GL_FRAMEBUFFER, GLES20.GL_COLOR_ATTACHMENT0, GLES20.GL_TEXTURE_2D, renderTexture[1], 0);
+            GLES20.glClear(0);
+
+            GLES20.glUseProgram(enhanceShaderProgram);
+            GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
+            GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, enhanceTextures[0]);
+            GLES20.glUniform1i(enhanceSourceImageHandle, 0);
+            GLES20.glActiveTexture(GLES20.GL_TEXTURE1);
+            GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, enhanceTextures[1]);
+            GLES20.glUniform1i(enhanceInputImageTexture2Handle, 1);
+            if (showOriginal) {
+                GLES20.glUniform1f(enhanceIntensityHandle, 0);
+            } else {
+                GLES20.glUniform1f(enhanceIntensityHandle, getEnhanceValue());
+            }
+
+            GLES20.glEnableVertexAttribArray(enhanceInputTexCoordHandle);
+            GLES20.glVertexAttribPointer(enhanceInputTexCoordHandle, 2, GLES20.GL_FLOAT, false, 8, textureBuffer);
+            GLES20.glEnableVertexAttribArray(enhancePositionHandle);
+            GLES20.glVertexAttribPointer(enhancePositionHandle, 2, GLES20.GL_FLOAT, false, 8, vertexBuffer);
+            GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4);
+        }
+
+        private void drawSharpenPass() {
+            GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, renderFrameBuffer[0]);
+            GLES20.glFramebufferTexture2D(GLES20.GL_FRAMEBUFFER, GLES20.GL_COLOR_ATTACHMENT0, GLES20.GL_TEXTURE_2D, renderTexture[0], 0);
+            GLES20.glClear(0);
+
+            GLES20.glUseProgram(sharpenShaderProgram);
+            GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
+            GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, renderTexture[1]);
+            GLES20.glUniform1i(sharpenSourceImageHandle, 0);
+            if (showOriginal) {
+                GLES20.glUniform1f(sharpenHandle, 0);
+            } else {
+                GLES20.glUniform1f(sharpenHandle, getSharpenValue());
+            }
+            GLES20.glUniform1f(sharpenWidthHandle, renderBufferWidth);
+            GLES20.glUniform1f(sharpenHeightHandle, renderBufferHeight);
+            GLES20.glEnableVertexAttribArray(sharpenInputTexCoordHandle);
+            GLES20.glVertexAttribPointer(sharpenInputTexCoordHandle, 2, GLES20.GL_FLOAT, false, 8, textureBuffer);
+            GLES20.glEnableVertexAttribArray(sharpenPositionHandle);
+            GLES20.glVertexAttribPointer(sharpenPositionHandle, 2, GLES20.GL_FLOAT, false, 8, vertexInvertBuffer);
+            GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4);
+        }
+
+        private void drawCustomParamsPass() {
+            GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, renderFrameBuffer[1]);
+            GLES20.glFramebufferTexture2D(GLES20.GL_FRAMEBUFFER, GLES20.GL_COLOR_ATTACHMENT0, GLES20.GL_TEXTURE_2D, renderTexture[1], 0);
+            GLES20.glClear(0);
+
+            GLES20.glUseProgram(toolsShaderProgram);
+            GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
+            GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, renderTexture[0]);
+            GLES20.glUniform1i(sourceImageHandle, 0);
+            if (showOriginal) {
+                GLES20.glUniform1f(shadowsHandle, 0);
+                GLES20.glUniform1f(highlightsHandle, 1);
+                GLES20.glUniform1f(exposureHandle, 0);
+                GLES20.glUniform1f(contrastHandle, 1);
+                GLES20.glUniform1f(saturationHandle, 1);
+                GLES20.glUniform1f(warmthHandle, 0);
+                GLES20.glUniform1f(vignetteHandle, 0);
+                GLES20.glUniform1f(grainHandle, 0);
+            } else {
+                GLES20.glUniform1f(shadowsHandle, getShadowsValue());
+                GLES20.glUniform1f(highlightsHandle, getHighlightsValue());
+                GLES20.glUniform1f(exposureHandle, getExposureValue());
+                GLES20.glUniform1f(contrastHandle, getContrastValue());
+                GLES20.glUniform1f(saturationHandle, getSaturationValue());
+                GLES20.glUniform1f(warmthHandle, getWarmthValue());
+                GLES20.glUniform1f(vignetteHandle, getVignetteValue());
+                GLES20.glUniform1f(grainHandle, getGrainValue());
+            }
+            GLES20.glUniform1f(widthHandle, renderBufferWidth);
+            GLES20.glUniform1f(heightHandle, renderBufferHeight);
+            GLES20.glEnableVertexAttribArray(inputTexCoordHandle);
+            GLES20.glVertexAttribPointer(inputTexCoordHandle, 2, GLES20.GL_FLOAT, false, 8, textureBuffer);
+            GLES20.glEnableVertexAttribArray(positionHandle);
+            GLES20.glVertexAttribPointer(positionHandle, 2, GLES20.GL_FLOAT, false, 8, vertexInvertBuffer);
+            GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4);
+        }
+
+        private boolean drawBlurPass() {
+            if (showOriginal || blurType == 0) {
+                return false;
+            }
+            if (needUpdateBlurTexture) {
+                GLES20.glUseProgram(blurShaderProgram);
+                GLES20.glUniform1i(blurSourceImageHandle, 0);
+                GLES20.glEnableVertexAttribArray(blurInputTexCoordHandle);
+                GLES20.glVertexAttribPointer(blurInputTexCoordHandle, 2, GLES20.GL_FLOAT, false, 8, textureBuffer);
+                GLES20.glEnableVertexAttribArray(blurPositionHandle);
+                GLES20.glVertexAttribPointer(blurPositionHandle, 2, GLES20.GL_FLOAT, false, 8, vertexInvertBuffer);
+
+                GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, renderFrameBuffer[0]);
+                GLES20.glFramebufferTexture2D(GLES20.GL_FRAMEBUFFER, GLES20.GL_COLOR_ATTACHMENT0, GLES20.GL_TEXTURE_2D, renderTexture[0], 0);
+                GLES20.glClear(0);
+                GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
+                GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, renderTexture[1]);
+                GLES20.glUniform1f(blurWidthHandle, 0.0f);
+                GLES20.glUniform1f(blurHeightHandle, 1.0f / renderBufferHeight);
+                GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4);
+
+                GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, renderFrameBuffer[2]);
+                GLES20.glFramebufferTexture2D(GLES20.GL_FRAMEBUFFER, GLES20.GL_COLOR_ATTACHMENT0, GLES20.GL_TEXTURE_2D, renderTexture[2], 0);
+                GLES20.glClear(0);
+                GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
+                GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, renderTexture[0]);
+                GLES20.glUniform1f(blurWidthHandle, 1.0f / renderBufferWidth);
+                GLES20.glUniform1f(blurHeightHandle, 0.0f);
+                GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4);
+                needUpdateBlurTexture = false;
+            }
+
+            GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, renderFrameBuffer[0]);
+            GLES20.glFramebufferTexture2D(GLES20.GL_FRAMEBUFFER, GLES20.GL_COLOR_ATTACHMENT0, GLES20.GL_TEXTURE_2D, renderTexture[0], 0);
+            GLES20.glClear(0);
+            if (blurType == 1) {
+                GLES20.glUseProgram(radialBlurShaderProgram);
+                GLES20.glUniform1i(radialBlurSourceImageHandle, 0);
+                GLES20.glUniform1i(radialBlurSourceImage2Handle, 1);
+                GLES20.glUniform1f(radialBlurExcludeSizeHandle, blurExcludeSize);
+                GLES20.glUniform1f(radialBlurExcludeBlurSizeHandle, blurExcludeBlurSize);
+                GLES20.glUniform2f(radialBlurExcludePointHandle, blurExcludePoint.x, blurExcludePoint.y);
+                GLES20.glUniform1f(radialBlurAspectRatioHandle, (float) renderBufferHeight / (float) renderBufferWidth);
+                GLES20.glEnableVertexAttribArray(radialBlurInputTexCoordHandle);
+                GLES20.glVertexAttribPointer(radialBlurInputTexCoordHandle, 2, GLES20.GL_FLOAT, false, 8, textureBuffer);
+                GLES20.glEnableVertexAttribArray(radialBlurPositionHandle);
+                GLES20.glVertexAttribPointer(radialBlurPositionHandle, 2, GLES20.GL_FLOAT, false, 8, vertexInvertBuffer);
+            } else if (blurType == 2) {
+                GLES20.glUseProgram(linearBlurShaderProgram);
+                GLES20.glUniform1i(linearBlurSourceImageHandle, 0);
+                GLES20.glUniform1i(linearBlurSourceImage2Handle, 1);
+                GLES20.glUniform1f(linearBlurExcludeSizeHandle, blurExcludeSize);
+                GLES20.glUniform1f(linearBlurExcludeBlurSizeHandle, blurExcludeBlurSize);
+                GLES20.glUniform1f(linearBlurAngleHandle, blurAngle);
+                GLES20.glUniform2f(linearBlurExcludePointHandle, blurExcludePoint.x, blurExcludePoint.y);
+                GLES20.glUniform1f(linearBlurAspectRatioHandle, (float) renderBufferHeight / (float) renderBufferWidth);
+                GLES20.glEnableVertexAttribArray(linearBlurInputTexCoordHandle);
+                GLES20.glVertexAttribPointer(linearBlurInputTexCoordHandle, 2, GLES20.GL_FLOAT, false, 8, textureBuffer);
+                GLES20.glEnableVertexAttribArray(linearBlurPositionHandle);
+                GLES20.glVertexAttribPointer(linearBlurPositionHandle, 2, GLES20.GL_FLOAT, false, 8, vertexInvertBuffer);
+            }
+
+            GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
+            GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, renderTexture[1]);
+            GLES20.glActiveTexture(GLES20.GL_TEXTURE1);
+            GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, renderTexture[2]);
+            GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4);
+
+            return true;
+        }
+
         private Runnable drawRunnable = new Runnable() {
             @Override
             public void run() {
@@ -743,130 +1145,10 @@ public class PhotoFilterView extends FrameLayout {
                 }
 
                 GLES20.glViewport(0, 0, renderBufferWidth, renderBufferHeight);
-                //enhance draw
-                if (!hsvGenerated) {
-                    GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, renderFrameBuffer[0]);
-                    GLES20.glFramebufferTexture2D(GLES20.GL_FRAMEBUFFER, GLES20.GL_COLOR_ATTACHMENT0, GLES20.GL_TEXTURE_2D, renderTexture[0], 0);
-                    GLES20.glClear(0);
-
-                    GLES20.glUseProgram(rgbToHsvShaderProgram);
-                    GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
-                    GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, renderTexture[1]);
-                    GLES20.glUniform1i(rgbToHsvSourceImageHandle, 0);
-                    GLES20.glEnableVertexAttribArray(rgbToHsvInputTexCoordHandle);
-                    GLES20.glVertexAttribPointer(rgbToHsvInputTexCoordHandle, 2, GLES20.GL_FLOAT, false, 8, textureBuffer);
-                    GLES20.glEnableVertexAttribArray(rgbToHsvPositionHandle);
-                    GLES20.glVertexAttribPointer(rgbToHsvPositionHandle, 2, GLES20.GL_FLOAT, false, 8, vertexBuffer);
-                    GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4);
-
-                    ByteBuffer hsvBuffer = ByteBuffer.allocateDirect(renderBufferWidth * renderBufferHeight * 4);
-                    GLES20.glReadPixels(0, 0, renderBufferWidth, renderBufferHeight, GLES20.GL_RGBA, GLES20.GL_UNSIGNED_BYTE, hsvBuffer);
-
-                    GLES20.glBindTexture(GL10.GL_TEXTURE_2D, enhanceTextures[0]);
-                    GLES20.glTexParameteri(GL10.GL_TEXTURE_2D, GL10.GL_TEXTURE_MIN_FILTER, GL10.GL_LINEAR);
-                    GLES20.glTexParameteri(GL10.GL_TEXTURE_2D, GL10.GL_TEXTURE_MAG_FILTER, GL10.GL_LINEAR);
-                    GLES20.glTexParameteri(GL10.GL_TEXTURE_2D, GL10.GL_TEXTURE_WRAP_S, GL10.GL_CLAMP_TO_EDGE);
-                    GLES20.glTexParameteri(GL10.GL_TEXTURE_2D, GL10.GL_TEXTURE_WRAP_T, GL10.GL_CLAMP_TO_EDGE);
-                    GLES20.glTexImage2D(GLES20.GL_TEXTURE_2D, 0, GLES20.GL_RGBA, renderBufferWidth, renderBufferHeight, 0, GLES20.GL_RGBA, GLES20.GL_UNSIGNED_BYTE, hsvBuffer);
-
-                    ByteBuffer buffer = null;
-                    try {
-                        buffer = ByteBuffer.allocateDirect(PGPhotoEnhanceSegments * PGPhotoEnhanceSegments * PGPhotoEnhanceHistogramBins * 4);
-                        Utilities.calcCDT(hsvBuffer, renderBufferWidth, renderBufferHeight, buffer);
-                    } catch (Exception e) {
-                        FileLog.e("tmessages", e);
-                    }
-
-                    GLES20.glBindTexture(GL10.GL_TEXTURE_2D, enhanceTextures[1]);
-                    GLES20.glTexParameteri(GL10.GL_TEXTURE_2D, GL10.GL_TEXTURE_MIN_FILTER, GL10.GL_LINEAR);
-                    GLES20.glTexParameteri(GL10.GL_TEXTURE_2D, GL10.GL_TEXTURE_MAG_FILTER, GL10.GL_LINEAR);
-                    GLES20.glTexParameteri(GL10.GL_TEXTURE_2D, GL10.GL_TEXTURE_WRAP_S, GL10.GL_CLAMP_TO_EDGE);
-                    GLES20.glTexParameteri(GL10.GL_TEXTURE_2D, GL10.GL_TEXTURE_WRAP_T, GL10.GL_CLAMP_TO_EDGE);
-                    GLES20.glTexImage2D(GLES20.GL_TEXTURE_2D, 0, GLES20.GL_RGBA, 256, 16, 0, GLES20.GL_RGBA, GLES20.GL_UNSIGNED_BYTE, buffer);
-
-                    hsvGenerated = true;
-                }
-
-                GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, renderFrameBuffer[1]);
-                GLES20.glFramebufferTexture2D(GLES20.GL_FRAMEBUFFER, GLES20.GL_COLOR_ATTACHMENT0, GLES20.GL_TEXTURE_2D, renderTexture[1], 0);
-                GLES20.glClear(0);
-
-                GLES20.glUseProgram(enhanceShaderProgram);
-                GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
-                GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, enhanceTextures[0]);
-                GLES20.glUniform1i(enhanceSourceImageHandle, 0);
-                GLES20.glActiveTexture(GLES20.GL_TEXTURE1);
-                GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, enhanceTextures[1]);
-                GLES20.glUniform1i(enhanceInputImageTexture2Handle, 1);
-                if (showOriginal) {
-                    GLES20.glUniform1f(enhanceIntensityHandle, 0);
-                } else {
-                    GLES20.glUniform1f(enhanceIntensityHandle, getEnhanceValue());
-                }
-
-                GLES20.glEnableVertexAttribArray(enhanceInputTexCoordHandle);
-                GLES20.glVertexAttribPointer(enhanceInputTexCoordHandle, 2, GLES20.GL_FLOAT, false, 8, textureBuffer);
-                GLES20.glEnableVertexAttribArray(enhancePositionHandle);
-                GLES20.glVertexAttribPointer(enhancePositionHandle, 2, GLES20.GL_FLOAT, false, 8, vertexBuffer);
-                GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4);
-
-                //sharpen draw
-                GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, renderFrameBuffer[0]);
-                GLES20.glFramebufferTexture2D(GLES20.GL_FRAMEBUFFER, GLES20.GL_COLOR_ATTACHMENT0, GLES20.GL_TEXTURE_2D, renderTexture[0], 0);
-                GLES20.glClear(0);
-
-                GLES20.glUseProgram(sharpenShaderProgram);
-                GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
-                GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, renderTexture[1]);
-                GLES20.glUniform1i(sharpenSourceImageHandle, 0);
-                if (showOriginal) {
-                    GLES20.glUniform1f(sharpenHandle, 0);
-                } else {
-                    GLES20.glUniform1f(sharpenHandle, getSharpenValue());
-                }
-                GLES20.glUniform1f(sharpenWidthHandle, renderBufferWidth);
-                GLES20.glUniform1f(sharpenHeightHandle, renderBufferHeight);
-                GLES20.glEnableVertexAttribArray(sharpenInputTexCoordHandle);
-                GLES20.glVertexAttribPointer(sharpenInputTexCoordHandle, 2, GLES20.GL_FLOAT, false, 8, textureBuffer);
-                GLES20.glEnableVertexAttribArray(sharpenPositionHandle);
-                GLES20.glVertexAttribPointer(sharpenPositionHandle, 2, GLES20.GL_FLOAT, false, 8, vertexInvertBuffer);
-                GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4);
-
-                //custom params draw
-                GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, renderFrameBuffer[1]);
-                GLES20.glFramebufferTexture2D(GLES20.GL_FRAMEBUFFER, GLES20.GL_COLOR_ATTACHMENT0, GLES20.GL_TEXTURE_2D, renderTexture[1], 0);
-                GLES20.glClear(0);
-
-                GLES20.glUseProgram(toolsShaderProgram);
-                GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
-                GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, renderTexture[0]);
-                GLES20.glUniform1i(sourceImageHandle, 0);
-                if (showOriginal) {
-                    GLES20.glUniform1f(shadowsHandle, 0);
-                    GLES20.glUniform1f(highlightsHandle, 1);
-                    GLES20.glUniform1f(exposureHandle, 0);
-                    GLES20.glUniform1f(contrastHandle, 1);
-                    GLES20.glUniform1f(saturationHandle, 1);
-                    GLES20.glUniform1f(warmthHandle, 0);
-                    GLES20.glUniform1f(vignetteHandle, 0);
-                    GLES20.glUniform1f(grainHandle, 0);
-                } else {
-                    GLES20.glUniform1f(shadowsHandle, getShadowsValue());
-                    GLES20.glUniform1f(highlightsHandle, getHighlightsValue());
-                    GLES20.glUniform1f(exposureHandle, getExposureValue());
-                    GLES20.glUniform1f(contrastHandle, getContrastValue());
-                    GLES20.glUniform1f(saturationHandle, getSaturationValue());
-                    GLES20.glUniform1f(warmthHandle, getWarmthValue());
-                    GLES20.glUniform1f(vignetteHandle, getVignetteValue());
-                    GLES20.glUniform1f(grainHandle, getGrainValue());
-                }
-                GLES20.glUniform1f(widthHandle, renderBufferWidth);
-                GLES20.glUniform1f(heightHandle, renderBufferHeight);
-                GLES20.glEnableVertexAttribArray(inputTexCoordHandle);
-                GLES20.glVertexAttribPointer(inputTexCoordHandle, 2, GLES20.GL_FLOAT, false, 8, textureBuffer);
-                GLES20.glEnableVertexAttribArray(positionHandle);
-                GLES20.glVertexAttribPointer(positionHandle, 2, GLES20.GL_FLOAT, false, 8, vertexInvertBuffer);
-                GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4);
+                drawEnhancePass();
+                drawSharpenPass();
+                drawCustomParamsPass();
+                blured = drawBlurPass();
 
                 //onscreen draw
                 GLES20.glViewport(0, 0, surfaceWidth, surfaceHeight);
@@ -875,7 +1157,7 @@ public class PhotoFilterView extends FrameLayout {
 
                 GLES20.glUseProgram(simpleShaderProgram);
                 GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
-                GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, renderTexture[1]);
+                GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, renderTexture[blured ? 0 : 1]);
                 GLES20.glUniform1i(simpleSourceImageHandle, 0);
                 GLES20.glEnableVertexAttribArray(simpleInputTexCoordHandle);
                 GLES20.glVertexAttribPointer(simpleInputTexCoordHandle, 2, GLES20.GL_FLOAT, false, 8, textureBuffer);
@@ -905,7 +1187,7 @@ public class PhotoFilterView extends FrameLayout {
                     @Override
                     public void run() {
                         GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, renderFrameBuffer[1]);
-                        GLES20.glFramebufferTexture2D(GLES20.GL_FRAMEBUFFER, GLES20.GL_COLOR_ATTACHMENT0, GLES20.GL_TEXTURE_2D, renderTexture[1], 0);
+                        GLES20.glFramebufferTexture2D(GLES20.GL_FRAMEBUFFER, GLES20.GL_COLOR_ATTACHMENT0, GLES20.GL_TEXTURE_2D, renderTexture[blured ? 0 : 1], 0);
                         GLES20.glClear(0);
                         object[0] = getRenderBufferBitmap();
                         semaphore.release();
@@ -973,8 +1255,8 @@ public class PhotoFilterView extends FrameLayout {
 
                 currentBitmap = createBitmap(bitmap, renderBufferWidth, renderBufferHeight, scale);
             }
-            GLES20.glGenFramebuffers(2, renderFrameBuffer, 0);
-            GLES20.glGenTextures(2, renderTexture, 0);
+            GLES20.glGenFramebuffers(3, renderFrameBuffer, 0);
+            GLES20.glGenTextures(3, renderTexture, 0);
 
             GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, renderTexture[0]);
             GLES20.glTexParameteri(GL10.GL_TEXTURE_2D, GL10.GL_TEXTURE_MIN_FILTER, GL10.GL_LINEAR);
@@ -989,6 +1271,13 @@ public class PhotoFilterView extends FrameLayout {
             GLES20.glTexParameteri(GL10.GL_TEXTURE_2D, GL10.GL_TEXTURE_WRAP_S, GL10.GL_CLAMP_TO_EDGE);
             GLES20.glTexParameteri(GL10.GL_TEXTURE_2D, GL10.GL_TEXTURE_WRAP_T, GL10.GL_CLAMP_TO_EDGE);
             GLUtils.texImage2D(GL10.GL_TEXTURE_2D, 0, currentBitmap, 0);
+
+            GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, renderTexture[2]);
+            GLES20.glTexParameteri(GL10.GL_TEXTURE_2D, GL10.GL_TEXTURE_MIN_FILTER, GL10.GL_LINEAR);
+            GLES20.glTexParameteri(GL10.GL_TEXTURE_2D, GL10.GL_TEXTURE_MAG_FILTER, GL10.GL_LINEAR);
+            GLES20.glTexParameteri(GL10.GL_TEXTURE_2D, GL10.GL_TEXTURE_WRAP_S, GL10.GL_CLAMP_TO_EDGE);
+            GLES20.glTexParameteri(GL10.GL_TEXTURE_2D, GL10.GL_TEXTURE_WRAP_T, GL10.GL_CLAMP_TO_EDGE);
+            GLES20.glTexImage2D(GLES20.GL_TEXTURE_2D, 0, GLES20.GL_RGBA, renderBufferWidth, renderBufferHeight, 0, GLES20.GL_RGBA, GLES20.GL_UNSIGNED_BYTE, null);
         }
 
         public void shutdown() {
@@ -1016,9 +1305,17 @@ public class PhotoFilterView extends FrameLayout {
             super.run();
         }
 
-        public void requestRender() {
-            cancelRunnable(drawRunnable);
-            postRunnable(drawRunnable);
+        public void requestRender(final boolean updateBlur) {
+            postRunnable(new Runnable() {
+                @Override
+                public void run() {
+                    if (!needUpdateBlurTexture) {
+                        needUpdateBlurTexture = updateBlur;
+                    }
+                    cancelRunnable(drawRunnable);
+                    postRunnable(drawRunnable);
+                }
+            });
         }
     }
 
@@ -1046,7 +1343,7 @@ public class PhotoFilterView extends FrameLayout {
                 if (eglThread == null && surface != null) {
                     eglThread = new EGLThread(surface, bitmapToEdit);
                     eglThread.setSurfaceTextureSize(width, height);
-                    eglThread.requestRender();
+                    eglThread.requestRender(true);
                 }
             }
 
@@ -1054,11 +1351,11 @@ public class PhotoFilterView extends FrameLayout {
             public void onSurfaceTextureSizeChanged(SurfaceTexture surface, final int width, final int height) {
                 if (eglThread != null) {
                     eglThread.setSurfaceTextureSize(width, height);
-                    eglThread.requestRender();
+                    eglThread.requestRender(false);
                     eglThread.postRunnable(new Runnable() {
                         @Override
                         public void run() {
-                            eglThread.requestRender();
+                            eglThread.requestRender(false);
                         }
                     });
                 }
@@ -1076,6 +1373,27 @@ public class PhotoFilterView extends FrameLayout {
             @Override
             public void onSurfaceTextureUpdated(SurfaceTexture surface) {
 
+            }
+        });
+
+        blurControl = new PhotoFilterBlurControl(context);
+        blurControl.setVisibility(INVISIBLE);
+        addView(blurControl);
+        layoutParams = (LayoutParams) blurControl.getLayoutParams();
+        layoutParams.width = LayoutParams.MATCH_PARENT;
+        layoutParams.height = LayoutParams.MATCH_PARENT;
+        layoutParams.gravity = Gravity.LEFT | Gravity.TOP;
+        blurControl.setLayoutParams(layoutParams);
+        blurControl.setDelegate(new PhotoFilterBlurControl.PhotoFilterLinearBlurControlDelegate() {
+            @Override
+            public void valueChanged(Point centerPoint, float falloff, float size, float angle) {
+                blurExcludeSize = size;
+                blurExcludePoint = centerPoint;
+                blurExcludeBlurSize = falloff;
+                blurAngle = angle;
+                if (eglThread != null) {
+                    eglThread.requestRender(false);
+                }
             }
         });
 
@@ -1186,7 +1504,7 @@ public class PhotoFilterView extends FrameLayout {
                     valueSeekBar.setMinMax(0, 100);
                     paramTextView.setText(LocaleController.getString("Sharpen", R.string.Sharpen));
                 } else if (i == blurTool) {
-
+                    previousValue = blurType;
                 }
                 valueSeekBar.setProgress((int) previousValue, false);
                 updateValueTextView();
@@ -1245,9 +1563,11 @@ public class PhotoFilterView extends FrameLayout {
                     grainValue = previousValue;
                 } else if (selectedTool == sharpenTool) {
                     sharpenValue = previousValue;
+                } else if (selectedTool == blurTool) {
+                    blurType = (int) previousValue;
                 }
                 if (eglThread != null) {
-                    eglThread.requestRender();
+                    eglThread.requestRender(selectedTool != blurTool);
                 }
                 switchToOrFromEditMode();
             }
@@ -1270,6 +1590,18 @@ public class PhotoFilterView extends FrameLayout {
                 switchToOrFromEditMode();
             }
         });
+
+        blurTextView = new TextView(context);
+        blurTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
+        blurTextView.setTextColor(0xffffffff);
+        blurTextView.setText(LocaleController.getString("Blur", R.string.Blur));
+        frameLayout.addView(blurTextView);
+        layoutParams = (LayoutParams) blurTextView.getLayoutParams();
+        layoutParams.width = LayoutParams.WRAP_CONTENT;
+        layoutParams.height = LayoutParams.WRAP_CONTENT;
+        layoutParams.gravity = Gravity.CENTER_HORIZONTAL;
+        layoutParams.topMargin = AndroidUtilities.dp(9);
+        blurTextView.setLayoutParams(layoutParams);
 
         paramTextView = new TextView(context);
         paramTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
@@ -1321,12 +1653,12 @@ public class PhotoFilterView extends FrameLayout {
                 }
                 updateValueTextView();
                 if (eglThread != null) {
-                    eglThread.requestRender();
+                    eglThread.requestRender(true);
                 }
             }
         });
         editView.addView(valueSeekBar);
-        layoutParams = (FrameLayout.LayoutParams) valueSeekBar.getLayoutParams();
+        layoutParams = (LayoutParams) valueSeekBar.getLayoutParams();
         layoutParams.height = AndroidUtilities.dp(60);
         layoutParams.leftMargin = AndroidUtilities.dp(14);
         layoutParams.rightMargin = AndroidUtilities.dp(14);
@@ -1339,6 +1671,113 @@ public class PhotoFilterView extends FrameLayout {
             layoutParams.gravity = Gravity.LEFT | Gravity.TOP;
         }
         valueSeekBar.setLayoutParams(layoutParams);
+
+        blurLayout = new FrameLayout(context);
+        editView.addView(blurLayout);
+        layoutParams = (LayoutParams) blurLayout.getLayoutParams();
+        layoutParams.width = AndroidUtilities.dp(280);
+        layoutParams.height = AndroidUtilities.dp(60);
+        layoutParams.topMargin = AndroidUtilities.dp(10);
+        layoutParams.gravity = Gravity.CENTER_HORIZONTAL;
+        blurLayout.setLayoutParams(layoutParams);
+
+        blurOffButton = new TextView(context);
+        blurOffButton.setCompoundDrawablesWithIntrinsicBounds(0, R.drawable.blur_off_active, 0, 0);
+        blurOffButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
+        blurOffButton.setTextColor(0xff51bdf3);
+        blurOffButton.setGravity(Gravity.CENTER_HORIZONTAL);
+        blurOffButton.setText(LocaleController.getString("BlurOff", R.string.BlurOff));
+        blurLayout.addView(blurOffButton);
+        layoutParams = (LayoutParams) blurOffButton.getLayoutParams();
+        layoutParams.width = AndroidUtilities.dp(80);
+        layoutParams.height = AndroidUtilities.dp(60);
+        blurOffButton.setLayoutParams(layoutParams);
+        blurOffButton.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                blurType = 0;
+                updateSelectedBlurType();
+                blurControl.setVisibility(INVISIBLE);
+                if (eglThread != null) {
+                    eglThread.requestRender(false);
+                }
+            }
+        });
+
+        blurRadialButton = new TextView(context);
+        blurRadialButton.setCompoundDrawablesWithIntrinsicBounds(0, R.drawable.blur_radial, 0, 0);
+        blurRadialButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
+        blurRadialButton.setTextColor(0xffffffff);
+        blurRadialButton.setGravity(Gravity.CENTER_HORIZONTAL);
+        blurRadialButton.setText(LocaleController.getString("BlurRadial", R.string.BlurRadial));
+        blurLayout.addView(blurRadialButton);
+        layoutParams = (LayoutParams) blurRadialButton.getLayoutParams();
+        layoutParams.width = AndroidUtilities.dp(80);
+        layoutParams.height = AndroidUtilities.dp(60);
+        layoutParams.leftMargin = AndroidUtilities.dp(100);
+        blurRadialButton.setLayoutParams(layoutParams);
+        blurRadialButton.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                blurType = 1;
+                updateSelectedBlurType();
+                blurControl.setVisibility(VISIBLE);
+                blurControl.setType(1);
+                if (eglThread != null) {
+                    eglThread.requestRender(false);
+                }
+            }
+        });
+
+        blurLinearButton = new TextView(context);
+        blurLinearButton.setCompoundDrawablesWithIntrinsicBounds(0, R.drawable.blur_linear, 0, 0);
+        blurLinearButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
+        blurLinearButton.setTextColor(0xffffffff);
+        blurLinearButton.setGravity(Gravity.CENTER_HORIZONTAL);
+        blurLinearButton.setText(LocaleController.getString("BlurLinear", R.string.BlurLinear));
+        blurLayout.addView(blurLinearButton);
+        layoutParams = (LayoutParams) blurLinearButton.getLayoutParams();
+        layoutParams.width = AndroidUtilities.dp(80);
+        layoutParams.height = AndroidUtilities.dp(60);
+        layoutParams.leftMargin = AndroidUtilities.dp(200);
+        blurLinearButton.setLayoutParams(layoutParams);
+        blurLinearButton.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                blurType = 2;
+                updateSelectedBlurType();
+                blurControl.setVisibility(VISIBLE);
+                blurControl.setType(0);
+                if (eglThread != null) {
+                    eglThread.requestRender(false);
+                }
+            }
+        });
+    }
+
+    private void updateSelectedBlurType() {
+        if (blurType == 0) {
+            blurOffButton.setCompoundDrawablesWithIntrinsicBounds(0, R.drawable.blur_off_active, 0, 0);
+            blurOffButton.setTextColor(0xff51bdf3);
+            blurRadialButton.setCompoundDrawablesWithIntrinsicBounds(0, R.drawable.blur_radial, 0, 0);
+            blurRadialButton.setTextColor(0xffffffff);
+            blurLinearButton.setCompoundDrawablesWithIntrinsicBounds(0, R.drawable.blur_linear, 0, 0);
+            blurLinearButton.setTextColor(0xffffffff);
+        } else if (blurType == 1) {
+            blurOffButton.setCompoundDrawablesWithIntrinsicBounds(0, R.drawable.blur_off, 0, 0);
+            blurOffButton.setTextColor(0xffffffff);
+            blurRadialButton.setCompoundDrawablesWithIntrinsicBounds(0, R.drawable.blur_radial_active, 0, 0);
+            blurRadialButton.setTextColor(0xff51bdf3);
+            blurLinearButton.setCompoundDrawablesWithIntrinsicBounds(0, R.drawable.blur_linear, 0, 0);
+            blurLinearButton.setTextColor(0xffffffff);
+        } else if (blurType == 2) {
+            blurOffButton.setCompoundDrawablesWithIntrinsicBounds(0, R.drawable.blur_off, 0, 0);
+            blurOffButton.setTextColor(0xffffffff);
+            blurRadialButton.setCompoundDrawablesWithIntrinsicBounds(0, R.drawable.blur_radial, 0, 0);
+            blurRadialButton.setTextColor(0xffffffff);
+            blurLinearButton.setCompoundDrawablesWithIntrinsicBounds(0, R.drawable.blur_linear_active, 0, 0);
+            blurLinearButton.setTextColor(0xff51bdf3);
+        }
     }
 
     private void updateValueTextView() {
@@ -1387,13 +1826,13 @@ public class PhotoFilterView extends FrameLayout {
         }
     }
 
-    public void setShowOriginal(boolean value) {
+    private void setShowOriginal(boolean value) {
         if (showOriginal == value) {
             return;
         }
         showOriginal = value;
         if (eglThread != null) {
-            eglThread.requestRender();
+            eglThread.requestRender(false);
         }
     }
 
@@ -1403,10 +1842,30 @@ public class PhotoFilterView extends FrameLayout {
         if (editView.getVisibility() == GONE) {
             viewFrom = toolsView;
             viewTo = editView;
+
+            if (selectedTool == blurTool) {
+                blurLayout.setVisibility(VISIBLE);
+                valueSeekBar.setVisibility(INVISIBLE);
+                blurTextView.setVisibility(VISIBLE);
+                paramTextView.setVisibility(INVISIBLE);
+                valueTextView.setVisibility(INVISIBLE);
+                if (blurType != 0) {
+                    blurControl.setVisibility(VISIBLE);
+                }
+                updateSelectedBlurType();
+            } else {
+                blurLayout.setVisibility(INVISIBLE);
+                valueSeekBar.setVisibility(VISIBLE);
+                blurTextView.setVisibility(INVISIBLE);
+                paramTextView.setVisibility(VISIBLE);
+                valueTextView.setVisibility(VISIBLE);
+                blurControl.setVisibility(INVISIBLE);
+            }
         } else {
             selectedTool = -1;
             viewFrom = editView;
             viewTo = toolsView;
+            blurControl.setVisibility(INVISIBLE);
         }
 
         AnimatorSetProxy animatorSet = new AnimatorSetProxy();
@@ -1494,6 +1953,11 @@ public class PhotoFilterView extends FrameLayout {
         layoutParams.width = (int) bitmapW;
         layoutParams.height = (int) bitmapH;
         textureView.setLayoutParams(layoutParams);
+
+        blurControl.setActualAreaSize(layoutParams.width, layoutParams.height);
+        layoutParams = (LayoutParams) blurControl.getLayoutParams();
+        layoutParams.height = viewHeight + AndroidUtilities.dp(28);
+        blurControl.setLayoutParams(layoutParams);
 
         if (AndroidUtilities.isTablet()) {
             int total = AndroidUtilities.dp(86) * 10;
@@ -1613,7 +2077,7 @@ public class PhotoFilterView extends FrameLayout {
 
         @Override
         public int getItemCount() {
-            return 10;
+            return 11;
         }
 
         @Override
@@ -1651,7 +2115,13 @@ public class PhotoFilterView extends FrameLayout {
             } else if (i == sharpenTool) {
                 ((PhotoEditToolCell) holder.itemView).setIconAndTextAndValue(R.drawable.tool_details, LocaleController.getString("Sharpen", R.string.Sharpen), sharpenValue);
             } else if (i == blurTool) {
-                ((PhotoEditToolCell) holder.itemView).setIconAndTextAndValue(R.drawable.tool_details, LocaleController.getString("Blur", R.string.Blur), 0); //TODO add value
+                String value = "";
+                if (blurType == 1) {
+                    value = "R";
+                } else if (blurType == 2) {
+                    value = "L";
+                }
+                ((PhotoEditToolCell) holder.itemView).setIconAndTextAndValue(R.drawable.tool_blur, LocaleController.getString("Blur", R.string.Blur), value);
             }
         }
     }

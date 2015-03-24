@@ -43,6 +43,7 @@ import com.googlecode.mp4parser.util.Path;
 import org.telegram.android.AndroidUtilities;
 import org.telegram.android.LocaleController;
 import org.telegram.android.MediaController;
+import org.telegram.android.NotificationCenter;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
@@ -57,7 +58,7 @@ import java.io.File;
 import java.util.List;
 
 @TargetApi(16)
-public class VideoEditorActivity extends BaseFragment implements TextureView.SurfaceTextureListener {
+public class VideoEditorActivity extends BaseFragment implements TextureView.SurfaceTextureListener, NotificationCenter.NotificationCenterDelegate {
 
     private boolean created = false;
     private MediaPlayer videoPlayer = null;
@@ -97,7 +98,7 @@ public class VideoEditorActivity extends BaseFragment implements TextureView.Sur
     private long originalSize = 0;
 
     public interface VideoEditorActivityDelegate {
-        public abstract void didFinishEditVideo(String videoPath, long startTime, long endTime, int resultWidth, int resultHeight, int rotationValue, int originalWidth, int originalHeight, int bitrate, long estimatedSize, long estimatedDuration);
+        void didFinishEditVideo(String videoPath, long startTime, long endTime, int resultWidth, int resultHeight, int rotationValue, int originalWidth, int originalHeight, int bitrate, long estimatedSize, long estimatedDuration);
     }
 
     private Runnable progressRunnable = new Runnable() {
@@ -198,6 +199,7 @@ public class VideoEditorActivity extends BaseFragment implements TextureView.Sur
             return false;
         }
 
+        NotificationCenter.getInstance().addObserver(this, NotificationCenter.closeChats);
         created = true;
 
         return super.onFragmentCreate();
@@ -217,6 +219,7 @@ public class VideoEditorActivity extends BaseFragment implements TextureView.Sur
                 FileLog.e("tmessages", e);
             }
         }
+        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.closeChats);
         super.onFragmentDestroy();
     }
 
@@ -405,6 +408,13 @@ public class VideoEditorActivity extends BaseFragment implements TextureView.Sur
             }
         }
         return fragmentView;
+    }
+
+    @Override
+    public void didReceivedNotification(int id, Object... args) {
+        if (id == NotificationCenter.closeChats) {
+            removeSelfFromStack();
+        }
     }
 
     private void setPlayerSurface() {

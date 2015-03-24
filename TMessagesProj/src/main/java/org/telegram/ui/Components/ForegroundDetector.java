@@ -20,8 +20,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 public class ForegroundDetector implements Application.ActivityLifecycleCallbacks {
 
     public interface Listener {
-        public void onBecameForeground();
-        public void onBecameBackground();
+        void onBecameForeground();
+        void onBecameBackground();
     }
 
     private int refs;
