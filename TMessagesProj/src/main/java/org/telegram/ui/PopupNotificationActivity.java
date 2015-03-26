@@ -194,7 +194,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
         chatActivityEnterView.setLayoutParams(layoutParams3);
         chatActivityEnterView.setDelegate(new ChatActivityEnterView.ChatActivityEnterViewDelegate() {
             @Override
-            public void onMessageSend() {
+            public void onMessageSend(String message) {
                 if (currentMessageObject == null) {
                     return;
                 }

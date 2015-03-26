@@ -153,13 +153,15 @@ public class ActionBarMenu extends LinearLayout {
         }
     }
 
-    public void openSearchField(String text) {
+    public void openSearchField(boolean toggle, String text) {
         for (int a = 0; a < getChildCount(); a++) {
             View view = getChildAt(a);
             if (view instanceof ActionBarMenuItem) {
                 ActionBarMenuItem item = (ActionBarMenuItem)view;
                 if (item.isSearchField()) {
-                    parentActionBar.onSearchFieldVisibilityChanged(item.toggleSearch());
+                    if (toggle) {
+                        parentActionBar.onSearchFieldVisibilityChanged(item.toggleSearch());
+                    }
                     item.getSearchField().setText(text);
                     item.getSearchField().setSelection(text.length());
                     break;

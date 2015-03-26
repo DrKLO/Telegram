@@ -93,7 +93,7 @@ public class MessageObject {
                     fromUser = MessagesController.getInstance().getUser(message.from_id);
                 }
                 if (message.action instanceof TLRPC.TL_messageActionChatCreate) {
-                    if (isFromMe()) {
+                    if (isOut()) {
                         messageText = LocaleController.getString("ActionYouCreateGroup", R.string.ActionYouCreateGroup);
                     } else {
                         if (fromUser != null) {
@@ -104,7 +104,7 @@ public class MessageObject {
                     }
                 } else if (message.action instanceof TLRPC.TL_messageActionChatDeleteUser) {
                     if (message.action.user_id == message.from_id) {
-                        if (isFromMe()) {
+                        if (isOut()) {
                             messageText = LocaleController.getString("ActionYouLeftUser", R.string.ActionYouLeftUser);
                         } else {
                             if (fromUser != null) {
@@ -122,7 +122,7 @@ public class MessageObject {
                             whoUser = MessagesController.getInstance().getUser(message.action.user_id);
                         }
                         if (whoUser != null && fromUser != null) {
-                            if (isFromMe()) {
+                            if (isOut()) {
                                 messageText = replaceWithLink(LocaleController.getString("ActionYouKickUser", R.string.ActionYouKickUser), "un2", whoUser);
                             } else if (message.action.user_id == UserConfig.getClientUserId()) {
                                 messageText = replaceWithLink(LocaleController.getString("ActionKickUserYou", R.string.ActionKickUserYou), "un1", fromUser);
@@ -143,7 +143,7 @@ public class MessageObject {
                         whoUser = MessagesController.getInstance().getUser(message.action.user_id);
                     }
                     if (whoUser != null && fromUser != null) {
-                        if (isFromMe()) {
+                        if (isOut()) {
                             messageText = replaceWithLink(LocaleController.getString("ActionYouAddUser", R.string.ActionYouAddUser), "un2", whoUser);
                         } else if (message.action.user_id == UserConfig.getClientUserId()) {
                             messageText = replaceWithLink(LocaleController.getString("ActionAddUserYou", R.string.ActionAddUserYou), "un1", fromUser);
@@ -155,7 +155,7 @@ public class MessageObject {
                         messageText = LocaleController.getString("ActionAddUser", R.string.ActionAddUser).replace("un2", "").replace("un1", "");
                     }
                 } else if (message.action instanceof TLRPC.TL_messageActionChatEditPhoto) {
-                    if (isFromMe()) {
+                    if (isOut()) {
                         messageText = LocaleController.getString("ActionYouChangedPhoto", R.string.ActionYouChangedPhoto);
                     } else {
                         if (fromUser != null) {
@@ -165,7 +165,7 @@ public class MessageObject {
                         }
                     }
                 } else if (message.action instanceof TLRPC.TL_messageActionChatEditTitle) {
-                    if (isFromMe()) {
+                    if (isOut()) {
                         messageText = LocaleController.getString("ActionYouChangedTitle", R.string.ActionYouChangedTitle).replace("un2", message.action.title);
                     } else {
                         if (fromUser != null) {
@@ -175,7 +175,7 @@ public class MessageObject {
                         }
                     }
                 } else if (message.action instanceof TLRPC.TL_messageActionChatDeletePhoto) {
-                    if (isFromMe()) {
+                    if (isOut()) {
                         messageText = LocaleController.getString("ActionYouRemovedPhoto", R.string.ActionYouRemovedPhoto);
                     } else {
                         if (fromUser != null) {
@@ -186,7 +186,7 @@ public class MessageObject {
                     }
                 } else if (message.action instanceof TLRPC.TL_messageActionTTLChange) {
                     if (message.action.ttl != 0) {
-                        if (isFromMe()) {
+                        if (isOut()) {
                             messageText = LocaleController.formatString("MessageLifetimeChangedOutgoing", R.string.MessageLifetimeChangedOutgoing, AndroidUtilities.formatTTLString(message.action.ttl));
                         } else {
                             if (fromUser != null) {
@@ -196,7 +196,7 @@ public class MessageObject {
                             }
                         }
                     } else {
-                        if (isFromMe()) {
+                        if (isOut()) {
                             messageText = LocaleController.getString("MessageLifetimeYouRemoved", R.string.MessageLifetimeYouRemoved);
                         } else {
                             if (fromUser != null) {
@@ -236,7 +236,7 @@ public class MessageObject {
                     }
                 } else if (message.action instanceof TLRPC.TL_messageEncryptedAction) {
                     if (message.action.encryptedAction instanceof TLRPC.TL_decryptedMessageActionScreenshotMessages) {
-                        if (isFromMe()) {
+                        if (isOut()) {
                             messageText = LocaleController.formatString("ActionTakeScreenshootYou", R.string.ActionTakeScreenshootYou);
                         } else {
                             if (fromUser != null) {
@@ -248,7 +248,7 @@ public class MessageObject {
                     } else if (message.action.encryptedAction instanceof TLRPC.TL_decryptedMessageActionSetMessageTTL) {
                         TLRPC.TL_decryptedMessageActionSetMessageTTL action = (TLRPC.TL_decryptedMessageActionSetMessageTTL) message.action.encryptedAction;
                         if (action.ttl_seconds != 0) {
-                            if (isFromMe()) {
+                            if (isOut()) {
                                 messageText = LocaleController.formatString("MessageLifetimeChangedOutgoing", R.string.MessageLifetimeChangedOutgoing, AndroidUtilities.formatTTLString(action.ttl_seconds));
                             } else {
                                 if (fromUser != null) {
@@ -258,7 +258,7 @@ public class MessageObject {
                                 }
                             }
                         } else {
-                            if (isFromMe()) {
+                            if (isOut()) {
                                 messageText = LocaleController.getString("MessageLifetimeYouRemoved", R.string.MessageLifetimeYouRemoved);
                             } else {
                                 if (fromUser != null) {
@@ -553,7 +553,7 @@ public class MessageObject {
             }
 
             try {
-                Pattern pattern = Pattern.compile("(^|\\s)@[a-zA-Z\\d_]{5,32}|(^|\\s)#[\\w@\\.]+");
+                Pattern pattern = Pattern.compile("(^|\\s)@[a-zA-Z\\d_]{5,32}|(^|\\s)#[\\w\\.]+");
                 Matcher matcher = pattern.matcher(messageText);
                 while (matcher.find()) {
                     int start = matcher.start();
@@ -571,13 +571,13 @@ public class MessageObject {
 
         int maxWidth;
         if (AndroidUtilities.isTablet()) {
-            if (messageOwner.to_id.chat_id != 0) {
+            if (messageOwner.to_id.chat_id != 0 && !isOut()) {
                 maxWidth = AndroidUtilities.getMinTabletSide() - AndroidUtilities.dp(122);
             } else {
                 maxWidth = AndroidUtilities.getMinTabletSide() - AndroidUtilities.dp(80);
             }
         } else {
-            if (messageOwner.to_id.chat_id != 0) {
+            if (messageOwner.to_id.chat_id != 0 && !isOut()) {
                 maxWidth = Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y) - AndroidUtilities.dp(122);
             } else {
                 maxWidth = Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y) - AndroidUtilities.dp(80);
@@ -727,10 +727,6 @@ public class MessageObject {
         return (messageOwner.flags & TLRPC.MESSAGE_FLAG_OUT) != 0;
     }
 
-    public boolean isFromMe() {
-        return messageOwner.from_id == UserConfig.getClientUserId();
-    }
-
     public boolean isUnread() {
         return (messageOwner.flags & TLRPC.MESSAGE_FLAG_UNREAD) != 0;
     }
@@ -776,7 +772,7 @@ public class MessageObject {
         } else {
             if (messageOwner.to_id.chat_id != 0) {
                 return -messageOwner.to_id.chat_id;
-            } else if (isFromMe()) {
+            } else if (isOut()) {
                 return messageOwner.to_id.user_id;
             } else {
                 return messageOwner.from_id;

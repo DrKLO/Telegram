@@ -58,6 +58,7 @@
     <string name="UnmuteNotifications">음소거 해제</string>
     <string name="WillUnmuteIn">%1$s 후</string>
     <string name="MuteDisable">비활성화</string>
+    <string name="Hashtags">해시태그</string>
     <!--broadcasts-->
     <string name="NewBroadcastList">새 단체 메시지 리스트</string>
     <string name="EnterListName">리스트 이름을 입력하세요</string>
@@ -302,6 +303,7 @@
     <string name="VibrationDisabled">비활성화됨</string>
     <string name="LedDisabled">비활성화됨</string>
     <string name="RepeatDisabled">끔</string>
+    <string name="InChatSound">채팅중 소리 설정</string>
     <!--passcode view-->
     <string name="Passcode">잠금번호</string>
     <string name="ChangePasscode">잠금번호 변경</string>
@@ -366,6 +368,8 @@
     <string name="AreYouSureDeletePhoto">이 사진을 삭제하시겠습니까?</string>
     <string name="AreYouSureDeleteVideo">이 동영상을 삭제하시겠습니까?</string>
     <string name="DiscardChanges">변경을 취소하시겠습니까?</string>
+    <string name="ClearSearch">검색기록을 지우시겠습니까?</string>
+    <string name="ClearButton">지우기</string>
     <!--password view-->
     <string name="Password">Password</string>
     <string name="ChangePassword">Change password</string>
@@ -486,7 +490,7 @@
     <string name="InvalidLastName">올바른 성을 입력해 주세요</string>
     <string name="Loading">불러오는 중...</string>
     <string name="NoPlayerInstalled">동영상 재생 앱이 없습니다. 계속하려면 앱을 설치해 주세요.</string>
-    <string name="NoMailInstalled">sms@telegram.org 이메일 주소로 이 문제를 보내주세요.</string>
+    <string name="NoMailInstalled">발생한 문제에 대하여 sms@stel.com 주소로 이메일을 보내주세요.</string>
     <string name="NoHandleAppInstalled">\'%1$s\' 파일 형식을 처리할 앱이 없습니다. 계속하려면 앱을 설치해 주세요.</string>
     <string name="InviteUser">친구가 아직 텔레그램을 사용하지 않네요. 초대해 보세요!</string>
     <string name="AreYouSure">확실합니까?</string>

@@ -1515,7 +1515,7 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                     });
                 }
             }
-        }, (req instanceof TLRPC.TL_messages_forwardMessages ? null : new RPCRequest.RPCQuickAckDelegate() {
+        }, new RPCRequest.RPCQuickAckDelegate() {
             @Override
             public void quickAck() {
                 final int msg_id = newMsgObj.id;
@@ -1527,7 +1527,7 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                     }
                 });
             }
-        }), true, RPCRequest.RPCRequestClassGeneric | RPCRequest.RPCRequestClassCanCompress, ConnectionsManager.DEFAULT_DATACENTER_ID);
+        }, true, RPCRequest.RPCRequestClassGeneric | RPCRequest.RPCRequestClassCanCompress, ConnectionsManager.DEFAULT_DATACENTER_ID);
     }
 
     private void processSentMessage(TLRPC.Message newMsg, TLRPC.Message sentMessage, String originalPath) {
@@ -1811,6 +1811,7 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                 }
                 if (bmOptions.outWidth != 0 && bmOptions.outHeight != 0 && bmOptions.outWidth <= 800 && bmOptions.outHeight <= 800) {
                     TLRPC.TL_documentAttributeSticker attributeSticker = new TLRPC.TL_documentAttributeSticker();
+                    attributeSticker.alt = "";
                     document.attributes.add(attributeSticker);
                     TLRPC.TL_documentAttributeImageSize attributeImageSize = new TLRPC.TL_documentAttributeImageSize();
                     attributeImageSize.w = bmOptions.outWidth;

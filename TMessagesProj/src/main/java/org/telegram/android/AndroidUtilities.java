@@ -65,10 +65,12 @@ public class AndroidUtilities {
     public static Point displaySize = new Point();
     public static Integer photoSize = null;
     public static DisplayMetrics displayMetrics = new DisplayMetrics();
+    public static int leftBaseline;
     private static Boolean isTablet = null;
 
     static {
         density = ApplicationLoader.applicationContext.getResources().getDisplayMetrics().density;
+        leftBaseline = isTablet() ? 80 : 72;
         checkDisplaySize();
     }
 

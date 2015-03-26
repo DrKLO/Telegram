@@ -236,7 +236,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
             layersActionBarLayout.setBackgroundResource(R.drawable.boxshadow);
             launchLayout.addView(layersActionBarLayout);
             relativeLayoutParams = (RelativeLayout.LayoutParams)layersActionBarLayout.getLayoutParams();
-            relativeLayoutParams.width = AndroidUtilities.dp(498);
+            relativeLayoutParams.width = AndroidUtilities.dp(530);
             relativeLayoutParams.height = AndroidUtilities.dp(528);
             layersActionBarLayout.setLayoutParams(relativeLayoutParams);
             layersActionBarLayout.init(layerFragmentsStack);
@@ -843,17 +843,21 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                     PhotoViewer.getInstance().closePhoto(false, true);
                 }
 
+                drawerLayoutContainer.setAllowOpenDrawer(false, false);
                 if (AndroidUtilities.isTablet()) {
                     actionBarLayout.showLastFragment();
                     rightActionBarLayout.showLastFragment();
+                } else {
+                    drawerLayoutContainer.setAllowOpenDrawer(true, false);
                 }
-                drawerLayoutContainer.setAllowOpenDrawer(false, false);
             } else if (open_settings != 0) {
                 actionBarLayout.presentFragment(new SettingsActivity(), false, true, true);
-                drawerLayoutContainer.setAllowOpenDrawer(false, false);
                 if (AndroidUtilities.isTablet()) {
                     actionBarLayout.showLastFragment();
                     rightActionBarLayout.showLastFragment();
+                    drawerLayoutContainer.setAllowOpenDrawer(false, false);
+                } else {
+                    drawerLayoutContainer.setAllowOpenDrawer(true, false);
                 }
                 pushOpened = true;
             }

@@ -9,7 +9,9 @@
 package org.telegram.ui;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.graphics.Bitmap;
 import android.os.Build;
 import android.util.Base64;
@@ -281,6 +283,33 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
                     PhotoViewer.getInstance().openPhotoForSelect(arrayList, i, singlePhoto ? 1 : 0, PhotoPickerActivity.this);
                 }
             });
+
+            if (selectedAlbum == null) {
+                listView.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
+                    @Override
+                    public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
+                        if (searchResult.isEmpty() && lastSearchString == null) {
+                            AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                            builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
+                            builder.setMessage(LocaleController.getString("ClearSearch", R.string.ClearSearch));
+                            builder.setPositiveButton(LocaleController.getString("ClearButton", R.string.ClearButton).toUpperCase(), new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialogInterface, int i) {
+                                    recentImages.clear();
+                                    if (listAdapter != null) {
+                                        listAdapter.notifyDataSetChanged();
+                                    }
+                                    MessagesStorage.getInstance().clearWebRecent(type);
+                                }
+                            });
+                            builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+                            showAlertDialog(builder);
+                            return true;
+                        }
+                        return false;
+                    }
+                });
+            }
 
             emptyView = new TextView(getParentActivity());
             emptyView.setTextColor(0xff808080);

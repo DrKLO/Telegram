@@ -382,7 +382,7 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                     }
                     long dialog_id = 0;
                     int message_id = 0;
-                    BaseFragmentAdapter adapter = (BaseFragmentAdapter)messagesListView.getAdapter();
+                    BaseFragmentAdapter adapter = (BaseFragmentAdapter) messagesListView.getAdapter();
                     if (adapter == dialogsAdapter) {
                         TLRPC.TL_dialog dialog = dialogsAdapter.getItem(i);
                         if (dialog == null) {
@@ -411,6 +411,9 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                             MessageObject messageObject = (MessageObject)obj;
                             dialog_id = messageObject.getDialogId();
                             message_id = messageObject.getId();
+                            dialogsSearchAdapter.addHashtagsFromMessage(dialogsSearchAdapter.getLastSearchString());
+                        } else if (obj instanceof String) {
+                            actionBar.openSearchField((String) obj);
                         }
                     }
 
@@ -467,6 +470,26 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                 @Override
                 public boolean onItemLongClick(AdapterView<?> adapterView, View view, int i, long l) {
                     if (onlySelect || searching && searchWas || getParentActivity() == null) {
+                        if (searchWas && searching) {
+                            BaseFragmentAdapter adapter = (BaseFragmentAdapter) messagesListView.getAdapter();
+                            if (adapter == dialogsSearchAdapter) {
+                                Object item = adapter.getItem(i);
+                                if (item instanceof String) {
+                                    AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                                    builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
+                                    builder.setMessage(LocaleController.getString("ClearSearch", R.string.ClearSearch));
+                                    builder.setPositiveButton(LocaleController.getString("ClearButton", R.string.ClearButton).toUpperCase(), new DialogInterface.OnClickListener() {
+                                        @Override
+                                        public void onClick(DialogInterface dialogInterface, int i) {
+                                            dialogsSearchAdapter.clearRecentHashtags();
+                                        }
+                                    });
+                                    builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+                                    showAlertDialog(builder);
+                                    return true;
+                                }
+                            }
+                        }
                         return false;
                     }
                     TLRPC.TL_dialog dialog;

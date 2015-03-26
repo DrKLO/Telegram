@@ -419,10 +419,10 @@ public class ActionBar extends FrameLayout {
     }
 
     public void openSearchField(String text) {
-        if (isSearchFieldVisible || menu == null) {
+        if (menu == null || text == null) {
             return;
         }
-        menu.openSearchField(text);
+        menu.openSearchField(!isSearchFieldVisible, text);
     }
 
     @Override

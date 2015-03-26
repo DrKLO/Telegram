@@ -31,7 +31,7 @@ import java.util.HashMap;
 import java.util.Timer;
 import java.util.TimerTask;
 
-public class ContactsSearchAdapter extends BaseContactsSearchAdapter {
+public class SearchAdapter extends BaseSearchAdapter {
     private Context mContext;
     private HashMap<Integer, TLRPC.User> ignoreUsers;
     private ArrayList<TLRPC.User> searchResult = new ArrayList<>();
@@ -41,7 +41,7 @@ public class ContactsSearchAdapter extends BaseContactsSearchAdapter {
     private boolean allowUsernameSearch;
     private boolean useUserCell;
 
-    public ContactsSearchAdapter(Context context, HashMap<Integer, TLRPC.User> arg1, boolean usernameSearch) {
+    public SearchAdapter(Context context, HashMap<Integer, TLRPC.User> arg1, boolean usernameSearch) {
         mContext = context;
         ignoreUsers = arg1;
         allowUsernameSearch = usernameSearch;

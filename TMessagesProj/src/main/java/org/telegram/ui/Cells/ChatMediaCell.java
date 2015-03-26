@@ -859,6 +859,7 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
     protected void onAfterBackgroundDraw(Canvas canvas) {
         boolean imageDrawn = false;
         if (gifDrawable != null) {
+            drawTime = !gifDrawable.isPlaying();
             canvas.save();
             gifDrawable.setBounds(photoImage.getImageX(), photoImage.getImageY(), photoImage.getImageX() + photoWidth, photoImage.getImageY() + photoHeight);
             gifDrawable.draw(canvas);

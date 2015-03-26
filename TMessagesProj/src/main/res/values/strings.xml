@@ -58,6 +58,7 @@
     <string name="UnmuteNotifications">Unmute</string>
     <string name="WillUnmuteIn">In %1$s</string>
     <string name="MuteDisable">Disable</string>
+    <string name="Hashtags">HASHTAGS</string>
     <!--broadcasts-->
     <string name="NewBroadcastList">New Broadcast List</string>
     <string name="EnterListName">Enter list name</string>
@@ -302,6 +303,7 @@
     <string name="VibrationDisabled">Disabled</string>
     <string name="LedDisabled">Disabled</string>
     <string name="RepeatDisabled">Off</string>
+    <string name="InChatSound">In-Chat Sounds</string>
     <!--passcode view-->
     <string name="Passcode">Passcode</string>
     <string name="ChangePasscode">Change Passcode</string>
@@ -366,6 +368,8 @@
     <string name="AreYouSureDeletePhoto">Are you sure you want to delete this photo?</string>
     <string name="AreYouSureDeleteVideo">Are you sure you want to delete this video?</string>
     <string name="DiscardChanges">Discard changes?</string>
+    <string name="ClearSearch">Clear search history?</string>
+    <string name="ClearButton">Clear</string>
     <!--password view-->
     <string name="Password">Password</string>
     <string name="ChangePassword">Change password</string>
@@ -486,7 +490,7 @@
     <string name="InvalidLastName">Invalid last name</string>
     <string name="Loading">Loading...</string>
     <string name="NoPlayerInstalled">You don\'t have a video player, please install one to continue</string>
-    <string name="NoMailInstalled">Please send an email to sms@telegram.org and tell us about your problem.</string>
+    <string name="NoMailInstalled">Please send an email to sms@stel.com and tell us about your problem.</string>
     <string name="NoHandleAppInstalled">You don\'t have applications that can handle the file type \'%1$s\', please install one to continue</string>
     <string name="InviteUser">This user does not have Telegram yet, send an invitation?</string>
     <string name="AreYouSure">Are you sure?</string>

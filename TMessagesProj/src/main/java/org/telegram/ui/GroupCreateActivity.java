@@ -49,7 +49,7 @@ import org.telegram.android.MessagesController;
 import org.telegram.android.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.ui.Adapters.ContactsAdapter;
-import org.telegram.ui.Adapters.ContactsSearchAdapter;
+import org.telegram.ui.Adapters.SearchAdapter;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.BaseFragment;
@@ -94,7 +94,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
     private TextView emptyTextView;
     private EditText userSelectEditText;
     private LetterSectionsListView listView;
-    private ContactsSearchAdapter searchListViewAdapter;
+    private SearchAdapter searchListViewAdapter;
 
     private GroupCreateActivityDelegate delegate;
 
@@ -185,7 +185,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
             ActionBarMenu menu = actionBar.createMenu();
             menu.addItemWithWidth(done_button, R.drawable.ic_done, AndroidUtilities.dp(56));
 
-            searchListViewAdapter = new ContactsSearchAdapter(getParentActivity(), null, false);
+            searchListViewAdapter = new SearchAdapter(getParentActivity(), null, false);
             searchListViewAdapter.setCheckedMap(selectedContacts);
             searchListViewAdapter.setUseUserCell(true);
             listViewAdapter = new ContactsAdapter(getParentActivity(), true, false, null);

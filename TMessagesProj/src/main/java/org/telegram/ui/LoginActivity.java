@@ -817,6 +817,12 @@ public class LoginActivity extends BaseFragment {
 
             final Bundle params = new Bundle();
             params.putString("phone", "+" + codeField.getText() + phoneField.getText());
+            try {
+                params.putString("ephone", "+" + PhoneFormat.stripExceptNumbers(codeField.getText().toString()) + " " + PhoneFormat.stripExceptNumbers(phoneField.getText().toString()));
+            } catch (Exception e) {
+                FileLog.e("tmessages", e);
+                params.putString("ephone", "+" + phone);
+            }
             params.putString("phoneFormated", phone);
             nextPressed = true;
             needShowProgress();
@@ -897,6 +903,7 @@ public class LoginActivity extends BaseFragment {
 
         private String phoneHash;
         private String requestPhone;
+        private String emailPhone;
         private EditText codeField;
         private TextView confirmTextView;
         private TextView timeText;
@@ -1004,8 +1011,8 @@ public class LoginActivity extends BaseFragment {
 
                         Intent mailer = new Intent(Intent.ACTION_SEND);
                         mailer.setType("message/rfc822");
-                        mailer.putExtra(Intent.EXTRA_EMAIL, new String[]{"sms@telegram.org"});
-                        mailer.putExtra(Intent.EXTRA_SUBJECT, "Android registration/login issue " + version + " " + requestPhone);
+                        mailer.putExtra(Intent.EXTRA_EMAIL, new String[]{"sms@stel.com"});
+                        mailer.putExtra(Intent.EXTRA_SUBJECT, "Android registration/login issue " + version + " " + emailPhone);
                         mailer.putExtra(Intent.EXTRA_TEXT, "Phone: " + requestPhone + "\nApp version: " + version + "\nOS version: SDK " + Build.VERSION.SDK_INT + "\nDevice Name: " + Build.MANUFACTURER + Build.MODEL + "\nLocale: " + Locale.getDefault() + "\nError: " + lastError);
                         getContext().startActivity(Intent.createChooser(mailer, "Send email..."));
                     } catch (Exception e) {
@@ -1063,6 +1070,7 @@ public class LoginActivity extends BaseFragment {
             currentParams = params;
             waitingForSms = true;
             String phone = params.getString("phone");
+            emailPhone = params.getString("ephone");
             requestPhone = params.getString("phoneFormated");
             phoneHash = params.getString("phoneHash");
             time = params.getInt("calltime");

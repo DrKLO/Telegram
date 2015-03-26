@@ -1293,7 +1293,11 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                         if (label.length() != 0) {
                             label += ", ";
                         }
-                        label += ContactsController.formatName(user.first_name, user.last_name);
+                        if (user.first_name != null && user.first_name.length() > 0) {
+                            label += user.first_name;
+                        } else if (user.last_name != null && user.last_name.length() > 0) {
+                            label += user.last_name;
+                        }
                         count++;
                     }
                     if (count == 2) {
@@ -2597,7 +2601,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
 
     public void getDifference() {
         registerForPush(UserConfig.pushString);
-        if (MessagesStorage.lastDateValue == 0) {
+        if (MessagesStorage.lastPtsValue == 0) {
             loadCurrentState();
             return;
         }
@@ -2713,7 +2717,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                                                 }
                                             }
 
-                                            if (!obj.isFromMe() && obj.isUnread()) {
+                                            if (!obj.isOut() && obj.isUnread()) {
                                                 pushMessages.add(obj);
                                             }
 
@@ -2946,7 +2950,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                             AndroidUtilities.runOnUIThread(new Runnable() {
                                 @Override
                                 public void run() {
-                                    if (!obj.isFromMe() && obj.isUnread()) {
+                                    if (!obj.isOut()) {
                                         NotificationsController.getInstance().processNewMessages(objArr, true);
                                     }
                                 }
@@ -3192,7 +3196,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     messages.put(uid, arr);
                 }
                 arr.add(obj);
-                if (!obj.isFromMe() && obj.isUnread()) {
+                if (!obj.isOut() && obj.isUnread()) {
                     pushMessages.add(obj);
                 }
             } else if (update instanceof TLRPC.TL_updateReadMessages) {

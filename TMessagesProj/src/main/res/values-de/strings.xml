@@ -58,6 +58,7 @@
     <string name="UnmuteNotifications">Stumm aus</string>
     <string name="WillUnmuteIn">In %1$s</string>
     <string name="MuteDisable">Stumm aus</string>
+    <string name="Hashtags">HASHTAGS</string>
     <!--broadcasts-->
     <string name="NewBroadcastList">Neue Broadcast Liste</string>
     <string name="EnterListName">Listenname</string>
@@ -302,6 +303,7 @@
     <string name="VibrationDisabled">Deaktiviert</string>
     <string name="LedDisabled">Deaktiviert</string>
     <string name="RepeatDisabled">Aus</string>
+    <string name="InChatSound">In-Chat Töne</string>
     <!--passcode view-->
     <string name="Passcode">Pincode</string>
     <string name="ChangePasscode">Pincode ändern</string>
@@ -366,6 +368,8 @@
     <string name="AreYouSureDeletePhoto">Möchtest du wirklich dieses Bild löschen?</string>
     <string name="AreYouSureDeleteVideo">Möchtest du wirklich dieses Video löschen?</string>
     <string name="DiscardChanges">Änderungen verwerfen?</string>
+    <string name="ClearSearch">Suchverlauf löschen?</string>
+    <string name="ClearButton">Löschen</string>
     <!--password view-->
     <string name="Password">Password</string>
     <string name="ChangePassword">Change password</string>
@@ -486,7 +490,7 @@
     <string name="InvalidLastName">Ungültiger Nachname</string>
     <string name="Loading">Lädt…</string>
     <string name="NoPlayerInstalled">Du hast keinen Videoplayer. Bitte installiere einen um fortzufahren.</string>
-    <string name="NoMailInstalled">Bitte sende uns eine Email an sms@telegram.org mit einer Beschreibung des Problems.</string>
+    <string name="NoMailInstalled">Bitte sende eine Email an sms@stel.com mit einer Beschreibung des Problems.</string>
     <string name="NoHandleAppInstalled">Du hast keine Applikationen, die den Dateityp \'%1$s\' öffnen könnten. Bitte installiere eine entsprechende Anwendung um fortzufahren.</string>
     <string name="InviteUser">Dieser Benutzer hat noch kein Telegram. Möchtest du ihn einladen?</string>
     <string name="AreYouSure">Bist du sicher?</string>
