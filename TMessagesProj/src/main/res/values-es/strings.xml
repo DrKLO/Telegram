@@ -245,6 +245,7 @@
     <string name="NoSound">Sin sonido</string>
     <string name="Default">Por defecto</string>
     <string name="Support">Soporte</string>
+    <string name="OnlyIfSilent">Only if silent</string>
     <string name="ChatBackground">Fondo de chat</string>
     <string name="MessagesSettings">Mensajes</string>
     <string name="SendByEnter">Enviar con \'Intro\'</string>

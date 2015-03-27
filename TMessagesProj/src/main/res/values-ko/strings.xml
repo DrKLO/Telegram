@@ -245,6 +245,7 @@
     <string name="NoSound">알림음 없음</string>
     <string name="Default">기본값</string>
     <string name="Support">지원</string>
+    <string name="OnlyIfSilent">Only if silent</string>
     <string name="ChatBackground">채팅방 배경화면</string>
     <string name="MessagesSettings">메시지</string>
     <string name="SendByEnter">엔터키로 메시지 전송</string>

@@ -1799,6 +1799,14 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                                     }
                                 }
                             }
+                            for (int a = 0; a < document.attributes.size(); a++) {
+                                TLRPC.DocumentAttribute attribute = document.attributes.get(a);
+                                if (attribute instanceof TLRPC.TL_documentAttributeSticker) {
+                                    document.attributes.remove(a);
+                                    document.attributes.add(new TLRPC.TL_documentAttributeSticker_old());
+                                    break;
+                                }
+                            }
                             SendMessagesHelper.getInstance().sendMessage((TLRPC.TL_document) document, null, null, dialog_id, replyingMessageObject);
                             showReplyForMessageObjectOrForward(false, null, null, true);
                         }
