@@ -186,7 +186,7 @@ public class ThemingChatActivity extends BaseFragment {
                 @Override
                 public void onItemClick(AdapterView<?> adapterView, View view, final int i, long l) {
 
-                    SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, Activity.MODE_PRIVATE);
+                    SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
                     final String key = view.getTag() != null ? view.getTag().toString() : "";
 
                     if (i == headerColorRow) {
@@ -207,7 +207,7 @@ public class ThemingChatActivity extends BaseFragment {
                         },themePrefs.getInt("chatHeaderColor", AndroidUtilities.getIntColor("themeColor")), CENTER, 0, false);
 
                         colorDialog.show();
-                    }  else if (i == memberColorCheckRow) {
+                    } else if (i == memberColorCheckRow) {
                         boolean b = themePrefs.getBoolean( key, true);
                         SharedPreferences.Editor editor = themePrefs.edit();
                         editor.putBoolean( key, !b);
@@ -785,7 +785,7 @@ public class ThemingChatActivity extends BaseFragment {
     }
 
     private void resetPref(String key){
-        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, Activity.MODE_PRIVATE);
+        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
         SharedPreferences.Editor editor = preferences.edit();
         editor.remove(key);
         editor.commit();
@@ -806,7 +806,7 @@ public class ThemingChatActivity extends BaseFragment {
     }
 
     private void commitInt(String key, int value){
-        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, Activity.MODE_PRIVATE);
+        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
         SharedPreferences.Editor editor = preferences.edit();
         editor.putInt(key, value);
         editor.commit();
@@ -893,7 +893,7 @@ public class ThemingChatActivity extends BaseFragment {
         @Override
         public View getView(int i, View view, ViewGroup viewGroup) {
             int type = getItemViewType(i);
-            SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, Activity.MODE_PRIVATE);
+            SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
             if (type == 0) {
                 if (view == null) {
                     view = new ShadowSectionCell(mContext);

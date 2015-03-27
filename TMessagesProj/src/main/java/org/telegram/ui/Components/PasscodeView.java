@@ -862,14 +862,16 @@ public class PasscodeView extends FrameLayout {
         int selectedBackground = preferences.getInt("selectedBackground", 1000001);
         boolean customTheme = false;
         if (selectedBackground == 1000001) {
-            backgroundFrameLayout.setBackgroundColor(0xff517c9e);
+            //backgroundFrameLayout.setBackgroundColor(0xff517c9e);
+            backgroundFrameLayout.setBackgroundColor(AndroidUtilities.getIntDarkerColor("themeColor", 0x15));
         } else {
             backgroundDrawable = ApplicationLoader.getCachedWallpaper();
             if (backgroundDrawable != null) {
                 backgroundFrameLayout.setBackgroundColor(0xbf000000);
                 customTheme = true;
             } else {
-                backgroundFrameLayout.setBackgroundColor(0xff517c9e);
+                //backgroundFrameLayout.setBackgroundColor(0xff517c9e);
+                backgroundFrameLayout.setBackgroundColor(AndroidUtilities.getIntDarkerColor("themeColor", 0x15));
             }
         }
 

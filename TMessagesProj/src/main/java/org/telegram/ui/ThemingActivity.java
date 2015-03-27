@@ -161,7 +161,7 @@ public class ThemingActivity extends BaseFragment {
                         if (getParentActivity() == null) {
                             return;
                         }
-                        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, Activity.MODE_PRIVATE);
+                        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
                         LayoutInflater li = (LayoutInflater)getParentActivity().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
 
                         li.inflate(R.layout.colordialog, null, false);
@@ -279,7 +279,7 @@ public class ThemingActivity extends BaseFragment {
                                             @Override
                                             public void run() {
                                                 reseting = false;
-                                                SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, Activity.MODE_PRIVATE);
+                                                SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
                                                 SharedPreferences.Editor editor = themePrefs.edit();
                                                 editor.clear();
                                                 editor.commit();
@@ -408,7 +408,7 @@ public class ThemingActivity extends BaseFragment {
     }*/
 
     private void commitInt(int i){
-        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, Activity.MODE_PRIVATE);
+        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
         SharedPreferences.Editor editor = preferences.edit();
         editor.putInt("themeColor", i);
         AndroidUtilities.themeColor = i;

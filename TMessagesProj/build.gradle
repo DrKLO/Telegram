@@ -22,7 +22,7 @@ dependencies {
 
 android {
     compileSdkVersion 22
-    buildToolsVersion '22.0.0'
+    buildToolsVersion '22.0.1'
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_7
@@ -47,6 +47,7 @@ android {
             debuggable true
             jniDebuggable true
             signingConfig signingConfigs.debug
+            applicationIdSuffix ".beta"
         }
 
         release {
@@ -88,7 +89,7 @@ android {
         applicationId "org.telegram.plus"
         minSdkVersion 8
         targetSdkVersion 22
-        versionCode 469
-        versionName "2.6.0.2"
+        versionCode 475
+        versionName "2.6.1.1"
     }
 }

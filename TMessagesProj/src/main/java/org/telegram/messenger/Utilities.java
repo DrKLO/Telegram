@@ -763,7 +763,8 @@ public class Utilities {
     }
 
     public static void checkForUpdates(Activity context) {
-        if (BuildVars.DEBUG_VERSION) {
+        //if (BuildVars.DEBUG_VERSION) {
+        if (BuildConfig.DEBUG) {
             UpdateManager.register(context, BuildVars.HOCKEY_APP_HASH);
         }
     }

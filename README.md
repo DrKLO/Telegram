@@ -1,4 +1,4 @@
-### Telegram+ for Android
+### Plus Messenger for Android
 
 This is an UNOFFICIAL app that uses [Telegram's API](https://core.telegram.org/api)
 
@@ -13,9 +13,9 @@ Apply themes shared by other users.
 
 **PRIVACY:** Mobile number can be hidden from Menu Drawer and Settings menu
 
-**SOCIAL:** Get in touch with other Telegram+ users through [our Google+ community](https://plus.google.com/communities/106927015963860485525)
+**SOCIAL:** Get in touch with other Plus Messenger users through [our Google+ community](https://plus.google.com/communities/106927015963860485525)
 
-This repo contains the source code for [Telegram+ App for Android](https://play.google.com/store/apps/details?id=org.telegram.plus).
+This repo contains the source code for [Plus Messenger App for Android](https://play.google.com/store/apps/details?id=org.telegram.plus).
 
 ### USAGE
 **Beware of using the dev branch and uploading it to any markets, in many cases it not will work as expected**.
@@ -25,5 +25,5 @@ Import the root folder into your IDE (tested on Android Studio), then run projec
 
 ### LOCALIZATION
 
-Join our translation project if you want to collaborate: https://www.transifex.com/projects/p/telegramplus/
+Join our translation project if you want to collaborate: https://www.transifex.com/projects/p/plusmessenger/
 

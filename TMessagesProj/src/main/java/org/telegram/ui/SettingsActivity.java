@@ -50,6 +50,7 @@ import org.telegram.android.ContactsController;
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.android.MediaController;
 import org.telegram.messenger.ApplicationLoader;
+import org.telegram.messenger.BuildConfig;
 import org.telegram.messenger.BuildVars;
 import org.telegram.android.LocaleController;
 import org.telegram.messenger.FileLoader;
@@ -241,8 +242,9 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         supportSectionRow2 = rowCount++;
         askQuestionRow = rowCount++;
         telegramFaqRow = rowCount++;
-        if (BuildVars.DEBUG_VERSION) {
-        sendLogsRow = rowCount++;
+        //if (BuildVars.DEBUG_VERSION) {
+        if (BuildConfig.DEBUG) {
+            sendLogsRow = rowCount++;
             clearLogsRow = rowCount++;
             //switchBackendButtonRow = rowCount++;
         }
@@ -447,7 +449,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                                 MessagesController.getInstance().fontSize = numberPicker.getValue();
                                 editor.commit();
                                 //
-                                SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, Activity.MODE_PRIVATE);
+                                SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
                                 SharedPreferences.Editor edit = themePrefs.edit();
                                 edit.putInt("chatTextSize", numberPicker.getValue());
                                 edit.commit();
@@ -959,9 +961,9 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             int avatarY = AndroidUtilities.dp(22) - (int)((AndroidUtilities.dp(22) - (AndroidUtilities.getCurrentActionBarHeight() - AndroidUtilities.dp(42)) / 2) * (1.0f - diff));
             int nameX = 97 + (int)(21 * diffm);
             int nameEndX = 16 + (int)(32 * diffm);
-            float nameFontSize = 20 - 2 * diffm;
-            int nameY = avatarY + AndroidUtilities.dp(29 - 10 * diffm);
+            int nameY = avatarY + AndroidUtilities.dp(29 - 13 * diffm);
             int statusY = avatarY + AndroidUtilities.dp(8 - 7 * diffm);
+            float scale = 1.0f - 0.12f * diffm;
 
             layoutParams = (FrameLayout.LayoutParams) writeButton.getLayoutParams();
             layoutParams.topMargin = (actionBar.getOccupyStatusBar() ? AndroidUtilities.statusBarHeight : 0) + AndroidUtilities.getCurrentActionBarHeight() + actionBar.getExtraHeight() - AndroidUtilities.dp(29.5f);
@@ -981,7 +983,10 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             layoutParams.bottomMargin = avatarY;
             avatarImage.setLayoutParams(layoutParams);
 
-            nameTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, nameFontSize);
+            ViewProxy.setPivotX(nameTextView, 0);
+            ViewProxy.setPivotY(nameTextView, 0);
+            ViewProxy.setScaleX(nameTextView, scale);
+            ViewProxy.setScaleY(nameTextView, scale);
             layoutParams = (FrameLayout.LayoutParams) nameTextView.getLayoutParams();
             layoutParams.leftMargin = AndroidUtilities.dp(LocaleController.isRTL ? nameEndX : nameX);
             layoutParams.rightMargin = AndroidUtilities.dp(LocaleController.isRTL ? nameX : nameEndX);

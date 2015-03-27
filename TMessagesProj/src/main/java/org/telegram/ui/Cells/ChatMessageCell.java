@@ -71,7 +71,7 @@ public class ChatMessageCell extends ChatBaseCell {
                                                         }
                                                     }
                                                 } else {
-                                                pressedLink.onClick(this);
+                                                    pressedLink.onClick(this);
                                                 }
                                             } catch (Exception e) {
                                                 FileLog.e("tmessages", e);

@@ -22,6 +22,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Parcelable;
 import android.provider.ContactsContract;
+import android.util.Log;
 import android.view.ActionMode;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
@@ -241,7 +242,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
             layersActionBarLayout.setBackgroundResource(R.drawable.boxshadow);
             launchLayout.addView(layersActionBarLayout);
             relativeLayoutParams = (RelativeLayout.LayoutParams)layersActionBarLayout.getLayoutParams();
-            relativeLayoutParams.width = AndroidUtilities.dp(498);
+            relativeLayoutParams.width = AndroidUtilities.dp(530);
             relativeLayoutParams.height = AndroidUtilities.dp(528);
             layersActionBarLayout.setLayoutParams(relativeLayoutParams);
             layersActionBarLayout.init(layerFragmentsStack);
@@ -869,17 +870,21 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                     PhotoViewer.getInstance().closePhoto(false, true);
             }
 
-            if (AndroidUtilities.isTablet()) {
-                actionBarLayout.showLastFragment();
-                rightActionBarLayout.showLastFragment();
-            }
                 drawerLayoutContainer.setAllowOpenDrawer(false, false);
+                if (AndroidUtilities.isTablet()) {
+                    actionBarLayout.showLastFragment();
+                    rightActionBarLayout.showLastFragment();
+                } else {
+                    drawerLayoutContainer.setAllowOpenDrawer(true, false);
+                }
         } else if (open_settings != 0) {
             actionBarLayout.presentFragment(new SettingsActivity(), false, true, true);
-                drawerLayoutContainer.setAllowOpenDrawer(false, false);
-            if (AndroidUtilities.isTablet()) {
-                actionBarLayout.showLastFragment();
-                rightActionBarLayout.showLastFragment();
+                if (AndroidUtilities.isTablet()) {
+                    actionBarLayout.showLastFragment();
+                    rightActionBarLayout.showLastFragment();
+                    drawerLayoutContainer.setAllowOpenDrawer(false, false);
+                } else {
+                    drawerLayoutContainer.setAllowOpenDrawer(true, false);
             }
             pushOpened = true;
         }

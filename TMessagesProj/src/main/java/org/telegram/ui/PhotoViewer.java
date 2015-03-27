@@ -518,7 +518,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 imagesArrLocationsSizes.clear();
                 avatarsArr.clear();
                 for (TLRPC.Photo photo : photos) {
-                    if (photo instanceof TLRPC.TL_photoEmpty || photo.sizes == null) {
+                    if (photo == null || photo instanceof TLRPC.TL_photoEmpty || photo.sizes == null) {
                         continue;
                     }
                     TLRPC.PhotoSize sizeFull = FileLoader.getClosestPhotoSizeWithSize(photo.sizes, 640);

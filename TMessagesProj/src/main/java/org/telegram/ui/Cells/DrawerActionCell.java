@@ -60,20 +60,8 @@ public class DrawerActionCell extends FrameLayout {
     private void updateTheme(){
         textView.setTextColor(AndroidUtilities.getIntDef("drawerOptionColor", 0xff444444));
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, AndroidUtilities.getIntDef("drawerOptionSize", 15));
+        Drawable[] drawables = textView.getCompoundDrawables();
         int color = AndroidUtilities.getIntDef("drawerIconColor", 0xff737373);
-        Drawable icon = getResources().getDrawable(R.drawable.menu_newgroup_white);
-        icon.setColorFilter(color, PorterDuff.Mode.MULTIPLY);
-        icon = getResources().getDrawable(R.drawable.menu_secret_white);
-        icon.setColorFilter(color, PorterDuff.Mode.MULTIPLY);
-        icon = getResources().getDrawable(R.drawable.menu_broadcast_white);
-        icon.setColorFilter(color, PorterDuff.Mode.MULTIPLY);
-        icon = getResources().getDrawable(R.drawable.menu_contacts_white);
-        icon.setColorFilter(color, PorterDuff.Mode.MULTIPLY);
-        icon = getResources().getDrawable(R.drawable.menu_theming_white);
-        icon.setColorFilter(color, PorterDuff.Mode.MULTIPLY);
-        icon = getResources().getDrawable(R.drawable.menu_settings_white);
-        icon.setColorFilter(color, PorterDuff.Mode.MULTIPLY);
-        icon = getResources().getDrawable(R.drawable.menu_forum_white);
-        icon.setColorFilter(color, PorterDuff.Mode.MULTIPLY);
+        if(drawables[0] != null)drawables[0].setColorFilter(color, PorterDuff.Mode.SRC_IN);
     }
 }

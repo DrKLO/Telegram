@@ -172,7 +172,7 @@ public class ThemingChatsActivity extends BaseFragment {
                 @Override
                 public void onItemClick(AdapterView<?> adapterView, View view, final int i, long l) {
 
-                    SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, Activity.MODE_PRIVATE);
+                    SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
                     final String key = view.getTag() != null ? view.getTag().toString() : "";
 
                     if (i == headerColorRow) {
@@ -257,8 +257,8 @@ public class ThemingChatsActivity extends BaseFragment {
                         int user_id = UserConfig.getClientUserId();
                         TLRPC.User user = MessagesController.getInstance().getUser(user_id);
                         List<CharSequence> array = new ArrayList<>();
-                        array.add( LocaleController.getString("AppName", R.string.AppName) + " Messenger" );
-                        array.add( LocaleController.getString("AppName", R.string.AppName) );
+                        array.add( LocaleController.getString("AppName", R.string.AppName));
+                        array.add( LocaleController.getString("ShortAppName", R.string.ShortAppName) );
                         String usr = "";
                         if (user != null && (user.first_name != null || user.last_name != null)) {
                             usr = ContactsController.formatName(user.first_name, user.last_name);
@@ -268,12 +268,13 @@ public class ThemingChatsActivity extends BaseFragment {
                             usr = "@" + user.username;
                             array.add(usr);
                         }
+                        array.add("");
                         String[] simpleArray = new String[ array.size() ];
                         array.toArray( new String[ array.size() ]);
                         builder.setItems(array.toArray(simpleArray), new DialogInterface.OnClickListener() {
                             @Override
                             public void onClick(DialogInterface dialog, int which) {
-                                SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, Activity.MODE_PRIVATE);
+                                SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
                                 themePrefs.edit().putInt("chatsHeaderTitle", which).commit();
                                 if (listView != null) {
                                     listView.invalidateViews();
@@ -581,7 +582,7 @@ public class ThemingChatsActivity extends BaseFragment {
     }
 
     private void resetPref(String key){
-        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, Activity.MODE_PRIVATE);
+        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
         SharedPreferences.Editor editor = preferences.edit();
         if(key != null)editor.remove(key);
         editor.commit();
@@ -591,7 +592,7 @@ public class ThemingChatsActivity extends BaseFragment {
     }
 
     private void commitInt(String key, int value){
-        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, Activity.MODE_PRIVATE);
+        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
         SharedPreferences.Editor editor = preferences.edit();
         editor.putInt(key, value);
         editor.commit();
@@ -676,7 +677,7 @@ public class ThemingChatsActivity extends BaseFragment {
         @Override
         public View getView(int i, View view, ViewGroup viewGroup) {
             int type = getItemViewType(i);
-            SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, Activity.MODE_PRIVATE);
+            SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
             if (type == 0) {
                 if (view == null) {
                     view = new ShadowSectionCell(mContext);
@@ -805,13 +806,15 @@ public class ThemingChatsActivity extends BaseFragment {
                         text = "-";
                     }
                     if (value == 0) {
-                        textCell.setTextAndValue(LocaleController.getString("HeaderTitle", R.string.HeaderTitle), LocaleController.getString("AppName", R.string.AppName) + " Messenger", false);
-                    } else if (value == 1) {
                         textCell.setTextAndValue(LocaleController.getString("HeaderTitle", R.string.HeaderTitle), LocaleController.getString("AppName", R.string.AppName), false);
+                    } else if (value == 1) {
+                        textCell.setTextAndValue(LocaleController.getString("HeaderTitle", R.string.HeaderTitle), LocaleController.getString("ShortAppName", R.string.ShortAppName), false);
                     } else if (value == 2) {
                         textCell.setTextAndValue(LocaleController.getString("HeaderTitle", R.string.HeaderTitle), ContactsController.formatName(user.first_name, user.last_name), false);
                     } else if (value == 3) {
                         textCell.setTextAndValue(LocaleController.getString("HeaderTitle", R.string.HeaderTitle), text, false);
+                    } else if (value == 4) {
+                        textCell.setTextAndValue(LocaleController.getString("HeaderTitle", R.string.HeaderTitle), "", false);
                     }
                 }
             }

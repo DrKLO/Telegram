@@ -53,6 +53,7 @@ public class HsvSelectorView extends LinearLayout {
 		LayoutInflater inflater = (LayoutInflater) getContext()
 				.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
 		View hsvView = inflater.inflate(R.layout.color_hsvview, null);
+        //line 55 android.view.InflateException: Binary XML file line #4: Error inflating class org.telegram.ui.Components.ColorSelectorView
 		this.addView(hsvView, new LayoutParams(LayoutParams.FILL_PARENT,
 				LayoutParams.FILL_PARENT));
 

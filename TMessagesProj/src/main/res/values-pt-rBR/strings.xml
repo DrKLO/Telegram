@@ -58,6 +58,7 @@
     <string name="UnmuteNotifications">Restaurar Som</string>
     <string name="WillUnmuteIn">Em %1$s</string>
     <string name="MuteDisable">Desativado</string>
+    <string name="Hashtags">HASHTAGS</string>
     <!--broadcasts-->
     <string name="NewBroadcastList">Nova Lista de Transmissão</string>
     <string name="EnterListName">Digite o nome da lista</string>
@@ -302,6 +303,7 @@
     <string name="VibrationDisabled">Desativar</string>
     <string name="LedDisabled">Desativado</string>
     <string name="RepeatDisabled">Desativado</string>
+    <string name="InChatSound">Sons no Chat</string>
     <!--passcode view-->
     <string name="Passcode">Senha</string>
     <string name="ChangePasscode">Alterar Senha</string>
@@ -366,6 +368,8 @@
     <string name="AreYouSureDeletePhoto">Você tem certeza que deseja apagar esta foto?</string>
     <string name="AreYouSureDeleteVideo">Você tem certeza que deseja apagar este vídeo?</string>
     <string name="DiscardChanges">Descartar mudanças?</string>
+    <string name="ClearSearch">Limpar histórico de busca?</string>
+    <string name="ClearButton">Limpar</string>
     <!--password view-->
     <string name="Password">Password</string>
     <string name="ChangePassword">Change password</string>
@@ -486,7 +490,7 @@
     <string name="InvalidLastName">Sobrenome inválido</string>
     <string name="Loading">Carregando...</string>
     <string name="NoPlayerInstalled">Você não possui um reprodutor de vídeo, instale um para continuar</string>
-    <string name="NoMailInstalled">Por favor, envie um email para sms@telegram.org e conte-nos sobre seu problema.</string>
+    <string name="NoMailInstalled">Por favor, envie um email para sms@stel.com e conte-nos sobre seu problema.</string>
     <string name="NoHandleAppInstalled">Você não possui um aplicativo que suporte o tipo de arquivo \'%1$s\', por favor instale um para continuar</string>
     <string name="InviteUser">Este usuário ainda não possui Telegram, deseja enviar um convite?</string>
     <string name="AreYouSure">Você tem certeza?</string>
@@ -780,8 +784,11 @@
   <string name="HeaderIconsColor">Cor dos Ícones do Cabeçalho</string>
   <string name="DividerColor">Cor das Linhas Divisórias</string>
   <string name="AvatarRadius">Diâmetro do Avatar</string>
-  <string name="SetMemberColor">Definir a Cor dos Membros</string>
+  <string name="SetMemberColor">Definir Cor do Membro</string>
   <string name="ForwardNameColor">Cor do Nome em Encaminhamentos</string>
   <string name="HeaderTitle">Título do Cabeçalho</string>
+  <string name="ForwardNoQuote">Encaminhar sem mencionar</string>
   <string name="DisableMessageClick">Desativar Pop-up ao Clicar</string>
+  <string name="ProfileScreen">Tela de Perfil de Contato/Grupo</string>
+  <string name="HideBackground">Ocultar wallpaper personalizado</string>
 </resources>

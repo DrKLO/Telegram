@@ -78,9 +78,11 @@ public class AndroidUtilities {
     public static Point displaySize = new Point();
     public static Integer photoSize = null;
     public static DisplayMetrics displayMetrics = new DisplayMetrics();
+    public static int leftBaseline;
     private static Boolean isTablet = null;
 
     public static final String THEME_PREFS = "theme";
+    public static final int THEME_PREFS_MODE = Activity.MODE_WORLD_READABLE;
 
     public static final int defColor = 0xff009688;//0xff58BCD5;//0xff43C3DB;//0xff2f8cc9;58BCD5//0xff55abd2
     public static int themeColor = getIntColor("themeColor");
@@ -89,6 +91,7 @@ public class AndroidUtilities {
 
     static {
         density = ApplicationLoader.applicationContext.getResources().getDisplayMetrics().density;
+        leftBaseline = isTablet() ? 80 : 72;
         checkDisplaySize();
     }
 
@@ -602,17 +605,17 @@ public class AndroidUtilities {
     }*/
     //PLUS
     public static int getIntColor(String key){
-        SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(THEME_PREFS, Activity.MODE_PRIVATE);
+        SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(THEME_PREFS, THEME_PREFS_MODE);
         return themePrefs.getInt(key, defColor);
     }
 
     public static int getIntDef(String key, int def){
-        SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(THEME_PREFS, Activity.MODE_PRIVATE);
+        SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(THEME_PREFS, THEME_PREFS_MODE);
         return themePrefs.getInt(key, def);
     }
 
     public static int getIntAlphaColor(String key, int def, float factor){
-        SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(THEME_PREFS, Activity.MODE_PRIVATE);
+        SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(THEME_PREFS, THEME_PREFS_MODE);
         int color = themePrefs.getInt(key, def);
         int alpha = Math.round(Color.alpha(color) * factor);
         int red = Color.red(color);
@@ -622,7 +625,7 @@ public class AndroidUtilities {
     }
 
     public static int getIntDarkerColor(String key, int factor){
-        SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(THEME_PREFS, Activity.MODE_PRIVATE);
+        SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(THEME_PREFS, THEME_PREFS_MODE);
         int color = themePrefs.getInt(key, defColor);
         return setDarkColor(color, factor);
     }
@@ -655,7 +658,7 @@ public class AndroidUtilities {
     }
 
     public static void setIntColor(String key, int value){
-        SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(THEME_PREFS, Activity.MODE_PRIVATE);
+        SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(THEME_PREFS, THEME_PREFS_MODE);
         SharedPreferences.Editor e = themePrefs.edit();
         e.putInt(key, value);
         e.commit();

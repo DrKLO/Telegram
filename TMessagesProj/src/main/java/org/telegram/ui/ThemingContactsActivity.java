@@ -131,7 +131,7 @@ public class ThemingContactsActivity extends BaseFragment {
                 @Override
                 public void onItemClick(AdapterView<?> adapterView, View view, final int i, long l) {
 
-                    SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, Activity.MODE_PRIVATE);
+                    SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
 
                     if (i == headerColorRow) {
                         if (getParentActivity() == null) {
@@ -321,7 +321,7 @@ public class ThemingContactsActivity extends BaseFragment {
     }
 
     private void resetInt(String key){
-        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, Activity.MODE_PRIVATE);
+        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
         SharedPreferences.Editor editor = preferences.edit();
         editor.remove(key);
         editor.commit();
@@ -331,7 +331,7 @@ public class ThemingContactsActivity extends BaseFragment {
     }
 
     private void commitInt(String key, int value){
-        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, Activity.MODE_PRIVATE);
+        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
         SharedPreferences.Editor editor = preferences.edit();
         editor.putInt(key, value);
         editor.commit();
@@ -414,7 +414,7 @@ public class ThemingContactsActivity extends BaseFragment {
         @Override
         public View getView(int i, View view, ViewGroup viewGroup) {
             int type = getItemViewType(i);
-            SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, Activity.MODE_PRIVATE);
+            SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
             if (type == 0) {
                 if (view == null) {
                     view = new ShadowSectionCell(mContext);

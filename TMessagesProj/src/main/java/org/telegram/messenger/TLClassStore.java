@@ -464,8 +464,11 @@ public class TLClassStore {
             }
         } else {
             FileLog.e("tmessages", String.format("unknown class %x", constructor));
-            return null;
-            //throw new RuntimeException(String.format("unknown class %x", constructor));
+            if (BuildVars.DEBUG_VERSION) {
+                throw new RuntimeException(String.format("unknown class %x", constructor));
+            } else {
+                return null;
+            }
         }
     }
 }

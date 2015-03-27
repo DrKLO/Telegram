@@ -39,13 +39,15 @@
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <!--
+    <uses-permission android:name="org.telegram.plus.android.provider.ACCESS" />-->
 
     <application
         android:name=".ApplicationLoader"
         android:allowBackup="false"
         android:hardwareAccelerated="@bool/useHardwareAcceleration"
         android:icon="@drawable/ic_launcher"
-        android:label="@string/AppName"
+        android:label="@string/ShortAppName"
         android:largeHeap="true"
         android:theme="@style/Theme.TMessages.Start">
 

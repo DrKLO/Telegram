@@ -15,11 +15,12 @@ import android.widget.SeekBar;
 import android.widget.SeekBar.OnSeekBarChangeListener;
 import android.widget.TextView;
 
+import org.telegram.android.AndroidUtilities;
 import org.telegram.messenger.R;
 
 public class SeekBarPreference extends Preference implements OnSeekBarChangeListener {
 
-    private static final String THEME_PREFS = "theme";
+    //private static final String THEME_PREFS = "theme";
 
 	private final String TAG = getClass().getName();
 	
@@ -223,7 +224,7 @@ public class SeekBarPreference extends Preference implements OnSeekBarChangeList
 	public void onStopTrackingTouch(SeekBar seekBar) {
 		notifyChanged();
 		if(mUnitsRight.contains("r") || mUnitsRight.contains("Mb")){
-            SharedPreferences sharedPref = mSeekBar.getContext().getSharedPreferences(THEME_PREFS, 0);
+            SharedPreferences sharedPref = mSeekBar.getContext().getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
             SharedPreferences.Editor e = sharedPref.edit();
             e.putBoolean("need_reboot",true);
             e.commit();

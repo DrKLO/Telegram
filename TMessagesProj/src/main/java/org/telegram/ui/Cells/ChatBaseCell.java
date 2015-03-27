@@ -10,6 +10,7 @@ package org.telegram.ui.Cells;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
+import android.content.res.Configuration;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.PorterDuff;
@@ -452,11 +453,15 @@ public class ChatBaseCell extends BaseCell {
             if (messageObject.type == 13) {
                 int width;
                 if (AndroidUtilities.isTablet()) {
+                    if (AndroidUtilities.isSmallTablet() && getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT) {
+                        width = AndroidUtilities.displaySize.x;
+                    } else {
                     int leftWidth = AndroidUtilities.displaySize.x / 100 * 35;
                     if (leftWidth < AndroidUtilities.dp(320)) {
                         leftWidth = AndroidUtilities.dp(320);
                     }
                     width = AndroidUtilities.displaySize.x - leftWidth;
+                    }
                 } else {
                     width = AndroidUtilities.displaySize.x;
                 }

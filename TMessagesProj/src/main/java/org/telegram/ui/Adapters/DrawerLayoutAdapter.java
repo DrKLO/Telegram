@@ -10,6 +10,9 @@ package org.telegram.ui.Adapters;
 
 import android.content.Context;
 import android.content.pm.PackageInfo;
+import android.graphics.PorterDuff;
+import android.graphics.drawable.Drawable;
+import android.util.TypedValue;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
@@ -97,21 +100,21 @@ public class DrawerLayoutAdapter extends BaseAdapter {
             }
             DrawerActionCell actionCell = (DrawerActionCell) view;
             if (i == 2) {
-                actionCell.setTextAndIcon(LocaleController.getString("NewGroup", R.string.NewGroup), R.drawable.menu_newgroup_white);
+                actionCell.setTextAndIcon(LocaleController.getString("NewGroup", R.string.NewGroup), R.drawable.menu_newgroup);
             } else if (i == 3) {
-                actionCell.setTextAndIcon(LocaleController.getString("NewSecretChat", R.string.NewSecretChat), R.drawable.menu_secret_white);
+                actionCell.setTextAndIcon(LocaleController.getString("NewSecretChat", R.string.NewSecretChat), R.drawable.menu_secret);
             } else if (i == 4) {
-                actionCell.setTextAndIcon(LocaleController.getString("NewBroadcastList", R.string.NewBroadcastList), R.drawable.menu_broadcast_white);
+                actionCell.setTextAndIcon(LocaleController.getString("NewBroadcastList", R.string.NewBroadcastList), R.drawable.menu_broadcast);
             } else if (i == 6) {
-                actionCell.setTextAndIcon(LocaleController.getString("Contacts", R.string.Contacts), R.drawable.menu_contacts_white);
+                actionCell.setTextAndIcon(LocaleController.getString("Contacts", R.string.Contacts), R.drawable.menu_contacts);
             }/* else if (i == 7) {
                 actionCell.setTextAndIcon(LocaleController.getString("InviteFriends", R.string.InviteFriends), R.drawable.menu_invite);
             }*/ else if (i == themingRow) {
-                actionCell.setTextAndIcon(LocaleController.getString("Theming", R.string.Theming), R.drawable.menu_theming_white);
+                actionCell.setTextAndIcon(LocaleController.getString("Theming", R.string.Theming), R.drawable.menu_theming);
             } else if (i == 8) {
-                actionCell.setTextAndIcon(LocaleController.getString("Settings", R.string.Settings), R.drawable.menu_settings_white);
+                actionCell.setTextAndIcon(LocaleController.getString("Settings", R.string.Settings), R.drawable.menu_settings);
             } else if (i == communityRow) {
-                actionCell.setTextAndIcon(LocaleController.getString("Community", R.string.Community), R.drawable.menu_forum_white);
+                actionCell.setTextAndIcon(LocaleController.getString("Community", R.string.Community), R.drawable.menu_forum);
             } /*else if (i == 10) {
                 actionCell.setTextAndIcon(LocaleController.getString("TelegramFaq", R.string.TelegramFaq), R.drawable.menu_help);
             }*/

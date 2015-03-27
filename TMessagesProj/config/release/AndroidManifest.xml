@@ -14,6 +14,8 @@
     <uses-permission android:name="com.google.android.providers.gsf.permission.READ_GSERVICES"/>
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <!--
+    <uses-permission android:name="org.telegram.plus.android.provider.ACCESS" />-->
 
     <permission android:name="org.telegram.plus.permission.MAPS_RECEIVE" android:protectionLevel="signature"/>
     <permission android:name="org.telegram.plus.permission.C2D_MESSAGE" android:protectionLevel="signature" />
@@ -21,7 +23,7 @@
     <application
         android:allowBackup="false"
         android:icon="@drawable/ic_launcher"
-        android:label="@string/AppName"
+        android:label="@string/ShortAppName"
         android:theme="@style/Theme.TMessages.Start"
         android:name=".ApplicationLoader"
         android:hardwareAccelerated="@bool/useHardwareAcceleration"

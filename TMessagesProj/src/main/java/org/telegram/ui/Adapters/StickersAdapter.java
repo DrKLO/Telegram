@@ -30,6 +30,7 @@ import org.telegram.messenger.Utilities;
 import org.telegram.ui.Cells.StickerCell;
 
 import java.io.File;
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -244,6 +245,17 @@ public class StickersAdapter extends RecyclerView.Adapter implements Notificatio
         });
     }
 
+    public ArrayList<TLRPC.Document> getAllStickers(ArrayList<TLRPC.Document> array){
+        for (ArrayList<TLRPC.Document> map : allStickers.values()){
+            for (TLRPC.Document st : map){
+                if (!array.contains(st)){
+                    array.add(st);
+                }
+            }
+        }
+        return array;
+    }
+
     public void loadStikersForEmoji(CharSequence emoji) {
         boolean search = emoji != null && emoji.length() != 0 && emoji.length() <= 2;
         if (search) {
@@ -257,6 +269,13 @@ public class StickersAdapter extends RecyclerView.Adapter implements Notificatio
                     }
                 } else {
                     stickers = newStickers;
+                    try {
+                        String firstEmo = new String(new byte[] {(byte) 0xF0, (byte) 0x9F, (byte) 0x98, (byte) 0x84}, "UTF-8");
+                        if(newStickers != null && lastSticker.equals(firstEmo))stickers = getAllStickers(newStickers);
+                        //if(newStickers != null)stickers = getAllStikers(newStickers);
+                    } catch (UnsupportedEncodingException e) {
+                        e.printStackTrace();
+                    }
                     checkStickerFilesExistAndDownload();
                     delegate.needChangePanelVisibility(stickers != null && !stickers.isEmpty() && stickersToLoad.isEmpty());
                     notifyDataSetChanged();

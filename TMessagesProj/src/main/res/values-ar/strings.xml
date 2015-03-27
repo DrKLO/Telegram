@@ -58,6 +58,7 @@
     <string name="UnmuteNotifications">إزالة كتم الصوت</string>
     <string name="WillUnmuteIn">خلال %1$s</string>
     <string name="MuteDisable">تعطيل</string>
+  <string name="Hashtags">الأوسمة</string>
     <!--broadcasts-->
     <string name="NewBroadcastList">رسالة جماعية جديدة</string>
     <string name="EnterListName">أدخل اسم القائمة</string>
@@ -302,6 +303,7 @@
     <string name="VibrationDisabled">تعطيل</string>
     <string name="LedDisabled">تعطيل</string>
     <string name="RepeatDisabled">إيقاف</string>
+  <string name="InChatSound">الأصوات داخل المحادثات</string>
     <!--passcode view-->
     <string name="Passcode">رمز المرور</string>
     <string name="ChangePasscode">غيًر رمز المرور</string>
@@ -366,6 +368,8 @@
     <string name="AreYouSureDeletePhoto">هل أنت متأكد من رغبتك في حذف هذه الصورة؟</string>
     <string name="AreYouSureDeleteVideo">هل أنت متأكد من رغبتك في حذف هذا المقطع المرئي؟</string>
     <string name="DiscardChanges">تجاهل التغييرات؟</string>
+    <string name="ClearSearch">هل ترغب في مسح سجل البحث؟</string>
+    <string name="ClearButton">مسح</string>
     <!--password view-->
     <string name="Password">Password</string>
     <string name="ChangePassword">Change password</string>
@@ -486,12 +490,12 @@
     <string name="InvalidLastName">اسم العائلة غير صحيح</string>
     <string name="Loading">جاري التحميل ...</string>
     <string name="NoPlayerInstalled">ليس لديك أي مشغل مقاطع مرئية، يرجى تنزيل أية مشغل</string>
-    <string name="NoMailInstalled">يرجى إرسال رسالة بواسطة البريد الإلكتروني إلى sms@telegram.org لتخبرنا عن مشكلتك.</string>
+    <string name="NoMailInstalled">يرجى إرسال رسالة بواسطة البريد الإلكتروني إلى sms@stel.com لتخبرنا عن مشكلتك.</string>
     <string name="NoHandleAppInstalled">لا يوجد لديك تطبيق يمكنه فتح \'%1$s\'، يرجى تنزيل تطبيق مناسب للإستمرار</string>
     <string name="InviteUser">هذا المستخدم ليس لديه تيليجرام بعد ، هل ترغب في دعوته الآن؟</string>
     <string name="AreYouSure">هل أنت متأكد؟</string>
     <string name="AddToTheGroup">هل ترغب في إضافة %1$s للمجموعة؟\n\nعدد الرسائل الحديثة المراد إعادة تحويلها:</string>
-    <string name="ForwardMessagesTo">؟%1$s هل تريد إعادة توجيه الرسائل إلى</string>
+    <string name="ForwardMessagesTo">هل تريد إعادة توجيه الرسائل إلى %1$s؟</string>
     <string name="SendMessagesTo">هل ترغب في إرسال رسالة إلى %1$s؟</string>
     <string name="AreYouSureLogout">نرجو الأخذ بالعلم أنه يمكنك استخدام تيليجرام على أجهزتك المتعددة بسهولة تامة وفي وقت واحد.\n\nوتذكر، تسجيل الخروج يحذف كافة محادثاتك السرية.</string>
     <string name="AreYouSureSessions">هل أنت متأكد من تسجيل الخروج من جميع الأجهزة الأخرى باستثناء هذا الجهاز؟</string>
@@ -506,7 +510,7 @@
     <string name="AreYouSureClearHistory">هل أنت متأكد من رغبتك في حذف سجل المحادثات؟</string>
     <string name="AreYouSureDeleteMessages">هل أنت متأكد من رغبتك في حذف %1$s؟</string>
     <string name="SendMessagesToGroup">هل ترغب في إرسال رسالة إلى %1$s؟</string>
-    <string name="ForwardMessagesToGroup">؟%1$s هل تريد إعادة توجيه الرسائل إلى</string>
+    <string name="ForwardMessagesToGroup">هل تريد إعادة توجيه الرسائل إلى %1$s؟</string>
     <string name="FeatureUnavailable">.Sorry, this feature is currently not available in your country</string>
     <!--Intro view-->
     <string name="Page1Title">تيليجرام</string>
@@ -732,7 +736,7 @@
     <string name="SaveThemeSum">حفظ الثيمات في مجلد Telegram/Themes</string>
     <string name="SaveThemeToastText">تم حفظ الثيم</string>
     <string name="SavedTo">%1$s saved to %2$s</string>
-    <string name="SaveErrorMsg0">Theme not created yet. Apply any Telegram+ MOD first, please</string>
+    <string name="SaveErrorMsg0">Theme not created yet. Apply any MOD first, please</string>
     <string name="restoreOkMsg">Preferences restored from sdcard</string>
     <string name="restoreErrorMsg">No preferences file found in %s</string>
     <string name="NoMediaMessage">لاتوجد بطاقة ذاكرة</string>

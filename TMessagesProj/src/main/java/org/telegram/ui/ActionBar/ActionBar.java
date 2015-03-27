@@ -430,10 +430,10 @@ public class ActionBar extends FrameLayout {
     }
 
     public void openSearchField(String text) {
-        if (isSearchFieldVisible || menu == null) {
+        if (menu == null || text == null) {
             return;
         }
-        menu.openSearchField(text);
+        menu.openSearchField(!isSearchFieldVisible, text);
     }
 
     @Override
@@ -505,8 +505,6 @@ public class ActionBar extends FrameLayout {
             backButtonImageView.setBackgroundResource(itemsBackgroundResourceId);
         }
         //
-        //SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, Activity.MODE_PRIVATE);
-        //setBackgroundColor(themePrefs.getInt("themeColor", 0x000000));
         setBackgroundColor(AndroidUtilities.getIntColor("themeColor"));
         //
     }
