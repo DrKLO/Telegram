@@ -245,6 +245,7 @@
     <string name="NoSound">Kein Ton</string>
     <string name="Default">Standard</string>
     <string name="Support">Support</string>
+    <string name="OnlyIfSilent">Nur wenn stumm</string>
     <string name="ChatBackground">Chat-Hintergrundbild</string>
     <string name="MessagesSettings">Nachrichten</string>
     <string name="SendByEnter">Mit Enter senden</string>

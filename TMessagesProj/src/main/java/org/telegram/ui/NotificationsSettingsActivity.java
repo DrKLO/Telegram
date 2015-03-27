@@ -439,7 +439,8 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
                                 LocaleController.getString("VibrationDisabled", R.string.VibrationDisabled),
                                 LocaleController.getString("Default", R.string.Default),
                                 LocaleController.getString("Short", R.string.Short),
-                                LocaleController.getString("Long", R.string.Long)
+                                LocaleController.getString("Long", R.string.Long),
+                                LocaleController.getString("OnlyIfSilent", R.string.OnlyIfSilent)
                         }, new DialogInterface.OnClickListener() {
                             @Override
                             public void onClick(DialogInterface dialog, int which) {
@@ -457,6 +458,8 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
                                     editor.putInt(param, 1);
                                 } else if (which == 3) {
                                     editor.putInt(param, 3);
+                                } else if (which == 4) {
+                                    editor.putInt(param, 4);
                                 }
                                 editor.commit();
                                 if (listView != null) {
@@ -767,6 +770,8 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
                         textCell.setTextAndValue(LocaleController.getString("Vibrate", R.string.Vibrate), LocaleController.getString("VibrationDisabled", R.string.VibrationDisabled), true);
                     } else if (value == 3) {
                         textCell.setTextAndValue(LocaleController.getString("Vibrate", R.string.Vibrate), LocaleController.getString("Long", R.string.Long), true);
+                    } else if (value == 4) {
+                        textCell.setTextAndValue(LocaleController.getString("Vibrate", R.string.Vibrate), LocaleController.getString("OnlyIfSilent", R.string.OnlyIfSilent), true);
                     }
                 } else if (i == repeatRow) {
                     textCell.setMultilineDetail(false);

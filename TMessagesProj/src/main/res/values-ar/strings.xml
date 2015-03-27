@@ -245,6 +245,7 @@
     <string name="NoSound">لا يوجد صوت</string>
     <string name="Default">افتراضي</string>
     <string name="Support">الدعم</string>
+    <string name="OnlyIfSilent">إذا كان على الصامت</string>
     <string name="ChatBackground">خلفية الدردشة</string>
     <string name="MessagesSettings">الرسائل</string>
     <string name="SendByEnter">أرسل بزر الإدخال</string>

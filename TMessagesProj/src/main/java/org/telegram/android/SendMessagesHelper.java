@@ -1810,8 +1810,13 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                     FileLog.e("tmessages", e);
                 }
                 if (bmOptions.outWidth != 0 && bmOptions.outHeight != 0 && bmOptions.outWidth <= 800 && bmOptions.outHeight <= 800) {
-                    TLRPC.TL_documentAttributeSticker attributeSticker = new TLRPC.TL_documentAttributeSticker();
-                    attributeSticker.alt = "";
+                    TLRPC.TL_documentAttributeSticker attributeSticker = null;
+                    if (isEncrypted) {
+                        attributeSticker = new TLRPC.TL_documentAttributeSticker_old();
+                    } else {
+                        attributeSticker = new TLRPC.TL_documentAttributeSticker();
+                        attributeSticker.alt = "";
+                    }
                     document.attributes.add(attributeSticker);
                     TLRPC.TL_documentAttributeImageSize attributeImageSize = new TLRPC.TL_documentAttributeImageSize();
                     attributeImageSize.w = bmOptions.outWidth;

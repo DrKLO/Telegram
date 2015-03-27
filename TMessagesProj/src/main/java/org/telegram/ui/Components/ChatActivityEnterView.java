@@ -376,6 +376,7 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
         audioSendButton.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
         audioSendButton.setImageResource(R.drawable.mic_button_states);
         audioSendButton.setBackgroundColor(0xffffffff);
+        audioSendButton.setSoundEffectsEnabled(false);
         audioSendButton.setPadding(0, 0, AndroidUtilities.dp(4), 0);
         frameLayout1.addView(audioSendButton);
         layoutParams1 = (FrameLayout.LayoutParams) audioSendButton.getLayoutParams();
@@ -461,6 +462,7 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
         sendButton.setVisibility(View.INVISIBLE);
         sendButton.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
         sendButton.setImageResource(R.drawable.ic_send);
+        sendButton.setSoundEffectsEnabled(false);
         ViewProxy.setScaleX(sendButton, 0.1f);
         ViewProxy.setScaleY(sendButton, 0.1f);
         ViewProxy.setAlpha(sendButton, 0.0f);

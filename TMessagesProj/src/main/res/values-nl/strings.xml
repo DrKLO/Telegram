@@ -245,6 +245,7 @@
     <string name="NoSound">Geen geluid</string>
     <string name="Default">Standaard</string>
     <string name="Support">Ondersteuning</string>
+    <string name="OnlyIfSilent">Alleen indien stil</string>
     <string name="ChatBackground">Achtergrond kiezen</string>
     <string name="MessagesSettings">Berichten</string>
     <string name="SendByEnter">Versturen met Enter</string>
