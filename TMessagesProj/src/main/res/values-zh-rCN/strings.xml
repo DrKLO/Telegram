@@ -446,7 +446,7 @@
     <string name="NoHandleAppInstalled">没有可以打开文件\'%1$s\'的应用，请下载以继续。</string>
     <string name="InviteUser">该用户还未加入Telegram，发送一封邀请？</string>
     <string name="AreYouSure">确定吗？</string>
-    <string name="AddToTheGroup">添加 %1$s 到群吗？\n\nNumber of last messages to forward:</string>
+    <string name="AddToTheGroup">添加 %1$s 到群吗？\n\n最近的消息转发数:</string>
     <string name="ForwardMessagesTo">转发给 %1$s？</string>
     <string name="SendMessagesTo">发送信息给 %1$s？</string>
     <string name="AreYouSureLogout">确定登出吗？\n\n注意：你可以立即在所有设备上无缝使用Telegram.\n\n登出后所有私密会话都将被删除。</string>
