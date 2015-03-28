@@ -224,7 +224,11 @@
     <string name="UnblockText">长按用户以解除屏蔽</string>
     <string name="NoBlocked">没有被屏蔽用户</string>
     <string name="MessageNotifications">消息通知</string>
+<<<<<<< HEAD
     <string name="Alert">通知</string>
+=======
+    <string name="Alert">提醒</string>
+>>>>>>> 050b13c65f11cb972eae6e32c94e6f2a4ae6e3ad
     <string name="MessagePreview">消息预览</string>
     <string name="GroupNotifications">群提醒</string>
     <string name="Sound">声音</string>
@@ -259,7 +263,11 @@
     <string name="Enabled">激活</string>
     <string name="Disabled">禁止</string>
     <string name="NotificationsService">通知服务</string>
+<<<<<<< HEAD
     <string name="NotificationsServiceDisableInfo">如果Google Play服务满足你接受信息的要求，你可以关闭通知服务。 但是我们建议你将其设置为开启状态以在应用在后台运行时仍能收到即时通知。</string>
+=======
+    <string name="NotificationsServiceDisableInfo">如果 Google Play 服务满足你接受信息的要求，你可以关闭通知服务。 但是我们建议你将其设置为开启状态以在应用在后台运行时仍能收到即时通知。</string>
+>>>>>>> 050b13c65f11cb972eae6e32c94e6f2a4ae6e3ad
     <string name="SortBy">分类</string>
     <string name="ImportContacts">重要联系人</string>
     <string name="SortFirstName">名</string>
