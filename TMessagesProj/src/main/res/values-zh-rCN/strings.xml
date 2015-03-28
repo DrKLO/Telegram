@@ -224,7 +224,7 @@
     <string name="UnblockText">长按用户以解除屏蔽</string>
     <string name="NoBlocked">没有被屏蔽用户</string>
     <string name="MessageNotifications">消息通知</string>
-    <string name="Alert">闹钟</string>
+    <string name="Alert">提醒</string>
     <string name="MessagePreview">消息预览</string>
     <string name="GroupNotifications">群提醒</string>
     <string name="Sound">声音</string>
