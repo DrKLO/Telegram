@@ -259,7 +259,7 @@
     <string name="Enabled">激活</string>
     <string name="Disabled">禁止</string>
     <string name="NotificationsService">通知服务</string>
-    <string name="NotificationsServiceDisableInfo">如果谷歌游戏服务满足你接受信息的要求，你可以关闭通知服务。 但是我们建议你将其设置为开启状态以在应用在后台运行时仍能收到即时通知。</string>
+    <string name="NotificationsServiceDisableInfo">如果 Google Play 服务满足你接受信息的要求，你可以关闭通知服务。 但是我们建议你将其设置为开启状态以在应用在后台运行时仍能收到即时通知。</string>
     <string name="SortBy">分类</string>
     <string name="ImportContacts">重要联系人</string>
     <string name="SortFirstName">名</string>
