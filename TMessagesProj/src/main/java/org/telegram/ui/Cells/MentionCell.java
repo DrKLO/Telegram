@@ -95,5 +95,13 @@ public class MentionCell extends LinearLayout {
         }
         nameTextView.setText(ContactsController.formatName(user.first_name, user.last_name));
         usernameTextView.setText("@" + user.username);
+        imageView.setVisibility(VISIBLE);
+        usernameTextView.setVisibility(VISIBLE);
+    }
+
+    public void setText(String text) {
+        imageView.setVisibility(INVISIBLE);
+        usernameTextView.setVisibility(INVISIBLE);
+        nameTextView.setText(text);
     }
 }

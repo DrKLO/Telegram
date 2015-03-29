@@ -9,15 +9,25 @@
 package org.telegram.ui.Cells;
 
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Paint;
+import android.graphics.Rect;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.ColorDrawable;
+import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.android.AndroidUtilities;
 import org.telegram.android.ContactsController;
+import org.telegram.messenger.ApplicationLoader;
+import org.telegram.messenger.R;
 import org.telegram.messenger.TLRPC;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
@@ -27,15 +37,30 @@ public class DrawerProfileCell extends FrameLayout {
     private BackupImageView avatarImageView;
     private TextView nameTextView;
     private TextView phoneTextView;
+    private ImageView shadowView;
+    private Rect srcRect = new Rect();
+    private Rect destRect = new Rect();
+    private Paint paint = new Paint();
 
     public DrawerProfileCell(Context context) {
         super(context);
         setBackgroundColor(0xff4c84b5);
 
+        shadowView = new ImageView(context);
+        shadowView.setVisibility(INVISIBLE);
+        shadowView.setScaleType(ImageView.ScaleType.FIT_XY);
+        shadowView.setImageResource(R.drawable.bottom_shadow);
+        addView(shadowView);
+        LayoutParams layoutParams = (FrameLayout.LayoutParams) shadowView.getLayoutParams();
+        layoutParams.width = LayoutParams.MATCH_PARENT;
+        layoutParams.height = AndroidUtilities.dp(70);
+        layoutParams.gravity = Gravity.LEFT | Gravity.BOTTOM;
+        shadowView.setLayoutParams(layoutParams);
+
         avatarImageView = new BackupImageView(context);
         avatarImageView.imageReceiver.setRoundRadius(AndroidUtilities.dp(32));
         addView(avatarImageView);
-        LayoutParams layoutParams = (LayoutParams) avatarImageView.getLayoutParams();
+        layoutParams = (LayoutParams) avatarImageView.getLayoutParams();
         layoutParams.width = AndroidUtilities.dp(64);
         layoutParams.height = AndroidUtilities.dp(64);
         layoutParams.gravity = Gravity.LEFT | Gravity.BOTTOM;
@@ -85,6 +110,35 @@ public class DrawerProfileCell extends FrameLayout {
             super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(148) + AndroidUtilities.statusBarHeight, MeasureSpec.EXACTLY));
         } else {
             super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(148), MeasureSpec.EXACTLY));
+        }
+    }
+
+    @Override
+    protected void onDraw(Canvas canvas) {
+        Drawable backgroundDrawable = ApplicationLoader.getCachedWallpaper();
+        if (ApplicationLoader.isCustomTheme() && backgroundDrawable != null) {
+            phoneTextView.setTextColor(0xffffffff);
+            shadowView.setVisibility(VISIBLE);
+            if (backgroundDrawable instanceof ColorDrawable) {
+                backgroundDrawable.setBounds(0, 0, getMeasuredWidth(), getMeasuredHeight());
+                backgroundDrawable.draw(canvas);
+            } else if (backgroundDrawable instanceof BitmapDrawable) {
+                Bitmap bitmap = ((BitmapDrawable) backgroundDrawable).getBitmap();
+                float scaleX = (float) getMeasuredWidth() / (float) bitmap.getWidth();
+                float scaleY = (float) getMeasuredHeight() / (float) bitmap.getHeight();
+                float scale = scaleX < scaleY ? scaleY : scaleX;
+                int width = (int) (getMeasuredWidth() / scale);
+                int height = (int) (getMeasuredHeight() / scale);
+                int x = (bitmap.getWidth() - width) / 2;
+                int y = (bitmap.getHeight() - height) / 2;
+                srcRect.set(x, y, x + width, y + height);
+                destRect.set(0, 0, getMeasuredWidth(), getMeasuredHeight());
+                canvas.drawBitmap(bitmap, srcRect, destRect, paint);
+            }
+        } else {
+            shadowView.setVisibility(INVISIBLE);
+            phoneTextView.setTextColor(0xffc2e5ff);
+            super.onDraw(canvas);
         }
     }
 

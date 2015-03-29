@@ -10,6 +10,7 @@ package org.telegram.ui.Cells;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
+import android.content.res.Configuration;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.drawable.Drawable;
@@ -397,11 +398,15 @@ public class ChatBaseCell extends BaseCell {
             if (messageObject.type == 13) {
                 int width;
                 if (AndroidUtilities.isTablet()) {
-                    int leftWidth = AndroidUtilities.displaySize.x / 100 * 35;
-                    if (leftWidth < AndroidUtilities.dp(320)) {
-                        leftWidth = AndroidUtilities.dp(320);
+                    if (AndroidUtilities.isSmallTablet() && getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT) {
+                        width = AndroidUtilities.displaySize.x;
+                    } else {
+                        int leftWidth = AndroidUtilities.displaySize.x / 100 * 35;
+                        if (leftWidth < AndroidUtilities.dp(320)) {
+                            leftWidth = AndroidUtilities.dp(320);
+                        }
+                        width = AndroidUtilities.displaySize.x - leftWidth;
                     }
-                    width = AndroidUtilities.displaySize.x - leftWidth;
                 } else {
                     width = AndroidUtilities.displaySize.x;
                 }
@@ -709,12 +714,20 @@ public class ChatBaseCell extends BaseCell {
                 if (currentMessageObject.isOut()) {
                     replyLinePaint.setColor(0xff8dc97a);
                     replyNamePaint.setColor(0xff61a349);
-                    replyTextPaint.setColor(0xff70b15c);
+                    if (currentMessageObject.replyMessageObject != null && currentMessageObject.replyMessageObject.type == 0) {
+                        replyTextPaint.setColor(0xff000000);
+                    } else {
+                        replyTextPaint.setColor(0xff70b15c);
+                    }
                     replyStartX = currentBackgroundDrawable.getBounds().left + AndroidUtilities.dp(11);
                 } else {
                     replyLinePaint.setColor(0xff6c9fd2);
                     replyNamePaint.setColor(0xff377aae);
-                    replyTextPaint.setColor(0xff999999);
+                    if (currentMessageObject.replyMessageObject != null && currentMessageObject.replyMessageObject.type == 0) {
+                        replyTextPaint.setColor(0xff000000);
+                    } else {
+                        replyTextPaint.setColor(0xff999999);
+                    }
                     if (currentMessageObject.contentType == 1 && media) {
                         replyStartX = currentBackgroundDrawable.getBounds().left + AndroidUtilities.dp(11);
                     } else {

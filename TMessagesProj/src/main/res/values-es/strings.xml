@@ -58,6 +58,7 @@
     <string name="UnmuteNotifications">No silenciar</string>
     <string name="WillUnmuteIn">En %1$s</string>
     <string name="MuteDisable">Desactivar</string>
+    <string name="Hashtags">HASHTAGS</string>
     <!--broadcasts-->
     <string name="NewBroadcastList">Nueva difusión</string>
     <string name="EnterListName">Nombre de la lista</string>
@@ -302,6 +303,7 @@
     <string name="VibrationDisabled">Desactivadas</string>
     <string name="LedDisabled">Desactivado</string>
     <string name="RepeatDisabled">Apagado</string>
+    <string name="InChatSound">Sonidos en el chat</string>
     <!--passcode view-->
     <string name="Passcode">Código de acceso</string>
     <string name="ChangePasscode">Cambiar código de acceso</string>
@@ -366,6 +368,8 @@
     <string name="AreYouSureDeletePhoto">¿Quieres eliminar esta foto?</string>
     <string name="AreYouSureDeleteVideo">¿Quieres eliminar este vídeo?</string>
     <string name="DiscardChanges">¿Descartar cambios?</string>
+    <string name="ClearSearch">¿Quieres borrar el historial de búsqueda?</string>
+    <string name="ClearButton">Borrar</string>
     <!--password view-->
     <string name="Password">Password</string>
     <string name="ChangePassword">Change password</string>
@@ -486,7 +490,7 @@
     <string name="InvalidLastName">Apellidos inválidos</string>
     <string name="Loading">Cargando...</string>
     <string name="NoPlayerInstalled">No tienes reproductor de vídeo. Por favor, instala uno para continuar.</string>
-    <string name="NoMailInstalled">Por favor, envíanos un correo electrónico a sms@telegram.org y cuéntanos tu problema.</string>
+    <string name="NoMailInstalled">Por favor, envía un correo electrónico a sms@stel.com y cuéntanos tu problema.</string>
     <string name="NoHandleAppInstalled">No tienes aplicaciones que puedan manejar el tipo de archivo \'%1$s\'. Por favor, instala una para continuar.</string>
     <string name="InviteUser">Este usuario no tiene Telegram Aniways aún. ¿Enviarle una invitación?</string>
     <string name="AreYouSure">¿Quieres hacerlo?</string>

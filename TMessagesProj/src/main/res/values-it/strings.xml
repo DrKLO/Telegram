@@ -58,6 +58,7 @@
     <string name="UnmuteNotifications">Suona</string>
     <string name="WillUnmuteIn">Tra %1$s</string>
     <string name="MuteDisable">Disabilita</string>
+    <string name="Hashtags">HASHTAG</string>
     <!--broadcasts-->
     <string name="NewBroadcastList">Nuova lista broadcast</string>
     <string name="EnterListName">Immetti il nome della lista</string>
@@ -302,6 +303,7 @@
     <string name="VibrationDisabled">Disabilitata</string>
     <string name="LedDisabled">Disabilitato</string>
     <string name="RepeatDisabled">No</string>
+    <string name="InChatSound">Suoni in-chat</string>
     <!--passcode view-->
     <string name="Passcode">Codice</string>
     <string name="ChangePasscode">Cambia codice</string>
@@ -366,6 +368,8 @@
     <string name="AreYouSureDeletePhoto">Sei sicuro di voler eliminare questa foto?</string>
     <string name="AreYouSureDeleteVideo">Sei sicuro di voler eliminare questo video?</string>
     <string name="DiscardChanges">Annullare le modifiche?</string>
+    <string name="ClearSearch">Cancellare la cronologia di ricerca?</string>
+    <string name="ClearButton">Pulisci</string>
     <!--password view-->
     <string name="Password">Password</string>
     <string name="ChangePassword">Change password</string>
@@ -486,7 +490,7 @@
     <string name="InvalidLastName">Cognome non valido</string>
     <string name="Loading">Caricamento…</string>
     <string name="NoPlayerInstalled">Non hai un lettore video, per favore installane uno per continuare</string>
-    <string name="NoMailInstalled">Invia un’email a sms@telegram.org spiegandoci il problema.</string>
+    <string name="NoMailInstalled">Invia un’email a sms@stel.com spiegandoci il problema.</string>
     <string name="NoHandleAppInstalled">Non hai nessuna applicazione che può gestire il tipo di file \'%1$s\': installane una per proseguire</string>
     <string name="InviteUser">Questo utente non ha ancora Telegram Aniways, vuoi invitarlo?</string>
     <string name="AreYouSure">Sei sicuro?</string>

@@ -20,8 +20,9 @@ import org.telegram.ui.Cells.MentionCell;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 
-public class MentionsAdapter extends BaseFragmentAdapter {
+public class MentionsAdapter extends BaseSearchAdapter {
 
     public interface MentionsAdapterDelegate {
         void needChangePanelVisibility(boolean show);
@@ -29,13 +30,15 @@ public class MentionsAdapter extends BaseFragmentAdapter {
 
     private Context mContext;
     private TLRPC.ChatParticipants info;
-    private ArrayList<TLRPC.User> searchResult = new ArrayList<>();
+    private ArrayList<TLRPC.User> searchResultUsernames;
+    private ArrayList<String> searchResultHashtags;
     private MentionsAdapterDelegate delegate;
-    private int usernameStartPosition;
-    private int usernameLength;
+    private int resultStartPosition;
+    private int resultLength;
     private String lastText;
     private int lastPosition;
     private ArrayList<MessageObject> messages;
+    private boolean needUsernames = true;
 
     public MentionsAdapter(Context context, MentionsAdapterDelegate delegate) {
         mContext = context;
@@ -45,91 +48,152 @@ public class MentionsAdapter extends BaseFragmentAdapter {
     public void setChatInfo(TLRPC.ChatParticipants chatParticipants) {
         info = chatParticipants;
         if (lastText != null) {
-            searchUsername(lastText, lastPosition, messages);
+            searchUsernameOrHashtag(lastText, lastPosition, messages);
         }
     }
 
-    public void searchUsername(String text, int position, ArrayList<MessageObject> messageObjects) {
-        if (text == null || text.length() == 0 || position < text.length()) {
+    public void setNeedUsernames(boolean value) {
+        needUsernames = value;
+    }
+
+    @Override
+    public void clearRecentHashtags() {
+        super.clearRecentHashtags();
+        searchResultHashtags.clear();
+        notifyDataSetChanged();
+        if (delegate != null) {
+            delegate.needChangePanelVisibility(false);
+        }
+    }
+
+    @Override
+    protected void setHashtags(ArrayList<HashtagObject> arrayList, HashMap<String, HashtagObject> hashMap) {
+        super.setHashtags(arrayList, hashMap);
+        if (lastText != null) {
+            searchUsernameOrHashtag(lastText, lastPosition, messages);
+        }
+    }
+
+    public void searchUsernameOrHashtag(String text, int position, ArrayList<MessageObject> messageObjects) {
+        if (text == null || text.length() == 0) {
             delegate.needChangePanelVisibility(false);
             lastText = null;
             return;
         }
-        if (info == null) {
-            lastText = text;
-            lastPosition = position;
-            messages = messageObjects;
-            delegate.needChangePanelVisibility(false);
-            return;
+        int searchPostion = position;
+        if (text.length() > 0) {
+            searchPostion--;
         }
         lastText = null;
-        StringBuilder username = new StringBuilder();
-        boolean found = false;
-        for (int a = position; a >= 0; a--) {
+        StringBuilder result = new StringBuilder();
+        int foundType = -1;
+        boolean hasIllegalUsernameCharacters = false;
+        for (int a = searchPostion; a >= 0; a--) {
             if (a >= text.length()) {
                 continue;
             }
             char ch = text.charAt(a);
-            if (ch == '@' && (a == 0 || text.charAt(a - 1) == ' ' || text.charAt(a - 1) == '\n')) {
-                found = true;
-                usernameStartPosition = a;
-                usernameLength = username.length() + 1;
-                break;
+            if (a == 0 || text.charAt(a - 1) == ' ' || text.charAt(a - 1) == '\n') {
+                if (needUsernames && ch == '@') {
+                    if (hasIllegalUsernameCharacters) {
+                        delegate.needChangePanelVisibility(false);
+                        return;
+                    }
+                    if (info == null) {
+                        lastText = text;
+                        lastPosition = position;
+                        messages = messageObjects;
+                        delegate.needChangePanelVisibility(false);
+                        return;
+                    }
+                    foundType = 0;
+                    resultStartPosition = a;
+                    resultLength = result.length() + 1;
+                    break;
+                } else if (ch == '#') {
+                    if (!hashtagsLoadedFromDb) {
+                        loadRecentHashtags();
+                        lastText = text;
+                        lastPosition = position;
+                        messages = messageObjects;
+                        delegate.needChangePanelVisibility(false);
+                        return;
+                    }
+                    foundType = 1;
+                    resultStartPosition = a;
+                    resultLength = result.length() + 1;
+                    result.insert(0, ch);
+                    break;
+                }
             }
             if (!(ch >= '0' && ch <= '9' || ch >= 'a' && ch <= 'z' || ch >= 'A' && ch <= 'Z' || ch == '_')) {
-                delegate.needChangePanelVisibility(false);
-                return;
+                hasIllegalUsernameCharacters = true;
             }
-            username.insert(0, ch);
+            result.insert(0, ch);
         }
-        if (!found) {
+        if (foundType == -1) {
             delegate.needChangePanelVisibility(false);
             return;
         }
-        final ArrayList<Integer> users = new ArrayList<>();
-        for (int a = 0; a < Math.min(100, messageObjects.size()); a++) {
-            int from_id = messageObjects.get(a).messageOwner.from_id;
-            if (!users.contains(from_id)) {
-                users.add(from_id);
-            }
-        }
-        String usernameString = username.toString().toLowerCase();
-        ArrayList<TLRPC.User> newResult = new ArrayList<>();
-        for (TLRPC.TL_chatParticipant chatParticipant : info.participants) {
-            TLRPC.User user = MessagesController.getInstance().getUser(chatParticipant.user_id);
-            if (user == null || user instanceof TLRPC.TL_userSelf) {
-                continue;
-            }
-            if (user.username != null && user.username.length() > 0 && (usernameString.length() > 0 && user.username.toLowerCase().startsWith(usernameString) || usernameString.length() == 0)) {
-                newResult.add(user);
-            }
-        }
-        searchResult = newResult;
-        Collections.sort(searchResult, new Comparator<TLRPC.User>() {
-            @Override
-            public int compare(TLRPC.User lhs, TLRPC.User rhs) {
-                int lhsNum = users.indexOf(lhs.id);
-                int rhsNum = users.indexOf(rhs.id);
-                if (lhsNum != -1 && rhsNum != -1) {
-                    return lhsNum < rhsNum ? -1 : (lhsNum == rhsNum ? 0 : 1);
-                } else if (lhsNum != -1 && rhsNum == -1) {
-                    return -1;
-                } else if (lhsNum == -1 && rhsNum != -1) {
-                    return 1;
+        if (foundType == 0) {
+            final ArrayList<Integer> users = new ArrayList<>();
+            for (int a = 0; a < Math.min(100, messageObjects.size()); a++) {
+                int from_id = messageObjects.get(a).messageOwner.from_id;
+                if (!users.contains(from_id)) {
+                    users.add(from_id);
                 }
-                return 0;
             }
-        });
-        notifyDataSetChanged();
-        delegate.needChangePanelVisibility(!newResult.isEmpty());
+            String usernameString = result.toString().toLowerCase();
+            ArrayList<TLRPC.User> newResult = new ArrayList<>();
+            for (TLRPC.TL_chatParticipant chatParticipant : info.participants) {
+                TLRPC.User user = MessagesController.getInstance().getUser(chatParticipant.user_id);
+                if (user == null || user instanceof TLRPC.TL_userSelf) {
+                    continue;
+                }
+                if (user.username != null && user.username.length() > 0 && (usernameString.length() > 0 && user.username.toLowerCase().startsWith(usernameString) || usernameString.length() == 0)) {
+                    newResult.add(user);
+                }
+            }
+            searchResultHashtags = null;
+            searchResultUsernames = newResult;
+            Collections.sort(searchResultUsernames, new Comparator<TLRPC.User>() {
+                @Override
+                public int compare(TLRPC.User lhs, TLRPC.User rhs) {
+                    int lhsNum = users.indexOf(lhs.id);
+                    int rhsNum = users.indexOf(rhs.id);
+                    if (lhsNum != -1 && rhsNum != -1) {
+                        return lhsNum < rhsNum ? -1 : (lhsNum == rhsNum ? 0 : 1);
+                    } else if (lhsNum != -1 && rhsNum == -1) {
+                        return -1;
+                    } else if (lhsNum == -1 && rhsNum != -1) {
+                        return 1;
+                    }
+                    return 0;
+                }
+            });
+            notifyDataSetChanged();
+            delegate.needChangePanelVisibility(!newResult.isEmpty());
+        } else {
+            ArrayList<String> newResult = new ArrayList<>();
+            String hashtagString = result.toString().toLowerCase();
+            for (HashtagObject hashtagObject : hashtags) {
+                if (hashtagString != null && hashtagObject.hashtag != null && hashtagObject.hashtag.startsWith(hashtagString)) {
+                    newResult.add(hashtagObject.hashtag);
+                }
+            }
+            searchResultHashtags = newResult;
+            searchResultUsernames = null;
+            notifyDataSetChanged();
+            delegate.needChangePanelVisibility(!newResult.isEmpty());
+        }
     }
 
-    public int getUsernameStartPosition() {
-        return usernameStartPosition;
+    public int getResultStartPosition() {
+        return resultStartPosition;
     }
 
-    public int getUsernameLength() {
-        return usernameLength;
+    public int getResultLength() {
+        return resultLength;
     }
 
     @Override
@@ -139,12 +203,22 @@ public class MentionsAdapter extends BaseFragmentAdapter {
 
     @Override
     public int getCount() {
-        return searchResult.size();
+        if (searchResultUsernames != null) {
+            return searchResultUsernames.size();
+        } else if (searchResultHashtags != null) {
+            return searchResultHashtags.size();
+        }
+        return 0;
     }
 
     @Override
     public boolean isEmpty() {
-        return searchResult.isEmpty();
+        if (searchResultUsernames != null) {
+            return searchResultUsernames.isEmpty();
+        } else if (searchResultHashtags != null) {
+            return searchResultHashtags.isEmpty();
+        }
+        return true;
     }
 
     @Override
@@ -168,11 +242,19 @@ public class MentionsAdapter extends BaseFragmentAdapter {
     }
 
     @Override
-    public TLRPC.User getItem(int i) {
-        if (i < 0 || i >= searchResult.size()) {
-            return null;
+    public Object getItem(int i) {
+        if (searchResultUsernames != null) {
+            if (i < 0 || i >= searchResultUsernames.size()) {
+                return null;
+            }
+            return searchResultUsernames.get(i);
+        } else if (searchResultHashtags != null) {
+            if (i < 0 || i >= searchResultHashtags.size()) {
+                return null;
+            }
+            return searchResultHashtags.get(i);
         }
-        return searchResult.get(i);
+        return null;
     }
 
     @Override
@@ -180,7 +262,11 @@ public class MentionsAdapter extends BaseFragmentAdapter {
         if (view == null) {
             view = new MentionCell(mContext);
         }
-        ((MentionCell) view).setUser(searchResult.get(i));
+        if (searchResultUsernames != null) {
+            ((MentionCell) view).setUser(searchResultUsernames.get(i));
+        } else if (searchResultHashtags != null) {
+            ((MentionCell) view).setText(searchResultHashtags.get(i));
+        }
         return view;
     }
 }
