@@ -11,7 +11,7 @@
     <string name="YourPhone">您的手机号</string>
     <string name="StartText">请确认您的国家码并输入您的手机号</string>
     <string name="ChooseCountry">选择您的国家</string>
-    <string name="WrongCountry">国家码错误</string>
+    <string name="WrongCountry">国家代码错误</string>
     <!--code enter view-->
     <string name="YourCode">验证码</string>
     <string name="SentSmsCode">我们已通过短信将验证码发送至您的手机</string>
@@ -34,7 +34,7 @@
     <string name="Yesterday">昨天</string>
     <string name="NoResult">没有结果</string>
     <string name="NoChats">还没有会话...</string>
-    <string name="NoChatsHelp">点击右下角的新消息按钮来发起会话\n或者点击菜单按钮查看更多选项.</string>
+    <string name="NoChatsHelp">要发起会话可点击右下角的新消息按钮\n或者点击菜单按钮查看更多选项。</string>
     <string name="WaitingForNetwork">等待网络连接...</string>
     <string name="Connecting">正在连接...</string>
     <string name="Updating">更新中...</string>
@@ -42,15 +42,15 @@
     <string name="AwaitingEncryption">等待 %s 上线...</string>
     <string name="EncryptionRejected">私密会话已取消</string>
     <string name="EncryptionProcessing">正在交换加密密钥...</string>
-    <string name="EncryptedChatStartedOutgoing">%s 加入了您的私密会话.</string>
-    <string name="EncryptedChatStartedIncoming">您加入了私密会话.</string>
-    <string name="ClearHistory">清楚历史记录</string>
+    <string name="EncryptedChatStartedOutgoing">%s 加入了您的私密会话。</string>
+    <string name="EncryptedChatStartedIncoming">您加入了私密会话。</string>
+    <string name="ClearHistory">清除历史记录</string>
     <string name="DeleteChat">删除并退出</string>
     <string name="DeleteChatUser">删除会话</string>
-    <string name="HiddenName">用户已删除</string>
+    <string name="HiddenName">账户已删除</string>
     <string name="SelectChat">选择会话</string>
     <string name="PhotoTip">长按来查看</string>
-    <string name="CompatibilityChat">%1$s 正在使用旧版的 Telegram, 所以私密图片会以兼容模式显示.\n\n当 %2$s 升级 Telegram 后, 有时限的图片将可以在 \'长按来查看\' 模式下运行, 同时在其他成员进行屏幕截图时您也会得到通知.</string>
+    <string name="CompatibilityChat">%1$s 正在使用旧版的 Telegram，所以私密图片会以兼容模式显示。\n\n当 %2$s 升级 Telegram 后，有时限的图片将可以在 \'长按来查看\' 模式下运行，同时在其他成员进行屏幕截图时您也会得到通知。</string>
     <string name="SearchMessages">消息</string>
     <string name="Search">搜索</string>
     <string name="MuteNotifications">屏蔽通知</string>
