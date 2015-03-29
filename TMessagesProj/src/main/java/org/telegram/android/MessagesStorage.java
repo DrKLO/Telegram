@@ -122,6 +122,7 @@ public class MessagesStorage {
                 database.executeFast("CREATE TABLE messages_seq(mid INTEGER PRIMARY KEY, seq_in INTEGER, seq_out INTEGER);").stepThis().dispose();
                 database.executeFast("CREATE TABLE web_recent_v3(id TEXT, type INTEGER, image_url TEXT, thumb_url TEXT, local_url TEXT, width INTEGER, height INTEGER, size INTEGER, date INTEGER, PRIMARY KEY (id, type));").stepThis().dispose();
                 database.executeFast("CREATE TABLE stickers(id INTEGER PRIMARY KEY, data BLOB, date INTEGER);").stepThis().dispose();
+                database.executeFast("CREATE TABLE hashtag_recent_v2(id TEXT PRIMARY KEY, date INTEGER);").stepThis().dispose();
 
                 database.executeFast("CREATE TABLE user_contacts_v6(uid INTEGER PRIMARY KEY, fname TEXT, sname TEXT)").stepThis().dispose();
                 database.executeFast("CREATE TABLE user_phones_v6(uid INTEGER, phone TEXT, sphone TEXT, deleted INTEGER, PRIMARY KEY (uid, phone))").stepThis().dispose();
@@ -162,7 +163,7 @@ public class MessagesStorage {
                 database.executeFast("CREATE TABLE keyvalue(id TEXT PRIMARY KEY, value TEXT)").stepThis().dispose();
 
                 //version
-                database.executeFast("PRAGMA user_version = 14").stepThis().dispose();
+                database.executeFast("PRAGMA user_version = 15").stepThis().dispose();
             } else {
                 try {
                     SQLiteCursor cursor = database.queryFinalized("SELECT seq, pts, date, qts, lsv, sg, pbytes FROM params WHERE id = 1");
@@ -193,7 +194,7 @@ public class MessagesStorage {
                     }
                 }
                 int version = database.executeInt("PRAGMA user_version");
-                if (version < 14) {
+                if (version < 15) {
                     updateDbToLastVersion(version);
                 }
             }
@@ -372,6 +373,11 @@ public class MessagesStorage {
                         database.executeFast("ALTER TABLE messages ADD COLUMN replydata BLOB default NULL").stepThis().dispose();
                         database.executeFast("PRAGMA user_version = 14").stepThis().dispose();
                         version = 14;
+                    }
+                    if (version == 14 && version < 15) {
+                        database.executeFast("CREATE TABLE IF NOT EXISTS hashtag_recent_v2(id TEXT PRIMARY KEY, date INTEGER);").stepThis().dispose();
+                        database.executeFast("PRAGMA user_version = 15").stepThis().dispose();
+                        version = 15;
                     }
                 } catch (Exception e) {
                     FileLog.e("tmessages", e);
@@ -627,7 +633,7 @@ public class MessagesStorage {
             @Override
             public void run() {
                 try {
-                    SQLiteCursor cursor = database.queryFinalized("SELECT id, image_url, thumb_url, local_url, width, height, size, date FROM web_recent_v3 wallpapers WHERE type = " + type);
+                    SQLiteCursor cursor = database.queryFinalized("SELECT id, image_url, thumb_url, local_url, width, height, size, date FROM web_recent_v3 WHERE type = " + type);
                     final ArrayList<MediaController.SearchImage> arrayList = new ArrayList<>();
                     while (cursor.next()) {
                         MediaController.SearchImage searchImage = new MediaController.SearchImage();
@@ -677,6 +683,19 @@ public class MessagesStorage {
             public void run() {
                 try {
                     database.executeFast("UPDATE web_recent_v3 SET local_url = '" + localUrl + "' WHERE image_url = '" + imageUrl + "'").stepThis().dispose();
+                } catch (Exception e) {
+                    FileLog.e("tmessages", e);
+                }
+            }
+        });
+    }
+
+    public void clearWebRecent(final int type) {
+        storageQueue.postRunnable(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    database.executeFast("DELETE FROM web_recent_v3 WHERE type = " + type).stepThis().dispose();
                 } catch (Exception e) {
                     FileLog.e("tmessages", e);
                 }

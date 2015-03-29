@@ -33,6 +33,7 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.Cells.DialogCell;
 import org.telegram.ui.Cells.GreySectionCell;
+import org.telegram.ui.Cells.HashtagSearchCell;
 import org.telegram.ui.Cells.LoadingCell;
 import org.telegram.ui.Cells.ProfileSearchCell;
 
@@ -44,13 +45,14 @@ import java.util.Locale;
 import java.util.Timer;
 import java.util.TimerTask;
 
-public class DialogsSearchAdapter extends BaseContactsSearchAdapter {
+public class DialogsSearchAdapter extends BaseSearchAdapter {
 
     private Context mContext;
     private Timer searchTimer;
     private ArrayList<TLObject> searchResult = new ArrayList<>();
     private ArrayList<CharSequence> searchResultNames = new ArrayList<>();
     private ArrayList<MessageObject> searchResultMessages = new ArrayList<>();
+    private ArrayList<String> searchResultHashtags = new ArrayList<>();
     private String lastSearchText;
     private long reqId = 0;
     private int lastReqId;
@@ -85,6 +87,10 @@ public class DialogsSearchAdapter extends BaseContactsSearchAdapter {
 
     public void loadMoreSearchMessages() {
         searchMessagesInternal(lastMessagesSearchString);
+    }
+
+    public String getLastSearchString() {
+        return lastMessagesSearchString;
     }
 
     private void searchMessagesInternal(final String query) {
@@ -188,8 +194,8 @@ public class DialogsSearchAdapter extends BaseContactsSearchAdapter {
                         dialogSearchResult.date = cursor.intValue(1);
                         dialogsResult.put(id, dialogSearchResult);
 
-                        int lower_id = (int)id;
-                        int high_id = (int)(id >> 32);
+                        int lower_id = (int) id;
+                        int high_id = (int) (id >> 32);
                         if (lower_id != 0) {
                             if (high_id == 1) {
                                 if (!serverOnly && !chatsToLoad.contains(lower_id)) {
@@ -389,7 +395,7 @@ public class DialogsSearchAdapter extends BaseContactsSearchAdapter {
                     cursor = MessagesStorage.getInstance().getDatabase().queryFinalized("SELECT u.data, u.status, u.name, u.uid FROM users as u INNER JOIN contacts as c ON u.uid = c.uid");
                     while (cursor.next()) {
                         int uid = cursor.intValue(3);
-                        if (dialogsResult.containsKey((long)uid)) {
+                        if (dialogsResult.containsKey((long) uid)) {
                             continue;
                         }
                         String name = cursor.stringValue(2);
@@ -477,6 +483,25 @@ public class DialogsSearchAdapter extends BaseContactsSearchAdapter {
         return i > searchResult.size() && i <= globalSearch.size() + searchResult.size();
     }
 
+    @Override
+    public void clearRecentHashtags() {
+        super.clearRecentHashtags();
+        searchResultHashtags.clear();
+        notifyDataSetChanged();
+    }
+
+    @Override
+    protected void setHashtags(ArrayList<HashtagObject> arrayList, HashMap<String, HashtagObject> hashMap) {
+        super.setHashtags(arrayList, hashMap);
+        for (HashtagObject hashtagObject : arrayList) {
+            searchResultHashtags.add(hashtagObject.hashtag);
+        }
+        if (delegate != null) {
+            delegate.searchStateChanged(false);
+        }
+        notifyDataSetChanged();
+    }
+
     public void searchDialogs(final String query, final boolean serverOnly) {
         if (query != null && lastSearchText != null && query.equals(lastSearchText)) {
             return;
@@ -489,14 +514,38 @@ public class DialogsSearchAdapter extends BaseContactsSearchAdapter {
             FileLog.e("tmessages", e);
         }
         if (query == null || query.length() == 0) {
+            hashtagsLoadedFromDb = false;
             searchResult.clear();
             searchResultNames.clear();
+            searchResultHashtags.clear();
             if (needMessagesSearch != 2) {
                 queryServerSearch(null);
             }
             searchMessagesInternal(null);
             notifyDataSetChanged();
         } else {
+            if (query.startsWith("#") && query.length() == 1) {
+                messagesSearchEndReached = true;
+                if (!hashtagsLoadedFromDb) {
+                    loadRecentHashtags();
+                    if (delegate != null) {
+                        delegate.searchStateChanged(true);
+                    }
+                    notifyDataSetChanged();
+                    return;
+                }
+                searchResultHashtags.clear();
+                for (HashtagObject hashtagObject : hashtags) {
+                    searchResultHashtags.add(hashtagObject.hashtag);
+                }
+                if (delegate != null) {
+                    delegate.searchStateChanged(false);
+                }
+                notifyDataSetChanged();
+                return;
+            } else {
+                searchResultHashtags.clear();
+            }
             final int searchId = ++lastSearchId;
             searchTimer = new Timer();
             searchTimer.schedule(new TimerTask() {
@@ -530,11 +579,27 @@ public class DialogsSearchAdapter extends BaseContactsSearchAdapter {
 
     @Override
     public boolean isEnabled(int i) {
-        return i != searchResult.size() && i != searchResult.size() + (globalSearch.isEmpty() ? 0 : globalSearch.size() + 1);
+        if (!searchResultHashtags.isEmpty()) {
+            return i != 0;
+        }
+        int localCount = searchResult.size();
+        int globalCount = globalSearch.isEmpty() ? 0 : globalSearch.size() + 1;
+        int messagesCount = searchResultMessages.isEmpty() ? 0 : searchResultMessages.size() + 1;
+        if (i >= 0 && i < localCount || i > localCount && i < globalCount + localCount) {
+            return true;
+        } else if (i > globalCount + localCount && i < globalCount + localCount + messagesCount) {
+            return true;
+        } else if (messagesCount != 0 && i == globalCount + localCount + messagesCount) {
+            return true;
+        }
+        return false;
     }
 
     @Override
     public int getCount() {
+        if (!searchResultHashtags.isEmpty()) {
+            return searchResultHashtags.size() + 1;
+        }
         int count = searchResult.size();
         int globalCount = globalSearch.size();
         int messagesCount = searchResultMessages.size();
@@ -549,6 +614,9 @@ public class DialogsSearchAdapter extends BaseContactsSearchAdapter {
 
     @Override
     public Object getItem(int i) {
+        if (!searchResultHashtags.isEmpty()) {
+            return searchResultHashtags.get(i - 1);
+        }
         int localCount = searchResult.size();
         int globalCount = globalSearch.isEmpty() ? 0 : globalSearch.size() + 1;
         int messagesCount = searchResultMessages.isEmpty() ? 0 : searchResultMessages.size() + 1;
@@ -580,7 +648,9 @@ public class DialogsSearchAdapter extends BaseContactsSearchAdapter {
             if (view == null) {
                 view = new GreySectionCell(mContext);
             }
-            if (!globalSearch.isEmpty() && i == searchResult.size()) {
+            if (!searchResultHashtags.isEmpty()) {
+                ((GreySectionCell) view).setText(LocaleController.getString("Hashtags", R.string.Hashtags).toUpperCase());
+            }  else if (!globalSearch.isEmpty() && i == searchResult.size()) {
                 ((GreySectionCell) view).setText(LocaleController.getString("GlobalSearch", R.string.GlobalSearch));
             } else {
                 ((GreySectionCell) view).setText(LocaleController.getString("SearchMessages", R.string.SearchMessages));
@@ -646,6 +716,12 @@ public class DialogsSearchAdapter extends BaseContactsSearchAdapter {
             if (view == null) {
                 view = new LoadingCell(mContext);
             }
+        } else if (type == 4) {
+            if (view == null) {
+                view = new HashtagSearchCell(mContext);
+            }
+            ((HashtagSearchCell) view).setText(searchResultHashtags.get(i - 1));
+            ((HashtagSearchCell) view).setNeedDivider(i != searchResultHashtags.size());
         }
 
         return view;
@@ -653,6 +729,9 @@ public class DialogsSearchAdapter extends BaseContactsSearchAdapter {
 
     @Override
     public int getItemViewType(int i) {
+        if (!searchResultHashtags.isEmpty()) {
+            return i == 0 ? 1 : 4;
+        }
         int localCount = searchResult.size();
         int globalCount = globalSearch.isEmpty() ? 0 : globalSearch.size() + 1;
         int messagesCount = searchResultMessages.isEmpty() ? 0 : searchResultMessages.size() + 1;
@@ -668,11 +747,11 @@ public class DialogsSearchAdapter extends BaseContactsSearchAdapter {
 
     @Override
     public int getViewTypeCount() {
-        return 4;
+        return 5;
     }
 
     @Override
     public boolean isEmpty() {
-        return searchResult.isEmpty() && globalSearch.isEmpty() && searchResultMessages.isEmpty();
+        return searchResult.isEmpty() && globalSearch.isEmpty() && searchResultMessages.isEmpty() && searchResultHashtags.isEmpty();
     }
 }

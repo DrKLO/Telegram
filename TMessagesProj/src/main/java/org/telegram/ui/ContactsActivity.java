@@ -44,7 +44,7 @@ import com.aniways.anigram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.ui.Adapters.BaseSectionsAdapter;
 import org.telegram.ui.Adapters.ContactsAdapter;
-import org.telegram.ui.Adapters.ContactsSearchAdapter;
+import org.telegram.ui.Adapters.SearchAdapter;
 import org.telegram.ui.Cells.UserCell;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
@@ -60,7 +60,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
     private BaseSectionsAdapter listViewAdapter;
     private TextView emptyTextView;
     private LetterSectionsListView listView;
-    private ContactsSearchAdapter searchListViewAdapter;
+    private SearchAdapter searchListViewAdapter;
 
     private boolean searchWas;
     private boolean searching;
@@ -197,7 +197,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
             });
             item.getSearchField().setHint(LocaleController.getString("Search", R.string.Search));
 
-            searchListViewAdapter = new ContactsSearchAdapter(getParentActivity(), ignoreUsers, allowUsernameSearch);
+            searchListViewAdapter = new SearchAdapter(getParentActivity(), ignoreUsers, allowUsernameSearch);
             listViewAdapter = new ContactsAdapter(getParentActivity(), onlyUsers, needPhonebook, ignoreUsers);
 
             fragmentView = new FrameLayout(getParentActivity());

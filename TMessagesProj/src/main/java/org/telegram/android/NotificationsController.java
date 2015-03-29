@@ -19,6 +19,8 @@ import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.graphics.drawable.BitmapDrawable;
 import android.media.AudioManager;
+import android.media.MediaPlayer;
+import android.media.SoundPool;
 import android.net.Uri;
 import android.os.Build;
 import android.os.SystemClock;
@@ -68,6 +70,13 @@ public class NotificationsController {
     private int personal_count = 0;
     private boolean notifyCheck = false;
     private int lastOnlineFromOtherDevice = 0;
+    private boolean inChatSoundEnabled = true;
+
+    private SoundPool soundPool;
+    private int inChatOutgoingSound;
+    private long lastSoundPlay;
+    private MediaPlayer mediaPlayer;
+    private String lastMediaPlayerUri;
 
     private static volatile NotificationsController Instance = null;
     public static NotificationsController getInstance() {
@@ -85,6 +94,16 @@ public class NotificationsController {
 
     public NotificationsController() {
         notificationManager = NotificationManagerCompat.from(ApplicationLoader.applicationContext);
+        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Context.MODE_PRIVATE);
+        inChatSoundEnabled = preferences.getBoolean("EnableInChatSound", true);
+
+        try {
+            soundPool = new SoundPool(1, AudioManager.STREAM_NOTIFICATION, 0);
+            inChatOutgoingSound = soundPool.load(ApplicationLoader.applicationContext, R.raw.sound_out, 1);
+            mediaPlayer = new MediaPlayer();
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
     }
 
     public void cleanup() {
@@ -101,6 +120,10 @@ public class NotificationsController {
         SharedPreferences.Editor editor = preferences.edit();
         editor.clear();
         editor.commit();
+    }
+
+    public void setInChatSoundEnabled(boolean value) {
+        inChatSoundEnabled = value;
     }
 
     public void setOpennedDialogId(long dialog_id) {
@@ -805,6 +828,63 @@ public class NotificationsController {
         }
     }
 
+    private void playInChatSound() {
+        if (!inChatSoundEnabled) {
+            return;
+        }
+        if (lastSoundPlay > System.currentTimeMillis() - 1800) {
+            return;
+        }
+        try {
+            String choosenSoundPath = null;
+            String defaultPath = Settings.System.DEFAULT_NOTIFICATION_URI.getPath();
+            SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Context.MODE_PRIVATE);
+            choosenSoundPath = preferences.getString("sound_path_" + openned_dialog_id, null);
+            boolean isChat = (int)(openned_dialog_id) < 0;
+            if (isChat) {
+                if (choosenSoundPath != null && choosenSoundPath.equals(defaultPath)) {
+                    choosenSoundPath = null;
+                } else if (choosenSoundPath == null) {
+                    choosenSoundPath = preferences.getString("GroupSoundPath", defaultPath);
+                }
+            } else {
+                if (choosenSoundPath != null && choosenSoundPath.equals(defaultPath)) {
+                    choosenSoundPath = null;
+                } else if (choosenSoundPath == null) {
+                    choosenSoundPath = preferences.getString("GlobalSoundPath", defaultPath);
+                }
+            }
+
+            if (choosenSoundPath != null && !choosenSoundPath.equals("NoSound")) {
+                if (lastMediaPlayerUri == null || !choosenSoundPath.equals(lastMediaPlayerUri)) {
+                    lastMediaPlayerUri = choosenSoundPath;
+                    mediaPlayer.reset();
+                    mediaPlayer.setAudioStreamType(AudioManager.STREAM_NOTIFICATION);
+                    if (choosenSoundPath.equals(defaultPath)) {
+                        mediaPlayer.setDataSource(ApplicationLoader.applicationContext, Settings.System.DEFAULT_NOTIFICATION_URI);
+                    } else {
+                        mediaPlayer.setDataSource(ApplicationLoader.applicationContext, Uri.parse(choosenSoundPath));
+                    }
+                    mediaPlayer.prepare();
+                }
+                mediaPlayer.start();
+            }
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
+    }
+
+    public void playOutChatSound() {
+        if (!inChatSoundEnabled) {
+            return;
+        }
+        try {
+            soundPool.play(inChatOutgoingSound, 1, 1, 1, 0, 1);
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
+    }
+
     public void processNewMessages(ArrayList<MessageObject> messageObjects, boolean isLast) {
         if (messageObjects.isEmpty()) {
             return;
@@ -823,6 +903,7 @@ public class NotificationsController {
             long dialog_id = messageObject.getDialogId();
             long original_dialog_id = dialog_id;
             if (dialog_id == openned_dialog_id && ApplicationLoader.isScreenOn) {
+                playInChatSound();
                 continue;
             }
             if ((messageObject.messageOwner.flags & TLRPC.MESSAGE_FLAG_MENTION) != 0) {
