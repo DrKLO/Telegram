@@ -332,6 +332,16 @@
     <string name="NewMessages_other">%1$d 条新消息</string>
     <string name="NewMessages_two">%1$d 条新消息</string>
     <string name="NewMessages_zero">没有新消息</string>
+    <string name="AttachAudio"></string>
+    <string name="AreYouSureBlockContact">你确定你要屏蔽这个联系人吗？</string>
+    <string name="AreYouSureDeleteAccount">你确定你要删除你的账户吗？</string>
+    <string name="AreYouSureClearHistory">你确定你要清除历史记录吗？</string>
+    <string name="AreYouSureClearHistory"></string>
+    <string name="AreYouSureDeleteAccount2">我们必须说清楚，你将失去你所有的聊天记录、信息和媒体文件。你真的确定吗？</string>
+    <string name="AreYouSureDeleteAndExit">你确定你想删除并离开这个群?</string>
+    <string name="AreYouSureDeleteContact">你确定你要删除这个联系人吗？</string>
+    <string name="AreYouSureDeleteMessages">你确定你要删除 %1$s 吗？</string>
+    <string name="AreYouSureDeleteThisChat">你确定你要删除这个聊天吗？</string>
 </string>
     <string name="NotificationsPriorityMax">最大</string>
     <string name="RepeatNotificationsNever">永不</string>
