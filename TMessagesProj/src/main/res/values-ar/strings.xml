@@ -16,7 +16,7 @@
     <string name="YourCode">رمز التفعيل</string>
     <string name="SentSmsCode">تم إرسال رسالة قصيرة تحتوي على رمز التفعيل الخاص بك</string>
     <string name="CallText">%1$d:%2$02d سنتصل بك خلال</string>
-    <string name="Calling">جاري الاتصال بك ...</string>
+    <string name="Calling">جارٍ الاتصال بك ...</string>
     <string name="Code">رمز التفعيل</string>
     <string name="WrongNumber">الرقم خاطئ؟</string>
     <string name="DidNotGetTheCode">هل استقبلت الرمز؟</string>
@@ -36,12 +36,12 @@
     <string name="NoChats">...لا توجد محادثات بعد</string>
     <string name="NoChatsHelp">إبدأ المراسلة بالضغط على\nأيقونة النقاط في أعلى يمين الشاشة\nأو اذهب لقسم جهات الاتصال.</string>
     <string name="WaitingForNetwork">في إنتظار الشبكة...</string>
-    <string name="Connecting">جاري الاتصال...</string>
-    <string name="Updating">جاري التحديث...</string>
+    <string name="Connecting">جارٍ الاتصال...</string>
+    <string name="Updating">جارٍ التحديث...</string>
     <string name="NewSecretChat">محادثة سرية جديدة</string>
     <string name="AwaitingEncryption">في إنتظار اتصال %s … </string>
     <string name="EncryptionRejected">تم إلغاء المحادثة السرية</string>
-    <string name="EncryptionProcessing">جاري إرسال المفاتيح المشفرة...</string>
+    <string name="EncryptionProcessing">جارٍ إرسال المفاتيح المشفرة...</string>
     <string name="EncryptedChatStartedOutgoing">%s قام بالدخول للمحادثة السرية.</string>
     <string name="EncryptedChatStartedIncoming">لقد قمت بالدخول للمحادثة السرية.</string>
     <string name="ClearHistory">مسح سجل المحادثات</string>
@@ -82,7 +82,7 @@
     <string name="GalleryInfo">أرسل الصورة بدون ضغطها</string>
     <!--chat view-->
     <string name="Invisible">مخفي</string>
-    <string name="Typing">جاري الكتابة… </string>
+    <string name="Typing">جارٍ الكتابة… </string>
     <string name="IsTyping">يكتب… </string>
     <string name="AreTyping">يكتبون… </string>
     <string name="GotAQuestion">هل يوجد لديك سؤال\nحول تيليجرام؟</string>
@@ -109,7 +109,7 @@
     <string name="YouWereKicked">لقد تم إخراجك من هذه المجموعة</string>
     <string name="YouLeft">لقد قمت بمغادرة المجموعة</string>
     <string name="DeleteThisGroup">حذف هذه المجموعة</string>
-    <string name="DeleteThisChat">حذف هذه الدردشة</string>
+    <string name="DeleteThisChat">حذف هذه المحادثة</string>
     <string name="SlideToCancel">قم بالسحب للإلغاء</string>
     <string name="SaveToDownloads">حفظ في الجهاز</string>
     <string name="ShareFile">مشاركة</string>
@@ -178,7 +178,7 @@
     <string name="GroupName">اسم المجموعة</string>
     <string name="MembersCount">%1$d/%2$d عضو</string>
     <!--group info view-->
-    <string name="SharedMedia">عدد الوسائط المشتركة</string>
+    <string name="SharedMedia">الوسائط المشتركة</string>
     <string name="SETTINGS">الإعدادات</string>
     <string name="AddMember">إضافة مشترك</string>
     <string name="DeleteAndExit">مغادرة المجموعة وحذفها</string>
@@ -245,7 +245,7 @@
     <string name="NoSound">لا يوجد صوت</string>
     <string name="Default">افتراضي</string>
     <string name="Support">الدعم</string>
-    <string name="ChatBackground">خلفية الدردشة</string>
+    <string name="ChatBackground">خلفية المحادثة</string>
     <string name="MessagesSettings">الرسائل</string>
     <string name="SendByEnter">أرسل بزر الإدخال</string>
     <string name="TerminateAllSessions">سجل الخروج من كافة الأجهزة الأخرى</string>
@@ -488,14 +488,14 @@
     <string name="InvalidCode">الرمز غير صحيح</string>
     <string name="InvalidFirstName">الاسم الأول غير صحيح</string>
     <string name="InvalidLastName">اسم العائلة غير صحيح</string>
-    <string name="Loading">جاري التحميل ...</string>
+    <string name="Loading">جارٍ التحميل ...</string>
     <string name="NoPlayerInstalled">ليس لديك أي مشغل مقاطع مرئية، يرجى تنزيل أية مشغل</string>
     <string name="NoMailInstalled">يرجى إرسال رسالة بواسطة البريد الإلكتروني إلى sms@stel.com لتخبرنا عن مشكلتك.</string>
     <string name="NoHandleAppInstalled">لا يوجد لديك تطبيق يمكنه فتح \'%1$s\'، يرجى تنزيل تطبيق مناسب للإستمرار</string>
     <string name="InviteUser">هذا المستخدم ليس لديه تيليجرام بعد ، هل ترغب في دعوته الآن؟</string>
     <string name="AreYouSure">هل أنت متأكد؟</string>
     <string name="AddToTheGroup">هل ترغب في إضافة %1$s للمجموعة؟\n\nعدد الرسائل الحديثة المراد إعادة تحويلها:</string>
-    <string name="ForwardMessagesTo">؟%1$s هل تريد إعادة توجيه الرسائل إلى</string>
+    <string name="ForwardMessagesTo">هل تريد إعادة توجيه الرسائل إلى %1$s؟</string>
     <string name="SendMessagesTo">هل ترغب في إرسال رسالة إلى %1$s؟</string>
     <string name="AreYouSureLogout">نرجو الأخذ بالعلم أنه يمكنك استخدام تيليجرام على أجهزتك المتعددة بسهولة تامة وفي وقت واحد.\n\nوتذكر، تسجيل الخروج يحذف كافة محادثاتك السرية.</string>
     <string name="AreYouSureSessions">هل أنت متأكد من تسجيل الخروج من جميع الأجهزة الأخرى باستثناء هذا الجهاز؟</string>
@@ -510,7 +510,7 @@
     <string name="AreYouSureClearHistory">هل أنت متأكد من رغبتك في حذف سجل المحادثات؟</string>
     <string name="AreYouSureDeleteMessages">هل أنت متأكد من رغبتك في حذف %1$s؟</string>
     <string name="SendMessagesToGroup">هل ترغب في إرسال رسالة إلى %1$s؟</string>
-    <string name="ForwardMessagesToGroup">؟%1$s هل تريد إعادة توجيه الرسائل إلى</string>
+    <string name="ForwardMessagesToGroup">هل تريد إعادة توجيه الرسائل إلى %1$s؟</string>
     <string name="FeatureUnavailable">.Sorry, this feature is currently not available in your country</string>
     <!--Intro view-->
     <string name="Page1Title">تيليجرام</string>
