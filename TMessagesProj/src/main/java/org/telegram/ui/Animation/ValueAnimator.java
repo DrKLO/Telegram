@@ -646,7 +646,7 @@ public class ValueAnimator extends Animator10 {
         return anim;
     }
 
-    public static interface AnimatorUpdateListener {
+    public interface AnimatorUpdateListener {
         void onAnimationUpdate(ValueAnimator animation);
     }
 

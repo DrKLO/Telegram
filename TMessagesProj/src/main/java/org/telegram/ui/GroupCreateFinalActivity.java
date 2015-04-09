@@ -85,7 +85,7 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
         avatarUpdater.parentFragment = this;
         avatarUpdater.delegate = this;
         selectedContacts = getArguments().getIntegerArrayList("result");
-        final ArrayList<Integer> usersToLoad = new ArrayList<Integer>();
+        final ArrayList<Integer> usersToLoad = new ArrayList<>();
         for (Integer uid : selectedContacts) {
             if (MessagesController.getInstance().getUser(uid) == null) {
                 usersToLoad.add(uid);
@@ -93,7 +93,7 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
         }
         if (!usersToLoad.isEmpty()) {
             final Semaphore semaphore = new Semaphore(0);
-            final ArrayList<TLRPC.User> users = new ArrayList<TLRPC.User>();
+            final ArrayList<TLRPC.User> users = new ArrayList<>();
             MessagesStorage.getInstance().getStorageQueue().postRunnable(new Runnable() {
                 @Override
                 public void run() {
@@ -138,191 +138,185 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
     }
 
     @Override
-    public View createView(LayoutInflater inflater, ViewGroup container) {
-        if (fragmentView == null) {
-            actionBar.setBackButtonImage(R.drawable.ic_ab_back);
-            actionBar.setAllowOverlayTitle(true);
-            if (isBroadcast) {
-                actionBar.setTitle(LocaleController.getString("NewBroadcastList", R.string.NewBroadcastList));
-            } else {
-                actionBar.setTitle(LocaleController.getString("NewGroup", R.string.NewGroup));
-            }
+    public View createView(Context context, LayoutInflater inflater) {
+        actionBar.setBackButtonImage(R.drawable.ic_ab_back);
+        actionBar.setAllowOverlayTitle(true);
+        if (isBroadcast) {
+            actionBar.setTitle(LocaleController.getString("NewBroadcastList", R.string.NewBroadcastList));
+        } else {
+            actionBar.setTitle(LocaleController.getString("NewGroup", R.string.NewGroup));
+        }
 
-            actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
-                @Override
-                public void onItemClick(int id) {
-                    if (id == -1) {
-                        finishFragment();
-                    } else if (id == done_button) {
-                        if (donePressed) {
-                            return;
-                        }
-                        if (nameTextView.getText().length() == 0) {
-                            return;
-                        }
-                        donePressed = true;
+        actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
+            @Override
+            public void onItemClick(int id) {
+                if (id == -1) {
+                    finishFragment();
+                } else if (id == done_button) {
+                    if (donePressed) {
+                        return;
+                    }
+                    if (nameTextView.getText().length() == 0) {
+                        return;
+                    }
+                    donePressed = true;
 
-                        if (isBroadcast) {
-                            MessagesController.getInstance().createChat(nameTextView.getText().toString(), selectedContacts, uploadedAvatar, isBroadcast);
+                    if (isBroadcast) {
+                        MessagesController.getInstance().createChat(nameTextView.getText().toString(), selectedContacts, isBroadcast);
+                    } else {
+                        if (avatarUpdater.uploadingAvatar != null) {
+                            createAfterUpload = true;
                         } else {
-                            if (avatarUpdater.uploadingAvatar != null) {
-                                createAfterUpload = true;
-                            } else {
-                                progressDialog = new ProgressDialog(getParentActivity());
-                                progressDialog.setMessage(LocaleController.getString("Loading", R.string.Loading));
-                                progressDialog.setCanceledOnTouchOutside(false);
-                                progressDialog.setCancelable(false);
+                            progressDialog = new ProgressDialog(getParentActivity());
+                            progressDialog.setMessage(LocaleController.getString("Loading", R.string.Loading));
+                            progressDialog.setCanceledOnTouchOutside(false);
+                            progressDialog.setCancelable(false);
 
-                                final long reqId = MessagesController.getInstance().createChat(nameTextView.getText().toString(), selectedContacts, uploadedAvatar, isBroadcast);
+                            final long reqId = MessagesController.getInstance().createChat(nameTextView.getText().toString(), selectedContacts, isBroadcast);
 
-                                progressDialog.setButton(DialogInterface.BUTTON_NEGATIVE, LocaleController.getString("Cancel", R.string.Cancel), new DialogInterface.OnClickListener() {
-                                    @Override
-                                    public void onClick(DialogInterface dialog, int which) {
-                                        ConnectionsManager.getInstance().cancelRpc(reqId, true);
-                                        donePressed = false;
-                                        try {
-                                            dialog.dismiss();
-                                        } catch (Exception e) {
-                                            FileLog.e("tmessages", e);
-                                        }
+                            progressDialog.setButton(DialogInterface.BUTTON_NEGATIVE, LocaleController.getString("Cancel", R.string.Cancel), new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+                                    ConnectionsManager.getInstance().cancelRpc(reqId, true);
+                                    donePressed = false;
+                                    try {
+                                        dialog.dismiss();
+                                    } catch (Exception e) {
+                                        FileLog.e("tmessages", e);
                                     }
-                                });
-                                progressDialog.show();
-                            }
+                                }
+                            });
+                            progressDialog.show();
                         }
                     }
                 }
-            });
+            }
+        });
 
-            ActionBarMenu menu = actionBar.createMenu();
-            menu.addItemWithWidth(done_button, R.drawable.ic_done, AndroidUtilities.dp(56));
+        ActionBarMenu menu = actionBar.createMenu();
+        menu.addItemWithWidth(done_button, R.drawable.ic_done, AndroidUtilities.dp(56));
 
-            fragmentView = new LinearLayout(getParentActivity());
-            LinearLayout linearLayout = (LinearLayout) fragmentView;
-            linearLayout.setOrientation(LinearLayout.VERTICAL);
+        fragmentView = new LinearLayout(context);
+        LinearLayout linearLayout = (LinearLayout) fragmentView;
+        linearLayout.setOrientation(LinearLayout.VERTICAL);
 
-            FrameLayout frameLayout = new FrameLayoutFixed(getParentActivity());
-            linearLayout.addView(frameLayout);
-            LinearLayout.LayoutParams layoutParams = (LinearLayout.LayoutParams) frameLayout.getLayoutParams();
-            layoutParams.width = LinearLayout.LayoutParams.MATCH_PARENT;
-            layoutParams.height = LinearLayout.LayoutParams.WRAP_CONTENT;
-            layoutParams.gravity = Gravity.TOP | Gravity.LEFT;
-            frameLayout.setLayoutParams(layoutParams);
+        FrameLayout frameLayout = new FrameLayoutFixed(context);
+        linearLayout.addView(frameLayout);
+        LinearLayout.LayoutParams layoutParams = (LinearLayout.LayoutParams) frameLayout.getLayoutParams();
+        layoutParams.width = LinearLayout.LayoutParams.MATCH_PARENT;
+        layoutParams.height = LinearLayout.LayoutParams.WRAP_CONTENT;
+        layoutParams.gravity = Gravity.TOP | Gravity.LEFT;
+        frameLayout.setLayoutParams(layoutParams);
 
-            avatarImage = new BackupImageView(getParentActivity());
-            avatarImage.imageReceiver.setRoundRadius(AndroidUtilities.dp(32));
-            avatarDrawable.setInfo(5, null, null, isBroadcast);
-            avatarImage.setImageDrawable(avatarDrawable);
-            frameLayout.addView(avatarImage);
-            FrameLayout.LayoutParams layoutParams1 = (FrameLayout.LayoutParams) avatarImage.getLayoutParams();
-            layoutParams1.width = AndroidUtilities.dp(64);
-            layoutParams1.height = AndroidUtilities.dp(64);
-            layoutParams1.topMargin = AndroidUtilities.dp(12);
-            layoutParams1.bottomMargin = AndroidUtilities.dp(12);
-            layoutParams1.leftMargin = LocaleController.isRTL ? 0 : AndroidUtilities.dp(16);
-            layoutParams1.rightMargin = LocaleController.isRTL ? AndroidUtilities.dp(16) : 0;
-            layoutParams1.gravity = Gravity.TOP | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
-            avatarImage.setLayoutParams(layoutParams1);
-            if (!isBroadcast) {
-                avatarDrawable.setDrawPhoto(true);
-                avatarImage.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View view) {
-                        if (getParentActivity() == null) {
-                            return;
-                        }
-                        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+        avatarImage = new BackupImageView(context);
+        avatarImage.setRoundRadius(AndroidUtilities.dp(32));
+        avatarDrawable.setInfo(5, null, null, isBroadcast);
+        avatarImage.setImageDrawable(avatarDrawable);
+        frameLayout.addView(avatarImage);
+        FrameLayout.LayoutParams layoutParams1 = (FrameLayout.LayoutParams) avatarImage.getLayoutParams();
+        layoutParams1.width = AndroidUtilities.dp(64);
+        layoutParams1.height = AndroidUtilities.dp(64);
+        layoutParams1.topMargin = AndroidUtilities.dp(12);
+        layoutParams1.bottomMargin = AndroidUtilities.dp(12);
+        layoutParams1.leftMargin = LocaleController.isRTL ? 0 : AndroidUtilities.dp(16);
+        layoutParams1.rightMargin = LocaleController.isRTL ? AndroidUtilities.dp(16) : 0;
+        layoutParams1.gravity = Gravity.TOP | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
+        avatarImage.setLayoutParams(layoutParams1);
+        if (!isBroadcast) {
+            avatarDrawable.setDrawPhoto(true);
+            avatarImage.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    if (getParentActivity() == null) {
+                        return;
+                    }
+                    AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
 
-                        CharSequence[] items;
+                    CharSequence[] items;
 
-                        if (avatar != null) {
-                            items = new CharSequence[]{LocaleController.getString("FromCamera", R.string.FromCamera), LocaleController.getString("FromGalley", R.string.FromGalley), LocaleController.getString("DeletePhoto", R.string.DeletePhoto)};
-                        } else {
-                            items = new CharSequence[]{LocaleController.getString("FromCamera", R.string.FromCamera), LocaleController.getString("FromGalley", R.string.FromGalley)};
-                        }
+                    if (avatar != null) {
+                        items = new CharSequence[]{LocaleController.getString("FromCamera", R.string.FromCamera), LocaleController.getString("FromGalley", R.string.FromGalley), LocaleController.getString("DeletePhoto", R.string.DeletePhoto)};
+                    } else {
+                        items = new CharSequence[]{LocaleController.getString("FromCamera", R.string.FromCamera), LocaleController.getString("FromGalley", R.string.FromGalley)};
+                    }
 
-                        builder.setItems(items, new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialogInterface, int i) {
-                                if (i == 0) {
-                                    avatarUpdater.openCamera();
-                                } else if (i == 1) {
-                                    avatarUpdater.openGallery();
-                                } else if (i == 2) {
-                                    avatar = null;
-                                    uploadedAvatar = null;
-                                    avatarImage.setImage(avatar, "50_50", avatarDrawable);
-                                }
+                    builder.setItems(items, new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialogInterface, int i) {
+                            if (i == 0) {
+                                avatarUpdater.openCamera();
+                            } else if (i == 1) {
+                                avatarUpdater.openGallery();
+                            } else if (i == 2) {
+                                avatar = null;
+                                uploadedAvatar = null;
+                                avatarImage.setImage(avatar, "50_50", avatarDrawable);
                             }
-                        });
-                        showAlertDialog(builder);
-                    }
-                });
-            }
-
-            nameTextView = new EditText(getParentActivity());
-            nameTextView.setHint(isBroadcast ? LocaleController.getString("EnterListName", R.string.EnterListName) : LocaleController.getString("EnterGroupNamePlaceholder", R.string.EnterGroupNamePlaceholder));
-            if (nameToSet != null) {
-                nameTextView.setText(nameToSet);
-                nameToSet = null;
-            }
-            nameTextView.setMaxLines(4);
-            nameTextView.setGravity(Gravity.CENTER_VERTICAL | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT));
-            nameTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
-            nameTextView.setHintTextColor(0xff979797);
-            nameTextView.setImeOptions(EditorInfo.IME_FLAG_NO_EXTRACT_UI);
-            nameTextView.setInputType(InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
-            nameTextView.setPadding(0, 0, 0, AndroidUtilities.dp(8));
-            AndroidUtilities.clearCursorDrawable(nameTextView);
-            nameTextView.setTextColor(0xff212121);
-            frameLayout.addView(nameTextView);
-            layoutParams1 = (FrameLayout.LayoutParams) nameTextView.getLayoutParams();
-            layoutParams1.width = FrameLayout.LayoutParams.MATCH_PARENT;
-            layoutParams1.height =  FrameLayout.LayoutParams.WRAP_CONTENT;
-            layoutParams1.leftMargin = LocaleController.isRTL ? AndroidUtilities.dp(16) : AndroidUtilities.dp(96);
-            layoutParams1.rightMargin = LocaleController.isRTL ? AndroidUtilities.dp(96) : AndroidUtilities.dp(16);
-            layoutParams1.gravity = Gravity.CENTER_VERTICAL;
-            nameTextView.setLayoutParams(layoutParams1);
-            if (!isBroadcast) {
-                nameTextView.addTextChangedListener(new TextWatcher() {
-                    @Override
-                    public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-
-                    }
-
-                    @Override
-                    public void onTextChanged(CharSequence s, int start, int before, int count) {
-
-                    }
-
-                    @Override
-                    public void afterTextChanged(Editable s) {
-                        avatarDrawable.setInfo(5, nameTextView.length() > 0 ? nameTextView.getText().toString() : null, null, isBroadcast);
-                        avatarImage.invalidate();
-                    }
-                });
-            }
-
-            GreySectionCell sectionCell = new GreySectionCell(getParentActivity());
-            sectionCell.setText(LocaleController.formatPluralString("Members", selectedContacts.size()));
-            linearLayout.addView(sectionCell);
-
-            listView = new ListView(getParentActivity());
-            listView.setDivider(null);
-            listView.setDividerHeight(0);
-            listView.setVerticalScrollBarEnabled(false);
-            listView.setAdapter(listAdapter = new ListAdapter(getParentActivity()));
-            linearLayout.addView(listView);
-            layoutParams = (LinearLayout.LayoutParams) listView.getLayoutParams();
-            layoutParams.width = LinearLayout.LayoutParams.MATCH_PARENT;
-            layoutParams.height = LinearLayout.LayoutParams.MATCH_PARENT;
-            listView.setLayoutParams(layoutParams);
-        } else {
-            ViewGroup parent = (ViewGroup)fragmentView.getParent();
-            if (parent != null) {
-                parent.removeView(fragmentView);
-            }
+                        }
+                    });
+                    showAlertDialog(builder);
+                }
+            });
         }
+
+        nameTextView = new EditText(context);
+        nameTextView.setHint(isBroadcast ? LocaleController.getString("EnterListName", R.string.EnterListName) : LocaleController.getString("EnterGroupNamePlaceholder", R.string.EnterGroupNamePlaceholder));
+        if (nameToSet != null) {
+            nameTextView.setText(nameToSet);
+            nameToSet = null;
+        }
+        nameTextView.setMaxLines(4);
+        nameTextView.setGravity(Gravity.CENTER_VERTICAL | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT));
+        nameTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+        nameTextView.setHintTextColor(0xff979797);
+        nameTextView.setImeOptions(EditorInfo.IME_FLAG_NO_EXTRACT_UI);
+        nameTextView.setInputType(InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
+        nameTextView.setPadding(0, 0, 0, AndroidUtilities.dp(8));
+        AndroidUtilities.clearCursorDrawable(nameTextView);
+        nameTextView.setTextColor(0xff212121);
+        frameLayout.addView(nameTextView);
+        layoutParams1 = (FrameLayout.LayoutParams) nameTextView.getLayoutParams();
+        layoutParams1.width = FrameLayout.LayoutParams.MATCH_PARENT;
+        layoutParams1.height = FrameLayout.LayoutParams.WRAP_CONTENT;
+        layoutParams1.leftMargin = LocaleController.isRTL ? AndroidUtilities.dp(16) : AndroidUtilities.dp(96);
+        layoutParams1.rightMargin = LocaleController.isRTL ? AndroidUtilities.dp(96) : AndroidUtilities.dp(16);
+        layoutParams1.gravity = Gravity.CENTER_VERTICAL;
+        nameTextView.setLayoutParams(layoutParams1);
+        if (!isBroadcast) {
+            nameTextView.addTextChangedListener(new TextWatcher() {
+                @Override
+                public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+
+                }
+
+                @Override
+                public void onTextChanged(CharSequence s, int start, int before, int count) {
+
+                }
+
+                @Override
+                public void afterTextChanged(Editable s) {
+                    avatarDrawable.setInfo(5, nameTextView.length() > 0 ? nameTextView.getText().toString() : null, null, isBroadcast);
+                    avatarImage.invalidate();
+                }
+            });
+        }
+
+        GreySectionCell sectionCell = new GreySectionCell(context);
+        sectionCell.setText(LocaleController.formatPluralString("Members", selectedContacts.size()));
+        linearLayout.addView(sectionCell);
+
+        listView = new ListView(context);
+        listView.setDivider(null);
+        listView.setDividerHeight(0);
+        listView.setVerticalScrollBarEnabled(false);
+        listView.setAdapter(listAdapter = new ListAdapter(context));
+        linearLayout.addView(listView);
+        layoutParams = (LinearLayout.LayoutParams) listView.getLayoutParams();
+        layoutParams.width = LinearLayout.LayoutParams.MATCH_PARENT;
+        layoutParams.height = LinearLayout.LayoutParams.MATCH_PARENT;
+        listView.setLayoutParams(layoutParams);
+
         return fragmentView;
     }
 
@@ -336,7 +330,7 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
                 avatarImage.setImage(avatar, "50_50", avatarDrawable);
                 if (createAfterUpload) {
                     FileLog.e("tmessages", "avatar did uploaded");
-                    MessagesController.getInstance().createChat(nameTextView.getText().toString(), selectedContacts, uploadedAvatar, false);
+                    MessagesController.getInstance().createChat(nameTextView.getText().toString(), selectedContacts, false);
                 }
             }
         });
@@ -402,9 +396,14 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
                             FileLog.e("tmessages", e);
                         }
                     }
+                    int chat_id = (Integer)args[0];
+                    NotificationCenter.getInstance().postNotificationName(NotificationCenter.closeChats);
                     Bundle args2 = new Bundle();
-                    args2.putInt("chat_id", (Integer)args[0]);
+                    args2.putInt("chat_id", chat_id);
                     presentFragment(new ChatActivity(args2), true);
+                    if (uploadedAvatar != null) {
+                        MessagesController.getInstance().changeChatAvatar(chat_id, uploadedAvatar);
+                    }
                 }
             });
         }

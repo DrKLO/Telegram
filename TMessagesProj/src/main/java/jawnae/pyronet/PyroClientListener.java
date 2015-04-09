@@ -22,17 +22,17 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 
 public interface PyroClientListener {
-    public void connectedClient(PyroClient client);
+    void connectedClient(PyroClient client);
 
-    public void unconnectableClient(PyroClient client, Exception cause);
+    void unconnectableClient(PyroClient client, Exception cause);
 
-    public void droppedClient(PyroClient client, IOException cause);
+    void droppedClient(PyroClient client, IOException cause);
 
-    public void disconnectedClient(PyroClient client);
+    void disconnectedClient(PyroClient client);
 
     //
 
-    public void receivedData(PyroClient client, ByteBuffer data);
+    void receivedData(PyroClient client, ByteBuffer data);
 
-    public void sentData(PyroClient client, int bytes);
+    void sentData(PyroClient client, int bytes);
 }

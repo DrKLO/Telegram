@@ -9,7 +9,7 @@
         android:label="@string/AppName"
         android:theme="@style/Theme.TMessages.Start"
         android:name=".ApplicationLoader"
-        android:hardwareAccelerated="true"
+        android:hardwareAccelerated="@bool/useHardwareAcceleration"
         android:largeHeap="true">
 
     </application>

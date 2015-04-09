@@ -19,7 +19,6 @@ import android.util.AttributeSet;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.FrameLayout;
 
 import org.telegram.android.AndroidUtilities;
@@ -36,7 +35,7 @@ import java.io.File;
 public class PhotoCropActivity extends BaseFragment {
 
     public interface PhotoEditActivityDelegate {
-        public abstract void didFinishEdit(Bitmap bitmap, Bundle args);
+        void didFinishEdit(Bitmap bitmap, Bundle args);
     }
 
     private class PhotoCropView extends FrameLayout {
@@ -303,6 +302,12 @@ public class PhotoCropActivity extends BaseFragment {
             int y = (int)(percY * imageToCrop.getHeight());
             int sizeX = (int)(percSizeX * imageToCrop.getWidth());
             int sizeY = (int)(percSizeY * imageToCrop.getWidth());
+            if (x < 0) {
+                x = 0;
+            }
+            if (y < 0) {
+                y = 0;
+            }
             if (x + sizeX > imageToCrop.getWidth()) {
                 sizeX = imageToCrop.getWidth() - x;
             }
@@ -426,44 +431,38 @@ public class PhotoCropActivity extends BaseFragment {
     }
 
     @Override
-    public View createView(LayoutInflater inflater, ViewGroup container) {
-        if (fragmentView == null) {
-            actionBar.setBackgroundColor(0xff333333);
-            actionBar.setItemsBackground(R.drawable.bar_selector_picker);
-            actionBar.setBackButtonImage(R.drawable.ic_ab_back);
-            actionBar.setAllowOverlayTitle(true);
-            actionBar.setTitle(LocaleController.getString("CropImage", R.string.CropImage));
-            actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
-                @Override
-                public void onItemClick(int id) {
-                    if (id == -1) {
-                        finishFragment();
-                    } else if (id == done_button) {
-                        if (delegate != null && !doneButtonPressed) {
-                            Bitmap bitmap = view.getBitmap();
-                            if (bitmap == imageToCrop) {
-                                sameBitmap = true;
-                            }
-                            delegate.didFinishEdit(bitmap, getArguments());
-                            doneButtonPressed = true;
+    public View createView(Context context, LayoutInflater inflater) {
+        actionBar.setBackgroundColor(0xff333333);
+        actionBar.setItemsBackground(R.drawable.bar_selector_picker);
+        actionBar.setBackButtonImage(R.drawable.ic_ab_back);
+        actionBar.setAllowOverlayTitle(true);
+        actionBar.setTitle(LocaleController.getString("CropImage", R.string.CropImage));
+        actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
+            @Override
+            public void onItemClick(int id) {
+                if (id == -1) {
+                    finishFragment();
+                } else if (id == done_button) {
+                    if (delegate != null && !doneButtonPressed) {
+                        Bitmap bitmap = view.getBitmap();
+                        if (bitmap == imageToCrop) {
+                            sameBitmap = true;
                         }
-                        finishFragment();
+                        delegate.didFinishEdit(bitmap, getArguments());
+                        doneButtonPressed = true;
                     }
+                    finishFragment();
                 }
-            });
-
-            ActionBarMenu menu = actionBar.createMenu();
-            menu.addItemWithWidth(done_button, R.drawable.ic_done, AndroidUtilities.dp(56));
-
-            fragmentView = view = new PhotoCropView(getParentActivity());
-            ((PhotoCropView) fragmentView).freeform = getArguments().getBoolean("freeform", false);
-            fragmentView.setLayoutParams(new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT));
-        } else {
-            ViewGroup parent = (ViewGroup)fragmentView.getParent();
-            if (parent != null) {
-                parent.removeView(fragmentView);
             }
-        }
+        });
+
+        ActionBarMenu menu = actionBar.createMenu();
+        menu.addItemWithWidth(done_button, R.drawable.ic_done, AndroidUtilities.dp(56));
+
+        fragmentView = view = new PhotoCropView(context);
+        ((PhotoCropView) fragmentView).freeform = getArguments().getBoolean("freeform", false);
+        fragmentView.setLayoutParams(new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT));
+
         return fragmentView;
     }
 

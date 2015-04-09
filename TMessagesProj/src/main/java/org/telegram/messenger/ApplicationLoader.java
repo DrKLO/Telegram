@@ -8,6 +8,7 @@
 
 package org.telegram.messenger;
 
+import android.app.Activity;
 import android.app.AlarmManager;
 import android.app.Application;
 import android.app.PendingIntent;
@@ -19,6 +20,7 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
+import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.AsyncTask;
 import android.os.Build;
@@ -38,10 +40,13 @@ import org.telegram.android.LocaleController;
 import org.telegram.android.MessagesController;
 import org.telegram.android.NativeLoader;
 import org.telegram.android.ScreenReceiver;
+import org.telegram.ui.Components.ForegroundDetector;
 
+import java.io.File;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class ApplicationLoader extends Application {
+
     private GoogleCloudMessaging gcm;
     private AtomicInteger msgId = new AtomicInteger();
     private String regid;
@@ -49,14 +54,79 @@ public class ApplicationLoader extends Application {
     public static final String PROPERTY_REG_ID = "registration_id";
     private static final String PROPERTY_APP_VERSION = "appVersion";
     private static final int PLAY_SERVICES_RESOLUTION_REQUEST = 9000;
-    public static Drawable cachedWallpaper = null;
+    private static Drawable cachedWallpaper;
+    private static int selectedColor;
+    private static boolean isCustomTheme;
+    private static final Object sync = new Object();
 
-    public static volatile Context applicationContext = null;
-    public static volatile Handler applicationHandler = null;
+    public static volatile Context applicationContext;
+    public static volatile Handler applicationHandler;
     private static volatile boolean applicationInited = false;
 
     public static volatile boolean isScreenOn = false;
     public static volatile boolean mainInterfacePaused = true;
+
+    public static boolean isCustomTheme() {
+        return isCustomTheme;
+    }
+
+    public static int getSelectedColor() {
+        return selectedColor;
+    }
+
+    public static void reloadWallpaper() {
+        cachedWallpaper = null;
+        loadWallpaper();
+    }
+
+    public static void loadWallpaper() {
+        if (cachedWallpaper != null) {
+            return;
+        }
+        Utilities.searchQueue.postRunnable(new Runnable() {
+            @Override
+            public void run() {
+                synchronized (sync) {
+                    int selectedColor = 0;
+                    try {
+                        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+                        int selectedBackground = preferences.getInt("selectedBackground", 1000001);
+                        selectedColor = preferences.getInt("selectedColor", 0);
+                        int cacheColorHint = 0;
+                        if (selectedColor == 0) {
+                            if (selectedBackground == 1000001) {
+                                cachedWallpaper = applicationContext.getResources().getDrawable(R.drawable.background_hd);
+                                isCustomTheme = false;
+                            } else {
+                                File toFile = new File(ApplicationLoader.applicationContext.getFilesDir(), "wallpaper.jpg");
+                                if (toFile.exists()) {
+                                    cachedWallpaper = Drawable.createFromPath(toFile.getAbsolutePath());
+                                    isCustomTheme = true;
+                                } else {
+                                    cachedWallpaper = applicationContext.getResources().getDrawable(R.drawable.background_hd);
+                                    isCustomTheme = false;
+                                }
+                            }
+                        }
+                    } catch (Throwable throwable) {
+                        //ignore
+                    }
+                    if (cachedWallpaper == null) {
+                        if (selectedColor == 0) {
+                            selectedColor = -2693905;
+                        }
+                        cachedWallpaper = new ColorDrawable(selectedColor);
+                    }
+                }
+            }
+        });
+    }
+
+    public static Drawable getCachedWallpaper() {
+        synchronized (sync) {
+            return cachedWallpaper;
+        }
+    }
 
     public static void postInitApplication() {
         if (applicationInited) {
@@ -116,6 +186,10 @@ public class ApplicationLoader extends Application {
 
         applicationContext = getApplicationContext();
         NativeLoader.initNativeLibs(ApplicationLoader.applicationContext);
+
+        if (Build.VERSION.SDK_INT >= 14) {
+            new ForegroundDetector(this);
+        }
 
         applicationHandler = new Handler(applicationContext.getMainLooper());
 

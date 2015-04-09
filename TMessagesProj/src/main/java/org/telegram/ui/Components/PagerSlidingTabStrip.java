@@ -38,7 +38,7 @@ import org.telegram.messenger.R;
 public class PagerSlidingTabStrip extends HorizontalScrollView {
 
     public interface IconTabProvider {
-        public int getPageIconResId(int position);
+        int getPageIconResId(int position);
     }
 
     private LinearLayout.LayoutParams defaultTabLayoutParams;

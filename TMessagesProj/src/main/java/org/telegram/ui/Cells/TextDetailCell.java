@@ -82,7 +82,7 @@ public class TextDetailCell extends FrameLayout {
     public void setTextAndValue(String text, String value) {
         textView.setText(text);
         valueTextView.setText(value);
-        imageView.setVisibility(GONE);
+        imageView.setVisibility(INVISIBLE);
     }
 
     public void setTextAndValueAndIcon(String text, String value, int resId) {

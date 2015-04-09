@@ -52,7 +52,7 @@ public class ActionBarMenu extends LinearLayout {
         view.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View view) {
-                onItemClick((Integer)view.getTag());
+                onItemClick((Integer) view.getTag());
             }
         });
         return view;
@@ -147,6 +147,24 @@ public class ActionBarMenu extends LinearLayout {
                 ActionBarMenuItem item = (ActionBarMenuItem)view;
                 if (item.isSearchField()) {
                     parentActionBar.onSearchFieldVisibilityChanged(item.toggleSearch());
+                    break;
+                }
+            }
+        }
+    }
+
+    public void openSearchField(boolean toggle, String text) {
+        for (int a = 0; a < getChildCount(); a++) {
+            View view = getChildAt(a);
+            if (view instanceof ActionBarMenuItem) {
+                ActionBarMenuItem item = (ActionBarMenuItem)view;
+                if (item.isSearchField()) {
+                    if (toggle) {
+                        parentActionBar.onSearchFieldVisibilityChanged(item.toggleSearch());
+                    }
+                    item.getSearchField().setText(text);
+                    item.getSearchField().setSelection(text.length());
+                    break;
                 }
             }
         }

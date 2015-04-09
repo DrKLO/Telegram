@@ -73,7 +73,7 @@ public class NumberPicker extends LinearLayout {
     private OnScrollListener mOnScrollListener;
     private Formatter mFormatter;
     private long mLongPressUpdateInterval = DEFAULT_LONG_PRESS_UPDATE_INTERVAL;
-    private final SparseArray<String> mSelectorIndexToStringCache = new SparseArray<String>();
+    private final SparseArray<String> mSelectorIndexToStringCache = new SparseArray<>();
     private final int[] mSelectorIndices = new int[SELECTOR_WHEEL_ITEM_COUNT];
     private Paint mSelectorWheelPaint;
     private Drawable mVirtualButtonPressedDrawable;
@@ -110,15 +110,15 @@ public class NumberPicker extends LinearLayout {
     }
 
     public interface OnScrollListener {
-        public static int SCROLL_STATE_IDLE = 0;
-        public static int SCROLL_STATE_TOUCH_SCROLL = 1;
-        public static int SCROLL_STATE_FLING = 2;
+        int SCROLL_STATE_IDLE = 0;
+        int SCROLL_STATE_TOUCH_SCROLL = 1;
+        int SCROLL_STATE_FLING = 2;
 
-        public void onScrollStateChange(NumberPicker view, int scrollState);
+        void onScrollStateChange(NumberPicker view, int scrollState);
     }
 
     public interface Formatter {
-        public String format(int value);
+        String format(int value);
     }
 
     private void init() {

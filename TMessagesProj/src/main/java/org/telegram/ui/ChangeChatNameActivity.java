@@ -9,6 +9,7 @@
 package org.telegram.ui;
 
 import android.app.Activity;
+import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.text.InputType;
@@ -55,85 +56,78 @@ public class ChangeChatNameActivity extends BaseFragment {
     }
 
     @Override
-    public View createView(LayoutInflater inflater, ViewGroup container) {
-        if (fragmentView == null) {
-
-            actionBar.setBackButtonImage(R.drawable.ic_ab_back);
-            actionBar.setAllowOverlayTitle(true);
-            actionBar.setTitle(LocaleController.getString("EditName", R.string.EditName));
-            actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
-                @Override
-                public void onItemClick(int id) {
-                    if (id == -1) {
+    public View createView(Context context, LayoutInflater inflater) {
+        actionBar.setBackButtonImage(R.drawable.ic_ab_back);
+        actionBar.setAllowOverlayTitle(true);
+        actionBar.setTitle(LocaleController.getString("EditName", R.string.EditName));
+        actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
+            @Override
+            public void onItemClick(int id) {
+                if (id == -1) {
+                    finishFragment();
+                } else if (id == done_button) {
+                    if (firstNameField.getText().length() != 0) {
+                        saveName();
                         finishFragment();
-                    } else if (id == done_button) {
-                        if (firstNameField.getText().length() != 0) {
-                            saveName();
-                            finishFragment();
-                        }
                     }
                 }
-            });
+            }
+        });
 
-            ActionBarMenu menu = actionBar.createMenu();
-            doneButton = menu.addItemWithWidth(done_button, R.drawable.ic_done, AndroidUtilities.dp(56));
+        ActionBarMenu menu = actionBar.createMenu();
+        doneButton = menu.addItemWithWidth(done_button, R.drawable.ic_done, AndroidUtilities.dp(56));
 
-            TLRPC.Chat currentChat = MessagesController.getInstance().getChat(chat_id);
+        TLRPC.Chat currentChat = MessagesController.getInstance().getChat(chat_id);
 
-            fragmentView = new LinearLayout(getParentActivity());
-            fragmentView.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-            ((LinearLayout) fragmentView).setOrientation(LinearLayout.VERTICAL);
-            fragmentView.setOnTouchListener(new View.OnTouchListener() {
-                @Override
-                public boolean onTouch(View v, MotionEvent event) {
+        fragmentView = new LinearLayout(context);
+        fragmentView.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        ((LinearLayout) fragmentView).setOrientation(LinearLayout.VERTICAL);
+        fragmentView.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                return true;
+            }
+        });
+
+        firstNameField = new EditText(context);
+        firstNameField.setText(currentChat.title);
+        firstNameField.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
+        firstNameField.setHintTextColor(0xff979797);
+        firstNameField.setTextColor(0xff212121);
+        firstNameField.setMaxLines(3);
+        firstNameField.setPadding(0, 0, 0, 0);
+        firstNameField.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
+        firstNameField.setInputType(InputType.TYPE_TEXT_FLAG_CAP_SENTENCES | InputType.TYPE_TEXT_FLAG_MULTI_LINE | InputType.TYPE_TEXT_FLAG_AUTO_CORRECT);
+        firstNameField.setImeOptions(EditorInfo.IME_ACTION_DONE);
+        firstNameField.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
+        AndroidUtilities.clearCursorDrawable(firstNameField);
+        firstNameField.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+            @Override
+            public boolean onEditorAction(TextView textView, int i, KeyEvent keyEvent) {
+                if (i == EditorInfo.IME_ACTION_DONE && doneButton != null) {
+                    doneButton.performClick();
                     return true;
                 }
-            });
-
-            firstNameField = new EditText(getParentActivity());
-            firstNameField.setText(currentChat.title);
-            firstNameField.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
-            firstNameField.setHintTextColor(0xff979797);
-            firstNameField.setTextColor(0xff212121);
-            firstNameField.setMaxLines(3);
-            firstNameField.setPadding(0, 0, 0, 0);
-            firstNameField.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
-            firstNameField.setInputType(InputType.TYPE_TEXT_FLAG_CAP_SENTENCES | InputType.TYPE_TEXT_FLAG_MULTI_LINE | InputType.TYPE_TEXT_FLAG_AUTO_CORRECT);
-            firstNameField.setImeOptions(EditorInfo.IME_ACTION_DONE);
-            firstNameField.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
-            AndroidUtilities.clearCursorDrawable(firstNameField);
-            firstNameField.setOnEditorActionListener(new TextView.OnEditorActionListener() {
-                @Override
-                public boolean onEditorAction(TextView textView, int i, KeyEvent keyEvent) {
-                    if (i == EditorInfo.IME_ACTION_DONE && doneButton != null) {
-                        doneButton.performClick();
-                        return true;
-                    }
-                    return false;
-                }
-            });
-
-            ((LinearLayout) fragmentView).addView(firstNameField);
-            LinearLayout.LayoutParams layoutParams = (LinearLayout.LayoutParams)firstNameField.getLayoutParams();
-            layoutParams.topMargin = AndroidUtilities.dp(24);
-            layoutParams.height = AndroidUtilities.dp(36);
-            layoutParams.leftMargin = AndroidUtilities.dp(24);
-            layoutParams.rightMargin = AndroidUtilities.dp(24);
-            layoutParams.width = LinearLayout.LayoutParams.MATCH_PARENT;
-            firstNameField.setLayoutParams(layoutParams);
-
-            if (chat_id > 0) {
-                firstNameField.setHint(LocaleController.getString("GroupName", R.string.GroupName));
-            } else {
-                firstNameField.setHint(LocaleController.getString("EnterListName", R.string.EnterListName));
+                return false;
             }
-            firstNameField.setSelection(firstNameField.length());
+        });
+
+        ((LinearLayout) fragmentView).addView(firstNameField);
+        LinearLayout.LayoutParams layoutParams = (LinearLayout.LayoutParams) firstNameField.getLayoutParams();
+        layoutParams.topMargin = AndroidUtilities.dp(24);
+        layoutParams.height = AndroidUtilities.dp(36);
+        layoutParams.leftMargin = AndroidUtilities.dp(24);
+        layoutParams.rightMargin = AndroidUtilities.dp(24);
+        layoutParams.width = LinearLayout.LayoutParams.MATCH_PARENT;
+        firstNameField.setLayoutParams(layoutParams);
+
+        if (chat_id > 0) {
+            firstNameField.setHint(LocaleController.getString("GroupName", R.string.GroupName));
         } else {
-            ViewGroup parent = (ViewGroup)fragmentView.getParent();
-            if (parent != null) {
-                parent.removeView(fragmentView);
-            }
+            firstNameField.setHint(LocaleController.getString("EnterListName", R.string.EnterListName));
         }
+        firstNameField.setSelection(firstNameField.length());
+
         return fragmentView;
     }
 

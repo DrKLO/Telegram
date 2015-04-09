@@ -53,6 +53,7 @@ import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.ChatActivityEnterView;
 import org.telegram.ui.Components.FrameLayoutFixed;
 import org.telegram.ui.Components.PopupAudioView;
+import org.telegram.ui.Components.SizeNotifierRelativeLayout;
 import org.telegram.ui.Components.TypingDotsDrawable;
 
 import java.io.File;
@@ -159,23 +160,54 @@ public class PopupNotificationActivity extends Activity implements NotificationC
 
         typingDotsDrawable = new TypingDotsDrawable();
 
-        chatActivityEnterView = new ChatActivityEnterView();
+        SizeNotifierRelativeLayout contentView = new SizeNotifierRelativeLayout(this);
+        setContentView(contentView);
+        contentView.setBackgroundColor(0x99000000);
+
+        RelativeLayout relativeLayout = new RelativeLayout(this);
+        contentView.addView(relativeLayout);
+        RelativeLayout.LayoutParams layoutParams3 = (RelativeLayout.LayoutParams) relativeLayout.getLayoutParams();
+        layoutParams3.width = RelativeLayout.LayoutParams.MATCH_PARENT;
+        layoutParams3.height = RelativeLayout.LayoutParams.MATCH_PARENT;
+        relativeLayout.setLayoutParams(layoutParams3);
+
+        RelativeLayout popupContainer = new RelativeLayout(this);
+        popupContainer.setBackgroundColor(0xffffffff);
+        relativeLayout.addView(popupContainer);
+        layoutParams3 = (RelativeLayout.LayoutParams) popupContainer.getLayoutParams();
+        layoutParams3.width = RelativeLayout.LayoutParams.MATCH_PARENT;
+        layoutParams3.height = AndroidUtilities.dp(240);
+        layoutParams3.leftMargin = AndroidUtilities.dp(12);
+        layoutParams3.rightMargin = AndroidUtilities.dp(12);
+        layoutParams3.addRule(RelativeLayout.CENTER_IN_PARENT);
+        popupContainer.setLayoutParams(layoutParams3);
+
+        if (chatActivityEnterView != null) {
+            chatActivityEnterView.onDestroy();
+        }
+        chatActivityEnterView = new ChatActivityEnterView(this, contentView, null, false);
+        popupContainer.addView(chatActivityEnterView);
+        layoutParams3 = (RelativeLayout.LayoutParams) chatActivityEnterView.getLayoutParams();
+        layoutParams3.width = RelativeLayout.LayoutParams.MATCH_PARENT;
+        layoutParams3.height = RelativeLayout.LayoutParams.WRAP_CONTENT;
+        layoutParams3.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
+        chatActivityEnterView.setLayoutParams(layoutParams3);
         chatActivityEnterView.setDelegate(new ChatActivityEnterView.ChatActivityEnterViewDelegate() {
             @Override
-            public void onMessageSend() {
+            public void onMessageSend(String message) {
                 if (currentMessageObject == null) {
                     return;
                 }
                 if (currentMessageNum >= 0 && currentMessageNum < NotificationsController.getInstance().popupMessages.size()) {
                     NotificationsController.getInstance().popupMessages.remove(currentMessageNum);
                 }
-                MessagesController.getInstance().markDialogAsRead(currentMessageObject.getDialogId(), currentMessageObject.messageOwner.id, Math.max(0, currentMessageObject.messageOwner.id), 0, currentMessageObject.messageOwner.date, true, true);
+                MessagesController.getInstance().markDialogAsRead(currentMessageObject.getDialogId(), currentMessageObject.getId(), Math.max(0, currentMessageObject.getId()), 0, currentMessageObject.messageOwner.date, true, true);
                 currentMessageObject = null;
                 getNewMessage();
             }
 
             @Override
-            public void onTextChanged(CharSequence text) {
+            public void onTextChanged(CharSequence text, boolean big) {
 
             }
 
@@ -202,15 +234,13 @@ public class PopupNotificationActivity extends Activity implements NotificationC
             }
         });
 
-        setContentView(R.layout.popup_notification_layout);
-        RelativeLayout popupContainer = (RelativeLayout) findViewById(R.id.popup_container);
         messageContainer = new FrameLayoutTouch(this);
         popupContainer.addView(messageContainer, 0);
 
         actionBar = new ActionBar(this);
         actionBar.setOccupyStatusBar(false);
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
-        actionBar.setBackgroundResource(R.color.header);
+        actionBar.setBackgroundColor(0xff54759e);
         actionBar.setItemsBackground(R.drawable.bar_selector);
         popupContainer.addView(actionBar);
         ViewGroup.LayoutParams layoutParams = actionBar.getLayoutParams();
@@ -234,8 +264,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
         avatarContainer.setLayoutParams(layoutParams2);
 
         avatarImageView = new BackupImageView(this);
-        avatarImageView.imageReceiver.setRoundRadius(AndroidUtilities.dp(21));
-        avatarImageView.processDetach = false;
+        avatarImageView.setRoundRadius(AndroidUtilities.dp(21));
         avatarContainer.addView(avatarImageView);
         layoutParams2 = (FrameLayout.LayoutParams) avatarImageView.getLayoutParams();
         layoutParams2.width = AndroidUtilities.dp(42);
@@ -291,8 +320,6 @@ public class PopupNotificationActivity extends Activity implements NotificationC
                 }
             }
         });
-
-        chatActivityEnterView.setContainerView(this, findViewById(R.id.chat_layout));
 
         PowerManager pm = (PowerManager) ApplicationLoader.applicationContext.getSystemService(Context.POWER_SERVICE);
         wakeLock = pm.newWakeLock(PowerManager.SCREEN_DIM_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP, "screen");
@@ -521,7 +548,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
 
             TextView messageText = (TextView)view.findViewById(R.id.message_text);
             BackupImageView imageView = (BackupImageView) view.findViewById(R.id.message_image);
-            imageView.imageReceiver.setAspectFit(true);
+            imageView.setAspectFit(true);
 
             if (messageObject.type == 1) {
                 TLRPC.PhotoSize currentPhotoObject = FileLoader.getClosestPhotoSizeWithSize(messageObject.photoThumbs, AndroidUtilities.getPhotoSize());
@@ -774,7 +801,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
         boolean found = false;
         if ((currentMessageNum != 0 || chatActivityEnterView.hasText() || startedMoving) && currentMessageObject != null) {
             for (int a = 0; a < NotificationsController.getInstance().popupMessages.size(); a++) {
-                if (NotificationsController.getInstance().popupMessages.get(a).messageOwner.id == currentMessageObject.messageOwner.id) {
+                if (NotificationsController.getInstance().popupMessages.get(a).getId() == currentMessageObject.getId()) {
                     currentMessageNum = a;
                     found = true;
                     break;
@@ -958,6 +985,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
         }
         ConnectionsManager.getInstance().setAppPaused(false, false);
         fixLayout();
+        checkAndUpdateAvatar();
         wakeLock.acquire(7000);
     }
 
@@ -1004,7 +1032,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
                     View view = messageContainer.getChildAt(a);
                     if ((Integer)view.getTag() == 3) {
                         PopupAudioView cell = (PopupAudioView)view.findViewWithTag(300);
-                        if (cell.getMessageObject() != null && cell.getMessageObject().messageOwner.id == mid) {
+                        if (cell.getMessageObject() != null && cell.getMessageObject().getId() == mid) {
                             cell.updateButtonState();
                             break;
                         }
@@ -1019,7 +1047,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
                     View view = messageContainer.getChildAt(a);
                     if ((Integer)view.getTag() == 3) {
                         PopupAudioView cell = (PopupAudioView)view.findViewWithTag(300);
-                        if (cell.getMessageObject() != null && cell.getMessageObject().messageOwner.id == mid) {
+                        if (cell.getMessageObject() != null && cell.getMessageObject().getId() == mid) {
                             cell.updateProgress();
                             break;
                         }
@@ -1050,6 +1078,9 @@ public class PopupNotificationActivity extends Activity implements NotificationC
         onFinish();
         if (wakeLock.isHeld()) {
             wakeLock.release();
+        }
+        if (avatarImageView != null) {
+            avatarImageView.setImageDrawable(null);
         }
     }
 

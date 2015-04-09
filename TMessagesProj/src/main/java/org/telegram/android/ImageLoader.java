@@ -344,7 +344,7 @@ public class ImageLoader {
                     });
                 }
             });
-            AndroidUtilities.runOnUIThread(new Runnable() {
+            imageLoadQueue.postRunnable(new Runnable() {
                 @Override
                 public void run() {
                     runHttpTasks(true);
@@ -354,7 +354,7 @@ public class ImageLoader {
 
         @Override
         protected void onCancelled() {
-            AndroidUtilities.runOnUIThread(new Runnable() {
+            imageLoadQueue.postRunnable(new Runnable() {
                 @Override
                 public void run() {
                     runHttpTasks(true);
@@ -449,6 +449,11 @@ public class ImageLoader {
                 originalBitmap = scaledBitmap;
                 FileOutputStream stream = new FileOutputStream(thumbFile);
                 originalBitmap.compress(Bitmap.CompressFormat.JPEG, 60, stream);
+                try {
+                    stream.close();
+                } catch (Exception e) {
+                    FileLog.e("tmessages", e);
+                }
                 final BitmapDrawable bitmapDrawable = new BitmapDrawable(originalBitmap);
                 AndroidUtilities.runOnUIThread(new Runnable() {
                     @Override
@@ -615,7 +620,9 @@ public class ImageLoader {
                         if (mediaId != null) {
                             MediaStore.Images.Thumbnails.getThumbnail(ApplicationLoader.applicationContext.getContentResolver(), mediaId, MediaStore.Images.Thumbnails.MINI_KIND, opts);
                         } else {
-                            BitmapFactory.decodeFile(cacheImage.finalFilePath.getAbsolutePath(), opts);
+                            FileInputStream is = new FileInputStream(cacheFileFinal);
+                            image = BitmapFactory.decodeStream(is, null, opts);
+                            is.close();
                         }
 
                         float photoW = opts.outWidth;
@@ -633,14 +640,18 @@ public class ImageLoader {
                         }
                     }
 
-                    if (cacheImage.filter == null || blur) {
+                    if (cacheImage.filter == null || blur || cacheImage.httpUrl != null) {
                         opts.inPreferredConfig = Bitmap.Config.ARGB_8888;
                     } else {
                         opts.inPreferredConfig = Bitmap.Config.RGB_565;
                     }
+                    //if (Build.VERSION.SDK_INT < 21) {
+                    //    opts.inPurgeable = true;
+                    //}
+
                     opts.inDither = false;
                     if (mediaId != null) {
-                        image = MediaStore.Images.Thumbnails.getThumbnail(ApplicationLoader.applicationContext.getContentResolver(), mediaId, MediaStore.Images.Thumbnails.MINI_KIND, null);
+                        image = MediaStore.Images.Thumbnails.getThumbnail(ApplicationLoader.applicationContext.getContentResolver(), mediaId, MediaStore.Images.Thumbnails.MINI_KIND, opts);
                     }
                     if (image == null) {
                         if (isWebp) {
@@ -1057,6 +1068,12 @@ public class ImageLoader {
                 FileLog.e("tmessages", e);
             }
         }
+        try {
+            new File(cachePath, ".nomedia").createNewFile();
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
+
         mediaDirs.put(FileLoader.MEDIA_DIR_CACHE, cachePath);
         FileLog.e("tmessages", "cache path = " + cachePath);
 
@@ -1678,42 +1695,47 @@ public class ImageLoader {
         runHttpFileLoadTasks(null, 0);
     }
 
-    private void runHttpFileLoadTasks(HttpFileTask oldTask, int reason) {
-        if (oldTask != null) {
-            currentHttpFileLoadTasksCount--;
-        }
-        if (oldTask != null) {
-            if (reason == 1) {
-                if (oldTask.canRetry) {
-                    final HttpFileTask newTask = new HttpFileTask(oldTask.url, oldTask.tempFile, oldTask.ext);
-                    Runnable runnable = new Runnable() {
-                        @Override
-                        public void run() {
-                            httpFileLoadTasks.add(newTask);
-                            runHttpFileLoadTasks(null, 0);
-                        }
-                    };
-                    retryHttpsTasks.put(oldTask.url, runnable);
-                    AndroidUtilities.runOnUIThread(runnable, 1000);
-                } else {
-                    NotificationCenter.getInstance().postNotificationName(NotificationCenter.httpFileDidFailedLoad, oldTask.url);
+    private void runHttpFileLoadTasks(final HttpFileTask oldTask, final int reason) {
+        AndroidUtilities.runOnUIThread(new Runnable() {
+            @Override
+            public void run() {
+                if (oldTask != null) {
+                    currentHttpFileLoadTasksCount--;
                 }
-            } else if (reason == 2) {
-                httpFileLoadTasksByKeys.remove(oldTask.url);
-                File file = new File(FileLoader.getInstance().getDirectory(FileLoader.MEDIA_DIR_CACHE), Utilities.MD5(oldTask.url) + "." + oldTask.ext);
-                String result = oldTask.tempFile.renameTo(file) ? file.toString() : oldTask.tempFile.toString();
-                NotificationCenter.getInstance().postNotificationName(NotificationCenter.httpFileDidLoaded, oldTask.url, result);
+                if (oldTask != null) {
+                    if (reason == 1) {
+                        if (oldTask.canRetry) {
+                            final HttpFileTask newTask = new HttpFileTask(oldTask.url, oldTask.tempFile, oldTask.ext);
+                            Runnable runnable = new Runnable() {
+                                @Override
+                                public void run() {
+                                    httpFileLoadTasks.add(newTask);
+                                    runHttpFileLoadTasks(null, 0);
+                                }
+                            };
+                            retryHttpsTasks.put(oldTask.url, runnable);
+                            AndroidUtilities.runOnUIThread(runnable, 1000);
+                        } else {
+                            NotificationCenter.getInstance().postNotificationName(NotificationCenter.httpFileDidFailedLoad, oldTask.url);
+                        }
+                    } else if (reason == 2) {
+                        httpFileLoadTasksByKeys.remove(oldTask.url);
+                        File file = new File(FileLoader.getInstance().getDirectory(FileLoader.MEDIA_DIR_CACHE), Utilities.MD5(oldTask.url) + "." + oldTask.ext);
+                        String result = oldTask.tempFile.renameTo(file) ? file.toString() : oldTask.tempFile.toString();
+                        NotificationCenter.getInstance().postNotificationName(NotificationCenter.httpFileDidLoaded, oldTask.url, result);
+                    }
+                }
+                while (currentHttpFileLoadTasksCount < 2 && !httpFileLoadTasks.isEmpty()) {
+                    HttpFileTask task = httpFileLoadTasks.poll();
+                    if (android.os.Build.VERSION.SDK_INT >= 11) {
+                        task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, null, null, null);
+                    } else {
+                        task.execute(null, null, null);
+                    }
+                    currentHttpFileLoadTasksCount++;
+                }
             }
-        }
-        while (currentHttpFileLoadTasksCount < 2 && !httpFileLoadTasks.isEmpty()) {
-            HttpFileTask task = httpFileLoadTasks.poll();
-            if (android.os.Build.VERSION.SDK_INT >= 11) {
-                task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, null, null, null);
-            } else {
-                task.execute(null, null, null);
-            }
-            currentHttpFileLoadTasksCount++;
-        }
+        });
     }
 
     public static Bitmap loadBitmap(String path, Uri uri, float maxWidth, float maxHeight, boolean useMaxScale) {
@@ -1963,6 +1985,15 @@ public class ImageLoader {
                     }
                 }
             }
+        } else if (message.media instanceof TLRPC.TL_messageMediaWebPage) {
+            if (message.media.webpage.photo != null) {
+                for (TLRPC.PhotoSize size : message.media.webpage.photo.sizes) {
+                    if (size instanceof TLRPC.TL_photoCachedSize) {
+                        photoSize = size;
+                        break;
+                    }
+                }
+            }
         }
         if (photoSize != null && photoSize.bytes != null && photoSize.bytes.length != 0) {
             if (photoSize.location instanceof TLRPC.TL_fileLocationUnavailable) {
@@ -2000,6 +2031,13 @@ public class ImageLoader {
                 message.media.video.thumb = newPhotoSize;
             } else if (message.media instanceof TLRPC.TL_messageMediaDocument) {
                 message.media.document.thumb = newPhotoSize;
+            } else if (message.media instanceof TLRPC.TL_messageMediaWebPage) {
+                for (int a = 0; a < message.media.webpage.photo.sizes.size(); a++) {
+                    if (message.media.webpage.photo.sizes.get(a) instanceof TLRPC.TL_photoCachedSize) {
+                        message.media.webpage.photo.sizes.set(a, newPhotoSize);
+                        break;
+                    }
+                }
             }
         }
     }

@@ -13,6 +13,7 @@ import android.content.res.Configuration;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.text.TextUtils;
+import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
@@ -47,7 +48,6 @@ public class ActionBar extends FrameLayout {
 
     private boolean allowOverlayTitle;
     private CharSequence lastTitle;
-    private boolean showingOverlayTitle;
     private boolean castShadows = true;
 
     protected boolean isSearchFieldVisible;
@@ -91,9 +91,9 @@ public class ActionBar extends FrameLayout {
 
         if (titleTextView != null && titleTextView.getVisibility() == VISIBLE) {
             if (!AndroidUtilities.isTablet() && getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
-                titleTextView.setTextSize(18);
+                titleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
             } else {
-                titleTextView.setTextSize(20);
+                titleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
             }
 
             layoutParams = (LayoutParams) titleTextView.getLayoutParams();
@@ -106,9 +106,9 @@ public class ActionBar extends FrameLayout {
         }
         if (subTitleTextView != null && subTitleTextView.getVisibility() == VISIBLE) {
             if (!AndroidUtilities.isTablet() && getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
-                subTitleTextView.setTextSize(14);
+                subTitleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             } else {
-                subTitleTextView.setTextSize(16);
+                subTitleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
             }
 
             layoutParams = (LayoutParams) subTitleTextView.getLayoutParams();
@@ -121,22 +121,14 @@ public class ActionBar extends FrameLayout {
         }
 
         int x = 0;
-        if (backButtonImageView != null) {
-            if (AndroidUtilities.isTablet()) {
-                x = AndroidUtilities.dp(80);
-            } else {
-                x = AndroidUtilities.dp(72);
-            }
+        if (backButtonImageView != null && backButtonImageView.getVisibility() == VISIBLE) {
+            x = AndroidUtilities.dp(AndroidUtilities.isTablet() ? 80 : 72);
         } else {
-            if (AndroidUtilities.isTablet()) {
-                x = AndroidUtilities.dp(26);
-            } else {
-                x = AndroidUtilities.dp(18);
-            }
+            x = AndroidUtilities.dp(AndroidUtilities.isTablet() ? 26 : 18);
         }
 
         if (menu != null) {
-            maxTextWidth = Math.min(maxTextWidth, width - menu.getMeasuredWidth() - AndroidUtilities.dp(16));
+            maxTextWidth = Math.min(maxTextWidth, width - menu.getMeasuredWidth() - AndroidUtilities.dp(16) - x);
         }
 
         if (titleTextView != null && titleTextView.getVisibility() == VISIBLE) {
@@ -173,7 +165,7 @@ public class ActionBar extends FrameLayout {
         FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams)menu.getLayoutParams();
         layoutParams.width = isSearchFieldVisible ? LayoutParams.MATCH_PARENT : LayoutParams.WRAP_CONTENT;
         layoutParams.height = height;
-        layoutParams.leftMargin = isSearchFieldVisible ? AndroidUtilities.dp(54) : 0;
+        layoutParams.leftMargin = isSearchFieldVisible ? AndroidUtilities.dp(AndroidUtilities.isTablet() ? 74 : 66) : 0;
         layoutParams.topMargin = occupyStatusBar ? AndroidUtilities.statusBarHeight : 0;
         menu.setLayoutParams(layoutParams);
         menu.measure(width, height);
@@ -202,17 +194,31 @@ public class ActionBar extends FrameLayout {
     }
 
     public void setBackButtonDrawable(Drawable drawable) {
+        boolean reposition = false;
         if (backButtonImageView == null) {
             createBackButtonImage();
+        } else {
+            reposition = true;
         }
+        backButtonImageView.setVisibility(drawable == null ? GONE : VISIBLE);
         backButtonImageView.setImageDrawable(drawable);
+        if (reposition) {
+            positionTitle(getMeasuredWidth(), getMeasuredHeight());
+        }
     }
 
     public void setBackButtonImage(int resource) {
+        boolean reposition = false;
         if (backButtonImageView == null) {
             createBackButtonImage();
+        } else {
+            reposition = true;
         }
+        backButtonImageView.setVisibility(resource == 0 ? GONE : VISIBLE);
         backButtonImageView.setImageResource(resource);
+        if (reposition) {
+            positionTitle(getMeasuredWidth(), getMeasuredHeight());
+        }
     }
 
     private void createSubtitleTextView() {
@@ -234,7 +240,7 @@ public class ActionBar extends FrameLayout {
             createSubtitleTextView();
         }
         if (subTitleTextView != null) {
-            subTitleTextView.setVisibility(value != null && !isSearchFieldVisible ? VISIBLE : GONE);
+            subTitleTextView.setVisibility(value != null && !isSearchFieldVisible ? VISIBLE : INVISIBLE);
             subTitleTextView.setText(value);
             positionTitle(getMeasuredWidth(), getMeasuredHeight());
         }
@@ -276,7 +282,7 @@ public class ActionBar extends FrameLayout {
         }
         if (titleTextView != null) {
             lastTitle = value;
-            titleTextView.setVisibility(value != null && !isSearchFieldVisible ? VISIBLE : GONE);
+            titleTextView.setVisibility(value != null && !isSearchFieldVisible ? VISIBLE : INVISIBLE);
             titleTextView.setText(value);
             positionTitle(getMeasuredWidth(), getMeasuredHeight());
         }
@@ -344,7 +350,7 @@ public class ActionBar extends FrameLayout {
         layoutParams.width = LayoutParams.FILL_PARENT;
         layoutParams.gravity = Gravity.RIGHT;
         actionMode.setLayoutParams(layoutParams);
-        actionMode.setVisibility(GONE);
+        actionMode.setVisibility(INVISIBLE);
 
         if (occupyStatusBar) {
             actionModeTop = new View(getContext());
@@ -355,7 +361,7 @@ public class ActionBar extends FrameLayout {
             layoutParams.width = LayoutParams.FILL_PARENT;
             layoutParams.gravity = Gravity.TOP | Gravity.LEFT;
             actionModeTop.setLayoutParams(layoutParams);
-            actionModeTop.setVisibility(GONE);
+            actionModeTop.setVisibility(INVISIBLE);
         }
 
         return actionMode;
@@ -366,7 +372,7 @@ public class ActionBar extends FrameLayout {
             return;
         }
         actionMode.setVisibility(VISIBLE);
-        if (actionModeTop != null) {
+        if (occupyStatusBar && actionModeTop != null) {
             actionModeTop.setVisibility(VISIBLE);
         }
         if (titleFrameLayout != null) {
@@ -381,9 +387,9 @@ public class ActionBar extends FrameLayout {
         if (actionMode == null) {
             return;
         }
-        actionMode.setVisibility(GONE);
-        if (actionModeTop != null) {
-            actionModeTop.setVisibility(GONE);
+        actionMode.setVisibility(INVISIBLE);
+        if (occupyStatusBar && actionModeTop != null) {
+            actionModeTop.setVisibility(INVISIBLE);
         }
         if (titleFrameLayout != null) {
             titleFrameLayout.setVisibility(VISIBLE);
@@ -400,10 +406,10 @@ public class ActionBar extends FrameLayout {
     protected void onSearchFieldVisibilityChanged(boolean visible) {
         isSearchFieldVisible = visible;
         if (titleTextView != null) {
-            titleTextView.setVisibility(visible ? GONE : VISIBLE);
+            titleTextView.setVisibility(visible ? INVISIBLE : VISIBLE);
         }
         if (subTitleTextView != null) {
-            subTitleTextView.setVisibility(visible ? GONE : VISIBLE);
+            subTitleTextView.setVisibility(visible ? INVISIBLE : VISIBLE);
         }
         Drawable drawable = backButtonImageView.getDrawable();
         if (drawable != null && drawable instanceof MenuDrawable) {
@@ -416,6 +422,13 @@ public class ActionBar extends FrameLayout {
             return;
         }
         menu.closeSearchField();
+    }
+
+    public void openSearchField(String text) {
+        if (menu == null || text == null) {
+            return;
+        }
+        menu.openSearchField(!isSearchFieldVisible, text);
     }
 
     @Override
@@ -445,16 +458,15 @@ public class ActionBar extends FrameLayout {
     }
 
     public void setTitleOverlayText(String text) {
-        if (showingOverlayTitle == (text != null) || !allowOverlayTitle || parentFragment.parentLayout == null) {
+        if (!allowOverlayTitle || parentFragment.parentLayout == null) {
             return;
         }
-        showingOverlayTitle = text != null;
         CharSequence textToSet = text != null ? text : lastTitle;
         if (textToSet != null && titleTextView == null) {
             createTitleTextView();
         }
         if (titleTextView != null) {
-            titleTextView.setVisibility(textToSet != null && !isSearchFieldVisible ? VISIBLE : GONE);
+            titleTextView.setVisibility(textToSet != null && !isSearchFieldVisible ? VISIBLE : INVISIBLE);
             titleTextView.setText(textToSet);
             positionTitle(getMeasuredWidth(), getMeasuredHeight());
         }
@@ -473,6 +485,9 @@ public class ActionBar extends FrameLayout {
 
     public void setOccupyStatusBar(boolean value) {
         occupyStatusBar = value;
+        if (actionMode != null) {
+            actionMode.setPadding(0, occupyStatusBar ? AndroidUtilities.statusBarHeight : 0, 0, 0);
+        }
     }
 
     public boolean getOccupyStatusBar() {

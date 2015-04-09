@@ -49,6 +49,41 @@ public class SerializedData extends AbsSerializedData {
         in = new DataInputStream(inbuf);
     }
 
+    public void cleanup() {
+        try {
+            if (inbuf != null) {
+                inbuf.close();
+                inbuf = null;
+            }
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
+        try {
+            if (in != null) {
+                in.close();
+                in = null;
+            }
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
+        try {
+            if (outbuf != null) {
+                outbuf.close();
+                outbuf = null;
+            }
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
+        try {
+            if (out != null) {
+                out.close();
+                out = null;
+            }
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
+    }
+
     public SerializedData(File file) throws Exception {
         FileInputStream is = new FileInputStream(file);
         byte[] data = new byte[(int)file.length()];

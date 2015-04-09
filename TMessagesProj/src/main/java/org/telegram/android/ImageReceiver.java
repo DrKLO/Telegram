@@ -29,8 +29,8 @@ import org.telegram.messenger.Utilities;
 
 public class ImageReceiver implements NotificationCenter.NotificationCenterDelegate {
 
-    public static interface ImageReceiverDelegate {
-        public void didSetImage(ImageReceiver imageReceiver, boolean set, boolean thumb);
+    public interface ImageReceiverDelegate {
+        void didSetImage(ImageReceiver imageReceiver, boolean set, boolean thumb);
     }
 
     private View parentView;
@@ -68,7 +68,8 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
     private Matrix shaderMatrix;
     private int alpha = 255;
     private boolean isPressed;
-    private boolean disableRecycle;
+    private int orientation;
+    private boolean centerRotation;
     private ImageReceiverDelegate delegate;
 
     public ImageReceiver() {
@@ -209,12 +210,17 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
         return isPressed;
     }
 
-    public void setImageBitmap(Bitmap bitmap) {
-        setImageBitmap(bitmap != null ? new BitmapDrawable(null, bitmap) : null);
+    public void setOrientation(int angle, boolean center) {
+        orientation = angle;
+        centerRotation = center;
     }
 
-    public void setDisableRecycle(boolean value) {
-        disableRecycle = value;
+    public int getOrientation() {
+        return orientation;
+    }
+
+    public void setImageBitmap(Bitmap bitmap) {
+        setImageBitmap(bitmap != null ? new BitmapDrawable(null, bitmap) : null);
     }
 
     public void setImageBitmap(Drawable bitmap) {
@@ -280,8 +286,17 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
                         canvas.drawRoundRect(roundRect, roundRadius, roundRadius, roundPaint);
                     }
                 } else {
-                    int bitmapW = bitmapDrawable.getIntrinsicWidth();
-                    int bitmapH = bitmapDrawable.getIntrinsicHeight();
+                    int bitmapW;
+                    int bitmapH;
+                    int originalW = bitmapDrawable.getIntrinsicWidth();
+                    int originalH = bitmapDrawable.getIntrinsicHeight();
+                    if (orientation == 90 || orientation == 270) {
+                        bitmapW = bitmapDrawable.getIntrinsicHeight();
+                        bitmapH = bitmapDrawable.getIntrinsicWidth();
+                    } else {
+                        bitmapW = bitmapDrawable.getIntrinsicWidth();
+                        bitmapH = bitmapDrawable.getIntrinsicHeight();
+                    }
                     float scaleW = bitmapW / (float) imageW;
                     float scaleH = bitmapH / (float) imageH;
 
@@ -312,14 +327,32 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
                             canvas.save();
                             canvas.clipRect(imageX, imageY, imageX + imageW, imageY + imageH);
 
+                            if (orientation != 0) {
+                                if (centerRotation) {
+                                    canvas.rotate(orientation, imageW / 2, imageH / 2);
+                                } else {
+                                    canvas.rotate(orientation, 0, 0);
+                                }
+                            }
+
                             if (bitmapW / scaleH > imageW) {
                                 bitmapW /= scaleH;
+                                originalW /= scaleH;
                                 drawRegion.set(imageX - (bitmapW - imageW) / 2, imageY, imageX + (bitmapW + imageW) / 2, imageY + imageH);
                             } else {
                                 bitmapH /= scaleW;
+                                originalH /= scaleW;
                                 drawRegion.set(imageX, imageY - (bitmapH - imageH) / 2, imageX + imageW, imageY + (bitmapH + imageH) / 2);
                             }
-                            bitmapDrawable.setBounds(drawRegion);
+                            if (orientation == 90 || orientation == 270) {
+                                int width = (drawRegion.right - drawRegion.left) / 2;
+                                int height = (drawRegion.bottom - drawRegion.top) / 2;
+                                int centerX = (drawRegion.right + drawRegion.left) / 2;
+                                int centerY = (drawRegion.top + drawRegion.bottom) / 2;
+                                bitmapDrawable.setBounds(centerX - height, centerY - width, centerX + height, centerY + width);
+                            } else {
+                                bitmapDrawable.setBounds(drawRegion);
+                            }
                             if (isVisible) {
                                 try {
                                     bitmapDrawable.setAlpha(alpha);
@@ -339,8 +372,24 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
 
                             canvas.restore();
                         } else {
+                            canvas.save();
+                            if (orientation != 0) {
+                                if (centerRotation) {
+                                    canvas.rotate(orientation, imageW / 2, imageH / 2);
+                                } else {
+                                    canvas.rotate(orientation, 0, 0);
+                                }
+                            }
                             drawRegion.set(imageX, imageY, imageX + imageW, imageY + imageH);
-                            bitmapDrawable.setBounds(drawRegion);
+                            if (orientation == 90 || orientation == 270) {
+                                int width = (drawRegion.right - drawRegion.left) / 2;
+                                int height = (drawRegion.bottom - drawRegion.top) / 2;
+                                int centerX = (drawRegion.right + drawRegion.left) / 2;
+                                int centerY = (drawRegion.top + drawRegion.bottom) / 2;
+                                bitmapDrawable.setBounds(centerX - height, centerY - width, centerX + height, centerY + width);
+                            } else {
+                                bitmapDrawable.setBounds(drawRegion);
+                            }
                             if (isVisible) {
                                 try {
                                     bitmapDrawable.setAlpha(alpha);
@@ -357,6 +406,7 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
                                     FileLog.e("tmessages", e);
                                 }
                             }
+                            canvas.restore();
                         }
                     }
                 }
@@ -389,6 +439,16 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
             return ((BitmapDrawable) staticThumb).getBitmap();
         }
         return null;
+    }
+
+    public int getBitmapWidth() {
+        Bitmap bitmap = getBitmap();
+        return orientation == 0 || orientation == 180 ? bitmap.getWidth() : bitmap.getHeight();
+    }
+
+    public int getBitmapHeight() {
+        Bitmap bitmap = getBitmap();
+        return orientation == 0 || orientation == 180 ? bitmap.getHeight() : bitmap.getWidth();
     }
 
     public void setVisible(boolean value, boolean invalidate) {
@@ -432,8 +492,16 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
         return imageX;
     }
 
+    public int getImageX2() {
+        return imageX + imageW;
+    }
+
     public int getImageY() {
         return imageY;
+    }
+
+    public int getImageY2() {
+        return imageY + imageH;
     }
 
     public int getImageWidth() {
@@ -617,7 +685,7 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
         if (newKey != null) {
             newBitmap = ImageLoader.getInstance().getImageFromMemory(newKey);
         }
-        if (key == null || image == null || image == newBitmap || disableRecycle) {
+        if (key == null || image == null || image == newBitmap) {
             return;
         }
         Bitmap bitmap = image.getBitmap();

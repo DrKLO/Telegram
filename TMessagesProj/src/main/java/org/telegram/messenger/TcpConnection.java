@@ -28,11 +28,11 @@ public class TcpConnection extends ConnectionContext {
         TcpConnectionStageSuspended
     }
 
-    public abstract static interface TcpConnectionDelegate {
-        public abstract void tcpConnectionClosed(TcpConnection connection);
-        public abstract void tcpConnectionConnected(TcpConnection connection);
-        public abstract void tcpConnectionQuiackAckReceived(TcpConnection connection, int ack);
-        public abstract void tcpConnectionReceivedData(TcpConnection connection, ByteBufferDesc data, int length);
+    public interface TcpConnectionDelegate {
+        void tcpConnectionClosed(TcpConnection connection);
+        void tcpConnectionConnected(TcpConnection connection);
+        void tcpConnectionQuiackAckReceived(TcpConnection connection, int ack);
+        void tcpConnectionReceivedData(TcpConnection connection, ByteBufferDesc data, int length);
     }
 
     private static PyroSelector selector;

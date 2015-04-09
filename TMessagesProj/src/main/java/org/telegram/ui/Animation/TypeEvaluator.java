@@ -17,5 +17,5 @@
 package org.telegram.ui.Animation;
 
 public interface TypeEvaluator<T> {
-    public T evaluate(float fraction, T startValue, T endValue);
+    T evaluate(float fraction, T startValue, T endValue);
 }

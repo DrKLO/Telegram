@@ -165,6 +165,9 @@ public class DrawerLayoutContainer extends FrameLayout {
     }
 
     public void openDrawer(boolean fast) {
+        if (!allowOpenDrawer) {
+            return;
+        }
         if (AndroidUtilities.isTablet() && parentActionBarLayout != null && parentActionBarLayout.parentActivity != null) {
             AndroidUtilities.hideKeyboard(parentActionBarLayout.parentActivity.getCurrentFocus());
         }
@@ -248,11 +251,15 @@ public class DrawerLayoutContainer extends FrameLayout {
         parentActionBarLayout = layout;
     }
 
-    public void setAllowOpenDrawer(boolean value) {
+    public void setAllowOpenDrawer(boolean value, boolean animated) {
         allowOpenDrawer = value;
         if (!allowOpenDrawer && drawerPosition != 0) {
-            setDrawerPosition(0);
-            onDrawerAnimationEnd(false);
+            if (!animated) {
+                setDrawerPosition(0);
+                onDrawerAnimationEnd(false);
+            } else {
+                closeDrawer(true);
+            }
         }
     }
 
@@ -294,7 +301,7 @@ public class DrawerLayoutContainer extends FrameLayout {
                     float dx = (int) (ev.getX() - startedTrackingX);
                     float dy = Math.abs((int) ev.getY() - startedTrackingY);
                     velocityTracker.addMovement(ev);
-                    if (maybeStartTracking && !startedTracking && (dx > 0 && dx / 3.0f > Math.abs(dy) || dx < 0 && Math.abs(dx) >= Math.abs(dy) && Math.abs(dx) >= AndroidUtilities.dp(10))) {
+                    if (maybeStartTracking && !startedTracking && (dx > 0 && dx / 3.0f > Math.abs(dy) && Math.abs(dx) >= AndroidUtilities.getPixelsInCM(0.2f, true) || dx < 0 && Math.abs(dx) >= Math.abs(dy) && Math.abs(dx) >= AndroidUtilities.getPixelsInCM(0.3f, true))) {
                         prepareForDrawerOpen(ev);
                         startedTrackingX = (int) ev.getX();
                         requestDisallowInterceptTouchEvent(true);

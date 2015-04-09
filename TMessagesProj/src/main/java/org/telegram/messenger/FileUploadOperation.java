@@ -45,10 +45,10 @@ public class FileUploadOperation {
     private MessageDigest mdEnc = null;
     private boolean started = false;
 
-    public static interface FileUploadOperationDelegate {
-        public abstract void didFinishUploadingFile(FileUploadOperation operation, TLRPC.InputFile inputFile, TLRPC.InputEncryptedFile inputEncryptedFile);
-        public abstract void didFailedUploadingFile(FileUploadOperation operation);
-        public abstract void didChangedUploadProgress(FileUploadOperation operation, float progress);
+    public interface FileUploadOperationDelegate {
+        void didFinishUploadingFile(FileUploadOperation operation, TLRPC.InputFile inputFile, TLRPC.InputEncryptedFile inputEncryptedFile);
+        void didFailedUploadingFile(FileUploadOperation operation);
+        void didChangedUploadProgress(FileUploadOperation operation, float progress);
     }
 
     public FileUploadOperation(String location, boolean encrypted, int estimated) {
@@ -91,6 +91,14 @@ public class FileUploadOperation {
                 remove(fileKey + "_iv").
                 remove(fileKey + "_key").
                 remove(fileKey + "_ivc").commit();
+        try {
+            if (stream != null) {
+                stream.close();
+                stream = null;
+            }
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
     }
 
     protected void checkNewDataAvailable(final long finalSize) {
@@ -100,7 +108,7 @@ public class FileUploadOperation {
                 if (estimatedSize != 0 && finalSize != 0) {
                     estimatedSize = 0;
                     totalFileSize = finalSize;
-                    totalPartsCount = (int) Math.ceil((float) totalFileSize / (float) uploadChunkSize);
+                    totalPartsCount = (int) (totalFileSize + uploadChunkSize - 1) / uploadChunkSize;
                     if (started) {
                         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("uploadinfo", Activity.MODE_PRIVATE);
                         storeFileUploadInfo(preferences);
@@ -154,7 +162,7 @@ public class FileUploadOperation {
                     }
                 }
 
-                uploadChunkSize = (int) Math.max(32, Math.ceil(totalFileSize / (1024.0f * 3000)));
+                uploadChunkSize = (int) Math.max(32, (totalFileSize + 1024 * 3000 - 1) / (1024 * 3000));
                 if (1024 % uploadChunkSize != 0) {
                     int chunkSize = 64;
                     while (uploadChunkSize > chunkSize) {
@@ -164,7 +172,7 @@ public class FileUploadOperation {
                 }
 
                 uploadChunkSize *= 1024;
-                totalPartsCount = (int) Math.ceil((float) totalFileSize / (float) uploadChunkSize);
+                totalPartsCount = (int) (totalFileSize + uploadChunkSize - 1) / uploadChunkSize;
                 readBuffer = new byte[uploadChunkSize];
 
                 fileKey = Utilities.MD5(uploadingFilePath + (isEncrypted ? "enc" : ""));
@@ -347,7 +355,7 @@ public class FileUploadOperation {
                 if (error == null) {
                     if (response instanceof TLRPC.TL_boolTrue) {
                         currentPartNum++;
-                        delegate.didChangedUploadProgress(FileUploadOperation.this, (float) currentUploaded / (float) totalFileSize);
+                        delegate.didChangedUploadProgress(FileUploadOperation.this, currentUploaded / (float) totalFileSize);
                         if (isLastPart) {
                             state = 3;
                             if (key == null) {

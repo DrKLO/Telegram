@@ -29,6 +29,7 @@ import java.util.ArrayList;
 
 @TargetApi(10)
 public class VideoTimelineView extends View {
+
     private long videoLength = 0;
     private float progressLeft = 0;
     private float progressRight = 1;
@@ -39,7 +40,7 @@ public class VideoTimelineView extends View {
     private float pressDx = 0;
     private MediaMetadataRetriever mediaMetadataRetriever = null;
     private VideoTimelineViewDelegate delegate = null;
-    private ArrayList<Bitmap> frames = new ArrayList<Bitmap>();
+    private ArrayList<Bitmap> frames = new ArrayList<>();
     private AsyncTask<Integer, Integer, Bitmap> currentTask = null;
     private static final Object sync = new Object();
     private long frameTimeOffset = 0;
@@ -48,9 +49,9 @@ public class VideoTimelineView extends View {
     private int framesToLoad = 0;
     private Drawable pickDrawable = null;
 
-    public abstract interface VideoTimelineViewDelegate {
-        public void onLeftProgressChanged(float progress);
-        public void onRifhtProgressChanged(float progress);
+    public interface VideoTimelineViewDelegate {
+        void onLeftProgressChanged(float progress);
+        void onRifhtProgressChanged(float progress);
     }
 
     private void init(Context context) {

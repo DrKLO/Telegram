@@ -30,7 +30,12 @@ public class UserConfig {
     private final static Object sync = new Object();
     public static boolean saveIncomingPhotos = false;
     public static int contactsVersion = 1;
-    public static boolean waitingForPasswordEnter = false;
+    public static String passcodeHash = "";
+    public static boolean appLocked = false;
+    public static int passcodeType = 0;
+    public static int autoLockIn = 60 * 60;
+    public static int lastPauseTime = 0;
+    public static boolean isWaitingForPasscodeEnter = false;
 
     public static int getNewMessageId() {
         int id;
@@ -61,13 +66,19 @@ public class UserConfig {
                 editor.putInt("lastBroadcastId", lastBroadcastId);
                 editor.putBoolean("registeredForInternalPush", registeredForInternalPush);
                 editor.putBoolean("blockedUsersLoaded", blockedUsersLoaded);
-                editor.putBoolean("waitingForPasswordEnter", waitingForPasswordEnter);
+                editor.putString("passcodeHash1", passcodeHash);
+                editor.putBoolean("appLocked", appLocked);
+                editor.putInt("passcodeType", passcodeType);
+                editor.putInt("autoLockIn", autoLockIn);
+                editor.putInt("lastPauseTime", lastPauseTime);
+
                 if (currentUser != null) {
                     if (withFile) {
                         SerializedData data = new SerializedData();
                         currentUser.serializeToStream(data);
                         String userString = Base64.encodeToString(data.toByteArray(), Base64.DEFAULT);
                         editor.putString("user", userString);
+                        data.cleanup();
                     }
                 } else {
                     editor.remove("user");
@@ -85,18 +96,6 @@ public class UserConfig {
     public static boolean isClientActivated() {
         synchronized (sync) {
             return currentUser != null;
-        }
-    }
-
-    public static boolean isWaitingForPasswordEnter() {
-        synchronized (sync) {
-            return waitingForPasswordEnter;
-        }
-    }
-
-    public static void setWaitingForPasswordEnter(boolean value) {
-        synchronized (sync) {
-            waitingForPasswordEnter = value;
         }
     }
 
@@ -172,6 +171,7 @@ public class UserConfig {
                     if (lastSendMessageId > -210000) {
                         lastSendMessageId = -210000;
                     }
+                    data.cleanup();
                     Utilities.stageQueue.postRunnable(new Runnable() {
                         @Override
                         public void run() {
@@ -194,13 +194,18 @@ public class UserConfig {
                 lastBroadcastId = preferences.getInt("lastBroadcastId", -1);
                 registeredForInternalPush = preferences.getBoolean("registeredForInternalPush", false);
                 blockedUsersLoaded = preferences.getBoolean("blockedUsersLoaded", false);
-                waitingForPasswordEnter = preferences.getBoolean("waitingForPasswordEnter", false);
+                passcodeHash = preferences.getString("passcodeHash1", "");
+                appLocked = preferences.getBoolean("appLocked", false);
+                passcodeType = preferences.getInt("passcodeType", 0);
+                autoLockIn = preferences.getInt("autoLockIn", 60 * 60);
+                lastPauseTime = preferences.getInt("lastPauseTime", 0);
                 String user = preferences.getString("user", null);
                 if (user != null) {
                     byte[] userBytes = Base64.decode(user, Base64.DEFAULT);
                     if (userBytes != null) {
                         SerializedData data = new SerializedData(userBytes);
                         currentUser = (TLRPC.TL_userSelf)TLClassStore.Instance().TLdeserialize(data, data.readInt32());
+                        data.cleanup();
                     }
                 }
             }
@@ -211,15 +216,19 @@ public class UserConfig {
         currentUser = null;
         registeredForInternalPush = false;
         registeredForPush = false;
-        waitingForPasswordEnter = false;
         contactsHash = "";
         importHash = "";
-        lastLocalId = -210000;
         lastSendMessageId = -210000;
         contactsVersion = 1;
         lastBroadcastId = -1;
         saveIncomingPhotos = false;
         blockedUsersLoaded = false;
+        appLocked = false;
+        passcodeType = 0;
+        passcodeHash = "";
+        autoLockIn = 60 * 60;
+        lastPauseTime = 0;
+        isWaitingForPasscodeEnter = false;
         saveConfig(true);
     }
 }

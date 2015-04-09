@@ -9,7 +9,6 @@
 package org.telegram.ui.Adapters;
 
 import android.content.Context;
-import android.text.Html;
 import android.text.TextUtils;
 import android.view.View;
 import android.view.ViewGroup;
@@ -33,6 +32,7 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.Cells.DialogCell;
 import org.telegram.ui.Cells.GreySectionCell;
+import org.telegram.ui.Cells.HashtagSearchCell;
 import org.telegram.ui.Cells.LoadingCell;
 import org.telegram.ui.Cells.ProfileSearchCell;
 
@@ -44,18 +44,19 @@ import java.util.Locale;
 import java.util.Timer;
 import java.util.TimerTask;
 
-public class DialogsSearchAdapter extends BaseContactsSearchAdapter {
+public class DialogsSearchAdapter extends BaseSearchAdapter {
 
     private Context mContext;
     private Timer searchTimer;
     private ArrayList<TLObject> searchResult = new ArrayList<>();
     private ArrayList<CharSequence> searchResultNames = new ArrayList<>();
     private ArrayList<MessageObject> searchResultMessages = new ArrayList<>();
+    private ArrayList<String> searchResultHashtags = new ArrayList<>();
     private String lastSearchText;
     private long reqId = 0;
     private int lastReqId;
     private MessagesActivitySearchAdapterDelegate delegate;
-    private boolean needMessagesSearch;
+    private int needMessagesSearch;
     private boolean messagesSearchEndReached;
     private String lastMessagesSearchString;
     private int lastSearchId = 0;
@@ -66,11 +67,11 @@ public class DialogsSearchAdapter extends BaseContactsSearchAdapter {
         public CharSequence name;
     }
 
-    public static interface MessagesActivitySearchAdapterDelegate {
-        public abstract void searchStateChanged(boolean searching);
+    public interface MessagesActivitySearchAdapterDelegate {
+        void searchStateChanged(boolean searching);
     }
 
-    public DialogsSearchAdapter(Context context, boolean messagesSearch) {
+    public DialogsSearchAdapter(Context context, int messagesSearch) {
         mContext = context;
         needMessagesSearch = messagesSearch;
     }
@@ -87,8 +88,12 @@ public class DialogsSearchAdapter extends BaseContactsSearchAdapter {
         searchMessagesInternal(lastMessagesSearchString);
     }
 
+    public String getLastSearchString() {
+        return lastMessagesSearchString;
+    }
+
     private void searchMessagesInternal(final String query) {
-        if (!needMessagesSearch) {
+        if (needMessagesSearch == 0) {
             return;
         }
         if (reqId != 0) {
@@ -110,7 +115,7 @@ public class DialogsSearchAdapter extends BaseContactsSearchAdapter {
         req.peer = new TLRPC.TL_inputPeerEmpty();
         req.q = query;
         if (lastMessagesSearchString != null && query.equals(lastMessagesSearchString) && !searchResultMessages.isEmpty()) {
-            req.max_id = searchResultMessages.get(searchResultMessages.size() - 1).messageOwner.id;
+            req.max_id = searchResultMessages.get(searchResultMessages.size() - 1).getId();
         }
         lastMessagesSearchString = query;
         req.filter = new TLRPC.TL_inputMessagesFilterEmpty();
@@ -151,6 +156,9 @@ public class DialogsSearchAdapter extends BaseContactsSearchAdapter {
     }
 
     private void searchDialogsInternal(final String query, final boolean serverOnly, final int searchId) {
+        if (needMessagesSearch == 2) {
+            return;
+        }
         MessagesStorage.getInstance().getStorageQueue().postRunnable(new Runnable() {
             @Override
             public void run() {
@@ -178,15 +186,15 @@ public class DialogsSearchAdapter extends BaseContactsSearchAdapter {
                     int resultCount = 0;
 
                     HashMap<Long, DialogSearchResult> dialogsResult = new HashMap<>();
-                    SQLiteCursor cursor = MessagesStorage.getInstance().getDatabase().queryFinalized(String.format(Locale.US, "SELECT did, date FROM dialogs ORDER BY date DESC LIMIT 200"));
+                    SQLiteCursor cursor = MessagesStorage.getInstance().getDatabase().queryFinalized("SELECT did, date FROM dialogs ORDER BY date DESC LIMIT 200");
                     while (cursor.next()) {
                         long id = cursor.longValue(0);
                         DialogSearchResult dialogSearchResult = new DialogSearchResult();
                         dialogSearchResult.date = cursor.intValue(1);
                         dialogsResult.put(id, dialogSearchResult);
 
-                        int lower_id = (int)id;
-                        int high_id = (int)(id >> 32);
+                        int lower_id = (int) id;
+                        int high_id = (int) (id >> 32);
                         if (lower_id != 0) {
                             if (high_id == 1) {
                                 if (!serverOnly && !chatsToLoad.contains(lower_id)) {
@@ -215,6 +223,10 @@ public class DialogsSearchAdapter extends BaseContactsSearchAdapter {
                         cursor = MessagesStorage.getInstance().getDatabase().queryFinalized(String.format(Locale.US, "SELECT data, status, name FROM users WHERE uid IN(%s)", TextUtils.join(",", usersToLoad)));
                         while (cursor.next()) {
                             String name = cursor.stringValue(2);
+                            String tName = LocaleController.getInstance().getTranslitString(name);
+                            if (name.equals(tName)) {
+                                tName = null;
+                            }
                             String username = null;
                             int usernamePos = name.lastIndexOf(";;;");
                             if (usernamePos != -1) {
@@ -222,7 +234,7 @@ public class DialogsSearchAdapter extends BaseContactsSearchAdapter {
                             }
                             int found = 0;
                             for (String q : search) {
-                                if (name.startsWith(q) || name.contains(" " + q)) {
+                                if (name.startsWith(q) || name.contains(" " + q) || tName != null && (tName.startsWith(q) || tName.contains(" " + q))) {
                                     found = 1;
                                 } else if (username != null && username.startsWith(q)) {
                                     found = 2;
@@ -257,8 +269,12 @@ public class DialogsSearchAdapter extends BaseContactsSearchAdapter {
                         cursor = MessagesStorage.getInstance().getDatabase().queryFinalized(String.format(Locale.US, "SELECT data, name FROM chats WHERE uid IN(%s)", TextUtils.join(",", chatsToLoad)));
                         while (cursor.next()) {
                             String name = cursor.stringValue(1);
+                            String tName = LocaleController.getInstance().getTranslitString(name);
+                            if (name.equals(tName)) {
+                                tName = null;
+                            }
                             for (String q : search) {
-                                if (name.startsWith(q) || name.contains(" " + q)) {
+                                if (name.startsWith(q) || name.contains(" " + q) || tName != null && (tName.startsWith(q) || tName.contains(" " + q))) {
                                     ByteBufferDesc data = MessagesStorage.getInstance().getBuffersStorage().getFreeBuffer(cursor.byteArrayLength(0));
                                     if (data != null && cursor.byteBufferValue(0, data.buffer) != 0) {
                                         TLRPC.Chat chat = (TLRPC.Chat) TLClassStore.Instance().TLdeserialize(data, data.readInt32());
@@ -285,6 +301,10 @@ public class DialogsSearchAdapter extends BaseContactsSearchAdapter {
                         cursor = MessagesStorage.getInstance().getDatabase().queryFinalized(String.format(Locale.US, "SELECT q.data, u.name, q.user, q.g, q.authkey, q.ttl, u.data, u.status, q.layer, q.seq_in, q.seq_out, q.use_count, q.exchange_id, q.key_date, q.fprint, q.fauthkey, q.khash FROM enc_chats as q INNER JOIN users as u ON q.user = u.uid WHERE q.uid IN(%s)", TextUtils.join(",", encryptedToLoad)));
                         while (cursor.next()) {
                             String name = cursor.stringValue(1);
+                            String tName = LocaleController.getInstance().getTranslitString(name);
+                            if (name.equals(tName)) {
+                                tName = null;
+                            }
 
                             String username = null;
                             int usernamePos = name.lastIndexOf(";;;");
@@ -293,7 +313,7 @@ public class DialogsSearchAdapter extends BaseContactsSearchAdapter {
                             }
                             int found = 0;
                             for (String q : search) {
-                                if (name.startsWith(q) || name.contains(" " + q)) {
+                                if (name.startsWith(q) || name.contains(" " + q) || tName != null && (tName.startsWith(q) || tName.contains(" " + q))) {
                                     found = 1;
                                 } else if (username != null && username.startsWith(q)) {
                                     found = 2;
@@ -327,7 +347,7 @@ public class DialogsSearchAdapter extends BaseContactsSearchAdapter {
                                             user.status.expires = cursor.intValue(7);
                                         }
                                         if (found == 1) {
-                                            dialogSearchResult.name = Html.fromHtml("<font color=\"#00a60e\">" + ContactsController.formatName(user.first_name, user.last_name) + "</font>");
+                                            dialogSearchResult.name = AndroidUtilities.replaceTags("<c#ff00a60e>" + ContactsController.formatName(user.first_name, user.last_name) + "</c>");
                                         } else {
                                             dialogSearchResult.name = Utilities.generateSearchName("@" + user.username, null, "@" + q);
                                         }
@@ -374,10 +394,14 @@ public class DialogsSearchAdapter extends BaseContactsSearchAdapter {
                     cursor = MessagesStorage.getInstance().getDatabase().queryFinalized("SELECT u.data, u.status, u.name, u.uid FROM users as u INNER JOIN contacts as c ON u.uid = c.uid");
                     while (cursor.next()) {
                         int uid = cursor.intValue(3);
-                        if (dialogsResult.containsKey((long)uid)) {
+                        if (dialogsResult.containsKey((long) uid)) {
                             continue;
                         }
                         String name = cursor.stringValue(2);
+                        String tName = LocaleController.getInstance().getTranslitString(name);
+                        if (name.equals(tName)) {
+                            tName = null;
+                        }
                         String username = null;
                         int usernamePos = name.lastIndexOf(";;;");
                         if (usernamePos != -1) {
@@ -385,7 +409,7 @@ public class DialogsSearchAdapter extends BaseContactsSearchAdapter {
                         }
                         int found = 0;
                         for (String q : search) {
-                            if (name.startsWith(q) || name.contains(" " + q)) {
+                            if (name.startsWith(q) || name.contains(" " + q) || tName != null && (tName.startsWith(q) || tName.contains(" " + q))) {
                                 found = 1;
                             } else if (username != null && username.startsWith(q)) {
                                 found = 2;
@@ -458,6 +482,25 @@ public class DialogsSearchAdapter extends BaseContactsSearchAdapter {
         return i > searchResult.size() && i <= globalSearch.size() + searchResult.size();
     }
 
+    @Override
+    public void clearRecentHashtags() {
+        super.clearRecentHashtags();
+        searchResultHashtags.clear();
+        notifyDataSetChanged();
+    }
+
+    @Override
+    protected void setHashtags(ArrayList<HashtagObject> arrayList, HashMap<String, HashtagObject> hashMap) {
+        super.setHashtags(arrayList, hashMap);
+        for (HashtagObject hashtagObject : arrayList) {
+            searchResultHashtags.add(hashtagObject.hashtag);
+        }
+        if (delegate != null) {
+            delegate.searchStateChanged(false);
+        }
+        notifyDataSetChanged();
+    }
+
     public void searchDialogs(final String query, final boolean serverOnly) {
         if (query != null && lastSearchText != null && query.equals(lastSearchText)) {
             return;
@@ -470,12 +513,39 @@ public class DialogsSearchAdapter extends BaseContactsSearchAdapter {
             FileLog.e("tmessages", e);
         }
         if (query == null || query.length() == 0) {
+            hashtagsLoadedFromDb = false;
             searchResult.clear();
             searchResultNames.clear();
+            searchResultHashtags.clear();
+            if (needMessagesSearch != 2) {
+                queryServerSearch(null);
+            }
             searchMessagesInternal(null);
-            queryServerSearch(null);
             notifyDataSetChanged();
         } else {
+            if (query.startsWith("#") && query.length() == 1) {
+                messagesSearchEndReached = true;
+                if (!hashtagsLoadedFromDb) {
+                    loadRecentHashtags();
+                    if (delegate != null) {
+                        delegate.searchStateChanged(true);
+                    }
+                    notifyDataSetChanged();
+                    return;
+                }
+                searchResultMessages.clear();
+                searchResultHashtags.clear();
+                for (HashtagObject hashtagObject : hashtags) {
+                    searchResultHashtags.add(hashtagObject.hashtag);
+                }
+                if (delegate != null) {
+                    delegate.searchStateChanged(false);
+                }
+                notifyDataSetChanged();
+                return;
+            } else {
+                searchResultHashtags.clear();
+            }
             final int searchId = ++lastSearchId;
             searchTimer = new Timer();
             searchTimer.schedule(new TimerTask() {
@@ -491,7 +561,9 @@ public class DialogsSearchAdapter extends BaseContactsSearchAdapter {
                     AndroidUtilities.runOnUIThread(new Runnable() {
                         @Override
                         public void run() {
-                            queryServerSearch(query);
+                            if (needMessagesSearch != 2) {
+                                queryServerSearch(query);
+                            }
                             searchMessagesInternal(query);
                         }
                     });
@@ -507,11 +579,27 @@ public class DialogsSearchAdapter extends BaseContactsSearchAdapter {
 
     @Override
     public boolean isEnabled(int i) {
-        return i != searchResult.size() && i != searchResult.size() + (globalSearch.isEmpty() ? 0 : globalSearch.size() + 1);
+        if (!searchResultHashtags.isEmpty()) {
+            return i != 0;
+        }
+        int localCount = searchResult.size();
+        int globalCount = globalSearch.isEmpty() ? 0 : globalSearch.size() + 1;
+        int messagesCount = searchResultMessages.isEmpty() ? 0 : searchResultMessages.size() + 1;
+        if (i >= 0 && i < localCount || i > localCount && i < globalCount + localCount) {
+            return true;
+        } else if (i > globalCount + localCount && i < globalCount + localCount + messagesCount) {
+            return true;
+        } else if (messagesCount != 0 && i == globalCount + localCount + messagesCount) {
+            return true;
+        }
+        return false;
     }
 
     @Override
     public int getCount() {
+        if (!searchResultHashtags.isEmpty()) {
+            return searchResultHashtags.size() + 1;
+        }
         int count = searchResult.size();
         int globalCount = globalSearch.size();
         int messagesCount = searchResultMessages.size();
@@ -526,6 +614,9 @@ public class DialogsSearchAdapter extends BaseContactsSearchAdapter {
 
     @Override
     public Object getItem(int i) {
+        if (!searchResultHashtags.isEmpty()) {
+            return searchResultHashtags.get(i - 1);
+        }
         int localCount = searchResult.size();
         int globalCount = globalSearch.isEmpty() ? 0 : globalSearch.size() + 1;
         int messagesCount = searchResultMessages.isEmpty() ? 0 : searchResultMessages.size() + 1;
@@ -557,7 +648,9 @@ public class DialogsSearchAdapter extends BaseContactsSearchAdapter {
             if (view == null) {
                 view = new GreySectionCell(mContext);
             }
-            if (!globalSearch.isEmpty() && i == searchResult.size()) {
+            if (!searchResultHashtags.isEmpty()) {
+                ((GreySectionCell) view).setText(LocaleController.getString("Hashtags", R.string.Hashtags).toUpperCase());
+            }  else if (!globalSearch.isEmpty() && i == searchResult.size()) {
                 ((GreySectionCell) view).setText(LocaleController.getString("GlobalSearch", R.string.GlobalSearch));
             } else {
                 ((GreySectionCell) view).setText(LocaleController.getString("SearchMessages", R.string.SearchMessages));
@@ -577,10 +670,11 @@ public class DialogsSearchAdapter extends BaseContactsSearchAdapter {
             ((ProfileSearchCell) view).useSeparator = (i != getCount() - 1 && i != localCount - 1 && i != localCount + globalCount - 1);
             Object obj = getItem(i);
             if (obj instanceof TLRPC.User) {
-                user = MessagesController.getInstance().getUser(((TLRPC.User) obj).id);
+                /*user = MessagesController.getInstance().getUser(((TLRPC.User) obj).id);
                 if (user == null) {
                     user = (TLRPC.User) obj;
-                }
+                }*/
+                user = (TLRPC.User) obj;
             } else if (obj instanceof TLRPC.Chat) {
                 chat = MessagesController.getInstance().getChat(((TLRPC.Chat) obj).id);
             } else if (obj instanceof TLRPC.EncryptedChat) {
@@ -604,7 +698,7 @@ public class DialogsSearchAdapter extends BaseContactsSearchAdapter {
                     foundUserName = foundUserName.substring(1);
                 }
                 try {
-                    username = Html.fromHtml(String.format("<font color=\"#4d83b3\">@%s</font>%s", user.username.substring(0, foundUserName.length()), user.username.substring(foundUserName.length())));
+                    username = AndroidUtilities.replaceTags(String.format("<c#ff4d83b3>@%s</c>%s", user.username.substring(0, foundUserName.length()), user.username.substring(foundUserName.length())));
                 } catch (Exception e) {
                     username = user.username;
                     FileLog.e("tmessages", e);
@@ -618,11 +712,17 @@ public class DialogsSearchAdapter extends BaseContactsSearchAdapter {
             }
             ((DialogCell) view).useSeparator = (i != getCount() - 1);
             MessageObject messageObject = (MessageObject)getItem(i);
-            ((DialogCell) view).setDialog(messageObject.getDialogId(), messageObject, false, messageObject.messageOwner.date, 0, false);
+            ((DialogCell) view).setDialog(messageObject.getDialogId(), messageObject, messageObject.messageOwner.date);
         } else if (type == 3) {
             if (view == null) {
                 view = new LoadingCell(mContext);
             }
+        } else if (type == 4) {
+            if (view == null) {
+                view = new HashtagSearchCell(mContext);
+            }
+            ((HashtagSearchCell) view).setText(searchResultHashtags.get(i - 1));
+            ((HashtagSearchCell) view).setNeedDivider(i != searchResultHashtags.size());
         }
 
         return view;
@@ -630,6 +730,9 @@ public class DialogsSearchAdapter extends BaseContactsSearchAdapter {
 
     @Override
     public int getItemViewType(int i) {
+        if (!searchResultHashtags.isEmpty()) {
+            return i == 0 ? 1 : 4;
+        }
         int localCount = searchResult.size();
         int globalCount = globalSearch.isEmpty() ? 0 : globalSearch.size() + 1;
         int messagesCount = searchResultMessages.isEmpty() ? 0 : searchResultMessages.size() + 1;
@@ -645,11 +748,11 @@ public class DialogsSearchAdapter extends BaseContactsSearchAdapter {
 
     @Override
     public int getViewTypeCount() {
-        return 4;
+        return 5;
     }
 
     @Override
     public boolean isEmpty() {
-        return searchResult.isEmpty() && globalSearch.isEmpty() && searchResultMessages.isEmpty();
+        return searchResult.isEmpty() && globalSearch.isEmpty() && searchResultMessages.isEmpty() && searchResultHashtags.isEmpty();
     }
 }

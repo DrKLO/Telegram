@@ -63,8 +63,8 @@ public class WallpapersActivity extends BaseFragment implements NotificationCent
     private ProgressBar progressBar;
     private int selectedBackground;
     private int selectedColor;
-    private ArrayList<TLRPC.WallPaper> wallPapers = new ArrayList<TLRPC.WallPaper>();
-    private HashMap<Integer, TLRPC.WallPaper> wallpappersByIds = new HashMap<Integer, TLRPC.WallPaper>();
+    private ArrayList<TLRPC.WallPaper> wallPapers = new ArrayList<>();
+    private HashMap<Integer, TLRPC.WallPaper> wallpappersByIds = new HashMap<>();
     private View doneButton;
     private String loadingFile = null;
     private File loadingFileObject = null;
@@ -101,120 +101,114 @@ public class WallpapersActivity extends BaseFragment implements NotificationCent
     }
 
     @Override
-    public View createView(LayoutInflater inflater, ViewGroup container) {
-        if (fragmentView == null) {
-            actionBar.setBackButtonImage(R.drawable.ic_ab_back);
-            actionBar.setAllowOverlayTitle(true);
-            actionBar.setTitle(LocaleController.getString("ChatBackground", R.string.ChatBackground));
-            actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
-                @Override
-                public void onItemClick(int id) {
-                    if (id == -1) {
-                        finishFragment();
-                    } else if (id == done_button) {
-                        boolean done;
-                        TLRPC.WallPaper wallPaper = wallpappersByIds.get(selectedBackground);
-                        if (wallPaper != null && wallPaper.id != 1000001 && wallPaper instanceof TLRPC.TL_wallPaper) {
-                            int width = AndroidUtilities.displaySize.x;
-                            int height = AndroidUtilities.displaySize.y;
-                            if (width > height) {
-                                int temp = width;
-                                width = height;
-                                height = temp;
-                            }
-                            TLRPC.PhotoSize size = FileLoader.getClosestPhotoSizeWithSize(wallPaper.sizes, Math.min(width, height));
-                            String fileName = size.location.volume_id + "_" + size.location.local_id + ".jpg";
-                            File f = new File(FileLoader.getInstance().getDirectory(FileLoader.MEDIA_DIR_CACHE), fileName);
+    public View createView(Context context, LayoutInflater inflater) {
+        actionBar.setBackButtonImage(R.drawable.ic_ab_back);
+        actionBar.setAllowOverlayTitle(true);
+        actionBar.setTitle(LocaleController.getString("ChatBackground", R.string.ChatBackground));
+        actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
+            @Override
+            public void onItemClick(int id) {
+                if (id == -1) {
+                    finishFragment();
+                } else if (id == done_button) {
+                    boolean done;
+                    TLRPC.WallPaper wallPaper = wallpappersByIds.get(selectedBackground);
+                    if (wallPaper != null && wallPaper.id != 1000001 && wallPaper instanceof TLRPC.TL_wallPaper) {
+                        int width = AndroidUtilities.displaySize.x;
+                        int height = AndroidUtilities.displaySize.y;
+                        if (width > height) {
+                            int temp = width;
+                            width = height;
+                            height = temp;
+                        }
+                        TLRPC.PhotoSize size = FileLoader.getClosestPhotoSizeWithSize(wallPaper.sizes, Math.min(width, height));
+                        String fileName = size.location.volume_id + "_" + size.location.local_id + ".jpg";
+                        File f = new File(FileLoader.getInstance().getDirectory(FileLoader.MEDIA_DIR_CACHE), fileName);
+                        File toFile = new File(ApplicationLoader.applicationContext.getFilesDir(), "wallpaper.jpg");
+                        try {
+                            done = Utilities.copyFile(f, toFile);
+                        } catch (Exception e) {
+                            done = false;
+                            FileLog.e("tmessages", e);
+                        }
+                    } else {
+                        if (selectedBackground == -1) {
+                            File fromFile = new File(ApplicationLoader.applicationContext.getFilesDir(), "wallpaper-temp.jpg");
                             File toFile = new File(ApplicationLoader.applicationContext.getFilesDir(), "wallpaper.jpg");
+                            done = fromFile.renameTo(toFile);
+                        } else {
+                            done = true;
+                        }
+                    }
+
+                    if (done) {
+                        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+                        SharedPreferences.Editor editor = preferences.edit();
+                        editor.putInt("selectedBackground", selectedBackground);
+                        editor.putInt("selectedColor", selectedColor);
+                        editor.commit();
+                        ApplicationLoader.reloadWallpaper();
+                    }
+                    finishFragment();
+                }
+            }
+        });
+
+        ActionBarMenu menu = actionBar.createMenu();
+        doneButton = menu.addItemWithWidth(done_button, R.drawable.ic_done, AndroidUtilities.dp(56));
+
+        fragmentView = inflater.inflate(R.layout.settings_wallpapers_layout, null, false);
+        listAdapter = new ListAdapter(context);
+
+        progressBar = (ProgressBar) fragmentView.findViewById(R.id.action_progress);
+        backgroundImage = (ImageView) fragmentView.findViewById(R.id.background_image);
+        listView = (HorizontalListView) fragmentView.findViewById(R.id.listView);
+        listView.setAdapter(listAdapter);
+        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
+                if (i == 0) {
+                    if (getParentActivity() == null) {
+                        return;
+                    }
+                    AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+
+                    CharSequence[] items = new CharSequence[]{LocaleController.getString("FromCamera", R.string.FromCamera), LocaleController.getString("FromGalley", R.string.FromGalley), LocaleController.getString("Cancel", R.string.Cancel)};
+
+                    builder.setItems(items, new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialogInterface, int i) {
                             try {
-                                done = Utilities.copyFile(f, toFile);
+                                if (i == 0) {
+                                    Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+                                    File image = Utilities.generatePicturePath();
+                                    if (image != null) {
+                                        takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(image));
+                                        currentPicturePath = image.getAbsolutePath();
+                                    }
+                                    startActivityForResult(takePictureIntent, 10);
+                                } else if (i == 1) {
+                                    Intent photoPickerIntent = new Intent(Intent.ACTION_PICK);
+                                    photoPickerIntent.setType("image/*");
+                                    startActivityForResult(photoPickerIntent, 11);
+                                }
                             } catch (Exception e) {
-                                done = false;
                                 FileLog.e("tmessages", e);
                             }
-                        } else {
-                            if (selectedBackground == -1) {
-                                File fromFile = new File(ApplicationLoader.applicationContext.getFilesDir(), "wallpaper-temp.jpg");
-                                File toFile = new File(ApplicationLoader.applicationContext.getFilesDir(), "wallpaper.jpg");
-                                done = fromFile.renameTo(toFile);
-                            } else {
-                                done = true;
-                            }
                         }
-
-                        if (done) {
-                            SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
-                            SharedPreferences.Editor editor = preferences.edit();
-                            editor.putInt("selectedBackground", selectedBackground);
-                            editor.putInt("selectedColor", selectedColor);
-                            editor.commit();
-                            ApplicationLoader.cachedWallpaper = null;
-                        }
-                        finishFragment();
-                    }
+                    });
+                    showAlertDialog(builder);
+                } else {
+                    TLRPC.WallPaper wallPaper = wallPapers.get(i - 1);
+                    selectedBackground = wallPaper.id;
+                    listAdapter.notifyDataSetChanged();
+                    processSelectedBackground();
                 }
-            });
-
-            ActionBarMenu menu = actionBar.createMenu();
-            doneButton = menu.addItemWithWidth(done_button, R.drawable.ic_done, AndroidUtilities.dp(56));
-
-            fragmentView = inflater.inflate(R.layout.settings_wallpapers_layout, container, false);
-            listAdapter = new ListAdapter(getParentActivity());
-
-            progressBar = (ProgressBar)fragmentView.findViewById(R.id.action_progress);
-            backgroundImage = (ImageView)fragmentView.findViewById(R.id.background_image);
-            listView = (HorizontalListView)fragmentView.findViewById(R.id.listView);
-            listView.setAdapter(listAdapter);
-            listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-                @Override
-                public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
-                    if (i == 0) {
-                        if (getParentActivity() == null) {
-                            return;
-                        }
-                        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-
-                        CharSequence[] items = new CharSequence[] {LocaleController.getString("FromCamera", R.string.FromCamera), LocaleController.getString("FromGalley", R.string.FromGalley), LocaleController.getString("Cancel", R.string.Cancel)};
-
-                        builder.setItems(items, new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialogInterface, int i) {
-                                try {
-                                    if (i == 0) {
-                                        Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-                                        File image = Utilities.generatePicturePath();
-                                        if (image != null) {
-                                            takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(image));
-                                            currentPicturePath = image.getAbsolutePath();
-                                        }
-                                        startActivityForResult(takePictureIntent, 10);
-                                    } else if (i == 1) {
-                                        Intent photoPickerIntent = new Intent(Intent.ACTION_PICK);
-                                        photoPickerIntent.setType("image/*");
-                                        startActivityForResult(photoPickerIntent, 11);
-                                    }
-                                } catch (Exception e) {
-                                    FileLog.e("tmessages", e);
-                                }
-                            }
-                        });
-                        showAlertDialog(builder);
-                    } else {
-                        TLRPC.WallPaper wallPaper = wallPapers.get(i - 1);
-                        selectedBackground = wallPaper.id;
-                        listAdapter.notifyDataSetChanged();
-                        processSelectedBackground();
-                    }
-                }
-            });
-
-            processSelectedBackground();
-        } else {
-            ViewGroup parent = (ViewGroup)fragmentView.getParent();
-            if (parent != null) {
-                parent.removeView(fragmentView);
             }
-        }
+        });
+
+        processSelectedBackground();
+
         return fragmentView;
     }
 
@@ -223,17 +217,26 @@ public class WallpapersActivity extends BaseFragment implements NotificationCent
         if (resultCode == Activity.RESULT_OK) {
             if (requestCode == 10) {
                 Utilities.addMediaToGallery(currentPicturePath);
+                FileOutputStream stream = null;
                 try {
                     Point screenSize = AndroidUtilities.getRealScreenSize();
                     Bitmap bitmap = ImageLoader.loadBitmap(currentPicturePath, null, screenSize.x, screenSize.y, true);
                     File toFile = new File(ApplicationLoader.applicationContext.getFilesDir(), "wallpaper-temp.jpg");
-                    FileOutputStream stream = new FileOutputStream(toFile);
+                    stream = new FileOutputStream(toFile);
                     bitmap.compress(Bitmap.CompressFormat.JPEG, 87, stream);
                     selectedBackground = -1;
                     selectedColor = 0;
                     backgroundImage.setImageBitmap(bitmap);
                 } catch (Exception e) {
                     FileLog.e("tmessages", e);
+                } finally {
+                    try {
+                        if (stream != null) {
+                            stream.close();
+                        }
+                    } catch (Exception e) {
+                        FileLog.e("tmessages", e);
+                    }
                 }
                 currentPicturePath = null;
             } else if (requestCode == 11) {
@@ -419,7 +422,9 @@ public class WallpapersActivity extends BaseFragment implements NotificationCent
                             wallPapers.add((TLRPC.WallPaper)obj);
                             wallpappersByIds.put(((TLRPC.WallPaper)obj).id, (TLRPC.WallPaper)obj);
                         }
-                        listAdapter.notifyDataSetChanged();
+                        if (listAdapter != null) {
+                            listAdapter.notifyDataSetChanged();
+                        }
                         if (backgroundImage != null) {
                             processSelectedBackground();
                         }

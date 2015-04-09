@@ -25,7 +25,6 @@ import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
-import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.view.animation.AccelerateDecelerateInterpolator;
 import android.view.inputmethod.EditorInfo;
@@ -101,80 +100,74 @@ public class ChangePhoneActivity extends BaseFragment {
     }
 
     @Override
-    public View createView(LayoutInflater inflater, ViewGroup container) {
-        if (fragmentView == null) {
-            actionBar.setTitle(LocaleController.getString("AppName", R.string.AppName));
-            actionBar.setBackButtonImage(R.drawable.ic_ab_back);
-            actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
-                @Override
-                public void onItemClick(int id) {
-                    if (id == done_button) {
-                        views[currentViewNum].onNextPressed();
-                    } else if (id == -1) {
-                        finishFragment();
+    public View createView(Context context, LayoutInflater inflater) {
+        actionBar.setTitle(LocaleController.getString("AppName", R.string.AppName));
+        actionBar.setBackButtonImage(R.drawable.ic_ab_back);
+        actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
+            @Override
+            public void onItemClick(int id) {
+                if (id == done_button) {
+                    views[currentViewNum].onNextPressed();
+                } else if (id == -1) {
+                    finishFragment();
+                }
+            }
+        });
+
+        ActionBarMenu menu = actionBar.createMenu();
+        menu.addItemWithWidth(done_button, R.drawable.ic_done, AndroidUtilities.dp(56));
+
+        fragmentView = new ScrollView(context);
+        ScrollView scrollView = (ScrollView) fragmentView;
+        scrollView.setFillViewport(true);
+
+        FrameLayout frameLayout = new FrameLayout(context);
+        scrollView.addView(frameLayout);
+        ScrollView.LayoutParams layoutParams = (ScrollView.LayoutParams) frameLayout.getLayoutParams();
+        layoutParams.width = ScrollView.LayoutParams.MATCH_PARENT;
+        layoutParams.height = ScrollView.LayoutParams.WRAP_CONTENT;
+        layoutParams.gravity = Gravity.TOP | Gravity.LEFT;
+        frameLayout.setLayoutParams(layoutParams);
+
+        views[0] = new PhoneView(context);
+        views[0].setVisibility(View.VISIBLE);
+        frameLayout.addView(views[0]);
+        FrameLayout.LayoutParams layoutParams1 = (FrameLayout.LayoutParams) views[0].getLayoutParams();
+        layoutParams1.width = FrameLayout.LayoutParams.MATCH_PARENT;
+        layoutParams1.height = FrameLayout.LayoutParams.WRAP_CONTENT;
+        layoutParams1.leftMargin = AndroidUtilities.dp(16);
+        layoutParams1.rightMargin = AndroidUtilities.dp(16);
+        layoutParams1.topMargin = AndroidUtilities.dp(30);
+        layoutParams1.gravity = Gravity.TOP | Gravity.LEFT;
+        views[0].setLayoutParams(layoutParams1);
+
+        views[1] = new LoginActivitySmsView(context);
+        views[1].setVisibility(View.GONE);
+        frameLayout.addView(views[1]);
+        layoutParams1 = (FrameLayout.LayoutParams) views[1].getLayoutParams();
+        layoutParams1.width = FrameLayout.LayoutParams.MATCH_PARENT;
+        layoutParams1.height = FrameLayout.LayoutParams.MATCH_PARENT;
+        layoutParams1.leftMargin = AndroidUtilities.dp(16);
+        layoutParams1.rightMargin = AndroidUtilities.dp(16);
+        layoutParams1.topMargin = AndroidUtilities.dp(30);
+        layoutParams1.gravity = Gravity.TOP | Gravity.LEFT;
+        views[1].setLayoutParams(layoutParams1);
+
+        try {
+            if (views[0] == null || views[1] == null) {
+                FrameLayout parent = (FrameLayout) ((ScrollView) fragmentView).getChildAt(0);
+                for (int a = 0; a < views.length; a++) {
+                    if (views[a] == null) {
+                        views[a] = (SlideView) parent.getChildAt(a);
                     }
                 }
-            });
-
-            ActionBarMenu menu = actionBar.createMenu();
-            menu.addItemWithWidth(done_button, R.drawable.ic_done, AndroidUtilities.dp(56));
-
-            fragmentView = new ScrollView(getParentActivity());
-            ScrollView scrollView = (ScrollView) fragmentView;
-            scrollView.setFillViewport(true);
-
-            FrameLayout frameLayout = new FrameLayout(getParentActivity());
-            scrollView.addView(frameLayout);
-            ScrollView.LayoutParams layoutParams = (ScrollView.LayoutParams) frameLayout.getLayoutParams();
-            layoutParams.width = ScrollView.LayoutParams.MATCH_PARENT;
-            layoutParams.height = ScrollView.LayoutParams.WRAP_CONTENT;
-            layoutParams.gravity = Gravity.TOP | Gravity.LEFT;
-            frameLayout.setLayoutParams(layoutParams);
-
-            views[0] = new PhoneView(getParentActivity());
-            views[0].setVisibility(View.VISIBLE);
-            frameLayout.addView(views[0]);
-            FrameLayout.LayoutParams layoutParams1 = (FrameLayout.LayoutParams) views[0].getLayoutParams();
-            layoutParams1.width = FrameLayout.LayoutParams.MATCH_PARENT;
-            layoutParams1.height = FrameLayout.LayoutParams.WRAP_CONTENT;
-            layoutParams1.leftMargin = AndroidUtilities.dp(16);
-            layoutParams1.rightMargin = AndroidUtilities.dp(16);
-            layoutParams1.topMargin = AndroidUtilities.dp(30);
-            layoutParams1.gravity = Gravity.TOP | Gravity.LEFT;
-            views[0].setLayoutParams(layoutParams1);
-
-            views[1] = new LoginActivitySmsView(getParentActivity());
-            views[1].setVisibility(View.GONE);
-            frameLayout.addView(views[1]);
-            layoutParams1 = (FrameLayout.LayoutParams) views[1].getLayoutParams();
-            layoutParams1.width = FrameLayout.LayoutParams.MATCH_PARENT;
-            layoutParams1.height = FrameLayout.LayoutParams.MATCH_PARENT;
-            layoutParams1.leftMargin = AndroidUtilities.dp(16);
-            layoutParams1.rightMargin = AndroidUtilities.dp(16);
-            layoutParams1.topMargin = AndroidUtilities.dp(30);
-            layoutParams1.gravity = Gravity.TOP | Gravity.LEFT;
-            views[1].setLayoutParams(layoutParams1);
-
-            try {
-                if (views[0] == null || views[1] == null) {
-                    FrameLayout parent = (FrameLayout)((ScrollView) fragmentView).getChildAt(0);
-                    for (int a = 0; a < views.length; a++) {
-                        if (views[a] == null) {
-                            views[a] = (SlideView)parent.getChildAt(a);
-                        }
-                    }
-                }
-            } catch (Exception e) {
-                FileLog.e("tmessages", e);
             }
-
-            actionBar.setTitle(views[0].getHeaderName());
-        } else {
-            ViewGroup parent = (ViewGroup)fragmentView.getParent();
-            if (parent != null) {
-                parent.removeView(fragmentView);
-            }
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
         }
+
+        actionBar.setTitle(views[0].getHeaderName());
+
         return fragmentView;
     }
 
@@ -289,9 +282,9 @@ public class ChangePhoneActivity extends BaseFragment {
 
         private int countryState = 0;
 
-        private ArrayList<String> countriesArray = new ArrayList<String>();
-        private HashMap<String, String> countriesMap = new HashMap<String, String>();
-        private HashMap<String, String> codesMap = new HashMap<String, String>();
+        private ArrayList<String> countriesArray = new ArrayList<>();
+        private HashMap<String, String> countriesMap = new HashMap<>();
+        private HashMap<String, String> codesMap = new HashMap<>();
 
         private boolean ignoreSelection = false;
         private boolean ignoreOnTextChange = false;
@@ -533,7 +526,7 @@ public class ChangePhoneActivity extends BaseFragment {
             layoutParams.gravity = Gravity.LEFT;
             textView.setLayoutParams(layoutParams);
 
-            HashMap<String, String> languageMap = new HashMap<String, String>();
+            HashMap<String, String> languageMap = new HashMap<>();
             try {
                 BufferedReader reader = new BufferedReader(new InputStreamReader(getResources().getAssets().open("countries.txt")));
                 String line;
@@ -544,6 +537,7 @@ public class ChangePhoneActivity extends BaseFragment {
                     codesMap.put(args[0], args[2]);
                     languageMap.put(args[1], args[2]);
                 }
+                reader.close();
             } catch (Exception e) {
                 FileLog.e("tmessages", e);
             }
@@ -1013,7 +1007,7 @@ public class ChangePhoneActivity extends BaseFragment {
                                 destroyCodeTimer();
                                 UserConfig.setCurrentUser(user);
                                 UserConfig.saveConfig(true);
-                                ArrayList<TLRPC.User> users = new ArrayList<TLRPC.User>();
+                                ArrayList<TLRPC.User> users = new ArrayList<>();
                                 users.add(user);
                                 MessagesStorage.getInstance().putUsersAndChats(users, null, true, true);
                                 MessagesController.getInstance().putUser(user, false);

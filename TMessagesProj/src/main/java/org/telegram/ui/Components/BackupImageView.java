@@ -20,10 +20,9 @@ import org.telegram.android.ImageReceiver;
 import org.telegram.messenger.TLObject;
 import org.telegram.messenger.TLRPC;
 
-
 public class BackupImageView extends View {
-    public ImageReceiver imageReceiver;
-    public boolean processDetach = true;
+
+    private ImageReceiver imageReceiver;
 
     public BackupImageView(Context context) {
         super(context);
@@ -68,6 +67,10 @@ public class BackupImageView extends View {
         setImage(null, path, filter, thumb, null, null, null, 0);
     }
 
+    public void setOrientation(int angle, boolean center) {
+        imageReceiver.setOrientation(angle, center);
+    }
+
     public void setImage(TLObject path, String httpUrl, String filter, Drawable thumb, Bitmap thumbBitmap, TLRPC.FileLocation thumbLocation, String thumbFilter, int size) {
         if (thumbBitmap != null) {
             thumb = new BitmapDrawable(null, thumbBitmap);
@@ -87,12 +90,22 @@ public class BackupImageView extends View {
         imageReceiver.setImageBitmap(drawable);
     }
 
+    public void setRoundRadius(int value) {
+        imageReceiver.setRoundRadius(value);
+    }
+
+    public void setAspectFit(boolean value) {
+        imageReceiver.setAspectFit(value);
+    }
+
+    public ImageReceiver getImageReceiver() {
+        return imageReceiver;
+    }
+
     @Override
     protected void onDetachedFromWindow() {
         super.onDetachedFromWindow();
-        if (processDetach) {
-            imageReceiver.clearImage();
-        }
+        imageReceiver.clearImage();
     }
 
     @Override

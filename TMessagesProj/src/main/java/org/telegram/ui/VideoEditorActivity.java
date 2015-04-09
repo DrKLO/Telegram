@@ -10,6 +10,7 @@ package org.telegram.ui;
 
 import android.annotation.TargetApi;
 import android.app.Activity;
+import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.graphics.SurfaceTexture;
@@ -22,7 +23,6 @@ import android.view.LayoutInflater;
 import android.view.Surface;
 import android.view.TextureView;
 import android.view.View;
-import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
@@ -43,6 +43,7 @@ import com.googlecode.mp4parser.util.Path;
 import org.telegram.android.AndroidUtilities;
 import org.telegram.android.LocaleController;
 import org.telegram.android.MediaController;
+import org.telegram.android.NotificationCenter;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
@@ -57,7 +58,7 @@ import java.io.File;
 import java.util.List;
 
 @TargetApi(16)
-public class VideoEditorActivity extends BaseFragment implements TextureView.SurfaceTextureListener {
+public class VideoEditorActivity extends BaseFragment implements TextureView.SurfaceTextureListener, NotificationCenter.NotificationCenterDelegate {
 
     private boolean created = false;
     private MediaPlayer videoPlayer = null;
@@ -97,7 +98,7 @@ public class VideoEditorActivity extends BaseFragment implements TextureView.Sur
     private long originalSize = 0;
 
     public interface VideoEditorActivityDelegate {
-        public abstract void didFinishEditVideo(String videoPath, long startTime, long endTime, int resultWidth, int resultHeight, int rotationValue, int originalWidth, int originalHeight, int bitrate, long estimatedSize, long estimatedDuration);
+        void didFinishEditVideo(String videoPath, long startTime, long endTime, int resultWidth, int resultHeight, int rotationValue, int originalWidth, int originalHeight, int bitrate, long estimatedSize, long estimatedDuration);
     }
 
     private Runnable progressRunnable = new Runnable() {
@@ -198,6 +199,7 @@ public class VideoEditorActivity extends BaseFragment implements TextureView.Sur
             return false;
         }
 
+        NotificationCenter.getInstance().addObserver(this, NotificationCenter.closeChats);
         created = true;
 
         return super.onFragmentCreate();
@@ -217,194 +219,196 @@ public class VideoEditorActivity extends BaseFragment implements TextureView.Sur
                 FileLog.e("tmessages", e);
             }
         }
+        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.closeChats);
         super.onFragmentDestroy();
     }
 
     @Override
-    public View createView(LayoutInflater inflater, ViewGroup container) {
-        if (fragmentView == null) {
-            actionBar.setBackgroundColor(0xff333333);
-            actionBar.setItemsBackground(R.drawable.bar_selector_white);
-            actionBar.setBackButtonImage(R.drawable.ic_ab_back);
-            actionBar.setTitle(LocaleController.getString("EditVideo", R.string.EditVideo));
-            actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
-                @Override
-                public void onItemClick(int id) {
-                    if (id == -1) {
-                        finishFragment();
-                    } else if (id == 1) {
-                        synchronized (sync) {
-                            if (videoPlayer != null) {
-                                try {
-                                    videoPlayer.stop();
-                                    videoPlayer.release();
-                                    videoPlayer = null;
-                                } catch (Exception e) {
-                                    FileLog.e("tmessages", e);
-                                }
+    public View createView(Context context, LayoutInflater inflater) {
+        actionBar.setBackgroundColor(0xff333333);
+        actionBar.setItemsBackground(R.drawable.bar_selector_white);
+        actionBar.setBackButtonImage(R.drawable.ic_ab_back);
+        actionBar.setTitle(LocaleController.getString("EditVideo", R.string.EditVideo));
+        actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
+            @Override
+            public void onItemClick(int id) {
+                if (id == -1) {
+                    finishFragment();
+                } else if (id == 1) {
+                    synchronized (sync) {
+                        if (videoPlayer != null) {
+                            try {
+                                videoPlayer.stop();
+                                videoPlayer.release();
+                                videoPlayer = null;
+                            } catch (Exception e) {
+                                FileLog.e("tmessages", e);
                             }
                         }
-                        if (delegate != null) {
-                            if (compressVideo.getVisibility() == View.GONE || compressVideo.getVisibility() == View.VISIBLE && !compressVideo.isChecked()) {
-                                delegate.didFinishEditVideo(videoPath, startTime, endTime, originalWidth, originalHeight, rotationValue, originalWidth, originalHeight, bitrate, estimatedSize, esimatedDuration);
-                            } else {
-                                delegate.didFinishEditVideo(videoPath, startTime, endTime, resultWidth, resultHeight, rotationValue, originalWidth, originalHeight, bitrate, estimatedSize, esimatedDuration);
-                            }
-                        }
-                        finishFragment();
                     }
+                    if (delegate != null) {
+                        if (compressVideo.getVisibility() == View.GONE || compressVideo.getVisibility() == View.VISIBLE && !compressVideo.isChecked()) {
+                            delegate.didFinishEditVideo(videoPath, startTime, endTime, originalWidth, originalHeight, rotationValue, originalWidth, originalHeight, bitrate, estimatedSize, esimatedDuration);
+                        } else {
+                            delegate.didFinishEditVideo(videoPath, startTime, endTime, resultWidth, resultHeight, rotationValue, originalWidth, originalHeight, bitrate, estimatedSize, esimatedDuration);
+                        }
+                    }
+                    finishFragment();
                 }
-            });
+            }
+        });
 
-            ActionBarMenu menu = actionBar.createMenu();
-            menu.addItemWithWidth(1, R.drawable.ic_done, AndroidUtilities.dp(56));
+        ActionBarMenu menu = actionBar.createMenu();
+        menu.addItemWithWidth(1, R.drawable.ic_done, AndroidUtilities.dp(56));
 
-            fragmentView = inflater.inflate(R.layout.video_editor_layout, container, false);
-            originalSizeTextView = (TextView) fragmentView.findViewById(R.id.original_size);
-            editedSizeTextView = (TextView) fragmentView.findViewById(R.id.edited_size);
-            videoContainerView = fragmentView.findViewById(R.id.video_container);
-            textContainerView = fragmentView.findViewById(R.id.info_container);
-            controlView = fragmentView.findViewById(R.id.control_layout);
-            compressVideo = (CheckBox) fragmentView.findViewById(R.id.compress_video);
-            compressVideo.setText(LocaleController.getString("CompressVideo", R.string.CompressVideo));
-            SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
-            compressVideo.setVisibility(originalHeight != resultHeight || originalWidth != resultWidth ? View.VISIBLE : View.GONE);
-            compressVideo.setChecked(preferences.getBoolean("compress_video", true));
-            compressVideo.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-                @Override
-                public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                    SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
-                    SharedPreferences.Editor editor = preferences.edit();
-                    editor.putBoolean("compress_video", isChecked);
-                    editor.commit();
-                    updateVideoEditedInfo();
-                }
-            });
+        fragmentView = inflater.inflate(R.layout.video_editor_layout, null, false);
+        originalSizeTextView = (TextView) fragmentView.findViewById(R.id.original_size);
+        editedSizeTextView = (TextView) fragmentView.findViewById(R.id.edited_size);
+        videoContainerView = fragmentView.findViewById(R.id.video_container);
+        textContainerView = fragmentView.findViewById(R.id.info_container);
+        controlView = fragmentView.findViewById(R.id.control_layout);
+        compressVideo = (CheckBox) fragmentView.findViewById(R.id.compress_video);
+        compressVideo.setText(LocaleController.getString("CompressVideo", R.string.CompressVideo));
+        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+        compressVideo.setVisibility(originalHeight != resultHeight || originalWidth != resultWidth ? View.VISIBLE : View.GONE);
+        compressVideo.setChecked(preferences.getBoolean("compress_video", true));
+        compressVideo.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+                SharedPreferences.Editor editor = preferences.edit();
+                editor.putBoolean("compress_video", isChecked);
+                editor.commit();
+                updateVideoEditedInfo();
+            }
+        });
 
-            if (Build.VERSION.SDK_INT < 18) {
-                try {
-                    MediaCodecInfo codecInfo = MediaController.selectCodec(MediaController.MIME_TYPE);
-                    if (codecInfo == null) {
+        if (Build.VERSION.SDK_INT < 18) {
+            try {
+                MediaCodecInfo codecInfo = MediaController.selectCodec(MediaController.MIME_TYPE);
+                if (codecInfo == null) {
+                    compressVideo.setVisibility(View.GONE);
+                } else {
+                    String name = codecInfo.getName();
+                    if (name.equals("OMX.google.h264.encoder") ||
+                            name.equals("OMX.ST.VFM.H264Enc") ||
+                            name.equals("OMX.Exynos.avc.enc") ||
+                            name.equals("OMX.MARVELL.VIDEO.HW.CODA7542ENCODER") ||
+                            name.equals("OMX.MARVELL.VIDEO.H264ENCODER") ||
+                            name.equals("OMX.k3.video.encoder.avc") || //fix this later
+                            name.equals("OMX.TI.DUCATI1.VIDEO.H264E")) { //fix this later
                         compressVideo.setVisibility(View.GONE);
                     } else {
-                        String name = codecInfo.getName();
-                        if (name.equals("OMX.google.h264.encoder") ||
-                                name.equals("OMX.ST.VFM.H264Enc") ||
-                                name.equals("OMX.Exynos.avc.enc") ||
-                                name.equals("OMX.MARVELL.VIDEO.HW.CODA7542ENCODER") ||
-                                name.equals("OMX.MARVELL.VIDEO.H264ENCODER") ||
-                                name.equals("OMX.k3.video.encoder.avc") || //fix this later
-                                name.equals("OMX.TI.DUCATI1.VIDEO.H264E")) { //fix this later
+                        if (MediaController.selectColorFormat(codecInfo, MediaController.MIME_TYPE) == 0) {
                             compressVideo.setVisibility(View.GONE);
-                        } else {
-                            if (MediaController.selectColorFormat(codecInfo, MediaController.MIME_TYPE) == 0) {
-                                compressVideo.setVisibility(View.GONE);
-                            }
                         }
                     }
-                } catch (Exception e) {
-                    compressVideo.setVisibility(View.GONE);
-                    FileLog.e("tmessages", e);
                 }
-            }
-
-            TextView titleTextView = (TextView) fragmentView.findViewById(R.id.original_title);
-            titleTextView.setText(LocaleController.getString("OriginalVideo", R.string.OriginalVideo));
-            titleTextView = (TextView) fragmentView.findViewById(R.id.edited_title);
-            titleTextView.setText(LocaleController.getString("EditedVideo", R.string.EditedVideo));
-
-            videoTimelineView = (VideoTimelineView) fragmentView.findViewById(R.id.video_timeline_view);
-            videoTimelineView.setVideoPath(videoPath);
-            videoTimelineView.setDelegate(new VideoTimelineView.VideoTimelineViewDelegate() {
-                @Override
-                public void onLeftProgressChanged(float progress) {
-                    if (videoPlayer == null || !playerPrepared) {
-                        return;
-                    }
-                    try {
-                        if (videoPlayer.isPlaying()) {
-                            videoPlayer.pause();
-                            playButton.setImageResource(R.drawable.video_play);
-                        }
-                        videoPlayer.setOnSeekCompleteListener(null);
-                        videoPlayer.seekTo((int) (videoDuration * progress));
-                    } catch (Exception e) {
-                        FileLog.e("tmessages", e);
-                    }
-                    needSeek = true;
-                    videoSeekBarView.setProgress(videoTimelineView.getLeftProgress());
-                    updateVideoEditedInfo();
-                }
-
-                @Override
-                public void onRifhtProgressChanged(float progress) {
-                    if (videoPlayer == null || !playerPrepared) {
-                        return;
-                    }
-                    try {
-                        if (videoPlayer.isPlaying()) {
-                            videoPlayer.pause();
-                            playButton.setImageResource(R.drawable.video_play);
-                        }
-                        videoPlayer.setOnSeekCompleteListener(null);
-                        videoPlayer.seekTo((int) (videoDuration * progress));
-                    } catch (Exception e) {
-                        FileLog.e("tmessages", e);
-                    }
-                    needSeek = true;
-                    videoSeekBarView.setProgress(videoTimelineView.getLeftProgress());
-                    updateVideoEditedInfo();
-                }
-            });
-
-            videoSeekBarView = (VideoSeekBarView) fragmentView.findViewById(R.id.video_seekbar);
-            videoSeekBarView.delegate = new VideoSeekBarView.SeekBarDelegate() {
-                @Override
-                public void onSeekBarDrag(float progress) {
-                    if (progress < videoTimelineView.getLeftProgress()) {
-                        progress = videoTimelineView.getLeftProgress();
-                        videoSeekBarView.setProgress(progress);
-                    } else if (progress > videoTimelineView.getRightProgress()) {
-                        progress = videoTimelineView.getRightProgress();
-                        videoSeekBarView.setProgress(progress);
-                    }
-                    if (videoPlayer == null || !playerPrepared) {
-                        return;
-                    }
-                    if (videoPlayer.isPlaying()) {
-                        try {
-                            videoPlayer.seekTo((int) (videoDuration * progress));
-                            lastProgress = progress;
-                        } catch (Exception e) {
-                            FileLog.e("tmessages", e);
-                        }
-                    } else {
-                        lastProgress = progress;
-                        needSeek = true;
-                    }
-                }
-            };
-
-            playButton = (ImageView) fragmentView.findViewById(R.id.play_button);
-            playButton.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    play();
-                }
-            });
-
-            textureView = (TextureView) fragmentView.findViewById(R.id.video_view);
-            textureView.setSurfaceTextureListener(this);
-
-            updateVideoOriginalInfo();
-            updateVideoEditedInfo();
-        } else {
-            ViewGroup parent = (ViewGroup) fragmentView.getParent();
-            if (parent != null) {
-                parent.removeView(fragmentView);
+            } catch (Exception e) {
+                compressVideo.setVisibility(View.GONE);
+                FileLog.e("tmessages", e);
             }
         }
+
+        TextView titleTextView = (TextView) fragmentView.findViewById(R.id.original_title);
+        titleTextView.setText(LocaleController.getString("OriginalVideo", R.string.OriginalVideo));
+        titleTextView = (TextView) fragmentView.findViewById(R.id.edited_title);
+        titleTextView.setText(LocaleController.getString("EditedVideo", R.string.EditedVideo));
+
+        videoTimelineView = (VideoTimelineView) fragmentView.findViewById(R.id.video_timeline_view);
+        videoTimelineView.setVideoPath(videoPath);
+        videoTimelineView.setDelegate(new VideoTimelineView.VideoTimelineViewDelegate() {
+            @Override
+            public void onLeftProgressChanged(float progress) {
+                if (videoPlayer == null || !playerPrepared) {
+                    return;
+                }
+                try {
+                    if (videoPlayer.isPlaying()) {
+                        videoPlayer.pause();
+                        playButton.setImageResource(R.drawable.video_play);
+                    }
+                    videoPlayer.setOnSeekCompleteListener(null);
+                    videoPlayer.seekTo((int) (videoDuration * progress));
+                } catch (Exception e) {
+                    FileLog.e("tmessages", e);
+                }
+                needSeek = true;
+                videoSeekBarView.setProgress(videoTimelineView.getLeftProgress());
+                updateVideoEditedInfo();
+            }
+
+            @Override
+            public void onRifhtProgressChanged(float progress) {
+                if (videoPlayer == null || !playerPrepared) {
+                    return;
+                }
+                try {
+                    if (videoPlayer.isPlaying()) {
+                        videoPlayer.pause();
+                        playButton.setImageResource(R.drawable.video_play);
+                    }
+                    videoPlayer.setOnSeekCompleteListener(null);
+                    videoPlayer.seekTo((int) (videoDuration * progress));
+                } catch (Exception e) {
+                    FileLog.e("tmessages", e);
+                }
+                needSeek = true;
+                videoSeekBarView.setProgress(videoTimelineView.getLeftProgress());
+                updateVideoEditedInfo();
+            }
+        });
+
+        videoSeekBarView = (VideoSeekBarView) fragmentView.findViewById(R.id.video_seekbar);
+        videoSeekBarView.delegate = new VideoSeekBarView.SeekBarDelegate() {
+            @Override
+            public void onSeekBarDrag(float progress) {
+                if (progress < videoTimelineView.getLeftProgress()) {
+                    progress = videoTimelineView.getLeftProgress();
+                    videoSeekBarView.setProgress(progress);
+                } else if (progress > videoTimelineView.getRightProgress()) {
+                    progress = videoTimelineView.getRightProgress();
+                    videoSeekBarView.setProgress(progress);
+                }
+                if (videoPlayer == null || !playerPrepared) {
+                    return;
+                }
+                if (videoPlayer.isPlaying()) {
+                    try {
+                        videoPlayer.seekTo((int) (videoDuration * progress));
+                        lastProgress = progress;
+                    } catch (Exception e) {
+                        FileLog.e("tmessages", e);
+                    }
+                } else {
+                    lastProgress = progress;
+                    needSeek = true;
+                }
+            }
+        };
+
+        playButton = (ImageView) fragmentView.findViewById(R.id.play_button);
+        playButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                play();
+            }
+        });
+
+        textureView = (TextureView) fragmentView.findViewById(R.id.video_view);
+        textureView.setSurfaceTextureListener(this);
+
+        updateVideoOriginalInfo();
+        updateVideoEditedInfo();
+
         return fragmentView;
+    }
+
+    @Override
+    public void didReceivedNotification(int id, Object... args) {
+        if (id == NotificationCenter.closeChats) {
+            removeSelfFromStack();
+        }
     }
 
     private void setPlayerSurface() {
@@ -578,6 +582,9 @@ public class VideoEditorActivity extends BaseFragment implements TextureView.Sur
     }
 
     private void fixLayoutInternal() {
+        if (getParentActivity() == null) {
+            return;
+        }
         if (!AndroidUtilities.isTablet() && getParentActivity().getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
             FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) videoContainerView.getLayoutParams();
             layoutParams.topMargin = AndroidUtilities.dp(16);

@@ -10,6 +10,7 @@ package org.telegram.ui.ActionBar;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
@@ -23,7 +24,7 @@ import org.telegram.messenger.R;
 
 public class BaseFragment {
     private boolean isFinished = false;
-    private AlertDialog visibleDialog = null;
+    protected AlertDialog visibleDialog = null;
 
     protected View fragmentView;
     protected ActionBarLayout parentLayout;
@@ -31,6 +32,7 @@ public class BaseFragment {
     protected int classGuid = 0;
     protected Bundle arguments;
     protected boolean swipeBackEnabled = true;
+    protected boolean hasOwnBackground = false;
 
     public BaseFragment() {
         classGuid = ConnectionsManager.getInstance().generateClassGuid();
@@ -41,7 +43,7 @@ public class BaseFragment {
         classGuid = ConnectionsManager.getInstance().generateClassGuid();
     }
 
-    public View createView(LayoutInflater inflater, ViewGroup container) {
+    public View createView(Context context, LayoutInflater inflater) {
         return null;
     }
 
@@ -76,7 +78,7 @@ public class BaseFragment {
             if (parentLayout != null) {
                 actionBar = new ActionBar(parentLayout.getContext());
                 actionBar.parentFragment = this;
-                actionBar.setBackgroundResource(R.color.header);
+                actionBar.setBackgroundColor(0xff54759e);
                 actionBar.setItemsBackground(R.drawable.bar_selector);
             }
         }
@@ -201,9 +203,9 @@ public class BaseFragment {
         return true;
     }
 
-    protected void showAlertDialog(AlertDialog.Builder builder) {
+    public AlertDialog showAlertDialog(AlertDialog.Builder builder) {
         if (parentLayout == null || parentLayout.checkTransitionAnimation() || parentLayout.animationInProgress || parentLayout.startedTracking) {
-            return;
+            return null;
         }
         try {
             if (visibleDialog != null) {
@@ -223,9 +225,11 @@ public class BaseFragment {
                     onDialogDismiss();
                 }
             });
+            return visibleDialog;
         } catch (Exception e) {
             FileLog.e("tmessages", e);
         }
+        return null;
     }
 
     protected void onDialogDismiss() {
