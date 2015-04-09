@@ -63,7 +63,7 @@ public class RPCRequest {
 
     boolean initRequest = false;
 
-    ArrayList<Long> respondsToMessageIds = new ArrayList<Long>();
+    ArrayList<Long> respondsToMessageIds = new ArrayList<>();
 
     public void addRespondMessageId(long messageId) {
         respondsToMessageIds.add(messageId);

@@ -37,7 +37,7 @@ public class MentionCell extends LinearLayout {
         avatarDrawable.setSmallStyle(true);
 
         imageView = new BackupImageView(context);
-        imageView.imageReceiver.setRoundRadius(AndroidUtilities.dp(14));
+        imageView.setRoundRadius(AndroidUtilities.dp(14));
         addView(imageView);
         LayoutParams layoutParams = (LayoutParams) imageView.getLayoutParams();
         layoutParams.leftMargin = AndroidUtilities.dp(12);

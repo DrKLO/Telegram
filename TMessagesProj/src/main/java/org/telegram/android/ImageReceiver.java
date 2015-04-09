@@ -68,7 +68,6 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
     private Matrix shaderMatrix;
     private int alpha = 255;
     private boolean isPressed;
-    private boolean disableRecycle;
     private int orientation;
     private boolean centerRotation;
     private ImageReceiverDelegate delegate;
@@ -222,10 +221,6 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
 
     public void setImageBitmap(Bitmap bitmap) {
         setImageBitmap(bitmap != null ? new BitmapDrawable(null, bitmap) : null);
-    }
-
-    public void setDisableRecycle(boolean value) {
-        disableRecycle = value;
     }
 
     public void setImageBitmap(Drawable bitmap) {
@@ -497,8 +492,16 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
         return imageX;
     }
 
+    public int getImageX2() {
+        return imageX + imageW;
+    }
+
     public int getImageY() {
         return imageY;
+    }
+
+    public int getImageY2() {
+        return imageY + imageH;
     }
 
     public int getImageWidth() {
@@ -682,7 +685,7 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
         if (newKey != null) {
             newBitmap = ImageLoader.getInstance().getImageFromMemory(newKey);
         }
-        if (key == null || image == null || image == newBitmap || disableRecycle) {
+        if (key == null || image == null || image == newBitmap) {
             return;
         }
         Bitmap bitmap = image.getBitmap();

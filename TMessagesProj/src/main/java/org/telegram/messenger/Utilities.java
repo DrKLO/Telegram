@@ -21,13 +21,14 @@ import android.os.Build;
 import android.os.Environment;
 import android.provider.DocumentsContract;
 import android.provider.MediaStore;
-import android.text.Html;
 import android.text.SpannableStringBuilder;
 import android.util.Base64;
 
 import net.hockeyapp.android.CrashManager;
 import net.hockeyapp.android.CrashManagerListener;
 import net.hockeyapp.android.UpdateManager;
+
+import org.telegram.android.AndroidUtilities;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -108,6 +109,7 @@ public class Utilities {
 
     public native static long doPQNative(long _what);
     public native static void loadBitmap(String path, Bitmap bitmap, int scale, int width, int height, int stride);
+    public native static int pinBitmap(Bitmap bitmap);
     public native static void blurBitmap(Object bitmap, int radius);
     public native static void calcCDT(ByteBuffer hsvBuffer, int width, int height, ByteBuffer buffer);
     public native static Bitmap loadWebpImage(ByteBuffer buffer, int len, BitmapFactory.Options options);
@@ -145,6 +147,9 @@ public class Utilities {
     }
 
     public static String bytesToHex(byte[] bytes) {
+        if (bytes == null) {
+            return "";
+        }
         char[] hexChars = new char[bytes.length * 2];
         int v;
         for (int j = 0; j < bytes.length; j++) {
@@ -156,6 +161,9 @@ public class Utilities {
     }
 
     public static byte[] hexToBytes(String hex) {
+        if (hex == null) {
+            return null;
+        }
         int len = hex.length();
         byte[] data = new byte[len / 2];
         for (int i = 0; i < len; i += 2) {
@@ -685,7 +693,7 @@ public class Utilities {
                 builder.append(" ");
             }
             query.trim();
-            builder.append(Html.fromHtml("<font color=\"#4d83b3\">" + query + "</font>"));
+            builder.append(AndroidUtilities.replaceTags("<c#ff4d83b3>" + query + "</c>"));
 
             lastIndex = end;
         }

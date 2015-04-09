@@ -14,6 +14,7 @@ import android.graphics.Paint;
 import org.telegram.android.AndroidUtilities;
 
 public class ProgressView {
+    
     private Paint innerPaint;
     private Paint outerPaint;
 

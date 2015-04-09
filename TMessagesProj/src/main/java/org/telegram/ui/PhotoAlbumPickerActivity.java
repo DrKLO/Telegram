@@ -95,129 +95,123 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
 
     @SuppressWarnings("unchecked")
     @Override
-    public View createView(LayoutInflater inflater) {
-        if (fragmentView == null) {
-            actionBar.setBackgroundColor(0xff333333);
-            actionBar.setItemsBackground(R.drawable.bar_selector_picker);
-            actionBar.setBackButtonImage(R.drawable.ic_ab_back);
-            actionBar.setTitle(LocaleController.getString("Gallery", R.string.Gallery));
-            actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
-                @Override
-                public void onItemClick(int id) {
-                    if (id == -1) {
-                        if (Build.VERSION.SDK_INT < 11) {
-                            listView.setAdapter(null);
-                            listView = null;
-                            listAdapter = null;
-                        }
-                        finishFragment();
-                    } else if (id == 1) {
-                        if (delegate != null) {
-                            finishFragment(false);
-                            delegate.startPhotoSelectActivity();
-                        }
+    public View createView(Context context, LayoutInflater inflater) {
+        actionBar.setBackgroundColor(0xff333333);
+        actionBar.setItemsBackground(R.drawable.bar_selector_picker);
+        actionBar.setBackButtonImage(R.drawable.ic_ab_back);
+        actionBar.setTitle(LocaleController.getString("Gallery", R.string.Gallery));
+        actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
+            @Override
+            public void onItemClick(int id) {
+                if (id == -1) {
+                    if (Build.VERSION.SDK_INT < 11) {
+                        listView.setAdapter(null);
+                        listView = null;
+                        listAdapter = null;
+                    }
+                    finishFragment();
+                } else if (id == 1) {
+                    if (delegate != null) {
+                        finishFragment(false);
+                        delegate.startPhotoSelectActivity();
                     }
                 }
-            });
-
-            ActionBarMenu menu = actionBar.createMenu();
-            menu.addItem(1, R.drawable.ic_ab_other);
-
-            fragmentView = new FrameLayout(getParentActivity());
-
-            FrameLayout frameLayout = (FrameLayout) fragmentView;
-            frameLayout.setBackgroundColor(0xff000000);
-
-            listView = new ListView(getParentActivity());
-            listView.setPadding(AndroidUtilities.dp(4), 0, AndroidUtilities.dp(4), AndroidUtilities.dp(4));
-            listView.setClipToPadding(false);
-            listView.setHorizontalScrollBarEnabled(false);
-            listView.setVerticalScrollBarEnabled(false);
-            listView.setSelector(new ColorDrawable(0));
-            listView.setDividerHeight(0);
-            listView.setDivider(null);
-            listView.setDrawingCacheEnabled(false);
-            listView.setScrollingCacheEnabled(false);
-            frameLayout.addView(listView);
-            FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) listView.getLayoutParams();
-            layoutParams.width = FrameLayout.LayoutParams.MATCH_PARENT;
-            layoutParams.height = FrameLayout.LayoutParams.MATCH_PARENT;
-            layoutParams.bottomMargin = AndroidUtilities.dp(48);
-            listView.setLayoutParams(layoutParams);
-            listView.setAdapter(listAdapter = new ListAdapter(getParentActivity()));
-            AndroidUtilities.setListViewEdgeEffectColor(listView, 0xff333333);
-
-            emptyView = new TextView(getParentActivity());
-            emptyView.setTextColor(0xff808080);
-            emptyView.setTextSize(20);
-            emptyView.setGravity(Gravity.CENTER);
-            emptyView.setVisibility(View.GONE);
-            emptyView.setText(LocaleController.getString("NoPhotos", R.string.NoPhotos));
-            frameLayout.addView(emptyView);
-            layoutParams = (FrameLayout.LayoutParams) emptyView.getLayoutParams();
-            layoutParams.width = FrameLayout.LayoutParams.MATCH_PARENT;
-            layoutParams.height = FrameLayout.LayoutParams.MATCH_PARENT;
-            layoutParams.bottomMargin = AndroidUtilities.dp(48);
-            emptyView.setLayoutParams(layoutParams);
-            emptyView.setOnTouchListener(new View.OnTouchListener() {
-                @Override
-                public boolean onTouch(View v, MotionEvent event) {
-                    return true;
-                }
-            });
-
-            progressView = new FrameLayout(getParentActivity());
-            progressView.setVisibility(View.GONE);
-            frameLayout.addView(progressView);
-            layoutParams = (FrameLayout.LayoutParams) progressView.getLayoutParams();
-            layoutParams.width = FrameLayout.LayoutParams.MATCH_PARENT;
-            layoutParams.height = FrameLayout.LayoutParams.MATCH_PARENT;
-            layoutParams.bottomMargin = AndroidUtilities.dp(48);
-            progressView.setLayoutParams(layoutParams);
-
-            ProgressBar progressBar = new ProgressBar(getParentActivity());
-            progressView.addView(progressBar);
-            layoutParams = (FrameLayout.LayoutParams) progressView.getLayoutParams();
-            layoutParams.width = FrameLayout.LayoutParams.WRAP_CONTENT;
-            layoutParams.height = FrameLayout.LayoutParams.WRAP_CONTENT;
-            layoutParams.gravity = Gravity.CENTER;
-            progressView.setLayoutParams(layoutParams);
-
-            photoPickerBottomLayout = new PhotoPickerBottomLayout(getParentActivity());
-            frameLayout.addView(photoPickerBottomLayout);
-            layoutParams = (FrameLayout.LayoutParams) photoPickerBottomLayout.getLayoutParams();
-            layoutParams.width = FrameLayout.LayoutParams.MATCH_PARENT;
-            layoutParams.height = AndroidUtilities.dp(48);
-            layoutParams.gravity = Gravity.BOTTOM;
-            photoPickerBottomLayout.setLayoutParams(layoutParams);
-            photoPickerBottomLayout.cancelButton.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-                    finishFragment();
-                }
-            });
-            photoPickerBottomLayout.doneButton.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-                    sendSelectedPhotos();
-                    finishFragment();
-                }
-            });
-
-            if (loading && (albumsSorted == null || albumsSorted != null && albumsSorted.isEmpty())) {
-                progressView.setVisibility(View.VISIBLE);
-                listView.setEmptyView(null);
-            } else {
-                progressView.setVisibility(View.GONE);
-                listView.setEmptyView(emptyView);
             }
-            photoPickerBottomLayout.updateSelectedCount(selectedPhotos.size() + selectedWebPhotos.size(), true);
+        });
+
+        ActionBarMenu menu = actionBar.createMenu();
+        menu.addItem(1, R.drawable.ic_ab_other);
+
+        fragmentView = new FrameLayout(context);
+
+        FrameLayout frameLayout = (FrameLayout) fragmentView;
+        frameLayout.setBackgroundColor(0xff000000);
+
+        listView = new ListView(context);
+        listView.setPadding(AndroidUtilities.dp(4), 0, AndroidUtilities.dp(4), AndroidUtilities.dp(4));
+        listView.setClipToPadding(false);
+        listView.setHorizontalScrollBarEnabled(false);
+        listView.setVerticalScrollBarEnabled(false);
+        listView.setSelector(new ColorDrawable(0));
+        listView.setDividerHeight(0);
+        listView.setDivider(null);
+        listView.setDrawingCacheEnabled(false);
+        listView.setScrollingCacheEnabled(false);
+        frameLayout.addView(listView);
+        FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) listView.getLayoutParams();
+        layoutParams.width = FrameLayout.LayoutParams.MATCH_PARENT;
+        layoutParams.height = FrameLayout.LayoutParams.MATCH_PARENT;
+        layoutParams.bottomMargin = AndroidUtilities.dp(48);
+        listView.setLayoutParams(layoutParams);
+        listView.setAdapter(listAdapter = new ListAdapter(context));
+        AndroidUtilities.setListViewEdgeEffectColor(listView, 0xff333333);
+
+        emptyView = new TextView(context);
+        emptyView.setTextColor(0xff808080);
+        emptyView.setTextSize(20);
+        emptyView.setGravity(Gravity.CENTER);
+        emptyView.setVisibility(View.GONE);
+        emptyView.setText(LocaleController.getString("NoPhotos", R.string.NoPhotos));
+        frameLayout.addView(emptyView);
+        layoutParams = (FrameLayout.LayoutParams) emptyView.getLayoutParams();
+        layoutParams.width = FrameLayout.LayoutParams.MATCH_PARENT;
+        layoutParams.height = FrameLayout.LayoutParams.MATCH_PARENT;
+        layoutParams.bottomMargin = AndroidUtilities.dp(48);
+        emptyView.setLayoutParams(layoutParams);
+        emptyView.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                return true;
+            }
+        });
+
+        progressView = new FrameLayout(context);
+        progressView.setVisibility(View.GONE);
+        frameLayout.addView(progressView);
+        layoutParams = (FrameLayout.LayoutParams) progressView.getLayoutParams();
+        layoutParams.width = FrameLayout.LayoutParams.MATCH_PARENT;
+        layoutParams.height = FrameLayout.LayoutParams.MATCH_PARENT;
+        layoutParams.bottomMargin = AndroidUtilities.dp(48);
+        progressView.setLayoutParams(layoutParams);
+
+        ProgressBar progressBar = new ProgressBar(context);
+        progressView.addView(progressBar);
+        layoutParams = (FrameLayout.LayoutParams) progressView.getLayoutParams();
+        layoutParams.width = FrameLayout.LayoutParams.WRAP_CONTENT;
+        layoutParams.height = FrameLayout.LayoutParams.WRAP_CONTENT;
+        layoutParams.gravity = Gravity.CENTER;
+        progressView.setLayoutParams(layoutParams);
+
+        photoPickerBottomLayout = new PhotoPickerBottomLayout(context);
+        frameLayout.addView(photoPickerBottomLayout);
+        layoutParams = (FrameLayout.LayoutParams) photoPickerBottomLayout.getLayoutParams();
+        layoutParams.width = FrameLayout.LayoutParams.MATCH_PARENT;
+        layoutParams.height = AndroidUtilities.dp(48);
+        layoutParams.gravity = Gravity.BOTTOM;
+        photoPickerBottomLayout.setLayoutParams(layoutParams);
+        photoPickerBottomLayout.cancelButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                finishFragment();
+            }
+        });
+        photoPickerBottomLayout.doneButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                sendSelectedPhotos();
+                finishFragment();
+            }
+        });
+
+        if (loading && (albumsSorted == null || albumsSorted != null && albumsSorted.isEmpty())) {
+            progressView.setVisibility(View.VISIBLE);
+            listView.setEmptyView(null);
         } else {
-            ViewGroup parent = (ViewGroup)fragmentView.getParent();
-            if (parent != null) {
-                parent.removeView(fragmentView);
-            }
+            progressView.setVisibility(View.GONE);
+            listView.setEmptyView(emptyView);
         }
+        photoPickerBottomLayout.updateSelectedCount(selectedPhotos.size() + selectedWebPhotos.size(), true);
+
         return fragmentView;
     }
 

@@ -9,7 +9,6 @@
 package org.telegram.ui.Adapters;
 
 import android.content.Context;
-import android.text.Html;
 import android.view.View;
 import android.view.ViewGroup;
 
@@ -257,7 +256,7 @@ public class SearchAdapter extends BaseSearchAdapter {
                         foundUserName = foundUserName.substring(1);
                     }
                     try {
-                        username = Html.fromHtml(String.format("<font color=\"#4d83b3\">@%s</font>%s", user.username.substring(0, foundUserName.length()), user.username.substring(foundUserName.length())));
+                        username = AndroidUtilities.replaceTags(String.format("<c#ff4d83b3>@%s</c>%s", user.username.substring(0, foundUserName.length()), user.username.substring(foundUserName.length())));
                     } catch (Exception e) {
                         username = user.username;
                         FileLog.e("tmessages", e);

@@ -121,18 +121,10 @@ public class ActionBar extends FrameLayout {
         }
 
         int x = 0;
-        if (backButtonImageView != null) {
-            if (AndroidUtilities.isTablet()) {
-                x = AndroidUtilities.dp(80);
-            } else {
-                x = AndroidUtilities.dp(72);
-            }
+        if (backButtonImageView != null && backButtonImageView.getVisibility() == VISIBLE) {
+            x = AndroidUtilities.dp(AndroidUtilities.isTablet() ? 80 : 72);
         } else {
-            if (AndroidUtilities.isTablet()) {
-                x = AndroidUtilities.dp(26);
-            } else {
-                x = AndroidUtilities.dp(18);
-            }
+            x = AndroidUtilities.dp(AndroidUtilities.isTablet() ? 26 : 18);
         }
 
         if (menu != null) {
@@ -202,17 +194,31 @@ public class ActionBar extends FrameLayout {
     }
 
     public void setBackButtonDrawable(Drawable drawable) {
+        boolean reposition = false;
         if (backButtonImageView == null) {
             createBackButtonImage();
+        } else {
+            reposition = true;
         }
+        backButtonImageView.setVisibility(drawable == null ? GONE : VISIBLE);
         backButtonImageView.setImageDrawable(drawable);
+        if (reposition) {
+            positionTitle(getMeasuredWidth(), getMeasuredHeight());
+        }
     }
 
     public void setBackButtonImage(int resource) {
+        boolean reposition = false;
         if (backButtonImageView == null) {
             createBackButtonImage();
+        } else {
+            reposition = true;
         }
+        backButtonImageView.setVisibility(resource == 0 ? GONE : VISIBLE);
         backButtonImageView.setImageResource(resource);
+        if (reposition) {
+            positionTitle(getMeasuredWidth(), getMeasuredHeight());
+        }
     }
 
     private void createSubtitleTextView() {
@@ -234,7 +240,7 @@ public class ActionBar extends FrameLayout {
             createSubtitleTextView();
         }
         if (subTitleTextView != null) {
-            subTitleTextView.setVisibility(value != null && !isSearchFieldVisible ? VISIBLE : GONE);
+            subTitleTextView.setVisibility(value != null && !isSearchFieldVisible ? VISIBLE : INVISIBLE);
             subTitleTextView.setText(value);
             positionTitle(getMeasuredWidth(), getMeasuredHeight());
         }
@@ -276,7 +282,7 @@ public class ActionBar extends FrameLayout {
         }
         if (titleTextView != null) {
             lastTitle = value;
-            titleTextView.setVisibility(value != null && !isSearchFieldVisible ? VISIBLE : GONE);
+            titleTextView.setVisibility(value != null && !isSearchFieldVisible ? VISIBLE : INVISIBLE);
             titleTextView.setText(value);
             positionTitle(getMeasuredWidth(), getMeasuredHeight());
         }
@@ -344,7 +350,7 @@ public class ActionBar extends FrameLayout {
         layoutParams.width = LayoutParams.FILL_PARENT;
         layoutParams.gravity = Gravity.RIGHT;
         actionMode.setLayoutParams(layoutParams);
-        actionMode.setVisibility(GONE);
+        actionMode.setVisibility(INVISIBLE);
 
         if (occupyStatusBar) {
             actionModeTop = new View(getContext());
@@ -355,7 +361,7 @@ public class ActionBar extends FrameLayout {
             layoutParams.width = LayoutParams.FILL_PARENT;
             layoutParams.gravity = Gravity.TOP | Gravity.LEFT;
             actionModeTop.setLayoutParams(layoutParams);
-            actionModeTop.setVisibility(GONE);
+            actionModeTop.setVisibility(INVISIBLE);
         }
 
         return actionMode;
@@ -381,9 +387,9 @@ public class ActionBar extends FrameLayout {
         if (actionMode == null) {
             return;
         }
-        actionMode.setVisibility(GONE);
+        actionMode.setVisibility(INVISIBLE);
         if (occupyStatusBar && actionModeTop != null) {
-            actionModeTop.setVisibility(GONE);
+            actionModeTop.setVisibility(INVISIBLE);
         }
         if (titleFrameLayout != null) {
             titleFrameLayout.setVisibility(VISIBLE);
@@ -400,10 +406,10 @@ public class ActionBar extends FrameLayout {
     protected void onSearchFieldVisibilityChanged(boolean visible) {
         isSearchFieldVisible = visible;
         if (titleTextView != null) {
-            titleTextView.setVisibility(visible ? GONE : VISIBLE);
+            titleTextView.setVisibility(visible ? INVISIBLE : VISIBLE);
         }
         if (subTitleTextView != null) {
-            subTitleTextView.setVisibility(visible ? GONE : VISIBLE);
+            subTitleTextView.setVisibility(visible ? INVISIBLE : VISIBLE);
         }
         Drawable drawable = backButtonImageView.getDrawable();
         if (drawable != null && drawable instanceof MenuDrawable) {
@@ -460,7 +466,7 @@ public class ActionBar extends FrameLayout {
             createTitleTextView();
         }
         if (titleTextView != null) {
-            titleTextView.setVisibility(textToSet != null && !isSearchFieldVisible ? VISIBLE : GONE);
+            titleTextView.setVisibility(textToSet != null && !isSearchFieldVisible ? VISIBLE : INVISIBLE);
             titleTextView.setText(textToSet);
             positionTitle(getMeasuredWidth(), getMeasuredHeight());
         }

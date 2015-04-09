@@ -268,439 +268,430 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
     }
 
     @Override
-    public View createView(LayoutInflater inflater) {
-        if (fragmentView == null) {
-            actionBar.setBackgroundColor(AvatarDrawable.getProfileBackColorForId(5));
-            actionBar.setItemsBackground(AvatarDrawable.getButtonColorForId(5));
-            actionBar.setBackButtonImage(R.drawable.ic_ab_back);
-            actionBar.setExtraHeight(AndroidUtilities.dp(88), false);
-            if (AndroidUtilities.isTablet()) {
-                actionBar.setOccupyStatusBar(false);
+    public View createView(Context context, LayoutInflater inflater) {
+        actionBar.setBackgroundColor(AvatarDrawable.getProfileBackColorForId(5));
+        actionBar.setItemsBackground(AvatarDrawable.getButtonColorForId(5));
+        actionBar.setBackButtonImage(R.drawable.ic_ab_back);
+        actionBar.setExtraHeight(AndroidUtilities.dp(88), false);
+        if (AndroidUtilities.isTablet()) {
+            actionBar.setOccupyStatusBar(false);
+        }
+        actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
+            @Override
+            public void onItemClick(int id) {
+                if (id == -1) {
+                    finishFragment();
+                } else if (id == edit_name) {
+                    presentFragment(new ChangeNameActivity());
+                } else if (id == logout) {
+                    if (getParentActivity() == null) {
+                        return;
+                    }
+                    AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                    builder.setMessage(LocaleController.getString("AreYouSureLogout", R.string.AreYouSureLogout));
+                    builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
+                    builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialogInterface, int i) {
+                            SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+                            SharedPreferences.Editor editor = preferences.edit();
+                            editor.clear().commit();
+                            MessagesController.getInstance().unregistedPush();
+                            MessagesController.getInstance().logOut();
+                            UserConfig.clearConfig();
+                            NotificationCenter.getInstance().postNotificationName(NotificationCenter.appDidLogout);
+                            MessagesStorage.getInstance().cleanUp(false);
+                            MessagesController.getInstance().cleanUp();
+                            ContactsController.getInstance().deleteAllAppAccounts();
+                        }
+                    });
+                    builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+                    showAlertDialog(builder);
+                }
             }
-            actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
-                @Override
-                public void onItemClick(int id) {
-                    if (id == -1) {
-                        finishFragment();
-                    } else if (id == edit_name) {
-                        presentFragment(new ChangeNameActivity());
-                    } else if (id == logout) {
-                        if (getParentActivity() == null) {
-                            return;
-                        }
-                        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-                        builder.setMessage(LocaleController.getString("AreYouSureLogout", R.string.AreYouSureLogout));
-                        builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
-                        builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialogInterface, int i) {
-                                SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
-                                SharedPreferences.Editor editor = preferences.edit();
-                                editor.clear().commit();
-                                MessagesController.getInstance().unregistedPush();
-                                MessagesController.getInstance().logOut();
-                                UserConfig.clearConfig();
-                                NotificationCenter.getInstance().postNotificationName(NotificationCenter.appDidLogout);
-                                MessagesStorage.getInstance().cleanUp(false);
-                                MessagesController.getInstance().cleanUp();
-                                ContactsController.getInstance().deleteAllAppAccounts();
-                            }
-                        });
-                        builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-                        showAlertDialog(builder);
-                    }
+        });
+        ActionBarMenu menu = actionBar.createMenu();
+        ActionBarMenuItem item = menu.addItem(0, R.drawable.ic_ab_other);
+        item.addSubItem(edit_name, LocaleController.getString("EditName", R.string.EditName), 0);
+        item.addSubItem(logout, LocaleController.getString("LogOut", R.string.LogOut), 0);
+
+        listAdapter = new ListAdapter(context);
+
+        fragmentView = new FrameLayout(context);
+        FrameLayout frameLayout = (FrameLayout) fragmentView;
+
+        avatarImage = new BackupImageView(context);
+        avatarImage.setRoundRadius(AndroidUtilities.dp(30));
+        actionBar.addView(avatarImage);
+        FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) avatarImage.getLayoutParams();
+        layoutParams.gravity = (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.BOTTOM;
+        layoutParams.width = AndroidUtilities.dp(60);
+        layoutParams.height = AndroidUtilities.dp(60);
+        layoutParams.leftMargin = LocaleController.isRTL ? 0 : AndroidUtilities.dp(17);
+        layoutParams.rightMargin = LocaleController.isRTL ? AndroidUtilities.dp(17) : 0;
+        layoutParams.bottomMargin = AndroidUtilities.dp(22);
+        avatarImage.setLayoutParams(layoutParams);
+        avatarImage.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                TLRPC.User user = MessagesController.getInstance().getUser(UserConfig.getClientUserId());
+                if (user.photo != null && user.photo.photo_big != null) {
+                    PhotoViewer.getInstance().setParentActivity(getParentActivity());
+                    PhotoViewer.getInstance().openPhoto(user.photo.photo_big, SettingsActivity.this);
                 }
-            });
-            ActionBarMenu menu = actionBar.createMenu();
-            ActionBarMenuItem item = menu.addItem(0, R.drawable.ic_ab_other);
-            item.addSubItem(edit_name, LocaleController.getString("EditName", R.string.EditName), 0);
-            item.addSubItem(logout, LocaleController.getString("LogOut", R.string.LogOut), 0);
-
-            listAdapter = new ListAdapter(getParentActivity());
-
-            fragmentView = new FrameLayout(getParentActivity());
-            FrameLayout frameLayout = (FrameLayout) fragmentView;
-
-            avatarImage = new BackupImageView(getParentActivity());
-            avatarImage.imageReceiver.setRoundRadius(AndroidUtilities.dp(30));
-            avatarImage.processDetach = false;
-            actionBar.addView(avatarImage);
-            FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) avatarImage.getLayoutParams();
-            layoutParams.gravity = (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.BOTTOM;
-            layoutParams.width = AndroidUtilities.dp(60);
-            layoutParams.height = AndroidUtilities.dp(60);
-            layoutParams.leftMargin = LocaleController.isRTL ? 0 : AndroidUtilities.dp(17);
-            layoutParams.rightMargin = LocaleController.isRTL ? AndroidUtilities.dp(17) : 0;
-            layoutParams.bottomMargin = AndroidUtilities.dp(22);
-            avatarImage.setLayoutParams(layoutParams);
-            avatarImage.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    TLRPC.User user = MessagesController.getInstance().getUser(UserConfig.getClientUserId());
-                    if (user.photo != null && user.photo.photo_big != null) {
-                        PhotoViewer.getInstance().setParentActivity(getParentActivity());
-                        PhotoViewer.getInstance().openPhoto(user.photo.photo_big, SettingsActivity.this);
-                    }
-                }
-            });
-
-            nameTextView = new TextView(getParentActivity());
-            nameTextView.setTextColor(0xffffffff);
-            nameTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
-            nameTextView.setLines(1);
-            nameTextView.setMaxLines(1);
-            nameTextView.setSingleLine(true);
-            nameTextView.setEllipsize(TextUtils.TruncateAt.END);
-            nameTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT));
-            nameTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
-            actionBar.addView(nameTextView);
-            layoutParams = (FrameLayout.LayoutParams) nameTextView.getLayoutParams();
-            layoutParams.width = FrameLayout.LayoutParams.WRAP_CONTENT;
-            layoutParams.height = FrameLayout.LayoutParams.WRAP_CONTENT;
-            layoutParams.leftMargin = AndroidUtilities.dp(LocaleController.isRTL ? 16 : 97);
-            layoutParams.rightMargin = AndroidUtilities.dp(LocaleController.isRTL ? 97 : 16);
-            layoutParams.bottomMargin = AndroidUtilities.dp(51);
-            layoutParams.gravity = (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.BOTTOM;
-            nameTextView.setLayoutParams(layoutParams);
-
-            onlineTextView = new TextView(getParentActivity());
-            onlineTextView.setTextColor(AvatarDrawable.getProfileTextColorForId(5));
-            onlineTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-            onlineTextView.setLines(1);
-            onlineTextView.setMaxLines(1);
-            onlineTextView.setSingleLine(true);
-            onlineTextView.setEllipsize(TextUtils.TruncateAt.END);
-            onlineTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT));
-            actionBar.addView(onlineTextView);
-            layoutParams = (FrameLayout.LayoutParams) onlineTextView.getLayoutParams();
-            layoutParams.width = FrameLayout.LayoutParams.WRAP_CONTENT;
-            layoutParams.height = FrameLayout.LayoutParams.WRAP_CONTENT;
-            layoutParams.leftMargin = AndroidUtilities.dp(LocaleController.isRTL ? 16 : 97);
-            layoutParams.rightMargin = AndroidUtilities.dp(LocaleController.isRTL ? 97 : 16);
-            layoutParams.bottomMargin = AndroidUtilities.dp(30);
-            layoutParams.gravity = (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.BOTTOM;
-            onlineTextView.setLayoutParams(layoutParams);
-
-            listView = new ListView(getParentActivity());
-            listView.setDivider(null);
-            listView.setDividerHeight(0);
-            listView.setVerticalScrollBarEnabled(false);
-            AndroidUtilities.setListViewEdgeEffectColor(listView, AvatarDrawable.getProfileBackColorForId(5));
-            frameLayout.addView(listView);
-            layoutParams = (FrameLayout.LayoutParams) listView.getLayoutParams();
-            layoutParams.width = FrameLayout.LayoutParams.MATCH_PARENT;
-            layoutParams.height = FrameLayout.LayoutParams.MATCH_PARENT;
-            layoutParams.gravity = Gravity.TOP;
-            listView.setLayoutParams(layoutParams);
-            listView.setAdapter(listAdapter);
-            listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-                @Override
-                public void onItemClick(AdapterView<?> adapterView, View view, final int i, long l) {
-                    if (i == textSizeRow) {
-                        if (getParentActivity() == null) {
-                            return;
-                        }
-                        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-                        builder.setTitle(LocaleController.getString("TextSize", R.string.TextSize));
-                        final NumberPicker numberPicker = new NumberPicker(getParentActivity());
-                        numberPicker.setMinValue(12);
-                        numberPicker.setMaxValue(30);
-                        numberPicker.setValue(MessagesController.getInstance().fontSize);
-                        builder.setView(numberPicker);
-                        builder.setNegativeButton(LocaleController.getString("Done", R.string.Done), new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialog, int which) {
-                                SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
-                                SharedPreferences.Editor editor = preferences.edit();
-                                editor.putInt("fons_size", numberPicker.getValue());
-                                MessagesController.getInstance().fontSize = numberPicker.getValue();
-                                editor.commit();
-                                if (listView != null) {
-                                    listView.invalidateViews();
-                                }
-                            }
-                        });
-                        showAlertDialog(builder);
-                    } else if (i == enableAnimationsRow) {
-                        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
-                        boolean animations = preferences.getBoolean("view_animations", true);
-                        SharedPreferences.Editor editor = preferences.edit();
-                        editor.putBoolean("view_animations", !animations);
-                        editor.commit();
-                        if (view instanceof TextCheckCell) {
-                            ((TextCheckCell) view).setChecked(!animations);
-                        }
-                    } else if (i == notificationRow) {
-                        presentFragment(new NotificationsSettingsActivity());
-                    } else if (i == backgroundRow) {
-                        presentFragment(new WallpapersActivity());
-                    } else if (i == askQuestionRow) {
-                        if (getParentActivity() == null) {
-                            return;
-                        }
-                        final TextView message = new TextView(getParentActivity());
-                        message.setText(Html.fromHtml(LocaleController.getString("AskAQuestionInfo", R.string.AskAQuestionInfo)));
-                        message.setTextSize(18);
-                        message.setPadding(AndroidUtilities.dp(8), AndroidUtilities.dp(5), AndroidUtilities.dp(8), AndroidUtilities.dp(6));
-                        message.setMovementMethod(new LinkMovementMethodMy());
-
-                        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-                        builder.setView(message);
-                        builder.setPositiveButton(LocaleController.getString("AskButton", R.string.AskButton), new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialogInterface, int i) {
-                                performAskAQuestion();
-                            }
-                        });
-                        builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-                        showAlertDialog(builder);
-                    } else if (i == sendLogsRow) {
-                        sendLogs();
-                    } else if (i == clearLogsRow) {
-                        FileLog.cleanupLogs();
-                    } else if (i == sendByEnterRow) {
-                        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
-                        boolean send = preferences.getBoolean("send_by_enter", false);
-                        SharedPreferences.Editor editor = preferences.edit();
-                        editor.putBoolean("send_by_enter", !send);
-                        editor.commit();
-                        if (view instanceof TextCheckCell) {
-                            ((TextCheckCell) view).setChecked(!send);
-                        }
-                    } else if (i == saveToGalleryRow) {
-                        MediaController.getInstance().toggleSaveToGallery();
-                        if (view instanceof TextCheckCell) {
-                            ((TextCheckCell) view).setChecked(MediaController.getInstance().canSaveToGallery());
-                        }
-                    } else if (i == privacyRow) {
-                        presentFragment(new PrivacySettingsActivity());
-                    } else if (i == languageRow) {
-                        presentFragment(new LanguageSelectActivity());
-                    } else if (i == switchBackendButtonRow) {
-                        if (getParentActivity() == null) {
-                            return;
-                        }
-                        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-                        builder.setMessage(LocaleController.getString("AreYouSure", R.string.AreYouSure));
-                        builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
-                        builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialogInterface, int i) {
-                                ConnectionsManager.getInstance().switchBackend();
-                            }
-                        });
-                        builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-                        showAlertDialog(builder);
-                    } else if (i == telegramFaqRow) {
-                        try {
-                            Intent pickIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(LocaleController.getString("TelegramFaqUrl", R.string.TelegramFaqUrl)));
-                            getParentActivity().startActivityForResult(pickIntent, 500);
-                        } catch (Exception e) {
-                            FileLog.e("tmessages", e);
-                        }
-                    } else if (i == contactsReimportRow) {
-
-                    } else if (i == contactsSortRow) {
-                        if (getParentActivity() == null) {
-                            return;
-                        }
-                        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-                        builder.setTitle(LocaleController.getString("SortBy", R.string.SortBy));
-                        builder.setItems(new CharSequence[] {
-                                LocaleController.getString("Default", R.string.Default),
-                                LocaleController.getString("SortFirstName", R.string.SortFirstName),
-                                LocaleController.getString("SortLastName", R.string.SortLastName)
-                        }, new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialog, int which) {
-                                SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
-                                SharedPreferences.Editor editor = preferences.edit();
-                                editor.putInt("sortContactsBy", which);
-                                editor.commit();
-                                if (listView != null) {
-                                    listView.invalidateViews();
-                                }
-                            }
-                        });
-                        builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-                        showAlertDialog(builder);
-                    } else if (i == wifiDownloadRow || i == mobileDownloadRow || i == roamingDownloadRow) {
-                        if (getParentActivity() == null) {
-                            return;
-                        }
-                        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-
-                        int mask = 0;
-                        if (i == mobileDownloadRow) {
-                            builder.setTitle(LocaleController.getString("WhenUsingMobileData", R.string.WhenUsingMobileData));
-                            mask = MediaController.getInstance().mobileDataDownloadMask;
-                        } else if (i == wifiDownloadRow) {
-                            builder.setTitle(LocaleController.getString("WhenConnectedOnWiFi", R.string.WhenConnectedOnWiFi));
-                            mask = MediaController.getInstance().wifiDownloadMask;
-                        } else if (i == roamingDownloadRow) {
-                            builder.setTitle(LocaleController.getString("WhenRoaming", R.string.WhenRoaming));
-                            mask = MediaController.getInstance().roamingDownloadMask;
-                        }
-                        builder.setMultiChoiceItems(
-                                new CharSequence[]{LocaleController.getString("AttachPhoto", R.string.AttachPhoto), LocaleController.getString("AttachAudio", R.string.AttachAudio), LocaleController.getString("AttachVideo", R.string.AttachVideo), LocaleController.getString("AttachDocument", R.string.AttachDocument)},
-                                new boolean[]{(mask & MediaController.AUTODOWNLOAD_MASK_PHOTO) != 0, (mask & MediaController.AUTODOWNLOAD_MASK_AUDIO) != 0, (mask & MediaController.AUTODOWNLOAD_MASK_VIDEO) != 0, (mask & MediaController.AUTODOWNLOAD_MASK_DOCUMENT) != 0},
-                                new DialogInterface.OnMultiChoiceClickListener() {
-                                    @Override
-                                    public void onClick(DialogInterface dialog, int which, boolean isChecked) {
-                                        int mask = 0;
-                                        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
-                                        SharedPreferences.Editor editor = preferences.edit();
-                                        if (i == mobileDownloadRow) {
-                                            mask = MediaController.getInstance().mobileDataDownloadMask;
-                                        } else if (i == wifiDownloadRow) {
-                                            mask = MediaController.getInstance().wifiDownloadMask;
-                                        } else if (i == roamingDownloadRow) {
-                                            mask = MediaController.getInstance().roamingDownloadMask;
-                                        }
-
-                                        int maskDiff = 0;
-                                        if (which == 0) {
-                                            maskDiff = MediaController.AUTODOWNLOAD_MASK_PHOTO;
-                                        } else if (which == 1) {
-                                            maskDiff = MediaController.AUTODOWNLOAD_MASK_AUDIO;
-                                        } else if (which == 2) {
-                                            maskDiff = MediaController.AUTODOWNLOAD_MASK_VIDEO;
-                                        } else if (which == 3) {
-                                            maskDiff = MediaController.AUTODOWNLOAD_MASK_DOCUMENT;
-                                        }
-
-                                        if (isChecked) {
-                                            mask |= maskDiff;
-                                        } else {
-                                            mask &= ~maskDiff;
-                                        }
-
-                                        if (i == mobileDownloadRow) {
-                                            editor.putInt("mobileDataDownloadMask", mask);
-                                            mask = MediaController.getInstance().mobileDataDownloadMask = mask;
-                                        } else if (i == wifiDownloadRow) {
-                                            editor.putInt("wifiDownloadMask", mask);
-                                            MediaController.getInstance().wifiDownloadMask = mask;
-                                        } else if (i == roamingDownloadRow) {
-                                            editor.putInt("roamingDownloadMask", mask);
-                                            MediaController.getInstance().roamingDownloadMask = mask;
-                                        }
-                                        editor.commit();
-                                        if (listView != null) {
-                                            listView.invalidateViews();
-                                        }
-                                    }
-                                });
-                        builder.setNegativeButton(LocaleController.getString("OK", R.string.OK), null);
-                        showAlertDialog(builder);
-                    } else if (i == usernameRow) {
-                        presentFragment(new ChangeUsernameActivity());
-                    } else if (i == numberRow) {
-                        presentFragment(new ChangePhoneHelpActivity());
-                    }
-                }
-            });
-
-            frameLayout.addView(actionBar);
-
-            writeButton = new ImageView(getParentActivity());
-            writeButton.setBackgroundResource(R.drawable.floating_user_states);
-            writeButton.setImageResource(R.drawable.floating_camera);
-            writeButton.setScaleType(ImageView.ScaleType.CENTER);
-            if (Build.VERSION.SDK_INT >= 21) {
-                StateListAnimator animator = new StateListAnimator();
-                animator.addState(new int[] {android.R.attr.state_pressed}, ObjectAnimator.ofFloat(writeButton, "translationZ", AndroidUtilities.dp(2), AndroidUtilities.dp(4)).setDuration(200));
-                animator.addState(new int[] {}, ObjectAnimator.ofFloat(writeButton, "translationZ", AndroidUtilities.dp(4), AndroidUtilities.dp(2)).setDuration(200));
-                writeButton.setStateListAnimator(animator);
-                writeButton.setOutlineProvider(new ViewOutlineProvider() {
-                    @Override
-                    public void getOutline(View view, Outline outline) {
-                        outline.setOval(0, 0, AndroidUtilities.dp(56), AndroidUtilities.dp(56));
-                    }
-                });
             }
-            frameLayout.addView(writeButton);
-            layoutParams = (FrameLayout.LayoutParams) writeButton.getLayoutParams();
-            layoutParams.width = FrameLayout.LayoutParams.WRAP_CONTENT;
-            layoutParams.height = FrameLayout.LayoutParams.WRAP_CONTENT;
-            layoutParams.leftMargin = AndroidUtilities.dp(LocaleController.isRTL ? 16 : 0);
-            layoutParams.rightMargin = AndroidUtilities.dp(LocaleController.isRTL ? 0 : 16);
-            layoutParams.gravity = (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT);
-            writeButton.setLayoutParams(layoutParams);
-            writeButton.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
+        });
+
+        nameTextView = new TextView(context);
+        nameTextView.setTextColor(0xffffffff);
+        nameTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
+        nameTextView.setLines(1);
+        nameTextView.setMaxLines(1);
+        nameTextView.setSingleLine(true);
+        nameTextView.setEllipsize(TextUtils.TruncateAt.END);
+        nameTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT));
+        nameTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        actionBar.addView(nameTextView);
+        layoutParams = (FrameLayout.LayoutParams) nameTextView.getLayoutParams();
+        layoutParams.width = FrameLayout.LayoutParams.WRAP_CONTENT;
+        layoutParams.height = FrameLayout.LayoutParams.WRAP_CONTENT;
+        layoutParams.leftMargin = AndroidUtilities.dp(LocaleController.isRTL ? 16 : 97);
+        layoutParams.rightMargin = AndroidUtilities.dp(LocaleController.isRTL ? 97 : 16);
+        layoutParams.bottomMargin = AndroidUtilities.dp(51);
+        layoutParams.gravity = (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.BOTTOM;
+        nameTextView.setLayoutParams(layoutParams);
+
+        onlineTextView = new TextView(context);
+        onlineTextView.setTextColor(AvatarDrawable.getProfileTextColorForId(5));
+        onlineTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+        onlineTextView.setLines(1);
+        onlineTextView.setMaxLines(1);
+        onlineTextView.setSingleLine(true);
+        onlineTextView.setEllipsize(TextUtils.TruncateAt.END);
+        onlineTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT));
+        actionBar.addView(onlineTextView);
+        layoutParams = (FrameLayout.LayoutParams) onlineTextView.getLayoutParams();
+        layoutParams.width = FrameLayout.LayoutParams.WRAP_CONTENT;
+        layoutParams.height = FrameLayout.LayoutParams.WRAP_CONTENT;
+        layoutParams.leftMargin = AndroidUtilities.dp(LocaleController.isRTL ? 16 : 97);
+        layoutParams.rightMargin = AndroidUtilities.dp(LocaleController.isRTL ? 97 : 16);
+        layoutParams.bottomMargin = AndroidUtilities.dp(30);
+        layoutParams.gravity = (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.BOTTOM;
+        onlineTextView.setLayoutParams(layoutParams);
+
+        listView = new ListView(context);
+        listView.setDivider(null);
+        listView.setDividerHeight(0);
+        listView.setVerticalScrollBarEnabled(false);
+        AndroidUtilities.setListViewEdgeEffectColor(listView, AvatarDrawable.getProfileBackColorForId(5));
+        frameLayout.addView(listView);
+        layoutParams = (FrameLayout.LayoutParams) listView.getLayoutParams();
+        layoutParams.width = FrameLayout.LayoutParams.MATCH_PARENT;
+        layoutParams.height = FrameLayout.LayoutParams.MATCH_PARENT;
+        layoutParams.gravity = Gravity.TOP;
+        listView.setLayoutParams(layoutParams);
+        listView.setAdapter(listAdapter);
+        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> adapterView, View view, final int i, long l) {
+                if (i == textSizeRow) {
+                    if (getParentActivity() == null) {
+                        return;
+                    }
+                    AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                    builder.setTitle(LocaleController.getString("TextSize", R.string.TextSize));
+                    final NumberPicker numberPicker = new NumberPicker(getParentActivity());
+                    numberPicker.setMinValue(12);
+                    numberPicker.setMaxValue(30);
+                    numberPicker.setValue(MessagesController.getInstance().fontSize);
+                    builder.setView(numberPicker);
+                    builder.setNegativeButton(LocaleController.getString("Done", R.string.Done), new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+                            SharedPreferences.Editor editor = preferences.edit();
+                            editor.putInt("fons_size", numberPicker.getValue());
+                            MessagesController.getInstance().fontSize = numberPicker.getValue();
+                            editor.commit();
+                            if (listView != null) {
+                                listView.invalidateViews();
+                            }
+                        }
+                    });
+                    showAlertDialog(builder);
+                } else if (i == enableAnimationsRow) {
+                    SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+                    boolean animations = preferences.getBoolean("view_animations", true);
+                    SharedPreferences.Editor editor = preferences.edit();
+                    editor.putBoolean("view_animations", !animations);
+                    editor.commit();
+                    if (view instanceof TextCheckCell) {
+                        ((TextCheckCell) view).setChecked(!animations);
+                    }
+                } else if (i == notificationRow) {
+                    presentFragment(new NotificationsSettingsActivity());
+                } else if (i == backgroundRow) {
+                    presentFragment(new WallpapersActivity());
+                } else if (i == askQuestionRow) {
+                    if (getParentActivity() == null) {
+                        return;
+                    }
+                    final TextView message = new TextView(getParentActivity());
+                    message.setText(Html.fromHtml(LocaleController.getString("AskAQuestionInfo", R.string.AskAQuestionInfo)));
+                    message.setTextSize(18);
+                    message.setPadding(AndroidUtilities.dp(8), AndroidUtilities.dp(5), AndroidUtilities.dp(8), AndroidUtilities.dp(6));
+                    message.setMovementMethod(new LinkMovementMethodMy());
+
+                    AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                    builder.setView(message);
+                    builder.setPositiveButton(LocaleController.getString("AskButton", R.string.AskButton), new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialogInterface, int i) {
+                            performAskAQuestion();
+                        }
+                    });
+                    builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+                    showAlertDialog(builder);
+                } else if (i == sendLogsRow) {
+                    sendLogs();
+                } else if (i == clearLogsRow) {
+                    FileLog.cleanupLogs();
+                } else if (i == sendByEnterRow) {
+                    SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+                    boolean send = preferences.getBoolean("send_by_enter", false);
+                    SharedPreferences.Editor editor = preferences.edit();
+                    editor.putBoolean("send_by_enter", !send);
+                    editor.commit();
+                    if (view instanceof TextCheckCell) {
+                        ((TextCheckCell) view).setChecked(!send);
+                    }
+                } else if (i == saveToGalleryRow) {
+                    MediaController.getInstance().toggleSaveToGallery();
+                    if (view instanceof TextCheckCell) {
+                        ((TextCheckCell) view).setChecked(MediaController.getInstance().canSaveToGallery());
+                    }
+                } else if (i == privacyRow) {
+                    presentFragment(new PrivacySettingsActivity());
+                } else if (i == languageRow) {
+                    presentFragment(new LanguageSelectActivity());
+                } else if (i == switchBackendButtonRow) {
+                    if (getParentActivity() == null) {
+                        return;
+                    }
+                    AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                    builder.setMessage(LocaleController.getString("AreYouSure", R.string.AreYouSure));
+                    builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
+                    builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialogInterface, int i) {
+                            ConnectionsManager.getInstance().switchBackend();
+                        }
+                    });
+                    builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+                    showAlertDialog(builder);
+                } else if (i == telegramFaqRow) {
+                    try {
+                        Intent pickIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(LocaleController.getString("TelegramFaqUrl", R.string.TelegramFaqUrl)));
+                        getParentActivity().startActivityForResult(pickIntent, 500);
+                    } catch (Exception e) {
+                        FileLog.e("tmessages", e);
+                    }
+                } else if (i == contactsReimportRow) {
+
+                } else if (i == contactsSortRow) {
+                    if (getParentActivity() == null) {
+                        return;
+                    }
+                    AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                    builder.setTitle(LocaleController.getString("SortBy", R.string.SortBy));
+                    builder.setItems(new CharSequence[]{
+                            LocaleController.getString("Default", R.string.Default),
+                            LocaleController.getString("SortFirstName", R.string.SortFirstName),
+                            LocaleController.getString("SortLastName", R.string.SortLastName)
+                    }, new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+                            SharedPreferences.Editor editor = preferences.edit();
+                            editor.putInt("sortContactsBy", which);
+                            editor.commit();
+                            if (listView != null) {
+                                listView.invalidateViews();
+                            }
+                        }
+                    });
+                    builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+                    showAlertDialog(builder);
+                } else if (i == wifiDownloadRow || i == mobileDownloadRow || i == roamingDownloadRow) {
                     if (getParentActivity() == null) {
                         return;
                     }
                     AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
 
-                    CharSequence[] items;
+                    int mask = 0;
+                    if (i == mobileDownloadRow) {
+                        builder.setTitle(LocaleController.getString("WhenUsingMobileData", R.string.WhenUsingMobileData));
+                        mask = MediaController.getInstance().mobileDataDownloadMask;
+                    } else if (i == wifiDownloadRow) {
+                        builder.setTitle(LocaleController.getString("WhenConnectedOnWiFi", R.string.WhenConnectedOnWiFi));
+                        mask = MediaController.getInstance().wifiDownloadMask;
+                    } else if (i == roamingDownloadRow) {
+                        builder.setTitle(LocaleController.getString("WhenRoaming", R.string.WhenRoaming));
+                        mask = MediaController.getInstance().roamingDownloadMask;
+                    }
+                    builder.setMultiChoiceItems(
+                            new CharSequence[]{LocaleController.getString("AttachPhoto", R.string.AttachPhoto), LocaleController.getString("AttachAudio", R.string.AttachAudio), LocaleController.getString("AttachVideo", R.string.AttachVideo), LocaleController.getString("AttachDocument", R.string.AttachDocument)},
+                            new boolean[]{(mask & MediaController.AUTODOWNLOAD_MASK_PHOTO) != 0, (mask & MediaController.AUTODOWNLOAD_MASK_AUDIO) != 0, (mask & MediaController.AUTODOWNLOAD_MASK_VIDEO) != 0, (mask & MediaController.AUTODOWNLOAD_MASK_DOCUMENT) != 0},
+                            new DialogInterface.OnMultiChoiceClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which, boolean isChecked) {
+                                    int mask = 0;
+                                    SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+                                    SharedPreferences.Editor editor = preferences.edit();
+                                    if (i == mobileDownloadRow) {
+                                        mask = MediaController.getInstance().mobileDataDownloadMask;
+                                    } else if (i == wifiDownloadRow) {
+                                        mask = MediaController.getInstance().wifiDownloadMask;
+                                    } else if (i == roamingDownloadRow) {
+                                        mask = MediaController.getInstance().roamingDownloadMask;
+                                    }
 
-                    TLRPC.User user = MessagesController.getInstance().getUser(UserConfig.getClientUserId());
-                    if (user == null) {
-                        user = UserConfig.getCurrentUser();
-                    }
-                    if (user == null) {
-                        return;
-                    }
-                    boolean fullMenu = false;
-                    if (user.photo != null && user.photo.photo_big != null && !(user.photo instanceof TLRPC.TL_userProfilePhotoEmpty)) {
-                        items = new CharSequence[] {LocaleController.getString("FromCamera", R.string.FromCamera), LocaleController.getString("FromGalley", R.string.FromGalley), LocaleController.getString("DeletePhoto", R.string.DeletePhoto)};
-                        fullMenu = true;
-                    } else {
-                        items = new CharSequence[] {LocaleController.getString("FromCamera", R.string.FromCamera), LocaleController.getString("FromGalley", R.string.FromGalley)};
-                    }
+                                    int maskDiff = 0;
+                                    if (which == 0) {
+                                        maskDiff = MediaController.AUTODOWNLOAD_MASK_PHOTO;
+                                    } else if (which == 1) {
+                                        maskDiff = MediaController.AUTODOWNLOAD_MASK_AUDIO;
+                                    } else if (which == 2) {
+                                        maskDiff = MediaController.AUTODOWNLOAD_MASK_VIDEO;
+                                    } else if (which == 3) {
+                                        maskDiff = MediaController.AUTODOWNLOAD_MASK_DOCUMENT;
+                                    }
 
-                    final boolean full = fullMenu;
-                    builder.setItems(items, new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialogInterface, int i) {
-                            if (i == 0) {
-                                avatarUpdater.openCamera();
-                            } else if (i == 1) {
-                                avatarUpdater.openGallery();
-                            } else if (i == 2) {
-                                MessagesController.getInstance().deleteUserPhoto(null);
-                            }
-                        }
-                    });
+                                    if (isChecked) {
+                                        mask |= maskDiff;
+                                    } else {
+                                        mask &= ~maskDiff;
+                                    }
+
+                                    if (i == mobileDownloadRow) {
+                                        editor.putInt("mobileDataDownloadMask", mask);
+                                        mask = MediaController.getInstance().mobileDataDownloadMask = mask;
+                                    } else if (i == wifiDownloadRow) {
+                                        editor.putInt("wifiDownloadMask", mask);
+                                        MediaController.getInstance().wifiDownloadMask = mask;
+                                    } else if (i == roamingDownloadRow) {
+                                        editor.putInt("roamingDownloadMask", mask);
+                                        MediaController.getInstance().roamingDownloadMask = mask;
+                                    }
+                                    editor.commit();
+                                    if (listView != null) {
+                                        listView.invalidateViews();
+                                    }
+                                }
+                            });
+                    builder.setNegativeButton(LocaleController.getString("OK", R.string.OK), null);
                     showAlertDialog(builder);
+                } else if (i == usernameRow) {
+                    presentFragment(new ChangeUsernameActivity());
+                } else if (i == numberRow) {
+                    presentFragment(new ChangePhoneHelpActivity());
                 }
-            });
-
-            listView.setOnScrollListener(new AbsListView.OnScrollListener() {
-                @Override
-                public void onScrollStateChanged(AbsListView view, int scrollState) {
-
-                }
-
-                @Override
-                public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
-                    if (totalItemCount == 0) {
-                        return;
-                    }
-                    int height = 0;
-                    View child = view.getChildAt(0);
-                    if (child != null) {
-                        if (firstVisibleItem == 0) {
-                            height = AndroidUtilities.dp(88) + (child.getTop() < 0 ? child.getTop() : 0);
-                        }
-                        if (actionBar.getExtraHeight() != height) {
-                            actionBar.setExtraHeight(height, true);
-                            needLayout();
-                        }
-                    }
-                }
-            });
-
-            updateUserData();
-        } else {
-            ViewGroup parent = (ViewGroup)fragmentView.getParent();
-            if (parent != null) {
-                parent.removeView(fragmentView);
             }
+        });
+
+        frameLayout.addView(actionBar);
+
+        writeButton = new ImageView(context);
+        writeButton.setBackgroundResource(R.drawable.floating_user_states);
+        writeButton.setImageResource(R.drawable.floating_camera);
+        writeButton.setScaleType(ImageView.ScaleType.CENTER);
+        if (Build.VERSION.SDK_INT >= 21) {
+            StateListAnimator animator = new StateListAnimator();
+            animator.addState(new int[]{android.R.attr.state_pressed}, ObjectAnimator.ofFloat(writeButton, "translationZ", AndroidUtilities.dp(2), AndroidUtilities.dp(4)).setDuration(200));
+            animator.addState(new int[]{}, ObjectAnimator.ofFloat(writeButton, "translationZ", AndroidUtilities.dp(4), AndroidUtilities.dp(2)).setDuration(200));
+            writeButton.setStateListAnimator(animator);
+            writeButton.setOutlineProvider(new ViewOutlineProvider() {
+                @Override
+                public void getOutline(View view, Outline outline) {
+                    outline.setOval(0, 0, AndroidUtilities.dp(56), AndroidUtilities.dp(56));
+                }
+            });
         }
+        frameLayout.addView(writeButton);
+        layoutParams = (FrameLayout.LayoutParams) writeButton.getLayoutParams();
+        layoutParams.width = FrameLayout.LayoutParams.WRAP_CONTENT;
+        layoutParams.height = FrameLayout.LayoutParams.WRAP_CONTENT;
+        layoutParams.leftMargin = AndroidUtilities.dp(LocaleController.isRTL ? 16 : 0);
+        layoutParams.rightMargin = AndroidUtilities.dp(LocaleController.isRTL ? 0 : 16);
+        layoutParams.gravity = (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT);
+        writeButton.setLayoutParams(layoutParams);
+        writeButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (getParentActivity() == null) {
+                    return;
+                }
+                AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+
+                CharSequence[] items;
+
+                TLRPC.User user = MessagesController.getInstance().getUser(UserConfig.getClientUserId());
+                if (user == null) {
+                    user = UserConfig.getCurrentUser();
+                }
+                if (user == null) {
+                    return;
+                }
+                boolean fullMenu = false;
+                if (user.photo != null && user.photo.photo_big != null && !(user.photo instanceof TLRPC.TL_userProfilePhotoEmpty)) {
+                    items = new CharSequence[]{LocaleController.getString("FromCamera", R.string.FromCamera), LocaleController.getString("FromGalley", R.string.FromGalley), LocaleController.getString("DeletePhoto", R.string.DeletePhoto)};
+                    fullMenu = true;
+                } else {
+                    items = new CharSequence[]{LocaleController.getString("FromCamera", R.string.FromCamera), LocaleController.getString("FromGalley", R.string.FromGalley)};
+                }
+
+                final boolean full = fullMenu;
+                builder.setItems(items, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        if (i == 0) {
+                            avatarUpdater.openCamera();
+                        } else if (i == 1) {
+                            avatarUpdater.openGallery();
+                        } else if (i == 2) {
+                            MessagesController.getInstance().deleteUserPhoto(null);
+                        }
+                    }
+                });
+                showAlertDialog(builder);
+            }
+        });
+
+        listView.setOnScrollListener(new AbsListView.OnScrollListener() {
+            @Override
+            public void onScrollStateChanged(AbsListView view, int scrollState) {
+
+            }
+
+            @Override
+            public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
+                if (totalItemCount == 0) {
+                    return;
+                }
+                int height = 0;
+                View child = view.getChildAt(0);
+                if (child != null) {
+                    if (firstVisibleItem == 0) {
+                        height = AndroidUtilities.dp(88) + (child.getTop() < 0 ? child.getTop() : 0);
+                    }
+                    if (actionBar.getExtraHeight() != height) {
+                        actionBar.setExtraHeight(height, true);
+                        needLayout();
+                    }
+                }
+            }
+        });
+
         return fragmentView;
     }
 
@@ -729,11 +720,11 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 object.viewX = coords[0];
                 object.viewY = coords[1] - AndroidUtilities.statusBarHeight;
                 object.parentView = avatarImage;
-                object.imageReceiver = avatarImage.imageReceiver;
+                object.imageReceiver = avatarImage.getImageReceiver();
                 object.user_id = UserConfig.getClientUserId();
                 object.thumb = object.imageReceiver.getBitmap();
                 object.size = -1;
-                object.radius = avatarImage.imageReceiver.getRoundRadius();
+                object.radius = avatarImage.getImageReceiver().getRoundRadius();
                 return object;
             }
         }
@@ -750,7 +741,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
 
     @Override
     public void willHidePhotoViewer() {
-        avatarImage.imageReceiver.setVisible(true, true);
+        avatarImage.getImageReceiver().setVisible(true, true);
     }
 
     @Override
@@ -888,6 +879,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         if (listAdapter != null) {
             listAdapter.notifyDataSetChanged();
         }
+        updateUserData();
         fixLayout();
     }
 
@@ -927,7 +919,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 writeButton.clearAnimation();
             }
 
-            avatarImage.imageReceiver.setRoundRadius(AndroidUtilities.dp(avatarSize / 2));
+            avatarImage.setRoundRadius(AndroidUtilities.dp(avatarSize / 2));
             layoutParams = (FrameLayout.LayoutParams) avatarImage.getLayoutParams();
             layoutParams.width = AndroidUtilities.dp(avatarSize);
             layoutParams.height = AndroidUtilities.dp(avatarSize);
@@ -982,12 +974,12 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         avatarDrawable.setColor(0xff5c98cd);
         if (avatarImage != null) {
             avatarImage.setImage(photo, "50_50", avatarDrawable);
-            avatarImage.imageReceiver.setVisible(!PhotoViewer.getInstance().isShowingImage(photoBig), false);
+            avatarImage.getImageReceiver().setVisible(!PhotoViewer.getInstance().isShowingImage(photoBig), false);
 
             nameTextView.setText(ContactsController.formatName(user.first_name, user.last_name));
             onlineTextView.setText(LocaleController.getString("Online", R.string.Online));
 
-            avatarImage.imageReceiver.setVisible(!PhotoViewer.getInstance().isShowingImage(photoBig), false);
+            avatarImage.getImageReceiver().setVisible(!PhotoViewer.getInstance().isShowingImage(photoBig), false);
         }
     }
 
