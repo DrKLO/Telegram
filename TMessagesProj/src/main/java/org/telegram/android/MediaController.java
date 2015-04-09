@@ -1105,8 +1105,16 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
         if (proximitySensor != null && audioTrackPlayer == null && audioPlayer == null || isPaused || (useFrontSpeaker == (event.values[0] < proximitySensor.getMaximumRange() / 10))) {
             return;
         }
+        boolean newValue = event.values[0] < proximitySensor.getMaximumRange() / 10;
+        try {
+            if (newValue && NotificationsController.getInstance().audioManager.isWiredHeadsetOn()) {
+                return;
+            }
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
         ignoreProximity = true;
-        useFrontSpeaker = event.values[0] < proximitySensor.getMaximumRange() / 10;
+        useFrontSpeaker = newValue;
         NotificationCenter.getInstance().postNotificationName(NotificationCenter.audioRouteChanged, useFrontSpeaker);
         MessageObject currentMessageObject = playingMessageObject;
         float progress = playingMessageObject.audioProgress;

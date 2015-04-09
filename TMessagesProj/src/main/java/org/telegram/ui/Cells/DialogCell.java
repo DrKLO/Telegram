@@ -12,7 +12,6 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.drawable.Drawable;
-import android.text.Html;
 import android.text.Layout;
 import android.text.StaticLayout;
 import android.text.TextPaint;
@@ -132,6 +131,7 @@ public class DialogCell extends BaseCell {
             messagePaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
             messagePaint.setTextSize(AndroidUtilities.dp(16));
             messagePaint.setColor(0xff8f8f8f);
+            messagePaint.linkColor = 0xff8f8f8f;
 
             linePaint = new Paint();
             linePaint.setColor(0xffdcdcdc);
@@ -341,9 +341,9 @@ public class DialogCell extends BaseCell {
                             }
                         }
                         checkMessage = false;
-                        if (message.messageOwner.media != null && !(message.messageOwner.media instanceof TLRPC.TL_messageMediaEmpty)) {
+                        if (message.messageOwner.media != null && !message.isMediaEmpty()) {
                             currentMessagePaint = messagePrintingPaint;
-                            messageString = Emoji.replaceEmoji(Html.fromHtml(String.format("<font color=#4d83b3>%s:</font> <font color=#4d83b3>%s</font>", name, message.messageText)), messagePaint.getFontMetricsInt(), AndroidUtilities.dp(20));
+                            messageString = Emoji.replaceEmoji(AndroidUtilities.replaceTags(String.format("<c#ff4d83b3>%s:</c> <c#ff4d83b3>%s</c>", name, message.messageText)), messagePaint.getFontMetricsInt(), AndroidUtilities.dp(20));
                         } else {
                             if (message.messageOwner.message != null) {
                                 String mess = message.messageOwner.message;
@@ -351,12 +351,12 @@ public class DialogCell extends BaseCell {
                                     mess = mess.substring(0, 150);
                                 }
                                 mess = mess.replace("\n", " ");
-                                messageString = Emoji.replaceEmoji(Html.fromHtml(String.format("<font color=#4d83b3>%s:</font> <font color=#808080>%s</font>", name, mess.replace("<", "&lt;").replace(">", "&gt;"))), messagePaint.getFontMetricsInt(), AndroidUtilities.dp(20));
+                                messageString = Emoji.replaceEmoji(AndroidUtilities.replaceTags(String.format("<c#ff4d83b3>%s:</c> <c#ff808080>%s</c>", name, mess.replace("<", "&lt;").replace(">", "&gt;"))), messagePaint.getFontMetricsInt(), AndroidUtilities.dp(20));
                             }
                         }
                     } else {
                         messageString = message.messageText;
-                        if (message.messageOwner.media != null && !(message.messageOwner.media instanceof TLRPC.TL_messageMediaEmpty)) {
+                        if (message.messageOwner.media != null && !message.isMediaEmpty()) {
                             currentMessagePaint = messagePrintingPaint;
                         }
                     }
@@ -370,7 +370,7 @@ public class DialogCell extends BaseCell {
                 drawCount = false;
             }
 
-            if (message.isOut() && message.isOut()) {
+            if (message.isOut()) {
                 if (message.isSending()) {
                     drawCheck1 = false;
                     drawCheck2 = false;

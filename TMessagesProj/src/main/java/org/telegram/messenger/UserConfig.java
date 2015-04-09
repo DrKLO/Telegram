@@ -30,7 +30,6 @@ public class UserConfig {
     private final static Object sync = new Object();
     public static boolean saveIncomingPhotos = false;
     public static int contactsVersion = 1;
-    public static boolean waitingForPasswordEnter = false;
     public static String passcodeHash = "";
     public static boolean appLocked = false;
     public static int passcodeType = 0;
@@ -67,7 +66,6 @@ public class UserConfig {
                 editor.putInt("lastBroadcastId", lastBroadcastId);
                 editor.putBoolean("registeredForInternalPush", registeredForInternalPush);
                 editor.putBoolean("blockedUsersLoaded", blockedUsersLoaded);
-                editor.putBoolean("waitingForPasswordEnter", waitingForPasswordEnter);
                 editor.putString("passcodeHash1", passcodeHash);
                 editor.putBoolean("appLocked", appLocked);
                 editor.putInt("passcodeType", passcodeType);
@@ -98,18 +96,6 @@ public class UserConfig {
     public static boolean isClientActivated() {
         synchronized (sync) {
             return currentUser != null;
-        }
-    }
-
-    public static boolean isWaitingForPasswordEnter() {
-        synchronized (sync) {
-            return waitingForPasswordEnter;
-        }
-    }
-
-    public static void setWaitingForPasswordEnter(boolean value) {
-        synchronized (sync) {
-            waitingForPasswordEnter = value;
         }
     }
 
@@ -208,7 +194,6 @@ public class UserConfig {
                 lastBroadcastId = preferences.getInt("lastBroadcastId", -1);
                 registeredForInternalPush = preferences.getBoolean("registeredForInternalPush", false);
                 blockedUsersLoaded = preferences.getBoolean("blockedUsersLoaded", false);
-                waitingForPasswordEnter = preferences.getBoolean("waitingForPasswordEnter", false);
                 passcodeHash = preferences.getString("passcodeHash1", "");
                 appLocked = preferences.getBoolean("appLocked", false);
                 passcodeType = preferences.getInt("passcodeType", 0);
@@ -231,7 +216,6 @@ public class UserConfig {
         currentUser = null;
         registeredForInternalPush = false;
         registeredForPush = false;
-        waitingForPasswordEnter = false;
         contactsHash = "";
         importHash = "";
         lastSendMessageId = -210000;

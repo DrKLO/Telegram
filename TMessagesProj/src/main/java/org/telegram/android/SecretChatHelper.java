@@ -119,7 +119,7 @@ public class SecretChatHelper {
             reqSend = new TLRPC.TL_decryptedMessageService();
         } else {
             reqSend = new TLRPC.TL_decryptedMessageService_old();
-            reqSend.random_bytes = new byte[Math.max(1, (int) Math.ceil(Utilities.random.nextDouble() * 16))];
+            reqSend.random_bytes = new byte[15];
             Utilities.random.nextBytes(reqSend.random_bytes);
         }
 
@@ -224,7 +224,7 @@ public class SecretChatHelper {
             reqSend = new TLRPC.TL_decryptedMessageService();
         } else {
             reqSend = new TLRPC.TL_decryptedMessageService_old();
-            reqSend.random_bytes = new byte[Math.max(1, (int) Math.ceil(Utilities.random.nextDouble() * 16))];
+            reqSend.random_bytes = new byte[15];
             Utilities.random.nextBytes(reqSend.random_bytes);
         }
 
@@ -252,7 +252,7 @@ public class SecretChatHelper {
             reqSend = new TLRPC.TL_decryptedMessageService();
         } else {
             reqSend = new TLRPC.TL_decryptedMessageService_old();
-            reqSend.random_bytes = new byte[Math.max(1, (int) Math.ceil(Utilities.random.nextDouble() * 16))];
+            reqSend.random_bytes = new byte[15];
             Utilities.random.nextBytes(reqSend.random_bytes);
         }
 
@@ -283,7 +283,7 @@ public class SecretChatHelper {
             reqSend = new TLRPC.TL_decryptedMessageService();
         } else {
             reqSend = new TLRPC.TL_decryptedMessageService_old();
-            reqSend.random_bytes = new byte[Math.max(1, (int) Math.ceil(Utilities.random.nextDouble() * 16))];
+            reqSend.random_bytes = new byte[15];
             Utilities.random.nextBytes(reqSend.random_bytes);
         }
 
@@ -312,7 +312,7 @@ public class SecretChatHelper {
             reqSend = new TLRPC.TL_decryptedMessageService();
         } else {
             reqSend = new TLRPC.TL_decryptedMessageService_old();
-            reqSend.random_bytes = new byte[Math.max(1, (int) Math.ceil(Utilities.random.nextDouble() * 16))];
+            reqSend.random_bytes = new byte[15];
             Utilities.random.nextBytes(reqSend.random_bytes);
         }
 
@@ -343,7 +343,7 @@ public class SecretChatHelper {
             reqSend = new TLRPC.TL_decryptedMessageService();
         } else {
             reqSend = new TLRPC.TL_decryptedMessageService_old();
-            reqSend.random_bytes = new byte[Math.max(1, (int) Math.ceil(Utilities.random.nextDouble() * 16))];
+            reqSend.random_bytes = new byte[15];
             Utilities.random.nextBytes(reqSend.random_bytes);
         }
 
@@ -375,7 +375,7 @@ public class SecretChatHelper {
             reqSend = new TLRPC.TL_decryptedMessageService();
         } else {
             reqSend = new TLRPC.TL_decryptedMessageService_old();
-            reqSend.random_bytes = new byte[Math.max(1, (int) Math.ceil(Utilities.random.nextDouble() * 16))];
+            reqSend.random_bytes = new byte[15];
             Utilities.random.nextBytes(reqSend.random_bytes);
         }
 
@@ -406,7 +406,7 @@ public class SecretChatHelper {
             reqSend = new TLRPC.TL_decryptedMessageService();
         } else {
             reqSend = new TLRPC.TL_decryptedMessageService_old();
-            reqSend.random_bytes = new byte[Math.max(1, (int) Math.ceil(Utilities.random.nextDouble() * 16))];
+            reqSend.random_bytes = new byte[15];
             Utilities.random.nextBytes(reqSend.random_bytes);
         }
 
@@ -436,7 +436,7 @@ public class SecretChatHelper {
             reqSend = new TLRPC.TL_decryptedMessageService();
         } else {
             reqSend = new TLRPC.TL_decryptedMessageService_old();
-            reqSend.random_bytes = new byte[Math.max(1, (int) Math.ceil(Utilities.random.nextDouble() * 16))];
+            reqSend.random_bytes = new byte[15];
             Utilities.random.nextBytes(reqSend.random_bytes);
         }
 
@@ -464,7 +464,7 @@ public class SecretChatHelper {
             reqSend = new TLRPC.TL_decryptedMessageService();
         } else {
             reqSend = new TLRPC.TL_decryptedMessageService_old();
-            reqSend.random_bytes = new byte[Math.max(1, (int) Math.ceil(Utilities.random.nextDouble() * 16))];
+            reqSend.random_bytes = new byte[15];
             Utilities.random.nextBytes(reqSend.random_bytes);
         }
 
@@ -500,7 +500,7 @@ public class SecretChatHelper {
             reqSend = new TLRPC.TL_decryptedMessageService();
         } else {
             reqSend = new TLRPC.TL_decryptedMessageService_old();
-            reqSend.random_bytes = new byte[Math.max(1, (int) Math.ceil(Utilities.random.nextDouble() * 16))];
+            reqSend.random_bytes = new byte[15];
             Utilities.random.nextBytes(reqSend.random_bytes);
         }
 
@@ -659,7 +659,7 @@ public class SecretChatHelper {
                     int myLayer = Math.max(17, AndroidUtilities.getMyLayerVersion(chat.layer));
                     layer.layer = Math.min(myLayer, AndroidUtilities.getPeerLayerVersion(chat.layer));
                     layer.message = req;
-                    layer.random_bytes = new byte[Math.max(1, (int) Math.ceil(Utilities.random.nextDouble() * 16))];
+                    layer.random_bytes = new byte[15];
                     Utilities.random.nextBytes(layer.random_bytes);
                     toEncryptObject = layer;
 
@@ -795,7 +795,7 @@ public class SecretChatHelper {
                                             @Override
                                             public void run() {
                                                 newMsgObj.send_state = MessageObject.MESSAGE_SEND_STATE_SENT;
-                                                NotificationCenter.getInstance().postNotificationName(NotificationCenter.messageReceivedByServer, newMsgObj.id, newMsgObj.id, newMsgObj);
+                                                NotificationCenter.getInstance().postNotificationName(NotificationCenter.messageReceivedByServer, newMsgObj.id, newMsgObj.id, newMsgObj, false);
                                                 SendMessagesHelper.getInstance().processSentMessage(newMsgObj.id);
                                                 if (newMsgObj.media instanceof TLRPC.TL_messageMediaVideo) {
                                                     SendMessagesHelper.getInstance().stopVideoService(attachPath);
@@ -1104,10 +1104,7 @@ public class SecretChatHelper {
                     }
 
                     byte[] salt = new byte[256];
-                    for (int a = 0; a < 256; a++) {
-                        salt[a] = (byte) (Utilities.random.nextDouble() * 256);
-                    }
-
+                    Utilities.random.nextBytes(salt);
                     BigInteger p = new BigInteger(1, MessagesStorage.secretPBytes);
                     BigInteger g_b = BigInteger.valueOf(MessagesStorage.secretG);
                     g_b = g_b.modPow(new BigInteger(1, salt), p);
@@ -1409,9 +1406,7 @@ public class SecretChatHelper {
             return;
         }
         final byte[] salt = new byte[256];
-        for (int a = 0; a < 256; a++) {
-            salt[a] = (byte) (Utilities.random.nextDouble() * 256);
-        }
+        Utilities.random.nextBytes(salt);
 
         BigInteger i_g_a = BigInteger.valueOf(MessagesStorage.secretG);
         i_g_a = i_g_a.modPow(new BigInteger(1, salt), new BigInteger(1, MessagesStorage.secretPBytes));

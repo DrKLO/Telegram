@@ -117,7 +117,7 @@ public class PhotoPickerAlbumsCell extends FrameLayoutFixed {
         for (int a = 0; a < 4; a++) {
             albumViews[a] = new AlbumView(context);
             addView(albumViews[a]);
-            albumViews[a].setVisibility(GONE);
+            albumViews[a].setVisibility(INVISIBLE);
             albumViews[a].setTag(a);
             albumViews[a].setOnClickListener(new OnClickListener() {
                 @Override
@@ -132,7 +132,7 @@ public class PhotoPickerAlbumsCell extends FrameLayoutFixed {
 
     public void setAlbumsCount(int count) {
         for (int a = 0; a < albumViews.length; a++) {
-            albumViews[a].setVisibility(a < count ? VISIBLE : GONE);
+            albumViews[a].setVisibility(a < count ? VISIBLE : INVISIBLE);
         }
         albumsCount = count;
     }
@@ -156,7 +156,7 @@ public class PhotoPickerAlbumsCell extends FrameLayoutFixed {
             albumView.nameTextView.setText(albumEntry.bucketName);
             albumView.countTextView.setText(String.format("%d", albumEntry.photos.size()));
         } else {
-            albumViews[a].setVisibility(GONE);
+            albumViews[a].setVisibility(INVISIBLE);
         }
     }
 

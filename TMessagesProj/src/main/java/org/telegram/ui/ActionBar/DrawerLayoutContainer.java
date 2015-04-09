@@ -301,7 +301,7 @@ public class DrawerLayoutContainer extends FrameLayout {
                     float dx = (int) (ev.getX() - startedTrackingX);
                     float dy = Math.abs((int) ev.getY() - startedTrackingY);
                     velocityTracker.addMovement(ev);
-                    if (maybeStartTracking && !startedTracking && (dx > 0 && dx / 3.0f > Math.abs(dy) || dx < 0 && Math.abs(dx) >= Math.abs(dy) && Math.abs(dx) >= AndroidUtilities.dp(10))) {
+                    if (maybeStartTracking && !startedTracking && (dx > 0 && dx / 3.0f > Math.abs(dy) && Math.abs(dx) >= AndroidUtilities.getPixelsInCM(0.2f, true) || dx < 0 && Math.abs(dx) >= Math.abs(dy) && Math.abs(dx) >= AndroidUtilities.getPixelsInCM(0.3f, true))) {
                         prepareForDrawerOpen(ev);
                         startedTrackingX = (int) ev.getX();
                         requestDisallowInterceptTouchEvent(true);

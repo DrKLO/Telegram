@@ -71,7 +71,7 @@ public class NotificationsController {
     private long lastSoundPlay;
     private MediaPlayer mediaPlayerIn;
     private MediaPlayer mediaPlayerOut;
-    private AudioManager audioManager;
+    protected AudioManager audioManager;
 
     private static volatile NotificationsController Instance = null;
     public static NotificationsController getInstance() {
@@ -171,7 +171,7 @@ public class NotificationsController {
                             msg = LocaleController.formatString("NotificationUnrecognizedDevice", R.string.NotificationUnrecognizedDevice, UserConfig.getCurrentUser().first_name, date, messageObject.messageOwner.action.title, messageObject.messageOwner.action.address);
                         }
                     } else {
-                        if (messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaEmpty) {
+                        if (messageObject.isMediaEmpty()) {
                             if (!shortMessage) {
                                 if (messageObject.messageOwner.message != null && messageObject.messageOwner.message.length() != 0) {
                                     msg = LocaleController.formatString("NotificationMessageText", R.string.NotificationMessageText, ContactsController.formatName(user.first_name, user.last_name), messageObject.messageOwner.message);
@@ -236,7 +236,7 @@ public class NotificationsController {
                             msg = messageObject.messageText.toString();
                         }
                     } else {
-                        if (messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaEmpty) {
+                        if (messageObject.isMediaEmpty()) {
                             if (!shortMessage && messageObject.messageOwner.message != null && messageObject.messageOwner.message.length() != 0) {
                                 msg = LocaleController.formatString("NotificationMessageGroupText", R.string.NotificationMessageGroupText, ContactsController.formatName(user.first_name, user.last_name), chat.title, messageObject.messageOwner.message);
                             } else {
@@ -868,7 +868,7 @@ public class NotificationsController {
                             AssetFileDescriptor assetFileDescriptor = ApplicationLoader.applicationContext.getResources().openRawResourceFd(R.raw.sound_in);
                             if (assetFileDescriptor != null) {
                                 mediaPlayerIn = new MediaPlayer();
-                                mediaPlayerIn.setAudioStreamType(AudioManager.STREAM_NOTIFICATION);
+                                mediaPlayerIn.setAudioStreamType(AudioManager.STREAM_SYSTEM);
                                 mediaPlayerIn.setDataSource(assetFileDescriptor.getFileDescriptor(), assetFileDescriptor.getStartOffset(), assetFileDescriptor.getLength());
                                 mediaPlayerIn.setLooping(false);
                                 assetFileDescriptor.close();
@@ -938,7 +938,7 @@ public class NotificationsController {
                         AssetFileDescriptor assetFileDescriptor = ApplicationLoader.applicationContext.getResources().openRawResourceFd(R.raw.sound_out);
                         if (assetFileDescriptor != null) {
                             mediaPlayerOut = new MediaPlayer();
-                            mediaPlayerOut.setAudioStreamType(AudioManager.STREAM_NOTIFICATION);
+                            mediaPlayerOut.setAudioStreamType(AudioManager.STREAM_SYSTEM);
                             mediaPlayerOut.setDataSource(assetFileDescriptor.getFileDescriptor(), assetFileDescriptor.getStartOffset(), assetFileDescriptor.getLength());
                             mediaPlayerOut.setLooping(false);
                             assetFileDescriptor.close();

@@ -14,6 +14,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
+import android.graphics.Color;
 import android.graphics.Point;
 import android.graphics.Rect;
 import android.graphics.Typeface;
@@ -23,6 +24,7 @@ import android.os.Environment;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
+import android.text.style.ForegroundColorSpan;
 import android.util.DisplayMetrics;
 import android.util.StateSet;
 import android.view.Display;
@@ -43,6 +45,10 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.UserConfig;
+import org.telegram.ui.AnimationCompat.AnimatorListenerAdapterProxy;
+import org.telegram.ui.AnimationCompat.AnimatorSetProxy;
+import org.telegram.ui.AnimationCompat.ObjectAnimatorProxy;
+import org.telegram.ui.AnimationCompat.ViewProxy;
 import org.telegram.ui.Components.ForegroundDetector;
 import org.telegram.ui.Components.NumberPicker;
 import org.telegram.ui.Components.TypefaceSpan;
@@ -538,21 +544,51 @@ public class AndroidUtilities {
         }
     }
 
-    public static Spannable replaceBold(String str) {
-        int start;
-        ArrayList<Integer> bolds = new ArrayList<>();
-        while ((start = str.indexOf("<b>")) != -1) {
-            int end = str.indexOf("</b>") - 3;
-            str = str.replaceFirst("<b>", "").replaceFirst("</b>", "");
-            bolds.add(start);
-            bolds.add(end);
+    public static Spannable replaceTags(String str) {
+        try {
+            int start = -1;
+            int startColor = -1;
+            int end = -1;
+            StringBuilder stringBuilder = new StringBuilder(str);
+            while ((start = stringBuilder.indexOf("<br>")) != -1) {
+                stringBuilder.replace(start, start + 4, "\n");
+            }
+            while ((start = stringBuilder.indexOf("<br/>")) != -1) {
+                stringBuilder.replace(start, start + 5, "\n");
+            }
+            ArrayList<Integer> bolds = new ArrayList<>();
+            ArrayList<Integer> colors = new ArrayList<>();
+            while ((start = stringBuilder.indexOf("<b>")) != -1 || (startColor = stringBuilder.indexOf("<c")) != -1) {
+                if (start != -1) {
+                    stringBuilder.replace(start, start + 3, "");
+                    end = stringBuilder.indexOf("</b>");
+                    stringBuilder.replace(end, end + 4, "");
+                    bolds.add(start);
+                    bolds.add(end);
+                } else if (startColor != -1) {
+                    stringBuilder.replace(startColor, startColor + 2, "");
+                    end = stringBuilder.indexOf(">", startColor);
+                    int color = Color.parseColor(stringBuilder.substring(startColor, end));
+                    stringBuilder.replace(startColor, end + 1, "");
+                    end = stringBuilder.indexOf("</c>");
+                    stringBuilder.replace(end, end + 4, "");
+                    colors.add(startColor);
+                    colors.add(end);
+                    colors.add(color);
+                }
+            }
+            SpannableStringBuilder spannableStringBuilder = new SpannableStringBuilder(stringBuilder);
+            for (int a = 0; a < bolds.size() / 2; a++) {
+                spannableStringBuilder.setSpan(new TypefaceSpan(AndroidUtilities.getTypeface("fonts/rmedium.ttf")), bolds.get(a * 2), bolds.get(a * 2 + 1), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            }
+            for (int a = 0; a < colors.size() / 3; a++) {
+                spannableStringBuilder.setSpan(new ForegroundColorSpan(colors.get(a * 3 + 2)), colors.get(a * 3), colors.get(a * 3 + 1), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            }
+            return spannableStringBuilder;
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
         }
-        SpannableStringBuilder stringBuilder = new SpannableStringBuilder(str);
-        for (int a = 0; a < bolds.size() / 2; a++) {
-            TypefaceSpan span = new TypefaceSpan(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
-            stringBuilder.setSpan(span, bolds.get(a * 2), bolds.get(a * 2 + 1), Spanned.SPAN_INCLUSIVE_INCLUSIVE);
-        }
-        return stringBuilder;
+        return new SpannableStringBuilder(str);
     }
 
     public static boolean needShowPasscode(boolean reset) {
@@ -568,6 +604,61 @@ public class AndroidUtilities {
         return UserConfig.passcodeHash.length() > 0 && wasInBackground &&
                 (UserConfig.appLocked || UserConfig.autoLockIn != 0 && UserConfig.lastPauseTime != 0 && !UserConfig.appLocked && (UserConfig.lastPauseTime + UserConfig.autoLockIn) <= ConnectionsManager.getInstance().getCurrentTime());
     }
+
+    public static void shakeTextView(final TextView textView, final float x, final int num) {
+        if (num == 6) {
+            ViewProxy.setTranslationX(textView, 0);
+            textView.clearAnimation();
+            return;
+        }
+        AnimatorSetProxy animatorSetProxy = new AnimatorSetProxy();
+        animatorSetProxy.playTogether(ObjectAnimatorProxy.ofFloat(textView, "translationX", AndroidUtilities.dp(x)));
+        animatorSetProxy.setDuration(50);
+        animatorSetProxy.addListener(new AnimatorListenerAdapterProxy() {
+            @Override
+            public void onAnimationEnd(Object animation) {
+                shakeTextView(textView, num == 5 ? 0 : -x, num + 1);
+            }
+        });
+        animatorSetProxy.start();
+    }
+
+
+
+    /*public static String ellipsize(String text, int maxLines, int maxWidth, TextPaint paint) {
+        if (text == null || paint == null) {
+            return null;
+        }
+        int count;
+        int offset = 0;
+        StringBuilder result = null;
+        TextView
+        for (int a = 0; a < maxLines; a++) {
+            count = paint.breakText(text, true, maxWidth, null);
+            if (a != maxLines - 1) {
+                if (result == null) {
+                    result = new StringBuilder(count * maxLines + 1);
+                }
+                boolean foundSpace = false;
+                for (int c = count - 1; c >= offset; c--) {
+                    if (text.charAt(c) == ' ') {
+                        foundSpace = true;
+                        result.append(text.substring(offset, c - 1));
+                        offset = c - 1;
+                    }
+                }
+                if (!foundSpace) {
+                    offset = count;
+                }
+                text = text.substring(0, offset);
+            } else if (maxLines == 1) {
+                return text.substring(0, count);
+            } else {
+                result.append(text.substring(0, count));
+            }
+        }
+        return result.toString();
+    }*/
 
     /*public static void turnOffHardwareAcceleration(Window window) {
         if (window == null || Build.MODEL == null || Build.VERSION.SDK_INT < 11) {

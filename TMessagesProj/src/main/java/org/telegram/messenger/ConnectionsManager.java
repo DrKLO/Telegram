@@ -1037,11 +1037,6 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
         for (int i = 0; i < runningRequests.size(); i++) {
             RPCRequest request = runningRequests.get(i);
 
-            if (UserConfig.waitingForPasswordEnter && (request.flags & RPCRequest.RPCRequestClassWithoutLogin) == 0) {
-                FileLog.e("tmessages", "skip request " + request.rawRequest + ", need password enter");
-                continue;
-            }
-
             int datacenterId = request.runningDatacenterId;
             if (datacenterId == DEFAULT_DATACENTER_ID) {
                 if (movingToDatacenterId != DEFAULT_DATACENTER_ID) {
@@ -1241,11 +1236,6 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
             if (request.cancelled) {
                 requestQueue.remove(i);
                 i--;
-                continue;
-            }
-
-            if (UserConfig.waitingForPasswordEnter && (request.flags & RPCRequest.RPCRequestClassWithoutLogin) == 0) {
-                FileLog.e("tmessages", "skip request " + request.rawRequest + ", need password enter");
                 continue;
             }
 
@@ -2183,10 +2173,6 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                                             }
                                         });
                                     }
-                                    if (request.rawRequest instanceof TLRPC.TL_auth_checkPassword) {
-                                        UserConfig.setWaitingForPasswordEnter(false);
-                                        UserConfig.saveConfig(false);
-                                    }
                                     request.completionBlock.run(resultContainer.result, null);
                                 }
                             }
@@ -2194,7 +2180,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                             if (implicitError != null && implicitError.code == 401) {
                                 isError = true;
                                 if (implicitError.text != null && implicitError.text.contains("SESSION_PASSWORD_NEEDED")) {
-                                    UserConfig.setWaitingForPasswordEnter(true);
+                                    /*UserConfig.setWaitingForPasswordEnter(true); TODO
                                     UserConfig.saveConfig(false);
                                     if (UserConfig.isClientActivated()) {
                                         discardResponse = true;
@@ -2204,7 +2190,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                                                 NotificationCenter.getInstance().postNotificationName(NotificationCenter.needPasswordEnter);
                                             }
                                         });
-                                    }
+                                    }*/
                                 } else if (datacenter.datacenterId == currentDatacenterId || datacenter.datacenterId == movingToDatacenterId) {
                                     if ((request.flags & RPCRequest.RPCRequestClassGeneric) != 0 && UserConfig.isClientActivated()) {
                                         UserConfig.clearConfig();

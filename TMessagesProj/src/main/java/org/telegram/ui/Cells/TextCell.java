@@ -97,32 +97,32 @@ public class TextCell extends FrameLayout {
 
     public void setText(String text) {
         textView.setText(text);
-        imageView.setVisibility(GONE);
-        valueTextView.setVisibility(GONE);
-        valueImageView.setVisibility(GONE);
+        imageView.setVisibility(INVISIBLE);
+        valueTextView.setVisibility(INVISIBLE);
+        valueImageView.setVisibility(INVISIBLE);
     }
 
     public void setTextAndIcon(String text, int resId) {
         textView.setText(text);
         imageView.setImageResource(resId);
         imageView.setVisibility(VISIBLE);
-        valueTextView.setVisibility(GONE);
-        valueImageView.setVisibility(GONE);
+        valueTextView.setVisibility(INVISIBLE);
+        valueImageView.setVisibility(INVISIBLE);
     }
 
     public void setTextAndValue(String text, String value) {
         textView.setText(text);
         valueTextView.setText(value);
         valueTextView.setVisibility(VISIBLE);
-        imageView.setVisibility(GONE);
-        valueImageView.setVisibility(GONE);
+        imageView.setVisibility(INVISIBLE);
+        valueImageView.setVisibility(INVISIBLE);
     }
 
     public void setTextAndValueDrawable(String text, Drawable drawable) {
         textView.setText(text);
         valueImageView.setVisibility(VISIBLE);
         valueImageView.setImageDrawable(drawable);
-        valueTextView.setVisibility(GONE);
-        imageView.setVisibility(GONE);
+        valueTextView.setVisibility(INVISIBLE);
+        imageView.setVisibility(INVISIBLE);
     }
 }

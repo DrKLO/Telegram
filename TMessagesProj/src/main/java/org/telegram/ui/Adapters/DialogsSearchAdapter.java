@@ -9,7 +9,6 @@
 package org.telegram.ui.Adapters;
 
 import android.content.Context;
-import android.text.Html;
 import android.text.TextUtils;
 import android.view.View;
 import android.view.ViewGroup;
@@ -348,7 +347,7 @@ public class DialogsSearchAdapter extends BaseSearchAdapter {
                                             user.status.expires = cursor.intValue(7);
                                         }
                                         if (found == 1) {
-                                            dialogSearchResult.name = Html.fromHtml("<font color=\"#00a60e\">" + ContactsController.formatName(user.first_name, user.last_name) + "</font>");
+                                            dialogSearchResult.name = AndroidUtilities.replaceTags("<c#ff00a60e>" + ContactsController.formatName(user.first_name, user.last_name) + "</c>");
                                         } else {
                                             dialogSearchResult.name = Utilities.generateSearchName("@" + user.username, null, "@" + q);
                                         }
@@ -534,6 +533,7 @@ public class DialogsSearchAdapter extends BaseSearchAdapter {
                     notifyDataSetChanged();
                     return;
                 }
+                searchResultMessages.clear();
                 searchResultHashtags.clear();
                 for (HashtagObject hashtagObject : hashtags) {
                     searchResultHashtags.add(hashtagObject.hashtag);
@@ -670,10 +670,11 @@ public class DialogsSearchAdapter extends BaseSearchAdapter {
             ((ProfileSearchCell) view).useSeparator = (i != getCount() - 1 && i != localCount - 1 && i != localCount + globalCount - 1);
             Object obj = getItem(i);
             if (obj instanceof TLRPC.User) {
-                user = MessagesController.getInstance().getUser(((TLRPC.User) obj).id);
+                /*user = MessagesController.getInstance().getUser(((TLRPC.User) obj).id);
                 if (user == null) {
                     user = (TLRPC.User) obj;
-                }
+                }*/
+                user = (TLRPC.User) obj;
             } else if (obj instanceof TLRPC.Chat) {
                 chat = MessagesController.getInstance().getChat(((TLRPC.Chat) obj).id);
             } else if (obj instanceof TLRPC.EncryptedChat) {
@@ -697,7 +698,7 @@ public class DialogsSearchAdapter extends BaseSearchAdapter {
                     foundUserName = foundUserName.substring(1);
                 }
                 try {
-                    username = Html.fromHtml(String.format("<font color=\"#4d83b3\">@%s</font>%s", user.username.substring(0, foundUserName.length()), user.username.substring(foundUserName.length())));
+                    username = AndroidUtilities.replaceTags(String.format("<c#ff4d83b3>@%s</c>%s", user.username.substring(0, foundUserName.length()), user.username.substring(foundUserName.length())));
                 } catch (Exception e) {
                     username = user.username;
                     FileLog.e("tmessages", e);
