@@ -2953,6 +2953,10 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         return chatActivityEnterView.processSendingText(text);
     }
 
+    public void setReplyText(String text) {
+        chatActivityEnterView.setFieldText(text);
+    }
+
     @SuppressWarnings("unchecked")
     @Override
     public void didReceivedNotification(int id, final Object... args) {
