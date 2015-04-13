@@ -12,7 +12,6 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.PorterDuff;
-import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.media.AudioManager;
 import android.os.Build;
@@ -20,12 +19,10 @@ import android.os.PowerManager;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.text.style.ImageSpan;
-import android.util.Log;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
-import android.view.Surface;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
@@ -50,7 +47,6 @@ import org.telegram.android.SendMessagesHelper;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLog;
-import org.telegram.android.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.UserConfig;
@@ -59,7 +55,6 @@ import org.telegram.ui.AnimationCompat.AnimatorListenerAdapterProxy;
 import org.telegram.ui.AnimationCompat.AnimatorSetProxy;
 import org.telegram.ui.AnimationCompat.ObjectAnimatorProxy;
 import org.telegram.ui.AnimationCompat.ViewProxy;
-import org.telegram.messenger.ApplicationLoader;
 
 import java.lang.reflect.Field;
 
@@ -68,7 +63,7 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
     public interface ChatActivityEnterViewDelegate {
         void onMessageSend(String message);
         void needSendTyping();
-        void onTextChanged(CharSequence text);
+        void onTextChanged(CharSequence text, boolean bigChange);
         void onAttachButtonHidden();
         void onAttachButtonShow();
         void onWindowSizeChanged(int size);
@@ -111,11 +106,15 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
     private long dialog_id;
     private boolean ignoreTextChange;
     private MessageObject replyingMessageObject;
+    private TLRPC.WebPage messageWebPage;
+    private boolean messageWebPageSearch;
     private ChatActivityEnterViewDelegate delegate;
 
     private float topViewAnimation;
+    private boolean topViewShowed;
     private boolean needShowTopView;
     private boolean allowShowTopView;
+    private AnimatorSetProxy currentTopViewAnimation;
 
     public ChatActivityEnterView(Activity context, SizeNotifierRelativeLayout parent, BaseFragment fragment, boolean isChat) {
         super(context);
@@ -161,7 +160,9 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
         emojiButton = new ImageView(context);
         //emojiButton.setImageResource(R.drawable.ic_msg_panel_smiles);
         Drawable emoji = parentActivity.getResources().getDrawable(R.drawable.ic_msg_panel_smiles);
-        emoji.setColorFilter(AndroidUtilities.getIntDef("chatEditTextIconsColor", 0xffadadad), PorterDuff.Mode.SRC_IN);
+        SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+        final int color = themePrefs.getInt("chatEditTextIconsColor", 0xffadadad);
+        emoji.setColorFilter(color, PorterDuff.Mode.SRC_IN);
         emojiButton.setImageDrawable(emoji);
         emojiButton.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
         emojiButton.setPadding(AndroidUtilities.dp(4), AndroidUtilities.dp(1), 0, 0);
@@ -244,12 +245,15 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
             }
 
             @Override
-            public void onTextChanged(CharSequence charSequence, int i, int i2, int i3) {
+            public void onTextChanged(CharSequence charSequence, int start, int before, int count) {
                 String message = getTrimmedString(charSequence.toString());
                 checkSendButton(true);
 
                 if (delegate != null) {
-                    delegate.onTextChanged(charSequence);
+                    if (before > count || count > 1) {
+                        messageWebPageSearch = true;
+                    }
+                    delegate.onTextChanged(charSequence, before > count || count > 1);
                 }
 
                 if (message.length() != 0 && lastTypingTimeSend < System.currentTimeMillis() - 5000 && !ignoreTextChange) {
@@ -386,8 +390,9 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
         audioSendButton.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
         //audioSendButton.setImageResource(R.drawable.mic_button_states);
         //audioSendButton.setBackgroundColor(0xffffffff);
+        audioSendButton.setSoundEffectsEnabled(false);
         Drawable mic = parentActivity.getResources().getDrawable(R.drawable.mic);
-        mic.setColorFilter(AndroidUtilities.getIntDef("chatEditTextIconsColor", 0xffadadad), PorterDuff.Mode.SRC_IN);
+        mic.setColorFilter(color, PorterDuff.Mode.SRC_IN);
         audioSendButton.setImageDrawable(mic);
         audioSendButton.setBackgroundColor(0x00000000);
         audioSendButton.setPadding(0, 0, AndroidUtilities.dp(4), 0);
@@ -425,7 +430,7 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
                     updateAudioRecordIntefrace();
                     audioSendButton.getParent().requestDisallowInterceptTouchEvent(true);
                 } else if (motionEvent.getAction() == MotionEvent.ACTION_UP || motionEvent.getAction() == MotionEvent.ACTION_CANCEL) {
-                    mic.setColorFilter(AndroidUtilities.getIntDef("chatEditTextIconsColor", 0xffadadad), PorterDuff.Mode.SRC_IN);
+                    mic.setColorFilter(color, PorterDuff.Mode.SRC_IN);
                     audioSendButton.setImageDrawable(mic);
                     startedDraggingX = -1;
                     MediaController.getInstance().stopRecording(true);
@@ -480,6 +485,7 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
         sendButton.setVisibility(View.INVISIBLE);
         sendButton.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
         sendButton.setImageResource(R.drawable.ic_send);
+        sendButton.setSoundEffectsEnabled(false);
         ViewProxy.setScaleX(sendButton, 0.1f);
         ViewProxy.setScaleY(sendButton, 0.1f);
         ViewProxy.setAlpha(sendButton, 0.0f);
@@ -502,13 +508,15 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
     }
 
     private void updateTheme() {
+        SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+        int def = themePrefs.getInt("themeColor", AndroidUtilities.defColor);
         Drawable send = parentActivity.getResources().getDrawable(R.drawable.ic_send);
-        send.setColorFilter(AndroidUtilities.getIntDef("chatSendIconColor", AndroidUtilities.getIntColor("chatEditTextIconsColor")), PorterDuff.Mode.SRC_IN);
+        send.setColorFilter(themePrefs.getInt("chatSendIconColor", themePrefs.getInt("chatEditTextIconsColor", def)), PorterDuff.Mode.SRC_IN);
         sendButton.setImageDrawable(send);
-        messageEditText.setTextColor(AndroidUtilities.getIntDef("chatEditTextColor",0xff000000));
+        messageEditText.setTextColor(themePrefs.getInt("chatEditTextColor", 0xff000000));
         messageEditText.setHintTextColor(AndroidUtilities.getIntAlphaColor("chatEditTextColor", 0xff000000, 0.35f));
-        messageEditText.setTextSize(AndroidUtilities.getIntDef("chatEditTextSize",18));
-        int color = AndroidUtilities.getIntDef("chatEditTextBGColor", 0xffffffff);
+        messageEditText.setTextSize(themePrefs.getInt("chatEditTextSize", 18));
+        int color = themePrefs.getInt("chatEditTextBGColor", 0xffffffff);
         setBackgroundColor(color);
         textFieldContainer.setBackgroundColor(color);
     }
@@ -530,6 +538,7 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
     }
 
     public void setTopViewAnimation(float progress) {
+        topViewAnimation = progress;
         LayoutParams layoutParams2 = (LayoutParams) textFieldContainer.getLayoutParams();
         layoutParams2.topMargin = AndroidUtilities.dp(2) + (int) (topView.getLayoutParams().height * progress);
         textFieldContainer.setLayoutParams(layoutParams2);
@@ -545,75 +554,85 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
     }
 
     public void showTopView(boolean animated) {
-        if (topView == null) {
+        if (topView == null || topViewShowed) {
             return;
         }
         needShowTopView = true;
+        topViewShowed = true;
         if (allowShowTopView) {
             topView.setVisibility(VISIBLE);
+            float resumeValue = 0.0f;
+            if (currentTopViewAnimation != null) {
+                resumeValue = topViewAnimation;
+                currentTopViewAnimation.cancel();
+                currentTopViewAnimation = null;
+            }
             if (animated) {
                 if (keyboardVisible || emojiPopup != null && emojiPopup.isShowing()) {
-                AnimatorSetProxy animatorSetProxy = new AnimatorSetProxy();
-                animatorSetProxy.playTogether(
-                        ObjectAnimatorProxy.ofFloat(ChatActivityEnterView.this, "topViewAnimation", 0.0f, 1.0f)
+                    currentTopViewAnimation = new AnimatorSetProxy();
+                    currentTopViewAnimation.playTogether(
+                            ObjectAnimatorProxy.ofFloat(ChatActivityEnterView.this, "topViewAnimation", 1.0f)
                 );
-                animatorSetProxy.addListener(new AnimatorListenerAdapterProxy() {
+                    currentTopViewAnimation.addListener(new AnimatorListenerAdapterProxy() {
                     @Override
                     public void onAnimationEnd(Object animation) {
-                        LayoutParams layoutParams2 = (LayoutParams) textFieldContainer.getLayoutParams();
-                        layoutParams2.topMargin = AndroidUtilities.dp(2) + topView.getLayoutParams().height;
-                        textFieldContainer.setLayoutParams(layoutParams2);
+                            if (animation == currentTopViewAnimation) {
+                                setTopViewAnimation(1.0f);
                         if (!forceShowSendButton) {
                             openKeyboard();
                         }
-                    }
-                });
-                animatorSetProxy.setDuration(200);
-                animatorSetProxy.start();
-            } else {
-                LayoutParams layoutParams2 = (LayoutParams) textFieldContainer.getLayoutParams();
-                layoutParams2.topMargin = AndroidUtilities.dp(2) + topView.getLayoutParams().height;
-                textFieldContainer.setLayoutParams(layoutParams2);
+                                currentTopViewAnimation = null;
+                            }
+                        }
+                    });
+                    currentTopViewAnimation.setDuration(200);
+                    currentTopViewAnimation.start();
+                } else {
+                    setTopViewAnimation(1.0f);
                     if (!forceShowSendButton) {
                         openKeyboard();
                     }
                 }
             } else {
-                LayoutParams layoutParams2 = (LayoutParams) textFieldContainer.getLayoutParams();
-                layoutParams2.topMargin = AndroidUtilities.dp(2) + topView.getLayoutParams().height;
-                textFieldContainer.setLayoutParams(layoutParams2);
+                setTopViewAnimation(1.0f);
             }
         }
-    }
+            }
 
-    public void hideTopView(boolean animated) {
-        if (topView == null) {
+    public void hideTopView(final boolean animated) {
+        if (topView == null || !topViewShowed) {
             return;
         }
 
+        topViewShowed = false;
         needShowTopView = false;
         if (allowShowTopView) {
+            float resumeValue = 1.0f;
+            if (currentTopViewAnimation != null) {
+                resumeValue = topViewAnimation;
+                currentTopViewAnimation.cancel();
+                currentTopViewAnimation = null;
+            }
             if (animated) {
-                AnimatorSetProxy animatorSetProxy = new AnimatorSetProxy();
-                animatorSetProxy.playTogether(
-                        ObjectAnimatorProxy.ofFloat(ChatActivityEnterView.this, "topViewAnimation", 1.0f, 0.0f)
+                currentTopViewAnimation = new AnimatorSetProxy();
+                currentTopViewAnimation.playTogether(
+                        ObjectAnimatorProxy.ofFloat(ChatActivityEnterView.this, "topViewAnimation", resumeValue, 0.0f)
                 );
-                animatorSetProxy.addListener(new AnimatorListenerAdapterProxy() {
+                currentTopViewAnimation.addListener(new AnimatorListenerAdapterProxy() {
                     @Override
                     public void onAnimationEnd(Object animation) {
-                        topView.setVisibility(GONE);
-                        LayoutParams layoutParams2 = (LayoutParams) textFieldContainer.getLayoutParams();
-                        layoutParams2.topMargin = AndroidUtilities.dp(2);
-                        textFieldContainer.setLayoutParams(layoutParams2);
+                        if (animation == currentTopViewAnimation) {
+                            topView.setVisibility(GONE);
+                            setTopViewAnimation(0.0f);
+                            currentTopViewAnimation = null;
+                        }
                     }
                 });
-                animatorSetProxy.setDuration(200);
-                animatorSetProxy.start();
+                currentTopViewAnimation.setDuration(200);
+                currentTopViewAnimation.start();
             } else {
                 topView.setVisibility(GONE);
-                LayoutParams layoutParams2 = (LayoutParams) textFieldContainer.getLayoutParams();
-                layoutParams2.topMargin = AndroidUtilities.dp(2);
-                textFieldContainer.setLayoutParams(layoutParams2);
+                setTopViewAnimation(0.0f);
             }
         }
     }
@@ -632,9 +651,7 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
                     allowShowTopView = false;
                     if (needShowTopView) {
                         topView.setVisibility(View.GONE);
-                        LayoutParams layoutParams2 = (LayoutParams) textFieldContainer.getLayoutParams();
-                        layoutParams2.topMargin = AndroidUtilities.dp(2);
-                        textFieldContainer.setLayoutParams(layoutParams2);
+                        setTopViewAnimation(0.0f);
                     }
                 }
             } else {
@@ -642,9 +659,7 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
                     allowShowTopView = true;
                     if (needShowTopView) {
                         topView.setVisibility(View.VISIBLE);
-                        LayoutParams layoutParams2 = (LayoutParams) textFieldContainer.getLayoutParams();
-                        layoutParams2.topMargin = AndroidUtilities.dp(2) + topView.getLayoutParams().height;
-                        textFieldContainer.setLayoutParams(layoutParams2);
+                        setTopViewAnimation(1.0f);
                     }
                 }
             }
@@ -680,6 +695,11 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
 
     public void setReplyingMessageObject(MessageObject messageObject) {
         replyingMessageObject = messageObject;
+    }
+
+    public void setWebPage(TLRPC.WebPage webPage, boolean searchWebPages) {
+        messageWebPage = webPage;
+        messageWebPageSearch = searchWebPages;
     }
 
     private void sendMessage() {
@@ -720,7 +740,7 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
             int count = (int) Math.ceil(text.length() / 4096.0f);
             for (int a = 0; a < count; a++) {
                 String mess = text.substring(a * 4096, Math.min((a + 1) * 4096, text.length()));
-                SendMessagesHelper.getInstance().sendMessage(mess, dialog_id, replyingMessageObject);
+                SendMessagesHelper.getInstance().sendMessage(mess, dialog_id, replyingMessageObject, messageWebPage, messageWebPageSearch);
             }
             return true;
         }
@@ -991,6 +1011,8 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
     }
 
     private void showEmojiPopup(boolean show) {
+        SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+        int color = themePrefs.getInt("chatEditTextIconsColor", 0xffadadad);
         if (show) {
             if (emojiPopup == null) {
                 if (parentActivity == null) {
@@ -1076,7 +1098,7 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
                     sizeNotifierRelativeLayout.setPadding(0, 0, 0, currentHeight);
                     //emojiButton.setImageResource(R.drawable.ic_msg_panel_hide);
                     Drawable hide = parentActivity.getResources().getDrawable(R.drawable.ic_msg_panel_hide);
-                    hide.setColorFilter(AndroidUtilities.getIntDef("chatEditTextIconsColor", 0xffadadad), PorterDuff.Mode.SRC_IN);
+                    hide.setColorFilter(color, PorterDuff.Mode.SRC_IN);
                     emojiButton.setImageDrawable(hide);
                     onWindowSizeChanged(sizeNotifierRelativeLayout.getHeight() - sizeNotifierRelativeLayout.getPaddingBottom());
                 }
@@ -1095,14 +1117,14 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
             }
             //emojiButton.setImageResource(R.drawable.ic_msg_panel_kb);
             Drawable kb = parentActivity.getResources().getDrawable(R.drawable.ic_msg_panel_kb_white);
-            kb.setColorFilter(AndroidUtilities.getIntDef("chatEditTextIconsColor", 0xffadadad), PorterDuff.Mode.MULTIPLY);
+            kb.setColorFilter(color, PorterDuff.Mode.MULTIPLY);
             emojiButton.setImageDrawable(kb);
             return;
         }
         if (emojiButton != null) {
             //emojiButton.setImageResource(R.drawable.ic_msg_panel_smiles);
             Drawable emoji = parentActivity.getResources().getDrawable(R.drawable.ic_msg_panel_smiles);
-            emoji.setColorFilter(AndroidUtilities.getIntDef("chatEditTextIconsColor", 0xffadadad), PorterDuff.Mode.SRC_IN);
+            emoji.setColorFilter(color, PorterDuff.Mode.SRC_IN);
             emojiButton.setImageDrawable(emoji);
         }
         if (emojiPopup != null) {
@@ -1147,7 +1169,7 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
         messageEditText.setSelection(messageEditText.getText().length());
         ignoreTextChange = false;
         if (delegate != null) {
-            delegate.onTextChanged(messageEditText.getText());
+            delegate.onTextChanged(messageEditText.getText(), true);
         }
     }
 
@@ -1229,7 +1251,6 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
     @Override
     public void onSizeChanged(int height, boolean isWidthGreater) {
         if (height > AndroidUtilities.dp(50) && keyboardVisible) {
-        //if (height > AndroidUtilities.dp(50) ) {
             if (isWidthGreater) {
                 keyboardHeightLand = height;
                 ApplicationLoader.applicationContext.getSharedPreferences("emoji", 0).edit().putInt("kbd_height_land3", keyboardHeightLand).commit();

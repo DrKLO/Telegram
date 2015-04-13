@@ -31,21 +31,21 @@ import android.widget.FrameLayout;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
+import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.android.AndroidUtilities;
 import org.telegram.android.ContactsController;
 import org.telegram.android.LocaleController;
 import org.telegram.android.MediaController;
+import org.telegram.android.MessageObject;
 import org.telegram.android.MessagesController;
-import org.telegram.PhoneFormat.PhoneFormat;
+import org.telegram.android.NotificationCenter;
 import org.telegram.android.NotificationsController;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
-import org.telegram.android.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.TLRPC;
-import org.telegram.android.MessageObject;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.Components.AvatarDrawable;
@@ -207,7 +207,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
             }
 
             @Override
-            public void onTextChanged(CharSequence text) {
+            public void onTextChanged(CharSequence text, boolean big) {
 
             }
 
@@ -265,8 +265,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
         avatarContainer.setLayoutParams(layoutParams2);
 
         avatarImageView = new BackupImageView(this);
-        avatarImageView.imageReceiver.setRoundRadius(AndroidUtilities.dp(21));
-        avatarImageView.processDetach = false;
+        avatarImageView.setRoundRadius(AndroidUtilities.dp(21));
         avatarContainer.addView(avatarImageView);
         layoutParams2 = (FrameLayout.LayoutParams) avatarImageView.getLayoutParams();
         layoutParams2.width = AndroidUtilities.dp(42);
@@ -550,7 +549,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
 
             TextView messageText = (TextView)view.findViewById(R.id.message_text);
             BackupImageView imageView = (BackupImageView) view.findViewById(R.id.message_image);
-            imageView.imageReceiver.setAspectFit(true);
+            imageView.setAspectFit(true);
 
             if (messageObject.type == 1) {
                 TLRPC.PhotoSize currentPhotoObject = FileLoader.getClosestPhotoSizeWithSize(messageObject.photoThumbs, AndroidUtilities.getPhotoSize());
@@ -987,6 +986,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
         }
         ConnectionsManager.getInstance().setAppPaused(false, false);
         fixLayout();
+        checkAndUpdateAvatar();
         wakeLock.acquire(7000);
     }
 

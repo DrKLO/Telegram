@@ -9,10 +9,9 @@
 package org.telegram.ui;
 
 import android.app.AlertDialog;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.graphics.PorterDuff;
-import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -33,23 +32,23 @@ import android.widget.ListView;
 import android.widget.TextView;
 
 import org.telegram.android.AndroidUtilities;
-import org.telegram.android.LocaleController;
-import org.telegram.android.MessagesStorage;
-import org.telegram.android.SecretChatHelper;
-import org.telegram.messenger.TLRPC;
 import org.telegram.android.ContactsController;
-import org.telegram.messenger.FileLog;
+import org.telegram.android.LocaleController;
 import org.telegram.android.MessagesController;
+import org.telegram.android.MessagesStorage;
 import org.telegram.android.NotificationCenter;
+import org.telegram.android.SecretChatHelper;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
-import org.telegram.ui.Adapters.BaseSectionsAdapter;
-import org.telegram.ui.Adapters.ContactsAdapter;
-import org.telegram.ui.Adapters.SearchAdapter;
-import org.telegram.ui.Cells.UserCell;
+import org.telegram.messenger.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.ui.Adapters.BaseSectionsAdapter;
+import org.telegram.ui.Adapters.ContactsAdapter;
+import org.telegram.ui.Adapters.SearchAdapter;
+import org.telegram.ui.Cells.UserCell;
 import org.telegram.ui.Components.LetterSectionsListView;
 
 import java.util.ArrayList;
@@ -118,8 +117,8 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
     }
 
     @Override
-    public View createView(LayoutInflater inflater) {
-        if (fragmentView == null) {
+    public View createView(Context context, LayoutInflater inflater) {
+
             searching = false;
             searchWas = false;
 
@@ -182,7 +181,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                         if (listView != null) {
                             listView.setAdapter(searchListViewAdapter);
                             searchListViewAdapter.notifyDataSetChanged();
-                            if(android.os.Build.VERSION.SDK_INT >= 11) {
+                        if (android.os.Build.VERSION.SDK_INT >= 11) {
                                 listView.setFastScrollAlwaysVisible(false);
                             }
                             listView.setFastScrollEnabled(false);
@@ -197,12 +196,12 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
             });
             item.getSearchField().setHint(LocaleController.getString("Search", R.string.Search));
 
-            searchListViewAdapter = new SearchAdapter(getParentActivity(), ignoreUsers, allowUsernameSearch);
-            listViewAdapter = new ContactsAdapter(getParentActivity(), onlyUsers, needPhonebook, ignoreUsers);
+        searchListViewAdapter = new SearchAdapter(context, ignoreUsers, allowUsernameSearch);
+        listViewAdapter = new ContactsAdapter(context, onlyUsers, needPhonebook, ignoreUsers);
 
-            fragmentView = new FrameLayout(getParentActivity());
+        fragmentView = new FrameLayout(context);
 
-            LinearLayout emptyTextLayout = new LinearLayout(getParentActivity());
+        LinearLayout emptyTextLayout = new LinearLayout(context);
             emptyTextLayout.setVisibility(View.INVISIBLE);
             emptyTextLayout.setOrientation(LinearLayout.VERTICAL);
             ((FrameLayout) fragmentView).addView(emptyTextLayout);
@@ -218,7 +217,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                 }
             });
 
-            emptyTextView = new TextView(getParentActivity());
+        emptyTextView = new TextView(context);
             emptyTextView.setTextColor(0xff808080);
             emptyTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
             emptyTextView.setGravity(Gravity.CENTER);
@@ -230,7 +229,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
             layoutParams1.weight = 0.5f;
             emptyTextView.setLayoutParams(layoutParams1);
 
-            FrameLayout frameLayout = new FrameLayout(getParentActivity());
+        FrameLayout frameLayout = new FrameLayout(context);
             emptyTextLayout.addView(frameLayout);
             layoutParams1 = (LinearLayout.LayoutParams) frameLayout.getLayoutParams();
             layoutParams1.width = LinearLayout.LayoutParams.MATCH_PARENT;
@@ -238,7 +237,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
             layoutParams1.weight = 0.5f;
             frameLayout.setLayoutParams(layoutParams1);
 
-            listView = new LetterSectionsListView(getParentActivity());
+        listView = new LetterSectionsListView(context);
             listView.setEmptyView(emptyTextLayout);
             listView.setVerticalScrollBarEnabled(false);
             listView.setDivider(null);
@@ -392,12 +391,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                     }
                 }
             });
-        } else {
-            ViewGroup parent = (ViewGroup)fragmentView.getParent();
-            if (parent != null) {
-                parent.removeView(fragmentView);
-            }
-        }
+
         return fragmentView;
     }
 

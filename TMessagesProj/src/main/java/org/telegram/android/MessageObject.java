@@ -8,6 +8,7 @@
 
 package org.telegram.android;
 
+import android.content.SharedPreferences;
 import android.graphics.Paint;
 import android.text.Layout;
 import android.text.Spannable;
@@ -18,11 +19,12 @@ import android.text.TextPaint;
 import android.text.TextUtils;
 import android.text.util.Linkify;
 
+import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
-import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.R;
+import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.UserConfig;
 import org.telegram.ui.Components.URLSpanNoUnderline;
 
@@ -41,6 +43,7 @@ public class MessageObject {
 
     public TLRPC.Message messageOwner;
     public CharSequence messageText;
+    public CharSequence linkDescription;
     public MessageObject replyMessageObject;
     public int type;
     public int contentType;
@@ -76,16 +79,17 @@ public class MessageObject {
             textPaint.setColor(0xff000000);
             textPaint.linkColor = 0xff316f9f;
         }
-
+        SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+        int def = themePrefs.getInt("themeColor", AndroidUtilities.defColor);
         textPaint.setTextSize(AndroidUtilities.dp(MessagesController.getInstance().fontSize));
 
-        textPaintLeft.setColor(AndroidUtilities.getIntDef("chatLTextColor", 0xff000000));
-        textPaintLeft.linkColor = AndroidUtilities.getIntDarkerColor("chatLTextColor", -0x10);
+        textPaintLeft.setColor(themePrefs.getInt("chatLTextColor", 0xff000000));
+        textPaintLeft.linkColor = themePrefs.getInt("chatLLinkColor", def);
         textPaintLeft.setTextSize(AndroidUtilities.dp(MessagesController.getInstance().fontSize));
         textPaint = textPaintLeft;
 
-        textPaintRight.setColor(AndroidUtilities.getIntDef("chatRTextColor", 0xff000000));
-        textPaintRight.linkColor = AndroidUtilities.getIntDarkerColor("chatRTextColor", -0x10);
+        textPaintRight.setColor(themePrefs.getInt("chatRTextColor", 0xff000000));
+        textPaintRight.linkColor = themePrefs.getInt("chatRLinkColor", def);
         textPaintRight.setTextSize(AndroidUtilities.dp(MessagesController.getInstance().fontSize));
 
         messageOwner = message;
@@ -96,6 +100,7 @@ public class MessageObject {
         
         if(isOut()){
             textPaint = textPaintRight;
+            textPaint.linkColor = themePrefs.getInt("chatRLinkColor", def);
         }
 
         if (message instanceof TLRPC.TL_messageService) {
@@ -288,7 +293,7 @@ public class MessageObject {
                     messageText = LocaleController.formatString("YouCreatedBroadcastList", R.string.YouCreatedBroadcastList);
                 }
             }
-        } else if (message.media != null && !(message.media instanceof TLRPC.TL_messageMediaEmpty)) {
+        } else if (!isMediaEmpty()) {
             if (message.media instanceof TLRPC.TL_messageMediaPhoto) {
                 messageText = LocaleController.getString("AttachPhoto", R.string.AttachPhoto);
             } else if (message.media instanceof TLRPC.TL_messageMediaVideo) {
@@ -324,22 +329,22 @@ public class MessageObject {
         messageText = Emoji.replaceEmoji(messageText, textPaint.getFontMetricsInt(), AndroidUtilities.dp(20));
 
         if (message instanceof TLRPC.TL_message || message instanceof TLRPC.TL_messageForwarded_old2) {
-            if (message.media == null || message.media instanceof TLRPC.TL_messageMediaEmpty) {
+            if (isMediaEmpty()) {
                 contentType = type = 0;
-            } else if (message.media != null && message.media instanceof TLRPC.TL_messageMediaPhoto) {
+            } else if (message.media instanceof TLRPC.TL_messageMediaPhoto) {
                 contentType = type = 1;
-            } else if (message.media != null && message.media instanceof TLRPC.TL_messageMediaGeo) {
+            } else if (message.media instanceof TLRPC.TL_messageMediaGeo) {
                 contentType = 1;
                 type = 4;
-            } else if (message.media != null && message.media instanceof TLRPC.TL_messageMediaVideo) {
+            } else if (message.media instanceof TLRPC.TL_messageMediaVideo) {
                 contentType = 1;
                 type = 3;
-            } else if (message.media != null && message.media instanceof TLRPC.TL_messageMediaContact) {
+            } else if (message.media instanceof TLRPC.TL_messageMediaContact) {
                 contentType = 3;
                 type = 12;
-            } else if (message.media != null && message.media instanceof TLRPC.TL_messageMediaUnsupported) {
+            } else if (message.media instanceof TLRPC.TL_messageMediaUnsupported) {
                 contentType = type = 0;
-            } else if (message.media != null && message.media instanceof TLRPC.TL_messageMediaDocument) {
+            } else if (message.media instanceof TLRPC.TL_messageMediaDocument) {
                 contentType = 1;
                 if (message.media.document.mime_type != null) {
                     if (message.media.document.mime_type.equals("image/gif") && message.media.document.thumb != null && !(message.media.document.thumb instanceof TLRPC.TL_photoSizeEmpty)) {
@@ -355,7 +360,7 @@ public class MessageObject {
                 } else {
                     type = 9;
                 }
-            } else if (message.media != null && message.media instanceof TLRPC.TL_messageMediaAudio) {
+            } else if (message.media instanceof TLRPC.TL_messageMediaAudio) {
                 contentType = type = 2;
             }
         } else if (message instanceof TLRPC.TL_messageService) {
@@ -446,6 +451,24 @@ public class MessageObject {
                     } else if (photoThumbs != null && !photoThumbs.isEmpty() && messageOwner.media.document.thumb != null) {
                         TLRPC.PhotoSize photoObject = photoThumbs.get(0);
                         photoObject.location = messageOwner.media.document.thumb.location;
+                    }
+                }
+            } else if (messageOwner.media instanceof TLRPC.TL_messageMediaWebPage) {
+                if (messageOwner.media.webpage.photo != null) {
+                    if (!update || photoThumbs == null) {
+                        photoThumbs = new ArrayList<>(messageOwner.media.webpage.photo.sizes);
+                    } else if (photoThumbs != null && !photoThumbs.isEmpty()) {
+                        for (TLRPC.PhotoSize photoObject : photoThumbs) {
+                            for (TLRPC.PhotoSize size : messageOwner.media.webpage.photo.sizes) {
+                                if (size instanceof TLRPC.TL_photoSizeEmpty) {
+                                    continue;
+                                }
+                                if (size.type.equals(photoObject.type)) {
+                                    photoObject.location = size.location;
+                                    break;
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -553,11 +576,24 @@ public class MessageObject {
         return false;
     }
 
+    public void generateLinkDescription() {
+        if (linkDescription != null) {
+            return;
+        }
+        if (messageOwner.media instanceof TLRPC.TL_messageMediaWebPage && messageOwner.media.webpage instanceof TLRPC.TL_webPage && messageOwner.media.webpage.description != null) {
+            linkDescription = Spannable.Factory.getInstance().newSpannable(messageOwner.media.webpage.description);
+            if (containsUrls(linkDescription)) {
+                Linkify.addLinks((Spannable) linkDescription, Linkify.WEB_URLS);
+            }
+        }
+    }
+
     private void generateLayout() {
         if (type != 0 || messageOwner.to_id == null || messageText == null || messageText.length() == 0) {
             return;
         }
 
+        generateLinkDescription();
         textLayoutBlocks = new ArrayList<>();
 
         if (messageText instanceof Spannable && containsUrls(messageText)) {
@@ -796,7 +832,7 @@ public class MessageObject {
     }
 
     public boolean isSending() {
-        return messageOwner.send_state == MESSAGE_SEND_STATE_SENDING;
+        return messageOwner.send_state == MESSAGE_SEND_STATE_SENDING && messageOwner.id < 0;
     }
 
     public boolean isSendError() {
@@ -804,7 +840,7 @@ public class MessageObject {
     }
 
     public boolean isSent() {
-        return messageOwner.send_state == MESSAGE_SEND_STATE_SENT;
+        return messageOwner.send_state == MESSAGE_SEND_STATE_SENT || messageOwner.id > 0;
     }
 
     public String getSecretTimeString() {
@@ -958,5 +994,13 @@ public class MessageObject {
 
     public boolean isReply() {
         return !(replyMessageObject != null && replyMessageObject.messageOwner instanceof TLRPC.TL_messageEmpty) && messageOwner.reply_to_msg_id != 0 && (messageOwner.flags & TLRPC.MESSAGE_FLAG_REPLY) != 0;
+    }
+
+    public boolean isMediaEmpty() {
+        return isMediaEmpty(messageOwner);
+    }
+
+    public static boolean isMediaEmpty(TLRPC.Message message) {
+        return message == null || message.media == null || message.media instanceof TLRPC.TL_messageMediaEmpty || message.media instanceof TLRPC.TL_messageMediaWebPage;
     }
 }

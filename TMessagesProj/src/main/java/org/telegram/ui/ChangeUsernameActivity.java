@@ -11,11 +11,11 @@ package org.telegram.ui;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.graphics.PorterDuff;
 import android.text.Editable;
-import android.text.Html;
 import android.text.InputType;
 import android.text.TextWatcher;
 import android.util.TypedValue;
@@ -62,8 +62,7 @@ public class ChangeUsernameActivity extends BaseFragment {
     private final static int done_button = 1;
 
     @Override
-    public View createView(LayoutInflater inflater) {
-        if (fragmentView == null) {
+    public View createView(Context context, LayoutInflater inflater) {
             actionBar.setBackButtonImage(R.drawable.ic_ab_back);
             actionBar.setAllowOverlayTitle(true);
             actionBar.setTitle(LocaleController.getString("Username", R.string.Username));
@@ -86,7 +85,7 @@ public class ChangeUsernameActivity extends BaseFragment {
                 user = UserConfig.getCurrentUser();
             }
 
-            fragmentView = new LinearLayout(getParentActivity());
+        fragmentView = new LinearLayout(context);
             fragmentView.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
             ((LinearLayout) fragmentView).setOrientation(LinearLayout.VERTICAL);
             fragmentView.setOnTouchListener(new View.OnTouchListener() {
@@ -96,7 +95,7 @@ public class ChangeUsernameActivity extends BaseFragment {
                 }
             });
 
-            firstNameField = new EditText(getParentActivity());
+        firstNameField = new EditText(context);
             firstNameField.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
             firstNameField.setHintTextColor(0xff979797);
             firstNameField.setTextColor(0xff212121);
@@ -122,7 +121,7 @@ public class ChangeUsernameActivity extends BaseFragment {
             });
 
             ((LinearLayout) fragmentView).addView(firstNameField);
-            LinearLayout.LayoutParams layoutParams = (LinearLayout.LayoutParams)firstNameField.getLayoutParams();
+        LinearLayout.LayoutParams layoutParams = (LinearLayout.LayoutParams) firstNameField.getLayoutParams();
             layoutParams.topMargin = AndroidUtilities.dp(24);
             layoutParams.height = AndroidUtilities.dp(36);
             layoutParams.leftMargin = AndroidUtilities.dp(24);
@@ -135,11 +134,11 @@ public class ChangeUsernameActivity extends BaseFragment {
                 firstNameField.setSelection(firstNameField.length());
             }
 
-            checkTextView = new TextView(getParentActivity());
+        checkTextView = new TextView(context);
             checkTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
             checkTextView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
             ((LinearLayout) fragmentView).addView(checkTextView);
-            layoutParams = (LinearLayout.LayoutParams)checkTextView.getLayoutParams();
+        layoutParams = (LinearLayout.LayoutParams) checkTextView.getLayoutParams();
             layoutParams.topMargin = AndroidUtilities.dp(12);
             layoutParams.width = LinearLayout.LayoutParams.WRAP_CONTENT;
             layoutParams.height = LinearLayout.LayoutParams.WRAP_CONTENT;
@@ -148,13 +147,13 @@ public class ChangeUsernameActivity extends BaseFragment {
             layoutParams.rightMargin = AndroidUtilities.dp(24);
             checkTextView.setLayoutParams(layoutParams);
 
-            TextView helpTextView = new TextView(getParentActivity());
+        TextView helpTextView = new TextView(context);
             helpTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
             helpTextView.setTextColor(0xff6d6d72);
             helpTextView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
-            helpTextView.setText(Html.fromHtml(LocaleController.getString("UsernameHelp", R.string.UsernameHelp)));
+        helpTextView.setText(AndroidUtilities.replaceTags(LocaleController.getString("UsernameHelp", R.string.UsernameHelp)));
             ((LinearLayout) fragmentView).addView(helpTextView);
-            layoutParams = (LinearLayout.LayoutParams)helpTextView.getLayoutParams();
+        layoutParams = (LinearLayout.LayoutParams) helpTextView.getLayoutParams();
             layoutParams.topMargin = AndroidUtilities.dp(10);
             layoutParams.width = LinearLayout.LayoutParams.WRAP_CONTENT;
             layoutParams.height = LinearLayout.LayoutParams.WRAP_CONTENT;
@@ -181,12 +180,7 @@ public class ChangeUsernameActivity extends BaseFragment {
             });
 
             checkTextView.setVisibility(View.GONE);
-        } else {
-            ViewGroup parent = (ViewGroup)fragmentView.getParent();
-            if (parent != null) {
-                parent.removeView(fragmentView);
-            }
-        }
+
         return fragmentView;
     }
 

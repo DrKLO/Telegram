@@ -8,7 +8,6 @@
 
 package org.telegram.ui;
 
-import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -130,7 +129,7 @@ public class ThemingChatsActivity extends BaseFragment {
     }
 
     @Override
-    public View createView(LayoutInflater inflater) {
+    public View createView(Context context, LayoutInflater inflater) {
         if (fragmentView == null) {
 
             actionBar.setItemsBackground(AvatarDrawable.getButtonColorForId(5));
@@ -150,12 +149,12 @@ public class ThemingChatsActivity extends BaseFragment {
                 }
             });
 
-            listAdapter = new ListAdapter(getParentActivity());
+            listAdapter = new ListAdapter(context);
 
-            fragmentView = new FrameLayout(getParentActivity());
+            fragmentView = new FrameLayout(context);
             FrameLayout frameLayout = (FrameLayout) fragmentView;
 
-            listView = new ListView(getParentActivity());
+            listView = new ListView(context);
             listView.setDivider(null);
             listView.setDividerHeight(0);
             listView.setVerticalScrollBarEnabled(false);
@@ -173,6 +172,8 @@ public class ThemingChatsActivity extends BaseFragment {
                 public void onItemClick(AdapterView<?> adapterView, View view, final int i, long l) {
 
                     SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+                    int defColor = themePrefs.getInt("themeColor", AndroidUtilities.defColor);
+                    int darkColor = AndroidUtilities.getIntDarkerColor("themeColor", 0x15);
                     final String key = view.getTag() != null ? view.getTag().toString() : "";
 
                     if (i == headerColorRow) {
@@ -187,7 +188,7 @@ public class ThemingChatsActivity extends BaseFragment {
                                 commitInt( key, color);
                             }
 
-                        },themePrefs.getInt( key, AndroidUtilities.getIntColor("themeColor")), CENTER, 0, false);
+                        },themePrefs.getInt( key, defColor), CENTER, 0, false);
                         colorDialog.show();
                     } else if (i == headerTitleColorRow) {
                         if (getParentActivity() == null) {
@@ -287,11 +288,8 @@ public class ThemingChatsActivity extends BaseFragment {
                         if (getParentActivity() == null) {
                             return;
                         }
-
                         LayoutInflater li = (LayoutInflater)getParentActivity().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-
                         li.inflate(R.layout.colordialog, null, false);
-
                         ColorSelectorDialog colorDialog = new ColorSelectorDialog(getParentActivity(), new OnColorChangedListener() {
                             @Override
                             public void colorChanged(int color) {
@@ -327,7 +325,7 @@ public class ThemingChatsActivity extends BaseFragment {
                                 commitInt( key, color);
                             }
 
-                        },themePrefs.getInt( key, AndroidUtilities.getIntColor("themeColor")), CENTER, 0, true);
+                        },themePrefs.getInt( key, defColor), CENTER, 0, true);
                         colorDialog.show();
                     } else if (i == messageColorRow) {
                         if (getParentActivity() == null) {
@@ -356,7 +354,7 @@ public class ThemingChatsActivity extends BaseFragment {
                                 commitInt( key, color);
                             }
 
-                        },themePrefs.getInt( key, AndroidUtilities.getIntDarkerColor("themeColor",0x15)), CENTER, 0, false);
+                        },themePrefs.getInt( key, darkColor), CENTER, 0, false);
 
                         colorDialog.show();
                     } else if (i == typingColorRow) {
@@ -371,7 +369,7 @@ public class ThemingChatsActivity extends BaseFragment {
                                 commitInt( key, color);
                             }
 
-                        },themePrefs.getInt( key, AndroidUtilities.getIntColor("themeColor")), CENTER, 0, false);
+                        },themePrefs.getInt( key, defColor), CENTER, 0, false);
 
                         colorDialog.show();
                     } else if (i == timeColorRow) {
@@ -414,7 +412,7 @@ public class ThemingChatsActivity extends BaseFragment {
                                 commitInt( key, color);
                             }
 
-                        },themePrefs.getInt( key, AndroidUtilities.getIntColor("themeColor")), CENTER, 0, true);
+                        },themePrefs.getInt( key, defColor), CENTER, 0, true);
                         colorDialog.show();
                     } else if (i == avatarRadiusRow) {
                         if (getParentActivity() == null) {
@@ -554,7 +552,7 @@ public class ThemingChatsActivity extends BaseFragment {
                                 commitInt( key, color);
                             }
 
-                        },themePrefs.getInt( key, AndroidUtilities.getIntColor("themeColor")), CENTER, 0, true);
+                        },themePrefs.getInt( key, defColor), CENTER, 0, true);
                         colorDialog.show();
                     }
                 }
@@ -678,6 +676,8 @@ public class ThemingChatsActivity extends BaseFragment {
         public View getView(int i, View view, ViewGroup viewGroup) {
             int type = getItemViewType(i);
             SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+            int defColor = themePrefs.getInt("themeColor", AndroidUtilities.defColor);
+            int darkColor = AndroidUtilities.getIntDarkerColor("themeColor", 0x15);
             if (type == 0) {
                 if (view == null) {
                     view = new ShadowSectionCell(mContext);
@@ -728,7 +728,7 @@ public class ThemingChatsActivity extends BaseFragment {
 
                 if (i == headerColorRow) {
                     textCell.setTag("chatsHeaderColor");
-                    textCell.setTextAndColor(LocaleController.getString("HeaderColor", R.string.HeaderColor), themePrefs.getInt("chatsHeaderColor", AndroidUtilities.getIntColor("themeColor")), true);
+                    textCell.setTextAndColor(LocaleController.getString("HeaderColor", R.string.HeaderColor), themePrefs.getInt("chatsHeaderColor", defColor), true);
                 } else if (i == headerTitleColorRow) {
                     textCell.setTag("chatsHeaderTitleColor");
                     textCell.setTextAndColor(LocaleController.getString("HeaderTitleColor", R.string.HeaderTitleColor), themePrefs.getInt(textCell.getTag().toString(), 0xffffffff), true);
@@ -749,16 +749,16 @@ public class ThemingChatsActivity extends BaseFragment {
                     textCell.setTextAndColor(LocaleController.getString("MuteColor", R.string.MuteColor), themePrefs.getInt("chatsMuteColor", 0xffa8a8a8), true);
                 } else if (i == checksColorRow) {
                     textCell.setTag("chatsChecksColor");
-                    textCell.setTextAndColor(LocaleController.getString("ChecksColor", R.string.ChecksColor), themePrefs.getInt("chatsChecksColor", AndroidUtilities.getIntColor("themeColor")), true);
+                    textCell.setTextAndColor(LocaleController.getString("ChecksColor", R.string.ChecksColor), themePrefs.getInt("chatsChecksColor", defColor), true);
                 } else if (i == messageColorRow) {
                     textCell.setTag("chatsMessageColor");
                     textCell.setTextAndColor(LocaleController.getString("MessageColor", R.string.MessageColor), themePrefs.getInt("chatsMessageColor", 0xff8f8f8f), true);
                 } else if (i == memberColorRow) {
                     textCell.setTag("chatsMemberColor");
-                    textCell.setTextAndColor(LocaleController.getString("MemberColor", R.string.MemberColor), themePrefs.getInt("chatsMemberColor", AndroidUtilities.getIntDarkerColor("themeColor",0x15)), true);
+                    textCell.setTextAndColor(LocaleController.getString("MemberColor", R.string.MemberColor), themePrefs.getInt("chatsMemberColor", darkColor), true);
                 } else if (i == typingColorRow) {
                     textCell.setTag("chatsTypingColor");
-                    textCell.setTextAndColor(LocaleController.getString("TypingColor", R.string.TypingColor), themePrefs.getInt(textCell.getTag().toString(), AndroidUtilities.getIntColor("themeColor")), true);
+                    textCell.setTextAndColor(LocaleController.getString("TypingColor", R.string.TypingColor), themePrefs.getInt(textCell.getTag().toString(), defColor), true);
                 } else if (i == timeColorRow) {
                     textCell.setTag("chatsTimeColor");
                     textCell.setTextAndColor(LocaleController.getString("TimeDateColor", R.string.TimeDateColor), themePrefs.getInt("chatsTimeColor", 0xff999999), true);
@@ -767,13 +767,13 @@ public class ThemingChatsActivity extends BaseFragment {
                     textCell.setTextAndColor(LocaleController.getString("CountColor", R.string.CountColor), themePrefs.getInt("chatsCountColor", 0xffffffff), true);
                 } else if (i == countBGColorRow) {
                     textCell.setTag("chatsCountBGColor");
-                    textCell.setTextAndColor(LocaleController.getString("CountBGColor", R.string.CountBGColor), themePrefs.getInt("chatsCountBGColor", AndroidUtilities.getIntColor("themeColor")), true);
+                    textCell.setTextAndColor(LocaleController.getString("CountBGColor", R.string.CountBGColor), themePrefs.getInt("chatsCountBGColor", defColor), true);
                 } else if (i == floatingPencilColorRow) {
                     textCell.setTag("chatsFloatingPencilColor");
                     textCell.setTextAndColor(LocaleController.getString("FloatingPencilColor", R.string.FloatingPencilColor), themePrefs.getInt("chatsFloatingPencilColor", 0xffffffff), true);
                 } else if (i == floatingBGColorRow) {
                     textCell.setTag("chatsFloatingBGColor");
-                    textCell.setTextAndColor(LocaleController.getString("FloatingBGColor", R.string.FloatingBGColor), themePrefs.getInt("chatsFloatingBGColor", AndroidUtilities.getIntColor("themeColor")), true);
+                    textCell.setTextAndColor(LocaleController.getString("FloatingBGColor", R.string.FloatingBGColor), themePrefs.getInt("chatsFloatingBGColor", defColor), true);
                 }
             } /*else if (type == 4) {
                 if (view == null) {

@@ -26,7 +26,6 @@ import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
-import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.view.animation.AccelerateDecelerateInterpolator;
 import android.view.inputmethod.EditorInfo;
@@ -102,8 +101,7 @@ public class ChangePhoneActivity extends BaseFragment {
     }
 
     @Override
-    public View createView(LayoutInflater inflater) {
-        if (fragmentView == null) {
+    public View createView(Context context, LayoutInflater inflater) {
             actionBar.setTitle(LocaleController.getString("AppName", R.string.AppName));
             actionBar.setBackButtonImage(R.drawable.ic_ab_back);
             actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
@@ -120,11 +118,11 @@ public class ChangePhoneActivity extends BaseFragment {
             ActionBarMenu menu = actionBar.createMenu();
             menu.addItemWithWidth(done_button, R.drawable.ic_done, AndroidUtilities.dp(56));
 
-            fragmentView = new ScrollView(getParentActivity());
+        fragmentView = new ScrollView(context);
             ScrollView scrollView = (ScrollView) fragmentView;
             scrollView.setFillViewport(true);
 
-            FrameLayout frameLayout = new FrameLayout(getParentActivity());
+        FrameLayout frameLayout = new FrameLayout(context);
             scrollView.addView(frameLayout);
             ScrollView.LayoutParams layoutParams = (ScrollView.LayoutParams) frameLayout.getLayoutParams();
             layoutParams.width = ScrollView.LayoutParams.MATCH_PARENT;
@@ -132,7 +130,7 @@ public class ChangePhoneActivity extends BaseFragment {
             layoutParams.gravity = Gravity.TOP | Gravity.LEFT;
             frameLayout.setLayoutParams(layoutParams);
 
-            views[0] = new PhoneView(getParentActivity());
+        views[0] = new PhoneView(context);
             views[0].setVisibility(View.VISIBLE);
             frameLayout.addView(views[0]);
             FrameLayout.LayoutParams layoutParams1 = (FrameLayout.LayoutParams) views[0].getLayoutParams();
@@ -144,7 +142,7 @@ public class ChangePhoneActivity extends BaseFragment {
             layoutParams1.gravity = Gravity.TOP | Gravity.LEFT;
             views[0].setLayoutParams(layoutParams1);
 
-            views[1] = new LoginActivitySmsView(getParentActivity());
+        views[1] = new LoginActivitySmsView(context);
             views[1].setVisibility(View.GONE);
             frameLayout.addView(views[1]);
             layoutParams1 = (FrameLayout.LayoutParams) views[1].getLayoutParams();
@@ -158,10 +156,10 @@ public class ChangePhoneActivity extends BaseFragment {
 
             try {
                 if (views[0] == null || views[1] == null) {
-                    FrameLayout parent = (FrameLayout)((ScrollView) fragmentView).getChildAt(0);
+                FrameLayout parent = (FrameLayout) ((ScrollView) fragmentView).getChildAt(0);
                     for (int a = 0; a < views.length; a++) {
                         if (views[a] == null) {
-                            views[a] = (SlideView)parent.getChildAt(a);
+                        views[a] = (SlideView) parent.getChildAt(a);
                         }
                     }
                 }
@@ -170,12 +168,7 @@ public class ChangePhoneActivity extends BaseFragment {
             }
 
             actionBar.setTitle(views[0].getHeaderName());
-        } else {
-            ViewGroup parent = (ViewGroup)fragmentView.getParent();
-            if (parent != null) {
-                parent.removeView(fragmentView);
-            }
-        }
+
         return fragmentView;
     }
 

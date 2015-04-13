@@ -19,22 +19,23 @@ import android.provider.MediaStore;
 import org.telegram.android.AndroidUtilities;
 import org.telegram.android.ImageLoader;
 import org.telegram.android.MediaController;
-import org.telegram.messenger.TLRPC;
+import org.telegram.android.NotificationCenter;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
-import org.telegram.android.NotificationCenter;
+import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
+import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.PhotoAlbumPickerActivity;
 import org.telegram.ui.PhotoCropActivity;
-import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.PhotoViewer;
 
 import java.io.File;
 import java.util.ArrayList;
 
 public class AvatarUpdater implements NotificationCenter.NotificationCenterDelegate, PhotoCropActivity.PhotoEditActivityDelegate {
+
     public String currentPicturePath;
     private TLRPC.PhotoSize smallPhoto;
     private TLRPC.PhotoSize bigPhoto;

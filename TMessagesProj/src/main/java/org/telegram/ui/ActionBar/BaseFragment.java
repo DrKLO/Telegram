@@ -10,6 +10,7 @@ package org.telegram.ui.ActionBar;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
@@ -34,6 +35,7 @@ public class BaseFragment {
     protected int classGuid = 0;
     protected Bundle arguments;
     protected boolean swipeBackEnabled = true;
+    protected boolean hasOwnBackground = false;
 
     public BaseFragment() {
         classGuid = ConnectionsManager.getInstance().generateClassGuid();
@@ -44,7 +46,7 @@ public class BaseFragment {
         classGuid = ConnectionsManager.getInstance().generateClassGuid();
     }
 
-    public View createView(LayoutInflater inflater) {
+    public View createView(Context context, LayoutInflater inflater) {
         return null;
     }
 
@@ -205,9 +207,9 @@ public class BaseFragment {
         return true;
     }
 
-    public void showAlertDialog(AlertDialog.Builder builder) {
+    public AlertDialog showAlertDialog(AlertDialog.Builder builder) {
         if (parentLayout == null || parentLayout.checkTransitionAnimation() || parentLayout.animationInProgress || parentLayout.startedTracking) {
-            return;
+            return null;
         }
         try {
             if (visibleDialog != null) {
@@ -242,9 +244,11 @@ public class BaseFragment {
                     onDialogDismiss();
                 }
             });
+            return visibleDialog;
         } catch (Exception e) {
             FileLog.e("tmessages", e);
         }
+        return null;
     }
 
     protected void onDialogDismiss() {

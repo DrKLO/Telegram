@@ -8,32 +8,30 @@
 
 package org.telegram.ui.Cells;
 
-import android.app.Activity;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.drawable.Drawable;
-import android.text.Html;
 import android.text.Layout;
 import android.text.StaticLayout;
 import android.text.TextPaint;
 import android.text.TextUtils;
 
-import org.telegram.android.AndroidUtilities;
 import org.telegram.PhoneFormat.PhoneFormat;
-import org.telegram.android.LocaleController;
-import org.telegram.android.MessageObject;
-import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.FileLog;
-import org.telegram.messenger.TLRPC;
+import org.telegram.android.AndroidUtilities;
 import org.telegram.android.ContactsController;
 import org.telegram.android.Emoji;
-import org.telegram.android.MessagesController;
-import org.telegram.messenger.R;
-import org.telegram.messenger.UserConfig;
 import org.telegram.android.ImageReceiver;
+import org.telegram.android.LocaleController;
+import org.telegram.android.MessageObject;
+import org.telegram.android.MessagesController;
+import org.telegram.messenger.ApplicationLoader;
+import org.telegram.messenger.FileLog;
+import org.telegram.messenger.R;
+import org.telegram.messenger.TLRPC;
+import org.telegram.messenger.UserConfig;
 import org.telegram.ui.Components.AvatarDrawable;
 
 public class DialogCell extends BaseCell {
@@ -145,6 +143,7 @@ public class DialogCell extends BaseCell {
             messagePaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
             messagePaint.setTextSize(AndroidUtilities.dp(16));
             messagePaint.setColor(0xff8f8f8f);
+            messagePaint.linkColor = 0xff8f8f8f;
 
             linePaint = new Paint();
             linePaint.setColor(0xffdcdcdc);
@@ -376,13 +375,15 @@ public class DialogCell extends BaseCell {
                             }
                         }
                         checkMessage = false;
-                        String hexColor = String.format("#%06X", (0xFFFFFF & AndroidUtilities.getIntColor("themeColor")));
-                        String hexMsgColor = String.format("#%06X", (0xFFFFFF & AndroidUtilities.getIntDef("chatsMessageColor",0xff8f8f8f)));
-                        String hexDarkColor = String.format("#%06X", (0xFFFFFF & AndroidUtilities.getIntDef("chatsMemberColor", AndroidUtilities.getIntDarkerColor("themeColor",0x15))));
-                        if (message.messageOwner.media != null && !(message.messageOwner.media instanceof TLRPC.TL_messageMediaEmpty)) {
+                        SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+                        int defColor = themePrefs.getInt("themeColor", AndroidUtilities.defColor);
+                        String hexColor = String.format("#%08X", (0xFFFFFFFF & defColor));
+                        String hexMsgColor = String.format("#%08X", (0xFFFFFFFF & themePrefs.getInt("chatsMessageColor", 0xff8f8f8f)));
+                        String hexDarkColor = String.format("#%08X", (0xFFFFFFFF & themePrefs.getInt("chatsMemberColor", AndroidUtilities.getIntDarkerColor("themeColor", 0x15))));
+                        if (message.messageOwner.media != null && !message.isMediaEmpty()) {
                             currentMessagePaint = messagePrintingPaint;
-                            //messageString = Emoji.replaceEmoji(Html.fromHtml(String.format("<font color=#4d83b3>%s:</font> <font color=#4d83b3>%s</font>", name, message.messageText)), messagePaint.getFontMetricsInt(), AndroidUtilities.dp(20));
-                            messageString = Emoji.replaceEmoji(Html.fromHtml(String.format("<font color=" + hexColor + ">%s:</font> <font color=" + hexColor + ">%s</font>", name, message.messageText)), messagePaint.getFontMetricsInt(), AndroidUtilities.dp(20));
+                            //messageString = Emoji.replaceEmoji(AndroidUtilities.replaceTags(String.format("<c#ff4d83b3>%s:</c> <c#ff4d83b3>%s</c>", name, message.messageText)), messagePaint.getFontMetricsInt(), AndroidUtilities.dp(20));
+                            messageString = Emoji.replaceEmoji(AndroidUtilities.replaceTags(String.format("<c" + hexColor + ">%s:</c> <c" + hexColor + ">%s</c>", name, message.messageText)), messagePaint.getFontMetricsInt(), AndroidUtilities.dp(20));
                         } else {
                             if (message.messageOwner.message != null) {
                                 String mess = message.messageOwner.message;
@@ -390,13 +391,13 @@ public class DialogCell extends BaseCell {
                                     mess = mess.substring(0, 150);
                                 }
                                 mess = mess.replace("\n", " ");
-                                //messageString = Emoji.replaceEmoji(Html.fromHtml(String.format("<font color=#4d83b3>%s:</font> <font color=#808080>%s</font>", name, mess.replace("<", "&lt;").replace(">", "&gt;"))), messagePaint.getFontMetricsInt(), AndroidUtilities.dp(20));
-                                messageString = Emoji.replaceEmoji(Html.fromHtml(String.format("<font color=" + hexDarkColor + ">%s:</font> <font color=" + hexMsgColor + ">%s</font>", name, mess.replace("<", "&lt;").replace(">", "&gt;"))), messagePaint.getFontMetricsInt(), AndroidUtilities.dp(20));
+                                //messageString = Emoji.replaceEmoji(AndroidUtilities.replaceTags(String.format("<c#ff4d83b3>%s:</c> <c#ff808080>%s</c>", name, mess.replace("<", "&lt;").replace(">", "&gt;"))), messagePaint.getFontMetricsInt(), AndroidUtilities.dp(20));
+                                messageString = Emoji.replaceEmoji(AndroidUtilities.replaceTags(String.format("<c" + hexDarkColor + ">%s:</c> <c" + hexMsgColor + ">%s</c>", name, mess.replace("<", "&lt;").replace(">", "&gt;"))), messagePaint.getFontMetricsInt(), AndroidUtilities.dp(20));
                             }
                         }
                     } else {
                         messageString = message.messageText;
-                        if (message.messageOwner.media != null && !(message.messageOwner.media instanceof TLRPC.TL_messageMediaEmpty)) {
+                        if (message.messageOwner.media != null && !message.isMediaEmpty()) {
                             currentMessagePaint = messagePrintingPaint;
                         }
                     }
@@ -775,7 +776,7 @@ public class DialogCell extends BaseCell {
 
     private void updateTheme(){
         SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
-        int tColor = AndroidUtilities.getIntColor("themeColor");
+        int tColor = themePrefs.getInt("themeColor", AndroidUtilities.defColor);
         int dColor = AndroidUtilities.getIntDarkerColor("themeColor",0x15);
 
         namePaint.setTextSize(AndroidUtilities.dp(themePrefs.getInt("chatsNameSize", 17)));
@@ -791,10 +792,10 @@ public class DialogCell extends BaseCell {
         messagePaint.setColor(themePrefs.getInt("chatsMessageColor", 0xff8f8f8f));
         
         messagePrintingPaint.setTextSize(AndroidUtilities.dp(themePrefs.getInt("chatsMessageSize", 16)));
-        messagePrintingPaint.setColor(AndroidUtilities.getIntDef("chatsMessageColor", tColor));
+        messagePrintingPaint.setColor(themePrefs.getInt("chatsMessageColor", tColor));
 
         messageTypingPaint.setTextSize(AndroidUtilities.dp(themePrefs.getInt("chatsMessageSize", 16)));
-        messageTypingPaint.setColor(AndroidUtilities.getIntDef("chatsTypingColor", tColor));
+        messageTypingPaint.setColor(themePrefs.getInt("chatsTypingColor", tColor));
 
         timePaint.setTextSize(AndroidUtilities.dp(themePrefs.getInt("chatsTimeSize", 13)));
         timePaint.setColor(themePrefs.getInt("chatsTimeColor", 0xff999999));
@@ -802,9 +803,9 @@ public class DialogCell extends BaseCell {
         countPaint.setTextSize(AndroidUtilities.dp(themePrefs.getInt("chatsCountSize", 13)));
         countPaint.setColor(themePrefs.getInt("chatsCountColor", 0xffffffff));
 
-        checkWhiteDrawable.setColorFilter(AndroidUtilities.getIntDef("chatsChecksColor",AndroidUtilities.getIntColor("themeColor")), PorterDuff.Mode.MULTIPLY);
-        halfCheckWhiteDrawable.setColorFilter(AndroidUtilities.getIntDef("chatsChecksColor",AndroidUtilities.getIntColor("themeColor")), PorterDuff.Mode.MULTIPLY);
-        clockDrawable.setColorFilter(AndroidUtilities.getIntDef("chatsChecksColor",AndroidUtilities.getIntColor("themeColor")), PorterDuff.Mode.SRC_IN);
+        checkWhiteDrawable.setColorFilter(themePrefs.getInt("chatsChecksColor", tColor), PorterDuff.Mode.MULTIPLY);
+        halfCheckWhiteDrawable.setColorFilter(themePrefs.getInt("chatsChecksColor", tColor), PorterDuff.Mode.MULTIPLY);
+        clockDrawable.setColorFilter(themePrefs.getInt("chatsChecksColor", tColor), PorterDuff.Mode.SRC_IN);
 
         countWhiteDrawable.setColorFilter(themePrefs.getInt("chatsCountBGColor", tColor), PorterDuff.Mode.MULTIPLY);
         lockWhiteDrawable.setColorFilter(dColor, PorterDuff.Mode.MULTIPLY);
@@ -819,7 +820,7 @@ public class DialogCell extends BaseCell {
 
         linePaint.setColor(themePrefs.getInt("chatsDividerColor", 0xffdcdcdc));
 
-        int radius = AndroidUtilities.dp(AndroidUtilities.getIntDef("chatsAvatarRadius", 32));
+        int radius = AndroidUtilities.dp(themePrefs.getInt("chatsAvatarRadius", 32));
         if(avatarImage != null)avatarImage.setRoundRadius(radius);
         if(avatarDrawable != null)avatarDrawable.setRadius(radius);
 

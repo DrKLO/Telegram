@@ -29,16 +29,16 @@ import android.widget.ListView;
 import android.widget.TextView;
 
 import org.telegram.android.AndroidUtilities;
-import org.telegram.messenger.FileLog;
 import org.telegram.android.LocaleController;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
-import org.telegram.ui.Adapters.BaseFragmentAdapter;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
+import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.ui.Adapters.BaseFragmentAdapter;
 import org.telegram.ui.AnimationCompat.AnimatorSetProxy;
 import org.telegram.ui.AnimationCompat.ObjectAnimatorProxy;
-import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.Cells.SharedDocumentCell;
 
 import java.io.BufferedReader;
@@ -128,7 +128,7 @@ public class DocumentSelectActivity extends BaseFragment {
     }
 
     @Override
-    public View createView(LayoutInflater inflater) {
+    public View createView(Context context, LayoutInflater inflater) {
         if (!receiverRegistered) {
             receiverRegistered = true;
             IntentFilter filter = new IntentFilter();
@@ -145,7 +145,6 @@ public class DocumentSelectActivity extends BaseFragment {
             getParentActivity().registerReceiver(receiver, filter);
         }
 
-        if (fragmentView == null) {
             actionBar.setBackButtonImage(R.drawable.ic_ab_back);
             actionBar.setAllowOverlayTitle(true);
             actionBar.setTitle(LocaleController.getString("SelectFile", R.string.SelectFile));
@@ -189,7 +188,7 @@ public class DocumentSelectActivity extends BaseFragment {
                 }
             });
             actionMode.addView(selectedMessagesCountTextView);
-            LinearLayout.LayoutParams layoutParams = (LinearLayout.LayoutParams)selectedMessagesCountTextView.getLayoutParams();
+        LinearLayout.LayoutParams layoutParams = (LinearLayout.LayoutParams) selectedMessagesCountTextView.getLayoutParams();
             layoutParams.weight = 1;
             layoutParams.width = 0;
             layoutParams.height = LinearLayout.LayoutParams.MATCH_PARENT;
@@ -198,15 +197,15 @@ public class DocumentSelectActivity extends BaseFragment {
             actionModeViews.add(actionMode.addItem(done, R.drawable.ic_ab_done_gray, R.drawable.bar_selector_mode, null, AndroidUtilities.dp(54)));
 
             fragmentView = inflater.inflate(R.layout.document_select_layout, null, false);
-            listAdapter = new ListAdapter(getParentActivity());
-            emptyView = (TextView)fragmentView.findViewById(R.id.searchEmptyView);
+        listAdapter = new ListAdapter(context);
+        emptyView = (TextView) fragmentView.findViewById(R.id.searchEmptyView);
             emptyView.setOnTouchListener(new View.OnTouchListener() {
                 @Override
                 public boolean onTouch(View v, MotionEvent event) {
                     return true;
                 }
             });
-            listView = (ListView)fragmentView.findViewById(R.id.listView);
+        listView = (ListView) fragmentView.findViewById(R.id.listView);
             listView.setEmptyView(emptyView);
             listView.setAdapter(listAdapter);
 
@@ -350,12 +349,7 @@ public class DocumentSelectActivity extends BaseFragment {
             });
 
             listRoots();
-        } else {
-            ViewGroup parent = (ViewGroup)fragmentView.getParent();
-            if (parent != null) {
-                parent.removeView(fragmentView);
-            }
-        }
+
         return fragmentView;
     }
 

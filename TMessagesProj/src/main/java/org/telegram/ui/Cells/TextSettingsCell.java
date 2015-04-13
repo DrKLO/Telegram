@@ -75,7 +75,7 @@ public class TextSettingsCell extends FrameLayout {
 
         valueImageView = new ImageView(context);
         valueImageView.setScaleType(ImageView.ScaleType.CENTER);
-        valueImageView.setVisibility(GONE);
+        valueImageView.setVisibility(INVISIBLE);
         addView(valueImageView);
         layoutParams = (LayoutParams) valueImageView.getLayoutParams();
         layoutParams.width = LayoutParams.WRAP_CONTENT;
@@ -110,20 +110,20 @@ public class TextSettingsCell extends FrameLayout {
 
     public void setText(String text, boolean divider) {
         textView.setText(text);
-        valueTextView.setVisibility(GONE);
-        valueImageView.setVisibility(GONE);
+        valueTextView.setVisibility(INVISIBLE);
+        valueImageView.setVisibility(INVISIBLE);
         needDivider = divider;
         setWillNotDraw(!divider);
     }
 
     public void setTextAndValue(String text, String value, boolean divider) {
         textView.setText(text);
-        valueImageView.setVisibility(GONE);
+        valueImageView.setVisibility(INVISIBLE);
         if (value != null) {
             valueTextView.setText(value);
             valueTextView.setVisibility(VISIBLE);
         } else {
-            valueTextView.setVisibility(GONE);
+            valueTextView.setVisibility(INVISIBLE);
         }
         needDivider = divider;
         setWillNotDraw(!divider);
@@ -131,12 +131,12 @@ public class TextSettingsCell extends FrameLayout {
 
     public void setTextAndIcon(String text, int resId, boolean divider) {
         textView.setText(text);
-        valueTextView.setVisibility(GONE);
+        valueTextView.setVisibility(INVISIBLE);
         if (resId != 0) {
             valueImageView.setVisibility(VISIBLE);
             valueImageView.setImageResource(resId);
         } else {
-            valueImageView.setVisibility(GONE);
+            valueImageView.setVisibility(INVISIBLE);
         }
         needDivider = divider;
         setWillNotDraw(!divider);

@@ -17,10 +17,10 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
+import android.content.res.AssetFileDescriptor;
 import android.graphics.drawable.BitmapDrawable;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
-import android.media.SoundPool;
 import android.net.Uri;
 import android.os.Build;
 import android.os.SystemClock;
@@ -31,6 +31,7 @@ import android.support.v4.app.RemoteInput;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.DispatchQueue;
 import org.telegram.messenger.FileLog;
@@ -39,7 +40,6 @@ import org.telegram.messenger.RPCRequest;
 import org.telegram.messenger.TLObject;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.UserConfig;
-import org.telegram.messenger.ApplicationLoader;
 import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.PopupNotificationActivity;
 
@@ -70,11 +70,10 @@ public class NotificationsController {
     private int lastOnlineFromOtherDevice = 0;
     private boolean inChatSoundEnabled = true;
 
-    private SoundPool soundPool;
-    private int inChatOutgoingSound;
     private long lastSoundPlay;
-    private MediaPlayer mediaPlayer;
-    private String lastMediaPlayerUri;
+    private MediaPlayer mediaPlayerIn;
+    private MediaPlayer mediaPlayerOut;
+    protected AudioManager audioManager;
 
     private static volatile NotificationsController Instance = null;
     public static NotificationsController getInstance() {
@@ -96,9 +95,8 @@ public class NotificationsController {
         inChatSoundEnabled = preferences.getBoolean("EnableInChatSound", true);
 
         try {
-            soundPool = new SoundPool(1, AudioManager.STREAM_NOTIFICATION, 0);
-            inChatOutgoingSound = soundPool.load(ApplicationLoader.applicationContext, R.raw.sound_out, 1);
-            mediaPlayer = new MediaPlayer();
+            audioManager = (AudioManager) ApplicationLoader.applicationContext.getSystemService(Context.AUDIO_SERVICE);
+            //mediaPlayer = new MediaPlayer();
         } catch (Exception e) {
             FileLog.e("tmessages", e);
         }
@@ -175,7 +173,7 @@ public class NotificationsController {
                             msg = LocaleController.formatString("NotificationUnrecognizedDevice", R.string.NotificationUnrecognizedDevice, UserConfig.getCurrentUser().first_name, date, messageObject.messageOwner.action.title, messageObject.messageOwner.action.address);
                         }
                     } else {
-                        if (messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaEmpty) {
+                        if (messageObject.isMediaEmpty()) {
                             if (!shortMessage) {
                                 if (messageObject.messageOwner.message != null && messageObject.messageOwner.message.length() != 0) {
                                     msg = LocaleController.formatString("NotificationMessageText", R.string.NotificationMessageText, ContactsController.formatName(user.first_name, user.last_name), messageObject.messageOwner.message);
@@ -240,7 +238,7 @@ public class NotificationsController {
                             msg = messageObject.messageText.toString();
                         }
                     } else {
-                        if (messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaEmpty) {
+                        if (messageObject.isMediaEmpty()) {
                             if (!shortMessage && messageObject.messageOwner.message != null && messageObject.messageOwner.message.length() != 0) {
                                 msg = LocaleController.formatString("NotificationMessageGroupText", R.string.NotificationMessageGroupText, ContactsController.formatName(user.first_name, user.last_name), chat.title, messageObject.messageOwner.message);
                             } else {
@@ -416,6 +414,7 @@ public class NotificationsController {
                 inAppPriority = preferences.getBoolean("EnableInAppPriority", false);
                 vibrate_override = preferences.getInt("vibrate_" + dialog_id, 0);
                 priority_override = preferences.getInt("priority_" + dialog_id, 3);
+                boolean vibrateOnlyIfSilent = false;
 
                 choosenSoundPath = preferences.getString("sound_path_" + dialog_id, null);
                 if (chat_id != 0) {
@@ -445,6 +444,10 @@ public class NotificationsController {
                     priority = priority_override;
                 }
 
+                if (needVibrate == 4) {
+                    vibrateOnlyIfSilent = true;
+                    needVibrate = 0;
+                }
                 if (needVibrate == 2 && (vibrate_override == 1 || vibrate_override == 3 || vibrate_override == 5) || needVibrate != 2 && vibrate_override == 2 || vibrate_override != 0) {
                     needVibrate = vibrate_override;
                 }
@@ -459,6 +462,16 @@ public class NotificationsController {
                         priority = 0;
                     } else if (priority == 2) {
                         priority = 1;
+                    }
+                }
+                if (vibrateOnlyIfSilent && needVibrate != 2) {
+                    try {
+                        int mode = audioManager.getRingerMode();
+                        if (mode != AudioManager.RINGER_MODE_SILENT && mode != AudioManager.RINGER_MODE_VIBRATE) {
+                            needVibrate = 2;
+                        }
+                    } catch (Exception e) {
+                        FileLog.e("tmessages", e);
                     }
                 }
             }
@@ -852,13 +865,53 @@ public class NotificationsController {
         if (!inChatSoundEnabled) {
             return;
         }
-        if (lastSoundPlay > System.currentTimeMillis() - 1800) {
-            return;
-        }
         try {
-            String choosenSoundPath = null;
-            String defaultPath = Settings.System.DEFAULT_NOTIFICATION_URI.getPath();
+            if (audioManager.getRingerMode() == AudioManager.RINGER_MODE_SILENT) {
+                return;
+            }
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
+
+        try {
             SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Context.MODE_PRIVATE);
+            int notify_override = preferences.getInt("notify2_" + openned_dialog_id, 0);
+            if (notify_override == 3) {
+                int mute_until = preferences.getInt("notifyuntil_" + openned_dialog_id, 0);
+                if (mute_until >= ConnectionsManager.getInstance().getCurrentTime()) {
+                    notify_override = 2;
+                }
+            }
+            if (notify_override == 2) {
+                return;
+            }
+            notificationsQueue.postRunnable(new Runnable() {
+                @Override
+                public void run() {
+                    if (lastSoundPlay > System.currentTimeMillis() - 500) {
+                        return;
+                    }
+                    try {
+                        if (mediaPlayerIn == null) {
+                            AssetFileDescriptor assetFileDescriptor = ApplicationLoader.applicationContext.getResources().openRawResourceFd(R.raw.sound_in);
+                            if (assetFileDescriptor != null) {
+                                mediaPlayerIn = new MediaPlayer();
+                                mediaPlayerIn.setAudioStreamType(AudioManager.STREAM_SYSTEM);
+                                mediaPlayerIn.setDataSource(assetFileDescriptor.getFileDescriptor(), assetFileDescriptor.getStartOffset(), assetFileDescriptor.getLength());
+                                mediaPlayerIn.setLooping(false);
+                                assetFileDescriptor.close();
+                                mediaPlayerIn.prepare();
+                            }
+                        }
+                        mediaPlayerIn.start();
+                    } catch (Exception e) {
+                        FileLog.e("tmessages", e);
+                    }
+                }
+            });
+            /*String choosenSoundPath = null;
+            String defaultPath = Settings.System.DEFAULT_NOTIFICATION_URI.getPath();
+
             choosenSoundPath = preferences.getString("sound_path_" + openned_dialog_id, null);
             boolean isChat = (int)(openned_dialog_id) < 0;
             if (isChat) {
@@ -888,7 +941,7 @@ public class NotificationsController {
                     mediaPlayer.prepare();
                 }
                 mediaPlayer.start();
-            }
+            }*/
         } catch (Exception e) {
             FileLog.e("tmessages", e);
         }
@@ -899,10 +952,33 @@ public class NotificationsController {
             return;
         }
         try {
-            soundPool.play(inChatOutgoingSound, 1, 1, 1, 0, 1);
+            if (audioManager.getRingerMode() == AudioManager.RINGER_MODE_SILENT) {
+                return;
+            }
         } catch (Exception e) {
             FileLog.e("tmessages", e);
         }
+        notificationsQueue.postRunnable(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    if (mediaPlayerOut == null) {
+                        AssetFileDescriptor assetFileDescriptor = ApplicationLoader.applicationContext.getResources().openRawResourceFd(R.raw.sound_out);
+                        if (assetFileDescriptor != null) {
+                            mediaPlayerOut = new MediaPlayer();
+                            mediaPlayerOut.setAudioStreamType(AudioManager.STREAM_SYSTEM);
+                            mediaPlayerOut.setDataSource(assetFileDescriptor.getFileDescriptor(), assetFileDescriptor.getStartOffset(), assetFileDescriptor.getLength());
+                            mediaPlayerOut.setLooping(false);
+                            assetFileDescriptor.close();
+                            mediaPlayerOut.prepare();
+                        }
+                    }
+                    mediaPlayerOut.start();
+                } catch (Exception e) {
+                    FileLog.e("tmessages", e);
+                }
+            }
+        });
     }
 
     public void processNewMessages(ArrayList<MessageObject> messageObjects, boolean isLast) {
@@ -1145,26 +1221,26 @@ public class NotificationsController {
                 try {
                     ContentValues cv = new ContentValues();
                     //cv.put("tag", "org.telegram.messenger/org.telegram.ui.LaunchActivity");
-                    cv.put("tag", "org.telegram.plus/org.telegram.ui.LaunchActivity");
+                    cv.put("tag", context.getPackageName() + "/org.telegram.ui.LaunchActivity");
                     cv.put("count", count);
                     context.getContentResolver().insert(Uri.parse("content://com.teslacoilsw.notifier/unread_count"), cv);
                 } catch (Throwable e) {
                      //ignore
                 }
-        try {
-            String launcherClassName = getLauncherClassName(context);
-            if (launcherClassName == null) {
-                return;
+                try {
+                    String launcherClassName = getLauncherClassName(context);
+                    if (launcherClassName == null) {
+                        return;
+                    }
+                    Intent intent = new Intent("android.intent.action.BADGE_COUNT_UPDATE");
+                    intent.putExtra("badge_count", count);
+                    intent.putExtra("badge_count_package_name", context.getPackageName());
+                    intent.putExtra("badge_count_class_name", launcherClassName);
+                    context.sendBroadcast(intent);
+                } catch (Throwable e) {
+                    FileLog.e("tmessages", e);
+                }
             }
-            Intent intent = new Intent("android.intent.action.BADGE_COUNT_UPDATE");
-            intent.putExtra("badge_count", count);
-            intent.putExtra("badge_count_package_name", context.getPackageName());
-            intent.putExtra("badge_count_class_name", launcherClassName);
-            context.sendBroadcast(intent);
-        } catch (Throwable e) {
-            FileLog.e("tmessages", e);
-        }
-    }
         });
     }
 

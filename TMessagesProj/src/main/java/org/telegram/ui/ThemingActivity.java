@@ -21,7 +21,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
 import android.widget.AdapterView;
-import android.widget.Button;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ListView;
@@ -31,6 +30,7 @@ import org.telegram.android.AndroidUtilities;
 import org.telegram.android.LocaleController;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.R;
+import org.telegram.messenger.Utilities;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.Adapters.BaseFragmentAdapter;
@@ -107,12 +107,12 @@ public class ThemingActivity extends BaseFragment {
         super.onFragmentDestroy();
         if(AndroidUtilities.needRestart){
             //AndroidUtilities.needRestart = false;
-            AndroidUtilities.restartApp();
+            Utilities.restartApp();
         }
     }
 
     @Override
-    public View createView(LayoutInflater inflater) {
+    public View createView(Context context, LayoutInflater inflater) {
         if (fragmentView == null) {
 
 
@@ -135,13 +135,13 @@ public class ThemingActivity extends BaseFragment {
                 }
             });
 
-            listAdapter = new ListAdapter(getParentActivity());
+            listAdapter = new ListAdapter(context);
 
-            fragmentView = new FrameLayout(getParentActivity());
+            fragmentView = new FrameLayout(context);
             FrameLayout frameLayout = (FrameLayout) fragmentView;
 
 
-            listView = new ListView(getParentActivity());
+            listView = new ListView(context);
             listView.setDivider(null);
             listView.setDividerHeight(0);
             listView.setVerticalScrollBarEnabled(false);
@@ -200,9 +200,9 @@ public class ThemingActivity extends BaseFragment {
                                         saving = false;
                                         if (getParentActivity() != null) {
                                             String pName = userInput.getText().toString();
-                                            AndroidUtilities.setStringPref(getParentActivity(),"themeName",pName);
-                                            AndroidUtilities.savePreferencesToSD(getParentActivity(), AndroidUtilities.THEME_PREFS+".xml", pName+".xml", true);
-                                            AndroidUtilities.copyWallpaperToSD(getParentActivity(), pName, true);
+                                            AndroidUtilities.setStringPref(getParentActivity(),"themeName", pName);
+                                            Utilities.savePreferencesToSD(getParentActivity(), AndroidUtilities.THEME_PREFS+".xml", pName+".xml", true);
+                                            Utilities.copyWallpaperToSD(getParentActivity(), pName, true);
                                             //Toast toast = Toast.makeText(getParentActivity(), LocaleController.getString("SaveThemeToastText", R.string.SaveThemeToastText), Toast.LENGTH_SHORT);
                                             //toast.show();
                                         }
@@ -248,9 +248,9 @@ public class ThemingActivity extends BaseFragment {
                                         AndroidUtilities.runOnUIThread(new Runnable() {
                                             @Override
                                             public void run() {
-                                                    if(AndroidUtilities.loadPrefFromSD(getParentActivity(), xmlFile) == 4){
-                                                        AndroidUtilities.loadWallpaperFromSDPath(getParentActivity(), wName);
-                                                        AndroidUtilities.restartApp();
+                                                    if( Utilities.loadPrefFromSD(getParentActivity(), xmlFile) == 4){
+                                                        Utilities.loadWallpaperFromSDPath(getParentActivity(), wName);
+                                                        Utilities.restartApp();
                                                     }
                                             }
                                         });

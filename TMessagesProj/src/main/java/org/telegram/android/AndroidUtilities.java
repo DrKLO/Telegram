@@ -9,12 +9,9 @@
 package org.telegram.android;
 
 import android.app.Activity;
-import android.app.AlarmManager;
 import android.app.AlertDialog;
-import android.app.PendingIntent;
 import android.content.Context;
 import android.content.DialogInterface;
-import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
@@ -30,8 +27,8 @@ import android.os.Environment;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
+import android.text.style.ForegroundColorSpan;
 import android.util.DisplayMetrics;
-import android.util.Log;
 import android.util.StateSet;
 import android.view.Display;
 import android.view.Surface;
@@ -44,7 +41,6 @@ import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.ConnectionsManager;
@@ -52,17 +48,17 @@ import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.UserConfig;
+import org.telegram.ui.AnimationCompat.AnimatorListenerAdapterProxy;
+import org.telegram.ui.AnimationCompat.AnimatorSetProxy;
+import org.telegram.ui.AnimationCompat.ObjectAnimatorProxy;
+import org.telegram.ui.AnimationCompat.ViewProxy;
 import org.telegram.ui.Components.ForegroundDetector;
 import org.telegram.ui.Components.NumberPicker;
 import org.telegram.ui.Components.TypefaceSpan;
-import org.telegram.ui.LaunchActivity;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.Hashtable;
 
@@ -559,21 +555,51 @@ public class AndroidUtilities {
         }
     }
 
-    public static Spannable replaceBold(String str) {
-        int start;
+    public static Spannable replaceTags(String str) {
+        try {
+            int start = -1;
+            int startColor = -1;
+            int end = -1;
+            StringBuilder stringBuilder = new StringBuilder(str);
+            while ((start = stringBuilder.indexOf("<br>")) != -1) {
+                stringBuilder.replace(start, start + 4, "\n");
+            }
+            while ((start = stringBuilder.indexOf("<br/>")) != -1) {
+                stringBuilder.replace(start, start + 5, "\n");
+            }
         ArrayList<Integer> bolds = new ArrayList<>();
-        while ((start = str.indexOf("<b>")) != -1) {
-            int end = str.indexOf("</b>") - 3;
-            str = str.replaceFirst("<b>", "").replaceFirst("</b>", "");
+            ArrayList<Integer> colors = new ArrayList<>();
+            while ((start = stringBuilder.indexOf("<b>")) != -1 || (startColor = stringBuilder.indexOf("<c")) != -1) {
+                if (start != -1) {
+                    stringBuilder.replace(start, start + 3, "");
+                    end = stringBuilder.indexOf("</b>");
+                    stringBuilder.replace(end, end + 4, "");
             bolds.add(start);
             bolds.add(end);
-        }
-        SpannableStringBuilder stringBuilder = new SpannableStringBuilder(str);
+                } else if (startColor != -1) {
+                    stringBuilder.replace(startColor, startColor + 2, "");
+                    end = stringBuilder.indexOf(">", startColor);
+                    int color = Color.parseColor(stringBuilder.substring(startColor, end));
+                    stringBuilder.replace(startColor, end + 1, "");
+                    end = stringBuilder.indexOf("</c>");
+                    stringBuilder.replace(end, end + 4, "");
+                    colors.add(startColor);
+                    colors.add(end);
+                    colors.add(color);
+                }
+            }
+            SpannableStringBuilder spannableStringBuilder = new SpannableStringBuilder(stringBuilder);
         for (int a = 0; a < bolds.size() / 2; a++) {
-            TypefaceSpan span = new TypefaceSpan(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
-            stringBuilder.setSpan(span, bolds.get(a * 2), bolds.get(a * 2 + 1), Spanned.SPAN_INCLUSIVE_INCLUSIVE);
+                spannableStringBuilder.setSpan(new TypefaceSpan(AndroidUtilities.getTypeface("fonts/rmedium.ttf")), bolds.get(a * 2), bolds.get(a * 2 + 1), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            }
+            for (int a = 0; a < colors.size() / 3; a++) {
+                spannableStringBuilder.setSpan(new ForegroundColorSpan(colors.get(a * 3 + 2)), colors.get(a * 3), colors.get(a * 3 + 1), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            }
+            return spannableStringBuilder;
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
         }
-        return stringBuilder;
+        return new SpannableStringBuilder(str);
     }
 
     public static boolean needShowPasscode(boolean reset) {
@@ -589,6 +615,61 @@ public class AndroidUtilities {
         return UserConfig.passcodeHash.length() > 0 && wasInBackground &&
                 (UserConfig.appLocked || UserConfig.autoLockIn != 0 && UserConfig.lastPauseTime != 0 && !UserConfig.appLocked && (UserConfig.lastPauseTime + UserConfig.autoLockIn) <= ConnectionsManager.getInstance().getCurrentTime());
     }
+
+    public static void shakeTextView(final TextView textView, final float x, final int num) {
+        if (num == 6) {
+            ViewProxy.setTranslationX(textView, 0);
+            textView.clearAnimation();
+            return;
+        }
+        AnimatorSetProxy animatorSetProxy = new AnimatorSetProxy();
+        animatorSetProxy.playTogether(ObjectAnimatorProxy.ofFloat(textView, "translationX", AndroidUtilities.dp(x)));
+        animatorSetProxy.setDuration(50);
+        animatorSetProxy.addListener(new AnimatorListenerAdapterProxy() {
+            @Override
+            public void onAnimationEnd(Object animation) {
+                shakeTextView(textView, num == 5 ? 0 : -x, num + 1);
+            }
+        });
+        animatorSetProxy.start();
+    }
+
+
+
+    /*public static String ellipsize(String text, int maxLines, int maxWidth, TextPaint paint) {
+        if (text == null || paint == null) {
+            return null;
+        }
+        int count;
+        int offset = 0;
+        StringBuilder result = null;
+        TextView
+        for (int a = 0; a < maxLines; a++) {
+            count = paint.breakText(text, true, maxWidth, null);
+            if (a != maxLines - 1) {
+                if (result == null) {
+                    result = new StringBuilder(count * maxLines + 1);
+                }
+                boolean foundSpace = false;
+                for (int c = count - 1; c >= offset; c--) {
+                    if (text.charAt(c) == ' ') {
+                        foundSpace = true;
+                        result.append(text.substring(offset, c - 1));
+                        offset = c - 1;
+                    }
+                }
+                if (!foundSpace) {
+                    offset = count;
+                }
+                text = text.substring(0, offset);
+            } else if (maxLines == 1) {
+                return text.substring(0, count);
+            } else {
+                result.append(text.substring(0, count));
+            }
+        }
+        return result.toString();
+    }*/
 
     /*public static void turnOffHardwareAcceleration(Window window) {
         if (window == null || Build.MODEL == null || Build.VERSION.SDK_INT < 11) {
@@ -606,7 +687,13 @@ public class AndroidUtilities {
     //PLUS
     public static int getIntColor(String key){
         SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(THEME_PREFS, THEME_PREFS_MODE);
-        return themePrefs.getInt(key, defColor);
+        return themePrefs.getInt(key, defColor);//Def color is Teal
+    }
+
+    public static int getIntTColor(String key){
+        SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(THEME_PREFS, THEME_PREFS_MODE);
+        int def = themePrefs.getInt("themeColor", defColor);
+        return themePrefs.getInt(key, def);//Def color is theme color
     }
 
     public static int getIntDef(String key, int def){
@@ -755,162 +842,6 @@ public class AndroidUtilities {
         return d;
     }
 
-    public static void restartApp(){
-        Intent mRestartApp = new Intent(ApplicationLoader.applicationContext, LaunchActivity.class);
-        int mPendingIntentId = 123456;
-        PendingIntent mPendingIntent = PendingIntent.getActivity(ApplicationLoader.applicationContext, mPendingIntentId, mRestartApp, PendingIntent.FLAG_CANCEL_CURRENT);
-        AlarmManager mgr = (AlarmManager)ApplicationLoader.applicationContext.getSystemService(Context.ALARM_SERVICE);
-        mgr.set(AlarmManager.RTC, System.currentTimeMillis() + 100, mPendingIntent);
-        System.exit(0);
-    }
-
-    public static void savePreferencesToSD(Context context, String prefName, String tName, boolean toast){
-        String folder = "/Telegram/Themes";
-        File dataF = new File (findPrefFolder(context),prefName);
-        if(checkSDStatus() > 1){
-            File f = new File (Environment.getExternalStorageDirectory(), folder);
-            f.mkdirs();
-            File sdF = new File(f, tName);
-            String s = getError(copyFile(dataF,sdF,true));
-            if (s.equalsIgnoreCase("4")) {
-                if(toast && sdF.getName()!="")Toast.makeText(context,context.getString(R.string.SavedTo,sdF.getName(),folder),Toast.LENGTH_SHORT ).show();
-            }else if (s.contains("0")) {
-                s = context.getString(R.string.SaveErrorMsg0);
-                Toast.makeText(context,"ERROR: "+ s ,Toast.LENGTH_LONG ).show();
-            }else{
-                Toast.makeText(context,"ERROR: "+s,Toast.LENGTH_LONG ).show();
-                Toast.makeText(context,dataF.getAbsolutePath(),Toast.LENGTH_LONG ).show();
-            }
-        }else{
-            Toast.makeText(context,"ERROR: " + context.getString(R.string.NoMediaMessage) , Toast.LENGTH_LONG ).show();
-        }
-    }
-
-    public static void copyWallpaperToSD(Context context, String tName, boolean toast){
-        String folder = "/Telegram/Themes";
-        String nFile = "wallpaper.jpg";
-        if(checkSDStatus()>0){
-            File f1 = context.getFilesDir();
-            f1 = new File (f1.getAbsolutePath(), nFile);
-            File f2 = new File (Environment.getExternalStorageDirectory(), folder);
-            f2.mkdirs();
-            f2 = new File(f2, tName+"_"+nFile);
-            if(f1.length()>1){
-                String s = getError(copyFile(f1,f2,true));
-                if(s.contains("4")){
-                    if(toast && f2.getName()!="" && folder !="")Toast.makeText(context,context.getString(R.string.SavedTo,f2.getName(),folder),Toast.LENGTH_SHORT ).show();
-                    if(f2.getName()=="" || folder =="") Toast.makeText(context,"ERROR: "+s,Toast.LENGTH_SHORT ).show();
-
-                }else{
-                    Toast.makeText(context,"ERROR: "+s+"\n"+f1.getAbsolutePath(),Toast.LENGTH_LONG ).show();
-                }
-            }
-        }
-    }
-
-    static String findPrefFolder(Context context){
-        File f = context.getFilesDir();
-        String appDir = f.getAbsolutePath();
-        File SPDir = new File (appDir.substring(0,appDir.lastIndexOf('/')+1)+ "shared_prefs/");
-        if(!SPDir.exists()) {// && SPDir.isDirectory()) {
-            String pck = context.getPackageName();
-            SPDir=new File ("/dbdata/databases/"+pck+"/shared_prefs/");
-        }
-        //Log.i("TAG", SPDir.getAbsolutePath());
-        return SPDir.getAbsolutePath();
-    }
-
-    static int checkSDStatus(){
-        int b=0;
-        String s = Environment.getExternalStorageState();
-        if (s.equals(Environment.MEDIA_MOUNTED))b=2;
-        else if (s.equals(Environment.MEDIA_MOUNTED_READ_ONLY))b=1;
-        return b;
-    }
-
-    static String getError(int i){
-        String s="-1";
-        if(i==0)s="0: SOURCE FILE DOESN'T EXIST";
-        if(i==1)s="1: DESTINATION FILE DOESN'T EXIST";
-        if(i==2)s="2: NULL SOURCE & DESTINATION FILES";
-        if(i==3)s="3: NULL SOURCE FILE";
-        if(i==4)s="4";
-        return s;
-    }
-
-    //0: source file doesn't exist
-    //1: dest file doesn't exist
-    //2: source & dest = NULL
-    //3: source = NULL
-    //4: dest = NULL
-    static int copyFile(File sourceFile, File destFile, boolean save) {
-        int i=-1;
-        try{
-            if (!sourceFile.exists()) {
-                return i+1;
-            }
-            if (!destFile.exists()) {
-                if(save)i=i+2;
-                destFile.createNewFile();
-            }
-            FileChannel source = null;
-            FileChannel destination = null;
-            FileInputStream fileInputStream = new FileInputStream(sourceFile);
-            source = fileInputStream.getChannel();
-            FileOutputStream fileOutputStream = new FileOutputStream(destFile);
-            destination = fileOutputStream.getChannel();
-            if (destination != null && source != null) {
-                destination.transferFrom(source, 0, source.size());
-                i=2;
-            }
-            if (source != null) {
-                source.close();
-                i=3;
-            }
-            if (destination != null) {
-                destination.close();
-                i=4;
-            }
-            fileInputStream.close();
-            fileOutputStream.close();
-        }catch (Exception e)
-        {
-            System.err.println("Error saving preferences: " + e.getMessage());
-            Log.e(e.getMessage() , e.toString());
-        }
-        return i;
-    }
-
-    public static int loadPrefFromSD(Context context, String prefPath){
-        File dataF = new File (findPrefFolder(context), THEME_PREFS + ".xml");
-        File prefFile = new File (prefPath);
-        String s = getError(copyFile(prefFile, dataF, false));
-        if (s.contains("0")) {
-            Toast.makeText(context,"ERROR: "+ context.getString(R.string.restoreErrorMsg, prefFile.getAbsolutePath()) , Toast.LENGTH_LONG ).show();
-        }
-        return Integer.parseInt(s);
-    }
-
-    public static int loadWallpaperFromSDPath(Context context, String wPath){
-        String nFile = "wallpaper.jpg";
-        File f1 = context.getFilesDir();
-        f1= new File (f1.getAbsolutePath(), nFile);
-        //Log.i("f1", f1.getAbsolutePath());
-        File wFile = new File (wPath);
-        //Log.i("wPath", wPath);
-        //Log.i("wFile", wFile.getAbsolutePath());
-        String s = "-1";
-        if (wFile.exists()){
-            s = getError(copyFile(wFile,f1,false));
-            if (s.contains("0")) {
-                Toast.makeText(context,"ERROR: "+ context.getString(R.string.restoreErrorMsg,wFile.getAbsolutePath()) ,Toast.LENGTH_LONG ).show();
-            }else{
-                Toast.makeText(context,"ERROR: "+s+"\n"+wFile.getAbsolutePath(),Toast.LENGTH_LONG ).show();
-            }
-        }
-        return Integer.parseInt(s);
-    }
-
     public static int getDefBubbleColor(){
         int color = 0xffb2dfdb;//0xff80cbc4;
         if(getIntColor("themeColor") != 0xff009688){
@@ -918,6 +849,7 @@ public class AndroidUtilities {
         }
         return color;
     }
+
 /*
     static void modifyXMLfile(File preffile,String sname){
         try {

@@ -9,6 +9,7 @@
 package org.telegram.ui.Cells;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.graphics.drawable.Drawable;
 import android.text.TextUtils;
 import android.util.TypedValue;
@@ -21,6 +22,7 @@ import org.telegram.android.AndroidUtilities;
 import org.telegram.android.ContactsController;
 import org.telegram.android.LocaleController;
 import org.telegram.android.MessagesController;
+import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.R;
 import org.telegram.messenger.TLRPC;
@@ -61,7 +63,7 @@ public class UserCell extends FrameLayout {
         super(context);
 
         avatarImageView = new BackupImageView(context);
-        avatarImageView.imageReceiver.setRoundRadius(AndroidUtilities.dp(24));
+        avatarImageView.setRoundRadius(AndroidUtilities.dp(24));
         addView(avatarImageView);
         LayoutParams layoutParams = (LayoutParams) avatarImageView.getLayoutParams();
         layoutParams.width = AndroidUtilities.dp(48);
@@ -120,7 +122,7 @@ public class UserCell extends FrameLayout {
         imageView.setLayoutParams(layoutParams);
 
         checkBox = new CheckBox(context, R.drawable.round_check2);
-        checkBox.setVisibility(GONE);
+        checkBox.setVisibility(INVISIBLE);
         addView(checkBox);
         layoutParams = (LayoutParams) checkBox.getLayoutParams();
         layoutParams.width = AndroidUtilities.dp(22);
@@ -207,7 +209,7 @@ public class UserCell extends FrameLayout {
                 return;
             }
         }
-
+        SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
         avatarDrawable.setInfo(currentUser);
         if (currentUser.status != null) {
             lastStatus = currentUser.status.expires;
@@ -222,7 +224,7 @@ public class UserCell extends FrameLayout {
         } else {
             nameTextView.setText(ContactsController.formatName(currentUser.first_name, currentUser.last_name));
             nameTextView.setTextColor(nameColor);
-            nameTextView.setTextSize(AndroidUtilities.getIntDef("contactsNameSize", 17));
+            nameTextView.setTextSize(themePrefs.getInt("contactsNameSize", 17));
         }
         if (currrntStatus != null) {
             statusTextView.setText(currrntStatus);
@@ -236,13 +238,13 @@ public class UserCell extends FrameLayout {
                 statusTextView.setTextColor(statusColor);
             }
         }
-        statusTextView.setTextSize(AndroidUtilities.getIntDef("contactsStatusSize", 14));
-        imageView.setVisibility(currentDrawable == 0 ? GONE : VISIBLE);
+        statusTextView.setTextSize(themePrefs.getInt("contactsStatusSize", 14));
+        imageView.setVisibility(currentDrawable == 0 ? INVISIBLE : VISIBLE);
         imageView.setImageResource(currentDrawable);
         if(curDrawable != null)imageView.setImageDrawable(curDrawable);
 
-        //int radius = AndroidUtilities.dp(AndroidUtilities.getIntDef("contactsAvatarRadius", 32));
-        avatarImageView.imageReceiver.setRoundRadius(AndroidUtilities.dp(radius));
+        //int radius = AndroidUtilities.dp(themePrefs.getInt("contactsAvatarRadius", 32));
+        avatarImageView.getImageReceiver().setRoundRadius(AndroidUtilities.dp(radius));
         avatarDrawable.setRadius(AndroidUtilities.dp(radius));
 
         avatarImageView.setImage(photo, "50_50", avatarDrawable);

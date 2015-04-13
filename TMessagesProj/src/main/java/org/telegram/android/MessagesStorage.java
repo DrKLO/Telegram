@@ -18,6 +18,7 @@ import org.telegram.SQLite.SQLiteCursor;
 import org.telegram.SQLite.SQLiteDatabase;
 import org.telegram.SQLite.SQLitePreparedStatement;
 import org.telegram.android.query.SharedMediaQuery;
+import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BuffersStorage;
 import org.telegram.messenger.ByteBufferDesc;
 import org.telegram.messenger.ConnectionsManager;
@@ -29,7 +30,6 @@ import org.telegram.messenger.TLObject;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
-import org.telegram.messenger.ApplicationLoader;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -123,6 +123,7 @@ public class MessagesStorage {
                 database.executeFast("CREATE TABLE web_recent_v3(id TEXT, type INTEGER, image_url TEXT, thumb_url TEXT, local_url TEXT, width INTEGER, height INTEGER, size INTEGER, date INTEGER, PRIMARY KEY (id, type));").stepThis().dispose();
                 database.executeFast("CREATE TABLE stickers(id INTEGER PRIMARY KEY, data BLOB, date INTEGER);").stepThis().dispose();
                 database.executeFast("CREATE TABLE hashtag_recent_v2(id TEXT PRIMARY KEY, date INTEGER);").stepThis().dispose();
+                database.executeFast("CREATE TABLE webpage_pending(id INTEGER, mid INTEGER, PRIMARY KEY (id, mid));").stepThis().dispose();
 
                 database.executeFast("CREATE TABLE user_contacts_v6(uid INTEGER PRIMARY KEY, fname TEXT, sname TEXT)").stepThis().dispose();
                 database.executeFast("CREATE TABLE user_phones_v6(uid INTEGER, phone TEXT, sphone TEXT, deleted INTEGER, PRIMARY KEY (uid, phone))").stepThis().dispose();
@@ -163,7 +164,7 @@ public class MessagesStorage {
                 database.executeFast("CREATE TABLE keyvalue(id TEXT PRIMARY KEY, value TEXT)").stepThis().dispose();
 
                 //version
-                database.executeFast("PRAGMA user_version = 15").stepThis().dispose();
+                database.executeFast("PRAGMA user_version = 16").stepThis().dispose();
             } else {
                 try {
                     SQLiteCursor cursor = database.queryFinalized("SELECT seq, pts, date, qts, lsv, sg, pbytes FROM params WHERE id = 1");
@@ -194,7 +195,7 @@ public class MessagesStorage {
                     }
                 }
                 int version = database.executeInt("PRAGMA user_version");
-                if (version < 15) {
+                if (version < 16) {
                     updateDbToLastVersion(version);
                 }
             }
@@ -378,6 +379,11 @@ public class MessagesStorage {
                         database.executeFast("CREATE TABLE IF NOT EXISTS hashtag_recent_v2(id TEXT PRIMARY KEY, date INTEGER);").stepThis().dispose();
                         database.executeFast("PRAGMA user_version = 15").stepThis().dispose();
                         version = 15;
+                    }
+                    if (version == 15 && version < 16) {
+                        database.executeFast("CREATE TABLE IF NOT EXISTS webpage_pending(id INTEGER, mid INTEGER, PRIMARY KEY (id, mid));").stepThis().dispose();
+                        database.executeFast("PRAGMA user_version = 16").stepThis().dispose();
+                        version = 16;
                     }
                 } catch (Exception e) {
                     FileLog.e("tmessages", e);
@@ -2660,6 +2666,79 @@ public class MessagesStorage {
         return -1;
     }
 
+    public void putWebPages(final HashMap<Long, TLRPC.WebPage> webPages) {
+        if (webPages == null || webPages.isEmpty()) {
+            return;
+        }
+        storageQueue.postRunnable(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    String ids = TextUtils.join(",", webPages.keySet());
+                    SQLiteCursor cursor = database.queryFinalized(String.format(Locale.US, "SELECT mid FROM webpage_pending WHERE id IN (%s)", ids));
+                    ArrayList<Integer> mids = new ArrayList<>();
+                    while (cursor.next()) {
+                        mids.add(cursor.intValue(0));
+                    }
+                    cursor.dispose();
+
+                    if (mids.isEmpty()) {
+                        return;
+                    }
+                    final ArrayList<TLRPC.Message> messages = new ArrayList<>();
+                    cursor = database.queryFinalized(String.format(Locale.US, "SELECT mid, data FROM messages WHERE mid IN (%s)", TextUtils.join(",", mids)));
+                    while (cursor.next()) {
+                        int mid = cursor.intValue(0);
+                        ByteBufferDesc data = buffersStorage.getFreeBuffer(cursor.byteArrayLength(1));
+                        if (data != null && cursor.byteBufferValue(1, data.buffer) != 0) {
+                            TLRPC.Message message = (TLRPC.Message)TLClassStore.Instance().TLdeserialize(data, data.readInt32());
+                            if (message.media instanceof TLRPC.TL_messageMediaWebPage) {
+                                message.id = mid;
+                                message.media.webpage = webPages.get(message.media.webpage.id);
+                                messages.add(message);
+                            }
+                        }
+                        buffersStorage.reuseFreeBuffer(data);
+                    }
+                    cursor.dispose();
+
+                    database.executeFast(String.format(Locale.US, "DELETE FROM webpage_pending WHERE id IN (%s)", ids)).stepThis().dispose();
+
+                    if (messages.isEmpty()) {
+                        return;
+                    }
+
+                    database.beginTransaction();
+
+                    SQLitePreparedStatement state = database.executeFast("UPDATE messages SET data = ? WHERE mid = ?");
+                    for (TLRPC.Message message : messages) {
+                        ByteBufferDesc data = buffersStorage.getFreeBuffer(message.getObjectSize());
+                        message.serializeToStream(data);
+
+                        state.requery();
+                        state.bindByteBuffer(1, data.buffer);
+                        state.bindInteger(2, message.id);
+                        state.step();
+
+                        buffersStorage.reuseFreeBuffer(data);
+                    }
+                    state.dispose();
+
+                    database.commitTransaction();
+
+                    AndroidUtilities.runOnUIThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            NotificationCenter.getInstance().postNotificationName(NotificationCenter.didReceivedWebpages, messages);
+                        }
+                    });
+                } catch (Exception e) {
+                    FileLog.e("tmessages", e);
+                }
+            }
+        });
+    }
+
     private void putMessagesInternal(final ArrayList<TLRPC.Message> messages, final boolean withTransaction, final boolean isBroadcast, final int downloadMask) {
         try {
             if (withTransaction) {
@@ -2677,6 +2756,7 @@ public class MessagesStorage {
             SQLitePreparedStatement state2 = database.executeFast("REPLACE INTO media_v2 VALUES(?, ?, ?, ?, ?)");
             SQLitePreparedStatement state3 = database.executeFast("REPLACE INTO randoms VALUES(?, ?)");
             SQLitePreparedStatement state4 = database.executeFast("REPLACE INTO download_queue VALUES(?, ?, ?, ?)");
+            SQLitePreparedStatement state5 = database.executeFast("REPLACE INTO webpage_pending VALUES(?, ?)");
 
             for (TLRPC.Message message : messages) {
                 long dialog_id = message.dialog_id;
@@ -2810,15 +2890,23 @@ public class MessagesStorage {
                     state2.bindByteBuffer(5, data.buffer);
                     state2.step();
                 }
+
+                if (message.media instanceof TLRPC.TL_messageMediaWebPage && message.media.webpage instanceof TLRPC.TL_webPagePending) {
+                    state5.requery();
+                    state5.bindLong(1, message.media.webpage.id);
+                    state5.bindInteger(2, message.id);
+                    state5.step();
+                }
+
                 buffersStorage.reuseFreeBuffer(data);
 
-                if (downloadMask != 0) {
+                if (message.date >= ConnectionsManager.getInstance().getCurrentTime() - 60 * 60 * 24 && downloadMask != 0) {
                     if (message.media instanceof TLRPC.TL_messageMediaAudio || message.media instanceof TLRPC.TL_messageMediaPhoto || message.media instanceof TLRPC.TL_messageMediaVideo || message.media instanceof TLRPC.TL_messageMediaDocument) {
                         int type = 0;
                         long id = 0;
                         TLObject object = null;
                         if (message.media instanceof TLRPC.TL_messageMediaAudio) {
-                            if ((downloadMask & MediaController.AUTODOWNLOAD_MASK_AUDIO) != 0) {
+                            if ((downloadMask & MediaController.AUTODOWNLOAD_MASK_AUDIO) != 0 && message.media.audio.size < 1024 * 1024 * 5) {
                                 id = message.media.audio.id;
                                 type = MediaController.AUTODOWNLOAD_MASK_AUDIO;
                                 object = message.media.audio;
@@ -2864,6 +2952,7 @@ public class MessagesStorage {
             state2.dispose();
             state3.dispose();
             state4.dispose();
+            state5.dispose();
 
             state = database.executeFast("REPLACE INTO dialogs(did, date, unread_count, last_mid) VALUES(?, ?, ?, ?)");
             for (HashMap.Entry<Long, TLRPC.Message> pair : messagesMap.entrySet()) {
@@ -3543,11 +3632,19 @@ public class MessagesStorage {
     }
 
     private void fixUnsupportedMedia(TLRPC.Message message) {
-        if (message != null && message.media instanceof TLRPC.TL_messageMediaUnsupported && message.media.bytes != null) {
+        if (message == null) {
+            return;
+        }
+        boolean ok = false;
+        if (message.media instanceof TLRPC.TL_messageMediaUnsupported_old) {
             if (message.media.bytes.length == 0) {
                 message.media.bytes = new byte[1];
                 message.media.bytes[0] = TLRPC.LAYER;
             }
+        } else if (message.media instanceof TLRPC.TL_messageMediaUnsupported) {
+            message.media = new TLRPC.TL_messageMediaUnsupported_old();
+            message.media.bytes = new byte[1];
+            message.media.bytes[0] = TLRPC.LAYER;
         }
     }
 
@@ -3800,6 +3897,42 @@ public class MessagesStorage {
                 }
             }
         });
+    }
+
+    public TLRPC.User getUserSync(final int user_id) {
+        final Semaphore semaphore = new Semaphore(0);
+        final TLRPC.User[] user = new TLRPC.User[1];
+        MessagesStorage.getInstance().getStorageQueue().postRunnable(new Runnable() {
+            @Override
+            public void run() {
+                user[0] = getUser(user_id);
+                semaphore.release();
+            }
+        });
+        try {
+            semaphore.acquire();
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
+        return user[0];
+    }
+
+    public TLRPC.Chat getChatSync(final int user_id) {
+        final Semaphore semaphore = new Semaphore(0);
+        final TLRPC.Chat[] chat = new TLRPC.Chat[1];
+        MessagesStorage.getInstance().getStorageQueue().postRunnable(new Runnable() {
+            @Override
+            public void run() {
+                chat[0] = getChat(user_id);
+                semaphore.release();
+            }
+        });
+        try {
+            semaphore.acquire();
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
+        return chat[0];
     }
 
     public TLRPC.User getUser(final int user_id) {

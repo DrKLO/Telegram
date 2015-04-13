@@ -9,6 +9,7 @@
 package org.telegram.ui;
 
 import android.app.Activity;
+import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.PorterDuff;
 import android.os.Bundle;
@@ -27,10 +28,10 @@ import android.widget.TextView;
 
 import org.telegram.android.AndroidUtilities;
 import org.telegram.android.LocaleController;
-import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.TLRPC;
 import org.telegram.android.MessagesController;
+import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.R;
+import org.telegram.messenger.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.BaseFragment;
@@ -56,9 +57,7 @@ public class ChangeChatNameActivity extends BaseFragment {
     }
 
     @Override
-    public View createView(LayoutInflater inflater) {
-        if (fragmentView == null) {
-
+    public View createView(Context context, LayoutInflater inflater) {
             actionBar.setBackButtonImage(R.drawable.ic_ab_back);
             actionBar.setAllowOverlayTitle(true);
             actionBar.setTitle(LocaleController.getString("EditName", R.string.EditName));
@@ -81,7 +80,7 @@ public class ChangeChatNameActivity extends BaseFragment {
 
             TLRPC.Chat currentChat = MessagesController.getInstance().getChat(chat_id);
 
-            fragmentView = new LinearLayout(getParentActivity());
+        fragmentView = new LinearLayout(context);
             fragmentView.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
             ((LinearLayout) fragmentView).setOrientation(LinearLayout.VERTICAL);
             fragmentView.setOnTouchListener(new View.OnTouchListener() {
@@ -91,7 +90,7 @@ public class ChangeChatNameActivity extends BaseFragment {
                 }
             });
 
-            firstNameField = new EditText(getParentActivity());
+        firstNameField = new EditText(context);
             firstNameField.setText(currentChat.title);
             firstNameField.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
             firstNameField.setHintTextColor(0xff979797);
@@ -116,7 +115,7 @@ public class ChangeChatNameActivity extends BaseFragment {
             });
 
             ((LinearLayout) fragmentView).addView(firstNameField);
-            LinearLayout.LayoutParams layoutParams = (LinearLayout.LayoutParams)firstNameField.getLayoutParams();
+        LinearLayout.LayoutParams layoutParams = (LinearLayout.LayoutParams) firstNameField.getLayoutParams();
             layoutParams.topMargin = AndroidUtilities.dp(24);
             layoutParams.height = AndroidUtilities.dp(36);
             layoutParams.leftMargin = AndroidUtilities.dp(24);
@@ -130,12 +129,7 @@ public class ChangeChatNameActivity extends BaseFragment {
                 firstNameField.setHint(LocaleController.getString("EnterListName", R.string.EnterListName));
             }
             firstNameField.setSelection(firstNameField.length());
-        } else {
-            ViewGroup parent = (ViewGroup)fragmentView.getParent();
-            if (parent != null) {
-                parent.removeView(fragmentView);
-            }
-        }
+
         return fragmentView;
     }
 

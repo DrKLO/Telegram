@@ -10,12 +10,12 @@ package org.telegram.ui.Cells;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.drawable.Drawable;
-import android.text.Html;
 import android.text.Layout;
 import android.text.StaticLayout;
 import android.text.TextPaint;
@@ -26,15 +26,15 @@ import android.view.SoundEffectConstants;
 import org.telegram.android.AndroidUtilities;
 import org.telegram.android.ContactsController;
 import org.telegram.android.Emoji;
+import org.telegram.android.ImageReceiver;
 import org.telegram.android.LocaleController;
+import org.telegram.android.MessageObject;
+import org.telegram.android.MessagesController;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
-import org.telegram.messenger.TLRPC;
-import org.telegram.android.MessagesController;
 import org.telegram.messenger.R;
-import org.telegram.android.MessageObject;
-import org.telegram.android.ImageReceiver;
+import org.telegram.messenger.TLRPC;
 import org.telegram.ui.Components.AvatarDrawable;
 
 public class ChatBaseCell extends BaseCell {
@@ -84,18 +84,10 @@ public class ChatBaseCell extends BaseCell {
     private static TextPaint timeMediaPaint;
     private static TextPaint namePaint;
     private static TextPaint forwardNamePaint;
-    private static TextPaint replyNamePaint;
-    private static TextPaint replyTextPaint;
-    private static Paint replyLinePaint;
+    protected static TextPaint replyNamePaint;
+    protected static TextPaint replyTextPaint;
+    protected static Paint replyLinePaint;
 
-    private static Drawable backgroundDrawableOutWhite;
-    private static Drawable backgroundDrawableOutWhiteSelected;
-    private static Drawable backgroundMediaDrawableOutWhite;
-    private static Drawable backgroundMediaDrawableOutWhiteSelected;
-    private static Drawable checkDrawableWhite;
-    private static Drawable halfCheckDrawableWhite;
-    private static Drawable clockDrawableWhite;
-    private static Drawable mediaBackgroundWhiteDrawable;
     protected int backgroundWidth = 100;
 
     protected int layoutWidth;
@@ -176,16 +168,6 @@ public class ChatBaseCell extends BaseCell {
             backgroundBlack = getResources().getDrawable(R.drawable.system_black);
             backgroundBlue = getResources().getDrawable(R.drawable.system_blue);
 
-            backgroundDrawableOutWhite = getResources().getDrawable(R.drawable.msg_out_white);
-            backgroundDrawableOutWhiteSelected = getResources().getDrawable(R.drawable.msg_out_white_selected);
-            backgroundMediaDrawableOutWhite = getResources().getDrawable(R.drawable.msg_out_photo_white);
-            backgroundMediaDrawableOutWhiteSelected = getResources().getDrawable(R.drawable.msg_out_photo_white_selected);
-            mediaBackgroundWhiteDrawable = getResources().getDrawable(R.drawable.phototime_white);
-
-            checkDrawableWhite = getResources().getDrawable(R.drawable.msg_check_white);
-            halfCheckDrawableWhite = getResources().getDrawable(R.drawable.msg_halfcheck_white);
-            clockDrawableWhite = getResources().getDrawable(R.drawable.msg_clock_white);
-
             timePaintIn = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
             timePaintIn.setTextSize(AndroidUtilities.dp(12));
             timePaintIn.setColor(0xffa1aab3);
@@ -210,6 +192,8 @@ public class ChatBaseCell extends BaseCell {
 
             replyTextPaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
             replyTextPaint.setTextSize(AndroidUtilities.dp(14));
+            replyTextPaint.linkColor = 0xff316f9f;
+            //replyTextPaint.linkColor = AndroidUtilities.getIntTColor("chatLLinkColor");
 
             replyLinePaint = new Paint();
         }
@@ -218,36 +202,49 @@ public class ChatBaseCell extends BaseCell {
         avatarDrawable = new AvatarDrawable();
         replyImageReceiver = new ImageReceiver(this);
         //Chat Photo
-        int radius = AndroidUtilities.dp(AndroidUtilities.getIntDef("chatAvatarRadius", 32));
+        SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+        int radius = AndroidUtilities.dp(themePrefs.getInt("chatAvatarRadius", 32));
         avatarImage.setRoundRadius(radius);
         avatarDrawable.setRadius(radius);
     }
 
     private void updateTheme(){
-        int tColor = AndroidUtilities.getIntColor("themeColor");
+        SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+        int tColor = themePrefs.getInt("themeColor", AndroidUtilities.defColor);
         int lColor = AndroidUtilities.getDefBubbleColor();
         int dColor = AndroidUtilities.getIntDarkerColor("themeColor", 0x15);
-        backgroundDrawableOutWhite.setColorFilter(AndroidUtilities.getIntDef("chatRBubbleColor", lColor), PorterDuff.Mode.MULTIPLY);
-        backgroundMediaDrawableOutWhite.setColorFilter(AndroidUtilities.getIntDef("chatRBubbleColor", lColor), PorterDuff.Mode.MULTIPLY);
-        backgroundDrawableIn.setColorFilter(AndroidUtilities.getIntDef("chatLBubbleColor",0xffffffff), PorterDuff.Mode.MULTIPLY);
-        backgroundMediaDrawableIn.setColorFilter(AndroidUtilities.getIntDef("chatLBubbleColor",0xffffffff), PorterDuff.Mode.MULTIPLY);
+        int rBubbleColor = themePrefs.getInt("chatRBubbleColor", lColor);
+        int rBubbleSColor = AndroidUtilities.getIntDarkerColor("chatRBubbleColor", 0x15);
+        int lBubbleColor = themePrefs.getInt("chatLBubbleColor", 0xffffffff);
 
-        int checksColor = AndroidUtilities.getIntDef("chatChecksColor", tColor);
-        checkDrawableWhite.setColorFilter(checksColor, PorterDuff.Mode.MULTIPLY);
-        halfCheckDrawableWhite.setColorFilter(checksColor, PorterDuff.Mode.MULTIPLY);
-        clockDrawableWhite.setColorFilter(checksColor, PorterDuff.Mode.MULTIPLY);
+        backgroundDrawableOut.setColorFilter(rBubbleColor, PorterDuff.Mode.SRC_IN);
+        backgroundMediaDrawableOut.setColorFilter(rBubbleColor, PorterDuff.Mode.SRC_IN);
+        backgroundDrawableOutSelected.setColorFilter(rBubbleSColor, PorterDuff.Mode.SRC_IN);
+        backgroundMediaDrawableOutSelected.setColorFilter(rBubbleSColor, PorterDuff.Mode.SRC_IN);
 
-        timePaintOut.setColor(AndroidUtilities.getIntDef("chatRTimeColor",dColor));
-        timePaintOut.setTextSize(AndroidUtilities.dp(AndroidUtilities.getIntDef("chatTimeSize", 12)));
-        timePaintIn.setColor(AndroidUtilities.getIntDef("chatLTimeColor", 0xffa1aab3));
-        timePaintIn.setTextSize(AndroidUtilities.dp(AndroidUtilities.getIntDef("chatTimeSize", 12)));
+        backgroundDrawableIn.setColorFilter(lBubbleColor, PorterDuff.Mode.MULTIPLY);
+        backgroundMediaDrawableIn.setColorFilter(lBubbleColor, PorterDuff.Mode.MULTIPLY);
+
+        int checksColor = themePrefs.getInt("chatChecksColor", tColor);
+        checkDrawable.setColorFilter(checksColor, PorterDuff.Mode.SRC_IN);
+        halfCheckDrawable.setColorFilter(checksColor, PorterDuff.Mode.SRC_IN);
+        clockDrawable.setColorFilter(checksColor, PorterDuff.Mode.SRC_IN);
+
+        timePaintOut.setColor(themePrefs.getInt("chatRTimeColor", dColor));
+        timePaintOut.setTextSize(AndroidUtilities.dp(themePrefs.getInt("chatTimeSize", 12)));
+        timePaintIn.setColor(themePrefs.getInt("chatLTimeColor", 0xffa1aab3));
+        timePaintIn.setTextSize(AndroidUtilities.dp(themePrefs.getInt("chatTimeSize", 12)));
+
+        int linkColor = themePrefs.getInt("chatLLinkColor", tColor);
 
         int bColor = AndroidUtilities.getIntAlphaColor("chatLBubbleColor", 0xffffffff, 0.9f);
         if(currentMessageObject.isOut()){
             bColor = AndroidUtilities.getIntAlphaColor("chatRBubbleColor", lColor, 0.9f);
+            linkColor = themePrefs.getInt("chatRLinkColor", tColor);
         }
-        mediaBackgroundWhiteDrawable.setColorFilter(bColor, PorterDuff.Mode.MULTIPLY);
-        mediaBackgroundDrawable = mediaBackgroundWhiteDrawable;
+        mediaBackgroundDrawable.setColorFilter(bColor, PorterDuff.Mode.SRC_IN);
+
+        replyTextPaint.linkColor = linkColor;
     }
 
     @Override
@@ -417,7 +414,7 @@ public class ChatBaseCell extends BaseCell {
                 forwardedNameWidth = getMaxNameWidth();
 
                 CharSequence str = TextUtils.ellipsize(currentForwardNameString.replace("\n", " "), forwardNamePaint, forwardedNameWidth - AndroidUtilities.dp(40), TextUtils.TruncateAt.END);
-                str = Html.fromHtml(String.format("%s<br>%s <b>%s</b>", LocaleController.getString("ForwardedMessage", R.string.ForwardedMessage), LocaleController.getString("From", R.string.From), str));
+                str = AndroidUtilities.replaceTags(String.format("%s\n%s <b>%s</b>", LocaleController.getString("ForwardedMessage", R.string.ForwardedMessage), LocaleController.getString("From", R.string.From), str));
                 forwardedNameLayout = new StaticLayout(str, forwardNamePaint, forwardedNameWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
                 if (forwardedNameLayout.getLineCount() > 1) {
                     forwardedNameWidth = Math.max((int) Math.ceil(forwardedNameLayout.getLineWidth(0)), (int) Math.ceil(forwardedNameLayout.getLineWidth(1)));
@@ -683,15 +680,15 @@ public class ChatBaseCell extends BaseCell {
         if (currentMessageObject.isOut()) {
             if (isPressed() && isCheckPressed || !isCheckPressed && isPressed || isHighlighted) {
                 if (!media) {
-                    currentBackgroundDrawable = backgroundDrawableOutWhiteSelected;//backgroundDrawableOutSelected;
+                    currentBackgroundDrawable = backgroundDrawableOutSelected;
                 } else {
-                    currentBackgroundDrawable = backgroundMediaDrawableOutWhiteSelected;//backgroundMediaDrawableOutSelected;
+                    currentBackgroundDrawable = backgroundMediaDrawableOutSelected;
                 }
             } else {
                 if (!media) {
-                    currentBackgroundDrawable = backgroundDrawableOutWhite;//backgroundDrawableOut;
+                    currentBackgroundDrawable = backgroundDrawableOut;
                 } else {
-                    currentBackgroundDrawable = backgroundMediaDrawableOutWhite;//backgroundMediaDrawableOut;
+                    currentBackgroundDrawable = backgroundMediaDrawableOut;
                 }
             }
             setDrawableBounds(currentBackgroundDrawable, layoutWidth - backgroundWidth - (!media ? 0 : AndroidUtilities.dp(9)), AndroidUtilities.dp(1), backgroundWidth, layoutHeight - AndroidUtilities.dp(2));
@@ -720,12 +717,12 @@ public class ChatBaseCell extends BaseCell {
         }
 
         onAfterBackgroundDraw(canvas);
-
+        SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
         if (drawName && nameLayout != null) {
             canvas.save();
             canvas.translate(currentBackgroundDrawable.getBounds().left + AndroidUtilities.dp(19) - nameOffsetX, AndroidUtilities.dp(10));
             if(AndroidUtilities.getBoolPref("chatMemberColorCheck")){
-                namePaint.setColor(AndroidUtilities.getIntDef("chatMemberColor", AndroidUtilities.getIntDarkerColor("themeColor", 0x15)));
+                namePaint.setColor(themePrefs.getInt("chatMemberColor", AndroidUtilities.getIntDarkerColor("themeColor", 0x15)));
             }else{
                 namePaint.setColor(AvatarDrawable.getNameColorForId(currentUser.id));
             }
@@ -737,11 +734,11 @@ public class ChatBaseCell extends BaseCell {
             forwardNameY = AndroidUtilities.dp(10 + (drawName ? 19 : 0));
             if (currentMessageObject.isOut()) {
                 //forwardNamePaint.setColor(0xff4a923c);
-                forwardNamePaint.setColor(AndroidUtilities.getIntDef("chatForwardColor", AndroidUtilities.getIntDarkerColor("themeColor", 0x15)));
+                forwardNamePaint.setColor(themePrefs.getInt("chatForwardColor", AndroidUtilities.getIntDarkerColor("themeColor", 0x15)));
                 forwardNameX = currentBackgroundDrawable.getBounds().left + AndroidUtilities.dp(10);
             } else {
                 //forwardNamePaint.setColor(0xff006fc8);
-                forwardNamePaint.setColor(AndroidUtilities.getIntDef("chatForwardColor", 0xff006fc8));
+                forwardNamePaint.setColor(themePrefs.getInt("chatForwardColor", 0xff006fc8));
                 forwardNameX = currentBackgroundDrawable.getBounds().left + AndroidUtilities.dp(19);
             }
             canvas.save();
@@ -774,13 +771,13 @@ public class ChatBaseCell extends BaseCell {
                 back.draw(canvas);
             } else {
                 if (currentMessageObject.isOut()) {
-                    int color = AndroidUtilities.getIntDef("chatForwardColor", AndroidUtilities.getIntDarkerColor("themeColor", 0x15));
+                    int color = themePrefs.getInt("chatForwardColor", AndroidUtilities.getIntDarkerColor("themeColor", 0x15));
                     replyLinePaint.setColor(color);//0xff8dc97a);
                     replyNamePaint.setColor(color);//0xff61a349);
                     replyTextPaint.setColor(color);//0xff70b15c);
                     replyStartX = currentBackgroundDrawable.getBounds().left + AndroidUtilities.dp(11);
                 } else {
-                    int color = AndroidUtilities.getIntDef("chatForwardColor", 0xff999999);
+                    int color = themePrefs.getInt("chatForwardColor", 0xff999999);
                     replyLinePaint.setColor(color);//0xff6c9fd2);
                     replyNamePaint.setColor(color);//0xff377aae);
                     replyTextPaint.setColor(color);//0xff999999);
@@ -857,7 +854,7 @@ public class ChatBaseCell extends BaseCell {
                 }
 
                 if (drawClock) {
-                    clockDrawable = clockMediaDrawable = clockDrawableWhite;
+                    clockDrawable = clockMediaDrawable;
                     if (!media) {
                         setDrawableBounds(clockDrawable, layoutWidth - AndroidUtilities.dp(18.5f) - clockDrawable.getIntrinsicWidth(), layoutHeight - AndroidUtilities.dp(8.5f) - clockDrawable.getIntrinsicHeight());
                         clockDrawable.draw(canvas);
@@ -878,7 +875,7 @@ public class ChatBaseCell extends BaseCell {
                     }
                 } else {
                     if (drawCheck2) {
-                        checkDrawable = checkMediaDrawable = checkDrawableWhite;
+                        checkDrawable = checkMediaDrawable;
                         if (!media) {
                             if (drawCheck1) {
                                 setDrawableBounds(checkDrawable, layoutWidth - AndroidUtilities.dp(22.5f) - checkDrawable.getIntrinsicWidth(), layoutHeight - AndroidUtilities.dp(8.5f) - checkDrawable.getIntrinsicHeight());
@@ -896,7 +893,7 @@ public class ChatBaseCell extends BaseCell {
                         }
                     }
                     if (drawCheck1) {
-                        halfCheckDrawable = halfCheckMediaDrawable = halfCheckDrawableWhite;
+                        halfCheckDrawable = halfCheckMediaDrawable;
                         if (!media) {
                             setDrawableBounds(halfCheckDrawable, layoutWidth - AndroidUtilities.dp(18) - halfCheckDrawable.getIntrinsicWidth(), layoutHeight - AndroidUtilities.dp(8.5f) - halfCheckDrawable.getIntrinsicHeight());
                             halfCheckDrawable.draw(canvas);

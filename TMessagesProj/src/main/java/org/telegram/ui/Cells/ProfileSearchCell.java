@@ -30,6 +30,7 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.ui.Components.AvatarDrawable;
 
 public class ProfileSearchCell extends BaseCell {
+
     private static TextPaint namePaint;
     private static TextPaint nameEncryptedPaint;
     private static TextPaint onlinePaint;
@@ -79,7 +80,8 @@ public class ProfileSearchCell extends BaseCell {
         if (namePaint == null) {
             namePaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
             namePaint.setTextSize(AndroidUtilities.dp(17));
-            namePaint.setColor(0xff212121);
+            //namePaint.setColor(0xff212121);
+            namePaint.setColor(AndroidUtilities.getIntDef("chatsNameColor", 0xff212121));
             namePaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
 
             nameEncryptedPaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);

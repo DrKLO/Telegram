@@ -55,9 +55,6 @@ import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.Adapters.BaseFragmentAdapter;
-import org.telegram.ui.AnimationCompat.AnimatorListenerAdapterProxy;
-import org.telegram.ui.AnimationCompat.AnimatorSetProxy;
-import org.telegram.ui.AnimationCompat.ObjectAnimatorProxy;
 import org.telegram.ui.Cells.TextCheckCell;
 import org.telegram.ui.Cells.TextInfoPrivacyCell;
 import org.telegram.ui.Cells.TextSettingsCell;
@@ -111,297 +108,295 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
     }
 
     @Override
-    public View createView(LayoutInflater inflater) {
-        if (fragmentView == null) {
-            if (type != 3) {
-                actionBar.setBackButtonImage(R.drawable.ic_ab_back);
+    public View createView(Context context, LayoutInflater inflater) {
+        if (type != 3) {
+            actionBar.setBackButtonImage(R.drawable.ic_ab_back);
+        }
+        actionBar.setAllowOverlayTitle(false);
+        actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
+            @Override
+            public void onItemClick(int id) {
+                if (id == -1) {
+                    finishFragment();
+                } else if (id == done_button) {
+                    if (passwordEditText.getImeOptions() == EditorInfo.IME_ACTION_NEXT) {
+                        processNext();
+                    } else if (passwordEditText.getImeOptions() == EditorInfo.IME_ACTION_DONE) {
+                        processDone();
+                    }
+                } else if (id == pin_item) {
+                    currentPasswordType = 0;
+                    updateDropDownTextView();
+                } else if (id == password_item) {
+                    currentPasswordType = 1;
+                    updateDropDownTextView();
+                }
             }
-            actionBar.setAllowOverlayTitle(false);
-            actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
+        });
+
+        fragmentView = new FrameLayout(context);
+        FrameLayout frameLayout = (FrameLayout) fragmentView;
+
+        if (type != 0) {
+            ActionBarMenu menu = actionBar.createMenu();
+            menu.addItemWithWidth(done_button, R.drawable.ic_done, AndroidUtilities.dp(56));
+
+            titleTextView = new TextView(context);
+            titleTextView.setTextColor(0xff757575);
+            if (type == 1) {
+                if (UserConfig.passcodeHash.length() != 0) {
+                    titleTextView.setText(LocaleController.getString("EnterNewPasscode", R.string.EnterNewPasscode));
+                } else {
+                    titleTextView.setText(LocaleController.getString("EnterNewFirstPasscode", R.string.EnterNewFirstPasscode));
+                }
+            } else {
+                titleTextView.setText(LocaleController.getString("EnterCurrentPasscode", R.string.EnterCurrentPasscode));
+            }
+            titleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
+            titleTextView.setGravity(Gravity.CENTER_HORIZONTAL);
+            frameLayout.addView(titleTextView);
+            FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) titleTextView.getLayoutParams();
+            layoutParams.width = FrameLayout.LayoutParams.WRAP_CONTENT;
+            layoutParams.height = FrameLayout.LayoutParams.WRAP_CONTENT;
+            layoutParams.gravity = Gravity.CENTER_HORIZONTAL;
+            layoutParams.topMargin = AndroidUtilities.dp(38);
+            titleTextView.setLayoutParams(layoutParams);
+
+            passwordEditText = new EditText(context);
+            passwordEditText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
+            passwordEditText.setTextColor(0xff000000);
+            passwordEditText.setMaxLines(1);
+            passwordEditText.setLines(1);
+            passwordEditText.setGravity(Gravity.CENTER_HORIZONTAL);
+            passwordEditText.setSingleLine(true);
+            if (type == 1) {
+                passwordEditText.setImeOptions(EditorInfo.IME_ACTION_NEXT);
+            } else {
+                passwordEditText.setImeOptions(EditorInfo.IME_ACTION_DONE);
+            }
+            passwordEditText.setTransformationMethod(PasswordTransformationMethod.getInstance());
+            passwordEditText.setTypeface(Typeface.DEFAULT);
+            AndroidUtilities.clearCursorDrawable(passwordEditText);
+            frameLayout.addView(passwordEditText);
+            layoutParams = (FrameLayout.LayoutParams) passwordEditText.getLayoutParams();
+            layoutParams.topMargin = AndroidUtilities.dp(90);
+            layoutParams.height = AndroidUtilities.dp(36);
+            layoutParams.leftMargin = AndroidUtilities.dp(40);
+            layoutParams.gravity = Gravity.TOP | Gravity.LEFT;
+            layoutParams.rightMargin = AndroidUtilities.dp(40);
+            layoutParams.width = LinearLayout.LayoutParams.MATCH_PARENT;
+            passwordEditText.setLayoutParams(layoutParams);
+            passwordEditText.setOnEditorActionListener(new TextView.OnEditorActionListener() {
                 @Override
-                public void onItemClick(int id) {
-                    if (id == -1) {
-                        finishFragment();
-                    } else if (id == done_button) {
-                        if (passwordEditText.getImeOptions() == EditorInfo.IME_ACTION_NEXT) {
-                            processNext();
-                        } else if (passwordEditText.getImeOptions() == EditorInfo.IME_ACTION_DONE) {
+                public boolean onEditorAction(TextView textView, int i, KeyEvent keyEvent) {
+                    if (i == EditorInfo.IME_ACTION_NEXT) {
+                        processNext();
+                        return true;
+                    } else if (i == EditorInfo.IME_ACTION_DONE) {
+                        processDone();
+                        return true;
+                    }
+                    return false;
+                }
+            });
+            passwordEditText.addTextChangedListener(new TextWatcher() {
+                @Override
+                public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+
+                }
+
+                @Override
+                public void onTextChanged(CharSequence s, int start, int before, int count) {
+
+                }
+
+                @Override
+                public void afterTextChanged(Editable s) {
+                    if (passwordEditText.length() == 4) {
+                        if (type == 2 && UserConfig.passcodeType == 0) {
                             processDone();
+                        } else if (type == 1 && currentPasswordType == 0) {
+                            if (passwordEditText.getImeOptions() == EditorInfo.IME_ACTION_NEXT) {
+                                processNext();
+                            } else if (passwordEditText.getImeOptions() == EditorInfo.IME_ACTION_DONE) {
+                                processDone();
+                            }
                         }
-                    } else if (id == pin_item) {
-                        currentPasswordType = 0;
-                        updateDropDownTextView();
-                    } else if (id == password_item) {
-                        currentPasswordType = 1;
-                        updateDropDownTextView();
                     }
                 }
             });
+            if (android.os.Build.VERSION.SDK_INT < 11) {
+                passwordEditText.setOnCreateContextMenuListener(new View.OnCreateContextMenuListener() {
+                    public void onCreateContextMenu(ContextMenu menu, View v, ContextMenu.ContextMenuInfo menuInfo) {
+                        menu.clear();
+                    }
+                });
+            } else {
+                passwordEditText.setCustomSelectionActionModeCallback(new ActionMode.Callback() {
+                    public boolean onPrepareActionMode(ActionMode mode, Menu menu) {
+                        return false;
+                    }
 
-            fragmentView = new FrameLayout(getParentActivity());
-            FrameLayout frameLayout = (FrameLayout) fragmentView;
+                    public void onDestroyActionMode(ActionMode mode) {
+                    }
 
-            if (type != 0) {
-                ActionBarMenu menu = actionBar.createMenu();
-                menu.addItemWithWidth(done_button, R.drawable.ic_done, AndroidUtilities.dp(56));
+                    public boolean onCreateActionMode(ActionMode mode, Menu menu) {
+                        return false;
+                    }
 
-                titleTextView = new TextView(getParentActivity());
-                titleTextView.setTextColor(0xff757575);
-                if (type == 1) {
-                    titleTextView.setText(LocaleController.getString("EnterNewPasscode", R.string.EnterNewPasscode));
-                } else {
-                    titleTextView.setText(LocaleController.getString("EnterCurrentPasscode", R.string.EnterCurrentPasscode));
-                }
-                titleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
-                titleTextView.setGravity(Gravity.CENTER_HORIZONTAL);
-                frameLayout.addView(titleTextView);
-                FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) titleTextView.getLayoutParams();
-                layoutParams.width = FrameLayout.LayoutParams.WRAP_CONTENT;
-                layoutParams.height = FrameLayout.LayoutParams.WRAP_CONTENT;
-                layoutParams.gravity = Gravity.CENTER_HORIZONTAL;
-                layoutParams.topMargin = AndroidUtilities.dp(38);
-                titleTextView.setLayoutParams(layoutParams);
-
-                passwordEditText = new EditText(getParentActivity());
-                passwordEditText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
-                passwordEditText.setTextColor(0xff000000);
-                passwordEditText.setMaxLines(1);
-                passwordEditText.setLines(1);
-                passwordEditText.setGravity(Gravity.CENTER_HORIZONTAL);
-                passwordEditText.setSingleLine(true);
-                if (type == 1) {
-                    passwordEditText.setImeOptions(EditorInfo.IME_ACTION_NEXT);
-                } else {
-                    passwordEditText.setImeOptions(EditorInfo.IME_ACTION_DONE);
-                }
-                passwordEditText.setTransformationMethod(PasswordTransformationMethod.getInstance());
-                passwordEditText.setTypeface(Typeface.DEFAULT);
-                AndroidUtilities.clearCursorDrawable(passwordEditText);
-                frameLayout.addView(passwordEditText);
-                layoutParams = (FrameLayout.LayoutParams) passwordEditText.getLayoutParams();
-                layoutParams.topMargin = AndroidUtilities.dp(90);
-                layoutParams.height = AndroidUtilities.dp(36);
-                layoutParams.leftMargin = AndroidUtilities.dp(40);
-                layoutParams.gravity = Gravity.TOP | Gravity.LEFT;
-                layoutParams.rightMargin = AndroidUtilities.dp(40);
-                layoutParams.width = LinearLayout.LayoutParams.MATCH_PARENT;
-                passwordEditText.setLayoutParams(layoutParams);
-                passwordEditText.setOnEditorActionListener(new TextView.OnEditorActionListener() {
-                    @Override
-                    public boolean onEditorAction(TextView textView, int i, KeyEvent keyEvent) {
-                        if (i == EditorInfo.IME_ACTION_NEXT) {
-                            processNext();
-                            return true;
-                        } else if (i == EditorInfo.IME_ACTION_DONE) {
-                            processDone();
-                            return true;
-                        }
+                    public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
                         return false;
                     }
                 });
-                passwordEditText.addTextChangedListener(new TextWatcher() {
+            }
+
+            if (type == 1) {
+                dropDownContainer = new ActionBarMenuItem(context, menu, R.drawable.bar_selector);
+                dropDownContainer.setSubMenuOpenSide(1);
+                dropDownContainer.addSubItem(pin_item, LocaleController.getString("PasscodePIN", R.string.PasscodePIN), 0);
+                dropDownContainer.addSubItem(password_item, LocaleController.getString("PasscodePassword", R.string.PasscodePassword), 0);
+                actionBar.addView(dropDownContainer);
+                layoutParams = (FrameLayout.LayoutParams) dropDownContainer.getLayoutParams();
+                layoutParams.height = FrameLayout.LayoutParams.MATCH_PARENT;
+                layoutParams.width = FrameLayout.LayoutParams.WRAP_CONTENT;
+                layoutParams.rightMargin = AndroidUtilities.dp(40);
+                layoutParams.leftMargin = AndroidUtilities.isTablet() ? AndroidUtilities.dp(64) : AndroidUtilities.dp(56);
+                layoutParams.gravity = Gravity.TOP | Gravity.LEFT;
+                dropDownContainer.setLayoutParams(layoutParams);
+                dropDownContainer.setOnClickListener(new View.OnClickListener() {
                     @Override
-                    public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-
-                    }
-
-                    @Override
-                    public void onTextChanged(CharSequence s, int start, int before, int count) {
-
-                    }
-
-                    @Override
-                    public void afterTextChanged(Editable s) {
-                        if (passwordEditText.length() == 4) {
-                            if (type == 2 && UserConfig.passcodeType == 0) {
-                                processDone();
-                            } else if (type == 1 && currentPasswordType == 0) {
-                                if (passwordEditText.getImeOptions() == EditorInfo.IME_ACTION_NEXT) {
-                                    processNext();
-                                } else if (passwordEditText.getImeOptions() == EditorInfo.IME_ACTION_DONE) {
-                                    processDone();
-                                }
-                            }
-                        }
+                    public void onClick(View view) {
+                        dropDownContainer.toggleSubMenu();
                     }
                 });
-                if (android.os.Build.VERSION.SDK_INT < 11) {
-                    passwordEditText.setOnCreateContextMenuListener(new View.OnCreateContextMenuListener() {
-                        public void onCreateContextMenu(ContextMenu menu, View v, ContextMenu.ContextMenuInfo menuInfo) {
-                            menu.clear();
-                        }
-                    });
-                } else {
-                    passwordEditText.setCustomSelectionActionModeCallback(new ActionMode.Callback() {
-                        public boolean onPrepareActionMode(ActionMode mode, Menu menu) {
-                            return false;
-                        }
 
-                        public void onDestroyActionMode(ActionMode mode) {
-                        }
-
-                        public boolean onCreateActionMode(ActionMode mode, Menu menu) {
-                            return false;
-                        }
-
-                        public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
-                            return false;
-                        }
-                    });
-                }
-
-                if (type == 1) {
-                    dropDownContainer = new ActionBarMenuItem(getParentActivity(), menu, R.drawable.bar_selector);
-                    dropDownContainer.setSubMenuOpenSide(1);
-                    dropDownContainer.addSubItem(pin_item, LocaleController.getString("PasscodePIN", R.string.PasscodePIN), 0);
-                    dropDownContainer.addSubItem(password_item, LocaleController.getString("PasscodePassword", R.string.PasscodePassword), 0);
-                    actionBar.addView(dropDownContainer);
-                    layoutParams = (FrameLayout.LayoutParams) dropDownContainer.getLayoutParams();
-                    layoutParams.height = FrameLayout.LayoutParams.MATCH_PARENT;
-                    layoutParams.width = FrameLayout.LayoutParams.WRAP_CONTENT;
-                    layoutParams.rightMargin = AndroidUtilities.dp(40);
-                    layoutParams.leftMargin = AndroidUtilities.isTablet() ? AndroidUtilities.dp(64) : AndroidUtilities.dp(56);
-                    layoutParams.gravity = Gravity.TOP | Gravity.LEFT;
-                    dropDownContainer.setLayoutParams(layoutParams);
-                    dropDownContainer.setOnClickListener(new View.OnClickListener() {
-                        @Override
-                        public void onClick(View view) {
-                            dropDownContainer.toggleSubMenu();
-                        }
-                    });
-
-                    dropDown = new TextView(getParentActivity());
-                    dropDown.setGravity(Gravity.LEFT);
-                    dropDown.setSingleLine(true);
-                    dropDown.setLines(1);
-                    dropDown.setMaxLines(1);
-                    dropDown.setEllipsize(TextUtils.TruncateAt.END);
-                    dropDown.setTextColor(0xffffffff);
-                    dropDown.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
-                    dropDown.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.ic_arrow_drop_down, 0);
-                    dropDown.setCompoundDrawablePadding(AndroidUtilities.dp(4));
-                    dropDown.setPadding(0, 0, AndroidUtilities.dp(10), 0);
-                    dropDownContainer.addView(dropDown);
-                    layoutParams = (FrameLayout.LayoutParams) dropDown.getLayoutParams();
-                    layoutParams.width = FrameLayout.LayoutParams.WRAP_CONTENT;
-                    layoutParams.height = FrameLayout.LayoutParams.WRAP_CONTENT;
-                    layoutParams.leftMargin = AndroidUtilities.dp(16);
-                    layoutParams.gravity = Gravity.CENTER_VERTICAL;
-                    layoutParams.bottomMargin = AndroidUtilities.dp(1);
-                    dropDown.setLayoutParams(layoutParams);
-                } else {
-                    actionBar.setTitle(LocaleController.getString("Passcode", R.string.Passcode));
-                }
-
-                updateDropDownTextView();
+                dropDown = new TextView(context);
+                dropDown.setGravity(Gravity.LEFT);
+                dropDown.setSingleLine(true);
+                dropDown.setLines(1);
+                dropDown.setMaxLines(1);
+                dropDown.setEllipsize(TextUtils.TruncateAt.END);
+                dropDown.setTextColor(0xffffffff);
+                dropDown.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+                dropDown.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.ic_arrow_drop_down, 0);
+                dropDown.setCompoundDrawablePadding(AndroidUtilities.dp(4));
+                dropDown.setPadding(0, 0, AndroidUtilities.dp(10), 0);
+                dropDownContainer.addView(dropDown);
+                layoutParams = (FrameLayout.LayoutParams) dropDown.getLayoutParams();
+                layoutParams.width = FrameLayout.LayoutParams.WRAP_CONTENT;
+                layoutParams.height = FrameLayout.LayoutParams.WRAP_CONTENT;
+                layoutParams.leftMargin = AndroidUtilities.dp(16);
+                layoutParams.gravity = Gravity.CENTER_VERTICAL;
+                layoutParams.bottomMargin = AndroidUtilities.dp(1);
+                dropDown.setLayoutParams(layoutParams);
             } else {
                 actionBar.setTitle(LocaleController.getString("Passcode", R.string.Passcode));
-                frameLayout.setBackgroundColor(0xfff0f0f0);
-                listView = new ListView(getParentActivity());
-                listView.setDivider(null);
-                listView.setDividerHeight(0);
-                listView.setVerticalScrollBarEnabled(false);
-                listView.setDrawSelectorOnTop(true);
-                frameLayout.addView(listView);
-                FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) listView.getLayoutParams();
-                layoutParams.width = FrameLayout.LayoutParams.MATCH_PARENT;
-                layoutParams.height = FrameLayout.LayoutParams.MATCH_PARENT;
-                layoutParams.gravity = Gravity.TOP;
-                listView.setLayoutParams(layoutParams);
-                listView.setAdapter(listAdapter = new ListAdapter(getParentActivity()));
-                listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-                    @Override
-                    public void onItemClick(AdapterView<?> adapterView, View view, final int i, long l) {
-                        if (i == changePasscodeRow) {
-                            presentFragment(new PasscodeActivity(1));
-                        } else if (i == passcodeRow) {
-                            TextCheckCell cell = (TextCheckCell) view;
-                            if (UserConfig.passcodeHash.length() != 0) {
-                                UserConfig.passcodeHash = "";
-                                UserConfig.appLocked = false;
-                                UserConfig.saveConfig(false);
-                                int count = listView.getChildCount();
-                                for (int a = 0; a < count; a++) {
-                                    View child = listView.getChildAt(a);
-                                    if (child instanceof TextSettingsCell) {
-                                        TextSettingsCell textCell = (TextSettingsCell) child;
-                                        textCell.setTextColor(0xffc6c6c6);
-                                        break;
-                                    }
-                                }
-                                cell.setChecked(UserConfig.passcodeHash.length() != 0);
-                                NotificationCenter.getInstance().postNotificationName(NotificationCenter.didSetPasscode);
-                            } else {
-                                presentFragment(new PasscodeActivity(1));
-                            }
-                        } else if (i == autoLockRow) {
-                            if (getParentActivity() == null) {
-                                return;
-                            }
-                            AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-                            builder.setTitle(LocaleController.getString("AutoLock", R.string.AutoLock));
-                            final NumberPicker numberPicker = new NumberPicker(getParentActivity());
-                            numberPicker.setMinValue(0);
-                            numberPicker.setMaxValue(4);
-                            if (UserConfig.autoLockIn == 0) {
-                                numberPicker.setValue(0);
-                            } else if (UserConfig.autoLockIn == 60) {
-                                numberPicker.setValue(1);
-                            } else if (UserConfig.autoLockIn == 60 * 5) {
-                                numberPicker.setValue(2);
-                            } else if (UserConfig.autoLockIn == 60 * 60) {
-                                numberPicker.setValue(3);
-                            } else if (UserConfig.autoLockIn == 60 * 60 * 5) {
-                                numberPicker.setValue(4);
-                            }
-                            numberPicker.setFormatter(new NumberPicker.Formatter() {
-                                @Override
-                                public String format(int value) {
-                                    if (value == 0) {
-                                        return LocaleController.getString("Disabled", R.string.Disabled);
-                                    } else if (value == 1) {
-                                        return LocaleController.formatString("AutoLockInTime", R.string.AutoLockInTime, LocaleController.formatPluralString("Minutes", 1));
-                                    } else if (value == 2) {
-                                        return LocaleController.formatString("AutoLockInTime", R.string.AutoLockInTime, LocaleController.formatPluralString("Minutes", 5));
-                                    } else if (value == 3) {
-                                        return LocaleController.formatString("AutoLockInTime", R.string.AutoLockInTime, LocaleController.formatPluralString("Hours", 1));
-                                    } else if (value == 4) {
-                                        return LocaleController.formatString("AutoLockInTime", R.string.AutoLockInTime, LocaleController.formatPluralString("Hours", 5));
-                                    }
-                                    return "";
-                                }
-                            });
-                            builder.setView(numberPicker);
-                            builder.setNegativeButton(LocaleController.getString("Done", R.string.Done), new DialogInterface.OnClickListener() {
-                                @Override
-                                public void onClick(DialogInterface dialog, int which) {
-                                    which = numberPicker.getValue();
-                                    if (which == 0) {
-                                        UserConfig.autoLockIn = 0;
-                                    } else if (which == 1) {
-                                        UserConfig.autoLockIn = 60;
-                                    } else if (which == 2) {
-                                        UserConfig.autoLockIn = 60 * 5;
-                                    } else if (which == 3) {
-                                        UserConfig.autoLockIn = 60 * 60;
-                                    } else if (which == 4) {
-                                        UserConfig.autoLockIn = 60 * 60 * 5;
-                                    }
-                                    listView.invalidateViews();
-                                    UserConfig.saveConfig(false);
-                                }
-                            });
-                            showAlertDialog(builder);
-                        }
-                    }
-                });
             }
+
+            updateDropDownTextView();
         } else {
-            ViewGroup parent = (ViewGroup)fragmentView.getParent();
-            if (parent != null) {
-                parent.removeView(fragmentView);
-            }
+            actionBar.setTitle(LocaleController.getString("Passcode", R.string.Passcode));
+            frameLayout.setBackgroundColor(0xfff0f0f0);
+            listView = new ListView(context);
+            listView.setDivider(null);
+            listView.setDividerHeight(0);
+            listView.setVerticalScrollBarEnabled(false);
+            listView.setDrawSelectorOnTop(true);
+            frameLayout.addView(listView);
+            FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) listView.getLayoutParams();
+            layoutParams.width = FrameLayout.LayoutParams.MATCH_PARENT;
+            layoutParams.height = FrameLayout.LayoutParams.MATCH_PARENT;
+            layoutParams.gravity = Gravity.TOP;
+            listView.setLayoutParams(layoutParams);
+            listView.setAdapter(listAdapter = new ListAdapter(context));
+            listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                @Override
+                public void onItemClick(AdapterView<?> adapterView, View view, final int i, long l) {
+                    if (i == changePasscodeRow) {
+                        presentFragment(new PasscodeActivity(1));
+                    } else if (i == passcodeRow) {
+                        TextCheckCell cell = (TextCheckCell) view;
+                        if (UserConfig.passcodeHash.length() != 0) {
+                            UserConfig.passcodeHash = "";
+                            UserConfig.appLocked = false;
+                            UserConfig.saveConfig(false);
+                            int count = listView.getChildCount();
+                            for (int a = 0; a < count; a++) {
+                                View child = listView.getChildAt(a);
+                                if (child instanceof TextSettingsCell) {
+                                    TextSettingsCell textCell = (TextSettingsCell) child;
+                                    textCell.setTextColor(0xffc6c6c6);
+                                    break;
+                                }
+                            }
+                            cell.setChecked(UserConfig.passcodeHash.length() != 0);
+                            NotificationCenter.getInstance().postNotificationName(NotificationCenter.didSetPasscode);
+                        } else {
+                            presentFragment(new PasscodeActivity(1));
+                        }
+                    } else if (i == autoLockRow) {
+                        if (getParentActivity() == null) {
+                            return;
+                        }
+                        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                        builder.setTitle(LocaleController.getString("AutoLock", R.string.AutoLock));
+                        final NumberPicker numberPicker = new NumberPicker(getParentActivity());
+                        numberPicker.setMinValue(0);
+                        numberPicker.setMaxValue(4);
+                        if (UserConfig.autoLockIn == 0) {
+                            numberPicker.setValue(0);
+                        } else if (UserConfig.autoLockIn == 60) {
+                            numberPicker.setValue(1);
+                        } else if (UserConfig.autoLockIn == 60 * 5) {
+                            numberPicker.setValue(2);
+                        } else if (UserConfig.autoLockIn == 60 * 60) {
+                            numberPicker.setValue(3);
+                        } else if (UserConfig.autoLockIn == 60 * 60 * 5) {
+                            numberPicker.setValue(4);
+                        }
+                        numberPicker.setFormatter(new NumberPicker.Formatter() {
+                            @Override
+                            public String format(int value) {
+                                if (value == 0) {
+                                    return LocaleController.getString("Disabled", R.string.Disabled);
+                                } else if (value == 1) {
+                                    return LocaleController.formatString("AutoLockInTime", R.string.AutoLockInTime, LocaleController.formatPluralString("Minutes", 1));
+                                } else if (value == 2) {
+                                    return LocaleController.formatString("AutoLockInTime", R.string.AutoLockInTime, LocaleController.formatPluralString("Minutes", 5));
+                                } else if (value == 3) {
+                                    return LocaleController.formatString("AutoLockInTime", R.string.AutoLockInTime, LocaleController.formatPluralString("Hours", 1));
+                                } else if (value == 4) {
+                                    return LocaleController.formatString("AutoLockInTime", R.string.AutoLockInTime, LocaleController.formatPluralString("Hours", 5));
+                                }
+                                return "";
+                            }
+                        });
+                        builder.setView(numberPicker);
+                        builder.setNegativeButton(LocaleController.getString("Done", R.string.Done), new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                which = numberPicker.getValue();
+                                if (which == 0) {
+                                    UserConfig.autoLockIn = 0;
+                                } else if (which == 1) {
+                                    UserConfig.autoLockIn = 60;
+                                } else if (which == 2) {
+                                    UserConfig.autoLockIn = 60 * 5;
+                                } else if (which == 3) {
+                                    UserConfig.autoLockIn = 60 * 60;
+                                } else if (which == 4) {
+                                    UserConfig.autoLockIn = 60 * 60 * 5;
+                                }
+                                listView.invalidateViews();
+                                UserConfig.saveConfig(false);
+                            }
+                        });
+                        showAlertDialog(builder);
+                    }
+                }
+            });
         }
+
         return fragmentView;
     }
 
@@ -526,7 +521,7 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
                 } catch (Exception e) {
                     FileLog.e("tmessages", e);
                 }
-                shakeTextView(2, 0);
+                AndroidUtilities.shakeTextView(titleTextView, 2, 0);
                 passwordEditText.setText("");
                 return;
             }
@@ -550,23 +545,6 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
         }
     }
 
-    private void shakeTextView(final float x, final int num) {
-        if (num == 6) {
-            titleTextView.clearAnimation();
-            return;
-        }
-        AnimatorSetProxy animatorSetProxy = new AnimatorSetProxy();
-        animatorSetProxy.playTogether(ObjectAnimatorProxy.ofFloat(titleTextView, "translationX", AndroidUtilities.dp(x)));
-        animatorSetProxy.setDuration(50);
-        animatorSetProxy.addListener(new AnimatorListenerAdapterProxy() {
-            @Override
-            public void onAnimationEnd(Object animation) {
-                shakeTextView(num == 5 ? 0 : -x, num + 1);
-            }
-        });
-        animatorSetProxy.start();
-    }
-
     private void onPasscodeError() {
         if (getParentActivity() == null) {
             return;
@@ -575,7 +553,7 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
         if (v != null) {
             v.vibrate(200);
         }
-        shakeTextView(2, 0);
+        AndroidUtilities.shakeTextView(titleTextView, 2, 0);
     }
 
     private void fixLayoutInternal() {

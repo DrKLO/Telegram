@@ -22,6 +22,7 @@ import android.provider.ContactsContract;
 import android.util.SparseArray;
 
 import org.telegram.PhoneFormat.PhoneFormat;
+import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLog;
@@ -31,7 +32,6 @@ import org.telegram.messenger.TLObject;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
-import org.telegram.messenger.ApplicationLoader;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -1773,7 +1773,7 @@ public class ContactsController {
     }
 
     public static String formatName(String firstName, String lastName) {
-        String result = null;
+        String result = "";
         if (LocaleController.nameDisplayOrder == 1) {
             result = firstName;
             if (result == null || result.length() == 0) {

@@ -8,7 +8,6 @@
 
 package org.telegram.ui;
 
-import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -89,7 +88,7 @@ public class ThemingContactsActivity extends BaseFragment {
     }
 
     @Override
-    public View createView(LayoutInflater inflater) {
+    public View createView(Context context, LayoutInflater inflater) {
         if (fragmentView == null) {
 
             actionBar.setItemsBackground(AvatarDrawable.getButtonColorForId(5));
@@ -109,12 +108,12 @@ public class ThemingContactsActivity extends BaseFragment {
                 }
             });
 
-            listAdapter = new ListAdapter(getParentActivity());
+            listAdapter = new ListAdapter(context);
 
-            fragmentView = new FrameLayout(getParentActivity());
+            fragmentView = new FrameLayout(context);
             FrameLayout frameLayout = (FrameLayout) fragmentView;
 
-            listView = new ListView(getParentActivity());
+            listView = new ListView(context);
             listView.setDivider(null);
             listView.setDividerHeight(0);
             listView.setVerticalScrollBarEnabled(false);

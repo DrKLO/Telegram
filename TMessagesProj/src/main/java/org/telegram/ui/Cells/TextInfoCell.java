@@ -15,7 +15,6 @@ import android.widget.FrameLayout;
 import android.widget.TextView;
 
 import org.telegram.android.AndroidUtilities;
-import org.telegram.android.LocaleController;
 import org.telegram.ui.LaunchActivity;
 
 public class TextInfoCell extends FrameLayout {

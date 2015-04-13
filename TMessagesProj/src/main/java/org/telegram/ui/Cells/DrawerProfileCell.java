@@ -10,6 +10,7 @@ package org.telegram.ui.Cells;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
@@ -64,7 +65,7 @@ public class DrawerProfileCell extends FrameLayout implements PhotoViewer.PhotoV
         shadowView.setLayoutParams(layoutParams);
 
         avatarImageView = new BackupImageView(context);
-        avatarImageView.imageReceiver.setRoundRadius(AndroidUtilities.dp(32));
+        avatarImageView.getImageReceiver().setRoundRadius(AndroidUtilities.dp(32));
         addView(avatarImageView);
         layoutParams = (LayoutParams) avatarImageView.getLayoutParams();
         layoutParams.width = AndroidUtilities.dp(64);
@@ -197,11 +198,11 @@ public class DrawerProfileCell extends FrameLayout implements PhotoViewer.PhotoV
                 object.viewX = coords[0];
                 object.viewY = coords[1] - AndroidUtilities.statusBarHeight;
                 object.parentView = avatarImageView;
-                object.imageReceiver = avatarImageView.imageReceiver;
+                object.imageReceiver = avatarImageView.getImageReceiver();
                 object.user_id = UserConfig.getClientUserId();
                 object.thumb = object.imageReceiver.getBitmap();
                 object.size = -1;
-                object.radius = avatarImageView.imageReceiver.getRoundRadius();
+                object.radius = avatarImageView.getImageReceiver().getRoundRadius();
                 return object;
             }
         }
@@ -218,7 +219,7 @@ public class DrawerProfileCell extends FrameLayout implements PhotoViewer.PhotoV
 
     @Override
     public void willHidePhotoViewer() {
-        avatarImageView.imageReceiver.setVisible(true, true);
+        avatarImageView.getImageReceiver().setVisible(true, true);
     }
 
     @Override
@@ -237,23 +238,24 @@ public class DrawerProfileCell extends FrameLayout implements PhotoViewer.PhotoV
     public int getSelectedCount() { return 0; }
 
     private void updateTheme(){
-        int tColor = AndroidUtilities.getIntColor("themeColor");
+        SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+        int tColor = themePrefs.getInt("themeColor", AndroidUtilities.defColor);
         int dColor = AndroidUtilities.getIntDarkerColor("themeColor",-0x40);
-        setBackgroundColor(AndroidUtilities.getIntDef("drawerHeaderColor", tColor));
-        nameTextView.setTextColor(AndroidUtilities.getIntDef("drawerNameColor", 0xffffffff));
-        nameTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, AndroidUtilities.getIntDef("drawerNameSize", 15));
-        phoneTextView.setTextColor(AndroidUtilities.getIntDef("drawerPhoneColor", dColor));
-        phoneTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, AndroidUtilities.getIntDef("drawerPhoneSize", 13));
+        setBackgroundColor(themePrefs.getInt("drawerHeaderColor", tColor));
+        nameTextView.setTextColor(themePrefs.getInt("drawerNameColor", 0xffffffff));
+        nameTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, themePrefs.getInt("drawerNameSize", 15));
+        phoneTextView.setTextColor(themePrefs.getInt("drawerPhoneColor", dColor));
+        phoneTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, themePrefs.getInt("drawerPhoneSize", 13));
         TLRPC.User user = MessagesController.getInstance().getUser(UserConfig.getClientUserId());
         TLRPC.FileLocation photo = null;
         if (user != null && user.photo != null && user.photo.photo_small != null ) {
             photo = user.photo.photo_small;
         }
         AvatarDrawable avatarDrawable = new AvatarDrawable(user);
-        avatarDrawable.setColor(AndroidUtilities.getIntDef("drawerAvatarColor",AndroidUtilities.getIntDarkerColor("themeColor", 0x15)));
-        int radius = AndroidUtilities.dp(AndroidUtilities.getIntDef("drawerAvatarRadius", 32));
+        avatarDrawable.setColor(themePrefs.getInt("drawerAvatarColor", AndroidUtilities.getIntDarkerColor("themeColor", 0x15)));
+        int radius = AndroidUtilities.dp(themePrefs.getInt("drawerAvatarRadius", 32));
         avatarDrawable.setRadius(radius);
-        avatarImageView.imageReceiver.setRoundRadius(radius);
+        avatarImageView.getImageReceiver().setRoundRadius(radius);
         avatarImageView.setImage(photo, "50_50", avatarDrawable);
         if(AndroidUtilities.getBoolMain("hideMobile")){
             phoneTextView.setVisibility(GONE);

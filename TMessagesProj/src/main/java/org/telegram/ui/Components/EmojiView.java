@@ -9,6 +9,7 @@
 package org.telegram.ui.Components;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.database.DataSetObserver;
 import android.support.v4.view.PagerAdapter;
 import android.support.v4.view.ViewPager;
@@ -26,12 +27,14 @@ import android.widget.TextView;
 import org.telegram.android.AndroidUtilities;
 import org.telegram.android.Emoji;
 import org.telegram.android.LocaleController;
+import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.R;
 
 import java.util.ArrayList;
 
 public class EmojiView extends LinearLayout {
-    private ArrayList<EmojiGridAdapter> adapters = new ArrayList<EmojiGridAdapter>();
+
+    private ArrayList<EmojiGridAdapter> adapters = new ArrayList<>();
     private int[] icons = {
             R.drawable.ic_emoji_recent,
             R.drawable.ic_emoji_smile,
@@ -42,7 +45,7 @@ public class EmojiView extends LinearLayout {
     private Listener listener;
     private ViewPager pager;
     private FrameLayout recentsWrap;
-    private ArrayList<GridView> views = new ArrayList<GridView>();
+    private ArrayList<GridView> views = new ArrayList<>();
 
     public EmojiView(Context paramContext) {
         super(paramContext);
@@ -63,7 +66,7 @@ public class EmojiView extends LinearLayout {
         if (this.pager.getCurrentItem() == 0) {
             return;
         }
-        ArrayList<Long> localArrayList = new ArrayList<Long>();
+        ArrayList<Long> localArrayList = new ArrayList<>();
         long[] currentRecent = Emoji.data[0];
         boolean was = false;
         for (long aCurrentRecent : currentRecent) {
@@ -163,12 +166,13 @@ public class EmojiView extends LinearLayout {
     }
 
     private void updateTheme(PagerSlidingTabStrip tabs) {
-        setBackgroundColor(AndroidUtilities.getIntDef("chatEmojiViewBGColor",0xff222222));
-        tabs.setIndicatorColor(AndroidUtilities.getIntDef("chatEmojiViewTabColor",AndroidUtilities.getIntDarkerColor("themeColor",0x15)));//0xff33b5e5
+        SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+        setBackgroundColor(themePrefs.getInt("chatEmojiViewBGColor", 0xff222222));
+        tabs.setIndicatorColor(themePrefs.getInt("chatEmojiViewTabColor",AndroidUtilities.getIntDarkerColor("themeColor",0x15)));//0xff33b5e5
     }
 
     private void saveRecents() {
-        ArrayList<Long> localArrayList = new ArrayList<Long>();
+        ArrayList<Long> localArrayList = new ArrayList<>();
         long[] arrayOfLong = Emoji.data[0];
         int i = arrayOfLong.length;
         for (int j = 0; ; j++) {

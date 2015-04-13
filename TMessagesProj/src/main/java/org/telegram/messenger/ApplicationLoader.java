@@ -33,13 +33,13 @@ import com.google.android.gms.gcm.GoogleCloudMessaging;
 
 import org.telegram.android.AndroidUtilities;
 import org.telegram.android.ContactsController;
-import org.telegram.android.MediaController;
-import org.telegram.android.NotificationsService;
-import org.telegram.android.SendMessagesHelper;
 import org.telegram.android.LocaleController;
+import org.telegram.android.MediaController;
 import org.telegram.android.MessagesController;
 import org.telegram.android.NativeLoader;
+import org.telegram.android.NotificationsService;
 import org.telegram.android.ScreenReceiver;
+import org.telegram.android.SendMessagesHelper;
 import org.telegram.ui.Components.ForegroundDetector;
 
 import java.io.File;
@@ -65,6 +65,8 @@ public class ApplicationLoader extends Application {
 
     public static volatile boolean isScreenOn = false;
     public static volatile boolean mainInterfacePaused = true;
+
+    public static boolean SHOW_ANDROID_EMOJI;
 
     public static boolean isCustomTheme() {
         return isCustomTheme;
@@ -192,6 +194,9 @@ public class ApplicationLoader extends Application {
         }
 
         applicationHandler = new Handler(applicationContext.getMainLooper());
+
+        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+        SHOW_ANDROID_EMOJI = preferences.getBoolean("showAndroidEmoji", false);
 
         startPushService();
     }

@@ -10,20 +10,16 @@ package org.telegram.ui;
 
 import android.animation.ObjectAnimator;
 import android.animation.StateListAnimator;
-import android.app.Activity;
 import android.app.AlertDialog;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
-import android.content.res.Resources;
-import android.graphics.Color;
 import android.graphics.Outline;
 import android.graphics.PorterDuff;
-import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
@@ -34,7 +30,6 @@ import android.view.ViewTreeObserver;
 import android.view.animation.AccelerateDecelerateInterpolator;
 import android.widget.AbsListView;
 import android.widget.AdapterView;
-import android.widget.BaseAdapter;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.FrameLayout;
@@ -43,29 +38,29 @@ import android.widget.ListView;
 import android.widget.TextView;
 
 import org.telegram.android.AndroidUtilities;
+import org.telegram.android.ContactsController;
 import org.telegram.android.LocaleController;
 import org.telegram.android.MessageObject;
-import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.FileLog;
-import org.telegram.messenger.TLRPC;
-import org.telegram.android.ContactsController;
 import org.telegram.android.MessagesController;
 import org.telegram.android.MessagesStorage;
 import org.telegram.android.NotificationCenter;
+import org.telegram.messenger.ApplicationLoader;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
+import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.UserConfig;
-import org.telegram.ui.Adapters.BaseFragmentAdapter;
-import org.telegram.ui.Adapters.DialogsAdapter;
-import org.telegram.ui.Adapters.DialogsSearchAdapter;
-import org.telegram.ui.AnimationCompat.ObjectAnimatorProxy;
-import org.telegram.ui.AnimationCompat.ViewProxy;
-import org.telegram.ui.Cells.UserCell;
-import org.telegram.ui.Cells.DialogCell;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.MenuDrawable;
+import org.telegram.ui.Adapters.BaseFragmentAdapter;
+import org.telegram.ui.Adapters.DialogsAdapter;
+import org.telegram.ui.Adapters.DialogsSearchAdapter;
+import org.telegram.ui.AnimationCompat.ObjectAnimatorProxy;
+import org.telegram.ui.AnimationCompat.ViewProxy;
+import org.telegram.ui.Cells.DialogCell;
+import org.telegram.ui.Cells.UserCell;
 
 import java.util.ArrayList;
 
@@ -165,15 +160,14 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
     }
 
     @Override
-    public View createView(LayoutInflater inflater) {
-        if (fragmentView == null) {
+    public View createView(Context context, LayoutInflater inflater) {
             searching = false;
             searchWas = false;
-
+            SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
             ActionBarMenu menu = actionBar.createMenu();
             if (!onlySelect && searchString == null) {
                 Drawable lock = getParentActivity().getResources().getDrawable(R.drawable.lock_close);
-                lock.setColorFilter(AndroidUtilities.getIntDef("chatsHeaderIconsColor", 0xffffffff), PorterDuff.Mode.MULTIPLY);
+                lock.setColorFilter(themePrefs.getInt("chatsHeaderIconsColor", 0xffffffff), PorterDuff.Mode.MULTIPLY);
                 passcodeItem = menu.addItem(passcode_menu_item, lock);
                 updatePasscodeButton();
             }
@@ -257,11 +251,11 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                 }
             });
             item.getSearchField().setHint(LocaleController.getString("Search", R.string.Search));
-            item.getSearchField().setTextColor(AndroidUtilities.getIntDef("chatsHeaderTitleColor", 0xffffffff));
+            item.getSearchField().setTextColor(themePrefs.getInt("chatsHeaderTitleColor", 0xffffffff));
             if (onlySelect) {
                 //actionBar.setBackButtonImage(R.drawable.ic_ab_back);
                 Drawable back = getParentActivity().getResources().getDrawable(R.drawable.ic_ab_back);
-                back.setColorFilter(AndroidUtilities.getIntDef("chatsHeaderIconsColor", 0xffffffff), PorterDuff.Mode.MULTIPLY);
+                back.setColorFilter(themePrefs.getInt("chatsHeaderIconsColor", 0xffffffff), PorterDuff.Mode.MULTIPLY);
                 actionBar.setBackButtonDrawable(back);
                 actionBar.setTitle(LocaleController.getString("SelectChat", R.string.SelectChat));
             } else {
@@ -294,7 +288,7 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
             fragmentView = inflater.inflate(R.layout.messages_list, null, false);
 
             if (searchString == null) {
-            dialogsAdapter = new DialogsAdapter(getParentActivity(), serverOnly);
+            dialogsAdapter = new DialogsAdapter(context, serverOnly);
             if (AndroidUtilities.isTablet() && openedDialogId != 0) {
                 dialogsAdapter.setOpenedDialogId(openedDialogId);
             }
@@ -305,7 +299,7 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
             } else if (!onlySelect) {
                 type = 1;
             }
-            dialogsSearchAdapter = new DialogsSearchAdapter(getParentActivity(), type);
+        dialogsSearchAdapter = new DialogsSearchAdapter(context, type);
             dialogsSearchAdapter.setDelegate(new DialogsSearchAdapter.MessagesActivitySearchAdapterDelegate() {
                 @Override
                 public void searchStateChanged(boolean search) {
@@ -317,7 +311,7 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                 }
             });
 
-            messagesListView = (ListView)fragmentView.findViewById(R.id.messages_list_view);
+        messagesListView = (ListView) fragmentView.findViewById(R.id.messages_list_view);
             if (dialogsAdapter != null) {
             messagesListView.setAdapter(dialogsAdapter);
             }
@@ -342,15 +336,15 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
             });
 
 
-            TextView textView = (TextView)fragmentView.findViewById(R.id.list_empty_view_text1);
+        TextView textView = (TextView) fragmentView.findViewById(R.id.list_empty_view_text1);
             textView.setText(LocaleController.getString("NoChats", R.string.NoChats));
-            textView = (TextView)fragmentView.findViewById(R.id.list_empty_view_text2);
+        textView = (TextView) fragmentView.findViewById(R.id.list_empty_view_text2);
             String help = LocaleController.getString("NoChatsHelp", R.string.NoChatsHelp);
             if (AndroidUtilities.isTablet() && !AndroidUtilities.isSmallTablet()) {
                 help = help.replace("\n", " ");
             }
             textView.setText(help);
-            textView = (TextView)fragmentView.findViewById(R.id.search_empty_text);
+        textView = (TextView) fragmentView.findViewById(R.id.search_empty_text);
             textView.setText(LocaleController.getString("NoResult", R.string.NoResult));
 
             floatingButton = (ImageView) fragmentView.findViewById(R.id.floating_button);
@@ -358,8 +352,8 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
             floatingButton.setScaleType(ImageView.ScaleType.CENTER);
             if (Build.VERSION.SDK_INT >= 21) {
                 StateListAnimator animator = new StateListAnimator();
-                animator.addState(new int[] {android.R.attr.state_pressed}, ObjectAnimator.ofFloat(floatingButton, "translationZ", AndroidUtilities.dp(2), AndroidUtilities.dp(4)).setDuration(200));
-                animator.addState(new int[] {}, ObjectAnimator.ofFloat(floatingButton, "translationZ", AndroidUtilities.dp(4), AndroidUtilities.dp(2)).setDuration(200));
+            animator.addState(new int[]{android.R.attr.state_pressed}, ObjectAnimator.ofFloat(floatingButton, "translationZ", AndroidUtilities.dp(2), AndroidUtilities.dp(4)).setDuration(200));
+            animator.addState(new int[]{}, ObjectAnimator.ofFloat(floatingButton, "translationZ", AndroidUtilities.dp(4), AndroidUtilities.dp(2)).setDuration(200));
                 floatingButton.setStateListAnimator(animator);
                 floatingButton.setOutlineProvider(new ViewOutlineProvider() {
                     @Override
@@ -368,7 +362,7 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                     }
                 });
             }
-            FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams)floatingButton.getLayoutParams();
+        FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) floatingButton.getLayoutParams();
             layoutParams.leftMargin = LocaleController.isRTL ? AndroidUtilities.dp(14) : 0;
             layoutParams.rightMargin = LocaleController.isRTL ? 0 : AndroidUtilities.dp(14);
             layoutParams.gravity = (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.BOTTOM;
@@ -413,7 +407,7 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                             dialog_id = ((TLRPC.User) obj).id;
                             if (dialogsSearchAdapter.isGlobalSearch(i)) {
                                 ArrayList<TLRPC.User> users = new ArrayList<>();
-                                users.add((TLRPC.User)obj);
+                            users.add((TLRPC.User) obj);
                                 MessagesController.getInstance().putUsers(users, false);
                                 MessagesStorage.getInstance().putUsersAndChats(users, null, false, true);
                             }
@@ -424,9 +418,9 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                                 dialog_id = AndroidUtilities.makeBroadcastId(((TLRPC.Chat) obj).id);
                             }
                         } else if (obj instanceof TLRPC.EncryptedChat) {
-                            dialog_id = ((long)((TLRPC.EncryptedChat) obj).id) << 32;
+                        dialog_id = ((long) ((TLRPC.EncryptedChat) obj).id) << 32;
                         } else if (obj instanceof MessageObject) {
-                            MessageObject messageObject = (MessageObject)obj;
+                        MessageObject messageObject = (MessageObject) obj;
                             dialog_id = messageObject.getDialogId();
                             message_id = messageObject.getId();
                             dialogsSearchAdapter.addHashtagsFromMessage(dialogsSearchAdapter.getLastSearchString());
@@ -443,8 +437,8 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                         didSelectResult(dialog_id, true, false);
                     } else {
                         Bundle args = new Bundle();
-                        int lower_part = (int)dialog_id;
-                        int high_id = (int)(dialog_id >> 32);
+                    int lower_part = (int) dialog_id;
+                    int high_id = (int) (dialog_id >> 32);
                         if (lower_part != 0) {
                             if (high_id == 1) {
                                 args.putInt("chat_id", lower_part);
@@ -527,8 +521,8 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                     AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                     builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
 
-                    int lower_id = (int)selectedDialog;
-                    int high_id = (int)(selectedDialog >> 32);
+                int lower_id = (int) selectedDialog;
+                int high_id = (int) (selectedDialog >> 32);
 
                     final boolean isChat = lower_id < 0 && high_id != 1;
                     builder.setItems(new CharSequence[]{LocaleController.getString("ClearHistory", R.string.ClearHistory),
@@ -549,14 +543,17 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
                             builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), new DialogInterface.OnClickListener() {
                                 @Override
                                 public void onClick(DialogInterface dialogInterface, int i) {
-                                    MessagesController.getInstance().deleteDialog(selectedDialog, 0, which == 0);
                                     if (which != 0) {
                                         if (isChat) {
                                             MessagesController.getInstance().deleteUserFromChat((int) -selectedDialog, MessagesController.getInstance().getUser(UserConfig.getClientUserId()), null);
+                                    } else {
+                                        MessagesController.getInstance().deleteDialog(selectedDialog, 0, false);
                                         }
                                         if (AndroidUtilities.isTablet()) {
                                             NotificationCenter.getInstance().postNotificationName(NotificationCenter.closeChats, selectedDialog);
                                         }
+                                } else {
+                                    MessagesController.getInstance().deleteDialog(selectedDialog, 0, true);
                                     }
                                 }
                             });
@@ -620,12 +617,7 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
             if (searchString != null) {
                 actionBar.openSearchField(searchString);
             }
-        } else {
-            ViewGroup parent = (ViewGroup)fragmentView.getParent();
-            if (parent != null) {
-                parent.removeView(fragmentView);
-            }
-        }
+
         return fragmentView;
     }
 
@@ -642,24 +634,10 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
     }
 
     private void updateTheme(){
-        updateActionBarTitle();
-        actionBar.setBackgroundColor(AndroidUtilities.getIntDef("chatsHeaderColor", AndroidUtilities.getIntColor("themeColor")));
-        Drawable floatingDrawableWhite = fragmentView.getResources().getDrawable(R.drawable.floating_white);
-        floatingDrawableWhite.setColorFilter(AndroidUtilities.getIntDef("chatsFloatingBGColor", AndroidUtilities.getIntColor("themeColor")), PorterDuff.Mode.MULTIPLY);
-        floatingButton.setBackgroundDrawable(floatingDrawableWhite);
-        Drawable pencilDrawableWhite = fragmentView.getResources().getDrawable(R.drawable.floating_pencil);
-        pencilDrawableWhite.setColorFilter(AndroidUtilities.getIntDef("chatsFloatingPencilColor", 0xffffffff), PorterDuff.Mode.MULTIPLY);
-        floatingButton.setImageDrawable(pencilDrawableWhite);
-        Drawable search = getParentActivity().getResources().getDrawable(R.drawable.ic_ab_search);
-        search.setColorFilter(AndroidUtilities.getIntDef("chatsHeaderIconsColor", 0xffffffff), PorterDuff.Mode.MULTIPLY);
-        Drawable lock = getParentActivity().getResources().getDrawable(R.drawable.lock_close);
-        lock.setColorFilter(AndroidUtilities.getIntDef("chatsHeaderIconsColor", 0xffffffff), PorterDuff.Mode.MULTIPLY);
-        lock = getParentActivity().getResources().getDrawable(R.drawable.lock_open);
-        lock.setColorFilter(AndroidUtilities.getIntDef("chatsHeaderIconsColor", 0xffffffff), PorterDuff.Mode.MULTIPLY);
-    }
-    
-    private void updateActionBarTitle(){
-        int value = AndroidUtilities.getIntDef("chatsHeaderTitle", 0);
+        SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+        int def = themePrefs.getInt("themeColor", AndroidUtilities.defColor);
+        //UpdateupdateActionBarTitle
+        int value = themePrefs.getInt("chatsHeaderTitle", 0);
         String title = LocaleController.getString("AppName", R.string.AppName);
         TLRPC.User user = UserConfig.getCurrentUser();
         if( value == 1){
@@ -676,7 +654,21 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
             title = "";
         }
         actionBar.setTitle(title);
-        actionBar.setTitleColor(AndroidUtilities.getIntDef("chatsHeaderTitleColor", 0xffffffff));
+        actionBar.setTitleColor(themePrefs.getInt("chatsHeaderTitleColor", 0xffffffff));
+
+        actionBar.setBackgroundColor(themePrefs.getInt("chatsHeaderColor", def));
+        Drawable floatingDrawableWhite = fragmentView.getResources().getDrawable(R.drawable.floating_white);
+        floatingDrawableWhite.setColorFilter(themePrefs.getInt("chatsFloatingBGColor", def), PorterDuff.Mode.MULTIPLY);
+        floatingButton.setBackgroundDrawable(floatingDrawableWhite);
+        Drawable pencilDrawableWhite = fragmentView.getResources().getDrawable(R.drawable.floating_pencil);
+        pencilDrawableWhite.setColorFilter(themePrefs.getInt("chatsFloatingPencilColor", 0xffffffff), PorterDuff.Mode.MULTIPLY);
+        floatingButton.setImageDrawable(pencilDrawableWhite);
+        Drawable search = getParentActivity().getResources().getDrawable(R.drawable.ic_ab_search);
+        search.setColorFilter(themePrefs.getInt("chatsHeaderIconsColor", 0xffffffff), PorterDuff.Mode.MULTIPLY);
+        Drawable lock = getParentActivity().getResources().getDrawable(R.drawable.lock_close);
+        lock.setColorFilter(themePrefs.getInt("chatsHeaderIconsColor", 0xffffffff), PorterDuff.Mode.MULTIPLY);
+        lock = getParentActivity().getResources().getDrawable(R.drawable.lock_open);
+        lock.setColorFilter(themePrefs.getInt("chatsHeaderIconsColor", 0xffffffff), PorterDuff.Mode.MULTIPLY);
     }
 
     @Override

@@ -9,6 +9,7 @@
 package org.telegram.ui;
 
 import android.app.Activity;
+import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
@@ -29,7 +30,6 @@ import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
 import android.widget.AbsListView;
 import android.widget.AdapterView;
@@ -39,21 +39,21 @@ import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
 
-import org.telegram.android.AndroidUtilities;
 import org.telegram.PhoneFormat.PhoneFormat;
-import org.telegram.android.LocaleController;
-import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.TLRPC;
+import org.telegram.android.AndroidUtilities;
 import org.telegram.android.ContactsController;
-import org.telegram.messenger.FileLog;
+import org.telegram.android.LocaleController;
 import org.telegram.android.MessagesController;
 import org.telegram.android.NotificationCenter;
+import org.telegram.messenger.ApplicationLoader;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
-import org.telegram.ui.Adapters.ContactsAdapter;
-import org.telegram.ui.Adapters.SearchAdapter;
+import org.telegram.messenger.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.ui.Adapters.ContactsAdapter;
+import org.telegram.ui.Adapters.SearchAdapter;
 import org.telegram.ui.Cells.UserCell;
 import org.telegram.ui.Components.LetterSectionsListView;
 
@@ -142,8 +142,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
     }
 
     @Override
-    public View createView(LayoutInflater inflater) {
-        if (fragmentView == null) {
+    public View createView(Context context, LayoutInflater inflater) {
             searching = false;
             searchWas = false;
 
@@ -186,17 +185,17 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
             ActionBarMenu menu = actionBar.createMenu();
             menu.addItemWithWidth(done_button, R.drawable.ic_done, AndroidUtilities.dp(56));
 
-            searchListViewAdapter = new SearchAdapter(getParentActivity(), null, false);
+        searchListViewAdapter = new SearchAdapter(context, null, false);
             searchListViewAdapter.setCheckedMap(selectedContacts);
             searchListViewAdapter.setUseUserCell(true);
-            listViewAdapter = new ContactsAdapter(getParentActivity(), true, false, null);
+        listViewAdapter = new ContactsAdapter(context, true, false, null);
             listViewAdapter.setCheckedMap(selectedContacts);
 
-            fragmentView = new LinearLayout(getParentActivity());
+        fragmentView = new LinearLayout(context);
             LinearLayout linearLayout = (LinearLayout) fragmentView;
             linearLayout.setOrientation(LinearLayout.VERTICAL);
 
-            FrameLayout frameLayout = new FrameLayout(getParentActivity());
+        FrameLayout frameLayout = new FrameLayout(context);
             linearLayout.addView(frameLayout);
             LinearLayout.LayoutParams layoutParams = (LinearLayout.LayoutParams) frameLayout.getLayoutParams();
             layoutParams.width = LinearLayout.LayoutParams.MATCH_PARENT;
@@ -204,7 +203,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
             layoutParams.gravity = Gravity.TOP;
             frameLayout.setLayoutParams(layoutParams);
 
-            userSelectEditText = new EditText(getParentActivity());
+        userSelectEditText = new EditText(context);
             userSelectEditText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
             userSelectEditText.setHintTextColor(0xff979797);
             userSelectEditText.setTextColor(0xff212121);
@@ -295,7 +294,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                                 if (listView != null) {
                                     listView.setAdapter(searchListViewAdapter);
                                     searchListViewAdapter.notifyDataSetChanged();
-                                    if(android.os.Build.VERSION.SDK_INT >= 11) {
+                                if (android.os.Build.VERSION.SDK_INT >= 11) {
                                         listView.setFastScrollAlwaysVisible(false);
                                     }
                                     listView.setFastScrollEnabled(false);
@@ -323,7 +322,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                 }
             });
 
-            LinearLayout emptyTextLayout = new LinearLayout(getParentActivity());
+        LinearLayout emptyTextLayout = new LinearLayout(context);
             emptyTextLayout.setVisibility(View.INVISIBLE);
             emptyTextLayout.setOrientation(LinearLayout.VERTICAL);
             linearLayout.addView(emptyTextLayout);
@@ -338,7 +337,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                 }
             });
 
-            emptyTextView = new TextView(getParentActivity());
+        emptyTextView = new TextView(context);
             emptyTextView.setTextColor(0xff808080);
             emptyTextView.setTextSize(20);
             emptyTextView.setGravity(Gravity.CENTER);
@@ -350,7 +349,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
             layoutParams.weight = 0.5f;
             emptyTextView.setLayoutParams(layoutParams);
 
-            FrameLayout frameLayout2 = new FrameLayout(getParentActivity());
+        FrameLayout frameLayout2 = new FrameLayout(context);
             emptyTextLayout.addView(frameLayout2);
             layoutParams = (LinearLayout.LayoutParams) frameLayout2.getLayoutParams();
             layoutParams.width = LinearLayout.LayoutParams.MATCH_PARENT;
@@ -358,7 +357,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
             layoutParams.weight = 0.5f;
             frameLayout2.setLayoutParams(layoutParams);
 
-            listView = new LetterSectionsListView(getParentActivity());
+        listView = new LetterSectionsListView(context);
             listView.setEmptyView(emptyTextLayout);
             listView.setVerticalScrollBarEnabled(false);
             listView.setDivider(null);
@@ -468,12 +467,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                     }
                 }
             });
-        } else {
-            ViewGroup parent = (ViewGroup)fragmentView.getParent();
-            if (parent != null) {
-                parent.removeView(fragmentView);
-            }
-        }
+
         return fragmentView;
     }
 

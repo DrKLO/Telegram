@@ -39,8 +39,6 @@
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
-    <!--
-    <uses-permission android:name="org.telegram.plus.android.provider.ACCESS" />-->
 
     <application
         android:name=".ApplicationLoader"

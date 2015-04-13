@@ -303,7 +303,7 @@ public class ActionBarLayout extends FrameLayout {
                 }
             }
         }
-        containerViewBack.setVisibility(View.GONE);
+        containerViewBack.setVisibility(View.INVISIBLE);
         //AndroidUtilities.unlockOrientation(parentActivity);
         startedTracking = false;
         animationInProgress = false;
@@ -321,7 +321,15 @@ public class ActionBarLayout extends FrameLayout {
         beginTrackingSent = false;
 
         BaseFragment lastFragment = fragmentsStack.get(fragmentsStack.size() - 2);
-        View fragmentView = lastFragment.createView(parentActivity.getLayoutInflater());
+        View fragmentView = lastFragment.fragmentView;
+        if (fragmentView == null) {
+            fragmentView = lastFragment.createView(parentActivity, parentActivity.getLayoutInflater());
+        } else {
+        ViewGroup parent = (ViewGroup) fragmentView.getParent();
+        if (parent != null) {
+            parent.removeView(fragmentView);
+        }
+        }
         ViewGroup parent = (ViewGroup) fragmentView.getParent();
         if (parent != null) {
             parent.removeView(fragmentView);
@@ -342,7 +350,7 @@ public class ActionBarLayout extends FrameLayout {
         layoutParams.width = FrameLayout.LayoutParams.MATCH_PARENT;
         layoutParams.height = FrameLayout.LayoutParams.MATCH_PARENT;
         fragmentView.setLayoutParams(layoutParams);
-        if (fragmentView.getBackground() == null) {
+        if (!lastFragment.hasOwnBackground && fragmentView.getBackground() == null) {
             fragmentView.setBackgroundColor(0xffffffff);
         }
         lastFragment.onResume();
@@ -372,7 +380,7 @@ public class ActionBarLayout extends FrameLayout {
                     int dx = Math.max(0, (int) (ev.getX() - startedTrackingX));
                     int dy = Math.abs((int) ev.getY() - startedTrackingY);
                     velocityTracker.addMovement(ev);
-                    if (maybeStartTracking && !startedTracking && dx >= AndroidUtilities.dp(10) && Math.abs(dx) / 3 > dy) {
+                    if (maybeStartTracking && !startedTracking && dx >= AndroidUtilities.getPixelsInCM(0.3f, true) && Math.abs(dx) / 3 > dy) {
                         prepareForMoving(ev);
                     } else if (startedTracking) {
                         if (!beginTrackingSent) {
@@ -531,7 +539,7 @@ public class ActionBarLayout extends FrameLayout {
                 }
             }
         }
-        containerViewBack.setVisibility(View.GONE);
+        containerViewBack.setVisibility(View.INVISIBLE);
     }
 
     public boolean presentFragment(BaseFragment fragment) {
@@ -555,7 +563,15 @@ public class ActionBarLayout extends FrameLayout {
         final BaseFragment currentFragment = !fragmentsStack.isEmpty() ? fragmentsStack.get(fragmentsStack.size() - 1) : null;
 
         fragment.setParentLayout(this);
-        View fragmentView = fragment.createView(parentActivity.getLayoutInflater());
+        View fragmentView = fragment.fragmentView;
+        if (fragmentView == null) {
+            fragmentView = fragment.createView(parentActivity, parentActivity.getLayoutInflater());
+        } else {
+            ViewGroup parent = (ViewGroup) fragmentView.getParent();
+            if (parent != null) {
+                parent.removeView(fragmentView);
+            }
+        }
         if (fragment.needAddActionBar() && fragment.actionBar != null) {
             if (removeActionBarExtraHeight) {
                 fragment.actionBar.setOccupyStatusBar(false);
@@ -576,7 +592,7 @@ public class ActionBarLayout extends FrameLayout {
         fragmentsStack.add(fragment);
         fragment.onResume();
         currentActionBar = fragment.actionBar;
-        if (fragmentView.getBackground() == null) {
+        if (!fragment.hasOwnBackground && fragmentView.getBackground() == null) {
             fragmentView.setBackgroundColor(0xffffffff);
         }
 
@@ -707,7 +723,7 @@ public class ActionBarLayout extends FrameLayout {
         fragment.onFragmentDestroy();
         fragment.setParentLayout(null);
         fragmentsStack.remove(fragment);
-        containerViewBack.setVisibility(View.GONE);
+        containerViewBack.setVisibility(View.INVISIBLE);
         bringChildToFront(containerView);
     }
 
@@ -733,7 +749,15 @@ public class ActionBarLayout extends FrameLayout {
             containerView.setVisibility(View.VISIBLE);
 
             previousFragment.setParentLayout(this);
-            View fragmentView = previousFragment.createView(parentActivity.getLayoutInflater());
+            View fragmentView = previousFragment.fragmentView;
+            if (fragmentView == null) {
+                fragmentView = previousFragment.createView(parentActivity, parentActivity.getLayoutInflater());
+            } else {
+                ViewGroup parent = (ViewGroup) fragmentView.getParent();
+                if (parent != null) {
+                    parent.removeView(fragmentView);
+                }
+            }
             if (previousFragment.needAddActionBar() && previousFragment.actionBar != null) {
                 if (removeActionBarExtraHeight) {
                     previousFragment.actionBar.setOccupyStatusBar(false);
@@ -752,7 +776,7 @@ public class ActionBarLayout extends FrameLayout {
             fragmentView.setLayoutParams(layoutParams);
             previousFragment.onResume();
             currentActionBar = previousFragment.actionBar;
-            if (fragmentView.getBackground() == null) {
+            if (!previousFragment.hasOwnBackground && fragmentView.getBackground() == null) {
                 fragmentView.setBackgroundColor(0xffffffff);
             }
 
@@ -804,9 +828,9 @@ public class ActionBarLayout extends FrameLayout {
                     @Override
                     public void run() {
                         removeFragmentFromStack(currentFragment);
-                        setVisibility(GONE);
+                        setVisibility(INVISIBLE);
                         if (backgroundView != null) {
-                            backgroundView.setVisibility(GONE);
+                            backgroundView.setVisibility(INVISIBLE);
                         }
                         if (drawerLayoutContainer != null) {
                             drawerLayoutContainer.setAllowOpenDrawer(true, false);
@@ -843,9 +867,9 @@ public class ActionBarLayout extends FrameLayout {
                 currentAnimation.start();
             } else {
                 removeFragmentFromStack(currentFragment);
-                setVisibility(GONE);
+                setVisibility(INVISIBLE);
                 if (backgroundView != null) {
-                    backgroundView.setVisibility(GONE);
+                    backgroundView.setVisibility(INVISIBLE);
                 }
             }
         }
@@ -857,7 +881,15 @@ public class ActionBarLayout extends FrameLayout {
         }
         BaseFragment previousFragment = fragmentsStack.get(fragmentsStack.size() - 1);
         previousFragment.setParentLayout(this);
-        View fragmentView = previousFragment.createView(parentActivity.getLayoutInflater());
+        View fragmentView = previousFragment.fragmentView;
+        if (fragmentView == null) {
+            fragmentView = previousFragment.createView(parentActivity, parentActivity.getLayoutInflater());
+        } else {
+            ViewGroup parent = (ViewGroup) fragmentView.getParent();
+            if (parent != null) {
+                parent.removeView(fragmentView);
+            }
+        }
         if (previousFragment.needAddActionBar() && previousFragment.actionBar != null) {
             if (removeActionBarExtraHeight) {
                 previousFragment.actionBar.setOccupyStatusBar(false);
@@ -876,7 +908,7 @@ public class ActionBarLayout extends FrameLayout {
         fragmentView.setLayoutParams(layoutParams);
         previousFragment.onResume();
         currentActionBar = previousFragment.actionBar;
-        if (fragmentView.getBackground() == null) {
+        if (!previousFragment.hasOwnBackground && fragmentView.getBackground() == null) {
             fragmentView.setBackgroundColor(0xffffffff);
         }
     }

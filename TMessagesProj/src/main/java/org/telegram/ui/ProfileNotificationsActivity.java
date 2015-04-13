@@ -95,8 +95,7 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
     }
 
     @Override
-    public View createView(LayoutInflater inflater) {
-        if (fragmentView == null) {
+    public View createView(Context context, LayoutInflater inflater) {
             actionBar.setBackButtonImage(R.drawable.ic_ab_back);
             actionBar.setAllowOverlayTitle(true);
             actionBar.setTitle(LocaleController.getString("NotificationsAndSounds", R.string.NotificationsAndSounds));
@@ -109,10 +108,10 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
                 }
             });
 
-            fragmentView = new FrameLayout(getParentActivity());
+        fragmentView = new FrameLayout(context);
             FrameLayout frameLayout = (FrameLayout) fragmentView;
 
-            listView = new ListView(getParentActivity());
+        listView = new ListView(context);
             listView.setDivider(null);
             listView.setDividerHeight(0);
             listView.setVerticalScrollBarEnabled(false);
@@ -122,14 +121,14 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
             layoutParams.width = FrameLayout.LayoutParams.MATCH_PARENT;
             layoutParams.height = FrameLayout.LayoutParams.MATCH_PARENT;
             listView.setLayoutParams(layoutParams);
-            listView.setAdapter(new ListAdapter(getParentActivity()));
+        listView.setAdapter(new ListAdapter(context));
             listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
                 @Override
                 public void onItemClick(AdapterView<?> adapterView, View view, final int i, long l) {
                     if (i == settingsVibrateRow) {
                         AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                         builder.setTitle(LocaleController.getString("Vibrate", R.string.Vibrate));
-                        builder.setItems(new CharSequence[] {
+                    builder.setItems(new CharSequence[]{
                                 LocaleController.getString("VibrationDisabled", R.string.VibrationDisabled),
                                 LocaleController.getString("SettingsDefault", R.string.SettingsDefault),
                                 LocaleController.getString("SystemDefault", R.string.SystemDefault),
@@ -289,15 +288,15 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
                             return;
                         }
 
-                        LayoutInflater li = (LayoutInflater)getParentActivity().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+                    LayoutInflater li = (LayoutInflater) getParentActivity().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
                         view = li.inflate(R.layout.settings_color_dialog_layout, null, false);
-                        final ColorPickerView colorPickerView = (ColorPickerView)view.findViewById(R.id.color_picker);
+                    final ColorPickerView colorPickerView = (ColorPickerView) view.findViewById(R.id.color_picker);
 
                         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
                         if (preferences.contains("color_" + dialog_id)) {
                             colorPickerView.setOldCenterColor(preferences.getInt("color_" + dialog_id, 0xff00ff00));
                         } else {
-                            if ((int)dialog_id < 0) {
+                        if ((int) dialog_id < 0) {
                                 colorPickerView.setOldCenterColor(preferences.getInt("GroupLed", 0xff00ff00));
                             } else {
                                 colorPickerView.setOldCenterColor(preferences.getInt("MessagesLed", 0xff00ff00));
@@ -341,7 +340,7 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
                     } else if (i == settingsPriorityRow) {
                         AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                         builder.setTitle(LocaleController.getString("NotificationsPriority", R.string.NotificationsPriority));
-                        builder.setItems(new CharSequence[] {
+                    builder.setItems(new CharSequence[]{
                                 LocaleController.getString("SettingsDefault", R.string.SettingsDefault),
                                 LocaleController.getString("NotificationsPriorityDefault", R.string.NotificationsPriorityDefault),
                                 LocaleController.getString("NotificationsPriorityHigh", R.string.NotificationsPriorityHigh),
@@ -433,12 +432,7 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
                     //
                 }
             });
-        } else {
-            ViewGroup parent = (ViewGroup)fragmentView.getParent();
-            if (parent != null) {
-                parent.removeView(fragmentView);
-            }
-        }
+
         return fragmentView;
     }
 
@@ -454,7 +448,7 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
                 Ringtone rng = RingtoneManager.getRingtone(ApplicationLoader.applicationContext, ringtone);
                 if (rng != null) {
                     if(ringtone.equals(Settings.System.DEFAULT_NOTIFICATION_URI)) {
-                        name = LocaleController.getString("Default", R.string.Default);
+                        name = LocaleController.getString("SoundDefault", R.string.SoundDefault);
                     } else {
                         name = rng.getTitle(getParentActivity());
                     }
@@ -594,7 +588,7 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
                     }
                     //
                 } else if (i == settingsSoundRow) {
-                    String value = preferences.getString("sound_" + dialog_id, LocaleController.getString("Default", R.string.Default));
+                    String value = preferences.getString("sound_" + dialog_id, LocaleController.getString("SoundDefault", R.string.SoundDefault));
                     if (value.equals("NoSound")) {
                         value = LocaleController.getString("NoSound", R.string.NoSound);
                     }

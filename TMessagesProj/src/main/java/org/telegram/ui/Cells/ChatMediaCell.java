@@ -9,6 +9,7 @@
 package org.telegram.ui.Cells;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
@@ -25,21 +26,22 @@ import android.view.SoundEffectConstants;
 
 import org.telegram.android.AndroidUtilities;
 import org.telegram.android.ImageLoader;
+import org.telegram.android.ImageReceiver;
 import org.telegram.android.LocaleController;
+import org.telegram.android.MediaController;
+import org.telegram.android.MessageObject;
 import org.telegram.android.MessagesController;
 import org.telegram.android.SendMessagesHelper;
+import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLoader;
-import org.telegram.android.MediaController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.Utilities;
-import org.telegram.android.MessageObject;
 import org.telegram.ui.Components.AvatarDrawable;
+import org.telegram.ui.Components.GifDrawable;
 import org.telegram.ui.Components.RadialProgress;
 import org.telegram.ui.PhotoViewer;
-import org.telegram.ui.Components.GifDrawable;
-import org.telegram.android.ImageReceiver;
 
 import java.io.File;
 import java.util.Locale;
@@ -484,7 +486,7 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
                         infoLayout2 = new StaticLayout(str2, senderPaint, infoWidth2, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
                     }
 
-                    infoWidth = Math.min(maxWidth, (int) Math.ceil(infoPaint.measureText(currentInfoString)));
+                    infoWidth = Math.max(infoWidth2, (int) Math.ceil(infoPaint.measureText(currentInfoString)));
                     CharSequence str2 = TextUtils.ellipsize(currentInfoString, infoPaint, infoWidth, TextUtils.TruncateAt.END);
                     infoLayout = new StaticLayout(str2, infoPaint, infoWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
                     //
@@ -550,6 +552,7 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
                         infoWidth = (int) Math.ceil(senderPaint.measureText(currentInfoString));
                         infoLayout = new StaticLayout(currentInfoString, senderPaint, infoWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
                     }
+                    if(!isChat)infoLayout = null;
                     infoLayout2 = null;
                 }
                 nameLayout = null;
@@ -941,23 +944,24 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
         }
 
         radialProgress.setHideCurrentDrawable(false);
-
+        SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+        int tColor = themePrefs.getInt("themeColor", AndroidUtilities.defColor);
         if (currentMessageObject.type == 9) {
             Drawable menuDrawable = null;
-            int color = AndroidUtilities.getIntDef("chatRTextColor", 0xff000000);
+            int color = themePrefs.getInt("chatRTextColor", 0xff000000);
             if (currentMessageObject.isOut()) {
                 //infoPaint.setColor(0xff70b15c);
                 infoPaint.setColor(color);
                 docBackPaint.setColor(0xffdaf5c3);
-                docMenuWhiteDrawable.setColorFilter(AndroidUtilities.getIntDef("chatRTimeColor", AndroidUtilities.getIntDarkerColor("themeColor",0x15)), PorterDuff.Mode.MULTIPLY);
+                docMenuWhiteDrawable.setColorFilter(themePrefs.getInt("chatRTimeColor", AndroidUtilities.getIntDarkerColor("themeColor", 0x15)), PorterDuff.Mode.MULTIPLY);
                 menuDrawable = docMenuOutDrawable = docMenuWhiteDrawable;
                 namePaint.setColor(color);
             } else {
-                color = AndroidUtilities.getIntDef("chatLTextColor", 0xff000000);
+                color = themePrefs.getInt("chatLTextColor", 0xff000000);
                 //infoPaint.setColor(0xffa1adbb);
                 infoPaint.setColor(color);
                 docBackPaint.setColor(0xffebf0f5);
-                docMenuWhiteDrawable.setColorFilter(AndroidUtilities.getIntDef("chatLTimeColor", 0xffa1adbb), PorterDuff.Mode.MULTIPLY);
+                docMenuWhiteDrawable.setColorFilter(themePrefs.getInt("chatLTimeColor", 0xffa1adbb), PorterDuff.Mode.MULTIPLY);
                 menuDrawable = docMenuInDrawable = docMenuWhiteDrawable;
                 namePaint.setColor(color);
             }
@@ -1023,8 +1027,8 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
         }
 
         radialProgress.onDraw(canvas);
-        if(AndroidUtilities.getBoolPref("chatMemberColorCheck")){
-            senderPaint.setColor(AndroidUtilities.getIntDef("chatMemberColor", AndroidUtilities.getIntDarkerColor("themeColor", 0x15)));
+        if(themePrefs.getBoolean("chatMemberColorCheck", false)){
+            senderPaint.setColor(themePrefs.getInt("chatMemberColor", AndroidUtilities.getIntDarkerColor("themeColor", 0x15)));
         }else{
             //if(currentMessageObject.type == 9){
                 senderPaint.setColor(AvatarDrawable.getNameColorForId(MessagesController.getInstance().getUser(currentMessageObject.messageOwner.from_id).id));
@@ -1054,11 +1058,13 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
         } else if (infoLayout != null && (buttonState == 1 || buttonState == 0 || buttonState == 3 || currentMessageObject.isSecretPhoto()  || currentMessageObject.type == 1 || (buttonState == 2 && currentMessageObject.type == 8) )) {
             //infoPaint.setColor(0xffffffff);
             if(currentMessageObject.isOut()){
-                infoPaint.setColor(AndroidUtilities.getIntDef("chatRTextColor", 0xff000000));
-                videoIconDrawable.setColorFilter(AndroidUtilities.getIntDef("chatRTextColor", 0xff000000), PorterDuff.Mode.MULTIPLY);
+                int color = themePrefs.getInt("chatRTextColor", 0xff000000);
+                infoPaint.setColor(color);
+                videoIconDrawable.setColorFilter(color, PorterDuff.Mode.MULTIPLY);
             }else{
-                infoPaint.setColor(AndroidUtilities.getIntDef("chatLTextColor", 0xff000000));
-                videoIconDrawable.setColorFilter(AndroidUtilities.getIntDef("chatLTextColor", 0xff000000), PorterDuff.Mode.MULTIPLY);
+                int color = themePrefs.getInt("chatLTextColor", 0xff000000);
+                infoPaint.setColor(color);
+                videoIconDrawable.setColorFilter(color, PorterDuff.Mode.MULTIPLY);
             }
             if (currentMessageObject.type == 1){
                 setDrawableBounds(mediaBackgroundDrawable, photoImage.getImageX() + AndroidUtilities.dp(4), photoImage.getImageY() + AndroidUtilities.dp(4), infoWidth + AndroidUtilities.dp(8) + infoOffset, AndroidUtilities.dp(20));

@@ -48,6 +48,7 @@ import org.telegram.android.video.InputSurface;
 import org.telegram.android.video.MP4Builder;
 import org.telegram.android.video.Mp4Movie;
 import org.telegram.android.video.OutputSurface;
+import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.DispatchQueue;
 import org.telegram.messenger.FileLoader;
@@ -56,7 +57,6 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
-import org.telegram.messenger.ApplicationLoader;
 import org.telegram.ui.Cells.ChatMediaCell;
 import org.telegram.ui.Components.GifDrawable;
 
@@ -1105,8 +1105,16 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
         if (proximitySensor != null && audioTrackPlayer == null && audioPlayer == null || isPaused || (useFrontSpeaker == (event.values[0] < proximitySensor.getMaximumRange() / 10))) {
             return;
         }
+        boolean newValue = event.values[0] < proximitySensor.getMaximumRange() / 10;
+        try {
+            if (newValue && NotificationsController.getInstance().audioManager.isWiredHeadsetOn()) {
+                return;
+            }
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
         ignoreProximity = true;
-        useFrontSpeaker = event.values[0] < proximitySensor.getMaximumRange() / 10;
+        useFrontSpeaker = newValue;
         NotificationCenter.getInstance().postNotificationName(NotificationCenter.audioRouteChanged, useFrontSpeaker);
         MessageObject currentMessageObject = playingMessageObject;
         float progress = playingMessageObject.audioProgress;

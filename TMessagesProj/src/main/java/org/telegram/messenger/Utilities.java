@@ -9,6 +9,8 @@
 package org.telegram.messenger;
 
 import android.app.Activity;
+import android.app.AlarmManager;
+import android.app.PendingIntent;
 import android.content.ContentUris;
 import android.content.Context;
 import android.content.Intent;
@@ -24,12 +26,17 @@ import android.provider.MediaStore;
 import android.text.Html;
 import android.text.SpannableStringBuilder;
 import android.util.Base64;
+import android.util.Log;
+import android.util.Xml;
+import android.widget.Toast;
 
 import net.hockeyapp.android.CrashManager;
 import net.hockeyapp.android.CrashManagerListener;
 import net.hockeyapp.android.UpdateManager;
 
 import org.telegram.android.AndroidUtilities;
+import org.telegram.ui.LaunchActivity;
+import org.xmlpull.v1.XmlPullParser;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -50,6 +57,7 @@ import java.security.spec.RSAPublicKeySpec;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
@@ -111,6 +119,7 @@ public class Utilities {
 
     public native static long doPQNative(long _what);
     public native static void loadBitmap(String path, Bitmap bitmap, int scale, int width, int height, int stride);
+    public native static int pinBitmap(Bitmap bitmap);
     public native static void blurBitmap(Object bitmap, int radius);
     public native static void calcCDT(ByteBuffer hsvBuffer, int width, int height, ByteBuffer buffer);
     public native static Bitmap loadWebpImage(ByteBuffer buffer, int len, BitmapFactory.Options options);
@@ -148,6 +157,9 @@ public class Utilities {
     }
 
     public static String bytesToHex(byte[] bytes) {
+        if (bytes == null) {
+            return "";
+        }
         char[] hexChars = new char[bytes.length * 2];
         int v;
         for (int j = 0; j < bytes.length; j++) {
@@ -159,6 +171,9 @@ public class Utilities {
     }
 
     public static byte[] hexToBytes(String hex) {
+        if (hex == null) {
+            return null;
+        }
         int len = hex.length();
         byte[] data = new byte[len / 2];
         for (int i = 0; i < len; i += 2) {
@@ -670,7 +685,7 @@ public class Utilities {
         }
         wholeString = wholeString.trim();
         String lower = " " + wholeString.toLowerCase();
-        String hexDarkColor = String.format("#%06X", (0xFFFFFF & AndroidUtilities.getIntDarkerColor("themeColor", 0x15)));
+        String hexDarkColor = String.format("#%06X", (0xFFFFFF & AndroidUtilities.getIntDarkerColor("themeColor", 0x15)));/*Search Name*/
         int index = -1;
         int lastIndex = 0;
         while ((index = lower.indexOf(" " + q, lastIndex)) != -1) {
@@ -768,4 +783,256 @@ public class Utilities {
             UpdateManager.register(context, BuildVars.HOCKEY_APP_HASH);
         }
     }
+
+    //MIO
+    public static void restartApp(){
+        Intent mRestartApp = new Intent(ApplicationLoader.applicationContext, LaunchActivity.class);
+        int mPendingIntentId = 123456;
+        PendingIntent mPendingIntent = PendingIntent.getActivity(ApplicationLoader.applicationContext, mPendingIntentId, mRestartApp, PendingIntent.FLAG_CANCEL_CURRENT);
+        AlarmManager mgr = (AlarmManager)ApplicationLoader.applicationContext.getSystemService(Context.ALARM_SERVICE);
+        mgr.set(AlarmManager.RTC, System.currentTimeMillis() + 100, mPendingIntent);
+        System.exit(0);
+    }
+
+    public static void savePreferencesToSD(Context context, String prefName, String tName, boolean toast){
+        String folder = "/Telegram/Themes";
+        File dataF = new File (findPrefFolder(context),prefName);
+        if(checkSDStatus() > 1){
+            File f = new File (Environment.getExternalStorageDirectory(), folder);
+            f.mkdirs();
+            File sdF = new File(f, tName);
+            String s = getError(copyFile(dataF,sdF,true));
+            if (s.equalsIgnoreCase("4")) {
+                if(toast && sdF.getName()!="")Toast.makeText(context,context.getString(R.string.SavedTo,sdF.getName(),folder),Toast.LENGTH_SHORT ).show();
+            }else if (s.contains("0")) {
+                s = context.getString(R.string.SaveErrorMsg0);
+                Toast.makeText(context,"ERROR: "+ s ,Toast.LENGTH_LONG ).show();
+            }else{
+                Toast.makeText(context,"ERROR: "+s,Toast.LENGTH_LONG ).show();
+                Toast.makeText(context,dataF.getAbsolutePath(),Toast.LENGTH_LONG ).show();
+            }
+        }else{
+            Toast.makeText(context,"ERROR: " + context.getString(R.string.NoMediaMessage) , Toast.LENGTH_LONG ).show();
+        }
+    }
+
+    public static void copyWallpaperToSD(Context context, String tName, boolean toast){
+        String folder = "/Telegram/Themes";
+        String nFile = "wallpaper.jpg";
+        if(checkSDStatus()>0){
+            File f1 = context.getFilesDir();
+            f1 = new File (f1.getAbsolutePath(), nFile);
+            File f2 = new File (Environment.getExternalStorageDirectory(), folder);
+            f2.mkdirs();
+            f2 = new File(f2, tName+"_"+nFile);
+            if(f1.length()>1){
+                String s = getError(copyFile(f1,f2,true));
+                if(s.contains("4")){
+                    if(toast && f2.getName()!="" && folder !="")Toast.makeText(context,context.getString(R.string.SavedTo,f2.getName(),folder),Toast.LENGTH_SHORT ).show();
+                    if(f2.getName()=="" || folder =="") Toast.makeText(context,"ERROR: "+s,Toast.LENGTH_SHORT ).show();
+
+                }else{
+                    Toast.makeText(context,"ERROR: "+s+"\n"+f1.getAbsolutePath(),Toast.LENGTH_LONG ).show();
+                }
+            }
+        }
+    }
+
+    static String findPrefFolder(Context context){
+        File f = context.getFilesDir();
+        String appDir = f.getAbsolutePath();
+        File SPDir = new File (appDir.substring(0,appDir.lastIndexOf('/')+1)+ "shared_prefs/");
+        if(!SPDir.exists()) {// && SPDir.isDirectory()) {
+            String pck = context.getPackageName();
+            SPDir=new File ("/dbdata/databases/"+pck+"/shared_prefs/");
+        }
+        //Log.i("TAG", SPDir.getAbsolutePath());
+        return SPDir.getAbsolutePath();
+    }
+
+    static int checkSDStatus(){
+        int b=0;
+        String s = Environment.getExternalStorageState();
+        if (s.equals(Environment.MEDIA_MOUNTED))b=2;
+        else if (s.equals(Environment.MEDIA_MOUNTED_READ_ONLY))b=1;
+        return b;
+    }
+
+    static String getError(int i){
+        String s="-1";
+        if(i==0)s="0: SOURCE FILE DOESN'T EXIST";
+        if(i==1)s="1: DESTINATION FILE DOESN'T EXIST";
+        if(i==2)s="2: NULL SOURCE & DESTINATION FILES";
+        if(i==3)s="3: NULL SOURCE FILE";
+        if(i==4)s="4";
+        return s;
+    }
+
+    //0: source file doesn't exist
+    //1: dest file doesn't exist
+    //2: source & dest = NULL
+    //3: source = NULL
+    //4: dest = NULL
+    static int copyFile(File sourceFile, File destFile, boolean save) {
+        int i=-1;
+        try{
+            if (!sourceFile.exists()) {
+                return i+1;
+            }
+            if (!destFile.exists()) {
+                if(save)i=i+2;
+                destFile.createNewFile();
+            }
+            FileChannel source;
+            FileChannel destination;
+            FileInputStream fileInputStream = new FileInputStream(sourceFile);
+            source = fileInputStream.getChannel();
+            FileOutputStream fileOutputStream = new FileOutputStream(destFile);
+            destination = fileOutputStream.getChannel();
+            if (destination != null && source != null) {
+                destination.transferFrom(source, 0, source.size());
+                i=2;
+            }
+            if (source != null) {
+                source.close();
+                i=3;
+            }
+            if (destination != null) {
+                destination.close();
+                i=4;
+            }
+            fileInputStream.close();
+            fileOutputStream.close();
+        }catch (Exception e)
+        {
+            System.err.println("Error saving preferences: " + e.getMessage());
+            Log.e(e.getMessage(), e.toString());
+        }
+        return i;
+    }
+
+    public static int loadWallpaperFromSDPath(Context context, String wPath){
+        String nFile = "wallpaper.jpg";
+        File f1 = context.getFilesDir();
+        f1= new File (f1.getAbsolutePath(), nFile);
+        File wFile = new File (wPath);
+        String s = "-1";
+        if (wFile.exists()){
+            s = getError(copyFile(wFile,f1,false));
+            if (!s.contains("4")) {
+                Toast.makeText(context,"ERROR: "+s+"\n"+ context.getString(R.string.restoreErrorMsg,wFile.getAbsolutePath()) ,Toast.LENGTH_LONG ).show();
+            }else{
+                //Toast.makeText(context,wFile.getAbsolutePath(),Toast.LENGTH_LONG ).show();
+            }
+        }
+        return Integer.parseInt(s);
+    }
+
+    public static int loadPrefFromSD(Context context, String prefPath){
+        File dataF = new File (findPrefFolder(context), "theme.xml");
+        File prefFile = new File (prefPath);
+        String s = getError(copyFile(prefFile, dataF, false));
+        if (!s.contains("4")) {
+            Toast.makeText(context, "ERROR: "+s+"\n"+ context.getString(R.string.restoreErrorMsg, prefFile.getAbsolutePath()), Toast.LENGTH_LONG).show();
+        }
+        return Integer.parseInt(s);
+    }
+
+    public static String applyThemeFile(File file) {
+        try {
+            HashMap<String, String> stringMap = getXmlFileStrings(file);
+            String xmlFile = file.getAbsolutePath();
+            String themeName = stringMap.get("themeName");
+
+            if (themeName != null && themeName.length() > 0) {
+
+                if (themeName.contains("&") || themeName.contains("|")) {
+                    return "";
+                }
+
+                if(loadPrefFromSD(ApplicationLoader.applicationContext, xmlFile) != 4){
+                    return "";
+                }
+
+                String wName = xmlFile.substring(0, xmlFile.lastIndexOf(".")) + "_wallpaper.jpg";
+                File wFile = new File(wName);
+                if(wFile.exists()){
+                    //Change Stock Background to set Custom Wallpaper
+                    SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+                    int selectedBackground = preferences.getInt("selectedBackground", 1000001);
+                    if (selectedBackground == 1000001) {
+                        //File toFile = new File(ApplicationLoader.applicationContext.getFilesDir(), "wallpaper.jpg");
+                        //if (!toFile.exists()) {
+                        SharedPreferences.Editor editor = preferences.edit();
+                        editor.putInt("selectedBackground", 113);
+                        editor.putInt("selectedColor", 0);
+                        editor.commit();
+                        //}
+                    }
+                    Utilities.loadWallpaperFromSDPath(ApplicationLoader.applicationContext, wName);
+                }
+                return themeName;
+            }
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
+        return "";
+    }
+
+    private static HashMap<String, String> getXmlFileStrings(File file) {
+        FileInputStream stream = null;
+        try {
+            HashMap<String, String> stringMap = new HashMap<>();
+            XmlPullParser parser = Xml.newPullParser();
+            stream = new FileInputStream(file);
+            parser.setInput(stream, "UTF-8");
+            int eventType = parser.getEventType();
+            String name = null;
+            String value = null;
+            String attrName = null;
+            while (eventType != XmlPullParser.END_DOCUMENT) {
+                if(eventType == XmlPullParser.START_TAG) {
+                    name = parser.getName();
+                    int c = parser.getAttributeCount();
+                    if (c > 0) {
+                        attrName = parser.getAttributeValue(0);
+                    }
+                } else if(eventType == XmlPullParser.TEXT) {
+                    if (attrName != null) {
+                        value = parser.getText();
+                        if (value != null) {
+                            value = value.trim();
+                            value = value.replace("\\n", "\n");
+                            value = value.replace("\\", "");
+                        }
+                    }
+                } else if (eventType == XmlPullParser.END_TAG) {
+                    value = null;
+                    attrName = null;
+                    name = null;
+                }
+                if (name != null && name.equals("string") && value != null && attrName != null && value.length() != 0 && attrName.length() != 0) {
+                    stringMap.put(attrName, value);
+                    name = null;
+                    value = null;
+                    attrName = null;
+                }
+                eventType = parser.next();
+            }
+            return stringMap;
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        } finally {
+            try {
+                if (stream != null) {
+                    stream.close();
+                    stream = null;
+                }
+            } catch (Exception e) {
+                FileLog.e("tmessages", e);
+            }
+        }
+        return null;
+    }
+    //
 }

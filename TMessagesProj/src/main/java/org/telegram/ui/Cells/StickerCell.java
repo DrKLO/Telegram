@@ -26,9 +26,7 @@ public class StickerCell extends FrameLayoutFixed {
         super(context);
 
         imageView = new BackupImageView(context);
-        imageView.imageReceiver.setAspectFit(true);
-        imageView.imageReceiver.setDisableRecycle(true);
-        imageView.processDetach = false;
+        imageView.setAspectFit(true);
         addView(imageView);
         LayoutParams layoutParams = (LayoutParams) imageView.getLayoutParams();
         layoutParams.width = AndroidUtilities.dp(66);
@@ -45,8 +43,8 @@ public class StickerCell extends FrameLayoutFixed {
 
     @Override
     public void setPressed(boolean pressed) {
-        if (imageView.imageReceiver.getPressed() != pressed) {
-            imageView.imageReceiver.setPressed(pressed);
+        if (imageView.getImageReceiver().getPressed() != pressed) {
+            imageView.getImageReceiver().setPressed(pressed);
             imageView.invalidate();
         }
         super.setPressed(pressed);

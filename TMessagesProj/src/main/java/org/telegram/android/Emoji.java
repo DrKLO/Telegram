@@ -8,11 +8,6 @@
 
 package org.telegram.android;
 
-import java.io.File;
-import java.io.InputStream;
-import java.util.HashMap;
-import java.util.Locale;
-
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
@@ -27,9 +22,14 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
+import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.Utilities;
-import org.telegram.messenger.ApplicationLoader;
+
+import java.io.File;
+import java.io.InputStream;
+import java.util.HashMap;
+import java.util.Locale;
 
 public class Emoji {
 	private static HashMap<Long, DrawableInfo> rects = new HashMap<>();
@@ -401,11 +401,16 @@ public class Emoji {
         if (cs == null || cs.length() == 0) {
             return cs;
         }
+
         Spannable s;
         if (cs instanceof Spannable) {
             s = (Spannable)cs;
         } else {
             s = Spannable.Factory.getInstance().newSpannable(cs);
+        }
+        // If showAndroidEmoji is enabled don't replace anything
+        if (android.os.Build.VERSION.SDK_INT >= 19 && ApplicationLoader.SHOW_ANDROID_EMOJI) {
+            return s;
         }
         long buf = 0;
         int emojiCount = 0;

@@ -9,6 +9,7 @@
 package org.telegram.ui.Cells;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
@@ -32,8 +33,8 @@ import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.UserConfig;
-import org.telegram.ui.PhotoViewer;
 import org.telegram.ui.Components.AvatarDrawable;
+import org.telegram.ui.PhotoViewer;
 
 public class ChatActionCell extends BaseCell {
 
@@ -268,13 +269,14 @@ public class ChatActionCell extends BaseCell {
     }
 
     private void updateTheme(){
-        int color = AndroidUtilities.getIntDef("chatDateColor", 0xffffffff);
+        SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+        int color = themePrefs.getInt("chatDateColor", 0xffffffff);
         textPaint.setColor(color);
         if(color != 0xffffffff){
             textPaint.linkColor = AndroidUtilities.getIntDarkerColor("chatDateColor", -0x50);
         }
-        textPaint.setTextSize(AndroidUtilities.dp(AndroidUtilities.getIntDef("chatDateSize", 16)));//16
-        backgroundWhite.setColorFilter(AndroidUtilities.getIntDef("chatDateBubbleColor", 0x59000000), PorterDuff.Mode.MULTIPLY);
+        textPaint.setTextSize(AndroidUtilities.dp(themePrefs.getInt("chatDateSize", 16)));//16
+        backgroundWhite.setColorFilter(themePrefs.getInt("chatDateBubbleColor", 0x59000000), PorterDuff.Mode.MULTIPLY);
     }
 
     @Override

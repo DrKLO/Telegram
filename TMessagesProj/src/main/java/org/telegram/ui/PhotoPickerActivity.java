@@ -36,6 +36,7 @@ import org.json.JSONObject;
 import org.telegram.android.AndroidUtilities;
 import org.telegram.android.LocaleController;
 import org.telegram.android.MediaController;
+import org.telegram.android.MessageObject;
 import org.telegram.android.MessagesStorage;
 import org.telegram.android.NotificationCenter;
 import org.telegram.android.volley.AuthFailureError;
@@ -50,13 +51,12 @@ import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
 import org.telegram.messenger.TLRPC;
-import org.telegram.android.MessageObject;
 import org.telegram.messenger.Utilities;
+import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
-import org.telegram.ui.Adapters.BaseFragmentAdapter;
-import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.ui.Adapters.BaseFragmentAdapter;
 import org.telegram.ui.Cells.PhotoPickerPhotoCell;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.PhotoPickerBottomLayout;
@@ -142,275 +142,269 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
 
     @SuppressWarnings("unchecked")
     @Override
-    public View createView(LayoutInflater inflater) {
-        if (fragmentView == null) {
-            actionBar.setBackgroundColor(0xff333333);
-            actionBar.setItemsBackground(R.drawable.bar_selector_picker);
-            actionBar.setBackButtonImage(R.drawable.ic_ab_back);
-            if (selectedAlbum != null) {
-                actionBar.setTitle(selectedAlbum.bucketName);
-            } else if (type == 0) {
-                actionBar.setTitle(LocaleController.getString("SearchImagesTitle", R.string.SearchImagesTitle));
-            } else if (type == 1) {
-                actionBar.setTitle(LocaleController.getString("SearchGifsTitle", R.string.SearchGifsTitle));
-            }
-            actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
-                @Override
-                public void onItemClick(int id) {
-                    if (id == -1) {
-                        if (Build.VERSION.SDK_INT < 11) {
-                            listView.setAdapter(null);
-                            listView = null;
-                            listAdapter = null;
-                        }
-                        finishFragment();
+    public View createView(Context context, LayoutInflater inflater) {
+        actionBar.setBackgroundColor(0xff333333);
+        actionBar.setItemsBackground(R.drawable.bar_selector_picker);
+        actionBar.setBackButtonImage(R.drawable.ic_ab_back);
+        if (selectedAlbum != null) {
+            actionBar.setTitle(selectedAlbum.bucketName);
+        } else if (type == 0) {
+            actionBar.setTitle(LocaleController.getString("SearchImagesTitle", R.string.SearchImagesTitle));
+        } else if (type == 1) {
+            actionBar.setTitle(LocaleController.getString("SearchGifsTitle", R.string.SearchGifsTitle));
+        }
+        actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
+            @Override
+            public void onItemClick(int id) {
+                if (id == -1) {
+                    if (Build.VERSION.SDK_INT < 11) {
+                        listView.setAdapter(null);
+                        listView = null;
+                        listAdapter = null;
                     }
+                    finishFragment();
                 }
-            });
+            }
+        });
 
-            if (selectedAlbum == null) {
-                ActionBarMenu menu = actionBar.createMenu();
-                searchItem = menu.addItem(0, R.drawable.ic_ab_search).setIsSearchField(true).setActionBarMenuItemSearchListener(new ActionBarMenuItem.ActionBarMenuItemSearchListener() {
-                    @Override
-                    public void onSearchExpand() {
+        if (selectedAlbum == null) {
+            ActionBarMenu menu = actionBar.createMenu();
+            searchItem = menu.addItem(0, R.drawable.ic_ab_search).setIsSearchField(true).setActionBarMenuItemSearchListener(new ActionBarMenuItem.ActionBarMenuItemSearchListener() {
+                @Override
+                public void onSearchExpand() {
 
-                    }
+                }
 
-                    @Override
-                    public boolean onSearchCollapse() {
-                        finishFragment();
-                        return false;
-                    }
+                @Override
+                public boolean onSearchCollapse() {
+                    finishFragment();
+                    return false;
+                }
 
-                    @Override
-                    public void onTextChanged(EditText editText) {
-                        if (editText.getText().length() == 0) {
-                            searchResult.clear();
-                            searchResultKeys.clear();
-                            lastSearchString = null;
-                            nextSearchBingString = null;
-                            giphySearchEndReached = true;
-                            searching = false;
-                            requestQueue.cancelAll("search");
-                            if (type == 0) {
-                                emptyView.setText(LocaleController.getString("NoRecentPhotos", R.string.NoRecentPhotos));
-                            } else if (type == 1) {
-                                emptyView.setText(LocaleController.getString("NoRecentGIFs", R.string.NoRecentGIFs));
-                            }
-                            updateSearchInterface();
-                        }
-                    }
-
-                    @Override
-                    public void onSearchPressed(EditText editText) {
-                        if (editText.getText().toString().length() == 0) {
-                            return;
-                        }
+                @Override
+                public void onTextChanged(EditText editText) {
+                    if (editText.getText().length() == 0) {
                         searchResult.clear();
                         searchResultKeys.clear();
+                        lastSearchString = null;
                         nextSearchBingString = null;
                         giphySearchEndReached = true;
+                        searching = false;
+                        requestQueue.cancelAll("search");
                         if (type == 0) {
-                            searchBingImages(editText.getText().toString(), 0, 53);
+                            emptyView.setText(LocaleController.getString("NoRecentPhotos", R.string.NoRecentPhotos));
                         } else if (type == 1) {
-                            searchGiphyImages(editText.getText().toString(), 0, 53);
-                        }
-                        lastSearchString = editText.getText().toString();
-                        if (lastSearchString.length() == 0) {
-                            lastSearchString = null;
-                            if (type == 0) {
-                                emptyView.setText(LocaleController.getString("NoRecentPhotos", R.string.NoRecentPhotos));
-                            } else if (type == 1) {
-                                emptyView.setText(LocaleController.getString("NoRecentGIFs", R.string.NoRecentGIFs));
-                            }
-                        } else {
-                            emptyView.setText(LocaleController.getString("NoResult", R.string.NoResult));
+                            emptyView.setText(LocaleController.getString("NoRecentGIFs", R.string.NoRecentGIFs));
                         }
                         updateSearchInterface();
                     }
-                });
-            }
-
-            if (selectedAlbum == null) {
-                if (type == 0) {
-                    searchItem.getSearchField().setHint(LocaleController.getString("SearchImagesTitle", R.string.SearchImagesTitle));
-                } else if (type == 1) {
-                    searchItem.getSearchField().setHint(LocaleController.getString("SearchGifsTitle", R.string.SearchGifsTitle));
                 }
-            }
 
-            fragmentView = new FrameLayout(getParentActivity());
-
-            FrameLayout frameLayout = (FrameLayout) fragmentView;
-            frameLayout.setBackgroundColor(0xff000000);
-
-            listView = new GridView(getParentActivity());
-            listView.setPadding(AndroidUtilities.dp(4), AndroidUtilities.dp(4), AndroidUtilities.dp(4), AndroidUtilities.dp(4));
-            listView.setClipToPadding(false);
-            listView.setDrawSelectorOnTop(true);
-            listView.setStretchMode(GridView.STRETCH_COLUMN_WIDTH);
-            listView.setHorizontalScrollBarEnabled(false);
-            listView.setVerticalScrollBarEnabled(false);
-            listView.setNumColumns(GridView.AUTO_FIT);
-            listView.setVerticalSpacing(AndroidUtilities.dp(4));
-            listView.setHorizontalSpacing(AndroidUtilities.dp(4));
-            listView.setSelector(R.drawable.list_selector);
-            frameLayout.addView(listView);
-            FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) listView.getLayoutParams();
-            layoutParams.width = FrameLayout.LayoutParams.MATCH_PARENT;
-            layoutParams.height = FrameLayout.LayoutParams.MATCH_PARENT;
-            layoutParams.bottomMargin = singlePhoto ? 0 : AndroidUtilities.dp(48);
-            listView.setLayoutParams(layoutParams);
-            listView.setAdapter(listAdapter = new ListAdapter(getParentActivity()));
-            AndroidUtilities.setListViewEdgeEffectColor(listView, 0xff333333);
-            listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
                 @Override
-                public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
-                    ArrayList<Object> arrayList = null;
-                    if (selectedAlbum != null) {
-                        arrayList = (ArrayList) selectedAlbum.photos;
-                    } else {
-                        if (searchResult.isEmpty() && lastSearchString == null) {
-                            arrayList = (ArrayList) recentImages;
-                        } else {
-                            arrayList = (ArrayList) searchResult;
-                        }
-                    }
-                    if (i < 0 || i >= arrayList.size()) {
+                public void onSearchPressed(EditText editText) {
+                    if (editText.getText().toString().length() == 0) {
                         return;
                     }
-                    PhotoViewer.getInstance().setParentActivity(getParentActivity());
-                    PhotoViewer.getInstance().openPhotoForSelect(arrayList, i, singlePhoto ? 1 : 0, PhotoPickerActivity.this);
+                    searchResult.clear();
+                    searchResultKeys.clear();
+                    nextSearchBingString = null;
+                    giphySearchEndReached = true;
+                    if (type == 0) {
+                        searchBingImages(editText.getText().toString(), 0, 53);
+                    } else if (type == 1) {
+                        searchGiphyImages(editText.getText().toString(), 0, 53);
+                    }
+                    lastSearchString = editText.getText().toString();
+                    if (lastSearchString.length() == 0) {
+                        lastSearchString = null;
+                        if (type == 0) {
+                            emptyView.setText(LocaleController.getString("NoRecentPhotos", R.string.NoRecentPhotos));
+                        } else if (type == 1) {
+                            emptyView.setText(LocaleController.getString("NoRecentGIFs", R.string.NoRecentGIFs));
+                        }
+                    } else {
+                        emptyView.setText(LocaleController.getString("NoResult", R.string.NoResult));
+                    }
+                    updateSearchInterface();
+                }
+            });
+        }
+
+        if (selectedAlbum == null) {
+            if (type == 0) {
+                searchItem.getSearchField().setHint(LocaleController.getString("SearchImagesTitle", R.string.SearchImagesTitle));
+            } else if (type == 1) {
+                searchItem.getSearchField().setHint(LocaleController.getString("SearchGifsTitle", R.string.SearchGifsTitle));
+            }
+        }
+
+        fragmentView = new FrameLayout(context);
+
+        FrameLayout frameLayout = (FrameLayout) fragmentView;
+        frameLayout.setBackgroundColor(0xff000000);
+
+        listView = new GridView(context);
+        listView.setPadding(AndroidUtilities.dp(4), AndroidUtilities.dp(4), AndroidUtilities.dp(4), AndroidUtilities.dp(4));
+        listView.setClipToPadding(false);
+        listView.setDrawSelectorOnTop(true);
+        listView.setStretchMode(GridView.STRETCH_COLUMN_WIDTH);
+        listView.setHorizontalScrollBarEnabled(false);
+        listView.setVerticalScrollBarEnabled(false);
+        listView.setNumColumns(GridView.AUTO_FIT);
+        listView.setVerticalSpacing(AndroidUtilities.dp(4));
+        listView.setHorizontalSpacing(AndroidUtilities.dp(4));
+        listView.setSelector(R.drawable.list_selector);
+        frameLayout.addView(listView);
+        FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) listView.getLayoutParams();
+        layoutParams.width = FrameLayout.LayoutParams.MATCH_PARENT;
+        layoutParams.height = FrameLayout.LayoutParams.MATCH_PARENT;
+        layoutParams.bottomMargin = singlePhoto ? 0 : AndroidUtilities.dp(48);
+        listView.setLayoutParams(layoutParams);
+        listView.setAdapter(listAdapter = new ListAdapter(context));
+        AndroidUtilities.setListViewEdgeEffectColor(listView, 0xff333333);
+        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
+                ArrayList<Object> arrayList = null;
+                if (selectedAlbum != null) {
+                    arrayList = (ArrayList) selectedAlbum.photos;
+                } else {
+                    if (searchResult.isEmpty() && lastSearchString == null) {
+                        arrayList = (ArrayList) recentImages;
+                    } else {
+                        arrayList = (ArrayList) searchResult;
+                    }
+                }
+                if (i < 0 || i >= arrayList.size()) {
+                    return;
+                }
+                PhotoViewer.getInstance().setParentActivity(getParentActivity());
+                PhotoViewer.getInstance().openPhotoForSelect(arrayList, i, singlePhoto ? 1 : 0, PhotoPickerActivity.this);
+            }
+        });
+
+        if (selectedAlbum == null) {
+            listView.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
+                @Override
+                public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
+                    if (searchResult.isEmpty() && lastSearchString == null) {
+                        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                        builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
+                        builder.setMessage(LocaleController.getString("ClearSearch", R.string.ClearSearch));
+                        builder.setPositiveButton(LocaleController.getString("ClearButton", R.string.ClearButton).toUpperCase(), new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialogInterface, int i) {
+                                recentImages.clear();
+                                if (listAdapter != null) {
+                                    listAdapter.notifyDataSetChanged();
+                                }
+                                MessagesStorage.getInstance().clearWebRecent(type);
+                            }
+                        });
+                        builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+                        showAlertDialog(builder);
+                        return true;
+                    }
+                    return false;
+                }
+            });
+        }
+
+        emptyView = new TextView(context);
+        emptyView.setTextColor(0xff808080);
+        emptyView.setTextSize(20);
+        emptyView.setGravity(Gravity.CENTER);
+        emptyView.setVisibility(View.GONE);
+        if (selectedAlbum != null) {
+            emptyView.setText(LocaleController.getString("NoPhotos", R.string.NoPhotos));
+        } else {
+            if (type == 0) {
+                emptyView.setText(LocaleController.getString("NoRecentPhotos", R.string.NoRecentPhotos));
+            } else if (type == 1) {
+                emptyView.setText(LocaleController.getString("NoRecentGIFs", R.string.NoRecentGIFs));
+            }
+        }
+        frameLayout.addView(emptyView);
+        layoutParams = (FrameLayout.LayoutParams) emptyView.getLayoutParams();
+        layoutParams.width = FrameLayout.LayoutParams.MATCH_PARENT;
+        layoutParams.height = FrameLayout.LayoutParams.MATCH_PARENT;
+        layoutParams.bottomMargin = singlePhoto ? 0 : AndroidUtilities.dp(48);
+        emptyView.setLayoutParams(layoutParams);
+        emptyView.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                return true;
+            }
+        });
+
+        if (selectedAlbum == null) {
+            listView.setOnScrollListener(new AbsListView.OnScrollListener() {
+                @Override
+                public void onScrollStateChanged(AbsListView absListView, int i) {
+                    if (i == SCROLL_STATE_TOUCH_SCROLL) {
+                        AndroidUtilities.hideKeyboard(getParentActivity().getCurrentFocus());
+                    }
+                }
+
+                @Override
+                public void onScroll(AbsListView absListView, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
+                    if (visibleItemCount != 0 && firstVisibleItem + visibleItemCount > totalItemCount - 2 && !searching) {
+                        if (type == 0 && nextSearchBingString != null) {
+                            searchBingImages(lastSearchString, searchResult.size(), 54);
+                        } else if (type == 1 && !giphySearchEndReached) {
+                            searchGiphyImages(searchItem.getSearchField().getText().toString(), searchResult.size(), 54);
+                        }
+                    }
                 }
             });
 
-            if (selectedAlbum == null) {
-                listView.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
-                    @Override
-                    public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
-                        if (searchResult.isEmpty() && lastSearchString == null) {
-                            AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-                            builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
-                            builder.setMessage(LocaleController.getString("ClearSearch", R.string.ClearSearch));
-                            builder.setPositiveButton(LocaleController.getString("ClearButton", R.string.ClearButton).toUpperCase(), new DialogInterface.OnClickListener() {
-                                @Override
-                                public void onClick(DialogInterface dialogInterface, int i) {
-                                    recentImages.clear();
-                                    if (listAdapter != null) {
-                                        listAdapter.notifyDataSetChanged();
-                                    }
-                                    MessagesStorage.getInstance().clearWebRecent(type);
-                                }
-                            });
-                            builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-                            showAlertDialog(builder);
-                            return true;
-                        }
-                        return false;
-                    }
-                });
-            }
-
-            emptyView = new TextView(getParentActivity());
-            emptyView.setTextColor(0xff808080);
-            emptyView.setTextSize(20);
-            emptyView.setGravity(Gravity.CENTER);
-            emptyView.setVisibility(View.GONE);
-            if (selectedAlbum != null) {
-                emptyView.setText(LocaleController.getString("NoPhotos", R.string.NoPhotos));
-            } else {
-                if (type == 0) {
-                    emptyView.setText(LocaleController.getString("NoRecentPhotos", R.string.NoRecentPhotos));
-                } else if (type == 1) {
-                    emptyView.setText(LocaleController.getString("NoRecentGIFs", R.string.NoRecentGIFs));
-                }
-            }
-            frameLayout.addView(emptyView);
-            layoutParams = (FrameLayout.LayoutParams) emptyView.getLayoutParams();
+            progressView = new FrameLayout(context);
+            progressView.setVisibility(View.GONE);
+            frameLayout.addView(progressView);
+            layoutParams = (FrameLayout.LayoutParams) progressView.getLayoutParams();
             layoutParams.width = FrameLayout.LayoutParams.MATCH_PARENT;
             layoutParams.height = FrameLayout.LayoutParams.MATCH_PARENT;
             layoutParams.bottomMargin = singlePhoto ? 0 : AndroidUtilities.dp(48);
-            emptyView.setLayoutParams(layoutParams);
-            emptyView.setOnTouchListener(new View.OnTouchListener() {
-                @Override
-                public boolean onTouch(View v, MotionEvent event) {
-                    return true;
-                }
-            });
+            progressView.setLayoutParams(layoutParams);
 
-            if (selectedAlbum == null) {
-                listView.setOnScrollListener(new AbsListView.OnScrollListener() {
-                    @Override
-                    public void onScrollStateChanged(AbsListView absListView, int i) {
-                        if (i == SCROLL_STATE_TOUCH_SCROLL) {
-                            AndroidUtilities.hideKeyboard(getParentActivity().getCurrentFocus());
-                        }
-                    }
+            ProgressBar progressBar = new ProgressBar(context);
+            progressView.addView(progressBar);
+            layoutParams = (FrameLayout.LayoutParams) progressBar.getLayoutParams();
+            layoutParams.width = FrameLayout.LayoutParams.WRAP_CONTENT;
+            layoutParams.height = FrameLayout.LayoutParams.WRAP_CONTENT;
+            layoutParams.gravity = Gravity.CENTER;
+            progressBar.setLayoutParams(layoutParams);
 
-                    @Override
-                    public void onScroll(AbsListView absListView, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
-                        if (visibleItemCount != 0 && firstVisibleItem + visibleItemCount > totalItemCount - 2 && !searching) {
-                            if (type == 0 && nextSearchBingString != null) {
-                                searchBingImages(lastSearchString, searchResult.size(), 54);
-                            } else if (type == 1 && !giphySearchEndReached) {
-                                searchGiphyImages(searchItem.getSearchField().getText().toString(), searchResult.size(), 54);
-                            }
-                        }
-                    }
-                });
-
-                progressView = new FrameLayout(getParentActivity());
-                progressView.setVisibility(View.GONE);
-                frameLayout.addView(progressView);
-                layoutParams = (FrameLayout.LayoutParams) progressView.getLayoutParams();
-                layoutParams.width = FrameLayout.LayoutParams.MATCH_PARENT;
-                layoutParams.height = FrameLayout.LayoutParams.MATCH_PARENT;
-                layoutParams.bottomMargin = singlePhoto ? 0 : AndroidUtilities.dp(48);
-                progressView.setLayoutParams(layoutParams);
-
-                ProgressBar progressBar = new ProgressBar(getParentActivity());
-                progressView.addView(progressBar);
-                layoutParams = (FrameLayout.LayoutParams) progressBar.getLayoutParams();
-                layoutParams.width = FrameLayout.LayoutParams.WRAP_CONTENT;
-                layoutParams.height = FrameLayout.LayoutParams.WRAP_CONTENT;
-                layoutParams.gravity = Gravity.CENTER;
-                progressBar.setLayoutParams(layoutParams);
-
-                updateSearchInterface();
-            }
-
-            photoPickerBottomLayout = new PhotoPickerBottomLayout(getParentActivity());
-            frameLayout.addView(photoPickerBottomLayout);
-            layoutParams = (FrameLayout.LayoutParams) photoPickerBottomLayout.getLayoutParams();
-            layoutParams.width = FrameLayout.LayoutParams.MATCH_PARENT;
-            layoutParams.height = AndroidUtilities.dp(48);
-            layoutParams.gravity = Gravity.BOTTOM;
-            photoPickerBottomLayout.setLayoutParams(layoutParams);
-            photoPickerBottomLayout.cancelButton.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-                    delegate.actionButtonPressed(true);
-                    finishFragment();
-                }
-            });
-            photoPickerBottomLayout.doneButton.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-                    sendSelectedPhotos();
-                }
-            });
-            if (singlePhoto) {
-                photoPickerBottomLayout.setVisibility(View.GONE);
-            }
-
-            listView.setEmptyView(emptyView);
-            photoPickerBottomLayout.updateSelectedCount(selectedPhotos.size() + selectedWebPhotos.size(), true);
-        } else {
-            ViewGroup parent = (ViewGroup)fragmentView.getParent();
-            if (parent != null) {
-                parent.removeView(fragmentView);
-            }
+            updateSearchInterface();
         }
+
+        photoPickerBottomLayout = new PhotoPickerBottomLayout(context);
+        frameLayout.addView(photoPickerBottomLayout);
+        layoutParams = (FrameLayout.LayoutParams) photoPickerBottomLayout.getLayoutParams();
+        layoutParams.width = FrameLayout.LayoutParams.MATCH_PARENT;
+        layoutParams.height = AndroidUtilities.dp(48);
+        layoutParams.gravity = Gravity.BOTTOM;
+        photoPickerBottomLayout.setLayoutParams(layoutParams);
+        photoPickerBottomLayout.cancelButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                delegate.actionButtonPressed(true);
+                finishFragment();
+            }
+        });
+        photoPickerBottomLayout.doneButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                sendSelectedPhotos();
+            }
+        });
+        if (singlePhoto) {
+            photoPickerBottomLayout.setVisibility(View.GONE);
+        }
+
+        listView.setEmptyView(emptyView);
+        photoPickerBottomLayout.updateSelectedCount(selectedPhotos.size() + selectedWebPhotos.size(), true);
+
         return fragmentView;
     }
 
@@ -488,7 +482,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
             object.viewX = coords[0];
             object.viewY = coords[1] - AndroidUtilities.statusBarHeight;
             object.parentView = listView;
-            object.imageReceiver = cell.photoImage.imageReceiver;
+            object.imageReceiver = cell.photoImage.getImageReceiver();
             object.thumb = object.imageReceiver.getBitmap();
             cell.checkBox.setVisibility(View.GONE);
             return object;
@@ -534,7 +528,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
     public Bitmap getThumbForPhoto(MessageObject messageObject, TLRPC.FileLocation fileLocation, int index) {
         PhotoPickerPhotoCell cell = getCellForIndex(index);
         if (cell != null) {
-            return cell.photoImage.imageReceiver.getBitmap();
+            return cell.photoImage.getImageReceiver().getBitmap();
         }
         return null;
     }
@@ -1057,7 +1051,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
                     cell.checkBox.setChecked(selectedWebPhotos.containsKey(photoEntry.id), false);
                     showing = PhotoViewer.getInstance().isShowingImage(photoEntry.thumbUrl);
                 }
-                imageView.imageReceiver.setVisible(!showing, false);
+                imageView.getImageReceiver().setVisible(!showing, false);
                 cell.checkBox.setVisibility(singlePhoto || showing ? View.GONE : View.VISIBLE);
             } else if (viewType == 1) {
                 if (view == null) {
