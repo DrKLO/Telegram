@@ -948,7 +948,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                 actionBarLayout.presentFragment(fragment, true);
 
                 if (sendingText != null) {
-                    fragment.processSendingText(sendingText);
+                    fragment.setReplyText(sendingText);
                 }
                 if (photoPathsArray != null) {
                     SendMessagesHelper.prepareSendingPhotos(null, photoPathsArray, dialog_id, null);
