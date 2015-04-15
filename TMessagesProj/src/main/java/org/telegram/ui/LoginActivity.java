@@ -845,8 +845,8 @@ public class LoginActivity extends BaseFragment {
                                             needShowAlert(LocaleController.getString("AppName", R.string.AppName), error.text);
                                         }
                                     }
-                                    needHideProgress();
                                 }
+                                needHideProgress();
                             } catch (Throwable ex) {
                                 Log.e(true, TAG, "Caught exception in phone reg", ex);
                             } finally {
