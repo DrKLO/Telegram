@@ -49,9 +49,13 @@ public class NotificationCenter {
     public static final int recentImagesDidLoaded = totalEvents++;
     public static final int replaceMessagesObjects = totalEvents++;
     public static final int didSetPasscode = totalEvents++;
+    public static final int didSetTwoStepPassword = totalEvents++;
     public static final int screenStateChanged = totalEvents++;
     public static final int appSwitchedToForeground = totalEvents++;
     public static final int didLoadedReplyMessages = totalEvents++;
+    public static final int newSessionReceived = totalEvents++;
+    public static final int didReceivedWebpages = totalEvents++;
+    public static final int didReceivedWebpagesInUpdates = totalEvents++;
 
     public static final int httpFileDidLoaded = totalEvents++;
     public static final int httpFileDidFailedLoad = totalEvents++;
@@ -64,7 +68,6 @@ public class NotificationCenter {
     public static final int didReceiveSmsCode = totalEvents++;
     public static final int emojiDidLoaded = totalEvents++;
     public static final int appDidLogout = totalEvents++;
-    public static final int needPasswordEnter = totalEvents++;
 
     public static final int FileDidUpload = totalEvents++;
     public static final int FileDidFailUpload = totalEvents++;

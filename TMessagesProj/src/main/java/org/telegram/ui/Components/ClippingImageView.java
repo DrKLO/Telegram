@@ -22,6 +22,7 @@ import org.telegram.messenger.FileLog;
 import org.telegram.ui.AnimationCompat.ViewProxy;
 
 public class ClippingImageView extends View {
+
     private int clipBottom;
     private int clipLeft;
     private int clipRight;
@@ -79,7 +80,7 @@ public class ClippingImageView extends View {
     }
 
     public void onDraw(Canvas canvas) {
-        if (getVisibility() == GONE || getVisibility() == INVISIBLE) {
+        if (getVisibility() != VISIBLE) {
             return;
         }
         if (bmp != null) {

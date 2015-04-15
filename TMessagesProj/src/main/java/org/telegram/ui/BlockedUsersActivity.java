@@ -64,131 +64,124 @@ public class BlockedUsersActivity extends BaseFragment implements NotificationCe
     }
 
     @Override
-    public View createView(LayoutInflater inflater) {
-        if (fragmentView == null) {
-            actionBar.setBackButtonImage(R.drawable.ic_ab_back);
-            actionBar.setAllowOverlayTitle(true);
-            actionBar.setTitle(LocaleController.getString("BlockedUsers", R.string.BlockedUsers));
-            actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
-                @Override
-                public void onItemClick(int id) {
-                    if (id == -1) {
-                        finishFragment();
-                    } else if (id == block_user) {
-                        Bundle args = new Bundle();
-                        args.putBoolean("onlyUsers", true);
-                        args.putBoolean("destroyAfterSelect", true);
-                        args.putBoolean("returnAsResult", true);
-                        ContactsActivity fragment = new ContactsActivity(args);
-                        fragment.setDelegate(BlockedUsersActivity.this);
-                        presentFragment(fragment);
-                    }
+    public View createView(Context context, LayoutInflater inflater) {
+        actionBar.setBackButtonImage(R.drawable.ic_ab_back);
+        actionBar.setAllowOverlayTitle(true);
+        actionBar.setTitle(LocaleController.getString("BlockedUsers", R.string.BlockedUsers));
+        actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
+            @Override
+            public void onItemClick(int id) {
+                if (id == -1) {
+                    finishFragment();
+                } else if (id == block_user) {
+                    Bundle args = new Bundle();
+                    args.putBoolean("onlyUsers", true);
+                    args.putBoolean("destroyAfterSelect", true);
+                    args.putBoolean("returnAsResult", true);
+                    ContactsActivity fragment = new ContactsActivity(args);
+                    fragment.setDelegate(BlockedUsersActivity.this);
+                    presentFragment(fragment);
                 }
-            });
+            }
+        });
 
-            ActionBarMenu menu = actionBar.createMenu();
-            menu.addItem(block_user, R.drawable.plus);
+        ActionBarMenu menu = actionBar.createMenu();
+        menu.addItem(block_user, R.drawable.plus);
 
-            fragmentView = new FrameLayout(getParentActivity());
-            FrameLayout frameLayout = (FrameLayout) fragmentView;
+        fragmentView = new FrameLayout(context);
+        FrameLayout frameLayout = (FrameLayout) fragmentView;
 
-            emptyTextView = new TextView(getParentActivity());
-            emptyTextView.setTextColor(0xff808080);
-            emptyTextView.setTextSize(20);
-            emptyTextView.setGravity(Gravity.CENTER);
-            emptyTextView.setVisibility(View.INVISIBLE);
-            emptyTextView.setText(LocaleController.getString("NoBlocked", R.string.NoBlocked));
-            frameLayout.addView(emptyTextView);
-            FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) emptyTextView.getLayoutParams();
-            layoutParams.width = FrameLayout.LayoutParams.MATCH_PARENT;
-            layoutParams.height = FrameLayout.LayoutParams.MATCH_PARENT;
-            layoutParams.gravity = Gravity.TOP;
-            emptyTextView.setLayoutParams(layoutParams);
-            emptyTextView.setOnTouchListener(new View.OnTouchListener() {
-                @Override
-                public boolean onTouch(View v, MotionEvent event) {
+        emptyTextView = new TextView(context);
+        emptyTextView.setTextColor(0xff808080);
+        emptyTextView.setTextSize(20);
+        emptyTextView.setGravity(Gravity.CENTER);
+        emptyTextView.setVisibility(View.INVISIBLE);
+        emptyTextView.setText(LocaleController.getString("NoBlocked", R.string.NoBlocked));
+        frameLayout.addView(emptyTextView);
+        FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) emptyTextView.getLayoutParams();
+        layoutParams.width = FrameLayout.LayoutParams.MATCH_PARENT;
+        layoutParams.height = FrameLayout.LayoutParams.MATCH_PARENT;
+        layoutParams.gravity = Gravity.TOP;
+        emptyTextView.setLayoutParams(layoutParams);
+        emptyTextView.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                return true;
+            }
+        });
+
+        progressView = new FrameLayout(context);
+        frameLayout.addView(progressView);
+        layoutParams = (FrameLayout.LayoutParams) progressView.getLayoutParams();
+        layoutParams.width = FrameLayout.LayoutParams.MATCH_PARENT;
+        layoutParams.height = FrameLayout.LayoutParams.MATCH_PARENT;
+        progressView.setLayoutParams(layoutParams);
+
+        ProgressBar progressBar = new ProgressBar(context);
+        progressView.addView(progressBar);
+        layoutParams = (FrameLayout.LayoutParams) progressView.getLayoutParams();
+        layoutParams.width = FrameLayout.LayoutParams.WRAP_CONTENT;
+        layoutParams.height = FrameLayout.LayoutParams.WRAP_CONTENT;
+        layoutParams.gravity = Gravity.CENTER;
+        progressView.setLayoutParams(layoutParams);
+
+        listView = new ListView(context);
+        listView.setEmptyView(emptyTextView);
+        listView.setVerticalScrollBarEnabled(false);
+        listView.setDivider(null);
+        listView.setDividerHeight(0);
+        listView.setAdapter(listViewAdapter = new ListAdapter(context));
+        if (Build.VERSION.SDK_INT >= 11) {
+            listView.setVerticalScrollbarPosition(LocaleController.isRTL ? ListView.SCROLLBAR_POSITION_LEFT : ListView.SCROLLBAR_POSITION_RIGHT);
+        }
+        frameLayout.addView(listView);
+        layoutParams = (FrameLayout.LayoutParams) listView.getLayoutParams();
+        layoutParams.width = FrameLayout.LayoutParams.MATCH_PARENT;
+        layoutParams.height = FrameLayout.LayoutParams.MATCH_PARENT;
+        listView.setLayoutParams(layoutParams);
+
+        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
+                if (i < MessagesController.getInstance().blockedUsers.size()) {
+                    Bundle args = new Bundle();
+                    args.putInt("user_id", MessagesController.getInstance().blockedUsers.get(i));
+                    presentFragment(new ProfileActivity(args));
+                }
+            }
+        });
+
+        listView.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
+            @Override
+            public boolean onItemLongClick(AdapterView<?> adapterView, View view, int i, long l) {
+                if (i < 0 || i >= MessagesController.getInstance().blockedUsers.size() || getParentActivity() == null) {
                     return true;
                 }
-            });
+                selectedUserId = MessagesController.getInstance().blockedUsers.get(i);
 
-            progressView = new FrameLayout(getParentActivity());
-            frameLayout.addView(progressView);
-            layoutParams = (FrameLayout.LayoutParams) progressView.getLayoutParams();
-            layoutParams.width = FrameLayout.LayoutParams.MATCH_PARENT;
-            layoutParams.height = FrameLayout.LayoutParams.MATCH_PARENT;
-            progressView.setLayoutParams(layoutParams);
-
-            ProgressBar progressBar = new ProgressBar(getParentActivity());
-            progressView.addView(progressBar);
-            layoutParams = (FrameLayout.LayoutParams) progressView.getLayoutParams();
-            layoutParams.width = FrameLayout.LayoutParams.WRAP_CONTENT;
-            layoutParams.height = FrameLayout.LayoutParams.WRAP_CONTENT;
-            layoutParams.gravity = Gravity.CENTER;
-            progressView.setLayoutParams(layoutParams);
-
-            listView = new ListView(getParentActivity());
-            listView.setEmptyView(emptyTextView);
-            listView.setVerticalScrollBarEnabled(false);
-            listView.setDivider(null);
-            listView.setDividerHeight(0);
-            listView.setAdapter(listViewAdapter = new ListAdapter(getParentActivity()));
-            if (Build.VERSION.SDK_INT >= 11) {
-                listView.setVerticalScrollbarPosition(LocaleController.isRTL ? ListView.SCROLLBAR_POSITION_LEFT : ListView.SCROLLBAR_POSITION_RIGHT);
-            }
-            frameLayout.addView(listView);
-            layoutParams = (FrameLayout.LayoutParams) listView.getLayoutParams();
-            layoutParams.width = FrameLayout.LayoutParams.MATCH_PARENT;
-            layoutParams.height = FrameLayout.LayoutParams.MATCH_PARENT;
-            listView.setLayoutParams(layoutParams);
-
-            listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-                @Override
-                public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
-                    if (i < MessagesController.getInstance().blockedUsers.size()) {
-                        Bundle args = new Bundle();
-                        args.putInt("user_id", MessagesController.getInstance().blockedUsers.get(i));
-                        presentFragment(new ProfileActivity(args));
-                    }
-                }
-            });
-
-            listView.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
-                @Override
-                public boolean onItemLongClick(AdapterView<?> adapterView, View view, int i, long l) {
-                    if (i < 0 || i >= MessagesController.getInstance().blockedUsers.size() || getParentActivity() == null) {
-                        return true;
-                    }
-                    selectedUserId = MessagesController.getInstance().blockedUsers.get(i);
-
-                    AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-                    CharSequence[] items = new CharSequence[] {LocaleController.getString("Unblock", R.string.Unblock)};
-                    builder.setItems(items, new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialogInterface, int i) {
-                            if (i == 0) {
-                                MessagesController.getInstance().unblockUser(selectedUserId);
-                            }
+                AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                CharSequence[] items = new CharSequence[]{LocaleController.getString("Unblock", R.string.Unblock)};
+                builder.setItems(items, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        if (i == 0) {
+                            MessagesController.getInstance().unblockUser(selectedUserId);
                         }
-                    });
-                    showAlertDialog(builder);
+                    }
+                });
+                showAlertDialog(builder);
 
-                    return true;
-                }
-            });
-
-            if (MessagesController.getInstance().loadingBlockedUsers) {
-                progressView.setVisibility(View.VISIBLE);
-                emptyTextView.setVisibility(View.GONE);
-                listView.setEmptyView(null);
-            } else {
-                progressView.setVisibility(View.GONE);
-                listView.setEmptyView(emptyTextView);
+                return true;
             }
+        });
+
+        if (MessagesController.getInstance().loadingBlockedUsers) {
+            progressView.setVisibility(View.VISIBLE);
+            emptyTextView.setVisibility(View.GONE);
+            listView.setEmptyView(null);
         } else {
-            ViewGroup parent = (ViewGroup)fragmentView.getParent();
-            if (parent != null) {
-                parent.removeView(fragmentView);
-            }
+            progressView.setVisibility(View.GONE);
+            listView.setEmptyView(emptyTextView);
         }
         return fragmentView;
     }

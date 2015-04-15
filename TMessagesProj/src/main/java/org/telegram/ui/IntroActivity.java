@@ -19,7 +19,6 @@ import android.os.Bundle;
 import android.os.Parcelable;
 import android.support.v4.view.PagerAdapter;
 import android.support.v4.view.ViewPager;
-import android.text.Html;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
@@ -267,7 +266,7 @@ public class IntroActivity extends Activity {
             container.addView(view, 0);
 
             headerTextView.setText(getString(titles[position]));
-            messageTextView.setText(Html.fromHtml(getString(messages[position])));
+            messageTextView.setText(AndroidUtilities.replaceTags(getString(messages[position])));
 
             return view;
         }

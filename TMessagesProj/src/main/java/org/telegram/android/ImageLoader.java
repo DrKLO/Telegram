@@ -646,9 +646,13 @@ public class ImageLoader {
                     } else {
                         opts.inPreferredConfig = Bitmap.Config.RGB_565;
                     }
+                    //if (Build.VERSION.SDK_INT < 21) {
+                    //    opts.inPurgeable = true;
+                    //}
+
                     opts.inDither = false;
                     if (mediaId != null) {
-                        image = MediaStore.Images.Thumbnails.getThumbnail(ApplicationLoader.applicationContext.getContentResolver(), mediaId, MediaStore.Images.Thumbnails.MINI_KIND, null);
+                        image = MediaStore.Images.Thumbnails.getThumbnail(ApplicationLoader.applicationContext.getContentResolver(), mediaId, MediaStore.Images.Thumbnails.MINI_KIND, opts);
                     }
                     if (image == null) {
                         if (isWebp) {
@@ -1989,6 +1993,15 @@ public class ImageLoader {
                     }
                 }
             }
+        } else if (message.media instanceof TLRPC.TL_messageMediaWebPage) {
+            if (message.media.webpage.photo != null) {
+                for (TLRPC.PhotoSize size : message.media.webpage.photo.sizes) {
+                    if (size instanceof TLRPC.TL_photoCachedSize) {
+                        photoSize = size;
+                        break;
+                    }
+                }
+            }
         }
         if (photoSize != null && photoSize.bytes != null && photoSize.bytes.length != 0) {
             if (photoSize.location instanceof TLRPC.TL_fileLocationUnavailable) {
@@ -2026,6 +2039,13 @@ public class ImageLoader {
                 message.media.video.thumb = newPhotoSize;
             } else if (message.media instanceof TLRPC.TL_messageMediaDocument) {
                 message.media.document.thumb = newPhotoSize;
+            } else if (message.media instanceof TLRPC.TL_messageMediaWebPage) {
+                for (int a = 0; a < message.media.webpage.photo.sizes.size(); a++) {
+                    if (message.media.webpage.photo.sizes.get(a) instanceof TLRPC.TL_photoCachedSize) {
+                        message.media.webpage.photo.sizes.set(a, newPhotoSize);
+                        break;
+                    }
+                }
             }
         }
     }

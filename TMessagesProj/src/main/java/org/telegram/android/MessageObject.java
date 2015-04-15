@@ -53,6 +53,7 @@ public class MessageObject {
 
     public TLRPC.Message messageOwner;
     public CharSequence messageText;
+    public CharSequence linkDescription;
     public MessageObject replyMessageObject;
     public int type;
     public int contentType;
@@ -306,7 +307,7 @@ public class MessageObject {
                     messageText = LocaleController.formatString("YouCreatedBroadcastList", R.string.YouCreatedBroadcastList);
                 }
             }
-        } else if (message.media != null && !(message.media instanceof TLRPC.TL_messageMediaEmpty)) {
+        } else if (!isMediaEmpty()) {
             if (message.media instanceof TLRPC.TL_messageMediaPhoto) {
                 messageText = LocaleController.getString("AttachPhoto", R.string.AttachPhoto);
             } else if (message.media instanceof TLRPC.TL_messageMediaVideo) {
@@ -342,22 +343,22 @@ public class MessageObject {
         //messageText = Emoji.replaceEmoji(messageText, textPaint.getFontMetricsInt(), AndroidUtilities.dp(20));
 
         if (message instanceof TLRPC.TL_message || message instanceof TLRPC.TL_messageForwarded_old2) {
-            if (message.media == null || message.media instanceof TLRPC.TL_messageMediaEmpty) {
+            if (isMediaEmpty()) {
                 contentType = type = 0;
-            } else if (message.media != null && message.media instanceof TLRPC.TL_messageMediaPhoto) {
+            } else if (message.media instanceof TLRPC.TL_messageMediaPhoto) {
                 contentType = type = 1;
-            } else if (message.media != null && message.media instanceof TLRPC.TL_messageMediaGeo) {
+            } else if (message.media instanceof TLRPC.TL_messageMediaGeo) {
                 contentType = 1;
                 type = 4;
-            } else if (message.media != null && message.media instanceof TLRPC.TL_messageMediaVideo) {
+            } else if (message.media instanceof TLRPC.TL_messageMediaVideo) {
                 contentType = 1;
                 type = 3;
-            } else if (message.media != null && message.media instanceof TLRPC.TL_messageMediaContact) {
+            } else if (message.media instanceof TLRPC.TL_messageMediaContact) {
                 contentType = 3;
                 type = 12;
-            } else if (message.media != null && message.media instanceof TLRPC.TL_messageMediaUnsupported) {
+            } else if (message.media instanceof TLRPC.TL_messageMediaUnsupported) {
                 contentType = type = 0;
-            } else if (message.media != null && message.media instanceof TLRPC.TL_messageMediaDocument) {
+            } else if (message.media instanceof TLRPC.TL_messageMediaDocument) {
                 contentType = 1;
                 if (message.media.document.mime_type != null) {
                     if (message.media.document.mime_type.equals("image/gif") && message.media.document.thumb != null && !(message.media.document.thumb instanceof TLRPC.TL_photoSizeEmpty)) {
@@ -373,7 +374,7 @@ public class MessageObject {
                 } else {
                     type = 9;
                 }
-            } else if (message.media != null && message.media instanceof TLRPC.TL_messageMediaAudio) {
+            } else if (message.media instanceof TLRPC.TL_messageMediaAudio) {
                 contentType = type = 2;
             }
         } else if (message instanceof TLRPC.TL_messageService) {
@@ -508,6 +509,24 @@ public class MessageObject {
                         photoObject.location = messageOwner.media.document.thumb.location;
                     }
                 }
+            } else if (messageOwner.media instanceof TLRPC.TL_messageMediaWebPage) {
+                if (messageOwner.media.webpage.photo != null) {
+                    if (!update || photoThumbs == null) {
+                        photoThumbs = new ArrayList<>(messageOwner.media.webpage.photo.sizes);
+                    } else if (photoThumbs != null && !photoThumbs.isEmpty()) {
+                        for (TLRPC.PhotoSize photoObject : photoThumbs) {
+                            for (TLRPC.PhotoSize size : messageOwner.media.webpage.photo.sizes) {
+                                if (size instanceof TLRPC.TL_photoSizeEmpty) {
+                                    continue;
+                                }
+                                if (size.type.equals(photoObject.type)) {
+                                    photoObject.location = size.location;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
     }
@@ -613,6 +632,18 @@ public class MessageObject {
         return false;
     }
 
+    public void generateLinkDescription() {
+        if (linkDescription != null) {
+            return;
+        }
+        if (messageOwner.media instanceof TLRPC.TL_messageMediaWebPage && messageOwner.media.webpage instanceof TLRPC.TL_webPage && messageOwner.media.webpage.description != null) {
+            linkDescription = Spannable.Factory.getInstance().newSpannable(messageOwner.media.webpage.description);
+            if (containsUrls(linkDescription)) {
+                Linkify.addLinks((Spannable) linkDescription, Linkify.WEB_URLS);
+            }
+        }
+    }
+
     public void generateLayout(IAniwaysTextContainer textContainer) {
         this.mtextContainer = textContainer;
         CharSequence messageTextDecoded = getAniwaysDecodedMessageTextBigIcons(textContainer);
@@ -621,6 +652,7 @@ public class MessageObject {
             return;
         }
 
+        generateLinkDescription();
         textLayoutBlocks = new ArrayList<>();
 
         if (messageTextDecoded instanceof Spannable && containsUrls(messageTextDecoded)) {
@@ -859,7 +891,7 @@ public class MessageObject {
     }
 
     public boolean isSending() {
-        return messageOwner.send_state == MESSAGE_SEND_STATE_SENDING;
+        return messageOwner.send_state == MESSAGE_SEND_STATE_SENDING && messageOwner.id < 0;
     }
 
     public boolean isSendError() {
@@ -867,7 +899,7 @@ public class MessageObject {
     }
 
     public boolean isSent() {
-        return messageOwner.send_state == MESSAGE_SEND_STATE_SENT;
+        return messageOwner.send_state == MESSAGE_SEND_STATE_SENT || messageOwner.id > 0;
     }
 
     public String getSecretTimeString() {
@@ -1021,5 +1053,13 @@ public class MessageObject {
 
     public boolean isReply() {
         return !(replyMessageObject != null && replyMessageObject.messageOwner instanceof TLRPC.TL_messageEmpty) && messageOwner.reply_to_msg_id != 0 && (messageOwner.flags & TLRPC.MESSAGE_FLAG_REPLY) != 0;
+    }
+
+    public boolean isMediaEmpty() {
+        return isMediaEmpty(messageOwner);
+    }
+
+    public static boolean isMediaEmpty(TLRPC.Message message) {
+        return message == null || message.media == null || message.media instanceof TLRPC.TL_messageMediaEmpty || message.media instanceof TLRPC.TL_messageMediaWebPage;
     }
 }

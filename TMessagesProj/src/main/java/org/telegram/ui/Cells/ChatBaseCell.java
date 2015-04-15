@@ -14,7 +14,6 @@ import android.content.res.Configuration;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.drawable.Drawable;
-import android.text.Html;
 import android.text.Layout;
 import android.text.StaticLayout;
 import android.text.TextPaint;
@@ -83,9 +82,9 @@ public class ChatBaseCell extends BaseCell {
     private static TextPaint timeMediaPaint;
     private static TextPaint namePaint;
     private static TextPaint forwardNamePaint;
-    private static TextPaint replyNamePaint;
-    private static TextPaint replyTextPaint;
-    private static Paint replyLinePaint;
+    protected static TextPaint replyNamePaint;
+    protected static TextPaint replyTextPaint;
+    protected static Paint replyLinePaint;
 
     protected int backgroundWidth = 100;
 
@@ -191,6 +190,7 @@ public class ChatBaseCell extends BaseCell {
 
             replyTextPaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
             replyTextPaint.setTextSize(AndroidUtilities.dp(14));
+            replyTextPaint.linkColor = 0xff316f9f;
 
             replyLinePaint = new Paint();
         }
@@ -362,7 +362,7 @@ public class ChatBaseCell extends BaseCell {
                 forwardedNameWidth = getMaxNameWidth();
 
                 CharSequence str = TextUtils.ellipsize(currentForwardNameString.replace("\n", " "), forwardNamePaint, forwardedNameWidth - AndroidUtilities.dp(40), TextUtils.TruncateAt.END);
-                str = Html.fromHtml(String.format("%s<br>%s <b>%s</b>", LocaleController.getString("ForwardedMessage", R.string.ForwardedMessage), LocaleController.getString("From", R.string.From), str));
+                str = AndroidUtilities.replaceTags(String.format("%s\n%s <b>%s</b>", LocaleController.getString("ForwardedMessage", R.string.ForwardedMessage), LocaleController.getString("From", R.string.From), str));
                 forwardedNameLayout = new StaticLayout(str, forwardNamePaint, forwardedNameWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
                 if (forwardedNameLayout.getLineCount() > 1) {
                     forwardedNameWidth = Math.max((int) Math.ceil(forwardedNameLayout.getLineWidth(0)), (int) Math.ceil(forwardedNameLayout.getLineWidth(1)));
