@@ -25,10 +25,10 @@ public class TextInfoPrivacyCell extends FrameLayout {
         super(context);
 
         textView = new TextView(context);
-        textView.setTextColor(0xffa3a3a3);
-        textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
+        textView.setTextColor(0xff808080);
+        textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         textView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
-        textView.setPadding(0, AndroidUtilities.dp(6), 0, AndroidUtilities.dp(16));
+        textView.setPadding(0, AndroidUtilities.dp(10), 0, AndroidUtilities.dp(17));
         addView(textView);
         LayoutParams layoutParams = (LayoutParams) textView.getLayoutParams();
         layoutParams.width = LayoutParams.WRAP_CONTENT;

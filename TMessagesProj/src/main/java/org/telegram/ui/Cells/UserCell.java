@@ -54,7 +54,7 @@ public class UserCell extends FrameLayout {
         super(context);
 
         avatarImageView = new BackupImageView(context);
-        avatarImageView.imageReceiver.setRoundRadius(AndroidUtilities.dp(24));
+        avatarImageView.setRoundRadius(AndroidUtilities.dp(24));
         addView(avatarImageView);
         LayoutParams layoutParams = (LayoutParams) avatarImageView.getLayoutParams();
         layoutParams.width = AndroidUtilities.dp(48);
@@ -113,7 +113,7 @@ public class UserCell extends FrameLayout {
         imageView.setLayoutParams(layoutParams);
 
         checkBox = new CheckBox(context, R.drawable.round_check2);
-        checkBox.setVisibility(GONE);
+        checkBox.setVisibility(INVISIBLE);
         addView(checkBox);
         layoutParams = (LayoutParams) checkBox.getLayoutParams();
         layoutParams.width = AndroidUtilities.dp(22);
@@ -228,7 +228,7 @@ public class UserCell extends FrameLayout {
             }
         }
 
-        imageView.setVisibility(currentDrawable == 0 ? GONE : VISIBLE);
+        imageView.setVisibility(currentDrawable == 0 ? INVISIBLE : VISIBLE);
         imageView.setImageResource(currentDrawable);
         avatarImageView.setImage(photo, "50_50", avatarDrawable);
     }

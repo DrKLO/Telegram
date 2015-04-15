@@ -30,6 +30,7 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.ui.Components.AvatarDrawable;
 
 public class ProfileSearchCell extends BaseCell {
+
     private static TextPaint namePaint;
     private static TextPaint nameEncryptedPaint;
     private static TextPaint onlinePaint;

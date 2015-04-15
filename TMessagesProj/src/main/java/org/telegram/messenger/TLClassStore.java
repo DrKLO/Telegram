@@ -124,8 +124,6 @@ public class TLClassStore {
         classStore.put(TLRPC.TL_boolTrue.constructor, TLRPC.TL_boolTrue.class);
         classStore.put(TLRPC.TL_boolFalse.constructor, TLRPC.TL_boolFalse.class);
         classStore.put(TLRPC.TL_auth_exportedAuthorization.constructor, TLRPC.TL_auth_exportedAuthorization.class);
-        classStore.put(TLRPC.TL_messages_statedMessagesLinks.constructor, TLRPC.TL_messages_statedMessagesLinks.class);
-        classStore.put(TLRPC.TL_messages_statedMessages.constructor, TLRPC.TL_messages_statedMessages.class);
         classStore.put(TLRPC.TL_inputNotifyChats.constructor, TLRPC.TL_inputNotifyChats.class);
         classStore.put(TLRPC.TL_inputNotifyPeer.constructor, TLRPC.TL_inputNotifyPeer.class);
         classStore.put(TLRPC.TL_inputNotifyUsers.constructor, TLRPC.TL_inputNotifyUsers.class);
@@ -322,8 +320,6 @@ public class TLClassStore {
         classStore.put(TLRPC.TL_contactFound.constructor, TLRPC.TL_contactFound.class);
         classStore.put(TLRPC.TL_inputFileBig.constructor, TLRPC.TL_inputFileBig.class);
         classStore.put(TLRPC.TL_inputFile.constructor, TLRPC.TL_inputFile.class);
-        classStore.put(TLRPC.TL_messages_statedMessageLink.constructor, TLRPC.TL_messages_statedMessageLink.class);
-        classStore.put(TLRPC.TL_messages_statedMessage.constructor, TLRPC.TL_messages_statedMessage.class);
         classStore.put(TLRPC.TL_userFull.constructor, TLRPC.TL_userFull.class);
         classStore.put(TLRPC.TL_updates_state.constructor, TLRPC.TL_updates_state.class);
         classStore.put(TLRPC.TL_resPQ.constructor, TLRPC.TL_resPQ.class);
@@ -377,6 +373,17 @@ public class TLClassStore {
         classStore.put(TLRPC.TL_contactLinkHasPhone.constructor, TLRPC.TL_contactLinkHasPhone.class);
         classStore.put(TLRPC.TL_contactLinkContact.constructor, TLRPC.TL_contactLinkContact.class);
         classStore.put(TLRPC.TL_messages_affectedMessages.constructor, TLRPC.TL_messages_affectedMessages.class);
+        classStore.put(TLRPC.TL_updateWebPage.constructor, TLRPC.TL_updateWebPage.class);
+        classStore.put(TLRPC.TL_webPagePending.constructor, TLRPC.TL_webPagePending.class);
+        classStore.put(TLRPC.TL_webPageEmpty.constructor, TLRPC.TL_webPageEmpty.class);
+        classStore.put(TLRPC.TL_webPage.constructor, TLRPC.TL_webPage.class);
+        classStore.put(TLRPC.TL_messageMediaWebPage.constructor, TLRPC.TL_messageMediaWebPage.class);
+        classStore.put(TLRPC.TL_authorization.constructor, TLRPC.TL_authorization.class);
+        classStore.put(TLRPC.TL_account_authorizations.constructor, TLRPC.TL_account_authorizations.class);
+        classStore.put(TLRPC.TL_account_passwordSettings.constructor, TLRPC.TL_account_passwordSettings.class);
+        classStore.put(TLRPC.TL_account_passwordInputSettings.constructor, TLRPC.TL_account_passwordInputSettings.class);
+        classStore.put(TLRPC.TL_auth_passwordRecovery.constructor, TLRPC.TL_auth_passwordRecovery.class);
+        classStore.put(TLRPC.TL_messages_getWebPagePreview.constructor, TLRPC.TL_messages_getWebPagePreview.class);
 
         classStore.put(TLRPC.TL_messageMediaUnsupported_old.constructor, TLRPC.TL_messageMediaUnsupported_old.class);
         classStore.put(TLRPC.TL_userSelf_old2.constructor, TLRPC.TL_userSelf_old2.class);

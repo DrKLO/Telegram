@@ -33,14 +33,17 @@ public class SizeNotifierRelativeLayout extends RelativeLayout {
 
     public SizeNotifierRelativeLayout(Context context) {
         super(context);
+        setWillNotDraw(false);
     }
 
     public SizeNotifierRelativeLayout(android.content.Context context, android.util.AttributeSet attrs) {
         super(context, attrs);
+        setWillNotDraw(false);
     }
 
     public SizeNotifierRelativeLayout(android.content.Context context, android.util.AttributeSet attrs, int defStyle) {
         super(context, attrs, defStyle);
+        setWillNotDraw(false);
     }
 
     public void setBackgroundImage(int resourceId) {

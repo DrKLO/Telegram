@@ -419,6 +419,11 @@ JNIEXPORT void Java_org_telegram_messenger_Utilities_calcCDT(JNIEnv *env, jclass
     free(cdfsMin);
 }
 
+JNIEXPORT int Java_org_telegram_messenger_Utilities_pinBitmap(JNIEnv *env, jclass class, jobject bitmap) {
+    unsigned char *pixels;
+    return AndroidBitmap_lockPixels(env, bitmap, &pixels) >= 0 ? 1 : 0;
+}
+
 JNIEXPORT void Java_org_telegram_messenger_Utilities_loadBitmap(JNIEnv *env, jclass class, jstring path, jobject bitmap, int scale, int width, int height, int stride) {
     
     AndroidBitmapInfo info;

@@ -59,7 +59,7 @@ public class DrawerProfileCell extends FrameLayout {
         shadowView.setLayoutParams(layoutParams);
 
         avatarImageView = new BackupImageView(context);
-        avatarImageView.imageReceiver.setRoundRadius(AndroidUtilities.dp(32));
+        avatarImageView.getImageReceiver().setRoundRadius(AndroidUtilities.dp(32));
         addView(avatarImageView);
         layoutParams = (LayoutParams) avatarImageView.getLayoutParams();
         layoutParams.width = AndroidUtilities.dp(64);

@@ -35,6 +35,7 @@ import java.io.File;
 import java.util.ArrayList;
 
 public class AvatarUpdater implements NotificationCenter.NotificationCenterDelegate, PhotoCropActivity.PhotoEditActivityDelegate {
+
     public String currentPicturePath;
     private TLRPC.PhotoSize smallPhoto;
     private TLRPC.PhotoSize bigPhoto;

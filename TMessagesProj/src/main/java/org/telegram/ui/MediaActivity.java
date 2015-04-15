@@ -216,364 +216,358 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
     }
 
     @Override
-    public View createView(LayoutInflater inflater) {
-        if (fragmentView == null) {
-            actionBar.setBackButtonImage(R.drawable.ic_ab_back);
-            actionBar.setTitle("");
-            actionBar.setAllowOverlayTitle(false);
-            actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
-                @Override
-                public void onItemClick(int id) {
-                    if (id == -1) {
-                        if (Build.VERSION.SDK_INT < 11 && listView != null) {
-                            listView.setAdapter(null);
-                            listView = null;
-                            photoVideoAdapter = null;
-                            documentsAdapter = null;
-                        }
-                        finishFragment();
-                    } else if (id == -2) {
-                        selectedFiles.clear();
-                        actionBar.hideActionMode();
-                        listView.invalidateViews();
-                    } else if (id == shared_media_item) {
-                        if (selectedMode == 0) {
-                            return;
-                        }
-                        selectedMode = 0;
-                        switchToCurrentSelectedMode();
-                    } else if (id == files_item) {
-                        if (selectedMode == 1) {
-                            return;
-                        }
-                        selectedMode = 1;
-                        switchToCurrentSelectedMode();
-                    } else if (id == delete) {
-                        if (getParentActivity() == null) {
-                            return;
-                        }
-                        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-                        builder.setMessage(LocaleController.formatString("AreYouSureDeleteMessages", R.string.AreYouSureDeleteMessages, LocaleController.formatPluralString("items", selectedFiles.size())));
-                        builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
-                        builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialogInterface, int i) {
-                                ArrayList<Integer> ids = new ArrayList<>(selectedFiles.keySet());
-                                ArrayList<Long> random_ids = null;
-                                TLRPC.EncryptedChat currentEncryptedChat = null;
-                                if ((int) dialog_id == 0) {
-                                    currentEncryptedChat = MessagesController.getInstance().getEncryptedChat((int) (dialog_id >> 32));
-                                }
-                                if (currentEncryptedChat != null) {
-                                    random_ids = new ArrayList<>();
-                                    for (HashMap.Entry<Integer, MessageObject> entry : selectedFiles.entrySet()) {
-                                        MessageObject msg = entry.getValue();
-                                        if (msg.messageOwner.random_id != 0 && msg.type != 10) {
-                                            random_ids.add(msg.messageOwner.random_id);
-                                        }
-                                    }
-                                }
-                                MessagesController.getInstance().deleteMessages(ids, random_ids, currentEncryptedChat);
-                                actionBar.hideActionMode();
-                                selectedFiles.clear();
-                            }
-                        });
-                        builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-                        showAlertDialog(builder);
-                    } else if (id == forward) {
-                        Bundle args = new Bundle();
-                        args.putBoolean("onlySelect", true);
-                        args.putBoolean("serverOnly", true);
-                        MessagesActivity fragment = new MessagesActivity(args);
-                        fragment.setDelegate(new MessagesActivity.MessagesActivityDelegate() {
-                            @Override
-                            public void didSelectDialog(MessagesActivity fragment, long did, boolean param) {
-                                int lower_part = (int)did;
-                                if (lower_part != 0) {
-                                    Bundle args = new Bundle();
-                                    args.putBoolean("scrollToTopOnResume", true);
-                                    if (lower_part > 0) {
-                                        args.putInt("user_id", lower_part);
-                                    } else if (lower_part < 0) {
-                                        args.putInt("chat_id", -lower_part);
-                                    }
-
-                                    ArrayList<MessageObject> fmessages = new ArrayList<>();
-                                    ArrayList<Integer> ids = new ArrayList<>(selectedFiles.keySet());
-                                    Collections.sort(ids);
-                                    for (Integer id : ids) {
-                                        if (id > 0) {
-                                            fmessages.add(selectedFiles.get(id));
-                                        }
-                                    }
-                                    selectedFiles.clear();
-                                    actionBar.hideActionMode();
-
-                                    NotificationCenter.getInstance().postNotificationName(NotificationCenter.closeChats);
-                                    ChatActivity chatActivity = new ChatActivity(args);
-                                    presentFragment(chatActivity, true);
-                                    chatActivity.showReplyForMessageObjectOrForward(true, null, fmessages, false);
-
-                                    if (!AndroidUtilities.isTablet()) {
-                                        removeSelfFromStack();
-                                        Activity parentActivity = getParentActivity();
-                                        if (parentActivity == null) {
-                                            parentActivity = chatActivity.getParentActivity();
-                                        }
-                                        if (parentActivity != null) {
-                                            parentActivity.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
-                                        }
-                                    }
-                                } else {
-                                    fragment.finishFragment();
-                                }
-                            }
-                        });
-                        presentFragment(fragment);
+    public View createView(Context context, LayoutInflater inflater) {
+        actionBar.setBackButtonImage(R.drawable.ic_ab_back);
+        actionBar.setTitle("");
+        actionBar.setAllowOverlayTitle(false);
+        actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
+            @Override
+            public void onItemClick(int id) {
+                if (id == -1) {
+                    if (Build.VERSION.SDK_INT < 11 && listView != null) {
+                        listView.setAdapter(null);
+                        listView = null;
+                        photoVideoAdapter = null;
+                        documentsAdapter = null;
                     }
-                }
-            });
-
-            selectedFiles.clear();
-            actionModeViews.clear();
-
-            final ActionBarMenu menu = actionBar.createMenu();
-            searchItem = menu.addItem(0, R.drawable.ic_ab_search).setIsSearchField(true).setActionBarMenuItemSearchListener(new ActionBarMenuItem.ActionBarMenuItemSearchListener() {
-                @Override
-                public void onSearchExpand() {
-                    dropDownContainer.setVisibility(View.GONE);
-                    searching = true;
-                }
-
-                @Override
-                public boolean onSearchCollapse() {
-                    dropDownContainer.setVisibility(View.VISIBLE);
-                    documentsSearchAdapter.searchDocuments(null);
-                    searching = false;
-                    searchWas = false;
+                    finishFragment();
+                } else if (id == -2) {
+                    selectedFiles.clear();
+                    actionBar.hideActionMode();
+                    listView.invalidateViews();
+                } else if (id == shared_media_item) {
+                    if (selectedMode == 0) {
+                        return;
+                    }
+                    selectedMode = 0;
                     switchToCurrentSelectedMode();
-
-                    return true;
-                }
-
-                @Override
-                public void onTextChanged(EditText editText) {
-                    if (documentsSearchAdapter == null) {
+                } else if (id == files_item) {
+                    if (selectedMode == 1) {
                         return;
                     }
-                    String text = editText.getText().toString();
-                    if (text.length() != 0) {
-                        searchWas = true;
-                        switchToCurrentSelectedMode();
-                    }
-                    documentsSearchAdapter.searchDocuments(text);
-                }
-            });
-            searchItem.getSearchField().setHint(LocaleController.getString("Search", R.string.Search));
-            searchItem.setVisibility(View.GONE);
-
-            dropDownContainer = new ActionBarMenuItem(getParentActivity(), menu, R.drawable.bar_selector);
-            dropDownContainer.setSubMenuOpenSide(1);
-            dropDownContainer.addSubItem(shared_media_item, LocaleController.getString("SharedMediaTitle", R.string.SharedMediaTitle), 0);
-            dropDownContainer.addSubItem(files_item, LocaleController.getString("DocumentsTitle", R.string.DocumentsTitle), 0);
-            actionBar.addView(dropDownContainer);
-            FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) dropDownContainer.getLayoutParams();
-            layoutParams.height = FrameLayout.LayoutParams.MATCH_PARENT;
-            layoutParams.width = FrameLayout.LayoutParams.WRAP_CONTENT;
-            layoutParams.rightMargin = AndroidUtilities.dp(40);
-            layoutParams.leftMargin = AndroidUtilities.isTablet() ? AndroidUtilities.dp(64) : AndroidUtilities.dp(56);
-            layoutParams.gravity = Gravity.TOP | Gravity.LEFT;
-            dropDownContainer.setLayoutParams(layoutParams);
-            dropDownContainer.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-                    dropDownContainer.toggleSubMenu();
-                }
-            });
-
-            dropDown = new TextView(getParentActivity());
-            dropDown.setGravity(Gravity.LEFT);
-            dropDown.setSingleLine(true);
-            dropDown.setLines(1);
-            dropDown.setMaxLines(1);
-            dropDown.setEllipsize(TextUtils.TruncateAt.END);
-            dropDown.setTextColor(0xffffffff);
-            dropDown.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
-            dropDown.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.ic_arrow_drop_down, 0);
-            dropDown.setCompoundDrawablePadding(AndroidUtilities.dp(4));
-            dropDown.setPadding(0, 0, AndroidUtilities.dp(10), 0);
-            dropDownContainer.addView(dropDown);
-            layoutParams = (FrameLayout.LayoutParams) dropDown.getLayoutParams();
-            layoutParams.width = FrameLayout.LayoutParams.WRAP_CONTENT;
-            layoutParams.height = FrameLayout.LayoutParams.WRAP_CONTENT;
-            layoutParams.leftMargin = AndroidUtilities.dp(16);
-            layoutParams.gravity = Gravity.CENTER_VERTICAL;
-            dropDown.setLayoutParams(layoutParams);
-
-            final ActionBarMenu actionMode = actionBar.createActionMode();
-            actionModeViews.add(actionMode.addItem(-2, R.drawable.ic_ab_back_grey, R.drawable.bar_selector_mode, null, AndroidUtilities.dp(54)));
-
-            selectedMessagesCountTextView = new TextView(actionMode.getContext());
-            selectedMessagesCountTextView.setTextSize(18);
-            selectedMessagesCountTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
-            selectedMessagesCountTextView.setTextColor(0xff737373);
-            selectedMessagesCountTextView.setSingleLine(true);
-            selectedMessagesCountTextView.setLines(1);
-            selectedMessagesCountTextView.setEllipsize(TextUtils.TruncateAt.END);
-            selectedMessagesCountTextView.setPadding(AndroidUtilities.dp(11), 0, 0, AndroidUtilities.dp(2));
-            selectedMessagesCountTextView.setGravity(Gravity.CENTER_VERTICAL);
-            selectedMessagesCountTextView.setOnTouchListener(new View.OnTouchListener() {
-                @Override
-                public boolean onTouch(View v, MotionEvent event) {
-                    return true;
-                }
-            });
-            actionMode.addView(selectedMessagesCountTextView);
-            LinearLayout.LayoutParams layoutParams1 = (LinearLayout.LayoutParams)selectedMessagesCountTextView.getLayoutParams();
-            layoutParams1.weight = 1;
-            layoutParams1.width = 0;
-            layoutParams1.height = LinearLayout.LayoutParams.MATCH_PARENT;
-            selectedMessagesCountTextView.setLayoutParams(layoutParams1);
-
-            if ((int) dialog_id != 0) {
-                actionModeViews.add(actionMode.addItem(forward, R.drawable.ic_ab_fwd_forward, R.drawable.bar_selector_mode, null, AndroidUtilities.dp(54)));
-            }
-            actionModeViews.add(actionMode.addItem(delete, R.drawable.ic_ab_fwd_delete, R.drawable.bar_selector_mode, null, AndroidUtilities.dp(54)));
-
-            photoVideoAdapter = new SharedPhotoVideoAdapter(getParentActivity());
-            documentsAdapter = new SharedDocumentsAdapter(getParentActivity());
-            documentsSearchAdapter = new DocumentsSearchAdapter(getParentActivity());
-
-            FrameLayout frameLayout;
-            fragmentView = frameLayout = new FrameLayout(getParentActivity());
-
-            listView = new SectionsListView(getParentActivity());
-            listView.setDivider(null);
-            listView.setDividerHeight(0);
-            listView.setDrawSelectorOnTop(true);
-            listView.setClipToPadding(false);
-            frameLayout.addView(listView);
-            layoutParams = (FrameLayout.LayoutParams) listView.getLayoutParams();
-            layoutParams.width = FrameLayout.LayoutParams.MATCH_PARENT;
-            layoutParams.height = FrameLayout.LayoutParams.MATCH_PARENT;
-            layoutParams.gravity = Gravity.TOP;
-            listView.setLayoutParams(layoutParams);
-            listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-                @Override
-                public void onItemClick(AdapterView<?> adapterView, View view, final int i, long l) {
-                    if (selectedMode == 1 && view instanceof SharedDocumentCell) {
-                        SharedDocumentCell cell = (SharedDocumentCell) view;
-                        MessageObject message = cell.getDocument();
-                        MediaActivity.this.onItemClick(i, view, message, 0);
-                    }
-                }
-            });
-            listView.setOnScrollListener(new AbsListView.OnScrollListener() {
-                @Override
-                public void onScrollStateChanged(AbsListView view, int scrollState) {
-                    if (scrollState == SCROLL_STATE_TOUCH_SCROLL && searching && searchWas) {
-                        AndroidUtilities.hideKeyboard(getParentActivity().getCurrentFocus());
-                    }
-                    scrolling = scrollState != SCROLL_STATE_IDLE;
-                }
-
-                @Override
-                public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
-                    if (searching && searchWas) {
+                    selectedMode = 1;
+                    switchToCurrentSelectedMode();
+                } else if (id == delete) {
+                    if (getParentActivity() == null) {
                         return;
                     }
-                    if (visibleItemCount != 0 && firstVisibleItem + visibleItemCount > totalItemCount - 2 && !sharedMediaData[selectedMode].loading && !sharedMediaData[selectedMode].endReached) {
-                        sharedMediaData[selectedMode].loading = true;
-                        int type;
-                        if (selectedMode == 0) {
-                            type = SharedMediaQuery.MEDIA_PHOTOVIDEO;
-                        } else if (selectedMode == 1) {
-                            type = SharedMediaQuery.MEDIA_FILE;
-                        } else {
-                            type = SharedMediaQuery.MEDIA_AUDIO;
+                    AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                    builder.setMessage(LocaleController.formatString("AreYouSureDeleteMessages", R.string.AreYouSureDeleteMessages, LocaleController.formatPluralString("items", selectedFiles.size())));
+                    builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
+                    builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialogInterface, int i) {
+                            ArrayList<Integer> ids = new ArrayList<>(selectedFiles.keySet());
+                            ArrayList<Long> random_ids = null;
+                            TLRPC.EncryptedChat currentEncryptedChat = null;
+                            if ((int) dialog_id == 0) {
+                                currentEncryptedChat = MessagesController.getInstance().getEncryptedChat((int) (dialog_id >> 32));
+                            }
+                            if (currentEncryptedChat != null) {
+                                random_ids = new ArrayList<>();
+                                for (HashMap.Entry<Integer, MessageObject> entry : selectedFiles.entrySet()) {
+                                    MessageObject msg = entry.getValue();
+                                    if (msg.messageOwner.random_id != 0 && msg.type != 10) {
+                                        random_ids.add(msg.messageOwner.random_id);
+                                    }
+                                }
+                            }
+                            MessagesController.getInstance().deleteMessages(ids, random_ids, currentEncryptedChat);
+                            actionBar.hideActionMode();
+                            selectedFiles.clear();
                         }
-                        SharedMediaQuery.loadMedia(dialog_id, 0, 50, sharedMediaData[selectedMode].max_id, type, !sharedMediaData[selectedMode].cacheEndReached, classGuid);
-                    }
-                }
-            });
-            listView.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
-                @Override
-                public boolean onItemLongClick(AdapterView<?> parent, View view, int i, long id) {
-                    if (selectedMode == 1 && view instanceof SharedDocumentCell) {
-                        SharedDocumentCell cell = (SharedDocumentCell) view;
-                        MessageObject message = cell.getDocument();
-                        return MediaActivity.this.onItemLongClick(message, view, 0);
-                    }
-                    return false;
-                }
-            });
+                    });
+                    builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+                    showAlertDialog(builder);
+                } else if (id == forward) {
+                    Bundle args = new Bundle();
+                    args.putBoolean("onlySelect", true);
+                    args.putBoolean("serverOnly", true);
+                    MessagesActivity fragment = new MessagesActivity(args);
+                    fragment.setDelegate(new MessagesActivity.MessagesActivityDelegate() {
+                        @Override
+                        public void didSelectDialog(MessagesActivity fragment, long did, boolean param) {
+                            int lower_part = (int) did;
+                            if (lower_part != 0) {
+                                Bundle args = new Bundle();
+                                args.putBoolean("scrollToTopOnResume", true);
+                                if (lower_part > 0) {
+                                    args.putInt("user_id", lower_part);
+                                } else if (lower_part < 0) {
+                                    args.putInt("chat_id", -lower_part);
+                                }
 
-            for (int a = 0; a < 6; a++) {
-                cellCache.add(new SharedPhotoVideoCell(getParentActivity()));
+                                ArrayList<MessageObject> fmessages = new ArrayList<>();
+                                ArrayList<Integer> ids = new ArrayList<>(selectedFiles.keySet());
+                                Collections.sort(ids);
+                                for (Integer id : ids) {
+                                    if (id > 0) {
+                                        fmessages.add(selectedFiles.get(id));
+                                    }
+                                }
+                                selectedFiles.clear();
+                                actionBar.hideActionMode();
+
+                                NotificationCenter.getInstance().postNotificationName(NotificationCenter.closeChats);
+                                ChatActivity chatActivity = new ChatActivity(args);
+                                presentFragment(chatActivity, true);
+                                chatActivity.showReplyPanel(true, null, fmessages, null, false, false);
+
+                                if (!AndroidUtilities.isTablet()) {
+                                    removeSelfFromStack();
+                                    Activity parentActivity = getParentActivity();
+                                    if (parentActivity == null) {
+                                        parentActivity = chatActivity.getParentActivity();
+                                    }
+                                    if (parentActivity != null) {
+                                        parentActivity.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+                                    }
+                                }
+                            } else {
+                                fragment.finishFragment();
+                            }
+                        }
+                    });
+                    presentFragment(fragment);
+                }
+            }
+        });
+
+        selectedFiles.clear();
+        actionModeViews.clear();
+
+        final ActionBarMenu menu = actionBar.createMenu();
+        searchItem = menu.addItem(0, R.drawable.ic_ab_search).setIsSearchField(true).setActionBarMenuItemSearchListener(new ActionBarMenuItem.ActionBarMenuItemSearchListener() {
+            @Override
+            public void onSearchExpand() {
+                dropDownContainer.setVisibility(View.GONE);
+                searching = true;
             }
 
-            emptyView = new LinearLayout(getParentActivity());
-            emptyView.setOrientation(LinearLayout.VERTICAL);
-            emptyView.setGravity(Gravity.CENTER);
-            emptyView.setVisibility(View.GONE);
-            emptyView.setBackgroundColor(0xfff0f0f0);
-            frameLayout.addView(emptyView);
-            layoutParams = (FrameLayout.LayoutParams) emptyView.getLayoutParams();
-            layoutParams.width = FrameLayout.LayoutParams.MATCH_PARENT;
-            layoutParams.height = FrameLayout.LayoutParams.MATCH_PARENT;
-            emptyView.setLayoutParams(layoutParams);
-            emptyView.setOnTouchListener(new View.OnTouchListener() {
-                @Override
-                public boolean onTouch(View v, MotionEvent event) {
-                    return true;
-                }
-            });
+            @Override
+            public boolean onSearchCollapse() {
+                dropDownContainer.setVisibility(View.VISIBLE);
+                documentsSearchAdapter.searchDocuments(null);
+                searching = false;
+                searchWas = false;
+                switchToCurrentSelectedMode();
 
-            emptyImageView = new ImageView(getParentActivity());
-            emptyView.addView(emptyImageView);
-            layoutParams1 = (LinearLayout.LayoutParams) emptyImageView.getLayoutParams();
-            layoutParams1.width = LinearLayout.LayoutParams.WRAP_CONTENT;
-            layoutParams1.height = LinearLayout.LayoutParams.WRAP_CONTENT;
-            emptyImageView.setLayoutParams(layoutParams1);
-
-            emptyTextView = new TextView(getParentActivity());
-            emptyTextView.setTextColor(0xff8a8a8a);
-            emptyTextView.setGravity(Gravity.CENTER);
-            emptyTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 17);
-            emptyTextView.setPadding(AndroidUtilities.dp(40), 0, AndroidUtilities.dp(40), AndroidUtilities.dp(128));
-            emptyView.addView(emptyTextView);
-            layoutParams1 = (LinearLayout.LayoutParams) emptyTextView.getLayoutParams();
-            layoutParams1.topMargin = AndroidUtilities.dp(24);
-            layoutParams1.width = FrameLayout.LayoutParams.WRAP_CONTENT;
-            layoutParams1.height = FrameLayout.LayoutParams.WRAP_CONTENT;
-            layoutParams1.gravity = Gravity.CENTER;
-            emptyTextView.setLayoutParams(layoutParams1);
-
-            progressView = new LinearLayout(getParentActivity());
-            progressView.setGravity(Gravity.CENTER);
-            progressView.setOrientation(LinearLayout.VERTICAL);
-            progressView.setVisibility(View.GONE);
-            progressView.setBackgroundColor(0xfff0f0f0);
-            frameLayout.addView(progressView);
-            layoutParams = (FrameLayout.LayoutParams) progressView.getLayoutParams();
-            layoutParams.width = FrameLayout.LayoutParams.MATCH_PARENT;
-            layoutParams.height = FrameLayout.LayoutParams.MATCH_PARENT;
-            progressView.setLayoutParams(layoutParams);
-
-            ProgressBar progressBar = new ProgressBar(getParentActivity());
-            progressView.addView(progressBar);
-            layoutParams1 = (LinearLayout.LayoutParams) progressBar.getLayoutParams();
-            layoutParams1.width = LinearLayout.LayoutParams.WRAP_CONTENT;
-            layoutParams1.height = LinearLayout.LayoutParams.WRAP_CONTENT;
-            progressBar.setLayoutParams(layoutParams1);
-
-            switchToCurrentSelectedMode();
-        } else {
-            ViewGroup parent = (ViewGroup)fragmentView.getParent();
-            if (parent != null) {
-                parent.removeView(fragmentView);
+                return true;
             }
+
+            @Override
+            public void onTextChanged(EditText editText) {
+                if (documentsSearchAdapter == null) {
+                    return;
+                }
+                String text = editText.getText().toString();
+                if (text.length() != 0) {
+                    searchWas = true;
+                    switchToCurrentSelectedMode();
+                }
+                documentsSearchAdapter.searchDocuments(text);
+            }
+        });
+        searchItem.getSearchField().setHint(LocaleController.getString("Search", R.string.Search));
+        searchItem.setVisibility(View.GONE);
+
+        dropDownContainer = new ActionBarMenuItem(context, menu, R.drawable.bar_selector);
+        dropDownContainer.setSubMenuOpenSide(1);
+        dropDownContainer.addSubItem(shared_media_item, LocaleController.getString("SharedMediaTitle", R.string.SharedMediaTitle), 0);
+        dropDownContainer.addSubItem(files_item, LocaleController.getString("DocumentsTitle", R.string.DocumentsTitle), 0);
+        actionBar.addView(dropDownContainer);
+        FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) dropDownContainer.getLayoutParams();
+        layoutParams.height = FrameLayout.LayoutParams.MATCH_PARENT;
+        layoutParams.width = FrameLayout.LayoutParams.WRAP_CONTENT;
+        layoutParams.rightMargin = AndroidUtilities.dp(40);
+        layoutParams.leftMargin = AndroidUtilities.isTablet() ? AndroidUtilities.dp(64) : AndroidUtilities.dp(56);
+        layoutParams.gravity = Gravity.TOP | Gravity.LEFT;
+        dropDownContainer.setLayoutParams(layoutParams);
+        dropDownContainer.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                dropDownContainer.toggleSubMenu();
+            }
+        });
+
+        dropDown = new TextView(context);
+        dropDown.setGravity(Gravity.LEFT);
+        dropDown.setSingleLine(true);
+        dropDown.setLines(1);
+        dropDown.setMaxLines(1);
+        dropDown.setEllipsize(TextUtils.TruncateAt.END);
+        dropDown.setTextColor(0xffffffff);
+        dropDown.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        dropDown.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.ic_arrow_drop_down, 0);
+        dropDown.setCompoundDrawablePadding(AndroidUtilities.dp(4));
+        dropDown.setPadding(0, 0, AndroidUtilities.dp(10), 0);
+        dropDownContainer.addView(dropDown);
+        layoutParams = (FrameLayout.LayoutParams) dropDown.getLayoutParams();
+        layoutParams.width = FrameLayout.LayoutParams.WRAP_CONTENT;
+        layoutParams.height = FrameLayout.LayoutParams.WRAP_CONTENT;
+        layoutParams.leftMargin = AndroidUtilities.dp(16);
+        layoutParams.gravity = Gravity.CENTER_VERTICAL;
+        dropDown.setLayoutParams(layoutParams);
+
+        final ActionBarMenu actionMode = actionBar.createActionMode();
+        actionModeViews.add(actionMode.addItem(-2, R.drawable.ic_ab_back_grey, R.drawable.bar_selector_mode, null, AndroidUtilities.dp(54)));
+
+        selectedMessagesCountTextView = new TextView(actionMode.getContext());
+        selectedMessagesCountTextView.setTextSize(18);
+        selectedMessagesCountTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        selectedMessagesCountTextView.setTextColor(0xff737373);
+        selectedMessagesCountTextView.setSingleLine(true);
+        selectedMessagesCountTextView.setLines(1);
+        selectedMessagesCountTextView.setEllipsize(TextUtils.TruncateAt.END);
+        selectedMessagesCountTextView.setPadding(AndroidUtilities.dp(11), 0, 0, AndroidUtilities.dp(2));
+        selectedMessagesCountTextView.setGravity(Gravity.CENTER_VERTICAL);
+        selectedMessagesCountTextView.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                return true;
+            }
+        });
+        actionMode.addView(selectedMessagesCountTextView);
+        LinearLayout.LayoutParams layoutParams1 = (LinearLayout.LayoutParams) selectedMessagesCountTextView.getLayoutParams();
+        layoutParams1.weight = 1;
+        layoutParams1.width = 0;
+        layoutParams1.height = LinearLayout.LayoutParams.MATCH_PARENT;
+        selectedMessagesCountTextView.setLayoutParams(layoutParams1);
+
+        if ((int) dialog_id != 0) {
+            actionModeViews.add(actionMode.addItem(forward, R.drawable.ic_ab_fwd_forward, R.drawable.bar_selector_mode, null, AndroidUtilities.dp(54)));
         }
+        actionModeViews.add(actionMode.addItem(delete, R.drawable.ic_ab_fwd_delete, R.drawable.bar_selector_mode, null, AndroidUtilities.dp(54)));
+
+        photoVideoAdapter = new SharedPhotoVideoAdapter(context);
+        documentsAdapter = new SharedDocumentsAdapter(context);
+        documentsSearchAdapter = new DocumentsSearchAdapter(context);
+
+        FrameLayout frameLayout;
+        fragmentView = frameLayout = new FrameLayout(context);
+
+        listView = new SectionsListView(context);
+        listView.setDivider(null);
+        listView.setDividerHeight(0);
+        listView.setDrawSelectorOnTop(true);
+        listView.setClipToPadding(false);
+        frameLayout.addView(listView);
+        layoutParams = (FrameLayout.LayoutParams) listView.getLayoutParams();
+        layoutParams.width = FrameLayout.LayoutParams.MATCH_PARENT;
+        layoutParams.height = FrameLayout.LayoutParams.MATCH_PARENT;
+        layoutParams.gravity = Gravity.TOP;
+        listView.setLayoutParams(layoutParams);
+        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> adapterView, View view, final int i, long l) {
+                if (selectedMode == 1 && view instanceof SharedDocumentCell) {
+                    SharedDocumentCell cell = (SharedDocumentCell) view;
+                    MessageObject message = cell.getDocument();
+                    MediaActivity.this.onItemClick(i, view, message, 0);
+                }
+            }
+        });
+        listView.setOnScrollListener(new AbsListView.OnScrollListener() {
+            @Override
+            public void onScrollStateChanged(AbsListView view, int scrollState) {
+                if (scrollState == SCROLL_STATE_TOUCH_SCROLL && searching && searchWas) {
+                    AndroidUtilities.hideKeyboard(getParentActivity().getCurrentFocus());
+                }
+                scrolling = scrollState != SCROLL_STATE_IDLE;
+            }
+
+            @Override
+            public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
+                if (searching && searchWas) {
+                    return;
+                }
+                if (visibleItemCount != 0 && firstVisibleItem + visibleItemCount > totalItemCount - 2 && !sharedMediaData[selectedMode].loading && !sharedMediaData[selectedMode].endReached) {
+                    sharedMediaData[selectedMode].loading = true;
+                    int type;
+                    if (selectedMode == 0) {
+                        type = SharedMediaQuery.MEDIA_PHOTOVIDEO;
+                    } else if (selectedMode == 1) {
+                        type = SharedMediaQuery.MEDIA_FILE;
+                    } else {
+                        type = SharedMediaQuery.MEDIA_AUDIO;
+                    }
+                    SharedMediaQuery.loadMedia(dialog_id, 0, 50, sharedMediaData[selectedMode].max_id, type, !sharedMediaData[selectedMode].cacheEndReached, classGuid);
+                }
+            }
+        });
+        listView.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
+            @Override
+            public boolean onItemLongClick(AdapterView<?> parent, View view, int i, long id) {
+                if (selectedMode == 1 && view instanceof SharedDocumentCell) {
+                    SharedDocumentCell cell = (SharedDocumentCell) view;
+                    MessageObject message = cell.getDocument();
+                    return MediaActivity.this.onItemLongClick(message, view, 0);
+                }
+                return false;
+            }
+        });
+
+        for (int a = 0; a < 6; a++) {
+            cellCache.add(new SharedPhotoVideoCell(context));
+        }
+
+        emptyView = new LinearLayout(context);
+        emptyView.setOrientation(LinearLayout.VERTICAL);
+        emptyView.setGravity(Gravity.CENTER);
+        emptyView.setVisibility(View.GONE);
+        emptyView.setBackgroundColor(0xfff0f0f0);
+        frameLayout.addView(emptyView);
+        layoutParams = (FrameLayout.LayoutParams) emptyView.getLayoutParams();
+        layoutParams.width = FrameLayout.LayoutParams.MATCH_PARENT;
+        layoutParams.height = FrameLayout.LayoutParams.MATCH_PARENT;
+        emptyView.setLayoutParams(layoutParams);
+        emptyView.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                return true;
+            }
+        });
+
+        emptyImageView = new ImageView(context);
+        emptyView.addView(emptyImageView);
+        layoutParams1 = (LinearLayout.LayoutParams) emptyImageView.getLayoutParams();
+        layoutParams1.width = LinearLayout.LayoutParams.WRAP_CONTENT;
+        layoutParams1.height = LinearLayout.LayoutParams.WRAP_CONTENT;
+        emptyImageView.setLayoutParams(layoutParams1);
+
+        emptyTextView = new TextView(context);
+        emptyTextView.setTextColor(0xff8a8a8a);
+        emptyTextView.setGravity(Gravity.CENTER);
+        emptyTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 17);
+        emptyTextView.setPadding(AndroidUtilities.dp(40), 0, AndroidUtilities.dp(40), AndroidUtilities.dp(128));
+        emptyView.addView(emptyTextView);
+        layoutParams1 = (LinearLayout.LayoutParams) emptyTextView.getLayoutParams();
+        layoutParams1.topMargin = AndroidUtilities.dp(24);
+        layoutParams1.width = FrameLayout.LayoutParams.WRAP_CONTENT;
+        layoutParams1.height = FrameLayout.LayoutParams.WRAP_CONTENT;
+        layoutParams1.gravity = Gravity.CENTER;
+        emptyTextView.setLayoutParams(layoutParams1);
+
+        progressView = new LinearLayout(context);
+        progressView.setGravity(Gravity.CENTER);
+        progressView.setOrientation(LinearLayout.VERTICAL);
+        progressView.setVisibility(View.GONE);
+        progressView.setBackgroundColor(0xfff0f0f0);
+        frameLayout.addView(progressView);
+        layoutParams = (FrameLayout.LayoutParams) progressView.getLayoutParams();
+        layoutParams.width = FrameLayout.LayoutParams.MATCH_PARENT;
+        layoutParams.height = FrameLayout.LayoutParams.MATCH_PARENT;
+        progressView.setLayoutParams(layoutParams);
+
+        ProgressBar progressBar = new ProgressBar(context);
+        progressView.addView(progressBar);
+        layoutParams1 = (LinearLayout.LayoutParams) progressBar.getLayoutParams();
+        layoutParams1.width = LinearLayout.LayoutParams.WRAP_CONTENT;
+        layoutParams1.height = LinearLayout.LayoutParams.WRAP_CONTENT;
+        progressBar.setLayoutParams(layoutParams1);
+
+        switchToCurrentSelectedMode();
+
         return fragmentView;
     }
 
@@ -742,7 +736,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                         object.viewX = coords[0];
                         object.viewY = coords[1] - AndroidUtilities.statusBarHeight;
                         object.parentView = listView;
-                        object.imageReceiver = imageView.imageReceiver;
+                        object.imageReceiver = imageView.getImageReceiver();
                         object.thumb = object.imageReceiver.getBitmap();
                         return object;
                     }

@@ -210,7 +210,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
             }
 
             @Override
-            public void onTextChanged(CharSequence text) {
+            public void onTextChanged(CharSequence text, boolean big) {
 
             }
 
@@ -267,8 +267,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
         avatarContainer.setLayoutParams(layoutParams2);
 
         avatarImageView = new BackupImageView(this);
-        avatarImageView.imageReceiver.setRoundRadius(AndroidUtilities.dp(21));
-        avatarImageView.processDetach = false;
+        avatarImageView.setRoundRadius(AndroidUtilities.dp(21));
         avatarContainer.addView(avatarImageView);
         layoutParams2 = (FrameLayout.LayoutParams) avatarImageView.getLayoutParams();
         layoutParams2.width = AndroidUtilities.dp(42);
@@ -560,7 +559,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
                 Log.w(true,"AniwaysPopupNotificationActivity","messageText is not AniwaysTextView");
             }
             BackupImageView imageView = (BackupImageView) view.findViewById(R.id.message_image);
-            imageView.imageReceiver.setAspectFit(true);
+            imageView.setAspectFit(true);
 
             if (messageObject.type == 1) {
                 TLRPC.PhotoSize currentPhotoObject = FileLoader.getClosestPhotoSizeWithSize(messageObject.photoThumbs, AndroidUtilities.getPhotoSize());
@@ -997,6 +996,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
         }
         ConnectionsManager.getInstance().setAppPaused(false, false);
         fixLayout();
+        checkAndUpdateAvatar();
         wakeLock.acquire(7000);
     }
 

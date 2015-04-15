@@ -1773,7 +1773,7 @@ public class ContactsController {
     }
 
     public static String formatName(String firstName, String lastName) {
-        String result = null;
+        String result = "";
         if (LocaleController.nameDisplayOrder == 1) {
             result = firstName;
             if (result == null || result.length() == 0) {
