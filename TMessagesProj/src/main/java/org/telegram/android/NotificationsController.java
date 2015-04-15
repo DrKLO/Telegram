@@ -51,6 +51,8 @@ import java.util.List;
 public class NotificationsController {
 
     public static final String EXTRA_VOICE_REPLY = "extra_voice_reply";
+    public String[] replyChoices = ApplicationLoader.applicationContext.getResources().getStringArray(R.array.reply_choices);
+	
 
     private DispatchQueue notificationsQueue = new DispatchQueue("notificationsQueue");
     private ArrayList<MessageObject> pushMessages = new ArrayList<>();
@@ -688,7 +690,7 @@ public class NotificationsController {
             replyIntent.putExtra("dialog_id", dialog_id);
             replyIntent.putExtra("max_id", max_id);
             PendingIntent replyPendingIntent = PendingIntent.getBroadcast(ApplicationLoader.applicationContext, notificationId, replyIntent, PendingIntent.FLAG_UPDATE_CURRENT);
-            RemoteInput remoteInput = new RemoteInput.Builder(EXTRA_VOICE_REPLY).setLabel(LocaleController.getString("Reply", R.string.Reply)).build();
+           RemoteInput remoteInput = new RemoteInput.Builder(EXTRA_VOICE_REPLY).setLabel(LocaleController.getString("Reply", R.string.Reply)).setChoices(replyChoices).build();
             String replyToString;
             if (chat != null) {
                 replyToString = LocaleController.formatString("ReplyToGroup", R.string.ReplyToGroup, name);
