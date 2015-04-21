@@ -76,7 +76,7 @@ public class EmojiView extends LinearLayout {
             }
         }
         if (!was) {
-            localArrayList.add(0, paramLong);
+            localArrayList.add((currentRecent.length > 1) ? currentRecent.length - 1 : 0, paramLong);
         }
         Emoji.data[0] = new long[Math.min(localArrayList.size(), 50)];
         for (int q = 0; q < Emoji.data[0].length; q++) {
