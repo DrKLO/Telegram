@@ -85,6 +85,9 @@ import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import io.intercom.android.sdk.Intercom;
+import io.intercom.android.sdk.identity.Registration;
+
 public class LoginActivity extends BaseFragment {
 
     private int currentViewNum = 0;
@@ -1273,6 +1276,7 @@ public class LoginActivity extends BaseFragment {
                                             ConnectionsManager.getInstance().updateDcSettings(0);
                                         }
                                     });
+                                    Intercom.client().registerIdentifiedUser(new Registration().withUserId(requestPhone));
                                 } else {
                                     lastError = error.text;
 
@@ -2270,6 +2274,8 @@ public class LoginActivity extends BaseFragment {
                                             ConnectionsManager.getInstance().updateDcSettings(0);
                                         }
                                     });
+                                    Intercom.client().registerIdentifiedUser(new Registration().withUserId(requestPhone));
+
                                 } else {
                                     if (error.text.contains("PHONE_NUMBER_INVALID")) {
                                         needShowAlert(LocaleController.getString("AppName", R.string.AppName), LocaleController.getString("InvalidPhoneNumber", R.string.InvalidPhoneNumber));

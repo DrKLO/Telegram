@@ -10,6 +10,9 @@ buildscript {
 allprojects {
     repositories {
         mavenCentral()
+        maven {
+            url 'https://dl.bintray.com/intercom/intercom-maven'
+        }
     }
 }
 
@@ -32,6 +35,10 @@ dependencies {
     compile 'com.googlecode.mp4parser:isoparser:1.0.+'
     compile 'com.android.support:recyclerview-v7:+'
     compile project(':Android-SDK')
+    compile ('io.intercom.android:intercom-sdk:0.9.3@aar') {
+        transitive = true
+    }
+
 }
 
 android {
