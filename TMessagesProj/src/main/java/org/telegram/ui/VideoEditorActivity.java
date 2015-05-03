@@ -51,6 +51,7 @@ import org.telegram.messenger.Utilities;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.VideoSeekBarView;
 import org.telegram.ui.Components.VideoTimelineView;
 
@@ -611,7 +612,7 @@ public class VideoEditorActivity extends BaseFragment implements TextureView.Sur
             FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) videoContainerView.getLayoutParams();
             layoutParams.topMargin = AndroidUtilities.dp(16);
             layoutParams.bottomMargin = AndroidUtilities.dp(260 + (compressVideo.getVisibility() == View.VISIBLE ? 20 : 0));
-            layoutParams.width = FrameLayout.LayoutParams.MATCH_PARENT;
+            layoutParams.width = LayoutHelper.MATCH_PARENT;
             layoutParams.leftMargin = 0;
             videoContainerView.setLayoutParams(layoutParams);
 
@@ -619,12 +620,12 @@ public class VideoEditorActivity extends BaseFragment implements TextureView.Sur
             layoutParams.topMargin = 0;
             layoutParams.leftMargin = 0;
             layoutParams.bottomMargin = AndroidUtilities.dp(150 + (compressVideo.getVisibility() == View.VISIBLE ? 20 : 0));
-            layoutParams.width = FrameLayout.LayoutParams.MATCH_PARENT;
+            layoutParams.width = LayoutHelper.MATCH_PARENT;
             layoutParams.gravity = Gravity.BOTTOM;
             controlView.setLayoutParams(layoutParams);
 
             layoutParams = (FrameLayout.LayoutParams) textContainerView.getLayoutParams();
-            layoutParams.width = FrameLayout.LayoutParams.MATCH_PARENT;
+            layoutParams.width = LayoutHelper.MATCH_PARENT;
             layoutParams.leftMargin = AndroidUtilities.dp(16);
             layoutParams.rightMargin = AndroidUtilities.dp(16);
             layoutParams.bottomMargin = AndroidUtilities.dp(16);

@@ -53,7 +53,6 @@ import org.telegram.messenger.BuildVars;
 import org.telegram.android.LocaleController;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.SerializedData;
-import org.telegram.messenger.TLClassStore;
 import org.telegram.messenger.TLObject;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.ConnectionsManager;
@@ -66,7 +65,7 @@ import org.telegram.messenger.RPCRequest;
 import org.telegram.messenger.UserConfig;
 import org.telegram.android.MessageObject;
 import org.telegram.ui.Adapters.BaseFragmentAdapter;
-import org.telegram.ui.AnimationCompat.ViewProxy;
+import org.telegram.android.AnimationCompat.ViewProxy;
 import org.telegram.ui.Cells.TextInfoCell;
 import org.telegram.ui.Cells.EmptyCell;
 import org.telegram.ui.Cells.HeaderCell;
@@ -81,6 +80,7 @@ import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.AvatarUpdater;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.NumberPicker;
 
 import java.io.File;
@@ -353,8 +353,8 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         nameTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         actionBar.addView(nameTextView);
         layoutParams = (FrameLayout.LayoutParams) nameTextView.getLayoutParams();
-        layoutParams.width = FrameLayout.LayoutParams.WRAP_CONTENT;
-        layoutParams.height = FrameLayout.LayoutParams.WRAP_CONTENT;
+        layoutParams.width = LayoutHelper.WRAP_CONTENT;
+        layoutParams.height = LayoutHelper.WRAP_CONTENT;
         layoutParams.leftMargin = AndroidUtilities.dp(LocaleController.isRTL ? 16 : 97);
         layoutParams.rightMargin = AndroidUtilities.dp(LocaleController.isRTL ? 97 : 16);
         layoutParams.bottomMargin = AndroidUtilities.dp(51);
@@ -371,8 +371,8 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         onlineTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT));
         actionBar.addView(onlineTextView);
         layoutParams = (FrameLayout.LayoutParams) onlineTextView.getLayoutParams();
-        layoutParams.width = FrameLayout.LayoutParams.WRAP_CONTENT;
-        layoutParams.height = FrameLayout.LayoutParams.WRAP_CONTENT;
+        layoutParams.width = LayoutHelper.WRAP_CONTENT;
+        layoutParams.height = LayoutHelper.WRAP_CONTENT;
         layoutParams.leftMargin = AndroidUtilities.dp(LocaleController.isRTL ? 16 : 97);
         layoutParams.rightMargin = AndroidUtilities.dp(LocaleController.isRTL ? 97 : 16);
         layoutParams.bottomMargin = AndroidUtilities.dp(30);
@@ -386,8 +386,8 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         AndroidUtilities.setListViewEdgeEffectColor(listView, AvatarDrawable.getProfileBackColorForId(5));
         frameLayout.addView(listView);
         layoutParams = (FrameLayout.LayoutParams) listView.getLayoutParams();
-        layoutParams.width = FrameLayout.LayoutParams.MATCH_PARENT;
-        layoutParams.height = FrameLayout.LayoutParams.MATCH_PARENT;
+        layoutParams.width = LayoutHelper.MATCH_PARENT;
+        layoutParams.height = LayoutHelper.MATCH_PARENT;
         layoutParams.gravity = Gravity.TOP;
         listView.setLayoutParams(layoutParams);
         listView.setAdapter(listAdapter);
@@ -619,8 +619,8 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         }
         frameLayout.addView(writeButton);
         layoutParams = (FrameLayout.LayoutParams) writeButton.getLayoutParams();
-        layoutParams.width = FrameLayout.LayoutParams.WRAP_CONTENT;
-        layoutParams.height = FrameLayout.LayoutParams.WRAP_CONTENT;
+        layoutParams.width = LayoutHelper.WRAP_CONTENT;
+        layoutParams.height = LayoutHelper.WRAP_CONTENT;
         layoutParams.leftMargin = AndroidUtilities.dp(LocaleController.isRTL ? 16 : 0);
         layoutParams.rightMargin = AndroidUtilities.dp(LocaleController.isRTL ? 0 : 16);
         layoutParams.gravity = (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT);
@@ -772,7 +772,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                         byte[] datacentersBytes = Base64.decode(userString, Base64.DEFAULT);
                         if (datacentersBytes != null) {
                             SerializedData data = new SerializedData(datacentersBytes);
-                            supportUser = (TLRPC.User)TLClassStore.Instance().TLdeserialize(data, data.readInt32());
+                            supportUser = TLRPC.User.TLdeserialize(data, data.readInt32(false), false);
                             if (supportUser != null && supportUser.id == 333000) {
                                 supportUser = null;
                             }
@@ -1055,9 +1055,9 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                     view = new EmptyCell(mContext);
                 }
                 if (i == overscrollRow) {
-                    ((EmptyCell) view).setHeight(88);
+                    ((EmptyCell) view).setHeight(AndroidUtilities.dp(88));
                 } else {
-                    ((EmptyCell) view).setHeight(16);
+                    ((EmptyCell) view).setHeight(AndroidUtilities.dp(16));
                 }
             } else if (type == 1) {
                 if (view == null) {

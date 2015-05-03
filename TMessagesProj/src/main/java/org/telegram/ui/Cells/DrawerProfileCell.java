@@ -31,6 +31,7 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.TLRPC;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
+import org.telegram.ui.Components.LayoutHelper;
 
 public class DrawerProfileCell extends FrameLayout {
 
@@ -52,7 +53,7 @@ public class DrawerProfileCell extends FrameLayout {
         shadowView.setImageResource(R.drawable.bottom_shadow);
         addView(shadowView);
         LayoutParams layoutParams = (FrameLayout.LayoutParams) shadowView.getLayoutParams();
-        layoutParams.width = LayoutParams.MATCH_PARENT;
+        layoutParams.width = LayoutHelper.MATCH_PARENT;
         layoutParams.height = AndroidUtilities.dp(70);
         layoutParams.gravity = Gravity.LEFT | Gravity.BOTTOM;
         shadowView.setLayoutParams(layoutParams);
@@ -78,8 +79,8 @@ public class DrawerProfileCell extends FrameLayout {
         nameTextView.setGravity(Gravity.LEFT);
         addView(nameTextView);
         layoutParams = (FrameLayout.LayoutParams) nameTextView.getLayoutParams();
-        layoutParams.width = LayoutParams.MATCH_PARENT;
-        layoutParams.height = LayoutParams.WRAP_CONTENT;
+        layoutParams.width = LayoutHelper.MATCH_PARENT;
+        layoutParams.height = LayoutHelper.WRAP_CONTENT;
         layoutParams.gravity = Gravity.LEFT | Gravity.BOTTOM;
         layoutParams.leftMargin = AndroidUtilities.dp(16);
         layoutParams.bottomMargin = AndroidUtilities.dp(28);
@@ -95,8 +96,8 @@ public class DrawerProfileCell extends FrameLayout {
         phoneTextView.setGravity(Gravity.LEFT);
         addView(phoneTextView);
         layoutParams = (FrameLayout.LayoutParams) phoneTextView.getLayoutParams();
-        layoutParams.width = LayoutParams.MATCH_PARENT;
-        layoutParams.height = LayoutParams.WRAP_CONTENT;
+        layoutParams.width = LayoutHelper.MATCH_PARENT;
+        layoutParams.height = LayoutHelper.WRAP_CONTENT;
         layoutParams.gravity = Gravity.LEFT | Gravity.BOTTOM;
         layoutParams.leftMargin = AndroidUtilities.dp(16);
         layoutParams.bottomMargin = AndroidUtilities.dp(9);

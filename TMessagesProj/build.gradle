@@ -13,11 +13,10 @@ repositories {
 }
 
 dependencies {
-    compile 'com.android.support:support-v4:22.0.+'
+    compile 'com.android.support:support-v4:22.1.+'
     compile 'com.google.android.gms:play-services:3.2.+'
     compile 'net.hockeyapp.android:HockeySDK:3.5.+'
     compile 'com.googlecode.mp4parser:isoparser:1.0.+'
-    compile 'com.android.support:recyclerview-v7:+'
 }
 
 android {
@@ -82,7 +81,7 @@ android {
     defaultConfig {
         minSdkVersion 8
         targetSdkVersion 22
-        versionCode 492
-        versionName "2.7.0"
+        versionCode 521
+        versionName "2.8.1"
     }
 }

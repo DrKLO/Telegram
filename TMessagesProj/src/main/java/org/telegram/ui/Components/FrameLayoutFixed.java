@@ -87,8 +87,8 @@ public class FrameLayoutFixed extends FrameLayout {
                             child.getMeasuredHeight() + lp.topMargin + lp.bottomMargin);
                     childState |= getMeasuredStateFixed(child);
                     if (measureMatchParentChildren) {
-                        if (lp.width == LayoutParams.MATCH_PARENT ||
-                                lp.height == LayoutParams.MATCH_PARENT) {
+                        if (lp.width == LayoutHelper.MATCH_PARENT ||
+                                lp.height == LayoutHelper.MATCH_PARENT) {
                             mMatchParentChildren.add(child);
                         }
                     }
@@ -122,7 +122,7 @@ public class FrameLayoutFixed extends FrameLayout {
                     int childWidthMeasureSpec;
                     int childHeightMeasureSpec;
 
-                    if (lp.width == LayoutParams.MATCH_PARENT) {
+                    if (lp.width == LayoutHelper.MATCH_PARENT) {
                         childWidthMeasureSpec = MeasureSpec.makeMeasureSpec(getMeasuredWidth() -
                                 getPaddingLeft() - getPaddingRight() -
                                 lp.leftMargin - lp.rightMargin,
@@ -134,7 +134,7 @@ public class FrameLayoutFixed extends FrameLayout {
                                 lp.width);
                     }
 
-                    if (lp.height == LayoutParams.MATCH_PARENT) {
+                    if (lp.height == LayoutHelper.MATCH_PARENT) {
                         childHeightMeasureSpec = MeasureSpec.makeMeasureSpec(getMeasuredHeight() -
                                 getPaddingTop() - getPaddingBottom() -
                                 lp.topMargin - lp.bottomMargin,

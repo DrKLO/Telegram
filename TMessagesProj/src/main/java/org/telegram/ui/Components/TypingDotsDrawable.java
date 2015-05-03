@@ -17,6 +17,7 @@ import android.view.animation.DecelerateInterpolator;
 import org.telegram.android.AndroidUtilities;
 
 public class TypingDotsDrawable extends Drawable {
+
     private boolean isChat = false;
     private Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private float[] scales = new float[3];
