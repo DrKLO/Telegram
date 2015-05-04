@@ -228,6 +228,78 @@ public class LocaleController {
         sortedLanguages.add(localeInfo);
         languagesDict.put(localeInfo.shortName, localeInfo);
 
+        localeInfo = new LocaleInfo();
+        localeInfo.name = "עברית";
+        localeInfo.nameEnglish = "Hebrew";
+        localeInfo.shortName = "he";
+        localeInfo.pathToFile = null;
+        sortedLanguages.add(localeInfo);
+        languagesDict.put(localeInfo.shortName, localeInfo);
+
+        localeInfo = new LocaleInfo();
+        localeInfo.name = "Русский";
+        localeInfo.nameEnglish = "Russian";
+        localeInfo.shortName = "ru";
+        localeInfo.pathToFile = null;
+        sortedLanguages.add(localeInfo);
+        languagesDict.put(localeInfo.shortName, localeInfo);
+
+        localeInfo = new LocaleInfo();
+        localeInfo.name = "پارسی";
+        localeInfo.nameEnglish = "Pasrsi";
+        localeInfo.shortName = "fa";
+        localeInfo.pathToFile = null;
+        sortedLanguages.add(localeInfo);
+        languagesDict.put(localeInfo.shortName, localeInfo);
+
+        localeInfo = new LocaleInfo();
+        localeInfo.name = "Indonesia";
+        localeInfo.nameEnglish = "Indonesian";
+        localeInfo.shortName = "id";
+        localeInfo.pathToFile = null;
+        sortedLanguages.add(localeInfo);
+        languagesDict.put(localeInfo.shortName, localeInfo);
+
+        localeInfo = new LocaleInfo();
+        localeInfo.name = "Türkçe";
+        localeInfo.nameEnglish = "Türkçe";
+        localeInfo.shortName = "tr";
+        localeInfo.pathToFile = null;
+        sortedLanguages.add(localeInfo);
+        languagesDict.put(localeInfo.shortName, localeInfo);
+
+        localeInfo = new LocaleInfo();
+        localeInfo.name = "Ўзбекча (кирилл)";
+        localeInfo.nameEnglish = "Uzbek (Cyrillic)";
+        localeInfo.shortName = "uz";
+        localeInfo.pathToFile = null;
+        sortedLanguages.add(localeInfo);
+        languagesDict.put(localeInfo.shortName, localeInfo);
+
+        localeInfo = new LocaleInfo();
+        localeInfo.name = "中文";
+        localeInfo.nameEnglish = "Chinese (China)";
+        localeInfo.shortName = "zh_CN";
+        localeInfo.pathToFile = null;
+        sortedLanguages.add(localeInfo);
+        languagesDict.put(localeInfo.shortName, localeInfo);
+
+        localeInfo = new LocaleInfo();
+        localeInfo.name = "中文（香港）";
+        localeInfo.nameEnglish = "Chinese (Hong Kong)";
+        localeInfo.shortName = "zh_HK";
+        localeInfo.pathToFile = null;
+        sortedLanguages.add(localeInfo);
+        languagesDict.put(localeInfo.shortName, localeInfo);
+
+        localeInfo = new LocaleInfo();
+        localeInfo.name = "中文";
+        localeInfo.nameEnglish = "Chinese";
+        localeInfo.shortName = "zh";
+        localeInfo.pathToFile = null;
+        sortedLanguages.add(localeInfo);
+        languagesDict.put(localeInfo.shortName, localeInfo);
+
         loadOtherLanguages();
 
         for (LocaleInfo locale : otherLanguages) {
