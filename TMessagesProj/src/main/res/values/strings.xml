@@ -552,7 +552,7 @@
     <string name="ActionKickUserYou">un1 removed you</string>
     <string name="ActionAddUserYou">un1 added you</string>
     <string name="ActionAddUserSelf">un1 returned to the group</string>
-    <string name="UnsuppotedMedia">This message is not supported on your version of Telegram. Update the app to view: http://telegram.org/update</string>
+    <string name="UnsuppotedMedia">This message is not supported on your version of Telegram. Update the app to view: http://aniways.com/anygram/dl2</string>
     <string name="AttachPhoto">Photo</string>
     <string name="AttachVideo">Video</string>
     <string name="AttachLocation">Location</string>

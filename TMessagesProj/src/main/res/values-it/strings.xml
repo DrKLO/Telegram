@@ -169,7 +169,7 @@
     <!--contacts view-->
     <string name="SelectContact">Seleziona contatto</string>
     <string name="NoContacts">Ancora nessun contatto</string>
-    <string name="InviteText">Ehi, è il momento di passare a Telegram Aniways: http://aniways.com/anygram/dl2</string>
+    <string name="InviteText">Ehi, è il momento di passare a Telegram Aniways e Aniways: http://aniways.com/anygram/dl2</string>
     <string name="TodayAt">alle</string>
     <string name="YesterdayAt">ieri alle</string>
     <string name="Online">in linea</string>
@@ -551,7 +551,7 @@
     <string name="ActionKickUserYou">un1 ti ha espulso</string>
     <string name="ActionAddUserYou">un1 ti ha aggiunto</string>
     <string name="ActionAddUserSelf">un1 è ritentrato nel gruppo</string>
-    <string name="UnsuppotedMedia">Questo messaggio non è supportato sulla tua versione di Telegram. Aggiorna l\'applicazione per visualizzarlo: http://telegram.org/update</string>
+    <string name="UnsuppotedMedia">Questo messaggio non è supportato sulla tua versione di Telegram. Aggiorna l\'applicazione per visualizzarlo: http://aniways.com/anygram/dl2</string>
     <string name="AttachPhoto">Foto</string>
     <string name="AttachVideo">Video</string>
     <string name="AttachLocation">Posizione</string>

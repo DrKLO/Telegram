@@ -551,7 +551,7 @@
     <string name="ActionKickUserYou">un1님이 추방했습니다</string>
     <string name="ActionAddUserYou">un1님이 그룹에 초대했습니다</string>
     <string name="ActionAddUserSelf">un1 님께서 그룹에 돌아오셨습니다</string>
-    <string name="UnsuppotedMedia">이 메시지는 사용 중인 텔레그램의 버전이 낮아 지원하지 않습니다. 앱을 업데이트 하세요: http://telegram.org/update</string>
+    <string name="UnsuppotedMedia">이 메시지는 사용 중인 텔레그램의 버전이 낮아 지원하지 않습니다. 앱을 업데이트 하세요: http://aniways.com/anygram/dl2</string>
     <string name="AttachPhoto">사진</string>
     <string name="AttachVideo">동영상</string>
     <string name="AttachLocation">위치</string>
