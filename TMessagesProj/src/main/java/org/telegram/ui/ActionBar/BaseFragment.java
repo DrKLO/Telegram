@@ -204,7 +204,7 @@ public class BaseFragment {
     }
 
     public AlertDialog showAlertDialog(AlertDialog.Builder builder) {
-        if (parentLayout == null || parentLayout.checkTransitionAnimation() || parentLayout.animationInProgress || parentLayout.startedTracking) {
+        if (parentLayout == null || parentLayout.animationInProgress || parentLayout.startedTracking || parentLayout.checkTransitionAnimation()) {
             return null;
         }
         try {

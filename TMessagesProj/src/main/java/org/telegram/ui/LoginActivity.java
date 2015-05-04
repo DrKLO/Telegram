@@ -70,6 +70,7 @@ import org.telegram.messenger.Utilities;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.SlideView;
 import org.telegram.ui.Components.TypefaceSpan;
 
@@ -151,8 +152,8 @@ public class LoginActivity extends BaseFragment {
             views[a].setVisibility(a == 0 ? View.VISIBLE : View.GONE);
             frameLayout.addView(views[a]);
             FrameLayout.LayoutParams layoutParams1 = (FrameLayout.LayoutParams) views[a].getLayoutParams();
-            layoutParams1.width = FrameLayout.LayoutParams.MATCH_PARENT;
-            layoutParams1.height = a == 0 ? FrameLayout.LayoutParams.WRAP_CONTENT : FrameLayout.LayoutParams.MATCH_PARENT;
+            layoutParams1.width = LayoutHelper.MATCH_PARENT;
+            layoutParams1.height = a == 0 ? LayoutHelper.WRAP_CONTENT : LayoutHelper.MATCH_PARENT;
             layoutParams1.leftMargin = AndroidUtilities.dp(AndroidUtilities.isTablet() ? 26 : 18);
             layoutParams1.rightMargin = AndroidUtilities.dp(AndroidUtilities.isTablet() ? 26 : 18);
             layoutParams1.topMargin = AndroidUtilities.dp(30);
@@ -448,11 +449,11 @@ public class LoginActivity extends BaseFragment {
             countryButton.setMaxLines(1);
             countryButton.setSingleLine(true);
             countryButton.setEllipsize(TextUtils.TruncateAt.END);
-            countryButton.setGravity(Gravity.LEFT | Gravity.CENTER_HORIZONTAL);
+            countryButton.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_HORIZONTAL);
             countryButton.setBackgroundResource(R.drawable.spinner_states);
             addView(countryButton);
             LayoutParams layoutParams = (LayoutParams) countryButton.getLayoutParams();
-            layoutParams.width = LayoutParams.MATCH_PARENT;
+            layoutParams.width = LayoutHelper.MATCH_PARENT;
             layoutParams.height = AndroidUtilities.dp(36);
             layoutParams.bottomMargin = AndroidUtilities.dp(14);
             countryButton.setLayoutParams(layoutParams);
@@ -476,7 +477,7 @@ public class LoginActivity extends BaseFragment {
             view.setBackgroundColor(0xffdbdbdb);
             addView(view);
             layoutParams = (LayoutParams) view.getLayoutParams();
-            layoutParams.width = LayoutParams.MATCH_PARENT;
+            layoutParams.width = LayoutHelper.MATCH_PARENT;
             layoutParams.height = 1;
             layoutParams.topMargin = AndroidUtilities.dp(-17.5f);
             layoutParams.leftMargin = AndroidUtilities.dp(4);
@@ -487,8 +488,8 @@ public class LoginActivity extends BaseFragment {
             linearLayout.setOrientation(HORIZONTAL);
             addView(linearLayout);
             layoutParams = (LayoutParams) linearLayout.getLayoutParams();
-            layoutParams.width = LayoutParams.MATCH_PARENT;
-            layoutParams.height = LayoutParams.WRAP_CONTENT;
+            layoutParams.width = LayoutHelper.MATCH_PARENT;
+            layoutParams.height = LayoutHelper.WRAP_CONTENT;
             layoutParams.topMargin = AndroidUtilities.dp(20);
             linearLayout.setLayoutParams(layoutParams);
 
@@ -498,8 +499,8 @@ public class LoginActivity extends BaseFragment {
             textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
             linearLayout.addView(textView);
             layoutParams = (LayoutParams) textView.getLayoutParams();
-            layoutParams.width = LayoutParams.WRAP_CONTENT;
-            layoutParams.height = LayoutParams.WRAP_CONTENT;
+            layoutParams.width = LayoutHelper.WRAP_CONTENT;
+            layoutParams.height = LayoutHelper.WRAP_CONTENT;
             textView.setLayoutParams(layoutParams);
 
             codeField = new EditText(context);
@@ -589,7 +590,7 @@ public class LoginActivity extends BaseFragment {
             phoneField.setImeOptions(EditorInfo.IME_ACTION_NEXT | EditorInfo.IME_FLAG_NO_EXTRACT_UI);
             linearLayout.addView(phoneField);
             layoutParams = (LayoutParams) phoneField.getLayoutParams();
-            layoutParams.width = LayoutParams.MATCH_PARENT;
+            layoutParams.width = LayoutHelper.MATCH_PARENT;
             layoutParams.height = AndroidUtilities.dp(36);
             phoneField.setLayoutParams(layoutParams);
             phoneField.addTextChangedListener(new TextWatcher() {
@@ -654,15 +655,15 @@ public class LoginActivity extends BaseFragment {
             textView.setText(LocaleController.getString("ChangePhoneHelp", R.string.ChangePhoneHelp));
             textView.setTextColor(0xff757575);
             textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-            textView.setGravity(Gravity.LEFT);
+            textView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
             textView.setLineSpacing(AndroidUtilities.dp(2), 1.0f);
             addView(textView);
             layoutParams = (LayoutParams) textView.getLayoutParams();
-            layoutParams.width = LayoutParams.WRAP_CONTENT;
-            layoutParams.height = LayoutParams.WRAP_CONTENT;
+            layoutParams.width = LayoutHelper.WRAP_CONTENT;
+            layoutParams.height = LayoutHelper.WRAP_CONTENT;
             layoutParams.topMargin = AndroidUtilities.dp(28);
             layoutParams.bottomMargin = AndroidUtilities.dp(10);
-            layoutParams.gravity = Gravity.LEFT;
+            layoutParams.gravity = LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT;
             textView.setLayoutParams(layoutParams);
 
             HashMap<String, String> languageMap = new HashMap<>();
@@ -800,7 +801,7 @@ public class LoginActivity extends BaseFragment {
             req.api_id = BuildVars.APP_ID;
             req.sms_type = 0;
             req.phone_number = phone;
-            req.lang_code = LocaleController.getLocaleString(Locale.getDefault());
+            req.lang_code = LocaleController.getLocaleString(LocaleController.getInstance().getSystemDefaultLocale());
             if (req.lang_code == null || req.lang_code.length() == 0) {
                 req.lang_code = "en";
             }
@@ -960,13 +961,13 @@ public class LoginActivity extends BaseFragment {
             confirmTextView = new TextView(context);
             confirmTextView.setTextColor(0xff757575);
             confirmTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-            confirmTextView.setGravity(Gravity.LEFT);
+            confirmTextView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
             confirmTextView.setLineSpacing(AndroidUtilities.dp(2), 1.0f);
             addView(confirmTextView);
             LayoutParams layoutParams = (LayoutParams) confirmTextView.getLayoutParams();
-            layoutParams.width = LayoutParams.WRAP_CONTENT;
-            layoutParams.height = LayoutParams.WRAP_CONTENT;
-            layoutParams.gravity = Gravity.LEFT;
+            layoutParams.width = LayoutHelper.WRAP_CONTENT;
+            layoutParams.height = LayoutHelper.WRAP_CONTENT;
+            layoutParams.gravity = LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT;
             confirmTextView.setLayoutParams(layoutParams);
 
             codeField = new EditText(context);
@@ -981,7 +982,7 @@ public class LoginActivity extends BaseFragment {
             codeField.setPadding(0, 0, 0, 0);
             addView(codeField);
             layoutParams = (LayoutParams) codeField.getLayoutParams();
-            layoutParams.width = LayoutParams.MATCH_PARENT;
+            layoutParams.width = LayoutHelper.MATCH_PARENT;
             layoutParams.height = AndroidUtilities.dp(36);
             layoutParams.gravity = Gravity.CENTER_HORIZONTAL;
             layoutParams.topMargin = AndroidUtilities.dp(20);
@@ -1001,28 +1002,28 @@ public class LoginActivity extends BaseFragment {
             timeText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             timeText.setTextColor(0xff757575);
             timeText.setLineSpacing(AndroidUtilities.dp(2), 1.0f);
-            timeText.setGravity(Gravity.LEFT);
+            timeText.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
             addView(timeText);
             layoutParams = (LayoutParams) timeText.getLayoutParams();
-            layoutParams.width = LayoutParams.WRAP_CONTENT;
-            layoutParams.height = LayoutParams.WRAP_CONTENT;
-            layoutParams.gravity = Gravity.LEFT;
+            layoutParams.width = LayoutHelper.WRAP_CONTENT;
+            layoutParams.height = LayoutHelper.WRAP_CONTENT;
+            layoutParams.gravity = LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT;
             layoutParams.topMargin = AndroidUtilities.dp(30);
             timeText.setLayoutParams(layoutParams);
 
             problemText = new TextView(context);
             problemText.setText(LocaleController.getString("DidNotGetTheCode", R.string.DidNotGetTheCode));
             problemText.setVisibility(time < 1000 ? VISIBLE : GONE);
-            problemText.setGravity(Gravity.LEFT);
+            problemText.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
             problemText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             problemText.setTextColor(0xff4d83b3);
             problemText.setLineSpacing(AndroidUtilities.dp(2), 1.0f);
             problemText.setPadding(0, AndroidUtilities.dp(2), 0, AndroidUtilities.dp(12));
             addView(problemText);
             layoutParams = (LayoutParams) problemText.getLayoutParams();
-            layoutParams.width = LayoutParams.WRAP_CONTENT;
-            layoutParams.height = LayoutParams.WRAP_CONTENT;
-            layoutParams.gravity = Gravity.LEFT;
+            layoutParams.width = LayoutHelper.WRAP_CONTENT;
+            layoutParams.height = LayoutHelper.WRAP_CONTENT;
+            layoutParams.gravity = LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT;
             layoutParams.topMargin = AndroidUtilities.dp(20);
             problemText.setLayoutParams(layoutParams);
             problemText.setOnClickListener(new OnClickListener() {
@@ -1045,24 +1046,25 @@ public class LoginActivity extends BaseFragment {
             });
 
             LinearLayout linearLayout = new LinearLayout(context);
-            linearLayout.setGravity(Gravity.BOTTOM | Gravity.CENTER_VERTICAL);
+            linearLayout.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL);
             addView(linearLayout);
             layoutParams = (LayoutParams) linearLayout.getLayoutParams();
-            layoutParams.width = LayoutParams.MATCH_PARENT;
-            layoutParams.height = LayoutParams.MATCH_PARENT;
+            layoutParams.width = LayoutHelper.MATCH_PARENT;
+            layoutParams.height = LayoutHelper.MATCH_PARENT;
+            layoutParams.gravity = (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
             linearLayout.setLayoutParams(layoutParams);
 
             TextView wrongNumber = new TextView(context);
-            wrongNumber.setGravity(Gravity.LEFT | Gravity.CENTER_HORIZONTAL);
+            wrongNumber.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_HORIZONTAL);
             wrongNumber.setTextColor(0xff4d83b3);
             wrongNumber.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             wrongNumber.setLineSpacing(AndroidUtilities.dp(2), 1.0f);
             wrongNumber.setPadding(0, AndroidUtilities.dp(24), 0, 0);
             linearLayout.addView(wrongNumber);
             layoutParams = (LayoutParams) wrongNumber.getLayoutParams();
-            layoutParams.width = LayoutParams.WRAP_CONTENT;
-            layoutParams.height = LayoutParams.WRAP_CONTENT;
-            layoutParams.gravity = Gravity.BOTTOM | Gravity.LEFT;
+            layoutParams.width = LayoutHelper.WRAP_CONTENT;
+            layoutParams.height = LayoutHelper.WRAP_CONTENT;
+            layoutParams.gravity = Gravity.BOTTOM | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
             layoutParams.bottomMargin = AndroidUtilities.dp(10);
             wrongNumber.setLayoutParams(layoutParams);
             wrongNumber.setText(LocaleController.getString("WrongNumber", R.string.WrongNumber));
@@ -1101,7 +1103,7 @@ public class LoginActivity extends BaseFragment {
             }
 
             String number = PhoneFormat.getInstance().format(phone);
-            String str = String.format(Locale.US, LocaleController.getString("SentSmsCode", R.string.SentSmsCode) + " %s", number);
+            String str = String.format(LocaleController.getString("SentSmsCode", R.string.SentSmsCode) + " %s", number);
             try {
                 SpannableStringBuilder stringBuilder = new SpannableStringBuilder(str);
                 TypefaceSpan span = new TypefaceSpan(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
@@ -1476,14 +1478,14 @@ public class LoginActivity extends BaseFragment {
             confirmTextView = new TextView(context);
             confirmTextView.setTextColor(0xff757575);
             confirmTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-            confirmTextView.setGravity(Gravity.LEFT);
+            confirmTextView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
             confirmTextView.setLineSpacing(AndroidUtilities.dp(2), 1.0f);
             confirmTextView.setText(LocaleController.getString("LoginPasswordText", R.string.LoginPasswordText));
             addView(confirmTextView);
             LayoutParams layoutParams = (LayoutParams) confirmTextView.getLayoutParams();
-            layoutParams.width = LayoutParams.WRAP_CONTENT;
-            layoutParams.height = LayoutParams.WRAP_CONTENT;
-            layoutParams.gravity = Gravity.LEFT;
+            layoutParams.width = LayoutHelper.WRAP_CONTENT;
+            layoutParams.height = LayoutHelper.WRAP_CONTENT;
+            layoutParams.gravity = LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT;
             confirmTextView.setLayoutParams(layoutParams);
 
             codeField = new EditText(context);
@@ -1498,9 +1500,10 @@ public class LoginActivity extends BaseFragment {
             codeField.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
             codeField.setTransformationMethod(PasswordTransformationMethod.getInstance());
             codeField.setTypeface(Typeface.DEFAULT);
+            codeField.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
             addView(codeField);
             layoutParams = (LayoutParams) codeField.getLayoutParams();
-            layoutParams.width = LayoutParams.MATCH_PARENT;
+            layoutParams.width = LayoutHelper.MATCH_PARENT;
             layoutParams.height = AndroidUtilities.dp(36);
             layoutParams.gravity = Gravity.CENTER_HORIZONTAL;
             layoutParams.topMargin = AndroidUtilities.dp(20);
@@ -1517,7 +1520,7 @@ public class LoginActivity extends BaseFragment {
             });
 
             TextView cancelButton = new TextView(context);
-            cancelButton.setGravity(Gravity.LEFT | Gravity.TOP);
+            cancelButton.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
             cancelButton.setTextColor(0xff4d83b3);
             cancelButton.setText(LocaleController.getString("ForgotPassword", R.string.ForgotPassword));
             cancelButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
@@ -1525,9 +1528,9 @@ public class LoginActivity extends BaseFragment {
             cancelButton.setPadding(0, AndroidUtilities.dp(14), 0, 0);
             addView(cancelButton);
             layoutParams = (LayoutParams) cancelButton.getLayoutParams();
-            layoutParams.width = LayoutParams.WRAP_CONTENT;
-            layoutParams.height = LayoutParams.WRAP_CONTENT;
-            layoutParams.gravity = Gravity.TOP | Gravity.LEFT;
+            layoutParams.width = LayoutHelper.WRAP_CONTENT;
+            layoutParams.height = LayoutHelper.WRAP_CONTENT;
+            layoutParams.gravity = Gravity.TOP | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
             cancelButton.setLayoutParams(layoutParams);
             cancelButton.setOnClickListener(new OnClickListener() {
                 @Override
@@ -1588,7 +1591,7 @@ public class LoginActivity extends BaseFragment {
             });
 
             resetAccountButton = new TextView(context);
-            resetAccountButton.setGravity(Gravity.LEFT | Gravity.TOP);
+            resetAccountButton.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
             resetAccountButton.setTextColor(0xffff6666);
             resetAccountButton.setVisibility(GONE);
             resetAccountButton.setText(LocaleController.getString("ResetMyAccount", R.string.ResetMyAccount));
@@ -1598,9 +1601,9 @@ public class LoginActivity extends BaseFragment {
             resetAccountButton.setPadding(0, AndroidUtilities.dp(14), 0, 0);
             addView(resetAccountButton);
             layoutParams = (LayoutParams) resetAccountButton.getLayoutParams();
-            layoutParams.width = LayoutParams.WRAP_CONTENT;
-            layoutParams.height = LayoutParams.WRAP_CONTENT;
-            layoutParams.gravity = Gravity.TOP | Gravity.LEFT;
+            layoutParams.width = LayoutHelper.WRAP_CONTENT;
+            layoutParams.height = LayoutHelper.WRAP_CONTENT;
+            layoutParams.gravity = Gravity.TOP | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
             layoutParams.topMargin = AndroidUtilities.dp(34);
             resetAccountButton.setLayoutParams(layoutParams);
             resetAccountButton.setOnClickListener(new OnClickListener() {
@@ -1643,7 +1646,7 @@ public class LoginActivity extends BaseFragment {
             });
 
             resetAccountText = new TextView(context);
-            resetAccountText.setGravity(Gravity.LEFT | Gravity.TOP);
+            resetAccountText.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
             resetAccountText.setVisibility(GONE);
             resetAccountText.setTextColor(0xff757575);
             resetAccountText.setText(LocaleController.getString("ResetMyAccountText", R.string.ResetMyAccountText));
@@ -1651,9 +1654,9 @@ public class LoginActivity extends BaseFragment {
             resetAccountText.setLineSpacing(AndroidUtilities.dp(2), 1.0f);
             addView(resetAccountText);
             layoutParams = (LayoutParams) resetAccountText.getLayoutParams();
-            layoutParams.width = LayoutParams.WRAP_CONTENT;
-            layoutParams.height = LayoutParams.WRAP_CONTENT;
-            layoutParams.gravity = Gravity.TOP | Gravity.LEFT;
+            layoutParams.width = LayoutHelper.WRAP_CONTENT;
+            layoutParams.height = LayoutHelper.WRAP_CONTENT;
+            layoutParams.gravity = Gravity.TOP | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
             layoutParams.bottomMargin = AndroidUtilities.dp(14);
             layoutParams.topMargin = AndroidUtilities.dp(7);
             resetAccountText.setLayoutParams(layoutParams);
@@ -1851,14 +1854,14 @@ public class LoginActivity extends BaseFragment {
             confirmTextView = new TextView(context);
             confirmTextView.setTextColor(0xff757575);
             confirmTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-            confirmTextView.setGravity(Gravity.LEFT);
+            confirmTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT));
             confirmTextView.setLineSpacing(AndroidUtilities.dp(2), 1.0f);
             confirmTextView.setText(LocaleController.getString("RestoreEmailSentInfo", R.string.RestoreEmailSentInfo));
             addView(confirmTextView);
             LayoutParams layoutParams = (LayoutParams) confirmTextView.getLayoutParams();
-            layoutParams.width = LayoutParams.WRAP_CONTENT;
-            layoutParams.height = LayoutParams.WRAP_CONTENT;
-            layoutParams.gravity = Gravity.LEFT;
+            layoutParams.width = LayoutHelper.WRAP_CONTENT;
+            layoutParams.height = LayoutHelper.WRAP_CONTENT;
+            layoutParams.gravity = (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
             confirmTextView.setLayoutParams(layoutParams);
 
             codeField = new EditText(context);
@@ -1873,9 +1876,10 @@ public class LoginActivity extends BaseFragment {
             codeField.setInputType(InputType.TYPE_CLASS_PHONE);
             codeField.setTransformationMethod(PasswordTransformationMethod.getInstance());
             codeField.setTypeface(Typeface.DEFAULT);
+            codeField.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
             addView(codeField);
             layoutParams = (LayoutParams) codeField.getLayoutParams();
-            layoutParams.width = LayoutParams.MATCH_PARENT;
+            layoutParams.width = LayoutHelper.MATCH_PARENT;
             layoutParams.height = AndroidUtilities.dp(36);
             layoutParams.gravity = Gravity.CENTER_HORIZONTAL;
             layoutParams.topMargin = AndroidUtilities.dp(20);
@@ -1892,16 +1896,16 @@ public class LoginActivity extends BaseFragment {
             });
 
             cancelButton = new TextView(context);
-            cancelButton.setGravity(Gravity.LEFT | Gravity.BOTTOM);
+            cancelButton.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.BOTTOM);
             cancelButton.setTextColor(0xff4d83b3);
             cancelButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             cancelButton.setLineSpacing(AndroidUtilities.dp(2), 1.0f);
             cancelButton.setPadding(0, AndroidUtilities.dp(14), 0, 0);
             addView(cancelButton);
             layoutParams = (LayoutParams) cancelButton.getLayoutParams();
-            layoutParams.width = LayoutParams.WRAP_CONTENT;
-            layoutParams.height = LayoutParams.WRAP_CONTENT;
-            layoutParams.gravity = Gravity.BOTTOM | Gravity.LEFT;
+            layoutParams.width = LayoutHelper.WRAP_CONTENT;
+            layoutParams.height = LayoutHelper.WRAP_CONTENT;
+            layoutParams.gravity = Gravity.BOTTOM | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
             layoutParams.bottomMargin = AndroidUtilities.dp(14);
             cancelButton.setLayoutParams(layoutParams);
             cancelButton.setOnClickListener(new OnClickListener() {
@@ -2098,14 +2102,14 @@ public class LoginActivity extends BaseFragment {
             TextView textView = new TextView(context);
             textView.setText(LocaleController.getString("RegisterText", R.string.RegisterText));
             textView.setTextColor(0xff757575);
-            textView.setGravity(Gravity.LEFT);
+            textView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
             textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             addView(textView);
             LayoutParams layoutParams = (LayoutParams) textView.getLayoutParams();
-            layoutParams.width = LayoutParams.WRAP_CONTENT;
-            layoutParams.height = LayoutParams.WRAP_CONTENT;
+            layoutParams.width = LayoutHelper.WRAP_CONTENT;
+            layoutParams.height = LayoutHelper.WRAP_CONTENT;
             layoutParams.topMargin = AndroidUtilities.dp(8);
-            layoutParams.gravity = Gravity.LEFT;
+            layoutParams.gravity = LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT;
             textView.setLayoutParams(layoutParams);
 
             firstNameField = new EditText(context);
@@ -2119,7 +2123,7 @@ public class LoginActivity extends BaseFragment {
             firstNameField.setInputType(InputType.TYPE_TEXT_FLAG_CAP_WORDS);
             addView(firstNameField);
             layoutParams = (LayoutParams) firstNameField.getLayoutParams();
-            layoutParams.width = LayoutParams.MATCH_PARENT;
+            layoutParams.width = LayoutHelper.MATCH_PARENT;
             layoutParams.height = AndroidUtilities.dp(36);
             layoutParams.topMargin = AndroidUtilities.dp(26);
             firstNameField.setLayoutParams(layoutParams);
@@ -2145,7 +2149,7 @@ public class LoginActivity extends BaseFragment {
             lastNameField.setInputType(InputType.TYPE_TEXT_FLAG_CAP_WORDS);
             addView(lastNameField);
             layoutParams = (LayoutParams) lastNameField.getLayoutParams();
-            layoutParams.width = LayoutParams.MATCH_PARENT;
+            layoutParams.width = LayoutHelper.MATCH_PARENT;
             layoutParams.height = AndroidUtilities.dp(36);
             layoutParams.topMargin = AndroidUtilities.dp(10);
             lastNameField.setLayoutParams(layoutParams);
@@ -2154,22 +2158,22 @@ public class LoginActivity extends BaseFragment {
             linearLayout.setGravity(Gravity.BOTTOM | Gravity.CENTER_VERTICAL);
             addView(linearLayout);
             layoutParams = (LayoutParams) linearLayout.getLayoutParams();
-            layoutParams.width = LayoutParams.MATCH_PARENT;
-            layoutParams.height = LayoutParams.MATCH_PARENT;
+            layoutParams.width = LayoutHelper.MATCH_PARENT;
+            layoutParams.height = LayoutHelper.MATCH_PARENT;
             linearLayout.setLayoutParams(layoutParams);
 
             TextView wrongNumber = new TextView(context);
             wrongNumber.setText(LocaleController.getString("CancelRegistration", R.string.CancelRegistration));
-            wrongNumber.setGravity(Gravity.LEFT | Gravity.CENTER_HORIZONTAL);
+            wrongNumber.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_HORIZONTAL);
             wrongNumber.setTextColor(0xff4d83b3);
             wrongNumber.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             wrongNumber.setLineSpacing(AndroidUtilities.dp(2), 1.0f);
             wrongNumber.setPadding(0, AndroidUtilities.dp(24), 0, 0);
             linearLayout.addView(wrongNumber);
             layoutParams = (LayoutParams) wrongNumber.getLayoutParams();
-            layoutParams.width = LayoutParams.WRAP_CONTENT;
-            layoutParams.height = LayoutParams.WRAP_CONTENT;
-            layoutParams.gravity = Gravity.BOTTOM | Gravity.LEFT;
+            layoutParams.width = LayoutHelper.WRAP_CONTENT;
+            layoutParams.height = LayoutHelper.WRAP_CONTENT;
+            layoutParams.gravity = Gravity.BOTTOM | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
             layoutParams.bottomMargin = AndroidUtilities.dp(10);
             wrongNumber.setLayoutParams(layoutParams);
             wrongNumber.setOnClickListener(new OnClickListener() {

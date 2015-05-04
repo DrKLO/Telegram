@@ -89,6 +89,10 @@
     <string name="IsSendingPhoto">%1$s님이 사진 보내는 중...</string>
     <string name="IsSendingVideo">%1$s님이 동영상 보내는 중...</string>
     <string name="IsSendingFile">%1$s님이 파일 보내는 중...</string>
+    <string name="RecordingAudio">음성메시지 녹음 중...</string>
+    <string name="SendingPhoto">사진 전송 중..</string>
+    <string name="SendingVideoStatus">동영상 전송 중..</string>
+    <string name="SendingFile">파일 전송 중...</string>
     <string name="GotAQuestion">텔레그램에 관해\n궁금한 사항이 있나요?</string>
     <string name="ChatTakePhoto">사진 촬영</string>
     <string name="ChatGallery">앨범</string>
@@ -157,6 +161,7 @@
     <string name="NotificationContactJoined">%1$s님이 텔레그램에 가입했습니다!</string>
     <string name="NotificationUnrecognizedDevice">%1$s님,\n%2$s에 새 기기에서 회원님의 계정 로그인이 감지되었습니다. \n\n기기: %3$s\n위치: %4$s\n\n본인의 접속이 아니라면  \'설정\' 창에서 \'모든 세션 종료\' 기능을 실행하세요.\n\n만약 강제접속 의심이 되신다면 2단계 인증을 설정 - 개인정보 및 보안에서 설정할 수 있습니다.\n\n감사합니다.\n텔레그램 팀</string>
     <string name="NotificationContactNewPhoto">%1$s님이 프로필 사진을 변경했습니다</string>
+    <string name="NotificationInvitedToGroupByLink">초대링크를 타고 %1$s님께서 %2$s 그룹에 참여하셨습니다.</string>
     <string name="Reply">답장</string>
     <string name="ReplyToGroup">%1$s 그룹에 답장하기</string>
     <string name="ReplyToUser">%1$s님에게 답장하기</string>
@@ -182,6 +187,19 @@
     <string name="EnterGroupNamePlaceholder">그룹 이름 입력</string>
     <string name="GroupName">그룹 이름</string>
     <string name="MembersCount">대화상대 %1$d/%2$d</string>
+    <string name="JoinToGroup">\'%1$s\' 그룹에 참여하시겠습니까?</string>
+    <string name="JoinToGroupErrorFull">죄송합니다, 그룹방의 인원이 최대치입니다.</string>
+    <string name="JoinToGroupErrorNotExist">죄송합니다, 그룹방이 더이상 존재하지 않습니다.</string>
+    <string name="LinkCopied">클립보드로 링크가 복사되었습니다.</string>
+    <string name="InviteToGroupByLink">링크를 통하여 그룹방에 초대하기</string>
+    <string name="InviteLink">초대링크</string>
+    <string name="RevokeAlert">초대링크를 폐지하시겠습니까? 진행하실 경우 해당 링크로 그룹방에 참여할 수 없게 됩니다.</string>
+    <string name="RevokeAlertNewLink">기존 초대링크는 비활성화 되었습니다. 새로운 링크가 생성되었습니다.</string>
+    <string name="RevokeButton">폐지하기</string>
+    <string name="RevokeLink">링크 폐지</string>
+    <string name="CopyLink">링크 복사</string>
+    <string name="ShareLink">링크 공유</string>
+    <string name="LinkInfo">텔레그램이 설치된 분들은 링크를 타고 그룹방에 참여가 가능합니다.</string>
     <!--group info view-->
     <string name="SharedMedia">공유한 미디어</string>
     <string name="SETTINGS">설정</string>
@@ -311,6 +329,13 @@
     <string name="RepeatDisabled">끔</string>
     <string name="InChatSound">채팅중 소리 설정</string>
     <string name="SoundDefault">기본값</string>
+    <string name="SmartNotifications">스마트 알림</string>
+    <string name="SmartNotificationsDisabled">비활성화됨</string>
+    <string name="SmartNotificationsInfo">최대 %1$s번, %2$s번 이내 알림</string>
+    <string name="SmartNotificationsSoundAtMost">알림 최대치</string>
+    <string name="SmartNotificationsTimes">번</string>
+    <string name="SmartNotificationsWithin">이내</string>
+    <string name="SmartNotificationsMinutes">분</string>
     <!--sessions view-->
     <string name="SessionsTitle">활성화된 세션</string>
     <string name="CurrentSession">현재 세션</string>
@@ -350,15 +375,20 @@
     <string name="Hybrid">혼합</string>
     <string name="MetersAway">m 떨어짐</string>
     <string name="KMetersAway">km 떨어짐</string>
-    <string name="SendLocation">위치 보내기</string>
-    <string name="ShareLocation">위치 공유</string>
+    <string name="SendLocation">현재 위치 전송</string>
+    <string name="SendSelectedLocation">선택한 위치 전송</string>
+    <string name="ShareLocation">위치</string>
+    <string name="AccurateTo">%1$s 반경 내 정확함</string>
+    <string name="NearbyPlaces">혹은 위치를 선택</string>
     <!--photo gallery view-->
     <string name="ShowAllMedia">모든 미디어 보기</string>
     <string name="SaveToGallery">앨범에 저장</string>
     <string name="Of">%1$d / %2$d</string>
     <string name="Gallery">앨범</string>
     <string name="AllPhotos">모든 사진</string>
+    <string name="AllVideo">모든 동영상</string>
     <string name="NoPhotos">사진이 없습니다.</string>
+    <string name="NoVideo">동영상이 아직 없음</string>
     <string name="PleaseDownload">사진/동영상을 먼저 다운로드하세요</string>
     <string name="NoRecentPhotos">최근 사진 없음</string>
     <string name="NoRecentGIFs">최근에 검색한 GIF</string>
@@ -388,6 +418,11 @@
     <string name="DiscardChanges">변경을 취소하시겠습니까?</string>
     <string name="ClearSearch">검색기록을 지우시겠습니까?</string>
     <string name="ClearButton">지우기</string>
+    <string name="PickerPhotos">사진</string>
+    <string name="PickerVideo">동영상</string>
+    <string name="AddCaption">설명 추가...</string>
+    <string name="PhotoCaption">사진 설명</string>
+    <string name="VideoCaption">동영상 설명</string>
     <!--password view-->
     <string name="TwoStepVerification">2단계 인증</string>
     <string name="SetAdditionalPassword">개별 비밀번호 설정</string>
@@ -497,6 +532,8 @@
     <string name="OK">확인</string>
     <string name="Crop">자르기</string>
     <!--messages-->
+    <string name="ActionInviteYou">초대링크를 타고 그룹에 참여하였습니다.</string>
+    <string name="ActionInviteUser">초대링크를 타고 그룹에 un1님이 참여하였습니다.</string>
     <string name="ActionKickUser">un1님이 un2님을 추방했습니다</string>
     <string name="ActionLeftUser">un1님이 퇴장했습니다</string>
     <string name="ActionAddUser">un1님이 un2님을 초대했습니다</string>
@@ -664,6 +701,18 @@
     <string name="Users_few">%1$d명의 대화상대</string>
     <string name="Users_many">%1$d명의 대화상대</string>
     <string name="Users_other">%1$d명의 대화상대</string>
+    <string name="Times_zero">%1$d 번</string>
+    <string name="Times_one">%1$d 번</string>
+    <string name="Times_two">%1$d 번</string>
+    <string name="Times_few">%1$d 번</string>
+    <string name="Times_many">%1$d 번</string>
+    <string name="Times_other">%1$d 번</string>
+    <string name="Meters_zero">%1$d 미터</string>
+    <string name="Meters_one">%1$d 미터</string>
+    <string name="Meters_two">%1$d 미터</string>
+    <string name="Meters_few">%1$d 미터</string>
+    <string name="Meters_many">%1$d 미터</string>
+    <string name="Meters_other">%1$d 미터</string>
     <!--forwarded messages-->
     <string name="ForwardedMessage_zero">%1$d 개의 전달된 메시지</string>
     <string name="ForwardedMessage_one">전달된 메시지</string>
@@ -730,4 +779,7 @@
     <string name="formatterDay24H">HH:mm</string>
     <string name="formatterDay12H">a h:mm</string>
     <string name="formatDateAtTime">%1$s %2$s</string>
+    <!--update text-->
+    <string name="updateText">텔레그램 안드로이드가 업데이트 되었습니다. 새로운 버전 2.8:\n\n-그룹방 초대링크 기능\n-스마트 알림\n-이모티콘 스티커탭\n-사진 설명 기능\n-위치에 장소 및 안내 기능\n-음성 메시지 \'청취확인\' 기능\n-\'입력 중\' 확장 : 사진 보내는중, 녹음 중등\n-부드러운 스크롤링 및 애니메이션 향상</string>
+    <string name="updateBuild">516</string>
 </resources>

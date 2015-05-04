@@ -27,6 +27,7 @@ import org.telegram.messenger.TLRPC;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.CheckBox;
 import org.telegram.ui.Components.FrameLayoutFixed;
+import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.PhotoViewer;
 
 public class SharedPhotoVideoCell extends FrameLayoutFixed {
@@ -57,63 +58,36 @@ public class SharedPhotoVideoCell extends FrameLayoutFixed {
             imageView = new BackupImageView(context);
             imageView.getImageReceiver().setNeedsQualityThumb(true);
             imageView.getImageReceiver().setShouldGenerateQualityThumb(true);
-            addView(imageView);
-            LayoutParams layoutParams = (LayoutParams) imageView.getLayoutParams();
-            layoutParams.width = LayoutParams.MATCH_PARENT;
-            layoutParams.height = LayoutParams.MATCH_PARENT;
-            imageView.setLayoutParams(layoutParams);
+            addView(imageView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
             videoInfoContainer = new LinearLayout(context);
             videoInfoContainer.setOrientation(LinearLayout.HORIZONTAL);
             videoInfoContainer.setBackgroundResource(R.drawable.phototime);
             videoInfoContainer.setPadding(AndroidUtilities.dp(3), 0, AndroidUtilities.dp(3), 0);
             videoInfoContainer.setGravity(Gravity.CENTER_VERTICAL);
-            addView(videoInfoContainer);
-            layoutParams = (LayoutParams) videoInfoContainer.getLayoutParams();
-            layoutParams.width = LayoutParams.MATCH_PARENT;
-            layoutParams.height = AndroidUtilities.dp(16);
-            layoutParams.gravity = Gravity.BOTTOM | Gravity.LEFT;
-            videoInfoContainer.setLayoutParams(layoutParams);
+            addView(videoInfoContainer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 16, Gravity.BOTTOM | Gravity.LEFT));
 
             ImageView imageView1 = new ImageView(context);
             imageView1.setImageResource(R.drawable.ic_video);
             videoInfoContainer.addView(imageView1);
             LinearLayout.LayoutParams layoutParams1 = (LinearLayout.LayoutParams) imageView1.getLayoutParams();
-            layoutParams1.width = LinearLayout.LayoutParams.WRAP_CONTENT;
-            layoutParams1.height = LinearLayout.LayoutParams.WRAP_CONTENT;
+            layoutParams1.width = LayoutHelper.WRAP_CONTENT;
+            layoutParams1.height = LayoutHelper.WRAP_CONTENT;
             imageView1.setLayoutParams(layoutParams1);
 
             videoTextView = new TextView(context);
             videoTextView.setTextColor(0xffffffff);
             videoTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
             videoTextView.setGravity(Gravity.CENTER_VERTICAL);
-            videoInfoContainer.addView(videoTextView);
-            layoutParams1 = (LinearLayout.LayoutParams) videoTextView.getLayoutParams();
-            layoutParams1.width = LinearLayout.LayoutParams.WRAP_CONTENT;
-            layoutParams1.height = LinearLayout.LayoutParams.WRAP_CONTENT;
-            layoutParams1.leftMargin = AndroidUtilities.dp(4);
-            layoutParams1.gravity = Gravity.CENTER_VERTICAL;
-            layoutParams1.bottomMargin = AndroidUtilities.dp(1);
-            videoTextView.setLayoutParams(layoutParams1);
+            videoInfoContainer.addView(videoTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL, 4, 0, 0, 1));
 
             selector = new View(context);
             selector.setBackgroundResource(R.drawable.list_selector);
-            addView(selector);
-            layoutParams = (LayoutParams) selector.getLayoutParams();
-            layoutParams.width = LayoutParams.MATCH_PARENT;
-            layoutParams.height = LayoutParams.MATCH_PARENT;
-            selector.setLayoutParams(layoutParams);
+            addView(selector, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
             checkBox = new CheckBox(context, R.drawable.round_check2);
             checkBox.setVisibility(INVISIBLE);
-            addView(checkBox);
-            layoutParams = (LayoutParams) checkBox.getLayoutParams();
-            layoutParams.width = AndroidUtilities.dp(22);
-            layoutParams.height = AndroidUtilities.dp(22);
-            layoutParams.gravity = Gravity.RIGHT | Gravity.TOP;
-            layoutParams.topMargin = AndroidUtilities.dp(6);
-            layoutParams.rightMargin = AndroidUtilities.dp(6);
-            checkBox.setLayoutParams(layoutParams);
+            addView(checkBox, LayoutHelper.createFrame(22, 22, Gravity.RIGHT | Gravity.TOP, 6, 0, 6, 0));
         }
 
         @Override

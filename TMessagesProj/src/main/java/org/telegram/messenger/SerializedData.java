@@ -47,6 +47,7 @@ public class SerializedData extends AbsSerializedData {
         isOut = false;
         inbuf = new ByteArrayInputStream(data);
         in = new DataInputStream(inbuf);
+        len = 0;
     }
 
     public void cleanup() {
@@ -131,17 +132,6 @@ public class SerializedData extends AbsSerializedData {
         }
     }
 
-    public boolean readBool() {
-        int consructor = readInt32();
-        if (consructor == 0x997275b5) {
-            return true;
-        } else if (consructor == 0xbc799737) {
-            return false;
-        }
-        FileLog.e("tmessages", "Not bool value!");
-        return false;
-    }
-
     public void writeBool(boolean value) {
         if (!justCalc) {
             if (value) {
@@ -173,52 +163,6 @@ public class SerializedData extends AbsSerializedData {
         }
     }
 
-    public int readInt32() {
-        return readInt32(null);
-    }
-
-    public int readInt32(boolean[] error) {
-        try {
-            int i = 0;
-            for(int j = 0; j < 4; j++) {
-                i |= (in.read() << (j * 8));
-            }
-            if (error != null) {
-                error[0] = false;
-            }
-            return i;
-        } catch(Exception x) {
-            if (error != null) {
-                error[0] = true;
-            }
-            FileLog.e("tmessages", "read int32 error");
-        }
-        return 0;
-    }
-
-    public long readInt64() {
-        return readInt64(null);
-    }
-
-    public long readInt64(boolean[] error) {
-        try {
-            long i = 0;
-            for(int j = 0; j < 8; j++) {
-                i |= ((long)in.read() << (j * 8));
-            }
-            if (error != null) {
-                error[0] = false;
-            }
-            return i;
-        } catch (Exception x) {
-            if (error != null) {
-                error[0] = true;
-            }
-            FileLog.e("tmessages", "read int64 error");
-        }
-        return 0;
-    }
-
     public void writeRaw(byte[] b) {
         try {
             if (!justCalc) {
@@ -226,7 +170,7 @@ public class SerializedData extends AbsSerializedData {
             } else {
                 len += b.length;
             }
-        } catch (Exception x) {
+        } catch (Exception e) {
             FileLog.e("tmessages", "write raw error");
         }
     }
@@ -238,7 +182,7 @@ public class SerializedData extends AbsSerializedData {
             } else {
                 len += count;
             }
-        } catch (Exception x) {
+        } catch (Exception e) {
             FileLog.e("tmessages", "write raw error");
         }
     }
@@ -246,7 +190,7 @@ public class SerializedData extends AbsSerializedData {
     public void writeByte(int i) {
         try {
             if (!justCalc) {
-                out.writeByte((byte)i);
+                out.writeByte((byte) i);
             } else {
                 len += 1;
             }
@@ -265,68 +209,6 @@ public class SerializedData extends AbsSerializedData {
         } catch (Exception e) {
             FileLog.e("tmessages", "write byte error");
         }
-    }
-
-    public void readRaw(byte[] b) {
-        try {
-            in.read(b);
-        } catch (Exception x) {
-            FileLog.e("tmessages", "read raw error");
-        }
-    }
-
-    public byte[] readData(int count) {
-        byte[] arr = new byte[count];
-        readRaw(arr);
-        return arr;
-    }
-
-    public String readString() {
-        try {
-            int sl = 1;
-            int l = in.read();
-            if(l >= 254) {
-                l = in.read() | (in.read() << 8) | (in.read() << 16);
-                sl = 4;
-            }
-            byte[] b = new byte[l];
-            in.read(b);
-            int i=sl;
-            while((l + i) % 4 != 0) {
-                in.read();
-                i++;
-            }
-            return new String(b, "UTF-8");
-        } catch (Exception x) {
-            FileLog.e("tmessages", "read string error");
-        }
-        return null;
-    }
-
-    public byte[] readByteArray() {
-        try {
-            int sl = 1;
-            int l = in.read();
-            if (l >= 254) {
-                l = in.read() | (in.read() << 8) | (in.read() << 16);
-                sl = 4;
-            }
-            byte[] b = new byte[l];
-            in.read(b);
-            int i = sl;
-            while((l + i) % 4 != 0) {
-                in.read();
-                i++;
-            }
-            return b;
-        } catch (Exception x) {
-            FileLog.e("tmessages", "read byte array error");
-        }
-        return null;
-    }
-
-    public ByteBufferDesc readByteBuffer() {
-        throw new RuntimeException("SerializedData don't support readByteBuffer");
     }
 
     public void writeByteArray(byte[] b) {
@@ -361,7 +243,7 @@ public class SerializedData extends AbsSerializedData {
                 }
                 i++;
             }
-        } catch (Exception x) {
+        } catch (Exception e) {
             FileLog.e("tmessages", "write byte array error");
         }
     }
@@ -369,7 +251,7 @@ public class SerializedData extends AbsSerializedData {
     public void writeString(String s) {
         try {
             writeByteArray(s.getBytes("UTF-8"));
-        } catch(Exception x) {
+        } catch(Exception e) {
             FileLog.e("tmessages", "write string error");
         }
     }
@@ -406,24 +288,15 @@ public class SerializedData extends AbsSerializedData {
                 }
                 i++;
             }
-        } catch (Exception x) {
+        } catch (Exception e) {
             FileLog.e("tmessages", "write byte array error");
         }
-    }
-
-    public double readDouble() {
-        try {
-            return Double.longBitsToDouble(readInt64());
-        } catch(Exception x) {
-            FileLog.e("tmessages", "read double error");
-        }
-        return 0;
     }
 
     public void writeDouble(double d) {
         try {
             writeInt64(Double.doubleToRawLongBits(d));
-        } catch(Exception x) {
+        } catch(Exception e) {
             FileLog.e("tmessages", "write double error");
         }
     }
@@ -443,5 +316,173 @@ public class SerializedData extends AbsSerializedData {
 
     public byte[] toByteArray() {
         return outbuf.toByteArray();
+    }
+
+    public void skip(int count) {
+        if (count == 0) {
+            return;
+        }
+        if (!justCalc) {
+            if (in != null) {
+                try {
+                    in.skipBytes(count);
+                } catch (Exception e) {
+                    FileLog.e("tmessages", e);
+                }
+            }
+        } else {
+            len += count;
+        }
+    }
+
+    public int getPosition() {
+        return len;
+    }
+
+    public boolean readBool(boolean exception) {
+        int consructor = readInt32(exception);
+        if (consructor == 0x997275b5) {
+            return true;
+        } else if (consructor == 0xbc799737) {
+            return false;
+        }
+        if (exception) {
+            throw new RuntimeException("Not bool value!");
+        } else {
+            FileLog.e("tmessages", "Not bool value!");
+        }
+        return false;
+    }
+
+    public void readRaw(byte[] b, boolean exception) {
+        try {
+            in.read(b);
+            len += b.length;
+        } catch (Exception e) {
+            if (exception) {
+                throw new RuntimeException("read raw error", e);
+            } else {
+                FileLog.e("tmessages", "read raw error");
+            }
+        }
+    }
+
+    public byte[] readData(int count, boolean exception) {
+        byte[] arr = new byte[count];
+        readRaw(arr, exception);
+        return arr;
+    }
+
+    public String readString(boolean exception) {
+        try {
+            int sl = 1;
+            int l = in.read();
+            len++;
+            if(l >= 254) {
+                l = in.read() | (in.read() << 8) | (in.read() << 16);
+                len += 3;
+                sl = 4;
+            }
+            byte[] b = new byte[l];
+            in.read(b);
+            len++;
+            int i=sl;
+            while((l + i) % 4 != 0) {
+                in.read();
+                len++;
+                i++;
+            }
+            return new String(b, "UTF-8");
+        } catch (Exception e) {
+            if (exception) {
+                throw new RuntimeException("read string error", e);
+            } else {
+                FileLog.e("tmessages", "read string error");
+            }
+        }
+        return null;
+    }
+
+    public byte[] readByteArray(boolean exception) {
+        try {
+            int sl = 1;
+            int l = in.read();
+            len++;
+            if (l >= 254) {
+                l = in.read() | (in.read() << 8) | (in.read() << 16);
+                len += 3;
+                sl = 4;
+            }
+            byte[] b = new byte[l];
+            in.read(b);
+            len++;
+            int i = sl;
+            while((l + i) % 4 != 0) {
+                in.read();
+                len++;
+                i++;
+            }
+            return b;
+        } catch (Exception e) {
+            if (exception) {
+                throw new RuntimeException("read byte array error", e);
+            } else {
+                FileLog.e("tmessages", "read byte array error");
+            }
+        }
+        return null;
+    }
+
+    public ByteBufferDesc readByteBuffer(boolean exception) {
+        throw new RuntimeException("SerializedData don't support readByteBuffer");
+    }
+
+    public double readDouble(boolean exception) {
+        try {
+            return Double.longBitsToDouble(readInt64(exception));
+        } catch(Exception e) {
+            if (exception) {
+                throw new RuntimeException("read double error", e);
+            } else {
+                FileLog.e("tmessages", "read double error");
+            }
+        }
+        return 0;
+    }
+
+    public int readInt32(boolean exception) {
+        try {
+            int i = 0;
+            for(int j = 0; j < 4; j++) {
+                i |= (in.read() << (j * 8));
+                len++;
+            }
+            return i;
+        } catch(Exception e) {
+            if (exception) {
+                throw new RuntimeException("read int32 error", e);
+            } else {
+                FileLog.e("tmessages", "read int32 error");
+            }
+        }
+        return 0;
+    }
+
+    public long readInt64(boolean exception) {
+        try {
+            long i = 0;
+            for(int j = 0; j < 8; j++) {
+                i |= ((long)in.read() << (j * 8));
+                len++;
+            }
+            return i;
+        } catch (Exception e) {
+            if (exception) {
+                throw new RuntimeException("read int64 error", e);
+            } else {
+                FileLog.e("tmessages", "read int64 error");
+            }
+        }
+        return 0;
     }
 }

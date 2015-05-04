@@ -13,7 +13,6 @@ import android.content.Intent;
 import android.graphics.Canvas;
 import android.graphics.Point;
 import android.graphics.Paint;
-import android.graphics.Path;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.provider.Browser;
@@ -44,6 +43,7 @@ import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.android.MessageObject;
 import org.telegram.messenger.TLRPC;
+import org.telegram.ui.Components.ResourceLoader;
 import org.telegram.ui.Components.StaticLayoutEx;
 import org.telegram.ui.Components.URLSpanNoUnderline;
 
@@ -57,9 +57,6 @@ public class ChatMessageCell extends ChatBaseCell implements IAniwaysTextContain
     private ClickableSpan pressedLink;
     private IAniwaysIconInfoSpan pressedIcon;
     private int linkBlockNum;
-    private MyPath urlPath = new MyPath();
-    private boolean linkPreviewPressed;
-    private static Paint urlPaint;
 
     private int lastVisibleBlockNum = 0;
     private int firstVisibleBlockNum = 0;
@@ -74,7 +71,6 @@ public class ChatMessageCell extends ChatBaseCell implements IAniwaysTextContain
     private boolean hasLinkPreview;
     private int linkPreviewHeight;
     private boolean isInstagram;
-    private int smallImageX;
     private int descriptionY;
     private int durationWidth;
     private StaticLayout siteNameLayout;
@@ -83,46 +79,8 @@ public class ChatMessageCell extends ChatBaseCell implements IAniwaysTextContain
     private StaticLayout durationLayout;
     private StaticLayout authorLayout;
     private static TextPaint durationPaint;
-    private TLRPC.PhotoSize currentPhotoObject;
-    private TLRPC.PhotoSize currentPhotoObjectThumb;
-    private boolean imageCleared;
 
     private static Drawable igvideoDrawable;
-
-    private class MyPath extends Path {
-
-        private StaticLayout currentLayout;
-        private int currentLine;
-        private float lastTop = -1;
-
-        public void setCurrentLayout(StaticLayout layout, int start) {
-            currentLayout = layout;
-            currentLine = layout.getLineForOffset(start);
-            lastTop = -1;
-        }
-
-        @Override
-        public void addRect(float left, float top, float right, float bottom, Direction dir) {
-            if (lastTop == -1) {
-                lastTop = top;
-            } else if (lastTop != top) {
-                lastTop = top;
-                currentLine++;
-            }
-            float lineRight = currentLayout.getLineRight(currentLine);
-            float lineLeft = currentLayout.getLineLeft(currentLine);
-            if (left >= lineRight) {
-                return;
-            }
-            if (right > lineRight) {
-                right = lineRight;
-            }
-            if (left < lineLeft) {
-                left = lineLeft;
-            }
-            super.addRect(left, top, right, bottom, dir);
-        }
-    }
 
     public ChatMessageCell(Context context) {
         super(context);
@@ -136,28 +94,20 @@ public class ChatMessageCell extends ChatBaseCell implements IAniwaysTextContain
         }
     }
 
-    private void resetPressedLink() {
-        if (pressedLink != null) {
-            pressedLink = null;
-        }
-        linkPreviewPressed = false;
-        invalidate();
-    }
-
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         boolean result = false;
         if (currentMessageObject != null && currentMessageObject.textLayoutBlocks != null && !currentMessageObject.textLayoutBlocks.isEmpty() && currentMessageObject.getAniwaysDecodedMessageTextBigIcons(this) instanceof Spannable && !isPressed) {
             if (event.getAction() == MotionEvent.ACTION_DOWN || (linkPreviewPressed || pressedLink != null) && event.getAction() == MotionEvent.ACTION_UP) {
-                int x = (int)event.getX();
-                int y = (int)event.getY();
+                int x = (int) event.getX();
+                int y = (int) event.getY();
                 if (x >= textX && y >= textY && x <= textX + currentMessageObject.textWidth && y <= textY + currentMessageObject.textHeight) {
                     y -= textY;
                     int blockNum = Math.max(0, y / currentMessageObject.blockHeight);
                     if (blockNum < currentMessageObject.textLayoutBlocks.size()) {
                         try {
                             MessageObject.TextLayoutBlock block = currentMessageObject.textLayoutBlocks.get(blockNum);
-                            x -= textX - (int)Math.ceil(block.textXOffset);
+                            x -= textX - (int) Math.ceil(block.textXOffset);
                             y -= block.textYOffset;
                             final int line = block.textLayout.getLineForVertical(y);
                             final int off = block.textLayout.getOffsetForHorizontal(line, x) + block.charactersOffset;
@@ -367,7 +317,7 @@ public class ChatMessageCell extends ChatBaseCell implements IAniwaysTextContain
             pos--;
             if (stringBuilder.charAt(pos + addedChars) == ' ') {
                 stringBuilder.replace(pos + addedChars, pos + addedChars + 1, "\n");
-            } else {
+            } else if (stringBuilder.charAt(pos + addedChars) != '\n') {
                 stringBuilder.insert(pos + addedChars, "\n");
                 addedChars++;
             }
@@ -380,7 +330,7 @@ public class ChatMessageCell extends ChatBaseCell implements IAniwaysTextContain
 
     @Override
     protected boolean isUserDataChanged() {
-        if (imageCleared || !hasLinkPreview && currentMessageObject.messageOwner.media != null && currentMessageObject.messageOwner.media.webpage instanceof TLRPC.TL_webPage) {
+        if (!hasLinkPreview && currentMessageObject.messageOwner.media != null && currentMessageObject.messageOwner.media.webpage instanceof TLRPC.TL_webPage) {
             return true;
         }
         //suppress warning
@@ -392,14 +342,13 @@ public class ChatMessageCell extends ChatBaseCell implements IAniwaysTextContain
         this.mDynamicImageSpansContainer.onDetachFromWindowCalled();
 
         super.onDetachedFromWindow();
-        if (linkImageView != null) {
-            linkImageView.clearImage();
-            if (currentPhotoObject != null) {
-                imageCleared = true;
-                currentPhotoObject = null;
-                currentPhotoObjectThumb = null;
-            }
-        }
+        linkImageView.onDetachedFromWindow();
+    }
+
+    @Override
+    protected void onAttachedToWindow() {
+        super.onAttachedToWindow();
+        linkImageView.onAttachedToWindow();
     }
 
     @Override
@@ -424,16 +373,12 @@ public class ChatMessageCell extends ChatBaseCell implements IAniwaysTextContain
             resetPressedLink();
             linkPreviewPressed = false;
             linkPreviewHeight = 0;
-            smallImageX = 0;
             isInstagram = false;
             durationLayout = null;
             descriptionLayout = null;
             titleLayout = null;
             siteNameLayout = null;
             authorLayout = null;
-            currentPhotoObject = null;
-            imageCleared = false;
-            currentPhotoObjectThumb = null;
             int maxWidth;
 
             if (AndroidUtilities.isTablet()) {
@@ -486,13 +431,19 @@ public class ChatMessageCell extends ChatBaseCell implements IAniwaysTextContain
                         linkPreviewMaxWidth = Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y) - AndroidUtilities.dp(80);
                     }
                 }
+
+                TLRPC.TL_webPage webPage = (TLRPC.TL_webPage) messageObject.messageOwner.media.webpage;
+
+                if (webPage.site_name != null && webPage.photo != null && webPage.site_name.toLowerCase().equals("instagram")) {
+                    linkPreviewMaxWidth = Math.max(AndroidUtilities.displaySize.y / 3, currentMessageObject.textWidth);
+                }
+
                 int additinalWidth = AndroidUtilities.dp(10);
                 int restLinesCount = 3;
                 int additionalHeight = 0;
                 linkPreviewMaxWidth -= additinalWidth;
 
                 hasLinkPreview = true;
-                TLRPC.TL_webPage webPage = (TLRPC.TL_webPage) messageObject.messageOwner.media.webpage;
 
                 if (currentMessageObject.photoThumbs == null && webPage.photo != null) {
                     currentMessageObject.generateThumbs(true);
@@ -536,7 +487,6 @@ public class ChatMessageCell extends ChatBaseCell implements IAniwaysTextContain
                         for (int a = 0; a < titleLayout.getLineCount(); a++) {
                             int width = (int) Math.ceil(titleLayout.getLineWidth(a));
                             if (a < restLines) {
-                                smallImageX = Math.max(smallImageX, width);
                                 width += AndroidUtilities.dp(48 + 2);
                             }
                             maxChildWidth = Math.max(maxChildWidth, width + additinalWidth);
@@ -588,7 +538,6 @@ public class ChatMessageCell extends ChatBaseCell implements IAniwaysTextContain
                         for (int a = 0; a < descriptionLayout.getLineCount(); a++) {
                             int width = (int) Math.ceil(descriptionLayout.getLineWidth(a));
                             if (a < restLines) {
-                                smallImageX = Math.max(smallImageX, width);
                                 width += AndroidUtilities.dp(48 + 2);
                             }
                             maxChildWidth = Math.max(maxChildWidth, width + additinalWidth);
@@ -605,8 +554,8 @@ public class ChatMessageCell extends ChatBaseCell implements IAniwaysTextContain
                         isSmallImage = false;
                     }
                     int maxPhotoWidth = smallImage ? AndroidUtilities.dp(48) : linkPreviewMaxWidth;
-                    currentPhotoObject = FileLoader.getClosestPhotoSizeWithSize(messageObject.photoThumbs, maxPhotoWidth);
-                    currentPhotoObjectThumb = FileLoader.getClosestPhotoSizeWithSize(messageObject.photoThumbs, 80);
+                    TLRPC.PhotoSize currentPhotoObject = FileLoader.getClosestPhotoSizeWithSize(messageObject.photoThumbs, maxPhotoWidth, true);
+                    TLRPC.PhotoSize currentPhotoObjectThumb = FileLoader.getClosestPhotoSizeWithSize(messageObject.photoThumbs, 80);
                     if (currentPhotoObjectThumb == currentPhotoObject) {
                         currentPhotoObjectThumb = null;
                     }
@@ -632,8 +581,10 @@ public class ChatMessageCell extends ChatBaseCell implements IAniwaysTextContain
                             float scale = width / (float) maxPhotoWidth;
                             width /= scale;
                             height /= scale;
-                            if (height > AndroidUtilities.displaySize.y / 3) {
-                                height = AndroidUtilities.displaySize.y / 3;
+                            if (webPage.site_name != null && !webPage.site_name.toLowerCase().equals("instagram")) {
+                                if (height > AndroidUtilities.displaySize.y / 3) {
+                                    height = AndroidUtilities.displaySize.y / 3;
+                                }
                             }
                         }
                         if (isSmallImage) {
@@ -823,7 +774,7 @@ public class ChatMessageCell extends ChatBaseCell implements IAniwaysTextContain
                 }
 
                 if (isSmallImage) {
-                    linkImageView.setImageCoords(textX + smallImageX + AndroidUtilities.dp(12), smallImageStartY, linkImageView.getImageWidth(), linkImageView.getImageHeight());
+                    linkImageView.setImageCoords(textX + backgroundWidth - AndroidUtilities.dp(77), smallImageStartY, linkImageView.getImageWidth(), linkImageView.getImageHeight());
                 } else {
                     linkImageView.setImageCoords(textX + AndroidUtilities.dp(10), linkPreviewY, linkImageView.getImageWidth(), linkImageView.getImageHeight());
                 }
@@ -839,8 +790,8 @@ public class ChatMessageCell extends ChatBaseCell implements IAniwaysTextContain
                 if (durationLayout != null) {
                     int x = linkImageView.getImageX() + linkImageView.getImageWidth() - AndroidUtilities.dp(8) - durationWidth;
                     int y = linkImageView.getImageY() + linkImageView.getImageHeight() - AndroidUtilities.dp(19);
-                    mediaBackgroundDrawable.setBounds(x - AndroidUtilities.dp(4), y - AndroidUtilities.dp(1.5f), x + durationWidth + AndroidUtilities.dp(4), y + AndroidUtilities.dp(14.5f));
-                    mediaBackgroundDrawable.draw(canvas);
+                    ResourceLoader.mediaBackgroundDrawable.setBounds(x - AndroidUtilities.dp(4), y - AndroidUtilities.dp(1.5f), x + durationWidth + AndroidUtilities.dp(4), y + AndroidUtilities.dp(14.5f));
+                    ResourceLoader.mediaBackgroundDrawable.draw(canvas);
 
                     canvas.save();
                     canvas.translate(x, y);

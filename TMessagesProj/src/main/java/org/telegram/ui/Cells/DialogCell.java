@@ -216,9 +216,13 @@ public class DialogCell extends BaseCell implements IAniwaysTextContainer {
     protected void onDetachedFromWindow() {
         this.mDynamicImageSpansContainer.onDetachFromWindowCalled();
         super.onDetachedFromWindow();
-        if (avatarImage != null) {
-            avatarImage.clearImage();
-        }
+        avatarImage.onDetachedFromWindow();
+    }
+
+    @Override
+    protected void onAttachedToWindow() {
+        super.onAttachedToWindow();
+        avatarImage.onAttachedToWindow();
     }
 
     @Override
@@ -363,23 +367,36 @@ public class DialogCell extends BaseCell implements IAniwaysTextContainer {
                             }
                         }
                         checkMessage = false;
-                        if (message.messageOwner.media != null && !message.isMediaEmpty()) {
-                            currentMessagePaint = messagePrintingPaint;
-                            messageString = AndroidUtilities.replaceTags(String.format("<c#ff4d83b3>%s:</c> <c#ff4d83b3>%s</c>", name, message.messageText));
+                        if (message.caption != null) {
+                            String mess = message.caption.toString();
+                            if (mess.length() > 150) {
+                                //mess = mess.substring(0, 150);
+                            }
+                            mess = mess.replace("\n", " ");
+                            messageString = AndroidUtilities.replaceTags(String.format("<c#ff4d83b3>%s:</c> <c#ff808080>%s</c>", name, mess));
                         } else {
-                            if (message.messageOwner.message != null) {
-                                String mess = message.messageOwner.message;
-                                //if (mess.length() > 150) {
-                                //    mess = mess.substring(0, 150);
-                                //}
-                                mess = mess.replace("\n", " ");
-                                messageString = AndroidUtilities.replaceTags(String.format("<c#ff4d83b3>%s:</c> <c#ff808080>%s</c>", name, mess.replace("<", "&lt;").replace(">", "&gt;")));
+                            if (message.messageOwner.media != null && !message.isMediaEmpty()) {
+                                currentMessagePaint = messagePrintingPaint;
+                                messageString = AndroidUtilities.replaceTags(String.format("<c#ff4d83b3>%s:</c> <c#ff4d83b3>%s</c>", name, message.messageText));
+                            } else {
+                                if (message.messageOwner.message != null) {
+                                    String mess = message.messageOwner.message;
+                                    if (mess.length() > 150) {
+                                        mess = mess.substring(0, 150);
+                                    }
+                                    mess = mess.replace("\n", " ");
+                                    messageString = AndroidUtilities.replaceTags(String.format("<c#ff4d83b3>%s:</c> <c#ff808080>%s</c>", name, mess));
+                                }
                             }
                         }
                     } else {
-                        messageString = message.messageText;
-                        if (message.messageOwner.media != null && !message.isMediaEmpty()) {
-                            currentMessagePaint = messagePrintingPaint;
+                        if (message.caption != null) {
+                            messageString = message.caption;
+                        } else {
+                            messageString = message.messageText;
+                            if (message.messageOwner.media != null && !message.isMediaEmpty()) {
+                                currentMessagePaint = messagePrintingPaint;
+                            }
                         }
                     }
                 }
@@ -680,10 +697,12 @@ public class DialogCell extends BaseCell implements IAniwaysTextContainer {
 
         if (mask != 0) {
             boolean continueUpdate = false;
-            if (isDialogCell && (mask & MessagesController.UPDATE_MASK_USER_PRINT) != 0) {
-                CharSequence printString = MessagesController.getInstance().printingStrings.get(currentDialogId);
-                if (lastPrintString != null && printString == null || lastPrintString == null && printString != null || lastPrintString != null && printString != null && !lastPrintString.equals(printString)) {
-                    continueUpdate = true;
+            if (isDialogCell) {
+                if ((mask & MessagesController.UPDATE_MASK_USER_PRINT) != 0) {
+                    CharSequence printString = MessagesController.getInstance().printingStrings.get(currentDialogId);
+                    if (lastPrintString != null && printString == null || lastPrintString == null && printString != null || lastPrintString != null && printString != null && !lastPrintString.equals(printString)) {
+                        continueUpdate = true;
+                    }
                 }
             }
             if (!continueUpdate && (mask & MessagesController.UPDATE_MASK_AVATAR) != 0) {

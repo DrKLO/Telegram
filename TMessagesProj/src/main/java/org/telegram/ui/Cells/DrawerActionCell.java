@@ -15,6 +15,7 @@ import android.widget.FrameLayout;
 import android.widget.TextView;
 
 import org.telegram.android.AndroidUtilities;
+import org.telegram.ui.Components.LayoutHelper;
 
 public class DrawerActionCell extends FrameLayout {
 
@@ -34,8 +35,8 @@ public class DrawerActionCell extends FrameLayout {
         textView.setCompoundDrawablePadding(AndroidUtilities.dp(34));
         addView(textView);
         LayoutParams layoutParams = (LayoutParams) textView.getLayoutParams();
-        layoutParams.width = LayoutParams.MATCH_PARENT;
-        layoutParams.height = LayoutParams.MATCH_PARENT;
+        layoutParams.width = LayoutHelper.MATCH_PARENT;
+        layoutParams.height = LayoutHelper.MATCH_PARENT;
         layoutParams.gravity = Gravity.LEFT;
         layoutParams.leftMargin = AndroidUtilities.dp(14);
         layoutParams.rightMargin = AndroidUtilities.dp(16);

@@ -10,6 +10,7 @@ package org.telegram.ui.Components;
 
 import android.os.Build;
 import android.text.Layout;
+import android.text.SpannableStringBuilder;
 import android.text.StaticLayout;
 import android.text.TextDirectionHeuristic;
 import android.text.TextDirectionHeuristics;
@@ -78,7 +79,7 @@ public class StaticLayoutEx {
     }
 
     public static StaticLayout createStaticLayout(CharSequence source, int bufstart, int bufend, TextPaint paint, int outerWidth, Layout.Alignment align, float spacingMult, float spacingAdd, boolean includePad, TextUtils.TruncateAt ellipsize, int ellipsisWidth, int maxLines) {
-        if (Build.VERSION.SDK_INT >= 14) {
+        /*if (Build.VERSION.SDK_INT >= 14) {
             init();
             try {
                 sConstructorArgs[0] = source;
@@ -98,17 +99,20 @@ public class StaticLayoutEx {
             } catch (Exception e) {
                 FileLog.e("tmessages", e);
             }
-        }
+        }*/
         try {
             if (maxLines == 1) {
-                return new StaticLayout(source, bufstart, bufend, paint, outerWidth, align, spacingMult, spacingAdd, includePad, ellipsize, ellipsisWidth);
+                CharSequence text = TextUtils.ellipsize(source, paint, ellipsisWidth, TextUtils.TruncateAt.END);
+                return new StaticLayout(text, 0, text.length(), paint, outerWidth, align, spacingMult, spacingAdd, includePad);
             } else {
                 StaticLayout layout = new StaticLayout(source, paint, outerWidth, align, spacingMult, spacingAdd, includePad);
                 if (layout.getLineCount() <= maxLines) {
                     return layout;
                 } else {
                     int off = layout.getOffsetForHorizontal(maxLines - 1, layout.getLineWidth(maxLines - 1));
-                    return new StaticLayout(source.subSequence(0, off), paint, outerWidth, align, spacingMult, spacingAdd, includePad);
+                    SpannableStringBuilder stringBuilder = new SpannableStringBuilder(source.subSequence(0, Math.max(0, off - 1)));
+                    stringBuilder.append("\u2026");
+                    return new StaticLayout(stringBuilder, paint, outerWidth, align, spacingMult, spacingAdd, includePad);
                 }
             }
         } catch (Exception e) {

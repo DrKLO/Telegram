@@ -32,7 +32,7 @@ public class NotificationCenter {
     public static final int mediaDidLoaded = totalEvents++;
     public static final int mediaCountDidLoaded = totalEvents++;
     public static final int encryptedChatUpdated = totalEvents++;
-    public static final int messagesReadedEncrypted = totalEvents++;
+    public static final int messagesReadEncrypted = totalEvents++;
     public static final int encryptedChatCreated = totalEvents++;
     public static final int userPhotosLoaded = totalEvents++;
     public static final int removeAllMessagesFromDialog = totalEvents++;
@@ -56,6 +56,9 @@ public class NotificationCenter {
     public static final int newSessionReceived = totalEvents++;
     public static final int didReceivedWebpages = totalEvents++;
     public static final int didReceivedWebpagesInUpdates = totalEvents++;
+    public static final int stickersDidLoaded = totalEvents++;
+    public static final int didReplacedPhotoInMemCache = totalEvents++;
+    public static final int messagesReadContent = totalEvents++;
 
     public static final int httpFileDidLoaded = totalEvents++;
     public static final int httpFileDidFailedLoad = totalEvents++;

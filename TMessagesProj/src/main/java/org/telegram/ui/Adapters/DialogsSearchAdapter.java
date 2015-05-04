@@ -25,10 +25,8 @@ import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLog;
 import com.aniways.anigram.messenger.R;
 import org.telegram.messenger.RPCRequest;
-import org.telegram.messenger.TLClassStore;
 import org.telegram.messenger.TLObject;
 import org.telegram.messenger.TLRPC;
-import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.Cells.DialogCell;
 import org.telegram.ui.Cells.GreySectionCell;
@@ -242,20 +240,18 @@ public class DialogsSearchAdapter extends BaseSearchAdapter {
                                 if (found != 0) {
                                     ByteBufferDesc data = MessagesStorage.getInstance().getBuffersStorage().getFreeBuffer(cursor.byteArrayLength(0));
                                     if (data != null && cursor.byteBufferValue(0, data.buffer) != 0) {
-                                        TLRPC.User user = (TLRPC.User) TLClassStore.Instance().TLdeserialize(data, data.readInt32());
-                                        if (user.id != UserConfig.getClientUserId()) {
-                                            DialogSearchResult dialogSearchResult = dialogsResult.get((long) user.id);
-                                            if (user.status != null) {
-                                                user.status.expires = cursor.intValue(1);
-                                            }
-                                            if (found == 1) {
-                                                dialogSearchResult.name = Utilities.generateSearchName(user.first_name, user.last_name, q);
-                                            } else {
-                                                dialogSearchResult.name = Utilities.generateSearchName("@" + user.username, null, "@" + q);
-                                            }
-                                            dialogSearchResult.object = user;
-                                            resultCount++;
+                                        TLRPC.User user = TLRPC.User.TLdeserialize(data, data.readInt32(false), false);
+                                        DialogSearchResult dialogSearchResult = dialogsResult.get((long) user.id);
+                                        if (user.status != null) {
+                                            user.status.expires = cursor.intValue(1);
                                         }
+                                        if (found == 1) {
+                                            dialogSearchResult.name = Utilities.generateSearchName(user.first_name, user.last_name, q);
+                                        } else {
+                                            dialogSearchResult.name = Utilities.generateSearchName("@" + user.username, null, "@" + q);
+                                        }
+                                        dialogSearchResult.object = user;
+                                        resultCount++;
                                     }
                                     MessagesStorage.getInstance().getBuffersStorage().reuseFreeBuffer(data);
                                     break;
@@ -277,7 +273,7 @@ public class DialogsSearchAdapter extends BaseSearchAdapter {
                                 if (name.startsWith(q) || name.contains(" " + q) || tName != null && (tName.startsWith(q) || tName.contains(" " + q))) {
                                     ByteBufferDesc data = MessagesStorage.getInstance().getBuffersStorage().getFreeBuffer(cursor.byteArrayLength(0));
                                     if (data != null && cursor.byteBufferValue(0, data.buffer) != 0) {
-                                        TLRPC.Chat chat = (TLRPC.Chat) TLClassStore.Instance().TLdeserialize(data, data.readInt32());
+                                        TLRPC.Chat chat = TLRPC.Chat.TLdeserialize(data, data.readInt32(false), false);
                                         long dialog_id;
                                         if (chat.id > 0) {
                                             dialog_id = -chat.id;
@@ -323,7 +319,7 @@ public class DialogsSearchAdapter extends BaseSearchAdapter {
                                     ByteBufferDesc data = MessagesStorage.getInstance().getBuffersStorage().getFreeBuffer(cursor.byteArrayLength(0));
                                     ByteBufferDesc data2 = MessagesStorage.getInstance().getBuffersStorage().getFreeBuffer(cursor.byteArrayLength(6));
                                     if (data != null && cursor.byteBufferValue(0, data.buffer) != 0 && cursor.byteBufferValue(6, data2.buffer) != 0) {
-                                        TLRPC.EncryptedChat chat = (TLRPC.EncryptedChat) TLClassStore.Instance().TLdeserialize(data, data.readInt32());
+                                        TLRPC.EncryptedChat chat = TLRPC.EncryptedChat.TLdeserialize(data, data.readInt32(false), false);
                                         DialogSearchResult dialogSearchResult = dialogsResult.get((long) chat.id << 32);
 
                                         chat.user_id = cursor.intValue(2);
@@ -342,7 +338,7 @@ public class DialogsSearchAdapter extends BaseSearchAdapter {
                                         chat.future_auth_key = cursor.byteArrayValue(15);
                                         chat.key_hash = cursor.byteArrayValue(16);
 
-                                        TLRPC.User user = (TLRPC.User) TLClassStore.Instance().TLdeserialize(data2, data2.readInt32());
+                                        TLRPC.User user = TLRPC.User.TLdeserialize(data2, data2.readInt32(false), false);
                                         if (user.status != null) {
                                             user.status.expires = cursor.intValue(7);
                                         }
@@ -417,18 +413,16 @@ public class DialogsSearchAdapter extends BaseSearchAdapter {
                             if (found != 0) {
                                 ByteBufferDesc data = MessagesStorage.getInstance().getBuffersStorage().getFreeBuffer(cursor.byteArrayLength(0));
                                 if (data != null && cursor.byteBufferValue(0, data.buffer) != 0) {
-                                    TLRPC.User user = (TLRPC.User) TLClassStore.Instance().TLdeserialize(data, data.readInt32());
-                                    if (user.id != UserConfig.getClientUserId()) {
-                                        if (user.status != null) {
-                                            user.status.expires = cursor.intValue(1);
-                                        }
-                                        if (found == 1) {
-                                            resultArrayNames.add(Utilities.generateSearchName(user.first_name, user.last_name, q));
-                                        } else {
-                                            resultArrayNames.add(Utilities.generateSearchName("@" + user.username, null, "@" + q));
-                                        }
-                                        resultArray.add(user);
+                                    TLRPC.User user = TLRPC.User.TLdeserialize(data, data.readInt32(false), false);
+                                    if (user.status != null) {
+                                        user.status.expires = cursor.intValue(1);
                                     }
+                                    if (found == 1) {
+                                        resultArrayNames.add(Utilities.generateSearchName(user.first_name, user.last_name, q));
+                                    } else {
+                                        resultArrayNames.add(Utilities.generateSearchName("@" + user.username, null, "@" + q));
+                                    }
+                                    resultArray.add(user);
                                 }
                                 MessagesStorage.getInstance().getBuffersStorage().reuseFreeBuffer(data);
                                 break;
