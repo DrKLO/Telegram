@@ -27,10 +27,6 @@ import android.os.Bundle;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.support.annotation.Nullable;
-
-import static org.telegram.android.support.widget.AdapterHelper.UpdateOp;
-import static org.telegram.android.support.widget.AdapterHelper.Callback;
-
 import android.support.v4.util.ArrayMap;
 import android.support.v4.view.InputDeviceCompat;
 import android.support.v4.view.MotionEventCompat;
@@ -43,6 +39,9 @@ import android.support.v4.view.accessibility.AccessibilityNodeInfoCompat;
 import android.support.v4.view.accessibility.AccessibilityRecordCompat;
 import android.support.v4.widget.EdgeEffectCompat;
 import android.support.v4.widget.ScrollerCompat;
+import static org.telegram.android.support.widget.AdapterHelper.UpdateOp;
+import static org.telegram.android.support.widget.AdapterHelper.Callback;
+
 import android.util.AttributeSet;
 import android.util.Log;
 import android.util.SparseArray;

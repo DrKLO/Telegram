@@ -165,12 +165,8 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
         }
 
         if (photoImage != null) {
-            photoImage.clearImage();
-            currentPhotoObject = null;
-            currentPhotoObjectThumb = null;
             photoImage.onDetachedFromWindow();
         }
-        currentUrl = null;
 
         if (gifDrawable != null) {
             MediaController.getInstance().clearGifDrawable(this);
