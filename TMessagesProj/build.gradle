@@ -41,13 +41,6 @@ android {
         targetCompatibility JavaVersion.VERSION_1_7
     }
 
-    lintOptions {
-        checkReleaseBuilds false
-        // Or, if you prefer, you can continue to check for errors in release builds,
-        // but continue the build even when errors are found:
-        abortOnError false
-    }
-
     signingConfigs {
         debug {
             storeFile file("config/debug.keystore")
@@ -65,17 +58,15 @@ android {
         debug {
             debuggable true
             jniDebuggable true
-            minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.txt'
             signingConfig signingConfigs.debug
         }
+
         release {
             debuggable false
             jniDebuggable false
-            minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.txt'
             signingConfig signingConfigs.release
         }
+
         foss {
             debuggable false
             jniDebuggable false
