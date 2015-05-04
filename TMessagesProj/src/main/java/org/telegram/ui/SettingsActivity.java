@@ -220,8 +220,6 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         usernameRow = rowCount++;
         settingsSectionRow = rowCount++;
         settingsSectionRow2 = rowCount++;
-        enableAnimationsRow = rowCount++;
-        languageRow = rowCount++;
         aniwaysSettingsRow = rowCount++;
         notificationRow = rowCount++;
         privacyRow = rowCount++;
@@ -886,21 +884,69 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
     public void onResume() {
         super.onResume();
 
-        // Terminate all other sessions, so we get push notifications here..
-        TLRPC.TL_auth_resetAuthorizations req = new TLRPC.TL_auth_resetAuthorizations();
-        ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
+        // Terminate all other sessions on this device, so we get push notifications here..
+        TLRPC.TL_account_getAuthorizations req = new TLRPC.TL_account_getAuthorizations();
+        long reqId = ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
             @Override
-            public void run(TLObject response, TLRPC.TL_error error) {
-
-                if (error == null && response instanceof TLRPC.TL_boolTrue) {
-                    Log.i("SettingsActivity", "Terminated other sessions");
-                } else {
-                    Log.e(true, "SettingsActivity", "Failed to terminate other sessions. Error code: " + (error == null ? "null" : error.code) + ". Error text: " + (error == null ? "null" : error.text));
-                }
-                UserConfig.registeredForPush = false;
-                MessagesController.getInstance().registerForPush(UserConfig.pushString);
+            public void run(final TLObject response, final TLRPC.TL_error error) {
+                AndroidUtilities.runOnUIThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (error == null) {
+                            Log.i("SettingsActivity", "Terminate all other sessions on this device");
+                            TLRPC.TL_account_authorizations res = (TLRPC.TL_account_authorizations) response;
+                            String device = "";
+                            for (TLRPC.TL_authorization authorization : res.authorizations) {
+                                if ((authorization.flags & 1) != 0) {
+                                    Log.i("SettingsActivity", "Found current session. Device: " + authorization.device_model);
+                                    device = authorization.device_model;
+                                } else {
+                                    // Doing nothing, will remove sessions which are not current on this device in the next round
+                                }
+                            }
+                            for (TLRPC.TL_authorization authorization : res.authorizations) {
+                                if ((authorization.flags & 1) != 0) {
+                                    // Doing nothing..
+                                } else {
+                                    Log.i("SettingsActivity", "Found non-current session. Device: " + authorization.device_model);
+                                    final TLRPC.TL_authorization finalAuthorization = authorization;
+                                    if(authorization.device_model == device) {
+                                        Log.i("SettingsActivity", "Same device as the current session, so terminating it: " + authorization.device_model + ". Session hash: " + authorization.hash);
+                                        TLRPC.TL_account_resetAuthorization req = new TLRPC.TL_account_resetAuthorization();
+                                        req.hash = authorization.hash;
+                                        ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
+                                            @Override
+                                            public void run(final TLObject response, final TLRPC.TL_error error) {
+                                                AndroidUtilities.runOnUIThread(new Runnable() {
+                                                    @Override
+                                                    public void run() {
+                                                        try {
+                                                            //progressDialog.dismiss();
+                                                        } catch (Exception e) {
+                                                            FileLog.e("tmessages", e);
+                                                        }
+                                                        if (error == null) {
+                                                            Log.i("SettingsActivity", "Terminated session on same device: " + finalAuthorization.device_model + ". Session hash: " + finalAuthorization.hash);
+                                                        }
+                                                        else{
+                                                            Log.e(true, "SettingsActivity", "Failed to terminate other session on device. Error code: " + (error == null ? "null" : error.code) + ". Error text: " + (error == null ? "null" : error.text) + ". Session hash: " + finalAuthorization.hash);
+                                                        }
+                                                    }
+                                                });
+                                            }
+                                        });
+                                    }
+                                }
+                            }
+                        }
+                        else{
+                            Log.e(true, "SettingsActivity", "Failed to list other sessions. Error code: " + (error == null ? "null" : error.code) + ". Error text: " + (error == null ? "null" : error.text));
+                        }
+                    }
+                });
             }
-        }, true, RPCRequest.RPCRequestClassGeneric);
+        });
+        ConnectionsManager.getInstance().bindRequestToGuid(reqId, classGuid);
 
         if (listAdapter != null) {
             listAdapter.notifyDataSetChanged();
