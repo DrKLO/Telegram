@@ -9,11 +9,14 @@
 package org.telegram.ui.Components;
 
 import android.content.Context;
-import android.support.v7.widget.RecyclerView;
+import org.telegram.android.support.widget.RecyclerView;
+
 import android.util.AttributeSet;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.View;
+
+import org.telegram.messenger.FileLog;
 
 public class RecyclerListView extends RecyclerView {
 
@@ -80,6 +83,15 @@ public class RecyclerListView extends RecyclerView {
     public boolean onInterceptTouchEvent(MotionEvent e) {
         requestDisallowInterceptTouchEvent(true);
         return super.onInterceptTouchEvent(e);
+    }
+
+    @Override
+    protected void onLayout(boolean changed, int l, int t, int r, int b) {
+        try {
+            super.onLayout(changed, l, t, r, b);
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
     }
 
     @Override

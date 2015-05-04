@@ -20,6 +20,7 @@ import org.telegram.android.ContactsController;
 import org.telegram.messenger.TLRPC;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
+import org.telegram.ui.Components.LayoutHelper;
 
 public class MentionCell extends LinearLayout {
 
@@ -55,8 +56,8 @@ public class MentionCell extends LinearLayout {
         addView(nameTextView);
         layoutParams = (LayoutParams) nameTextView.getLayoutParams();
         layoutParams.leftMargin = AndroidUtilities.dp(12);
-        layoutParams.width = LayoutParams.WRAP_CONTENT;
-        layoutParams.height = LayoutParams.WRAP_CONTENT;
+        layoutParams.width = LayoutHelper.WRAP_CONTENT;
+        layoutParams.height = LayoutHelper.WRAP_CONTENT;
         layoutParams.gravity = Gravity.CENTER_VERTICAL;
         nameTextView.setLayoutParams(layoutParams);
 
@@ -69,8 +70,8 @@ public class MentionCell extends LinearLayout {
         addView(usernameTextView);
         layoutParams = (LayoutParams) usernameTextView.getLayoutParams();
         layoutParams.leftMargin = AndroidUtilities.dp(12);
-        layoutParams.width = LayoutParams.WRAP_CONTENT;
-        layoutParams.height = LayoutParams.WRAP_CONTENT;
+        layoutParams.width = LayoutHelper.WRAP_CONTENT;
+        layoutParams.height = LayoutHelper.WRAP_CONTENT;
         layoutParams.gravity = Gravity.CENTER_VERTICAL;
         usernameTextView.setLayoutParams(layoutParams);
     }
@@ -103,5 +104,15 @@ public class MentionCell extends LinearLayout {
         imageView.setVisibility(INVISIBLE);
         usernameTextView.setVisibility(INVISIBLE);
         nameTextView.setText(text);
+    }
+
+    public void setIsDarkTheme(boolean isDarkTheme) {
+        if (isDarkTheme) {
+            nameTextView.setTextColor(0xffffffff);
+            usernameTextView.setTextColor(0xff999999);
+        } else {
+            nameTextView.setTextColor(0xff000000);
+            usernameTextView.setTextColor(0xff999999);
+        }
     }
 }

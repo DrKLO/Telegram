@@ -340,7 +340,7 @@ public class HandshakeAction extends Action implements TcpConnection.TcpConnecti
 
                 Utilities.aesIgeEncryption(answerWithHash.buffer, tmpAesKey.toByteArray(), tmpAesIv.toByteArray(), false, false, 0, serverDhParams.encrypted_answer.length);
                 byte[] answerHash = new byte[20];
-                answerWithHash.readRaw(answerHash);
+                answerWithHash.readRaw(answerHash, false);
 
                 boolean hashVerified = false;
                 for (int i = 0; i < 16; i++) {
@@ -358,8 +358,8 @@ public class HandshakeAction extends Action implements TcpConnection.TcpConnecti
                     return;
                 }
 
-                int constructor = answerWithHash.readInt32();
-                TLRPC.TL_server_DH_inner_data dhInnerData = (TLRPC.TL_server_DH_inner_data)TLClassStore.Instance().TLdeserialize(answerWithHash, constructor);
+                int constructor = answerWithHash.readInt32(false);
+                TLRPC.TL_server_DH_inner_data dhInnerData = TLRPC.TL_server_DH_inner_data.TLdeserialize(answerWithHash, constructor, false);
                 BuffersStorage.getInstance().reuseFreeBuffer(answerWithHash);
 
                 if (!(dhInnerData instanceof TLRPC.TL_server_DH_inner_data)) {
@@ -627,17 +627,17 @@ public class HandshakeAction extends Action implements TcpConnection.TcpConnecti
 
     @Override
     public void tcpConnectionReceivedData(TcpConnection connection, ByteBufferDesc data, int length) {
-        long keyId = data.readInt64();
+        long keyId = data.readInt64(false);
         if (keyId == 0) {
-            long messageId = data.readInt64();
+            long messageId = data.readInt64(false);
             if (processedMessageIds.contains(messageId)) {
                 FileLog.d("tmessages", String.format("===== Duplicate message id %d received, ignoring", messageId));
                 return;
             }
-            int messageLength = data.readInt32();
+            int messageLength = data.readInt32(false);
 
-            int constructor = data.readInt32();
-            TLObject object = TLClassStore.Instance().TLdeserialize(data, constructor);
+            int constructor = data.readInt32(false);
+            TLObject object = TLClassStore.Instance().TLdeserialize(data, constructor, false);
 
             if (object != null) {
                 processedMessageIds.add(messageId);

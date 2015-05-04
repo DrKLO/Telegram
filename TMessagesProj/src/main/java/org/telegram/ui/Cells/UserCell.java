@@ -9,12 +9,9 @@
 package org.telegram.ui.Cells;
 
 import android.content.Context;
-import android.text.TextUtils;
-import android.util.TypedValue;
 import android.view.Gravity;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
-import android.widget.TextView;
 
 import org.telegram.android.AndroidUtilities;
 import org.telegram.android.ContactsController;
@@ -27,12 +24,14 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.CheckBox;
+import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.SimpleTextView;
 
 public class UserCell extends FrameLayout {
 
     private BackupImageView avatarImageView;
-    private TextView nameTextView;
-    private TextView statusTextView;
+    private SimpleTextView nameTextView;
+    private SimpleTextView statusTextView;
     private ImageView imageView;
     private CheckBox checkBox;
 
@@ -53,76 +52,31 @@ public class UserCell extends FrameLayout {
     public UserCell(Context context, int padding) {
         super(context);
 
-        avatarImageView = new BackupImageView(context);
-        avatarImageView.setRoundRadius(AndroidUtilities.dp(24));
-        addView(avatarImageView);
-        LayoutParams layoutParams = (LayoutParams) avatarImageView.getLayoutParams();
-        layoutParams.width = AndroidUtilities.dp(48);
-        layoutParams.height = AndroidUtilities.dp(48);
-        layoutParams.gravity = LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT;
-        layoutParams.leftMargin = LocaleController.isRTL ? 0 : AndroidUtilities.dp(7 + padding);
-        layoutParams.rightMargin = LocaleController.isRTL ? AndroidUtilities.dp(7 + padding) : 0;
-        layoutParams.topMargin = AndroidUtilities.dp(8);
-        avatarImageView.setLayoutParams(layoutParams);
         avatarDrawable = new AvatarDrawable();
 
-        nameTextView = new TextView(context);
-        nameTextView.setTextColor(0xff212121);
-        nameTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 17);
-        nameTextView.setLines(1);
-        nameTextView.setMaxLines(1);
-        nameTextView.setSingleLine(true);
-        nameTextView.setEllipsize(TextUtils.TruncateAt.END);
-        nameTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL);
-        addView(nameTextView);
-        layoutParams = (LayoutParams) nameTextView.getLayoutParams();
-        layoutParams.width = LayoutParams.WRAP_CONTENT;
-        layoutParams.height = LayoutParams.WRAP_CONTENT;
-        layoutParams.leftMargin = AndroidUtilities.dp(LocaleController.isRTL ? 16 : (68 + padding));
-        layoutParams.rightMargin = AndroidUtilities.dp(LocaleController.isRTL ? (68 + padding) : 16);
-        layoutParams.topMargin = AndroidUtilities.dp(10.5f);
-        layoutParams.gravity = LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT;
-        nameTextView.setLayoutParams(layoutParams);
+        avatarImageView = new BackupImageView(context);
+        avatarImageView.setRoundRadius(AndroidUtilities.dp(24));
+        addView(avatarImageView, LayoutHelper.createFrame(48, 48, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 0 : 7 + padding, 8, LocaleController.isRTL ? 7 + padding : 0, 0));
 
-        statusTextView = new TextView(context);
-        statusTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-        statusTextView.setLines(1);
-        statusTextView.setMaxLines(1);
-        statusTextView.setSingleLine(true);
-        statusTextView.setEllipsize(TextUtils.TruncateAt.END);
-        statusTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL);
-        addView(statusTextView);
-        layoutParams = (LayoutParams) statusTextView.getLayoutParams();
-        layoutParams.width = LayoutParams.WRAP_CONTENT;
-        layoutParams.height = LayoutParams.WRAP_CONTENT;
-        layoutParams.leftMargin = AndroidUtilities.dp(LocaleController.isRTL ? 16 : (68 + padding));
-        layoutParams.rightMargin = AndroidUtilities.dp(LocaleController.isRTL ? (68 + padding) : 16);
-        layoutParams.topMargin = AndroidUtilities.dp(33.5f);
-        layoutParams.gravity = LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT;
-        statusTextView.setLayoutParams(layoutParams);
+        nameTextView = new SimpleTextView(context);
+        nameTextView.setTextColor(0xff212121);
+        nameTextView.setTextSize(17);
+        nameTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
+        addView(nameTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 20, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 28 : (68 + padding), 11.5f, LocaleController.isRTL ? (68 + padding) : 28, 0));
+
+        statusTextView = new SimpleTextView(context);
+        statusTextView.setTextSize(14);
+        statusTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
+        addView(statusTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 20, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 28 : (68 + padding), 34.5f, LocaleController.isRTL ? (68 + padding) : 28, 0));
 
         imageView = new ImageView(context);
         imageView.setScaleType(ImageView.ScaleType.CENTER);
-        addView(imageView);
-        layoutParams = (LayoutParams) imageView.getLayoutParams();
-        layoutParams.width = LayoutParams.WRAP_CONTENT;
-        layoutParams.height = LayoutParams.WRAP_CONTENT;
-        layoutParams.leftMargin = AndroidUtilities.dp(LocaleController.isRTL ? 0 : 16);
-        layoutParams.rightMargin = AndroidUtilities.dp(LocaleController.isRTL ? 16 : 0);
-        layoutParams.gravity = (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL;
-        imageView.setLayoutParams(layoutParams);
+        imageView.setVisibility(GONE);
+        addView(imageView, LayoutHelper.createFrame(LayoutParams.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL, LocaleController.isRTL ? 0 : 16, 0, LocaleController.isRTL ? 16 : 0, 0));
 
         checkBox = new CheckBox(context, R.drawable.round_check2);
         checkBox.setVisibility(INVISIBLE);
-        addView(checkBox);
-        layoutParams = (LayoutParams) checkBox.getLayoutParams();
-        layoutParams.width = AndroidUtilities.dp(22);
-        layoutParams.height = AndroidUtilities.dp(22);
-        layoutParams.topMargin = AndroidUtilities.dp(38);
-        layoutParams.leftMargin = LocaleController.isRTL ? 0 : AndroidUtilities.dp(37 + padding);
-        layoutParams.rightMargin = LocaleController.isRTL ? AndroidUtilities.dp(37 + padding) : 0;
-        layoutParams.gravity = (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
-        checkBox.setLayoutParams(layoutParams);
+        addView(checkBox, LayoutHelper.createFrame(22, 22, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 0 : 37 + padding, 38, LocaleController.isRTL ? 37 + padding : 0, 0));
     }
 
     public void setData(TLRPC.User user, CharSequence name, CharSequence status, int resId) {
@@ -150,12 +104,6 @@ public class UserCell extends FrameLayout {
     }
 
     @Override
-    protected void onDetachedFromWindow() {
-        super.onDetachedFromWindow();
-        lastAvatar = null;
-    }
-
-    @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(64), MeasureSpec.EXACTLY));
     }
@@ -170,6 +118,7 @@ public class UserCell extends FrameLayout {
             return;
         }
         TLRPC.FileLocation photo = null;
+        String newName = null;
         if (currentUser.photo != null) {
             photo = currentUser.photo.photo_small;
         }
@@ -190,9 +139,9 @@ public class UserCell extends FrameLayout {
                     continueUpdate = true;
                 }
             }
-            if (!continueUpdate && (mask & MessagesController.UPDATE_MASK_NAME) != 0) {
-                String newName = currentUser.first_name + currentUser.last_name;
-                if (newName == null || !newName.equals(lastName)) {
+            if (!continueUpdate && currentName == null && lastName != null && (mask & MessagesController.UPDATE_MASK_NAME) != 0) {
+                newName = ContactsController.formatName(currentUser.first_name, currentUser.last_name);
+                if (!newName.equals(lastName)) {
                     continueUpdate = true;
                 }
             }
@@ -207,29 +156,31 @@ public class UserCell extends FrameLayout {
         } else {
             lastStatus = 0;
         }
-        lastName = currentUser.first_name + currentUser.last_name;
-        lastAvatar = photo;
 
         if (currentName != null) {
+            lastName = null;
             nameTextView.setText(currentName);
         } else {
-            nameTextView.setText(ContactsController.formatName(currentUser.first_name, currentUser.last_name));
+            lastName = newName == null ? ContactsController.formatName(currentUser.first_name, currentUser.last_name) : newName;
+            nameTextView.setText(lastName);
         }
         if (currrntStatus != null) {
-            statusTextView.setText(currrntStatus);
             statusTextView.setTextColor(statusColor);
+            statusTextView.setText(currrntStatus);
         } else {
             if (currentUser.id == UserConfig.getClientUserId() || currentUser.status != null && currentUser.status.expires > ConnectionsManager.getInstance().getCurrentTime()) {
-                statusTextView.setText(LocaleController.getString("Online", R.string.Online));
                 statusTextView.setTextColor(statusOnlineColor);
+                statusTextView.setText(LocaleController.getString("Online", R.string.Online));
             } else {
-                statusTextView.setText(LocaleController.formatUserStatus(currentUser));
                 statusTextView.setTextColor(statusColor);
+                statusTextView.setText(LocaleController.formatUserStatus(currentUser));
             }
         }
 
-        imageView.setVisibility(currentDrawable == 0 ? INVISIBLE : VISIBLE);
-        imageView.setImageResource(currentDrawable);
+        if (imageView.getVisibility() == VISIBLE && currentDrawable == 0 || imageView.getVisibility() == GONE && currentDrawable != 0) {
+            imageView.setVisibility(currentDrawable == 0 ? GONE : VISIBLE);
+            imageView.setImageResource(currentDrawable);
+        }
         avatarImageView.setImage(photo, "50_50", avatarDrawable);
     }
 }

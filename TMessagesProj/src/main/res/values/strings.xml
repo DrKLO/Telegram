@@ -89,6 +89,10 @@
     <string name="IsSendingPhoto">%1$s is sending photo...</string>
     <string name="IsSendingVideo">%1$s is sending video...</string>
     <string name="IsSendingFile">%1$s is sending file...</string>
+    <string name="RecordingAudio">recording audio...</string>
+    <string name="SendingPhoto">sending photo...</string>
+    <string name="SendingVideoStatus">sending video...</string>
+    <string name="SendingFile">sending file...</string>
     <string name="GotAQuestion">Got a question\nabout Telegram?</string>
     <string name="ChatTakePhoto">Take photo</string>
     <string name="ChatGallery">Gallery</string>
@@ -157,6 +161,7 @@
     <string name="NotificationContactJoined">%1$s joined Telegram!</string>
     <string name="NotificationUnrecognizedDevice">%1$s,\nWe detected a login into your account from a new device on %2$s\n\nDevice: %3$s\nLocation: %4$s\n\nIf this wasn\'t you, you can go to Settings - Privacy and Security - Sessions and terminate that session.\n\nIf you think that somebody logged in to your account against your will, you can enable two-step verification in Privacy and Security settings.\n\nSincerely,\nThe Telegram Team</string>
     <string name="NotificationContactNewPhoto">%1$s updated profile photo</string>
+    <string name="NotificationInvitedToGroupByLink">%1$s joined to the group %2$s via invite link</string>
     <string name="Reply">Reply</string>
     <string name="ReplyToGroup">Reply to %1$s</string>
     <string name="ReplyToUser">Reply to %1$s</string>
@@ -182,6 +187,19 @@
     <string name="EnterGroupNamePlaceholder">Enter group name</string>
     <string name="GroupName">Group name</string>
     <string name="MembersCount">%1$d/%2$d members</string>
+    <string name="JoinToGroup">Do you want to join the group \'%1$s\'?</string>
+    <string name="JoinToGroupErrorFull">Sorry, this group is already full.</string>
+    <string name="JoinToGroupErrorNotExist">Sorry, this group does not seem to exist.</string>
+    <string name="LinkCopied">Link copied to clipboard</string>
+    <string name="InviteToGroupByLink">Invite to Group via Link</string>
+    <string name="InviteLink">Invite Link</string>
+    <string name="RevokeAlert">Are you sure you want to revoke this link? Once you do, no one will be able to join the group using it.</string>
+    <string name="RevokeAlertNewLink">The previous invite link is now inactive. A new link has been generated.</string>
+    <string name="RevokeButton">Revoke</string>
+    <string name="RevokeLink">Revoke Link</string>
+    <string name="CopyLink">Copy Link</string>
+    <string name="ShareLink">Share Link</string>
+    <string name="LinkInfo">Anyone who has Telegram installed will be able to join your group by following this link.</string>
     <!--group info view-->
     <string name="SharedMedia">Shared Media</string>
     <string name="SETTINGS">Settings</string>
@@ -312,6 +330,13 @@
     <string name="RepeatDisabled">Off</string>
     <string name="InChatSound">In-Chat Sounds</string>
     <string name="SoundDefault">Default</string>
+    <string name="SmartNotifications">Smart Notifications</string>
+    <string name="SmartNotificationsDisabled">Disabled</string>
+    <string name="SmartNotificationsInfo">Sound at most %1$s within %2$s</string>
+    <string name="SmartNotificationsSoundAtMost">Sound at most</string>
+    <string name="SmartNotificationsTimes">times</string>
+    <string name="SmartNotificationsWithin">within</string>
+    <string name="SmartNotificationsMinutes">minutes</string>
     <!--sessions view-->
     <string name="SessionsTitle">Active Sessions</string>
     <string name="CurrentSession">Current session</string>
@@ -351,15 +376,20 @@
     <string name="Hybrid">Hybrid</string>
     <string name="MetersAway">m away</string>
     <string name="KMetersAway">km away</string>
-    <string name="SendLocation">Send Location</string>
-    <string name="ShareLocation">Share Location</string>
+    <string name="SendLocation">Send your current location</string>
+    <string name="SendSelectedLocation">Send selected location</string>
+    <string name="ShareLocation">Location</string>
+    <string name="AccurateTo">Accurate to %1$s</string>
+    <string name="NearbyPlaces">OR CHOOSE A PLACE</string>
     <!--photo gallery view-->
     <string name="ShowAllMedia">Show all media</string>
     <string name="SaveToGallery">Save to gallery</string>
     <string name="Of">%1$d of %2$d</string>
     <string name="Gallery">Gallery</string>
     <string name="AllPhotos">All Photos</string>
+    <string name="AllVideo">All Videos</string>
     <string name="NoPhotos">No photos yet</string>
+    <string name="NoVideo">No videos yet</string>
     <string name="PleaseDownload">Please download media first</string>
     <string name="NoRecentPhotos">No recent photos</string>
     <string name="NoRecentGIFs">No recent GIFs</string>
@@ -389,6 +419,11 @@
     <string name="DiscardChanges">Discard changes?</string>
     <string name="ClearSearch">Clear search history?</string>
     <string name="ClearButton">Clear</string>
+    <string name="PickerPhotos">Photos</string>
+    <string name="PickerVideo">Video</string>
+    <string name="AddCaption">Add a caption...</string>
+    <string name="PhotoCaption">Photo Caption</string>
+    <string name="VideoCaption">Video Caption</string>
     <!--password view-->
     <string name="TwoStepVerification">Two-Step Verification</string>
     <string name="SetAdditionalPassword">Set Additional Password</string>
@@ -498,6 +533,8 @@
     <string name="OK">OK</string>
     <string name="Crop">CROP</string>
     <!--messages-->
+    <string name="ActionInviteYou">You joined the group via invite link</string>
+    <string name="ActionInviteUser">un1 joined the group via invite link</string>
     <string name="ActionKickUser">un1 removed un2</string>
     <string name="ActionLeftUser">un1 left group</string>
     <string name="ActionAddUser">un1 added un2</string>
@@ -665,6 +702,18 @@
     <string name="Users_few">%1$d users</string>
     <string name="Users_many">%1$d users</string>
     <string name="Users_other">%1$d users</string>
+    <string name="Times_zero">%1$d times</string>
+    <string name="Times_one">%1$d time</string>
+    <string name="Times_two">%1$d times</string>
+    <string name="Times_few">%1$d times</string>
+    <string name="Times_many">%1$d times</string>
+    <string name="Times_other">%1$d times</string>
+    <string name="Meters_zero">%1$d meters</string>
+    <string name="Meters_one">%1$d meter</string>
+    <string name="Meters_two">%1$d meters</string>
+    <string name="Meters_few">%1$d meters</string>
+    <string name="Meters_many">%1$d meters</string>
+    <string name="Meters_other">%1$d meters</string>
     <!--forwarded messages-->
     <string name="ForwardedMessage_zero">%1$d forwarded messages</string>
     <string name="ForwardedMessage_one">Forwarded message</string>
@@ -731,4 +780,7 @@
     <string name="formatterDay24H">HH:mm</string>
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s at %2$s</string>
+    <!--update text-->
+    <string name="updateText">Telegram for Android has been updated. New in version 2.8:\n\n- Places and directions in locations\n- Smart notifications\n- Invite links for group chats\n- Stickers tab in emoji menu\n- Captions for photos\n- \'Listened\' status for voice messages\n- Advanced \'typing\' status: sending photo, recording audio, etc.\n- Improved scrolling and animations for a smooooooooth experience</string>
+    <string name="updateBuild">516</string>
 </resources>

@@ -18,8 +18,6 @@ import android.opengl.GLES20;
 import android.opengl.GLUtils;
 import android.os.Build;
 import android.os.Looper;
-import android.support.v7.widget.LinearLayoutManager;
-import android.support.v7.widget.RecyclerView;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.MotionEvent;
@@ -34,13 +32,15 @@ import com.aniways.anigram.messenger.R;
 
 import org.telegram.android.AndroidUtilities;
 import org.telegram.android.LocaleController;
+import org.telegram.android.support.widget.LinearLayoutManager;
+import org.telegram.android.support.widget.RecyclerView;
 import org.telegram.messenger.DispatchQueue;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.Utilities;
-import org.telegram.ui.AnimationCompat.AnimatorListenerAdapterProxy;
-import org.telegram.ui.AnimationCompat.AnimatorSetProxy;
-import org.telegram.ui.AnimationCompat.ObjectAnimatorProxy;
-import org.telegram.ui.AnimationCompat.ViewProxy;
+import org.telegram.android.AnimationCompat.AnimatorListenerAdapterProxy;
+import org.telegram.android.AnimationCompat.AnimatorSetProxy;
+import org.telegram.android.AnimationCompat.ObjectAnimatorProxy;
+import org.telegram.android.AnimationCompat.ViewProxy;
 import org.telegram.ui.Cells.PhotoEditToolCell;
 
 import java.nio.ByteBuffer;
@@ -1334,8 +1334,8 @@ public class PhotoFilterView extends FrameLayout {
         addView(textureView);
         textureView.setVisibility(INVISIBLE);
         LayoutParams layoutParams = (LayoutParams) textureView.getLayoutParams();
-        layoutParams.width = FrameLayout.LayoutParams.MATCH_PARENT;
-        layoutParams.height = FrameLayout.LayoutParams.MATCH_PARENT;
+        layoutParams.width = LayoutHelper.MATCH_PARENT;
+        layoutParams.height = LayoutHelper.MATCH_PARENT;
         layoutParams.gravity = Gravity.TOP | Gravity.LEFT;
         textureView.setLayoutParams(layoutParams);
         textureView.setSurfaceTextureListener(new TextureView.SurfaceTextureListener() {
@@ -1381,8 +1381,8 @@ public class PhotoFilterView extends FrameLayout {
         blurControl.setVisibility(INVISIBLE);
         addView(blurControl);
         layoutParams = (LayoutParams) blurControl.getLayoutParams();
-        layoutParams.width = LayoutParams.MATCH_PARENT;
-        layoutParams.height = LayoutParams.MATCH_PARENT;
+        layoutParams.width = LayoutHelper.MATCH_PARENT;
+        layoutParams.height = LayoutHelper.MATCH_PARENT;
         layoutParams.gravity = Gravity.LEFT | Gravity.TOP;
         blurControl.setLayoutParams(layoutParams);
         blurControl.setDelegate(new PhotoFilterBlurControl.PhotoFilterLinearBlurControlDelegate() {
@@ -1401,7 +1401,7 @@ public class PhotoFilterView extends FrameLayout {
         toolsView = new FrameLayout(context);
         addView(toolsView);
         layoutParams = (LayoutParams) toolsView.getLayoutParams();
-        layoutParams.width = LayoutParams.MATCH_PARENT;
+        layoutParams.width = LayoutHelper.MATCH_PARENT;
         layoutParams.height = AndroidUtilities.dp(126);
         layoutParams.gravity = Gravity.LEFT | Gravity.BOTTOM;
         toolsView.setLayoutParams(layoutParams);
@@ -1410,7 +1410,7 @@ public class PhotoFilterView extends FrameLayout {
         frameLayout.setBackgroundColor(0xff1a1a1a);
         toolsView.addView(frameLayout);
         layoutParams = (LayoutParams) frameLayout.getLayoutParams();
-        layoutParams.width = LayoutParams.MATCH_PARENT;
+        layoutParams.width = LayoutHelper.MATCH_PARENT;
         layoutParams.height = AndroidUtilities.dp(48);
         layoutParams.gravity = Gravity.BOTTOM | Gravity.LEFT;
         frameLayout.setLayoutParams(layoutParams);
@@ -1425,8 +1425,8 @@ public class PhotoFilterView extends FrameLayout {
         cancelTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         frameLayout.addView(cancelTextView);
         layoutParams = (LayoutParams) cancelTextView.getLayoutParams();
-        layoutParams.width = LayoutParams.WRAP_CONTENT;
-        layoutParams.height = LayoutParams.MATCH_PARENT;
+        layoutParams.width = LayoutHelper.WRAP_CONTENT;
+        layoutParams.height = LayoutHelper.MATCH_PARENT;
         layoutParams.gravity = Gravity.TOP | Gravity.LEFT;
         cancelTextView.setLayoutParams(layoutParams);
 
@@ -1440,8 +1440,8 @@ public class PhotoFilterView extends FrameLayout {
         doneTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         frameLayout.addView(doneTextView);
         layoutParams = (LayoutParams) doneTextView.getLayoutParams();
-        layoutParams.width = LayoutParams.WRAP_CONTENT;
-        layoutParams.height = LayoutParams.MATCH_PARENT;
+        layoutParams.width = LayoutHelper.WRAP_CONTENT;
+        layoutParams.height = LayoutHelper.MATCH_PARENT;
         layoutParams.gravity = Gravity.TOP | Gravity.RIGHT;
         doneTextView.setLayoutParams(layoutParams);
 
@@ -1456,7 +1456,7 @@ public class PhotoFilterView extends FrameLayout {
         recyclerListView.setAdapter(toolsAdapter = new ToolsAdapter(context));
         toolsView.addView(recyclerListView);
         layoutParams = (FrameLayout.LayoutParams) recyclerListView.getLayoutParams();
-        layoutParams.width = FrameLayout.LayoutParams.MATCH_PARENT;
+        layoutParams.width = LayoutHelper.MATCH_PARENT;
         layoutParams.height = AndroidUtilities.dp(60);
         layoutParams.gravity = Gravity.LEFT | Gravity.TOP;
         recyclerListView.setLayoutParams(layoutParams);
@@ -1517,7 +1517,7 @@ public class PhotoFilterView extends FrameLayout {
         editView.setVisibility(GONE);
         addView(editView);
         layoutParams = (LayoutParams) editView.getLayoutParams();
-        layoutParams.width = LayoutParams.MATCH_PARENT;
+        layoutParams.width = LayoutHelper.MATCH_PARENT;
         layoutParams.height = AndroidUtilities.dp(126);
         layoutParams.gravity = Gravity.LEFT | Gravity.BOTTOM;
         editView.setLayoutParams(layoutParams);
@@ -1526,7 +1526,7 @@ public class PhotoFilterView extends FrameLayout {
         frameLayout.setBackgroundColor(0xff1a1a1a);
         editView.addView(frameLayout);
         layoutParams = (LayoutParams) frameLayout.getLayoutParams();
-        layoutParams.width = LayoutParams.MATCH_PARENT;
+        layoutParams.width = LayoutHelper.MATCH_PARENT;
         layoutParams.height = AndroidUtilities.dp(48);
         layoutParams.gravity = Gravity.BOTTOM | Gravity.LEFT;
         frameLayout.setLayoutParams(layoutParams);
@@ -1537,8 +1537,8 @@ public class PhotoFilterView extends FrameLayout {
         imageView.setPadding(AndroidUtilities.dp(22), 0, AndroidUtilities.dp(22), 0);
         frameLayout.addView(imageView);
         layoutParams = (LayoutParams) imageView.getLayoutParams();
-        layoutParams.width = LayoutParams.WRAP_CONTENT;
-        layoutParams.height = LayoutParams.MATCH_PARENT;
+        layoutParams.width = LayoutHelper.WRAP_CONTENT;
+        layoutParams.height = LayoutHelper.MATCH_PARENT;
         layoutParams.gravity = Gravity.TOP | Gravity.LEFT;
         imageView.setLayoutParams(layoutParams);
         imageView.setOnClickListener(new OnClickListener() {
@@ -1580,8 +1580,8 @@ public class PhotoFilterView extends FrameLayout {
         imageView.setPadding(AndroidUtilities.dp(22), AndroidUtilities.dp(1), AndroidUtilities.dp(22), 0);
         frameLayout.addView(imageView);
         layoutParams = (LayoutParams) imageView.getLayoutParams();
-        layoutParams.width = LayoutParams.WRAP_CONTENT;
-        layoutParams.height = LayoutParams.MATCH_PARENT;
+        layoutParams.width = LayoutHelper.WRAP_CONTENT;
+        layoutParams.height = LayoutHelper.MATCH_PARENT;
         layoutParams.gravity = Gravity.TOP | Gravity.RIGHT;
         imageView.setLayoutParams(layoutParams);
         imageView.setOnClickListener(new OnClickListener() {
@@ -1598,8 +1598,8 @@ public class PhotoFilterView extends FrameLayout {
         blurTextView.setText(LocaleController.getString("Blur", R.string.Blur));
         frameLayout.addView(blurTextView);
         layoutParams = (LayoutParams) blurTextView.getLayoutParams();
-        layoutParams.width = LayoutParams.WRAP_CONTENT;
-        layoutParams.height = LayoutParams.WRAP_CONTENT;
+        layoutParams.width = LayoutHelper.WRAP_CONTENT;
+        layoutParams.height = LayoutHelper.WRAP_CONTENT;
         layoutParams.gravity = Gravity.CENTER_HORIZONTAL;
         layoutParams.topMargin = AndroidUtilities.dp(9);
         blurTextView.setLayoutParams(layoutParams);
@@ -1609,8 +1609,8 @@ public class PhotoFilterView extends FrameLayout {
         paramTextView.setTextColor(0xff808080);
         frameLayout.addView(paramTextView);
         layoutParams = (LayoutParams) paramTextView.getLayoutParams();
-        layoutParams.width = LayoutParams.WRAP_CONTENT;
-        layoutParams.height = LayoutParams.WRAP_CONTENT;
+        layoutParams.width = LayoutHelper.WRAP_CONTENT;
+        layoutParams.height = LayoutHelper.WRAP_CONTENT;
         layoutParams.gravity = Gravity.CENTER_HORIZONTAL;
         layoutParams.topMargin = AndroidUtilities.dp(26);
         paramTextView.setLayoutParams(layoutParams);
@@ -1620,8 +1620,8 @@ public class PhotoFilterView extends FrameLayout {
         valueTextView.setTextColor(0xffffffff);
         frameLayout.addView(valueTextView);
         layoutParams = (LayoutParams) valueTextView.getLayoutParams();
-        layoutParams.width = LayoutParams.WRAP_CONTENT;
-        layoutParams.height = LayoutParams.WRAP_CONTENT;
+        layoutParams.width = LayoutHelper.WRAP_CONTENT;
+        layoutParams.height = LayoutHelper.WRAP_CONTENT;
         layoutParams.gravity = Gravity.CENTER_HORIZONTAL;
         layoutParams.topMargin = AndroidUtilities.dp(3);
         valueTextView.setLayoutParams(layoutParams);
@@ -1668,7 +1668,7 @@ public class PhotoFilterView extends FrameLayout {
             layoutParams.width = AndroidUtilities.dp(498);
             layoutParams.gravity = Gravity.CENTER_HORIZONTAL | Gravity.TOP;
         } else {
-            layoutParams.width = FrameLayout.LayoutParams.MATCH_PARENT;
+            layoutParams.width = LayoutHelper.MATCH_PARENT;
             layoutParams.gravity = Gravity.LEFT | Gravity.TOP;
         }
         valueSeekBar.setLayoutParams(layoutParams);
@@ -1967,7 +1967,7 @@ public class PhotoFilterView extends FrameLayout {
                 layoutParams.width = total;
                 layoutParams.leftMargin = (viewWidth - total) / 2;
             } else {
-                layoutParams.width = FrameLayout.LayoutParams.MATCH_PARENT;
+                layoutParams.width = LayoutHelper.MATCH_PARENT;
                 layoutParams.leftMargin = 0;
             }
             recyclerListView.setLayoutParams(layoutParams);

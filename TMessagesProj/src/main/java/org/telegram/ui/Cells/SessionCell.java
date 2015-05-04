@@ -23,6 +23,7 @@ import com.aniways.anigram.messenger.R;
 import org.telegram.android.AndroidUtilities;
 import org.telegram.android.LocaleController;
 import org.telegram.messenger.TLRPC;
+import org.telegram.ui.Components.LayoutHelper;
 
 import java.util.Locale;
 
@@ -49,7 +50,7 @@ public class SessionCell extends FrameLayout {
         linearLayout.setWeightSum(1);
         addView(linearLayout);
         LayoutParams layoutParams = (LayoutParams) linearLayout.getLayoutParams();
-        layoutParams.width = LayoutParams.MATCH_PARENT;
+        layoutParams.width = LayoutHelper.MATCH_PARENT;
         layoutParams.height = AndroidUtilities.dp(30);
         layoutParams.leftMargin = AndroidUtilities.dp(17);
         layoutParams.rightMargin = AndroidUtilities.dp(17);
@@ -81,7 +82,7 @@ public class SessionCell extends FrameLayout {
 
         LinearLayout.LayoutParams layoutParams2 = (LinearLayout.LayoutParams) nameTextView.getLayoutParams();
         layoutParams2.width = 0;
-        layoutParams2.height = LayoutParams.MATCH_PARENT;
+        layoutParams2.height = LayoutHelper.MATCH_PARENT;
         layoutParams2.weight = 1;
         if (LocaleController.isRTL) {
             layoutParams2.leftMargin = AndroidUtilities.dp(10);
@@ -92,8 +93,8 @@ public class SessionCell extends FrameLayout {
         nameTextView.setLayoutParams(layoutParams2);
 
         layoutParams2 = (LinearLayout.LayoutParams) onlineTextView.getLayoutParams();
-        layoutParams2.width = LayoutParams.WRAP_CONTENT;
-        layoutParams2.height = LayoutParams.MATCH_PARENT;
+        layoutParams2.width = LayoutHelper.WRAP_CONTENT;
+        layoutParams2.height = LayoutHelper.MATCH_PARENT;
         layoutParams2.topMargin = AndroidUtilities.dp(2);
         layoutParams2.gravity = (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.TOP;
         onlineTextView.setLayoutParams(layoutParams2);
@@ -108,8 +109,8 @@ public class SessionCell extends FrameLayout {
         detailTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
         addView(detailTextView);
         layoutParams = (LayoutParams) detailTextView.getLayoutParams();
-        layoutParams.width = LayoutParams.MATCH_PARENT;
-        layoutParams.height = LayoutParams.WRAP_CONTENT;
+        layoutParams.width = LayoutHelper.MATCH_PARENT;
+        layoutParams.height = LayoutHelper.WRAP_CONTENT;
         layoutParams.leftMargin = AndroidUtilities.dp(17);
         layoutParams.rightMargin = AndroidUtilities.dp(17);
         layoutParams.topMargin = AndroidUtilities.dp(36);
@@ -126,8 +127,8 @@ public class SessionCell extends FrameLayout {
         detailExTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
         addView(detailExTextView);
         layoutParams = (LayoutParams) detailExTextView.getLayoutParams();
-        layoutParams.width = LayoutParams.MATCH_PARENT;
-        layoutParams.height = LayoutParams.WRAP_CONTENT;
+        layoutParams.width = LayoutHelper.MATCH_PARENT;
+        layoutParams.height = LayoutHelper.WRAP_CONTENT;
         layoutParams.leftMargin = AndroidUtilities.dp(17);
         layoutParams.rightMargin = AndroidUtilities.dp(17);
         layoutParams.topMargin = AndroidUtilities.dp(59);

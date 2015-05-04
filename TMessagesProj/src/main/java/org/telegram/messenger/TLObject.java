@@ -11,15 +11,15 @@ package org.telegram.messenger;
 public class TLObject {
     public boolean disableFree = false;
 
-    public TLObject () {
+    public TLObject() {
 
     }
 
-    public void readParams(AbsSerializedData stream) {
+    public void readParams(AbsSerializedData stream, boolean exception) {
 
     }
 
-    public byte[] serialize () {
+    public byte[] serialize() {
         return null;
     }
 
@@ -27,16 +27,12 @@ public class TLObject {
 
     }
 
-    public Class<? extends TLObject> responseClass () {
-        return this.getClass();
+    public TLObject deserializeResponse(AbsSerializedData stream, int constructor, boolean exception) {
+        return null;
     }
 
-    public int layer () {
-       return 11;
-    }
-
-    public void parseVector(TLRPC.Vector vector, AbsSerializedData data) {
-
+    public int layer() {
+        return 11;
     }
 
     public void freeResources() {

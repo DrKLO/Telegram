@@ -23,6 +23,7 @@ import org.telegram.android.MediaController;
 import com.aniways.anigram.messenger.R;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.FrameLayoutFixed;
+import org.telegram.ui.Components.LayoutHelper;
 
 public class PhotoPickerAlbumsCell extends FrameLayoutFixed {
 
@@ -48,8 +49,8 @@ public class PhotoPickerAlbumsCell extends FrameLayoutFixed {
             imageView = new BackupImageView(context);
             addView(imageView);
             LayoutParams layoutParams = (LayoutParams) imageView.getLayoutParams();
-            layoutParams.width = LayoutParams.MATCH_PARENT;
-            layoutParams.height = LayoutParams.MATCH_PARENT;
+            layoutParams.width = LayoutHelper.MATCH_PARENT;
+            layoutParams.height = LayoutHelper.MATCH_PARENT;
             imageView.setLayoutParams(layoutParams);
 
             LinearLayout linearLayout = new LinearLayout(context);
@@ -57,7 +58,7 @@ public class PhotoPickerAlbumsCell extends FrameLayoutFixed {
             linearLayout.setBackgroundColor(0x7f000000);
             addView(linearLayout);
             layoutParams = (LayoutParams) linearLayout.getLayoutParams();
-            layoutParams.width = LayoutParams.MATCH_PARENT;
+            layoutParams.width = LayoutHelper.MATCH_PARENT;
             layoutParams.height = AndroidUtilities.dp(28);
             layoutParams.gravity = Gravity.BOTTOM;
             linearLayout.setLayoutParams(layoutParams);
@@ -72,7 +73,7 @@ public class PhotoPickerAlbumsCell extends FrameLayoutFixed {
             linearLayout.addView(nameTextView);
             LinearLayout.LayoutParams layoutParams1 = (LinearLayout.LayoutParams) nameTextView.getLayoutParams();
             layoutParams1.width = 0;
-            layoutParams1.height = LinearLayout.LayoutParams.MATCH_PARENT;
+            layoutParams1.height = LayoutHelper.MATCH_PARENT;
             layoutParams1.leftMargin = AndroidUtilities.dp(8);
             layoutParams1.weight = 1;
             nameTextView.setLayoutParams(layoutParams1);
@@ -86,8 +87,8 @@ public class PhotoPickerAlbumsCell extends FrameLayoutFixed {
             countTextView.setGravity(Gravity.CENTER_VERTICAL);
             linearLayout.addView(countTextView);
             layoutParams1 = (LinearLayout.LayoutParams) countTextView.getLayoutParams();
-            layoutParams1.width = LinearLayout.LayoutParams.WRAP_CONTENT;
-            layoutParams1.height = LinearLayout.LayoutParams.MATCH_PARENT;
+            layoutParams1.width = LayoutHelper.WRAP_CONTENT;
+            layoutParams1.height = LayoutHelper.MATCH_PARENT;
             layoutParams1.leftMargin = AndroidUtilities.dp(4);
             layoutParams1.rightMargin = AndroidUtilities.dp(4);
             countTextView.setLayoutParams(layoutParams1);
@@ -96,8 +97,8 @@ public class PhotoPickerAlbumsCell extends FrameLayoutFixed {
             selector.setBackgroundResource(R.drawable.list_selector);
             addView(selector);
             layoutParams = (LayoutParams) selector.getLayoutParams();
-            layoutParams.width = LayoutParams.MATCH_PARENT;
-            layoutParams.height = LayoutParams.MATCH_PARENT;
+            layoutParams.width = LayoutHelper.MATCH_PARENT;
+            layoutParams.height = LayoutHelper.MATCH_PARENT;
             selector.setLayoutParams(layoutParams);
         }
 
@@ -149,7 +150,11 @@ public class PhotoPickerAlbumsCell extends FrameLayoutFixed {
             albumView.imageView.setOrientation(0, true);
             if (albumEntry.coverPhoto != null && albumEntry.coverPhoto.path != null) {
                 albumView.imageView.setOrientation(albumEntry.coverPhoto.orientation, true);
-                albumView.imageView.setImage("thumb://" + albumEntry.coverPhoto.imageId + ":" + albumEntry.coverPhoto.path, null, getContext().getResources().getDrawable(R.drawable.nophotos));
+                if (albumEntry.coverPhoto.isVideo) {
+                    albumView.imageView.setImage("vthumb://" + albumEntry.coverPhoto.imageId + ":" + albumEntry.coverPhoto.path, null, getContext().getResources().getDrawable(R.drawable.nophotos));
+                } else {
+                    albumView.imageView.setImage("thumb://" + albumEntry.coverPhoto.imageId + ":" + albumEntry.coverPhoto.path, null, getContext().getResources().getDrawable(R.drawable.nophotos));
+                }
             } else {
                 albumView.imageView.setImageResource(R.drawable.nophotos);
             }

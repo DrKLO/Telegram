@@ -14,6 +14,7 @@ import android.app.Activity;
 import android.content.ContentProviderOperation;
 import android.content.ContentProviderResult;
 import android.content.ContentResolver;
+import android.content.ContentValues;
 import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.net.Uri;
@@ -38,7 +39,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.Locale;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class ContactsController {
@@ -169,7 +169,7 @@ public class ContactsController {
         if (!updatingInviteText && (inviteText == null || time + 86400 < (int)(System.currentTimeMillis() / 1000))) {
             updatingInviteText = true;
             TLRPC.TL_help_getInviteText req = new TLRPC.TL_help_getInviteText();
-            req.lang_code = LocaleController.getLocaleString(Locale.getDefault());
+            req.lang_code = LocaleController.getLocaleString(LocaleController.getInstance().getSystemDefaultLocale());
             if (req.lang_code == null || req.lang_code.length() == 0) {
                 req.lang_code = "en";
             }
@@ -203,7 +203,19 @@ public class ContactsController {
 
     public void checkAppAccount() {
         AccountManager am = AccountManager.get(ApplicationLoader.applicationContext);
-        Account[] accounts = am.getAccountsByType("com.aniways.anigram.messenger.account");
+        Account[] accounts;
+        try {
+            accounts = am.getAccountsByType("com.aniways.anigram.messenger.account");
+            if (accounts != null && accounts.length > 0) {
+                for (Account c : accounts) {
+                    am.removeAccount(c, null, null);
+                }
+            }
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
+
+        accounts = am.getAccountsByType("com.aniways.anigram.messenger.account");
         boolean recreateAccount = false;
         if (UserConfig.isClientActivated()) {
             if (accounts.length == 1) {
@@ -240,7 +252,7 @@ public class ContactsController {
     public void deleteAllAppAccounts() {
         try {
             AccountManager am = AccountManager.get(ApplicationLoader.applicationContext);
-            Account[] accounts = am.getAccountsByType("org.telegram.account");
+            Account[] accounts = am.getAccountsByType("com.aniways.anigram.messenger.account");
             for (Account c : accounts) {
                 am.removeAccount(c, null, null);
             }
@@ -1247,7 +1259,7 @@ public class ContactsController {
     private void performWriteContactsToPhoneBook() {
         final ArrayList<TLRPC.TL_contact> contactsArray = new ArrayList<>();
         contactsArray.addAll(contacts);
-        Utilities.photoBookQueue.postRunnable(new Runnable() {
+        Utilities.phoneBookQueue.postRunnable(new Runnable() {
             @Override
             public void run() {
                 performWriteContactsToPhoneBookInternal(contactsArray);
@@ -1304,7 +1316,7 @@ public class ContactsController {
         }
 
         for (final Integer uid : contactsTD) {
-            Utilities.photoBookQueue.postRunnable(new Runnable() {
+            Utilities.phoneBookQueue.postRunnable(new Runnable() {
                 @Override
                 public void run() {
                     deleteContactFromPhoneBook(uid);
@@ -1464,7 +1476,7 @@ public class ContactsController {
         builder = ContentProviderOperation.newInsert(ContactsContract.Data.CONTENT_URI);
         builder.withValueBackReference(ContactsContract.Data.RAW_CONTACT_ID, 0);
         builder.withValue(ContactsContract.Data.MIMETYPE, "vnd.android.cursor.item/vnd.org.telegram.messenger.android.profile");
-        builder.withValue(ContactsContract.Data.DATA1, "+" + user.phone);
+        builder.withValue(ContactsContract.Data.DATA1, user.id);
         builder.withValue(ContactsContract.Data.DATA2, "Telegram Profile");
         builder.withValue(ContactsContract.Data.DATA3, "+" + user.phone);
         builder.withValue(ContactsContract.Data.DATA4, user.id);
@@ -1495,6 +1507,22 @@ public class ContactsController {
         synchronized (observerLock) {
             ignoreChanges = false;
         }
+    }
+
+    protected void markAsContacted(final String contactId) {
+        if (contactId == null) {
+            return;
+        }
+        Utilities.phoneBookQueue.postRunnable(new Runnable() {
+            @Override
+            public void run() {
+                Uri uri = Uri.parse(contactId);
+                ContentValues values = new ContentValues();
+                values.put(ContactsContract.Contacts.LAST_TIME_CONTACTED, System.currentTimeMillis());
+                ContentResolver cr = ApplicationLoader.applicationContext.getContentResolver();
+                cr.update(uri, values, null, null);
+            }
+        });
     }
 
     public void addContact(TLRPC.User user) {
@@ -1534,7 +1562,7 @@ public class ContactsController {
 //                }
 
                 for (final TLRPC.User u : res.users) {
-                    Utilities.photoBookQueue.postRunnable(new Runnable() {
+                    Utilities.phoneBookQueue.postRunnable(new Runnable() {
                         @Override
                         public void run() {
                             addContactToPhoneBook(u, true);
@@ -1547,7 +1575,7 @@ public class ContactsController {
                     MessagesStorage.getInstance().putContacts(arrayList, false);
 
                     if (u.phone != null && u.phone.length() > 0) {
-                        String name = formatName(u.first_name, u.last_name);
+                        CharSequence name = formatName(u.first_name, u.last_name);
                         MessagesStorage.getInstance().applyPhoneBookUpdates(u.phone, "");
                         Contact contact = contactsBookSPhones.get(u.phone);
                         if (contact != null) {
@@ -1600,7 +1628,7 @@ public class ContactsController {
                     return;
                 }
                 MessagesStorage.getInstance().deleteContacts(uids);
-                Utilities.photoBookQueue.postRunnable(new Runnable() {
+                Utilities.phoneBookQueue.postRunnable(new Runnable() {
                     @Override
                     public void run() {
                         for (TLRPC.User user : users) {
@@ -1611,7 +1639,7 @@ public class ContactsController {
 
                 for (TLRPC.User user : users) {
                     if (user.phone != null && user.phone.length() > 0) {
-                        String name = ContactsController.formatName(user.first_name, user.last_name);
+                        CharSequence name = ContactsController.formatName(user.first_name, user.last_name);
                         MessagesStorage.getInstance().applyPhoneBookUpdates(user.phone, "");
                         Contact contact = contactsBookSPhones.get(user.phone);
                         if (contact != null) {
@@ -1773,22 +1801,37 @@ public class ContactsController {
     }
 
     public static String formatName(String firstName, String lastName) {
-        String result = "";
+        /*if ((firstName == null || firstName.length() == 0) && (lastName == null || lastName.length() == 0)) {
+            return LocaleController.getString("HiddenName", R.string.HiddenName);
+        }*/
+        if (firstName != null) {
+            firstName = firstName.trim();
+        }
+        if (lastName != null) {
+            lastName = lastName.trim();
+        }
+        StringBuilder result = new StringBuilder((firstName != null ? firstName.length() : 0) + (lastName != null ? lastName.length() : 0) + 1);
         if (LocaleController.nameDisplayOrder == 1) {
-            result = firstName;
-            if (result == null || result.length() == 0) {
-                result = lastName;
-            } else if (result.length() != 0 && lastName != null && lastName.length() != 0) {
-                result += " " + lastName;
+            if (firstName != null && firstName.length() > 0) {
+                result.append(firstName);
+                if (lastName != null && lastName.length() > 0) {
+                    result.append(" ");
+                    result.append(lastName);
+                }
+            } else if (lastName != null && lastName.length() > 0) {
+                result.append(lastName);
             }
         } else {
-            result = lastName;
-            if (result == null || result.length() == 0) {
-                result = firstName;
-            } else if (result.length() != 0 && firstName != null && firstName.length() != 0) {
-                result += " " + firstName;
+            if (lastName != null && lastName.length() > 0) {
+                result.append(lastName);
+                if (firstName != null && firstName.length() > 0) {
+                    result.append(" ");
+                    result.append(firstName);
+                }
+            } else if (firstName != null && firstName.length() > 0) {
+                result.append(firstName);
             }
         }
-        return result.trim();
+        return result.toString();
     }
 }

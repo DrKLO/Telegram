@@ -1,17 +1,15 @@
 buildscript {
     repositories {
         mavenCentral()
-        maven { url "https://raw.github.com/Raizlabs/maven-releases/master/releases" }
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:1.1.3'
+        classpath 'com.android.tools.build:gradle:1.2.2'
     }
 }
 
 allprojects {
     repositories {
         mavenCentral()
-        maven { url "https://raw.github.com/Raizlabs/maven-releases/master/releases" }
     }
 }
 
@@ -22,17 +20,15 @@ repositories {
 }
 
 dependencies {
-    compile 'com.android.support:support-v4:22.0'
-    compile 'com.android.support:appcompat-v7:22.0.0'
-    compile 'com.google.android.gms:play-services-maps:7.0.0'
-    compile 'com.google.android.gms:play-services-location:7.0.0'
-    compile 'com.google.android.gms:play-services-identity:7.0.0'
-    compile 'com.google.android.gms:play-services-appstate:7.0.0'
-    compile 'com.google.android.gms:play-services-wearable:7.0.0'
-    compile 'com.google.android.gms:play-services-gcm:7.0.0'
+    compile 'com.android.support:support-v4:22.1.1'
+    compile 'com.google.android.gms:play-services-maps:7.3.0'
+    compile 'com.google.android.gms:play-services-location:7.3.0'
+    compile 'com.google.android.gms:play-services-identity:7.3.0'
+    compile 'com.google.android.gms:play-services-appstate:7.3.0'
+    compile 'com.google.android.gms:play-services-wearable:7.3.0'
+    compile 'com.google.android.gms:play-services-gcm:7.3.0'
     compile 'net.hockeyapp.android:HockeySDK:3.5.+'
     compile 'com.googlecode.mp4parser:isoparser:1.0.+'
-    compile 'com.android.support:recyclerview-v7:+'
     compile project(':Android-SDK')
 }
 
