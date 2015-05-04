@@ -407,12 +407,12 @@ public class LoginActivity extends BaseFragment {
                     @Override
                     public void run() {
                         if (error == null) {
-                            Log.i("SettingsActivity", "Terminate all other sessions on this device");
+                            Log.i("LoginActivity", "Terminate all other sessions on this device");
                             TLRPC.TL_account_authorizations res = (TLRPC.TL_account_authorizations) response;
                             String device = "";
                             for (TLRPC.TL_authorization authorization : res.authorizations) {
                                 if ((authorization.flags & 1) != 0) {
-                                    Log.i("SettingsActivity", "Found current session. Device: " + authorization.device_model);
+                                    Log.i("LoginActivity", "Found current session. Device: " + authorization.device_model + ". Session hash: " + authorization.hash);
                                     device = authorization.device_model;
                                 } else {
                                     // Doing nothing, will remove sessions which are not current on this device in the next round
@@ -422,10 +422,10 @@ public class LoginActivity extends BaseFragment {
                                 if ((authorization.flags & 1) != 0) {
                                     // Doing nothing..
                                 } else {
-                                    Log.i("SettingsActivity", "Found non-current session. Device: " + authorization.device_model);
+                                    Log.i("LoginActivity", "Found non-current session. Device: " + authorization.device_model);
                                     final TLRPC.TL_authorization finalAuthorization = authorization;
-                                    if(authorization.device_model == device) {
-                                        Log.i("SettingsActivity", "Same device as the current session, so terminating it: " + authorization.device_model + ". Session hash: " + authorization.hash);
+                                    if(authorization.device_model.equals(device)) {
+                                        Log.i("LoginActivity", "Same device as the current session, so terminating it: " + authorization.device_model + ". Session hash: " + authorization.hash);
                                         TLRPC.TL_account_resetAuthorization req = new TLRPC.TL_account_resetAuthorization();
                                         req.hash = authorization.hash;
                                         ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
@@ -440,10 +440,10 @@ public class LoginActivity extends BaseFragment {
                                                             FileLog.e("tmessages", e);
                                                         }
                                                         if (error == null) {
-                                                            Log.i("SettingsActivity", "Terminated session on same device: " + finalAuthorization.device_model + ". Session hash: " + finalAuthorization.hash);
+                                                            Log.i("LoginActivity", "Terminated session on same device: " + finalAuthorization.device_model + ". Session hash: " + finalAuthorization.hash);
                                                         }
                                                         else{
-                                                            Log.e(true, "SettingsActivity", "Failed to terminate other session on device. Error code: " + (error == null ? "null" : error.code) + ". Error text: " + (error == null ? "null" : error.text) + ". Session hash: " + finalAuthorization.hash);
+                                                            Log.e(true, "LoginActivity", "Failed to terminate other session on device. Error code: " + (error == null ? "null" : error.code) + ". Error text: " + (error == null ? "null" : error.text) + ". Session hash: " + finalAuthorization.hash);
                                                         }
                                                     }
                                                 });
@@ -454,7 +454,7 @@ public class LoginActivity extends BaseFragment {
                             }
                         }
                         else{
-                            Log.e(true, "SettingsActivity", "Failed to list other sessions. Error code: " + (error == null ? "null" : error.code) + ". Error text: " + (error == null ? "null" : error.text));
+                            Log.e(true, "LoginActivity", "Failed to list other sessions. Error code: " + (error == null ? "null" : error.code) + ". Error text: " + (error == null ? "null" : error.text));
                         }
                     }
                 });

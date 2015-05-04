@@ -898,7 +898,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                             String device = "";
                             for (TLRPC.TL_authorization authorization : res.authorizations) {
                                 if ((authorization.flags & 1) != 0) {
-                                    Log.i("SettingsActivity", "Found current session. Device: " + authorization.device_model);
+                                    Log.i("SettingsActivity", "Found current session. Device: " + authorization.device_model + ". Session hash: " + authorization.hash);
                                     device = authorization.device_model;
                                 } else {
                                     // Doing nothing, will remove sessions which are not current on this device in the next round
@@ -910,7 +910,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                                 } else {
                                     Log.i("SettingsActivity", "Found non-current session. Device: " + authorization.device_model);
                                     final TLRPC.TL_authorization finalAuthorization = authorization;
-                                    if(authorization.device_model == device) {
+                                    if(authorization.device_model.equals(device)) {
                                         Log.i("SettingsActivity", "Same device as the current session, so terminating it: " + authorization.device_model + ". Session hash: " + authorization.hash);
                                         TLRPC.TL_account_resetAuthorization req = new TLRPC.TL_account_resetAuthorization();
                                         req.hash = authorization.hash;
