@@ -624,7 +624,7 @@ public class LocaleController {
                 }
             }
             if (newLocale != null) {
-                if (localeInfo.pathToFile == null) {
+                 if (localeInfo.pathToFile == null) {
                     localeValues.clear();
                 } else if (!fromFile) {
                     localeValues = getLocaleFileStrings(new File(localeInfo.pathToFile));
