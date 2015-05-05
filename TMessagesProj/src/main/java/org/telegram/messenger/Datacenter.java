@@ -20,8 +20,8 @@ public class Datacenter {
     private static final int DATA_VERSION = 4;
 
     public int datacenterId;
-    public ArrayList<String> addresses = new ArrayList<String>();
-    public HashMap<String, Integer> ports = new HashMap<String, Integer>();
+    public ArrayList<String> addresses = new ArrayList<>();
+    public HashMap<String, Integer> ports = new HashMap<>();
     public int[] defaultPorts =   new int[] {-1, 80, -1, 443, -1, 443, -1, 80, -1, 443, -1};
     public int[] defaultPorts8888 = new int[] {-1, 8888, -1, 443, -1, 8888,  -1, 80, -1, 8888,  -1};
     public boolean authorized;
@@ -37,74 +37,74 @@ public class Datacenter {
     private TcpConnection uploadConnection;
     public TcpConnection pushConnection;
 
-    private ArrayList<ServerSalt> authServerSaltSet = new ArrayList<ServerSalt>();
+    private ArrayList<ServerSalt> authServerSaltSet = new ArrayList<>();
 
     public Datacenter() {
-        authServerSaltSet = new ArrayList<ServerSalt>();
+        authServerSaltSet = new ArrayList<>();
     }
 
     public Datacenter(SerializedData data, int version) {
         if (version == 0) {
-            datacenterId = data.readInt32();
-            String address = data.readString();
+            datacenterId = data.readInt32(false);
+            String address = data.readString(false);
             addresses.add(address);
-            int port = data.readInt32();
+            int port = data.readInt32(false);
             ports.put(address, port);
-            int len = data.readInt32();
+            int len = data.readInt32(false);
             if (len != 0) {
-                authKey = data.readData(len);
+                authKey = data.readData(len, false);
             }
-            len = data.readInt32();
+            len = data.readInt32(false);
             if (len != 0) {
-                authKeyId = data.readInt64();
+                authKeyId = data.readInt64(false);
             }
-            authorized = data.readInt32() != 0;
-            len = data.readInt32();
+            authorized = data.readInt32(false) != 0;
+            len = data.readInt32(false);
             for (int a = 0; a < len; a++) {
                 ServerSalt salt = new ServerSalt();
-                salt.validSince = data.readInt32();
-                salt.validUntil = data.readInt32();
-                salt.value = data.readInt64();
+                salt.validSince = data.readInt32(false);
+                salt.validUntil = data.readInt32(false);
+                salt.value = data.readInt64(false);
                 if (authServerSaltSet == null) {
-                    authServerSaltSet = new ArrayList<ServerSalt>();
+                    authServerSaltSet = new ArrayList<>();
                 }
                 authServerSaltSet.add(salt);
             }
         } else if (version == 1) {
-            int currentVersion = data.readInt32();
+            int currentVersion = data.readInt32(false);
             if (currentVersion == 2 || currentVersion == 3 || currentVersion == 4) {
-                datacenterId = data.readInt32();
+                datacenterId = data.readInt32(false);
                 if (currentVersion >= 3) {
-                    lastInitVersion = data.readInt32();
+                    lastInitVersion = data.readInt32(false);
                 }
-                int len = data.readInt32();
+                int len = data.readInt32(false);
                 for (int a = 0; a < len; a++) {
-                    String address = data.readString();
+                    String address = data.readString(false);
                     addresses.add(address);
-                    ports.put(address, data.readInt32());
+                    ports.put(address, data.readInt32(false));
                 }
 
-                len = data.readInt32();
+                len = data.readInt32(false);
                 if (len != 0) {
-                    authKey = data.readData(len);
+                    authKey = data.readData(len, false);
                 }
                 if (currentVersion == 4) {
-                    authKeyId = data.readInt64();
+                    authKeyId = data.readInt64(false);
                 } else {
-                    len = data.readInt32();
+                    len = data.readInt32(false);
                     if (len != 0) {
-                        authKeyId = data.readInt64();
+                        authKeyId = data.readInt64(false);
                     }
                 }
-                authorized = data.readInt32() != 0;
-                len = data.readInt32();
+                authorized = data.readInt32(false) != 0;
+                len = data.readInt32(false);
                 for (int a = 0; a < len; a++) {
                     ServerSalt salt = new ServerSalt();
-                    salt.validSince = data.readInt32();
-                    salt.validUntil = data.readInt32();
-                    salt.value = data.readInt64();
+                    salt.validSince = data.readInt32(false);
+                    salt.validUntil = data.readInt32(false);
+                    salt.value = data.readInt64(false);
                     if (authServerSaltSet == null) {
-                        authServerSaltSet = new ArrayList<ServerSalt>();
+                        authServerSaltSet = new ArrayList<>();
                     }
                     authServerSaltSet.add(salt);
                 }
@@ -113,6 +113,16 @@ public class Datacenter {
 
         }
         readCurrentAddressAndPortNum();
+    }
+
+    public void switchTo443Port() {
+        for (int a = 0; a < addresses.size(); a++) {
+            if (ports.get(addresses.get(a)) == 443) {
+                currentAddressNum = a;
+                currentPortNum = 0;
+                break;
+            }
+        }
     }
 
     public String getCurrentAddress() {
@@ -281,7 +291,7 @@ public class Datacenter {
         if (salts == null) {
             return;
         }
-        ArrayList<Long> existingSalts = new ArrayList<Long>(authServerSaltSet.size());
+        ArrayList<Long> existingSalts = new ArrayList<>(authServerSaltSet.size());
 
         for (ServerSalt salt : authServerSaltSet) {
             existingSalts.add(salt.value);

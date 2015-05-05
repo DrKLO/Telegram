@@ -49,4 +49,8 @@ public class SlideView extends LinearLayout {
     public void restoreStateParams(Bundle bundle) {
 
     }
+
+    public boolean needBackButton() {
+        return false;
+    }
 }

@@ -113,7 +113,7 @@ jint gifOnJNILoad(JavaVM *vm, void *reserved, JNIEnv *env) {
 	if (defaultCmap == NULL) {
         return -1;
     }
-    return JNI_VERSION_1_4;
+    return JNI_VERSION_1_6;
 }
 
 void gifOnJNIUnload(JavaVM *vm, void *reserved) {

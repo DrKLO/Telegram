@@ -8,6 +8,8 @@
 
 package org.telegram.messenger;
 
+import com.aniways.anigram.messenger.BuildConfig;
+
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketTimeoutException;
@@ -28,11 +30,11 @@ public class TcpConnection extends ConnectionContext {
         TcpConnectionStageSuspended
     }
 
-    public abstract static interface TcpConnectionDelegate {
-        public abstract void tcpConnectionClosed(TcpConnection connection);
-        public abstract void tcpConnectionConnected(TcpConnection connection);
-        public abstract void tcpConnectionQuiackAckReceived(TcpConnection connection, int ack);
-        public abstract void tcpConnectionReceivedData(TcpConnection connection, ByteBufferDesc data, int length);
+    public interface TcpConnectionDelegate {
+        void tcpConnectionClosed(TcpConnection connection);
+        void tcpConnectionConnected(TcpConnection connection);
+        void tcpConnectionQuiackAckReceived(TcpConnection connection, int ack);
+        void tcpConnectionReceivedData(TcpConnection connection, ByteBufferDesc data, int length);
     }
 
     private static PyroSelector selector;
@@ -298,6 +300,9 @@ public class TcpConnection extends ConnectionContext {
                 if (client == null || client.isDisconnected()) {
                     if (canReuse) {
                         BuffersStorage.getInstance().reuseFreeBuffer(buff);
+                    }
+                    if (BuildConfig.DEBUG) {
+                        FileLog.e("tmessages", TcpConnection.this + " disconnected, don't send data");
                     }
                     return;
                 }

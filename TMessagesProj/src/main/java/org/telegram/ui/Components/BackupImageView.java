@@ -17,11 +17,14 @@ import android.util.AttributeSet;
 import android.view.View;
 
 import org.telegram.android.ImageReceiver;
+import org.telegram.messenger.TLObject;
 import org.telegram.messenger.TLRPC;
 
 public class BackupImageView extends View {
-    public ImageReceiver imageReceiver;
-    public boolean processDetach = true;
+
+    private ImageReceiver imageReceiver;
+    private int width = -1;
+    private int height = -1;
 
     public BackupImageView(Context context) {
         super(context);
@@ -42,34 +45,39 @@ public class BackupImageView extends View {
         imageReceiver = new ImageReceiver(this);
     }
 
-    public void setImage(TLRPC.FileLocation path, String filter, Drawable placeholder) {
-        setImage(path, null, filter, placeholder, null, 0);
+    public void setImage(TLObject path, String filter, Drawable thumb) {
+        setImage(path, null, filter, thumb, null, null, null, 0);
     }
 
-    public void setImage(TLRPC.FileLocation path, String filter, Bitmap placeholderBitmap) {
-        setImage(path, null, filter, null, placeholderBitmap, 0);
+    public void setImage(TLObject path, String filter, Bitmap thumb) {
+        setImage(path, null, filter, null, thumb, null, null, 0);
     }
 
-    public void setImage(TLRPC.FileLocation path, String filter, Drawable placeholder, int size) {
-        setImage(path, null, filter, placeholder, null, size);
+    public void setImage(TLObject path, String filter, Drawable thumb, int size) {
+        setImage(path, null, filter, thumb, null, null, null, size);
     }
 
-    public void setImage(TLRPC.FileLocation path, String filter, Bitmap placeholderBitmap, int size) {
-        setImage(path, null, filter, null, placeholderBitmap, size);
+    public void setImage(TLObject path, String filter, Bitmap thumb, int size) {
+        setImage(path, null, filter, null, thumb, null, null, size);
     }
 
-    public void setImage(String path, String filter, Drawable placeholder) {
-        setImage(null, path, filter, placeholder, null, 0);
+    public void setImage(TLObject path, String filter, TLRPC.FileLocation thumb, int size) {
+        setImage(path, null, filter, null, null, thumb, null, size);
     }
 
-    public void setImage(TLRPC.FileLocation path, String httpUrl, String filter, Drawable placeholder, Bitmap placeholderBitmap, int size) {
-        Drawable placeholderDrawable = null;
-        if (placeholderBitmap != null) {
-            placeholderDrawable = new BitmapDrawable(null, placeholderBitmap);
-        } else if (placeholder != null) {
-            placeholderDrawable = placeholder;
+    public void setImage(String path, String filter, Drawable thumb) {
+        setImage(null, path, filter, thumb, null, null, null, 0);
+    }
+
+    public void setOrientation(int angle, boolean center) {
+        imageReceiver.setOrientation(angle, center);
+    }
+
+    public void setImage(TLObject path, String httpUrl, String filter, Drawable thumb, Bitmap thumbBitmap, TLRPC.FileLocation thumbLocation, String thumbFilter, int size) {
+        if (thumbBitmap != null) {
+            thumb = new BitmapDrawable(null, thumbBitmap);
         }
-        imageReceiver.setImage(path, httpUrl, filter, placeholderDrawable, size, false);
+        imageReceiver.setImage(path, httpUrl, filter, thumb, thumbLocation, thumbFilter, size, false);
     }
 
     public void setImageBitmap(Bitmap bitmap) {
@@ -84,17 +92,42 @@ public class BackupImageView extends View {
         imageReceiver.setImageBitmap(drawable);
     }
 
+    public void setRoundRadius(int value) {
+        imageReceiver.setRoundRadius(value);
+    }
+
+    public void setAspectFit(boolean value) {
+        imageReceiver.setAspectFit(value);
+    }
+
+    public ImageReceiver getImageReceiver() {
+        return imageReceiver;
+    }
+
+    public void setSize(int w, int h) {
+        width = w;
+        height = h;
+    }
+
     @Override
     protected void onDetachedFromWindow() {
         super.onDetachedFromWindow();
-        if (processDetach) {
-            imageReceiver.clearImage();
-        }
+        imageReceiver.onDetachedFromWindow();
+    }
+
+    @Override
+    protected void onAttachedToWindow() {
+        super.onAttachedToWindow();
+        imageReceiver.onAttachedToWindow();
     }
 
     @Override
     protected void onDraw(Canvas canvas) {
-        imageReceiver.setImageCoords(0, 0, getWidth(), getHeight());
+        if (width != -1 && height != -1) {
+            imageReceiver.setImageCoords((getWidth() - width) / 2, (getHeight() - height) / 2, width, height);
+        } else {
+            imageReceiver.setImageCoords(0, 0, getWidth(), getHeight());
+        }
         imageReceiver.draw(canvas);
     }
 }

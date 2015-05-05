@@ -9,3 +9,6 @@ local.properties
 gradle.properties
 
 TMessagesProj/src/main/java/org/telegram/messenger/BuildVars.java
+aniways/
+TMessagesProj/TMessagesProj-release.apk
+TMessagesProj/manifest-merger-release-report.txt

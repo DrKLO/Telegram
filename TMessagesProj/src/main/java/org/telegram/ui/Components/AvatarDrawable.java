@@ -13,13 +13,14 @@ import android.graphics.ColorFilter;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
+import android.os.Build;
 import android.text.Layout;
 import android.text.StaticLayout;
 import android.text.TextPaint;
 
 import org.telegram.android.AndroidUtilities;
 import org.telegram.messenger.FileLog;
-import org.telegram.messenger.R;
+import com.aniways.anigram.messenger.R;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.ApplicationLoader;
@@ -30,15 +31,14 @@ public class AvatarDrawable extends Drawable {
 
     private static Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private static TextPaint namePaint;
+    private static TextPaint namePaintSmall;
     private static int[] arrColors = {0xffe56555, 0xfff28c48, 0xffeec764, 0xff76c84d, 0xff5fbed5, 0xff549cdd, 0xff8e85ee, 0xfff2749a};
     private static int[] arrColorsProfiles = {0xffd86f65, 0xfff69d61, 0xfffabb3c, 0xff67b35d, 0xff56a2bb, 0xff5c98cd, 0xff8c79d2, 0xfff37fa6};
-    private static int[] arrColorsProfilesBack = {0xffca6056, 0xfff18944, 0xfff2b02c, 0xff56a14c, 0xff4492ac, 0xff4c84b6, 0xff7d6ac4, 0xffe66b94};
-    private static int[] arrColorsProfilesText = {0xfff9cbc5, 0xfffdddc8, 0xfffce5bb, 0xffc0edba, 0xffb8e2f0, 0xffb3d7f7, 0xffcdc4ed, 0xfffed1e0};
-    private static int[] arrColorsNames = {0xffca5650, 0xffd87b29, 0xffc7a21c, 0xff50b232, 0xff42b1a8, 0xff4e92cc, 0xff4e92cc, 0xffdb5b9d};
-    private static int[] arrColorsButtons = {R.drawable.bar_selector_red, R.drawable.bar_selector_orange, R.drawable.bar_selector_yellow,
-            R.drawable.bar_selector_green, R.drawable.bar_selector_cyan, R.drawable.bar_selector_blue, R.drawable.bar_selector_violet, R.drawable.bar_selector_pink};
-
-
+    private static int[] arrColorsProfilesBack = {0xffca6056, 0xfff18944, 0xff7d6ac4, 0xff56a14c, 0xff4492ac, 0xff4c84b6, 0xff7d6ac4, 0xff4c84b6};
+    private static int[] arrColorsProfilesText = {0xfff9cbc5, 0xfffdddc8, 0xffcdc4ed, 0xffc0edba, 0xffb8e2f0, 0xffb3d7f7, 0xffcdc4ed, 0xffb3d7f7};
+    private static int[] arrColorsNames = {0xffca5650, 0xffd87b29, 0xff4e92cc, 0xff50b232, 0xff42b1a8, 0xff4e92cc, 0xff4e92cc, 0xff4e92cc};
+    private static int[] arrColorsButtons = {R.drawable.bar_selector_red, R.drawable.bar_selector_orange, R.drawable.bar_selector_violet,
+            R.drawable.bar_selector_green, R.drawable.bar_selector_cyan, R.drawable.bar_selector_blue, R.drawable.bar_selector_violet, R.drawable.bar_selector_blue};
 
     private static Drawable broadcastDrawable;
     private static Drawable photoDrawable;
@@ -51,6 +51,8 @@ public class AvatarDrawable extends Drawable {
     private boolean isProfile;
     private boolean drawBrodcast;
     private boolean drawPhoto;
+    private boolean smallStyle;
+    private StringBuilder stringBuilder = new StringBuilder(5);
 
     public AvatarDrawable() {
         super();
@@ -59,6 +61,10 @@ public class AvatarDrawable extends Drawable {
             namePaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
             namePaint.setColor(0xffffffff);
             namePaint.setTextSize(AndroidUtilities.dp(20));
+
+            namePaintSmall = new TextPaint(Paint.ANTI_ALIAS_FLAG);
+            namePaintSmall.setColor(0xffffffff);
+            namePaintSmall.setTextSize(AndroidUtilities.dp(14));
 
             broadcastDrawable = ApplicationLoader.applicationContext.getResources().getDrawable(R.drawable.broadcast_w);
         }
@@ -86,6 +92,10 @@ public class AvatarDrawable extends Drawable {
         if (chat != null) {
             setInfo(chat.id, chat.title, null, chat.id < 0);
         }
+    }
+
+    public void setSmallStyle(boolean value) {
+        smallStyle = value;
     }
 
     public static int getColorIndex(int id) {
@@ -164,17 +174,45 @@ public class AvatarDrawable extends Drawable {
 
         drawBrodcast = isBroadcast;
 
-        String text = "";
+        if (firstName == null || firstName.length() == 0) {
+            firstName = lastName;
+            lastName = null;
+        }
+
+        stringBuilder.setLength(0);
         if (firstName != null && firstName.length() > 0) {
-            text += firstName.substring(0, 1);
+            stringBuilder.append(firstName.substring(0, 1));
         }
         if (lastName != null && lastName.length() > 0) {
-            text += lastName.substring(0, 1);
+            String lastch = null;
+            for (int a = lastName.length() - 1; a >= 0; a--) {
+                if (lastch != null && lastName.charAt(a) == ' ') {
+                    break;
+                }
+                lastch = lastName.substring(a, a + 1);
+            }
+            if (Build.VERSION.SDK_INT >= 16) {
+                stringBuilder.append("\u200C");
+            }
+            stringBuilder.append(lastch);
+        } else if (firstName != null && firstName.length() > 0) {
+            for (int a = firstName.length() - 1; a >= 0; a--) {
+                if (firstName.charAt(a) == ' ') {
+                    if (a != firstName.length() - 1 && firstName.charAt(a + 1) != ' ') {
+                        if (Build.VERSION.SDK_INT >= 16) {
+                            stringBuilder.append("\u200C");
+                        }
+                        stringBuilder.append(firstName.substring(a + 1, a + 2));
+                        break;
+                    }
+                }
+            }
         }
-        if (text.length() > 0) {
-            text = text.toUpperCase();
+
+        if (stringBuilder.length() > 0) {
+            String text = stringBuilder.toString().toUpperCase();
             try {
-                textLayout = new StaticLayout(text, namePaint, AndroidUtilities.dp(100), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+                textLayout = new StaticLayout(text, (smallStyle ? namePaintSmall : namePaint), AndroidUtilities.dp(100), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
                 if (textLayout.getLineCount() > 0) {
                     textLeft = textLayout.getLineLeft(0);
                     textWidth = textLayout.getLineWidth(0);

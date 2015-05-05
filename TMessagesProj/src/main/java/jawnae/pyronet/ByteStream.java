@@ -28,7 +28,7 @@ public class ByteStream {
     private final ArrayList<ByteBufferDesc> queue;
 
     public ByteStream() {
-        this.queue = new ArrayList<ByteBufferDesc>();
+        this.queue = new ArrayList<>();
     }
 
     public void append(ByteBufferDesc buf) {

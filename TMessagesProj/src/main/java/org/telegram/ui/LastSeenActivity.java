@@ -35,7 +35,7 @@ import org.telegram.android.NotificationCenter;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLog;
-import org.telegram.messenger.R;
+import com.aniways.anigram.messenger.R;
 import org.telegram.messenger.RPCRequest;
 import org.telegram.messenger.TLObject;
 import org.telegram.messenger.TLRPC;
@@ -46,6 +46,7 @@ import org.telegram.ui.Adapters.BaseFragmentAdapter;
 import org.telegram.ui.Cells.HeaderCell;
 import org.telegram.ui.Cells.TextInfoPrivacyCell;
 import org.telegram.ui.Cells.TextSettingsCell;
+import org.telegram.ui.Components.LayoutHelper;
 
 import java.util.ArrayList;
 
@@ -99,150 +100,144 @@ public class LastSeenActivity extends BaseFragment implements NotificationCenter
     }
 
     @Override
-    public View createView(LayoutInflater inflater, ViewGroup container) {
-        if (fragmentView == null) {
-            actionBar.setBackButtonImage(R.drawable.ic_ab_back);
-            actionBar.setAllowOverlayTitle(true);
-            actionBar.setTitle(LocaleController.getString("PrivacyLastSeen", R.string.PrivacyLastSeen));
-            actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
-                @Override
-                public void onItemClick(int id) {
-                    if (id == -1) {
-                        finishFragment();
-                    } else if (id == done_button) {
-                        if (getParentActivity() == null) {
-                            return;
-                        }
-
-                        if (currentType != 0) {
-                            final SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
-                            boolean showed = preferences.getBoolean("privacyAlertShowed", false);
-                            if (!showed) {
-                                AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-                                builder.setMessage(LocaleController.getString("CustomHelp", R.string.CustomHelp));
-                                builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
-                                builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), new DialogInterface.OnClickListener() {
-                                    @Override
-                                    public void onClick(DialogInterface dialogInterface, int i) {
-                                        applyCurrentPrivacySettings();
-                                        preferences.edit().putBoolean("privacyAlertShowed", true).commit();
-                                    }
-                                });
-                                builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-                                showAlertDialog(builder);
-                                return;
-                            }
-                        }
-                        applyCurrentPrivacySettings();
+    public View createView(Context context, LayoutInflater inflater) {
+        actionBar.setBackButtonImage(R.drawable.ic_ab_back);
+        actionBar.setAllowOverlayTitle(true);
+        actionBar.setTitle(LocaleController.getString("PrivacyLastSeen", R.string.PrivacyLastSeen));
+        actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
+            @Override
+            public void onItemClick(int id) {
+                if (id == -1) {
+                    finishFragment();
+                } else if (id == done_button) {
+                    if (getParentActivity() == null) {
+                        return;
                     }
-                }
-            });
 
-            ActionBarMenu menu = actionBar.createMenu();
-            doneButton = menu.addItemWithWidth(done_button, R.drawable.ic_done, AndroidUtilities.dp(56));
-            doneButton.setVisibility(View.GONE);
-
-            listAdapter = new ListAdapter(getParentActivity());
-
-            fragmentView = new FrameLayout(getParentActivity());
-            FrameLayout frameLayout = (FrameLayout) fragmentView;
-            frameLayout.setBackgroundColor(0xfff0f0f0);
-
-            ListView listView = new ListView(getParentActivity());
-            listView.setDivider(null);
-            listView.setDividerHeight(0);
-            listView.setVerticalScrollBarEnabled(false);
-            listView.setDrawSelectorOnTop(true);
-            frameLayout.addView(listView);
-            FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) listView.getLayoutParams();
-            layoutParams.width = FrameLayout.LayoutParams.MATCH_PARENT;
-            layoutParams.height = FrameLayout.LayoutParams.MATCH_PARENT;
-            layoutParams.gravity = Gravity.TOP;
-            listView.setLayoutParams(layoutParams);
-            listView.setAdapter(listAdapter);
-            listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-                @Override
-                public void onItemClick(AdapterView<?> adapterView, View view, final int i, long l) {
-                    if (i == nobodyRow || i == everybodyRow || i == myContactsRow) {
-                        int newType = currentType;
-                        if (i == nobodyRow) {
-                            newType = 1;
-                        } else if (i == everybodyRow) {
-                            newType = 0;
-                        } else if (i == myContactsRow) {
-                            newType = 2;
-                        }
-                        if (newType == currentType) {
+                    if (currentType != 0) {
+                        final SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+                        boolean showed = preferences.getBoolean("privacyAlertShowed", false);
+                        if (!showed) {
+                            AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                            builder.setMessage(LocaleController.getString("CustomHelp", R.string.CustomHelp));
+                            builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
+                            builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialogInterface, int i) {
+                                    applyCurrentPrivacySettings();
+                                    preferences.edit().putBoolean("privacyAlertShowed", true).commit();
+                                }
+                            });
+                            builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+                            showAlertDialog(builder);
                             return;
                         }
-                        doneButton.setVisibility(View.VISIBLE);
-                        currentType = newType;
-                        updateRows();
-                    } else if (i == neverShareRow || i == alwaysShareRow) {
-                        ArrayList<Integer> createFromArray = null;
-                        if (i == neverShareRow) {
-                            createFromArray = currentMinus;
-                        } else {
-                            createFromArray = currentPlus;
-                        }
-                        if (createFromArray.isEmpty()) {
-                            Bundle args = new Bundle();
-                            args.putBoolean(i == neverShareRow ? "isNeverShare" : "isAlwaysShare", true);
-                            GroupCreateActivity fragment = new GroupCreateActivity(args);
-                            fragment.setDelegate(new GroupCreateActivity.GroupCreateActivityDelegate() {
-                                @Override
-                                public void didSelectUsers(ArrayList<Integer> ids) {
-                                    if (i == neverShareRow) {
-                                        currentMinus = ids;
+                    }
+                    applyCurrentPrivacySettings();
+                }
+            }
+        });
+
+        ActionBarMenu menu = actionBar.createMenu();
+        doneButton = menu.addItemWithWidth(done_button, R.drawable.ic_done, AndroidUtilities.dp(56));
+        doneButton.setVisibility(View.GONE);
+
+        listAdapter = new ListAdapter(context);
+
+        fragmentView = new FrameLayout(context);
+        FrameLayout frameLayout = (FrameLayout) fragmentView;
+        frameLayout.setBackgroundColor(0xfff0f0f0);
+
+        ListView listView = new ListView(context);
+        listView.setDivider(null);
+        listView.setDividerHeight(0);
+        listView.setVerticalScrollBarEnabled(false);
+        listView.setDrawSelectorOnTop(true);
+        frameLayout.addView(listView);
+        FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) listView.getLayoutParams();
+        layoutParams.width = LayoutHelper.MATCH_PARENT;
+        layoutParams.height = LayoutHelper.MATCH_PARENT;
+        layoutParams.gravity = Gravity.TOP;
+        listView.setLayoutParams(layoutParams);
+        listView.setAdapter(listAdapter);
+        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> adapterView, View view, final int i, long l) {
+                if (i == nobodyRow || i == everybodyRow || i == myContactsRow) {
+                    int newType = currentType;
+                    if (i == nobodyRow) {
+                        newType = 1;
+                    } else if (i == everybodyRow) {
+                        newType = 0;
+                    } else if (i == myContactsRow) {
+                        newType = 2;
+                    }
+                    if (newType == currentType) {
+                        return;
+                    }
+                    doneButton.setVisibility(View.VISIBLE);
+                    currentType = newType;
+                    updateRows();
+                } else if (i == neverShareRow || i == alwaysShareRow) {
+                    ArrayList<Integer> createFromArray = null;
+                    if (i == neverShareRow) {
+                        createFromArray = currentMinus;
+                    } else {
+                        createFromArray = currentPlus;
+                    }
+                    if (createFromArray.isEmpty()) {
+                        Bundle args = new Bundle();
+                        args.putBoolean(i == neverShareRow ? "isNeverShare" : "isAlwaysShare", true);
+                        GroupCreateActivity fragment = new GroupCreateActivity(args);
+                        fragment.setDelegate(new GroupCreateActivity.GroupCreateActivityDelegate() {
+                            @Override
+                            public void didSelectUsers(ArrayList<Integer> ids) {
+                                if (i == neverShareRow) {
+                                    currentMinus = ids;
+                                    for (Integer id : currentMinus) {
+                                        currentPlus.remove(id);
+                                    }
+                                } else {
+                                    currentPlus = ids;
+                                    for (Integer id : currentPlus) {
+                                        currentMinus.remove(id);
+                                    }
+                                }
+                                doneButton.setVisibility(View.VISIBLE);
+                                listAdapter.notifyDataSetChanged();
+                            }
+                        });
+                        presentFragment(fragment);
+                    } else {
+                        LastSeenUsersActivity fragment = new LastSeenUsersActivity(createFromArray, i == alwaysShareRow);
+                        fragment.setDelegate(new LastSeenUsersActivity.LastSeenUsersActivityDelegate() {
+                            @Override
+                            public void didUpdatedUserList(ArrayList<Integer> ids, boolean added) {
+                                if (i == neverShareRow) {
+                                    currentMinus = ids;
+                                    if (added) {
                                         for (Integer id : currentMinus) {
                                             currentPlus.remove(id);
                                         }
-                                    } else {
-                                        currentPlus = ids;
+                                    }
+                                } else {
+                                    currentPlus = ids;
+                                    if (added) {
                                         for (Integer id : currentPlus) {
                                             currentMinus.remove(id);
                                         }
                                     }
-                                    doneButton.setVisibility(View.VISIBLE);
-                                    listAdapter.notifyDataSetChanged();
                                 }
-                            });
-                            presentFragment(fragment);
-                        } else {
-                            LastSeenUsersActivity fragment = new LastSeenUsersActivity(createFromArray, i == alwaysShareRow);
-                            fragment.setDelegate(new LastSeenUsersActivity.LastSeenUsersActivityDelegate() {
-                                @Override
-                                public void didUpdatedUserList(ArrayList<Integer> ids, boolean added) {
-                                    if (i == neverShareRow) {
-                                        currentMinus = ids;
-                                        if (added) {
-                                            for (Integer id : currentMinus) {
-                                                currentPlus.remove(id);
-                                            }
-                                        }
-                                    } else {
-                                        currentPlus = ids;
-                                        if (added) {
-                                            for (Integer id : currentPlus) {
-                                                currentMinus.remove(id);
-                                            }
-                                        }
-                                    }
-                                    doneButton.setVisibility(View.VISIBLE);
-                                    listAdapter.notifyDataSetChanged();
-                                }
-                            });
-                            presentFragment(fragment);
-                        }
+                                doneButton.setVisibility(View.VISIBLE);
+                                listAdapter.notifyDataSetChanged();
+                            }
+                        });
+                        presentFragment(fragment);
                     }
                 }
-            });
-        } else {
-            ViewGroup parent = (ViewGroup) fragmentView.getParent();
-            if (parent != null) {
-                parent.removeView(fragmentView);
             }
-        }
+        });
+
         return fragmentView;
     }
 
@@ -332,8 +327,8 @@ public class LastSeenActivity extends BaseFragment implements NotificationCenter
     }
 
     private void checkPrivacy() {
-        currentPlus = new ArrayList<Integer>();
-        currentMinus = new ArrayList<Integer>();
+        currentPlus = new ArrayList<>();
+        currentMinus = new ArrayList<>();
         ArrayList<TLRPC.PrivacyRule> privacyRules = ContactsController.getInstance().getPrivacyRules();
         if (privacyRules.size() == 0) {
             currentType = 1;

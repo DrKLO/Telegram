@@ -20,6 +20,7 @@ import android.widget.TextView;
 
 import org.telegram.android.AndroidUtilities;
 import org.telegram.android.LocaleController;
+import org.telegram.ui.Components.LayoutHelper;
 
 public class TextSettingsCell extends FrameLayout {
 
@@ -48,8 +49,8 @@ public class TextSettingsCell extends FrameLayout {
         textView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL);
         addView(textView);
         LayoutParams layoutParams = (LayoutParams) textView.getLayoutParams();
-        layoutParams.width = LayoutParams.MATCH_PARENT;
-        layoutParams.height = LayoutParams.MATCH_PARENT;
+        layoutParams.width = LayoutHelper.MATCH_PARENT;
+        layoutParams.height = LayoutHelper.MATCH_PARENT;
         layoutParams.leftMargin = AndroidUtilities.dp(17);
         layoutParams.rightMargin = AndroidUtilities.dp(17);
         layoutParams.gravity = LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT;
@@ -65,8 +66,8 @@ public class TextSettingsCell extends FrameLayout {
         valueTextView.setGravity((LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.CENTER_VERTICAL);
         addView(valueTextView);
         layoutParams = (LayoutParams) valueTextView.getLayoutParams();
-        layoutParams.width = LayoutParams.WRAP_CONTENT;
-        layoutParams.height = LayoutParams.MATCH_PARENT;
+        layoutParams.width = LayoutHelper.WRAP_CONTENT;
+        layoutParams.height = LayoutHelper.MATCH_PARENT;
         layoutParams.leftMargin = AndroidUtilities.dp(17);
         layoutParams.rightMargin = AndroidUtilities.dp(17);
         layoutParams.gravity = LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT;
@@ -74,11 +75,11 @@ public class TextSettingsCell extends FrameLayout {
 
         valueImageView = new ImageView(context);
         valueImageView.setScaleType(ImageView.ScaleType.CENTER);
-        valueImageView.setVisibility(GONE);
+        valueImageView.setVisibility(INVISIBLE);
         addView(valueImageView);
         layoutParams = (LayoutParams) valueImageView.getLayoutParams();
-        layoutParams.width = LayoutParams.WRAP_CONTENT;
-        layoutParams.height = LayoutParams.WRAP_CONTENT;
+        layoutParams.width = LayoutHelper.WRAP_CONTENT;
+        layoutParams.height = LayoutHelper.WRAP_CONTENT;
         layoutParams.leftMargin = AndroidUtilities.dp(LocaleController.isRTL ? 17 : 0);
         layoutParams.rightMargin = AndroidUtilities.dp(LocaleController.isRTL ? 0 : 17);
         layoutParams.gravity = (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.CENTER_VERTICAL;
@@ -109,20 +110,20 @@ public class TextSettingsCell extends FrameLayout {
 
     public void setText(String text, boolean divider) {
         textView.setText(text);
-        valueTextView.setVisibility(GONE);
-        valueImageView.setVisibility(GONE);
+        valueTextView.setVisibility(INVISIBLE);
+        valueImageView.setVisibility(INVISIBLE);
         needDivider = divider;
         setWillNotDraw(!divider);
     }
 
     public void setTextAndValue(String text, String value, boolean divider) {
         textView.setText(text);
-        valueImageView.setVisibility(GONE);
+        valueImageView.setVisibility(INVISIBLE);
         if (value != null) {
             valueTextView.setText(value);
             valueTextView.setVisibility(VISIBLE);
         } else {
-            valueTextView.setVisibility(GONE);
+            valueTextView.setVisibility(INVISIBLE);
         }
         needDivider = divider;
         setWillNotDraw(!divider);
@@ -130,12 +131,12 @@ public class TextSettingsCell extends FrameLayout {
 
     public void setTextAndIcon(String text, int resId, boolean divider) {
         textView.setText(text);
-        valueTextView.setVisibility(GONE);
+        valueTextView.setVisibility(INVISIBLE);
         if (resId != 0) {
             valueImageView.setVisibility(VISIBLE);
             valueImageView.setImageResource(resId);
         } else {
-            valueImageView.setVisibility(GONE);
+            valueImageView.setVisibility(INVISIBLE);
         }
         needDivider = divider;
         setWillNotDraw(!divider);

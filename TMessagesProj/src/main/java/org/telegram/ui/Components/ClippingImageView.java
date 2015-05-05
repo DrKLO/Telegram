@@ -14,23 +14,24 @@ import android.graphics.BitmapShader;
 import android.graphics.Canvas;
 import android.graphics.Matrix;
 import android.graphics.Paint;
-import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.Shader;
 import android.view.View;
 
 import org.telegram.messenger.FileLog;
-import org.telegram.ui.AnimationCompat.ViewProxy;
+import org.telegram.android.AnimationCompat.ViewProxy;
 
 public class ClippingImageView extends View {
+
     private int clipBottom;
     private int clipLeft;
     private int clipRight;
     private int clipTop;
-    private Rect drawRect;
+    private int orientation;
+    private RectF drawRect;
     private Paint paint;
     private Bitmap bmp;
-    private onDrawListener drawListener;
+    private Matrix matrix;
 
     private boolean needRadius;
     private int radius;
@@ -40,15 +41,39 @@ public class ClippingImageView extends View {
     private RectF bitmapRect;
     private Matrix shaderMatrix;
 
-    public static interface onDrawListener {
-        public abstract void onDraw();
-    }
+    private float animationProgress;
+    private float animationValues[][];
 
     public ClippingImageView(Context context) {
         super(context);
         paint = new Paint();
         paint.setFilterBitmap(true);
-        drawRect = new Rect();
+        matrix = new Matrix();
+        drawRect = new RectF();
+        bitmapRect = new RectF();
+    }
+
+    public void setAnimationValues(float[][] values) {
+        animationValues = values;
+    }
+
+    public float getAnimationProgress() {
+        return animationProgress;
+    }
+
+    public void setAnimationProgress(float progress) {
+        animationProgress = progress;
+
+        ViewProxy.setScaleX(this, animationValues[0][0] + (animationValues[1][0] - animationValues[0][0]) * animationProgress);
+        ViewProxy.setScaleY(this, animationValues[0][1] + (animationValues[1][1] - animationValues[0][1]) * animationProgress);
+        ViewProxy.setTranslationX(this, animationValues[0][2] + (animationValues[1][2] - animationValues[0][2]) * animationProgress);
+        ViewProxy.setTranslationY(this, animationValues[0][3] + (animationValues[1][3] - animationValues[0][3]) * animationProgress);
+        setClipHorizontal((int) (animationValues[0][4] + (animationValues[1][4] - animationValues[0][4]) * animationProgress));
+        setClipTop((int) (animationValues[0][5] + (animationValues[1][5] - animationValues[0][5]) * animationProgress));
+        setClipBottom((int) (animationValues[0][6] + (animationValues[1][6] - animationValues[0][6]) * animationProgress));
+        setRadius((int) (animationValues[0][7] + (animationValues[1][7] - animationValues[0][7]) * animationProgress));
+
+        invalidate();
     }
 
     public int getClipBottom() {
@@ -76,15 +101,13 @@ public class ClippingImageView extends View {
     }
 
     public void onDraw(Canvas canvas) {
-        if (getVisibility() == GONE || getVisibility() == INVISIBLE) {
+        if (getVisibility() != VISIBLE) {
             return;
         }
         if (bmp != null) {
             float scaleY = ViewProxy.getScaleY(this);
-            if (drawListener != null && scaleY != 1) {
-                drawListener.onDraw();
-            }
             canvas.save();
+
             if (needRadius) {
                 roundRect.set(0, 0, getWidth(), getHeight());
                 shaderMatrix.reset();
@@ -92,10 +115,24 @@ public class ClippingImageView extends View {
                 bitmapShader.setLocalMatrix(shaderMatrix);
                 canvas.drawRoundRect(roundRect, radius, radius, roundPaint);
             } else {
+                if (orientation == 90 || orientation == 270) {
+                    drawRect.set(-getHeight() / 2, -getWidth() / 2, getHeight() / 2, getWidth() / 2);
+                    matrix.setRectToRect(bitmapRect, drawRect, Matrix.ScaleToFit.FILL);
+                    matrix.postRotate(orientation, 0, 0);
+                    matrix.postTranslate(getWidth() / 2, getHeight() / 2);
+                } else if (orientation == 180) {
+                    drawRect.set(-getWidth() / 2, -getHeight() / 2, getWidth() / 2, getHeight() / 2);
+                    matrix.setRectToRect(bitmapRect, drawRect, Matrix.ScaleToFit.FILL);
+                    matrix.postRotate(orientation, 0, 0);
+                    matrix.postTranslate(getWidth() / 2, getHeight() / 2);
+                } else {
+                    drawRect.set(0, 0, getWidth(), getHeight());
+                    matrix.setRectToRect(bitmapRect, drawRect, Matrix.ScaleToFit.FILL);
+                }
+
                 canvas.clipRect(clipLeft / scaleY, clipTop / scaleY, getWidth() - clipRight / scaleY, getHeight() - clipBottom / scaleY);
-                drawRect.set(0, 0, getWidth(), getHeight());
                 try {
-                    canvas.drawBitmap(bmp, null, drawRect, paint);
+                    canvas.drawBitmap(bmp, matrix, paint);
                 } catch (Exception e) {
                     FileLog.e("tmessages", e);
                 }
@@ -136,22 +173,23 @@ public class ClippingImageView extends View {
         invalidate();
     }
 
-    public void setImageBitmap(Bitmap bitmap) {
-        bmp = bitmap;
-        if (bitmap != null && needRadius) {
-            roundRect = new RectF();
-            shaderMatrix = new Matrix();
-            bitmapRect = new RectF();
-            bitmapRect.set(0, 0, bitmap.getWidth(), bitmap.getHeight());
-            bitmapShader = new BitmapShader(bitmap, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP);
-            roundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-            roundPaint.setShader(bitmapShader);
-        }
-        invalidate();
+    public void setOrientation(int angle) {
+        orientation = angle;
     }
 
-    public void setOnDrawListener(onDrawListener listener) {
-        drawListener = listener;
+    public void setImageBitmap(Bitmap bitmap) {
+        bmp = bitmap;
+        if (bitmap != null) {
+            bitmapRect.set(0, 0, bitmap.getWidth(), bitmap.getHeight());
+            if (needRadius) {
+                roundRect = new RectF();
+                shaderMatrix = new Matrix();
+                bitmapShader = new BitmapShader(bitmap, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP);
+                roundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+                roundPaint.setShader(bitmapShader);
+            }
+        }
+        invalidate();
     }
 
     public void setNeedRadius(boolean value) {

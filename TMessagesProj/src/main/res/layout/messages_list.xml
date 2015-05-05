@@ -61,6 +61,8 @@
             android:gravity="center"
             android:textSize="15dp"
             android:paddingTop="6dp"
+            android:paddingLeft="8dp"
+            android:paddingRight="8dp"
             android:lineSpacingExtra="2dp"
             android:id="@+id/list_empty_view_text2"/>
 
@@ -83,7 +85,8 @@
     <ImageView
         android:layout_height="wrap_content"
         android:layout_width="wrap_content"
-        android:src="@drawable/floating_states"
+        android:background="@drawable/floating_states"
+        android:src="@drawable/floating_pencil"
         android:layout_gravity="bottom|right"
         android:layout_marginRight="14dp"
         android:layout_marginBottom="14dp"

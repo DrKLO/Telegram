@@ -15,18 +15,21 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
 import android.provider.DocumentsContract;
 import android.provider.MediaStore;
-import android.text.Html;
 import android.text.SpannableStringBuilder;
 import android.util.Base64;
 
 import net.hockeyapp.android.CrashManager;
 import net.hockeyapp.android.CrashManagerListener;
 import net.hockeyapp.android.UpdateManager;
+import com.aniways.anigram.messenger.R;
+
+import org.telegram.android.AndroidUtilities;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -38,7 +41,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.security.KeyFactory;
 import java.security.MessageDigest;
 import java.security.PublicKey;
@@ -58,7 +60,10 @@ public class Utilities {
     public static Pattern pattern = Pattern.compile("[0-9]+");
     public static SecureRandom random = new SecureRandom();
 
-    public static ArrayList<String> goodPrimes = new ArrayList<String>();
+    private static byte[] decompressBuffer;
+    private static ByteArrayOutputStreamExpand decompressStream;
+
+    public static ArrayList<String> goodPrimes = new ArrayList<>();
 
     public static class TPFactorizedValue {
         public long p, q;
@@ -67,7 +72,7 @@ public class Utilities {
     public static volatile DispatchQueue stageQueue = new DispatchQueue("stageQueue");
     public static volatile DispatchQueue globalQueue = new DispatchQueue("globalQueue");
     public static volatile DispatchQueue searchQueue = new DispatchQueue("searchQueue");
-    public static volatile DispatchQueue photoBookQueue = new DispatchQueue("photoBookQueue");
+    public static volatile DispatchQueue phoneBookQueue = new DispatchQueue("photoBookQueue");
 
     final protected static char[] hexArray = "0123456789ABCDEF".toCharArray();
 
@@ -92,10 +97,11 @@ public class Utilities {
                 byte[] bytes = Base64.decode(primes, Base64.DEFAULT);
                 if (bytes != null) {
                     SerializedData data = new SerializedData(bytes);
-                    int count = data.readInt32();
+                    int count = data.readInt32(false);
                     for (int a = 0; a < count; a++) {
-                        goodPrimes.add(data.readString());
+                        goodPrimes.add(data.readString(false));
                     }
+                    data.cleanup();
                 }
             } catch (Exception e) {
                 FileLog.e("tmessages", e);
@@ -107,12 +113,16 @@ public class Utilities {
 
     public native static long doPQNative(long _what);
     public native static void loadBitmap(String path, Bitmap bitmap, int scale, int width, int height, int stride);
-    public native static void blurBitmap(Object bitmap, int radius);
+    public native static int pinBitmap(Bitmap bitmap);
+    public native static void blurBitmap(Object bitmap, int radius, int unpin);
+    public native static void calcCDT(ByteBuffer hsvBuffer, int width, int height, ByteBuffer buffer);
+    public native static Bitmap loadWebpImage(ByteBuffer buffer, int len, BitmapFactory.Options options);
+    public native static Bitmap loadBpgImage(ByteBuffer buffer, int len, BitmapFactory.Options options);
     public native static int convertVideoFrame(ByteBuffer src, ByteBuffer dest, int destFormat, int width, int height, int padding, int swap);
     private native static void aesIgeEncryption(ByteBuffer buffer, byte[] key, byte[] iv, boolean encrypt, int offset, int length);
 
     public static void aesIgeEncryption(ByteBuffer buffer, byte[] key, byte[] iv, boolean encrypt, boolean changeIv, int offset, int length) {
-        aesIgeEncryption(buffer, key, changeIv ? iv : (byte [])iv.clone(), encrypt, offset, length);
+        aesIgeEncryption(buffer, key, changeIv ? iv : iv.clone(), encrypt, offset, length);
     }
 
     public static Integer parseInt(String value) {
@@ -141,6 +151,9 @@ public class Utilities {
     }
 
     public static String bytesToHex(byte[] bytes) {
+        if (bytes == null) {
+            return "";
+        }
         char[] hexChars = new char[bytes.length * 2];
         int v;
         for (int j = 0; j < bytes.length; j++) {
@@ -152,6 +165,9 @@ public class Utilities {
     }
 
     public static byte[] hexToBytes(String hex) {
+        if (hex == null) {
+            return null;
+        }
         int len = hex.length();
         byte[] data = new byte[len / 2];
         for (int i = 0; i < len; i += 2) {
@@ -225,6 +241,7 @@ public class Utilities {
                         data.writeString(pr);
                     }
                     byte[] bytes = data.toByteArray();
+                    data.cleanup();
                     SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("primes", Context.MODE_PRIVATE);
                     SharedPreferences.Editor editor = preferences.edit();
                     editor.putString("primes", Base64.encodeToString(bytes, Base64.DEFAULT));
@@ -316,6 +333,17 @@ public class Utilities {
         return computeSHA1(convertme, 0, convertme.length);
     }
 
+    public static byte[] computeSHA256(byte[] convertme, int offset, int len) {
+        try {
+            MessageDigest md = MessageDigest.getInstance("SHA-256");
+            md.update(convertme, offset, len);
+            return md.digest();
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
+        return null;
+    }
+
     public static byte[] encryptWithRSA(BigInteger[] key, byte[] data) {
         try {
             KeyFactory fact = KeyFactory.getInstance("RSA");
@@ -349,57 +377,79 @@ public class Utilities {
         data.writeRaw(messageKey);
         data.writeRaw(authKey, x, 32);
         byte[] sha1_a = Utilities.computeSHA1(data.toByteArray());
+        data.cleanup();
 
         data = new SerializedData();
         data.writeRaw(authKey, 32 + x, 16);
         data.writeRaw(messageKey);
         data.writeRaw(authKey, 48 + x, 16);
         byte[] sha1_b = Utilities.computeSHA1(data.toByteArray());
+        data.cleanup();
 
         data = new SerializedData();
         data.writeRaw(authKey, 64 + x, 32);
         data.writeRaw(messageKey);
         byte[] sha1_c = Utilities.computeSHA1(data.toByteArray());
+        data.cleanup();
 
         data = new SerializedData();
         data.writeRaw(messageKey);
         data.writeRaw(authKey, 96 + x, 32);
         byte[] sha1_d = Utilities.computeSHA1(data.toByteArray());
+        data.cleanup();
 
-        SerializedData aesKey = new SerializedData();
-        aesKey.writeRaw(sha1_a, 0, 8);
-        aesKey.writeRaw(sha1_b, 8, 12);
-        aesKey.writeRaw(sha1_c, 4, 12);
-        keyData.aesKey = aesKey.toByteArray();
+        data = new SerializedData();
+        data.writeRaw(sha1_a, 0, 8);
+        data.writeRaw(sha1_b, 8, 12);
+        data.writeRaw(sha1_c, 4, 12);
+        keyData.aesKey = data.toByteArray();
+        data.cleanup();
 
-        SerializedData aesIv = new SerializedData();
-        aesIv.writeRaw(sha1_a, 8, 12);
-        aesIv.writeRaw(sha1_b, 0, 8);
-        aesIv.writeRaw(sha1_c, 16, 4);
-        aesIv.writeRaw(sha1_d, 0, 8);
-        keyData.aesIv = aesIv.toByteArray();
+        data = new SerializedData();
+        data.writeRaw(sha1_a, 8, 12);
+        data.writeRaw(sha1_b, 0, 8);
+        data.writeRaw(sha1_c, 16, 4);
+        data.writeRaw(sha1_d, 0, 8);
+        keyData.aesIv = data.toByteArray();
+        data.cleanup();
 
         return keyData;
     }
 
-    public static TLObject decompress(byte[] data, TLObject parentObject) {
-        final int BUFFER_SIZE = 512;
+    public static TLObject decompress(byte[] data, TLObject parentObject, boolean exception) {
+        final int BUFFER_SIZE = 16384;
         ByteArrayInputStream is = new ByteArrayInputStream(data);
         GZIPInputStream gis;
+        SerializedData stream = null;
         try {
-            gis = new GZIPInputStream(is, BUFFER_SIZE);
-            ByteArrayOutputStream bytesOutput = new ByteArrayOutputStream();
-            data = new byte[BUFFER_SIZE];
-            int bytesRead;
-            while ((bytesRead = gis.read(data)) != -1) {
-                bytesOutput.write(data, 0, bytesRead);
+            if (decompressBuffer == null) {
+                decompressBuffer = new byte[BUFFER_SIZE];
+                decompressStream = new ByteArrayOutputStreamExpand(BUFFER_SIZE);
             }
-            gis.close();
-            is.close();
-            SerializedData stream = new SerializedData(bytesOutput.toByteArray());
-            return TLClassStore.Instance().TLdeserialize(stream, stream.readInt32(), parentObject);
+            decompressStream.reset();
+            gis = new GZIPInputStream(is, BUFFER_SIZE);
+            int bytesRead;
+            while ((bytesRead = gis.read(decompressBuffer)) != -1) {
+                decompressStream.write(decompressBuffer, 0, bytesRead);
+            }
+            try {
+                gis.close();
+            } catch (Exception e) {
+                FileLog.e("tmessages", e);
+            }
+            try {
+                is.close();
+            } catch (Exception e) {
+                FileLog.e("tmessages", e);
+            }
+            stream = new SerializedData(decompressStream.toByteArray());
         } catch (IOException e) {
             FileLog.e("tmessages", e);
+        }
+        if (stream != null) {
+            TLObject object = ConnectionsManager.getInstance().deserialize(parentObject, stream, exception);
+            stream.cleanup();
+            return object;
         }
         return null;
     }
@@ -418,6 +468,12 @@ public class Utilities {
             packedData = bytesStream.toByteArray();
         } catch (IOException e) {
             FileLog.e("tmessages", e);
+        } finally {
+            try {
+                bytesStream.close();
+            } catch (Exception e) {
+                FileLog.e("tmessages", e);
+            }
         }
         return packedData;
     }
@@ -435,23 +491,23 @@ public class Utilities {
     }
 
     public static boolean copyFile(File sourceFile, File destFile) throws IOException {
-        if(!destFile.exists()) {
+        if (!destFile.exists()) {
             destFile.createNewFile();
         }
-        FileChannel source = null;
-        FileChannel destination = null;
+        FileInputStream source = null;
+        FileOutputStream destination = null;
         try {
-            source = new FileInputStream(sourceFile).getChannel();
-            destination = new FileOutputStream(destFile).getChannel();
-            destination.transferFrom(source, 0, source.size());
+            source = new FileInputStream(sourceFile);
+            destination = new FileOutputStream(destFile);
+            destination.getChannel().transferFrom(source.getChannel(), 0, source.getChannel().size());
         } catch (Exception e) {
             FileLog.e("tmessages", e);
             return false;
         } finally {
-            if(source != null) {
+            if (source != null) {
                 source.close();
             }
-            if(destination != null) {
+            if (destination != null) {
                 destination.close();
             }
         }
@@ -534,12 +590,16 @@ public class Utilities {
                     final String type = split[0];
 
                     Uri contentUri = null;
-                    if ("image".equals(type)) {
-                        contentUri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI;
-                    } else if ("video".equals(type)) {
-                        contentUri = MediaStore.Video.Media.EXTERNAL_CONTENT_URI;
-                    } else if ("audio".equals(type)) {
-                        contentUri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
+                    switch (type) {
+                        case "image":
+                            contentUri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI;
+                            break;
+                        case "video":
+                            contentUri = MediaStore.Video.Media.EXTERNAL_CONTENT_URI;
+                            break;
+                        case "audio":
+                            contentUri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
+                            break;
                     }
 
                     final String selection = "_id=?";
@@ -637,8 +697,8 @@ public class Utilities {
             if (query.startsWith(" ")) {
                 builder.append(" ");
             }
-            query.trim();
-            builder.append(Html.fromHtml("<font color=\"#4d83b3\">" + query + "</font>"));
+            query = query.trim();
+            builder.append(AndroidUtilities.replaceTags("<c#ff4d83b3>" + query + "</c>"));
 
             lastIndex = end;
         }
@@ -693,7 +753,13 @@ public class Utilities {
                 buffer.write(b);
             }
         }
-        return buffer.toByteArray();
+        byte[] array = buffer.toByteArray();
+        try {
+            buffer.close();
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
+        return array;
     }
 
     public static void checkForCrashes(Activity context) {

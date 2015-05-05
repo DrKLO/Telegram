@@ -15,6 +15,7 @@ import android.widget.FrameLayout;
 import android.widget.TextView;
 
 import org.telegram.android.AndroidUtilities;
+import org.telegram.ui.Components.LayoutHelper;
 
 public class TextInfoCell extends FrameLayout {
 
@@ -30,8 +31,8 @@ public class TextInfoCell extends FrameLayout {
         textView.setPadding(0, AndroidUtilities.dp(19), 0, AndroidUtilities.dp(19));
         addView(textView);
         LayoutParams layoutParams = (LayoutParams) textView.getLayoutParams();
-        layoutParams.width = LayoutParams.WRAP_CONTENT;
-        layoutParams.height = LayoutParams.WRAP_CONTENT;
+        layoutParams.width = LayoutHelper.WRAP_CONTENT;
+        layoutParams.height = LayoutHelper.WRAP_CONTENT;
         layoutParams.leftMargin = AndroidUtilities.dp(17);
         layoutParams.rightMargin = AndroidUtilities.dp(17);
         layoutParams.gravity = Gravity.CENTER;

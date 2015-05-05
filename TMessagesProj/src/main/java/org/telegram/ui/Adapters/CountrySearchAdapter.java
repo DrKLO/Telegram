@@ -73,7 +73,7 @@ public class CountrySearchAdapter extends BaseFragmentAdapter {
                     return;
                 }
                 long time = System.currentTimeMillis();
-                ArrayList<Country> resultArray = new ArrayList<Country>();
+                ArrayList<Country> resultArray = new ArrayList<>();
 
                 String n = query.substring(0, 1);
                 ArrayList<Country> arr = countries.get(n.toUpperCase());

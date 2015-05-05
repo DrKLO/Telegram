@@ -17,7 +17,7 @@ import android.view.MotionEvent;
 import android.view.View;
 
 import org.telegram.android.AndroidUtilities;
-import org.telegram.messenger.R;
+import com.aniways.anigram.messenger.R;
 
 public class VideoSeekBarView extends View {
 
@@ -30,8 +30,8 @@ public class VideoSeekBarView extends View {
     private boolean pressed = false;
     public SeekBarDelegate delegate;
 
-    public abstract interface SeekBarDelegate {
-        public void onSeekBarDrag(float progress);
+    public interface SeekBarDelegate {
+        void onSeekBarDrag(float progress);
     }
 
     private void init(Context context) {

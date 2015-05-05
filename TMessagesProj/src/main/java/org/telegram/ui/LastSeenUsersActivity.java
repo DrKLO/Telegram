@@ -27,7 +27,7 @@ import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.android.LocaleController;
 import org.telegram.android.MessagesController;
 import org.telegram.android.NotificationCenter;
-import org.telegram.messenger.R;
+import com.aniways.anigram.messenger.R;
 import org.telegram.messenger.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
@@ -35,13 +35,14 @@ import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.Adapters.BaseFragmentAdapter;
 import org.telegram.ui.Cells.TextInfoCell;
 import org.telegram.ui.Cells.UserCell;
+import org.telegram.ui.Components.LayoutHelper;
 
 import java.util.ArrayList;
 
 public class LastSeenUsersActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
 
-    public static interface LastSeenUsersActivityDelegate {
-        public abstract void didUpdatedUserList(ArrayList<Integer> ids, boolean added);
+    public interface LastSeenUsersActivityDelegate {
+        void didUpdatedUserList(ArrayList<Integer> ids, boolean added);
     }
 
     private ListView listView;
@@ -75,127 +76,121 @@ public class LastSeenUsersActivity extends BaseFragment implements NotificationC
     }
 
     @Override
-    public View createView(LayoutInflater inflater, ViewGroup container) {
-        if (fragmentView == null) {
-            actionBar.setBackButtonImage(R.drawable.ic_ab_back);
-            actionBar.setAllowOverlayTitle(true);
-            if (isAlwaysShare) {
-                actionBar.setTitle(LocaleController.getString("AlwaysShareWithTitle", R.string.AlwaysShareWithTitle));
-            } else {
-                actionBar.setTitle(LocaleController.getString("NeverShareWithTitle", R.string.NeverShareWithTitle));
-            }
-            actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
-                @Override
-                public void onItemClick(int id) {
-                    if (id == -1) {
-                        finishFragment();
-                    } else if (id == block_user) {
-                        Bundle args = new Bundle();
-                        args.putBoolean(isAlwaysShare ? "isAlwaysShare" : "isNeverShare", true);
-                        GroupCreateActivity fragment = new GroupCreateActivity(args);
-                        fragment.setDelegate(new GroupCreateActivity.GroupCreateActivityDelegate() {
-                            @Override
-                            public void didSelectUsers(ArrayList<Integer> ids) {
-                                for (Integer id : ids) {
-                                    if (uidArray.contains(id)) {
-                                        continue;
-                                    }
-                                    uidArray.add(id);
-                                }
-                                listViewAdapter.notifyDataSetChanged();
-                                if (delegate != null) {
-                                    delegate.didUpdatedUserList(uidArray, true);
-                                }
-                            }
-                        });
-                        presentFragment(fragment);
-                    }
-                }
-            });
-
-            ActionBarMenu menu = actionBar.createMenu();
-            menu.addItem(block_user, R.drawable.plus);
-
-            fragmentView = new FrameLayout(getParentActivity());
-            FrameLayout frameLayout = (FrameLayout) fragmentView;
-
-            TextView emptyTextView = new TextView(getParentActivity());
-            emptyTextView.setTextColor(0xff808080);
-            emptyTextView.setTextSize(20);
-            emptyTextView.setGravity(Gravity.CENTER);
-            emptyTextView.setVisibility(View.INVISIBLE);
-            emptyTextView.setText(LocaleController.getString("NoContacts", R.string.NoContacts));
-            frameLayout.addView(emptyTextView);
-            FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) emptyTextView.getLayoutParams();
-            layoutParams.width = FrameLayout.LayoutParams.MATCH_PARENT;
-            layoutParams.height = FrameLayout.LayoutParams.MATCH_PARENT;
-            layoutParams.gravity = Gravity.TOP;
-            emptyTextView.setLayoutParams(layoutParams);
-            emptyTextView.setOnTouchListener(new View.OnTouchListener() {
-                @Override
-                public boolean onTouch(View v, MotionEvent event) {
-                    return true;
-                }
-            });
-
-            listView = new ListView(getParentActivity());
-            listView.setEmptyView(emptyTextView);
-            listView.setVerticalScrollBarEnabled(false);
-            listView.setDivider(null);
-            listView.setDividerHeight(0);
-            listView.setAdapter(listViewAdapter = new ListAdapter(getParentActivity()));
-            if (Build.VERSION.SDK_INT >= 11) {
-                listView.setVerticalScrollbarPosition(LocaleController.isRTL ? ListView.SCROLLBAR_POSITION_LEFT : ListView.SCROLLBAR_POSITION_RIGHT);
-            }
-            frameLayout.addView(listView);
-            layoutParams = (FrameLayout.LayoutParams) listView.getLayoutParams();
-            layoutParams.width = FrameLayout.LayoutParams.MATCH_PARENT;
-            layoutParams.height = FrameLayout.LayoutParams.MATCH_PARENT;
-            listView.setLayoutParams(layoutParams);
-
-            listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-                @Override
-                public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
-                    if (i < uidArray.size()) {
-                        Bundle args = new Bundle();
-                        args.putInt("user_id", uidArray.get(i));
-                        presentFragment(new ProfileActivity(args));
-                    }
-                }
-            });
-
-            listView.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
-                @Override
-                public boolean onItemLongClick(AdapterView<?> adapterView, View view, int i, long l) {
-                    if (i < 0 || i >= uidArray.size() || getParentActivity() == null) {
-                        return true;
-                    }
-                    selectedUserId = uidArray.get(i);
-
-                    AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-                    CharSequence[] items = new CharSequence[] {LocaleController.getString("Delete", R.string.Delete)};
-                    builder.setItems(items, new DialogInterface.OnClickListener() {
+    public View createView(Context context, LayoutInflater inflater) {
+        actionBar.setBackButtonImage(R.drawable.ic_ab_back);
+        actionBar.setAllowOverlayTitle(true);
+        if (isAlwaysShare) {
+            actionBar.setTitle(LocaleController.getString("AlwaysShareWithTitle", R.string.AlwaysShareWithTitle));
+        } else {
+            actionBar.setTitle(LocaleController.getString("NeverShareWithTitle", R.string.NeverShareWithTitle));
+        }
+        actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
+            @Override
+            public void onItemClick(int id) {
+                if (id == -1) {
+                    finishFragment();
+                } else if (id == block_user) {
+                    Bundle args = new Bundle();
+                    args.putBoolean(isAlwaysShare ? "isAlwaysShare" : "isNeverShare", true);
+                    GroupCreateActivity fragment = new GroupCreateActivity(args);
+                    fragment.setDelegate(new GroupCreateActivity.GroupCreateActivityDelegate() {
                         @Override
-                        public void onClick(DialogInterface dialogInterface, int i) {
-                            if (i == 0) {
-                                uidArray.remove((Integer)selectedUserId);
-                                listViewAdapter.notifyDataSetChanged();
-                                if (delegate != null) {
-                                    delegate.didUpdatedUserList(uidArray, false);
+                        public void didSelectUsers(ArrayList<Integer> ids) {
+                            for (Integer id : ids) {
+                                if (uidArray.contains(id)) {
+                                    continue;
                                 }
+                                uidArray.add(id);
+                            }
+                            listViewAdapter.notifyDataSetChanged();
+                            if (delegate != null) {
+                                delegate.didUpdatedUserList(uidArray, true);
                             }
                         }
                     });
-                    showAlertDialog(builder);
+                    presentFragment(fragment);
+                }
+            }
+        });
+
+        ActionBarMenu menu = actionBar.createMenu();
+        menu.addItem(block_user, R.drawable.plus);
+
+        fragmentView = new FrameLayout(context);
+        FrameLayout frameLayout = (FrameLayout) fragmentView;
+
+        TextView emptyTextView = new TextView(context);
+        emptyTextView.setTextColor(0xff808080);
+        emptyTextView.setTextSize(20);
+        emptyTextView.setGravity(Gravity.CENTER);
+        emptyTextView.setVisibility(View.INVISIBLE);
+        emptyTextView.setText(LocaleController.getString("NoContacts", R.string.NoContacts));
+        frameLayout.addView(emptyTextView);
+        FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) emptyTextView.getLayoutParams();
+        layoutParams.width = LayoutHelper.MATCH_PARENT;
+        layoutParams.height = LayoutHelper.MATCH_PARENT;
+        layoutParams.gravity = Gravity.TOP;
+        emptyTextView.setLayoutParams(layoutParams);
+        emptyTextView.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                return true;
+            }
+        });
+
+        listView = new ListView(context);
+        listView.setEmptyView(emptyTextView);
+        listView.setVerticalScrollBarEnabled(false);
+        listView.setDivider(null);
+        listView.setDividerHeight(0);
+        listView.setAdapter(listViewAdapter = new ListAdapter(context));
+        if (Build.VERSION.SDK_INT >= 11) {
+            listView.setVerticalScrollbarPosition(LocaleController.isRTL ? ListView.SCROLLBAR_POSITION_LEFT : ListView.SCROLLBAR_POSITION_RIGHT);
+        }
+        frameLayout.addView(listView);
+        layoutParams = (FrameLayout.LayoutParams) listView.getLayoutParams();
+        layoutParams.width = LayoutHelper.MATCH_PARENT;
+        layoutParams.height = LayoutHelper.MATCH_PARENT;
+        listView.setLayoutParams(layoutParams);
+
+        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
+                if (i < uidArray.size()) {
+                    Bundle args = new Bundle();
+                    args.putInt("user_id", uidArray.get(i));
+                    presentFragment(new ProfileActivity(args));
+                }
+            }
+        });
+
+        listView.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
+            @Override
+            public boolean onItemLongClick(AdapterView<?> adapterView, View view, int i, long l) {
+                if (i < 0 || i >= uidArray.size() || getParentActivity() == null) {
                     return true;
                 }
-            });
-        } else {
-            ViewGroup parent = (ViewGroup)fragmentView.getParent();
-            if (parent != null) {
-                parent.removeView(fragmentView);
+                selectedUserId = uidArray.get(i);
+
+                AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                CharSequence[] items = new CharSequence[]{LocaleController.getString("Delete", R.string.Delete)};
+                builder.setItems(items, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        if (i == 0) {
+                            uidArray.remove((Integer) selectedUserId);
+                            listViewAdapter.notifyDataSetChanged();
+                            if (delegate != null) {
+                                delegate.didUpdatedUserList(uidArray, false);
+                            }
+                        }
+                    }
+                });
+                showAlertDialog(builder);
+                return true;
             }
-        }
+        });
+
         return fragmentView;
     }
 

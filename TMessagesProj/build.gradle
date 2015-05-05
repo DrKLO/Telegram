@@ -3,29 +3,76 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:0.14.0'
+        classpath 'com.android.tools.build:gradle:1.2.2'
     }
 }
+
+allprojects {
+    repositories {
+        mavenCentral()
+    }
+}
+
 apply plugin: 'com.android.application'
 
 repositories {
     mavenCentral()
 }
 
-tasks.withType(JavaCompile) {
-    options.encoding = "UTF-8"
-}
-
 dependencies {
-    compile 'com.android.support:support-v4:21.0.+'
-    compile 'com.google.android.gms:play-services:3.2.+'
-    compile 'net.hockeyapp.android:HockeySDK:3.0.2'
+    compile 'com.android.support:support-v4:22.1.1'
+    compile 'com.google.android.gms:play-services-maps:7.3.0'
+    compile 'com.google.android.gms:play-services-location:7.3.0'
+    compile 'com.google.android.gms:play-services-identity:7.3.0'
+    compile 'com.google.android.gms:play-services-appstate:7.3.0'
+    compile 'com.google.android.gms:play-services-wearable:7.3.0'
+    compile 'com.google.android.gms:play-services-gcm:7.3.0'
+    compile 'net.hockeyapp.android:HockeySDK:3.5.+'
     compile 'com.googlecode.mp4parser:isoparser:1.0.+'
+    compile project(':Android-SDK')
 }
 
 android {
-    compileSdkVersion 21
-    buildToolsVersion '21.1.1'
+    compileSdkVersion 22
+    buildToolsVersion '22.0.1'
+
+    flavorDimensions "abi"
+
+    productFlavors {
+        fat {
+            flavorDimension "abi"
+            ndk {
+                abiFilters "x86", "armeabi-v7a", "armeabi"
+                versionCode = 259;
+            }
+        }
+//        arm {
+//            flavorDimension "abi"
+//            ndk {
+//                abiFilter "armeabi"
+//                versionCode = 1;
+//            }
+//        }
+//        armv7a {
+//            flavorDimension "abi"
+//            ndk {
+//                abiFilter "armeabi-v7a"
+//                versionCode = 3;
+//            }
+//        }
+//        x86 {
+//            flavorDimension "abi"
+//            ndk {
+//                abiFilter "x86"
+//                versionCode = 6;
+//            }
+//        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_7
+        targetCompatibility JavaVersion.VERSION_1_7
+    }
 
     signingConfigs {
         debug {
@@ -33,7 +80,7 @@ android {
         }
 
         release {
-            storeFile file("config/release.keystore")
+            //storeFile file("config/release.keystore")
             storePassword RELEASE_STORE_PASSWORD
             keyAlias RELEASE_KEY_ALIAS
             keyPassword RELEASE_KEY_PASSWORD
@@ -78,9 +125,11 @@ android {
     }
 
     defaultConfig {
-        minSdkVersion 8
-        targetSdkVersion 21
-        versionCode 403
-        versionName "2.1.0"
+        minSdkVersion 9
+        targetSdkVersion 22
+        renderscriptTargetApi 22
+        renderscriptSupportModeEnabled true
+        versionCode 259
+        versionName "1.7.9"
     }
 }

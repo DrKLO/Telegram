@@ -48,8 +48,8 @@ public class ActionBarPopupWindow extends PopupWindow {
     private ViewTreeObserver.OnScrollChangedListener mSuperScrollListener;
     private ViewTreeObserver mViewTreeObserver;
 
-    public static interface OnDispatchKeyEventListener {
-        public void onDispatchKeyEvent(KeyEvent keyEvent);
+    public interface OnDispatchKeyEventListener {
+        void onDispatchKeyEvent(KeyEvent keyEvent);
     }
 
     public static class ActionBarPopupWindowLayout extends LinearLayout {
@@ -200,7 +200,11 @@ public class ActionBarPopupWindow extends PopupWindow {
     @Override
     public void dismiss() {
         setFocusable(false);
-        super.dismiss();
+        try {
+            super.dismiss();
+        } catch (Exception e) {
+            //don't promt
+        }
         unregisterListener();
     }
 }

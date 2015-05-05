@@ -9,7 +9,6 @@
 package org.telegram.ui.Cells;
 
 import android.content.Context;
-import android.util.AttributeSet;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.widget.FrameLayout;
@@ -17,11 +16,14 @@ import android.widget.TextView;
 
 import org.telegram.android.AndroidUtilities;
 import org.telegram.android.LocaleController;
+import org.telegram.ui.Components.LayoutHelper;
 
 public class GreySectionCell extends FrameLayout {
     private TextView textView;
 
-    private void init() {
+    public GreySectionCell(Context context) {
+        super(context);
+
         setBackgroundColor(0xfff2f2f2);
 
         textView = new TextView(getContext());
@@ -31,32 +33,12 @@ public class GreySectionCell extends FrameLayout {
         textView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL);
         addView(textView);
         FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams)textView.getLayoutParams();
-        layoutParams.width = FrameLayout.LayoutParams.MATCH_PARENT;
-        layoutParams.height = FrameLayout.LayoutParams.MATCH_PARENT;
+        layoutParams.width = LayoutHelper.MATCH_PARENT;
+        layoutParams.height = LayoutHelper.MATCH_PARENT;
         layoutParams.leftMargin = AndroidUtilities.dp(16);
         layoutParams.rightMargin = AndroidUtilities.dp(16);
         layoutParams.gravity = LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT;
         textView.setLayoutParams(layoutParams);
-    }
-
-    public GreySectionCell(Context context) {
-        super(context);
-        init();
-    }
-
-    public GreySectionCell(Context context, AttributeSet attrs) {
-        super(context, attrs);
-        init();
-    }
-
-    public GreySectionCell(Context context, AttributeSet attrs, int defStyleAttr) {
-        super(context, attrs, defStyleAttr);
-        init();
-    }
-
-    public GreySectionCell(Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes) {
-        super(context, attrs, defStyleAttr, defStyleRes);
-        init();
     }
 
     @Override

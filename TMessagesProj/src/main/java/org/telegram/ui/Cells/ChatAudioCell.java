@@ -10,6 +10,7 @@ package org.telegram.ui.Cells;
 
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.Paint;
 import android.graphics.drawable.Drawable;
 import android.text.Layout;
 import android.text.StaticLayout;
@@ -18,27 +19,23 @@ import android.view.MotionEvent;
 import android.view.SoundEffectConstants;
 
 import org.telegram.android.AndroidUtilities;
+import org.telegram.android.ImageLoader;
+import org.telegram.android.MessagesController;
 import org.telegram.messenger.FileLoader;
 import org.telegram.android.MediaController;
-import org.telegram.messenger.TLRPC;
-import org.telegram.android.MessagesController;
-import org.telegram.messenger.R;
+
 import org.telegram.android.MessageObject;
-import org.telegram.android.ImageReceiver;
-import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.ProgressView;
+import org.telegram.ui.Components.ResourceLoader;
 import org.telegram.ui.Components.SeekBar;
 
 import java.io.File;
 
 public class ChatAudioCell extends ChatBaseCell implements SeekBar.SeekBarDelegate, MediaController.FileDownloadProgressListener {
 
-    private static Drawable[][] statesDrawable = new Drawable[8][2];
     private static TextPaint timePaint;
+    private static Paint circlePaint;
 
-    private ImageReceiver avatarImage;
-    private AvatarDrawable avatarDrawable;
-    private boolean needAvatarImage = false;
     private SeekBar seekBar;
     private ProgressView progressView;
     private int seekBarX;
@@ -49,60 +46,40 @@ public class ChatAudioCell extends ChatBaseCell implements SeekBar.SeekBarDelega
     private int buttonY;
     private boolean buttonPressed = false;
 
-    private boolean avatarPressed = false;
-
     private StaticLayout timeLayout;
     private int timeX;
+    private int timeWidth;
     private String lastTimeString = null;
 
     private int TAG;
-
-    public TLRPC.User audioUser;
-    private TLRPC.FileLocation currentPhoto;
 
     public ChatAudioCell(Context context) {
         super(context);
         TAG = MediaController.getInstance().generateObserverTag();
 
-        avatarImage = new ImageReceiver(this);
-        avatarImage.setRoundRadius(AndroidUtilities.dp(25));
         seekBar = new SeekBar(context);
         seekBar.delegate = this;
         progressView = new ProgressView();
-        avatarDrawable = new AvatarDrawable();
+        drawForwardedName = true;
 
         if (timePaint == null) {
-            statesDrawable[0][0] = getResources().getDrawable(R.drawable.play1);
-            statesDrawable[0][1] = getResources().getDrawable(R.drawable.play1_pressed);
-            statesDrawable[1][0] = getResources().getDrawable(R.drawable.pause1);
-            statesDrawable[1][1] = getResources().getDrawable(R.drawable.pause1_pressed);
-            statesDrawable[2][0] = getResources().getDrawable(R.drawable.audioload1);
-            statesDrawable[2][1] = getResources().getDrawable(R.drawable.audioload1_pressed);
-            statesDrawable[3][0] = getResources().getDrawable(R.drawable.audiocancel1);
-            statesDrawable[3][1] = getResources().getDrawable(R.drawable.audiocancel1_pressed);
-
-            statesDrawable[4][0] = getResources().getDrawable(R.drawable.play2);
-            statesDrawable[4][1] = getResources().getDrawable(R.drawable.play2_pressed);
-            statesDrawable[5][0] = getResources().getDrawable(R.drawable.pause2);
-            statesDrawable[5][1] = getResources().getDrawable(R.drawable.pause2_pressed);
-            statesDrawable[6][0] = getResources().getDrawable(R.drawable.audioload2);
-            statesDrawable[6][1] = getResources().getDrawable(R.drawable.audioload2_pressed);
-            statesDrawable[7][0] = getResources().getDrawable(R.drawable.audiocancel2);
-            statesDrawable[7][1] = getResources().getDrawable(R.drawable.audiocancel2_pressed);
-
             timePaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
             timePaint.setTextSize(AndroidUtilities.dp(12));
+
+            circlePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         }
     }
 
     @Override
     protected void onDetachedFromWindow() {
         super.onDetachedFromWindow();
-        if (avatarImage != null) {
-            avatarImage.clearImage();
-            currentPhoto = null;
-        }
         MediaController.getInstance().removeLoadingFileObserver(this);
+    }
+
+    @Override
+    protected void onAttachedToWindow() {
+        super.onAttachedToWindow();
+        updateButtonState();
     }
 
     @Override
@@ -122,9 +99,6 @@ public class ChatAudioCell extends ChatBaseCell implements SeekBar.SeekBarDelega
                     buttonPressed = true;
                     invalidate();
                     result = true;
-                } else if (needAvatarImage && avatarImage.isInsideImage(x, y)) {
-                    avatarPressed = true;
-                    result = true;
                 }
             } else if (buttonPressed) {
                 if (event.getAction() == MotionEvent.ACTION_UP) {
@@ -141,20 +115,6 @@ public class ChatAudioCell extends ChatBaseCell implements SeekBar.SeekBarDelega
                         invalidate();
                     }
                 }
-            } else if (avatarPressed) {
-                if (event.getAction() == MotionEvent.ACTION_UP) {
-                    avatarPressed = false;
-                    playSoundEffect(SoundEffectConstants.CLICK);
-                    if (delegate != null) {
-                        delegate.didPressedUserAvatar(this, audioUser);
-                    }
-                } else if (event.getAction() == MotionEvent.ACTION_CANCEL) {
-                    avatarPressed = false;
-                } else if (event.getAction() == MotionEvent.ACTION_MOVE) {
-                    if (!avatarImage.isInsideImage(x, y)) {
-                        avatarPressed = false;
-                    }
-                }
             }
             if (!result) {
                 result = super.onTouchEvent(event);
@@ -167,6 +127,9 @@ public class ChatAudioCell extends ChatBaseCell implements SeekBar.SeekBarDelega
     private void didPressedButton() {
         if (buttonState == 0) {
             boolean result = MediaController.getInstance().playAudio(currentMessageObject);
+            if (!currentMessageObject.isOut() && currentMessageObject.isContentUnread()) {
+                MessagesController.getInstance().markMessageContentAsRead(currentMessageObject.getId());
+            }
             if (result) {
                 buttonState = 1;
                 invalidate();
@@ -182,9 +145,15 @@ public class ChatAudioCell extends ChatBaseCell implements SeekBar.SeekBarDelega
             buttonState = 3;
             invalidate();
         } else if (buttonState == 3) {
-            FileLoader.getInstance().cancelLoadFile(currentMessageObject.messageOwner.media.audio);
-            buttonState = 2;
-            invalidate();
+            if (currentMessageObject.isOut() && currentMessageObject.isSending()) {
+                if (delegate != null) {
+                    delegate.didPressedCancelSendButton(this);
+                }
+            } else {
+                FileLoader.getInstance().cancelLoadFile(currentMessageObject.messageOwner.media.audio);
+                buttonState = 2;
+                invalidate();
+            }
         }
     }
 
@@ -205,7 +174,7 @@ public class ChatAudioCell extends ChatBaseCell implements SeekBar.SeekBarDelega
         }
         String timeString = String.format("%02d:%02d", duration / 60, duration % 60);
         if (lastTimeString == null || lastTimeString != null && !lastTimeString.equals(timeString)) {
-            int timeWidth = (int)Math.ceil(timePaint.measureText(timeString));
+            timeWidth = (int)Math.ceil(timePaint.measureText(timeString));
             timeLayout = new StaticLayout(timeString, timePaint, timeWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
         }
         invalidate();
@@ -220,29 +189,36 @@ public class ChatAudioCell extends ChatBaseCell implements SeekBar.SeekBarDelega
     }
 
     public void updateButtonState() {
-        String fileName = currentMessageObject.getFileName();
-        File cacheFile = FileLoader.getPathToMessage(currentMessageObject.messageOwner);
-        if (cacheFile.exists()) {
-            MediaController.getInstance().removeLoadingFileObserver(this);
-            boolean playing = MediaController.getInstance().isPlayingAudio(currentMessageObject);
-            if (!playing || playing && MediaController.getInstance().isAudioPaused()) {
-                buttonState = 0;
-            } else {
-                buttonState = 1;
-            }
-            progressView.setProgress(0);
+        if (currentMessageObject == null) {
+            return;
+        }
+        if (currentMessageObject.isOut() && currentMessageObject.isSending()) {
+            buttonState = 4;
         } else {
-            MediaController.getInstance().addLoadingFileObserver(fileName, this);
-            if (!FileLoader.getInstance().isLoadingFile(fileName)) {
-                buttonState = 2;
+            String fileName = currentMessageObject.getFileName();
+            File cacheFile = FileLoader.getPathToMessage(currentMessageObject.messageOwner);
+            if (cacheFile.exists()) {
+                MediaController.getInstance().removeLoadingFileObserver(this);
+                boolean playing = MediaController.getInstance().isPlayingAudio(currentMessageObject);
+                if (!playing || playing && MediaController.getInstance().isAudioPaused()) {
+                    buttonState = 0;
+                } else {
+                    buttonState = 1;
+                }
                 progressView.setProgress(0);
             } else {
-                buttonState = 3;
-                Float progress = FileLoader.getInstance().getFileProgress(fileName);
-                if (progress != null) {
-                    progressView.setProgress(progress);
-                } else {
+                MediaController.getInstance().addLoadingFileObserver(fileName, this);
+                if (!FileLoader.getInstance().isLoadingFile(fileName)) {
+                    buttonState = 2;
                     progressView.setProgress(0);
+                } else {
+                    buttonState = 3;
+                    Float progress = ImageLoader.getInstance().getFileProgress(fileName);
+                    if (progress != null) {
+                        progressView.setProgress(progress);
+                    } else {
+                        progressView.setProgress(0);
+                    }
                 }
             }
         }
@@ -290,93 +266,51 @@ public class ChatAudioCell extends ChatBaseCell implements SeekBar.SeekBarDelega
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         int width = MeasureSpec.getSize(widthMeasureSpec);
-        setMeasuredDimension(width, AndroidUtilities.dp(68));
-        if (isChat) {
-            backgroundWidth = Math.min(width - AndroidUtilities.dp(102), AndroidUtilities.dp(300));
-        } else {
-            backgroundWidth = Math.min(width - AndroidUtilities.dp(50), AndroidUtilities.dp(300));
-        }
+        setMeasuredDimension(width, AndroidUtilities.dp(66) + namesOffset);
     }
 
     @Override
     protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
         super.onLayout(changed, left, top, right, bottom);
 
-        int x;
-
         if (currentMessageObject.isOut()) {
-            x = layoutWidth - backgroundWidth + AndroidUtilities.dp(8);
-            seekBarX = layoutWidth - backgroundWidth + AndroidUtilities.dp(97);
-            buttonX = layoutWidth - backgroundWidth + AndroidUtilities.dp(67);
-            timeX = layoutWidth - backgroundWidth + AndroidUtilities.dp(71);
+            seekBarX = layoutWidth - backgroundWidth + AndroidUtilities.dp(55);
+            buttonX = layoutWidth - backgroundWidth + AndroidUtilities.dp(13);
+            timeX = layoutWidth - backgroundWidth + AndroidUtilities.dp(66);
         } else {
             if (isChat) {
-                x = AndroidUtilities.dp(69);
-                seekBarX = AndroidUtilities.dp(158);
-                buttonX = AndroidUtilities.dp(128);
-                timeX = AndroidUtilities.dp(132);
+                seekBarX = AndroidUtilities.dp(116);
+                buttonX = AndroidUtilities.dp(74);
+                timeX = AndroidUtilities.dp(127);
             } else {
-                x = AndroidUtilities.dp(16);
-                seekBarX = AndroidUtilities.dp(106);
-                buttonX = AndroidUtilities.dp(76);
-                timeX = AndroidUtilities.dp(80);
+                seekBarX = AndroidUtilities.dp(64);
+                buttonX = AndroidUtilities.dp(22);
+                timeX = AndroidUtilities.dp(75);
             }
         }
-        int diff = 0;
-        if (needAvatarImage) {
-            avatarImage.setImageCoords(x, AndroidUtilities.dp(9), AndroidUtilities.dp(50), AndroidUtilities.dp(50));
-        } else {
-            diff = AndroidUtilities.dp(56);
-            seekBarX -= diff;
-            buttonX -= diff;
-            timeX -= diff;
-        }
 
-        seekBar.width = backgroundWidth - AndroidUtilities.dp(112) + diff;
+        seekBar.width = backgroundWidth - AndroidUtilities.dp(70);
         seekBar.height = AndroidUtilities.dp(30);
-        progressView.width = backgroundWidth - AndroidUtilities.dp(136) + diff;
+        progressView.width = backgroundWidth - AndroidUtilities.dp(94);
         progressView.height = AndroidUtilities.dp(30);
-        seekBarY = AndroidUtilities.dp(13);
-        buttonY = AndroidUtilities.dp(10);
+        seekBarY = AndroidUtilities.dp(11) + namesOffset;
+        buttonY = AndroidUtilities.dp(13) + namesOffset;
 
         updateProgress();
     }
 
     @Override
-    protected boolean isUserDataChanged() {
-        TLRPC.User newUser = MessagesController.getInstance().getUser(currentMessageObject.messageOwner.media.audio.user_id);
-        TLRPC.FileLocation newPhoto = null;
-
-        if (avatarImage != null && newUser != null && newUser.photo != null) {
-            newPhoto = newUser.photo.photo_small;
-        }
-
-        return currentPhoto == null && newPhoto != null || currentPhoto != null && newPhoto == null || currentPhoto != null && newPhoto != null && (currentPhoto.local_id != newPhoto.local_id || currentPhoto.volume_id != newPhoto.volume_id) || super.isUserDataChanged();
-    }
-
-    @Override
     public void setMessageObject(MessageObject messageObject) {
         if (currentMessageObject != messageObject || isUserDataChanged()) {
+            if (AndroidUtilities.isTablet()) {
+                backgroundWidth = Math.min(AndroidUtilities.getMinTabletSide() - AndroidUtilities.dp(isChat ? 102 : 50), AndroidUtilities.dp(300));
+            } else {
+                backgroundWidth = Math.min(AndroidUtilities.displaySize.x - AndroidUtilities.dp(isChat ? 102 : 50), AndroidUtilities.dp(300));
+            }
+
             int uid = messageObject.messageOwner.media.audio.user_id;
             if (uid == 0) {
                 uid = messageObject.messageOwner.from_id;
-            }
-            needAvatarImage = !(messageObject.messageOwner.to_id != null && messageObject.messageOwner.to_id.chat_id != 0 && !messageObject.isOut() && messageObject.messageOwner.media.audio.user_id == messageObject.messageOwner.from_id);
-            audioUser = MessagesController.getInstance().getUser(uid);
-
-            if (needAvatarImage) {
-                if (audioUser != null) {
-                    if (audioUser.photo != null) {
-                        currentPhoto = audioUser.photo.photo_small;
-                    } else {
-                        currentPhoto = null;
-                    }
-                    avatarDrawable.setInfo(audioUser);
-                } else {
-                    avatarDrawable.setInfo(uid, null, null, false);
-                    currentPhoto = null;
-                }
-                avatarImage.setImage(currentPhoto, "50_50", avatarDrawable, false);
             }
 
             if (messageObject.isOut()) {
@@ -400,10 +334,6 @@ public class ChatAudioCell extends ChatBaseCell implements SeekBar.SeekBarDelega
             return;
         }
 
-        if (needAvatarImage) {
-            avatarImage.draw(canvas);
-        }
-
         canvas.save();
         if (buttonState == 0 || buttonState == 1) {
             canvas.translate(seekBarX, seekBarY);
@@ -415,22 +345,25 @@ public class ChatAudioCell extends ChatBaseCell implements SeekBar.SeekBarDelega
         canvas.restore();
 
         int state = buttonState;
-        if (!currentMessageObject.isOut()) {
-            state += 4;
-            timePaint.setColor(0xffa1aab3);
-        } else {
+        if (currentMessageObject.isOut()) {
             timePaint.setColor(0xff70b15c);
+            circlePaint.setColor(0xff87bf78);
+        } else {
+            state += 5;
+            timePaint.setColor(0xffa1aab3);
+            circlePaint.setColor(0xff4195e5);
         }
-        Drawable buttonDrawable = statesDrawable[state][buttonPressed ? 1 : 0];
-        int side = AndroidUtilities.dp(36);
-        int x = (side - buttonDrawable.getIntrinsicWidth()) / 2;
-        int y = (side - buttonDrawable.getIntrinsicHeight()) / 2;
-        setDrawableBounds(buttonDrawable, x + buttonX, y + buttonY);
+        Drawable buttonDrawable = ResourceLoader.audioStatesDrawable[state][buttonPressed ? 1 : 0];
+        setDrawableBounds(buttonDrawable, buttonX, buttonY);
         buttonDrawable.draw(canvas);
 
         canvas.save();
-        canvas.translate(timeX, AndroidUtilities.dp(45));
+        canvas.translate(timeX, AndroidUtilities.dp(42) + namesOffset);
         timeLayout.draw(canvas);
         canvas.restore();
+
+        if (currentMessageObject.isContentUnread()) {
+            canvas.drawCircle(timeX + timeWidth + AndroidUtilities.dp(8), AndroidUtilities.dp(49.5f) + namesOffset, AndroidUtilities.dp(3), circlePaint);
+        }
     }
 }

@@ -11,12 +11,14 @@ package org.telegram.ui.Components;
 import android.app.Activity;
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.media.ExifInterface;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
 
 import org.telegram.android.AndroidUtilities;
 import org.telegram.android.ImageLoader;
+import org.telegram.android.MediaController;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
@@ -24,12 +26,16 @@ import org.telegram.android.NotificationCenter;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.LaunchActivity;
+import org.telegram.ui.PhotoAlbumPickerActivity;
 import org.telegram.ui.PhotoCropActivity;
 import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.ui.PhotoViewer;
 
 import java.io.File;
+import java.util.ArrayList;
 
-public class AvatarUpdater implements NotificationCenter.NotificationCenterDelegate, PhotoCropActivity.PhotoCropActivityDelegate {
+public class AvatarUpdater implements NotificationCenter.NotificationCenterDelegate, PhotoCropActivity.PhotoEditActivityDelegate {
+
     public String currentPicturePath;
     private TLRPC.PhotoSize smallPhoto;
     private TLRPC.PhotoSize bigPhoto;
@@ -40,8 +46,8 @@ public class AvatarUpdater implements NotificationCenter.NotificationCenterDeleg
     private boolean clearAfterUpdate = false;
     public boolean returnOnly = false;
 
-    public static abstract interface AvatarUpdaterDelegate {
-        public abstract void didUploadedPhoto(TLRPC.InputFile file, TLRPC.PhotoSize small, TLRPC.PhotoSize big);
+    public interface AvatarUpdaterDelegate {
+        void didUploadedPhoto(TLRPC.InputFile file, TLRPC.PhotoSize small, TLRPC.PhotoSize big);
     }
 
     public void clear() {
@@ -68,13 +74,33 @@ public class AvatarUpdater implements NotificationCenter.NotificationCenterDeleg
     }
 
     public void openGallery() {
-        try {
-            Intent photoPickerIntent = new Intent(Intent.ACTION_GET_CONTENT);
-            photoPickerIntent.setType("image/*");
-            parentFragment.startActivityForResult(photoPickerIntent, 14);
-        } catch (Exception e) {
-            FileLog.e("tmessages", e);
-        }
+        PhotoAlbumPickerActivity fragment = new PhotoAlbumPickerActivity(true, null);
+        fragment.setDelegate(new PhotoAlbumPickerActivity.PhotoAlbumPickerActivityDelegate() {
+            @Override
+            public void didSelectPhotos(ArrayList<String> photos, ArrayList<String> captions, ArrayList<MediaController.SearchImage> webPhotos) {
+                if (!photos.isEmpty()) {
+                    Bitmap bitmap = ImageLoader.loadBitmap(photos.get(0), null, 800, 800, true);
+                    processBitmap(bitmap);
+                }
+            }
+
+            @Override
+            public void startPhotoSelectActivity() {
+                try {
+                    Intent photoPickerIntent = new Intent(Intent.ACTION_GET_CONTENT);
+                    photoPickerIntent.setType("image/*");
+                    parentFragment.startActivityForResult(photoPickerIntent, 14);
+                } catch (Exception e) {
+                    FileLog.e("tmessages", e);
+                }
+            }
+
+            @Override
+            public boolean didSelectVideo(String path) {
+                return true;
+            }
+        });
+        parentFragment.presentFragment(fragment);
     }
 
     private void startCrop(String path, Uri uri) {
@@ -94,7 +120,7 @@ public class AvatarUpdater implements NotificationCenter.NotificationCenterDeleg
             activity.presentFragment(photoCropActivity);
         } catch (Exception e) {
             FileLog.e("tmessages", e);
-            Bitmap bitmap = ImageLoader.loadBitmap(path, uri, 800, 800);
+            Bitmap bitmap = ImageLoader.loadBitmap(path, uri, 800, 800, true);
             processBitmap(bitmap);
         }
     }
@@ -102,9 +128,42 @@ public class AvatarUpdater implements NotificationCenter.NotificationCenterDeleg
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (resultCode == Activity.RESULT_OK) {
             if (requestCode == 13) {
+                PhotoViewer.getInstance().setParentActivity(parentFragment.getParentActivity());
+                int orientation = 0;
+                try {
+                    ExifInterface ei = new ExifInterface(currentPicturePath);
+                    int exif = ei.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL);
+                    switch(exif) {
+                        case ExifInterface.ORIENTATION_ROTATE_90:
+                            orientation = 90;
+                            break;
+                        case ExifInterface.ORIENTATION_ROTATE_180:
+                            orientation = 180;
+                            break;
+                        case ExifInterface.ORIENTATION_ROTATE_270:
+                            orientation = 270;
+                            break;
+                    }
+                } catch (Exception e) {
+                    FileLog.e("tmessages", e);
+                }
+                final ArrayList<Object> arrayList = new ArrayList<>();
+                arrayList.add(new MediaController.PhotoEntry(0, 0, 0, currentPicturePath, orientation, false));
+                PhotoViewer.getInstance().openPhotoForSelect(arrayList, 0, 1, new PhotoViewer.EmptyPhotoViewerProvider() {
+                    @Override
+                    public void sendButtonPressed(int index) {
+                        String path = null;
+                        MediaController.PhotoEntry photoEntry = (MediaController.PhotoEntry) arrayList.get(0);
+                        if (photoEntry.imagePath != null) {
+                            path = photoEntry.imagePath;
+                        } else if (photoEntry.path != null) {
+                            path = photoEntry.path;
+                        }
+                        Bitmap bitmap = ImageLoader.loadBitmap(path, null, 800, 800, true);
+                        processBitmap(bitmap);
+                    }
+                }, null);
                 Utilities.addMediaToGallery(currentPicturePath);
-                startCrop(currentPicturePath, null);
-
                 currentPicturePath = null;
             } else if (requestCode == 14) {
                 if (data == null || data.getData() == null) {
@@ -137,7 +196,7 @@ public class AvatarUpdater implements NotificationCenter.NotificationCenterDeleg
     }
 
     @Override
-    public void didFinishCrop(Bitmap bitmap) {
+    public void didFinishEdit(Bitmap bitmap, Bundle args) {
         processBitmap(bitmap);
     }
 

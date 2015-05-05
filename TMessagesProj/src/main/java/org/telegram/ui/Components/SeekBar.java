@@ -15,12 +15,12 @@ import android.graphics.drawable.Drawable;
 import android.view.MotionEvent;
 
 import org.telegram.android.AndroidUtilities;
-import org.telegram.messenger.R;
+import com.aniways.anigram.messenger.R;
 
 public class SeekBar {
 
-    public abstract interface SeekBarDelegate {
-        public void onSeekBarDrag(float progress);
+    public interface SeekBarDelegate {
+        void onSeekBarDrag(float progress);
     }
 
     private static Drawable thumbDrawable1;

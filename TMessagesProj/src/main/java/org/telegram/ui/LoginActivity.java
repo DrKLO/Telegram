@@ -16,8 +16,10 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
+import android.graphics.Typeface;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Vibrator;
 import android.telephony.TelephonyManager;
 import android.text.Editable;
 import android.text.InputFilter;
@@ -26,12 +28,12 @@ import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.TextUtils;
 import android.text.TextWatcher;
+import android.text.method.PasswordTransformationMethod;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
-import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.view.animation.AccelerateDecelerateInterpolator;
 import android.view.inputmethod.EditorInfo;
@@ -41,6 +43,7 @@ import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.android.AndroidUtilities;
@@ -53,14 +56,21 @@ import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLog;
 import org.telegram.android.LocaleController;
-import org.telegram.messenger.R;
+
+import com.aniways.Log;
+import com.aniways.anigram.messenger.R;
+import com.aniways.data.AniwaysNetworkStateChecker;
+import com.aniways.data.AniwaysPrivateConfig;
+
 import org.telegram.messenger.RPCRequest;
 import org.telegram.messenger.TLObject;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.UserConfig;
+import org.telegram.messenger.Utilities;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.SlideView;
 import org.telegram.ui.Components.TypefaceSpan;
 
@@ -79,7 +89,7 @@ import java.util.TimerTask;
 public class LoginActivity extends BaseFragment {
 
     private int currentViewNum = 0;
-    private SlideView[] views = new SlideView[3];
+    private SlideView[] views = new SlideView[5];
     private ProgressDialog progressDialog;
 
     private final static int done_button = 1;
@@ -103,104 +113,72 @@ public class LoginActivity extends BaseFragment {
     }
 
     @Override
-    public View createView(LayoutInflater inflater, ViewGroup container) {
-        if (fragmentView == null) {
-            actionBar.setTitle(LocaleController.getString("AppName", R.string.AppName));
+    public View createView(Context context, LayoutInflater inflater) {
+        actionBar.setTitle(LocaleController.getString("AppName", R.string.AppName));
 
-            actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
-                @Override
-                public void onItemClick(int id) {
-                    if (id == done_button) {
-                        views[currentViewNum].onNextPressed();
-                    }
+        actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
+            @Override
+            public void onItemClick(int id) {
+                if (id == done_button) {
+                    views[currentViewNum].onNextPressed();
+                } else if (id == -1) {
+                    onBackPressed();
                 }
-            });
-
-            ActionBarMenu menu = actionBar.createMenu();
-            menu.addItemWithWidth(done_button, R.drawable.ic_done, AndroidUtilities.dp(56));
-
-            fragmentView = new ScrollView(getParentActivity());
-            ScrollView scrollView = (ScrollView) fragmentView;
-            scrollView.setFillViewport(true);
-
-            FrameLayout frameLayout = new FrameLayout(getParentActivity());
-            scrollView.addView(frameLayout);
-            ScrollView.LayoutParams layoutParams = (ScrollView.LayoutParams) frameLayout.getLayoutParams();
-            layoutParams.width = ScrollView.LayoutParams.MATCH_PARENT;
-            layoutParams.height = ScrollView.LayoutParams.WRAP_CONTENT;
-            layoutParams.gravity = Gravity.TOP | Gravity.LEFT;
-            frameLayout.setLayoutParams(layoutParams);
-
-            views[0] = new PhoneView(getParentActivity());
-            views[0].setVisibility(View.VISIBLE);
-            frameLayout.addView(views[0]);
-            FrameLayout.LayoutParams layoutParams1 = (FrameLayout.LayoutParams) views[0].getLayoutParams();
-            layoutParams1.width = FrameLayout.LayoutParams.MATCH_PARENT;
-            layoutParams1.height = FrameLayout.LayoutParams.WRAP_CONTENT;
-            layoutParams1.leftMargin = AndroidUtilities.dp(16);
-            layoutParams1.rightMargin = AndroidUtilities.dp(16);
-            layoutParams1.topMargin = AndroidUtilities.dp(30);
-            layoutParams1.gravity = Gravity.TOP | Gravity.LEFT;
-            views[0].setLayoutParams(layoutParams1);
-
-            views[1] = new LoginActivitySmsView(getParentActivity());
-            views[1].setVisibility(View.GONE);
-            frameLayout.addView(views[1]);
-            layoutParams1 = (FrameLayout.LayoutParams) views[1].getLayoutParams();
-            layoutParams1.width = FrameLayout.LayoutParams.MATCH_PARENT;
-            layoutParams1.height = FrameLayout.LayoutParams.MATCH_PARENT;
-            layoutParams1.leftMargin = AndroidUtilities.dp(16);
-            layoutParams1.rightMargin = AndroidUtilities.dp(16);
-            layoutParams1.topMargin = AndroidUtilities.dp(30);
-            layoutParams1.gravity = Gravity.TOP | Gravity.LEFT;
-            views[1].setLayoutParams(layoutParams1);
-
-            views[2] = new RegisterView(getParentActivity());
-            views[2].setVisibility(View.GONE);
-            frameLayout.addView(views[2]);
-            layoutParams1 = (FrameLayout.LayoutParams) views[2].getLayoutParams();
-            layoutParams1.width = FrameLayout.LayoutParams.MATCH_PARENT;
-            layoutParams1.height = FrameLayout.LayoutParams.MATCH_PARENT;
-            layoutParams1.leftMargin = AndroidUtilities.dp(16);
-            layoutParams1.rightMargin = AndroidUtilities.dp(16);
-            layoutParams1.topMargin = AndroidUtilities.dp(30);
-            layoutParams1.gravity = Gravity.TOP | Gravity.LEFT;
-            views[2].setLayoutParams(layoutParams1);
-
-            try {
-                if (views[0] == null || views[1] == null || views[2] == null) {
-                    FrameLayout parent = (FrameLayout)((ScrollView) fragmentView).getChildAt(0);
-                    for (int a = 0; a < views.length; a++) {
-                        if (views[a] == null) {
-                            views[a] = (SlideView)parent.getChildAt(a);
-                        }
-                    }
-                }
-            } catch (Exception e) {
-                FileLog.e("tmessages", e);
             }
+        });
 
-            actionBar.setTitle(views[0].getHeaderName());
+        ActionBarMenu menu = actionBar.createMenu();
+        menu.addItemWithWidth(done_button, R.drawable.ic_done, AndroidUtilities.dp(56));
 
-            Bundle savedInstanceState = loadCurrentState();
+        fragmentView = new ScrollView(context);
+        ScrollView scrollView = (ScrollView) fragmentView;
+        scrollView.setFillViewport(true);
+
+        FrameLayout frameLayout = new FrameLayout(context);
+        scrollView.addView(frameLayout);
+        ScrollView.LayoutParams layoutParams = (ScrollView.LayoutParams) frameLayout.getLayoutParams();
+        layoutParams.width = ScrollView.LayoutParams.MATCH_PARENT;
+        layoutParams.height = ScrollView.LayoutParams.WRAP_CONTENT;
+        layoutParams.gravity = Gravity.TOP | Gravity.LEFT;
+        frameLayout.setLayoutParams(layoutParams);
+
+        views[0] = new PhoneView(context);
+        views[1] = new LoginActivitySmsView(context);
+        views[2] = new LoginActivityRegisterView(context);
+        views[3] = new LoginActivityPasswordView(context);
+        views[4] = new LoginActivityRecoverView(context);
+
+        for (int a = 0; a < 5; a++) {
+            views[a].setVisibility(a == 0 ? View.VISIBLE : View.GONE);
+            frameLayout.addView(views[a]);
+            FrameLayout.LayoutParams layoutParams1 = (FrameLayout.LayoutParams) views[a].getLayoutParams();
+            layoutParams1.width = LayoutHelper.MATCH_PARENT;
+            layoutParams1.height = a == 0 ? LayoutHelper.WRAP_CONTENT : LayoutHelper.MATCH_PARENT;
+            layoutParams1.leftMargin = AndroidUtilities.dp(AndroidUtilities.isTablet() ? 26 : 18);
+            layoutParams1.rightMargin = AndroidUtilities.dp(AndroidUtilities.isTablet() ? 26 : 18);
+            layoutParams1.topMargin = AndroidUtilities.dp(30);
+            layoutParams1.gravity = Gravity.TOP | Gravity.LEFT;
+            views[a].setLayoutParams(layoutParams1);
+        }
+
+        Bundle savedInstanceState = loadCurrentState();
+        if (savedInstanceState != null) {
+            currentViewNum = savedInstanceState.getInt("currentViewNum", 0);
+        }
+        actionBar.setTitle(views[currentViewNum].getHeaderName());
+        for (int a = 0; a < views.length; a++) {
             if (savedInstanceState != null) {
-                currentViewNum = savedInstanceState.getInt("currentViewNum", 0);
+                views[a].restoreStateParams(savedInstanceState);
             }
-            for (int a = 0; a < views.length; a++) {
-                SlideView v = views[a];
-                if (v != null) {
-                    if (savedInstanceState != null) {
-                        v.restoreStateParams(savedInstanceState);
-                    }
-                    v.setVisibility(currentViewNum == a ? View.VISIBLE : View.GONE);
-                }
-            }
-        } else {
-            ViewGroup parent = (ViewGroup)fragmentView.getParent();
-            if (parent != null) {
-                parent.removeView(fragmentView);
+            if (currentViewNum == a) {
+                actionBar.setBackButtonImage(views[a].needBackButton() ? R.drawable.ic_ab_back : 0);
+                views[a].setVisibility(View.VISIBLE);
+                views[a].onShow();
+            } else {
+                views[a].setVisibility(View.GONE);
             }
         }
+
         return fragmentView;
     }
 
@@ -279,7 +257,7 @@ public class LoginActivity extends BaseFragment {
                     editor.putInt(key, (Integer) obj);
                 }
             } else if (obj instanceof Bundle) {
-                putBundleToEditor((Bundle)obj, editor, key);
+                putBundleToEditor((Bundle) obj, editor, key);
             }
         }
     }
@@ -294,18 +272,22 @@ public class LoginActivity extends BaseFragment {
             }
             clearCurrentState();
             return true;
-        } else if (currentViewNum != 1 && currentViewNum != 2) {
+        } else if (currentViewNum == 3) {
+            views[currentViewNum].onBackPressed();
             setPage(0, true, null, true);
+        }  else if (currentViewNum == 4) {
+            views[currentViewNum].onBackPressed();
+            setPage(3, true, null, true);
         }
         return false;
     }
 
-    public void needShowAlert(final String text) {
+    public void needShowAlert(String title, String text) {
         if (text == null || getParentActivity() == null) {
             return;
         }
         AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-        builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
+        builder.setTitle(title);
         builder.setMessage(text);
         builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), null);
         showAlertDialog(builder);
@@ -335,10 +317,11 @@ public class LoginActivity extends BaseFragment {
     }
 
     public void setPage(int page, boolean animated, Bundle params, boolean back) {
-        if(android.os.Build.VERSION.SDK_INT > 13) {
+        if (android.os.Build.VERSION.SDK_INT > 13) {
             final SlideView outView = views[currentViewNum];
             final SlideView newView = views[page];
             currentViewNum = page;
+            actionBar.setBackButtonImage(newView.needBackButton() ? R.drawable.ic_ab_back : 0);
 
             newView.setParams(params);
             actionBar.setTitle(newView.getHeaderName());
@@ -382,6 +365,7 @@ public class LoginActivity extends BaseFragment {
                 }
             }).setDuration(300).translationX(0).start();
         } else {
+            actionBar.setBackButtonImage(views[page].needBackButton() ? R.drawable.ic_ab_back : 0);
             views[currentViewNum].setVisibility(View.GONE);
             currentViewNum = page;
             views[page].setParams(params);
@@ -413,22 +397,88 @@ public class LoginActivity extends BaseFragment {
     }
 
     public void needFinishActivity() {
+
+        // Terminate all other sessions on this device, so we get push notifications here..
+        TLRPC.TL_account_getAuthorizations req = new TLRPC.TL_account_getAuthorizations();
+        long reqId = ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
+            @Override
+            public void run(final TLObject response, final TLRPC.TL_error error) {
+                AndroidUtilities.runOnUIThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (error == null) {
+                            Log.i("LoginActivity", "Terminate all other sessions on this device");
+                            TLRPC.TL_account_authorizations res = (TLRPC.TL_account_authorizations) response;
+                            String device = "";
+                            for (TLRPC.TL_authorization authorization : res.authorizations) {
+                                if ((authorization.flags & 1) != 0) {
+                                    Log.i("LoginActivity", "Found current session. Device: " + authorization.device_model + ". Session hash: " + authorization.hash);
+                                    device = authorization.device_model;
+                                } else {
+                                    // Doing nothing, will remove sessions which are not current on this device in the next round
+                                }
+                            }
+                            for (TLRPC.TL_authorization authorization : res.authorizations) {
+                                if ((authorization.flags & 1) != 0) {
+                                    // Doing nothing..
+                                } else {
+                                    Log.i("LoginActivity", "Found non-current session. Device: " + authorization.device_model);
+                                    final TLRPC.TL_authorization finalAuthorization = authorization;
+                                    if(authorization.device_model.equals(device)) {
+                                        Log.i("LoginActivity", "Same device as the current session, so terminating it: " + authorization.device_model + ". Session hash: " + authorization.hash);
+                                        TLRPC.TL_account_resetAuthorization req = new TLRPC.TL_account_resetAuthorization();
+                                        req.hash = authorization.hash;
+                                        ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
+                                            @Override
+                                            public void run(final TLObject response, final TLRPC.TL_error error) {
+                                                AndroidUtilities.runOnUIThread(new Runnable() {
+                                                    @Override
+                                                    public void run() {
+                                                        try {
+                                                            //progressDialog.dismiss();
+                                                        } catch (Exception e) {
+                                                            FileLog.e("tmessages", e);
+                                                        }
+                                                        if (error == null) {
+                                                            Log.i("LoginActivity", "Terminated session on same device: " + finalAuthorization.device_model + ". Session hash: " + finalAuthorization.hash);
+                                                        }
+                                                        else{
+                                                            Log.e(true, "LoginActivity", "Failed to terminate other session on device. Error code: " + (error == null ? "null" : error.code) + ". Error text: " + (error == null ? "null" : error.text) + ". Session hash: " + finalAuthorization.hash);
+                                                        }
+                                                    }
+                                                });
+                                            }
+                                        });
+                                    }
+                                }
+                            }
+                        }
+                        else{
+                            Log.e(true, "LoginActivity", "Failed to list other sessions. Error code: " + (error == null ? "null" : error.code) + ". Error text: " + (error == null ? "null" : error.text));
+                        }
+                    }
+                });
+            }
+        });
+        ConnectionsManager.getInstance().bindRequestToGuid(reqId, classGuid);
+
         clearCurrentState();
         presentFragment(new MessagesActivity(null), true);
         NotificationCenter.getInstance().postNotificationName(NotificationCenter.mainUserInfoChanged);
     }
 
     public class PhoneView extends SlideView implements AdapterView.OnItemSelectedListener {
-
+        private static final String TAG = "AniwaysPhoneView"; //This is the one that matters!
+        private boolean requestInprogress = false;
         private EditText codeField;
         private EditText phoneField;
         private TextView countryButton;
 
         private int countryState = 0;
 
-        private ArrayList<String> countriesArray = new ArrayList<String>();
-        private HashMap<String, String> countriesMap = new HashMap<String, String>();
-        private HashMap<String, String> codesMap = new HashMap<String, String>();
+        private ArrayList<String> countriesArray = new ArrayList<>();
+        private HashMap<String, String> countriesMap = new HashMap<>();
+        private HashMap<String, String> codesMap = new HashMap<>();
 
         private boolean ignoreSelection = false;
         private boolean ignoreOnTextChange = false;
@@ -447,14 +497,12 @@ public class LoginActivity extends BaseFragment {
             countryButton.setMaxLines(1);
             countryButton.setSingleLine(true);
             countryButton.setEllipsize(TextUtils.TruncateAt.END);
-            countryButton.setGravity(Gravity.LEFT | Gravity.CENTER_HORIZONTAL);
+            countryButton.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_HORIZONTAL);
             countryButton.setBackgroundResource(R.drawable.spinner_states);
             addView(countryButton);
             LayoutParams layoutParams = (LayoutParams) countryButton.getLayoutParams();
-            layoutParams.width = LayoutParams.MATCH_PARENT;
+            layoutParams.width = LayoutHelper.MATCH_PARENT;
             layoutParams.height = AndroidUtilities.dp(36);
-            layoutParams.leftMargin = AndroidUtilities.dp(20);
-            layoutParams.rightMargin = AndroidUtilities.dp(20);
             layoutParams.bottomMargin = AndroidUtilities.dp(14);
             countryButton.setLayoutParams(layoutParams);
             countryButton.setOnClickListener(new OnClickListener() {
@@ -477,19 +525,19 @@ public class LoginActivity extends BaseFragment {
             view.setBackgroundColor(0xffdbdbdb);
             addView(view);
             layoutParams = (LayoutParams) view.getLayoutParams();
-            layoutParams.width = LayoutParams.MATCH_PARENT;
+            layoutParams.width = LayoutHelper.MATCH_PARENT;
             layoutParams.height = 1;
-            layoutParams.leftMargin = AndroidUtilities.dp(24);
-            layoutParams.rightMargin = AndroidUtilities.dp(24);
             layoutParams.topMargin = AndroidUtilities.dp(-17.5f);
+            layoutParams.leftMargin = AndroidUtilities.dp(4);
+            layoutParams.rightMargin = AndroidUtilities.dp(4);
             view.setLayoutParams(layoutParams);
 
             LinearLayout linearLayout = new LinearLayout(context);
             linearLayout.setOrientation(HORIZONTAL);
             addView(linearLayout);
             layoutParams = (LayoutParams) linearLayout.getLayoutParams();
-            layoutParams.width = LayoutParams.MATCH_PARENT;
-            layoutParams.height = LayoutParams.WRAP_CONTENT;
+            layoutParams.width = LayoutHelper.MATCH_PARENT;
+            layoutParams.height = LayoutHelper.WRAP_CONTENT;
             layoutParams.topMargin = AndroidUtilities.dp(20);
             linearLayout.setLayoutParams(layoutParams);
 
@@ -499,9 +547,8 @@ public class LoginActivity extends BaseFragment {
             textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
             linearLayout.addView(textView);
             layoutParams = (LayoutParams) textView.getLayoutParams();
-            layoutParams.width = LayoutParams.WRAP_CONTENT;
-            layoutParams.height = LayoutParams.WRAP_CONTENT;
-            layoutParams.leftMargin = AndroidUtilities.dp(24);
+            layoutParams.width = LayoutHelper.WRAP_CONTENT;
+            layoutParams.height = LayoutHelper.WRAP_CONTENT;
             textView.setLayoutParams(layoutParams);
 
             codeField = new EditText(context);
@@ -591,9 +638,8 @@ public class LoginActivity extends BaseFragment {
             phoneField.setImeOptions(EditorInfo.IME_ACTION_NEXT | EditorInfo.IME_FLAG_NO_EXTRACT_UI);
             linearLayout.addView(phoneField);
             layoutParams = (LayoutParams) phoneField.getLayoutParams();
-            layoutParams.width = LayoutParams.MATCH_PARENT;
+            layoutParams.width = LayoutHelper.MATCH_PARENT;
             layoutParams.height = AndroidUtilities.dp(36);
-            layoutParams.rightMargin = AndroidUtilities.dp(24);
             phoneField.setLayoutParams(layoutParams);
             phoneField.addTextChangedListener(new TextWatcher() {
                 @Override
@@ -611,7 +657,7 @@ public class LoginActivity extends BaseFragment {
                             int toDelete = 0;
                             for (int a = start; a >= 0; a--) {
                                 substr = str.substring(a, a + 1);
-                                if(phoneChars.contains(substr)) {
+                                if (phoneChars.contains(substr)) {
                                     break;
                                 }
                                 toDelete++;
@@ -657,20 +703,18 @@ public class LoginActivity extends BaseFragment {
             textView.setText(LocaleController.getString("ChangePhoneHelp", R.string.ChangePhoneHelp));
             textView.setTextColor(0xff757575);
             textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-            textView.setGravity(Gravity.LEFT);
+            textView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
             textView.setLineSpacing(AndroidUtilities.dp(2), 1.0f);
             addView(textView);
             layoutParams = (LayoutParams) textView.getLayoutParams();
-            layoutParams.width = LayoutParams.WRAP_CONTENT;
-            layoutParams.height = LayoutParams.WRAP_CONTENT;
-            layoutParams.leftMargin = AndroidUtilities.dp(24);
-            layoutParams.rightMargin = AndroidUtilities.dp(24);
+            layoutParams.width = LayoutHelper.WRAP_CONTENT;
+            layoutParams.height = LayoutHelper.WRAP_CONTENT;
             layoutParams.topMargin = AndroidUtilities.dp(28);
             layoutParams.bottomMargin = AndroidUtilities.dp(10);
-            layoutParams.gravity = Gravity.LEFT;
+            layoutParams.gravity = LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT;
             textView.setLayoutParams(layoutParams);
 
-            HashMap<String, String> languageMap = new HashMap<String, String>();
+            HashMap<String, String> languageMap = new HashMap<>();
             try {
                 BufferedReader reader = new BufferedReader(new InputStreamReader(getResources().getAssets().open("countries.txt")));
                 String line;
@@ -681,6 +725,7 @@ public class LoginActivity extends BaseFragment {
                     codesMap.put(args[0], args[2]);
                     languageMap.put(args[1], args[2]);
                 }
+                reader.close();
             } catch (Exception e) {
                 FileLog.e("tmessages", e);
             }
@@ -695,7 +740,7 @@ public class LoginActivity extends BaseFragment {
             String country = null;
 
             try {
-                TelephonyManager telephonyManager = (TelephonyManager)ApplicationLoader.applicationContext.getSystemService(Context.TELEPHONY_SERVICE);
+                TelephonyManager telephonyManager = (TelephonyManager) ApplicationLoader.applicationContext.getSystemService(Context.TELEPHONY_SERVICE);
                 if (telephonyManager != null) {
                     country = telephonyManager.getSimCountryIso().toUpperCase();
                 }
@@ -787,14 +832,14 @@ public class LoginActivity extends BaseFragment {
                 return;
             }
             if (countryState == 1) {
-                needShowAlert(LocaleController.getString("ChooseCountry", R.string.ChooseCountry));
+                needShowAlert(LocaleController.getString("AppName", R.string.AppName), LocaleController.getString("ChooseCountry", R.string.ChooseCountry));
                 return;
             } else if (countryState == 2 && !BuildVars.DEBUG_VERSION) {
-                needShowAlert(LocaleController.getString("WrongCountry", R.string.WrongCountry));
+                needShowAlert(LocaleController.getString("AppName", R.string.AppName), LocaleController.getString("WrongCountry", R.string.WrongCountry));
                 return;
             }
             if (codeField.length() == 0) {
-                needShowAlert(LocaleController.getString("InvalidPhoneNumber", R.string.InvalidPhoneNumber));
+                needShowAlert(LocaleController.getString("AppName", R.string.AppName), LocaleController.getString("InvalidPhoneNumber", R.string.InvalidPhoneNumber));
                 return;
             }
             TLRPC.TL_auth_sendCode req = new TLRPC.TL_auth_sendCode();
@@ -804,51 +849,94 @@ public class LoginActivity extends BaseFragment {
             req.api_id = BuildVars.APP_ID;
             req.sms_type = 0;
             req.phone_number = phone;
-            req.lang_code = LocaleController.getLocaleString(Locale.getDefault());
+            req.lang_code = LocaleController.getLocaleString(LocaleController.getInstance().getSystemDefaultLocale());
             if (req.lang_code == null || req.lang_code.length() == 0) {
                 req.lang_code = "en";
             }
 
             final Bundle params = new Bundle();
             params.putString("phone", "+" + codeField.getText() + phoneField.getText());
+            try {
+                params.putString("ephone", "+" + PhoneFormat.stripExceptNumbers(codeField.getText().toString()) + " " + PhoneFormat.stripExceptNumbers(phoneField.getText().toString()));
+            } catch (Exception e) {
+                FileLog.e("tmessages", e);
+                params.putString("ephone", "+" + phone);
+            }
             params.putString("phoneFormated", phone);
             nextPressed = true;
+            this.requestInprogress = true;
             needShowProgress();
+            final long startReqTime = System.currentTimeMillis();
             ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
                 @Override
                 public void run(final TLObject response, final TLRPC.TL_error error) {
                     AndroidUtilities.runOnUIThread(new Runnable() {
                         @Override
                         public void run() {
-                            nextPressed = false;
-                            if (error == null) {
-                                final TLRPC.TL_auth_sentCode res = (TLRPC.TL_auth_sentCode)response;
-                                params.putString("phoneHash", res.phone_code_hash);
-                                params.putInt("calltime", res.send_call_timeout * 1000);
-                                if (res.phone_registered) {
-                                    params.putString("registered", "true");
-                                }
-                                setPage(1, true, params, false);
-                            } else {
-                                if (error.text != null) {
-                                    if (error.text.contains("PHONE_NUMBER_INVALID")) {
-                                        needShowAlert(LocaleController.getString("InvalidPhoneNumber", R.string.InvalidPhoneNumber));
-                                    } else if (error.text.contains("PHONE_CODE_EMPTY") || error.text.contains("PHONE_CODE_INVALID")) {
-                                        needShowAlert(LocaleController.getString("InvalidCode", R.string.InvalidCode));
-                                    } else if (error.text.contains("PHONE_CODE_EXPIRED")) {
-                                        needShowAlert(LocaleController.getString("CodeExpired", R.string.CodeExpired));
-                                    } else if (error.text.startsWith("FLOOD_WAIT")) {
-                                        needShowAlert(LocaleController.getString("FloodWait", R.string.FloodWait));
-                                    } else {
-                                        needShowAlert(error.text);
+                            try {
+                                nextPressed = false;
+                                if (error == null) {
+                                    final TLRPC.TL_auth_sentCode res = (TLRPC.TL_auth_sentCode) response;
+                                    params.putString("phoneHash", res.phone_code_hash);
+                                    params.putInt("calltime", res.send_call_timeout * 1000);
+                                    setPage(1, true, params, false);
+                                } else {
+                                    if (error.text != null) {
+                                        if (error.text.contains("PHONE_NUMBER_INVALID")) {
+                                            needShowAlert(LocaleController.getString("AppName", R.string.AppName), LocaleController.getString("InvalidPhoneNumber", R.string.InvalidPhoneNumber));
+                                        } else if (error.text.contains("PHONE_CODE_EMPTY") || error.text.contains("PHONE_CODE_INVALID")) {
+                                            needShowAlert(LocaleController.getString("AppName", R.string.AppName), LocaleController.getString("InvalidCode", R.string.InvalidCode));
+                                        } else if (error.text.contains("PHONE_CODE_EXPIRED")) {
+                                            needShowAlert(LocaleController.getString("AppName", R.string.AppName), LocaleController.getString("CodeExpired", R.string.CodeExpired));
+                                        } else if (error.text.startsWith("FLOOD_WAIT")) {
+                                            needShowAlert(LocaleController.getString("AppName", R.string.AppName), LocaleController.getString("FloodWait", R.string.FloodWait));
+                                        } else if (error.code != -1000) {
+                                            needShowAlert(LocaleController.getString("AppName", R.string.AppName), error.text);
+                                        }
                                     }
                                 }
+                                needHideProgress();
+                            } catch (Throwable ex) {
+                                Log.e(true, TAG, "Caught exception in phone reg", ex);
+                            } finally {
+                                requestInprogress = false;
                             }
-                            needHideProgress();
                         }
                     });
                 }
             }, true, RPCRequest.RPCRequestClassGeneric | RPCRequest.RPCRequestClassFailOnServerErrors | RPCRequest.RPCRequestClassWithoutLogin | RPCRequest.RPCRequestClassTryDifferentDc | RPCRequest.RPCRequestClassEnableUnauthorized);
+            checkConnection(startReqTime);
+        }
+
+        private void checkConnection(final long startReqTime) {
+            AniwaysNetworkStateChecker.checkInternet(new AniwaysNetworkStateChecker.AniwaysNetworkSateCheckCallback() {
+
+                @Override
+                public void run(boolean connectionAvailable) {
+                    if (!requestInprogress) {
+                        return;
+                    }
+                    if (connectionAvailable) {
+                        long now = System.currentTimeMillis();
+                        if ((now - startReqTime) > AniwaysPrivateConfig.getInstance().phoneRegTimeout) {
+                            Log.e(true, TAG, "Takes long time receiving response in reg process: " + Long.toString(now - startReqTime));
+                            Toast toast = Toast.makeText(getContext(), "Process takes too long. Please re-install app and try again", Toast.LENGTH_LONG);
+                            toast.setGravity(Gravity.CENTER, 0, 0);
+                            toast.show();
+                            needHideProgress();
+                        } else {
+                            Log.i(TAG, "Starting connectivity check again..");
+                            checkConnection(startReqTime);
+                        }
+                    } else {
+                        Log.e(false, TAG, "Error registering phone cause no internet");
+                        Toast toast = Toast.makeText(getContext(), "No internet connection. Please try again once connected", Toast.LENGTH_LONG);
+                        toast.setGravity(Gravity.CENTER, 0, 0);
+                        toast.show();
+                        needHideProgress();
+                    }
+                }
+            });
         }
 
         @Override
@@ -891,10 +979,11 @@ public class LoginActivity extends BaseFragment {
     }
 
     public class LoginActivitySmsView extends SlideView implements NotificationCenter.NotificationCenterDelegate {
-
+        private static final String TAG = "AniwaysLoginActivitySmsView";
+        private boolean requestInprogress = false;
         private String phoneHash;
         private String requestPhone;
-        private String registered;
+        private String emailPhone;
         private EditText codeField;
         private TextView confirmTextView;
         private TextView timeText;
@@ -920,15 +1009,13 @@ public class LoginActivity extends BaseFragment {
             confirmTextView = new TextView(context);
             confirmTextView.setTextColor(0xff757575);
             confirmTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-            confirmTextView.setGravity(Gravity.LEFT);
+            confirmTextView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
             confirmTextView.setLineSpacing(AndroidUtilities.dp(2), 1.0f);
             addView(confirmTextView);
             LayoutParams layoutParams = (LayoutParams) confirmTextView.getLayoutParams();
-            layoutParams.width = LayoutParams.WRAP_CONTENT;
-            layoutParams.height = LayoutParams.WRAP_CONTENT;
-            layoutParams.gravity = Gravity.LEFT;
-            layoutParams.leftMargin = AndroidUtilities.dp(24);
-            layoutParams.rightMargin = AndroidUtilities.dp(24);
+            layoutParams.width = LayoutHelper.WRAP_CONTENT;
+            layoutParams.height = LayoutHelper.WRAP_CONTENT;
+            layoutParams.gravity = LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT;
             confirmTextView.setLayoutParams(layoutParams);
 
             codeField = new EditText(context);
@@ -943,12 +1030,10 @@ public class LoginActivity extends BaseFragment {
             codeField.setPadding(0, 0, 0, 0);
             addView(codeField);
             layoutParams = (LayoutParams) codeField.getLayoutParams();
-            layoutParams.width = LayoutParams.MATCH_PARENT;
+            layoutParams.width = LayoutHelper.MATCH_PARENT;
             layoutParams.height = AndroidUtilities.dp(36);
             layoutParams.gravity = Gravity.CENTER_HORIZONTAL;
             layoutParams.topMargin = AndroidUtilities.dp(20);
-            layoutParams.leftMargin = AndroidUtilities.dp(24);
-            layoutParams.rightMargin = AndroidUtilities.dp(24);
             codeField.setLayoutParams(layoutParams);
             codeField.setOnEditorActionListener(new TextView.OnEditorActionListener() {
                 @Override
@@ -965,33 +1050,29 @@ public class LoginActivity extends BaseFragment {
             timeText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             timeText.setTextColor(0xff757575);
             timeText.setLineSpacing(AndroidUtilities.dp(2), 1.0f);
-            timeText.setGravity(Gravity.LEFT);
+            timeText.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
             addView(timeText);
             layoutParams = (LayoutParams) timeText.getLayoutParams();
-            layoutParams.width = LayoutParams.WRAP_CONTENT;
-            layoutParams.height = LayoutParams.WRAP_CONTENT;
-            layoutParams.gravity = Gravity.LEFT;
+            layoutParams.width = LayoutHelper.WRAP_CONTENT;
+            layoutParams.height = LayoutHelper.WRAP_CONTENT;
+            layoutParams.gravity = LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT;
             layoutParams.topMargin = AndroidUtilities.dp(30);
-            layoutParams.leftMargin = AndroidUtilities.dp(24);
-            layoutParams.rightMargin = AndroidUtilities.dp(24);
             timeText.setLayoutParams(layoutParams);
 
             problemText = new TextView(context);
             problemText.setText(LocaleController.getString("DidNotGetTheCode", R.string.DidNotGetTheCode));
             problemText.setVisibility(time < 1000 ? VISIBLE : GONE);
-            problemText.setGravity(Gravity.LEFT);
+            problemText.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
             problemText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             problemText.setTextColor(0xff4d83b3);
             problemText.setLineSpacing(AndroidUtilities.dp(2), 1.0f);
             problemText.setPadding(0, AndroidUtilities.dp(2), 0, AndroidUtilities.dp(12));
             addView(problemText);
             layoutParams = (LayoutParams) problemText.getLayoutParams();
-            layoutParams.width = LayoutParams.WRAP_CONTENT;
-            layoutParams.height = LayoutParams.WRAP_CONTENT;
-            layoutParams.gravity = Gravity.LEFT;
+            layoutParams.width = LayoutHelper.WRAP_CONTENT;
+            layoutParams.height = LayoutHelper.WRAP_CONTENT;
+            layoutParams.gravity = LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT;
             layoutParams.topMargin = AndroidUtilities.dp(20);
-            layoutParams.leftMargin = AndroidUtilities.dp(24);
-            layoutParams.rightMargin = AndroidUtilities.dp(24);
             problemText.setLayoutParams(layoutParams);
             problemText.setOnClickListener(new OnClickListener() {
                 @Override
@@ -1002,38 +1083,37 @@ public class LoginActivity extends BaseFragment {
 
                         Intent mailer = new Intent(Intent.ACTION_SEND);
                         mailer.setType("message/rfc822");
-                        mailer.putExtra(Intent.EXTRA_EMAIL, new String[]{"sms@telegram.org"});
-                        mailer.putExtra(Intent.EXTRA_SUBJECT, "Android registration/login issue " + version + " " + requestPhone);
+                        mailer.putExtra(Intent.EXTRA_EMAIL, new String[]{"sms@stel.com"});
+                        mailer.putExtra(Intent.EXTRA_SUBJECT, "Android registration/login issue " + version + " " + emailPhone);
                         mailer.putExtra(Intent.EXTRA_TEXT, "Phone: " + requestPhone + "\nApp version: " + version + "\nOS version: SDK " + Build.VERSION.SDK_INT + "\nDevice Name: " + Build.MANUFACTURER + Build.MODEL + "\nLocale: " + Locale.getDefault() + "\nError: " + lastError);
                         getContext().startActivity(Intent.createChooser(mailer, "Send email..."));
                     } catch (Exception e) {
-                        needShowAlert(LocaleController.getString("NoMailInstalled", R.string.NoMailInstalled));
+                        needShowAlert(LocaleController.getString("AppName", R.string.AppName), LocaleController.getString("NoMailInstalled", R.string.NoMailInstalled));
                     }
                 }
             });
 
             LinearLayout linearLayout = new LinearLayout(context);
-            linearLayout.setGravity(Gravity.BOTTOM | Gravity.CENTER_VERTICAL);
+            linearLayout.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL);
             addView(linearLayout);
             layoutParams = (LayoutParams) linearLayout.getLayoutParams();
-            layoutParams.width = LayoutParams.MATCH_PARENT;
-            layoutParams.height = LayoutParams.MATCH_PARENT;
+            layoutParams.width = LayoutHelper.MATCH_PARENT;
+            layoutParams.height = LayoutHelper.MATCH_PARENT;
+            layoutParams.gravity = (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
             linearLayout.setLayoutParams(layoutParams);
 
             TextView wrongNumber = new TextView(context);
-            wrongNumber.setGravity(Gravity.LEFT | Gravity.CENTER_HORIZONTAL);
+            wrongNumber.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_HORIZONTAL);
             wrongNumber.setTextColor(0xff4d83b3);
             wrongNumber.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             wrongNumber.setLineSpacing(AndroidUtilities.dp(2), 1.0f);
             wrongNumber.setPadding(0, AndroidUtilities.dp(24), 0, 0);
             linearLayout.addView(wrongNumber);
             layoutParams = (LayoutParams) wrongNumber.getLayoutParams();
-            layoutParams.width = LayoutParams.WRAP_CONTENT;
-            layoutParams.height = LayoutParams.WRAP_CONTENT;
-            layoutParams.gravity = Gravity.BOTTOM | Gravity.LEFT;
+            layoutParams.width = LayoutHelper.WRAP_CONTENT;
+            layoutParams.height = LayoutHelper.WRAP_CONTENT;
+            layoutParams.gravity = Gravity.BOTTOM | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
             layoutParams.bottomMargin = AndroidUtilities.dp(10);
-            layoutParams.leftMargin = AndroidUtilities.dp(24);
-            layoutParams.rightMargin = AndroidUtilities.dp(24);
             wrongNumber.setLayoutParams(layoutParams);
             wrongNumber.setText(LocaleController.getString("WrongNumber", R.string.WrongNumber));
             wrongNumber.setOnClickListener(new OnClickListener() {
@@ -1061,9 +1141,9 @@ public class LoginActivity extends BaseFragment {
             currentParams = params;
             waitingForSms = true;
             String phone = params.getString("phone");
+            emailPhone = params.getString("ephone");
             requestPhone = params.getString("phoneFormated");
             phoneHash = params.getString("phoneHash");
-            registered = params.getString("registered");
             time = params.getInt("calltime");
 
             if (phone == null) {
@@ -1071,7 +1151,7 @@ public class LoginActivity extends BaseFragment {
             }
 
             String number = PhoneFormat.getInstance().format(phone);
-            String str = String.format(Locale.US, LocaleController.getString("SentSmsCode", R.string.SentSmsCode) + " %s", number);
+            String str = String.format(LocaleController.getString("SentSmsCode", R.string.SentSmsCode) + " %s", number);
             try {
                 SpannableStringBuilder stringBuilder = new SpannableStringBuilder(str);
                 TypefaceSpan span = new TypefaceSpan(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
@@ -1124,7 +1204,7 @@ public class LoginActivity extends BaseFragment {
 
         private void destroyCodeTimer() {
             try {
-                synchronized(timerSync) {
+                synchronized (timerSync) {
                     if (codeTimer != null) {
                         codeTimer.cancel();
                         codeTimer = null;
@@ -1183,7 +1263,7 @@ public class LoginActivity extends BaseFragment {
 
         private void destroyTimer() {
             try {
-                synchronized(timerSync) {
+                synchronized (timerSync) {
                     if (timeTimer != null) {
                         timeTimer.cancel();
                         timeTimer = null;
@@ -1208,62 +1288,139 @@ public class LoginActivity extends BaseFragment {
             req.phone_code = codeField.getText().toString();
             req.phone_code_hash = phoneHash;
             destroyTimer();
+            this.requestInprogress = true;
             needShowProgress();
+            final long startReqTime = System.currentTimeMillis();
             ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
                 @Override
                 public void run(final TLObject response, final TLRPC.TL_error error) {
                     AndroidUtilities.runOnUIThread(new Runnable() {
                         @Override
                         public void run() {
-                            needHideProgress();
-                            nextPressed = false;
-                            if (error == null) {
-                                TLRPC.TL_auth_authorization res = (TLRPC.TL_auth_authorization)response;
-                                destroyTimer();
-                                destroyCodeTimer();
-                                UserConfig.clearConfig();
-                                MessagesController.getInstance().cleanUp();
-                                UserConfig.setCurrentUser(res.user);
-                                UserConfig.saveConfig(true);
-                                MessagesStorage.getInstance().cleanUp(true);
-                                ArrayList<TLRPC.User> users = new ArrayList<TLRPC.User>();
-                                users.add(res.user);
-                                MessagesStorage.getInstance().putUsersAndChats(users, null, true, true);
-                                MessagesController.getInstance().putUser(res.user, false);
-                                ContactsController.getInstance().checkAppAccount();
-                                MessagesController.getInstance().getBlockedUsers(true);
-                                needFinishActivity();
-                                ConnectionsManager.getInstance().initPushConnection();
-                            } else {
-                                lastError = error.text;
-
-                                if (error.text.contains("PHONE_NUMBER_UNOCCUPIED") && registered == null) {
-                                    Bundle params = new Bundle();
-                                    params.putString("phoneFormated", requestPhone);
-                                    params.putString("phoneHash", phoneHash);
-                                    params.putString("code", req.phone_code);
-                                    setPage(2, true, params, false);
+                            try {
+                                nextPressed = false;
+                                if (error == null) {
+                                    needHideProgress();
+                                    TLRPC.TL_auth_authorization res = (TLRPC.TL_auth_authorization) response;
                                     destroyTimer();
                                     destroyCodeTimer();
+                                    UserConfig.clearConfig();
+                                    MessagesController.getInstance().cleanUp();
+                                    UserConfig.setCurrentUser(res.user);
+                                    UserConfig.saveConfig(true);
+                                    MessagesStorage.getInstance().cleanUp(true);
+                                    ArrayList<TLRPC.User> users = new ArrayList<>();
+                                    users.add(res.user);
+                                    MessagesStorage.getInstance().putUsersAndChats(users, null, true, true);
+                                    MessagesController.getInstance().putUser(res.user, false);
+                                    ContactsController.getInstance().checkAppAccount();
+                                    MessagesController.getInstance().getBlockedUsers(true);
+                                    needFinishActivity();
+                                    ConnectionsManager.getInstance().initPushConnection();
+                                    Utilities.stageQueue.postRunnable(new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            ConnectionsManager.getInstance().updateDcSettings(0);
+                                        }
+                                    });
                                 } else {
-                                    createTimer();
-                                    if (error.text.contains("PHONE_NUMBER_INVALID")) {
-                                        needShowAlert(LocaleController.getString("InvalidPhoneNumber", R.string.InvalidPhoneNumber));
-                                    } else if (error.text.contains("PHONE_CODE_EMPTY") || error.text.contains("PHONE_CODE_INVALID")) {
-                                        needShowAlert(LocaleController.getString("InvalidCode", R.string.InvalidCode));
-                                    } else if (error.text.contains("PHONE_CODE_EXPIRED")) {
-                                        needShowAlert(LocaleController.getString("CodeExpired", R.string.CodeExpired));
-                                    } else if (error.text.startsWith("FLOOD_WAIT")) {
-                                        needShowAlert(LocaleController.getString("FloodWait", R.string.FloodWait));
+                                    lastError = error.text;
+
+                                    if (error.text.contains("PHONE_NUMBER_UNOCCUPIED")) {
+                                        needHideProgress();
+                                        Bundle params = new Bundle();
+                                        params.putString("phoneFormated", requestPhone);
+                                        params.putString("phoneHash", phoneHash);
+                                        params.putString("code", req.phone_code);
+                                        setPage(2, true, params, false);
+                                        destroyTimer();
+                                        destroyCodeTimer();
+                                    } else if (error.text.contains("SESSION_PASSWORD_NEEDED")) {
+                                        TLRPC.TL_account_getPassword req2 = new TLRPC.TL_account_getPassword();
+                                        ConnectionsManager.getInstance().performRpc(req2, new RPCRequest.RPCRequestDelegate() {
+                                            @Override
+                                            public void run(final TLObject response, final TLRPC.TL_error error) {
+                                                AndroidUtilities.runOnUIThread(new Runnable() {
+                                                    @Override
+                                                    public void run() {
+                                                        needHideProgress();
+                                                        if (error == null) {
+                                                            TLRPC.TL_account_password password = (TLRPC.TL_account_password) response;
+                                                            Bundle bundle = new Bundle();
+                                                            bundle.putString("current_salt", Utilities.bytesToHex(password.current_salt));
+                                                            bundle.putString("hint", password.hint);
+                                                            bundle.putString("email_unconfirmed_pattern", password.email_unconfirmed_pattern);
+                                                            bundle.putString("phoneFormated", requestPhone);
+                                                            bundle.putString("phoneHash", phoneHash);
+                                                            bundle.putString("code", req.phone_code);
+                                                            bundle.putInt("has_recovery", password.has_recovery ? 1 : 0);
+                                                            setPage(3, true, bundle, false);
+                                                        } else {
+                                                            needShowAlert(LocaleController.getString("AppName", R.string.AppName), error.text);
+                                                        }
+                                                    }
+                                                });
+                                            }
+                                        }, true, RPCRequest.RPCRequestClassGeneric | RPCRequest.RPCRequestClassFailOnServerErrors | RPCRequest.RPCRequestClassWithoutLogin);
+                                        destroyTimer();
+                                        destroyCodeTimer();
                                     } else {
-                                        needShowAlert(error.text);
+                                        needHideProgress();
+                                        createTimer();
+                                        if (error.text.contains("PHONE_NUMBER_INVALID")) {
+                                            needShowAlert(LocaleController.getString("AppName", R.string.AppName), LocaleController.getString("InvalidPhoneNumber", R.string.InvalidPhoneNumber));
+                                        } else if (error.text.contains("PHONE_CODE_EMPTY") || error.text.contains("PHONE_CODE_INVALID")) {
+                                            needShowAlert(LocaleController.getString("AppName", R.string.AppName), LocaleController.getString("InvalidCode", R.string.InvalidCode));
+                                        } else if (error.text.contains("PHONE_CODE_EXPIRED")) {
+                                            needShowAlert(LocaleController.getString("AppName", R.string.AppName), LocaleController.getString("CodeExpired", R.string.CodeExpired));
+                                        } else if (error.text.startsWith("FLOOD_WAIT")) {
+                                            needShowAlert(LocaleController.getString("AppName", R.string.AppName), LocaleController.getString("FloodWait", R.string.FloodWait));
+                                        } else {
+                                            needShowAlert(LocaleController.getString("AppName", R.string.AppName), error.text);
+                                        }
                                     }
                                 }
+                            } catch (Throwable ex) {
+                                Log.e(true, TAG, "Caught exception in phone reg", ex);
+                            } finally {
+                                requestInprogress = false;
                             }
                         }
                     });
                 }
             }, true, RPCRequest.RPCRequestClassGeneric | RPCRequest.RPCRequestClassFailOnServerErrors | RPCRequest.RPCRequestClassWithoutLogin);
+            checkConnection(startReqTime);
+        }
+
+        private void checkConnection(final long startReqTime) {
+            AniwaysNetworkStateChecker.checkInternet(new AniwaysNetworkStateChecker.AniwaysNetworkSateCheckCallback() {
+
+                @Override
+                public void run(boolean connectionAvailable) {
+                    if (!requestInprogress) {
+                        return;
+                    }
+                    if (connectionAvailable) {
+                        long now = System.currentTimeMillis();
+                        if ((now - startReqTime) > AniwaysPrivateConfig.getInstance().phoneRegTimeout) {
+                            Log.e(true, TAG, "Takes long time receiving response in reg process: " + Long.toString(now - startReqTime));
+                            Toast toast = Toast.makeText(getContext(), "Process takes too long. Please re-install app and try again", Toast.LENGTH_LONG);
+                            toast.setGravity(Gravity.CENTER, 0, 0);
+                            toast.show();
+                            needHideProgress();
+                        } else {
+                            Log.i(TAG, "Starting connectivity check again..");
+                            checkConnection(startReqTime);
+                        }
+                    } else {
+                        Log.e(false, TAG, "Error registering phone cause no internet");
+                        Toast toast = Toast.makeText(getContext(), "No internet connection. Please try again once connected", Toast.LENGTH_LONG);
+                        toast.setGravity(Gravity.CENTER, 0, 0);
+                        toast.show();
+                        needHideProgress();
+                    }
+                }
+            });
         }
 
         @Override
@@ -1344,8 +1501,638 @@ public class LoginActivity extends BaseFragment {
         }
     }
 
-    public class RegisterView extends SlideView {
+    public class LoginActivityPasswordView extends SlideView {
 
+        private EditText codeField;
+        private TextView confirmTextView;
+        private TextView resetAccountButton;
+        private TextView resetAccountText;
+
+        private Bundle currentParams;
+        private boolean nextPressed;
+        private byte[] current_salt;
+        private String hint;
+        private String email_unconfirmed_pattern;
+        private boolean has_recovery;
+        private String requestPhone;
+        private String phoneHash;
+        private String phoneCode;
+
+        public LoginActivityPasswordView(Context context) {
+            super(context);
+
+            setOrientation(VERTICAL);
+
+            confirmTextView = new TextView(context);
+            confirmTextView.setTextColor(0xff757575);
+            confirmTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+            confirmTextView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
+            confirmTextView.setLineSpacing(AndroidUtilities.dp(2), 1.0f);
+            confirmTextView.setText(LocaleController.getString("LoginPasswordText", R.string.LoginPasswordText));
+            addView(confirmTextView);
+            LayoutParams layoutParams = (LayoutParams) confirmTextView.getLayoutParams();
+            layoutParams.width = LayoutHelper.WRAP_CONTENT;
+            layoutParams.height = LayoutHelper.WRAP_CONTENT;
+            layoutParams.gravity = LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT;
+            confirmTextView.setLayoutParams(layoutParams);
+
+            codeField = new EditText(context);
+            codeField.setTextColor(0xff212121);
+            AndroidUtilities.clearCursorDrawable(codeField);
+            codeField.setHintTextColor(0xff979797);
+            codeField.setHint(LocaleController.getString("LoginPassword", R.string.LoginPassword));
+            codeField.setImeOptions(EditorInfo.IME_ACTION_NEXT | EditorInfo.IME_FLAG_NO_EXTRACT_UI);
+            codeField.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
+            codeField.setMaxLines(1);
+            codeField.setPadding(0, 0, 0, 0);
+            codeField.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
+            codeField.setTransformationMethod(PasswordTransformationMethod.getInstance());
+            codeField.setTypeface(Typeface.DEFAULT);
+            codeField.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
+            addView(codeField);
+            layoutParams = (LayoutParams) codeField.getLayoutParams();
+            layoutParams.width = LayoutHelper.MATCH_PARENT;
+            layoutParams.height = AndroidUtilities.dp(36);
+            layoutParams.gravity = Gravity.CENTER_HORIZONTAL;
+            layoutParams.topMargin = AndroidUtilities.dp(20);
+            codeField.setLayoutParams(layoutParams);
+            codeField.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+                @Override
+                public boolean onEditorAction(TextView textView, int i, KeyEvent keyEvent) {
+                    if (i == EditorInfo.IME_ACTION_NEXT) {
+                        onNextPressed();
+                        return true;
+                    }
+                    return false;
+                }
+            });
+
+            TextView cancelButton = new TextView(context);
+            cancelButton.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
+            cancelButton.setTextColor(0xff4d83b3);
+            cancelButton.setText(LocaleController.getString("ForgotPassword", R.string.ForgotPassword));
+            cancelButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+            cancelButton.setLineSpacing(AndroidUtilities.dp(2), 1.0f);
+            cancelButton.setPadding(0, AndroidUtilities.dp(14), 0, 0);
+            addView(cancelButton);
+            layoutParams = (LayoutParams) cancelButton.getLayoutParams();
+            layoutParams.width = LayoutHelper.WRAP_CONTENT;
+            layoutParams.height = LayoutHelper.WRAP_CONTENT;
+            layoutParams.gravity = Gravity.TOP | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
+            cancelButton.setLayoutParams(layoutParams);
+            cancelButton.setOnClickListener(new OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    if (has_recovery) {
+                        needShowProgress();
+                        TLRPC.TL_auth_requestPasswordRecovery req = new TLRPC.TL_auth_requestPasswordRecovery();
+                        ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
+                            @Override
+                            public void run(final TLObject response, final TLRPC.TL_error error) {
+                                AndroidUtilities.runOnUIThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        needHideProgress();
+                                        if (error == null) {
+                                            final TLRPC.TL_auth_passwordRecovery res = (TLRPC.TL_auth_passwordRecovery) response;
+                                            AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                                            builder.setMessage(LocaleController.formatString("RestoreEmailSent", R.string.RestoreEmailSent, res.email_pattern));
+                                            builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
+                                            builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), new DialogInterface.OnClickListener() {
+                                                @Override
+                                                public void onClick(DialogInterface dialogInterface, int i) {
+                                                    Bundle bundle = new Bundle();
+                                                    bundle.putString("email_unconfirmed_pattern", res.email_pattern);
+                                                    setPage(4, true, bundle, false);
+                                                }
+                                            });
+                                            AlertDialog dialog = showAlertDialog(builder);
+                                            if (dialog != null) {
+                                                dialog.setCanceledOnTouchOutside(false);
+                                                dialog.setCancelable(false);
+                                            }
+                                        } else {
+                                            if (error.text.startsWith("FLOOD_WAIT")) {
+                                                int time = Utilities.parseInt(error.text);
+                                                String timeString;
+                                                if (time < 60) {
+                                                    timeString = LocaleController.formatPluralString("Seconds", time);
+                                                } else {
+                                                    timeString = LocaleController.formatPluralString("Minutes", time / 60);
+                                                }
+                                                needShowAlert(LocaleController.getString("AppName", R.string.AppName), LocaleController.formatString("FloodWaitTime", R.string.FloodWaitTime, timeString));
+                                            } else {
+                                                needShowAlert(LocaleController.getString("AppName", R.string.AppName), error.text);
+                                            }
+                                        }
+                                    }
+                                });
+                            }
+                        }, true, RPCRequest.RPCRequestClassGeneric | RPCRequest.RPCRequestClassFailOnServerErrors | RPCRequest.RPCRequestClassWithoutLogin);
+                    } else {
+                        resetAccountText.setVisibility(VISIBLE);
+                        resetAccountButton.setVisibility(VISIBLE);
+                        AndroidUtilities.hideKeyboard(codeField);
+                        needShowAlert(LocaleController.getString("RestorePasswordNoEmailTitle", R.string.RestorePasswordNoEmailTitle), LocaleController.getString("RestorePasswordNoEmailText", R.string.RestorePasswordNoEmailText));
+                    }
+                }
+            });
+
+            resetAccountButton = new TextView(context);
+            resetAccountButton.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
+            resetAccountButton.setTextColor(0xffff6666);
+            resetAccountButton.setVisibility(GONE);
+            resetAccountButton.setText(LocaleController.getString("ResetMyAccount", R.string.ResetMyAccount));
+            resetAccountButton.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            resetAccountButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+            resetAccountButton.setLineSpacing(AndroidUtilities.dp(2), 1.0f);
+            resetAccountButton.setPadding(0, AndroidUtilities.dp(14), 0, 0);
+            addView(resetAccountButton);
+            layoutParams = (LayoutParams) resetAccountButton.getLayoutParams();
+            layoutParams.width = LayoutHelper.WRAP_CONTENT;
+            layoutParams.height = LayoutHelper.WRAP_CONTENT;
+            layoutParams.gravity = Gravity.TOP | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
+            layoutParams.topMargin = AndroidUtilities.dp(34);
+            resetAccountButton.setLayoutParams(layoutParams);
+            resetAccountButton.setOnClickListener(new OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                    builder.setMessage(LocaleController.getString("ResetMyAccountWarningText", R.string.ResetMyAccountWarningText));
+                    builder.setTitle(LocaleController.getString("ResetMyAccountWarning", R.string.ResetMyAccountWarning));
+                    builder.setPositiveButton(LocaleController.getString("ResetMyAccountWarningReset", R.string.ResetMyAccountWarningReset), new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialogInterface, int i) {
+                            needShowProgress();
+                            TLRPC.TL_account_deleteAccount req = new TLRPC.TL_account_deleteAccount();
+                            req.reason = "Forgot password";
+                            ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
+                                @Override
+                                public void run(TLObject response, final TLRPC.TL_error error) {
+                                    AndroidUtilities.runOnUIThread(new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            needHideProgress();
+                                            if (error == null) {
+                                                Bundle params = new Bundle();
+                                                params.putString("phoneFormated", requestPhone);
+                                                params.putString("phoneHash", phoneHash);
+                                                params.putString("code", phoneCode);
+                                                setPage(2, true, params, false);
+                                            } else {
+                                                needShowAlert(LocaleController.getString("AppName", R.string.AppName), error.text);
+                                            }
+                                        }
+                                    });
+                                }
+                            }, true, RPCRequest.RPCRequestClassGeneric | RPCRequest.RPCRequestClassWithoutLogin | RPCRequest.RPCRequestClassFailOnServerErrors);
+                        }
+                    });
+                    builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+                    showAlertDialog(builder);
+                }
+            });
+
+            resetAccountText = new TextView(context);
+            resetAccountText.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
+            resetAccountText.setVisibility(GONE);
+            resetAccountText.setTextColor(0xff757575);
+            resetAccountText.setText(LocaleController.getString("ResetMyAccountText", R.string.ResetMyAccountText));
+            resetAccountText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+            resetAccountText.setLineSpacing(AndroidUtilities.dp(2), 1.0f);
+            addView(resetAccountText);
+            layoutParams = (LayoutParams) resetAccountText.getLayoutParams();
+            layoutParams.width = LayoutHelper.WRAP_CONTENT;
+            layoutParams.height = LayoutHelper.WRAP_CONTENT;
+            layoutParams.gravity = Gravity.TOP | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
+            layoutParams.bottomMargin = AndroidUtilities.dp(14);
+            layoutParams.topMargin = AndroidUtilities.dp(7);
+            resetAccountText.setLayoutParams(layoutParams);
+        }
+
+        @Override
+        public String getHeaderName() {
+            return LocaleController.getString("LoginPassword", R.string.LoginPassword);
+        }
+
+        @Override
+        public void setParams(Bundle params) {
+            if (params == null) {
+                return;
+            }
+            if (params.isEmpty()) {
+                resetAccountButton.setVisibility(VISIBLE);
+                resetAccountText.setVisibility(VISIBLE);
+                AndroidUtilities.hideKeyboard(codeField);
+                return;
+            }
+            resetAccountButton.setVisibility(GONE);
+            resetAccountText.setVisibility(GONE);
+            codeField.setText("");
+            currentParams = params;
+            current_salt = Utilities.hexToBytes(currentParams.getString("current_salt"));
+            hint = currentParams.getString("hint");
+            has_recovery = currentParams.getInt("has_recovery") == 1;
+            email_unconfirmed_pattern = currentParams.getString("email_unconfirmed_pattern");
+            requestPhone = params.getString("phoneFormated");
+            phoneHash = params.getString("phoneHash");
+            phoneCode = params.getString("code");
+
+            AndroidUtilities.showKeyboard(codeField);
+            codeField.requestFocus();
+
+
+            if (hint != null && hint.length() > 0) {
+                codeField.setHint(hint);
+            } else {
+                codeField.setHint(LocaleController.getString("LoginPassword", R.string.LoginPassword));
+            }
+        }
+
+        private void onPasscodeError(boolean clear) {
+            if (getParentActivity() == null) {
+                return;
+            }
+            Vibrator v = (Vibrator) getParentActivity().getSystemService(Context.VIBRATOR_SERVICE);
+            if (v != null) {
+                v.vibrate(200);
+            }
+            if (clear) {
+                codeField.setText("");
+            }
+            AndroidUtilities.shakeTextView(confirmTextView, 2, 0);
+        }
+
+        @Override
+        public void onNextPressed() {
+            if (nextPressed) {
+                return;
+            }
+
+            String oldPassword = codeField.getText().toString();
+            if (oldPassword.length() == 0) {
+                onPasscodeError(false);
+                return;
+            }
+            nextPressed = true;
+            byte[] oldPasswordBytes = null;
+            try {
+                oldPasswordBytes = oldPassword.getBytes("UTF-8");
+            } catch (Exception e) {
+                FileLog.e("tmessages", e);
+            }
+
+            needShowProgress();
+            byte[] hash = new byte[current_salt.length * 2 + oldPasswordBytes.length];
+            System.arraycopy(current_salt, 0, hash, 0, current_salt.length);
+            System.arraycopy(oldPasswordBytes, 0, hash, current_salt.length, oldPasswordBytes.length);
+            System.arraycopy(current_salt, 0, hash, hash.length - current_salt.length, current_salt.length);
+
+            final TLRPC.TL_auth_checkPassword req = new TLRPC.TL_auth_checkPassword();
+            req.password_hash = Utilities.computeSHA256(hash, 0, hash.length);
+            ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
+                @Override
+                public void run(final TLObject response, final TLRPC.TL_error error) {
+                    AndroidUtilities.runOnUIThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            needHideProgress();
+                            nextPressed = false;
+                            if (error == null) {
+                                TLRPC.TL_auth_authorization res = (TLRPC.TL_auth_authorization) response;
+                                UserConfig.clearConfig();
+                                MessagesController.getInstance().cleanUp();
+                                UserConfig.setCurrentUser(res.user);
+                                UserConfig.saveConfig(true);
+                                MessagesStorage.getInstance().cleanUp(true);
+                                ArrayList<TLRPC.User> users = new ArrayList<>();
+                                users.add(res.user);
+                                MessagesStorage.getInstance().putUsersAndChats(users, null, true, true);
+                                MessagesController.getInstance().putUser(res.user, false);
+                                ContactsController.getInstance().checkAppAccount();
+                                MessagesController.getInstance().getBlockedUsers(true);
+                                needFinishActivity();
+                                ConnectionsManager.getInstance().initPushConnection();
+                                Utilities.stageQueue.postRunnable(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        ConnectionsManager.getInstance().updateDcSettings(0);
+                                    }
+                                });
+                            } else {
+                                if (error.text.equals("PASSWORD_HASH_INVALID")) {
+                                    onPasscodeError(true);
+                                } else if (error.text.startsWith("FLOOD_WAIT")) {
+                                    int time = Utilities.parseInt(error.text);
+                                    String timeString;
+                                    if (time < 60) {
+                                        timeString = LocaleController.formatPluralString("Seconds", time);
+                                    } else {
+                                        timeString = LocaleController.formatPluralString("Minutes", time / 60);
+                                    }
+                                    needShowAlert(LocaleController.getString("AppName", R.string.AppName), LocaleController.formatString("FloodWaitTime", R.string.FloodWaitTime, timeString));
+                                } else {
+                                    needShowAlert(LocaleController.getString("AppName", R.string.AppName), error.text);
+                                }
+                            }
+                        }
+                    });
+                }
+            }, true, RPCRequest.RPCRequestClassGeneric | RPCRequest.RPCRequestClassFailOnServerErrors | RPCRequest.RPCRequestClassWithoutLogin);
+        }
+
+        @Override
+        public boolean needBackButton() {
+            return true;
+        }
+
+        @Override
+        public void onBackPressed() {
+            currentParams = null;
+        }
+
+        @Override
+        public void onShow() {
+            super.onShow();
+            if (codeField != null) {
+                codeField.requestFocus();
+                codeField.setSelection(codeField.length());
+            }
+        }
+
+        @Override
+        public void saveStateParams(Bundle bundle) {
+            String code = codeField.getText().toString();
+            if (code != null && code.length() != 0) {
+                bundle.putString("passview_code", code);
+            }
+            if (currentParams != null) {
+                bundle.putBundle("passview_params", currentParams);
+            }
+        }
+
+        @Override
+        public void restoreStateParams(Bundle bundle) {
+            currentParams = bundle.getBundle("passview_params");
+            if (currentParams != null) {
+                setParams(currentParams);
+            }
+            String code = bundle.getString("passview_code");
+            if (code != null) {
+                codeField.setText(code);
+            }
+        }
+    }
+
+    public class LoginActivityRecoverView extends SlideView {
+
+        private EditText codeField;
+        private TextView confirmTextView;
+        private TextView cancelButton;
+
+        private Bundle currentParams;
+        private boolean nextPressed;
+        private String email_unconfirmed_pattern;
+
+        public LoginActivityRecoverView(Context context) {
+            super(context);
+
+            setOrientation(VERTICAL);
+
+            confirmTextView = new TextView(context);
+            confirmTextView.setTextColor(0xff757575);
+            confirmTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+            confirmTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT));
+            confirmTextView.setLineSpacing(AndroidUtilities.dp(2), 1.0f);
+            confirmTextView.setText(LocaleController.getString("RestoreEmailSentInfo", R.string.RestoreEmailSentInfo));
+            addView(confirmTextView);
+            LayoutParams layoutParams = (LayoutParams) confirmTextView.getLayoutParams();
+            layoutParams.width = LayoutHelper.WRAP_CONTENT;
+            layoutParams.height = LayoutHelper.WRAP_CONTENT;
+            layoutParams.gravity = (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
+            confirmTextView.setLayoutParams(layoutParams);
+
+            codeField = new EditText(context);
+            codeField.setTextColor(0xff212121);
+            AndroidUtilities.clearCursorDrawable(codeField);
+            codeField.setHintTextColor(0xff979797);
+            codeField.setHint(LocaleController.getString("PasswordCode", R.string.PasswordCode));
+            codeField.setImeOptions(EditorInfo.IME_ACTION_NEXT | EditorInfo.IME_FLAG_NO_EXTRACT_UI);
+            codeField.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
+            codeField.setMaxLines(1);
+            codeField.setPadding(0, 0, 0, 0);
+            codeField.setInputType(InputType.TYPE_CLASS_PHONE);
+            codeField.setTransformationMethod(PasswordTransformationMethod.getInstance());
+            codeField.setTypeface(Typeface.DEFAULT);
+            codeField.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
+            addView(codeField);
+            layoutParams = (LayoutParams) codeField.getLayoutParams();
+            layoutParams.width = LayoutHelper.MATCH_PARENT;
+            layoutParams.height = AndroidUtilities.dp(36);
+            layoutParams.gravity = Gravity.CENTER_HORIZONTAL;
+            layoutParams.topMargin = AndroidUtilities.dp(20);
+            codeField.setLayoutParams(layoutParams);
+            codeField.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+                @Override
+                public boolean onEditorAction(TextView textView, int i, KeyEvent keyEvent) {
+                    if (i == EditorInfo.IME_ACTION_NEXT) {
+                        onNextPressed();
+                        return true;
+                    }
+                    return false;
+                }
+            });
+
+            cancelButton = new TextView(context);
+            cancelButton.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.BOTTOM);
+            cancelButton.setTextColor(0xff4d83b3);
+            cancelButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+            cancelButton.setLineSpacing(AndroidUtilities.dp(2), 1.0f);
+            cancelButton.setPadding(0, AndroidUtilities.dp(14), 0, 0);
+            addView(cancelButton);
+            layoutParams = (LayoutParams) cancelButton.getLayoutParams();
+            layoutParams.width = LayoutHelper.WRAP_CONTENT;
+            layoutParams.height = LayoutHelper.WRAP_CONTENT;
+            layoutParams.gravity = Gravity.BOTTOM | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
+            layoutParams.bottomMargin = AndroidUtilities.dp(14);
+            cancelButton.setLayoutParams(layoutParams);
+            cancelButton.setOnClickListener(new OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                    builder.setMessage(LocaleController.getString("RestoreEmailTroubleText", R.string.RestoreEmailTroubleText));
+                    builder.setTitle(LocaleController.getString("RestorePasswordNoEmailTitle", R.string.RestorePasswordNoEmailTitle));
+                    builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialogInterface, int i) {
+                            setPage(3, true, new Bundle(), true);
+                        }
+                    });
+                    AlertDialog dialog = showAlertDialog(builder);
+                    if (dialog != null) {
+                        dialog.setCanceledOnTouchOutside(false);
+                        dialog.setCancelable(false);
+                    }
+                }
+            });
+        }
+
+        @Override
+        public boolean needBackButton() {
+            return true;
+        }
+
+        @Override
+        public String getHeaderName() {
+            return LocaleController.getString("LoginPassword", R.string.LoginPassword);
+        }
+
+        @Override
+        public void setParams(Bundle params) {
+            if (params == null) {
+                return;
+            }
+            codeField.setText("");
+            currentParams = params;
+            email_unconfirmed_pattern = currentParams.getString("email_unconfirmed_pattern");
+            cancelButton.setText(LocaleController.formatString("RestoreEmailTrouble", R.string.RestoreEmailTrouble, email_unconfirmed_pattern));
+
+            AndroidUtilities.showKeyboard(codeField);
+            codeField.requestFocus();
+        }
+
+        private void onPasscodeError(boolean clear) {
+            if (getParentActivity() == null) {
+                return;
+            }
+            Vibrator v = (Vibrator) getParentActivity().getSystemService(Context.VIBRATOR_SERVICE);
+            if (v != null) {
+                v.vibrate(200);
+            }
+            if (clear) {
+                codeField.setText("");
+            }
+            AndroidUtilities.shakeTextView(confirmTextView, 2, 0);
+        }
+
+        @Override
+        public void onNextPressed() {
+            if (nextPressed) {
+                return;
+            }
+
+            String oldPassword = codeField.getText().toString();
+            if (oldPassword.length() == 0) {
+                onPasscodeError(false);
+                return;
+            }
+            nextPressed = true;
+            byte[] oldPasswordBytes = null;
+            try {
+                oldPasswordBytes = oldPassword.getBytes("UTF-8");
+            } catch (Exception e) {
+                FileLog.e("tmessages", e);
+            }
+
+            String code = codeField.getText().toString();
+            if (code.length() == 0) {
+                onPasscodeError(false);
+                return;
+            }
+            needShowProgress();
+            TLRPC.TL_auth_recoverPassword req = new TLRPC.TL_auth_recoverPassword();
+            req.code = code;
+            ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
+                @Override
+                public void run(final TLObject response, final TLRPC.TL_error error) {
+                    AndroidUtilities.runOnUIThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            needHideProgress();
+                            nextPressed = false;
+                            if (error == null) {
+                                TLRPC.TL_auth_authorization res = (TLRPC.TL_auth_authorization) response;
+                                UserConfig.clearConfig();
+                                MessagesController.getInstance().cleanUp();
+                                UserConfig.setCurrentUser(res.user);
+                                UserConfig.saveConfig(true);
+                                MessagesStorage.getInstance().cleanUp(true);
+                                ArrayList<TLRPC.User> users = new ArrayList<>();
+                                users.add(res.user);
+                                MessagesStorage.getInstance().putUsersAndChats(users, null, true, true);
+                                MessagesController.getInstance().putUser(res.user, false);
+                                ContactsController.getInstance().checkAppAccount();
+                                MessagesController.getInstance().getBlockedUsers(true);
+                                needFinishActivity();
+                                ConnectionsManager.getInstance().initPushConnection();
+                                Utilities.stageQueue.postRunnable(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        ConnectionsManager.getInstance().updateDcSettings(0);
+                                    }
+                                });
+                            } else {
+                                if (error.text.startsWith("CODE_INVALID")) {
+                                    onPasscodeError(true);
+                                } else if (error.text.startsWith("FLOOD_WAIT")) {
+                                    int time = Utilities.parseInt(error.text);
+                                    String timeString;
+                                    if (time < 60) {
+                                        timeString = LocaleController.formatPluralString("Seconds", time);
+                                    } else {
+                                        timeString = LocaleController.formatPluralString("Minutes", time / 60);
+                                    }
+                                    needShowAlert(LocaleController.getString("AppName", R.string.AppName), LocaleController.formatString("FloodWaitTime", R.string.FloodWaitTime, timeString));
+                                } else {
+                                    needShowAlert(LocaleController.getString("AppName", R.string.AppName), error.text);
+                                }
+                            }
+                        }
+                    });
+                }
+            }, true, RPCRequest.RPCRequestClassGeneric | RPCRequest.RPCRequestClassFailOnServerErrors | RPCRequest.RPCRequestClassWithoutLogin);
+        }
+
+        @Override
+        public void onBackPressed() {
+            currentParams = null;
+        }
+
+        @Override
+        public void onShow() {
+            super.onShow();
+            if (codeField != null) {
+                codeField.requestFocus();
+                codeField.setSelection(codeField.length());
+            }
+        }
+
+        @Override
+        public void saveStateParams(Bundle bundle) {
+            String code = codeField.getText().toString();
+            if (code != null && code.length() != 0) {
+                bundle.putString("recoveryview_code", code);
+            }
+            if (currentParams != null) {
+                bundle.putBundle("recoveryview_params", currentParams);
+            }
+        }
+
+        @Override
+        public void restoreStateParams(Bundle bundle) {
+            currentParams = bundle.getBundle("recoveryview_params");
+            if (currentParams != null) {
+                setParams(currentParams);
+            }
+            String code = bundle.getString("recoveryview_code");
+            if (code != null) {
+                codeField.setText(code);
+            }
+        }
+    }
+
+    public class LoginActivityRegisterView extends SlideView {
+        private static final String TAG = "AniwaysRegisterView";
         private EditText firstNameField;
         private EditText lastNameField;
         private String requestPhone;
@@ -1353,8 +2140,9 @@ public class LoginActivity extends BaseFragment {
         private String phoneCode;
         private Bundle currentParams;
         private boolean nextPressed = false;
+        private boolean requestInprogress = false;
 
-        public RegisterView(Context context) {
+        public LoginActivityRegisterView(Context context) {
             super(context);
 
             setOrientation(VERTICAL);
@@ -1362,16 +2150,14 @@ public class LoginActivity extends BaseFragment {
             TextView textView = new TextView(context);
             textView.setText(LocaleController.getString("RegisterText", R.string.RegisterText));
             textView.setTextColor(0xff757575);
-            textView.setGravity(Gravity.LEFT);
+            textView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
             textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             addView(textView);
             LayoutParams layoutParams = (LayoutParams) textView.getLayoutParams();
-            layoutParams.width = LayoutParams.WRAP_CONTENT;
-            layoutParams.height = LayoutParams.WRAP_CONTENT;
+            layoutParams.width = LayoutHelper.WRAP_CONTENT;
+            layoutParams.height = LayoutHelper.WRAP_CONTENT;
             layoutParams.topMargin = AndroidUtilities.dp(8);
-            layoutParams.leftMargin = AndroidUtilities.dp(24);
-            layoutParams.rightMargin = AndroidUtilities.dp(24);
-            layoutParams.gravity = Gravity.LEFT;
+            layoutParams.gravity = LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT;
             textView.setLayoutParams(layoutParams);
 
             firstNameField = new EditText(context);
@@ -1385,10 +2171,8 @@ public class LoginActivity extends BaseFragment {
             firstNameField.setInputType(InputType.TYPE_TEXT_FLAG_CAP_WORDS);
             addView(firstNameField);
             layoutParams = (LayoutParams) firstNameField.getLayoutParams();
-            layoutParams.width = LayoutParams.MATCH_PARENT;
+            layoutParams.width = LayoutHelper.MATCH_PARENT;
             layoutParams.height = AndroidUtilities.dp(36);
-            layoutParams.leftMargin = AndroidUtilities.dp(24);
-            layoutParams.rightMargin = AndroidUtilities.dp(24);
             layoutParams.topMargin = AndroidUtilities.dp(26);
             firstNameField.setLayoutParams(layoutParams);
             firstNameField.setOnEditorActionListener(new TextView.OnEditorActionListener() {
@@ -1413,10 +2197,8 @@ public class LoginActivity extends BaseFragment {
             lastNameField.setInputType(InputType.TYPE_TEXT_FLAG_CAP_WORDS);
             addView(lastNameField);
             layoutParams = (LayoutParams) lastNameField.getLayoutParams();
-            layoutParams.width = LayoutParams.MATCH_PARENT;
+            layoutParams.width = LayoutHelper.MATCH_PARENT;
             layoutParams.height = AndroidUtilities.dp(36);
-            layoutParams.leftMargin = AndroidUtilities.dp(24);
-            layoutParams.rightMargin = AndroidUtilities.dp(24);
             layoutParams.topMargin = AndroidUtilities.dp(10);
             lastNameField.setLayoutParams(layoutParams);
 
@@ -1424,25 +2206,23 @@ public class LoginActivity extends BaseFragment {
             linearLayout.setGravity(Gravity.BOTTOM | Gravity.CENTER_VERTICAL);
             addView(linearLayout);
             layoutParams = (LayoutParams) linearLayout.getLayoutParams();
-            layoutParams.width = LayoutParams.MATCH_PARENT;
-            layoutParams.height = LayoutParams.MATCH_PARENT;
+            layoutParams.width = LayoutHelper.MATCH_PARENT;
+            layoutParams.height = LayoutHelper.MATCH_PARENT;
             linearLayout.setLayoutParams(layoutParams);
 
             TextView wrongNumber = new TextView(context);
             wrongNumber.setText(LocaleController.getString("CancelRegistration", R.string.CancelRegistration));
-            wrongNumber.setGravity(Gravity.LEFT | Gravity.CENTER_HORIZONTAL);
+            wrongNumber.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_HORIZONTAL);
             wrongNumber.setTextColor(0xff4d83b3);
             wrongNumber.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             wrongNumber.setLineSpacing(AndroidUtilities.dp(2), 1.0f);
             wrongNumber.setPadding(0, AndroidUtilities.dp(24), 0, 0);
             linearLayout.addView(wrongNumber);
             layoutParams = (LayoutParams) wrongNumber.getLayoutParams();
-            layoutParams.width = LayoutParams.WRAP_CONTENT;
-            layoutParams.height = LayoutParams.WRAP_CONTENT;
-            layoutParams.gravity = Gravity.BOTTOM | Gravity.LEFT;
+            layoutParams.width = LayoutHelper.WRAP_CONTENT;
+            layoutParams.height = LayoutHelper.WRAP_CONTENT;
+            layoutParams.gravity = Gravity.BOTTOM | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
             layoutParams.bottomMargin = AndroidUtilities.dp(10);
-            layoutParams.leftMargin = AndroidUtilities.dp(24);
-            layoutParams.rightMargin = AndroidUtilities.dp(24);
             wrongNumber.setLayoutParams(layoutParams);
             wrongNumber.setOnClickListener(new OnClickListener() {
                 @Override
@@ -1507,51 +2287,98 @@ public class LoginActivity extends BaseFragment {
             req.phone_number = requestPhone;
             req.first_name = firstNameField.getText().toString();
             req.last_name = lastNameField.getText().toString();
+            this.requestInprogress = true;
             needShowProgress();
+            final long startReqTime = System.currentTimeMillis();
             ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
                 @Override
                 public void run(final TLObject response, final TLRPC.TL_error error) {
                     AndroidUtilities.runOnUIThread(new Runnable() {
                         @Override
                         public void run() {
-                            nextPressed = false;
-                            needHideProgress();
-                            if (error == null) {
-                                final TLRPC.TL_auth_authorization res = (TLRPC.TL_auth_authorization) response;
-                                TLRPC.TL_userSelf user = (TLRPC.TL_userSelf) res.user;
-                                UserConfig.clearConfig();
-                                MessagesController.getInstance().cleanUp();
-                                UserConfig.setCurrentUser(user);
-                                UserConfig.saveConfig(true);
-                                MessagesStorage.getInstance().cleanUp(true);
-                                ArrayList<TLRPC.User> users = new ArrayList<TLRPC.User>();
-                                users.add(user);
-                                MessagesStorage.getInstance().putUsersAndChats(users, null, true, true);
-                                //MessagesController.getInstance().uploadAndApplyUserAvatar(avatarPhotoBig);
-                                MessagesController.getInstance().putUser(res.user, false);
-                                ContactsController.getInstance().checkAppAccount();
-                                MessagesController.getInstance().getBlockedUsers(true);
-                                needFinishActivity();
-                                ConnectionsManager.getInstance().initPushConnection();
-                            } else {
-                                if (error.text.contains("PHONE_NUMBER_INVALID")) {
-                                    needShowAlert(LocaleController.getString("InvalidPhoneNumber", R.string.InvalidPhoneNumber));
-                                } else if (error.text.contains("PHONE_CODE_EMPTY") || error.text.contains("PHONE_CODE_INVALID")) {
-                                    needShowAlert(LocaleController.getString("InvalidCode", R.string.InvalidCode));
-                                } else if (error.text.contains("PHONE_CODE_EXPIRED")) {
-                                    needShowAlert(LocaleController.getString("CodeExpired", R.string.CodeExpired));
-                                } else if (error.text.contains("FIRSTNAME_INVALID")) {
-                                    needShowAlert(LocaleController.getString("InvalidFirstName", R.string.InvalidFirstName));
-                                } else if (error.text.contains("LASTNAME_INVALID")) {
-                                    needShowAlert(LocaleController.getString("InvalidLastName", R.string.InvalidLastName));
+                            try {
+                                nextPressed = false;
+                                needHideProgress();
+                                if (error == null) {
+                                    final TLRPC.TL_auth_authorization res = (TLRPC.TL_auth_authorization) response;
+                                    TLRPC.TL_userSelf user = (TLRPC.TL_userSelf) res.user;
+                                    UserConfig.clearConfig();
+                                    MessagesController.getInstance().cleanUp();
+                                    UserConfig.setCurrentUser(user);
+                                    UserConfig.saveConfig(true);
+                                    MessagesStorage.getInstance().cleanUp(true);
+                                    ArrayList<TLRPC.User> users = new ArrayList<>();
+                                    users.add(user);
+                                    MessagesStorage.getInstance().putUsersAndChats(users, null, true, true);
+                                    //MessagesController.getInstance().uploadAndApplyUserAvatar(avatarPhotoBig);
+                                    MessagesController.getInstance().putUser(res.user, false);
+                                    ContactsController.getInstance().checkAppAccount();
+                                    MessagesController.getInstance().getBlockedUsers(true);
+                                    needFinishActivity();
+                                    ConnectionsManager.getInstance().initPushConnection();
+                                    Utilities.stageQueue.postRunnable(new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            ConnectionsManager.getInstance().updateDcSettings(0);
+                                        }
+                                    });
                                 } else {
-                                    needShowAlert(error.text);
+                                    if (error.text.contains("PHONE_NUMBER_INVALID")) {
+                                        needShowAlert(LocaleController.getString("AppName", R.string.AppName), LocaleController.getString("InvalidPhoneNumber", R.string.InvalidPhoneNumber));
+                                    } else if (error.text.contains("PHONE_CODE_EMPTY") || error.text.contains("PHONE_CODE_INVALID")) {
+                                        needShowAlert(LocaleController.getString("AppName", R.string.AppName), LocaleController.getString("InvalidCode", R.string.InvalidCode));
+                                    } else if (error.text.contains("PHONE_CODE_EXPIRED")) {
+                                        needShowAlert(LocaleController.getString("AppName", R.string.AppName), LocaleController.getString("CodeExpired", R.string.CodeExpired));
+                                    } else if (error.text.contains("FIRSTNAME_INVALID")) {
+                                        needShowAlert(LocaleController.getString("AppName", R.string.AppName), LocaleController.getString("InvalidFirstName", R.string.InvalidFirstName));
+                                    } else if (error.text.contains("LASTNAME_INVALID")) {
+                                        needShowAlert(LocaleController.getString("AppName", R.string.AppName), LocaleController.getString("InvalidLastName", R.string.InvalidLastName));
+                                    } else {
+                                        needShowAlert(LocaleController.getString("AppName", R.string.AppName), error.text);
+                                    }
                                 }
+                            } catch (Throwable ex) {
+                                Log.e(true, TAG, "Caught exception in phone reg", ex);
+                            } finally {
+                                requestInprogress = false;
                             }
                         }
                     });
                 }
-            }, true, RPCRequest.RPCRequestClassGeneric | RPCRequest.RPCRequestClassWithoutLogin);
+
+            }, true, RPCRequest.RPCRequestClassGeneric | RPCRequest.RPCRequestClassWithoutLogin | RPCRequest.RPCRequestClassFailOnServerErrors);
+            checkConnection(startReqTime);
+        }
+
+        private void checkConnection(final long startReqTime) {
+            AniwaysNetworkStateChecker.checkInternet(new AniwaysNetworkStateChecker.AniwaysNetworkSateCheckCallback() {
+
+                @Override
+                public void run(boolean connectionAvailable) {
+                    if (!requestInprogress) {
+                        return;
+                    }
+                    if (connectionAvailable) {
+                        long now = System.currentTimeMillis();
+                        if ((now - startReqTime) > AniwaysPrivateConfig.getInstance().phoneRegTimeout) {
+                            Log.e(true, TAG, "Takes long time receiving response in reg process: " + Long.toString(now - startReqTime));
+                            Toast toast = Toast.makeText(getContext(), "Process takes too long. Please re-install app and try again", Toast.LENGTH_LONG);
+                            toast.setGravity(Gravity.CENTER, 0, 0);
+                            toast.show();
+                            needHideProgress();
+                        } else {
+                            Log.i(TAG, "Starting connectivity check again..");
+                            checkConnection(startReqTime);
+                        }
+                    } else {
+                        Log.e(false, TAG, "Error registering phone cause no internet");
+                        Toast toast = Toast.makeText(getContext(), "No internet connection. Please try again once connected", Toast.LENGTH_LONG);
+                        toast.setGravity(Gravity.CENTER, 0, 0);
+                        toast.show();
+                        needHideProgress();
+                    }
+                }
+            });
         }
 
         @Override

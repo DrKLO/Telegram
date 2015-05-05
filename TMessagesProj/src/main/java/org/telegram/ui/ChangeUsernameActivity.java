@@ -11,10 +11,10 @@ package org.telegram.ui;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.text.Editable;
-import android.text.Html;
 import android.text.InputType;
 import android.text.TextWatcher;
 import android.util.TypedValue;
@@ -37,7 +37,7 @@ import org.telegram.android.NotificationCenter;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLog;
-import org.telegram.messenger.R;
+import com.aniways.anigram.messenger.R;
 import org.telegram.messenger.RPCRequest;
 import org.telegram.messenger.TLObject;
 import org.telegram.messenger.TLRPC;
@@ -45,6 +45,7 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.ui.Components.LayoutHelper;
 
 import java.util.ArrayList;
 
@@ -61,130 +62,124 @@ public class ChangeUsernameActivity extends BaseFragment {
     private final static int done_button = 1;
 
     @Override
-    public View createView(LayoutInflater inflater, ViewGroup container) {
-        if (fragmentView == null) {
-            actionBar.setBackButtonImage(R.drawable.ic_ab_back);
-            actionBar.setAllowOverlayTitle(true);
-            actionBar.setTitle(LocaleController.getString("Username", R.string.Username));
-            actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
-                @Override
-                public void onItemClick(int id) {
-                    if (id == -1) {
-                        finishFragment();
-                    } else if (id == done_button) {
-                        saveName();
-                    }
+    public View createView(Context context, LayoutInflater inflater) {
+        actionBar.setBackButtonImage(R.drawable.ic_ab_back);
+        actionBar.setAllowOverlayTitle(true);
+        actionBar.setTitle(LocaleController.getString("Username", R.string.Username));
+        actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
+            @Override
+            public void onItemClick(int id) {
+                if (id == -1) {
+                    finishFragment();
+                } else if (id == done_button) {
+                    saveName();
                 }
-            });
-
-            ActionBarMenu menu = actionBar.createMenu();
-            doneButton = menu.addItemWithWidth(done_button, R.drawable.ic_done, AndroidUtilities.dp(56));
-
-            TLRPC.User user = MessagesController.getInstance().getUser(UserConfig.getClientUserId());
-            if (user == null) {
-                user = UserConfig.getCurrentUser();
             }
+        });
 
-            fragmentView = new LinearLayout(getParentActivity());
-            fragmentView.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-            ((LinearLayout) fragmentView).setOrientation(LinearLayout.VERTICAL);
-            fragmentView.setOnTouchListener(new View.OnTouchListener() {
-                @Override
-                public boolean onTouch(View v, MotionEvent event) {
+        ActionBarMenu menu = actionBar.createMenu();
+        doneButton = menu.addItemWithWidth(done_button, R.drawable.ic_done, AndroidUtilities.dp(56));
+
+        TLRPC.User user = MessagesController.getInstance().getUser(UserConfig.getClientUserId());
+        if (user == null) {
+            user = UserConfig.getCurrentUser();
+        }
+
+        fragmentView = new LinearLayout(context);
+        fragmentView.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        ((LinearLayout) fragmentView).setOrientation(LinearLayout.VERTICAL);
+        fragmentView.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                return true;
+            }
+        });
+
+        firstNameField = new EditText(context);
+        firstNameField.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
+        firstNameField.setHintTextColor(0xff979797);
+        firstNameField.setTextColor(0xff212121);
+        firstNameField.setMaxLines(1);
+        firstNameField.setLines(1);
+        firstNameField.setPadding(0, 0, 0, 0);
+        firstNameField.setSingleLine(true);
+        firstNameField.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
+        firstNameField.setInputType(InputType.TYPE_TEXT_FLAG_CAP_SENTENCES | InputType.TYPE_TEXT_FLAG_MULTI_LINE | InputType.TYPE_TEXT_FLAG_AUTO_CORRECT);
+        firstNameField.setImeOptions(EditorInfo.IME_ACTION_DONE);
+        firstNameField.setHint(LocaleController.getString("UsernamePlaceholder", R.string.UsernamePlaceholder));
+        AndroidUtilities.clearCursorDrawable(firstNameField);
+        firstNameField.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+            @Override
+            public boolean onEditorAction(TextView textView, int i, KeyEvent keyEvent) {
+                if (i == EditorInfo.IME_ACTION_DONE && doneButton != null) {
+                    doneButton.performClick();
                     return true;
                 }
-            });
-
-            firstNameField = new EditText(getParentActivity());
-            firstNameField.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
-            firstNameField.setHintTextColor(0xff979797);
-            firstNameField.setTextColor(0xff212121);
-            firstNameField.setMaxLines(1);
-            firstNameField.setLines(1);
-            firstNameField.setPadding(0, 0, 0, 0);
-            firstNameField.setSingleLine(true);
-            firstNameField.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
-            firstNameField.setInputType(InputType.TYPE_TEXT_FLAG_CAP_SENTENCES | InputType.TYPE_TEXT_FLAG_MULTI_LINE | InputType.TYPE_TEXT_FLAG_AUTO_CORRECT);
-            firstNameField.setImeOptions(EditorInfo.IME_ACTION_DONE);
-            firstNameField.setHint(LocaleController.getString("UsernamePlaceholder", R.string.UsernamePlaceholder));
-            AndroidUtilities.clearCursorDrawable(firstNameField);
-            firstNameField.setOnEditorActionListener(new TextView.OnEditorActionListener() {
-                @Override
-                public boolean onEditorAction(TextView textView, int i, KeyEvent keyEvent) {
-                    if (i == EditorInfo.IME_ACTION_DONE && doneButton != null) {
-                        doneButton.performClick();
-                        return true;
-                    }
-                    return false;
-                }
-            });
-
-            ((LinearLayout) fragmentView).addView(firstNameField);
-            LinearLayout.LayoutParams layoutParams = (LinearLayout.LayoutParams)firstNameField.getLayoutParams();
-            layoutParams.topMargin = AndroidUtilities.dp(24);
-            layoutParams.height = AndroidUtilities.dp(36);
-            layoutParams.leftMargin = AndroidUtilities.dp(24);
-            layoutParams.rightMargin = AndroidUtilities.dp(24);
-            layoutParams.width = LinearLayout.LayoutParams.MATCH_PARENT;
-            firstNameField.setLayoutParams(layoutParams);
-
-            if (user != null && user.username != null && user.username.length() > 0) {
-                firstNameField.setText(user.username);
-                firstNameField.setSelection(firstNameField.length());
+                return false;
             }
+        });
 
-            checkTextView = new TextView(getParentActivity());
-            checkTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
-            checkTextView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
-            ((LinearLayout) fragmentView).addView(checkTextView);
-            layoutParams = (LinearLayout.LayoutParams)checkTextView.getLayoutParams();
-            layoutParams.topMargin = AndroidUtilities.dp(12);
-            layoutParams.width = LinearLayout.LayoutParams.WRAP_CONTENT;
-            layoutParams.height = LinearLayout.LayoutParams.WRAP_CONTENT;
-            layoutParams.gravity = LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT;
-            layoutParams.leftMargin = AndroidUtilities.dp(24);
-            layoutParams.rightMargin = AndroidUtilities.dp(24);
-            checkTextView.setLayoutParams(layoutParams);
+        ((LinearLayout) fragmentView).addView(firstNameField);
+        LinearLayout.LayoutParams layoutParams = (LinearLayout.LayoutParams) firstNameField.getLayoutParams();
+        layoutParams.topMargin = AndroidUtilities.dp(24);
+        layoutParams.height = AndroidUtilities.dp(36);
+        layoutParams.leftMargin = AndroidUtilities.dp(24);
+        layoutParams.rightMargin = AndroidUtilities.dp(24);
+        layoutParams.width = LayoutHelper.MATCH_PARENT;
+        firstNameField.setLayoutParams(layoutParams);
 
-            TextView helpTextView = new TextView(getParentActivity());
-            helpTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
-            helpTextView.setTextColor(0xff6d6d72);
-            helpTextView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
-            helpTextView.setText(Html.fromHtml(LocaleController.getString("UsernameHelp", R.string.UsernameHelp)));
-            ((LinearLayout) fragmentView).addView(helpTextView);
-            layoutParams = (LinearLayout.LayoutParams)helpTextView.getLayoutParams();
-            layoutParams.topMargin = AndroidUtilities.dp(10);
-            layoutParams.width = LinearLayout.LayoutParams.WRAP_CONTENT;
-            layoutParams.height = LinearLayout.LayoutParams.WRAP_CONTENT;
-            layoutParams.gravity = LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT;
-            layoutParams.leftMargin = AndroidUtilities.dp(24);
-            layoutParams.rightMargin = AndroidUtilities.dp(24);
-            helpTextView.setLayoutParams(layoutParams);
-
-            firstNameField.addTextChangedListener(new TextWatcher() {
-                @Override
-                public void beforeTextChanged(CharSequence charSequence, int i, int i2, int i3) {
-
-                }
-
-                @Override
-                public void onTextChanged(CharSequence charSequence, int i, int i2, int i3) {
-                    checkUserName(firstNameField.getText().toString(), false);
-                }
-
-                @Override
-                public void afterTextChanged(Editable editable) {
-
-                }
-            });
-
-            checkTextView.setVisibility(View.GONE);
-        } else {
-            ViewGroup parent = (ViewGroup)fragmentView.getParent();
-            if (parent != null) {
-                parent.removeView(fragmentView);
-            }
+        if (user != null && user.username != null && user.username.length() > 0) {
+            firstNameField.setText(user.username);
+            firstNameField.setSelection(firstNameField.length());
         }
+
+        checkTextView = new TextView(context);
+        checkTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
+        checkTextView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
+        ((LinearLayout) fragmentView).addView(checkTextView);
+        layoutParams = (LinearLayout.LayoutParams) checkTextView.getLayoutParams();
+        layoutParams.topMargin = AndroidUtilities.dp(12);
+        layoutParams.width = LayoutHelper.WRAP_CONTENT;
+        layoutParams.height = LayoutHelper.WRAP_CONTENT;
+        layoutParams.gravity = LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT;
+        layoutParams.leftMargin = AndroidUtilities.dp(24);
+        layoutParams.rightMargin = AndroidUtilities.dp(24);
+        checkTextView.setLayoutParams(layoutParams);
+
+        TextView helpTextView = new TextView(context);
+        helpTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
+        helpTextView.setTextColor(0xff6d6d72);
+        helpTextView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
+        helpTextView.setText(AndroidUtilities.replaceTags(LocaleController.getString("UsernameHelp", R.string.UsernameHelp)));
+        ((LinearLayout) fragmentView).addView(helpTextView);
+        layoutParams = (LinearLayout.LayoutParams) helpTextView.getLayoutParams();
+        layoutParams.topMargin = AndroidUtilities.dp(10);
+        layoutParams.width = LayoutHelper.WRAP_CONTENT;
+        layoutParams.height = LayoutHelper.WRAP_CONTENT;
+        layoutParams.gravity = LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT;
+        layoutParams.leftMargin = AndroidUtilities.dp(24);
+        layoutParams.rightMargin = AndroidUtilities.dp(24);
+        helpTextView.setLayoutParams(layoutParams);
+
+        firstNameField.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence charSequence, int i, int i2, int i3) {
+
+            }
+
+            @Override
+            public void onTextChanged(CharSequence charSequence, int i, int i2, int i3) {
+                checkUserName(firstNameField.getText().toString(), false);
+            }
+
+            @Override
+            public void afterTextChanged(Editable editable) {
+
+            }
+        });
+
+        checkTextView.setVisibility(View.GONE);
+
         return fragmentView;
     }
 
@@ -205,14 +200,19 @@ public class ChangeUsernameActivity extends BaseFragment {
         }
         AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
         builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
-        if (error.equals("USERNAME_INVALID")) {
-            builder.setMessage(LocaleController.getString("UsernameInvalid", R.string.UsernameInvalid));
-        } else if (error.equals("USERNAME_OCCUPIED")) {
-            builder.setMessage(LocaleController.getString("UsernameInUse", R.string.UsernameInUse));
-        } else if (error.equals("USERNAMES_UNAVAILABLE")) {
-            builder.setMessage(LocaleController.getString("FeatureUnavailable", R.string.FeatureUnavailable));
-        } else {
-            builder.setMessage(LocaleController.getString("ErrorOccurred", R.string.ErrorOccurred));
+        switch (error) {
+            case "USERNAME_INVALID":
+                builder.setMessage(LocaleController.getString("UsernameInvalid", R.string.UsernameInvalid));
+                break;
+            case "USERNAME_OCCUPIED":
+                builder.setMessage(LocaleController.getString("UsernameInUse", R.string.UsernameInUse));
+                break;
+            case "USERNAMES_UNAVAILABLE":
+                builder.setMessage(LocaleController.getString("FeatureUnavailable", R.string.FeatureUnavailable));
+                break;
+            default:
+                builder.setMessage(LocaleController.getString("ErrorOccurred", R.string.ErrorOccurred));
+                break;
         }
         builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), null);
         showAlertDialog(builder);
@@ -371,7 +371,7 @@ public class ChangeUsernameActivity extends BaseFragment {
                             } catch (Exception e) {
                                 FileLog.e("tmessages", e);
                             }
-                            ArrayList<TLRPC.User> users = new ArrayList<TLRPC.User>();
+                            ArrayList<TLRPC.User> users = new ArrayList<>();
                             users.add(user);
                             MessagesController.getInstance().putUsers(users, false);
                             MessagesStorage.getInstance().putUsersAndChats(users, null, false, true);

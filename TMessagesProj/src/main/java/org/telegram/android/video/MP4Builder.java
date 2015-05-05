@@ -59,7 +59,7 @@ public class MP4Builder {
     private long dataOffset = 0;
     private long writedSinceLastMdat = 0;
     private boolean writeNewMdat = true;
-    private HashMap<Track, long[]> track2SampleSizes = new HashMap<Track, long[]>();
+    private HashMap<Track, long[]> track2SampleSizes = new HashMap<>();
     private ByteBuffer sizeBuffer = null;
 
     public MP4Builder createMovie(Mp4Movie mp4Movie) throws Exception {
@@ -158,7 +158,7 @@ public class MP4Builder {
     }
 
     protected FileTypeBox createFileTypeBox() {
-        LinkedList<String> minorBrands = new LinkedList<String>();
+        LinkedList<String> minorBrands = new LinkedList<>();
         minorBrands.add("isom");
         minorBrands.add("3gp4");
         return new FileTypeBox("isom", 0, minorBrands);
@@ -237,7 +237,10 @@ public class MP4Builder {
     }
 
     public long getTimescale(Mp4Movie mp4Movie) {
-        long timescale = mp4Movie.getTracks().iterator().next().getTimeScale();
+        long timescale = 0;
+        if (!mp4Movie.getTracks().isEmpty()) {
+            timescale = mp4Movie.getTracks().iterator().next().getTimeScale();
+        }
         for (Track track : mp4Movie.getTracks()) {
             timescale = gcd(track.getTimeScale(), timescale);
         }
@@ -347,7 +350,7 @@ public class MP4Builder {
 
     protected void createStts(Track track, SampleTableBox stbl) {
         TimeToSampleBox.Entry lastEntry = null;
-        List<TimeToSampleBox.Entry> entries = new ArrayList<TimeToSampleBox.Entry>();
+        List<TimeToSampleBox.Entry> entries = new ArrayList<>();
 
         for (long delta : track.getSampleDurations()) {
             if (lastEntry != null && lastEntry.getDelta() == delta) {
@@ -418,7 +421,7 @@ public class MP4Builder {
     }
 
     protected void createStco(Track track, SampleTableBox stbl) {
-        ArrayList<Long> chunksOffsets = new ArrayList<Long>();
+        ArrayList<Long> chunksOffsets = new ArrayList<>();
         long lastOffset = -1;
         for (Sample sample : track.getSamples()) {
             long offset = sample.getOffset();

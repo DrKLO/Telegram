@@ -19,7 +19,7 @@
             android:layout_marginRight="10dp"
             android:paddingTop="2dp"/>
 
-        <TextView
+        <com.aniways.AniwaysTextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"

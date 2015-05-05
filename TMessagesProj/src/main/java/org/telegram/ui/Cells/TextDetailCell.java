@@ -18,6 +18,7 @@ import android.widget.TextView;
 
 import org.telegram.android.AndroidUtilities;
 import org.telegram.android.LocaleController;
+import org.telegram.ui.Components.LayoutHelper;
 
 public class TextDetailCell extends FrameLayout {
 
@@ -37,8 +38,8 @@ public class TextDetailCell extends FrameLayout {
         textView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
         addView(textView);
         FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) textView.getLayoutParams();
-        layoutParams.width = LayoutParams.WRAP_CONTENT;
-        layoutParams.height = LayoutParams.WRAP_CONTENT;
+        layoutParams.width = LayoutHelper.WRAP_CONTENT;
+        layoutParams.height = LayoutHelper.WRAP_CONTENT;
         layoutParams.topMargin = AndroidUtilities.dp(10);
         layoutParams.leftMargin = AndroidUtilities.dp(LocaleController.isRTL ? 16 : 71);
         layoutParams.rightMargin = AndroidUtilities.dp(LocaleController.isRTL ? 71 : 16);
@@ -54,8 +55,8 @@ public class TextDetailCell extends FrameLayout {
         valueTextView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
         addView(valueTextView);
         layoutParams = (FrameLayout.LayoutParams) valueTextView.getLayoutParams();
-        layoutParams.width = LayoutParams.WRAP_CONTENT;
-        layoutParams.height = LayoutParams.WRAP_CONTENT;
+        layoutParams.width = LayoutHelper.WRAP_CONTENT;
+        layoutParams.height = LayoutHelper.WRAP_CONTENT;
         layoutParams.topMargin = AndroidUtilities.dp(35);
         layoutParams.leftMargin = AndroidUtilities.dp(LocaleController.isRTL ? 16 : 71);
         layoutParams.rightMargin = AndroidUtilities.dp(LocaleController.isRTL ? 71 : 16);
@@ -66,8 +67,8 @@ public class TextDetailCell extends FrameLayout {
         imageView.setScaleType(ImageView.ScaleType.CENTER);
         addView(imageView);
         layoutParams = (LayoutParams) imageView.getLayoutParams();
-        layoutParams.width = LayoutParams.WRAP_CONTENT;
-        layoutParams.height = LayoutParams.WRAP_CONTENT;
+        layoutParams.width = LayoutHelper.WRAP_CONTENT;
+        layoutParams.height = LayoutHelper.WRAP_CONTENT;
         layoutParams.leftMargin = AndroidUtilities.dp(LocaleController.isRTL ? 0 : 16);
         layoutParams.rightMargin = AndroidUtilities.dp(LocaleController.isRTL ? 16 : 0);
         layoutParams.gravity = (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL;
@@ -82,7 +83,7 @@ public class TextDetailCell extends FrameLayout {
     public void setTextAndValue(String text, String value) {
         textView.setText(text);
         valueTextView.setText(value);
-        imageView.setVisibility(GONE);
+        imageView.setVisibility(INVISIBLE);
     }
 
     public void setTextAndValueAndIcon(String text, String value, int resId) {

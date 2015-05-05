@@ -16,6 +16,7 @@ import android.widget.TextView;
 
 import org.telegram.android.AndroidUtilities;
 import org.telegram.android.LocaleController;
+import org.telegram.ui.Components.LayoutHelper;
 
 public class TextInfoPrivacyCell extends FrameLayout {
 
@@ -25,14 +26,14 @@ public class TextInfoPrivacyCell extends FrameLayout {
         super(context);
 
         textView = new TextView(context);
-        textView.setTextColor(0xffa3a3a3);
-        textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
+        textView.setTextColor(0xff808080);
+        textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         textView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
-        textView.setPadding(0, AndroidUtilities.dp(6), 0, AndroidUtilities.dp(16));
+        textView.setPadding(0, AndroidUtilities.dp(10), 0, AndroidUtilities.dp(17));
         addView(textView);
         LayoutParams layoutParams = (LayoutParams) textView.getLayoutParams();
-        layoutParams.width = LayoutParams.WRAP_CONTENT;
-        layoutParams.height = LayoutParams.WRAP_CONTENT;
+        layoutParams.width = LayoutHelper.WRAP_CONTENT;
+        layoutParams.height = LayoutHelper.WRAP_CONTENT;
         layoutParams.leftMargin = AndroidUtilities.dp(17);
         layoutParams.rightMargin = AndroidUtilities.dp(17);
         layoutParams.gravity = LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT;
@@ -46,5 +47,9 @@ public class TextInfoPrivacyCell extends FrameLayout {
 
     public void setText(String text) {
         textView.setText(text);
+    }
+
+    public void setTextColor(int color) {
+        textView.setTextColor(color);
     }
 }
