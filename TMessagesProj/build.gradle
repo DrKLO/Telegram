@@ -43,7 +43,7 @@ android {
             flavorDimension "abi"
             ndk {
                 abiFilters "x86", "armeabi-v7a", "armeabi"
-                versionCode = 0;
+                versionCode = 259;
             }
         }
 //        arm {
