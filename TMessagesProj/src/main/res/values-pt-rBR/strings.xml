@@ -2,7 +2,9 @@
 
 <!--https://www.transifex.com/projects/p/telegram/language/pt_BR/members/-->
 
-<resources>
+<resources
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:ignore="MissingTranslation" >
     <string name="AppName">Telegram Aniways</string>
     <string name="LanguageName">Português (Brasil)</string>
     <string name="LanguageNameInEnglish">Português (Brasil)</string>

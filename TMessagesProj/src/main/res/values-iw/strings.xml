@@ -1,5 +1,7 @@
 <?xml version='1.0' encoding='UTF-8'?>
-<resources>
+<resources
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:ignore="MissingTranslation" >
   <string name="AppName">טלגרם עם אניוויז</string>
   <string name="LanguageName">עברית</string>
   <string name="LanguageNameInEnglish">Hebrew</string>

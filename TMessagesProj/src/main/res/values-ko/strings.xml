@@ -2,7 +2,9 @@
 
 <!--https://www.transifex.com/projects/p/telegram/language/ko/members/-->
 
-<resources>
+<resources
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:ignore="MissingTranslation" >
     <string name="AppName">텔레그램</string>
     <string name="LanguageName">한국어</string>
     <string name="LanguageNameInEnglish">Korean</string>

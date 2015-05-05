@@ -2,7 +2,9 @@
 
 <!--https://www.transifex.com/projects/p/telegram/language/it/members/-->
 
-<resources>
+<resources
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:ignore="MissingTranslation" >
     <string name="AppName">Telegram Aniways</string>
     <string name="LanguageName">Italiano</string>
     <string name="LanguageNameInEnglish">Italian</string>

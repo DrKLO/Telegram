@@ -1,5 +1,7 @@
 <?xml version='1.0' encoding='UTF-8'?>
-<resources>
+<resources
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:ignore="MissingTranslation" >
   <string name="AppName">Telegram Aniways</string>
   <string name="LanguageName">Русский</string>
   <string name="LanguageNameInEnglish">Russian</string>

@@ -2,7 +2,10 @@
 
 <!--Translation by Khalid Alaraifi-->
 
-<resources>
+<resources
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:ignore="MissingTranslation"
+    tools:locale="en">
     <string name="AppName">Telegram Aniways</string>
     <string name="LanguageName">العربية</string>
     <string name="LanguageNameInEnglish">Arabic</string>

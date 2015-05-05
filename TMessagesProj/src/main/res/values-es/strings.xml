@@ -2,7 +2,10 @@
 
 <!--Translation by Borja Campina, Edited by Victor Espinoza and Francisco Vila-->
 
-<resources>
+<resources
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:ignore="MissingTranslation"
+    tools:locale="en">
     <string name="AppName">Telegram Aniways</string>
     <string name="LanguageName">Español</string>
     <string name="LanguageNameInEnglish">Spanish</string>

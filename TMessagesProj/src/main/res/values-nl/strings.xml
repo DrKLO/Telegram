@@ -2,7 +2,9 @@
 
 <!--https://www.transifex.com/projects/p/telegram/language/nl/members/-->
 
-<resources>
+<resources
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:ignore="MissingTranslation" >
     <string name="AppName">Telegram Aniways</string>
     <string name="LanguageName">Nederlands</string>
     <string name="LanguageNameInEnglish">Dutch</string>
