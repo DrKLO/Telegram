@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="auth_client_needs_enabling_title">Perkhidmatan Google Play perlu didayakan untuk menggunakan aplikasi.</string>
+    <string name="auth_client_needs_installation_title">Perkhidmatan Google Play perlu dipasang untuk mengguankan aplikasi.</string>
+    <string name="auth_client_needs_update_title">Perkhidmatan Google Play perlu dikemas kini untuk menggunakan aplikasi.</string>
+    <string name="auth_client_play_services_err_notification_msg">Ralat perkhidmatan Google Play</string>
+    <string name="auth_client_requested_by_msg">Diminta oleh %1$s</string>
+    <string name="auth_client_using_bad_version_title">Aplikasi cuba menggunakan versi Perkhidmatan Google Play yang rosak.</string>
+    <string name="common_google_play_services_enable_button">Dayakan perkhidmatan Google Play</string>
+    <string name="common_google_play_services_enable_text">Apl ini tidak akan berfungsi kecuali anda mendayakan perkhidmatan Google Play.</string>
+    <string name="common_google_play_services_enable_title">Dayakan perkhidmatan Google Play</string>
+    <string name="common_google_play_services_install_button">Dapatkan perkhidmatan Google Play</string>
+    <string name="common_google_play_services_install_text_phone">Apl ini tidak akan berfungsi tanpa perkhidmatan Google Play dan apl ini tiada pada telefon anda.</string>
+    <string name="common_google_play_services_install_text_tablet">Apl ini tidak akan berfungsi tanpa perkhidmatan Google Play dan apl ini tiada pada tablet anda.</string>
+    <string name="common_google_play_services_install_title">Dapatkan perkhidmatan Google Play</string>
+    <string name="common_google_play_services_invalid_account_text">Akaun yang dinyatakan tidak wujud pada peranti ini. Sila pilih akaun yang lain.</string>
+    <string name="common_google_play_services_invalid_account_title">Akaun Tidak Sah</string>
+    <string name="common_google_play_services_network_error_text">Sambungan data diperlukan untuk menyambung ke perkhidmatan Google Play.</string>
+    <string name="common_google_play_services_network_error_title">Ralat Rangkaian</string>
+    <string name="common_google_play_services_unknown_issue">Isu tidak diketahui dengan perkhidmatan Google Play.</string>
+    <string name="common_google_play_services_unsupported_text">Peranti anda tidak menyokong perkhidmatan Google Play, sedangkan sesetengah aplikasi anda memerlukannya. Sila hubungi pengilang untuk bantuan.</string>
+    <string name="common_google_play_services_unsupported_title">Perkhidmatan Google Play</string>
+    <string name="common_google_play_services_update_button">Kemas kini</string>
+    <string name="common_google_play_services_update_text">Apl ini tidak akan berfungsi kecuali anda mengemas kini perkhidmatan Google Play.</string>
+    <string name="common_google_play_services_update_title">Kemas kini perkhidmatan Google Play</string>
+    <string name="common_signin_button_text">Log masuk</string>
+    <string name="common_signin_button_text_long">Log masuk dengan Google</string>
+</resources>

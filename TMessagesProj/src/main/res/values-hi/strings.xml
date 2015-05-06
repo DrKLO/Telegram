@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="auth_client_needs_enabling_title">एप्लिकेशन के लिए Google Play सेवाओं को सक्षम किए जाने की आवश्यकता है.</string>
+    <string name="auth_client_needs_installation_title">एप्लिकेशन के लिए Google Play सेवाओं के इंस्टॉलेशन की आवश्यकता है.</string>
+    <string name="auth_client_needs_update_title">एप्लिकेशन के लिए Google Play सेवाओं में अपडेट की आवश्यकता है.</string>
+    <string name="auth_client_play_services_err_notification_msg">Google Play सेवाएं त्रुटि</string>
+    <string name="auth_client_requested_by_msg">%1$s द्वारा अनुरोधित</string>
+    <string name="auth_client_using_bad_version_title">एप्लि. ने Google Play सेवाओं के खराब संस्करण के उपयोग का प्रयास किया.</string>
+    <string name="common_google_play_services_enable_button">Google Play सेवाएं सक्षम करें</string>
+    <string name="common_google_play_services_enable_text">जब तक आप Google Play सेवाएं सक्षम नहीं करते, तब तक यह एप्लिकेशन कार्य नहीं करेगा.</string>
+    <string name="common_google_play_services_enable_title">Google Play सेवाएं सक्षम करें</string>
+    <string name="common_google_play_services_install_button">Google Play सेवाएं पाएं</string>
+    <string name="common_google_play_services_install_text_phone">यह एप्लिकेशन Google Play सेवाओं के बिना नहीं चलेगा, जो आपके फ़ोन में नहीं हैं.</string>
+    <string name="common_google_play_services_install_text_tablet">यह एप्लिकेशन Google Play सेवाओं के बिना नहीं चलेगा, जो आपके टेबलेट में नहीं हैं.</string>
+    <string name="common_google_play_services_install_title">Google Play सेवाएं पाएं</string>
+    <string name="common_google_play_services_invalid_account_text">निर्दिष्ट खाता इस उपकरण पर मौजूद नहीं है. कृपया कोई भिन्न खाता चुनें.</string>
+    <string name="common_google_play_services_invalid_account_title">अमान्य खाता</string>
+    <string name="common_google_play_services_network_error_text">Google Play सेवाओं से कनेक्ट करने के लिए डेटा कनेक्शन की आवश्यकता है.</string>
+    <string name="common_google_play_services_network_error_title">नेटवर्क त्रुटि</string>
+    <string name="common_google_play_services_unknown_issue">Google Play सेवाओं के साथ अज्ञात समस्या.</string>
+    <string name="common_google_play_services_unsupported_text">Google Play सेवाएं, जिन पर आपके कुछ एप्लिकेशन निर्भर करते हैं, आपके उपकरण द्वारा समर्थित नहीं हैं. कृपया सहायता के लिए निर्माता से संपर्क करें.</string>
+    <string name="common_google_play_services_unsupported_title">Google Play सेवाएं</string>
+    <string name="common_google_play_services_update_button">अपडेट करें</string>
+    <string name="common_google_play_services_update_text">जब तक आप Google Play सेवाओं को अपडेट नहीं करते, तब तक यह एप्लिकेशन नहीं चलेगा.</string>
+    <string name="common_google_play_services_update_title">Google Play सेवाएं अपडेट करें</string>
+    <string name="common_signin_button_text">प्रवेश करें</string>
+    <string name="common_signin_button_text_long">Google से प्रवेश करें</string>
+</resources>
