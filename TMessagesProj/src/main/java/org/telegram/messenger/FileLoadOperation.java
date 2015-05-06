@@ -8,8 +8,8 @@
 
 package org.telegram.messenger;
 
-import java.io.RandomAccessFile;
 import java.io.File;
+import java.io.RandomAccessFile;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.Scanner;
@@ -54,6 +54,8 @@ public class FileLoadOperation {
     private File tempPath = null;
     private boolean isForceRequest = false;
 
+    private static String orgName = null;
+
     public interface FileLoadOperationDelegate {
         void didFinishLoadingFile(FileLoadOperation operation, File finalFile);
         void didFailedLoadingFile(FileLoadOperation operation, int state);
@@ -83,6 +85,7 @@ public class FileLoadOperation {
         if (ext == null) {
             ext = "jpg";
         }
+        orgName = null;
     }
 
     public FileLoadOperation(TLRPC.Video videoLocation) {
@@ -148,6 +151,9 @@ public class FileLoadOperation {
             if (ext.length() <= 1) {
                 ext = "";
             }
+        }
+        if(ApplicationLoader.KEEP_ORIGINAL_FILENAME && !ext.contains("webp")){
+            orgName = FileLoader.getDocName(documentLocation);
         }
     }
 
@@ -215,9 +221,19 @@ public class FileLoadOperation {
                 return;
             }
         }
-
+        //
+        if(ApplicationLoader.KEEP_ORIGINAL_FILENAME && orgName != null){
+            fileNameFinal = orgName;
+        }
+        //
         cacheFileFinal = new File(storePath, fileNameFinal);
         boolean exist = cacheFileFinal.exists();
+        //
+        if(exist && orgName != null && ApplicationLoader.KEEP_ORIGINAL_FILENAME){
+            exist = false;
+            cacheFileFinal.delete();
+        }
+        //
         if (exist && totalBytesCount != 0 && totalBytesCount != cacheFileFinal.length()) {
             exist = false;
             cacheFileFinal.delete();

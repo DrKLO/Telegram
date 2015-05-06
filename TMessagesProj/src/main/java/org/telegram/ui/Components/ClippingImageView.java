@@ -18,8 +18,8 @@ import android.graphics.RectF;
 import android.graphics.Shader;
 import android.view.View;
 
+import org.telegram.android.AnimationCompat.ViewProxy;
 import org.telegram.messenger.FileLog;
-import org.telegram.ui.AnimationCompat.ViewProxy;
 
 public class ClippingImageView extends View {
 
@@ -32,7 +32,6 @@ public class ClippingImageView extends View {
     private Paint paint;
     private Bitmap bmp;
     private Matrix matrix;
-    private onDrawListener drawListener;
 
     private boolean needRadius;
     private int radius;
@@ -42,9 +41,8 @@ public class ClippingImageView extends View {
     private RectF bitmapRect;
     private Matrix shaderMatrix;
 
-    public interface onDrawListener {
-        void onDraw();
-    }
+    private float animationProgress;
+    private float animationValues[][];
 
     public ClippingImageView(Context context) {
         super(context);
@@ -53,6 +51,29 @@ public class ClippingImageView extends View {
         matrix = new Matrix();
         drawRect = new RectF();
         bitmapRect = new RectF();
+    }
+
+    public void setAnimationValues(float[][] values) {
+        animationValues = values;
+    }
+
+    public float getAnimationProgress() {
+        return animationProgress;
+    }
+
+    public void setAnimationProgress(float progress) {
+        animationProgress = progress;
+
+        ViewProxy.setScaleX(this, animationValues[0][0] + (animationValues[1][0] - animationValues[0][0]) * animationProgress);
+        ViewProxy.setScaleY(this, animationValues[0][1] + (animationValues[1][1] - animationValues[0][1]) * animationProgress);
+        ViewProxy.setTranslationX(this, animationValues[0][2] + (animationValues[1][2] - animationValues[0][2]) * animationProgress);
+        ViewProxy.setTranslationY(this, animationValues[0][3] + (animationValues[1][3] - animationValues[0][3]) * animationProgress);
+        setClipHorizontal((int) (animationValues[0][4] + (animationValues[1][4] - animationValues[0][4]) * animationProgress));
+        setClipTop((int) (animationValues[0][5] + (animationValues[1][5] - animationValues[0][5]) * animationProgress));
+        setClipBottom((int) (animationValues[0][6] + (animationValues[1][6] - animationValues[0][6]) * animationProgress));
+        setRadius((int) (animationValues[0][7] + (animationValues[1][7] - animationValues[0][7]) * animationProgress));
+
+        invalidate();
     }
 
     public int getClipBottom() {
@@ -85,9 +106,6 @@ public class ClippingImageView extends View {
         }
         if (bmp != null) {
             float scaleY = ViewProxy.getScaleY(this);
-            if (drawListener != null && scaleY != 1) {
-                drawListener.onDraw();
-            }
             canvas.save();
 
             if (needRadius) {
@@ -172,10 +190,6 @@ public class ClippingImageView extends View {
             }
         }
         invalidate();
-    }
-
-    public void setOnDrawListener(onDrawListener listener) {
-        drawListener = listener;
     }
 
     public void setNeedRadius(boolean value) {

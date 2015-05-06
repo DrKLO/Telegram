@@ -36,6 +36,7 @@ import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.Adapters.BaseFragmentAdapter;
 import org.telegram.ui.Cells.TextInfoCell;
 import org.telegram.ui.Cells.UserCell;
+import org.telegram.ui.Components.LayoutHelper;
 
 public class BlockedUsersActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate, ContactsActivity.ContactsActivityDelegate {
 
@@ -99,8 +100,8 @@ public class BlockedUsersActivity extends BaseFragment implements NotificationCe
         emptyTextView.setText(LocaleController.getString("NoBlocked", R.string.NoBlocked));
         frameLayout.addView(emptyTextView);
         FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) emptyTextView.getLayoutParams();
-        layoutParams.width = FrameLayout.LayoutParams.MATCH_PARENT;
-        layoutParams.height = FrameLayout.LayoutParams.MATCH_PARENT;
+        layoutParams.width = LayoutHelper.MATCH_PARENT;
+        layoutParams.height = LayoutHelper.MATCH_PARENT;
         layoutParams.gravity = Gravity.TOP;
         emptyTextView.setLayoutParams(layoutParams);
         emptyTextView.setOnTouchListener(new View.OnTouchListener() {
@@ -113,15 +114,15 @@ public class BlockedUsersActivity extends BaseFragment implements NotificationCe
         progressView = new FrameLayout(context);
         frameLayout.addView(progressView);
         layoutParams = (FrameLayout.LayoutParams) progressView.getLayoutParams();
-        layoutParams.width = FrameLayout.LayoutParams.MATCH_PARENT;
-        layoutParams.height = FrameLayout.LayoutParams.MATCH_PARENT;
+        layoutParams.width = LayoutHelper.MATCH_PARENT;
+        layoutParams.height = LayoutHelper.MATCH_PARENT;
         progressView.setLayoutParams(layoutParams);
 
         ProgressBar progressBar = new ProgressBar(context);
         progressView.addView(progressBar);
         layoutParams = (FrameLayout.LayoutParams) progressView.getLayoutParams();
-        layoutParams.width = FrameLayout.LayoutParams.WRAP_CONTENT;
-        layoutParams.height = FrameLayout.LayoutParams.WRAP_CONTENT;
+        layoutParams.width = LayoutHelper.WRAP_CONTENT;
+        layoutParams.height = LayoutHelper.WRAP_CONTENT;
         layoutParams.gravity = Gravity.CENTER;
         progressView.setLayoutParams(layoutParams);
 
@@ -136,8 +137,8 @@ public class BlockedUsersActivity extends BaseFragment implements NotificationCe
         }
         frameLayout.addView(listView);
         layoutParams = (FrameLayout.LayoutParams) listView.getLayoutParams();
-        layoutParams.width = FrameLayout.LayoutParams.MATCH_PARENT;
-        layoutParams.height = FrameLayout.LayoutParams.MATCH_PARENT;
+        layoutParams.width = LayoutHelper.MATCH_PARENT;
+        layoutParams.height = LayoutHelper.MATCH_PARENT;
         listView.setLayoutParams(layoutParams);
 
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {

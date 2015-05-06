@@ -83,6 +83,10 @@ public class ThemingChatActivity extends BaseFragment {
     private int memberColorRow;
     private int forwardNameColorRow;
     private int avatarRadiusRow;
+    private int bubblesRow;
+    private int avatarSizeRow;
+    private int avatarAlignTopRow;
+    private int avatarMarginLeftRow;
 
     private int rowCount;
 
@@ -106,7 +110,10 @@ public class ThemingChatActivity extends BaseFragment {
         rowsSectionRow = rowCount++;
         rowsSection2Row = rowCount++;
 
-        avatarRadiusRow  = rowCount++;
+        avatarRadiusRow = rowCount++;
+        avatarSizeRow = rowCount++;
+        avatarMarginLeftRow = rowCount++;
+        avatarAlignTopRow = rowCount++;
         textSizeRow = rowCount++;
         rTextColorRow = rowCount++;
         rLinkColorRow = rowCount++;
@@ -121,6 +128,7 @@ public class ThemingChatActivity extends BaseFragment {
         dateSizeRow = rowCount++;
         dateColorRow = rowCount++;
 
+        bubblesRow = rowCount++;
         rBubbleColorRow = rowCount++;
         lBubbleColorRow = rowCount++;
         dateBubbleColorRow = rowCount++;
@@ -214,6 +222,17 @@ public class ThemingChatActivity extends BaseFragment {
 
                         colorDialog.show();
                     } else if (i == memberColorCheckRow) {
+                        boolean b = themePrefs.getBoolean( key, true);
+                        SharedPreferences.Editor editor = themePrefs.edit();
+                        editor.putBoolean( key, !b);
+                        editor.commit();
+                        if (view instanceof TextCheckCell) {
+                            ((TextCheckCell) view).setChecked(!b);
+                        }
+                        if (listView != null) {
+                            listView.invalidateViews();
+                        }
+                    } else if (i == avatarAlignTopRow) {
                         boolean b = themePrefs.getBoolean( key, true);
                         SharedPreferences.Editor editor = themePrefs.edit();
                         editor.putBoolean( key, !b);
@@ -529,7 +548,7 @@ public class ThemingChatActivity extends BaseFragment {
                                 commitInt("chatEmojiViewBGColor", color);
                             }
 
-                        },themePrefs.getInt("chatEmojiViewBGColor", 0xff222222), CENTER, 0, true);
+                        },themePrefs.getInt("chatEmojiViewBGColor", 0xfff5f6f7), CENTER, 0, true);
 
                         colorDialog.show();
                     } else if (i == emojiViewTabColorRow) {
@@ -547,7 +566,7 @@ public class ThemingChatActivity extends BaseFragment {
                                 commitInt("chatEmojiViewTabColor", color);
                             }
 
-                        },themePrefs.getInt("chatEmojiViewTabColor", darkColor), CENTER, 0, true);
+                        },themePrefs.getInt("chatEmojiViewTabColor", AndroidUtilities.getIntDarkerColor("themeColor",-0x15)), CENTER, 0, true);
 
                         colorDialog.show();
                     } else if (i == statusColorRow) {
@@ -603,6 +622,48 @@ public class ThemingChatActivity extends BaseFragment {
                         final int currentValue = themePrefs.getInt( key, 32);
                         numberPicker.setMinValue(1);
                         numberPicker.setMaxValue(32);
+                        numberPicker.setValue(currentValue);
+                        builder.setView(numberPicker);
+                        builder.setNegativeButton(LocaleController.getString("Done", R.string.Done), new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                if (numberPicker.getValue() != currentValue) {
+                                    commitInt( key, numberPicker.getValue());
+                                }
+                            }
+                        });
+                        showAlertDialog(builder);
+                    } else if (i == avatarSizeRow) {
+                        if (getParentActivity() == null) {
+                            return;
+                        }
+                        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                        builder.setTitle(LocaleController.getString("AvatarSize", R.string.AvatarSize));
+                        final NumberPicker numberPicker = new NumberPicker(getParentActivity());
+                        final int currentValue = themePrefs.getInt( key, 42);
+                        numberPicker.setMinValue(1);
+                        numberPicker.setMaxValue(56);
+                        numberPicker.setValue(currentValue);
+                        builder.setView(numberPicker);
+                        builder.setNegativeButton(LocaleController.getString("Done", R.string.Done), new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                if (numberPicker.getValue() != currentValue) {
+                                    commitInt( key, numberPicker.getValue());
+                                }
+                            }
+                        });
+                        showAlertDialog(builder);
+                    } else if (i == avatarMarginLeftRow) {
+                        if (getParentActivity() == null) {
+                            return;
+                        }
+                        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                        builder.setTitle(LocaleController.getString("AvatarMarginLeft", R.string.AvatarMarginLeft));
+                        final NumberPicker numberPicker = new NumberPicker(getParentActivity());
+                        final int currentValue = themePrefs.getInt( key, 6);
+                        numberPicker.setMinValue(0);
+                        numberPicker.setMaxValue(12);
                         numberPicker.setValue(currentValue);
                         builder.setView(numberPicker);
                         builder.setNegativeButton(LocaleController.getString("Done", R.string.Done), new DialogInterface.OnClickListener() {
@@ -745,6 +806,8 @@ public class ThemingChatActivity extends BaseFragment {
                             }
                         });
                         showAlertDialog(builder);
+                    } else if (i == bubblesRow) {
+                        presentFragment(new ImageListActivity());
                     }
                 }
             });
@@ -879,7 +942,7 @@ public class ThemingChatActivity extends BaseFragment {
                 return false;
             }
         });
-        listView.setAdapter(listAdapter);
+        //listView.setAdapter(listAdapter);
         //actionBar.setBackgroundColor(AndroidUtilities.getIntColor("themeColor"));
     }
 
@@ -897,8 +960,8 @@ public class ThemingChatActivity extends BaseFragment {
 
         @Override
         public boolean isEnabled(int i) {
-            return  i == headerColorRow || i == muteColorRow || i == headerIconsColorRow || i == rBubbleColorRow || i == lBubbleColorRow ||
-                    i == avatarRadiusRow || i == nameColorRow || i == nameSizeRow || i == statusColorRow || i == statusSizeRow ||
+            return  i == headerColorRow || i == muteColorRow || i == headerIconsColorRow || i == rBubbleColorRow || i == lBubbleColorRow ||  i == bubblesRow ||
+                    i == avatarRadiusRow || i == avatarSizeRow || i == avatarMarginLeftRow || i == avatarAlignTopRow || i == nameColorRow || i == nameSizeRow || i == statusColorRow || i == statusSizeRow ||
                     i == textSizeRow || i == timeSizeRow || i == dateColorRow || i == dateSizeRow || i == dateBubbleColorRow || i == rTextColorRow || i == rLinkColorRow || i == lTextColorRow || i == lLinkColorRow ||
                     i == rTimeColorRow|| i == lTimeColorRow || i == checksColorRow || i == memberColorCheckRow || AndroidUtilities.getBoolPref("chatMemberColorCheck") && i == memberColorRow || i == forwardNameColorRow ||
                     i == editTextSizeRow || i == editTextColorRow || i == editTextIconsColorRow || i == sendColorRow || i == editTextBGColorRow ||
@@ -954,6 +1017,14 @@ public class ThemingChatActivity extends BaseFragment {
                     textCell.setTag("chatAvatarRadius");
                     int size = themePrefs.getInt("chatAvatarRadius", AndroidUtilities.isTablet() ? 35 : 32);
                     textCell.setTextAndValue(LocaleController.getString("AvatarRadius", R.string.AvatarRadius), String.format("%d", size), true);
+                } else if (i == avatarSizeRow) {
+                    textCell.setTag("chatAvatarSize");
+                    int size = themePrefs.getInt("chatAvatarSize", AndroidUtilities.isTablet() ? 45 : 42);
+                    textCell.setTextAndValue(LocaleController.getString("AvatarSize", R.string.AvatarSize), String.format("%d", size), true);
+                } else if (i == avatarMarginLeftRow) {
+                    textCell.setTag("chatAvatarMarginLeft");
+                    int size = themePrefs.getInt("chatAvatarMarginLeft", 6);
+                    textCell.setTextAndValue(LocaleController.getString("AvatarMarginLeft", R.string.AvatarMarginLeft), String.format("%d", size), true);
                 } else if (i == nameSizeRow) {
                     int size = themePrefs.getInt("chatNameSize", AndroidUtilities.isTablet() ? 20 : 18);
                     textCell.setTextAndValue(LocaleController.getString("NameSize", R.string.NameSize), String.format("%d", size), true);
@@ -972,6 +1043,9 @@ public class ThemingChatActivity extends BaseFragment {
                 }  else if (i == editTextSizeRow) {
                     int size = themePrefs.getInt("chatEditTextSize", AndroidUtilities.isTablet() ? 20 : 18);
                     textCell.setTextAndValue(LocaleController.getString("EditTextSize", R.string.EditTextSize), String.format("%d", size), true);
+                } else if (i == bubblesRow) {
+                    String bStyle = themePrefs.getString("chatBubbleStyle", ImageListActivity.getBubbleName(0));
+                    textCell.setTextAndValue(LocaleController.getString("BubbleStyle", R.string.BubbleStyle), bStyle, true);
                 }
             } else if (type == 4) {
                 if (view == null) {
@@ -981,6 +1055,9 @@ public class ThemingChatActivity extends BaseFragment {
                 if (i == memberColorCheckRow) {
                     textCell.setTag("chatMemberColorCheck");
                     textCell.setTextAndCheck(LocaleController.getString("SetMemberColor", R.string.SetMemberColor), themePrefs.getBoolean("chatMemberColorCheck", false), false);
+                } else if (i == avatarAlignTopRow) {
+                    textCell.setTag("chatAvatarAlignTop");
+                    textCell.setTextAndCheck(LocaleController.getString("AvatarAlignTop", R.string.AvatarAlignTop), themePrefs.getBoolean("chatAvatarAlignTop", false), true);
                 }
             }
             else if (type == 3){
@@ -1045,9 +1122,9 @@ public class ThemingChatActivity extends BaseFragment {
                     textCell.setTag("chatEditTextIconsColor");
                     textCell.setTextAndColor(LocaleController.getString("EditTextIconsColor", R.string.EditTextIconsColor), themePrefs.getInt("chatEditTextIconsColor", 0xffadadad), true);
                 } else if (i == emojiViewBGColorRow) {
-                    textCell.setTextAndColor(LocaleController.getString("EmojiViewBGColor", R.string.EmojiViewBGColor), themePrefs.getInt("chatEmojiViewBGColor", 0xff222222), true);
+                    textCell.setTextAndColor(LocaleController.getString("EmojiViewBGColor", R.string.EmojiViewBGColor), themePrefs.getInt("chatEmojiViewBGColor", 0xfff5f6f7), true);
                 } else if (i == emojiViewTabColorRow) {
-                    textCell.setTextAndColor(LocaleController.getString("EmojiViewTabColor", R.string.EmojiViewTabColor), themePrefs.getInt("chatEmojiViewTabColor", darkColor), true);
+                    textCell.setTextAndColor(LocaleController.getString("EmojiViewTabColor", R.string.EmojiViewTabColor), themePrefs.getInt("chatEmojiViewTabColor", AndroidUtilities.getIntDarkerColor("themeColor",-0x15)), true);
                 }
             }
             return view;
@@ -1061,7 +1138,7 @@ public class ThemingChatActivity extends BaseFragment {
             else if ( i == headerSection2Row || i == rowsSection2Row ) {
                 return 1;
             }
-            else if ( i == avatarRadiusRow || i == nameSizeRow ||  i == statusSizeRow || i == textSizeRow || i == timeSizeRow || i == dateSizeRow  || i == editTextSizeRow) {
+            else if ( i == avatarRadiusRow || i == avatarSizeRow || i == avatarMarginLeftRow  || i == nameSizeRow ||  i == statusSizeRow || i == textSizeRow || i == timeSizeRow || i == dateSizeRow  || i == editTextSizeRow || i == bubblesRow) {
                 return 2;
             }
 
@@ -1071,7 +1148,7 @@ public class ThemingChatActivity extends BaseFragment {
                     i == sendColorRow || i == editTextColorRow || i == editTextBGColorRow || i == editTextIconsColorRow ||
                     i == emojiViewBGColorRow || i == emojiViewTabColorRow) {
                 return 3;
-            } else if (i == memberColorCheckRow) {
+            } else if (i == memberColorCheckRow || i == avatarAlignTopRow) {
                 return 4;
             }
             else {

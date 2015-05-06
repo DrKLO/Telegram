@@ -24,6 +24,7 @@ import org.telegram.android.AndroidUtilities;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
+import org.telegram.messenger.Utilities;
 
 public class BaseFragment {
     private boolean isFinished = false;
@@ -82,7 +83,7 @@ public class BaseFragment {
                 actionBar = new ActionBar(parentLayout.getContext());
                 actionBar.parentFragment = this;
                 //actionBar.setBackgroundColor(0xff54759e);
-                actionBar.setBackgroundResource(R.color.header);
+                actionBar.setBackgroundResource(R.color.header); //Plus
                 actionBar.setItemsBackground(R.drawable.bar_selector);
             }
         }
@@ -119,7 +120,10 @@ public class BaseFragment {
     }
 
     public void onResume() {
-
+        if(AndroidUtilities.needRestart){
+            AndroidUtilities.needRestart = false;
+            Utilities.restartApp();
+        }
     }
 
     public void onPause() {
@@ -208,7 +212,7 @@ public class BaseFragment {
     }
 
     public AlertDialog showAlertDialog(AlertDialog.Builder builder) {
-        if (parentLayout == null || parentLayout.checkTransitionAnimation() || parentLayout.animationInProgress || parentLayout.startedTracking) {
+        if (parentLayout == null || parentLayout.animationInProgress || parentLayout.startedTracking || parentLayout.checkTransitionAnimation()) {
             return null;
         }
         try {
@@ -221,7 +225,7 @@ public class BaseFragment {
         }
         try {
             visibleDialog = builder.show();
-            //
+            //Plus
             int color = AndroidUtilities.getIntColor("themeColor");
             int id = visibleDialog.getContext().getResources().getIdentifier("android:id/alertTitle", null, null);
             TextView tv = (TextView) visibleDialog.findViewById(id);

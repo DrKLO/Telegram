@@ -40,6 +40,7 @@ import android.widget.TextView;
 
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.android.AndroidUtilities;
+import org.telegram.android.AnimationCompat.ViewProxy;
 import org.telegram.android.ContactsController;
 import org.telegram.android.LocaleController;
 import org.telegram.android.MessageObject;
@@ -61,7 +62,7 @@ import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.Adapters.BaseFragmentAdapter;
-import org.telegram.ui.AnimationCompat.ViewProxy;
+import org.telegram.ui.Cells.AddMemberCell;
 import org.telegram.ui.Cells.DividerCell;
 import org.telegram.ui.Cells.EmptyCell;
 import org.telegram.ui.Cells.ShadowSectionCell;
@@ -72,6 +73,7 @@ import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.AvatarUpdater;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.IdenticonDrawable;
+import org.telegram.ui.Components.LayoutHelper;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -128,6 +130,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     private int sectionRow;
     private int membersSectionRow;
     private int membersEndRow;
+    private int addMemberRow;
     private int rowCount = 0;
 
     public ProfileActivity(Bundle args) {
@@ -301,29 +304,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
                         showAlertDialog(builder);
                     } else if (id == add_member) {
-                        Bundle args = new Bundle();
-                        args.putBoolean("onlyUsers", true);
-                        args.putBoolean("destroyAfterSelect", true);
-                        args.putBoolean("returnAsResult", true);
-                        //args.putBoolean("allowUsernameSearch", false);
-                        if (chat_id > 0) {
-                            args.putString("selectAlertString", LocaleController.getString("AddToTheGroup", R.string.AddToTheGroup));
-                        }
-                        ContactsActivity fragment = new ContactsActivity(args);
-                        fragment.setDelegate(new ContactsActivity.ContactsActivityDelegate() {
-                            @Override
-                            public void didSelectContact(TLRPC.User user, String param) {
-                                MessagesController.getInstance().addUserToChat(chat_id, user, info, param != null ? Utilities.parseInt(param) : 0);
-                            }
-                        });
-                        if (info != null) {
-                            HashMap<Integer, TLRPC.User> users = new HashMap<>();
-                            for (TLRPC.TL_chatParticipant p : info.participants) {
-                                users.put(p.user_id, null);
-                            }
-                            fragment.setIgnoreUsers(users);
-                        }
-                        presentFragment(fragment);
+                    openAddMember();
                     } else if (id == leave_group) {
                         AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                         builder.setMessage(LocaleController.getString("AreYouSureDeleteAndExit", R.string.AreYouSureDeleteAndExit));
@@ -392,8 +373,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             nameTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
             actionBar.addView(nameTextView);
             layoutParams = (FrameLayout.LayoutParams) nameTextView.getLayoutParams();
-            layoutParams.width = FrameLayout.LayoutParams.WRAP_CONTENT;
-            layoutParams.height = FrameLayout.LayoutParams.WRAP_CONTENT;
+        layoutParams.width = LayoutHelper.WRAP_CONTENT;
+        layoutParams.height = LayoutHelper.WRAP_CONTENT;
             layoutParams.leftMargin = AndroidUtilities.dp(LocaleController.isRTL ? 16 : 97);
             layoutParams.rightMargin = AndroidUtilities.dp(LocaleController.isRTL ? 97 : 16);
             layoutParams.bottomMargin = AndroidUtilities.dp(51);
@@ -411,8 +392,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             onlineTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT));
             actionBar.addView(onlineTextView);
             layoutParams = (FrameLayout.LayoutParams) onlineTextView.getLayoutParams();
-            layoutParams.width = FrameLayout.LayoutParams.WRAP_CONTENT;
-            layoutParams.height = FrameLayout.LayoutParams.WRAP_CONTENT;
+        layoutParams.width = LayoutHelper.WRAP_CONTENT;
+        layoutParams.height = LayoutHelper.WRAP_CONTENT;
             layoutParams.leftMargin = AndroidUtilities.dp(LocaleController.isRTL ? 16 : 97);
             layoutParams.rightMargin = AndroidUtilities.dp(LocaleController.isRTL ? 97 : 16);
             layoutParams.bottomMargin = AndroidUtilities.dp(30);
@@ -426,8 +407,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             AndroidUtilities.setListViewEdgeEffectColor(listView, AvatarDrawable.getProfileBackColorForId(user_id != 0 ? 5 : chat_id));
             frameLayout.addView(listView);
             layoutParams = (FrameLayout.LayoutParams) listView.getLayoutParams();
-            layoutParams.width = FrameLayout.LayoutParams.MATCH_PARENT;
-            layoutParams.height = FrameLayout.LayoutParams.MATCH_PARENT;
+        layoutParams.width = LayoutHelper.MATCH_PARENT;
+        layoutParams.height = LayoutHelper.MATCH_PARENT;
             layoutParams.gravity = Gravity.TOP;
             listView.setLayoutParams(layoutParams);
 
@@ -515,6 +496,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         Bundle args = new Bundle();
                         args.putInt("user_id", user_id);
                         presentFragment(new ProfileActivity(args));
+                } else if (i == addMemberRow) {
+                    openAddMember();
                     }
                 }
             });
@@ -596,8 +579,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     });
                 }
                 layoutParams = (FrameLayout.LayoutParams) writeButton.getLayoutParams();
-                layoutParams.width = FrameLayout.LayoutParams.WRAP_CONTENT;
-                layoutParams.height = FrameLayout.LayoutParams.WRAP_CONTENT;
+            layoutParams.width = LayoutHelper.WRAP_CONTENT;
+            layoutParams.height = LayoutHelper.WRAP_CONTENT;
                 layoutParams.leftMargin = AndroidUtilities.dp(LocaleController.isRTL ? 16 : 0);
                 layoutParams.rightMargin = AndroidUtilities.dp(LocaleController.isRTL ? 0 : 16);
                 layoutParams.gravity = (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT);
@@ -686,6 +669,35 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         if (chat_id != 0) {
             avatarUpdater.onActivityResult(requestCode, resultCode, data);
         }
+    }
+
+    private void openAddMember() {
+        Bundle args = new Bundle();
+        args.putBoolean("onlyUsers", true);
+        args.putBoolean("destroyAfterSelect", true);
+        args.putBoolean("returnAsResult", true);
+        if (info != null && info.admin_id == UserConfig.getClientUserId()) {
+            args.putInt("chat_id", currentChat.id);
+        }
+        //args.putBoolean("allowUsernameSearch", false);
+        if (chat_id > 0) {
+            args.putString("selectAlertString", LocaleController.getString("AddToTheGroup", R.string.AddToTheGroup));
+        }
+        ContactsActivity fragment = new ContactsActivity(args);
+        fragment.setDelegate(new ContactsActivity.ContactsActivityDelegate() {
+            @Override
+            public void didSelectContact(TLRPC.User user, String param) {
+                MessagesController.getInstance().addUserToChat(chat_id, user, info, param != null ? Utilities.parseInt(param) : 0);
+            }
+        });
+        if (info != null) {
+            HashMap<Integer, TLRPC.User> users = new HashMap<>();
+            for (TLRPC.TL_chatParticipant p : info.participants) {
+                users.put(p.user_id, null);
+            }
+            fragment.setIgnoreUsers(users);
+        }
+        presentFragment(fragment);
     }
 
     private void checkListViewScroll() {
@@ -1097,16 +1109,18 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 rowCount += info.participants.size();
                 membersEndRow = rowCount;
                 int maxCount = chat_id > 0 ? MessagesController.getInstance().maxGroupCount : MessagesController.getInstance().maxBroadcastCount;
+                addMemberRow = rowCount++;
             } else {
                 membersEndRow = -1;
                 membersSectionRow = -1;
                 emptyRowChat2 = -1;
+                addMemberRow = -1;
             }
         }
     }
 
     private void updateProfileData() {
-        if (avatarImage == null) {
+        if (avatarImage == null || nameTextView == null) {
             return;
         }
         updateTheme();
@@ -1138,6 +1152,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             TLRPC.Chat chat = MessagesController.getInstance().getChat(chat_id);
             if (chat != null) {
                 currentChat = chat;
+            } else {
+                chat = currentChat;
             }
             nameTextView.setText(chat.title);
 
@@ -1269,7 +1285,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             if (user_id != 0) {
                 return i == phoneRow || i == settingsTimerRow || i == settingsKeyRow || i == settingsNotificationsRow || i == sharedMediaRow || i == startSecretChatRow;
             } else if (chat_id != 0) {
-                return i == settingsNotificationsRow || i == sharedMediaRow || i > emptyRowChat2 && i < membersEndRow;
+                return i == settingsNotificationsRow || i == sharedMediaRow || i > emptyRowChat2 && i < membersEndRow || i == addMemberRow;
             }
             return false;
         }
@@ -1304,11 +1320,11 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     view = new EmptyCell(mContext);
                 }
                 if (i == overscrollRow) {
-                    ((EmptyCell) view).setHeight(88);
+                    ((EmptyCell) view).setHeight(AndroidUtilities.dp(88));
                 } else if (i == emptyRowChat || i == emptyRowChat2) {
-                    ((EmptyCell) view).setHeight(8);
+                    ((EmptyCell) view).setHeight(AndroidUtilities.dp(8));
                 } else {
-                    ((EmptyCell) view).setHeight(36);
+                    ((EmptyCell) view).setHeight(AndroidUtilities.dp(36));
                 }
             } else if (type == 1) {
                 if (view == null) {
@@ -1404,6 +1420,10 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     view = new ShadowSectionCell(mContext);
                 }
                 view.setBackgroundColor(themePrefs.getInt("profileRowColor", 0xffffffff));
+            } else if (type == 6) {
+                if (view == null) {
+                    view = new AddMemberCell(mContext);
+                }
             }
             viewGroup.setBackgroundColor(themePrefs.getInt("profileRowColor", 0xffffffff));
             return view;
@@ -1423,13 +1443,15 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 return 4;
             } else if (i == membersSectionRow) {
                 return 5;
+            } else if (i == addMemberRow) {
+                return 6;
             }
             return 0;
         }
 
         @Override
         public int getViewTypeCount() {
-            return 6;
+            return 7;
         }
 
         @Override

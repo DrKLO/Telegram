@@ -89,6 +89,10 @@
     <string name="IsSendingPhoto">%1$s está enviando una foto...</string>
     <string name="IsSendingVideo">%1$s está enviando un vídeo...</string>
     <string name="IsSendingFile">%1$s está enviando un archivo...</string>
+    <string name="RecordingAudio">grabando audio...</string>
+    <string name="SendingPhoto">enviando foto...</string>
+    <string name="SendingVideoStatus">enviando vídeo...</string>
+    <string name="SendingFile">enviando archivo...</string>
     <string name="GotAQuestion">¿Tienes preguntas\nsobre Telegram?</string>
     <string name="ChatTakePhoto">Hacer foto</string>
     <string name="ChatGallery">Galería</string>
@@ -157,6 +161,7 @@
     <string name="NotificationContactJoined">¡%1$s se unió a Telegram!</string>
     <string name="NotificationUnrecognizedDevice">%1$s,\nDetectamos un inicio de sesión en tu cuenta desde un nuevo dispositivo, el %2$s\n\nDispositivo: %3$s\nUbicación: %4$s\n\nSi no eras tú, puedes ir a Ajustes - Privacidad y seguridad - Cerrar todas las otras sesiones.\n\nSi crees que alguien ha iniciado la sesión sin tu consentimiento, puedes activar la verificación en dos pasos, en los ajustes de privacidad y seguridad.\n\nAtentamente,\nEl equipo de Telegram</string>
     <string name="NotificationContactNewPhoto">%1$s actualizó su foto de perfil</string>
+    <string name="NotificationInvitedToGroupByLink">%1$s se unió al grupo %2$s con un enlace de invitación</string>
     <string name="Reply">Responder</string>
     <string name="ReplyToGroup">Responder a %1$s</string>
     <string name="ReplyToUser">Responder a %1$s</string>
@@ -182,8 +187,21 @@
     <string name="EnterGroupNamePlaceholder">Nombre del grupo</string>
     <string name="GroupName">Nombre del grupo</string>
     <string name="MembersCount">%1$d/%2$d miembros</string>
+    <string name="JoinToGroup">¿Quieres unirte al grupo \'%1$s\'?</string>
+    <string name="JoinToGroupErrorFull">Lo sentimos. Este grupo está lleno.</string>
+    <string name="JoinToGroupErrorNotExist">Lo sentimos. Este grupo no existe.</string>
+    <string name="LinkCopied">Enlace copiado al portapapeles</string>
+    <string name="InviteToGroupByLink">Invitar al grupo con un enlace</string>
+    <string name="InviteLink">Enlace de invitación</string>
+    <string name="RevokeAlert">¿Quieres anular este enlace? Una vez hecho, nadie podrá usarlo para unirse al grupo.</string>
+    <string name="RevokeAlertNewLink">El enlace de invitación anterior está inactivo. Ha sido creado uno nuevo.</string>
+    <string name="RevokeButton">Anular</string>
+    <string name="RevokeLink">Anular enlace</string>
+    <string name="CopyLink">Copiar enlace</string>
+    <string name="ShareLink">Compartir enlace</string>
+    <string name="LinkInfo">Cualquiera que tenga Telegram instalado podrá unirse a tu grupo siguiendo este enlace.</string>
     <!--group info view-->
-    <string name="SharedMedia">Multimedia compartida</string>
+    <string name="SharedMedia">Todos los archivos</string>
     <string name="SETTINGS">Ajustes</string>
     <string name="AddMember">Añadir miembro</string>
     <string name="DeleteAndExit">Eliminar y dejar el grupo</string>
@@ -211,15 +229,15 @@
     <string name="Info">Información</string>
     <string name="Phone">Teléfono</string>
     <!--usernames-->
-    <string name="Username">Apodo</string>
-    <string name="UsernamePlaceholder">Tu apodo</string>
-    <string name="UsernameInUse">Lo siento, este apodo ya está ocupado.</string>
-    <string name="UsernameInvalid">Lo siento, este apodo es inválido.</string>
-    <string name="UsernameInvalidShort">Un apodo debe tener al menos 5 caracteres.</string>
-    <string name="UsernameInvalidLong">El apodo no debe exceder los 32 caracteres.</string>
-    <string name="UsernameInvalidStartNumber">Lo siento, un apodo no puede comenzar con un número.</string>
-    <string name="UsernameHelp">Puedes elegir un apodo en <![CDATA[<b>]]>Plus Messenger<![CDATA[</b>]]>. Si lo haces, otras personas te podrán encontrar por ese apodo y contactarte sin saber tu número de teléfono.<![CDATA[<br><br>]]>Puedes usar <![CDATA[<b>]]>a–z<![CDATA[</b>]]>, <![CDATA[<b>]]>0–9<![CDATA[</b>]]> y guiones bajos. La longitud mínima es de <![CDATA[<b>]]>5<![CDATA[</b>]]> caracteres.</string>
-    <string name="UsernameChecking">Verificando apodo...</string>
+    <string name="Username">Alias</string>
+    <string name="UsernamePlaceholder">Tu alias</string>
+    <string name="UsernameInUse">Lo siento, este alias ya está ocupado.</string>
+    <string name="UsernameInvalid">Lo siento, este alias es inválido.</string>
+    <string name="UsernameInvalidShort">Un alias debe tener al menos 5 caracteres.</string>
+    <string name="UsernameInvalidLong">El alias no debe exceder los 32 caracteres.</string>
+    <string name="UsernameInvalidStartNumber">Lo siento, un alias no puede comenzar con un número.</string>
+    <string name="UsernameHelp">Puedes elegir un alias en <![CDATA[<b>]]>Plus Messenger<![CDATA[</b>]]>. Si lo haces, otras personas te podrán encontrar por ese alias y contactarte sin saber tu número de teléfono.<![CDATA[<br><br>]]>Puedes usar <![CDATA[<b>]]>a–z<![CDATA[</b>]]>, <![CDATA[<b>]]>0–9<![CDATA[</b>]]> y guiones bajos. La longitud mínima es de <![CDATA[<b>]]>5<![CDATA[</b>]]> caracteres.</string>
+    <string name="UsernameChecking">Verificando alias...</string>
     <string name="UsernameAvailable">%1$s está disponible.</string>
     <string name="UsernameEmpty">Ninguno</string>
     <string name="ErrorOccurred">Ocurrió un error.</string>
@@ -311,6 +329,13 @@
     <string name="RepeatDisabled">Apagado</string>
     <string name="InChatSound">Sonidos en el chat</string>
     <string name="SoundDefault">Por defecto</string>
+    <string name="SmartNotifications">Notificaciones inteligentes</string>
+    <string name="SmartNotificationsDisabled">Desactivadas</string>
+    <string name="SmartNotificationsInfo">Sonar como máximo %1$s en %2$s</string>
+    <string name="SmartNotificationsSoundAtMost">Sonar como máximo</string>
+    <string name="SmartNotificationsTimes">veces</string>
+    <string name="SmartNotificationsWithin">en</string>
+    <string name="SmartNotificationsMinutes">minutos</string>
     <!--sessions view-->
     <string name="SessionsTitle">Sesiones activas</string>
     <string name="CurrentSession">Sesión actual</string>
@@ -350,15 +375,20 @@
     <string name="Hybrid">Híbrido</string>
     <string name="MetersAway">m de distancia</string>
     <string name="KMetersAway">km de distancia</string>
-    <string name="SendLocation">Enviar ubicación</string>
+    <string name="SendLocation">Enviar tu ubicación actual</string>
+    <string name="SendSelectedLocation">Enviar la ubicación seleccionada</string>
     <string name="ShareLocation">Ubicación</string>
+    <string name="AccurateTo">Exacto a %1$s</string>
+    <string name="NearbyPlaces">O ELIGE UN LUGAR</string>
     <!--photo gallery view-->
     <string name="ShowAllMedia">Ir a Multimedia</string>
     <string name="SaveToGallery">Guardar en galería</string>
     <string name="Of">%1$d de %2$d</string>
     <string name="Gallery">Galería</string>
     <string name="AllPhotos">Todas las fotos</string>
+    <string name="AllVideo">Todos los vídeos</string>
     <string name="NoPhotos">Aún sin fotos</string>
+    <string name="NoVideo">Sin vídeos aún</string>
     <string name="PleaseDownload">Por favor, primero descarga la multimedia</string>
     <string name="NoRecentPhotos">No hay fotos recientes</string>
     <string name="NoRecentGIFs">No hay GIF recientes</string>
@@ -388,6 +418,11 @@
     <string name="DiscardChanges">¿Descartar cambios?</string>
     <string name="ClearSearch">¿Quieres borrar el historial de búsqueda?</string>
     <string name="ClearButton">Borrar</string>
+    <string name="PickerPhotos">Fotos</string>
+    <string name="PickerVideo">Vídeo</string>
+    <string name="AddCaption">Añadir un comentario...</string>
+    <string name="PhotoCaption">Comentario de foto</string>
+    <string name="VideoCaption">Comentario de vídeo</string>
     <!--password view-->
     <string name="TwoStepVerification">Verificación en dos pasos</string>
     <string name="SetAdditionalPassword">Poner contraseña adicional</string>
@@ -497,6 +532,8 @@
     <string name="OK">OK</string>
     <string name="Crop">RECORTAR</string>
     <!--messages-->
+    <string name="ActionInviteYou">Te uniste al grupo con un enlace de invitación</string>
+    <string name="ActionInviteUser">un1 se unió al grupo con un enlace de invitación</string>
     <string name="ActionKickUser">un1 expulsó a un2</string>
     <string name="ActionLeftUser">un1 dejó el grupo</string>
     <string name="ActionAddUser">un1 añadió a un2</string>
@@ -664,6 +701,18 @@
     <string name="Users_few">%1$d usuarios</string>
     <string name="Users_many">%1$d usuarios</string>
     <string name="Users_other">%1$d usuarios</string>
+    <string name="Times_zero">%1$d veces</string>
+    <string name="Times_one">%1$d vez</string>
+    <string name="Times_two">%1$d veces</string>
+    <string name="Times_few">%1$d veces</string>
+    <string name="Times_many">%1$d veces</string>
+    <string name="Times_other">%1$d veces</string>
+    <string name="Meters_zero">%1$d metros</string>
+    <string name="Meters_one">%1$d metro</string>
+    <string name="Meters_two">%1$d metros</string>
+    <string name="Meters_few">%1$d metros</string>
+    <string name="Meters_many">%1$d metros</string>
+    <string name="Meters_other">%1$d metros</string>
     <!--forwarded messages-->
     <string name="ForwardedMessage_zero">%1$d mensajes adjuntos</string>
     <string name="ForwardedMessage_one">Mensaje adjunto</string>
@@ -730,24 +779,17 @@
     <string name="formatterDay24H">HH:mm</string>
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s a las %2$s</string>
+    <!--update text-->
+    <string name="updateText">Plus Messenger para Android ha sido actualizada. Novedades en la versión 2.8:\n\n- Enlaces de invitación para chats grupales\n- Notificaciones inteligentes\n- Pestaña de stickers en el menú de emojis\n- Comentarios en las fotos\n- Lugares y direcciones en las ubicaciones\n- Estado \'escuchado\' para los mensajes de voz\n- Estado \'escribiendo\' avanzado: enviando foto, grabando audio, etc.\n- Deslizamiento y animaciones mejoradas para una experiencia fluiiiiiiiiiiiiiiiiiida</string>
+    <string name="updateBuild">523</string>
     <!--Telegram+ Spanish-->
-    <!--Smart Notifications-->
-    <string name="SmartNotification">Notificación inteligente</string>
-    <string name="TimeUnitSeconds">segundo(s)</string>
-    <string name="TimeUnitMinutes">minuto(s)</string>
-    <string name="TimeUnitHours">hora(s)</string>
-    <string name="TimeUnitDays">día(s)</string>
-    <string name="settings_smart_notify_begin">Suena máximo</string>
-    <string name="settings_smart_notify_mid1">veces</string>
-    <string name="settings_smart_notify_mid11">vez</string>
-    <string name="settings_smart_notify_mid2">cada</string>
-    <!---->
+    <string name="updatePlusText">\n\nNovedades en 2.8.1.3:\n\n- Nuevo MOD para cambiar estilo de bocadillos (3 estilos nuevos)\n- Opción para guardar automáticamente ficheros usando nombre original\n- Nueva opción para enviar sticker directamente desde la galería\n- Nuevo MOD para cambiar tamaño de avatares en pantalla principal y chat\n- Nuevo MOD para ajustar margen izquierdo de avatares en pantalla principal y chat\n- Opción para ajustar avatares arriba del bocadillo en vez de abajo en chat\n- Nuevos MODs para cambiar color y tamaño de nombre de grupo en pantalla principal\n- Nuevo MOD para cambiar color de nombre de contacto con número desconocido en pantalla principal\n- Solución de errores</string>
     <string name="TelegramForAndroid">Plus Messenger para Android</string>
     <string name="Theming">Tematización</string>
     <string name="colorHexInvalid">¡Color hexadecimal inválido!</string>
     <string name="themeColor">Color de tema</string>
     <string name="ResetThemeSettings">Restablecer tema</string>
-  <string name="ResetThemeSettingsSum">Deshacer todos los cambios del tema actual</string>
+    <string name="ResetThemeSettingsSum">Deshacer todos los cambios del tema actual</string>
     <string name="ResetThemeToastText">¡Ajustes de tema restablecidos a valores por defecto!</string>
     <string name="General">General</string>
     <string name="Screens">Pantallas</string>
@@ -841,4 +883,13 @@
     <string name="ThemeApplied">¡Tema aplicado!</string>
     <string name="ClickOkToRestart">Pulsa OK para reiniciar la aplicación</string>
     <string name="ShowAndroidEmoji">Muestra emoticonos del teléfono</string>
+    <string name="BubbleStyle">Estilo de globo de diálogo</string>
+    <string name="KeepOriginalFilename">Mantener nombre de archivo original</string>
+    <string name="KeepOriginalFilenameHelp">En lugar de solo números los archivos se guardarán usando el formato nombre_fecha</string>
+    <string name="AvatarSize">Tamaño de avatar</string>
+    <string name="AvatarAlignTop">Alinear avatar arriba</string>
+    <string name="AvatarMarginLeft">Margen izquierdo de avatar</string>
+    <string name="GroupNameColor">Color de nombre de grupo</string>
+    <string name="GroupNameSize">Tamaño de nombre de grupo</string>
+    <string name="UnknownNameColor">Color de nombre (nº desconocido)</string>
 </resources>

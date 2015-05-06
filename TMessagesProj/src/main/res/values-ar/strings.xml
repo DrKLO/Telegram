@@ -89,6 +89,10 @@
     <string name="IsSendingPhoto">%1$s يقوم بإرسال صورة...</string>
     <string name="IsSendingVideo">%1$s يقوم بإرسال مقطع مرئي...</string>
     <string name="IsSendingFile">%1$s يقوم بإرسال ملف...</string>
+    <string name="RecordingAudio">جاري تسجيل المقطع الصوتي...</string>
+    <string name="SendingPhoto">جاري إرسال الصورة...</string>
+    <string name="SendingVideoStatus">جاري إرسال المقطع المرئي...</string>
+    <string name="SendingFile">جاري إرسال الملف...</string>
     <string name="GotAQuestion">هل يوجد لديك سؤال\nحول تيليجرام؟</string>
     <string name="ChatTakePhoto">التقط صورة</string>
     <string name="ChatGallery">صورة</string>
@@ -157,6 +161,7 @@
     <string name="NotificationContactJoined">%1$s قام بالتسجيل في تيليجرام!</string>
     <string name="NotificationUnrecognizedDevice">%1$s,\nتم تسجيل الدخول لحسابك من جهاز جديد يوم %2$s\n\nالجهاز: %3$s\nالموقع: %4$s\n\nإذا لم يكن أنت من سجل الدخول، يمكنك الذهاب للإعدادات ثم تسجيل الخروج من كافة الأجهزة الأخرى. كما يمكنك تفعيل التحقق بخطوتين إذا رغبت بذلك عن طريق إعدادات الخصوصية.\n\nشكرًا,\nفريق عمل تيليجرام</string>
     <string name="NotificationContactNewPhoto">%1$s قام بتغيير صورته الشخصية</string>
+    <string name="NotificationInvitedToGroupByLink">%1$s قام بالدخول للمجموعة %2$s باستخدام رابط الدعوة</string>
     <string name="Reply">الرد</string>
     <string name="ReplyToGroup">الرد على %1$s</string>
     <string name="ReplyToUser">الرد على %1$s</string>
@@ -182,6 +187,19 @@
     <string name="EnterGroupNamePlaceholder">أدخل اسم للمجموعة</string>
     <string name="GroupName">اسم المجموعة</string>
     <string name="MembersCount">%1$d/%2$d عضو</string>
+    <string name="JoinToGroup">هل ترغب في الدخول للمجموعة \'%1$s\'؟</string>
+    <string name="JoinToGroupErrorFull">المعذرة، هذه المجموعة ممتلئة.</string>
+    <string name="JoinToGroupErrorNotExist">المعذرة، هذه المجموعة غير موجودة.</string>
+    <string name="LinkCopied">تم نسخ الرابط إلى الحافظة</string>
+    <string name="InviteToGroupByLink">قم بدعوة للمجموعة باستخدام رابط</string>
+    <string name="InviteLink">رابط دعوة</string>
+    <string name="RevokeAlert">هل أنت متأكد من رغبتك في إلغاء رابط الدعوة؟ إذا قمت بذلك، لن يستطيع أحد من استخدامه للدخول للمجموعة.</string>
+    <string name="RevokeAlertNewLink">رابط الدعوة السابق لا يعمل الآن. سيتم إنشاء رابط جديد.</string>
+    <string name="RevokeButton">إلغاء</string>
+    <string name="RevokeLink">إلغاء الرابط</string>
+    <string name="CopyLink">نسخ الرابط</string>
+    <string name="ShareLink">شارك الرابط</string>
+    <string name="LinkInfo">أي شخص يمتلك تيليجرام على جهازه سيسطيع الدخول لمجموعتك باستخدام الرابط التالي.</string>
     <!--group info view-->
     <string name="SharedMedia">عدد الوسائط المشتركة</string>
     <string name="SETTINGS">الإعدادات</string>
@@ -311,6 +329,13 @@
     <string name="RepeatDisabled">إيقاف</string>
   <string name="InChatSound">الأصوات داخل المحادثات</string>
     <string name="SoundDefault">افتراضي</string>
+    <string name="SmartNotifications">إشعارات ذكية</string>
+    <string name="SmartNotificationsDisabled">تعطيل</string>
+    <string name="SmartNotificationsInfo">أعلى صوت %1$s خلال %2$s</string>
+    <string name="SmartNotificationsSoundAtMost">أعلى صوت</string>
+    <string name="SmartNotificationsTimes">الأوقات</string>
+    <string name="SmartNotificationsWithin">خلال</string>
+    <string name="SmartNotificationsMinutes">دقائق</string>
     <!--sessions view-->
     <string name="SessionsTitle">الأجهزة المسجّل دخول منها</string>
     <string name="CurrentSession">الجهاز الحالي</string>
@@ -350,15 +375,20 @@
     <string name="Hybrid">هجين</string>
     <string name="MetersAway">متر يبعد</string>
     <string name="KMetersAway">كيلومتر يبعد</string>
-    <string name="SendLocation">أرسل موقعك</string>
-    <string name="ShareLocation">مشاركة الموقع</string>
+    <string name="SendLocation">أرسل مكانك الحالي</string>
+    <string name="SendSelectedLocation">أرسل المكان المختار</string>
+    <string name="ShareLocation">المكان</string>
+    <string name="AccurateTo">دقيق لدرجة %1$s</string>
+    <string name="NearbyPlaces">أو اختر مكان</string>
     <!--photo gallery view-->
     <string name="ShowAllMedia">عرض كافة الوسائط</string>
     <string name="SaveToGallery">حفظ في الجهاز</string>
     <string name="Of">%1$d من %2$d</string>
     <string name="Gallery">الألبوم</string>
     <string name="AllPhotos">جميع الصور</string>
+    <string name="AllVideo">كافة المقاطع المرئية</string>
     <string name="NoPhotos">لا توجد صور حتى الآن</string>
+    <string name="NoVideo">لا يوجد مقاطع مرئية بعد</string>
     <string name="PleaseDownload">فضلًا، قم بتنزيل الوسائط أولًا</string>
     <string name="NoRecentPhotos">لا توجد صور حديثة</string>
     <string name="NoRecentGIFs">لا يوجد صور متحركة حديثة</string>
@@ -388,6 +418,11 @@
     <string name="DiscardChanges">تجاهل التغييرات؟</string>
     <string name="ClearSearch">هل ترغب في مسح سجل البحث؟</string>
     <string name="ClearButton">مسح</string>
+    <string name="PickerPhotos">صور</string>
+    <string name="PickerVideo">مقطع مرئي</string>
+    <string name="AddCaption">أضف تعليق...</string>
+    <string name="PhotoCaption">تعليق الصورة</string>
+    <string name="VideoCaption">تعليق المقطع المرئي</string>
     <!--password view-->
     <string name="TwoStepVerification">التحقق بخطوتين</string>
     <string name="SetAdditionalPassword">تعيين كلمة مرور إضافية</string>
@@ -497,6 +532,8 @@
     <string name="OK">موافق</string>
     <string name="Crop">قطع</string>
     <!--messages-->
+    <string name="ActionInviteYou">لقد قمت بالدخول للمجموعة باستخدام رابط الدعوة</string>
+    <string name="ActionInviteUser">un1 قام بالدخول للمجموعة باستخدام رابط الدعوة</string>
     <string name="ActionKickUser">un1 أزال un2</string>
     <string name="ActionLeftUser">غادر المجموعة العضو un1</string>
     <string name="ActionAddUser">un1 قام بإضافة un2</string>
@@ -664,6 +701,18 @@
     <string name="Users_few">%1$d مستخدمون</string>
     <string name="Users_many">%1$d مستخدم</string>
     <string name="Users_other">%1$d مستخدم</string>
+    <string name="Times_zero">%1$d مرات</string>
+    <string name="Times_one">%1$d مرة</string>
+    <string name="Times_two">%1$d مرة</string>
+    <string name="Times_few">%1$d مرة</string>
+    <string name="Times_many">%1$d مرة</string>
+    <string name="Times_other">%1$d مرة</string>
+    <string name="Meters_zero">%1$d أمتار</string>
+    <string name="Meters_one">%1$d متر</string>
+    <string name="Meters_two">%1$d متر</string>
+    <string name="Meters_few">%1$d متر</string>
+    <string name="Meters_many">%1$d متر</string>
+    <string name="Meters_other">%1$d متر</string>
     <!--forwarded messages-->
     <string name="ForwardedMessage_zero">%1$d رسالة معاد توجيهها</string>
     <string name="ForwardedMessage_one">الرسالة المعاد توجيهها</string>
@@ -730,6 +779,9 @@
     <string name="formatterDay24H">HH:mm</string>
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s الساعة %2$s</string>
+    <!--update text-->
+    <string name="updateText">تم تحديث تيليجرام نسخة الأندرويد. الجديد في النسخة ٢.٨:\n\n- روابط الدعوة للمجموعات\n- الإشعارات الذكية\n- خيار الملصقات في قائمة الإموجي\n- التعليقات للصور\n- الأماكن في خدمة المواقع\n- وضعية \"مسموع\" في الرسائل الصوتية\n- شرح متطور لحالة الطرف الآخر: يرسل صورة، يسجل مقطع صوتي، إلخ\n- تطوير التحريك والحركات داخل التطبيق ليكون أسهل وأسرع</string>
+    <string name="updateBuild">523</string>
     <!--Telegram+ arabic-->
     <string name="TelegramForAndroid">تلغرام للاندرويد</string>
     <string name="Theming">Theming</string>

@@ -19,6 +19,7 @@ import android.widget.TextView;
 
 import org.telegram.android.AndroidUtilities;
 import org.telegram.android.LocaleController;
+import org.telegram.ui.Components.LayoutHelper;
 
 public class TextCell extends FrameLayout {
 
@@ -40,8 +41,8 @@ public class TextCell extends FrameLayout {
         textView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL);
         addView(textView);
         LayoutParams layoutParams = (LayoutParams) textView.getLayoutParams();
-        layoutParams.width = LayoutParams.MATCH_PARENT;
-        layoutParams.height = LayoutParams.MATCH_PARENT;
+        layoutParams.width = LayoutHelper.MATCH_PARENT;
+        layoutParams.height = LayoutHelper.MATCH_PARENT;
         layoutParams.leftMargin = AndroidUtilities.dp(LocaleController.isRTL ? 16 : 71);
         layoutParams.rightMargin = AndroidUtilities.dp(LocaleController.isRTL ? 71 : 16);
         layoutParams.gravity = LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT;
@@ -57,8 +58,8 @@ public class TextCell extends FrameLayout {
         valueTextView.setGravity((LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.CENTER_VERTICAL);
         addView(valueTextView);
         layoutParams = (LayoutParams) valueTextView.getLayoutParams();
-        layoutParams.width = LayoutParams.WRAP_CONTENT;
-        layoutParams.height = LayoutParams.MATCH_PARENT;
+        layoutParams.width = LayoutHelper.WRAP_CONTENT;
+        layoutParams.height = LayoutHelper.MATCH_PARENT;
         layoutParams.leftMargin = AndroidUtilities.dp(LocaleController.isRTL ? 24 : 0);
         layoutParams.rightMargin = AndroidUtilities.dp(LocaleController.isRTL ? 0 : 24);
         layoutParams.gravity = LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT;
@@ -68,8 +69,8 @@ public class TextCell extends FrameLayout {
         imageView.setScaleType(ImageView.ScaleType.CENTER);
         addView(imageView);
         layoutParams = (LayoutParams) imageView.getLayoutParams();
-        layoutParams.width = LayoutParams.WRAP_CONTENT;
-        layoutParams.height = LayoutParams.WRAP_CONTENT;
+        layoutParams.width = LayoutHelper.WRAP_CONTENT;
+        layoutParams.height = LayoutHelper.WRAP_CONTENT;
         layoutParams.leftMargin = AndroidUtilities.dp(LocaleController.isRTL ? 0 : 16);
         layoutParams.rightMargin = AndroidUtilities.dp(LocaleController.isRTL ? 16 : 0);
         layoutParams.gravity = (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL;
@@ -79,8 +80,8 @@ public class TextCell extends FrameLayout {
         valueImageView.setScaleType(ImageView.ScaleType.CENTER);
         addView(valueImageView);
         layoutParams = (LayoutParams) valueImageView.getLayoutParams();
-        layoutParams.width = LayoutParams.WRAP_CONTENT;
-        layoutParams.height = LayoutParams.WRAP_CONTENT;
+        layoutParams.width = LayoutHelper.WRAP_CONTENT;
+        layoutParams.height = LayoutHelper.WRAP_CONTENT;
         layoutParams.leftMargin = AndroidUtilities.dp(LocaleController.isRTL ? 24 : 0);
         layoutParams.rightMargin = AndroidUtilities.dp(LocaleController.isRTL ? 0 : 24);
         layoutParams.gravity = (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.CENTER_VERTICAL;

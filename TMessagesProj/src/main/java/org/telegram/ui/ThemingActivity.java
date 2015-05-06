@@ -424,7 +424,7 @@ public class ThemingActivity extends BaseFragment {
         editor.putInt("chatRBubbleColor", AndroidUtilities.getDefBubbleColor());
         editor.putInt("chatStatusColor", AndroidUtilities.setDarkColor(i, -0x40));
         editor.putInt("chatRTimeColor", AndroidUtilities.setDarkColor(i, 0x15));
-        editor.putInt("chatEmojiViewTabColor", AndroidUtilities.setDarkColor(i, 0x15));
+        editor.putInt("chatEmojiViewTabColor", AndroidUtilities.setDarkColor(i, -0x15));
         editor.putInt("chatChecksColor", i);
         editor.putInt("chatSendIconColor", i);
         editor.putInt("chatMemberColor", AndroidUtilities.setDarkColor(i, 0x15));

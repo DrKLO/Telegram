@@ -46,6 +46,9 @@ public class ThemingContactsActivity extends BaseFragment {
 
     private int headerSection2Row;
     private int headerColorRow;
+    private int headerTitleColorRow;
+    private int headerIconsColorRow;
+
     private int rowsSectionRow;
     private int rowsSection2Row;
     private int rowColorRow;
@@ -67,6 +70,8 @@ public class ThemingContactsActivity extends BaseFragment {
         rowCount = 0;
         headerSection2Row = rowCount++;
         headerColorRow = rowCount++;
+        headerTitleColorRow = rowCount++;
+        headerIconsColorRow = rowCount++;
 
         rowsSectionRow = rowCount++;
         rowsSection2Row = rowCount++;
@@ -138,9 +143,7 @@ public class ThemingContactsActivity extends BaseFragment {
                         }
 
                         LayoutInflater li = (LayoutInflater)getParentActivity().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-
-                        view = li.inflate(R.layout.colordialog, null, false);
-
+                        li.inflate(R.layout.colordialog, null, false);
                         ColorSelectorDialog colorDialog = new ColorSelectorDialog(getParentActivity(), new OnColorChangedListener() {
                             @Override
                             public void colorChanged(int color) {
@@ -148,17 +151,39 @@ public class ThemingContactsActivity extends BaseFragment {
                             }
 
                         },themePrefs.getInt("contactsHeaderColor", AndroidUtilities.getIntColor("themeColor")), CENTER, 0, false);
-
+                        colorDialog.show();
+                    } else if (i == headerTitleColorRow) {
+                        if (getParentActivity() == null) {
+                            return;
+                        }
+                        LayoutInflater li = (LayoutInflater)getParentActivity().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+                        li.inflate(R.layout.colordialog, null, false);
+                        ColorSelectorDialog colorDialog = new ColorSelectorDialog(getParentActivity(), new OnColorChangedListener() {
+                            @Override
+                            public void colorChanged(int color) {
+                                commitInt( "contactsHeaderTitleColor", color);
+                            }
+                        },themePrefs.getInt( "contactsHeaderTitleColor", 0xffffffff), CENTER, 0, false);
+                        colorDialog.show();
+                    } else if (i == headerIconsColorRow) {
+                        if (getParentActivity() == null) {
+                            return;
+                        }
+                        LayoutInflater li = (LayoutInflater)getParentActivity().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+                        li.inflate(R.layout.colordialog, null, false);
+                        ColorSelectorDialog colorDialog = new ColorSelectorDialog(getParentActivity(), new OnColorChangedListener() {
+                            @Override
+                            public void colorChanged(int color) {
+                                commitInt( "contactsHeaderIconsColor", color);
+                            }
+                        },themePrefs.getInt( "contactsHeaderIconsColor", 0xffffffff), CENTER, 0, false);
                         colorDialog.show();
                     } else if (i == rowColorRow) {
                         if (getParentActivity() == null) {
                             return;
                         }
-
                         LayoutInflater li = (LayoutInflater)getParentActivity().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-
-                        view = li.inflate(R.layout.colordialog, null, false);
-
+                        li.inflate(R.layout.colordialog, null, false);
                         ColorSelectorDialog colorDialog = new ColorSelectorDialog(getParentActivity(), new OnColorChangedListener() {
                             @Override
                             public void colorChanged(int color) {
@@ -166,17 +191,13 @@ public class ThemingContactsActivity extends BaseFragment {
                             }
 
                         },themePrefs.getInt("contactsRowColor", 0xffffffff), CENTER, 0, false);
-
                         colorDialog.show();
                     } else if (i == nameColorRow) {
                         if (getParentActivity() == null) {
                             return;
                         }
-
                         LayoutInflater li = (LayoutInflater)getParentActivity().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-
-                        view = li.inflate(R.layout.colordialog, null, false);
-
+                        li.inflate(R.layout.colordialog, null, false);
                         ColorSelectorDialog colorDialog = new ColorSelectorDialog(getParentActivity(), new OnColorChangedListener() {
                             @Override
                             public void colorChanged(int color) {
@@ -184,14 +205,13 @@ public class ThemingContactsActivity extends BaseFragment {
                             }
 
                         },themePrefs.getInt("contactsNameColor", 0xff000000), CENTER, 0, false);
-
                         colorDialog.show();
                     } else if (i == statusColorRow) {
                         if (getParentActivity() == null) {
                             return;
                         }
                         LayoutInflater li = (LayoutInflater)getParentActivity().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-                        view = li.inflate(R.layout.colordialog, null, false);
+                        li.inflate(R.layout.colordialog, null, false);
                         ColorSelectorDialog colorDialog = new ColorSelectorDialog(getParentActivity(), new OnColorChangedListener() {
                             @Override
                             public void colorChanged(int color) {
@@ -199,20 +219,18 @@ public class ThemingContactsActivity extends BaseFragment {
                             }
 
                         },themePrefs.getInt("contactsStatusColor", 0xffa8a8a8), CENTER, 0, false);
-
                         colorDialog.show();
                     }  else if (i == onlineColorRow) {
                         if (getParentActivity() == null) {
                             return;
                         }
                         LayoutInflater li = (LayoutInflater)getParentActivity().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-                        view = li.inflate(R.layout.colordialog, null, false);
+                        li.inflate(R.layout.colordialog, null, false);
                         ColorSelectorDialog colorDialog = new ColorSelectorDialog(getParentActivity(), new OnColorChangedListener() {
                             @Override
                             public void colorChanged(int color) {
                                 commitInt("contactsOnlineColor", color);
                             }
-
                         },themePrefs.getInt("contactsOnlineColor", AndroidUtilities.getIntDarkerColor("themeColor",0x15)), CENTER, 0, false);
                         colorDialog.show();
                     } else if (i == avatarRadiusRow) {
@@ -290,6 +308,10 @@ public class ThemingContactsActivity extends BaseFragment {
                     }
                     if (i == headerColorRow) {
                         resetInt("contactsHeaderColor");
+                    } else if (i == headerTitleColorRow) {
+                        resetInt("contactsHeaderTitleColor");
+                    } else if (i == headerIconsColorRow) {
+                        resetInt("contactsHeaderIconsColor");
                     } else if (i == rowColorRow) {
                         resetInt("contactsRowColor");
                     } else if (i == avatarRadiusRow) {
@@ -386,7 +408,7 @@ public class ThemingContactsActivity extends BaseFragment {
 
         @Override
         public boolean isEnabled(int i) {
-            return  i == headerColorRow || i == rowColorRow || i == avatarRadiusRow || i == nameColorRow || i == nameSizeRow || i == statusColorRow || i == statusSizeRow ||
+            return  i == headerColorRow || i == headerTitleColorRow || i == headerIconsColorRow || i == rowColorRow || i == avatarRadiusRow || i == nameColorRow || i == nameSizeRow || i == statusColorRow || i == statusSizeRow ||
                     i == onlineColorRow ;
         }
 
@@ -456,6 +478,10 @@ public class ThemingContactsActivity extends BaseFragment {
 
                 if (i == headerColorRow) {
                     textCell.setTextAndColor(LocaleController.getString("HeaderColor", R.string.HeaderColor), themePrefs.getInt("contactsHeaderColor", AndroidUtilities.getIntColor("themeColor")), true);
+                } else if (i == headerTitleColorRow) {
+                    textCell.setTextAndColor(LocaleController.getString("HeaderTitleColor", R.string.HeaderTitleColor), themePrefs.getInt("contactsHeaderTitleColor", 0xffffffff), true);
+                } else if (i == headerIconsColorRow) {
+                    textCell.setTextAndColor(LocaleController.getString("HeaderIconsColor", R.string.HeaderIconsColor), themePrefs.getInt("contactsHeaderIconsColor", 0xffffffff), true);
                 } else if (i == rowColorRow) {
                     textCell.setTextAndColor(LocaleController.getString("RowColor", R.string.RowColor), themePrefs.getInt("contactsRowColor", 0xffffffff), true);
                 } else if (i == nameColorRow) {
@@ -481,7 +507,7 @@ public class ThemingContactsActivity extends BaseFragment {
                 return 2;
             }
 
-            else if ( i == headerColorRow || i == rowColorRow || i == nameColorRow || i == statusColorRow || i == onlineColorRow) {
+            else if ( i == headerColorRow || i == headerTitleColorRow || i == headerIconsColorRow || i == rowColorRow || i == nameColorRow || i == statusColorRow || i == onlineColorRow) {
                 return 3;
             }
             else {

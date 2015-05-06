@@ -39,6 +39,7 @@ import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
 import org.telegram.messenger.TLRPC;
+import org.telegram.ui.Components.LayoutHelper;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -213,8 +214,8 @@ public class SecretPhotoViewer implements NotificationCenter.NotificationCenterD
         containerView.setFocusable(false);
         windowView.addView(containerView);
         FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams)containerView.getLayoutParams();
-        layoutParams.width = FrameLayout.LayoutParams.MATCH_PARENT;
-        layoutParams.height = FrameLayout.LayoutParams.MATCH_PARENT;
+        layoutParams.width = LayoutHelper.MATCH_PARENT;
+        layoutParams.height = LayoutHelper.MATCH_PARENT;
         layoutParams.gravity = Gravity.TOP | Gravity.LEFT;
         containerView.setLayoutParams(layoutParams);
         containerView.setOnTouchListener(new View.OnTouchListener() {

@@ -11,8 +11,6 @@ package org.telegram.ui.Cells;
 import android.content.Context;
 import android.widget.FrameLayout;
 
-import org.telegram.android.AndroidUtilities;
-
 public class EmptyCell extends FrameLayout {
 
     int cellHeight;
@@ -33,6 +31,6 @@ public class EmptyCell extends FrameLayout {
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(cellHeight), MeasureSpec.EXACTLY));
+        super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(cellHeight, MeasureSpec.EXACTLY));
     }
 }

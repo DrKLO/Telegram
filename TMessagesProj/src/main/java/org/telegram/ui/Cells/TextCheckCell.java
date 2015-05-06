@@ -19,6 +19,7 @@ import android.widget.TextView;
 import org.telegram.android.AndroidUtilities;
 import org.telegram.android.LocaleController;
 import org.telegram.ui.Components.FrameLayoutFixed;
+import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.Switch;
 
 public class TextCheckCell extends FrameLayoutFixed {
@@ -46,8 +47,8 @@ public class TextCheckCell extends FrameLayoutFixed {
         textView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL);
         addView(textView);
         LayoutParams layoutParams = (LayoutParams) textView.getLayoutParams();
-        layoutParams.width = LayoutParams.MATCH_PARENT;
-        layoutParams.height = LayoutParams.MATCH_PARENT;
+        layoutParams.width = LayoutHelper.MATCH_PARENT;
+        layoutParams.height = LayoutHelper.MATCH_PARENT;
         layoutParams.leftMargin = AndroidUtilities.dp(17);
         layoutParams.rightMargin = AndroidUtilities.dp(17);
         layoutParams.gravity = LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT;
@@ -60,12 +61,18 @@ public class TextCheckCell extends FrameLayoutFixed {
         checkBox.setClickable(false);
         addView(checkBox);
         layoutParams = (LayoutParams) checkBox.getLayoutParams();
-        layoutParams.width = LayoutParams.WRAP_CONTENT;
-        layoutParams.height = LayoutParams.WRAP_CONTENT;
+        layoutParams.width = LayoutHelper.WRAP_CONTENT;
+        layoutParams.height = LayoutHelper.WRAP_CONTENT;
         layoutParams.leftMargin = AndroidUtilities.dp(14);
         layoutParams.rightMargin = AndroidUtilities.dp(14);
         layoutParams.gravity = (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.CENTER_VERTICAL;
         checkBox.setLayoutParams(layoutParams);
+        //setDarkTheme();
+    }
+
+    private void setDarkTheme(){
+        textView.setTextColor(0xff747474);
+        paint.setColor(0xff474747);
     }
 
     @Override

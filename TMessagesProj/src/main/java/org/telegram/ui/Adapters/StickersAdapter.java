@@ -9,7 +9,6 @@
 package org.telegram.ui.Adapters;
 
 import android.content.Context;
-import android.support.v7.widget.RecyclerView;
 import android.view.View;
 import android.view.ViewGroup;
 
@@ -18,12 +17,12 @@ import org.telegram.SQLite.SQLitePreparedStatement;
 import org.telegram.android.AndroidUtilities;
 import org.telegram.android.MessagesStorage;
 import org.telegram.android.NotificationCenter;
+import org.telegram.android.support.widget.RecyclerView;
 import org.telegram.messenger.ByteBufferDesc;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.RPCRequest;
-import org.telegram.messenger.TLClassStore;
 import org.telegram.messenger.TLObject;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.Utilities;
@@ -109,7 +108,7 @@ public class StickersAdapter extends RecyclerView.Adapter implements Notificatio
                         if (cursor.next()) {
                             ByteBufferDesc data = MessagesStorage.getInstance().getBuffersStorage().getFreeBuffer(cursor.byteArrayLength(0));
                             if (data != null && cursor.byteBufferValue(0, data.buffer) != 0) {
-                                result = (TLRPC.messages_AllStickers) TLClassStore.Instance().TLdeserialize(data, data.readInt32());
+                                result = TLRPC.messages_AllStickers.TLdeserialize(data, data.readInt32(false), false);
                             }
                             date = cursor.intValue(1);
                             MessagesStorage.getInstance().getBuffersStorage().reuseFreeBuffer(data);
@@ -320,7 +319,6 @@ public class StickersAdapter extends RecyclerView.Adapter implements Notificatio
 
     @Override
     public void onBindViewHolder(RecyclerView.ViewHolder viewHolder, int i) {
-        Holder holder = (Holder) viewHolder;
         int side = 0;
         if (i == 0) {
             if (stickers.size() == 1) {
@@ -331,6 +329,6 @@ public class StickersAdapter extends RecyclerView.Adapter implements Notificatio
         } else if (i == stickers.size() - 1) {
             side = 1;
         }
-        ((StickerCell) holder.itemView).setSticker(stickers.get(i), side);
+        ((StickerCell) viewHolder.itemView).setSticker(stickers.get(i), side);
     }
 }

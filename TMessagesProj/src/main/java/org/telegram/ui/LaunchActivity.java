@@ -9,6 +9,7 @@
 package org.telegram.ui;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.content.ContentResolver;
 import android.content.DialogInterface;
@@ -58,6 +59,7 @@ import org.telegram.ui.ActionBar.ActionBarLayout;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.DrawerLayoutContainer;
 import org.telegram.ui.Adapters.DrawerLayoutAdapter;
+import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.PasscodeView;
 
 import java.io.BufferedReader;
@@ -88,9 +90,10 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
     private FrameLayout shadowTablet;
     private FrameLayout shadowTabletSide;
     private ImageView backgroundTablet;
-    private DrawerLayoutContainer drawerLayoutContainer;
+    protected DrawerLayoutContainer drawerLayoutContainer;
     private DrawerLayoutAdapter drawerLayoutAdapter;
     private PasscodeView passcodeView;
+    private AlertDialog visibleDialog;
 
     private Intent passcodeSaveIntent;
     private boolean passcodeSaveIntentIsNew;
@@ -154,8 +157,8 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
             RelativeLayout launchLayout = new RelativeLayout(this);
             drawerLayoutContainer.addView(launchLayout);
             FrameLayout.LayoutParams layoutParams1 = (FrameLayout.LayoutParams) launchLayout.getLayoutParams();
-            layoutParams1.width = FrameLayout.LayoutParams.MATCH_PARENT;
-            layoutParams1.height = FrameLayout.LayoutParams.MATCH_PARENT;
+            layoutParams1.width = LayoutHelper.MATCH_PARENT;
+            layoutParams1.height = LayoutHelper.MATCH_PARENT;
             launchLayout.setLayoutParams(layoutParams1);
 
             backgroundTablet = new ImageView(this);
@@ -163,21 +166,21 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
             backgroundTablet.setImageResource(R.drawable.cats);
             launchLayout.addView(backgroundTablet);
             RelativeLayout.LayoutParams relativeLayoutParams = (RelativeLayout.LayoutParams) backgroundTablet.getLayoutParams();
-            relativeLayoutParams.width = RelativeLayout.LayoutParams.MATCH_PARENT;
-            relativeLayoutParams.height = RelativeLayout.LayoutParams.MATCH_PARENT;
+            relativeLayoutParams.width = LayoutHelper.MATCH_PARENT;
+            relativeLayoutParams.height = LayoutHelper.MATCH_PARENT;
             backgroundTablet.setLayoutParams(relativeLayoutParams);
 
             launchLayout.addView(actionBarLayout);
             relativeLayoutParams = (RelativeLayout.LayoutParams) actionBarLayout.getLayoutParams();
-            relativeLayoutParams.width = RelativeLayout.LayoutParams.MATCH_PARENT;
-            relativeLayoutParams.height = RelativeLayout.LayoutParams.MATCH_PARENT;
+            relativeLayoutParams.width = LayoutHelper.MATCH_PARENT;
+            relativeLayoutParams.height = LayoutHelper.MATCH_PARENT;
             actionBarLayout.setLayoutParams(relativeLayoutParams);
 
             rightActionBarLayout = new ActionBarLayout(this);
             launchLayout.addView(rightActionBarLayout);
             relativeLayoutParams = (RelativeLayout.LayoutParams)rightActionBarLayout.getLayoutParams();
             relativeLayoutParams.width = AndroidUtilities.dp(320);
-            relativeLayoutParams.height = RelativeLayout.LayoutParams.MATCH_PARENT;
+            relativeLayoutParams.height = LayoutHelper.MATCH_PARENT;
             rightActionBarLayout.setLayoutParams(relativeLayoutParams);
             rightActionBarLayout.init(rightFragmentsStack);
             rightActionBarLayout.setDelegate(this);
@@ -187,7 +190,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
             launchLayout.addView(shadowTabletSide);
             relativeLayoutParams = (RelativeLayout.LayoutParams) shadowTabletSide.getLayoutParams();
             relativeLayoutParams.width = AndroidUtilities.dp(1);
-            relativeLayoutParams.height = RelativeLayout.LayoutParams.MATCH_PARENT;
+            relativeLayoutParams.height = LayoutHelper.MATCH_PARENT;
             shadowTabletSide.setLayoutParams(relativeLayoutParams);
 
             shadowTablet = new FrameLayout(this);
@@ -195,8 +198,8 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
             shadowTablet.setBackgroundColor(0x7F000000);
             launchLayout.addView(shadowTablet);
             relativeLayoutParams = (RelativeLayout.LayoutParams) shadowTablet.getLayoutParams();
-            relativeLayoutParams.width = RelativeLayout.LayoutParams.MATCH_PARENT;
-            relativeLayoutParams.height = RelativeLayout.LayoutParams.MATCH_PARENT;
+            relativeLayoutParams.width = LayoutHelper.MATCH_PARENT;
+            relativeLayoutParams.height = LayoutHelper.MATCH_PARENT;
             shadowTablet.setLayoutParams(relativeLayoutParams);
             shadowTablet.setOnTouchListener(new View.OnTouchListener() {
                 @Override
@@ -258,7 +261,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
         FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams)listView.getLayoutParams();
         Point screenSize = AndroidUtilities.getRealScreenSize();
         layoutParams.width = AndroidUtilities.isTablet() ? AndroidUtilities.dp(320) : Math.min(screenSize.x, screenSize.y) - AndroidUtilities.dp(56);
-        layoutParams.height = FrameLayout.LayoutParams.MATCH_PARENT;
+        layoutParams.height = LayoutHelper.MATCH_PARENT;
         listView.setPadding(0, 0, 0, 0);
         listView.setChoiceMode(AbsListView.CHOICE_MODE_SINGLE);
         listView.setDivider(null);
@@ -349,8 +352,8 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
         passcodeView = new PasscodeView(this);
         drawerLayoutContainer.addView(passcodeView);
         FrameLayout.LayoutParams layoutParams1 = (FrameLayout.LayoutParams) passcodeView.getLayoutParams();
-        layoutParams1.width = FrameLayout.LayoutParams.MATCH_PARENT;
-        layoutParams1.height = FrameLayout.LayoutParams.MATCH_PARENT;
+        layoutParams1.width = LayoutHelper.MATCH_PARENT;
+        layoutParams1.height = LayoutHelper.MATCH_PARENT;
         passcodeView.setLayoutParams(layoutParams1);
 
         NotificationCenter.getInstance().postNotificationName(NotificationCenter.closeOtherAppActivities, this);
@@ -694,6 +697,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                     Uri data = intent.getData();
                     if (data != null) {
                         String username = null;
+                            String group = null;
                         String scheme = data.getScheme();
                         if (scheme != null) {
                             if ((scheme.equals("http") || scheme.equals("https"))) {
@@ -701,68 +705,29 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                                 if (host.equals("telegram.me")) {
                                     String path = data.getPath();
                                     if (path != null && path.length() >= 6) {
-                                        username = path.substring(1);
+                                            path = path.substring(1);
+                                            if (path.startsWith("joinchat/")) {
+                                                group = path.replace("joinchat/", "");
+                                            } else {
+                                                username = path;
+                                            }
                                     }
                                 }
                             } else if (scheme.equals("tg")) {
-                                String url = data.toString().toLowerCase();
+                                    String url = data.toString();
                                 if (url.startsWith("tg:resolve") || url.startsWith("tg://resolve")) {
                                     url = url.replace("tg:resolve", "tg://telegram.org").replace("tg://resolve", "tg://telegram.org");
                                     data = Uri.parse(url);
                                     username = data.getQueryParameter("domain");
-                                }
-                            }
-                        }
-                        if (username != null) {
-                            final ProgressDialog progressDialog = new ProgressDialog(this);
-                            progressDialog.setMessage(LocaleController.getString("Loading", R.string.Loading));
-                            progressDialog.setCanceledOnTouchOutside(false);
-                            progressDialog.setCancelable(false);
-
-                            TLRPC.TL_contacts_resolveUsername req = new TLRPC.TL_contacts_resolveUsername();
-                            req.username = username;
-                            final long reqId = ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
-                                @Override
-                                public void run(final TLObject response, final TLRPC.TL_error error) {
-                                    AndroidUtilities.runOnUIThread(new Runnable() {
-                                        @Override
-                                        public void run() {
-                                            if (!LaunchActivity.this.isFinishing()) {
-                                                try {
-                                                    progressDialog.dismiss();
-                                                } catch (Exception e) {
-                                                    FileLog.e("tmessages", e);
-                                                }
-                                                if (error == null && actionBarLayout != null) {
-                                                    TLRPC.User user = (TLRPC.User) response;
-                                                    MessagesController.getInstance().putUser(user, false);
-                                                    ArrayList<TLRPC.User> users = new ArrayList<>();
-                                                    users.add(user);
-                                                    MessagesStorage.getInstance().putUsersAndChats(users, null, false, true);
-                                                    Bundle args = new Bundle();
-                                                    args.putInt("user_id", user.id);
-                                                    ChatActivity fragment = new ChatActivity(args);
-                                                    NotificationCenter.getInstance().postNotificationName(NotificationCenter.closeChats);
-                                                    actionBarLayout.presentFragment(fragment, false, true, true);
-                                                }
-                                            }
-                                        }
-                                    });
-                                }
-                            });
-
-                            progressDialog.setButton(DialogInterface.BUTTON_NEGATIVE, LocaleController.getString("Cancel", R.string.Cancel), new DialogInterface.OnClickListener() {
-                                @Override
-                                public void onClick(DialogInterface dialog, int which) {
-                                    ConnectionsManager.getInstance().cancelRpc(reqId, true);
-                                    try {
-                                        dialog.dismiss();
-                                    } catch (Exception e) {
-                                        FileLog.e("tmessages", e);
+                                    } else if (url.startsWith("tg:join") || url.startsWith("tg://join")) {
+                                        url = url.replace("tg:join", "tg://telegram.org").replace("tg://join", "tg://telegram.org");
+                                        data = Uri.parse(url);
+                                        group = data.getQueryParameter("invite");
                                     }
                                 }
-                            });
-                            progressDialog.show();
+                            }
+                            if (username != null || group != null) {
+                                runLinkRequest(username, group, 0);
                         } else {
                             try {
                                 Cursor cursor = getContentResolver().query(intent.getData(), null, null, null, null);
@@ -918,6 +883,189 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
         return false;
     }
 
+    private void runLinkRequest(final String username, final String group, final int state) {
+        final ProgressDialog progressDialog = new ProgressDialog(this);
+        progressDialog.setMessage(LocaleController.getString("Loading", R.string.Loading));
+        progressDialog.setCanceledOnTouchOutside(false);
+        progressDialog.setCancelable(false);
+        long requestId = 0;
+
+        if (username != null) {
+            TLRPC.TL_contacts_resolveUsername req = new TLRPC.TL_contacts_resolveUsername();
+            req.username = username;
+            requestId = ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
+                @Override
+                public void run(final TLObject response, final TLRPC.TL_error error) {
+                    AndroidUtilities.runOnUIThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            if (!LaunchActivity.this.isFinishing()) {
+                                try {
+                                    progressDialog.dismiss();
+                                } catch (Exception e) {
+                                    FileLog.e("tmessages", e);
+                                }
+                                if (error == null && actionBarLayout != null) {
+                                    TLRPC.User user = (TLRPC.User) response;
+                                    MessagesController.getInstance().putUser(user, false);
+                                    ArrayList<TLRPC.User> users = new ArrayList<>();
+                                    users.add(user);
+                                    MessagesStorage.getInstance().putUsersAndChats(users, null, false, true);
+                                    Bundle args = new Bundle();
+                                    args.putInt("user_id", user.id);
+                                    ChatActivity fragment = new ChatActivity(args);
+                                    NotificationCenter.getInstance().postNotificationName(NotificationCenter.closeChats);
+                                    actionBarLayout.presentFragment(fragment, false, true, true);
+                                }
+                            }
+                        }
+                    });
+                }
+            });
+        } else if (group != null) {
+            if (state == 0) {
+                final TLRPC.TL_messages_checkChatInvite req = new TLRPC.TL_messages_checkChatInvite();
+                req.hash = group;
+                requestId = ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
+                    @Override
+                    public void run(final TLObject response, final TLRPC.TL_error error) {
+                        AndroidUtilities.runOnUIThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                if (!LaunchActivity.this.isFinishing()) {
+                                    try {
+                                        progressDialog.dismiss();
+                                    } catch (Exception e) {
+                                        FileLog.e("tmessages", e);
+                                    }
+                                    if (error == null && actionBarLayout != null) {
+                                        TLRPC.ChatInvite invite = (TLRPC.ChatInvite) response;
+                                        if (invite.chat != null && !invite.chat.left) {
+                                            MessagesController.getInstance().putChat(invite.chat, false);
+                                            ArrayList<TLRPC.Chat> chats = new ArrayList<>();
+                                            chats.add(invite.chat);
+                                            MessagesStorage.getInstance().putUsersAndChats(null, chats, false, true);
+                                            Bundle args = new Bundle();
+                                            args.putInt("chat_id", invite.chat.id);
+                                            ChatActivity fragment = new ChatActivity(args);
+                                            NotificationCenter.getInstance().postNotificationName(NotificationCenter.closeChats);
+                                            actionBarLayout.presentFragment(fragment, false, true, true);
+                                        } else {
+                                            AlertDialog.Builder builder = new AlertDialog.Builder(LaunchActivity.this);
+                                            builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
+                                            builder.setMessage(LocaleController.formatString("JoinToGroup", R.string.JoinToGroup, invite.chat != null ? invite.chat.title : invite.title));
+                                            builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), new DialogInterface.OnClickListener() {
+                                                @Override
+                                                public void onClick(DialogInterface dialogInterface, int i) {
+                                                    runLinkRequest(username, group, 1);
+                                                }
+                                            });
+                                            builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+                                            showAlertDialog(builder);
+                                        }
+                                    } else {
+                                        AlertDialog.Builder builder = new AlertDialog.Builder(LaunchActivity.this);
+                                        builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
+                                        builder.setMessage(LocaleController.getString("JoinToGroupErrorNotExist", R.string.JoinToGroupErrorNotExist));
+                                        builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), null);
+                                        showAlertDialog(builder);
+                                    }
+                                }
+                            }
+                        });
+                    }
+                });
+            } else if (state == 1) {
+                TLRPC.TL_messages_importChatInvite req = new TLRPC.TL_messages_importChatInvite();
+                req.hash = group;
+                ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
+                    @Override
+                    public void run(final TLObject response, final TLRPC.TL_error error) {
+                        if (error == null) {
+                            TLRPC.Updates updates = (TLRPC.Updates) response;
+                            MessagesController.getInstance().processUpdates(updates, false);
+                        }
+                        AndroidUtilities.runOnUIThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                if (!LaunchActivity.this.isFinishing()) {
+                                    try {
+                                        progressDialog.dismiss();
+                                    } catch (Exception e) {
+                                        FileLog.e("tmessages", e);
+                                    }
+                                    if (error == null) {
+                                        if (actionBarLayout != null) {
+                                            TLRPC.Updates updates = (TLRPC.Updates) response;
+                                            if (!updates.chats.isEmpty()) {
+                                                MessagesController.getInstance().putUsers(updates.users, false);
+                                                MessagesController.getInstance().putChats(updates.chats, false);
+                                                Bundle args = new Bundle();
+                                                args.putInt("chat_id", updates.chats.get(0).id);
+                                                ChatActivity fragment = new ChatActivity(args);
+                                                NotificationCenter.getInstance().postNotificationName(NotificationCenter.closeChats);
+                                                actionBarLayout.presentFragment(fragment, false, true, true);
+                                            }
+                                        }
+                                    } else {
+                                        AlertDialog.Builder builder = new AlertDialog.Builder(LaunchActivity.this);
+                                        builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
+                                        if (error.text.equals("USERS_TOO_MUCH")) {
+                                            builder.setMessage(LocaleController.getString("JoinToGroupErrorFull", R.string.JoinToGroupErrorFull));
+                                        } else {
+                                            builder.setMessage(LocaleController.getString("JoinToGroupErrorNotExist", R.string.JoinToGroupErrorNotExist));
+                                        }
+                                        builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), null);
+                                        showAlertDialog(builder);
+                                    }
+                                }
+                            }
+                        });
+                    }
+                });
+            }
+        }
+
+        final long reqId = requestId;
+        progressDialog.setButton(DialogInterface.BUTTON_NEGATIVE, LocaleController.getString("Cancel", R.string.Cancel), new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                ConnectionsManager.getInstance().cancelRpc(reqId, true);
+                try {
+                    dialog.dismiss();
+                } catch (Exception e) {
+                    FileLog.e("tmessages", e);
+                }
+            }
+        });
+        progressDialog.show();
+    }
+
+    public AlertDialog showAlertDialog(AlertDialog.Builder builder) {
+        try {
+            if (visibleDialog != null) {
+                visibleDialog.dismiss();
+                visibleDialog = null;
+            }
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
+        try {
+            visibleDialog = builder.show();
+            visibleDialog.setCanceledOnTouchOutside(true);
+            visibleDialog.setOnDismissListener(new DialogInterface.OnDismissListener() {
+                @Override
+                public void onDismiss(DialogInterface dialog) {
+                    visibleDialog = null;
+                }
+            });
+            return visibleDialog;
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
+        return null;
+    }
+
     @Override
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
@@ -960,7 +1108,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                         actionBarLayout.addFragmentToStack(fragment, actionBarLayout.fragmentsStack.size() - 1);
                     }
 
-                    if (!fragment.openVideoEditor(videoPath, true)) {
+                    if (!fragment.openVideoEditor(videoPath, true, false)) {
                         if (!AndroidUtilities.isTablet()) {
                             messageFragment.finishFragment(true);
                         }
@@ -970,13 +1118,13 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                     SendMessagesHelper.prepareSendingVideo(videoPath, 0, 0, 0, 0, null, dialog_id, null);
                 }
             } else {
-                actionBarLayout.presentFragment(fragment, true);
-
                 if (sendingText != null) {
-                    fragment.processSendingText(sendingText);
+                    SendMessagesHelper.prepareSendingText(sendingText, dialog_id);
+                    //fragment.setReplyText(sendingText);//Always open chat before sending text message shared from other app
                 }
+                actionBarLayout.presentFragment(fragment, true);
                 if (photoPathsArray != null) {
-                    SendMessagesHelper.prepareSendingPhotos(null, photoPathsArray, dialog_id, null);
+                    SendMessagesHelper.prepareSendingPhotos(null, photoPathsArray, dialog_id, null, null);
                 }
                 if (documentsPathsArray != null || documentsUrisArray != null) {
                     SendMessagesHelper.prepareSendingDocuments(documentsPathsArray, documentsOriginalPathsArray, documentsUrisArray, documentsMimeType, dialog_id, null);
@@ -1043,7 +1191,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
 
                 relativeLayoutParams = (RelativeLayout.LayoutParams) actionBarLayout.getLayoutParams();
                 relativeLayoutParams.width = leftWidth;
-                relativeLayoutParams.height = RelativeLayout.LayoutParams.MATCH_PARENT;
+                relativeLayoutParams.height = LayoutHelper.MATCH_PARENT;
                 actionBarLayout.setLayoutParams(relativeLayoutParams);
 
                 relativeLayoutParams = (RelativeLayout.LayoutParams) shadowTabletSide.getLayoutParams();
@@ -1052,7 +1200,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
 
                 relativeLayoutParams = (RelativeLayout.LayoutParams) rightActionBarLayout.getLayoutParams();
                 relativeLayoutParams.width = AndroidUtilities.displaySize.x - leftWidth;
-                relativeLayoutParams.height = RelativeLayout.LayoutParams.MATCH_PARENT;
+                relativeLayoutParams.height = LayoutHelper.MATCH_PARENT;
                 relativeLayoutParams.leftMargin = leftWidth;
                 rightActionBarLayout.setLayoutParams(relativeLayoutParams);
 
@@ -1074,8 +1222,8 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                 tabletFullSize = true;
 
                 relativeLayoutParams = (RelativeLayout.LayoutParams) actionBarLayout.getLayoutParams();
-                relativeLayoutParams.width = RelativeLayout.LayoutParams.MATCH_PARENT;
-                relativeLayoutParams.height = RelativeLayout.LayoutParams.MATCH_PARENT;
+                relativeLayoutParams.width = LayoutHelper.MATCH_PARENT;
+                relativeLayoutParams.height = LayoutHelper.MATCH_PARENT;
                 actionBarLayout.setLayoutParams(relativeLayoutParams);
 
                 shadowTabletSide.setVisibility(View.GONE);
@@ -1156,6 +1304,14 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
     protected void onDestroy() {
         PhotoViewer.getInstance().destroyPhotoViewer();
         SecretPhotoViewer.getInstance().destroyPhotoViewer();
+        try {
+            if (visibleDialog != null) {
+                visibleDialog.dismiss();
+                visibleDialog = null;
+            }
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
         super.onDestroy();
         onFinish();
     }
@@ -1178,6 +1334,9 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
         ApplicationLoader.mainInterfacePaused = false;
         ConnectionsManager.getInstance().setAppPaused(false, false);
         updateCurrentConnectionState();
+        if (PhotoViewer.getInstance().isVisible()) {
+            PhotoViewer.getInstance().onResume();
+        }
     }
 
     @Override
@@ -1438,7 +1597,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
     @Override
     public boolean needPresentFragment(BaseFragment fragment, boolean removeLast, boolean forceWithoutAnimation, ActionBarLayout layout) {
         if (AndroidUtilities.isTablet()) {
-            drawerLayoutContainer.setAllowOpenDrawer(!(fragment instanceof LoginActivity) && layersActionBarLayout.getVisibility() != View.VISIBLE, true);
+            drawerLayoutContainer.setAllowOpenDrawer(!(fragment instanceof LoginActivity || fragment instanceof CountrySelectActivity) && layersActionBarLayout.getVisibility() != View.VISIBLE, true);
             if (fragment instanceof MessagesActivity) {
                 MessagesActivity messagesActivity = (MessagesActivity)fragment;
                 if (messagesActivity.isMainDialogList() && layout != actionBarLayout) {
@@ -1519,7 +1678,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
             }
             return true;
         } else {
-            drawerLayoutContainer.setAllowOpenDrawer(!(fragment instanceof LoginActivity), false);
+            drawerLayoutContainer.setAllowOpenDrawer(!(fragment instanceof LoginActivity || fragment instanceof CountrySelectActivity), false);
             return true;
         }
     }
@@ -1527,7 +1686,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
     @Override
     public boolean needAddFragmentToStack(BaseFragment fragment, ActionBarLayout layout) {
         if (AndroidUtilities.isTablet()) {
-            drawerLayoutContainer.setAllowOpenDrawer(!(fragment instanceof LoginActivity) && layersActionBarLayout.getVisibility() != View.VISIBLE, true);
+            drawerLayoutContainer.setAllowOpenDrawer(!(fragment instanceof LoginActivity || fragment instanceof CountrySelectActivity) && layersActionBarLayout.getVisibility() != View.VISIBLE, true);
             if (fragment instanceof MessagesActivity) {
                 MessagesActivity messagesActivity = (MessagesActivity)fragment;
                 if (messagesActivity.isMainDialogList() && layout != actionBarLayout) {
@@ -1584,7 +1743,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
             }
             return true;
         } else {
-            drawerLayoutContainer.setAllowOpenDrawer(!(fragment instanceof LoginActivity), false);
+            drawerLayoutContainer.setAllowOpenDrawer(!(fragment instanceof LoginActivity || fragment instanceof CountrySelectActivity), false);
             return true;
         }
     }

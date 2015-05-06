@@ -9,7 +9,6 @@
 package org.telegram.ui.Components;
 
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.ColorFilter;
 import android.graphics.Paint;
 import android.graphics.Rect;
@@ -21,11 +20,11 @@ import android.text.StaticLayout;
 import android.text.TextPaint;
 
 import org.telegram.android.AndroidUtilities;
+import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.UserConfig;
-import org.telegram.messenger.ApplicationLoader;
 
 import java.util.Locale;
 
@@ -76,6 +75,7 @@ public class AvatarDrawable extends Drawable {
     private boolean drawBrodcast;
     private boolean drawPhoto;
     private boolean smallStyle;
+    private StringBuilder stringBuilder = new StringBuilder(5);
     private int radius;
 
     public AvatarDrawable() {
@@ -240,9 +240,9 @@ public class AvatarDrawable extends Drawable {
             lastName = null;
         }
 
-        String text = "";
+        stringBuilder.setLength(0);
         if (firstName != null && firstName.length() > 0) {
-            text += firstName.substring(0, 1);
+            stringBuilder.append(firstName.substring(0, 1));
         }
         if (lastName != null && lastName.length() > 0) {
             String lastch = null;
@@ -253,27 +253,25 @@ public class AvatarDrawable extends Drawable {
                 lastch = lastName.substring(a, a + 1);
             }
             if (Build.VERSION.SDK_INT >= 16) {
-                text += "\u200C" + lastch;
-            } else {
-            text += lastch;
-        }
+                stringBuilder.append("\u200C");
+            }
+            stringBuilder.append(lastch);
         } else if (firstName != null && firstName.length() > 0) {
             for (int a = firstName.length() - 1; a >= 0; a--) {
                 if (firstName.charAt(a) == ' ') {
                     if (a != firstName.length() - 1 && firstName.charAt(a + 1) != ' ') {
                         if (Build.VERSION.SDK_INT >= 16) {
-                            text += "\u200C" + firstName.substring(a + 1, a + 2);
-                        } else {
-                            text += firstName.substring(a + 1, a + 2);
+                            stringBuilder.append("\u200C");
                         }
+                        stringBuilder.append(firstName.substring(a + 1, a + 2));
                         break;
                     }
                 }
             }
         }
 
-        if (text.length() > 0) {
-            text = text.toUpperCase();
+        if (stringBuilder.length() > 0) {
+            String text = stringBuilder.toString().toUpperCase();
             try {
                 textLayout = new StaticLayout(text, (smallStyle ? namePaintSmall : namePaint), AndroidUtilities.dp(100), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
                 if (textLayout.getLineCount() > 0) {

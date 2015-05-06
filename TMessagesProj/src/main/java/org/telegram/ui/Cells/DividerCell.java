@@ -13,7 +13,6 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 
 import org.telegram.android.AndroidUtilities;
-import org.telegram.ui.LaunchActivity;
 
 public class DividerCell extends BaseCell {
 

@@ -78,5 +78,4 @@
     <item name="android:windowContentOverlay">@null</item>
     <item name="android:backgroundDimEnabled">false</item>
     </style>
-
 </resources>

@@ -89,6 +89,10 @@
     <string name="IsSendingPhoto">%1$s verstuurt een foto</string>
     <string name="IsSendingVideo">%1$s verstuurt een video</string>
     <string name="IsSendingFile">%1$s verstuurt een bestand</string>
+    <string name="RecordingAudio">geluid opnemen</string>
+    <string name="SendingPhoto">foto versturen</string>
+    <string name="SendingVideoStatus">video versturen</string>
+    <string name="SendingFile">bestand versturen</string>
     <string name="GotAQuestion">Heb je een vraag\nover Telegram?</string>
     <string name="ChatTakePhoto">Foto maken</string>
     <string name="ChatGallery">Galerij</string>
@@ -157,6 +161,7 @@
     <string name="NotificationContactJoined">%1$s heeft nu Telegram!</string>
     <string name="NotificationUnrecognizedDevice">%1$s,\nEr is op je account ingelogd vanaf een nieuw apparaat op %2$s\n\nApparaat: %3$s\nLocatie: %4$s\n\nAls jij dit niet was, kun je die sessie beëindigen via Instellingen - Privacy en veiligheid - Sessies.\n\nAls je dat denkt dat iemand anders zonder jouw toestemming is ingelogd kun je twee-staps-verificatie activeren via instellingen - privacy en veiligheid .\n\nBedankt,\nHet Telegram-team</string>
     <string name="NotificationContactNewPhoto">%1$s heeft zijn/haar profielfoto gewijzigd</string>
+    <string name="NotificationInvitedToGroupByLink">%1$s neemt deel aan de groep %2$s via uitnodigingslink</string>
     <string name="Reply">Antwoord</string>
     <string name="ReplyToGroup">Antwoord op %1$s</string>
     <string name="ReplyToUser">Antwoord op %1$s</string>
@@ -182,6 +187,19 @@
     <string name="EnterGroupNamePlaceholder">Groepsnaam</string>
     <string name="GroupName">Groepsnaam</string>
     <string name="MembersCount">%1$d/%2$d deelnemers</string>
+    <string name="JoinToGroup">Wil je deelnemen aan de groep \'%1$s\'?</string>
+    <string name="JoinToGroupErrorFull">Sorry, deze groep is al vol.</string>
+    <string name="JoinToGroupErrorNotExist">Sorry, deze groep bestaat niet.</string>
+    <string name="LinkCopied">Link gekopieerd naar klembord.</string>
+    <string name="InviteToGroupByLink">Uitnodigingslink sturen</string>
+    <string name="InviteLink">Uitnodigingslink</string>
+    <string name="RevokeAlert">Deze link echt intrekken? Na intrekken kan niemand meer lid worden met de oude link.</string>
+    <string name="RevokeAlertNewLink">De oude link is nu inactief. Een nieuwe link is aangemaakt.</string>
+    <string name="RevokeButton">Intrekken</string>
+    <string name="RevokeLink">Link intrekken</string>
+    <string name="CopyLink">Link kopiëren</string>
+    <string name="ShareLink">Link delen</string>
+    <string name="LinkInfo">Andere Telegram-gebruikers kunnen aan je groep deelnemen door deze link te openen.</string>
     <!--group info view-->
     <string name="SharedMedia">Gedeelde media</string>
     <string name="SETTINGS">Instellingen</string>
@@ -311,6 +329,13 @@
     <string name="RepeatDisabled">Uit</string>
     <string name="InChatSound">Chatgeluiden</string>
     <string name="SoundDefault">Standaard</string>
+    <string name="SmartNotifications">Slimme meldingen</string>
+    <string name="SmartNotificationsDisabled">Uitgeschakeld</string>
+    <string name="SmartNotificationsInfo">Geluid maximaal %1$s per %2$s</string>
+    <string name="SmartNotificationsSoundAtMost">Geluid maximaal</string>
+    <string name="SmartNotificationsTimes">keer</string>
+    <string name="SmartNotificationsWithin">binnen</string>
+    <string name="SmartNotificationsMinutes">minuten</string>
     <!--sessions view-->
     <string name="SessionsTitle">Actieve sessies</string>
     <string name="CurrentSession">Huidige sessie</string>
@@ -350,15 +375,20 @@
     <string name="Hybrid">Hybride</string>
     <string name="MetersAway">m hiervandaan</string>
     <string name="KMetersAway">km hiervandaan</string>
-    <string name="SendLocation">Locatie versturen</string>
-    <string name="ShareLocation">Locatie delen</string>
+    <string name="SendLocation">Huidige locatie sturen</string>
+    <string name="SendSelectedLocation">Geselecteerde locatie sturen</string>
+    <string name="ShareLocation">Locatie</string>
+    <string name="AccurateTo">Nauwkeurig tot op %1$s</string>
+    <string name="NearbyPlaces">OF KIES EEN PLEK</string>
     <!--photo gallery view-->
     <string name="ShowAllMedia">Alle media weergeven</string>
     <string name="SaveToGallery">Opslaan in galerij</string>
     <string name="Of">%1$d van %2$d</string>
     <string name="Gallery">Galerij</string>
     <string name="AllPhotos">Alle foto\'s</string>
+    <string name="AllVideo">Alle video\'s</string>
     <string name="NoPhotos">Nog geen foto\'s</string>
+    <string name="NoVideo">Nog geen video\'s</string>
     <string name="PleaseDownload">Download media eerst</string>
     <string name="NoRecentPhotos">Niets recents</string>
     <string name="NoRecentGIFs">Niets recents</string>
@@ -388,6 +418,11 @@
     <string name="DiscardChanges">Wijzigingen negeren?</string>
     <string name="ClearSearch">Zoekgeschiedenis wissen?</string>
     <string name="ClearButton">Wissen</string>
+    <string name="PickerPhotos">Foto\'s</string>
+    <string name="PickerVideo">Video</string>
+    <string name="AddCaption">Onderschrift toevoegen</string>
+    <string name="PhotoCaption">Foto-onderschrift</string>
+    <string name="VideoCaption">Video-onderschrift</string>
     <!--password view-->
     <string name="TwoStepVerification">Twee-staps-verificatie</string>
     <string name="SetAdditionalPassword">Extra wachtwoord instellen</string>
@@ -497,6 +532,8 @@
     <string name="OK">OK</string>
     <string name="Crop">BIJSNIJDEN</string>
     <!--messages-->
+    <string name="ActionInviteYou">Je neemt deel aan de groep via uitnodigingslink</string>
+    <string name="ActionInviteUser">un1 neemt deel aan de groep via uitnodigingslink</string>
     <string name="ActionKickUser">un1 heeft un2 verwijderd</string>
     <string name="ActionLeftUser">un1 heeft de groep verlaten</string>
     <string name="ActionAddUser">un1 heeft un2 toegevoegd</string>
@@ -664,6 +701,18 @@
     <string name="Users_few">%1$d gebruikers</string>
     <string name="Users_many">%1$d gebruikers</string>
     <string name="Users_other">%1$d gebruikers</string>
+    <string name="Times_zero">%1$d keer</string>
+    <string name="Times_one">%1$d keer</string>
+    <string name="Times_two">%1$d keer</string>
+    <string name="Times_few">%1$d keer</string>
+    <string name="Times_many">%1$d keer</string>
+    <string name="Times_other">%1$d keer</string>
+    <string name="Meters_zero">%1$d meter</string>
+    <string name="Meters_one">%1$d meter</string>
+    <string name="Meters_two">%1$d meter</string>
+    <string name="Meters_few">%1$d meter</string>
+    <string name="Meters_many">%1$d meter</string>
+    <string name="Meters_other">%1$d meter</string>
     <!--forwarded messages-->
     <string name="ForwardedMessage_zero">Bijlage: %1$d berichten</string>
     <string name="ForwardedMessage_one">Bijlage: 1 bericht</string>
@@ -730,20 +779,12 @@
     <string name="formatterDay24H">HH:mm</string>
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s om %2$s</string>
+    <!--update text-->
+    <string name="updateText">Plus Messenger voor Android is geüpdatet. Nieuw in versie 2.8:\n\n- Uitnodigingslinks voor groepchats\n- Slimme meldingen\n- Stickerstab in emojimenu\n- Onderschriften voor foto\'s\n- Plekken en routebeschrijvingen op locaties\n- \'Beluistered\'-status voor spraakberichten\n- Geadvanceerde \'aan het typen\'-status: verstuurt een foto, audio opnemen, etc.\n- Scrollen en animaties verbeterd voor een soepele ervaring</string>
+    <string name="updateBuild">523</string>
     <!--Telegram+ Dutch-->
-    <!--Smart Notifications-->
-    <string name="SmartNotification">Slimme melding</string>
-    <string name="TimeUnitSeconds">seconde(n)</string>
-    <string name="TimeUnitMinutes">minute(n)</string>
-    <string name="TimeUnitHours">uur</string>
-    <string name="TimeUnitDays">dag(en)</string>
-    <string name="settings_smart_notify_begin">Geluid bij de meeste</string>
-    <string name="settings_smart_notify_mid1">tijden</string>
-    <string name="settings_smart_notify_mid11">tijd</string>
-    <string name="settings_smart_notify_mid2">binnen</string>
-    <!---->
     <string name="TelegramForAndroid">Plus Messenger voor Android</string>
-    <string name="Theming">Uiterlijk</string>
+  <string name="Theming">Thema\'s</string>
     <string name="colorHexInvalid">Ongeldige kleurhexcode!</string>
     <string name="themeColor">Themakleur</string>
     <string name="ResetThemeSettings">Thema-instellingen herstellen</string>
@@ -752,15 +793,15 @@
     <string name="General">Algemeen</string>
     <string name="Screens">Schermen</string>
     <string name="MainScreen">Hoofdscherm</string>
-    <string name="ChatScreen">Chatgesprek-scherm</string>
-    <string name="ContactsScreen">Contactpersonen-scherm</string>
-    <string name="Header">Banier</string>
+  <string name="ChatScreen">Chatscherm</string>
+  <string name="ContactsScreen">Contactenscherm</string>
+  <string name="Header">Kop</string>
     <string name="Rows">Rijen</string>
     <string name="ChatList">Chatlijst</string>
     <string name="ChatsList">Chatslijst</string>
-    <string name="ContactsList">Contactpersonenlijst</string>
-    <string name="HeaderColor">Banierkleur</string>
-  <string name="NameColor">Naamkleur</string>
+  <string name="ContactsList">Contactenlijst</string>
+  <string name="HeaderColor">Kopkleur</string>
+  <string name="NameColor">Kleur van naam</string>
   <string name="NameSize">Naamgrootte</string>
     <string name="MessageColor">Berichtkleur</string>
     <string name="MessageSize">Berichtgrootte</string>
@@ -779,8 +820,8 @@
     <string name="DateBubbleColor">Kleur van datumballon</string>
   <string name="RTextColor">Rechtertekstkleur</string>
     <string name="LTextColor">Linkertekstkleur</string>
-    <string name="RTimeColor">Rechtertekstkleur</string>
-    <string name="LTimeColor">Rechtertijdskleur</string>
+  <string name="RTimeColor">Rechtertijdskleur</string>
+  <string name="LTimeColor">Linkertijdskleur</string>
     <string name="TimeSize">Tijdgrootte</string>
     <string name="EditTextColor">Kleur van tekstinvoer</string>
     <string name="EditTextSize">Grootte van tekstinvoer</string>
@@ -791,17 +832,17 @@
     <string name="ChatMusic">Muziek</string>
     <string name="SaveTheme">Thema opslaan</string>
     <string name="SaveThemeSum">Sla uw thema op in de Telegram/Thema\'s-map</string>
-  <string name="SaveThemeToastText">Het thema is opgeslagen!</string>
+  <string name="SaveThemeToastText">Thema opgeslagen!</string>
     <string name="SavedTo">%1$s is opgeslagen naar %2$s</string>
   <string name="SaveErrorMsg0">Het thema is nog niet gecreëerd. Pas eerst een MOD toe.</string>
     <string name="restoreOkMsg">De voorkeuren zijn hersteld vanaf de SD-kaart</string>
     <string name="restoreErrorMsg">Er is geen voorkeurenbestand aangetroffen in %s</string>
-    <string name="NoMediaMessage">Er is geen SD-kaart gevonden.</string>
+  <string name="NoMediaMessage">Geen SD-kaart gevonden.</string>
     <string name="EnterName">Vul een naam in</string>
     <string name="Themes">Thema\'s</string>
     <string name="ApplyTheme">Thema toepassen</string>
     <string name="ApplyThemeSum">XML-thema uit lokale map toepassen</string>
-  <string name="MemberColor">Gebruikerskleur</string>
+  <string name="MemberColor">Lidkleur</string>
     <string name="ChecksColor">Kleur van tikken</string>
     <string name="MuteColor">Kleur van gedempt</string>
     <string name="SendLogs">Logbestanden versturen</string>
@@ -819,25 +860,35 @@
   <string name="OwnNameSize">Naamgrootte</string>
   <string name="PhoneColor">Telefoonkleur</string>
   <string name="PhoneSize">Telefoongrootte</string>
-  <string name="AvatarColor">Kleur van gebruikersafbeelding</string>
+  <string name="AvatarColor">Profielfotokleur</string>
   <string name="IconColor">Kleur van optiespictogram</string>
   <string name="OptionColor">Optiekleur</string>
   <string name="OptionSize">Optiegrootte</string>
   <string name="VersionColor">Versiekleur</string>
   <string name="VersionSize">Versiegrootte</string>
-  <string name="HeaderTitleColor">Kleur van baniertitel</string>
-  <string name="HeaderIconsColor">Kleur van banierpictogrammen</string>
+  <string name="HeaderTitleColor">Kleur van koptitel</string>
+  <string name="HeaderIconsColor">Kleur van koppictogrammen</string>
   <string name="DividerColor">Scheidingskleur</string>
-  <string name="AvatarRadius">Radius van gebruikersafbeelding</string>
-  <string name="SetMemberColor">Gebruikerskleur instellen</string>
+  <string name="AvatarRadius">Profielfotostraal</string>
+  <string name="SetMemberColor">Lidkleur instellen</string>
   <string name="ForwardNameColor">Doorstuurnaamkleur</string>
-  <string name="HeaderTitle">Baniertitel</string>
+  <string name="HeaderTitle">Koptitel</string>
   <string name="ForwardNoQuote">Doorsturen zonder citeren</string>
   <string name="DisableMessageClick">Pop-up bij klikken uitschakelen</string>
-  <string name="ProfileScreen">Groeps-/contactpersoonprofielscherm</string>
+  <string name="ProfileScreen">Groeps-/contactpersoonprofiel</string>
   <string name="HideBackground">Aangepaste achtergrond verbergen</string>
   <string name="RLinkColor">Rechterlinkkleur</string>
   <string name="LLinkColor">Linkerlinkkleur</string>
-    <string name="ThemeApplied">Het thema is toegepast!</string>
+  <string name="ThemeApplied">Thema toegepast!</string>
     <string name="ClickOkToRestart">Druk op OK om de applicatie te herstarten</string>
+  <string name="ShowAndroidEmoji">Telefoonemoji</string>
+  <string name="BubbleStyle">Bubbelstijl</string>
+  <string name="KeepOriginalFilename">Originele bestandsnaam behouden</string>
+  <string name="KeepOriginalFilenameHelp">In plaats van alleen nummers worden bestanden opgeslagen onder een naam_datum-bestandsnaam</string>
+  <string name="AvatarSize">Profielfotogrootte</string>
+  <string name="AvatarAlignTop">Profielfoto naar boven uitlijnen</string>
+  <string name="AvatarMarginLeft">Linkermarge van profielfoto</string>
+  <string name="GroupNameColor">Kleur van groepsnaam</string>
+  <string name="GroupNameSize">Grootte van groepsnaam</string>
+  <string name="UnknownNameColor">Naamkleur (onbekend nummer)</string>
 </resources>

@@ -38,6 +38,8 @@ import android.widget.ListView;
 import android.widget.TextView;
 
 import org.telegram.android.AndroidUtilities;
+import org.telegram.android.AnimationCompat.ObjectAnimatorProxy;
+import org.telegram.android.AnimationCompat.ViewProxy;
 import org.telegram.android.ContactsController;
 import org.telegram.android.LocaleController;
 import org.telegram.android.MessageObject;
@@ -57,10 +59,9 @@ import org.telegram.ui.ActionBar.MenuDrawable;
 import org.telegram.ui.Adapters.BaseFragmentAdapter;
 import org.telegram.ui.Adapters.DialogsAdapter;
 import org.telegram.ui.Adapters.DialogsSearchAdapter;
-import org.telegram.ui.AnimationCompat.ObjectAnimatorProxy;
-import org.telegram.ui.AnimationCompat.ViewProxy;
 import org.telegram.ui.Cells.DialogCell;
 import org.telegram.ui.Cells.UserCell;
+import org.telegram.ui.Components.ResourceLoader;
 
 import java.util.ArrayList;
 
@@ -163,6 +164,9 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
     public View createView(Context context, LayoutInflater inflater) {
             searching = false;
             searchWas = false;
+
+            ResourceLoader.loadRecources(context);
+
             SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
             ActionBarMenu menu = actionBar.createMenu();
             if (!onlySelect && searchString == null) {
@@ -252,6 +256,9 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
             });
             item.getSearchField().setHint(LocaleController.getString("Search", R.string.Search));
             item.getSearchField().setTextColor(themePrefs.getInt("chatsHeaderTitleColor", 0xffffffff));
+            Drawable clear = getParentActivity().getResources().getDrawable(R.drawable.ic_close_white);
+            clear.setColorFilter(AndroidUtilities.getIntDef("chatsHeaderIconsColor", 0xffffffff), PorterDuff.Mode.MULTIPLY);
+            item.getClearButton().setImageDrawable(clear);
             if (onlySelect) {
                 //actionBar.setBackButtonImage(R.drawable.ic_ab_back);
                 Drawable back = getParentActivity().getResources().getDrawable(R.drawable.ic_ab_back);
@@ -669,6 +676,9 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
         lock.setColorFilter(themePrefs.getInt("chatsHeaderIconsColor", 0xffffffff), PorterDuff.Mode.MULTIPLY);
         lock = getParentActivity().getResources().getDrawable(R.drawable.lock_open);
         lock.setColorFilter(themePrefs.getInt("chatsHeaderIconsColor", 0xffffffff), PorterDuff.Mode.MULTIPLY);
+        Drawable clear = getParentActivity().getResources().getDrawable(R.drawable.ic_close_white);
+        clear.setColorFilter(AndroidUtilities.getIntDef("chatsHeaderIconsColor", 0xffffffff), PorterDuff.Mode.MULTIPLY);
+
     }
 
     @Override

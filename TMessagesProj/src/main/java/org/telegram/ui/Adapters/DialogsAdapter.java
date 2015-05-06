@@ -8,17 +8,14 @@
 
 package org.telegram.ui.Adapters;
 
-import android.app.Activity;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.view.View;
 import android.view.ViewGroup;
 
 import org.telegram.android.AndroidUtilities;
-import org.telegram.android.MessageObject;
 import org.telegram.android.MessagesController;
 import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.R;
 import org.telegram.messenger.TLRPC;
 import org.telegram.ui.Cells.DialogCell;
 import org.telegram.ui.Cells.LoadingCell;

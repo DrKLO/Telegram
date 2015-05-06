@@ -17,6 +17,7 @@ import android.widget.TextView;
 
 import org.telegram.android.AndroidUtilities;
 import org.telegram.ui.Components.FrameLayoutFixed;
+import org.telegram.ui.Components.LayoutHelper;
 
 public class PhotoEditToolCell extends FrameLayoutFixed {
 
@@ -31,8 +32,8 @@ public class PhotoEditToolCell extends FrameLayoutFixed {
         iconImage.setScaleType(ImageView.ScaleType.CENTER);
         addView(iconImage);
         LayoutParams layoutParams = (LayoutParams) iconImage.getLayoutParams();
-        layoutParams.width = LayoutParams.MATCH_PARENT;
-        layoutParams.height = LayoutParams.MATCH_PARENT;
+        layoutParams.width = LayoutHelper.MATCH_PARENT;
+        layoutParams.height = LayoutHelper.MATCH_PARENT;
         layoutParams.bottomMargin = AndroidUtilities.dp(12);
         iconImage.setLayoutParams(layoutParams);
 
@@ -46,8 +47,8 @@ public class PhotoEditToolCell extends FrameLayoutFixed {
         nameTextView.setEllipsize(TextUtils.TruncateAt.END);
         addView(nameTextView);
         layoutParams = (LayoutParams) nameTextView.getLayoutParams();
-        layoutParams.width = LayoutParams.MATCH_PARENT;
-        layoutParams.height = LayoutParams.WRAP_CONTENT;
+        layoutParams.width = LayoutHelper.MATCH_PARENT;
+        layoutParams.height = LayoutHelper.WRAP_CONTENT;
         layoutParams.gravity = Gravity.LEFT | Gravity.BOTTOM;
         layoutParams.leftMargin = AndroidUtilities.dp(4);
         layoutParams.rightMargin = AndroidUtilities.dp(4);
@@ -59,8 +60,8 @@ public class PhotoEditToolCell extends FrameLayoutFixed {
         valueTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         addView(valueTextView);
         layoutParams = (LayoutParams) valueTextView.getLayoutParams();
-        layoutParams.width = LayoutParams.WRAP_CONTENT;
-        layoutParams.height = LayoutParams.WRAP_CONTENT;
+        layoutParams.width = LayoutHelper.WRAP_CONTENT;
+        layoutParams.height = LayoutHelper.WRAP_CONTENT;
         layoutParams.gravity = Gravity.LEFT | Gravity.TOP;
         layoutParams.leftMargin = AndroidUtilities.dp(57);
         layoutParams.topMargin = AndroidUtilities.dp(3);

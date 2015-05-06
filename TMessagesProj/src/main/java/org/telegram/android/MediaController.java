@@ -87,6 +87,8 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
 
     public static int[] readArgs = new int[3];
 
+    public static String iFilter = "*";
+
     public interface FileDownloadProgressListener {
         void onFailedDownload(String fileName);
         void onSuccessDownload(String fileName);
@@ -117,17 +119,27 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
             MediaStore.Images.Media.ORIENTATION
     };
 
+    private static final String[] projectionVideo = {
+            MediaStore.Video.Media._ID,
+            MediaStore.Video.Media.BUCKET_ID,
+            MediaStore.Video.Media.BUCKET_DISPLAY_NAME,
+            MediaStore.Video.Media.DATA,
+            MediaStore.Video.Media.DATE_TAKEN
+    };
+
     public static class AlbumEntry {
         public int bucketId;
         public String bucketName;
         public PhotoEntry coverPhoto;
         public ArrayList<PhotoEntry> photos = new ArrayList<>();
         public HashMap<Integer, PhotoEntry> photosByIds = new HashMap<>();
+        public boolean isVideo;
 
-        public AlbumEntry(int bucketId, String bucketName, PhotoEntry coverPhoto) {
+        public AlbumEntry(int bucketId, String bucketName, PhotoEntry coverPhoto, boolean isVideo) {
             this.bucketId = bucketId;
             this.bucketName = bucketName;
             this.coverPhoto = coverPhoto;
+            this.isVideo = isVideo;
         }
 
         public void addPhoto(PhotoEntry photoEntry) {
@@ -144,13 +156,16 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
         public int orientation;
         public String thumbPath;
         public String imagePath;
+        public boolean isVideo;
+        public CharSequence caption;
 
-        public PhotoEntry(int bucketId, int imageId, long dateTaken, String path, int orientation) {
+        public PhotoEntry(int bucketId, int imageId, long dateTaken, String path, int orientation, boolean isVideo) {
             this.bucketId = bucketId;
             this.imageId = imageId;
             this.dateTaken = dateTaken;
             this.path = path;
             this.orientation = orientation;
+            this.isVideo = isVideo;
         }
     }
 
@@ -167,6 +182,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
         public int date;
         public String thumbPath;
         public String imagePath;
+        public CharSequence caption;
     }
 
     public final static String MIME_TYPE = "video/avc";
@@ -177,6 +193,8 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
     private final static int PROCESSOR_TYPE_SEC = 4;
     private final static int PROCESSOR_TYPE_TI = 5;
     private final Object videoConvertSync = new Object();
+
+    private HashMap<Long, Long> typingTimes = new HashMap<>();
 
     private SensorManager sensorManager;
     private Sensor proximitySensor;
@@ -550,6 +568,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
         videoDownloadQueue.clear();
         downloadQueueKeys.clear();
         videoConvertQueue.clear();
+        typingTimes.clear();
         cancelVideoConvert(null);
     }
 
@@ -975,6 +994,29 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
             }
             listenerInProgress = false;
             processLaterArrays();
+            try {
+                ArrayList<SendMessagesHelper.DelayedMessage> delayedMessages = SendMessagesHelper.getInstance().getDelayedMessages(fileName);
+                if (delayedMessages != null) {
+                    for (SendMessagesHelper.DelayedMessage delayedMessage : delayedMessages) {
+                        if (delayedMessage.encryptedChat == null) {
+                            long dialog_id = delayedMessage.obj.getDialogId();
+                            Long lastTime = typingTimes.get(dialog_id);
+                            if (lastTime == null || lastTime + 4000 < System.currentTimeMillis()) {
+                                if (delayedMessage.videoLocation != null) {
+                                    MessagesController.getInstance().sendTyping(dialog_id, 5, 0);
+                                } else if (delayedMessage.documentLocation != null) {
+                                    MessagesController.getInstance().sendTyping(dialog_id, 3, 0);
+                                } else if (delayedMessage.location != null) {
+                                    MessagesController.getInstance().sendTyping(dialog_id, 4, 0);
+                                }
+                                typingTimes.put(dialog_id, System.currentTimeMillis());
+                            }
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                FileLog.e("tmessages", e);
+            }
         } else if (id == NotificationCenter.messagesDeleted) {
             if (playingMessageObject != null) {
                 ArrayList<Integer> markAsDeletedMessages = (ArrayList<Integer>)args[0];
@@ -1970,10 +2012,12 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
             @Override
             public void run() {
                 final ArrayList<AlbumEntry> albumsSorted = new ArrayList<>();
+                final ArrayList<AlbumEntry> videoAlbumsSorted = new ArrayList<>();
                 HashMap<Integer, AlbumEntry> albums = new HashMap<>();
                 AlbumEntry allPhotosAlbum = null;
                 String cameraFolder = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM).getAbsolutePath() + "/" + "Camera/";
                 Integer cameraAlbumId = null;
+                Integer cameraAlbumVideoId = null;
 
                 Cursor cursor = null;
                 try {
@@ -1993,15 +2037,15 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                             String path = cursor.getString(dataColumn);
                             long dateTaken = cursor.getLong(dateColumn);
                             int orientation = cursor.getInt(orientationColumn);
-
-                            if (path == null || path.length() == 0) {
+                            //Plus
+                            if (path == null || path.length() == 0 || !iFilter.equals("*") && !path.toLowerCase().endsWith(iFilter)) {//|| !path.contains(".webp")
                                 continue;
                             }
 
-                            PhotoEntry photoEntry = new PhotoEntry(bucketId, imageId, dateTaken, path, orientation);
+                            PhotoEntry photoEntry = new PhotoEntry(bucketId, imageId, dateTaken, path, orientation, false);
 
                             if (allPhotosAlbum == null) {
-                                allPhotosAlbum = new AlbumEntry(0, LocaleController.getString("AllPhotos", R.string.AllPhotos), photoEntry);
+                                allPhotosAlbum = new AlbumEntry(0, LocaleController.getString("AllPhotos", R.string.AllPhotos), photoEntry, false);
                                 albumsSorted.add(0, allPhotosAlbum);
                             }
                             if (allPhotosAlbum != null) {
@@ -2010,7 +2054,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
 
                             AlbumEntry albumEntry = albums.get(bucketId);
                             if (albumEntry == null) {
-                                albumEntry = new AlbumEntry(bucketId, bucketName, photoEntry);
+                                albumEntry = new AlbumEntry(bucketId, bucketName, photoEntry, false);
                                 albums.put(bucketId, albumEntry);
                                 if (cameraAlbumId == null && cameraFolder != null && path != null && path.startsWith(cameraFolder)) {
                                     albumsSorted.add(0, albumEntry);
@@ -2034,11 +2078,72 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                         }
                     }
                 }
+
+                try {
+                    albums.clear();
+                    allPhotosAlbum = null;
+                    cursor = MediaStore.Images.Media.query(ApplicationLoader.applicationContext.getContentResolver(), MediaStore.Video.Media.EXTERNAL_CONTENT_URI, projectionVideo, "", null, MediaStore.Video.Media.DATE_TAKEN + " DESC");
+                    if (cursor != null) {
+                        int imageIdColumn = cursor.getColumnIndex(MediaStore.Video.Media._ID);
+                        int bucketIdColumn = cursor.getColumnIndex(MediaStore.Video.Media.BUCKET_ID);
+                        int bucketNameColumn = cursor.getColumnIndex(MediaStore.Video.Media.BUCKET_DISPLAY_NAME);
+                        int dataColumn = cursor.getColumnIndex(MediaStore.Video.Media.DATA);
+                        int dateColumn = cursor.getColumnIndex(MediaStore.Video.Media.DATE_TAKEN);
+
+                        while (cursor.moveToNext()) {
+                            int imageId = cursor.getInt(imageIdColumn);
+                            int bucketId = cursor.getInt(bucketIdColumn);
+                            String bucketName = cursor.getString(bucketNameColumn);
+                            String path = cursor.getString(dataColumn);
+                            long dateTaken = cursor.getLong(dateColumn);
+
+                            if (path == null || path.length() == 0) {
+                                continue;
+                            }
+
+                            PhotoEntry photoEntry = new PhotoEntry(bucketId, imageId, dateTaken, path, 0, true);
+
+                            if (allPhotosAlbum == null) {
+                                allPhotosAlbum = new AlbumEntry(0, LocaleController.getString("AllVideo", R.string.AllVideo), photoEntry, true);
+                                videoAlbumsSorted.add(0, allPhotosAlbum);
+                            }
+                            if (allPhotosAlbum != null) {
+                                allPhotosAlbum.addPhoto(photoEntry);
+                            }
+
+                            AlbumEntry albumEntry = albums.get(bucketId);
+                            if (albumEntry == null) {
+                                albumEntry = new AlbumEntry(bucketId, bucketName, photoEntry, true);
+                                albums.put(bucketId, albumEntry);
+                                if (cameraAlbumVideoId == null && cameraFolder != null && path != null && path.startsWith(cameraFolder)) {
+                                    videoAlbumsSorted.add(0, albumEntry);
+                                    cameraAlbumVideoId = bucketId;
+                                } else {
+                                    videoAlbumsSorted.add(albumEntry);
+                                }
+                            }
+
+                            albumEntry.addPhoto(photoEntry);
+                        }
+                    }
+                } catch (Exception e) {
+                    FileLog.e("tmessages", e);
+                } finally {
+                    if (cursor != null) {
+                        try {
+                            cursor.close();
+                        } catch (Exception e) {
+                            FileLog.e("tmessages", e);
+                        }
+                    }
+                }
+
                 final Integer cameraAlbumIdFinal = cameraAlbumId;
+                final Integer cameraAlbumVideoIdFinal = cameraAlbumVideoId;
                 AndroidUtilities.runOnUIThread(new Runnable() {
                     @Override
                     public void run() {
-                        NotificationCenter.getInstance().postNotificationName(NotificationCenter.albumsDidLoaded, guid, albumsSorted, cameraAlbumIdFinal);
+                        NotificationCenter.getInstance().postNotificationName(NotificationCenter.albumsDidLoaded, guid, albumsSorted, cameraAlbumIdFinal, videoAlbumsSorted, cameraAlbumVideoIdFinal);
                     }
                 });
             }

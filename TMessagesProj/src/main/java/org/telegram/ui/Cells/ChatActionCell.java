@@ -34,6 +34,7 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.UserConfig;
 import org.telegram.ui.Components.AvatarDrawable;
+import org.telegram.ui.ImageListActivity;
 import org.telegram.ui.PhotoViewer;
 
 public class ChatActionCell extends BaseCell {
@@ -44,8 +45,6 @@ public class ChatActionCell extends BaseCell {
         void needOpenUserProfile(int uid);
     }
 
-    private static Drawable backgroundBlack;
-    private static Drawable backgroundBlue;
     private static TextPaint textPaint;
 
     private static Drawable backgroundWhite;
@@ -69,12 +68,8 @@ public class ChatActionCell extends BaseCell {
 
     public ChatActionCell(Context context) {
         super(context);
-        if (backgroundBlack == null) {
-            backgroundBlack = getResources().getDrawable(R.drawable.system_black);
-            backgroundBlue = getResources().getDrawable(R.drawable.system_blue);
-
+        if (textPaint == null) {
             backgroundWhite = getResources().getDrawable(R.drawable.system_white);
-
             textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
             textPaint.setColor(0xffffffff);
             textPaint.linkColor = 0xffffffff;
@@ -276,9 +271,21 @@ public class ChatActionCell extends BaseCell {
             textPaint.linkColor = AndroidUtilities.getIntDarkerColor("chatDateColor", -0x50);
         }
         textPaint.setTextSize(AndroidUtilities.dp(themePrefs.getInt("chatDateSize", 16)));//16
+        setBubbles(themePrefs.getString("chatBubbleStyle", ImageListActivity.getBubbleName(0)));
         backgroundWhite.setColorFilter(themePrefs.getInt("chatDateBubbleColor", 0x59000000), PorterDuff.Mode.MULTIPLY);
     }
 
+    private void setBubbles(String bubble){
+        if(bubble.equals(ImageListActivity.getBubbleName(0))){
+            backgroundWhite = getResources().getDrawable(R.drawable.system_white);
+        } else if(bubble.equals(ImageListActivity.getBubbleName(1))){
+            backgroundWhite = getResources().getDrawable(R.drawable.system_white);
+        } else if(bubble.equals(ImageListActivity.getBubbleName(2))){
+            backgroundWhite = getResources().getDrawable(R.drawable.system_white_3);
+        } else if(bubble.equals(ImageListActivity.getBubbleName(3))){
+            backgroundWhite = getResources().getDrawable(R.drawable.system_white_4);
+        }
+    }
     @Override
     protected void onDraw(Canvas canvas) {
         if (currentMessageObject == null) {

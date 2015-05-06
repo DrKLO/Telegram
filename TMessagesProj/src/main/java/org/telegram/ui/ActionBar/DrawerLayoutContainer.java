@@ -25,10 +25,10 @@ import android.widget.FrameLayout;
 import android.widget.ListView;
 
 import org.telegram.android.AndroidUtilities;
+import org.telegram.android.AnimationCompat.AnimatorListenerAdapterProxy;
+import org.telegram.android.AnimationCompat.AnimatorSetProxy;
+import org.telegram.android.AnimationCompat.ObjectAnimatorProxy;
 import org.telegram.messenger.R;
-import org.telegram.ui.AnimationCompat.AnimatorListenerAdapterProxy;
-import org.telegram.ui.AnimationCompat.AnimatorSetProxy;
-import org.telegram.ui.AnimationCompat.ObjectAnimatorProxy;
 
 public class DrawerLayoutContainer extends FrameLayout {
 
@@ -57,6 +57,7 @@ public class DrawerLayoutContainer extends FrameLayout {
 
     private float drawerPosition = 0;
     private boolean drawerOpened = false;
+    private boolean allowDrawContent = true;
 
     public DrawerLayoutContainer(Context context) {
         super(context);
@@ -150,7 +151,7 @@ public class DrawerLayoutContainer extends FrameLayout {
         if (drawerLayout.getVisibility() != newVisibility) {
             drawerLayout.setVisibility(newVisibility);
         }
-        setScrimOpacity(drawerPosition / (float)drawerLayout.getMeasuredWidth());
+        setScrimOpacity(drawerPosition / (float) drawerLayout.getMeasuredWidth());
     }
 
     public float getDrawerPosition() {
@@ -276,6 +277,13 @@ public class DrawerLayoutContainer extends FrameLayout {
         return drawerOpened;
     }
 
+    public void setAllowDrawContent(boolean value) {
+        if (allowDrawContent != value) {
+            allowDrawContent = value;
+            invalidate();
+        }
+    }
+
     public boolean onTouchEvent(MotionEvent ev) {
         if (!parentActionBarLayout.checkTransitionAnimation()) {
             if (drawerOpened && ev != null && ev.getX() > drawerPosition && !startedTracking) {
@@ -301,7 +309,7 @@ public class DrawerLayoutContainer extends FrameLayout {
                     float dx = (int) (ev.getX() - startedTrackingX);
                     float dy = Math.abs((int) ev.getY() - startedTrackingY);
                     velocityTracker.addMovement(ev);
-                    if (maybeStartTracking && !startedTracking && (dx > 0 && dx / 3.0f > Math.abs(dy) && Math.abs(dx) >= AndroidUtilities.getPixelsInCM(0.2f, true) || dx < 0 && Math.abs(dx) >= Math.abs(dy) && Math.abs(dx) >= AndroidUtilities.getPixelsInCM(0.3f, true))) {
+                    if (maybeStartTracking && !startedTracking && (dx > 0 && dx / 3.0f > Math.abs(dy) && Math.abs(dx) >= AndroidUtilities.getPixelsInCM(0.2f, true) || dx < 0 && Math.abs(dx) >= Math.abs(dy) && Math.abs(dx) >= AndroidUtilities.getPixelsInCM(0.4f, true))) {
                         prepareForDrawerOpen(ev);
                         startedTrackingX = (int) ev.getX();
                         requestDisallowInterceptTouchEvent(true);
@@ -441,11 +449,14 @@ public class DrawerLayoutContainer extends FrameLayout {
                 child.measure(drawerWidthSpec, drawerHeightSpec);
             }
         }
-        getDrawerLayout().setBackgroundColor(AndroidUtilities.getIntDef("drawerListColor",0xffffffff));
+        getDrawerLayout().setBackgroundColor(AndroidUtilities.getIntDef("drawerListColor",0xffffffff));  //Plus
     }
 
     @Override
     protected boolean drawChild(Canvas canvas, View child, long drawingTime) {
+        if (!allowDrawContent) {
+            return false;
+        }
         final int height = getHeight();
         final boolean drawingContent = child != drawerLayout;
         int clipLeft = 0, clipRight = getWidth();

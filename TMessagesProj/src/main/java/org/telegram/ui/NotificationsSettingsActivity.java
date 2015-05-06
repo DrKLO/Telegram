@@ -48,6 +48,7 @@ import org.telegram.ui.Cells.TextCheckCell;
 import org.telegram.ui.Cells.TextColorCell;
 import org.telegram.ui.Cells.TextDetailSettingsCell;
 import org.telegram.ui.Components.ColorPickerView;
+import org.telegram.ui.Components.LayoutHelper;
 
 public class NotificationsSettingsActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
     private ListView listView;
@@ -178,8 +179,8 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
         listView.setVerticalScrollBarEnabled(false);
         frameLayout.addView(listView);
         FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) listView.getLayoutParams();
-        layoutParams.width = FrameLayout.LayoutParams.MATCH_PARENT;
-        layoutParams.height = FrameLayout.LayoutParams.MATCH_PARENT;
+        layoutParams.width = LayoutHelper.MATCH_PARENT;
+        layoutParams.height = LayoutHelper.MATCH_PARENT;
         listView.setLayoutParams(layoutParams);
         listView.setAdapter(new ListAdapter(context));
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {

@@ -38,10 +38,13 @@ import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import org.telegram.android.AndroidUtilities;
+import org.telegram.android.AnimationCompat.AnimatorListenerAdapterProxy;
+import org.telegram.android.AnimationCompat.AnimatorSetProxy;
+import org.telegram.android.AnimationCompat.ObjectAnimatorProxy;
+import org.telegram.android.AnimationCompat.ViewProxy;
 import org.telegram.android.LocaleController;
 import org.telegram.android.NotificationCenter;
 import org.telegram.messenger.ApplicationLoader;
@@ -49,10 +52,6 @@ import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
-import org.telegram.ui.AnimationCompat.AnimatorListenerAdapterProxy;
-import org.telegram.ui.AnimationCompat.AnimatorSetProxy;
-import org.telegram.ui.AnimationCompat.ObjectAnimatorProxy;
-import org.telegram.ui.AnimationCompat.ViewProxy;
 
 import java.util.ArrayList;
 import java.util.Locale;
@@ -424,15 +423,15 @@ public class PasscodeView extends FrameLayout {
         backgroundFrameLayout = new FrameLayout(context);
         addView(backgroundFrameLayout);
         LayoutParams layoutParams = (LayoutParams) backgroundFrameLayout.getLayoutParams();
-        layoutParams.width = LayoutParams.MATCH_PARENT;
-        layoutParams.height = LayoutParams.MATCH_PARENT;
+        layoutParams.width = LayoutHelper.MATCH_PARENT;
+        layoutParams.height = LayoutHelper.MATCH_PARENT;
         backgroundFrameLayout.setLayoutParams(layoutParams);
 
         passwordFrameLayout = new FrameLayout(context);
         addView(passwordFrameLayout);
         layoutParams = (LayoutParams) passwordFrameLayout.getLayoutParams();
-        layoutParams.width = LayoutParams.MATCH_PARENT;
-        layoutParams.height = LayoutParams.MATCH_PARENT;
+        layoutParams.width = LayoutHelper.MATCH_PARENT;
+        layoutParams.height = LayoutHelper.MATCH_PARENT;
         layoutParams.gravity = Gravity.TOP | Gravity.LEFT;
         passwordFrameLayout.setLayoutParams(layoutParams);
 
@@ -458,8 +457,8 @@ public class PasscodeView extends FrameLayout {
         passcodeTextView.setGravity(Gravity.CENTER_HORIZONTAL);
         passwordFrameLayout.addView(passcodeTextView);
         layoutParams = (LayoutParams) passcodeTextView.getLayoutParams();
-        layoutParams.width = LayoutParams.WRAP_CONTENT;
-        layoutParams.height = LayoutParams.WRAP_CONTENT;
+        layoutParams.width = LayoutHelper.WRAP_CONTENT;
+        layoutParams.height = LayoutHelper.WRAP_CONTENT;
         layoutParams.bottomMargin = AndroidUtilities.dp(62);
         layoutParams.gravity = Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL;
         passcodeTextView.setLayoutParams(layoutParams);
@@ -467,8 +466,8 @@ public class PasscodeView extends FrameLayout {
         passwordEditText2 = new AnimatingTextView(context);
         passwordFrameLayout.addView(passwordEditText2);
         layoutParams = (FrameLayout.LayoutParams) passwordEditText2.getLayoutParams();
-        layoutParams.height = LinearLayout.LayoutParams.WRAP_CONTENT;
-        layoutParams.width = LinearLayout.LayoutParams.MATCH_PARENT;
+        layoutParams.height = LayoutHelper.WRAP_CONTENT;
+        layoutParams.width = LayoutHelper.MATCH_PARENT;
         layoutParams.leftMargin = AndroidUtilities.dp(70);
         layoutParams.rightMargin = AndroidUtilities.dp(70);
         layoutParams.bottomMargin = AndroidUtilities.dp(6);
@@ -488,8 +487,8 @@ public class PasscodeView extends FrameLayout {
         AndroidUtilities.clearCursorDrawable(passwordEditText);
         passwordFrameLayout.addView(passwordEditText);
         layoutParams = (FrameLayout.LayoutParams) passwordEditText.getLayoutParams();
-        layoutParams.height = LinearLayout.LayoutParams.WRAP_CONTENT;
-        layoutParams.width = LinearLayout.LayoutParams.MATCH_PARENT;
+        layoutParams.height = LayoutHelper.WRAP_CONTENT;
+        layoutParams.width = LayoutHelper.MATCH_PARENT;
         layoutParams.leftMargin = AndroidUtilities.dp(70);
         layoutParams.rightMargin = AndroidUtilities.dp(70);
         layoutParams.bottomMargin = AndroidUtilities.dp(6);
@@ -571,7 +570,7 @@ public class PasscodeView extends FrameLayout {
         lineFrameLayout.setBackgroundColor(0x26ffffff);
         passwordFrameLayout.addView(lineFrameLayout);
         layoutParams = (LayoutParams) lineFrameLayout.getLayoutParams();
-        layoutParams.width = LayoutParams.MATCH_PARENT;
+        layoutParams.width = LayoutHelper.MATCH_PARENT;
         layoutParams.height = AndroidUtilities.dp(1);
         layoutParams.gravity = Gravity.BOTTOM | Gravity.LEFT;
         layoutParams.leftMargin = AndroidUtilities.dp(20);
@@ -581,8 +580,8 @@ public class PasscodeView extends FrameLayout {
         numbersFrameLayout = new FrameLayout(context);
         addView(numbersFrameLayout);
         layoutParams = (LayoutParams) numbersFrameLayout.getLayoutParams();
-        layoutParams.width = LayoutParams.MATCH_PARENT;
-        layoutParams.height = LayoutParams.MATCH_PARENT;
+        layoutParams.width = LayoutHelper.MATCH_PARENT;
+        layoutParams.height = LayoutHelper.MATCH_PARENT;
         layoutParams.gravity = Gravity.TOP | Gravity.LEFT;
         numbersFrameLayout.setLayoutParams(layoutParams);
 

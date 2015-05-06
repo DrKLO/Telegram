@@ -12,6 +12,9 @@ import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.graphics.PorterDuff;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -38,6 +41,7 @@ import org.telegram.android.MessagesController;
 import org.telegram.android.MessagesStorage;
 import org.telegram.android.NotificationCenter;
 import org.telegram.android.SecretChatHelper;
+import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
 import org.telegram.messenger.TLRPC;
@@ -49,6 +53,7 @@ import org.telegram.ui.Adapters.BaseSectionsAdapter;
 import org.telegram.ui.Adapters.ContactsAdapter;
 import org.telegram.ui.Adapters.SearchAdapter;
 import org.telegram.ui.Cells.UserCell;
+import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.LetterSectionsListView;
 
 import java.util.ArrayList;
@@ -69,6 +74,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
     private boolean returnAsResult;
     private boolean createSecretChat;
     private boolean creatingChat = false;
+    private int chat_id;
     private String selectAlertString = null;
     private HashMap<Integer, TLRPC.User> ignoreUsers;
     private boolean allowUsernameSearch = true;
@@ -97,6 +103,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
             createSecretChat = arguments.getBoolean("createSecretChat", false);
             selectAlertString = arguments.getString("selectAlertString");
             allowUsernameSearch = arguments.getBoolean("allowUsernameSearch", true);
+            chat_id = arguments.getInt("chat_id", 0);
         } else {
             needPhonebook = true;
         }
@@ -121,8 +128,11 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
 
             searching = false;
             searchWas = false;
-
-            actionBar.setBackButtonImage(R.drawable.ic_ab_back);
+            SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+            //actionBar.setBackButtonImage(R.drawable.ic_ab_back);
+            Drawable back = getParentActivity().getResources().getDrawable(R.drawable.ic_ab_back);
+            back.setColorFilter(themePrefs.getInt("contactsHeaderIconsColor", 0xffffffff), PorterDuff.Mode.MULTIPLY);
+            actionBar.setBackButtonDrawable(back);
             actionBar.setAllowOverlayTitle(true);
             if (destroyAfterSelect) {
                 if (returnAsResult) {
@@ -148,7 +158,9 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
             });
 
             ActionBarMenu menu = actionBar.createMenu();
-            ActionBarMenuItem item = menu.addItem(0, R.drawable.ic_ab_search).setIsSearchField(true).setActionBarMenuItemSearchListener(new ActionBarMenuItem.ActionBarMenuItemSearchListener() {
+            //ActionBarMenuItem item = menu.addItem(0, R.drawable.ic_ab_search).setIsSearchField(true).setActionBarMenuItemSearchListener(new ActionBarMenuItem.ActionBarMenuItemSearchListener() {
+            Drawable search = getParentActivity().getResources().getDrawable(R.drawable.ic_ab_search);
+            ActionBarMenuItem item = menu.addItem(0, search).setIsSearchField(true).setActionBarMenuItemSearchListener(new ActionBarMenuItem.ActionBarMenuItemSearchListener() {
                 @Override
                 public void onSearchExpand() {
                     searching = true;
@@ -195,9 +207,13 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                 }
             });
             item.getSearchField().setHint(LocaleController.getString("Search", R.string.Search));
+            item.getSearchField().setTextColor(themePrefs.getInt("contactsHeaderTitleColor", 0xffffffff));
+            Drawable clear = getParentActivity().getResources().getDrawable(R.drawable.ic_close_white);
+            clear.setColorFilter(AndroidUtilities.getIntDef("contactsHeaderIconsColor", 0xffffffff), PorterDuff.Mode.MULTIPLY);
+            item.getClearButton().setImageDrawable(clear);
 
         searchListViewAdapter = new SearchAdapter(context, ignoreUsers, allowUsernameSearch);
-        listViewAdapter = new ContactsAdapter(context, onlyUsers, needPhonebook, ignoreUsers);
+        listViewAdapter = new ContactsAdapter(context, onlyUsers, needPhonebook, ignoreUsers, chat_id != 0);
 
         fragmentView = new FrameLayout(context);
 
@@ -206,8 +222,8 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
             emptyTextLayout.setOrientation(LinearLayout.VERTICAL);
             ((FrameLayout) fragmentView).addView(emptyTextLayout);
             FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) emptyTextLayout.getLayoutParams();
-            layoutParams.width = FrameLayout.LayoutParams.MATCH_PARENT;
-            layoutParams.height = FrameLayout.LayoutParams.MATCH_PARENT;
+        layoutParams.width = LayoutHelper.MATCH_PARENT;
+        layoutParams.height = LayoutHelper.MATCH_PARENT;
             layoutParams.gravity = Gravity.TOP;
             emptyTextLayout.setLayoutParams(layoutParams);
             emptyTextLayout.setOnTouchListener(new View.OnTouchListener() {
@@ -224,16 +240,16 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
             emptyTextView.setText(LocaleController.getString("NoContacts", R.string.NoContacts));
             emptyTextLayout.addView(emptyTextView);
             LinearLayout.LayoutParams layoutParams1 = (LinearLayout.LayoutParams) emptyTextView.getLayoutParams();
-            layoutParams1.width = LinearLayout.LayoutParams.MATCH_PARENT;
-            layoutParams1.height = LinearLayout.LayoutParams.MATCH_PARENT;
+        layoutParams1.width = LayoutHelper.MATCH_PARENT;
+        layoutParams1.height = LayoutHelper.MATCH_PARENT;
             layoutParams1.weight = 0.5f;
             emptyTextView.setLayoutParams(layoutParams1);
 
         FrameLayout frameLayout = new FrameLayout(context);
             emptyTextLayout.addView(frameLayout);
             layoutParams1 = (LinearLayout.LayoutParams) frameLayout.getLayoutParams();
-            layoutParams1.width = LinearLayout.LayoutParams.MATCH_PARENT;
-            layoutParams1.height = LinearLayout.LayoutParams.MATCH_PARENT;
+        layoutParams1.width = LayoutHelper.MATCH_PARENT;
+        layoutParams1.height = LayoutHelper.MATCH_PARENT;
             layoutParams1.weight = 0.5f;
             frameLayout.setLayoutParams(layoutParams1);
 
@@ -251,8 +267,8 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
             }
             ((FrameLayout) fragmentView).addView(listView);
             layoutParams = (FrameLayout.LayoutParams) listView.getLayoutParams();
-            layoutParams.width = FrameLayout.LayoutParams.MATCH_PARENT;
-            layoutParams.height = FrameLayout.LayoutParams.MATCH_PARENT;
+        layoutParams.width = LayoutHelper.MATCH_PARENT;
+        layoutParams.height = LayoutHelper.MATCH_PARENT;
             listView.setLayoutParams(layoutParams);
 
             listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
@@ -290,7 +306,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                         if (row < 0 || section < 0) {
                             return;
                         }
-                        if (!onlyUsers && section == 0) {
+                    if ((!onlyUsers || chat_id != 0) && section == 0) {
                             if (needPhonebook) {
                                 if (row == 0) {
                                     try {
@@ -302,6 +318,10 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                                         FileLog.e("tmessages", e);
                                     }
                                 }
+                        } else if (chat_id != 0) {
+                            if (row == 0) {
+                                presentFragment(new GroupInviteActivity(chat_id));
+                            }
                             } else {
                                 if (row == 0) {
                                     if (!MessagesController.isFeatureEnabled("chat_create", ContactsActivity.this)) {
@@ -446,13 +466,26 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
             listViewAdapter.notifyDataSetChanged();
         }
         updateTheme();
+
+
     }
 
     private void updateTheme(){
-        actionBar.setBackgroundColor(AndroidUtilities.getIntDef("contactsHeaderColor", AndroidUtilities.getIntColor("themeColor")));
+        SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+        int def = themePrefs.getInt("themeColor", AndroidUtilities.defColor);
+        actionBar.setBackgroundColor(themePrefs.getInt("contactsHeaderColor", def));
+        actionBar.setTitleColor(themePrefs.getInt("contactsHeaderTitleColor", 0xffffffff));
 
+        Drawable search = getParentActivity().getResources().getDrawable(R.drawable.ic_ab_search);
+        search.setColorFilter(themePrefs.getInt("contactsHeaderIconsColor", 0xffffffff), PorterDuff.Mode.MULTIPLY);
+
+        //Drawable clear = getParentActivity().getResources().getDrawable(R.drawable.ic_close_white);
+        //clear.setColorFilter(AndroidUtilities.getIntDef("contactsHeaderIconsColor", 0xffffffff), PorterDuff.Mode.MULTIPLY);
+        //Drawable lock = getParentActivity().getResources().getDrawable(R.drawable.lock_close);
+        //lock.setColorFilter(themePrefs.getInt("contactsHeaderIconsColor", 0xffffffff), PorterDuff.Mode.MULTIPLY);
+        //lock = getParentActivity().getResources().getDrawable(R.drawable.lock_open);
+        //lock.setColorFilter(themePrefs.getInt("contactsHeaderIconsColor", 0xffffffff), PorterDuff.Mode.MULTIPLY);
     }
-
     @Override
     public void onPause() {
         super.onPause();

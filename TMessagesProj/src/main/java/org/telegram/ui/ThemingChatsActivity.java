@@ -79,6 +79,11 @@ public class ThemingChatsActivity extends BaseFragment {
     private int countBGColorRow;
     private int floatingPencilColorRow;
     private int floatingBGColorRow;
+    private int avatarSizeRow;
+    private int avatarMarginLeftRow;
+    private int unknownNameColorRow;
+    private int groupNameColorRow;
+    private int groupNameSizeRow;
 
     private int rowCount;
 
@@ -100,9 +105,14 @@ public class ThemingChatsActivity extends BaseFragment {
         rowColorRow = rowCount++;
         dividerColorRow = rowCount++;
 
-        avatarRadiusRow  = rowCount++;
+        avatarRadiusRow = rowCount++;
+        avatarSizeRow = rowCount++;
+        avatarMarginLeftRow = rowCount++;
         nameColorRow = rowCount++;
+        unknownNameColorRow = rowCount++;
         nameSizeRow = rowCount++;
+        groupNameColorRow = rowCount++;
+        groupNameSizeRow = rowCount++;
         muteColorRow = rowCount++;
         checksColorRow = rowCount++;
 
@@ -296,7 +306,37 @@ public class ThemingChatsActivity extends BaseFragment {
                                 commitInt( key, color);
                             }
 
-                        },themePrefs.getInt( key, 0xff000000), CENTER, 0, false);
+                        },themePrefs.getInt( key, 0xff212121), CENTER, 0, false);
+
+                        colorDialog.show();
+                    } else if (i == groupNameColorRow) {
+                        if (getParentActivity() == null) {
+                            return;
+                        }
+                        LayoutInflater li = (LayoutInflater)getParentActivity().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+                        li.inflate(R.layout.colordialog, null, false);
+                        ColorSelectorDialog colorDialog = new ColorSelectorDialog(getParentActivity(), new OnColorChangedListener() {
+                            @Override
+                            public void colorChanged(int color) {
+                                commitInt( key, color);
+                            }
+
+                        },themePrefs.getInt( key, themePrefs.getInt("chatsNameColor", 0xff212121)), CENTER, 0, false);
+
+                        colorDialog.show();
+                    } else if (i == unknownNameColorRow) {
+                        if (getParentActivity() == null) {
+                            return;
+                        }
+                        LayoutInflater li = (LayoutInflater)getParentActivity().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+                        li.inflate(R.layout.colordialog, null, false);
+                        ColorSelectorDialog colorDialog = new ColorSelectorDialog(getParentActivity(), new OnColorChangedListener() {
+                            @Override
+                            public void colorChanged(int color) {
+                                commitInt( key, color);
+                            }
+
+                        },themePrefs.getInt( key, themePrefs.getInt("chatsNameColor", 0xff212121)), CENTER, 0, false);
 
                         colorDialog.show();
                     } else if (i == muteColorRow) {
@@ -437,6 +477,52 @@ public class ThemingChatsActivity extends BaseFragment {
                         });
 
                         showAlertDialog(builder);
+                    } else if (i == avatarSizeRow) {
+                        if (getParentActivity() == null) {
+                            return;
+                        }
+                        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                        builder.setTitle(LocaleController.getString("AvatarSize", R.string.AvatarSize));
+                        final NumberPicker numberPicker = new NumberPicker(getParentActivity());
+                        final int currentValue = themePrefs.getInt( key, 52);
+                        numberPicker.setMinValue(1);
+                        numberPicker.setMaxValue(72);
+                        numberPicker.setValue(currentValue);
+                        builder.setView(numberPicker);
+
+                        builder.setNegativeButton(LocaleController.getString("Done", R.string.Done), new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                if (numberPicker.getValue() != currentValue) {
+                                    commitInt( key, numberPicker.getValue());
+                                }
+                            }
+                        });
+
+                        showAlertDialog(builder);
+                    } else if (i == avatarMarginLeftRow) {
+                        if (getParentActivity() == null) {
+                            return;
+                        }
+                        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                        builder.setTitle(LocaleController.getString("AvatarMarginLeft", R.string.AvatarMarginLeft));
+                        final NumberPicker numberPicker = new NumberPicker(getParentActivity());
+                        final int currentValue = themePrefs.getInt( key, AndroidUtilities.isTablet() ? 13 : 9);
+                        numberPicker.setMinValue(0);
+                        numberPicker.setMaxValue(18);
+                        numberPicker.setValue(currentValue);
+                        builder.setView(numberPicker);
+
+                        builder.setNegativeButton(LocaleController.getString("Done", R.string.Done), new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                if (numberPicker.getValue() != currentValue) {
+                                    commitInt( key, numberPicker.getValue());
+                                }
+                            }
+                        });
+
+                        showAlertDialog(builder);
                     } else if (i == nameSizeRow) {
                         if (getParentActivity() == null) {
                             return;
@@ -461,6 +547,28 @@ public class ThemingChatsActivity extends BaseFragment {
                         //dialog.show();
                         //Button btn = dialog.getButton(DialogInterface.BUTTON_NEGATIVE);
                         //btn.setTextColor(0xff0000ff);
+                        showAlertDialog(builder);
+
+                    } else if (i == groupNameSizeRow) {
+                        if (getParentActivity() == null) {
+                            return;
+                        }
+                        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                        builder.setTitle(LocaleController.getString("GroupNameSize", R.string.GroupNameSize));
+                        final NumberPicker numberPicker = new NumberPicker(getParentActivity());
+                        final int currentValue = themePrefs.getInt( key, themePrefs.getInt("chatsNameSize", 17));
+                        numberPicker.setMinValue(12);
+                        numberPicker.setMaxValue(30);
+                        numberPicker.setValue(currentValue);
+                        builder.setView(numberPicker);
+                        builder.setNegativeButton(LocaleController.getString("Done", R.string.Done), new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                if (numberPicker.getValue() != currentValue) {
+                                    commitInt( key, numberPicker.getValue());
+                                }
+                            }
+                        }).create();
                         showAlertDialog(builder);
 
                     } else if (i == messageSizeRow) {
@@ -521,7 +629,7 @@ public class ThemingChatsActivity extends BaseFragment {
                             @Override
                             public void onClick(DialogInterface dialog, int which) {
                                 if (numberPicker.getValue() != currentValue) {
-                                    commitInt( key, numberPicker.getValue());
+                                    commitInt(key, numberPicker.getValue());
                                 }
                             }
                         });
@@ -647,8 +755,8 @@ public class ThemingChatsActivity extends BaseFragment {
         @Override
         public boolean isEnabled(int i) {
             return  i == headerColorRow || i == headerTitleColorRow || i == headerIconsColorRow || i == headerTitleRow ||
-                    i == rowColorRow || i == dividerColorRow || i == avatarRadiusRow ||
-                    i == nameColorRow || i == muteColorRow || i == checksColorRow || i == nameSizeRow || i == messageColorRow || i == memberColorRow || i == typingColorRow || i == messageSizeRow ||
+                    i == rowColorRow || i == dividerColorRow || i == avatarRadiusRow ||  i == avatarSizeRow ||   i == avatarMarginLeftRow ||
+                    i == nameColorRow || i == groupNameColorRow || i == unknownNameColorRow || i == muteColorRow || i == checksColorRow || i == nameSizeRow || i == groupNameSizeRow || i == messageColorRow || i == memberColorRow || i == typingColorRow || i == messageSizeRow ||
                     i == timeColorRow || i == timeSizeRow || i == countColorRow || i == countSizeRow || i == countBGColorRow || i == floatingPencilColorRow || i == floatingBGColorRow;
         }
 
@@ -701,10 +809,22 @@ public class ThemingChatsActivity extends BaseFragment {
                     textCell.setTag("chatsAvatarRadius");
                     int size = themePrefs.getInt("chatsAvatarRadius", AndroidUtilities.isTablet() ? 35 : 32);
                     textCell.setTextAndValue(LocaleController.getString("AvatarRadius", R.string.AvatarRadius), String.format("%d", size), true);
+                } else if (i == avatarSizeRow) {
+                    textCell.setTag("chatsAvatarSize");
+                    int size = themePrefs.getInt("chatsAvatarSize", AndroidUtilities.isTablet() ? 55 : 52);
+                    textCell.setTextAndValue(LocaleController.getString("AvatarSize", R.string.AvatarSize), String.format("%d", size), true);
+                } else if (i == avatarMarginLeftRow) {
+                    textCell.setTag("chatsAvatarMarginLeft");
+                    int size = themePrefs.getInt("chatsAvatarMarginLeft", AndroidUtilities.isTablet() ? 13 : 9);
+                    textCell.setTextAndValue(LocaleController.getString("AvatarMarginLeft", R.string.AvatarMarginLeft), String.format("%d", size), true);
                 } else if (i == nameSizeRow) {
                     textCell.setTag("chatsNameSize");
                     int size = themePrefs.getInt("chatsNameSize", AndroidUtilities.isTablet() ? 19 : 17);
                     textCell.setTextAndValue(LocaleController.getString("NameSize", R.string.NameSize), String.format("%d", size), true);
+                } else if (i == groupNameSizeRow) {
+                    textCell.setTag("chatsGroupNameSize");
+                    int size = themePrefs.getInt("chatsGroupNameSize", themePrefs.getInt("chatsNameSize", AndroidUtilities.isTablet() ? 19 : 17));
+                    textCell.setTextAndValue(LocaleController.getString("GroupNameSize", R.string.GroupNameSize), String.format("%d", size), true);
                 } else if (i == messageSizeRow) {
                     textCell.setTag("chatsMessageSize");
                     int size = themePrefs.getInt("chatsMessageSize", AndroidUtilities.isTablet() ? 18 : 16);
@@ -743,7 +863,13 @@ public class ThemingChatsActivity extends BaseFragment {
                     textCell.setTextAndColor(LocaleController.getString("DividerColor", R.string.DividerColor), themePrefs.getInt("chatsDividerColor", 0xffdcdcdc), true);
                 } else if (i == nameColorRow) {
                     textCell.setTag("chatsNameColor");
-                    textCell.setTextAndColor(LocaleController.getString("NameColor", R.string.NameColor), themePrefs.getInt("chatsNameColor", 0xff000000), true);
+                    textCell.setTextAndColor(LocaleController.getString("NameColor", R.string.NameColor), themePrefs.getInt("chatsNameColor", 0xff212121), true);
+                } else if (i == groupNameColorRow) {
+                    textCell.setTag("chatsGroupNameColor");
+                    textCell.setTextAndColor(LocaleController.getString("GroupNameColor", R.string.GroupNameColor), themePrefs.getInt("chatsGroupNameColor", themePrefs.getInt("chatsNameColor", 0xff212121)), true);
+                } else if (i == unknownNameColorRow) {
+                    textCell.setTag("chatsUnknownNameColor");
+                    textCell.setTextAndColor(LocaleController.getString("UnknownNameColor", R.string.UnknownNameColor), themePrefs.getInt("chatsUnknownNameColor", themePrefs.getInt("chatsNameColor", 0xff212121)), true);
                 } else if (i == muteColorRow) {
                     textCell.setTag("chatsMuteColor");
                     textCell.setTextAndColor(LocaleController.getString("MuteColor", R.string.MuteColor), themePrefs.getInt("chatsMuteColor", 0xffa8a8a8), true);
@@ -806,15 +932,15 @@ public class ThemingChatsActivity extends BaseFragment {
                         text = "-";
                     }
                     if (value == 0) {
-                        textCell.setTextAndValue(LocaleController.getString("HeaderTitle", R.string.HeaderTitle), LocaleController.getString("AppName", R.string.AppName), false);
+                        textCell.setTextAndValue(LocaleController.getString("HeaderTitle", R.string.HeaderTitle), LocaleController.getString("AppName", R.string.AppName), true);
                     } else if (value == 1) {
-                        textCell.setTextAndValue(LocaleController.getString("HeaderTitle", R.string.HeaderTitle), LocaleController.getString("ShortAppName", R.string.ShortAppName), false);
+                        textCell.setTextAndValue(LocaleController.getString("HeaderTitle", R.string.HeaderTitle), LocaleController.getString("ShortAppName", R.string.ShortAppName), true);
                     } else if (value == 2) {
-                        textCell.setTextAndValue(LocaleController.getString("HeaderTitle", R.string.HeaderTitle), ContactsController.formatName(user.first_name, user.last_name), false);
+                        textCell.setTextAndValue(LocaleController.getString("HeaderTitle", R.string.HeaderTitle), ContactsController.formatName(user.first_name, user.last_name), true);
                     } else if (value == 3) {
-                        textCell.setTextAndValue(LocaleController.getString("HeaderTitle", R.string.HeaderTitle), text, false);
+                        textCell.setTextAndValue(LocaleController.getString("HeaderTitle", R.string.HeaderTitle), text, true);
                     } else if (value == 4) {
-                        textCell.setTextAndValue(LocaleController.getString("HeaderTitle", R.string.HeaderTitle), "", false);
+                        textCell.setTextAndValue(LocaleController.getString("HeaderTitle", R.string.HeaderTitle), "", true);
                     }
                 }
             }
@@ -827,10 +953,10 @@ public class ThemingChatsActivity extends BaseFragment {
                 return 0;
             } else if ( i == headerSection2Row || i == rowsSection2Row ) {
                 return 1;
-            } else if ( i == avatarRadiusRow || i == nameSizeRow ||  i == messageSizeRow || i == timeSizeRow || i == countSizeRow ) {
+            } else if ( i == avatarRadiusRow || i == avatarSizeRow || i == avatarMarginLeftRow || i == nameSizeRow || i == groupNameSizeRow ||  i == messageSizeRow || i == timeSizeRow || i == countSizeRow ) {
                 return 2;
             } else if ( i == headerColorRow || i == headerTitleColorRow || i == headerIconsColorRow  ||
-                        i == rowColorRow || i == dividerColorRow || i == nameColorRow || i == muteColorRow || i == checksColorRow || i == messageColorRow  || i == memberColorRow || i == typingColorRow || i == timeColorRow || i == countColorRow ||
+                        i == rowColorRow || i == dividerColorRow || i == nameColorRow || i == groupNameColorRow || i == unknownNameColorRow || i == muteColorRow || i == checksColorRow || i == messageColorRow  || i == memberColorRow || i == typingColorRow || i == timeColorRow || i == countColorRow ||
                         i == countBGColorRow || i == floatingPencilColorRow || i == floatingBGColorRow) {
                 return 3;
             }/* else if (i == usernameTitleRow) {

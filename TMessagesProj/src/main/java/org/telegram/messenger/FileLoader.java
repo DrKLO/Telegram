@@ -11,9 +11,12 @@ package org.telegram.messenger;
 import org.telegram.android.AndroidUtilities;
 
 import java.io.File;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.Locale;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
 
@@ -632,6 +635,10 @@ public class FileLoader {
     }
 
     public static TLRPC.PhotoSize getClosestPhotoSizeWithSize(ArrayList<TLRPC.PhotoSize> sizes, int side) {
+        return getClosestPhotoSizeWithSize(sizes, side, false);
+    }
+
+    public static TLRPC.PhotoSize getClosestPhotoSizeWithSize(ArrayList<TLRPC.PhotoSize> sizes, int side, boolean byMinSide) {
         if (sizes == null || sizes.isEmpty()) {
             return null;
         }
@@ -641,10 +648,18 @@ public class FileLoader {
             if (obj == null) {
                 continue;
             }
-            int currentSide = obj.w >= obj.h ? obj.w : obj.h;
-            if (closestObject == null || side > 100 && closestObject.location != null && closestObject.location.dc_id == Integer.MIN_VALUE || obj instanceof TLRPC.TL_photoCachedSize || currentSide <= side && lastSide < currentSide) {
+            if (byMinSide) {
+                int currentSide = obj.h >= obj.w ? obj.w : obj.h;
+                if (closestObject == null || side > 100 && closestObject.location != null && closestObject.location.dc_id == Integer.MIN_VALUE || obj instanceof TLRPC.TL_photoCachedSize || side > lastSide && lastSide < currentSide) {
                 closestObject = obj;
                 lastSide = currentSide;
+            }
+            } else {
+                int currentSide = obj.w >= obj.h ? obj.w : obj.h;
+                if (closestObject == null || side > 100 && closestObject.location != null && closestObject.location.dc_id == Integer.MIN_VALUE || obj instanceof TLRPC.TL_photoCachedSize || currentSide <= side && lastSide < currentSide) {
+                    closestObject = obj;
+                    lastSide = currentSide;
+                }
             }
         }
         return closestObject;
@@ -675,6 +690,7 @@ public class FileLoader {
                 ext = ext.substring(idx);
             }
             if (ext.length() > 1) {
+                if(ApplicationLoader.KEEP_ORIGINAL_FILENAME && !ext.contains("webp"))return getDocName(document); //Plus
                 return document.dc_id + "_" + document.id + ext;
             } else {
                 return document.dc_id + "_" + document.id;
@@ -693,6 +709,64 @@ public class FileLoader {
             return location.volume_id + "_" + location.local_id + "." + (location.ext != null ? location.ext : "jpg");
         }
         return "";
+    }
+    //Plus
+    public static String getAttachFileName(TLObject attach, boolean out) {
+        if (attach instanceof TLRPC.Video) {
+            TLRPC.Video video = (TLRPC.Video)attach;
+            return video.dc_id + "_" + video.id + ".mp4";
+        } else if (attach instanceof TLRPC.Document) {
+            TLRPC.Document document = (TLRPC.Document)attach;
+            String ext = getDocumentFileName(document);
+            int idx = -1;
+            if (ext == null || (idx = ext.lastIndexOf(".")) == -1) {
+                ext = "";
+            } else {
+                ext = ext.substring(idx);
+            }
+            if (ext.length() > 1) {
+                if(!out && ApplicationLoader.KEEP_ORIGINAL_FILENAME && !ext.contains("webp"))return getDocName(document);
+                return document.dc_id + "_" + document.id + ext;
+            } else {
+                return document.dc_id + "_" + document.id;
+            }
+        } else if (attach instanceof TLRPC.PhotoSize) {
+            TLRPC.PhotoSize photo = (TLRPC.PhotoSize)attach;
+            if (photo.location == null) {
+                return "";
+            }
+            return photo.location.volume_id + "_" + photo.location.local_id + "." + (photo.location.ext != null ? photo.location.ext : "jpg");
+        } else if (attach instanceof TLRPC.Audio) {
+            TLRPC.Audio audio = (TLRPC.Audio)attach;
+            return audio.dc_id + "_" + audio.id + ".ogg";
+        } else if (attach instanceof TLRPC.FileLocation) {
+            TLRPC.FileLocation location = (TLRPC.FileLocation)attach;
+            return location.volume_id + "_" + location.local_id + "." + (location.ext != null ? location.ext : "jpg");
+        }
+        return "";
+    }
+    //Plus
+    public static String getDocName(TLRPC.Document document) {
+        String name = getDocumentFileName(document);
+        //boolean org = false;
+        //if(org)return name;
+        String date = document.date +"";
+        String ext = name;
+        int idx = -1;
+        if (ext == null || (idx = ext.lastIndexOf(".")) == -1) {
+            ext = "";
+        } else {
+            ext = ext.substring(idx);
+        }
+        int pos = name.lastIndexOf(".");
+        SimpleDateFormat formatter  = new SimpleDateFormat("ddMMyyHHmmss", Locale.US);
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTimeInMillis(document.date * 1000L);
+        date = formatter.format(calendar.getTime());
+        if (pos > 0) {
+            name = name.substring(0, pos) + "_" +  date + ext;
+        }
+        return name;
     }
 
     public void deleteFiles(final ArrayList<File> files) {

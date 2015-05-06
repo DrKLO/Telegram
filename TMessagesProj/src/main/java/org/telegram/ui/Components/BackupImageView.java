@@ -23,6 +23,8 @@ import org.telegram.messenger.TLRPC;
 public class BackupImageView extends View {
 
     private ImageReceiver imageReceiver;
+    private int width = -1;
+    private int height = -1;
 
     public BackupImageView(Context context) {
         super(context);
@@ -102,15 +104,30 @@ public class BackupImageView extends View {
         return imageReceiver;
     }
 
+    public void setSize(int w, int h) {
+        width = w;
+        height = h;
+    }
+
     @Override
     protected void onDetachedFromWindow() {
         super.onDetachedFromWindow();
-            imageReceiver.clearImage();
-        }
+        imageReceiver.onDetachedFromWindow();
+    }
+
+    @Override
+    protected void onAttachedToWindow() {
+        super.onAttachedToWindow();
+        imageReceiver.onAttachedToWindow();
+    }
 
     @Override
     protected void onDraw(Canvas canvas) {
-        imageReceiver.setImageCoords(0, 0, getWidth(), getHeight());
+        if (width != -1 && height != -1) {
+            imageReceiver.setImageCoords((getWidth() - width) / 2, (getHeight() - height) / 2, width, height);
+        } else {
+            imageReceiver.setImageCoords(0, 0, getWidth(), getHeight());
+        }
         imageReceiver.draw(canvas);
     }
 }

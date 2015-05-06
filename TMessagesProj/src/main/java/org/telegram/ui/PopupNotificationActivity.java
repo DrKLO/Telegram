@@ -52,7 +52,9 @@ import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.ChatActivityEnterView;
 import org.telegram.ui.Components.FrameLayoutFixed;
+import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.PopupAudioView;
+import org.telegram.ui.Components.RecordStatusDrawable;
 import org.telegram.ui.Components.SizeNotifierRelativeLayout;
 import org.telegram.ui.Components.TypingDotsDrawable;
 
@@ -78,6 +80,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
     private ArrayList<ViewGroup> audioViews = new ArrayList<>();
     private VelocityTracker velocityTracker = null;
     private TypingDotsDrawable typingDotsDrawable;
+    private RecordStatusDrawable recordStatusDrawable;
 
     private int classGuid;
     private TLRPC.User currentUser;
@@ -159,6 +162,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
         NotificationCenter.getInstance().addObserver(this, NotificationCenter.emojiDidLoaded);
 
         typingDotsDrawable = new TypingDotsDrawable();
+        recordStatusDrawable = new RecordStatusDrawable();
 
         SizeNotifierRelativeLayout contentView = new SizeNotifierRelativeLayout(this);
         setContentView(contentView);
@@ -167,15 +171,15 @@ public class PopupNotificationActivity extends Activity implements NotificationC
         RelativeLayout relativeLayout = new RelativeLayout(this);
         contentView.addView(relativeLayout);
         RelativeLayout.LayoutParams layoutParams3 = (RelativeLayout.LayoutParams) relativeLayout.getLayoutParams();
-        layoutParams3.width = RelativeLayout.LayoutParams.MATCH_PARENT;
-        layoutParams3.height = RelativeLayout.LayoutParams.MATCH_PARENT;
+        layoutParams3.width = LayoutHelper.MATCH_PARENT;
+        layoutParams3.height = LayoutHelper.MATCH_PARENT;
         relativeLayout.setLayoutParams(layoutParams3);
 
         RelativeLayout popupContainer = new RelativeLayout(this);
         popupContainer.setBackgroundColor(0xffffffff);
         relativeLayout.addView(popupContainer);
         layoutParams3 = (RelativeLayout.LayoutParams) popupContainer.getLayoutParams();
-        layoutParams3.width = RelativeLayout.LayoutParams.MATCH_PARENT;
+        layoutParams3.width = LayoutHelper.MATCH_PARENT;
         layoutParams3.height = AndroidUtilities.dp(240);
         layoutParams3.leftMargin = AndroidUtilities.dp(12);
         layoutParams3.rightMargin = AndroidUtilities.dp(12);
@@ -188,8 +192,8 @@ public class PopupNotificationActivity extends Activity implements NotificationC
         chatActivityEnterView = new ChatActivityEnterView(this, contentView, null, false);
         popupContainer.addView(chatActivityEnterView);
         layoutParams3 = (RelativeLayout.LayoutParams) chatActivityEnterView.getLayoutParams();
-        layoutParams3.width = RelativeLayout.LayoutParams.MATCH_PARENT;
-        layoutParams3.height = RelativeLayout.LayoutParams.WRAP_CONTENT;
+        layoutParams3.width = LayoutHelper.MATCH_PARENT;
+        layoutParams3.height = LayoutHelper.WRAP_CONTENT;
         layoutParams3.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
         chatActivityEnterView.setLayoutParams(layoutParams3);
         chatActivityEnterView.setDelegate(new ChatActivityEnterView.ChatActivityEnterViewDelegate() {
@@ -214,7 +218,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
             @Override
             public void needSendTyping() {
                 if (currentMessageObject != null) {
-                    MessagesController.getInstance().sendTyping(currentMessageObject.getDialogId(), classGuid);
+                    MessagesController.getInstance().sendTyping(currentMessageObject.getDialogId(), 0, classGuid);
                 }
             }
 
@@ -257,8 +261,8 @@ public class PopupNotificationActivity extends Activity implements NotificationC
         avatarContainer.setPadding(AndroidUtilities.dp(4), 0, AndroidUtilities.dp(4), 0);
         actionBar.addView(avatarContainer);
         FrameLayout.LayoutParams layoutParams2 = (FrameLayout.LayoutParams) avatarContainer.getLayoutParams();
-        layoutParams2.height = FrameLayout.LayoutParams.MATCH_PARENT;
-        layoutParams2.width = FrameLayout.LayoutParams.WRAP_CONTENT;
+        layoutParams2.height = LayoutHelper.MATCH_PARENT;
+        layoutParams2.width = LayoutHelper.WRAP_CONTENT;
         layoutParams2.rightMargin = AndroidUtilities.dp(48);
         layoutParams2.leftMargin = AndroidUtilities.dp(60);
         layoutParams2.gravity = Gravity.TOP | Gravity.LEFT;
@@ -284,8 +288,8 @@ public class PopupNotificationActivity extends Activity implements NotificationC
         nameTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         avatarContainer.addView(nameTextView);
         layoutParams2 = (FrameLayout.LayoutParams) nameTextView.getLayoutParams();
-        layoutParams2.width = FrameLayout.LayoutParams.WRAP_CONTENT;
-        layoutParams2.height = FrameLayout.LayoutParams.WRAP_CONTENT;
+        layoutParams2.width = LayoutHelper.WRAP_CONTENT;
+        layoutParams2.height = LayoutHelper.WRAP_CONTENT;
         layoutParams2.leftMargin = AndroidUtilities.dp(54);
         layoutParams2.bottomMargin = AndroidUtilities.dp(22);
         layoutParams2.gravity = Gravity.BOTTOM;
@@ -301,8 +305,8 @@ public class PopupNotificationActivity extends Activity implements NotificationC
         onlineTextView.setGravity(Gravity.LEFT);
         avatarContainer.addView(onlineTextView);
         layoutParams2 = (FrameLayout.LayoutParams) onlineTextView.getLayoutParams();
-        layoutParams2.width = FrameLayout.LayoutParams.WRAP_CONTENT;
-        layoutParams2.height = FrameLayout.LayoutParams.WRAP_CONTENT;
+        layoutParams2.width = LayoutHelper.WRAP_CONTENT;
+        layoutParams2.height = LayoutHelper.WRAP_CONTENT;
         layoutParams2.leftMargin = AndroidUtilities.dp(54);
         layoutParams2.bottomMargin = AndroidUtilities.dp(4);
         layoutParams2.gravity = Gravity.BOTTOM;
@@ -956,9 +960,18 @@ public class PopupNotificationActivity extends Activity implements NotificationC
         }
         if (start) {
             try {
+                Integer type = MessagesController.getInstance().printingStringsTypes.get(currentMessageObject.getDialogId());
+                if (type == 0) {
                 onlineTextView.setCompoundDrawablesWithIntrinsicBounds(typingDotsDrawable, null, null, null);
                 onlineTextView.setCompoundDrawablePadding(AndroidUtilities.dp(4));
                 typingDotsDrawable.start();
+                    recordStatusDrawable.stop();
+                } else if (type == 1) {
+                    onlineTextView.setCompoundDrawablesWithIntrinsicBounds(recordStatusDrawable, null, null, null);
+                    onlineTextView.setCompoundDrawablePadding(AndroidUtilities.dp(4));
+                    recordStatusDrawable.start();
+                    typingDotsDrawable.stop();
+                }
             } catch (Exception e) {
                 FileLog.e("tmessages", e);
             }
@@ -966,6 +979,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
             onlineTextView.setCompoundDrawablesWithIntrinsicBounds(null, null, null, null);
             onlineTextView.setCompoundDrawablePadding(0);
             typingDotsDrawable.stop();
+            recordStatusDrawable.stop();
         }
     }
 

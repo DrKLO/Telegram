@@ -9,7 +9,6 @@
 package org.telegram.ui.ActionBar;
 
 import android.content.Context;
-import android.graphics.PorterDuff;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
@@ -33,10 +32,11 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import org.telegram.android.AndroidUtilities;
+import org.telegram.android.AnimationCompat.ViewProxy;
 import org.telegram.android.LocaleController;
 import org.telegram.messenger.R;
-import org.telegram.ui.AnimationCompat.ViewProxy;
 import org.telegram.ui.Components.FrameLayoutFixed;
+import org.telegram.ui.Components.LayoutHelper;
 
 import java.lang.reflect.Field;
 
@@ -76,8 +76,8 @@ public class ActionBarMenuItem extends FrameLayoutFixed {
         iconView.setScaleType(ImageView.ScaleType.CENTER);
         addView(iconView);
         LayoutParams layoutParams = (LayoutParams) iconView.getLayoutParams();
-        layoutParams.width = LayoutParams.MATCH_PARENT;
-        layoutParams.height = LayoutParams.MATCH_PARENT;
+        layoutParams.width = LayoutHelper.MATCH_PARENT;
+        layoutParams.height = LayoutHelper.MATCH_PARENT;
         iconView.setLayoutParams(layoutParams);
     }
 
@@ -218,7 +218,7 @@ public class ActionBarMenuItem extends FrameLayoutFixed {
         if (LocaleController.isRTL) {
             layoutParams.gravity = Gravity.RIGHT;
         }
-        layoutParams.width = LinearLayout.LayoutParams.MATCH_PARENT;
+        layoutParams.width = LayoutHelper.MATCH_PARENT;
         layoutParams.height = AndroidUtilities.dp(48);
         textView.setLayoutParams(layoutParams);
         textView.setOnClickListener(new OnClickListener() {
@@ -251,7 +251,7 @@ public class ActionBarMenuItem extends FrameLayoutFixed {
             return;
         }
         if (popupWindow == null) {
-            popupWindow = new ActionBarPopupWindow(popupLayout, FrameLayout.LayoutParams.WRAP_CONTENT, FrameLayout.LayoutParams.WRAP_CONTENT);
+            popupWindow = new ActionBarPopupWindow(popupLayout, LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT);
             //popupWindow.setBackgroundDrawable(new BitmapDrawable());
             popupWindow.setAnimationStyle(R.style.PopupAnimation);
             popupWindow.setOutsideTouchable(true);
@@ -352,7 +352,7 @@ public class ActionBarMenuItem extends FrameLayoutFixed {
     public void setIcon(int resId) {
         iconView.setImageResource(resId);
     }
-
+    //Plus
     public void setIcon(Drawable drawable) {
         iconView.setImageDrawable(drawable);
     }
@@ -368,7 +368,7 @@ public class ActionBarMenuItem extends FrameLayoutFixed {
             LinearLayout.LayoutParams layoutParams = (LinearLayout.LayoutParams)searchContainer.getLayoutParams();
             layoutParams.weight = 1;
             layoutParams.width = 0;
-            layoutParams.height = LinearLayout.LayoutParams.MATCH_PARENT;
+            layoutParams.height = LayoutHelper.MATCH_PARENT;
             layoutParams.leftMargin = AndroidUtilities.dp(6);
             searchContainer.setLayoutParams(layoutParams);
             searchContainer.setVisibility(GONE);
@@ -452,7 +452,7 @@ public class ActionBarMenuItem extends FrameLayoutFixed {
             }
             searchContainer.addView(searchField);
             FrameLayout.LayoutParams layoutParams2 = (FrameLayout.LayoutParams) searchField.getLayoutParams();
-            layoutParams2.width = FrameLayout.LayoutParams.MATCH_PARENT;
+            layoutParams2.width = LayoutHelper.MATCH_PARENT;
             layoutParams2.gravity = Gravity.CENTER_VERTICAL;
             layoutParams2.height = AndroidUtilities.dp(36);
             layoutParams2.rightMargin = AndroidUtilities.dp(48);
@@ -472,7 +472,7 @@ public class ActionBarMenuItem extends FrameLayoutFixed {
             layoutParams2 = (FrameLayout.LayoutParams) clearButton.getLayoutParams();
             layoutParams2.width = AndroidUtilities.dp(48);
             layoutParams2.gravity = Gravity.CENTER_VERTICAL | Gravity.RIGHT;
-            layoutParams2.height = FrameLayout.LayoutParams.MATCH_PARENT;
+            layoutParams2.height = LayoutHelper.MATCH_PARENT;
             clearButton.setLayoutParams(layoutParams2);
         }
         isSearchField = value;
@@ -502,11 +502,15 @@ public class ActionBarMenuItem extends FrameLayoutFixed {
                 popupWindow.update(this, -AndroidUtilities.dp(8), getOffsetY(), -1, -1);
             }
         }
-        if(clearButton!=null){
+        /*if(clearButton!=null){ //Plus
             Drawable clear = getResources().getDrawable(R.drawable.ic_close_white);
             clear.setColorFilter(AndroidUtilities.getIntDef("chatsHeaderIconsColor", 0xffffffff), PorterDuff.Mode.MULTIPLY);
             clearButton.setImageDrawable(clear);
-        }
+        }*/
+    }
+
+    public ImageView getClearButton(){
+        return clearButton;
     }
 
     public void hideSubItem(int id) {

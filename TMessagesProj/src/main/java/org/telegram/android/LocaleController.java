@@ -378,6 +378,10 @@ public class LocaleController {
         }
     }
 
+    public Locale getSystemDefaultLocale() {
+        return systemDefaultLocale;
+    }
+
     public static String getLocaleString(Locale locale) {
         if (locale == null) {
             return "en";
@@ -676,11 +680,12 @@ public class LocaleController {
     }
 
     public static String formatString(String key, int res, Object... args) {
+        try {
         String value = getInstance().localeValues.get(key);
         if (value == null) {
             value = ApplicationLoader.applicationContext.getString(res);
         }
-        try {
+
             if (getInstance().currentLocale != null) {
                 return String.format(getInstance().currentLocale, value, args);
             } else {

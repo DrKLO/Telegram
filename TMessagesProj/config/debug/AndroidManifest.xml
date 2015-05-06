@@ -15,13 +15,11 @@
     <uses-permission android:name="com.google.android.providers.gsf.permission.READ_GSERVICES"/>
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-    <!--
-    <uses-permission android:name="org.telegram.plus.beta.android.provider.ACCESS" />-->
 
     <permission android:name="org.telegram.plus.beta.permission.MAPS_RECEIVE" android:protectionLevel="signature"/>
     <permission android:name="org.telegram.plus.beta.permission.C2D_MESSAGE" android:protectionLevel="signature" />
-    <!--
-    <permission android:name="org.telegram.plus.beta.android.provider.ACCESS" android:protectionLevel="signature"/>-->
+
+    <permission android:name="org.telegram.plus.beta.android.provider.ACCESS" android:protectionLevel="signature"/>
 
     <application
         android:allowBackup="false"
@@ -48,6 +46,14 @@
         </receiver>
 
         <uses-library android:name="com.google.android.maps" android:required="false"/>
+
+        <provider
+            android:authorities="org.telegram.plus.beta.android.provider.content"
+            android:name="org.telegram.android.ModuleContentProvider"
+            android:label="Plus beta"
+            tools:replace="label"
+            android:exported="true"
+            android:permission="org.telegram.plus.beta.android.provider.ACCESS" />
 
     </application>
 

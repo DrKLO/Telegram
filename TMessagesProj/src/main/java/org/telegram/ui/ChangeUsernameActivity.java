@@ -46,6 +46,7 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.ui.Components.LayoutHelper;
 
 import java.util.ArrayList;
 
@@ -126,7 +127,7 @@ public class ChangeUsernameActivity extends BaseFragment {
             layoutParams.height = AndroidUtilities.dp(36);
             layoutParams.leftMargin = AndroidUtilities.dp(24);
             layoutParams.rightMargin = AndroidUtilities.dp(24);
-            layoutParams.width = LinearLayout.LayoutParams.MATCH_PARENT;
+        layoutParams.width = LayoutHelper.MATCH_PARENT;
             firstNameField.setLayoutParams(layoutParams);
 
             if (user != null && user.username != null && user.username.length() > 0) {
@@ -140,8 +141,8 @@ public class ChangeUsernameActivity extends BaseFragment {
             ((LinearLayout) fragmentView).addView(checkTextView);
         layoutParams = (LinearLayout.LayoutParams) checkTextView.getLayoutParams();
             layoutParams.topMargin = AndroidUtilities.dp(12);
-            layoutParams.width = LinearLayout.LayoutParams.WRAP_CONTENT;
-            layoutParams.height = LinearLayout.LayoutParams.WRAP_CONTENT;
+        layoutParams.width = LayoutHelper.WRAP_CONTENT;
+        layoutParams.height = LayoutHelper.WRAP_CONTENT;
             layoutParams.gravity = LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT;
             layoutParams.leftMargin = AndroidUtilities.dp(24);
             layoutParams.rightMargin = AndroidUtilities.dp(24);
@@ -155,8 +156,8 @@ public class ChangeUsernameActivity extends BaseFragment {
             ((LinearLayout) fragmentView).addView(helpTextView);
         layoutParams = (LinearLayout.LayoutParams) helpTextView.getLayoutParams();
             layoutParams.topMargin = AndroidUtilities.dp(10);
-            layoutParams.width = LinearLayout.LayoutParams.WRAP_CONTENT;
-            layoutParams.height = LinearLayout.LayoutParams.WRAP_CONTENT;
+        layoutParams.width = LayoutHelper.WRAP_CONTENT;
+        layoutParams.height = LayoutHelper.WRAP_CONTENT;
             layoutParams.gravity = LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT;
             layoutParams.leftMargin = AndroidUtilities.dp(24);
             layoutParams.rightMargin = AndroidUtilities.dp(24);

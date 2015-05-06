@@ -42,16 +42,16 @@ import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
+import org.telegram.android.AnimationCompat.AnimatorListenerAdapterProxy;
+import org.telegram.android.AnimationCompat.AnimatorSetProxy;
+import org.telegram.android.AnimationCompat.ObjectAnimatorProxy;
+import org.telegram.android.AnimationCompat.ViewProxy;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.UserConfig;
-import org.telegram.ui.AnimationCompat.AnimatorListenerAdapterProxy;
-import org.telegram.ui.AnimationCompat.AnimatorSetProxy;
-import org.telegram.ui.AnimationCompat.ObjectAnimatorProxy;
-import org.telegram.ui.AnimationCompat.ViewProxy;
 import org.telegram.ui.Components.ForegroundDetector;
 import org.telegram.ui.Components.NumberPicker;
 import org.telegram.ui.Components.TypefaceSpan;
@@ -75,10 +75,11 @@ public class AndroidUtilities {
     public static Integer photoSize = null;
     public static DisplayMetrics displayMetrics = new DisplayMetrics();
     public static int leftBaseline;
+    public static boolean usingHardwareInput;
     private static Boolean isTablet = null;
 
     public static final String THEME_PREFS = "theme";
-    public static final int THEME_PREFS_MODE = Activity.MODE_WORLD_READABLE;
+    public static final int THEME_PREFS_MODE = Activity.MODE_PRIVATE;
 
     public static final int defColor = 0xff009688;//0xff58BCD5;//0xff43C3DB;//0xff2f8cc9;58BCD5//0xff55abd2
     public static int themeColor = getIntColor("themeColor");
@@ -238,21 +239,38 @@ public class AndroidUtilities {
     }
 
     public static int dp(float value) {
+        if (value == 0) {
+            return 0;
+        }
         return (int)Math.ceil(density * value);
     }
 
+    public static int compare(int lhs, int rhs) {
+        if (lhs == rhs) {
+            return 0;
+        } else if (lhs > rhs) {
+            return 1;
+        }
+        return -1;
+    }
+
     public static float dpf2(float value) {
+        if (value == 0) {
+            return 0;
+        }
         return density * value;
     }
 
     public static void checkDisplaySize() {
         try {
-            WindowManager manager = (WindowManager)ApplicationLoader.applicationContext.getSystemService(Context.WINDOW_SERVICE);
+            Configuration configuration = ApplicationLoader.applicationContext.getResources().getConfiguration();
+            usingHardwareInput = configuration.keyboard != Configuration.KEYBOARD_NOKEYS && configuration.hardKeyboardHidden == Configuration.HARDKEYBOARDHIDDEN_NO;
+            WindowManager manager = (WindowManager) ApplicationLoader.applicationContext.getSystemService(Context.WINDOW_SERVICE);
             if (manager != null) {
                 Display display = manager.getDefaultDisplay();
                 if (display != null) {
                     display.getMetrics(displayMetrics);
-                    if(android.os.Build.VERSION.SDK_INT < 13) {
+                    if (android.os.Build.VERSION.SDK_INT < 13) {
                         displaySize.set(display.getWidth(), display.getHeight());
                     } else {
                         display.getSize(displaySize);
@@ -263,6 +281,38 @@ public class AndroidUtilities {
         } catch (Exception e) {
             FileLog.e("tmessages", e);
         }
+
+        /*
+        keyboardHidden
+        public static final int KEYBOARDHIDDEN_NO = 1
+        Constant for keyboardHidden, value corresponding to the keysexposed resource qualifier.
+
+        public static final int KEYBOARDHIDDEN_UNDEFINED = 0
+        Constant for keyboardHidden: a value indicating that no value has been set.
+
+        public static final int KEYBOARDHIDDEN_YES = 2
+        Constant for keyboardHidden, value corresponding to the keyshidden resource qualifier.
+
+        hardKeyboardHidden
+        public static final int HARDKEYBOARDHIDDEN_NO = 1
+        Constant for hardKeyboardHidden, value corresponding to the physical keyboard being exposed.
+
+        public static final int HARDKEYBOARDHIDDEN_UNDEFINED = 0
+        Constant for hardKeyboardHidden: a value indicating that no value has been set.
+
+        public static final int HARDKEYBOARDHIDDEN_YES = 2
+        Constant for hardKeyboardHidden, value corresponding to the physical keyboard being hidden.
+
+        keyboard
+        public static final int KEYBOARD_12KEY = 3
+        Constant for keyboard, value corresponding to the 12key resource qualifier.
+
+        public static final int KEYBOARD_NOKEYS = 1
+        Constant for keyboard, value corresponding to the nokeys resource qualifier.
+
+        public static final int KEYBOARD_QWERTY = 2
+        Constant for keyboard, value corresponding to the qwerty resource qualifier.
+         */
     }
 
     public static float getPixelsInCM(float cm, boolean isX) {
@@ -573,6 +623,9 @@ public class AndroidUtilities {
                 if (start != -1) {
                     stringBuilder.replace(start, start + 3, "");
                     end = stringBuilder.indexOf("</b>");
+                    if (end == -1) {
+                        end = stringBuilder.indexOf("<b>");
+                    }
                     stringBuilder.replace(end, end + 4, "");
             bolds.add(start);
             bolds.add(end);
