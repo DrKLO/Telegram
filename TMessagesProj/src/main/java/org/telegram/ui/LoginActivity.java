@@ -1326,7 +1326,10 @@ public class LoginActivity extends BaseFragment {
                                             ConnectionsManager.getInstance().updateDcSettings(0);
                                         }
                                     });
-                                    Intercom.client().registerIdentifiedUser(new Registration().withUserId(requestPhone));
+                                    Intercom.client().registerIdentifiedUser(
+                                            new Registration()
+                                                    .withUserId(requestPhone)
+                                                    .withUserAttributes(getCurrentUserAttributes()));
                                 } else {
                                     lastError = error.text;
 
@@ -2326,7 +2329,10 @@ public class LoginActivity extends BaseFragment {
                                             ConnectionsManager.getInstance().updateDcSettings(0);
                                         }
                                     });
-                                    Intercom.client().registerIdentifiedUser(new Registration().withUserId(requestPhone));
+                                    Intercom.client().registerIdentifiedUser(
+                                            new Registration()
+                                                    .withUserId(requestPhone)
+                                                    .withUserAttributes(getCurrentUserAttributes()));
 
                                 } else {
                                     if (error.text.contains("PHONE_NUMBER_INVALID")) {
@@ -2417,5 +2423,15 @@ public class LoginActivity extends BaseFragment {
                 lastNameField.setText(last);
             }
         }
+    }
+
+    private Map<String, Object> getCurrentUserAttributes() {
+        Map<String,Object> userAttributes = new HashMap<>();
+
+        userAttributes.put("firstName", UserConfig.getCurrentUser().first_name);
+        userAttributes.put("lastName", UserConfig.getCurrentUser().last_name);
+        userAttributes.put("userName", UserConfig.getCurrentUser().username);
+
+        return userAttributes;
     }
 }
