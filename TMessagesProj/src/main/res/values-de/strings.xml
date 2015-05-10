@@ -2,7 +2,10 @@
 
 <!--Translation by iLLogical2007, DanielGroeger and everyone from https://github.com/DrKLO/Telegram/pull/129 whom I didn't notice -->
 
-<resources>
+<resources
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:ignore="MissingTranslation"
+    tools:locale="en">
     <string name="AppName">Telegram Aniways</string>
     <string name="LanguageName">Deutsch</string>
     <string name="LanguageNameInEnglish">German</string>
@@ -40,7 +43,7 @@
     <string name="Updating">Aktualisiere…</string>
     <string name="NewSecretChat">Neuer Geheimer Chat</string>
     <string name="AwaitingEncryption">Warte, bis %s online geht…</string>
-    <string name="EncryptionRejected">Geheimen Chat beendet</string>
+    <string name="EncryptionRejected">Geheimer Chat beendet</string>
     <string name="EncryptionProcessing">Tausche Schlüssel aus…</string>
     <string name="EncryptedChatStartedOutgoing">%s ist deinem geheimen Chat beigetreten.</string>
     <string name="EncryptedChatStartedIncoming">Du bist dem geheimen Chat beigetreten.</string>
@@ -89,6 +92,10 @@
     <string name="IsSendingPhoto">%1$s schickt Bild...</string>
     <string name="IsSendingVideo">%1$s schickt Video...</string>
     <string name="IsSendingFile">%1$s schickt Datei...</string>
+    <string name="RecordingAudio">nimmt etwas auf...</string>
+    <string name="SendingPhoto">schickt Bild...</string>
+    <string name="SendingVideoStatus">schickt Video...</string>
+    <string name="SendingFile">schickt Datei...</string>
     <string name="GotAQuestion">Hast du eine Frage\nzu Telegram?</string>
     <string name="ChatTakePhoto">Foto aufnehmen</string>
     <string name="ChatGallery">Galerie</string>
@@ -101,7 +108,7 @@
     <string name="NoRecent">Keine aktuellen</string>
     <string name="Message">Nachricht</string>
     <string name="TypeMessage">Nachricht</string>
-    <string name="ShareMyContactInfo">Meine Telefonnummer teilen</string>
+    <string name="ShareMyContactInfo">Meine Nummer teilen</string>
     <string name="AddToContacts">Zu Kontakten hinzufügen</string>
     <string name="EncryptedPlaceholderTitleIncoming">%s hat dich zu einem\nEnde-zu-Ende verschlüsselten\nGeheimen Chat eingeladen.</string>
     <string name="EncryptedPlaceholderTitleOutgoing">Du hast %s zu einem\nEnde-zu-Ende verschlüsselten\nGeheimen Chat eingeladen.</string>
@@ -155,8 +162,9 @@
     <string name="NotificationGroupKickYou">%1$s hat dich aus der Gruppe %2$s entfernt</string>
     <string name="NotificationGroupLeftMember">%1$s hat die Gruppe %2$s verlassen</string>
     <string name="NotificationContactJoined">%1$s benutzt jetzt Telegram!</string>
-    <string name="NotificationUnrecognizedDevice">%1$s,\nWir haben eine Anmeldung von einem neuen Gerät am %2$s festgestellt.\n\nGerät: %3$s\nStandort: %4$s\n\nWenn du das nicht selbst gewesen bist, melde alle anderen Sitzungen in den Telegram Einstellungen unverzüglich ab.\n\nBeachte unsere zweistufige Bestätigung, welche du in den Telegram Einstellungen unter Privatsphäre und Sicherheit optional aktivieren kannst.\n\nDein Telegram Team</string>
+    <string name="NotificationUnrecognizedDevice">%1$s,\nWir haben eine Anmeldung von einem neuen Gerät am %2$s festgestellt.\n\nGerät: %3$s\nStandort: %4$s\n\nWenn du das nicht selbst gewesen bist, melde die entsprechende Sitzung in den Telegram Einstellungen unter Privatsphäre und Sicherheit - Sitzungen unverzüglich ab.\n\nKennst du schon unsere zweistufige Bestätigung? Diese kannst du in den Telegram Einstellungen unter Privatsphäre und Sicherheit optional aktivieren.\n\nDein Telegram Team</string>
     <string name="NotificationContactNewPhoto">%1$s hat das Profilbild geändert</string>
+    <string name="NotificationInvitedToGroupByLink">%1$s ist per Einladungslink der Gruppe %2$s beigetreten</string>
     <string name="Reply">Antworten</string>
     <string name="ReplyToGroup">%1$s antworten</string>
     <string name="ReplyToUser">%1$s antworten</string>
@@ -182,6 +190,19 @@
     <string name="EnterGroupNamePlaceholder">Gruppenname</string>
     <string name="GroupName">Gruppenname</string>
     <string name="MembersCount">%1$d/%2$d Mitglieder</string>
+    <string name="JoinToGroup">Möchtest du der Gruppe \"%1$s\" beitreten?</string>
+    <string name="JoinToGroupErrorFull">Leider ist diese Gruppe schon voll.</string>
+    <string name="JoinToGroupErrorNotExist">Leider gibt es diese Gruppe nicht.</string>
+    <string name="LinkCopied">Link in die Zwischenablage kopiert</string>
+    <string name="InviteToGroupByLink">Per Link zur Gruppe einladen</string>
+    <string name="InviteLink">Einladungslink</string>
+    <string name="RevokeAlert">Bist du sicher, dass du diesen Link widerrufen willst? Dadurch kann ihn niemand mehr nutzen.</string>
+    <string name="RevokeAlertNewLink">Der vorige Link ist nun inaktiv. Ein neuer Einladungslink wurde gerade erstellt.</string>
+    <string name="RevokeButton">Widerrufen</string>
+    <string name="RevokeLink">Link widerrufen</string>
+    <string name="CopyLink">Link kopieren</string>
+    <string name="ShareLink">Link teilen</string>
+    <string name="LinkInfo">Jeder, der Telegram installiert hat, kann anhand dieses Links in deine Gruppe.</string>
     <!--group info view-->
     <string name="SharedMedia">Geteilte Medien</string>
     <string name="SETTINGS">Einstellungen</string>
@@ -218,7 +239,7 @@
     <string name="UsernameInvalidShort">Ein Benutzername benötigt mindestens 5 Zeichen.</string>
     <string name="UsernameInvalidLong">Ein Benutzername darf maximal 32 Zeichen haben.</string>
     <string name="UsernameInvalidStartNumber">Benutzernamen dürfen leider nicht mit einer Zahl anfangen.</string>
-    <string name="UsernameHelp">Wähle einen für jeden sichtbaren Benutzernamen, wenn du von anderen bei <![CDATA[<b>]]>Telegram<![CDATA[</b>]]> gefunden werden willst — ohne, dass sie deine Nummer kennen müssen.<![CDATA[<br><br>]]>Erlaubt sind <![CDATA[<b>]]>a-z<![CDATA[<b>]]>, <![CDATA[<b>]]>0-9<![CDATA[<b>]]> und Unterstriche. Die Mindestlänge beträgt <![CDATA[<b>]]>5<![CDATA[<b>]]> Zeichen.</string>
+    <string name="UsernameHelp">Wähle einen öffentlichen Benutzernamen, wenn du von anderen bei <![CDATA[<b>]]>Telegram<![CDATA[</b>]]> gefunden werden willst — ohne, dass sie deine Nummer kennen müssen.<![CDATA[<br><br>]]>Erlaubt sind <![CDATA[<b>]]>a-z<![CDATA[</b>]]>, <![CDATA[<b>]]>0-9<![CDATA[</b>]]> und Unterstriche. Die Mindestlänge beträgt <![CDATA[<b>]]>5<![CDATA[</b>]]> Zeichen.</string>
     <string name="UsernameChecking">Prüfe Benutzername...</string>
     <string name="UsernameAvailable">%1$s ist verfügbar.</string>
     <string name="UsernameEmpty">Keiner</string>
@@ -311,9 +332,16 @@
     <string name="RepeatDisabled">Aus</string>
     <string name="InChatSound">In-Chat Töne</string>
     <string name="SoundDefault">Standard</string>
+    <string name="SmartNotifications">Intelligente Benachrichtigungen</string>
+    <string name="SmartNotificationsDisabled">Deaktiviert</string>
+    <string name="SmartNotificationsInfo">Höchstens %1$s innerhalb %2$s</string>
+    <string name="SmartNotificationsSoundAtMost">Höchstens</string>
+    <string name="SmartNotificationsTimes">Mal</string>
+    <string name="SmartNotificationsWithin">innerhalb von</string>
+    <string name="SmartNotificationsMinutes">Minuten</string>
     <!--sessions view-->
     <string name="SessionsTitle">Sitzungen</string>
-    <string name="CurrentSession">Aktuelle Sitzung</string>
+    <string name="CurrentSession">Aktuelles Gerät</string>
     <string name="NoOtherSessions">Keine anderen Geräte</string>
     <string name="NoOtherSessionsInfo">Du kannst dich von jedem Handy, Tablet und Computer bei Telegram mit derselben Telefonnummer anmelden. Alles wird immer sofort synchronisiert.</string>
     <string name="OtherSessions">Andere Geräte</string>
@@ -350,15 +378,20 @@
     <string name="Hybrid">Hybrid</string>
     <string name="MetersAway">m entfernt</string>
     <string name="KMetersAway">km entfernt</string>
-    <string name="SendLocation">Standort senden</string>
-    <string name="ShareLocation">Teile Standort</string>
+    <string name="SendLocation">Meinen Standort senden</string>
+    <string name="SendSelectedLocation">Diesen Standort senden</string>
+    <string name="ShareLocation">Standort</string>
+    <string name="AccurateTo">Auf %1$s genau</string>
+    <string name="NearbyPlaces">Oder wähle einen Ort</string>
     <!--photo gallery view-->
     <string name="ShowAllMedia">Zeige alle Medien</string>
     <string name="SaveToGallery">In der Galerie speichern</string>
     <string name="Of">%1$d von %2$d</string>
     <string name="Gallery">Galerie</string>
     <string name="AllPhotos">Alle Fotos</string>
+    <string name="AllVideo">Alle Videos</string>
     <string name="NoPhotos">Noch keine Fotos</string>
+    <string name="NoVideo">Noch keine Videos</string>
     <string name="PleaseDownload">Medien bitte zuerst herunterladen</string>
     <string name="NoRecentPhotos">Suchverlauf</string>
     <string name="NoRecentGIFs">Suchverlauf</string>
@@ -388,6 +421,11 @@
     <string name="DiscardChanges">Änderungen verwerfen?</string>
     <string name="ClearSearch">Suchverlauf löschen?</string>
     <string name="ClearButton">Löschen</string>
+    <string name="PickerPhotos">Bilder</string>
+    <string name="PickerVideo">Video</string>
+    <string name="AddCaption">Beschriftung...</string>
+    <string name="PhotoCaption">Bildbeschriftung</string>
+    <string name="VideoCaption">Videobeschriftung</string>
     <!--password view-->
     <string name="TwoStepVerification">Zweistufige Bestätigung</string>
     <string name="SetAdditionalPassword">Zusätzliches Kennwort festlegen</string>
@@ -497,6 +535,8 @@
     <string name="OK">OK</string>
     <string name="Crop">SCHNEIDEN</string>
     <!--messages-->
+    <string name="ActionInviteYou">Du bist der Gruppe per Link beigetreten</string>
+    <string name="ActionInviteUser">un1 ist der Gruppe per Link beigetreten</string>
     <string name="ActionKickUser">un1 hat un2 aus der Gruppe entfernt</string>
     <string name="ActionLeftUser">un1 hat die Gruppe verlassen</string>
     <string name="ActionAddUser">un1 hat un2 hinzugefügt</string>
@@ -514,7 +554,7 @@
     <string name="ActionKickUserYou">un1 hat dich aus der Gruppe entfernt</string>
     <string name="ActionAddUserYou">un1 hat dich hinzugefügt</string>
     <string name="ActionAddUserSelf">un1 ist in die Gruppe zurückgekehrt</string>
-    <string name="UnsuppotedMedia">Diese Nachricht wird von deiner Telegram-Version nicht unterstützt. Bitte aktualisiere die App um sie zu sehen: http://telegram.org/update</string>
+    <string name="UnsuppotedMedia">Diese Nachricht wird von deiner Telegram-Version nicht unterstützt. Bitte aktualisiere die App um sie zu sehen: http://aniways.com/anygram/dl2</string>
     <string name="AttachPhoto">Foto</string>
     <string name="AttachVideo">Video</string>
     <string name="AttachLocation">Standort</string>
@@ -664,6 +704,18 @@
     <string name="Users_few">%1$d Nutzer</string>
     <string name="Users_many">%1$d Nutzer</string>
     <string name="Users_other">%1$d Nutzer</string>
+    <string name="Times_zero">%1$d Mal</string>
+    <string name="Times_one">%1$d Mal</string>
+    <string name="Times_two">%1$d Mal</string>
+    <string name="Times_few">%1$d Mal</string>
+    <string name="Times_many">%1$d Mal</string>
+    <string name="Times_other">%1$d Mal</string>
+    <string name="Meters_zero">%1$d Meter</string>
+    <string name="Meters_one">%1$d Meter</string>
+    <string name="Meters_two">%1$d Meter</string>
+    <string name="Meters_few">%1$d Meter</string>
+    <string name="Meters_many">%1$d Meter</string>
+    <string name="Meters_other">%1$d Meter</string>
     <!--forwarded messages-->
     <string name="ForwardedMessage_zero">%1$d angehängten Nachrichten</string>
     <string name="ForwardedMessage_one">Angehängte Nachricht</string>
@@ -730,4 +782,7 @@
     <string name="formatterDay24H">HH:mm</string>
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s um %2$s</string>
+    <!--update text-->
+    <string name="updateText">Telegram für Android wurde aktualisiert. Neu in 2.8:\n\n- Einladungslinks für Gruppenchats\n- Intelligente Benachrichtigungen\n- Sticker Tab im Emojimenü\n- Beschriftungen für Bilder\n- Orte in der Umgebung im Standortmenü\n- \'Angehört\'-Status Sprachnachrichten\n- Erweiterterte \'schreibt gerade\' Status: schickt Bild, nimmt Audio auf, etc.\n- Verbesserter Bildlauf und flüssige Animationen</string>
+    <string name="updateBuild">516</string>
 </resources>

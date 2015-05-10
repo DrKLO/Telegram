@@ -41,8 +41,8 @@ public class PhotoPickerBottomLayout extends FrameLayout {
         cancelButton.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         addView(cancelButton);
         LayoutParams layoutParams = (LayoutParams) cancelButton.getLayoutParams();
-        layoutParams.width = LayoutParams.WRAP_CONTENT;
-        layoutParams.height = LayoutParams.MATCH_PARENT;
+        layoutParams.width = LayoutHelper.WRAP_CONTENT;
+        layoutParams.height = LayoutHelper.MATCH_PARENT;
         layoutParams.gravity = Gravity.TOP | Gravity.LEFT;
         cancelButton.setLayoutParams(layoutParams);
 
@@ -52,8 +52,8 @@ public class PhotoPickerBottomLayout extends FrameLayout {
         doneButton.setPadding(AndroidUtilities.dp(29), 0, AndroidUtilities.dp(29), 0);
         addView(doneButton);
         layoutParams = (LayoutParams) doneButton.getLayoutParams();
-        layoutParams.width = LayoutParams.WRAP_CONTENT;
-        layoutParams.height = LayoutParams.MATCH_PARENT;
+        layoutParams.width = LayoutHelper.WRAP_CONTENT;
+        layoutParams.height = LayoutHelper.MATCH_PARENT;
         layoutParams.gravity = Gravity.TOP | Gravity.RIGHT;
         doneButton.setLayoutParams(layoutParams);
 
@@ -67,7 +67,7 @@ public class PhotoPickerBottomLayout extends FrameLayout {
         doneButtonBadgeTextView.setPadding(AndroidUtilities.dp(8), 0, AndroidUtilities.dp(8), AndroidUtilities.dp(1));
         doneButton.addView(doneButtonBadgeTextView);
         LinearLayout.LayoutParams layoutParams1 = (LinearLayout.LayoutParams) doneButtonBadgeTextView.getLayoutParams();
-        layoutParams1.width = LayoutParams.WRAP_CONTENT;
+        layoutParams1.width = LayoutHelper.WRAP_CONTENT;
         layoutParams1.height = AndroidUtilities.dp(23);
         layoutParams1.rightMargin = AndroidUtilities.dp(10);
         layoutParams1.gravity = Gravity.CENTER_VERTICAL;
@@ -82,9 +82,9 @@ public class PhotoPickerBottomLayout extends FrameLayout {
         doneButtonTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         doneButton.addView(doneButtonTextView);
         layoutParams1 = (LinearLayout.LayoutParams) doneButtonTextView.getLayoutParams();
-        layoutParams1.width = LayoutParams.WRAP_CONTENT;
+        layoutParams1.width = LayoutHelper.WRAP_CONTENT;
         layoutParams1.gravity = Gravity.CENTER_VERTICAL;
-        layoutParams1.height = LayoutParams.WRAP_CONTENT;
+        layoutParams1.height = LayoutHelper.WRAP_CONTENT;
         doneButtonTextView.setLayoutParams(layoutParams1);
     }
 

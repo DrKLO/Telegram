@@ -35,6 +35,7 @@ import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.ui.Components.LayoutHelper;
 
 import java.util.ArrayList;
 import java.util.Timer;
@@ -113,8 +114,8 @@ public class LanguageSelectActivity extends BaseFragment {
         emptyTextLayout.setOrientation(LinearLayout.VERTICAL);
         ((FrameLayout) fragmentView).addView(emptyTextLayout);
         FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) emptyTextLayout.getLayoutParams();
-        layoutParams.width = FrameLayout.LayoutParams.MATCH_PARENT;
-        layoutParams.height = FrameLayout.LayoutParams.MATCH_PARENT;
+        layoutParams.width = LayoutHelper.MATCH_PARENT;
+        layoutParams.height = LayoutHelper.MATCH_PARENT;
         layoutParams.gravity = Gravity.TOP;
         emptyTextLayout.setLayoutParams(layoutParams);
         emptyTextLayout.setOnTouchListener(new View.OnTouchListener() {
@@ -131,16 +132,16 @@ public class LanguageSelectActivity extends BaseFragment {
         emptyTextView.setText(LocaleController.getString("NoResult", R.string.NoResult));
         emptyTextLayout.addView(emptyTextView);
         LinearLayout.LayoutParams layoutParams1 = (LinearLayout.LayoutParams) emptyTextView.getLayoutParams();
-        layoutParams1.width = LinearLayout.LayoutParams.MATCH_PARENT;
-        layoutParams1.height = LinearLayout.LayoutParams.MATCH_PARENT;
+        layoutParams1.width = LayoutHelper.MATCH_PARENT;
+        layoutParams1.height = LayoutHelper.MATCH_PARENT;
         layoutParams1.weight = 0.5f;
         emptyTextView.setLayoutParams(layoutParams1);
 
         FrameLayout frameLayout = new FrameLayout(context);
         emptyTextLayout.addView(frameLayout);
         layoutParams1 = (LinearLayout.LayoutParams) frameLayout.getLayoutParams();
-        layoutParams1.width = LinearLayout.LayoutParams.MATCH_PARENT;
-        layoutParams1.height = LinearLayout.LayoutParams.MATCH_PARENT;
+        layoutParams1.width = LayoutHelper.MATCH_PARENT;
+        layoutParams1.height = LayoutHelper.MATCH_PARENT;
         layoutParams1.weight = 0.5f;
         frameLayout.setLayoutParams(layoutParams1);
 
@@ -152,8 +153,8 @@ public class LanguageSelectActivity extends BaseFragment {
         listView.setAdapter(listAdapter);
         ((FrameLayout) fragmentView).addView(listView);
         layoutParams = (FrameLayout.LayoutParams) listView.getLayoutParams();
-        layoutParams.width = FrameLayout.LayoutParams.MATCH_PARENT;
-        layoutParams.height = FrameLayout.LayoutParams.MATCH_PARENT;
+        layoutParams.width = LayoutHelper.MATCH_PARENT;
+        layoutParams.height = LayoutHelper.MATCH_PARENT;
         listView.setLayoutParams(layoutParams);
 
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {

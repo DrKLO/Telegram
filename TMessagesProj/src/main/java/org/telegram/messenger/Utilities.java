@@ -60,6 +60,9 @@ public class Utilities {
     public static Pattern pattern = Pattern.compile("[0-9]+");
     public static SecureRandom random = new SecureRandom();
 
+    private static byte[] decompressBuffer;
+    private static ByteArrayOutputStreamExpand decompressStream;
+
     public static ArrayList<String> goodPrimes = new ArrayList<>();
 
     public static class TPFactorizedValue {
@@ -69,7 +72,7 @@ public class Utilities {
     public static volatile DispatchQueue stageQueue = new DispatchQueue("stageQueue");
     public static volatile DispatchQueue globalQueue = new DispatchQueue("globalQueue");
     public static volatile DispatchQueue searchQueue = new DispatchQueue("searchQueue");
-    public static volatile DispatchQueue photoBookQueue = new DispatchQueue("photoBookQueue");
+    public static volatile DispatchQueue phoneBookQueue = new DispatchQueue("photoBookQueue");
 
     final protected static char[] hexArray = "0123456789ABCDEF".toCharArray();
 
@@ -94,9 +97,9 @@ public class Utilities {
                 byte[] bytes = Base64.decode(primes, Base64.DEFAULT);
                 if (bytes != null) {
                     SerializedData data = new SerializedData(bytes);
-                    int count = data.readInt32();
+                    int count = data.readInt32(false);
                     for (int a = 0; a < count; a++) {
-                        goodPrimes.add(data.readString());
+                        goodPrimes.add(data.readString(false));
                     }
                     data.cleanup();
                 }
@@ -111,7 +114,7 @@ public class Utilities {
     public native static long doPQNative(long _what);
     public native static void loadBitmap(String path, Bitmap bitmap, int scale, int width, int height, int stride);
     public native static int pinBitmap(Bitmap bitmap);
-    public native static void blurBitmap(Object bitmap, int radius);
+    public native static void blurBitmap(Object bitmap, int radius, int unpin);
     public native static void calcCDT(ByteBuffer hsvBuffer, int width, int height, ByteBuffer buffer);
     public native static Bitmap loadWebpImage(ByteBuffer buffer, int len, BitmapFactory.Options options);
     public native static Bitmap loadBpgImage(ByteBuffer buffer, int len, BitmapFactory.Options options);
@@ -413,17 +416,21 @@ public class Utilities {
         return keyData;
     }
 
-    public static TLObject decompress(byte[] data, TLObject parentObject) {
-        final int BUFFER_SIZE = 512;
+    public static TLObject decompress(byte[] data, TLObject parentObject, boolean exception) {
+        final int BUFFER_SIZE = 16384;
         ByteArrayInputStream is = new ByteArrayInputStream(data);
         GZIPInputStream gis;
+        SerializedData stream = null;
         try {
+            if (decompressBuffer == null) {
+                decompressBuffer = new byte[BUFFER_SIZE];
+                decompressStream = new ByteArrayOutputStreamExpand(BUFFER_SIZE);
+            }
+            decompressStream.reset();
             gis = new GZIPInputStream(is, BUFFER_SIZE);
-            ByteArrayOutputStream bytesOutput = new ByteArrayOutputStream();
-            data = new byte[BUFFER_SIZE];
             int bytesRead;
-            while ((bytesRead = gis.read(data)) != -1) {
-                bytesOutput.write(data, 0, bytesRead);
+            while ((bytesRead = gis.read(decompressBuffer)) != -1) {
+                decompressStream.write(decompressBuffer, 0, bytesRead);
             }
             try {
                 gis.close();
@@ -435,17 +442,14 @@ public class Utilities {
             } catch (Exception e) {
                 FileLog.e("tmessages", e);
             }
-            SerializedData stream = new SerializedData(bytesOutput.toByteArray());
-            try {
-                bytesOutput.close();
-            } catch (Exception e) {
-                FileLog.e("tmessages", e);
-            }
-            TLObject object = TLClassStore.Instance().TLdeserialize(stream, stream.readInt32(), parentObject);
-            stream.cleanup();
-            return object;
+            stream = new SerializedData(decompressStream.toByteArray());
         } catch (IOException e) {
             FileLog.e("tmessages", e);
+        }
+        if (stream != null) {
+            TLObject object = ConnectionsManager.getInstance().deserialize(parentObject, stream, exception);
+            stream.cleanup();
+            return object;
         }
         return null;
     }
@@ -693,7 +697,7 @@ public class Utilities {
             if (query.startsWith(" ")) {
                 builder.append(" ");
             }
-            query.trim();
+            query = query.trim();
             builder.append(AndroidUtilities.replaceTags("<c#ff4d83b3>" + query + "</c>"));
 
             lastIndex = end;

@@ -43,15 +43,13 @@ import org.telegram.android.ContactsController;
 import org.telegram.android.MessagesController;
 import org.telegram.android.MessagesStorage;
 import org.telegram.android.NotificationCenter;
-import com.aniways.Log;
 import com.aniways.anigram.messenger.R;
-import com.aniways.volley.toolbox.Volley;
 import org.telegram.messenger.UserConfig;
 import org.telegram.ui.Adapters.BaseFragmentAdapter;
 import org.telegram.ui.Adapters.DialogsAdapter;
 import org.telegram.ui.Adapters.DialogsSearchAdapter;
-import org.telegram.ui.AnimationCompat.ObjectAnimatorProxy;
-import org.telegram.ui.AnimationCompat.ViewProxy;
+import org.telegram.android.AnimationCompat.ObjectAnimatorProxy;
+import org.telegram.android.AnimationCompat.ViewProxy;
 import org.telegram.ui.Cells.UserCell;
 import org.telegram.ui.Cells.DialogCell;
 import org.telegram.ui.ActionBar.ActionBar;
@@ -59,6 +57,7 @@ import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.MenuDrawable;
+import org.telegram.ui.Components.ResourceLoader;
 
 import java.util.ArrayList;
 
@@ -161,6 +160,8 @@ public class MessagesActivity extends BaseFragment implements NotificationCenter
     public View createView(Context context, LayoutInflater inflater) {
         searching = false;
         searchWas = false;
+
+        ResourceLoader.loadRecources(context);
 
         ActionBarMenu menu = actionBar.createMenu();
         if (!onlySelect && searchString == null) {

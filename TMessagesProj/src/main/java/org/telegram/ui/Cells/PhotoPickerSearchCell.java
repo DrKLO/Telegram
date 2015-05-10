@@ -23,6 +23,7 @@ import android.widget.TextView;
 import org.telegram.android.AndroidUtilities;
 import org.telegram.android.LocaleController;
 import com.aniways.anigram.messenger.R;
+import org.telegram.ui.Components.LayoutHelper;
 
 public class PhotoPickerSearchCell extends LinearLayout {
 
@@ -46,8 +47,8 @@ public class PhotoPickerSearchCell extends LinearLayout {
             selector.setBackgroundResource(R.drawable.list_selector);
             addView(selector);
             FrameLayout.LayoutParams layoutParams1 = (FrameLayout.LayoutParams) selector.getLayoutParams();
-            layoutParams1.width = LayoutParams.MATCH_PARENT;
-            layoutParams1.height = LayoutParams.MATCH_PARENT;
+            layoutParams1.width = LayoutHelper.MATCH_PARENT;
+            layoutParams1.height = LayoutHelper.MATCH_PARENT;
             selector.setLayoutParams(layoutParams1);
 
             imageView = new ImageView(context);
@@ -68,8 +69,8 @@ public class PhotoPickerSearchCell extends LinearLayout {
             textView1.setEllipsize(TextUtils.TruncateAt.END);
             addView(textView1);
             layoutParams1 = (FrameLayout.LayoutParams) textView1.getLayoutParams();
-            layoutParams1.width = LayoutParams.MATCH_PARENT;
-            layoutParams1.height = LayoutParams.WRAP_CONTENT;
+            layoutParams1.width = LayoutHelper.MATCH_PARENT;
+            layoutParams1.height = LayoutHelper.WRAP_CONTENT;
             layoutParams1.gravity = Gravity.TOP | Gravity.LEFT;
             layoutParams1.rightMargin = AndroidUtilities.dp(4);
             layoutParams1.leftMargin = AndroidUtilities.dp(51);
@@ -85,8 +86,8 @@ public class PhotoPickerSearchCell extends LinearLayout {
             textView2.setEllipsize(TextUtils.TruncateAt.END);
             addView(textView2);
             layoutParams1 = (FrameLayout.LayoutParams) textView2.getLayoutParams();
-            layoutParams1.width = LayoutParams.MATCH_PARENT;
-            layoutParams1.height = LayoutParams.WRAP_CONTENT;
+            layoutParams1.width = LayoutHelper.MATCH_PARENT;
+            layoutParams1.height = LayoutHelper.WRAP_CONTENT;
             layoutParams1.gravity = Gravity.TOP | Gravity.LEFT;
             layoutParams1.leftMargin = AndroidUtilities.dp(51);
             layoutParams1.rightMargin = AndroidUtilities.dp(4);

@@ -32,6 +32,7 @@ import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.CheckBox;
+import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.LineProgressView;
 
 import java.io.File;
@@ -99,7 +100,7 @@ public class SharedDocumentCell extends FrameLayout implements MediaController.F
         addView(extTextView);
         layoutParams = (LayoutParams) extTextView.getLayoutParams();
         layoutParams.width = AndroidUtilities.dp(32);
-        layoutParams.height = LayoutParams.WRAP_CONTENT;
+        layoutParams.height = LayoutHelper.WRAP_CONTENT;
         layoutParams.topMargin = AndroidUtilities.dp(22);
         layoutParams.leftMargin = LocaleController.isRTL ? 0 : AndroidUtilities.dp(16);
         layoutParams.rightMargin = LocaleController.isRTL ? AndroidUtilities.dp(16) : 0;
@@ -135,8 +136,8 @@ public class SharedDocumentCell extends FrameLayout implements MediaController.F
         nameTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL);
         addView(nameTextView);
         layoutParams = (LayoutParams) nameTextView.getLayoutParams();
-        layoutParams.width = LayoutParams.MATCH_PARENT;
-        layoutParams.height = LayoutParams.WRAP_CONTENT;
+        layoutParams.width = LayoutHelper.MATCH_PARENT;
+        layoutParams.height = LayoutHelper.WRAP_CONTENT;
         layoutParams.topMargin = AndroidUtilities.dp(5);
         layoutParams.leftMargin = LocaleController.isRTL ? AndroidUtilities.dp(8) : AndroidUtilities.dp(72);
         layoutParams.rightMargin = LocaleController.isRTL ? AndroidUtilities.dp(72) : AndroidUtilities.dp(8);
@@ -147,8 +148,8 @@ public class SharedDocumentCell extends FrameLayout implements MediaController.F
         statusImageView.setVisibility(INVISIBLE);
         addView(statusImageView);
         layoutParams = (LayoutParams) statusImageView.getLayoutParams();
-        layoutParams.width = LayoutParams.WRAP_CONTENT;
-        layoutParams.height = LayoutParams.WRAP_CONTENT;
+        layoutParams.width = LayoutHelper.WRAP_CONTENT;
+        layoutParams.height = LayoutHelper.WRAP_CONTENT;
         layoutParams.topMargin = AndroidUtilities.dp(35);
         layoutParams.leftMargin = LocaleController.isRTL ? AndroidUtilities.dp(8) : AndroidUtilities.dp(72);
         layoutParams.rightMargin = LocaleController.isRTL ? AndroidUtilities.dp(72) : AndroidUtilities.dp(8);
@@ -165,8 +166,8 @@ public class SharedDocumentCell extends FrameLayout implements MediaController.F
         dateTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL);
         addView(dateTextView);
         layoutParams = (LayoutParams) dateTextView.getLayoutParams();
-        layoutParams.width = LayoutParams.MATCH_PARENT;
-        layoutParams.height = LayoutParams.WRAP_CONTENT;
+        layoutParams.width = LayoutHelper.MATCH_PARENT;
+        layoutParams.height = LayoutHelper.WRAP_CONTENT;
         layoutParams.topMargin = AndroidUtilities.dp(30);
         layoutParams.leftMargin = LocaleController.isRTL ? AndroidUtilities.dp(8) : AndroidUtilities.dp(72);
         layoutParams.rightMargin = LocaleController.isRTL ? AndroidUtilities.dp(72) : AndroidUtilities.dp(8);
@@ -176,7 +177,7 @@ public class SharedDocumentCell extends FrameLayout implements MediaController.F
         progressView = new LineProgressView(context);
         addView(progressView);
         layoutParams = (LayoutParams) progressView.getLayoutParams();
-        layoutParams.width = LayoutParams.MATCH_PARENT;
+        layoutParams.width = LayoutHelper.MATCH_PARENT;
         layoutParams.height = AndroidUtilities.dp(2);
         layoutParams.topMargin = AndroidUtilities.dp(54);
         layoutParams.leftMargin = LocaleController.isRTL ? 0 : AndroidUtilities.dp(72);

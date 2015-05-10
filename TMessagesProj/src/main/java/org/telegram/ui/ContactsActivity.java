@@ -51,6 +51,7 @@ import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.LetterSectionsListView;
 
 import java.util.ArrayList;
@@ -71,6 +72,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
     private boolean returnAsResult;
     private boolean createSecretChat;
     private boolean creatingChat = false;
+    private int chat_id;
     private String selectAlertString = null;
     private HashMap<Integer, TLRPC.User> ignoreUsers;
     private boolean allowUsernameSearch = true;
@@ -99,6 +101,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
             createSecretChat = arguments.getBoolean("createSecretChat", false);
             selectAlertString = arguments.getString("selectAlertString");
             allowUsernameSearch = arguments.getBoolean("allowUsernameSearch", true);
+            chat_id = arguments.getInt("chat_id", 0);
         } else {
             needPhonebook = true;
         }
@@ -199,7 +202,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
         item.getSearchField().setHint(LocaleController.getString("Search", R.string.Search));
 
         searchListViewAdapter = new SearchAdapter(context, ignoreUsers, allowUsernameSearch);
-        listViewAdapter = new ContactsAdapter(context, onlyUsers, needPhonebook, ignoreUsers);
+        listViewAdapter = new ContactsAdapter(context, onlyUsers, needPhonebook, ignoreUsers, chat_id != 0);
 
         fragmentView = new FrameLayout(context);
 
@@ -208,8 +211,8 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
         emptyTextLayout.setOrientation(LinearLayout.VERTICAL);
         ((FrameLayout) fragmentView).addView(emptyTextLayout);
         FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) emptyTextLayout.getLayoutParams();
-        layoutParams.width = FrameLayout.LayoutParams.MATCH_PARENT;
-        layoutParams.height = FrameLayout.LayoutParams.MATCH_PARENT;
+        layoutParams.width = LayoutHelper.MATCH_PARENT;
+        layoutParams.height = LayoutHelper.MATCH_PARENT;
         layoutParams.gravity = Gravity.TOP;
         emptyTextLayout.setLayoutParams(layoutParams);
         emptyTextLayout.setOnTouchListener(new View.OnTouchListener() {
@@ -226,16 +229,16 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
         emptyTextView.setText(LocaleController.getString("NoContacts", R.string.NoContacts));
         emptyTextLayout.addView(emptyTextView);
         LinearLayout.LayoutParams layoutParams1 = (LinearLayout.LayoutParams) emptyTextView.getLayoutParams();
-        layoutParams1.width = LinearLayout.LayoutParams.MATCH_PARENT;
-        layoutParams1.height = LinearLayout.LayoutParams.MATCH_PARENT;
+        layoutParams1.width = LayoutHelper.MATCH_PARENT;
+        layoutParams1.height = LayoutHelper.MATCH_PARENT;
         layoutParams1.weight = 0.5f;
         emptyTextView.setLayoutParams(layoutParams1);
 
         FrameLayout frameLayout = new FrameLayout(context);
         emptyTextLayout.addView(frameLayout);
         layoutParams1 = (LinearLayout.LayoutParams) frameLayout.getLayoutParams();
-        layoutParams1.width = LinearLayout.LayoutParams.MATCH_PARENT;
-        layoutParams1.height = LinearLayout.LayoutParams.MATCH_PARENT;
+        layoutParams1.width = LayoutHelper.MATCH_PARENT;
+        layoutParams1.height = LayoutHelper.MATCH_PARENT;
         layoutParams1.weight = 0.5f;
         frameLayout.setLayoutParams(layoutParams1);
 
@@ -253,8 +256,8 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
         }
         ((FrameLayout) fragmentView).addView(listView);
         layoutParams = (FrameLayout.LayoutParams) listView.getLayoutParams();
-        layoutParams.width = FrameLayout.LayoutParams.MATCH_PARENT;
-        layoutParams.height = FrameLayout.LayoutParams.MATCH_PARENT;
+        layoutParams.width = LayoutHelper.MATCH_PARENT;
+        layoutParams.height = LayoutHelper.MATCH_PARENT;
         listView.setLayoutParams(layoutParams);
 
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
@@ -292,7 +295,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                     if (row < 0 || section < 0) {
                         return;
                     }
-                    if (!onlyUsers && section == 0) {
+                    if ((!onlyUsers || chat_id != 0) && section == 0) {
                         if (needPhonebook) {
                             if (row == 0) {
                                 try {
@@ -303,6 +306,10 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                                 } catch (Exception e) {
                                     FileLog.e("tmessages", e);
                                 }
+                            }
+                        } else if (chat_id != 0) {
+                            if (row == 0) {
+                                presentFragment(new GroupInviteActivity(chat_id));
                             }
                         } else {
                             if (row == 0) {

@@ -1,7 +1,7 @@
 <ScrollView
     xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_height="fill_parent"
-    android:layout_width="fill_parent"
+    android:layout_height="match_parent"
+    android:layout_width="match_parent"
     android:fillViewport="true">
 
     <FrameLayout
@@ -31,8 +31,8 @@
         </FrameLayout>
 
         <android.support.v4.view.ViewPager
-            android:layout_width="fill_parent"
-            android:layout_height="fill_parent"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
             android:id="@+id/intro_view_pager"/>
 
         <TextView android:layout_width="wrap_content"

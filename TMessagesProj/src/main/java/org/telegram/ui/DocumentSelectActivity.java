@@ -36,10 +36,11 @@ import org.telegram.messenger.Utilities;
 import org.telegram.ui.Adapters.BaseFragmentAdapter;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
-import org.telegram.ui.AnimationCompat.AnimatorSetProxy;
-import org.telegram.ui.AnimationCompat.ObjectAnimatorProxy;
+import org.telegram.android.AnimationCompat.AnimatorSetProxy;
+import org.telegram.android.AnimationCompat.ObjectAnimatorProxy;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.Cells.SharedDocumentCell;
+import org.telegram.ui.Components.LayoutHelper;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -188,7 +189,7 @@ public class DocumentSelectActivity extends BaseFragment {
         LinearLayout.LayoutParams layoutParams = (LinearLayout.LayoutParams) selectedMessagesCountTextView.getLayoutParams();
         layoutParams.weight = 1;
         layoutParams.width = 0;
-        layoutParams.height = LinearLayout.LayoutParams.MATCH_PARENT;
+        layoutParams.height = LayoutHelper.MATCH_PARENT;
         selectedMessagesCountTextView.setLayoutParams(layoutParams);
 
         actionModeViews.add(actionMode.addItem(done, R.drawable.ic_ab_done_gray, R.drawable.bar_selector_mode, null, AndroidUtilities.dp(54)));

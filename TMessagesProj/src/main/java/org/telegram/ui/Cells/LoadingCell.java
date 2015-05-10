@@ -14,6 +14,7 @@ import android.widget.FrameLayout;
 import android.widget.ProgressBar;
 
 import org.telegram.android.AndroidUtilities;
+import org.telegram.ui.Components.LayoutHelper;
 
 public class LoadingCell extends FrameLayout {
 
@@ -23,8 +24,8 @@ public class LoadingCell extends FrameLayout {
         ProgressBar progressBar = new ProgressBar(context);
         addView(progressBar);
         LayoutParams layoutParams = (FrameLayout.LayoutParams) progressBar.getLayoutParams();
-        layoutParams.width = LayoutParams.WRAP_CONTENT;
-        layoutParams.height = LayoutParams.WRAP_CONTENT;
+        layoutParams.width = LayoutHelper.WRAP_CONTENT;
+        layoutParams.height = LayoutHelper.WRAP_CONTENT;
         layoutParams.gravity = Gravity.CENTER;
         progressBar.setLayoutParams(layoutParams);
     }

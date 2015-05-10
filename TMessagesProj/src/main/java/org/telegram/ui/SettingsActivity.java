@@ -53,7 +53,6 @@ import org.telegram.messenger.BuildVars;
 import org.telegram.android.LocaleController;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.SerializedData;
-import org.telegram.messenger.TLClassStore;
 import org.telegram.messenger.TLObject;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.ConnectionsManager;
@@ -68,7 +67,7 @@ import org.telegram.messenger.RPCRequest;
 import org.telegram.messenger.UserConfig;
 import org.telegram.android.MessageObject;
 import org.telegram.ui.Adapters.BaseFragmentAdapter;
-import org.telegram.ui.AnimationCompat.ViewProxy;
+import org.telegram.android.AnimationCompat.ViewProxy;
 import org.telegram.ui.Cells.TextInfoCell;
 import org.telegram.ui.Cells.EmptyCell;
 import org.telegram.ui.Cells.HeaderCell;
@@ -83,6 +82,7 @@ import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.AvatarUpdater;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.NumberPicker;
 
 import java.io.File;
@@ -220,8 +220,6 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         usernameRow = rowCount++;
         settingsSectionRow = rowCount++;
         settingsSectionRow2 = rowCount++;
-        enableAnimationsRow = rowCount++;
-        languageRow = rowCount++;
         aniwaysSettingsRow = rowCount++;
         notificationRow = rowCount++;
         privacyRow = rowCount++;
@@ -359,8 +357,8 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         nameTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         actionBar.addView(nameTextView);
         layoutParams = (FrameLayout.LayoutParams) nameTextView.getLayoutParams();
-        layoutParams.width = FrameLayout.LayoutParams.WRAP_CONTENT;
-        layoutParams.height = FrameLayout.LayoutParams.WRAP_CONTENT;
+        layoutParams.width = LayoutHelper.WRAP_CONTENT;
+        layoutParams.height = LayoutHelper.WRAP_CONTENT;
         layoutParams.leftMargin = AndroidUtilities.dp(LocaleController.isRTL ? 16 : 97);
         layoutParams.rightMargin = AndroidUtilities.dp(LocaleController.isRTL ? 97 : 16);
         layoutParams.bottomMargin = AndroidUtilities.dp(51);
@@ -377,8 +375,8 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         onlineTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT));
         actionBar.addView(onlineTextView);
         layoutParams = (FrameLayout.LayoutParams) onlineTextView.getLayoutParams();
-        layoutParams.width = FrameLayout.LayoutParams.WRAP_CONTENT;
-        layoutParams.height = FrameLayout.LayoutParams.WRAP_CONTENT;
+        layoutParams.width = LayoutHelper.WRAP_CONTENT;
+        layoutParams.height = LayoutHelper.WRAP_CONTENT;
         layoutParams.leftMargin = AndroidUtilities.dp(LocaleController.isRTL ? 16 : 97);
         layoutParams.rightMargin = AndroidUtilities.dp(LocaleController.isRTL ? 97 : 16);
         layoutParams.bottomMargin = AndroidUtilities.dp(30);
@@ -392,8 +390,8 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         AndroidUtilities.setListViewEdgeEffectColor(listView, AvatarDrawable.getProfileBackColorForId(5));
         frameLayout.addView(listView);
         layoutParams = (FrameLayout.LayoutParams) listView.getLayoutParams();
-        layoutParams.width = FrameLayout.LayoutParams.MATCH_PARENT;
-        layoutParams.height = FrameLayout.LayoutParams.MATCH_PARENT;
+        layoutParams.width = LayoutHelper.MATCH_PARENT;
+        layoutParams.height = LayoutHelper.MATCH_PARENT;
         layoutParams.gravity = Gravity.TOP;
         listView.setLayoutParams(layoutParams);
         listView.setAdapter(listAdapter);
@@ -628,8 +626,8 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         }
         frameLayout.addView(writeButton);
         layoutParams = (FrameLayout.LayoutParams) writeButton.getLayoutParams();
-        layoutParams.width = FrameLayout.LayoutParams.WRAP_CONTENT;
-        layoutParams.height = FrameLayout.LayoutParams.WRAP_CONTENT;
+        layoutParams.width = LayoutHelper.WRAP_CONTENT;
+        layoutParams.height = LayoutHelper.WRAP_CONTENT;
         layoutParams.leftMargin = AndroidUtilities.dp(LocaleController.isRTL ? 16 : 0);
         layoutParams.rightMargin = AndroidUtilities.dp(LocaleController.isRTL ? 0 : 16);
         layoutParams.gravity = (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT);
@@ -781,7 +779,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                         byte[] datacentersBytes = Base64.decode(userString, Base64.DEFAULT);
                         if (datacentersBytes != null) {
                             SerializedData data = new SerializedData(datacentersBytes);
-                            supportUser = (TLRPC.User)TLClassStore.Instance().TLdeserialize(data, data.readInt32());
+                            supportUser = TLRPC.User.TLdeserialize(data, data.readInt32(false), false);
                             if (supportUser != null && supportUser.id == 333000) {
                                 supportUser = null;
                             }
@@ -886,21 +884,69 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
     public void onResume() {
         super.onResume();
 
-        // Terminate all other sessions, so we get push notifications here..
-        TLRPC.TL_auth_resetAuthorizations req = new TLRPC.TL_auth_resetAuthorizations();
-        ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
+        // Terminate all other sessions on this device, so we get push notifications here..
+        TLRPC.TL_account_getAuthorizations req = new TLRPC.TL_account_getAuthorizations();
+        long reqId = ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
             @Override
-            public void run(TLObject response, TLRPC.TL_error error) {
-
-                if (error == null && response instanceof TLRPC.TL_boolTrue) {
-                    Log.i("SettingsActivity", "Terminated other sessions");
-                } else {
-                    Log.e(true, "SettingsActivity", "Failed to terminate other sessions. Error code: " + (error == null ? "null" : error.code) + ". Error text: " + (error == null ? "null" : error.text));
-                }
-                UserConfig.registeredForPush = false;
-                MessagesController.getInstance().registerForPush(UserConfig.pushString);
+            public void run(final TLObject response, final TLRPC.TL_error error) {
+                AndroidUtilities.runOnUIThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (error == null) {
+                            Log.i("SettingsActivity", "Terminate all other sessions on this device");
+                            TLRPC.TL_account_authorizations res = (TLRPC.TL_account_authorizations) response;
+                            String device = "";
+                            for (TLRPC.TL_authorization authorization : res.authorizations) {
+                                if ((authorization.flags & 1) != 0) {
+                                    Log.i("SettingsActivity", "Found current session. Device: " + authorization.device_model + ". Session hash: " + authorization.hash);
+                                    device = authorization.device_model;
+                                } else {
+                                    // Doing nothing, will remove sessions which are not current on this device in the next round
+                                }
+                            }
+                            for (TLRPC.TL_authorization authorization : res.authorizations) {
+                                if ((authorization.flags & 1) != 0) {
+                                    // Doing nothing..
+                                } else {
+                                    Log.i("SettingsActivity", "Found non-current session. Device: " + authorization.device_model);
+                                    final TLRPC.TL_authorization finalAuthorization = authorization;
+                                    if(authorization.device_model.equals(device)) {
+                                        Log.i("SettingsActivity", "Same device as the current session, so terminating it: " + authorization.device_model + ". Session hash: " + authorization.hash);
+                                        TLRPC.TL_account_resetAuthorization req = new TLRPC.TL_account_resetAuthorization();
+                                        req.hash = authorization.hash;
+                                        ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
+                                            @Override
+                                            public void run(final TLObject response, final TLRPC.TL_error error) {
+                                                AndroidUtilities.runOnUIThread(new Runnable() {
+                                                    @Override
+                                                    public void run() {
+                                                        try {
+                                                            //progressDialog.dismiss();
+                                                        } catch (Exception e) {
+                                                            FileLog.e("tmessages", e);
+                                                        }
+                                                        if (error == null) {
+                                                            Log.i("SettingsActivity", "Terminated session on same device: " + finalAuthorization.device_model + ". Session hash: " + finalAuthorization.hash);
+                                                        }
+                                                        else{
+                                                            Log.e(true, "SettingsActivity", "Failed to terminate other session on device. Error code: " + (error == null ? "null" : error.code) + ". Error text: " + (error == null ? "null" : error.text) + ". Session hash: " + finalAuthorization.hash);
+                                                        }
+                                                    }
+                                                });
+                                            }
+                                        });
+                                    }
+                                }
+                            }
+                        }
+                        else{
+                            Log.e(true, "SettingsActivity", "Failed to list other sessions. Error code: " + (error == null ? "null" : error.code) + ". Error text: " + (error == null ? "null" : error.text));
+                        }
+                    }
+                });
             }
-        }, true, RPCRequest.RPCRequestClassGeneric);
+        });
+        ConnectionsManager.getInstance().bindRequestToGuid(reqId, classGuid);
 
         if (listAdapter != null) {
             listAdapter.notifyDataSetChanged();
@@ -1085,9 +1131,9 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                     view = new EmptyCell(mContext);
                 }
                 if (i == overscrollRow) {
-                    ((EmptyCell) view).setHeight(88);
+                    ((EmptyCell) view).setHeight(AndroidUtilities.dp(88));
                 } else {
-                    ((EmptyCell) view).setHeight(16);
+                    ((EmptyCell) view).setHeight(AndroidUtilities.dp(16));
                 }
             } else if (type == 1) {
                 if (view == null) {

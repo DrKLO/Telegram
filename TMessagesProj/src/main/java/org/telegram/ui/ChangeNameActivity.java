@@ -38,6 +38,7 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.ui.Components.LayoutHelper;
 
 public class ChangeNameActivity extends BaseFragment {
 
@@ -103,7 +104,7 @@ public class ChangeNameActivity extends BaseFragment {
         layoutParams.height = AndroidUtilities.dp(36);
         layoutParams.leftMargin = AndroidUtilities.dp(24);
         layoutParams.rightMargin = AndroidUtilities.dp(24);
-        layoutParams.width = LinearLayout.LayoutParams.MATCH_PARENT;
+        layoutParams.width = LayoutHelper.MATCH_PARENT;
         firstNameField.setLayoutParams(layoutParams);
         firstNameField.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             @Override
@@ -135,7 +136,7 @@ public class ChangeNameActivity extends BaseFragment {
         layoutParams.height = AndroidUtilities.dp(36);
         layoutParams.leftMargin = AndroidUtilities.dp(24);
         layoutParams.rightMargin = AndroidUtilities.dp(24);
-        layoutParams.width = LinearLayout.LayoutParams.MATCH_PARENT;
+        layoutParams.width = LayoutHelper.MATCH_PARENT;
         lastNameField.setLayoutParams(layoutParams);
         lastNameField.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             @Override

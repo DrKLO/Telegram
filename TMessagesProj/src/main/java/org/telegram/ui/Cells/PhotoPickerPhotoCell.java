@@ -16,6 +16,7 @@ import org.telegram.android.AndroidUtilities;
 import com.aniways.anigram.messenger.R;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.CheckBox;
+import org.telegram.ui.Components.LayoutHelper;
 
 public class PhotoPickerPhotoCell extends FrameLayout {
 
@@ -30,8 +31,8 @@ public class PhotoPickerPhotoCell extends FrameLayout {
         photoImage = new BackupImageView(context);
         addView(photoImage);
         LayoutParams layoutParams = (LayoutParams) photoImage.getLayoutParams();
-        layoutParams.width = LayoutParams.MATCH_PARENT;
-        layoutParams.height = LayoutParams.MATCH_PARENT;
+        layoutParams.width = LayoutHelper.MATCH_PARENT;
+        layoutParams.height = LayoutHelper.MATCH_PARENT;
         photoImage.setLayoutParams(layoutParams);
 
         checkFrame = new FrameLayout(context);

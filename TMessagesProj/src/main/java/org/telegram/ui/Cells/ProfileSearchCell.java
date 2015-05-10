@@ -117,10 +117,13 @@ public class ProfileSearchCell extends BaseCell {
     @Override
     protected void onDetachedFromWindow() {
         super.onDetachedFromWindow();
-        if (avatarImage != null) {
-            avatarImage.clearImage();
-            lastAvatar = null;
-        }
+        avatarImage.onDetachedFromWindow();
+    }
+
+    @Override
+    protected void onAttachedToWindow() {
+        super.onAttachedToWindow();
+        avatarImage.onAttachedToWindow();
     }
 
     @Override

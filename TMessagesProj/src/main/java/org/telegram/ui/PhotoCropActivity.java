@@ -29,6 +29,7 @@ import com.aniways.anigram.messenger.R;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.ui.Components.LayoutHelper;
 
 import java.io.File;
 
@@ -461,7 +462,7 @@ public class PhotoCropActivity extends BaseFragment {
 
         fragmentView = view = new PhotoCropView(context);
         ((PhotoCropView) fragmentView).freeform = getArguments().getBoolean("freeform", false);
-        fragmentView.setLayoutParams(new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT));
+        fragmentView.setLayoutParams(new FrameLayout.LayoutParams(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
         return fragmentView;
     }

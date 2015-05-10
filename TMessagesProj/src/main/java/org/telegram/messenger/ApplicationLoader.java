@@ -17,8 +17,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
-import android.content.pm.PackageInfo;
-import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
@@ -284,8 +282,7 @@ public class ApplicationLoader extends Application {
             return "";
         }
         int registeredVersion = prefs.getInt(PROPERTY_APP_VERSION, Integer.MIN_VALUE);
-        int currentVersion = getAppVersion();
-        if (registeredVersion != currentVersion) {
+        if (registeredVersion != BuildVars.BUILD_VERSION) {
             FileLog.d("tmessages", "App version changed.");
             return "";
         }
@@ -294,15 +291,6 @@ public class ApplicationLoader extends Application {
 
     private SharedPreferences getGCMPreferences(Context context) {
         return getSharedPreferences(ApplicationLoader.class.getSimpleName(), Context.MODE_PRIVATE);
-    }
-
-    public static int getAppVersion() {
-        try {
-            PackageInfo packageInfo = applicationContext.getPackageManager().getPackageInfo(applicationContext.getPackageName(), 0);
-            return packageInfo.versionCode;
-        } catch (PackageManager.NameNotFoundException e) {
-            throw new RuntimeException("Could not get package name: " + e);
-        }
     }
 
     private void registerInBackground() {
@@ -365,7 +353,7 @@ public class ApplicationLoader extends Application {
 
     private void storeRegistrationId(Context context, String regId) {
         final SharedPreferences prefs = getGCMPreferences(context);
-        int appVersion = getAppVersion();
+        int appVersion = BuildVars.BUILD_VERSION;
         FileLog.e("tmessages", "Saving regId on app version " + appVersion);
         SharedPreferences.Editor editor = prefs.edit();
         editor.putString(PROPERTY_REG_ID, regId);
