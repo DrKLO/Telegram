@@ -1,6 +1,7 @@
 buildscript {
     repositories {
         mavenCentral()
+        maven { url "https://raw.github.com/Raizlabs/maven-releases/master/releases" }
     }
     dependencies {
         classpath 'com.android.tools.build:gradle:1.2.2'
@@ -10,6 +11,7 @@ buildscript {
 allprojects {
     repositories {
         mavenCentral()
+        maven { url "https://raw.github.com/Raizlabs/maven-releases/master/releases" }
     }
 }
 
