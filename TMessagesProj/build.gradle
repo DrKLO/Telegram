@@ -33,7 +33,6 @@ dependencies {
     compile 'net.hockeyapp.android:HockeySDK:3.5.+'
     compile 'com.googlecode.mp4parser:isoparser:1.0.+'
     compile project(':Android-SDK')
-    compile 'com.android.support:multidex:1.0.0'
     compile ('io.intercom.android:intercom-sdk:0.9.3@aar') {
         transitive = true
     }
@@ -100,12 +99,18 @@ android {
             debuggable true
             jniDebuggable true
             signingConfig signingConfigs.debug
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.txt'
         }
 
         release {
             debuggable false
             jniDebuggable false
             signingConfig signingConfigs.release
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.txt'
         }
 
         foss {
@@ -140,9 +145,5 @@ android {
         versionCode 259
         versionName "1.7.9"
         multiDexEnabled true
-    }
-
-    dexOptions {
-        javaMaxHeapSize "4g"
     }
 }

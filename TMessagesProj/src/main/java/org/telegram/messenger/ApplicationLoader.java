@@ -246,12 +246,6 @@ public class ApplicationLoader extends Application {
         }
     }
 
-    @Override
-    protected void attachBaseContext(Context base) {
-        super.attachBaseContext(base);
-        MultiDex.install(this);
-    }
-
     private void initPlayServices() {
         if (checkPlayServices()) {
             gcm = GoogleCloudMessaging.getInstance(this);
