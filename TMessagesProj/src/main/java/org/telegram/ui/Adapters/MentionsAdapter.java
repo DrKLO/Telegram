@@ -39,10 +39,12 @@ public class MentionsAdapter extends BaseSearchAdapter {
     private int lastPosition;
     private ArrayList<MessageObject> messages;
     private boolean needUsernames = true;
+    private boolean isDarkTheme;
 
-    public MentionsAdapter(Context context, MentionsAdapterDelegate delegate) {
+    public MentionsAdapter(Context context, boolean isDarkTheme, MentionsAdapterDelegate delegate) {
         mContext = context;
         this.delegate = delegate;
+        this.isDarkTheme = isDarkTheme;
     }
 
     public void setChatInfo(TLRPC.ChatParticipants chatParticipants) {
@@ -261,6 +263,7 @@ public class MentionsAdapter extends BaseSearchAdapter {
     public View getView(int i, View view, ViewGroup viewGroup) {
         if (view == null) {
             view = new MentionCell(mContext);
+            ((MentionCell) view).setIsDarkTheme(isDarkTheme);
         }
         if (searchResultUsernames != null) {
             ((MentionCell) view).setUser(searchResultUsernames.get(i));

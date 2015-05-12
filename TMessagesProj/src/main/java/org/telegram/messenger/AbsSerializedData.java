@@ -20,17 +20,19 @@ public abstract class AbsSerializedData {
     public abstract void writeByteArray(byte[] b, int offset, int count);
     public abstract void writeByteArray(byte[] b);
     public abstract void writeDouble(double d);
-    public abstract int readInt32();
-    public abstract int readInt32(boolean[] error);
-    public abstract boolean readBool();
-    public abstract long readInt64();
-    public abstract long readInt64(boolean[] error);
-    public abstract void readRaw(byte[] b);
-    public abstract byte[] readData(int count);
-    public abstract String readString();
-    public abstract byte[] readByteArray();
-    public abstract ByteBufferDesc readByteBuffer();
     public abstract void writeByteBuffer(ByteBufferDesc buffer);
-    public abstract double readDouble();
+
+    public abstract int readInt32(boolean exception);
+    public abstract boolean readBool(boolean exception);
+    public abstract long readInt64(boolean exception);
+    public abstract void readRaw(byte[] b, boolean exception);
+    public abstract byte[] readData(int count, boolean exception);
+    public abstract String readString(boolean exception);
+    public abstract byte[] readByteArray(boolean exception);
+    public abstract ByteBufferDesc readByteBuffer(boolean exception);
+    public abstract double readDouble(boolean exception);
+
     public abstract int length();
+    public abstract void skip(int count);
+    public abstract int getPosition();
 }

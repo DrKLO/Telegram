@@ -1,14 +1,14 @@
 <LinearLayout
-    android:layout_height="fill_parent"
-    android:layout_width="fill_parent"
+    android:layout_height="match_parent"
+    android:layout_width="match_parent"
     android:orientation="vertical"
     android:weightSum="100"
     android:background="#f0f0f0"
     xmlns:android="http://schemas.android.com/apk/res/android">
 
     <FrameLayout
-        android:layout_width="fill_parent"
-        android:layout_height="fill_parent"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
         android:layout_weight="40"
         android:paddingLeft="20dp"
         android:paddingRight="20dp"
@@ -16,15 +16,15 @@
         android:paddingBottom="20dp">
 
         <ImageView
-            android:layout_width="fill_parent"
-            android:layout_height="fill_parent"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
             android:scaleType="fitXY"
             android:id="@+id/identicon_view"/>
 
     </FrameLayout>
 
-    <FrameLayout android:layout_width="fill_parent"
-        android:layout_height="fill_parent"
+    <FrameLayout android:layout_width="match_parent"
+        android:layout_height="match_parent"
         android:layout_weight="60"
         android:paddingLeft="10dp"
         android:paddingRight="10dp"

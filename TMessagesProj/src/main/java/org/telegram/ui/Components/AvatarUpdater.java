@@ -74,10 +74,10 @@ public class AvatarUpdater implements NotificationCenter.NotificationCenterDeleg
     }
 
     public void openGallery() {
-        PhotoAlbumPickerActivity fragment = new PhotoAlbumPickerActivity(true);
+        PhotoAlbumPickerActivity fragment = new PhotoAlbumPickerActivity(true, null);
         fragment.setDelegate(new PhotoAlbumPickerActivity.PhotoAlbumPickerActivityDelegate() {
             @Override
-            public void didSelectPhotos(ArrayList<String> photos, ArrayList<MediaController.SearchImage> webPhotos) {
+            public void didSelectPhotos(ArrayList<String> photos, ArrayList<String> captions, ArrayList<MediaController.SearchImage> webPhotos) {
                 if (!photos.isEmpty()) {
                     Bitmap bitmap = ImageLoader.loadBitmap(photos.get(0), null, 800, 800, true);
                     processBitmap(bitmap);
@@ -93,6 +93,11 @@ public class AvatarUpdater implements NotificationCenter.NotificationCenterDeleg
                 } catch (Exception e) {
                     FileLog.e("tmessages", e);
                 }
+            }
+
+            @Override
+            public boolean didSelectVideo(String path) {
+                return true;
             }
         });
         parentFragment.presentFragment(fragment);
@@ -143,7 +148,7 @@ public class AvatarUpdater implements NotificationCenter.NotificationCenterDeleg
                     FileLog.e("tmessages", e);
                 }
                 final ArrayList<Object> arrayList = new ArrayList<>();
-                arrayList.add(new MediaController.PhotoEntry(0, 0, 0, currentPicturePath, orientation));
+                arrayList.add(new MediaController.PhotoEntry(0, 0, 0, currentPicturePath, orientation, false));
                 PhotoViewer.getInstance().openPhotoForSelect(arrayList, 0, 1, new PhotoViewer.EmptyPhotoViewerProvider() {
                     @Override
                     public void sendButtonPressed(int index) {
@@ -157,7 +162,7 @@ public class AvatarUpdater implements NotificationCenter.NotificationCenterDeleg
                         Bitmap bitmap = ImageLoader.loadBitmap(path, null, 800, 800, true);
                         processBitmap(bitmap);
                     }
-                });
+                }, null);
                 Utilities.addMediaToGallery(currentPicturePath);
                 currentPicturePath = null;
             } else if (requestCode == 14) {

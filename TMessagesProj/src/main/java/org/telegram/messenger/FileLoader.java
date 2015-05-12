@@ -631,6 +631,10 @@ public class FileLoader {
     }
 
     public static TLRPC.PhotoSize getClosestPhotoSizeWithSize(ArrayList<TLRPC.PhotoSize> sizes, int side) {
+        return getClosestPhotoSizeWithSize(sizes, side, false);
+    }
+
+    public static TLRPC.PhotoSize getClosestPhotoSizeWithSize(ArrayList<TLRPC.PhotoSize> sizes, int side, boolean byMinSide) {
         if (sizes == null || sizes.isEmpty()) {
             return null;
         }
@@ -640,10 +644,18 @@ public class FileLoader {
             if (obj == null) {
                 continue;
             }
-            int currentSide = obj.w >= obj.h ? obj.w : obj.h;
-            if (closestObject == null || side > 100 && closestObject.location != null && closestObject.location.dc_id == Integer.MIN_VALUE || obj instanceof TLRPC.TL_photoCachedSize || currentSide <= side && lastSide < currentSide) {
-                closestObject = obj;
-                lastSide = currentSide;
+            if (byMinSide) {
+                int currentSide = obj.h >= obj.w ? obj.w : obj.h;
+                if (closestObject == null || side > 100 && closestObject.location != null && closestObject.location.dc_id == Integer.MIN_VALUE || obj instanceof TLRPC.TL_photoCachedSize || side > lastSide && lastSide < currentSide) {
+                    closestObject = obj;
+                    lastSide = currentSide;
+                }
+            } else {
+                int currentSide = obj.w >= obj.h ? obj.w : obj.h;
+                if (closestObject == null || side > 100 && closestObject.location != null && closestObject.location.dc_id == Integer.MIN_VALUE || obj instanceof TLRPC.TL_photoCachedSize || currentSide <= side && lastSide < currentSide) {
+                    closestObject = obj;
+                    lastSide = currentSide;
+                }
             }
         }
         return closestObject;

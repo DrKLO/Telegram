@@ -54,6 +54,7 @@ import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.Cells.UserCell;
+import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.LetterSectionsListView;
 
 import java.util.ArrayList;
@@ -187,7 +188,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
         searchListViewAdapter = new SearchAdapter(context, null, false);
         searchListViewAdapter.setCheckedMap(selectedContacts);
         searchListViewAdapter.setUseUserCell(true);
-        listViewAdapter = new ContactsAdapter(context, true, false, null);
+        listViewAdapter = new ContactsAdapter(context, true, false, null, false);
         listViewAdapter.setCheckedMap(selectedContacts);
 
         fragmentView = new LinearLayout(context);
@@ -197,8 +198,8 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
         FrameLayout frameLayout = new FrameLayout(context);
         linearLayout.addView(frameLayout);
         LinearLayout.LayoutParams layoutParams = (LinearLayout.LayoutParams) frameLayout.getLayoutParams();
-        layoutParams.width = LinearLayout.LayoutParams.MATCH_PARENT;
-        layoutParams.height = LinearLayout.LayoutParams.WRAP_CONTENT;
+        layoutParams.width = LayoutHelper.MATCH_PARENT;
+        layoutParams.height = LayoutHelper.WRAP_CONTENT;
         layoutParams.gravity = Gravity.TOP;
         frameLayout.setLayoutParams(layoutParams);
 
@@ -219,8 +220,8 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
         AndroidUtilities.clearCursorDrawable(userSelectEditText);
         frameLayout.addView(userSelectEditText);
         FrameLayout.LayoutParams layoutParams1 = (FrameLayout.LayoutParams) userSelectEditText.getLayoutParams();
-        layoutParams1.width = FrameLayout.LayoutParams.MATCH_PARENT;
-        layoutParams1.height = FrameLayout.LayoutParams.WRAP_CONTENT;
+        layoutParams1.width = LayoutHelper.MATCH_PARENT;
+        layoutParams1.height = LayoutHelper.WRAP_CONTENT;
         layoutParams1.leftMargin = AndroidUtilities.dp(10);
         layoutParams1.rightMargin = AndroidUtilities.dp(10);
         layoutParams1.gravity = Gravity.TOP;
@@ -325,8 +326,8 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
         emptyTextLayout.setOrientation(LinearLayout.VERTICAL);
         linearLayout.addView(emptyTextLayout);
         layoutParams = (LinearLayout.LayoutParams) emptyTextLayout.getLayoutParams();
-        layoutParams.width = FrameLayout.LayoutParams.MATCH_PARENT;
-        layoutParams.height = FrameLayout.LayoutParams.MATCH_PARENT;
+        layoutParams.width = LayoutHelper.MATCH_PARENT;
+        layoutParams.height = LayoutHelper.MATCH_PARENT;
         emptyTextLayout.setLayoutParams(layoutParams);
         emptyTextLayout.setOnTouchListener(new View.OnTouchListener() {
             @Override
@@ -342,16 +343,16 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
         emptyTextView.setText(LocaleController.getString("NoContacts", R.string.NoContacts));
         emptyTextLayout.addView(emptyTextView);
         layoutParams = (LinearLayout.LayoutParams) emptyTextView.getLayoutParams();
-        layoutParams.width = LinearLayout.LayoutParams.MATCH_PARENT;
-        layoutParams.height = LinearLayout.LayoutParams.MATCH_PARENT;
+        layoutParams.width = LayoutHelper.MATCH_PARENT;
+        layoutParams.height = LayoutHelper.MATCH_PARENT;
         layoutParams.weight = 0.5f;
         emptyTextView.setLayoutParams(layoutParams);
 
         FrameLayout frameLayout2 = new FrameLayout(context);
         emptyTextLayout.addView(frameLayout2);
         layoutParams = (LinearLayout.LayoutParams) frameLayout2.getLayoutParams();
-        layoutParams.width = LinearLayout.LayoutParams.MATCH_PARENT;
-        layoutParams.height = LinearLayout.LayoutParams.MATCH_PARENT;
+        layoutParams.width = LayoutHelper.MATCH_PARENT;
+        layoutParams.height = LayoutHelper.MATCH_PARENT;
         layoutParams.weight = 0.5f;
         frameLayout2.setLayoutParams(layoutParams);
 
@@ -369,8 +370,8 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
         }
         linearLayout.addView(listView);
         layoutParams = (LinearLayout.LayoutParams) listView.getLayoutParams();
-        layoutParams.width = LinearLayout.LayoutParams.MATCH_PARENT;
-        layoutParams.height = LinearLayout.LayoutParams.MATCH_PARENT;
+        layoutParams.width = LayoutHelper.MATCH_PARENT;
+        layoutParams.height = LayoutHelper.MATCH_PARENT;
         listView.setLayoutParams(layoutParams);
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override

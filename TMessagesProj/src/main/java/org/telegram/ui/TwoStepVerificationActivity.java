@@ -56,6 +56,7 @@ import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.Adapters.BaseFragmentAdapter;
 import org.telegram.ui.Cells.TextInfoPrivacyCell;
 import org.telegram.ui.Cells.TextSettingsCell;
+import org.telegram.ui.Components.LayoutHelper;
 
 public class TwoStepVerificationActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
 
@@ -167,8 +168,8 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
         scrollView.setFillViewport(true);
         frameLayout.addView(scrollView);
         FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) scrollView.getLayoutParams();
-        layoutParams.width = FrameLayout.LayoutParams.MATCH_PARENT;
-        layoutParams.height = FrameLayout.LayoutParams.MATCH_PARENT;
+        layoutParams.width = LayoutHelper.MATCH_PARENT;
+        layoutParams.height = LayoutHelper.MATCH_PARENT;
         scrollView.setLayoutParams(layoutParams);
 
         LinearLayout linearLayout = new LinearLayout(context);
@@ -185,8 +186,8 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
         titleTextView.setGravity(Gravity.CENTER_HORIZONTAL);
         linearLayout.addView(titleTextView);
         LinearLayout.LayoutParams layoutParams3 = (LinearLayout.LayoutParams) titleTextView.getLayoutParams();
-        layoutParams3.width = FrameLayout.LayoutParams.WRAP_CONTENT;
-        layoutParams3.height = FrameLayout.LayoutParams.WRAP_CONTENT;
+        layoutParams3.width = LayoutHelper.WRAP_CONTENT;
+        layoutParams3.height = LayoutHelper.WRAP_CONTENT;
         layoutParams3.gravity = Gravity.CENTER_HORIZONTAL;
         layoutParams3.topMargin = AndroidUtilities.dp(38);
         titleTextView.setLayoutParams(layoutParams3);
@@ -209,7 +210,7 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
         layoutParams3.leftMargin = AndroidUtilities.dp(40);
         layoutParams3.rightMargin = AndroidUtilities.dp(40);
         layoutParams3.gravity = Gravity.TOP | Gravity.LEFT;
-        layoutParams3.width = LinearLayout.LayoutParams.MATCH_PARENT;
+        layoutParams3.width = LayoutHelper.MATCH_PARENT;
         passwordEditText.setLayoutParams(layoutParams3);
         passwordEditText.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             @Override
@@ -253,8 +254,8 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
         bottomTextView.setText(LocaleController.getString("YourEmailInfo", R.string.YourEmailInfo));
         linearLayout.addView(bottomTextView);
         layoutParams3 = (LinearLayout.LayoutParams) bottomTextView.getLayoutParams();
-        layoutParams3.width = FrameLayout.LayoutParams.WRAP_CONTENT;
-        layoutParams3.height = FrameLayout.LayoutParams.WRAP_CONTENT;
+        layoutParams3.width = LayoutHelper.WRAP_CONTENT;
+        layoutParams3.height = LayoutHelper.WRAP_CONTENT;
         layoutParams3.gravity = (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP;
         layoutParams3.topMargin = AndroidUtilities.dp(30);
         layoutParams3.leftMargin = AndroidUtilities.dp(40);
@@ -265,8 +266,8 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
         linearLayout2.setGravity(Gravity.BOTTOM | Gravity.CENTER_VERTICAL);
         linearLayout.addView(linearLayout2);
         layoutParams3 = (LinearLayout.LayoutParams) linearLayout2.getLayoutParams();
-        layoutParams3.width = LinearLayout.LayoutParams.MATCH_PARENT;
-        layoutParams3.height = LinearLayout.LayoutParams.MATCH_PARENT;
+        layoutParams3.width = LayoutHelper.MATCH_PARENT;
+        layoutParams3.height = LayoutHelper.MATCH_PARENT;
         linearLayout2.setLayoutParams(layoutParams3);
 
         bottomButton = new TextView(context);
@@ -277,8 +278,8 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
         bottomButton.setPadding(0, AndroidUtilities.dp(10), 0, 0);
         linearLayout2.addView(bottomButton);
         layoutParams3 = (LinearLayout.LayoutParams) bottomButton.getLayoutParams();
-        layoutParams3.width = FrameLayout.LayoutParams.WRAP_CONTENT;
-        layoutParams3.height = FrameLayout.LayoutParams.WRAP_CONTENT;
+        layoutParams3.width = LayoutHelper.WRAP_CONTENT;
+        layoutParams3.height = LayoutHelper.WRAP_CONTENT;
         layoutParams3.gravity = (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.BOTTOM;
         layoutParams3.bottomMargin = AndroidUtilities.dp(14);
         layoutParams3.leftMargin = AndroidUtilities.dp(40);
@@ -364,8 +365,8 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
             progressView = new FrameLayout(context);
             frameLayout.addView(progressView);
             layoutParams = (FrameLayout.LayoutParams) progressView.getLayoutParams();
-            layoutParams.width = FrameLayout.LayoutParams.MATCH_PARENT;
-            layoutParams.height = FrameLayout.LayoutParams.MATCH_PARENT;
+            layoutParams.width = LayoutHelper.MATCH_PARENT;
+            layoutParams.height = LayoutHelper.MATCH_PARENT;
             progressView.setLayoutParams(layoutParams);
             progressView.setOnTouchListener(new View.OnTouchListener() {
                 @Override
@@ -377,8 +378,8 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
             ProgressBar progressBar = new ProgressBar(context);
             progressView.addView(progressBar);
             layoutParams = (FrameLayout.LayoutParams) progressView.getLayoutParams();
-            layoutParams.width = FrameLayout.LayoutParams.WRAP_CONTENT;
-            layoutParams.height = FrameLayout.LayoutParams.WRAP_CONTENT;
+            layoutParams.width = LayoutHelper.WRAP_CONTENT;
+            layoutParams.height = LayoutHelper.WRAP_CONTENT;
             layoutParams.gravity = Gravity.CENTER;
             progressView.setLayoutParams(layoutParams);
 
@@ -390,8 +391,8 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
             listView.setDrawSelectorOnTop(true);
             frameLayout.addView(listView);
             layoutParams = (FrameLayout.LayoutParams) listView.getLayoutParams();
-            layoutParams.width = FrameLayout.LayoutParams.MATCH_PARENT;
-            layoutParams.height = FrameLayout.LayoutParams.MATCH_PARENT;
+            layoutParams.width = LayoutHelper.MATCH_PARENT;
+            layoutParams.height = LayoutHelper.MATCH_PARENT;
             layoutParams.gravity = Gravity.TOP;
             listView.setLayoutParams(layoutParams);
             listView.setAdapter(listAdapter = new ListAdapter(context));
@@ -440,7 +441,7 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
     @Override
     public void didReceivedNotification(int id, Object... args) {
         if (id == NotificationCenter.didSetTwoStepPassword) {
-            if (args != null && args.length > 0) {
+            if (args != null && args.length > 0 && args[0] != null) {
                 currentPasswordHash = (byte[]) args[0];
             }
             loadPasswordInfo(false);
@@ -993,7 +994,7 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
 
         @Override
         public boolean isEnabled(int i) {
-            return i != setPasswordDetailRow && i != shadowRow && i != passwordSetupDetailRow && i != passwordEmailVerifyDetailRow;
+            return i != setPasswordDetailRow && i != shadowRow && i != passwordSetupDetailRow && i != passwordEmailVerifyDetailRow && i != passwordEnabledDetailRow;
         }
 
         @Override
