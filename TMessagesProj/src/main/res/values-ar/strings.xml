@@ -781,7 +781,7 @@
     <string name="formatDateAtTime">%1$s الساعة %2$s</string>
     <!--update text-->
     <string name="updateText">تم تحديث تيليجرام نسخة الأندرويد. الجديد في النسخة ٢.٨:\n\n- روابط الدعوة للمجموعات\n- الإشعارات الذكية\n- خيار الملصقات في قائمة الإموجي\n- التعليقات للصور\n- الأماكن في خدمة المواقع\n- وضعية \"مسموع\" في الرسائل الصوتية\n- شرح متطور لحالة الطرف الآخر: يرسل صورة، يسجل مقطع صوتي، إلخ\n- تطوير التحريك والحركات داخل التطبيق ليكون أسهل وأسرع</string>
-    <string name="updateBuild">523</string>
+    <string name="updateBuild">526</string>
     <!--Telegram+ arabic-->
     <string name="TelegramForAndroid">تلغرام للاندرويد</string>
     <string name="Theming">Theming</string>

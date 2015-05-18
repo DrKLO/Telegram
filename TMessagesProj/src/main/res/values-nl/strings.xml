@@ -780,8 +780,8 @@
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s om %2$s</string>
     <!--update text-->
-    <string name="updateText">Plus Messenger voor Android is geüpdatet. Nieuw in versie 2.8:\n\n- Uitnodigingslinks voor groepchats\n- Slimme meldingen\n- Stickerstab in emojimenu\n- Onderschriften voor foto\'s\n- Plekken en routebeschrijvingen op locaties\n- \'Beluistered\'-status voor spraakberichten\n- Geadvanceerde \'aan het typen\'-status: verstuurt een foto, audio opnemen, etc.\n- Scrollen en animaties verbeterd voor een soepele ervaring</string>
-    <string name="updateBuild">523</string>
+    <string name="updateText">Plus Messenger voor Android is geüpdatet.</string>
+    <string name="updateBuild">526</string>
     <!--Telegram+ Dutch-->
     <string name="TelegramForAndroid">Plus Messenger voor Android</string>
   <string name="Theming">Thema\'s</string>

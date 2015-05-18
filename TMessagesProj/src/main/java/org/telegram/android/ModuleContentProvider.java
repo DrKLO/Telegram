@@ -4,13 +4,13 @@ import android.app.Activity;
 import android.content.ContentProvider;
 import android.content.ContentValues;
 import android.content.SharedPreferences;
-import android.content.UriMatcher;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Environment;
 import android.util.Log;
 
 import org.telegram.messenger.ApplicationLoader;
+import org.telegram.messenger.BuildConfig;
 import org.telegram.messenger.Utilities;
 
 import java.io.File;
@@ -19,16 +19,18 @@ public class ModuleContentProvider extends ContentProvider {
     private static final String TAG = "ModuleContentProvider";
 
     private static final String AUTHORITY = "org.telegram.plus.android.provider.content";
-    public static final Uri THEME_URI = Uri.parse("content://" + AUTHORITY + "/theme");
-    public static final Uri GET_NAME = Uri.parse("content://" + AUTHORITY + "/name");
-    public static final Uri SET_NAME = Uri.parse("content://" + AUTHORITY + "/newname");
+    private static final String AUTHORITY_BETA = "org.telegram.plus.beta.android.provider.content";
 
-    private static final UriMatcher sUriMatcher;
+    public static Uri THEME_URI = Uri.parse("content://" + AUTHORITY + "/theme");
+    public static Uri GET_NAME = Uri.parse("content://" + AUTHORITY + "/name");
+    public static Uri SET_NAME = Uri.parse("content://" + AUTHORITY + "/newname");
+
+    /*private static final UriMatcher sUriMatcher;
     static {
         sUriMatcher = new UriMatcher(UriMatcher.NO_MATCH);
         sUriMatcher.addURI(AUTHORITY, "theme", 1);
         sUriMatcher.addURI(AUTHORITY, "name", 2);
-    }
+    }*/
 
     @Override
     public boolean onCreate() {
@@ -44,6 +46,7 @@ public class ModuleContentProvider extends ContentProvider {
 
     @Override
     public String getType(Uri uri) {
+        if(BuildConfig.DEBUG)GET_NAME = Uri.parse("content://" + AUTHORITY_BETA + "/name");
         if(uri.equals(GET_NAME)){
             SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences("theme", Activity.MODE_PRIVATE);
             return themePrefs.getString("themeName","empty");
@@ -55,6 +58,7 @@ public class ModuleContentProvider extends ContentProvider {
     @Override
     public Uri insert(Uri uri, ContentValues values) {
         Log.d(TAG, "insert uri: " + uri.toString());
+        if(BuildConfig.DEBUG)SET_NAME = Uri.parse("content://" + AUTHORITY_BETA + "/newname");
         if(uri.toString().contains(SET_NAME.toString())){
             String sName = uri.toString();
             sName = sName.substring(sName.lastIndexOf(":")+1, sName.length());
@@ -71,6 +75,7 @@ public class ModuleContentProvider extends ContentProvider {
     @Override
     public int update(Uri uri, ContentValues values, String selection, String[] selectionArgs) {
         //Log.d(TAG, "update uri: " + uri.toString());
+        if(BuildConfig.DEBUG)THEME_URI = Uri.parse("content://" + AUTHORITY_BETA + "/theme");
         if(uri.toString().contains(THEME_URI.toString())){
             String theme = uri.toString();
             theme = theme.substring(theme.lastIndexOf(":")+1, theme.length());

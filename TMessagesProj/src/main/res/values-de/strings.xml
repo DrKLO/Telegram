@@ -780,12 +780,10 @@
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s um %2$s</string>
     <!--update text-->
-    <string name="updateText">Plus Messenger für Android wurde aktualisiert. Neu in 2.8:\n\n- Einladungslinks für Gruppenchats\n- Intelligente Benachrichtigungen\n- Sticker Tab im Emojimenü\n- Beschriftungen für Bilder\n- Orte in der Umgebung im Standortmenü\n- \'Angehört\'-Status Sprachnachrichten\n- Erweiterterte \'schreibt gerade\' Status: schickt Bild, nimmt Audio auf, etc.\n- Verbesserter Bildlauf und flüssige Animationen</string>
-    <string name="updateBuild">523</string>
+    <string name="updateText">Plus Messenger für Android wurde aktualisiert.</string>
+    <string name="updateBuild">526</string>
     <!--Telegram+ German-->
-    <!--update-->
-    <string name="updatePlusText">\n\nNeu in 2.8.1.3:\n\n- Sprechblasenform ändern\n- Option in den Einstellungen um Dateien mit Original Dateinamen zu speichern\n- Option um Sticker aus der Galerie im Chat zu senden\n- Profilbildgröße im Chat und Chatübersicht ändern\n- Profilbild Randabstand links im Chat und Chatübersicht ändern\n- Profilbild im Gruppenchat nach oben\n- Gruppenname Farbe und Größe in der Chatübersicht\n-  Kontaktname Farbe mit unbekannter Nummer ändern\n- Fehlerbeseitigungen</string>
-    <!--update-->
+    <string name="updatePlusText">\n\nNeu in 2.8.1.6:\n\n- Option im Navigationsmenü hinzugefügt, um Plus Themes für Plus Messenger zu öffnen \n- \"Löschen Chat\" Option innerhalb des Chat funktioniert wieder \n- Text für Bild- und Video bekommt ordnungsgemäße Farbe \n- Bug showing replied/forwarded text when text input is transparent fixed \n- weitere kleinere Bugs beseitigt</string>
     <string name="TelegramForAndroid">Plus Messenger für Android</string>
   <string name="Theming">Theming</string>
   <string name="colorHexInvalid">Ungültiger Hex Code!</string>

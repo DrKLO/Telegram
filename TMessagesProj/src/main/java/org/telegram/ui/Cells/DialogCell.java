@@ -369,15 +369,15 @@ public class DialogCell extends BaseCell {
                         checkMessage = false;
                         SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
                         int defColor = themePrefs.getInt("themeColor", AndroidUtilities.defColor);
-                        //String hexColor = String.format("#%08X", (0xFFFFFFFF & defColor));
-                        String hexMsgColor = String.format("#%08X", (0xFFFFFFFF & themePrefs.getInt("chatsMessageColor", 0xff808080)));
-                        String hexDarkColor = String.format("#%08X", (0xFFFFFFFF & themePrefs.getInt("chatsMemberColor", AndroidUtilities.getIntDarkerColor("themeColor", 0x15))));
+                        //String hexColor = String.format("#%08X", (0xffffffff & defColor));
+                        String hexMsgColor = String.format("#%08X", (0xffffffff & themePrefs.getInt("chatsMessageColor", 0xff808080)));
+                        String hexDarkColor = String.format("#%08X", (0xffffffff & themePrefs.getInt("chatsMemberColor", AndroidUtilities.getIntDarkerColor("themeColor", 0x15))));
                         if (message.caption != null) {
                             String mess = message.caption.toString();
                             if (mess.length() > 150) {
                                 mess = mess.substring(0, 150);
                             }
-                            mess = mess.replace("\n", " ");                                                    //hexMsgColor                 //hexMsgColor
+                            mess = mess.replace("\n", " ");
                             //messageString = Emoji.replaceEmoji(AndroidUtilities.replaceTags(String.format("<c#ff4d83b3>%s:</c> <c#ff808080>%s</c>", name, mess)), messagePaint.getFontMetricsInt(), AndroidUtilities.dp(20));
                             messageString = Emoji.replaceEmoji(AndroidUtilities.replaceTags(String.format("<c" + hexDarkColor + ">%s:</c> <c" + hexMsgColor + ">%s</c>", name, mess)), messagePaint.getFontMetricsInt(), AndroidUtilities.dp(20));
                         } else {
@@ -392,8 +392,8 @@ public class DialogCell extends BaseCell {
                                         mess = mess.substring(0, 150);
                                     }
                                     mess = mess.replace("\n", " ");
-                                    //messageString = Emoji.replaceEmoji(AndroidUtilities.replaceTags(String.format("<c#ff4d83b3>%s:</c> <c#ff808080>%s</c>", name, mess.replace("<", "&lt;").replace(">", "&gt;"))), messagePaint.getFontMetricsInt(), AndroidUtilities.dp(20));
-                                    messageString = Emoji.replaceEmoji(AndroidUtilities.replaceTags(String.format("<c" + hexDarkColor + ">%s:</c> <c" + hexMsgColor + ">%s</c>", name, mess.replace("<", "&lt;").replace(">", "&gt;"))), messagePaint.getFontMetricsInt(), AndroidUtilities.dp(20));
+                                    //messageString = Emoji.replaceEmoji(AndroidUtilities.replaceTags(String.format("<c#ff4d83b3>%s:</c> <c#ff808080>%s</c>", name, mess)), messagePaint.getFontMetricsInt(), AndroidUtilities.dp(20));
+                                    messageString = Emoji.replaceEmoji(AndroidUtilities.replaceTags(String.format("<c" + hexDarkColor + ">%s:</c> <c" + hexMsgColor + ">%s</c>", name, mess)), messagePaint.getFontMetricsInt(), AndroidUtilities.dp(20));
                                 }
                             }
                         }

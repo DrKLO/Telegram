@@ -1,7 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 
-
-
 <resources>
     <string name="AppName">Plus Messenger</string>
     <string name="ShortAppName">Plus</string>
@@ -781,10 +779,10 @@
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s at %2$s</string>
     <!--update text-->
-    <string name="updateText">Plus Messenger for Android has been updated. New in version 2.8:\n\n- Places and directions in locations\n- Smart notifications\n- Invite links for group chats\n- Stickers tab in emoji menu\n- Captions for photos\n- \'Listened\' status for voice messages\n- Advanced \'typing\' status: sending photo, recording audio, etc.\n- Improved scrolling and animations for a smooooooooth experience</string>
-    <string name="updateBuild">523</string>
+    <string name="updateText">Plus Messenger for Android has been updated.</string>
+    <string name="updateBuild">526</string>
     <!--Telegram+ English-->
-    <string name="updatePlusText">\n\nNew in 2.8.1.3:\n\n- New MOD to change bubbles style (3 new styles, more will come)\n- Added option in Settings to save files using original file name\n- Added option in chat to send sticker directly from gallery\n- New MOD to change avatar size in main and chat screen\n- New MOD to change avatar left margin in main and chat screen\n- Option to align avatar to top instead of bottom in chat screen\n- New MODs to change group name color and size in main screen\n- New MOD to change contact name color with unknown number\n- Bug fixes</string>
+    <string name="updatePlusText">\n\nNew in 2.8.1.6:\n\n- Added option in navigation menu to open new Themes for Plus Messenger app\n -"Delete chat" option inside chat is working again\n -Now image and video caption gets proper color\n -Bug showing replied/forwarded text when text input is transparent fixed\n- Other minor bug fixes</string>
     <string name="TelegramForAndroid">Plus Messenger for Android</string>
     <string name="Theming">Theming</string>
     <string name="colorHexInvalid">Invalid color hex code!</string>

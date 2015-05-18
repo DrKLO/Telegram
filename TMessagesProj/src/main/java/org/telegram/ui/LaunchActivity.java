@@ -47,6 +47,7 @@ import org.telegram.android.MessagesStorage;
 import org.telegram.android.NotificationCenter;
 import org.telegram.android.SendMessagesHelper;
 import org.telegram.messenger.ApplicationLoader;
+import org.telegram.messenger.BuildConfig;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
@@ -103,9 +104,13 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
 
     private Runnable lockRunnable;
 
-    private int themingRow = 7;
-    private int communityRow = 9;
-    private int versionRow = 10;
+    private int versionRow = 11;
+    private int contactsRow = 6;
+    private int settingsRow = 9;
+    private int themingRow = 8;
+    private int communityRow = 10;
+    private int faqRow = 12;
+    private int themesRow = 7;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -293,25 +298,16 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                     args.putBoolean("broadcast", true);
                     presentFragment(new GroupCreateActivity(args));
                     drawerLayoutContainer.closeDrawer(false);
-                } else if (position == 6) {
+                } else if (position == contactsRow) {
                     presentFragment(new ContactsActivity(null));
                     drawerLayoutContainer.closeDrawer(false);
                 } else if (position == themingRow) {
-                    /*
-                    try {
-                        Intent intent = new Intent(Intent.ACTION_SEND);
-                        intent.setType("text/plain");
-                        intent.putExtra(Intent.EXTRA_TEXT, ContactsController.getInstance().getInviteText());
-                        startActivityForResult(Intent.createChooser(intent, LocaleController.getString("InviteFriends", R.string.InviteFriends)), 500);
-                    } catch (Exception e) {
-                        FileLog.e("tmessages", e);
-                    }*/
                     presentFragment(new ThemingActivity());
                     drawerLayoutContainer.closeDrawer(false);
-                } else if (position == 8) {
+                } else if (position == settingsRow) {
                     presentFragment(new SettingsActivity());
                     drawerLayoutContainer.closeDrawer(false);
-                } else if (position == 11) {
+                } else if (position == faqRow) {
                     try {
                         Intent pickIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(LocaleController.getString("TelegramFaqUrl", R.string.TelegramFaqUrl)));
                         startActivityForResult(pickIntent, 500);
@@ -325,7 +321,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                         if(Locale.getDefault().getLanguage().contains("es")){
                             link = "https://plus.google.com/communities/111922519175849600270";
                         }
-                        startActivityForResult(new Intent(Intent.ACTION_VIEW, Uri.parse(link)), 500);
+                        startActivityForResult(new Intent(Intent.ACTION_VIEW, Uri.parse(link)), 501);
                     } catch (Exception e) {
                         FileLog.e("tmessages", e);
                     }
@@ -333,7 +329,22 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                 } else if (position == versionRow) {
                     try {
                         Intent pickIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=org.telegram.plus"));
-                        startActivityForResult(pickIntent, 500);
+                        startActivityForResult(pickIntent, 502);
+                    } catch (Exception e) {
+                        FileLog.e("tmessages", e);
+                    }
+                    drawerLayoutContainer.closeDrawer(false);
+                } else if (position == themesRow) {
+                    try {
+                        String packageName = "es.rafalense.themes";
+                        if(BuildConfig.DEBUG)packageName = "es.rafalense.themes.beta";
+                        Intent intent = getPackageManager().getLaunchIntentForPackage(packageName);
+                        if(intent == null) {
+                            intent = new Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id="+packageName));
+                            if(BuildConfig.DEBUG)intent = new Intent(Intent.ACTION_VIEW, Uri.parse("https://rink.hockeyapp.net/apps/b5860b775ca122d3335685f39917e68f"));
+                        }
+                        //Toast.makeText(getApplicationContext(), intent.toString(), Toast.LENGTH_SHORT).show();
+                        startActivityForResult(intent, 503);
                     } catch (Exception e) {
                         FileLog.e("tmessages", e);
                     }

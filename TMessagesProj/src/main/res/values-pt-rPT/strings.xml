@@ -780,8 +780,8 @@
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s às %2$s</string>
     <!--update text-->
-    <string name="updateText">Plus Messengerpara Android atualizado: Novidades na versão 2.8:\n\n- Link de convite para chats em grupo\n- Notificações inteligentes\n- Botão para stickers no menu de emojis\n- Legendas para fotos\n- Lugares e direções nas localizações\n- Status \'ouvido\' para mensagens de voz\n- Status \'escrevendo\' avançado: enviando foto, gravando áudio, etc.\n- Melhorias nas animações de rolagem para uma leeeeeeeve experiência</string>
-    <string name="updateBuild">523</string>
+    <string name="updateText">Plus Messengerpara Android atualizado.</string>
+    <string name="updateBuild">526</string>
     <!--Telegram+ Portuguese(Portugal)-->
   <!--Smart Notifications
   <string name="SmartNotification">Notificação Inteligente</string>

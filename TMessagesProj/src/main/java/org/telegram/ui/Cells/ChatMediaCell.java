@@ -867,6 +867,11 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
                         backgroundWidth += AndroidUtilities.dp(9);
                     }
                     if (messageObject.caption != null) {
+                        if(messageObject.isOut()){ //fix caption color bug
+                            MessageObject.textPaint = MessageObject.textPaintRight;
+                        }else{
+                            MessageObject.textPaint = MessageObject.textPaintLeft;
+                        }
                         nameLayout = new StaticLayout(messageObject.caption, MessageObject.textPaint, photoWidth - AndroidUtilities.dp(10), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
                         if (nameLayout.getLineCount() > 0) {
                             captionHeight = nameLayout.getHeight();

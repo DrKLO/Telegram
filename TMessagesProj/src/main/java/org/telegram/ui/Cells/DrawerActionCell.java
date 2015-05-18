@@ -17,6 +17,7 @@ import android.widget.FrameLayout;
 import android.widget.TextView;
 
 import org.telegram.android.AndroidUtilities;
+import org.telegram.messenger.R;
 import org.telegram.ui.Components.LayoutHelper;
 
 public class DrawerActionCell extends FrameLayout {
@@ -61,6 +62,9 @@ public class DrawerActionCell extends FrameLayout {
         textView.setTextColor(AndroidUtilities.getIntDef("drawerOptionColor", 0xff444444));
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, AndroidUtilities.getIntDef("drawerOptionSize", 15));
         Drawable[] drawables = textView.getCompoundDrawables();
+        if(drawables[0].getConstantState().equals(getResources().getDrawable(R.drawable.menu_themes).getConstantState())){
+            return;
+        }
         int color = AndroidUtilities.getIntDef("drawerIconColor", 0xff737373);
         if(drawables[0] != null)drawables[0].setColorFilter(color, PorterDuff.Mode.SRC_IN);
     }

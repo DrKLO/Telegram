@@ -51,7 +51,6 @@
             android:authorities="org.telegram.plus.beta.android.provider.content"
             android:name="org.telegram.android.ModuleContentProvider"
             android:label="Plus beta"
-            tools:replace="label"
             android:exported="true"
             android:permission="org.telegram.plus.beta.android.provider.ACCESS" />
 

@@ -780,11 +780,11 @@
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s alle %2$s</string>
     <!--update text-->
-    <string name="updateText">Plus Messenger per Android si è aggiornato. Nuovo nella versione 2.8:\n\n- Invita nei gruppi tramite link\n- Notifiche intelligenti\n- Pannello degli sticker nella lista emoji\n- Luoghi e direzioni nelle posizioni\n- Stato \'ascoltato\' per i messaggi vocali\n- Stato di scrittura \'avanzato\': inviando una foto, registrando un audio, etc\n- Animazioni e scorrimento migliorati per un\'esperienza rapidissimaaaa</string>
-    <string name="updateBuild">523</string>
+    <string name="updateText">Plus Messenger per Android si è aggiornato.</string>
+    <string name="updateBuild">526</string>
     <!--Telegram+ Italian-->
       <!--update-->
-    <string name="updatePlusText">\n\nNovità nella 2.8.1.3:\n\n- Nuova MOD per cambiare lo stile delle nuvolette\n- Aggiunta opzione nelle impostazioni per salvare i file usando il nome di origine\n- Aggiunta opzione nella chat per inviare gli sticker dalla galleria\n- Nuova MOD per cambiare la dimensione dell\'avatar nella schermata principale e della chat\n- Nuova MOD per cambiare il margine sinistro dell\'avatar nella schermata principale e della chat\n- Opzione per allineare l\'avatar all\'intestazione invece che al fondo nella schermata della chat\n- Nuove MOD per cambiare il colore del nome del gruppo e la dimensione nella schermata principale\n- Nuova MOD per cambiare il colore del nome del contatto con numero sconosciuto\n- Correzioni bug</string>
+    <string name="updatePlusText">\n\nNovità nella 2.8.1.6:\n\n- Correzioni bug</string>
     <!--update-->
     <string name="TelegramForAndroid">Plus Messenger per Android</string>
   <string name="Theming">Personalizzazione</string>

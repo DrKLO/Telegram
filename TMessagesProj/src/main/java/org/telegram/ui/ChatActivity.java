@@ -165,6 +165,8 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     private ListView mentionListView;
     private AnimatorSetProxy mentionListAnimation;
 
+    private ImageView deleteIconImageView;
+
     private boolean allowStickersPanel;
     private AnimatorSetProxy runningAnimation;
 
@@ -242,8 +244,8 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     private float startX = 0;
     private float startY = 0;
 
+    private final static int quoteforward = 0;
     private final static int copy = 1;
-    private final static int quoteforward = 12;
     private final static int forward = 2;
     private final static int delete = 3;
     private final static int chat_enc_timer = 4;
@@ -1661,17 +1663,24 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             replyIconImageView.setScaleType(ImageView.ScaleType.CENTER);
         replyLayout.addView(replyIconImageView, LayoutHelper.createFrame(52, 46, Gravity.TOP | Gravity.LEFT));
 
-        ImageView imageView = new ImageView(context);
-            imageView.setImageResource(R.drawable.delete_reply);
-            imageView.setScaleType(ImageView.ScaleType.CENTER);
-        replyLayout.addView(imageView, LayoutHelper.createFrame(52, 46, Gravity.RIGHT | Gravity.TOP, 0, 0.5f, 0, 0));
-            imageView.setOnClickListener(new View.OnClickListener() {
+
+        deleteIconImageView = new ImageView(context);
+        //ImageView imageView = new ImageView(context);
+          //  imageView.setImageResource(R.drawable.delete_reply);
+          //  imageView.setScaleType(ImageView.ScaleType.CENTER);
+        //replyLayout.addView(imageView, LayoutHelper.createFrame(52, 46, Gravity.RIGHT | Gravity.TOP, 0, 0.5f, 0, 0));
+            //imageView.setOnClickListener(new View.OnClickListener() {
+        deleteIconImageView.setImageResource(R.drawable.delete_reply);
+        deleteIconImageView.setScaleType(ImageView.ScaleType.CENTER);
+        replyLayout.addView(deleteIconImageView, LayoutHelper.createFrame(52, 46, Gravity.RIGHT | Gravity.TOP, 0, 0.5f, 0, 0));
+        deleteIconImageView.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
                     if (forwardingMessages != null) {
                         forwardingMessages.clear();
                     }
-                showReplyPanel(false, null, null, foundWebPage, true, true);
+                    v.setVisibility(View.INVISIBLE);
+                    showReplyPanel(false, null, null, foundWebPage, true, true);
                 }
             });
 
@@ -1767,7 +1776,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 }));
             }
 
-        imageView = new ImageView(context);
+        ImageView imageView = new ImageView(context);
             imageView.setImageResource(R.drawable.stickers_back_arrow);
         stickersPanel.addView(imageView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM | Gravity.LEFT, 53, 0, 0, 0));
 
@@ -1938,7 +1947,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             }
         }
     }
-
+    //(false, null, null, foundWebPage, true, true)
     public void showReplyPanel(boolean show, MessageObject messageObject, ArrayList<MessageObject> messageObjects, TLRPC.WebPage webPage, boolean cancel, boolean animated) {
         if (show) {
             if (messageObject == null && messageObjects == null && webPage == null) {
@@ -2123,6 +2132,12 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             replyImageLocation = null;
             SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
             preferences.edit().remove("reply_" + dialog_id).commit();
+            //New plus
+            replyImageView.setImageDrawable(null);
+            replyIconImageView.setImageDrawable(null);
+            replyNameTextView.setText("");
+            replyObjectTextView.setText("");
+            deleteIconImageView.setImageDrawable(null);
         }
     }
 

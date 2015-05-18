@@ -780,10 +780,10 @@
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s a las %2$s</string>
     <!--update text-->
-    <string name="updateText">Plus Messenger para Android ha sido actualizada. Novedades en la versión 2.8:\n\n- Enlaces de invitación para chats grupales\n- Notificaciones inteligentes\n- Pestaña de stickers en el menú de emojis\n- Comentarios en las fotos\n- Lugares y direcciones en las ubicaciones\n- Estado \'escuchado\' para los mensajes de voz\n- Estado \'escribiendo\' avanzado: enviando foto, grabando audio, etc.\n- Deslizamiento y animaciones mejoradas para una experiencia fluiiiiiiiiiiiiiiiiiida</string>
-    <string name="updateBuild">523</string>
+    <string name="updateText">Plus Messenger para Android ha sido actualizada.</string>
+    <string name="updateBuild">526</string>
     <!--Telegram+ Spanish-->
-    <string name="updatePlusText">\n\nNovedades en 2.8.1.3:\n\n- Nuevo MOD para cambiar estilo de bocadillos (3 estilos nuevos)\n- Opción para guardar automáticamente ficheros usando nombre original\n- Nueva opción para enviar sticker directamente desde la galería\n- Nuevo MOD para cambiar tamaño de avatares en pantalla principal y chat\n- Nuevo MOD para ajustar margen izquierdo de avatares en pantalla principal y chat\n- Opción para ajustar avatares arriba del bocadillo en vez de abajo en chat\n- Nuevos MODs para cambiar color y tamaño de nombre de grupo en pantalla principal\n- Nuevo MOD para cambiar color de nombre de contacto con número desconocido en pantalla principal\n- Solución de errores</string>
+    <string name="updatePlusText">\n\nNovedades en 2.8.1.6:\n\n- Añadida opción en el menú de navegación para abrir la app Temas para Plus Messenger\n - Opción "Eliminar chat" dentro de chat funciona de nuevo\n -Comentarios en fotos y vídeos ya cogen color adecuado\n -Solucionado error que mostraba texto reenviado cuando el fondo de entrada de texto es transparente\n- Otros errores menores solucionados</string>
     <string name="TelegramForAndroid">Plus Messenger para Android</string>
     <string name="Theming">Tematización</string>
     <string name="colorHexInvalid">¡Color hexadecimal inválido!</string>

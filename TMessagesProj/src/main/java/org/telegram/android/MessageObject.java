@@ -56,8 +56,8 @@ public class MessageObject {
     public ArrayList<TLRPC.PhotoSize> photoThumbs;
 
     public static TextPaint textPaint;
-    private static TextPaint textPaintRight = new TextPaint(Paint.ANTI_ALIAS_FLAG);
-    private static TextPaint textPaintLeft = new TextPaint(Paint.ANTI_ALIAS_FLAG);
+    public static TextPaint textPaintRight = new TextPaint(Paint.ANTI_ALIAS_FLAG);
+    public static TextPaint textPaintLeft = new TextPaint(Paint.ANTI_ALIAS_FLAG);
     public int lastLineWidth;
     public int textWidth;
     public int textHeight;

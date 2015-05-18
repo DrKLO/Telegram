@@ -780,8 +780,8 @@ Si vous oubliez votre mot de passe, vous perdrez l\'accès à votre compte Teleg
   <string name="formatterDay12H">h:mm a</string>
   <string name="formatDateAtTime">%1$s à %2$s</string>
   <!--update text-->
-  <string name="updateText">Plus Messenger pour Android vient d\'être mis à jour. Nouveautés de la version 2.8:\n\n- Liens d\'invitation pour les conversations en groupe\n- Notifications intelligentes\n- Onglet stickers dans le menu des émoticônes\n- Légendes sur les photos\n- Emplacements et itinéraires dans l\'écran de localisation\n- Statut \'Écouté\' pour les messages vocaux\n- Statut \'écrit\' plus varié : envoie une photo, enregistre un son, etc.\n- Défilement du contenu amélioré et ajout d\'animations pour une expérience fluiiiiiiiide!\n\nPour plus d\'infos (en anglais) :\ntelegram.org/blog/captions-places</string>
-  <string name="updateBuild">523</string>
+  <string name="updateText">Plus Messenger pour Android vient d\'être mis à jour.</string>
+  <string name="updateBuild">526</string>
     <!--Telegram+ French-->
     <!--Smart Notifications-->
     <string name="SmartNotification">Notification intelligente</string>

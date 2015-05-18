@@ -781,5 +781,5 @@
     <string name="formatDateAtTime">%1$s %2$s</string>
     <!--update text-->
     <string name="updateText">텔레그램 안드로이드가 업데이트 되었습니다. 새로운 버전 2.8:\n\n-그룹방 초대링크 기능\n-스마트 알림\n-이모티콘 스티커탭\n-사진 설명 기능\n-위치에 장소 및 안내 기능\n-음성 메시지 \'청취확인\' 기능\n-\'입력 중\' 확장 : 사진 보내는중, 녹음 중등\n-부드러운 스크롤링 및 애니메이션 향상</string>
-    <string name="updateBuild">523</string>
+    <string name="updateBuild">526</string>
 </resources>

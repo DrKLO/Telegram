@@ -13,6 +13,7 @@ import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.SharedPreferences;
+import android.content.pm.PackageInfo;
 import android.content.res.Configuration;
 import android.graphics.PorterDuff;
 import android.view.Gravity;
@@ -29,6 +30,7 @@ import android.widget.Toast;
 import org.telegram.android.AndroidUtilities;
 import org.telegram.android.LocaleController;
 import org.telegram.messenger.ApplicationLoader;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.ActionBar.ActionBar;
@@ -201,6 +203,13 @@ public class ThemingActivity extends BaseFragment {
                                         if (getParentActivity() != null) {
                                             String pName = userInput.getText().toString();
                                             AndroidUtilities.setStringPref(getParentActivity(),"themeName", pName);
+                                            try{
+                                                PackageInfo pInfo = ApplicationLoader.applicationContext.getPackageManager().getPackageInfo(ApplicationLoader.applicationContext.getPackageName(), 0);
+                                                AndroidUtilities.setStringPref(getParentActivity(),"version", pInfo.versionName);
+                                            } catch (Exception e) {
+                                                FileLog.e("tmessages", e);
+                                            }
+                                            AndroidUtilities.setStringPref(getParentActivity(),"model", android.os.Build.MODEL+"/"+android.os.Build.VERSION.RELEASE);
                                             Utilities.savePreferencesToSD(getParentActivity(), AndroidUtilities.THEME_PREFS+".xml", pName+".xml", true);
                                             Utilities.copyWallpaperToSD(getParentActivity(), pName, true);
                                             //Toast toast = Toast.makeText(getParentActivity(), LocaleController.getString("SaveThemeToastText", R.string.SaveThemeToastText), Toast.LENGTH_SHORT);

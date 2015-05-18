@@ -778,7 +778,7 @@
     <string name="formatDateAtTime">%1$s 於時間 %2$s</string>
   <!--update text-->
   <string name="updateText">Android 版的 Plus Messenger 已經更新了。在 2.8 版的新功能：\n\n- 群組聊天室的邀請連結\n- 智慧通知\n- 表情符號選單裡的貼圖分頁\n- 照片的說明文字\n- 位置功能中的地點與方向\n- 語音訊息的「已聽」狀態\n- 進階「輸入」狀態：正在傳送照片、正在錄音等等。\n- 改善的頁面捲動及動畫的超平滑體驗\n\更多關於此次更新的詳情:\ntelegram.org/blog/captions-places</string>
-  <string name="updateBuild">523</string>
+  <string name="updateBuild">526</string>
   <!--Telegram+-->
   <!--Smart Notifications-->
   <string name="SmartNotification">智能通知</string>
