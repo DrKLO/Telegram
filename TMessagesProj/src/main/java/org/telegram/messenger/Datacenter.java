@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 1.3.2.
+ * This is the source code of Telegram for Android v. 2.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013.
+ * Copyright Nikolai Kudashov, 2013-2015.
  */
 
 package org.telegram.messenger;
@@ -17,10 +17,13 @@ import java.util.Comparator;
 import java.util.HashMap;
 
 public class Datacenter {
-    private static final int DATA_VERSION = 4;
+    private static final int DATA_VERSION = 5;
 
     public int datacenterId;
-    public ArrayList<String> addresses = new ArrayList<>();
+    public ArrayList<String> addressesIpv4 = new ArrayList<>();
+    public ArrayList<String> addressesIpv6 = new ArrayList<>();
+    public ArrayList<String> addressesIpv4Download = new ArrayList<>();
+    public ArrayList<String> addressesIpv6Download = new ArrayList<>();
     public HashMap<String, Integer> ports = new HashMap<>();
     public int[] defaultPorts =   new int[] {-1, 80, -1, 443, -1, 443, -1, 80, -1, 443, -1};
     public int[] defaultPorts8888 = new int[] {-1, 8888, -1, 443, -1, 8888,  -1, 80, -1, 8888,  -1};
@@ -29,8 +32,15 @@ public class Datacenter {
     public long authKeyId;
     public int lastInitVersion = 0;
     public int overridePort = -1;
-    private volatile int currentPortNum = 0;
-    private volatile int currentAddressNum = 0;
+
+    private volatile int currentPortNumIpv4 = 0;
+    private volatile int currentAddressNumIpv4 = 0;
+    private volatile int currentPortNumIpv6 = 0;
+    private volatile int currentAddressNumIpv6 = 0;
+    private volatile int currentPortNumIpv4Download = 0;
+    private volatile int currentAddressNumIpv4Download = 0;
+    private volatile int currentPortNumIpv6Download = 0;
+    private volatile int currentAddressNumIpv6Download = 0;
 
     public TcpConnection connection;
     private TcpConnection downloadConnection;
@@ -47,7 +57,7 @@ public class Datacenter {
         if (version == 0) {
             datacenterId = data.readInt32(false);
             String address = data.readString(false);
-            addresses.add(address);
+            addressesIpv4.add(address);
             int port = data.readInt32(false);
             ports.put(address, port);
             int len = data.readInt32(false);
@@ -72,7 +82,7 @@ public class Datacenter {
             }
         } else if (version == 1) {
             int currentVersion = data.readInt32(false);
-            if (currentVersion == 2 || currentVersion == 3 || currentVersion == 4) {
+            if (currentVersion >= 2 && currentVersion <= 5) {
                 datacenterId = data.readInt32(false);
                 if (currentVersion >= 3) {
                     lastInitVersion = data.readInt32(false);
@@ -80,15 +90,35 @@ public class Datacenter {
                 int len = data.readInt32(false);
                 for (int a = 0; a < len; a++) {
                     String address = data.readString(false);
-                    addresses.add(address);
+                    addressesIpv4.add(address);
                     ports.put(address, data.readInt32(false));
+                }
+                if (currentVersion >= 5) {
+                    len = data.readInt32(false);
+                    for (int a = 0; a < len; a++) {
+                        String address = data.readString(false);
+                        addressesIpv6.add(address);
+                        ports.put(address, data.readInt32(false));
+                    }
+                    len = data.readInt32(false);
+                    for (int a = 0; a < len; a++) {
+                        String address = data.readString(false);
+                        addressesIpv4Download.add(address);
+                        ports.put(address, data.readInt32(false));
+                    }
+                    len = data.readInt32(false);
+                    for (int a = 0; a < len; a++) {
+                        String address = data.readString(false);
+                        addressesIpv6Download.add(address);
+                        ports.put(address, data.readInt32(false));
+                    }
                 }
 
                 len = data.readInt32(false);
                 if (len != 0) {
                     authKey = data.readData(len, false);
                 }
-                if (currentVersion == 4) {
+                if (currentVersion >= 4) {
                     authKeyId = data.readInt64(false);
                 } else {
                     len = data.readInt32(false);
@@ -116,26 +146,79 @@ public class Datacenter {
     }
 
     public void switchTo443Port() {
-        for (int a = 0; a < addresses.size(); a++) {
-            if (ports.get(addresses.get(a)) == 443) {
-                currentAddressNum = a;
-                currentPortNum = 0;
+        for (int a = 0; a < addressesIpv4.size(); a++) {
+            if (ports.get(addressesIpv4.get(a)) == 443) {
+                currentAddressNumIpv4 = a;
+                currentPortNumIpv4 = 0;
+                break;
+            }
+        }
+        for (int a = 0; a < addressesIpv6.size(); a++) {
+            if (ports.get(addressesIpv6.get(a)) == 443) {
+                currentAddressNumIpv6 = a;
+                currentPortNumIpv6 = 0;
+                break;
+            }
+        }
+        for (int a = 0; a < addressesIpv4Download.size(); a++) {
+            if (ports.get(addressesIpv4Download.get(a)) == 443) {
+                currentAddressNumIpv4Download = a;
+                currentPortNumIpv4Download = 0;
+                break;
+            }
+        }
+        for (int a = 0; a < addressesIpv6Download.size(); a++) {
+            if (ports.get(addressesIpv6Download.get(a)) == 443) {
+                currentAddressNumIpv6Download = a;
+                currentPortNumIpv6Download = 0;
                 break;
             }
         }
     }
 
-    public String getCurrentAddress() {
+    public String getCurrentAddress(int flags) {
+        int currentAddressNum;
+        ArrayList<String> addresses;
+        if ((flags & 2) != 0) {
+            if ((flags & 1) != 0) {
+                currentAddressNum = currentAddressNumIpv6Download;
+                addresses = addressesIpv6Download;
+            } else {
+                currentAddressNum = currentAddressNumIpv4Download;
+                addresses = addressesIpv4Download;
+            }
+        } else {
+            if ((flags & 1) != 0) {
+                currentAddressNum = currentAddressNumIpv6;
+                addresses = addressesIpv6;
+            } else {
+                currentAddressNum = currentAddressNumIpv4;
+                addresses = addressesIpv4;
+            }
+        }
         if (addresses.isEmpty()) {
             return null;
         }
         if (currentAddressNum >= addresses.size()) {
             currentAddressNum = 0;
+            if ((flags & 2) != 0) {
+                if ((flags & 1) != 0) {
+                    currentAddressNumIpv6Download = currentAddressNum;
+                } else {
+                    currentAddressNumIpv4Download = currentAddressNum;
+                }
+            } else {
+                if ((flags & 1) != 0) {
+                    currentAddressNumIpv6 = currentAddressNum;
+                } else {
+                    currentAddressNumIpv4 = currentAddressNum;
+                }
+            }
         }
         return addresses.get(currentAddressNum);
     }
 
-    public int getCurrentPort() {
+    public int getCurrentPort(int flags) {
         if (ports.isEmpty()) {
             return overridePort == -1 ? 443 : overridePort;
         }
@@ -146,21 +229,64 @@ public class Datacenter {
             portsArray = defaultPorts8888;
         }
 
+        int currentPortNum;
+        ArrayList<String> addresses;
+        if ((flags & 2) != 0) {
+            if ((flags & 1) != 0) {
+                currentPortNum = currentPortNumIpv6Download;
+            } else {
+                currentPortNum = currentPortNumIpv4Download;
+            }
+        } else {
+            if ((flags & 1) != 0) {
+                currentPortNum = currentPortNumIpv6;
+            } else {
+                currentPortNum = currentPortNumIpv4;
+            }
+        }
+
         if (currentPortNum >= defaultPorts.length) {
             currentPortNum = 0;
+            if ((flags & 2) != 0) {
+                if ((flags & 1) != 0) {
+                    currentPortNumIpv6Download = currentPortNum;
+                } else {
+                    currentPortNumIpv4Download = currentPortNum;
+                }
+            } else {
+                if ((flags & 1) != 0) {
+                    currentPortNumIpv6 = currentPortNum;
+                } else {
+                    currentPortNumIpv4 = currentPortNum;
+                }
+            }
         }
         int port = portsArray[currentPortNum];
         if (port == -1) {
             if (overridePort != -1) {
                 return overridePort;
             }
-            String address = getCurrentAddress();
+            String address = getCurrentAddress(flags);
             return ports.get(address);
         }
         return port;
     }
 
-    public void addAddressAndPort(String address, int port) {
+    public void addAddressAndPort(String address, int port, int flags) {
+        ArrayList<String> addresses;
+        if ((flags & 2) != 0) {
+            if ((flags & 1) != 0) {
+                addresses = addressesIpv6Download;
+            } else {
+                addresses = addressesIpv4Download;
+            }
+        } else {
+            if ((flags & 1) != 0) {
+                addresses = addressesIpv6;
+            } else {
+                addresses = addressesIpv4;
+            }
+        }
         if (addresses.contains(address)) {
             return;
         }
@@ -168,7 +294,31 @@ public class Datacenter {
         ports.put(address, port);
     }
 
-    public void nextAddressOrPort() {
+    public void nextAddressOrPort(int flags) {
+        int currentPortNum;
+        int currentAddressNum;
+        ArrayList<String> addresses;
+        if ((flags & 2) != 0) {
+            if ((flags & 1) != 0) {
+                currentPortNum = currentPortNumIpv6Download;
+                currentAddressNum = currentAddressNumIpv6Download;
+                addresses = addressesIpv6Download;
+            } else {
+                currentPortNum = currentPortNumIpv4Download;
+                currentAddressNum = currentAddressNumIpv4Download;
+                addresses = addressesIpv4Download;
+            }
+        } else {
+            if ((flags & 1) != 0) {
+                currentPortNum = currentPortNumIpv6;
+                currentAddressNum = currentAddressNumIpv6;
+                addresses = addressesIpv6;
+            } else {
+                currentPortNum = currentPortNumIpv4;
+                currentAddressNum = currentAddressNumIpv4;
+                addresses = addressesIpv4;
+            }
+        }
         if (currentPortNum + 1 < defaultPorts.length) {
             currentPortNum++;
         } else {
@@ -179,6 +329,23 @@ public class Datacenter {
             }
             currentPortNum = 0;
         }
+        if ((flags & 2) != 0) {
+            if ((flags & 1) != 0) {
+                currentPortNumIpv6Download = currentPortNum;
+                currentAddressNumIpv6Download = currentAddressNum;
+            } else {
+                currentPortNumIpv4Download = currentPortNum;
+                currentAddressNumIpv4Download = currentAddressNum;
+            }
+        } else {
+            if ((flags & 1) != 0) {
+                currentPortNumIpv6 = currentPortNum;
+                currentAddressNumIpv6 = currentAddressNum;
+            } else {
+                currentPortNumIpv4 = currentPortNum;
+                currentAddressNumIpv4 = currentAddressNum;
+            }
+        }
     }
 
     public void storeCurrentAddressAndPortNum() {
@@ -187,8 +354,14 @@ public class Datacenter {
             public void run() {
                 SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("dataconfig", Context.MODE_PRIVATE);
                 SharedPreferences.Editor editor = preferences.edit();
-                editor.putInt("dc" + datacenterId + "port", currentPortNum);
-                editor.putInt("dc" + datacenterId + "address", currentAddressNum);
+                editor.putInt("dc" + datacenterId + "port", currentPortNumIpv4);
+                editor.putInt("dc" + datacenterId + "address", currentAddressNumIpv4);
+                editor.putInt("dc" + datacenterId + "port6", currentPortNumIpv6);
+                editor.putInt("dc" + datacenterId + "address6", currentAddressNumIpv6);
+                editor.putInt("dc" + datacenterId + "portD", currentPortNumIpv4Download);
+                editor.putInt("dc" + datacenterId + "addressD", currentAddressNumIpv4Download);
+                editor.putInt("dc" + datacenterId + "port6D", currentPortNumIpv6Download);
+                editor.putInt("dc" + datacenterId + "address6D", currentAddressNumIpv6Download);
                 editor.commit();
             }
         });
@@ -196,21 +369,71 @@ public class Datacenter {
 
     private void readCurrentAddressAndPortNum() {
         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("dataconfig", Context.MODE_PRIVATE);
-        currentPortNum = preferences.getInt("dc" + datacenterId + "port", 0);
-        currentAddressNum = preferences.getInt("dc" + datacenterId + "address", 0);
+        currentPortNumIpv4 = preferences.getInt("dc" + datacenterId + "port", 0);
+        currentAddressNumIpv4 = preferences.getInt("dc" + datacenterId + "address", 0);
+        currentPortNumIpv6 = preferences.getInt("dc" + datacenterId + "port6", 0);
+        currentAddressNumIpv6 = preferences.getInt("dc" + datacenterId + "address6", 0);
+        currentPortNumIpv4Download = preferences.getInt("dc" + datacenterId + "portD", 0);
+        currentAddressNumIpv4Download = preferences.getInt("dc" + datacenterId + "addressD", 0);
+        currentPortNumIpv6Download = preferences.getInt("dc" + datacenterId + "port6D", 0);
+        currentAddressNumIpv6Download = preferences.getInt("dc" + datacenterId + "address6D", 0);
     }
 
-    public void replaceAddressesAndPorts(ArrayList<String> newAddresses, HashMap<String, Integer> newPorts) {
-        addresses = newAddresses;
-        ports = newPorts;
+    public void replaceAddressesAndPorts(ArrayList<String> newAddresses, HashMap<String, Integer> newPorts, int flags) {
+        ArrayList<String> addresses;
+        if ((flags & 2) != 0) {
+            if ((flags & 1) != 0) {
+                addresses = addressesIpv6Download;
+            } else {
+                addresses = addressesIpv4Download;
+            }
+        } else {
+            if ((flags & 1) != 0) {
+                addresses = addressesIpv6;
+            } else {
+                addresses = addressesIpv4;
+            }
+        }
+        for (String address : addresses) {
+            ports.remove(address);
+        }
+        if ((flags & 2) != 0) {
+            if ((flags & 1) != 0) {
+                addressesIpv6Download = newAddresses;
+            } else {
+                addressesIpv4Download = newAddresses;
+            }
+        } else {
+            if ((flags & 1) != 0) {
+                addressesIpv6 = newAddresses;
+            } else {
+                addressesIpv4 = newAddresses;
+            }
+        }
+        ports.putAll(newPorts);
     }
 
     public void SerializeToStream(SerializedData stream) {
         stream.writeInt32(DATA_VERSION);
         stream.writeInt32(datacenterId);
         stream.writeInt32(lastInitVersion);
-        stream.writeInt32(addresses.size());
-        for (String address : addresses) {
+        stream.writeInt32(addressesIpv4.size());
+        for (String address : addressesIpv4) {
+            stream.writeString(address);
+            stream.writeInt32(ports.get(address));
+        }
+        stream.writeInt32(addressesIpv6.size());
+        for (String address : addressesIpv6) {
+            stream.writeString(address);
+            stream.writeInt32(ports.get(address));
+        }
+        stream.writeInt32(addressesIpv4Download.size());
+        for (String address : addressesIpv4Download) {
+            stream.writeString(address);
+            stream.writeInt32(ports.get(address));
+        }
+        stream.writeInt32(addressesIpv6Download.size());
+        for (String address : addressesIpv6Download) {
             stream.writeString(address);
             stream.writeInt32(ports.get(address));
         }

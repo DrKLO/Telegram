@@ -10,7 +10,6 @@ package org.telegram.ui.ActionBar;
 
 import android.content.Context;
 import android.graphics.drawable.Drawable;
-import android.util.AttributeSet;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.LinearLayout;
@@ -30,14 +29,6 @@ public class ActionBarMenu extends LinearLayout {
 
     public ActionBarMenu(Context context) {
         super(context);
-    }
-
-    public ActionBarMenu(Context context, AttributeSet attrs) {
-        super(context, attrs);
-    }
-
-    public ActionBarMenu(Context context, AttributeSet attrs, int defStyleAttr) {
-        super(context, attrs, defStyleAttr);
     }
 
     public View addItemResource(int id, int resourceId) {

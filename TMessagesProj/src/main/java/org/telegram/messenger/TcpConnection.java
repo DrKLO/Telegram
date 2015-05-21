@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 1.3.2.
+ * This is the source code of Telegram for Android v. 2.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013.
+ * Copyright Nikolai Kudashov, 2013-2015.
  */
 
 package org.telegram.messenger;
@@ -20,6 +20,7 @@ import jawnae.pyronet.PyroClient;
 import jawnae.pyronet.PyroSelector;
 
 public class TcpConnection extends ConnectionContext {
+
     public enum TcpConnectionState {
         TcpConnectionStageIdle,
         TcpConnectionStageConnecting,
@@ -30,8 +31,11 @@ public class TcpConnection extends ConnectionContext {
 
     public interface TcpConnectionDelegate {
         void tcpConnectionClosed(TcpConnection connection);
+
         void tcpConnectionConnected(TcpConnection connection);
+
         void tcpConnectionQuiackAckReceived(TcpConnection connection, int ack);
+
         void tcpConnectionReceivedData(TcpConnection connection, ByteBufferDesc data, int length);
     }
 
@@ -41,6 +45,7 @@ public class TcpConnection extends ConnectionContext {
     public volatile int channelToken = 0;
     private String hostAddress;
     private int hostPort;
+    private int currentAddressFlag;
     private int datacenterId;
     private int failedConnectionCount;
     public TcpConnectionDelegate delegate;
@@ -62,13 +67,14 @@ public class TcpConnection extends ConnectionContext {
         if (selector == null) {
             selector = new PyroSelector();
             selector.spawnNetworkThread("network thread");
-            BuffersStorage storage = BuffersStorage.getInstance();
+            BuffersStorage.getInstance();
         }
         datacenterId = did;
         connectionState = TcpConnectionState.TcpConnectionStageIdle;
     }
 
     static volatile Integer nextChannelToken = 1;
+
     static int generateChannelToken() {
         return nextChannelToken++;
     }
@@ -101,8 +107,27 @@ public class TcpConnection extends ConnectionContext {
                 connectionState = TcpConnectionState.TcpConnectionStageConnecting;
                 try {
                     Datacenter datacenter = ConnectionsManager.getInstance().datacenterWithId(datacenterId);
-                    hostAddress = datacenter.getCurrentAddress();
-                    hostPort = datacenter.getCurrentPort();
+                    if (transportRequestClass == RPCRequest.RPCRequestClassDownloadMedia) {
+                        currentAddressFlag = 2;
+                        if (ConnectionsManager.useIpv6Address()) {
+                            currentAddressFlag |= 1;
+                        }
+                        hostAddress = datacenter.getCurrentAddress(currentAddressFlag);
+                        if (hostAddress == null) {
+                            currentAddressFlag = 0;
+                            if (ConnectionsManager.useIpv6Address()) {
+                                currentAddressFlag |= 1;
+                            }
+                            hostAddress = datacenter.getCurrentAddress(currentAddressFlag);
+                        }
+                    } else {
+                        currentAddressFlag = 0;
+                        if (ConnectionsManager.useIpv6Address()) {
+                            currentAddressFlag |= 1;
+                        }
+                        hostAddress = datacenter.getCurrentAddress(currentAddressFlag);
+                    }
+                    hostPort = datacenter.getCurrentPort(currentAddressFlag);
 
                     try {
                         synchronized (timerSync) {
@@ -163,7 +188,7 @@ public class TcpConnection extends ConnectionContext {
         } catch (Exception e2) {
             FileLog.e("tmessages", e2);
         }
-        connectionState =  TcpConnectionState.TcpConnectionStageReconnecting;
+        connectionState = TcpConnectionState.TcpConnectionStageReconnecting;
         if (delegate != null) {
             final TcpConnectionDelegate finalDelegate = delegate;
             Utilities.stageQueue.postRunnable(new Runnable() {
@@ -186,7 +211,7 @@ public class TcpConnection extends ConnectionContext {
             isNextPort = true;
             if (failedConnectionCount > willRetryConnectCount) {
                 Datacenter datacenter = ConnectionsManager.getInstance().datacenterWithId(datacenterId);
-                datacenter.nextAddressOrPort();
+                datacenter.nextAddressOrPort(currentAddressFlag);
                 failedConnectionCount = 0;
             }
         }
@@ -319,7 +344,7 @@ public class TcpConnection extends ConnectionContext {
 
                 ByteBufferDesc buffer = BuffersStorage.getInstance().getFreeBuffer(bufferLen);
                 if (firstPacket) {
-                    buffer.writeByte((byte)0xef);
+                    buffer.writeByte((byte) 0xef);
                     firstPacket = false;
                 }
                 if (packetLength < 0x7f) {
@@ -354,12 +379,10 @@ public class TcpConnection extends ConnectionContext {
         ByteBuffer parseLaterBuffer = null;
         if (restOfTheData != null) {
             if (lastPacketLength == 0) {
-                //FileLog.e("tmessages", this +  " write addition data to restOfTheData");
                 if (restOfTheData.capacity() - restOfTheData.position() >= buffer.limit()) {
                     restOfTheData.limit(restOfTheData.position() + buffer.limit());
                     restOfTheData.put(buffer);
                     buffer = restOfTheData.buffer;
-                    //FileLog.e("tmessages", this +  " no need to recreate buffer");
                 } else {
                     ByteBufferDesc newBuffer = BuffersStorage.getInstance().getFreeBuffer(restOfTheData.limit() + buffer.limit());
                     restOfTheData.rewind();
@@ -368,30 +391,23 @@ public class TcpConnection extends ConnectionContext {
                     buffer = newBuffer.buffer;
                     BuffersStorage.getInstance().reuseFreeBuffer(restOfTheData);
                     restOfTheData = newBuffer;
-                    //FileLog.e("tmessages", this +  " NEED to recreate buffer");
                 }
             } else {
-                //FileLog.e("tmessages", this +  " write buffer to restOfTheData buffer of len = " + lastPacketLength);
-                int len = 0;
+                int len;
                 if (lastPacketLength - restOfTheData.position() <= buffer.limit()) {
                     len = lastPacketLength - restOfTheData.position();
-                    //FileLog.e("tmessages", this +  " received buffer - OK!");
                 } else {
                     len = buffer.limit();
-                    //FileLog.e("tmessages", this +  " received buffer less than need");
                 }
                 int oldLimit = buffer.limit();
                 buffer.limit(len);
                 restOfTheData.put(buffer);
                 buffer.limit(oldLimit);
                 if (restOfTheData.position() != lastPacketLength) {
-                    //FileLog.e("tmessages", this +  " don't get much data to restOfTheData");
                     return;
                 } else {
-                    //FileLog.e("tmessages", this +  " get much data to restOfTheData - OK!");
                     if (buffer.hasRemaining()) {
                         parseLaterBuffer = buffer;
-                        //FileLog.e("tmessages", this +  " something remain in the received buffer");
                     } else {
                         parseLaterBuffer = null;
                     }
@@ -427,10 +443,8 @@ public class TcpConnection extends ConnectionContext {
                     restOfTheData.put(buffer);
                     restOfTheData.limit(restOfTheData.position());
                     lastPacketLength = 0;
-                    //FileLog.e("tmessages", this +  " 1 - size less than 4 bytes - write to free buffer");
                     if (reuseLater != null) {
                         BuffersStorage.getInstance().reuseFreeBuffer(reuseLater);
-                        //FileLog.e("tmessages", this +  " 1 - reuse later buffer1");
                     }
                     break;
                 }
@@ -450,11 +464,10 @@ public class TcpConnection extends ConnectionContext {
             }
 
             if (fByte != 0x7f) {
-                currentPacketLength = ((int)fByte) * 4;
+                currentPacketLength = ((int) fByte) * 4;
             } else {
                 buffer.reset();
                 if (buffer.remaining() < 4) {
-                    //FileLog.e("tmessages", this +  " 2 - size less than 4 bytes - write to free buffer");
                     if (restOfTheData == null || restOfTheData != null && restOfTheData.position() != 0) {
                         ByteBufferDesc reuseLater = restOfTheData;
                         restOfTheData = BuffersStorage.getInstance().getFreeBuffer(16384);
@@ -463,7 +476,6 @@ public class TcpConnection extends ConnectionContext {
                         lastPacketLength = 0;
                         if (reuseLater != null) {
                             BuffersStorage.getInstance().reuseFreeBuffer(reuseLater);
-                            //FileLog.e("tmessages", this +  " 2 - reuse later buffer1");
                         }
                     } else {
                         restOfTheData.position(restOfTheData.limit());
@@ -491,10 +503,8 @@ public class TcpConnection extends ConnectionContext {
                 if (restOfTheData != null && restOfTheData.capacity() < len) {
                     reuseLater = restOfTheData;
                     restOfTheData = null;
-                    //FileLog.e("tmessages", this +  " not enough space for len, recreate buffer = " + len);
                 }
                 if (restOfTheData == null) {
-                    //FileLog.e("tmessages", this +  " write to restOfTheData, get buffer len = " + len);
                     buffer.reset();
                     restOfTheData = BuffersStorage.getInstance().getFreeBuffer(len);
                     restOfTheData.put(buffer);
@@ -505,7 +515,6 @@ public class TcpConnection extends ConnectionContext {
                 lastPacketLength = len;
                 if (reuseLater != null) {
                     BuffersStorage.getInstance().reuseFreeBuffer(reuseLater);
-                    //FileLog.e("tmessages", this +  " 3 - reuse later buffer1");
                 }
                 return;
             }
@@ -533,17 +542,14 @@ public class TcpConnection extends ConnectionContext {
                 if (lastPacketLength != 0 && restOfTheData.position() == lastPacketLength || lastPacketLength == 0 && !restOfTheData.hasRemaining()) {
                     BuffersStorage.getInstance().reuseFreeBuffer(restOfTheData);
                     restOfTheData = null;
-                    //FileLog.e("tmessages", this +  " restOfTheData parsed null it");
                 } else {
                     restOfTheData.compact();
                     restOfTheData.limit(restOfTheData.position());
                     restOfTheData.position(0);
-                    //FileLog.e("tmessages", this +  " restOfTheData NOT parsed, compact");
                 }
             }
 
             if (parseLaterBuffer != null) {
-                //FileLog.e("tmessages", this +  " there is parseLaterBuffer");
                 buffer = parseLaterBuffer;
                 parseLaterBuffer = null;
             }
@@ -597,7 +603,7 @@ public class TcpConnection extends ConnectionContext {
                 isNextPort = true;
                 if (failedConnectionCount > willRetryConnectCount || switchToNextPort) {
                     Datacenter datacenter = ConnectionsManager.getInstance().datacenterWithId(datacenterId);
-                    datacenter.nextAddressOrPort();
+                    datacenter.nextAddressOrPort(currentAddressFlag);
                     failedConnectionCount = 0;
                 }
             }

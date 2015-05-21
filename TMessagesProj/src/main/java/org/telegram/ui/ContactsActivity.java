@@ -376,7 +376,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                                 }
                             });
                             builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-                            showAlertDialog(builder);
+                            showDialog(builder.create());
                         }
                     }
                 }
@@ -427,7 +427,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                 }
             });
             builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-            showAlertDialog(builder);
+            showDialog(builder.create());
             ViewGroup.MarginLayoutParams layoutParams = (ViewGroup.MarginLayoutParams)editText.getLayoutParams();
             if (layoutParams != null) {
                 if (layoutParams instanceof FrameLayout.LayoutParams) {

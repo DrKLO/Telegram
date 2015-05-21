@@ -71,7 +71,7 @@ public class ActionBarLayout extends FrameLayout {
                     if (view instanceof ActionBar && view.getVisibility() == VISIBLE) {
                         if (((ActionBar) view).getCastShadows()) {
                             actionBarHeight = view.getMeasuredHeight();
-                            wasActionBar = true;
+                            //wasActionBar = true;
                         }
                         break;
                     }
@@ -424,7 +424,7 @@ public class ActionBarLayout extends FrameLayout {
                         float velX = velocityTracker.getXVelocity();
                         float velY = velocityTracker.getYVelocity();
                         final boolean backAnimation = x < containerView.getMeasuredWidth() / 3.0f && (velX < 3500 || velX < velY);
-                        float distToMove = 0;
+                        float distToMove;
                         if (!backAnimation) {
                             distToMove = containerView.getMeasuredWidth() - x;
                             animatorSet.playTogether(
@@ -674,6 +674,7 @@ public class ActionBarLayout extends FrameLayout {
                     animators.add(ObjectAnimatorProxy.ofFloat(backgroundView, "alpha", 0.0f, 1.0f));
                 }
 
+                fragment.onOpenAnimationStart();
                 currentAnimation = new AnimatorSetProxy();
                 currentAnimation.playTogether(animators);
                 currentAnimation.setInterpolator(accelerateDecelerateInterpolator);
@@ -703,6 +704,7 @@ public class ActionBarLayout extends FrameLayout {
                 };
                 ViewProxy.setAlpha(containerView, 0.0f);
                 ViewProxy.setTranslationX(containerView, 48.0f);
+                fragment.onOpenAnimationStart();
                 startLayoutAnimation(true, true);
                 /*currentAnimation = new AnimatorSetProxy();
                 currentAnimation.playTogether(
@@ -733,6 +735,7 @@ public class ActionBarLayout extends FrameLayout {
                 ViewProxy.setAlpha(backgroundView, 1.0f);
                 backgroundView.setVisibility(VISIBLE);
             }
+            fragment.onOpenAnimationStart();
             fragment.onOpenAnimationEnd();
         }
         return true;

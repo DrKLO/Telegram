@@ -126,6 +126,8 @@
     <string name="SetTimer">Zelfvernietigingstimer instellen</string>
     <string name="ServiceNotifications">Servicemeldingen</string>
     <string name="GettingLinkInfo">Link-preview ophalen...</string>
+    <string name="OpenInBrowser">Openen in browser</string>
+    <string name="CopyUrl">Link kopiëren</string>
     <!--notification-->
     <string name="MessageLifetimeChanged">%1$s heeft de zelfvernietigingstimer ingesteld op %2$s</string>
     <string name="MessageLifetimeChangedOutgoing">Je hebt de zelfvernietigingstimer ingesteld op %1$s</string>
@@ -241,6 +243,23 @@
     <string name="UsernameAvailable">%1$s is beschikbaar.</string>
     <string name="UsernameEmpty">Geen</string>
     <string name="ErrorOccurred">Er is een fout opgetreden.</string>
+    <!--stickers view-->
+    <string name="Stickers">Stickers</string>
+    <string name="GeniusStickerPackName">Grote geesten</string>
+  <string name="StickersInfo">Ontwerpers kunnen stickerbundels toevoegen via onze bot: @stickers.
+
+Gebruikers kunnen met een tik stickers toevoegen via \"Toevoegen aan stickers\".</string>
+    <string name="AddStickers">Stickers toevoegen</string>
+    <string name="AddToStickers">Toevoegen aan stickers</string>
+    <string name="AddStickersNotFound">Stickers niet gevonden</string>
+    <string name="StickersRemoved">Stickers verwijderd</string>
+    <string name="AddStickersInstalled">Nieuwe stickers toegevoegd</string>
+    <string name="StickersHide">Verbergen</string>
+    <string name="StickersShow">Weergeven</string>
+    <string name="StickersShare">Delen</string>
+    <string name="StickersCopy">Link kopiëren</string>
+    <string name="StickersRemove">Verwijder</string>
+    <string name="NoStickers">Nog geen stickers</string>
     <!--settings view-->
     <string name="ResetNotificationsText">Meldingen gereset</string>
     <string name="TextSize">Tekstgrootte berichten</string>
@@ -517,6 +536,7 @@
     <string name="Done">Gereed</string>
     <string name="Open">Openen</string>
     <string name="Cancel">Annuleren</string>
+    <string name="Close">Sluit</string>
     <string name="Add">Toevoegen</string>
     <string name="Edit">Wijzig</string>
     <string name="Send">Stuur</string>
@@ -551,6 +571,7 @@
     <string name="ActionKickUserYou">un1 heeft je verwijderd</string>
     <string name="ActionAddUserYou">un1 heeft je toegevoegd</string>
     <string name="ActionAddUserSelf">un1 is terug in de groep</string>
+    <string name="ActionAddUserSelfYou">Je keerde terug naar de groep</string>
     <string name="UnsuppotedMedia">Dit bericht wordt niet ondersteund door jouw versie van Telegram. Werk Telegram bij om dit bericht te bekijken: http://telegram.org/update</string>
     <string name="AttachPhoto">Foto</string>
     <string name="AttachVideo">Video</string>
@@ -713,6 +734,12 @@
     <string name="Meters_few">%1$d meter</string>
     <string name="Meters_many">%1$d meter</string>
     <string name="Meters_other">%1$d meter</string>
+    <string name="Stickers_zero">%1$d stickers</string>
+    <string name="Stickers_one">%1$d sticker</string>
+    <string name="Stickers_two">%1$d stickers</string>
+    <string name="Stickers_few">%1$d stickers</string>
+    <string name="Stickers_many">%1$d stickers</string>
+    <string name="Stickers_other">%1$d stickers</string>
     <!--forwarded messages-->
     <string name="ForwardedMessage_zero">Bijlage: %1$d berichten</string>
     <string name="ForwardedMessage_one">Bijlage: 1 bericht</string>
@@ -780,6 +807,6 @@
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s om %2$s</string>
     <!--update text-->
-    <string name="updateText">Telegram voor Android is geüpdatet. Nieuw in versie 2.8:\n\n- Uitnodigingslinks voor groepchats\n- Slimme meldingen\n- Stickerstab in emojimenu\n- Onderschriften voor foto\'s\n- Plekken en routebeschrijvingen op locaties\n- \'Beluistered\'-status voor spraakberichten\n- Geadvanceerde \'aan het typen\'-status: verstuurt een foto, audio opnemen, etc.\n- Scrollen en animaties verbeterd voor een soepele ervaring</string>
-    <string name="updateBuild">516</string>
+    <string name="updateText">Telegram voor Android is geüpdatet. Nieuw in versie 2.9:\n\n- Deel en installeer stickerbundels zoals deze: https://telegram.me/addstickers/Animals\n- Ben je een ontwerper? Maak stickerbundels met onze bot: @stickers.\n\n- Gebruik Telegram met Android Auto.</string>
+    <string name="updateBuild">536</string>
 </resources>

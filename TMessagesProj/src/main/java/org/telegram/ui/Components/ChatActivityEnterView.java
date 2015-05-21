@@ -73,7 +73,7 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
     private ImageView audioSendButton;
     private FrameLayout recordPanel;
     private LinearLayout slideText;
-    private SizeNotifierRelativeLayout sizeNotifierRelativeLayout;
+    private View sizeNotifierLayout;
     private FrameLayout attachButton;
     private LinearLayout textFieldContainer;
     private View topView;
@@ -118,7 +118,7 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
     private boolean allowShowTopView;
     private AnimatorSetProxy currentTopViewAnimation;
 
-    public ChatActivityEnterView(Activity context, SizeNotifierRelativeLayout parent, BaseFragment fragment, boolean isChat) {
+    public ChatActivityEnterView(Activity context, View parent, BaseFragment fragment, boolean isChat) {
         super(context);
         setBackgroundResource(R.drawable.compose_panel);
         setFocusable(true);
@@ -135,8 +135,12 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
         NotificationCenter.getInstance().addObserver(this, NotificationCenter.audioRouteChanged);
         parentActivity = context;
         parentFragment = fragment;
-        sizeNotifierRelativeLayout = parent;
-        sizeNotifierRelativeLayout.setDelegate(this);
+        sizeNotifierLayout = parent;
+        if (sizeNotifierLayout instanceof SizeNotifierRelativeLayout) {
+            ((SizeNotifierRelativeLayout) sizeNotifierLayout).setDelegate(this);
+        } else if (sizeNotifierLayout instanceof SizeNotifierFrameLayout) {
+            ((SizeNotifierFrameLayout) sizeNotifierLayout).setDelegate(this);
+        }
         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
         sendByEnter = preferences.getBoolean("send_by_enter", false);
 
@@ -155,7 +159,7 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
                 } else if (keyboardTransitionState == 2) {
                     if (!keyboardVisible || framesDroped >= 60) {
                         int currentHeight = AndroidUtilities.displaySize.x > AndroidUtilities.displaySize.y ? keyboardHeightLand : keyboardHeight;
-                        sizeNotifierRelativeLayout.setPadding(0, 0, 0, currentHeight);
+                        sizeNotifierLayout.setPadding(0, 0, 0, currentHeight);
                         keyboardTransitionState = 0;
                     }
                     framesDroped++;
@@ -433,8 +437,8 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
             public boolean onTouch(View view, MotionEvent motionEvent) {
                 if (motionEvent.getAction() == MotionEvent.ACTION_DOWN) {
                     if (parentFragment != null) {
-                        String action = null;
-                        TLRPC.Chat currentChat = null;
+                        String action;
+                        TLRPC.Chat currentChat;
                         if ((int) dialog_id < 0) {
                             currentChat = MessagesController.getInstance().getChat(-(int) dialog_id);
                             if (currentChat != null && currentChat.participants_count > MessagesController.getInstance().groupBigSize) {
@@ -535,14 +539,14 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
 
             } else if (state == 2) {
                 int currentHeight = AndroidUtilities.displaySize.x > AndroidUtilities.displaySize.y ? keyboardHeightLand : keyboardHeight;
-                sizeNotifierRelativeLayout.setPadding(0, 0, 0, currentHeight);
+                sizeNotifierLayout.setPadding(0, 0, 0, currentHeight);
                 keyboardTransitionState = 0;
             }
         } else {
             framesDroped = 0;
             keyboardTransitionState = state;
             if (state == 1) {
-                sizeNotifierRelativeLayout.setPadding(0, 0, 0, 0);
+                sizeNotifierLayout.setPadding(0, 0, 0, 0);
             }
         }
     }
@@ -591,9 +595,7 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
         topViewShowed = true;
         if (allowShowTopView) {
             topView.setVisibility(VISIBLE);
-            float resumeValue = 0.0f;
             if (currentTopViewAnimation != null) {
-                resumeValue = topViewAnimation;
                 currentTopViewAnimation.cancel();
                 currentTopViewAnimation = null;
             }
@@ -706,7 +708,7 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.emojiDidLoaded);
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.hideEmojiKeyboard);
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.audioRouteChanged);
-        sizeNotifierRelativeLayout.getViewTreeObserver().removeOnPreDrawListener(onPreDrawListener);
+        sizeNotifierLayout.getViewTreeObserver().removeOnPreDrawListener(onPreDrawListener);
         if (mWakeLock != null) {
             try {
                 mWakeLock.release();
@@ -715,8 +717,12 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
                 FileLog.e("tmessages", e);
             }
         }
-        if (sizeNotifierRelativeLayout != null) {
-            sizeNotifierRelativeLayout.setDelegate(null);
+        if (sizeNotifierLayout != null) {
+            if (sizeNotifierLayout instanceof SizeNotifierRelativeLayout) {
+                ((SizeNotifierRelativeLayout) sizeNotifierLayout).setDelegate(null);
+            } else if (sizeNotifierLayout instanceof SizeNotifierFrameLayout) {
+                ((SizeNotifierFrameLayout) sizeNotifierLayout).setDelegate(null);
+            }
         }
     }
 
@@ -739,8 +745,8 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
 
     private void sendMessage() {
         if (parentFragment != null) {
-            String action = null;
-            TLRPC.Chat currentChat = null;
+            String action;
+            TLRPC.Chat currentChat;
             if ((int) dialog_id < 0) {
                 currentChat = MessagesController.getInstance().getChat(-(int) dialog_id);
                 if (currentChat != null && currentChat.participants_count > MessagesController.getInstance().groupBigSize) {
@@ -1066,8 +1072,8 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
                         if (i < 0) {
                             i = 0;
                         }
-                        try {
-                            CharSequence localCharSequence = Emoji.replaceEmoji(symbol, messageEditText.getPaint().getFontMetricsInt(), AndroidUtilities.dp(20));
+                        try {//TODO check
+                            CharSequence localCharSequence = Emoji.replaceEmoji(symbol/* + "\uFE0F"*/, messageEditText.getPaint().getFontMetricsInt(), AndroidUtilities.dp(20));
                             messageEditText.setText(messageEditText.getText().insert(i, localCharSequence));
                             int j = i + localCharSequence.length();
                             messageEditText.setSelection(j, j);
@@ -1095,18 +1101,18 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
             int currentHeight = AndroidUtilities.displaySize.x > AndroidUtilities.displaySize.y ? keyboardHeightLand : keyboardHeight;
             FileLog.e("tmessages", "show emoji with height = " + currentHeight);
             emojiPopup.setHeight(View.MeasureSpec.makeMeasureSpec(currentHeight, View.MeasureSpec.EXACTLY));
-            if (sizeNotifierRelativeLayout != null) {
+            if (sizeNotifierLayout != null) {
                 emojiPopup.setWidth(View.MeasureSpec.makeMeasureSpec(AndroidUtilities.displaySize.x, View.MeasureSpec.EXACTLY));
             }
 
             emojiPopup.showAtLocation(parentActivity.getWindow().getDecorView(), Gravity.BOTTOM | Gravity.LEFT, 0, 0);
 
             if (!keyboardVisible) {
-                if (sizeNotifierRelativeLayout != null) {
-                    sizeNotifierRelativeLayout.setPadding(0, 0, 0, currentHeight);
+                if (sizeNotifierLayout != null) {
+                    sizeNotifierLayout.setPadding(0, 0, 0, currentHeight);
                     emojiButton.setImageResource(R.drawable.ic_msg_panel_hide);
                     showKeyboardOnEmojiButton = false;
-                    onWindowSizeChanged(sizeNotifierRelativeLayout.getHeight() - sizeNotifierRelativeLayout.getPaddingBottom());
+                    onWindowSizeChanged(sizeNotifierLayout.getHeight() - sizeNotifierLayout.getPaddingBottom());
                 }
                 return;
             } else {
@@ -1129,19 +1135,19 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
             }
         }
         if (keyboardTransitionState == 0) {
-            if (sizeNotifierRelativeLayout != null) {
+            if (sizeNotifierLayout != null) {
                 if (post) {
-                    sizeNotifierRelativeLayout.post(new Runnable() {
+                    sizeNotifierLayout.post(new Runnable() {
                         public void run() {
-                            if (sizeNotifierRelativeLayout != null) {
-                                sizeNotifierRelativeLayout.setPadding(0, 0, 0, 0);
-                                onWindowSizeChanged(sizeNotifierRelativeLayout.getHeight());
+                            if (sizeNotifierLayout != null) {
+                                sizeNotifierLayout.setPadding(0, 0, 0, 0);
+                                onWindowSizeChanged(sizeNotifierLayout.getHeight());
                             }
                         }
                     });
                 } else {
-                    sizeNotifierRelativeLayout.setPadding(0, 0, 0, 0);
-                    onWindowSizeChanged(sizeNotifierRelativeLayout.getHeight());
+                    sizeNotifierLayout.setPadding(0, 0, 0, 0);
+                    onWindowSizeChanged(sizeNotifierLayout.getHeight());
                 }
             }
         }
@@ -1262,12 +1268,7 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
         }
 
         if (emojiPopup != null && emojiPopup.isShowing()) {
-            int newHeight = 0;
-            if (isWidthGreater) {
-                newHeight = keyboardHeightLand;
-            } else {
-                newHeight = keyboardHeight;
-            }
+            int newHeight = isWidthGreater ? keyboardHeightLand : keyboardHeight;
             final WindowManager.LayoutParams layoutParams = (WindowManager.LayoutParams) emojiPopup.getContentView().getLayoutParams();
             FileLog.e("tmessages", "update emoji height to = " + newHeight);
             if (layoutParams.width != AndroidUtilities.displaySize.x || layoutParams.height != newHeight) {
@@ -1277,10 +1278,10 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
                 if (wm != null) {
                     wm.updateViewLayout(emojiPopup.getContentView(), layoutParams);
                     if (!keyboardVisible) {
-                        if (sizeNotifierRelativeLayout != null) {
-                            sizeNotifierRelativeLayout.setPadding(0, 0, 0, layoutParams.height);
-                            sizeNotifierRelativeLayout.requestLayout();
-                            onWindowSizeChanged(sizeNotifierRelativeLayout.getHeight() - sizeNotifierRelativeLayout.getPaddingBottom());
+                        if (sizeNotifierLayout != null) {
+                            sizeNotifierLayout.setPadding(0, 0, 0, layoutParams.height);
+                            sizeNotifierLayout.requestLayout();
+                            onWindowSizeChanged(sizeNotifierLayout.getHeight() - sizeNotifierLayout.getPaddingBottom());
                         }
                     }
                 }
@@ -1289,13 +1290,13 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
 
         boolean oldValue = keyboardVisible;
         keyboardVisible = height > 0;
-        if (keyboardVisible && (sizeNotifierRelativeLayout.getPaddingBottom() > 0 || keyboardTransitionState == 1)) {
+        if (keyboardVisible && (sizeNotifierLayout.getPaddingBottom() > 0 || keyboardTransitionState == 1)) {
             setKeyboardTransitionState(1);
         } else if (keyboardTransitionState != 2 && !keyboardVisible && keyboardVisible != oldValue && emojiPopup != null && emojiPopup.isShowing()) {
             showEmojiPopup(false, true);
         }
         if (keyboardTransitionState == 0) {
-            onWindowSizeChanged(sizeNotifierRelativeLayout.getHeight() - sizeNotifierRelativeLayout.getPaddingBottom());
+            onWindowSizeChanged(sizeNotifierLayout.getHeight() - sizeNotifierLayout.getPaddingBottom());
         }
     }
 

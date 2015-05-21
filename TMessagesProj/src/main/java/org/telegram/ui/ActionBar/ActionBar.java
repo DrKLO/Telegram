@@ -88,7 +88,7 @@ public class ActionBar extends FrameLayout {
         }
         int maxTextWidth = 0;
 
-        LayoutParams layoutParams = null;
+        LayoutParams layoutParams;
 
         if (titleTextView != null && titleTextView.getVisibility() == VISIBLE) {
             if (!AndroidUtilities.isTablet() && getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
@@ -121,7 +121,7 @@ public class ActionBar extends FrameLayout {
             maxTextWidth = Math.max(maxTextWidth, subTitleTextView.getMeasuredWidth());
         }
 
-        int x = 0;
+        int x;
         if (backButtonImageView != null && backButtonImageView.getVisibility() == VISIBLE) {
             x = AndroidUtilities.dp(AndroidUtilities.isTablet() ? 80 : 72);
         } else {

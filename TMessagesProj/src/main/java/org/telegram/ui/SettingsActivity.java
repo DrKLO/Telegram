@@ -10,6 +10,7 @@ package org.telegram.ui;
 
 import android.animation.ObjectAnimator;
 import android.animation.StateListAnimator;
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
@@ -118,6 +119,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
     private int messagesSectionRow;
     private int messagesSectionRow2;
     private int textSizeRow;
+    private int stickersRow;
     private int sendByEnterRow;
     private int supportSectionRow;
     private int supportSectionRow2;
@@ -176,7 +178,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                             if (user == null) {
                                 return;
                             }
-                            TLRPC.TL_photos_photo photo = (TLRPC.TL_photos_photo)response;
+                            TLRPC.TL_photos_photo photo = (TLRPC.TL_photos_photo) response;
                             ArrayList<TLRPC.PhotoSize> sizes = photo.photo.sizes;
                             TLRPC.PhotoSize smallSize = FileLoader.getClosestPhotoSizeWithSize(sizes, 100);
                             TLRPC.PhotoSize bigSize = FileLoader.getClosestPhotoSizeWithSize(sizes, 1000);
@@ -231,6 +233,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         messagesSectionRow = rowCount++;
         messagesSectionRow2 = rowCount++;
         textSizeRow = rowCount++;
+        stickersRow = rowCount++;
         sendByEnterRow = rowCount++;
         supportSectionRow = rowCount++;
         supportSectionRow2 = rowCount++;
@@ -293,20 +296,11 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                     builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialogInterface, int i) {
-                            SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
-                            SharedPreferences.Editor editor = preferences.edit();
-                            editor.clear().commit();
-                            MessagesController.getInstance().unregistedPush();
-                            MessagesController.getInstance().logOut();
-                            UserConfig.clearConfig();
-                            NotificationCenter.getInstance().postNotificationName(NotificationCenter.appDidLogout);
-                            MessagesStorage.getInstance().cleanUp(false);
-                            MessagesController.getInstance().cleanUp();
-                            ContactsController.getInstance().deleteAllAppAccounts();
+                            MessagesController.getInstance().performLogout(true);
                         }
                     });
                     builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-                    showAlertDialog(builder);
+                    showDialog(builder.create());
                 }
             }
         });
@@ -322,15 +316,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
 
         avatarImage = new BackupImageView(context);
         avatarImage.setRoundRadius(AndroidUtilities.dp(30));
-        actionBar.addView(avatarImage);
-        FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) avatarImage.getLayoutParams();
-        layoutParams.gravity = (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.BOTTOM;
-        layoutParams.width = AndroidUtilities.dp(60);
-        layoutParams.height = AndroidUtilities.dp(60);
-        layoutParams.leftMargin = LocaleController.isRTL ? 0 : AndroidUtilities.dp(17);
-        layoutParams.rightMargin = LocaleController.isRTL ? AndroidUtilities.dp(17) : 0;
-        layoutParams.bottomMargin = AndroidUtilities.dp(22);
-        avatarImage.setLayoutParams(layoutParams);
+        actionBar.addView(avatarImage, LayoutHelper.createFrame(60, 60, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.BOTTOM, LocaleController.isRTL ? 0 : 17, 0, LocaleController.isRTL ? 17 : 0, 22));
         avatarImage.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -351,15 +337,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         nameTextView.setEllipsize(TextUtils.TruncateAt.END);
         nameTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT));
         nameTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
-        actionBar.addView(nameTextView);
-        layoutParams = (FrameLayout.LayoutParams) nameTextView.getLayoutParams();
-        layoutParams.width = LayoutHelper.WRAP_CONTENT;
-        layoutParams.height = LayoutHelper.WRAP_CONTENT;
-        layoutParams.leftMargin = AndroidUtilities.dp(LocaleController.isRTL ? 16 : 97);
-        layoutParams.rightMargin = AndroidUtilities.dp(LocaleController.isRTL ? 97 : 16);
-        layoutParams.bottomMargin = AndroidUtilities.dp(51);
-        layoutParams.gravity = (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.BOTTOM;
-        nameTextView.setLayoutParams(layoutParams);
+        actionBar.addView(nameTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.BOTTOM, LocaleController.isRTL ? 16 : 97, 0, LocaleController.isRTL ? 97 : 16, 51));
 
         onlineTextView = new TextView(context);
         onlineTextView.setTextColor(AvatarDrawable.getProfileTextColorForId(5));
@@ -369,27 +347,14 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         onlineTextView.setSingleLine(true);
         onlineTextView.setEllipsize(TextUtils.TruncateAt.END);
         onlineTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT));
-        actionBar.addView(onlineTextView);
-        layoutParams = (FrameLayout.LayoutParams) onlineTextView.getLayoutParams();
-        layoutParams.width = LayoutHelper.WRAP_CONTENT;
-        layoutParams.height = LayoutHelper.WRAP_CONTENT;
-        layoutParams.leftMargin = AndroidUtilities.dp(LocaleController.isRTL ? 16 : 97);
-        layoutParams.rightMargin = AndroidUtilities.dp(LocaleController.isRTL ? 97 : 16);
-        layoutParams.bottomMargin = AndroidUtilities.dp(30);
-        layoutParams.gravity = (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.BOTTOM;
-        onlineTextView.setLayoutParams(layoutParams);
+        actionBar.addView(onlineTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.BOTTOM, LocaleController.isRTL ? 16 : 97, 0, LocaleController.isRTL ? 97 : 16, 30));
 
         listView = new ListView(context);
         listView.setDivider(null);
         listView.setDividerHeight(0);
         listView.setVerticalScrollBarEnabled(false);
         AndroidUtilities.setListViewEdgeEffectColor(listView, AvatarDrawable.getProfileBackColorForId(5));
-        frameLayout.addView(listView);
-        layoutParams = (FrameLayout.LayoutParams) listView.getLayoutParams();
-        layoutParams.width = LayoutHelper.MATCH_PARENT;
-        layoutParams.height = LayoutHelper.MATCH_PARENT;
-        layoutParams.gravity = Gravity.TOP;
-        listView.setLayoutParams(layoutParams);
+        frameLayout.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT));
         listView.setAdapter(listAdapter);
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
@@ -418,7 +383,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                             }
                         }
                     });
-                    showAlertDialog(builder);
+                    showDialog(builder.create());
                 } else if (i == enableAnimationsRow) {
                     SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
                     boolean animations = preferences.getBoolean("view_animations", true);
@@ -451,7 +416,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                         }
                     });
                     builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-                    showAlertDialog(builder);
+                    showDialog(builder.create());
                 } else if (i == sendLogsRow) {
                     sendLogs();
                 } else if (i == clearLogsRow) {
@@ -488,7 +453,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                         }
                     });
                     builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-                    showAlertDialog(builder);
+                    showDialog(builder.create());
                 } else if (i == telegramFaqRow) {
                     try {
                         Intent pickIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(LocaleController.getString("TelegramFaqUrl", R.string.TelegramFaqUrl)));
@@ -521,7 +486,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                         }
                     });
                     builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-                    showAlertDialog(builder);
+                    showDialog(builder.create());
                 } else if (i == wifiDownloadRow || i == mobileDownloadRow || i == roamingDownloadRow) {
                     if (getParentActivity() == null) {
                         return;
@@ -575,7 +540,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
 
                                     if (i == mobileDownloadRow) {
                                         editor.putInt("mobileDataDownloadMask", mask);
-                                        mask = MediaController.getInstance().mobileDataDownloadMask = mask;
+                                        MediaController.getInstance().mobileDataDownloadMask = mask;
                                     } else if (i == wifiDownloadRow) {
                                         editor.putInt("wifiDownloadMask", mask);
                                         MediaController.getInstance().wifiDownloadMask = mask;
@@ -590,11 +555,13 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                                 }
                             });
                     builder.setNegativeButton(LocaleController.getString("OK", R.string.OK), null);
-                    showAlertDialog(builder);
+                    showDialog(builder.create());
                 } else if (i == usernameRow) {
                     presentFragment(new ChangeUsernameActivity());
                 } else if (i == numberRow) {
                     presentFragment(new ChangePhoneHelpActivity());
+                } else if (i == stickersRow) {
+                    presentFragment(new StickersActivity());
                 }
             }
         });
@@ -611,20 +578,14 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             animator.addState(new int[]{}, ObjectAnimator.ofFloat(writeButton, "translationZ", AndroidUtilities.dp(4), AndroidUtilities.dp(2)).setDuration(200));
             writeButton.setStateListAnimator(animator);
             writeButton.setOutlineProvider(new ViewOutlineProvider() {
+                @SuppressLint("NewApi")
                 @Override
                 public void getOutline(View view, Outline outline) {
                     outline.setOval(0, 0, AndroidUtilities.dp(56), AndroidUtilities.dp(56));
                 }
             });
         }
-        frameLayout.addView(writeButton);
-        layoutParams = (FrameLayout.LayoutParams) writeButton.getLayoutParams();
-        layoutParams.width = LayoutHelper.WRAP_CONTENT;
-        layoutParams.height = LayoutHelper.WRAP_CONTENT;
-        layoutParams.leftMargin = AndroidUtilities.dp(LocaleController.isRTL ? 16 : 0);
-        layoutParams.rightMargin = AndroidUtilities.dp(LocaleController.isRTL ? 0 : 16);
-        layoutParams.gravity = (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT);
-        writeButton.setLayoutParams(layoutParams);
+        frameLayout.addView(writeButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.TOP, LocaleController.isRTL ? 16 : 0, 0, LocaleController.isRTL ? 0 : 16, 0));
         writeButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -663,7 +624,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                         }
                     }
                 });
-                showAlertDialog(builder);
+                showDialog(builder.create());
             }
         });
 
@@ -737,7 +698,8 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
     }
 
     @Override
-    public void willSwitchFromPhoto(MessageObject messageObject, TLRPC.FileLocation fileLocation, int index) { }
+    public void willSwitchFromPhoto(MessageObject messageObject, TLRPC.FileLocation fileLocation, int index) {
+    }
 
     @Override
     public void willHidePhotoViewer() {
@@ -745,19 +707,26 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
     }
 
     @Override
-    public boolean isPhotoChecked(int index) { return false; }
+    public boolean isPhotoChecked(int index) {
+        return false;
+    }
 
     @Override
-    public void setPhotoChecked(int index) { }
+    public void setPhotoChecked(int index) {
+    }
 
     @Override
-    public void cancelButtonPressed() { }
+    public void cancelButtonPressed() {
+    }
 
     @Override
-    public void sendButtonPressed(int index) { }
+    public void sendButtonPressed(int index) {
+    }
 
     @Override
-    public int getSelectedCount() { return 0; }
+    public int getSelectedCount() {
+        return 0;
+    }
 
     public void performAskAQuestion() {
         final SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
@@ -797,7 +766,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 public void run(TLObject response, TLRPC.TL_error error) {
                     if (error == null) {
 
-                        final TLRPC.TL_help_support res = (TLRPC.TL_help_support)response;
+                        final TLRPC.TL_help_support res = (TLRPC.TL_help_support) response;
                         AndroidUtilities.runOnUIThread(new Runnable() {
                             @Override
                             public void run() {
@@ -866,7 +835,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
     @Override
     public void didReceivedNotification(int id, Object... args) {
         if (id == NotificationCenter.updateInterfaces) {
-            int mask = (Integer)args[0];
+            int mask = (Integer) args[0];
             if ((mask & MessagesController.UPDATE_MASK_AVATAR) != 0 || (mask & MessagesController.UPDATE_MASK_NAME) != 0) {
                 updateUserData();
             }
@@ -898,14 +867,14 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         }
 
         if (avatarImage != null) {
-            float diff = actionBar.getExtraHeight() / (float)AndroidUtilities.dp(88);
+            float diff = actionBar.getExtraHeight() / (float) AndroidUtilities.dp(88);
             float diffm = 1.0f - diff;
 
-            int avatarSize = 42 + (int)(18 * diff);
-            int avatarX = 17 + (int)(47 * diffm);
-            int avatarY = AndroidUtilities.dp(22) - (int)((AndroidUtilities.dp(22) - (AndroidUtilities.getCurrentActionBarHeight() - AndroidUtilities.dp(42)) / 2) * (1.0f - diff));
-            int nameX = 97 + (int)(21 * diffm);
-            int nameEndX = 16 + (int)(32 * diffm);
+            int avatarSize = 42 + (int) (18 * diff);
+            int avatarX = 17 + (int) (47 * diffm);
+            int avatarY = AndroidUtilities.dp(22) - (int) ((AndroidUtilities.dp(22) - (AndroidUtilities.getCurrentActionBarHeight() - AndroidUtilities.dp(42)) / 2) * (1.0f - diff));
+            int nameX = 97 + (int) (21 * diffm);
+            int nameEndX = 16 + (int) (32 * diffm);
             int nameY = avatarY + AndroidUtilities.dp(29 - 13 * diffm);
             int statusY = avatarY + AndroidUtilities.dp(8 - 7 * diffm);
             float scale = 1.0f - 0.12f * diffm;
@@ -987,7 +956,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         try {
             ArrayList<Uri> uris = new ArrayList<>();
             File sdCard = ApplicationLoader.applicationContext.getExternalFilesDir(null);
-            File dir = new File (sdCard.getAbsolutePath() + "/logs");
+            File dir = new File(sdCard.getAbsolutePath() + "/logs");
             File[] files = dir.listFiles();
             for (File file : files) {
                 uris.add(Uri.fromFile(file));
@@ -997,7 +966,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 return;
             }
             Intent i = new Intent(Intent.ACTION_SEND_MULTIPLE);
-            i.setType("message/rfc822") ;
+            i.setType("message/rfc822");
             i.putExtra(Intent.EXTRA_EMAIL, new String[]{BuildVars.SEND_LOGS_EMAIL});
             i.putExtra(Intent.EXTRA_SUBJECT, "last logs");
             i.putParcelableArrayListExtra(Intent.EXTRA_STREAM, uris);
@@ -1024,7 +993,8 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             return i == textSizeRow || i == enableAnimationsRow || i == notificationRow || i == backgroundRow || i == numberRow ||
                     i == askQuestionRow || i == sendLogsRow || i == sendByEnterRow || i == privacyRow || i == wifiDownloadRow ||
                     i == mobileDownloadRow || i == clearLogsRow || i == roamingDownloadRow || i == languageRow || i == usernameRow ||
-                    i == switchBackendButtonRow || i == telegramFaqRow || i == contactsSortRow || i == contactsReimportRow || i == saveToGalleryRow;
+                    i == switchBackendButtonRow || i == telegramFaqRow || i == contactsSortRow || i == contactsReimportRow || i == saveToGalleryRow ||
+                    i == stickersRow;
         }
 
         @Override
@@ -1104,6 +1074,8 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                     textCell.setText(LocaleController.getString("TelegramFAQ", R.string.TelegramFaq), true);
                 } else if (i == contactsReimportRow) {
                     textCell.setText(LocaleController.getString("ImportContacts", R.string.ImportContacts), true);
+                } else if (i == stickersRow) {
+                    textCell.setText(LocaleController.getString("Stickers", R.string.Stickers), true);
                 }
             } else if (type == 3) {
                 if (view == null) {
@@ -1151,7 +1123,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 TextDetailSettingsCell textCell = (TextDetailSettingsCell) view;
 
                 if (i == mobileDownloadRow || i == wifiDownloadRow || i == roamingDownloadRow) {
-                    int mask = 0;
+                    int mask;
                     String value;
                     SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
                     if (i == mobileDownloadRow) {
@@ -1217,11 +1189,12 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         public int getItemViewType(int i) {
             if (i == emptyRow || i == overscrollRow) {
                 return 0;
-            } if (i == settingsSectionRow || i == supportSectionRow || i == messagesSectionRow || i == mediaDownloadSection || i == contactsSectionRow) {
+            }
+            if (i == settingsSectionRow || i == supportSectionRow || i == messagesSectionRow || i == mediaDownloadSection || i == contactsSectionRow) {
                 return 1;
             } else if (i == enableAnimationsRow || i == sendByEnterRow || i == saveToGalleryRow) {
                 return 3;
-            } else if (i == notificationRow || i == backgroundRow || i == askQuestionRow || i == sendLogsRow || i == privacyRow || i == clearLogsRow || i == switchBackendButtonRow || i == telegramFaqRow || i == contactsReimportRow || i == textSizeRow || i == languageRow || i == contactsSortRow) {
+            } else if (i == notificationRow || i == backgroundRow || i == askQuestionRow || i == sendLogsRow || i == privacyRow || i == clearLogsRow || i == switchBackendButtonRow || i == telegramFaqRow || i == contactsReimportRow || i == textSizeRow || i == languageRow || i == contactsSortRow || i == stickersRow) {
                 return 2;
             } else if (i == versionRow) {
                 return 5;

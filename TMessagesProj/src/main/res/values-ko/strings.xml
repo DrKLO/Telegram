@@ -126,6 +126,8 @@
     <string name="SetTimer">자동삭제 타이머 설정</string>
     <string name="ServiceNotifications">서비스 알림</string>
     <string name="GettingLinkInfo">링크 정보를 가져오는 중...</string>
+    <string name="OpenInBrowser">브라우져에서 열기</string>
+    <string name="CopyUrl">URL 복사</string>
     <!--notification-->
     <string name="MessageLifetimeChanged">%1$s님이 자동삭제를 %2$s 후로 설정했습니다</string>
     <string name="MessageLifetimeChangedOutgoing">자동삭제를 %1$s 후로 설정했습니다</string>
@@ -241,6 +243,21 @@
     <string name="UsernameAvailable">%1$s: 사용 가능합니다.</string>
     <string name="UsernameEmpty">없음</string>
     <string name="ErrorOccurred">오류가 발생했습니다.</string>
+    <!--stickers view-->
+    <string name="Stickers">스티커</string>
+    <string name="GeniusStickerPackName">Great Minds</string>
+    <string name="StickersInfo">\@stickers 봇을 통하여 누구든지 스스로 제작한 스티커를 등록 할 수 있습니다.\n\n스티커는  더블탭하여 \"스티커 추가\" 를 통하여 추가할 수 있습니다.</string>
+    <string name="AddStickers">스티커 추가</string>
+    <string name="AddToStickers">스티커 추가</string>
+    <string name="AddStickersNotFound">스티커를 찾을 수 없음</string>
+    <string name="StickersRemoved">스티커 제거됨</string>
+    <string name="AddStickersInstalled">새로운 스티커가 추가되었습니다.</string>
+    <string name="StickersHide">숨김</string>
+    <string name="StickersShow">보기</string>
+    <string name="StickersShare">공유</string>
+    <string name="StickersCopy">링크 복사</string>
+    <string name="StickersRemove">삭제</string>
+    <string name="NoStickers">스티커가 아직 없음</string>
     <!--settings view-->
     <string name="ResetNotificationsText">모든 알림 설정이 초기화되었습니다</string>
     <string name="TextSize">채팅 글자 크기</string>
@@ -517,6 +534,7 @@
     <string name="Done">완료</string>
     <string name="Open">열기</string>
     <string name="Cancel">취소</string>
+    <string name="Close">닫기</string>
     <string name="Add">추가</string>
     <string name="Edit">편집</string>
     <string name="Send">보내기</string>
@@ -551,6 +569,7 @@
     <string name="ActionKickUserYou">un1님이 추방했습니다</string>
     <string name="ActionAddUserYou">un1님이 그룹에 초대했습니다</string>
     <string name="ActionAddUserSelf">un1 님께서 그룹에 돌아오셨습니다</string>
+    <string name="ActionAddUserSelfYou">그룹에 돌아오셨습니다.</string>
     <string name="UnsuppotedMedia">이 메시지는 사용 중인 텔레그램의 버전이 낮아 지원하지 않습니다. 앱을 업데이트 하세요: http://telegram.org/update</string>
     <string name="AttachPhoto">사진</string>
     <string name="AttachVideo">동영상</string>
@@ -713,6 +732,12 @@
     <string name="Meters_few">%1$d 미터</string>
     <string name="Meters_many">%1$d 미터</string>
     <string name="Meters_other">%1$d 미터</string>
+    <string name="Stickers_zero">스티커 %1$d개</string>
+    <string name="Stickers_one">스티커 %1$d개</string>
+    <string name="Stickers_two">스티커 %1$d개</string>
+    <string name="Stickers_few">스티커 %1$d개</string>
+    <string name="Stickers_many">스티커 %1$d개</string>
+    <string name="Stickers_other">스티커 %1$d개</string>
     <!--forwarded messages-->
     <string name="ForwardedMessage_zero">%1$d 개의 전달된 메시지</string>
     <string name="ForwardedMessage_one">전달된 메시지</string>
@@ -780,6 +805,6 @@
     <string name="formatterDay12H">a h:mm</string>
     <string name="formatDateAtTime">%1$s %2$s</string>
     <!--update text-->
-    <string name="updateText">텔레그램 안드로이드가 업데이트 되었습니다. 새로운 버전 2.8:\n\n-그룹방 초대링크 기능\n-스마트 알림\n-이모티콘 스티커탭\n-사진 설명 기능\n-위치에 장소 및 안내 기능\n-음성 메시지 \'청취확인\' 기능\n-\'입력 중\' 확장 : 사진 보내는중, 녹음 중등\n-부드러운 스크롤링 및 애니메이션 향상</string>
-    <string name="updateBuild">516</string>
+    <string name="updateText">텔레그램 안드로이드 버전이 업데이트 되었습니다. 새로운 버전은 2.9 입니다:\n\n - 아래와 같은 커스텀 스티커 설치 및 공유 : https://telegram.me/addstickers/Animals\n - 커스텀 스티커를 신규로 생성하여 등록할 수 있는 @stickers 봇 활용\n\n - Android Auto와 텔레그램 호환</string>
+    <string name="updateBuild">536</string>
 </resources>

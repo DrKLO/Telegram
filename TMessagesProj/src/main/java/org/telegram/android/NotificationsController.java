@@ -8,6 +8,7 @@
 
 package org.telegram.android;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.AlarmManager;
 import android.app.PendingIntent;
@@ -59,9 +60,11 @@ public class NotificationsController {
     private HashMap<Long, Point> smartNotificationsDialogs = new HashMap<>();
     private NotificationManagerCompat notificationManager = null;
     private HashMap<Long, Integer> pushDialogs = new HashMap<>();
-    private HashMap<Long, Integer> wearNoticationsIds = new HashMap<>();
+    private HashMap<Long, Integer> wearNotificationsIds = new HashMap<>();
+    private HashMap<Long, Integer> autoNotificationsIds = new HashMap<>();
     private HashMap<Long, Integer> pushDialogsOverrideMention = new HashMap<>();
     private int wearNotificationId = 10000;
+    private int autoNotificationId = 20000;
     public ArrayList<MessageObject> popupMessages = new ArrayList<>();
     private long openned_dialog_id = 0;
     private int total_unread_count = 0;
@@ -70,10 +73,10 @@ public class NotificationsController {
     private int lastOnlineFromOtherDevice = 0;
     private boolean inChatSoundEnabled = true;
     private int lastBadgeCount;
+    private String launcherClassName;
 
     private long lastSoundPlay;
-    //private MediaPlayer mediaPlayerIn;
-    //private MediaPlayer mediaPlayerOut;
+    private long lastSoundOutPlay;
     private SoundPool soundPool;
     private int soundIn;
     private int soundOut;
@@ -100,7 +103,6 @@ public class NotificationsController {
 
         try {
             audioManager = (AudioManager) ApplicationLoader.applicationContext.getSystemService(Context.AUDIO_SERVICE);
-            //mediaPlayer = new MediaPlayer();
         } catch (Exception e) {
             FileLog.e("tmessages", e);
         }
@@ -114,7 +116,8 @@ public class NotificationsController {
         pushMessagesDict.clear();
         pushDialogs.clear();
         popupMessages.clear();
-        wearNoticationsIds.clear();
+        wearNotificationsIds.clear();
+        autoNotificationsIds.clear();
         notifyCheck = false;
         lastBadgeCount = 0;
         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Context.MODE_PRIVATE);
@@ -376,13 +379,13 @@ public class NotificationsController {
             int needVibrate = 0;
             String choosenSoundPath = null;
             int ledColor = 0xff00ff00;
-            boolean inAppSounds = false;
-            boolean inAppVibrate = false;
+            boolean inAppSounds;
+            boolean inAppVibrate;
             boolean inAppPreview = false;
-            boolean inAppPriority = false;
+            boolean inAppPriority;
             int priority = 0;
-            int priorityOverride = 0;
-            int vibrateOverride = 0;
+            int priorityOverride;
+            int vibrateOverride;
 
             SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Context.MODE_PRIVATE);
             int notifyOverride = getNotifyOverride(preferences, override_dialog_id);
@@ -517,7 +520,7 @@ public class NotificationsController {
             }
             PendingIntent contentIntent = PendingIntent.getActivity(ApplicationLoader.applicationContext, 0, intent, PendingIntent.FLAG_ONE_SHOT);
 
-            String name = null;
+            String name;
             boolean replace = true;
             if ((int)dialog_id == 0 || pushDialogs.size() > 1 || AndroidUtilities.needShowPasscode(false) || UserConfig.isWaitingForPasscodeEnter) {
                 name = LocaleController.getString("AppName", R.string.AppName);
@@ -530,7 +533,7 @@ public class NotificationsController {
                 }
             }
 
-            String detailText = null;
+            String detailText;
             if (pushDialogs.size() == 1) {
                 detailText = LocaleController.formatPluralString("NewMessages", total_unread_count);
             } else {
@@ -547,12 +550,16 @@ public class NotificationsController {
                     .setGroupSummary(true)
                     .setColor(0xff2ca5e0);
 
-            if (priority == 0) {
-                mBuilder.setPriority(NotificationCompat.PRIORITY_DEFAULT);
-            } else if (priority == 1) {
-                mBuilder.setPriority(NotificationCompat.PRIORITY_HIGH);
-            } else if (priority == 2) {
-                mBuilder.setPriority(NotificationCompat.PRIORITY_MAX);
+            if (!notifyAboutLast) {
+                mBuilder.setPriority(NotificationCompat.PRIORITY_LOW);
+            } else {
+                if (priority == 0) {
+                    mBuilder.setPriority(NotificationCompat.PRIORITY_DEFAULT);
+                } else if (priority == 1) {
+                    mBuilder.setPriority(NotificationCompat.PRIORITY_HIGH);
+                } else if (priority == 2) {
+                    mBuilder.setPriority(NotificationCompat.PRIORITY_MAX);
+                }
             }
 
             mBuilder.setCategory(NotificationCompat.CATEGORY_MESSAGE);
@@ -649,18 +656,20 @@ public class NotificationsController {
                 mBuilder.setVibrate(new long[]{0, 0});
             }
 
+            showExtraNotifications(mBuilder, notifyAboutLast);
             notificationManager.notify(1, mBuilder.build());
             if (preferences.getBoolean("EnablePebbleNotifications", false)) {
                 sendAlertToPebble(lastMessageFull);
             }
-            showWearNotifications(notifyAboutLast);
+
             scheduleNotificationRepeat();
         } catch (Exception e) {
             FileLog.e("tmessages", e);
         }
     }
 
-    public void showWearNotifications(boolean notifyAboutLast) {
+    @SuppressLint("InlinedApi")
+    public void showExtraNotifications(NotificationCompat.Builder notificationBuilder, boolean notifyAboutLast) {
         if (Build.VERSION.SDK_INT < 19) {
             return;
         }
@@ -681,16 +690,21 @@ public class NotificationsController {
             arrayList.add(messageObject);
         }
 
-        HashMap<Long, Integer> oldIds = new HashMap<>();
-        oldIds.putAll(wearNoticationsIds);
-        wearNoticationsIds.clear();
+        HashMap<Long, Integer> oldIdsWear = new HashMap<>();
+        oldIdsWear.putAll(wearNotificationsIds);
+        wearNotificationsIds.clear();
+
+        HashMap<Long, Integer> oldIdsAuto = new HashMap<>();
+        oldIdsAuto.putAll(autoNotificationsIds);
+        autoNotificationsIds.clear();
 
         for (long dialog_id : sortedDialogs) {
             ArrayList<MessageObject> messageObjects = messagesByDialogs.get(dialog_id);
             int max_id = messageObjects.get(0).getId();
+            int max_date = messageObjects.get(0).messageOwner.date;
             TLRPC.Chat chat = null;
             TLRPC.User user = null;
-            String name = null;
+            String name;
             if (dialog_id > 0) {
                 user = MessagesController.getInstance().getUser((int)dialog_id);
                 if (user == null) {
@@ -708,28 +722,56 @@ public class NotificationsController {
                 name = ContactsController.formatName(user.first_name, user.last_name);
             }
 
-            Integer notificationId = oldIds.get(dialog_id);
-            if (notificationId == null) {
-                notificationId = wearNotificationId++;
+            Integer notificationIdWear = oldIdsWear.get(dialog_id);
+            if (notificationIdWear == null) {
+                notificationIdWear = wearNotificationId++;
             } else {
-                oldIds.remove(dialog_id);
+                oldIdsWear.remove(dialog_id);
+            }
+
+            Integer notificationIdAuto = oldIdsAuto.get(dialog_id);
+            if (notificationIdAuto == null) {
+                notificationIdAuto = autoNotificationId++;
+            } else {
+                oldIdsAuto.remove(dialog_id);
             }
 
             Intent replyIntent = new Intent(ApplicationLoader.applicationContext, WearReplyReceiver.class);
             replyIntent.putExtra("dialog_id", dialog_id);
             replyIntent.putExtra("max_id", max_id);
-            PendingIntent replyPendingIntent = PendingIntent.getBroadcast(ApplicationLoader.applicationContext, notificationId, replyIntent, PendingIntent.FLAG_UPDATE_CURRENT);
-            RemoteInput remoteInput = new RemoteInput.Builder(EXTRA_VOICE_REPLY).setLabel(LocaleController.getString("Reply", R.string.Reply)).build();
+            PendingIntent replyPendingIntent = PendingIntent.getBroadcast(ApplicationLoader.applicationContext, notificationIdWear, replyIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+            RemoteInput remoteInputWear = new RemoteInput.Builder(EXTRA_VOICE_REPLY).setLabel(LocaleController.getString("Reply", R.string.Reply)).build();
             String replyToString;
             if (chat != null) {
                 replyToString = LocaleController.formatString("ReplyToGroup", R.string.ReplyToGroup, name);
             } else {
                 replyToString = LocaleController.formatString("ReplyToUser", R.string.ReplyToUser, name);
             }
-            NotificationCompat.Action action = new NotificationCompat.Action.Builder(R.drawable.ic_reply_icon, replyToString, replyPendingIntent).addRemoteInput(remoteInput).build();
+            NotificationCompat.Action action = new NotificationCompat.Action.Builder(R.drawable.ic_reply_icon, replyToString, replyPendingIntent).addRemoteInput(remoteInputWear).build();
+
+            Intent msgHeardIntent = new Intent();
+            msgHeardIntent.addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES);
+            msgHeardIntent.setAction("org.telegram.messenger.ACTION_MESSAGE_HEARD");
+            msgHeardIntent.putExtra("dialog_id", dialog_id);
+            msgHeardIntent.putExtra("max_id", max_id);
+            PendingIntent msgHeardPendingIntent = PendingIntent.getBroadcast(ApplicationLoader.applicationContext, notificationIdAuto, msgHeardIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+
+            Intent msgReplyIntent = new Intent();
+            msgReplyIntent.addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES);
+            msgReplyIntent.setAction("org.telegram.messenger.ACTION_MESSAGE_REPLY");
+            msgReplyIntent.putExtra("dialog_id", dialog_id);
+            msgReplyIntent.putExtra("max_id", max_id);
+            PendingIntent msgReplyPendingIntent = PendingIntent.getBroadcast(ApplicationLoader.applicationContext, notificationIdAuto, msgReplyIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+            RemoteInput remoteInputAuto = new RemoteInput.Builder(NotificationsController.EXTRA_VOICE_REPLY).setLabel(LocaleController.getString("Reply", R.string.Reply)).build();
+
+            NotificationCompat.CarExtender.UnreadConversation.Builder unreadConvBuilder = new NotificationCompat.CarExtender.UnreadConversation.Builder(name)
+            .setReadPendingIntent(msgHeardPendingIntent)
+            .setReplyAction(msgReplyPendingIntent, remoteInputAuto)
+            .setLatestTimestamp((long) max_date * 1000);
 
             String text = "";
-            for (MessageObject messageObject : messageObjects) {
+            for (int a = messageObjects.size() - 1; a >= 0; a--) {
+                MessageObject messageObject = messageObjects.get(a);
                 String message = getStringForMessage(messageObject, false);
                 if (message == null) {
                     continue;
@@ -743,7 +785,39 @@ public class NotificationsController {
                     text += "\n\n";
                 }
                 text += message;
+
+                unreadConvBuilder.addMessage(message);
             }
+
+
+
+            TLRPC.FileLocation photoPath = null;
+            if (chat != null) {
+                if (chat.photo != null && chat.photo.photo_small != null && chat.photo.photo_small.volume_id != 0 && chat.photo.photo_small.local_id != 0) {
+                    photoPath = chat.photo.photo_small;
+                }
+            } else {
+                if (user.photo != null && user.photo.photo_small != null && user.photo.photo_small.volume_id != 0 && user.photo.photo_small.local_id != 0) {
+                    photoPath = user.photo.photo_small;
+                }
+            }
+            //notificationBuilder.extend(new NotificationCompat.CarExtender().setUnreadConversation(unreadConvBuilder.build()));
+            NotificationCompat.Builder builderAuto = new NotificationCompat.Builder(ApplicationLoader.applicationContext)
+                    .setSmallIcon(R.drawable.notification)
+                    .setColor(0xff2ca5e0)
+                    .setGroup("messages")
+                    .setLocalOnly(true)
+                    //.setGroupSummary(false)
+                    //.setCategory(NotificationCompat.CATEGORY_MESSAGE)
+                    .extend(new NotificationCompat.CarExtender().setUnreadConversation(unreadConvBuilder.build()));
+            if (photoPath != null) {
+                BitmapDrawable img = ImageLoader.getInstance().getImageFromMemory(photoPath, null, "50_50");
+                if (img != null) {
+                    builderAuto.setLargeIcon(img.getBitmap());
+                }
+            }
+            notificationManager.notify("android_auto", notificationIdAuto, builderAuto.build());
+            autoNotificationsIds.put(dialog_id, notificationIdAuto);
 
             Intent intent = new Intent(ApplicationLoader.applicationContext, LaunchActivity.class);
             intent.setAction("com.tmessages.openchat" + Math.random() + Integer.MAX_VALUE);
@@ -760,20 +834,30 @@ public class NotificationsController {
                     .setSmallIcon(R.drawable.notification)
                     .setGroup("messages")
                     .setContentText(text)
+                    .setColor(0xff2ca5e0)
                     .setGroupSummary(false)
                     .setContentIntent(contentIntent)
                     .extend(new NotificationCompat.WearableExtender().addAction(action))
                     .setCategory(NotificationCompat.CATEGORY_MESSAGE);
+            if (photoPath != null) {
+                BitmapDrawable img = ImageLoader.getInstance().getImageFromMemory(photoPath, null, "50_50");
+                if (img != null) {
+                    builder.setLargeIcon(img.getBitmap());
+                }
+            }
 
             if (chat == null && user != null && user.phone != null && user.phone.length() > 0) {
                 builder.addPerson("tel:+" + user.phone);
             }
 
-            notificationManager.notify(notificationId, builder.build());
-            wearNoticationsIds.put(dialog_id, notificationId);
+            notificationManager.notify(notificationIdWear, builder.build());
+            wearNotificationsIds.put(dialog_id, notificationIdWear);
         }
 
-        for (HashMap.Entry<Long, Integer> entry : oldIds.entrySet()) {
+        for (HashMap.Entry<Long, Integer> entry : oldIdsAuto.entrySet()) {
+            notificationManager.cancel(entry.getValue());
+        }
+        for (HashMap.Entry<Long, Integer> entry : oldIdsWear.entrySet()) {
             notificationManager.cancel(entry.getValue());
         }
     }
@@ -783,6 +867,14 @@ public class NotificationsController {
             notificationManager.cancel(1);
             pushMessages.clear();
             pushMessagesDict.clear();
+            for (HashMap.Entry<Long, Integer> entry : autoNotificationsIds.entrySet()) {
+                notificationManager.cancel(entry.getValue());
+            }
+            autoNotificationsIds.clear();
+            for (HashMap.Entry<Long, Integer> entry : wearNotificationsIds.entrySet()) {
+                notificationManager.cancel(entry.getValue());
+            }
+            wearNotificationsIds.clear();
             NotificationCenter.getInstance().postNotificationName(NotificationCenter.pushMessagesUpdated);
         } catch (Exception e) {
             FileLog.e("tmessages", e);
@@ -893,29 +985,19 @@ public class NotificationsController {
                     try {
                         if (soundPool == null) {
                             soundPool = new SoundPool(4, AudioManager.STREAM_SYSTEM, 0);
+                            soundPool.setOnLoadCompleteListener(new SoundPool.OnLoadCompleteListener() {
+                                @Override
+                                public void onLoadComplete(SoundPool soundPool, int sampleId, int status) {
+                                    if (status == 0) {
+                                        soundPool.play(sampleId, 1.0f, 1.0f, 1, 0, 1.0f);
+                                    }
+                                }
+                            });
                         }
                         if (soundIn == 0) {
                             soundIn = soundPool.load(ApplicationLoader.applicationContext, R.raw.sound_in, 1);
                         }
                         soundPool.play(soundIn, 1.0f, 1.0f, 1, 0, 1.0f);
-                        /*if (mediaPlayerIn == null) {
-                            AssetFileDescriptor assetFileDescriptor = ApplicationLoader.applicationContext.getResources().openRawResourceFd(R.raw.sound_in);
-                            if (assetFileDescriptor != null) {
-                                mediaPlayerIn = new MediaPlayer();
-                                mediaPlayerIn.setAudioStreamType(AudioManager.STREAM_SYSTEM);
-                                mediaPlayerIn.setDataSource(assetFileDescriptor.getFileDescriptor(), assetFileDescriptor.getStartOffset(), assetFileDescriptor.getLength());
-                                mediaPlayerIn.setLooping(false);
-                                assetFileDescriptor.close();
-                                mediaPlayerIn.prepare();
-                            }
-                        }
-                        try {
-                            mediaPlayerIn.pause();
-                            mediaPlayerIn.seekTo(0);
-                        } catch (Exception e) {
-                            FileLog.e("tmessages", e);
-                        }
-                        mediaPlayerIn.start();*/
                     } catch (Exception e) {
                         FileLog.e("tmessages", e);
                     }
@@ -941,31 +1023,25 @@ public class NotificationsController {
             @Override
             public void run() {
                 try {
+                    if (lastSoundOutPlay > System.currentTimeMillis() - 100) {
+                        return;
+                    }
+                    lastSoundOutPlay = System.currentTimeMillis();
                     if (soundPool == null) {
                         soundPool = new SoundPool(4, AudioManager.STREAM_SYSTEM, 0);
+                        soundPool.setOnLoadCompleteListener(new SoundPool.OnLoadCompleteListener() {
+                            @Override
+                            public void onLoadComplete(SoundPool soundPool, int sampleId, int status) {
+                                if (status == 0) {
+                                    soundPool.play(sampleId, 1.0f, 1.0f, 1, 0, 1.0f);
+                                }
+                            }
+                        });
                     }
                     if (soundOut == 0) {
                         soundOut = soundPool.load(ApplicationLoader.applicationContext, R.raw.sound_out, 1);
                     }
                     soundPool.play(soundOut, 1.0f, 1.0f, 1, 0, 1.0f);
-                    /*if (mediaPlayerOut == null) {
-                        AssetFileDescriptor assetFileDescriptor = ApplicationLoader.applicationContext.getResources().openRawResourceFd(R.raw.sound_out);
-                        if (assetFileDescriptor != null) {
-                            mediaPlayerOut = new MediaPlayer();
-                            mediaPlayerOut.setAudioStreamType(AudioManager.STREAM_SYSTEM);
-                            mediaPlayerOut.setDataSource(assetFileDescriptor.getFileDescriptor(), assetFileDescriptor.getStartOffset(), assetFileDescriptor.getLength());
-                            mediaPlayerOut.setLooping(false);
-                            assetFileDescriptor.close();
-                            mediaPlayerOut.prepare();
-                        }
-                    }
-                    try {
-                        mediaPlayerOut.pause();
-                        mediaPlayerOut.seekTo(0);
-                    } catch (Exception e) {
-                        FileLog.e("tmessages", e);
-                    }
-                    mediaPlayerOut.start();*/
                 } catch (Exception e) {
                     FileLog.e("tmessages", e);
                 }
@@ -1109,13 +1185,9 @@ public class NotificationsController {
                 delayedPushMessages.clear();
                 showOrUpdateNotification(notifyCheck);
             } else {
-                showOrUpdateNotification(false);
                 scheduleNotificationDelay(lastOnlineFromOtherDevice > ConnectionsManager.getInstance().getCurrentTime());
             }
         }
-        /*if (old_unread_count != total_unread_count) {
-            showOrUpdateNotification(notifyCheck);
-        }*/
         notifyCheck = false;
         if (preferences.getBoolean("badgeNumber", true)) {
             setBadge(ApplicationLoader.applicationContext, total_unread_count);
@@ -1217,15 +1289,24 @@ public class NotificationsController {
                      //ignore
                 }
                 try {
-                    String launcherClassName = getLauncherClassName(context);
+                    launcherClassName = getLauncherClassName(context);
                     if (launcherClassName == null) {
                         return;
                     }
-                    Intent intent = new Intent("android.intent.action.BADGE_COUNT_UPDATE");
-                    intent.putExtra("badge_count", count);
-                    intent.putExtra("badge_count_package_name", context.getPackageName());
-                    intent.putExtra("badge_count_class_name", launcherClassName);
-                    context.sendBroadcast(intent);
+                    AndroidUtilities.runOnUIThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            try {
+                                Intent intent = new Intent("android.intent.action.BADGE_COUNT_UPDATE");
+                                intent.putExtra("badge_count", count);
+                                intent.putExtra("badge_count_package_name", context.getPackageName());
+                                intent.putExtra("badge_count_class_name", launcherClassName);
+                                context.sendBroadcast(intent);
+                            } catch (Exception e) {
+                                FileLog.e("tmessages", e);
+                            }
+                        }
+                    });
                 } catch (Throwable e) {
                     FileLog.e("tmessages", e);
                 }

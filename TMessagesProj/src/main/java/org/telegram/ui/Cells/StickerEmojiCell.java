@@ -9,10 +9,14 @@
 package org.telegram.ui.Cells;
 
 import android.content.Context;
-import android.graphics.drawable.Drawable;
+import android.util.TypedValue;
 import android.view.Gravity;
 import android.widget.FrameLayout;
+import android.widget.TextView;
 
+import org.telegram.android.AndroidUtilities;
+import org.telegram.android.Emoji;
+import org.telegram.android.query.StickersQuery;
 import org.telegram.messenger.TLRPC;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.LayoutHelper;
@@ -21,6 +25,7 @@ public class StickerEmojiCell extends FrameLayout {
 
     private BackupImageView imageView;
     private TLRPC.Document sticker;
+    private TextView emojiTextView;
 
     public StickerEmojiCell(Context context) {
         super(context);
@@ -28,6 +33,10 @@ public class StickerEmojiCell extends FrameLayout {
         imageView = new BackupImageView(context);
         imageView.setAspectFit(true);
         addView(imageView, LayoutHelper.createFrame(66, 66, Gravity.CENTER));
+
+        emojiTextView = new TextView(context);
+        emojiTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+        addView(emojiTextView, LayoutHelper.createFrame(28, 28, Gravity.BOTTOM | Gravity.RIGHT));
     }
 
     @Override
@@ -43,11 +52,30 @@ public class StickerEmojiCell extends FrameLayout {
         return sticker;
     }
 
-    public void setSticker(TLRPC.Document document) {
+    public void setSticker(TLRPC.Document document, boolean showEmoji) {
         if (document != null) {
             sticker = document;
-            document.thumb.location.ext = "webp";
-            imageView.setImage(document.thumb.location, null, (Drawable) null);
+            imageView.setImage(document.thumb.location, null, "webp", null);
+
+
+            if (showEmoji) {
+                boolean set = false;
+                for (TLRPC.DocumentAttribute attribute : document.attributes) {
+                    if (attribute instanceof TLRPC.TL_documentAttributeSticker) {
+                        if (attribute.alt != null && attribute.alt.length() > 0) {
+                            emojiTextView.setText(Emoji.replaceEmoji(attribute.alt, emojiTextView.getPaint().getFontMetricsInt(), AndroidUtilities.dp(16)));
+                            set = true;
+                        }
+                        break;
+                    }
+                }
+                if (!set) {
+                    emojiTextView.setText(Emoji.replaceEmoji(StickersQuery.getEmojiForSticker(sticker.id), emojiTextView.getPaint().getFontMetricsInt(), AndroidUtilities.dp(16)));
+                }
+                emojiTextView.setVisibility(VISIBLE);
+            } else {
+                emojiTextView.setVisibility(INVISIBLE);
+            }
         }
     }
 }

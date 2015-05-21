@@ -294,7 +294,7 @@ public class ChatActivityAdapter {
                                         }
                                     }
                             );
-                            showAlertDialog(builder);
+                            showDialog(builder.create());
                         }
                     });
                 }

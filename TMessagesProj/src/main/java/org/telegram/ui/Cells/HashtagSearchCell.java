@@ -11,11 +11,14 @@ package org.telegram.ui.Cells;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.os.Build;
 import android.util.TypedValue;
 import android.view.Gravity;
+import android.view.MotionEvent;
 import android.widget.TextView;
 
 import org.telegram.android.AndroidUtilities;
+import org.telegram.messenger.R;
 
 public class HashtagSearchCell extends TextView {
 
@@ -32,6 +35,18 @@ public class HashtagSearchCell extends TextView {
             paint = new Paint();
             paint.setColor(0xffdcdcdc);
         }
+
+        setBackgroundResource(R.drawable.list_selector);
+    }
+
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+        if (Build.VERSION.SDK_INT >= 21 && getBackground() != null) {
+            if (event.getAction() == MotionEvent.ACTION_DOWN || event.getAction() == MotionEvent.ACTION_MOVE) {
+                getBackground().setHotspot(event.getX(), event.getY());
+            }
+        }
+        return super.onTouchEvent(event);
     }
 
     public void setNeedDivider(boolean value) {

@@ -376,7 +376,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
-                TLRPC.User user = null;
+                TLRPC.User user;
                 if (searching && searchWas) {
                     user = searchListViewAdapter.getItem(i);
                 } else {
@@ -482,12 +482,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                 updateVisibleRows(mask);
             }
         } else if (id == NotificationCenter.chatDidCreated) {
-            AndroidUtilities.runOnUIThread(new Runnable() {
-                @Override
-                public void run() {
-                    removeSelfFromStack();
-                }
-            });
+            removeSelfFromStack();
         }
     }
 

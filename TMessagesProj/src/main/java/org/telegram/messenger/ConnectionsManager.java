@@ -1,13 +1,14 @@
 /*
- * This is the source code of Telegram for Android v. 1.3.2.
+ * This is the source code of Telegram for Android v. 2.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013.
+ * Copyright Nikolai Kudashov, 2013-2015.
  */
 
 package org.telegram.messenger;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
@@ -24,7 +25,13 @@ import org.telegram.android.MessagesController;
 import org.telegram.android.NotificationCenter;
 
 import java.io.File;
+import java.net.Inet4Address;
+import java.net.Inet6Address;
+import java.net.InetAddress;
+import java.net.InterfaceAddress;
+import java.net.NetworkInterface;
 import java.util.ArrayList;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.concurrent.ConcurrentHashMap;
@@ -444,65 +451,115 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
             if (isTestBackend == 0) {
                 Datacenter datacenter = new Datacenter();
                 datacenter.datacenterId = 1;
-                datacenter.addAddressAndPort("149.154.175.50", 443);
+                datacenter.addAddressAndPort("149.154.175.50", 443, 0);
+                datacenter.addAddressAndPort("2001:b28:f23d:f001:0000:0000:0000:000a", 443, 1);
                 datacenters.put(datacenter.datacenterId, datacenter);
 
                 datacenter = new Datacenter();
                 datacenter.datacenterId = 2;
-                datacenter.addAddressAndPort("149.154.167.51", 443);
+                datacenter.addAddressAndPort("149.154.167.51", 443, 0);
+                datacenter.addAddressAndPort("2001:67c:4e8:f002:0000:0000:0000:000a", 443, 1);
                 datacenters.put(datacenter.datacenterId, datacenter);
 
                 datacenter = new Datacenter();
                 datacenter.datacenterId = 3;
-                datacenter.addAddressAndPort("149.154.175.100", 443);
+                datacenter.addAddressAndPort("149.154.175.100", 443, 0);
+                datacenter.addAddressAndPort("2001:b28:f23d:f003:0000:0000:0000:000a", 443, 1);
                 datacenters.put(datacenter.datacenterId, datacenter);
 
                 datacenter = new Datacenter();
                 datacenter.datacenterId = 4;
-                datacenter.addAddressAndPort("149.154.167.91", 443);
+                datacenter.addAddressAndPort("149.154.167.91", 443, 0);
+                datacenter.addAddressAndPort("2001:67c:4e8:f004:0000:0000:0000:000a", 443, 1);
                 datacenters.put(datacenter.datacenterId, datacenter);
 
                 datacenter = new Datacenter();
                 datacenter.datacenterId = 5;
-                datacenter.addAddressAndPort("149.154.171.5", 443);
+                datacenter.addAddressAndPort("149.154.171.5", 443, 0);
+                datacenter.addAddressAndPort("2001:b28:f23f:f005:0000:0000:0000:000a", 443, 1);
                 datacenters.put(datacenter.datacenterId, datacenter);
             } else {
                 Datacenter datacenter = new Datacenter();
                 datacenter.datacenterId = 1;
-                datacenter.addAddressAndPort("149.154.175.10", 443);
+                datacenter.addAddressAndPort("149.154.175.10", 443, 0);
+                datacenter.addAddressAndPort("2001:b28:f23d:f001:0000:0000:0000:000e", 443, 1);
                 datacenters.put(datacenter.datacenterId, datacenter);
 
                 datacenter = new Datacenter();
                 datacenter.datacenterId = 2;
-                datacenter.addAddressAndPort("149.154.167.40", 443);
+                datacenter.addAddressAndPort("149.154.167.40", 443, 0);
+                datacenter.addAddressAndPort("2001:67c:4e8:f002:0000:0000:0000:000e", 443, 1);
                 datacenters.put(datacenter.datacenterId, datacenter);
 
                 datacenter = new Datacenter();
                 datacenter.datacenterId = 3;
-                datacenter.addAddressAndPort("149.154.175.117", 443);
+                datacenter.addAddressAndPort("149.154.175.117", 443, 0);
+                datacenter.addAddressAndPort("2001:b28:f23d:f003:0000:0000:0000:000e", 443, 1);
                 datacenters.put(datacenter.datacenterId, datacenter);
             }
         } else if (datacenters.size() == 1) {
             Datacenter datacenter = new Datacenter();
             datacenter.datacenterId = 2;
-            datacenter.addAddressAndPort("149.154.167.51", 443);
+            datacenter.addAddressAndPort("149.154.167.51", 443, 0);
+            datacenter.addAddressAndPort("2001:67c:4e8:f002:0000:0000:0000:000a", 443, 1);
             datacenters.put(datacenter.datacenterId, datacenter);
 
             datacenter = new Datacenter();
             datacenter.datacenterId = 3;
-            datacenter.addAddressAndPort("149.154.175.100", 443);
+            datacenter.addAddressAndPort("149.154.175.100", 443, 0);
+            datacenter.addAddressAndPort("2001:b28:f23d:f003:0000:0000:0000:000a", 443, 1);
             datacenters.put(datacenter.datacenterId, datacenter);
 
             datacenter = new Datacenter();
             datacenter.datacenterId = 4;
-            datacenter.addAddressAndPort("149.154.167.91", 443);
+            datacenter.addAddressAndPort("149.154.167.91", 443, 0);
+            datacenter.addAddressAndPort("2001:67c:4e8:f004:0000:0000:0000:000a", 443, 1);
             datacenters.put(datacenter.datacenterId, datacenter);
 
             datacenter = new Datacenter();
             datacenter.datacenterId = 5;
-            datacenter.addAddressAndPort("149.154.171.5", 443);
+            datacenter.addAddressAndPort("149.154.171.5", 443, 0);
+            datacenter.addAddressAndPort("2001:b28:f23f:f005:0000:0000:0000:000a", 443, 1);
             datacenters.put(datacenter.datacenterId, datacenter);
         }
+    }
+
+    @SuppressLint("NewApi")
+    protected static boolean useIpv6Address() {
+        if (Build.VERSION.SDK_INT < 19) {
+            return false;
+        }
+        try {
+            NetworkInterface networkInterface;
+
+            Enumeration<NetworkInterface> networkInterfaces = NetworkInterface.getNetworkInterfaces();
+            while (networkInterfaces.hasMoreElements()) {
+                networkInterface = networkInterfaces.nextElement();
+                if (!networkInterface.isUp() || networkInterface.isLoopback()) {
+                    continue;
+                }
+                boolean hasIpv4 = false;
+                boolean hasIpv6 = false;
+                for (InterfaceAddress address : networkInterface.getInterfaceAddresses()) {
+                    InetAddress inetAddress = address.getAddress();
+                    if (inetAddress.isLinkLocalAddress() || inetAddress.isLoopbackAddress() || inetAddress.isMulticastAddress()) {
+                        continue;
+                    }
+                    if (inetAddress instanceof Inet6Address) {
+                        hasIpv6 = true;
+                    } else if (inetAddress instanceof Inet4Address) {
+                        hasIpv4 = true;
+                    }
+                }
+                if (!hasIpv4 && hasIpv6) {
+                    return true;
+                }
+            }
+        } catch (Throwable e) {
+            FileLog.e("tmessages", e);
+        }
+
+        return false;
     }
 
     private void saveSession() {
@@ -698,7 +755,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                     HashMap<String, Integer> ports = new HashMap<>();
                     addresses.add(ip_address);
                     ports.put(ip_address, port);
-                    exist.replaceAddressesAndPorts(addresses, ports);
+                    exist.replaceAddressesAndPorts(addresses, ports, 0);
                     exist.suspendConnections();
                     updateDcSettings(dc);
                 }
@@ -783,7 +840,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                             datacentersArr.add(existing);
                             datacenterMap.put(existing.datacenterId, existing);
                         }
-                        existing.addAddressAndPort(datacenterDesc.ip_address, datacenterDesc.port);
+                        existing.addAddressAndPort(datacenterDesc.ip_address, datacenterDesc.port, datacenterDesc.flags);
                     }
 
                     if (!datacentersArr.isEmpty()) {
@@ -792,7 +849,10 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                             if (exist == null) {
                                 datacenters.put(datacenter.datacenterId, datacenter);
                             } else {
-                                exist.replaceAddressesAndPorts(datacenter.addresses, datacenter.ports);
+                                exist.replaceAddressesAndPorts(datacenter.addressesIpv4, datacenter.ports, 0);
+                                exist.replaceAddressesAndPorts(datacenter.addressesIpv6, datacenter.ports, 1);
+                                exist.replaceAddressesAndPorts(datacenter.addressesIpv4Download, datacenter.ports, 2);
+                                exist.replaceAddressesAndPorts(datacenter.addressesIpv6Download, datacenter.ports, 3);
                             }
                             if (datacenter.datacenterId == movingToDatacenterId) {
                                 movingToDatacenterId = DEFAULT_DATACENTER_ID;
@@ -821,18 +881,12 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                 invoke.api_id = BuildVars.APP_ID;
                 try {
                     invoke.lang_code = LocaleController.getLocaleString(LocaleController.getInstance().getSystemDefaultLocale());
-                    if (invoke.lang_code == null || invoke.lang_code.length() == 0) {
+                    if (invoke.lang_code.length() == 0) {
                         invoke.lang_code = "en";
                     }
                     invoke.device_model = Build.MANUFACTURER + Build.MODEL;
-                    if (invoke.device_model == null) {
-                        invoke.device_model = "Android unknown";
-                    }
                     PackageInfo pInfo = ApplicationLoader.applicationContext.getPackageManager().getPackageInfo(ApplicationLoader.applicationContext.getPackageName(), 0);
                     invoke.app_version = pInfo.versionName + " (" + pInfo.versionCode + ")";
-                    if (invoke.app_version == null) {
-                        invoke.app_version = "App version unknown";
-                    }
                     invoke.system_version = "SDK " + Build.VERSION.SDK_INT;
                 } catch (Exception e) {
                     FileLog.e("tmessages", e);
@@ -1729,7 +1783,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
             data.cleanup();
         }
 
-        MessageKeyData keyData = Utilities.generateMessageKeyData(datacenter.authKey, messageKey, false);
+        MessageKeyData keyData = MessageKeyData.generateMessageKeyData(datacenter.authKey, messageKey, false);
 
         int zeroCount = 0;
         if (innerOs.limit() % 16 != 0) {
@@ -1841,20 +1895,13 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
         req.app_sandbox = false;
         try {
             req.lang_code = LocaleController.getLocaleString(LocaleController.getInstance().getSystemDefaultLocale());
-            if (req.lang_code == null || req.lang_code.length() == 0) {
+            if (req.lang_code.length() == 0) {
                 req.lang_code = "en";
             }
             req.device_model = Build.MANUFACTURER + Build.MODEL;
-            if (req.device_model == null) {
-                req.device_model = "Android unknown";
-            }
             req.system_version = "SDK " + Build.VERSION.SDK_INT;
             PackageInfo pInfo = ApplicationLoader.applicationContext.getPackageManager().getPackageInfo(ApplicationLoader.applicationContext.getPackageName(), 0);
             req.app_version = pInfo.versionName + " (" + pInfo.versionCode + ")";
-            if (req.app_version == null) {
-                req.app_version = "App version unknown";
-            }
-
         } catch (Exception e) {
             FileLog.e("tmessages", e);
             req.lang_code = "en";
@@ -2191,7 +2238,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                                         AndroidUtilities.runOnUIThread(new Runnable() {
                                             @Override
                                             public void run() {
-                                                NotificationCenter.getInstance().postNotificationName(NotificationCenter.appDidLogout);
+                                                MessagesController.getInstance().performLogout(false);
                                             }
                                         });
                                     }
@@ -2428,13 +2475,13 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
     }
 
     void generatePing(Datacenter datacenter, boolean push) {
-        TcpConnection connection = null;
+        TcpConnection connection;
         if (push) {
             connection = datacenter.pushConnection;
         } else {
             connection = datacenter.connection;
         }
-        if (connection != null && (push || !push && connection.channelToken != 0)) {
+        if (connection != null && (push || connection.channelToken != 0)) {
             ByteBufferDesc transportData = generatePingData(connection);
             if (transportData != null) {
                 if (push) {
@@ -2607,7 +2654,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
             }
 
             byte[] messageKey = data.readData(16, false);
-            MessageKeyData keyData = Utilities.generateMessageKeyData(datacenter.authKey, messageKey, true);
+            MessageKeyData keyData = MessageKeyData.generateMessageKeyData(datacenter.authKey, messageKey, true);
 
             Utilities.aesIgeEncryption(data.buffer, keyData.aesKey, keyData.aesIv, false, false, data.position(), length - 24);
 
@@ -2671,10 +2718,15 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
     }
 
     protected TLObject deserialize(TLObject request, AbsSerializedData data, boolean exception) {
-        int constructor = data.readInt32(exception);
+        int constructor = 0;
+        try {
+            constructor = data.readInt32(exception);
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
         TLObject message = null;
         try {
-            message = TLClassStore.Instance().TLdeserialize(data, constructor, request, exception);
+            message = TLClassStore.Instance().TLdeserialize(data, constructor, exception);
         } catch (Exception e) {
             FileLog.e("tmessages", e);
         }

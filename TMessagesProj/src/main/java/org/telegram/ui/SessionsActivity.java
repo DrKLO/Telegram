@@ -224,7 +224,7 @@ public class SessionsActivity extends BaseFragment implements NotificationCenter
                         }
                     });
                     builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-                    showAlertDialog(builder);
+                    showDialog(builder.create());
                 } else if (i >= otherSessionsStartRow && i < otherSessionsEndRow) {
                     AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                     builder.setMessage(LocaleController.getString("TerminateSessionQuestion", R.string.TerminateSessionQuestion));
@@ -266,7 +266,7 @@ public class SessionsActivity extends BaseFragment implements NotificationCenter
                         }
                     });
                     builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-                    showAlertDialog(builder);
+                    showDialog(builder.create());
                 }
             }
         });
@@ -336,7 +336,11 @@ public class SessionsActivity extends BaseFragment implements NotificationCenter
             currentSessionSectionRow = -1;
         }
         if (sessions.isEmpty()) {
-            noOtherSessionsRow = -1;
+            if (currentSession != null) {
+                noOtherSessionsRow = rowCount++;
+            } else {
+                noOtherSessionsRow = -1;
+            }
             terminateAllSessionsRow = -1;
             terminateAllSessionsDetailRow = -1;
             otherSessionsSectionRow = -1;

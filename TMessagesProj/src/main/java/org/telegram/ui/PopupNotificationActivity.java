@@ -493,7 +493,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
     }
 
     private void applyViewsLayoutParams(int xOffset) {
-        FrameLayout.LayoutParams layoutParams = null;
+        FrameLayout.LayoutParams layoutParams;
         int widht = AndroidUtilities.displaySize.x - AndroidUtilities.dp(24);
         if (leftView != null) {
             layoutParams = (FrameLayout.LayoutParams) leftView.getLayoutParams();
@@ -531,7 +531,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
         } else if (num == NotificationsController.getInstance().popupMessages.size()) {
             num = 0;
         }
-        ViewGroup view = null;
+        ViewGroup view;
         MessageObject messageObject = NotificationsController.getInstance().popupMessages.get(num);
         if (messageObject.type == 1 || messageObject.type == 4) {
             if (imageViews.size() > 0) {
@@ -595,7 +595,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
                 imageView.setImage(currentUrl, null, null);
             }
         } else if (messageObject.type == 2) {
-            PopupAudioView cell = null;
+            PopupAudioView cell;
             if (audioViews.size() > 0) {
                 view = audioViews.get(0);
                 audioViews.remove(0);

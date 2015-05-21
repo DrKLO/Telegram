@@ -37,7 +37,6 @@ import android.view.inputmethod.EditorInfo;
 import android.widget.AdapterView;
 import android.widget.EditText;
 import android.widget.FrameLayout;
-import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -392,7 +391,7 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
                                 UserConfig.saveConfig(false);
                             }
                         });
-                        showAlertDialog(builder);
+                        showDialog(builder.create());
                     }
                 }
             });
@@ -526,7 +525,20 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
                 passwordEditText.setText("");
                 return;
             }
-            UserConfig.passcodeHash = Utilities.MD5(firstPassword);
+
+            try {
+                UserConfig.passcodeSalt = new byte[16];
+                Utilities.random.nextBytes(UserConfig.passcodeSalt);
+                byte[] passcodeBytes = firstPassword.getBytes("UTF-8");
+                byte[] bytes = new byte[32 + passcodeBytes.length];
+                System.arraycopy(UserConfig.passcodeSalt, 0, bytes, 0, 16);
+                System.arraycopy(passcodeBytes, 0, bytes, 16, passcodeBytes.length);
+                System.arraycopy(UserConfig.passcodeSalt, 0, bytes, passcodeBytes.length + 16, 16);
+                UserConfig.passcodeHash = Utilities.bytesToHex(Utilities.computeSHA256(bytes, 0, bytes.length));
+            } catch (Exception e) {
+                FileLog.e("tmessages", e);
+            }
+
             UserConfig.passcodeType = currentPasswordType;
             UserConfig.saveConfig(false);
             finishFragment();
@@ -534,7 +546,7 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
             passwordEditText.clearFocus();
             AndroidUtilities.hideKeyboard(passwordEditText);
         } else if (type == 2) {
-            if (!Utilities.MD5(passwordEditText.getText().toString()).equals(UserConfig.passcodeHash)) {
+            if (!UserConfig.checkPasscode(passwordEditText.getText().toString())) {
                 passwordEditText.setText("");
                 onPasscodeError();
                 return;
