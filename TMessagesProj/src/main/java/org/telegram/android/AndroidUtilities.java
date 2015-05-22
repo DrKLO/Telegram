@@ -8,19 +8,26 @@
 
 package org.telegram.android;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.content.ContentUris;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
+import android.database.Cursor;
 import android.graphics.Color;
 import android.graphics.Point;
 import android.graphics.Rect;
 import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
+import android.provider.DocumentsContract;
+import android.provider.MediaStore;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
@@ -39,6 +46,11 @@ import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
+import net.hockeyapp.android.CrashManager;
+import net.hockeyapp.android.CrashManagerListener;
+import net.hockeyapp.android.UpdateManager;
+
+import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLog;
 import com.aniways.anigram.messenger.R;
@@ -53,11 +65,20 @@ import org.telegram.ui.Components.ForegroundDetector;
 import org.telegram.ui.Components.NumberPicker;
 import org.telegram.ui.Components.TypefaceSpan;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.Hashtable;
+import java.util.Locale;
 
 public class AndroidUtilities {
 
@@ -159,7 +180,7 @@ public class AndroidUtilities {
     }
 
     public static boolean isWaitingForSms() {
-        boolean value = false;
+        boolean value;
         synchronized (smsLock) {
             value = waitingForSms;
         }
@@ -575,11 +596,12 @@ public class AndroidUtilities {
         }
     }
 
+    @SuppressLint("NewApi")
     public static void clearDrawableAnimation(View view) {
         if (Build.VERSION.SDK_INT < 21 || view == null) {
             return;
         }
-        Drawable drawable = null;
+        Drawable drawable;
         if (view instanceof ListView) {
             drawable = ((ListView) view).getSelector();
             if (drawable != null) {
@@ -596,9 +618,9 @@ public class AndroidUtilities {
 
     public static Spannable replaceTags(String str) {
         try {
-            int start = -1;
+            int start;
             int startColor = -1;
-            int end = -1;
+            int end;
             StringBuilder stringBuilder = new StringBuilder(str);
             while ((start = stringBuilder.indexOf("<br>")) != -1) {
                 stringBuilder.replace(start, start + 4, "\n");
@@ -608,7 +630,7 @@ public class AndroidUtilities {
             }
             ArrayList<Integer> bolds = new ArrayList<>();
             ArrayList<Integer> colors = new ArrayList<>();
-            while ((start = stringBuilder.indexOf("<b>")) != -1 || (startColor = stringBuilder.indexOf("<c")) != -1) {
+            while ((start = stringBuilder.indexOf("<b>")) != -1 || (startColor = stringBuilder.indexOf("<c#")) != -1) {
                 if (start != -1) {
                     stringBuilder.replace(start, start + 3, "");
                     end = stringBuilder.indexOf("</b>");
@@ -628,6 +650,7 @@ public class AndroidUtilities {
                     colors.add(startColor);
                     colors.add(end);
                     colors.add(color);
+                    startColor = -1;
                 }
             }
             SpannableStringBuilder spannableStringBuilder = new SpannableStringBuilder(stringBuilder);
@@ -726,4 +749,290 @@ public class AndroidUtilities {
             window.clearFlags(WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED);
         }
     }*/
+
+    public static void checkForCrashes(Activity context) {
+        CrashManager.register(context, BuildVars.HOCKEY_APP_HASH, new CrashManagerListener() {
+            @Override
+            public boolean includeDeviceData() {
+                return true;
+            }
+        });
+    }
+
+    public static void checkForUpdates(Activity context) {
+        if (BuildVars.DEBUG_VERSION) {
+            UpdateManager.register(context, BuildVars.HOCKEY_APP_HASH);
+        }
+    }
+
+    public static void unregisterUpdates() {
+        if (BuildVars.DEBUG_VERSION) {
+            UpdateManager.unregister();
+        }
+    }
+
+    public static void addMediaToGallery(String fromPath) {
+        if (fromPath == null) {
+            return;
+        }
+        File f = new File(fromPath);
+        Uri contentUri = Uri.fromFile(f);
+        addMediaToGallery(contentUri);
+    }
+
+    public static void addMediaToGallery(Uri uri) {
+        if (uri == null) {
+            return;
+        }
+        Intent mediaScanIntent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
+        mediaScanIntent.setData(uri);
+        ApplicationLoader.applicationContext.sendBroadcast(mediaScanIntent);
+    }
+
+    private static File getAlbumDir() {
+        File storageDir = null;
+        if (Environment.MEDIA_MOUNTED.equals(Environment.getExternalStorageState())) {
+            storageDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "Telegram");
+            if (!storageDir.mkdirs()) {
+                if (!storageDir.exists()){
+                    FileLog.d("tmessages", "failed to create directory");
+                    return null;
+                }
+            }
+        } else {
+            FileLog.d("tmessages", "External storage is not mounted READ/WRITE.");
+        }
+
+        return storageDir;
+    }
+
+    @SuppressLint("NewApi")
+    public static String getPath(final Uri uri) {
+        try {
+            final boolean isKitKat = Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT;
+            if (isKitKat && DocumentsContract.isDocumentUri(ApplicationLoader.applicationContext, uri)) {
+                if (isExternalStorageDocument(uri)) {
+                    final String docId = DocumentsContract.getDocumentId(uri);
+                    final String[] split = docId.split(":");
+                    final String type = split[0];
+                    if ("primary".equalsIgnoreCase(type)) {
+                        return Environment.getExternalStorageDirectory() + "/" + split[1];
+                    }
+                } else if (isDownloadsDocument(uri)) {
+                    final String id = DocumentsContract.getDocumentId(uri);
+                    final Uri contentUri = ContentUris.withAppendedId(Uri.parse("content://downloads/public_downloads"), Long.valueOf(id));
+                    return getDataColumn(ApplicationLoader.applicationContext, contentUri, null, null);
+                } else if (isMediaDocument(uri)) {
+                    final String docId = DocumentsContract.getDocumentId(uri);
+                    final String[] split = docId.split(":");
+                    final String type = split[0];
+
+                    Uri contentUri = null;
+                    switch (type) {
+                        case "image":
+                            contentUri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI;
+                            break;
+                        case "video":
+                            contentUri = MediaStore.Video.Media.EXTERNAL_CONTENT_URI;
+                            break;
+                        case "audio":
+                            contentUri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
+                            break;
+                    }
+
+                    final String selection = "_id=?";
+                    final String[] selectionArgs = new String[] {
+                            split[1]
+                    };
+
+                    return getDataColumn(ApplicationLoader.applicationContext, contentUri, selection, selectionArgs);
+                }
+            } else if ("content".equalsIgnoreCase(uri.getScheme())) {
+                return getDataColumn(ApplicationLoader.applicationContext, uri, null, null);
+            } else if ("file".equalsIgnoreCase(uri.getScheme())) {
+                return uri.getPath();
+            }
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
+        return null;
+    }
+
+    public static String getDataColumn(Context context, Uri uri, String selection, String[] selectionArgs) {
+
+        Cursor cursor = null;
+        final String column = "_data";
+        final String[] projection = {
+                column
+        };
+
+        try {
+            cursor = context.getContentResolver().query(uri, projection, selection, selectionArgs, null);
+            if (cursor != null && cursor.moveToFirst()) {
+                final int column_index = cursor.getColumnIndexOrThrow(column);
+                return cursor.getString(column_index);
+            }
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        } finally {
+            if (cursor != null) {
+                cursor.close();
+            }
+        }
+        return null;
+    }
+
+    public static boolean isExternalStorageDocument(Uri uri) {
+        return "com.android.externalstorage.documents".equals(uri.getAuthority());
+    }
+
+    public static boolean isDownloadsDocument(Uri uri) {
+        return "com.android.providers.downloads.documents".equals(uri.getAuthority());
+    }
+
+    public static boolean isMediaDocument(Uri uri) {
+        return "com.android.providers.media.documents".equals(uri.getAuthority());
+    }
+
+    public static File generatePicturePath() {
+        try {
+            File storageDir = getAlbumDir();
+            String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(new Date());
+            return new File(storageDir, "IMG_" + timeStamp + ".jpg");
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
+        return null;
+    }
+
+    public static CharSequence generateSearchName(String name, String name2, String q) {
+        if (name == null && name2 == null) {
+            return "";
+        }
+        SpannableStringBuilder builder = new SpannableStringBuilder();
+        String wholeString = name;
+        if (wholeString == null || wholeString.length() == 0) {
+            wholeString = name2;
+        } else if (name2 != null && name2.length() != 0) {
+            wholeString += " " + name2;
+        }
+        wholeString = wholeString.trim();
+        String lower = " " + wholeString.toLowerCase();
+
+        int index;
+        int lastIndex = 0;
+        while ((index = lower.indexOf(" " + q, lastIndex)) != -1) {
+            int idx = index - (index == 0 ? 0 : 1);
+            int end = q.length() + (index == 0 ? 0 : 1) + idx;
+
+            if (lastIndex != 0 && lastIndex != idx + 1) {
+                builder.append(wholeString.substring(lastIndex, idx));
+            } else if (lastIndex == 0 && idx != 0) {
+                builder.append(wholeString.substring(0, idx));
+            }
+
+            String query = wholeString.substring(idx, end);
+            if (query.startsWith(" ")) {
+                builder.append(" ");
+            }
+            query = query.trim();
+            builder.append(AndroidUtilities.replaceTags("<c#ff4d83b3>" + query + "</c>"));
+
+            lastIndex = end;
+        }
+
+        if (lastIndex != -1 && lastIndex != wholeString.length()) {
+            builder.append(wholeString.substring(lastIndex, wholeString.length()));
+        }
+
+        return builder;
+    }
+
+    public static File generateVideoPath() {
+        try {
+            File storageDir = getAlbumDir();
+            String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(new Date());
+            return new File(storageDir, "VID_" + timeStamp + ".mp4");
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
+        return null;
+    }
+
+    public static String formatFileSize(long size) {
+        if (size < 1024) {
+            return String.format("%d B", size);
+        } else if (size < 1024 * 1024) {
+            return String.format("%.1f KB", size / 1024.0f);
+        } else if (size < 1024 * 1024 * 1024) {
+            return String.format("%.1f MB", size / 1024.0f / 1024.0f);
+        } else {
+            return String.format("%.1f GB", size / 1024.0f / 1024.0f / 1024.0f);
+        }
+    }
+
+    public static byte[] decodeQuotedPrintable(final byte[] bytes) {
+        if (bytes == null) {
+            return null;
+        }
+        final ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+        for (int i = 0; i < bytes.length; i++) {
+            final int b = bytes[i];
+            if (b == '=') {
+                try {
+                    final int u = Character.digit((char) bytes[++i], 16);
+                    final int l = Character.digit((char) bytes[++i], 16);
+                    buffer.write((char) ((u << 4) + l));
+                } catch (Exception e) {
+                    FileLog.e("tmessages", e);
+                    return null;
+                }
+            } else {
+                buffer.write(b);
+            }
+        }
+        byte[] array = buffer.toByteArray();
+        try {
+            buffer.close();
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
+        return array;
+    }
+
+    public static boolean copyFile(InputStream sourceFile, File destFile) throws IOException {
+        OutputStream out = new FileOutputStream(destFile);
+        byte[] buf = new byte[4096];
+        int len;
+        while ((len = sourceFile.read(buf)) > 0) {
+            Thread.yield();
+            out.write(buf, 0, len);
+        }
+        out.close();
+        return true;
+    }
+
+    public static boolean copyFile(File sourceFile, File destFile) throws IOException {
+        if (!destFile.exists()) {
+            destFile.createNewFile();
+        }
+        FileInputStream source = null;
+        FileOutputStream destination = null;
+        try {
+            source = new FileInputStream(sourceFile);
+            destination = new FileOutputStream(destFile);
+            destination.getChannel().transferFrom(source.getChannel(), 0, source.getChannel().size());
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+            return false;
+        } finally {
+            if (source != null) {
+                source.close();
+            }
+            if (destination != null) {
+                destination.close();
+            }
+        }
+        return true;
+    }
 }

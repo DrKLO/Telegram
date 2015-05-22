@@ -1,14 +1,15 @@
 /*
- * This is the source code of Telegram for Android v. 1.3.2.
+ * This is the source code of Telegram for Android v. 2.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013.
+ * Copyright Nikolai Kudashov, 2013-2015.
  */
 
 package org.telegram.messenger;
 
 public class TLObject {
+
     public boolean disableFree = false;
 
     public TLObject() {
@@ -17,10 +18,6 @@ public class TLObject {
 
     public void readParams(AbsSerializedData stream, boolean exception) {
 
-    }
-
-    public byte[] serialize() {
-        return null;
     }
 
     public void serializeToStream(AbsSerializedData stream) {

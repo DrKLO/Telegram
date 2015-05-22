@@ -279,7 +279,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                         }
                     });
                     builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-                    showAlertDialog(builder);
+                    showDialog(builder.create());
                 } else if (id == forward) {
                     Bundle args = new Bundle();
                     args.putBoolean("onlySelect", true);
@@ -938,7 +938,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                                 builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
                                 builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), null);
                                 builder.setMessage(LocaleController.formatString("NoHandleAppInstalled", R.string.NoHandleAppInstalled, message.messageOwner.media.document.mime_type));
-                                showAlertDialog(builder);
+                                showDialog(builder.create());
                             }
                         }
                     } else if (!cell.isLoading()) {
@@ -1140,7 +1140,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                     MessageObject messageObject = messageObjects.get(0);
                     ((SharedMediaSectionCell) convertView).setText(LocaleController.formatterMonthYear.format((long) messageObject.messageOwner.date * 1000).toUpperCase());
                 } else {
-                    SharedPhotoVideoCell cell = null;
+                    SharedPhotoVideoCell cell;
                     if (convertView == null) {
                         if (!cellCache.isEmpty()) {
                             convertView = cellCache.get(0);

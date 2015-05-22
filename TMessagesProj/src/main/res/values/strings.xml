@@ -129,6 +129,8 @@
     <string name="SetTimer">Set self-destruct timer</string>
     <string name="ServiceNotifications">Service notifications</string>
     <string name="GettingLinkInfo">Getting Link Info...</string>
+    <string name="OpenInBrowser">Open in Browser</string>
+    <string name="CopyUrl">Copy URL</string>
     <!--notification-->
     <string name="MessageLifetimeChanged">%1$s set the self-destruct timer to %2$s</string>
     <string name="MessageLifetimeChangedOutgoing">You set the self-destruct timer to %1$s</string>
@@ -244,6 +246,21 @@
     <string name="UsernameAvailable">%1$s is available.</string>
     <string name="UsernameEmpty">None</string>
     <string name="ErrorOccurred">An error occurred.</string>
+    <!--stickers view-->
+    <string name="Stickers">Stickers</string>
+    <string name="GeniusStickerPackName">Great Minds</string>
+    <string name="StickersInfo">Artists are welcome to add their own sticker packs using our @stickers bot.\n\nUsers can add stickers by tapping on them and choosing \"Add to Stickers\".</string>
+    <string name="AddStickers">Add Stickers</string>
+    <string name="AddToStickers">Add to Stickers</string>
+    <string name="AddStickersNotFound">Stickers not found</string>
+    <string name="StickersRemoved">Stickers removed</string>
+    <string name="AddStickersInstalled">New stickers added</string>
+    <string name="StickersHide">Hide</string>
+    <string name="StickersShow">Show</string>
+    <string name="StickersShare">Share</string>
+    <string name="StickersCopy">Copy link</string>
+    <string name="StickersRemove">Remove</string>
+    <string name="NoStickers">No stickers yet</string>
     <!--settings view-->
     <string name="ResetNotificationsText">Reset all notification settings to default</string>
     <string name="TextSize">Messages Text Size</string>
@@ -521,6 +538,7 @@
     <string name="Done">Done</string>
     <string name="Open">Open</string>
     <string name="Cancel">Cancel</string>
+    <string name="Close">Close</string>
     <string name="Add">Add</string>
     <string name="Edit">Edit</string>
     <string name="Send">Send</string>
@@ -556,6 +574,7 @@
     <string name="ActionAddUserYou">un1 added you</string>
     <string name="ActionAddUserSelf">un1 returned to the group</string>
     <string name="UnsuppotedMedia">This message is not supported on your version of Telegram. Update the app to view: http://aniways.com/anygram/dl2</string>
+    <string name="ActionAddUserSelfYou">You returned to the group</string>
     <string name="AttachPhoto">Photo</string>
     <string name="AttachVideo">Video</string>
     <string name="AttachLocation">Location</string>
@@ -717,6 +736,12 @@
     <string name="Meters_few">%1$d meters</string>
     <string name="Meters_many">%1$d meters</string>
     <string name="Meters_other">%1$d meters</string>
+    <string name="Stickers_zero">%1$d stickers</string>
+    <string name="Stickers_one">%1$d sticker</string>
+    <string name="Stickers_two">%1$d stickers</string>
+    <string name="Stickers_few">%1$d stickers</string>
+    <string name="Stickers_many">%1$d stickers</string>
+    <string name="Stickers_other">%1$d stickers</string>
     <!--forwarded messages-->
     <string name="ForwardedMessage_zero">%1$d forwarded messages</string>
     <string name="ForwardedMessage_one">Forwarded message</string>
@@ -784,6 +809,6 @@
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s at %2$s</string>
     <!--update text-->
-    <string name="updateText">Telegram for Android has been updated. New in version 2.8:\n\n- Places and directions in locations\n- Smart notifications\n- Invite links for group chats\n- Stickers tab in emoji menu\n- Captions for photos\n- \'Listened\' status for voice messages\n- Advanced \'typing\' status: sending photo, recording audio, etc.\n- Improved scrolling and animations for a smooooooooth experience</string>
-    <string name="updateBuild">516</string>
+    <string name="updateText">Telegram for Android has been updated. New in version 2.9:\n\n- Install and share custom sticker sets like this one: https://telegram.me/addstickers/Animals\n- If you\'re an artist, create custom sticker sets using our @stickers bot.\n\n- Use Telegram with Android Auto.</string>
+    <string name="updateBuild">536</string>
 </resources>

@@ -69,11 +69,7 @@ public class SharedPhotoVideoCell extends FrameLayoutFixed {
 
             ImageView imageView1 = new ImageView(context);
             imageView1.setImageResource(R.drawable.ic_video);
-            videoInfoContainer.addView(imageView1);
-            LinearLayout.LayoutParams layoutParams1 = (LinearLayout.LayoutParams) imageView1.getLayoutParams();
-            layoutParams1.width = LayoutHelper.WRAP_CONTENT;
-            layoutParams1.height = LayoutHelper.WRAP_CONTENT;
-            imageView1.setLayoutParams(layoutParams1);
+            videoInfoContainer.addView(imageView1, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
 
             videoTextView = new TextView(context);
             videoTextView.setTextColor(0xffffffff);
@@ -186,14 +182,14 @@ public class SharedPhotoVideoCell extends FrameLayoutFixed {
                 photoVideoView.videoTextView.setText(String.format("%d:%02d", minutes, seconds));
                 if (messageObject.messageOwner.media.video.thumb != null) {
                     TLRPC.FileLocation location = messageObject.messageOwner.media.video.thumb.location;
-                    photoVideoView.imageView.setImage(null, null, null, ApplicationLoader.applicationContext.getResources().getDrawable(R.drawable.photo_placeholder_in), null, location, "b", 0);
+                    photoVideoView.imageView.setImage(null, null, null, ApplicationLoader.applicationContext.getResources().getDrawable(R.drawable.photo_placeholder_in), null, location, "b", null, 0);
                 } else {
                     photoVideoView.imageView.setImageResource(R.drawable.photo_placeholder_in);
                 }
             } else if (messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaPhoto && messageObject.messageOwner.media.photo != null && !messageObject.photoThumbs.isEmpty()) {
                 photoVideoView.videoInfoContainer.setVisibility(INVISIBLE);
                 TLRPC.PhotoSize photoSize = FileLoader.getClosestPhotoSizeWithSize(messageObject.photoThumbs, 80);
-                photoVideoView.imageView.setImage(null, null, null, ApplicationLoader.applicationContext.getResources().getDrawable(R.drawable.photo_placeholder_in), null, photoSize.location, "b", 0);
+                photoVideoView.imageView.setImage(null, null, null, ApplicationLoader.applicationContext.getResources().getDrawable(R.drawable.photo_placeholder_in), null, photoSize.location, "b", null, 0);
             } else {
                 photoVideoView.videoInfoContainer.setVisibility(INVISIBLE);
                 photoVideoView.imageView.setImageResource(R.drawable.photo_placeholder_in);

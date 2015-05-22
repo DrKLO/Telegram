@@ -9,7 +9,6 @@
 package org.telegram.ui.Cells;
 
 import android.content.Context;
-import android.util.AttributeSet;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.widget.FrameLayout;
@@ -23,41 +22,15 @@ public class HeaderCell extends FrameLayout {
 
     private TextView textView;
 
-    private void init() {
+    public HeaderCell(Context context) {
+        super(context);
+
         textView = new TextView(getContext());
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
         textView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         textView.setTextColor(0xff3e90cf);
         textView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL);
-        addView(textView);
-        FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams)textView.getLayoutParams();
-        layoutParams.width = LayoutHelper.MATCH_PARENT;
-        layoutParams.height = LayoutHelper.MATCH_PARENT;
-        layoutParams.leftMargin = AndroidUtilities.dp(17);
-        layoutParams.rightMargin = AndroidUtilities.dp(17);
-        layoutParams.topMargin = AndroidUtilities.dp(15);
-        layoutParams.gravity = LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT;
-        textView.setLayoutParams(layoutParams);
-    }
-
-    public HeaderCell(Context context) {
-        super(context);
-        init();
-    }
-
-    public HeaderCell(Context context, AttributeSet attrs) {
-        super(context, attrs);
-        init();
-    }
-
-    public HeaderCell(Context context, AttributeSet attrs, int defStyleAttr) {
-        super(context, attrs, defStyleAttr);
-        init();
-    }
-
-    public HeaderCell(Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes) {
-        super(context, attrs, defStyleAttr, defStyleRes);
-        init();
+        addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, 17, 15, 17, 0));
     }
 
     @Override

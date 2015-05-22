@@ -215,7 +215,7 @@ public class LanguageSelectActivity extends BaseFragment {
                     }
                 });
                 builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-                showAlertDialog(builder);
+                showDialog(builder.create());
                 return true;
             }
         });

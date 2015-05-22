@@ -33,14 +33,7 @@ public class DrawerActionCell extends FrameLayout {
         textView.setSingleLine(true);
         textView.setGravity(Gravity.LEFT | Gravity.CENTER_VERTICAL);
         textView.setCompoundDrawablePadding(AndroidUtilities.dp(34));
-        addView(textView);
-        LayoutParams layoutParams = (LayoutParams) textView.getLayoutParams();
-        layoutParams.width = LayoutHelper.MATCH_PARENT;
-        layoutParams.height = LayoutHelper.MATCH_PARENT;
-        layoutParams.gravity = Gravity.LEFT;
-        layoutParams.leftMargin = AndroidUtilities.dp(14);
-        layoutParams.rightMargin = AndroidUtilities.dp(16);
-        textView.setLayoutParams(layoutParams);
+        addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.TOP, 14, 0, 16, 0));
     }
 
     @Override

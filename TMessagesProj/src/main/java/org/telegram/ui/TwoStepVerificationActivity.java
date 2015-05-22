@@ -9,6 +9,7 @@
 package org.telegram.ui;
 
 import android.app.AlertDialog;
+import android.app.Dialog;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -314,7 +315,7 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
                                                     presentFragment(fragment);
                                                 }
                                             });
-                                            AlertDialog dialog = showAlertDialog(builder);
+                                            Dialog dialog = showDialog(builder.create());
                                             if (dialog != null) {
                                                 dialog.setCanceledOnTouchOutside(false);
                                                 dialog.setCancelable(false);
@@ -355,7 +356,7 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
                             }
                         });
                         builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-                        showAlertDialog(builder);
+                        showDialog(builder.create());
                     }
                 }
             }
@@ -422,7 +423,7 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
                             }
                         });
                         builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-                        showAlertDialog(builder);
+                        showDialog(builder.create());
                     }
                 }
             });
@@ -696,7 +697,7 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
         builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), null);
         builder.setTitle(title);
         builder.setMessage(text);
-        showAlertDialog(builder);
+        showDialog(builder.create());
     }
 
     private void setNewPassword(final boolean clear) {
@@ -707,6 +708,7 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
             if (waitingForEmail && currentPassword instanceof TLRPC.TL_account_noPassword) {
                 req.new_settings.flags = 2;
                 req.new_settings.email = "";
+                req.current_password_hash = new byte[0];
             } else {
                 req.new_settings.flags = 3;
                 req.new_settings.hint = "";
@@ -766,7 +768,7 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
                                 });
                                 builder.setMessage(LocaleController.getString("YourPasswordSuccessText", R.string.YourPasswordSuccessText));
                                 builder.setTitle(LocaleController.getString("YourPasswordSuccess", R.string.YourPasswordSuccess));
-                                AlertDialog dialog = showAlertDialog(builder);
+                                Dialog dialog = showDialog(builder.create());
                                 if (dialog != null) {
                                     dialog.setCanceledOnTouchOutside(false);
                                     dialog.setCancelable(false);
@@ -784,7 +786,7 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
                                 });
                                 builder.setMessage(LocaleController.getString("YourEmailAlmostThereText", R.string.YourEmailAlmostThereText));
                                 builder.setTitle(LocaleController.getString("YourEmailAlmostThere", R.string.YourEmailAlmostThere));
-                                AlertDialog dialog = showAlertDialog(builder);
+                                Dialog dialog = showDialog(builder.create());
                                 if (dialog != null) {
                                     dialog.setCanceledOnTouchOutside(false);
                                     dialog.setCancelable(false);
@@ -937,7 +939,7 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
                                     });
                                     builder.setMessage(LocaleController.getString("PasswordReset", R.string.PasswordReset));
                                     builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
-                                    AlertDialog dialog = showAlertDialog(builder);
+                                    Dialog dialog = showDialog(builder.create());
                                     if (dialog != null) {
                                         dialog.setCanceledOnTouchOutside(false);
                                         dialog.setCancelable(false);

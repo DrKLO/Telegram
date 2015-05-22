@@ -1,14 +1,13 @@
 /*
- * This is the source code of Telegram for Android v. 1.3.2.
+ * This is the source code of Telegram for Android v. 2.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013.
+ * Copyright Nikolai Kudashov, 2013-2015.
  */
 
 package org.telegram.messenger;
 
-import android.net.Uri;
 import android.util.Log;
 
 import org.telegram.android.time.FastDateFormat;
@@ -16,7 +15,6 @@ import org.telegram.android.time.FastDateFormat;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.OutputStreamWriter;
-import java.util.ArrayList;
 import java.util.Locale;
 
 public class FileLog {
@@ -50,14 +48,8 @@ public class FileLog {
                 return;
             }
             File dir = new File(sdCard.getAbsolutePath() + "/logs");
-            if (dir == null) {
-                return;
-            }
             dir.mkdirs();
             currentFile = new File(dir, dateFormat.format(System.currentTimeMillis()) + ".txt");
-            if (currentFile == null) {
-                return;
-            }
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -201,7 +193,6 @@ public class FileLog {
     }
 
     public static void cleanupLogs() {
-        ArrayList<Uri> uris = new ArrayList<>();
         File sdCard = ApplicationLoader.applicationContext.getExternalFilesDir(null);
         File dir = new File (sdCard.getAbsolutePath() + "/logs");
         File[] files = dir.listFiles();

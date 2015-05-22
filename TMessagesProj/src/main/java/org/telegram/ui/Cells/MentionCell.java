@@ -39,13 +39,7 @@ public class MentionCell extends LinearLayout {
 
         imageView = new BackupImageView(context);
         imageView.setRoundRadius(AndroidUtilities.dp(14));
-        addView(imageView);
-        LayoutParams layoutParams = (LayoutParams) imageView.getLayoutParams();
-        layoutParams.leftMargin = AndroidUtilities.dp(12);
-        layoutParams.topMargin = AndroidUtilities.dp(4);
-        layoutParams.width = AndroidUtilities.dp(28);
-        layoutParams.height = AndroidUtilities.dp(28);
-        imageView.setLayoutParams(layoutParams);
+        addView(imageView, LayoutHelper.createLinear(28, 28, 12, 4, 0, 0));
 
         nameTextView = new TextView(context);
         nameTextView.setTextColor(0xff000000);
@@ -53,13 +47,7 @@ public class MentionCell extends LinearLayout {
         nameTextView.setSingleLine(true);
         nameTextView.setGravity(Gravity.LEFT);
         nameTextView.setEllipsize(TextUtils.TruncateAt.END);
-        addView(nameTextView);
-        layoutParams = (LayoutParams) nameTextView.getLayoutParams();
-        layoutParams.leftMargin = AndroidUtilities.dp(12);
-        layoutParams.width = LayoutHelper.WRAP_CONTENT;
-        layoutParams.height = LayoutHelper.WRAP_CONTENT;
-        layoutParams.gravity = Gravity.CENTER_VERTICAL;
-        nameTextView.setLayoutParams(layoutParams);
+        addView(nameTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL, 12, 0, 0, 0));
 
         usernameTextView = new TextView(context);
         usernameTextView.setTextColor(0xff999999);
@@ -67,13 +55,7 @@ public class MentionCell extends LinearLayout {
         usernameTextView.setSingleLine(true);
         usernameTextView.setGravity(Gravity.LEFT);
         usernameTextView.setEllipsize(TextUtils.TruncateAt.END);
-        addView(usernameTextView);
-        layoutParams = (LayoutParams) usernameTextView.getLayoutParams();
-        layoutParams.leftMargin = AndroidUtilities.dp(12);
-        layoutParams.width = LayoutHelper.WRAP_CONTENT;
-        layoutParams.height = LayoutHelper.WRAP_CONTENT;
-        layoutParams.gravity = Gravity.CENTER_VERTICAL;
-        usernameTextView.setLayoutParams(layoutParams);
+        addView(usernameTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL, 12, 0, 0, 0));
     }
 
     @Override

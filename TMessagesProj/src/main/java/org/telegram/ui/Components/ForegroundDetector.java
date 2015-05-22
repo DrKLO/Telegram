@@ -8,6 +8,7 @@
 
 package org.telegram.ui.Components;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.Application;
 import android.os.Build;
@@ -17,6 +18,7 @@ import org.telegram.messenger.FileLog;
 
 import java.util.concurrent.CopyOnWriteArrayList;
 
+@SuppressLint("NewApi")
 public class ForegroundDetector implements Application.ActivityLifecycleCallbacks {
 
     public interface Listener {

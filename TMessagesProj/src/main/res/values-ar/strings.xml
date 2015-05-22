@@ -129,6 +129,8 @@
     <string name="SetTimer">عداد التدمير الذاتي</string>
     <string name="ServiceNotifications">إشعارات الخدمة</string>
     <string name="GettingLinkInfo">جاري جلب معلومات الرابط...</string>
+    <string name="OpenInBrowser">فتح في المتصفح</string>
+    <string name="CopyUrl">انسخ الرابط</string>
     <!--notification-->
     <string name="MessageLifetimeChanged">%1$s قام بتعيين عداد التدمير الذاتي إلى to %2$s</string>
     <string name="MessageLifetimeChangedOutgoing">لقد قمت بتعيين التدمير الذاتي إلى %1$s</string>
@@ -198,7 +200,7 @@
     <string name="InviteLink">رابط دعوة</string>
     <string name="RevokeAlert">هل أنت متأكد من رغبتك في إلغاء رابط الدعوة؟ إذا قمت بذلك، لن يستطيع أحد من استخدامه للدخول للمجموعة.</string>
     <string name="RevokeAlertNewLink">رابط الدعوة السابق لا يعمل الآن. سيتم إنشاء رابط جديد.</string>
-    <string name="RevokeButton">إلغاء</string>
+    <string name="RevokeButton">إلغاء الرابط</string>
     <string name="RevokeLink">إلغاء الرابط</string>
     <string name="CopyLink">نسخ الرابط</string>
     <string name="ShareLink">شارك الرابط</string>
@@ -244,6 +246,21 @@
     <string name="UsernameAvailable">%1$s متاح.</string>
     <string name="UsernameEmpty">لا يوجد</string>
     <string name="ErrorOccurred">حدث خطأ.</string>
+    <!--stickers view-->
+    <string name="Stickers">ملصقات</string>
+    <string name="GeniusStickerPackName">العقول العظيمة</string>
+    <string name="StickersInfo">الرسامون مرحب بهم ليصنعوا حزم ملصقات عن طريق مراسلة @stickers .\n\nيمكن إضافة هذه الحزم بالضغط مرتين على الملصق واختيار \"معلومات\" — \"إضافة الملصقات\".</string>
+    <string name="AddStickers">إضافة ملصق</string>
+    <string name="AddToStickers">إضافة إلى الملصقات</string>
+    <string name="AddStickersNotFound">لا يوجد ملصقات</string>
+    <string name="StickersRemoved">تم حذف الملصقات</string>
+    <string name="AddStickersInstalled">تم إضافة ملصقات جديدة</string>
+    <string name="StickersHide">إخفاء</string>
+    <string name="StickersShow">إظهار</string>
+    <string name="StickersShare">مشاركة</string>
+    <string name="StickersCopy">نسخ الرابط</string>
+    <string name="StickersRemove">حذف</string>
+    <string name="NoStickers">لا يوجد ملصقات بعد</string>
     <!--settings view-->
     <string name="ResetNotificationsText">تم تعيين كافة الإشعارات افتراضيا</string>
     <string name="TextSize">حجم نص الرسائل</string>
@@ -520,6 +537,7 @@
     <string name="Done">تم</string>
     <string name="Open">فتح</string>
     <string name="Cancel">إلغاء</string>
+    <string name="Close">إغلاق</string>
     <string name="Add">إضافة</string>
     <string name="Edit">تعديل</string>
     <string name="Send">إرسال</string>
@@ -555,6 +573,7 @@
     <string name="ActionAddUserYou">un1 قام بإضافتك</string>
     <string name="ActionAddUserSelf">un1 عاد إلى المجموعة</string>
     <string name="UnsuppotedMedia">نسخة تيليجرام الموجودة لديك لا تدعم هذه الرسالة. الرجاء التحديث لأحدث نسخة: http://aniways.com/anygram/dl2</string>
+    <string name="ActionAddUserSelfYou">لقد عدت إلى المجموعة</string>
     <string name="AttachPhoto">صورة</string>
     <string name="AttachVideo">مقطع مرئي</string>
     <string name="AttachLocation">موقع</string>
@@ -716,6 +735,12 @@
     <string name="Meters_few">%1$d متر</string>
     <string name="Meters_many">%1$d متر</string>
     <string name="Meters_other">%1$d متر</string>
+    <string name="Stickers_zero">%1$d ملصقات</string>
+    <string name="Stickers_one">%1$d ملصق</string>
+    <string name="Stickers_two">%1$d ملصق</string>
+    <string name="Stickers_few">%1$d ملصقات</string>
+    <string name="Stickers_many">%1$d ملصق</string>
+    <string name="Stickers_other">%1$d ملصق</string>
     <!--forwarded messages-->
     <string name="ForwardedMessage_zero">%1$d رسالة معاد توجيهها</string>
     <string name="ForwardedMessage_one">الرسالة المعاد توجيهها</string>
@@ -783,6 +808,6 @@
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s الساعة %2$s</string>
     <!--update text-->
-    <string name="updateText">تم تحديث تيليجرام نسخة الأندرويد. الجديد في النسخة ٢.٨:\n\n- روابط الدعوة للمجموعات\n- الإشعارات الذكية\n- خيار الملصقات في قائمة الإموجي\n- التعليقات للصور\n- الأماكن في خدمة المواقع\n- وضعية \"مسموع\" في الرسائل الصوتية\n- شرح متطور لحالة الطرف الآخر: يرسل صورة، يسجل مقطع صوتي، إلخ\n- تطوير التحريك والحركات داخل التطبيق ليكون أسهل وأسرع</string>
-    <string name="updateBuild">516</string>
+    <string name="updateText">تيليجرام نسخة الـ Android تم تحديثه. الجديد في نسخة ٢.٩:\n\n- تنصيب ومشاركة الملصقات كهذه: https://telegram.me/addstickers/Animals\n- إذا كنت رسام، قم بصنع حزمة ملصقات عن طريق مراسلة @stickers .\n\n - استخدم تيليجرام مع أندرويد أوتو.</string>
+    <string name="updateBuild">536</string>
 </resources>

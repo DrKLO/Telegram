@@ -107,7 +107,6 @@ public class LruCache {
 
         if (previous != null) {
             entryRemoved(false, key, previous, value);
-            ImageLoader.getInstance().callGC();
         }
 
         trimToSize(maxSize, key);
@@ -148,7 +147,6 @@ public class LruCache {
 
                 entryRemoved(true, key, value, null);
             }
-            ImageLoader.getInstance().callGC();
         }
     }
 
@@ -183,7 +181,6 @@ public class LruCache {
             }
 
             entryRemoved(false, key, previous, null);
-            ImageLoader.getInstance().callGC();
         }
 
         return previous;
