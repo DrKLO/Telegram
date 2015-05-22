@@ -107,25 +107,28 @@ public class TcpConnection extends ConnectionContext {
                 connectionState = TcpConnectionState.TcpConnectionStageConnecting;
                 try {
                     Datacenter datacenter = ConnectionsManager.getInstance().datacenterWithId(datacenterId);
+                    boolean isIpv6 = ConnectionsManager.useIpv6Address();
                     if (transportRequestClass == RPCRequest.RPCRequestClassDownloadMedia) {
                         currentAddressFlag = 2;
-                        if (ConnectionsManager.useIpv6Address()) {
-                            currentAddressFlag |= 1;
-                        }
-                        hostAddress = datacenter.getCurrentAddress(currentAddressFlag);
+                        hostAddress = datacenter.getCurrentAddress(currentAddressFlag | (isIpv6 ? 1 : 0));
                         if (hostAddress == null) {
                             currentAddressFlag = 0;
-                            if (ConnectionsManager.useIpv6Address()) {
-                                currentAddressFlag |= 1;
-                            }
+                            hostAddress = datacenter.getCurrentAddress(currentAddressFlag | (isIpv6 ? 1 : 0));
+                        }
+                        if (hostAddress == null && isIpv6) {
+                            currentAddressFlag = 2;
                             hostAddress = datacenter.getCurrentAddress(currentAddressFlag);
+                            if (hostAddress == null) {
+                                currentAddressFlag = 0;
+                                hostAddress = datacenter.getCurrentAddress(currentAddressFlag);
+                            }
                         }
                     } else {
                         currentAddressFlag = 0;
-                        if (ConnectionsManager.useIpv6Address()) {
-                            currentAddressFlag |= 1;
+                        hostAddress = datacenter.getCurrentAddress(currentAddressFlag | (isIpv6 ? 1 : 0));
+                        if (isIpv6 && hostAddress == null) {
+                            hostAddress = datacenter.getCurrentAddress(currentAddressFlag);
                         }
-                        hostAddress = datacenter.getCurrentAddress(currentAddressFlag);
                     }
                     hostPort = datacenter.getCurrentPort(currentAddressFlag);
 

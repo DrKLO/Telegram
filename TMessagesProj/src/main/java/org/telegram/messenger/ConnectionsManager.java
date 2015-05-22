@@ -526,12 +526,38 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
 
     @SuppressLint("NewApi")
     protected static boolean useIpv6Address() {
-        if (Build.VERSION.SDK_INT < 19) {
+        if (BuildVars.DEBUG_VERSION && Build.VERSION.SDK_INT >= 19) {
+            try {
+                NetworkInterface networkInterface;
+                Enumeration<NetworkInterface> networkInterfaces = NetworkInterface.getNetworkInterfaces();
+                while (networkInterfaces.hasMoreElements()) {
+                    networkInterface = networkInterfaces.nextElement();
+                    if (!networkInterface.isUp() || networkInterface.isLoopback() || networkInterface.getInterfaceAddresses().isEmpty()) {
+                        continue;
+                    }
+                    FileLog.e("tmessages", "valid interface: " + networkInterface);
+                    for (InterfaceAddress address : networkInterface.getInterfaceAddresses()) {
+                        InetAddress inetAddress = address.getAddress();
+                        if (BuildVars.DEBUG_VERSION) {
+                            FileLog.e("tmessages", "address: " + inetAddress.getHostAddress());
+                        }
+                        if (inetAddress.isLinkLocalAddress() || inetAddress.isLoopbackAddress() || inetAddress.isMulticastAddress()) {
+                            continue;
+                        }
+                        if (BuildVars.DEBUG_VERSION) {
+                            FileLog.e("tmessages", "address is good");
+                        }
+                    }
+                }
+            } catch (Throwable e) {
+                FileLog.e("tmessages", e);
+            }
+        }
+        if (Build.VERSION.SDK_INT < 50) {
             return false;
         }
         try {
             NetworkInterface networkInterface;
-
             Enumeration<NetworkInterface> networkInterfaces = NetworkInterface.getNetworkInterfaces();
             while (networkInterfaces.hasMoreElements()) {
                 networkInterface = networkInterfaces.nextElement();
