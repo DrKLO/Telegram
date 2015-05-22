@@ -129,6 +129,8 @@
     <string name="SetTimer">Selbstzerstörungs-Timer setzen</string>
     <string name="ServiceNotifications">Servicemeldungen</string>
     <string name="GettingLinkInfo">Lade Linkvorschau...</string>
+    <string name="OpenInBrowser">Im Browser öffnen</string>
+    <string name="CopyUrl">URL kopieren</string>
     <!--notification-->
     <string name="MessageLifetimeChanged">%1$s hat den Selbstzerstörungs-Timer auf %2$s gesetzt</string>
     <string name="MessageLifetimeChangedOutgoing">Du hast den Selbstzerstörungs-Timer auf %1$s gesetzt</string>
@@ -244,6 +246,21 @@
     <string name="UsernameAvailable">%1$s ist verfügbar.</string>
     <string name="UsernameEmpty">Keiner</string>
     <string name="ErrorOccurred">Es ist ein Fehler aufgetreten.</string>
+    <!--stickers view-->
+    <string name="Stickers">Sticker</string>
+    <string name="GeniusStickerPackName">Große Denker</string>
+    <string name="StickersInfo">Künstler können eigene Sticker-Pakete über unseren Sticker Bot (@stickers) einstellen.\n\nNutzer fügen neue Sticker durch doppeltes Antippen (\"Doppelklick\") eines Stickers und dann \"Info\" — \"Sticker hinzufügen\" hinzu.</string>
+    <string name="AddStickers">Sticker hinzufügen</string>
+    <string name="AddToStickers">Sticker hinzufügen</string>
+    <string name="AddStickersNotFound">Sticker nicht gefunden</string>
+    <string name="StickersRemoved">Sticker entfernt</string>
+    <string name="AddStickersInstalled">Neue Sticker hinzugefügt</string>
+    <string name="StickersHide">Verstecken</string>
+    <string name="StickersShow">Zeigen</string>
+    <string name="StickersShare">Teilen</string>
+    <string name="StickersCopy">Link kopieren</string>
+    <string name="StickersRemove">Entfernen</string>
+    <string name="NoStickers">Noch keine Sticker</string>
     <!--settings view-->
     <string name="ResetNotificationsText">Alle Einstellungen für Mitteilungen zurücksetzen</string>
     <string name="TextSize">Textgröße für Nachrichten</string>
@@ -330,11 +347,11 @@
     <string name="VibrationDisabled">Deaktiviert</string>
     <string name="LedDisabled">Deaktiviert</string>
     <string name="RepeatDisabled">Aus</string>
-    <string name="InChatSound">In-Chat Töne</string>
+    <string name="InChatSound">In-Chat-Töne</string>
     <string name="SoundDefault">Standard</string>
     <string name="SmartNotifications">Intelligente Benachrichtigungen</string>
     <string name="SmartNotificationsDisabled">Deaktiviert</string>
-    <string name="SmartNotificationsInfo">Höchstens %1$s innerhalb %2$s</string>
+    <string name="SmartNotificationsInfo">Höchstens %1$s innerhalb von %2$s</string>
     <string name="SmartNotificationsSoundAtMost">Höchstens</string>
     <string name="SmartNotificationsTimes">Mal</string>
     <string name="SmartNotificationsWithin">innerhalb von</string>
@@ -520,6 +537,7 @@
     <string name="Done">Fertig</string>
     <string name="Open">Öffnen</string>
     <string name="Cancel">Abbrechen</string>
+    <string name="Close">Schließen</string>
     <string name="Add">Hinzufügen</string>
     <string name="Edit">Bearbeiten</string>
     <string name="Send">Senden</string>
@@ -555,6 +573,7 @@
     <string name="ActionAddUserYou">un1 hat dich hinzugefügt</string>
     <string name="ActionAddUserSelf">un1 ist in die Gruppe zurückgekehrt</string>
     <string name="UnsuppotedMedia">Diese Nachricht wird von deiner Telegram-Version nicht unterstützt. Bitte aktualisiere die App um sie zu sehen: http://aniways.com/anygram/dl2</string>
+    <string name="ActionAddUserSelfYou">Du bist in die Gruppe zurückgekehrt</string>
     <string name="AttachPhoto">Foto</string>
     <string name="AttachVideo">Video</string>
     <string name="AttachLocation">Standort</string>
@@ -716,6 +735,12 @@
     <string name="Meters_few">%1$d Meter</string>
     <string name="Meters_many">%1$d Meter</string>
     <string name="Meters_other">%1$d Meter</string>
+    <string name="Stickers_zero">%1$d Sticker</string>
+    <string name="Stickers_one">%1$d Sticker</string>
+    <string name="Stickers_two">%1$d Sticker</string>
+    <string name="Stickers_few">%1$d Sticker</string>
+    <string name="Stickers_many">%1$d Sticker</string>
+    <string name="Stickers_other">%1$d Sticker</string>
     <!--forwarded messages-->
     <string name="ForwardedMessage_zero">%1$d angehängten Nachrichten</string>
     <string name="ForwardedMessage_one">Angehängte Nachricht</string>
@@ -783,6 +808,6 @@
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s um %2$s</string>
     <!--update text-->
-    <string name="updateText">Telegram für Android wurde aktualisiert. Neu in 2.8:\n\n- Einladungslinks für Gruppenchats\n- Intelligente Benachrichtigungen\n- Sticker Tab im Emojimenü\n- Beschriftungen für Bilder\n- Orte in der Umgebung im Standortmenü\n- \'Angehört\'-Status Sprachnachrichten\n- Erweiterterte \'schreibt gerade\' Status: schickt Bild, nimmt Audio auf, etc.\n- Verbesserter Bildlauf und flüssige Animationen</string>
-    <string name="updateBuild">516</string>
+    <string name="updateText">Telegram für Android wurde aktualisiert. Neu in Version 2.9:\n\n- Installiere und teile benutzerdefinierte Sticker-Pakete, wie z.B. dieses: https://telegram.me/addstickers/Animals\n- Künstler können eigene Sticker-Pakete über unseren Sticker Bot (@stickers) einstellen.\n\n- Benutze Telegram mit Android Auto (siehe android.com/auto)</string>
+    <string name="updateBuild">536</string>
 </resources>

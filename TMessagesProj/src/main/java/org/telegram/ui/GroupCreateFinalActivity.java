@@ -255,7 +255,7 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
                             }
                         }
                     });
-                    showAlertDialog(builder);
+                    showDialog(builder.create());
                 }
             });
         }
@@ -393,26 +393,21 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
             }
             donePressed = false;
         } else if (id == NotificationCenter.chatDidCreated) {
-            AndroidUtilities.runOnUIThread(new Runnable() {
-                @Override
-                public void run() {
-                    if (progressDialog != null) {
-                        try {
-                            progressDialog.dismiss();
-                        } catch (Exception e) {
-                            FileLog.e("tmessages", e);
-                        }
-                    }
-                    int chat_id = (Integer)args[0];
-                    NotificationCenter.getInstance().postNotificationName(NotificationCenter.closeChats);
-                    Bundle args2 = new Bundle();
-                    args2.putInt("chat_id", chat_id);
-                    presentFragment(new ChatActivity(args2), true);
-                    if (uploadedAvatar != null) {
-                        MessagesController.getInstance().changeChatAvatar(chat_id, uploadedAvatar);
-                    }
+            if (progressDialog != null) {
+                try {
+                    progressDialog.dismiss();
+                } catch (Exception e) {
+                    FileLog.e("tmessages", e);
                 }
-            });
+            }
+            int chat_id = (Integer)args[0];
+            NotificationCenter.getInstance().postNotificationName(NotificationCenter.closeChats);
+            Bundle args2 = new Bundle();
+            args2.putInt("chat_id", chat_id);
+            presentFragment(new ChatActivity(args2), true);
+            if (uploadedAvatar != null) {
+                MessagesController.getInstance().changeChatAvatar(chat_id, uploadedAvatar);
+            }
         }
     }
 

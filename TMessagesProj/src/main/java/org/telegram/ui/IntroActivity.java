@@ -34,7 +34,6 @@ import com.aniways.AniwaysTextView;
 import com.aniways.Log;
 import com.aniways.anigram.messenger.R;
 import com.aniways.Aniways;
-import org.telegram.messenger.Utilities;
 
 public class IntroActivity extends Activity {
     private ViewPager viewPager;
@@ -240,8 +239,14 @@ public class IntroActivity extends Activity {
             }
             justCreated = false;
         }
-        Utilities.checkForCrashes(this);
-        Utilities.checkForUpdates(this);
+        AndroidUtilities.checkForCrashes(this);
+        AndroidUtilities.checkForUpdates(this);
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        AndroidUtilities.unregisterUpdates();
     }
 
     private class IntroAdapter extends PagerAdapter {

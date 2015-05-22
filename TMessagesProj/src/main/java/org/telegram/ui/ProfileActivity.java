@@ -10,6 +10,7 @@ package org.telegram.ui;
 
 import android.animation.ObjectAnimator;
 import android.animation.StateListAnimator;
+import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -261,7 +262,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         }
                     });
                     builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-                    showAlertDialog(builder);
+                    showDialog(builder.create());
                 } else if (id == add_contact) {
                     TLRPC.User user = MessagesController.getInstance().getUser(user_id);
                     Bundle args = new Bundle();
@@ -295,7 +296,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         }
                     });
                     builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-                    showAlertDialog(builder);
+                    showDialog(builder.create());
                 } else if (id == add_member) {
                     openAddMember();
                 } else if (id == leave_group) {
@@ -309,7 +310,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         }
                     });
                     builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-                    showAlertDialog(builder);
+                    showDialog(builder.create());
                 } else if (id == edit_name) {
                     Bundle args = new Bundle();
                     args.putInt("chat_id", chat_id);
@@ -427,7 +428,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     if (getParentActivity() == null) {
                         return;
                     }
-                    showAlertDialog(AndroidUtilities.buildTTLAlert(getParentActivity(), currentEncryptedChat));
+                    showDialog(AndroidUtilities.buildTTLAlert(getParentActivity(), currentEncryptedChat).create());
                 } else if (i == settingsNotificationsRow) {
                     Bundle args = new Bundle();
                     if (user_id != 0) {
@@ -448,7 +449,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         }
                     });
                     builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-                    showAlertDialog(builder);
+                    showDialog(builder.create());
                 } else if (i == phoneRow) {
                     final TLRPC.User user = MessagesController.getInstance().getUser(user_id);
                     if (user == null || user.phone == null || user.phone.length() == 0 || getParentActivity() == null) {
@@ -479,7 +480,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                             }
                         }
                     });
-                    showAlertDialog(builder);
+                    showDialog(builder.create());
                 } else if (i > emptyRowChat2 && i < membersEndRow) {
                     int user_id = info.participants.get(sortedUsers.get(i - emptyRowChat2 - 1)).user_id;
                     if (user_id == UserConfig.getClientUserId()) {
@@ -522,7 +523,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                                 }
                             }
                         });
-                        showAlertDialog(builder);
+                        showDialog(builder.create());
 
                         return true;
                     }
@@ -555,6 +556,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 animator.addState(new int[]{}, ObjectAnimator.ofFloat(writeButton, "translationZ", AndroidUtilities.dp(4), AndroidUtilities.dp(2)).setDuration(200));
                 writeButton.setStateListAnimator(animator);
                 writeButton.setOutlineProvider(new ViewOutlineProvider() {
+                    @SuppressLint("NewApi")
                     @Override
                     public void getOutline(View view, Outline outline) {
                         outline.setOval(0, 0, AndroidUtilities.dp(56), AndroidUtilities.dp(56));
@@ -607,7 +609,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                                 }
                             }
                         });
-                        showAlertDialog(builder);
+                        showDialog(builder.create());
                     }
                 }
             });

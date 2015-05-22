@@ -13,12 +13,14 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Point;
 import android.graphics.drawable.Drawable;
+import android.os.Build;
 import android.text.Layout;
 import android.text.Spannable;
 import android.text.StaticLayout;
 import android.text.TextPaint;
 import android.text.TextUtils;
 import android.view.View;
+import android.view.MotionEvent;
 
 import org.telegram.android.AndroidUtilities;
 import com.aniways.Aniways;
@@ -64,6 +66,7 @@ public class DialogCell extends BaseCell implements IAniwaysTextContainer {
     private static Drawable muteDrawable;
 
     private static Paint linePaint;
+    private static Paint backPaint;
 
     private long currentDialogId;
     private boolean isDialogCell;
@@ -88,7 +91,6 @@ public class DialogCell extends BaseCell implements IAniwaysTextContainer {
     private AniwaysDynamicImageSpansContainer mDynamicImageSpansContainer;
 
     public boolean useSeparator = false;
-
 
     private int nameLeft;
     private StaticLayout nameLayout;
@@ -126,7 +128,13 @@ public class DialogCell extends BaseCell implements IAniwaysTextContainer {
 
     private int avatarTop = AndroidUtilities.dp(10);
 
-    private void init() {
+    private boolean isSelected;
+
+    public DialogCell(Context context) {
+        super(context);
+        mDynamicImageSpansContainer = new AniwaysDynamicImageSpansContainer(this);
+        mIconInfoDisplayer = new AniwaysIconInfoDisplayer();
+
         if (namePaint == null) {
             namePaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
             namePaint.setTextSize(AndroidUtilities.dp(17));
@@ -151,6 +159,9 @@ public class DialogCell extends BaseCell implements IAniwaysTextContainer {
             linePaint = new Paint();
             linePaint.setColor(0xffdcdcdc);
 
+            backPaint = new Paint();
+            backPaint.setColor(0x0f000000);
+
             messagePrintingPaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
             messagePrintingPaint.setTextSize(AndroidUtilities.dp(16));
             messagePrintingPaint.setColor(0xff4d83b3);
@@ -174,13 +185,9 @@ public class DialogCell extends BaseCell implements IAniwaysTextContainer {
             broadcastDrawable = getResources().getDrawable(R.drawable.list_broadcast);
             muteDrawable = getResources().getDrawable(R.drawable.mute_grey);
         }
-    }
 
-    public DialogCell(Context context) {
-        super(context);
-        mDynamicImageSpansContainer = new AniwaysDynamicImageSpansContainer(this);
-        mIconInfoDisplayer = new AniwaysIconInfoDisplayer();
-        init();
+        setBackgroundResource(R.drawable.list_selector);
+
         avatarImage = new ImageReceiver(this);
         avatarImage.setRoundRadius(AndroidUtilities.dp(26));
         avatarDrawable = new AvatarDrawable();
@@ -227,7 +234,7 @@ public class DialogCell extends BaseCell implements IAniwaysTextContainer {
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        setMeasuredDimension(MeasureSpec.getSize(widthMeasureSpec), AndroidUtilities.dp(72));
+        setMeasuredDimension(MeasureSpec.getSize(widthMeasureSpec), AndroidUtilities.dp(72) + (useSeparator ? 1 : 0));
     }
 
     @Override
@@ -242,6 +249,16 @@ public class DialogCell extends BaseCell implements IAniwaysTextContainer {
         if (changed) {
             buildLayout();
         }
+    }
+
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+        if (Build.VERSION.SDK_INT >= 21 && getBackground() != null) {
+            if (event.getAction() == MotionEvent.ACTION_DOWN || event.getAction() == MotionEvent.ACTION_MOVE) {
+                getBackground().setHotspot(event.getX(), event.getY());
+            }
+        }
+        return super.onTouchEvent(event);
     }
 
     public void buildLayout() {
@@ -613,8 +630,8 @@ public class DialogCell extends BaseCell implements IAniwaysTextContainer {
             }
         }
 
-        double widthpx = 0;
-        float left = 0;
+        double widthpx;
+        float left;
         if (LocaleController.isRTL) {
             if (nameLayout != null && nameLayout.getLineCount() > 0) {
                 left = nameLayout.getLineLeft(0);
@@ -660,6 +677,13 @@ public class DialogCell extends BaseCell implements IAniwaysTextContainer {
                 }
             }
         }
+    }
+
+    public void setDialogSelected(boolean value) {
+        if (isSelected != value) {
+            invalidate();
+        }
+        isSelected = value;
     }
 
     public void checkCurrentDialogIndex() {
@@ -785,7 +809,7 @@ public class DialogCell extends BaseCell implements IAniwaysTextContainer {
             }
             avatarDrawable.setInfo(chat);
         }
-        avatarImage.setImage(photo, "50_50", avatarDrawable, false);
+        avatarImage.setImage(photo, "50_50", avatarDrawable, null, false);
 
         if (getMeasuredWidth() != 0 || getMeasuredHeight() != 0) {
             buildLayout();
@@ -800,6 +824,10 @@ public class DialogCell extends BaseCell implements IAniwaysTextContainer {
     protected void onDraw(Canvas canvas) {
         if (currentDialogId == 0) {
             return;
+        }
+
+        if (isSelected) {
+            canvas.drawRect(0, 0, getMeasuredWidth(), getMeasuredHeight(), backPaint);
         }
 
         if (drawNameLock) {
