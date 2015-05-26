@@ -39,6 +39,7 @@ public class UserConfig {
     public static int lastPauseTime = 0;
     public static boolean isWaitingForPasscodeEnter = false;
     public static int lastUpdateVersion;
+    public static boolean editTakenPhoto = true;
 
     public static int getNewMessageId() {
         int id;
@@ -76,6 +77,7 @@ public class UserConfig {
                 editor.putInt("autoLockIn", autoLockIn);
                 editor.putInt("lastPauseTime", lastPauseTime);
                 editor.putInt("lastUpdateVersion", lastUpdateVersion);
+                editor.putBoolean("editTakenPhoto", editTakenPhoto);
 
                 if (currentUser != null) {
                     if (withFile) {
@@ -170,6 +172,7 @@ public class UserConfig {
                         importHash = preferences.getString("importHash", "");
                         saveIncomingPhotos = preferences.getBoolean("saveIncomingPhotos", false);
                         contactsVersion = preferences.getInt("contactsVersion", 0);
+                        editTakenPhoto = preferences.getBoolean("editTakenPhoto", true);
                     }
                     if (lastLocalId > -210000) {
                         lastLocalId = -210000;
@@ -206,6 +209,7 @@ public class UserConfig {
                 autoLockIn = preferences.getInt("autoLockIn", 60 * 60);
                 lastPauseTime = preferences.getInt("lastPauseTime", 0);
                 lastUpdateVersion = preferences.getInt("lastUpdateVersion", 511);
+                editTakenPhoto = preferences.getBoolean("editTakenPhoto", true);
                 String user = preferences.getString("user", null);
                 if (user != null) {
                     byte[] userBytes = Base64.decode(user, Base64.DEFAULT);
@@ -279,6 +283,7 @@ public class UserConfig {
         lastPauseTime = 0;
         isWaitingForPasscodeEnter = false;
         lastUpdateVersion = BuildVars.BUILD_VERSION;
+        editTakenPhoto = true;
         saveConfig(true);
     }
 }
