@@ -106,6 +106,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
     private int settingsSectionRow;
     private int settingsSectionRow2;
     private int enableAnimationsRow;
+    private int editTakenPhotoRow;
     private int notificationRow;
     private int backgroundRow;
     private int languageRow;
@@ -224,6 +225,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         backgroundRow = rowCount++;
         languageRow = rowCount++;
         enableAnimationsRow = rowCount++;
+        editTakenPhotoRow = rowCount++;
         mediaDownloadSection = rowCount++;
         mediaDownloadSection2 = rowCount++;
         mobileDownloadRow = rowCount++;
@@ -392,6 +394,15 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                     editor.commit();
                     if (view instanceof TextCheckCell) {
                         ((TextCheckCell) view).setChecked(!animations);
+                    }
+                } else if (i == editTakenPhotoRow) {
+                    SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+                    boolean editTakenPhoto = preferences.getBoolean("editTakenPhoto", true);
+                    SharedPreferences.Editor editor = preferences.edit();
+                    editor.putBoolean("editTakenPhoto", !editTakenPhoto);
+                    editor.commit();
+                    if (view instanceof TextCheckCell) {
+                        ((TextCheckCell) view).setChecked(!editTakenPhoto);
                     }
                 } else if (i == notificationRow) {
                     presentFragment(new NotificationsSettingsActivity());
@@ -994,7 +1005,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                     i == askQuestionRow || i == sendLogsRow || i == sendByEnterRow || i == privacyRow || i == wifiDownloadRow ||
                     i == mobileDownloadRow || i == clearLogsRow || i == roamingDownloadRow || i == languageRow || i == usernameRow ||
                     i == switchBackendButtonRow || i == telegramFaqRow || i == contactsSortRow || i == contactsReimportRow || i == saveToGalleryRow ||
-                    i == stickersRow;
+                    i == stickersRow || i == editTakenPhotoRow;
         }
 
         @Override
@@ -1090,6 +1101,8 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                     textCell.setTextAndCheck(LocaleController.getString("SendByEnter", R.string.SendByEnter), preferences.getBoolean("send_by_enter", false), false);
                 } else if (i == saveToGalleryRow) {
                     textCell.setTextAndCheck(LocaleController.getString("SaveToGallerySettings", R.string.SaveToGallerySettings), MediaController.getInstance().canSaveToGallery(), false);
+                } else if (i == editTakenPhotoRow) {
+                    textCell.setTextAndCheck(LocaleController.getString("EditTakenPhoto", R.string.EditTakenPhoto), preferences.getBoolean("editTakenPhoto", true), false);
                 }
             } else if (type == 4) {
                 if (view == null) {
@@ -1192,7 +1205,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             }
             if (i == settingsSectionRow || i == supportSectionRow || i == messagesSectionRow || i == mediaDownloadSection || i == contactsSectionRow) {
                 return 1;
-            } else if (i == enableAnimationsRow || i == sendByEnterRow || i == saveToGalleryRow) {
+            } else if (i == enableAnimationsRow || i == sendByEnterRow || i == saveToGalleryRow || i == editTakenPhotoRow) {
                 return 3;
             } else if (i == notificationRow || i == backgroundRow || i == askQuestionRow || i == sendLogsRow || i == privacyRow || i == clearLogsRow || i == switchBackendButtonRow || i == telegramFaqRow || i == contactsReimportRow || i == textSizeRow || i == languageRow || i == contactsSortRow || i == stickersRow) {
                 return 2;

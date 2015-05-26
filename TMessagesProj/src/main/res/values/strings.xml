@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 
 
-
 <resources>
     <string name="AppName">Telegram</string>
     <string name="LanguageName">English</string>
@@ -807,4 +806,5 @@
     <!--update text-->
     <string name="updateText">Telegram for Android has been updated. New in version 2.9:\n\n- Install and share custom sticker sets like this one: https://telegram.me/addstickers/Animals\n- If you\'re an artist, create custom sticker sets using our @stickers bot.\n\n- Use Telegram with Android Auto.</string>
     <string name="updateBuild">536</string>
+    <string name="EditTakenPhoto">Edit taken photo</string>
 </resources>

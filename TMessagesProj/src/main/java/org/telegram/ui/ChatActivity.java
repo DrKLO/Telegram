@@ -2840,19 +2840,17 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 }
                 arrayList.add(new MediaController.PhotoEntry(0, 0, 0, currentPicturePath, orientation, false));
 
-                PhotoViewer.getInstance().openPhotoForSelect(arrayList, 0, 2, new PhotoViewer.EmptyPhotoViewerProvider() {
-                    @Override
-                    public void sendButtonPressed(int index) {
-                        MediaController.PhotoEntry photoEntry = (MediaController.PhotoEntry) arrayList.get(0);
-                        if (photoEntry.imagePath != null) {
-                            SendMessagesHelper.prepareSendingPhoto(photoEntry.imagePath, null, dialog_id, replyingMessageObject, photoEntry.caption);
-                            showReplyPanel(false, null, null, null, false, true);
-                        } else if (photoEntry.path != null) {
-                            SendMessagesHelper.prepareSendingPhoto(photoEntry.path, null, dialog_id, replyingMessageObject, photoEntry.caption);
-                            showReplyPanel(false, null, null, null, false, true);
+                SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+                if (preferences.getBoolean("editTakenPhoto", true)) {
+                    PhotoViewer.getInstance().openPhotoForSelect(arrayList, 0, 2, new PhotoViewer.EmptyPhotoViewerProvider() {
+                        @Override
+                        public void sendButtonPressed(int index) {
+                            sendCurrentPhoto(arrayList);
                         }
-                    }
-                }, this);
+                    }, this);
+                } else {
+                    sendCurrentPhoto(arrayList);
+                }
                 AndroidUtilities.addMediaToGallery(currentPicturePath);
                 currentPicturePath = null;
             } else if (requestCode == 1) {
@@ -2932,6 +2930,17 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 SendMessagesHelper.prepareSendingDocument(tempPath, originalPath, null, null, dialog_id, replyingMessageObject);
                 showReplyPanel(false, null, null, null, false, true);
             }
+        }
+    }
+
+    private void sendCurrentPhoto(ArrayList<Object> arrayList) {
+        MediaController.PhotoEntry photoEntry = (MediaController.PhotoEntry) arrayList.get(0);
+        if (photoEntry.imagePath != null) {
+            SendMessagesHelper.prepareSendingPhoto(photoEntry.imagePath, null, dialog_id, replyingMessageObject, photoEntry.caption);
+            showReplyPanel(false, null, null, null, false, true);
+        } else if (photoEntry.path != null) {
+            SendMessagesHelper.prepareSendingPhoto(photoEntry.path, null, dialog_id, replyingMessageObject, photoEntry.caption);
+            showReplyPanel(false, null, null, null, false, true);
         }
     }
 
