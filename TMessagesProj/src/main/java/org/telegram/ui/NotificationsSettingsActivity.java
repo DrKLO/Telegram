@@ -19,11 +19,13 @@ import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.Build;
 import android.provider.Settings;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.FrameLayout;
+import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.Toast;
 
@@ -356,16 +358,17 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
                             }
                         });
                         builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-                        showAlertDialog(builder);
+                        showDialog(builder.create());
                     }
                 } else if (i == messageLedRow || i == groupLedRow) {
                     if (getParentActivity() == null) {
                         return;
                     }
 
-                    LayoutInflater li = (LayoutInflater) getParentActivity().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-                    view = li.inflate(R.layout.settings_color_dialog_layout, null, false);
-                    final ColorPickerView colorPickerView = (ColorPickerView) view.findViewById(R.id.color_picker);
+                    LinearLayout linearLayout = new LinearLayout(getParentActivity());
+                    linearLayout.setOrientation(LinearLayout.VERTICAL);
+                    final ColorPickerView colorPickerView = new ColorPickerView(getParentActivity());
+                    linearLayout.addView(colorPickerView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
 
                     SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
                     if (i == messageLedRow) {
@@ -376,7 +379,7 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
 
                     AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                     builder.setTitle(LocaleController.getString("LedColor", R.string.LedColor));
-                    builder.setView(view);
+                    builder.setView(linearLayout);
                     builder.setPositiveButton(LocaleController.getString("Set", R.string.Set), new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialogInterface, int which) {
@@ -405,7 +408,7 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
                             listView.invalidateViews();
                         }
                     });
-                    showAlertDialog(builder);
+                    showDialog(builder.create());
                 } else if (i == messagePopupNotificationRow || i == groupPopupNotificationRow) {
                     AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                     builder.setTitle(LocaleController.getString("PopupNotification", R.string.PopupNotification));
@@ -431,7 +434,7 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
                         }
                     });
                     builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-                    showAlertDialog(builder);
+                    showDialog(builder.create());
                 } else if (i == messageVibrateRow || i == groupVibrateRow) {
                     AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                     builder.setTitle(LocaleController.getString("Vibrate", R.string.Vibrate));
@@ -468,7 +471,7 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
                         }
                     });
                     builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-                    showAlertDialog(builder);
+                    showDialog(builder.create());
                 } else if (i == messagePriorityRow || i == groupPriorityRow) {
                     AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                     builder.setTitle(LocaleController.getString("NotificationsPriority", R.string.NotificationsPriority));
@@ -491,7 +494,7 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
                         }
                     });
                     builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-                    showAlertDialog(builder);
+                    showDialog(builder.create());
                 } else if (i == repeatRow) {
                     AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                     builder.setTitle(LocaleController.getString("RepeatNotifications", R.string.RepeatNotifications));
@@ -528,7 +531,7 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
                         }
                     });
                     builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-                    showAlertDialog(builder);
+                    showDialog(builder.create());
                 }
                 if (view instanceof TextCheckCell) {
                     ((TextCheckCell) view).setChecked(!enabled);

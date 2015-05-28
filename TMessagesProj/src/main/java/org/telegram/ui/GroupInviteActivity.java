@@ -167,7 +167,7 @@ public class GroupInviteActivity extends BaseFragment implements NotificationCen
                         }
                     });
                     builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-                    showAlertDialog(builder);
+                    showDialog(builder.create());
                 }
             }
         });
@@ -225,7 +225,7 @@ public class GroupInviteActivity extends BaseFragment implements NotificationCen
                                 builder.setMessage(LocaleController.getString("RevokeAlertNewLink", R.string.RevokeAlertNewLink));
                                 builder.setTitle(LocaleController.getString("RevokeLink", R.string.RevokeLink));
                                 builder.setNegativeButton(LocaleController.getString("OK", R.string.OK), null);
-                                showAlertDialog(builder);
+                                showDialog(builder.create());
                             }
                         }
                         loading = false;

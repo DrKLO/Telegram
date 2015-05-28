@@ -92,25 +92,29 @@ public class DrawerLayoutContainer extends FrameLayout {
 
     private void dispatchChildInsets(View child, Object insets, int drawerGravity) {
         WindowInsets wi = (WindowInsets) insets;
-        if (drawerGravity == Gravity.LEFT) {
-            wi = wi.replaceSystemWindowInsets(wi.getSystemWindowInsetLeft(), wi.getSystemWindowInsetTop(), 0, wi.getSystemWindowInsetBottom());
-        } else if (drawerGravity == Gravity.RIGHT) {
-            wi = wi.replaceSystemWindowInsets(0, wi.getSystemWindowInsetTop(), wi.getSystemWindowInsetRight(), wi.getSystemWindowInsetBottom());
+        if (Build.VERSION.SDK_INT >= 20) {
+            if (drawerGravity == Gravity.LEFT) {
+                wi = wi.replaceSystemWindowInsets(wi.getSystemWindowInsetLeft(), wi.getSystemWindowInsetTop(), 0, wi.getSystemWindowInsetBottom());
+            } else if (drawerGravity == Gravity.RIGHT) {
+                wi = wi.replaceSystemWindowInsets(0, wi.getSystemWindowInsetTop(), wi.getSystemWindowInsetRight(), wi.getSystemWindowInsetBottom());
+            }
+            child.dispatchApplyWindowInsets(wi);
         }
-        child.dispatchApplyWindowInsets(wi);
     }
 
     private void applyMarginInsets(MarginLayoutParams lp, Object insets, int drawerGravity, boolean topOnly) {
         WindowInsets wi = (WindowInsets) insets;
-        if (drawerGravity == Gravity.LEFT) {
-            wi = wi.replaceSystemWindowInsets(wi.getSystemWindowInsetLeft(), wi.getSystemWindowInsetTop(), 0, wi.getSystemWindowInsetBottom());
-        } else if (drawerGravity == Gravity.RIGHT) {
-            wi = wi.replaceSystemWindowInsets(0, wi.getSystemWindowInsetTop(), wi.getSystemWindowInsetRight(), wi.getSystemWindowInsetBottom());
+        if (Build.VERSION.SDK_INT >= 20) {
+            if (drawerGravity == Gravity.LEFT) {
+                wi = wi.replaceSystemWindowInsets(wi.getSystemWindowInsetLeft(), wi.getSystemWindowInsetTop(), 0, wi.getSystemWindowInsetBottom());
+            } else if (drawerGravity == Gravity.RIGHT) {
+                wi = wi.replaceSystemWindowInsets(0, wi.getSystemWindowInsetTop(), wi.getSystemWindowInsetRight(), wi.getSystemWindowInsetBottom());
+            }
+            lp.leftMargin = wi.getSystemWindowInsetLeft();
+            lp.topMargin = topOnly ? 0 : wi.getSystemWindowInsetTop();
+            lp.rightMargin = wi.getSystemWindowInsetRight();
+            lp.bottomMargin = wi.getSystemWindowInsetBottom();
         }
-        lp.leftMargin = wi.getSystemWindowInsetLeft();
-        lp.topMargin = topOnly ? 0 : wi.getSystemWindowInsetTop();
-        lp.rightMargin = wi.getSystemWindowInsetRight();
-        lp.bottomMargin = wi.getSystemWindowInsetBottom();
     }
 
     private int getTopInset(Object insets) {

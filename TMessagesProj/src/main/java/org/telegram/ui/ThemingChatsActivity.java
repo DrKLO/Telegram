@@ -293,7 +293,7 @@ public class ThemingChatsActivity extends BaseFragment {
                             }
                         });
                         builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-                        showAlertDialog(builder);
+                        showDialog(builder.create());
                     } else if (i == nameColorRow) {
                         if (getParentActivity() == null) {
                             return;
@@ -476,7 +476,7 @@ public class ThemingChatsActivity extends BaseFragment {
                             }
                         });
 
-                        showAlertDialog(builder);
+                        showDialog(builder.create());
                     } else if (i == avatarSizeRow) {
                         if (getParentActivity() == null) {
                             return;
@@ -499,7 +499,7 @@ public class ThemingChatsActivity extends BaseFragment {
                             }
                         });
 
-                        showAlertDialog(builder);
+                        showDialog(builder.create());
                     } else if (i == avatarMarginLeftRow) {
                         if (getParentActivity() == null) {
                             return;
@@ -522,7 +522,7 @@ public class ThemingChatsActivity extends BaseFragment {
                             }
                         });
 
-                        showAlertDialog(builder);
+                        showDialog(builder.create());
                     } else if (i == nameSizeRow) {
                         if (getParentActivity() == null) {
                             return;
@@ -547,7 +547,7 @@ public class ThemingChatsActivity extends BaseFragment {
                         //dialog.show();
                         //Button btn = dialog.getButton(DialogInterface.BUTTON_NEGATIVE);
                         //btn.setTextColor(0xff0000ff);
-                        showAlertDialog(builder);
+                        showDialog(builder.create());
 
                     } else if (i == groupNameSizeRow) {
                         if (getParentActivity() == null) {
@@ -569,7 +569,7 @@ public class ThemingChatsActivity extends BaseFragment {
                                 }
                             }
                         }).create();
-                        showAlertDialog(builder);
+                        showDialog(builder.create());
 
                     } else if (i == messageSizeRow) {
                         if (getParentActivity() == null) {
@@ -591,7 +591,7 @@ public class ThemingChatsActivity extends BaseFragment {
                                 }
                             }
                         });
-                        showAlertDialog(builder);
+                        showDialog(builder.create());
                     } else if (i == timeSizeRow) {
                         if (getParentActivity() == null) {
                             return;
@@ -612,7 +612,7 @@ public class ThemingChatsActivity extends BaseFragment {
                                 }
                             }
                         });
-                        showAlertDialog(builder);
+                        showDialog(builder.create());
                     } else if (i == countSizeRow) {
                         if (getParentActivity() == null) {
                             return;
@@ -633,7 +633,7 @@ public class ThemingChatsActivity extends BaseFragment {
                                 }
                             }
                         });
-                        showAlertDialog(builder);
+                        showDialog(builder.create());
                     } else if (i == floatingPencilColorRow) {
                         if (getParentActivity() == null) {
                             return;

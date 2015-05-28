@@ -265,7 +265,7 @@ public class SecretPhotoViewer implements NotificationCenter.NotificationCenterD
         BitmapDrawable drawable = ImageLoader.getInstance().getImageFromMemory(sizeFull.location, null, null);
         if (drawable == null) {
             File file = FileLoader.getPathToAttach(sizeFull);
-            Bitmap bitmap = null;
+            Bitmap bitmap;
             try {
                 bitmap = BitmapFactory.decodeFile(file.getAbsolutePath());
             } catch (Throwable e) {
@@ -280,7 +280,7 @@ public class SecretPhotoViewer implements NotificationCenter.NotificationCenterD
         if (drawable != null) {
             centerImage.setImageBitmap(drawable);
         } else {
-            centerImage.setImage(sizeFull.location, null, null, size, false);
+            centerImage.setImage(sizeFull.location, null, null, size, null, false);
         }
 
         currentMessageObject = messageObject;

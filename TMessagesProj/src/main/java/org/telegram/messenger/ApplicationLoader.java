@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 1.3.2.
+ * This is the source code of Telegram for Android v. 2.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013.
+ * Copyright Nikolai Kudashov, 2013-2015.
  */
 
 package org.telegram.messenger;
@@ -94,6 +94,13 @@ public class ApplicationLoader extends Application {
                         int selectedBackground = preferences.getInt("selectedBackground", 1000001);
                         selectedColor = preferences.getInt("selectedColor", 0);
                         int cacheColorHint = 0;
+                        //
+                        SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+                        if(themePrefs.getBoolean("chatSolidBGColorCheck", false)){
+                            cachedWallpaper = null;
+                            selectedColor = themePrefs.getInt("chatSolidBGColor", 0xffffffff);
+                        }
+                        //
                         if (selectedColor == 0) {
                             if (selectedBackground == 1000001) {
                                 cachedWallpaper = applicationContext.getResources().getDrawable(R.drawable.background_hd);
@@ -160,6 +167,7 @@ public class ApplicationLoader extends Application {
         }
 
         UserConfig.loadConfig();
+        MessagesController.getInstance();
         if (UserConfig.getCurrentUser() != null) {
             MessagesController.getInstance().putUser(UserConfig.getCurrentUser(), true);
             ConnectionsManager.getInstance().applyCountryPortNumber(UserConfig.getCurrentUser().phone);
@@ -193,10 +201,11 @@ public class ApplicationLoader extends Application {
         }
 
         applicationHandler = new Handler(applicationContext.getMainLooper());
-
+        //plus
         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
         SHOW_ANDROID_EMOJI = preferences.getBoolean("showAndroidEmoji", false);
         KEEP_ORIGINAL_FILENAME = preferences.getBoolean("keepOriginalFilename", false);
+        //
         startPushService();
     }
 

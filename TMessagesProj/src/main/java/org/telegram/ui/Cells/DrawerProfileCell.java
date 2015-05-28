@@ -32,6 +32,7 @@ import org.telegram.android.ContactsController;
 import org.telegram.android.MessageObject;
 import org.telegram.android.MessagesController;
 import org.telegram.messenger.ApplicationLoader;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.UserConfig;
@@ -58,23 +59,12 @@ public class DrawerProfileCell extends FrameLayout implements PhotoViewer.PhotoV
         shadowView.setVisibility(INVISIBLE);
         shadowView.setScaleType(ImageView.ScaleType.FIT_XY);
         shadowView.setImageResource(R.drawable.bottom_shadow);
-        addView(shadowView);
-        LayoutParams layoutParams = (FrameLayout.LayoutParams) shadowView.getLayoutParams();
-        layoutParams.width = LayoutHelper.MATCH_PARENT;
-        layoutParams.height = AndroidUtilities.dp(70);
-        layoutParams.gravity = Gravity.LEFT | Gravity.BOTTOM;
-        shadowView.setLayoutParams(layoutParams);
+        addView(shadowView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 70, Gravity.LEFT | Gravity.BOTTOM));
 
         avatarImageView = new BackupImageView(context);
         avatarImageView.getImageReceiver().setRoundRadius(AndroidUtilities.dp(32));
-        addView(avatarImageView);
-        layoutParams = (LayoutParams) avatarImageView.getLayoutParams();
-        layoutParams.width = AndroidUtilities.dp(64);
-        layoutParams.height = AndroidUtilities.dp(64);
-        layoutParams.gravity = Gravity.LEFT | Gravity.BOTTOM;
-        layoutParams.leftMargin = AndroidUtilities.dp(16);
-        layoutParams.bottomMargin = AndroidUtilities.dp(67);
-        avatarImageView.setLayoutParams(layoutParams);
+                addView(avatarImageView, LayoutHelper.createFrame(64, 64, Gravity.LEFT | Gravity.BOTTOM, 16, 0, 0, 67));
+
         final Activity activity = (Activity) context;
         avatarImageView.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -89,7 +79,6 @@ public class DrawerProfileCell extends FrameLayout implements PhotoViewer.PhotoV
                 }
             }
         });
-
         nameTextView = new TextView(context);
         nameTextView.setTextColor(0xffffffff);
         nameTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
@@ -98,15 +87,7 @@ public class DrawerProfileCell extends FrameLayout implements PhotoViewer.PhotoV
         nameTextView.setMaxLines(1);
         nameTextView.setSingleLine(true);
         nameTextView.setGravity(Gravity.LEFT);
-        addView(nameTextView);
-        layoutParams = (FrameLayout.LayoutParams) nameTextView.getLayoutParams();
-        layoutParams.width = LayoutHelper.MATCH_PARENT;
-        layoutParams.height = LayoutHelper.WRAP_CONTENT;
-        layoutParams.gravity = Gravity.LEFT | Gravity.BOTTOM;
-        layoutParams.leftMargin = AndroidUtilities.dp(16);
-        layoutParams.bottomMargin = AndroidUtilities.dp(28);
-        layoutParams.rightMargin = AndroidUtilities.dp(16);
-        nameTextView.setLayoutParams(layoutParams);
+        addView(nameTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.BOTTOM, 16, 0, 16, 28));
 
         phoneTextView = new TextView(context);
         phoneTextView.setTextColor(0xffc2e5ff);
@@ -115,15 +96,7 @@ public class DrawerProfileCell extends FrameLayout implements PhotoViewer.PhotoV
         phoneTextView.setMaxLines(1);
         phoneTextView.setSingleLine(true);
         phoneTextView.setGravity(Gravity.LEFT);
-        addView(phoneTextView);
-        layoutParams = (FrameLayout.LayoutParams) phoneTextView.getLayoutParams();
-        layoutParams.width = LayoutHelper.MATCH_PARENT;
-        layoutParams.height = LayoutHelper.WRAP_CONTENT;
-        layoutParams.gravity = Gravity.LEFT | Gravity.BOTTOM;
-        layoutParams.leftMargin = AndroidUtilities.dp(16);
-        layoutParams.bottomMargin = AndroidUtilities.dp(9);
-        layoutParams.rightMargin = AndroidUtilities.dp(16);
-        phoneTextView.setLayoutParams(layoutParams);
+        addView(phoneTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.BOTTOM, 16, 0, 16, 9));
     }
 
     @Override
@@ -131,7 +104,11 @@ public class DrawerProfileCell extends FrameLayout implements PhotoViewer.PhotoV
         if (Build.VERSION.SDK_INT >= 21) {
             super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(148) + AndroidUtilities.statusBarHeight, MeasureSpec.EXACTLY));
         } else {
+            try {
             super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(148), MeasureSpec.EXACTLY));
+            } catch (Exception e) {
+                FileLog.e("tmessages", e);
+            }
         }
         updateTheme();
     }
@@ -139,9 +116,14 @@ public class DrawerProfileCell extends FrameLayout implements PhotoViewer.PhotoV
     @Override
     protected void onDraw(Canvas canvas) {
         Drawable backgroundDrawable = ApplicationLoader.getCachedWallpaper();
-        if (ApplicationLoader.isCustomTheme() && backgroundDrawable != null && !AndroidUtilities.getBoolPref("drawerHeaderBGCheck")) {
+        SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+        if (ApplicationLoader.isCustomTheme() && backgroundDrawable != null && !themePrefs.getBoolean("drawerHeaderBGCheck", false)) {
             phoneTextView.setTextColor(0xffffffff);
-            shadowView.setVisibility(VISIBLE);
+            int visible = INVISIBLE;
+            if(!themePrefs.getBoolean("drawerHideBGShadowCheck", false)){
+                visible = VISIBLE;
+            }
+            shadowView.setVisibility(visible);
             if (backgroundDrawable instanceof ColorDrawable) {
                 backgroundDrawable.setBounds(0, 0, getMeasuredWidth(), getMeasuredHeight());
                 backgroundDrawable.draw(canvas);

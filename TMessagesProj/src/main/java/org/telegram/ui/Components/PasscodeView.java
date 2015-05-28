@@ -51,7 +51,6 @@ import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
-import org.telegram.messenger.Utilities;
 
 import java.util.ArrayList;
 import java.util.Locale;
@@ -675,55 +674,42 @@ public class PasscodeView extends FrameLayout {
                     int key = KeyEvent.KEYCODE_DEL;
                     switch (tag) {
                         case 0:
-                            key = KeyEvent.KEYCODE_0;
                             passwordEditText2.appendCharacter("0");
                             break;
                         case 1:
-                            key = KeyEvent.KEYCODE_1;
                             passwordEditText2.appendCharacter("1");
                             break;
                         case 2:
-                            key = KeyEvent.KEYCODE_2;
                             passwordEditText2.appendCharacter("2");
                             break;
                         case 3:
-                            key = KeyEvent.KEYCODE_3;
                             passwordEditText2.appendCharacter("3");
                             break;
                         case 4:
-                            key = KeyEvent.KEYCODE_4;
                             passwordEditText2.appendCharacter("4");
                             break;
                         case 5:
-                            key = KeyEvent.KEYCODE_5;
                             passwordEditText2.appendCharacter("5");
                             break;
                         case 6:
-                            key = KeyEvent.KEYCODE_6;
                             passwordEditText2.appendCharacter("6");
                             break;
                         case 7:
-                            key = KeyEvent.KEYCODE_7;
                             passwordEditText2.appendCharacter("7");
                             break;
                         case 8:
-                            key = KeyEvent.KEYCODE_8;
                             passwordEditText2.appendCharacter("8");
                             break;
                         case 9:
-                            key = KeyEvent.KEYCODE_9;
                             passwordEditText2.appendCharacter("9");
                             break;
                         case 10:
-                            key = KeyEvent.KEYCODE_DEL;
                             passwordEditText2.eraseLastCharacter();
                             break;
                     }
                     if (passwordEditText2.lenght() == 4) {
                         processDone();
                     }
-                    //passwordEditText.dispatchKeyEvent(new KeyEvent(0, 0, KeyEvent.ACTION_DOWN, key, 0));
-                    //passwordEditText.dispatchKeyEvent(new KeyEvent(0, 0, KeyEvent.ACTION_UP, key, 0));
                 }
             });
             numberFrameLayouts.add(frameLayout);
@@ -754,7 +740,7 @@ public class PasscodeView extends FrameLayout {
             onPasscodeError();
             return;
         }
-        if (!Utilities.MD5(password).equals(UserConfig.passcodeHash)) {
+        if (!UserConfig.checkPasscode(password)) {
             passwordEditText.setText("");
             passwordEditText2.eraseAllCharacters(true);
             onPasscodeError();
@@ -867,7 +853,6 @@ public class PasscodeView extends FrameLayout {
             backgroundDrawable = ApplicationLoader.getCachedWallpaper();
             if (backgroundDrawable != null) {
                 backgroundFrameLayout.setBackgroundColor(0xbf000000);
-                customTheme = true;
             } else {
                 //backgroundFrameLayout.setBackgroundColor(0xff517c9e);
                 backgroundFrameLayout.setBackgroundColor(AndroidUtilities.getIntDarkerColor("themeColor", 0x15));
@@ -1012,7 +997,7 @@ public class PasscodeView extends FrameLayout {
 
         if (UserConfig.passcodeType == 1 && (AndroidUtilities.isTablet() || getContext().getResources().getConfiguration().orientation != Configuration.ORIENTATION_LANDSCAPE)) {
             int t = 0;
-            if ((Integer) passwordFrameLayout.getTag() != 0) {
+            if ((Integer) passwordFrameLayout.getTag() != 0) { //Don't change
                 t = (Integer) passwordFrameLayout.getTag();
             }
             LayoutParams layoutParams = (LayoutParams) passwordFrameLayout.getLayoutParams();

@@ -282,7 +282,7 @@ public class MessagesStorage {
                         database.executeFast("PRAGMA user_version = 4").stepThis().dispose();
                         version = 4;
                     }
-                    if (version == 4 && version < 6) {
+                    if (version == 4) {
                         database.executeFast("CREATE TABLE IF NOT EXISTS enc_tasks_v2(mid INTEGER PRIMARY KEY, date INTEGER)").stepThis().dispose();
                         database.executeFast("CREATE INDEX IF NOT EXISTS date_idx_enc_tasks_v2 ON enc_tasks_v2(date);").stepThis().dispose();
                         database.beginTransaction();
@@ -290,7 +290,7 @@ public class MessagesStorage {
                         SQLitePreparedStatement state = database.executeFast("REPLACE INTO enc_tasks_v2 VALUES(?, ?)");
                         if (cursor.next()) {
                             int date = cursor.intValue(0);
-                            int length = 0;
+                            int length;
                             ByteBufferDesc data = buffersStorage.getFreeBuffer(cursor.byteArrayLength(1));
                             if ((length = cursor.byteBufferValue(1, data.buffer)) != 0) {
                                 for (int a = 0; a < length / 4; a++) {
@@ -313,7 +313,7 @@ public class MessagesStorage {
                         database.executeFast("PRAGMA user_version = 6").stepThis().dispose();
                         version = 6;
                     }
-                    if (version == 6 && version < 7) {
+                    if (version == 6) {
                         database.executeFast("CREATE TABLE IF NOT EXISTS messages_seq(mid INTEGER PRIMARY KEY, seq_in INTEGER, seq_out INTEGER);").stepThis().dispose();
                         database.executeFast("CREATE INDEX IF NOT EXISTS seq_idx_messages_seq ON messages_seq(seq_in, seq_out);").stepThis().dispose();
                         database.executeFast("ALTER TABLE enc_chats ADD COLUMN layer INTEGER default 0").stepThis().dispose();
@@ -333,7 +333,7 @@ public class MessagesStorage {
                         database.executeFast("PRAGMA user_version = 9").stepThis().dispose();
                         version = 9;
                     }*/
-                    if ((version == 7 || version == 8 || version == 9) && version < 10) {
+                    if (version == 7 || version == 8 || version == 9) {
                         database.executeFast("ALTER TABLE enc_chats ADD COLUMN use_count INTEGER default 0").stepThis().dispose();
                         database.executeFast("ALTER TABLE enc_chats ADD COLUMN exchange_id INTEGER default 0").stepThis().dispose();
                         database.executeFast("ALTER TABLE enc_chats ADD COLUMN key_date INTEGER default 0").stepThis().dispose();
@@ -343,17 +343,17 @@ public class MessagesStorage {
                         database.executeFast("PRAGMA user_version = 10").stepThis().dispose();
                         version = 10;
                     }
-                    if (version == 10 && version < 11) {
+                    if (version == 10) {
                         database.executeFast("CREATE TABLE IF NOT EXISTS web_recent_v3(id TEXT, type INTEGER, image_url TEXT, thumb_url TEXT, local_url TEXT, width INTEGER, height INTEGER, size INTEGER, date INTEGER, PRIMARY KEY (id, type));").stepThis().dispose();
                         database.executeFast("PRAGMA user_version = 11").stepThis().dispose();
                         version = 11;
                     }
-                    if (version == 11 && version < 12) {
+                    if (version == 11) {
                         database.executeFast("CREATE TABLE IF NOT EXISTS stickers(id INTEGER PRIMARY KEY, data BLOB, date INTEGER);").stepThis().dispose();
                         database.executeFast("PRAGMA user_version = 12").stepThis().dispose();
                         version = 12;
                     }
-                    if (version == 12 && version < 13) {
+                    if (version == 12) {
                         database.executeFast("DROP INDEX IF EXISTS uid_mid_idx_media;").stepThis().dispose();
                         database.executeFast("DROP INDEX IF EXISTS mid_idx_media;").stepThis().dispose();
                         database.executeFast("DROP INDEX IF EXISTS uid_date_mid_idx_media;").stepThis().dispose();
@@ -370,26 +370,26 @@ public class MessagesStorage {
                         database.executeFast("PRAGMA user_version = 13").stepThis().dispose();
                         version = 13;
                     }
-                    if (version == 13 && version < 14) {
+                    if (version == 13) {
                         database.executeFast("ALTER TABLE messages ADD COLUMN replydata BLOB default NULL").stepThis().dispose();
                         database.executeFast("PRAGMA user_version = 14").stepThis().dispose();
                         version = 14;
                     }
-                    if (version == 14 && version < 15) {
+                    if (version == 14) {
                         database.executeFast("CREATE TABLE IF NOT EXISTS hashtag_recent_v2(id TEXT PRIMARY KEY, date INTEGER);").stepThis().dispose();
                         database.executeFast("PRAGMA user_version = 15").stepThis().dispose();
                         version = 15;
                     }
-                    if (version == 15 && version < 16) {
+                    if (version == 15) {
                         database.executeFast("CREATE TABLE IF NOT EXISTS webpage_pending(id INTEGER, mid INTEGER, PRIMARY KEY (id, mid));").stepThis().dispose();
                         database.executeFast("PRAGMA user_version = 16").stepThis().dispose();
                         version = 16;
                     }
-                    if (version == 16 && version < 17) {
+                    if (version == 16) {
                         database.executeFast("ALTER TABLE dialogs ADD COLUMN inbox_max INTEGER default 0").stepThis().dispose();
                         database.executeFast("ALTER TABLE dialogs ADD COLUMN outbox_max INTEGER default 0").stepThis().dispose();
                         database.executeFast("PRAGMA user_version = 17").stepThis().dispose();
-                        version = 17;
+                        //version = 17;
                     }
                 } catch (Exception e) {
                     FileLog.e("tmessages", e);
@@ -764,7 +764,7 @@ public class MessagesStorage {
             public void run() {
                 try {
                     SQLiteCursor cursor = database.queryFinalized("SELECT data FROM wallpapers WHERE 1");
-                    ArrayList<TLRPC.WallPaper> wallPapers = new ArrayList<>();
+                    final ArrayList<TLRPC.WallPaper> wallPapers = new ArrayList<>();
                     while (cursor.next()) {
                         ByteBufferDesc data = buffersStorage.getFreeBuffer(cursor.byteArrayLength(0));
                         if (data != null && cursor.byteBufferValue(0, data.buffer) != 0) {
@@ -774,7 +774,12 @@ public class MessagesStorage {
                         buffersStorage.reuseFreeBuffer(data);
                     }
                     cursor.dispose();
-                    NotificationCenter.getInstance().postNotificationName(NotificationCenter.wallpapersDidLoaded, wallPapers);
+                    AndroidUtilities.runOnUIThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            NotificationCenter.getInstance().postNotificationName(NotificationCenter.wallpapersDidLoaded, wallPapers);
+                        }
+                    });
                 } catch (Exception e) {
                     FileLog.e("tmessages", e);
                 }
@@ -1069,7 +1074,7 @@ public class MessagesStorage {
                     int minDate = Integer.MAX_VALUE;
                     SparseArray<ArrayList<Integer>> messages = new SparseArray<>();
                     StringBuilder mids = new StringBuilder();
-                    SQLiteCursor cursor = null;
+                    SQLiteCursor cursor;
                     if (random_ids == null) {
                         cursor = database.queryFinalized(String.format(Locale.US, "SELECT mid, ttl FROM messages WHERE uid = %d AND out = %d AND read_state != 0 AND ttl > 0 AND date <= %d AND send_state = 0 AND media != 1", ((long) chat_id) << 32, isOut, time));
                     } else {
@@ -1763,7 +1768,7 @@ public class MessagesStorage {
                     ArrayList<Integer> replyMessages = new ArrayList<>();
                     HashMap<Integer, ArrayList<TLRPC.Message>> replyMessageOwners = new HashMap<>();
 
-                    SQLiteCursor cursor = null;
+                    SQLiteCursor cursor;
                     int lower_id = (int)dialog_id;
 
                     if (lower_id != 0) {
@@ -3241,7 +3246,6 @@ public class MessagesStorage {
             } finally {
                 if (state != null) {
                     state.dispose();
-                    state = null;
                 }
             }
 
@@ -3304,8 +3308,8 @@ public class MessagesStorage {
                     if (updateUser != null) {
                         if (updateUser.first_name != null && updateUser.last_name != null) {
                             if (!(user instanceof TLRPC.TL_userContact)) {
-                            user.first_name = updateUser.first_name;
-                            user.last_name = updateUser.last_name;
+                                user.first_name = updateUser.first_name;
+                                user.last_name = updateUser.last_name;
                             }
                             user.username = updateUser.username;
                         } else if (updateUser.photo != null) {
@@ -3351,12 +3355,12 @@ public class MessagesStorage {
         try {
             if (inbox != null) {
                 for (HashMap.Entry<Integer, Integer> entry : inbox.entrySet()) {
-                    database.executeFast(String.format(Locale.US, "UPDATE messages SET read_state = read_state | 1 WHERE uid = %d AND mid <= %d AND read_state IN(0,2) AND out = 0", entry.getKey(), entry.getValue())).stepThis().dispose();
+                    database.executeFast(String.format(Locale.US, "UPDATE messages SET read_state = read_state | 1 WHERE uid = %d AND mid > 0 AND mid <= %d AND read_state IN(0,2) AND out = 0", entry.getKey(), entry.getValue())).stepThis().dispose();
                 }
             }
             if (outbox != null) {
                 for (HashMap.Entry<Integer, Integer> entry : outbox.entrySet()) {
-                    database.executeFast(String.format(Locale.US, "UPDATE messages SET read_state = read_state | 1 WHERE uid = %d AND mid <= %d AND read_state IN(0,2) AND out = 1", entry.getKey(), entry.getValue())).stepThis().dispose();
+                    database.executeFast(String.format(Locale.US, "UPDATE messages SET read_state = read_state | 1 WHERE uid = %d AND mid > 0 AND mid <= %d AND read_state IN(0,2) AND out = 1", entry.getKey(), entry.getValue())).stepThis().dispose();
                 }
             }
             if (encryptedMessages != null && !encryptedMessages.isEmpty()) {

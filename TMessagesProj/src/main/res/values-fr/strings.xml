@@ -82,14 +82,14 @@
   <string name="Typing">écrit…</string>
   <string name="IsTyping">écrit…</string>
   <string name="AreTyping">écrivent…</string>
-  <string name="IsRecordingAudio">%1$s capture de l\'audio...</string>
+  <string name="IsRecordingAudio">%1$s enregistre de l\'audio...</string>
   <string name="IsSendingPhoto">%1$s envoie une photo...</string>
   <string name="IsSendingVideo">%1$s envoie une vidéo...</string>
   <string name="IsSendingFile">%1$s envoie un fichier...</string>
-  <string name="RecordingAudio">enregistre du son...</string>
-  <string name="SendingPhoto">envoie une photo...</string>
-  <string name="SendingVideoStatus">envoie une vidéo...</string>
-  <string name="SendingFile">envoie un fichier...</string>
+  <string name="RecordingAudio">enregistrement de l\'audio...</string>
+  <string name="SendingPhoto">envoi de la photo...</string>
+  <string name="SendingVideoStatus">envoi de la vidéo...</string>
+  <string name="SendingFile">envoi d\'un fichier...</string>
   <string name="GotAQuestion">Une question\nsur Telegram?</string>
   <string name="ChatTakePhoto">Prendre une photo</string>
   <string name="ChatGallery">Galerie</string>
@@ -104,9 +104,9 @@
   <string name="TypeMessage">Message</string>
   <string name="ShareMyContactInfo">Partager mes informations de contact</string>
   <string name="AddToContacts">Ajouter aux contacts</string>
-  <string name="EncryptedPlaceholderTitleIncoming">%s vous a invité à rejoindre une discussion privée.</string>
-  <string name="EncryptedPlaceholderTitleOutgoing">Vous avez invité %s à rejoindre une discussion privée.</string>
-  <string name="EncryptedDescriptionTitle">Les discussions privées :</string>
+  <string name="EncryptedPlaceholderTitleIncoming">%s vous a invité à rejoindre une conversation secrète.</string>
+  <string name="EncryptedPlaceholderTitleOutgoing">Vous avez invité %s à rejoindre une conversation secrète.</string>
+  <string name="EncryptedDescriptionTitle">Conversations secrètes :</string>
   <string name="EncryptedDescription1">utilisent le chiffrement entre mobiles</string>
   <string name="EncryptedDescription2">ne laissent aucune trace sur nos serveurs</string>
   <string name="EncryptedDescription3">ont un délai d\'auto-destruction des messages</string>
@@ -124,6 +124,8 @@
   <string name="SetTimer">Temps avant auto-destruction</string>
   <string name="ServiceNotifications">Notifications de Service</string>
   <string name="GettingLinkInfo">Obtention d\'informations sur le lien…</string>
+  <string name="OpenInBrowser">Ouvrir dans un navigateur</string>
+  <string name="CopyUrl">Copier l\'URL</string>
   <!--notification-->
   <string name="MessageLifetimeChanged">%1$s a défini l\'auto-destruction des messages à %2$s</string>
   <string name="MessageLifetimeChangedOutgoing">Vous avez défini l\'auto-destruction des messages à %1$s</string>
@@ -157,7 +159,7 @@
   <string name="NotificationGroupKickYou">%1$s vous a ejecté du groupe %2$s</string>
   <string name="NotificationGroupLeftMember">%1$s a quitté le groupe %2$s</string>
   <string name="NotificationContactJoined">%1$s a rejoint Telegram!</string>
-  <string name="NotificationUnrecognizedDevice">%1$s,\nNous avons détecté une connection à votre compte depuis un nouvel appareil le %2$s\n\nAppareil : %3$s\nEmplacement : %4$s\n\nSi ce n\'était pas vous, vous pouvez aller terminer cette session dans Paramètres - Vie privée et Sécurité - Sessions.\n\nSi vous pensez que qu\'une personne indésirable s\'est connectée à votre compte, vous pouvez activer la Vérification en deux étapes dans Paramètres - Vie privée et Sécurité.\n\nCordialement,\nL\'équipe Telegram</string>
+  <string name="NotificationUnrecognizedDevice">%1$s,\nNous avons détecté une connexion à votre compte depuis un nouvel appareil le %2$s\n\nAppareil : %3$s\nEmplacement : %4$s\n\nSi ce n\'était pas vous, vous pouvez aller terminer cette session dans Paramètres - Vie privée et Sécurité - Sessions.\n\nSi vous pensez qu\'une personne indésirable s\'est connectée à votre compte, vous pouvez activer la vérification en deux étapes dans Paramètres - Vie privée et Sécurité.\n\nCordialement,\nL\'équipe Telegram</string>
   <string name="NotificationContactNewPhoto">%1$s a actualisé sa photo de profil</string>
   <string name="NotificationInvitedToGroupByLink">%1$s a rejoint le groupe %2$s avec un lien d\'invitation</string>
   <string name="Reply">Répondre</string>
@@ -189,7 +191,7 @@
   <string name="JoinToGroupErrorFull">Désolé, ce groupe est déjà complet.</string>
   <string name="JoinToGroupErrorNotExist">Désolé, ce groupe n\'a pas l\'air d\'exister.</string>
   <string name="LinkCopied">Lien copié dans le presse-papier</string>
-  <string name="InviteToGroupByLink">Inviter au groupe par un lien </string>
+  <string name="InviteToGroupByLink">Inviter à rejoindre le groupe via un lien </string>
   <string name="InviteLink">Lien d\'invitation</string>
   <string name="RevokeAlert">Êtes vous sûr(e) de vouloir révoquer ce lien? Plus personne ne pourra l\'utiliser pour rejoindre le groupe.</string>
   <string name="RevokeAlertNewLink">L\'ancien lien d\'invitation a été désactivé. Un nouveau lien a été généré.</string>
@@ -222,7 +224,7 @@
   <string name="EncryptionKey">Clé de chiffrement</string>
   <string name="MessageLifetime">Temps avant auto-destruction</string>
   <string name="ShortMessageLifetimeForever">Désactivé</string>
-  <string name="EncryptionKeyDescription">Cette image est une visualisation de la clé de chiffrement pour cette conversation secrète avec <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>.<![CDATA[<br><br>]]>Si l\'image semble similaire sur le téléphone de <![CDATA[<b>]]>%2$s<![CDATA[</b>]]>, votre conversation est sécurisée à 200%%.<![CDATA[<br><br>]]>Plus d\'informations sur telegram.org</string>
+  <string name="EncryptionKeyDescription">Cette image est une visualisation de la clé de chiffrement pour cette conversation secrète avec <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>.<![CDATA[<br><br>]]>Si l\'image sur le téléphone de <![CDATA[<b>]]>%2$s<![CDATA[</b>]]> est identique, votre conversation est sécurisée à 200%%.<![CDATA[<br><br>]]>Plus d\'informations sur telegram.org</string>
   <string name="NumberUnknown">Inconnu</string>
   <string name="Info">Info</string>
   <string name="Phone">Téléphone</string>
@@ -234,11 +236,26 @@
   <string name="UsernameInvalidShort">Un nom d\'utilisateur doit contenir 5 caractères minimum.</string>
   <string name="UsernameInvalidLong">Le nom d\'utilisateur ne doit pas dépasser 32 caractères.</string>
   <string name="UsernameInvalidStartNumber">Désolé, un nom d\'utilisateur ne peut pas commencer par un chiffre.</string>
-  <string name="UsernameHelp">Vous pouvez choisir un nom d\'utilisateur sur <![CDATA[<b>]]>Plus Messenger<![CDATA[</b>]]>. Si vous le faites, d\'autres personnes pourront vous trouver à l\'aide de celui-ci, et vous contacter sans connaitre votre numéro de téléphone.<![CDATA[<br><br>]]>Vous pouvez utiliser <![CDATA[<b>]]>a–z<![CDATA[</b>]]>, <![CDATA[<b>]]>0–9<![CDATA[</b>]]> et _. La longueur minimale est de <![CDATA[<b>]]>5<![CDATA[</b>]]> caractères.</string>
+  <string name="UsernameHelp">Vous pouvez choisir un nom d\'utilisateur sur <![CDATA[<b>]]>Telegram<![CDATA[</b>]]>. Si vous le faites, d\'autres personnes pourront vous trouver à l\'aide de celui-ci, et vous contacter sans connaitre votre numéro de téléphone.<![CDATA[<br><br>]]>Vous pouvez utiliser <![CDATA[<b>]]>a–z<![CDATA[</b>]]>, <![CDATA[<b>]]>0–9<![CDATA[</b>]]> et _. La longueur minimale est de <![CDATA[<b>]]>5<![CDATA[</b>]]> caractères.</string>
   <string name="UsernameChecking">Vérification du nom d\'utilisateur...</string>
   <string name="UsernameAvailable">%1$s est disponible.</string>
   <string name="UsernameEmpty">Vide</string>
   <string name="ErrorOccurred">Une erreur est survenue.</string>
+  <!--stickers view-->
+  <string name="Stickers">Autocollants</string>
+  <string name="GeniusStickerPackName">Grands esprits</string>
+  <string name="StickersInfo">Les artistes peuvent ajouter leur propre paquet d\'autocollants en utilisant notre robot @stickers.\n\nLes utilisateurs peuvent ajouter des autocollants en les touchant et en choisissant \"Ajouter aux autocollants\".</string>
+  <string name="AddStickers">Ajouter des autocollants</string>
+  <string name="AddToStickers">Ajouter aux autocollants</string>
+  <string name="AddStickersNotFound">Autocollants introuvables</string>
+  <string name="StickersRemoved">Autocollants retirés</string>
+  <string name="AddStickersInstalled">Nouveaux autocollants ajoutés</string>
+  <string name="StickersHide">Cacher</string>
+  <string name="StickersShow">Afficher</string>
+  <string name="StickersShare">Partager</string>
+  <string name="StickersCopy">Copier le lien</string>
+  <string name="StickersRemove">Retirer</string>
+  <string name="NoStickers">Aucun autocollant actuellement</string>
   <!--settings view-->
   <string name="ResetNotificationsText">Rétablir tous les paramètres de notification par défaut</string>
   <string name="TextSize">Taille de police des messages</string>
@@ -338,17 +355,17 @@
   <string name="SessionsTitle">Sessions actives</string>
   <string name="CurrentSession">Session actuelle</string>
   <string name="NoOtherSessions">Aucune autre session active</string>
-  <string name="NoOtherSessionsInfo">Vous pouvez vous connectez depuis d\'autres téléphones, tablettes et ordinateurs avec ce même numéro de téléphone. Vos données seront automatiquement synchronisées.</string>
+  <string name="NoOtherSessionsInfo">Vous pouvez vous connecter depuis d\'autres téléphones, tablettes et ordinateurs avec ce même numéro de téléphone. Vos données seront automatiquement synchronisées.</string>
   <string name="OtherSessions">Sessions actives</string>
   <string name="SessionsInfo">Contrôlez vos sessions sur d\'autres appareils.</string>
   <string name="TerminateSessionInfo">Appuyez sur une session pour la terminer.</string>
   <string name="TerminateSessionQuestion">Terminer cette session ?</string>
-  <string name="UnofficialApp">App non-officiel</string>
+  <string name="UnofficialApp">app non-officielle</string>
   <!--passcode view-->
   <string name="Passcode">Verrouillage par code d\'accès</string>
   <string name="ChangePasscode">Changer le code d\'accès</string>
-  <string name="ChangePasscodeInfo">Lorsque vous configurez un code d\'accès supplémentaire, une icône de verrouillage s\'affiche sur la page des chats. Touchez-le pour verrouiller et déverrouiller votre application Telegram. \ n \ nNote: si vous oubliez le code d\'accès, vous devrez supprimer et réinstaller l\'application. Tous les chats secrets seront perdues.</string>
-  <string name="ChangePasscodeAlert">Vous allez à présent voir une icône de verrouillage sur la page des chats. Touchez-le pour verrouiller votre application Telegram avec votre nouveau code d\'accès.</string>
+  <string name="ChangePasscodeInfo">Lorsque vous configurez un code d\'accès supplémentaire, une icône de verrouillage s\'affiche sur la page des chats. Touchez-la pour verrouiller et déverrouiller votre application Telegram. \ n \ nNote: si vous oubliez le code d\'accès, vous devrez supprimer et réinstaller l\'application. Toutes les conversations secrètes seront perdues.</string>
+  <string name="ChangePasscodeAlert">Vous allez à présent voir une icône de verrouillage sur la page des chats. Touchez-la pour verrouiller votre application Telegram avec votre nouveau code d\'accès.</string>
   <string name="PasscodePIN">PIN</string>
   <string name="PasscodePassword">Mot de passe</string>
   <string name="EnterCurrentPasscode">Saisissez votre code d\'accès actuel</string>
@@ -356,10 +373,10 @@
   <string name="EnterNewPasscode">Saisissez votre nouveau code d\'accès</string>
   <string name="EnterYourPasscode">Saisissez votre code d\'accès</string>
   <string name="ReEnterYourPasscode">Saisissez à nouveau votre nouveau code d\'accès</string>
-  <string name="InvalidPasscode">Code invalide</string>
+  <string name="InvalidPasscode">Code d\'accès invalide</string>
   <string name="PasscodeDoNotMatch">Les codes d\'accès ne correspondent pas</string>
   <string name="AutoLock">Verrouillage automatique</string>
-  <string name="AutoLockInfo">Code d\'accès requit en cas d\'absence</string>
+  <string name="AutoLockInfo">Code d\'accès requis en cas d\'absence</string>
   <string name="AutoLockInTime">dans %1$s</string>
   <string name="AutoLockDisabled">Verrouillage désactivé</string>
   <!--media view-->
@@ -373,7 +390,7 @@
   <string name="Hybrid">Hybride</string>
   <string name="MetersAway">m de distance</string>
   <string name="KMetersAway">km de distance</string>
-  <string name="SendLocation">envoyer ma localisation actuelle</string>
+  <string name="SendLocation">Envoyer votre localisation actuelle</string>
   <string name="SendSelectedLocation">Envoyer la localisation selectionnée</string>
   <string name="ShareLocation">Localisation</string>
   <string name="AccurateTo">Exact à %1$s</string>
@@ -411,10 +428,10 @@
   <string name="BlurOff">Désactiver</string>
   <string name="BlurLinear">Linéaire</string>
   <string name="BlurRadial">Radial</string>
-  <string name="AreYouSureDeletePhoto">Êtes-vous sûr de vouloir supprimer cette photo?</string>
-  <string name="AreYouSureDeleteVideo">Êtes-vous sûr de vouloir supprimer cette vidéo?</string>
+  <string name="AreYouSureDeletePhoto">Êtes-vous sûr(e) de vouloir supprimer cette photo?</string>
+  <string name="AreYouSureDeleteVideo">Êtes-vous sûr(e) de vouloir supprimer cette vidéo?</string>
   <string name="DiscardChanges">Annuler les modifications?</string>
-  <string name="ClearSearch">Supprimer l\'historique de la recherche ?</string>
+  <string name="ClearSearch">Supprimer l\'historique de recherche ?</string>
   <string name="ClearButton">Effacer</string>
   <string name="PickerPhotos">Photos</string>
   <string name="PickerVideo">Vidéo</string>
@@ -423,29 +440,27 @@
   <string name="VideoCaption">Légende vidéo</string>
   <!--password view-->
   <string name="TwoStepVerification">Vérification en deux étapes</string>
-  <string name="SetAdditionalPassword">Ajouter un mot de passe additionnel</string>
+  <string name="SetAdditionalPassword">Définir un mot de passe additionnel</string>
   <string name="SetAdditionalPasswordInfo">Vous pouvez définir un mot de passe qui sera requis à chaque connexion sur un nouvel appareil en plus du code envoyé par SMS.</string>
   <string name="YourPassword">Votre mot de passe</string>
   <string name="PleaseEnterCurrentPassword">Veuillez saisir votre mot de passe</string>
   <string name="PleaseEnterFirstPassword">Saisir un mot de passe</string>
-  <string name="PleaseEnterPassword">Vueillez saiser votre nouveau mot de passe</string>
-  <string name="PleaseReEnterPassword">Vueillez re-saisir votre mot de passe</string>
+  <string name="PleaseEnterPassword">Vueillez saisir votre nouveau mot de passe</string>
+  <string name="PleaseReEnterPassword">Veuillez re-saisir votre mot de passe</string>
   <string name="RecoveryEmail">E-mail de récupération</string>
   <string name="YourEmail">Votre E-Mail</string>
   <string name="YourEmailInfo">Veuillez ajouter votre e-mail valide. C\'est la seule manière de retrouver un mot de passe oublié.</string>
   <string name="YourEmailSkip">Passer</string>
   <string name="YourEmailSkipWarning">Attention</string>
-  <string name="YourEmailSkipWarningText">Non, sérieusement.
-
-Si vous oubliez votre mot de passe, vous perdrez l\'accès à votre compte Telegram. Il n\'y a aucun moyen de le récupérer.</string>
+  <string name="YourEmailSkipWarningText">Non, sérieusement.\n\nSi vous oubliez votre mot de passe, vous perdrez l\'accès à votre compte Telegram. Il n\'y aura aucun moyen de le récupérer.</string>
   <string name="YourEmailAlmostThere">On y est presque !</string>
-  <string name="YourEmailAlmostThereText">Veuillez vérifier votre e-mail (n\'oubliez pas le dossier spam) pour terminer le paramétrage de la vérification en deux étapes.</string>
+  <string name="YourEmailAlmostThereText">Veuillez consulter vos e-mails (n\'oubliez pas le dossier spam) pour terminer le paramétrage de la vérification en deux étapes.</string>
   <string name="YourPasswordSuccess">Succès !</string>
   <string name="YourPasswordSuccessText">Votre mot de passe pour la vérification en deux étapes est maintenant actif.</string>
   <string name="ChangePassword">Changer le mot de passe</string>
   <string name="TurnPasswordOff">Désactiver le mot de passe</string>
-  <string name="SetRecoveryEmail">Activer l\'e-mail de récupération</string>
-  <string name="ChangeRecoveryEmail">Changer l\'e-mail de récupération</string>
+  <string name="SetRecoveryEmail">Définir l\'e-mail de récupération</string>
+  <string name="ChangeRecoveryEmail">Modifier l\'e-mail de récupération</string>
   <string name="TurnPasswordOffQuestion">Êtes-vous sûr(e) de vouloir désactiver le mot de passe ?</string>
   <string name="PasswordHint">Indice du mot de passe</string>
   <string name="PasswordHintText">Veuillez créer un indice pour votre mot de passe</string>
@@ -456,8 +471,8 @@ Si vous oubliez votre mot de passe, vous perdrez l\'accès à votre compte Teleg
   <string name="PasswordEmailInvalid">E-mail invalide</string>
   <string name="RestorePasswordNoEmailTitle">Désolé</string>
   <string name="RestorePasswordNoEmailText">Comme vous n\'avez pas fourni un e-mail de récupération lors de la création de votre mot de passe, vos seules options restantes sont de vous rappeler de votre mot de passe ou de réinitialiser votre compte.</string>
-  <string name="RestoreEmailSent">Un code de récupération a été envoyé à votre adresse e-mail : \n\n%1$s</string>
-  <string name="RestoreEmailSentInfo">Veuillez consultez vos e-mails et entrer le code à 6 chiffres qui vous a été envoyé.</string>
+  <string name="RestoreEmailSent">Nous avons envoyé un code de récupération à votre adresse e-mail que vous avez indiquée : \n\n%1$s</string>
+  <string name="RestoreEmailSentInfo">Veuillez consulter vos e-mails et entrer le code à 6 chiffres qui vous a été envoyé.</string>
   <string name="RestoreEmailTrouble">Des soucis pour accéder à votre e-mail %1$s?</string>
   <string name="RestoreEmailTroubleText">Si vous ne pouvez plus accéder à cette adresse e-mail, il vous reste deux options : soit retrouver votre mot de passe, soit réinitialiser votre compte.</string>
   <string name="ResetMyAccount">REINITIALISER MON COMPTE</string>
@@ -466,13 +481,13 @@ Si vous oubliez votre mot de passe, vous perdrez l\'accès à votre compte Teleg
   <string name="ResetMyAccountWarningText">Cette action ne peut pas être annulée.\n\nSi vous réinitialisez votre compte, tous vos messages et conversations seront supprimés.</string>
   <string name="ResetMyAccountWarningReset">Réinitialiser </string>
   <string name="LoginPassword">Mot de passe</string>
-  <string name="LoginPasswordText">Vous avez activé la vérification en deux étapes activée,  votre compte est donc protégé avec un mot de passe additionnel.</string>
+  <string name="LoginPasswordText">Vous avez activé la vérification en deux étapes,  votre compte est donc protégé avec un mot de passe additionnel.</string>
   <string name="ForgotPassword">Mot de passe oublié ?</string>
   <string name="PasswordRecovery">Récupération du mot de passe</string>
   <string name="PasswordCode">Code</string>
   <string name="PasswordReset">Mot de passe désactivé</string>
   <string name="EnabledPasswordText">Vous avez activé la vérification en deux étapes.\nVous devrez fournir le mot de passe défini ici à chaque connexion à votre compte Telegram.</string>
-  <string name="PendingEmailText">Votre e-mail de récupération %1$s est inactive et en attente de confirmation.</string>
+  <string name="PendingEmailText">Votre e-mail de récupération %1$s est encore inactif et en attente de confirmation.</string>
   <!--privacy settings-->
   <string name="PrivacySettings">Vie privée et Sécurité</string>
   <string name="PrivacyTitle">Vie privée</string>
@@ -517,6 +532,7 @@ Si vous oubliez votre mot de passe, vous perdrez l\'accès à votre compte Teleg
   <string name="Done">Terminé</string>
   <string name="Open">Ouvrir</string>
   <string name="Cancel">Annuler</string>
+  <string name="Close">Fermer</string>
   <string name="Add">Ajouter</string>
   <string name="Edit">Éditer</string>
   <string name="Send">Envoyer</string>
@@ -530,7 +546,7 @@ Si vous oubliez votre mot de passe, vous perdrez l\'accès à votre compte Teleg
   <string name="DeletePhoto">Supprimer la photo</string>
   <string name="Set">Définir</string>
   <string name="OK">OK</string>
-  <string name="Crop">DECOUPER</string>
+  <string name="Crop">ROGNER</string>
   <!--messages-->
   <string name="ActionInviteYou">Vous avez rejoint le groupe avec un lien d\'invitation</string>
   <string name="ActionInviteUser">un1 a rejoint le groupe avec un lien d\'invitation</string>
@@ -551,6 +567,7 @@ Si vous oubliez votre mot de passe, vous perdrez l\'accès à votre compte Teleg
   <string name="ActionKickUserYou">un1 vous a ejecté</string>
   <string name="ActionAddUserYou">un1 vous a ajouté</string>
   <string name="ActionAddUserSelf">un1 est revenu dans le groupe</string>
+  <string name="ActionAddUserSelfYou">Vous êtes revenu au groupe</string>
   <string name="UnsuppotedMedia">Ce message n\'est pas supporté dans votre version de Telegram. Veuillez mettre à jour l\'appli pour le voir: http://telegram.org/update</string>
   <string name="AttachPhoto">Photo</string>
   <string name="AttachVideo">Vidéo</string>
@@ -587,7 +604,7 @@ Si vous oubliez votre mot de passe, vous perdrez l\'accès à votre compte Teleg
   <string name="AreYouSureBlockContact">Êtes-vous sûr de vouloir bloquer ce contact ?</string>
   <string name="AreYouSureUnblockContact">Êtes-vous sûr de vouloir débloquer ce contact ?</string>
   <string name="AreYouSureDeleteContact">Êtes-vous sûr de vouloir supprimer ce contact ?</string>
-  <string name="AreYouSureSecretChat">Êtes-vous sûr de vouloir démarrer une discussion secrète ? </string>
+  <string name="AreYouSureSecretChat">Êtes-vous sûr de vouloir démarrer une conversation secrète ? </string>
   <string name="AreYouSureRegistration">Êtes-vous sûr de vouloir annuler l\'enregistrement ?</string>
   <string name="AreYouSureClearHistory">Êtes-vous sûr de vouloir effacer l\'historique ?</string>
   <string name="AreYouSureDeleteMessages">Êtes-vous sûr de vouloir supprimer %1$s?</string>
@@ -713,6 +730,12 @@ Si vous oubliez votre mot de passe, vous perdrez l\'accès à votre compte Teleg
   <string name="Meters_few">%1$d mètres</string>
   <string name="Meters_many">%1$d mètres</string>
   <string name="Meters_other">%1$d mètres</string>
+  <string name="Stickers_zero">%1$d stickers</string>
+  <string name="Stickers_one">%1$d sticker</string>
+  <string name="Stickers_two">%1$d stickers</string>
+  <string name="Stickers_few">%1$d stickers</string>
+  <string name="Stickers_many">%1$d stickers</string>
+  <string name="Stickers_other">%1$d stickers</string>
   <!--forwarded messages-->
   <string name="ForwardedMessage_zero">%1$d messages transférés</string>
   <string name="ForwardedMessage_one">Message transféré</string>
@@ -780,20 +803,9 @@ Si vous oubliez votre mot de passe, vous perdrez l\'accès à votre compte Teleg
   <string name="formatterDay12H">h:mm a</string>
   <string name="formatDateAtTime">%1$s à %2$s</string>
   <!--update text-->
-  <string name="updateText">Plus Messenger pour Android vient d\'être mis à jour.</string>
-  <string name="updateBuild">526</string>
+  <string name="updateText">Plus Messenger pour Android vient d\'être mis à jour. Nouveautés de la version 2.9: \n\n- Installez et partagez des paquets de stickers personnalisés comme celui-ci: this one: https://telegram.me/addstickers/Animals\n- Si vous êtes un artiste, créez vos paquets de stickers, en utilisant notre robot @stickers. \n\n- Utilisez Telegram avec Android Auto.</string>
+  <string name="updateBuild">543</string>
     <!--Telegram+ French-->
-    <!--Smart Notifications-->
-    <string name="SmartNotification">Notification intelligente</string>
-    <string name="TimeUnitSeconds">seconde(s)</string>
-    <string name="TimeUnitMinutes">minute(s)</string>
-    <string name="TimeUnitHours">heure(s)</string>
-    <string name="TimeUnitDays">jour(s)</string>
-    <string name="settings_smart_notify_begin">Sonner au maximum</string>
-    <string name="settings_smart_notify_mid1">fois</string>
-    <string name="settings_smart_notify_mid11">fois</string>
-    <string name="settings_smart_notify_mid2">en</string>
-    <!---->
     <string name="TelegramForAndroid">Plus Messenger pour Android</string>
     <string name="Theming">Thème</string>
     <string name="colorHexInvalid">Code couleur hexadécimal incorrect!</string>

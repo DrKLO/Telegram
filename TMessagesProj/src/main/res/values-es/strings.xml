@@ -126,6 +126,8 @@
     <string name="SetTimer">Establecer autodestrucción</string>
     <string name="ServiceNotifications">Servicio de notificaciones</string>
     <string name="GettingLinkInfo">Obteniendo información...</string>
+    <string name="OpenInBrowser">Abrir en el navegador</string>
+    <string name="CopyUrl">Copiar URL</string>
     <!--notification-->
     <string name="MessageLifetimeChanged">%1$s activó la autodestrucción en %2$s</string>
     <string name="MessageLifetimeChangedOutgoing">Activaste la autodestrucción en %1$s</string>
@@ -241,6 +243,21 @@
     <string name="UsernameAvailable">%1$s está disponible.</string>
     <string name="UsernameEmpty">Ninguno</string>
     <string name="ErrorOccurred">Ocurrió un error.</string>
+    <!--stickers view-->
+    <string name="Stickers">Stickers</string>
+    <string name="GeniusStickerPackName">Grandes personajes</string>
+    <string name="StickersInfo">Los artistas pueden añadir sus propios packs de stickers usando el bot @stickers.\n\nLos usuarios pueden añadir stickers pulsando y eligiendo \"Añadir stickers\".</string>
+    <string name="AddStickers">Añadir stickers</string>
+    <string name="AddToStickers">Añadir a stickers</string>
+    <string name="AddStickersNotFound">Stickers no encontrados</string>
+    <string name="StickersRemoved">Stickers eliminados</string>
+    <string name="AddStickersInstalled">Nuevos stickers añadidos</string>
+    <string name="StickersHide">Ocultar</string>
+    <string name="StickersShow">Mostrar</string>
+    <string name="StickersShare">Compartir</string>
+    <string name="StickersCopy">Copiar enlace</string>
+    <string name="StickersRemove">Quitar</string>
+    <string name="NoStickers">Sin stickers aún</string>
     <!--settings view-->
     <string name="ResetNotificationsText">Restablecer las notificaciones</string>
     <string name="TextSize">Tamaño del texto</string>
@@ -517,6 +534,7 @@
     <string name="Done">Hecho</string>
     <string name="Open">Abrir</string>
     <string name="Cancel">Cancelar</string>
+    <string name="Close">Cerrar</string>
     <string name="Add">Añadir</string>
     <string name="Edit">Editar</string>
     <string name="Send">Enviar</string>
@@ -551,6 +569,7 @@
     <string name="ActionKickUserYou">un1 te expulsó</string>
     <string name="ActionAddUserYou">un1 te añadió</string>
     <string name="ActionAddUserSelf">un1 volvió al grupo</string>
+    <string name="ActionAddUserSelfYou">Volviste al grupo</string>
     <string name="UnsuppotedMedia">Este mensaje no lo admite tu versión de Telegram. Actualiza la app para verlo: http://telegram.org/update</string>
     <string name="AttachPhoto">Foto</string>
     <string name="AttachVideo">Vídeo</string>
@@ -574,7 +593,7 @@
     <string name="NoPlayerInstalled">No tienes reproductor de vídeo. Por favor, instala uno para continuar.</string>
     <string name="NoMailInstalled">Por favor, envía un correo electrónico a sms@stel.com y cuéntanos tu problema.</string>
     <string name="NoHandleAppInstalled">No tienes aplicaciones que puedan manejar el tipo de archivo \'%1$s\'. Por favor, instala una para continuar.</string>
-    <string name="InviteUser">Este usuario no tiene Telegram aún. ¿Enviarle una invitación?</string>
+    <string name="InviteUser">Este usuario aún no tiene Telegram. ¿Enviarle una invitación?</string>
     <string name="AreYouSure">¿Quieres hacerlo?</string>
     <string name="AddToTheGroup">¿Añadir a %1$s al grupo?\n\nNúmero de los últimos mensajes para reenviar:</string>
     <string name="ForwardMessagesTo">¿Reenviar mensajes a %1$s?</string>
@@ -713,6 +732,12 @@
     <string name="Meters_few">%1$d metros</string>
     <string name="Meters_many">%1$d metros</string>
     <string name="Meters_other">%1$d metros</string>
+    <string name="Stickers_zero">%1$d stickers</string>
+    <string name="Stickers_one">%1$d sticker</string>
+    <string name="Stickers_two">%1$d stickers</string>
+    <string name="Stickers_few">%1$d stickers</string>
+    <string name="Stickers_many">%1$d stickers</string>
+    <string name="Stickers_other">%1$d stickers</string>
     <!--forwarded messages-->
     <string name="ForwardedMessage_zero">%1$d mensajes adjuntos</string>
     <string name="ForwardedMessage_one">Mensaje adjunto</string>
@@ -780,10 +805,10 @@
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s a las %2$s</string>
     <!--update text-->
-    <string name="updateText">Plus Messenger para Android ha sido actualizada.</string>
-    <string name="updateBuild">526</string>
+    <string name="updateText">Plus Messenger para Android fue actualizada. Novedades en la versión 2.9:\n\n- Instala y comparte packs de stickers personalizados como estos:\n https://telegram.me/addstickers/Animals\n https://telegram.me/addstickers/forocoches\n https://telegram.me/addstickers/Unofficial\n https://telegram.me/addstickers/ragefaces\n- Si eres un artista, crea packs de stickers personalizados usando nuestro bot @stickers.\n\n- Usa Plus Messenger con Android Auto.</string>
+    <string name="updateBuild">543</string>
     <!--Telegram+ Spanish-->
-    <string name="updatePlusText">\n\nNovedades en 2.8.1.6:\n\n- Añadida opción en el menú de navegación para abrir la app Temas para Plus Messenger\n - Opción "Eliminar chat" dentro de chat funciona de nuevo\n -Comentarios en fotos y vídeos ya cogen color adecuado\n -Solucionado error que mostraba texto reenviado cuando el fondo de entrada de texto es transparente\n- Otros errores menores solucionados</string>
+    <string name="updatePlusText">\n\nNovedades en 2.9.1.1:\n\n- Añadido MOD para poner color sólido de fondo en pantalla chat\n- Añadido MOD para quitar sombra en fondo de menú de navegación\n- Añadido MOD para ajustar radio de avatar en pantalla de perfil\n- Solución de errores</string>
     <string name="TelegramForAndroid">Plus Messenger para Android</string>
     <string name="Theming">Tematización</string>
     <string name="colorHexInvalid">¡Color hexadecimal inválido!</string>
@@ -892,4 +917,7 @@
     <string name="GroupNameColor">Color de nombre de grupo</string>
     <string name="GroupNameSize">Tamaño de nombre de grupo</string>
     <string name="UnknownNameColor">Color de nombre (nº desconocido)</string>
+    <string name="HideBackgroundShadow">Ocultar sombra de fondo personalizado</string>
+    <string name="SetSolidBGColor">Fijar color de fondo</string>
+    <string name="SolidBGColor">Color de fondo</string>
 </resources>

@@ -9,6 +9,8 @@
 package org.telegram.ui.Cells;
 
 import android.content.Context;
+import android.graphics.PorterDuff;
+import android.graphics.drawable.Drawable;
 import android.view.Gravity;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
@@ -20,16 +22,20 @@ import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.SimpleTextView;
 
 public class AddMemberCell extends FrameLayout {
+    private SimpleTextView textView;
+    private ImageView imageView;
 
     public AddMemberCell(Context context) {
         super(context);
 
-        ImageView imageView = new ImageView(context);
+        //ImageView imageView = new ImageView(context);
+        imageView = new ImageView(context);
         imageView.setImageResource(R.drawable.addmember);
         imageView.setScaleType(ImageView.ScaleType.CENTER);
         addView(imageView, LayoutHelper.createFrame(48, 48, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 0 : 68, 8, LocaleController.isRTL ? 68 : 0, 0));
 
-        SimpleTextView textView = new SimpleTextView(context);
+        //SimpleTextView textView = new SimpleTextView(context);
+        textView = new SimpleTextView(context);
         textView.setTextColor(0xff212121);
         textView.setTextSize(17);
         textView.setText(LocaleController.getString("AddMember", R.string.AddMember));
@@ -40,5 +46,15 @@ public class AddMemberCell extends FrameLayout {
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(64), MeasureSpec.EXACTLY));
+    }
+
+    public void setTextColor(int color) {
+        textView.setTextColor(color);
+    }
+
+    public void setDrawableColor(int color) {
+        Drawable d = getResources().getDrawable(R.drawable.addmember);
+        d.setColorFilter(color, PorterDuff.Mode.SRC_IN);
+        imageView.setImageDrawable(d);
     }
 }

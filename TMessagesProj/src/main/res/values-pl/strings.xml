@@ -596,17 +596,6 @@
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s podczas %2$s</string>
     <!--Telegram+ Polish-->
-    <!--Smart Notifications-->
-    <string name="SmartNotification">Inteligentne powiadomienia</string>
-    <string name="TimeUnitSeconds">sekunda(y)</string>
-    <string name="TimeUnitMinutes">minuta(y)</string>
-    <string name="TimeUnitHours">Godzina(y)</string>
-    <string name="TimeUnitDays">dzień(dni)</string>
-    <string name="settings_smart_notify_begin">Najgłośniej</string>
-    <string name="settings_smart_notify_mid1">czasy</string>
-    <string name="settings_smart_notify_mid11">czas</string>
-    <string name="settings_smart_notify_mid2">w ciągu</string>
-    <!---->
   <string name="TelegramForAndroid">Plus Messenger dla Androida</string>
   <string name="Theming">Motywy</string>
   <string name="colorHexInvalid">Zły kod hex</string>
@@ -625,8 +614,8 @@
   <string name="ChatsList">Lista rozmów</string>
   <string name="ContactsList">Kontakty</string>
   <string name="HeaderColor">Kolor nagłówka</string>
-  <string name="NameColor">Kolor nazwy kontaktu</string>
-  <string name="NameSize">Wielkość czcionki nazwy kontaktu</string>
+  <string name="NameColor">Kolor nazwy </string>
+  <string name="NameSize">Rozmiar nazwy </string>
   <string name="MessageColor">Kolor wiadomości</string>
   <string name="MessageSize">Wielkość wiadomości</string>
   <string name="TimeDateColor">Kolor czasu/daty</string>
@@ -699,6 +688,20 @@
   <string name="HeaderTitle">Tytuł nagłówka</string>
   <string name="ForwardNoQuote">Przekaż bez cytowania</string>
   <string name="DisableMessageClick">Wyłącz kliknięciem wyskakujące okienka</string>
-  <string name="ProfileScreen">Lista grup/kontaktów</string>
+  <string name="ProfileScreen">Profil grupy/kontaktu</string>
   <string name="HideBackground">Ukryj niestandardowe tło</string>
+  <string name="RLinkColor">Kolor prawej lini</string>
+  <string name="LLinkColor">Kolor lewej lini</string>
+  <string name="ThemeApplied">Motyw zastosowany! </string>
+  <string name="ClickOkToRestart">Naciśnij Ok, aby uruchomić ponownie aplikację </string>
+  <string name="ShowAndroidEmoji">Pokaż emotikony telefonu </string>
+  <string name="BubbleStyle">Rozmiar belki </string>
+  <string name="KeepOriginalFilename">Zachowaj oryginalną nazwę pilku </string>
+  <string name="KeepOriginalFilenameHelp">Z uwagi na liczbę pliki będą zapisane w formacie nazwa_data </string>
+  <string name="AvatarSize">Rozmiar zdjęcia kontaktu </string>
+  <string name="AvatarAlignTop">Przesuń zdjęcie na wierzch </string>
+  <string name="AvatarMarginLeft">Zdjęcie lewego marginesu </string>
+  <string name="GroupNameColor">Kolor nazwy grupy</string>
+  <string name="GroupNameSize">Rozmiar nazwy grupy</string>
+  <string name="UnknownNameColor">Nazwa osoby z poza kontaktów (nieznany numer)</string>
 </resources>

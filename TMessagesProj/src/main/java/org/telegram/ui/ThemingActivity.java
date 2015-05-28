@@ -221,7 +221,7 @@ public class ThemingActivity extends BaseFragment {
                         });
 
                         builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-                        showAlertDialog(builder);
+                        showDialog(builder.create());
 
                     }  else if (i == applyThemeRow) {
                         DocumentSelectActivity fragment = new DocumentSelectActivity();
@@ -266,7 +266,7 @@ public class ThemingActivity extends BaseFragment {
                                     }
                                 });
                                 builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-                                showAlertDialog(builder);
+                                showDialog(builder.create());
                             }
 
                             @Override
@@ -313,7 +313,7 @@ public class ThemingActivity extends BaseFragment {
                             }
                         });
                         builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-                        showAlertDialog(builder);
+                        showDialog(builder.create());
                     } else if (i == chatsRow) {
                         presentFragment(new ThemingChatsActivity());
                     } else if (i == chatRow) {

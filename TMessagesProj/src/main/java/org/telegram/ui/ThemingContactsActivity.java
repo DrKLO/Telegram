@@ -253,7 +253,7 @@ public class ThemingContactsActivity extends BaseFragment {
                                 }
                             }
                         });
-                        showAlertDialog(builder);
+                        showDialog(builder.create());
                     } else if (i == nameSizeRow) {
                         if (getParentActivity() == null) {
                             return;
@@ -274,7 +274,7 @@ public class ThemingContactsActivity extends BaseFragment {
                                 }
                             }
                         });
-                        showAlertDialog(builder);
+                        showDialog(builder.create());
                     } else if (i == statusSizeRow) {
                         if (getParentActivity() == null) {
                             return;
@@ -295,7 +295,7 @@ public class ThemingContactsActivity extends BaseFragment {
                                 }
                             }
                         });
-                        showAlertDialog(builder);
+                        showDialog(builder.create());
                     }
                 }
             });

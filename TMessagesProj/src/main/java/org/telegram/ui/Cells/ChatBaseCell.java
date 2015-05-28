@@ -49,6 +49,7 @@ public class ChatBaseCell extends BaseCell {
         void didLongPressed(ChatBaseCell cell);
         void didPressReplyMessage(ChatBaseCell cell, int id);
         void didPressUrl(String url);
+        void needOpenWebView(String url, String title, String originalUrl, int w, int h);
         boolean canPerformActions();
     }
 
@@ -204,6 +205,9 @@ public class ChatBaseCell extends BaseCell {
             //replyTextPaint.linkColor = AndroidUtilities.getIntTColor("chatLLinkColor");
 
             replyLinePaint = new Paint();
+
+            urlPaint = new Paint();
+            urlPaint.setColor(0x33316f9f);
         }
         avatarImage = new ImageReceiver(this);
         avatarImage.setRoundRadius(AndroidUtilities.dp(21));
@@ -423,7 +427,7 @@ public class ChatBaseCell extends BaseCell {
                 currentPhoto = null;
                 avatarDrawable.setInfo(messageObject.messageOwner.from_id, null, null, false);
             }
-            avatarImage.setImage(currentPhoto, "50_50", avatarDrawable, false);
+            avatarImage.setImage(currentPhoto, "50_50", avatarDrawable, null, false);
         }
            /*
         if (!media) {
@@ -542,7 +546,7 @@ public class ChatBaseCell extends BaseCell {
                     needReplyImage = false;
                 } else {
                     currentReplyPhoto = photoSize.location;
-                    replyImageReceiver.setImage(photoSize.location, "50_50", null, true);
+                    replyImageReceiver.setImage(photoSize.location, "50_50", null, null, true);
                     needReplyImage = true;
                     maxWidth -= AndroidUtilities.dp(44);
                 }
@@ -736,7 +740,7 @@ public class ChatBaseCell extends BaseCell {
             avatarImage.draw(canvas);
         }
         updateTheme();
-        Drawable currentBackgroundDrawable = null;
+        Drawable currentBackgroundDrawable;
         if (currentMessageObject.isOut()) {
             if (isPressed() && isCheckPressed || !isCheckPressed && isPressed || isHighlighted) {
                 if (!media) {

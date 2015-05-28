@@ -200,7 +200,7 @@ public class ChatContactCell extends ChatBaseCell {
                 currentPhoto = null;
                 avatarDrawable.setInfo(uid, null, null, false);
             }
-            avatarImage.setImage(currentPhoto, "50_50", avatarDrawable, false);
+            avatarImage.setImage(currentPhoto, "50_50", avatarDrawable, null, false);
 
             String currentNameString = ContactsController.formatName(messageObject.messageOwner.media.first_name, messageObject.messageOwner.media.last_name);
             int nameWidth = Math.min((int) Math.ceil(namePaint.measureText(currentNameString)), maxWidth);

@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 1.3.2.
+ * This is the source code of Telegram for Android v. 2.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013.
+ * Copyright Nikolai Kudashov, 2013-2015.
  */
 
 package org.telegram.messenger;
@@ -62,7 +62,7 @@ public class FileLoadOperation {
         void didChangedLoadProgress(FileLoadOperation operation, float progress);
     }
 
-    public FileLoadOperation(TLRPC.FileLocation photoLocation, int size) {
+    public FileLoadOperation(TLRPC.FileLocation photoLocation, String extension, int size) {
         if (photoLocation instanceof TLRPC.TL_fileEncryptedLocation) {
             location = new TLRPC.TL_inputEncryptedFileLocation();
             location.id = photoLocation.volume_id;
@@ -81,10 +81,7 @@ public class FileLoadOperation {
             datacenter_id = photoLocation.dc_id;
         }
         totalBytesCount = size;
-        ext = photoLocation.ext;
-        if (ext == null) {
-            ext = "jpg";
-        }
+        ext = extension != null ? extension : "jpg";
         orgName = null;
     }
 
@@ -143,7 +140,7 @@ public class FileLoadOperation {
         }
         totalBytesCount = documentLocation.size;
         ext = FileLoader.getDocumentFileName(documentLocation);
-        int idx = -1;
+        int idx;
         if (ext == null || (idx = ext.lastIndexOf(".")) == -1) {
             ext = "";
         } else {
@@ -185,8 +182,8 @@ public class FileLoadOperation {
             return;
         }
         Long mediaId = null;
-        String fileNameFinal = null;
-        String fileNameTemp = null;
+        String fileNameFinal;
+        String fileNameTemp;
         String fileNameIv = null;
         if (location.volume_id != 0 && location.local_id != 0) {
             fileNameTemp = location.volume_id + "_" + location.local_id + "_temp." + ext;
@@ -235,7 +232,6 @@ public class FileLoadOperation {
         }
         //
         if (exist && totalBytesCount != 0 && totalBytesCount != cacheFileFinal.length()) {
-            exist = false;
             cacheFileFinal.delete();
         }
 
@@ -404,7 +400,6 @@ public class FileLoadOperation {
                         processRequestResult(delayedRequestInfo, null);
                         delayedRequestInfo.response.disableFree = false;
                         delayedRequestInfo.response.freeResources();
-                        delayedRequestInfo = null;
                         break;
                     }
                 }

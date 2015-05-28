@@ -9,7 +9,6 @@
 package org.telegram.ui.Cells;
 
 import android.content.Context;
-import android.graphics.drawable.Drawable;
 import android.view.Gravity;
 
 import org.telegram.android.AndroidUtilities;
@@ -17,6 +16,7 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.TLRPC;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.FrameLayoutFixed;
+import org.telegram.ui.Components.LayoutHelper;
 
 public class StickerCell extends FrameLayoutFixed {
 
@@ -27,13 +27,7 @@ public class StickerCell extends FrameLayoutFixed {
 
         imageView = new BackupImageView(context);
         imageView.setAspectFit(true);
-        addView(imageView);
-        LayoutParams layoutParams = (LayoutParams) imageView.getLayoutParams();
-        layoutParams.width = AndroidUtilities.dp(66);
-        layoutParams.height = AndroidUtilities.dp(66);
-        layoutParams.gravity = Gravity.CENTER_HORIZONTAL;
-        layoutParams.topMargin = AndroidUtilities.dp(5);
-        imageView.setLayoutParams(layoutParams);
+        addView(imageView, LayoutHelper.createFrame(66, 66, Gravity.CENTER_HORIZONTAL, 0, 5, 0, 0));
     }
 
     @Override
@@ -52,8 +46,7 @@ public class StickerCell extends FrameLayoutFixed {
 
     public void setSticker(TLRPC.Document document, int side) {
         if (document != null) {
-            document.thumb.location.ext = "webp";
-            imageView.setImage(document.thumb.location, null, (Drawable) null);
+            imageView.setImage(document.thumb.location, null, "webp", null);
         }
         if (side == -1) {
             setBackgroundResource(R.drawable.stickers_back_left);

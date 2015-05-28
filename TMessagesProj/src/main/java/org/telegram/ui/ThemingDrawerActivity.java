@@ -48,6 +48,7 @@ public class ThemingDrawerActivity extends BaseFragment {
     private int headerSection2Row;
     private int headerColorRow;
     private int headerBackgroundCheckRow;
+    private int hideBackgroundShadowRow;
     private int rowsSectionRow;
     private int rowsSection2Row;
     private int listColorRow;
@@ -74,6 +75,7 @@ public class ThemingDrawerActivity extends BaseFragment {
         rowCount = 0;
         headerSection2Row = rowCount++;
         headerBackgroundCheckRow = rowCount++;
+        hideBackgroundShadowRow = rowCount++;
         headerColorRow = rowCount++;
         avatarColorRow  = rowCount++;
         avatarRadiusRow  = rowCount++;
@@ -161,6 +163,17 @@ public class ThemingDrawerActivity extends BaseFragment {
                         },themePrefs.getInt("drawerHeaderColor", AndroidUtilities.getIntColor("themeColor")), CENTER, 0, false);
                         colorDialog.show();
                     } else if (i == headerBackgroundCheckRow) {
+                        boolean b = themePrefs.getBoolean( key, true);
+                        SharedPreferences.Editor editor = themePrefs.edit();
+                        editor.putBoolean(key, !b);
+                        editor.commit();
+                        if (view instanceof TextCheckCell) {
+                            ((TextCheckCell) view).setChecked(!b);
+                        }
+                        if (listView != null) {
+                            listView.invalidateViews();
+                        }
+                    } else if (i == hideBackgroundShadowRow) {
                         boolean b = themePrefs.getBoolean( key, true);
                         SharedPreferences.Editor editor = themePrefs.edit();
                         editor.putBoolean(key, !b);
@@ -291,7 +304,7 @@ public class ThemingDrawerActivity extends BaseFragment {
                                 }
                             }
                         });
-                        showAlertDialog(builder);
+                        showDialog(builder.create());
                     } else if (i == nameSizeRow) {
                         if (getParentActivity() == null) {
                             return;
@@ -312,7 +325,7 @@ public class ThemingDrawerActivity extends BaseFragment {
                                 }
                             }
                         });
-                        showAlertDialog(builder);
+                        showDialog(builder.create());
                     } else if (i == phoneSizeRow) {
                         if (getParentActivity() == null) {
                             return;
@@ -333,7 +346,7 @@ public class ThemingDrawerActivity extends BaseFragment {
                                 }
                             }
                         });
-                        showAlertDialog(builder);
+                        showDialog(builder.create());
                     } else if (i == optionSizeRow) {
                         if (getParentActivity() == null) {
                             return;
@@ -354,7 +367,7 @@ public class ThemingDrawerActivity extends BaseFragment {
                                 }
                             }
                         });
-                        showAlertDialog(builder);
+                        showDialog(builder.create());
                     } else if (i == versionSizeRow) {
                         if (getParentActivity() == null) {
                             return;
@@ -375,7 +388,7 @@ public class ThemingDrawerActivity extends BaseFragment {
                                 }
                             }
                         });
-                        showAlertDialog(builder);
+                        showDialog(builder.create());
                     }
                 }
             });
@@ -508,7 +521,7 @@ public class ThemingDrawerActivity extends BaseFragment {
 
         @Override
         public boolean isEnabled(int i) {
-            return  i == headerColorRow || i == headerBackgroundCheckRow || i == listColorRow || i == iconColorRow || i == optionColorRow || i == optionSizeRow || i == avatarColorRow || i == avatarRadiusRow || i == nameColorRow || i == nameSizeRow || i == phoneColorRow || i == phoneSizeRow ||
+            return  i == headerColorRow || i == headerBackgroundCheckRow || i == hideBackgroundShadowRow || i == listColorRow || i == iconColorRow || i == optionColorRow || i == optionSizeRow || i == avatarColorRow || i == avatarRadiusRow || i == nameColorRow || i == nameSizeRow || i == phoneColorRow || i == phoneSizeRow ||
                     i == versionColorRow || i == versionSizeRow;
         }
 
@@ -606,7 +619,10 @@ public class ThemingDrawerActivity extends BaseFragment {
                 TextCheckCell textCell = (TextCheckCell) view;
                 if (i == headerBackgroundCheckRow) {
                     textCell.setTag("drawerHeaderBGCheck");
-                    textCell.setTextAndCheck(LocaleController.getString("HideBackground", R.string.HideBackground), themePrefs.getBoolean("drawerHeaderBGCheck", false), false);
+                    textCell.setTextAndCheck(LocaleController.getString("HideBackground", R.string.HideBackground), themePrefs.getBoolean("drawerHeaderBGCheck", false), true);
+                } else if (i == hideBackgroundShadowRow) {
+                    textCell.setTag("drawerHideBGShadowCheck");
+                    textCell.setTextAndCheck(LocaleController.getString("HideBackgroundShadow", R.string.HideBackgroundShadow), themePrefs.getBoolean("drawerHideBGShadowCheck", false), true);
                 }
             }
             return view;
@@ -626,7 +642,7 @@ public class ThemingDrawerActivity extends BaseFragment {
             else if ( i == headerColorRow || i == listColorRow || i == iconColorRow || i == optionColorRow || i == versionColorRow  || i == avatarColorRow  || i == nameColorRow || i == phoneColorRow) {
                 return 3;
             }
-            else if (i == headerBackgroundCheckRow) {
+            else if (i == headerBackgroundCheckRow || i == hideBackgroundShadowRow) {
                 return 4;
             }
             else {

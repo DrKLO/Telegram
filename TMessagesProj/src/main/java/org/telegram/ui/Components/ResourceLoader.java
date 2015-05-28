@@ -40,6 +40,8 @@ public class ResourceLoader {
     public static Drawable backgroundBlue;
     public static Drawable mediaBackgroundDrawable;
 
+    public static Drawable backgroundWhite;
+
     public static Drawable geoInDrawable;
     public static Drawable geoOutDrawable;
 
@@ -76,6 +78,8 @@ public class ResourceLoader {
             broadcastMediaDrawable = context.getResources().getDrawable(R.drawable.broadcast4);
             backgroundBlack = context.getResources().getDrawable(R.drawable.system_black);
             backgroundBlue = context.getResources().getDrawable(R.drawable.system_blue);
+
+            backgroundWhite = context.getResources().getDrawable(R.drawable.system_white);
 
             audioStatesDrawable[0][0] = context.getResources().getDrawable(R.drawable.play_w2);
             audioStatesDrawable[0][1] = context.getResources().getDrawable(R.drawable.play_w2_pressed);

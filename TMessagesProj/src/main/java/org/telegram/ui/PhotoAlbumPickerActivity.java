@@ -539,7 +539,7 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
         public View getView(int i, View view, ViewGroup viewGroup) {
             int type = getItemViewType(i);
             if (type == 0) {
-                PhotoPickerAlbumsCell photoPickerAlbumsCell = null;
+                PhotoPickerAlbumsCell photoPickerAlbumsCell;
                 if (view == null) {
                     view = new PhotoPickerAlbumsCell(mContext);
                     photoPickerAlbumsCell = (PhotoPickerAlbumsCell) view;

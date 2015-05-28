@@ -123,9 +123,8 @@ public class PagerSlidingTabStrip extends HorizontalScrollView {
     private void addIconTab(final int position, int resId) {
         ImageView tab = new ImageView(getContext());
         tab.setFocusable(true);
-        paintTabIcons(position);
-        //tab.setImageResource(resId);
-        tab.setImageDrawable(getResources().getDrawable(resId));//Plus
+        tab.setImageResource(resId);
+
         tab.setScaleType(ImageView.ScaleType.CENTER);
         tab.setOnClickListener(new OnClickListener() {
             @Override
@@ -146,11 +145,12 @@ public class PagerSlidingTabStrip extends HorizontalScrollView {
             R.drawable.ic_smiles_grid_active,
             R.drawable.ic_smiles_sticker_active};
 
-    private void paintTabIcons(int position){
+    private void paintTabIcons(int i){
         SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
         int tabColor = themePrefs.getInt("chatEmojiViewTabColor", AndroidUtilities.getIntDarkerColor("themeColor", -0x15));
-        Drawable icon = getResources().getDrawable(icons[position]);
+        Drawable icon = getResources().getDrawable(icons[i]);
         icon.setColorFilter(tabColor, PorterDuff.Mode.SRC_IN);
+        //iv.setImageDrawable(icon);
     }//
 
     private void updateTabStyles() {
@@ -253,6 +253,9 @@ public class PagerSlidingTabStrip extends HorizontalScrollView {
             if (delegatePageListener != null) {
                 delegatePageListener.onPageSelected(position);
             }
+            //
+            if(position == currentPosition)paintTabIcons(position);
+            //
             for (int a = 0; a < tabsContainer.getChildCount(); a++) {
                 tabsContainer.getChildAt(a).setSelected(a == position);
             }
@@ -343,52 +346,7 @@ public class PagerSlidingTabStrip extends HorizontalScrollView {
     public boolean getShouldExpand() {
         return shouldExpand;
     }
-/*
-    public boolean isTextAllCaps() {
-        return textAllCaps;
-    }
 
-    public void setAllCaps(boolean textAllCaps) {
-        this.textAllCaps = textAllCaps;
-    }
-
-    public void setTextSize(int textSizePx) {
-        this.tabTextSize = textSizePx;
-        updateTabStyles();
-    }
-
-    public int getTextSize() {
-        return tabTextSize;
-    }
-
-    public void setTextColor(int textColor) {
-        this.tabTextColor = textColor;
-        updateTabStyles();
-    }
-
-    public void setTextColorResource(int resId) {
-        this.tabTextColor = getResources().getColor(resId);
-        updateTabStyles();
-    }
-
-    public int getTextColor() {
-        return tabTextColor;
-    }
-
-    public void setTypeface(Typeface typeface, int style) {
-        this.tabTypeface = typeface;
-        this.tabTypefaceStyle = style;
-        updateTabStyles();
-    }
-
-    public void setTabBackground(int resId) {
-        this.tabBackgroundResId = resId;
-    }
-
-    public int getTabBackground() {
-        return tabBackgroundResId;
-    }
-*/
     public void setTabPaddingLeftRight(int paddingPx) {
         this.tabPadding = paddingPx;
         updateTabStyles();

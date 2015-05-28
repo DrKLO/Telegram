@@ -129,7 +129,7 @@ public class LastSeenActivity extends BaseFragment implements NotificationCenter
                                 }
                             });
                             builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-                            showAlertDialog(builder);
+                            showDialog(builder.create());
                             return;
                         }
                     }
@@ -179,7 +179,7 @@ public class LastSeenActivity extends BaseFragment implements NotificationCenter
                     currentType = newType;
                     updateRows();
                 } else if (i == neverShareRow || i == alwaysShareRow) {
-                    ArrayList<Integer> createFromArray = null;
+                    ArrayList<Integer> createFromArray;
                     if (i == neverShareRow) {
                         createFromArray = currentMinus;
                     } else {
@@ -323,7 +323,7 @@ public class LastSeenActivity extends BaseFragment implements NotificationCenter
         builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
         builder.setMessage(LocaleController.getString("PrivacyFloodControlError", R.string.PrivacyFloodControlError));
         builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), null);
-        showAlertDialog(builder);
+        showDialog(builder.create());
     }
 
     private void checkPrivacy() {

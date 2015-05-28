@@ -13,10 +13,12 @@ import android.content.SharedPreferences;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.drawable.Drawable;
+import android.os.Build;
 import android.text.Layout;
 import android.text.StaticLayout;
 import android.text.TextPaint;
 import android.text.TextUtils;
+import android.view.MotionEvent;
 
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.android.AndroidUtilities;
@@ -72,13 +74,7 @@ public class ProfileSearchCell extends BaseCell {
 
     public ProfileSearchCell(Context context) {
         super(context);
-        init();
-        avatarImage = new ImageReceiver(this);
-        avatarImage.setRoundRadius(AndroidUtilities.dp(26));
-        avatarDrawable = new AvatarDrawable();
-    }
 
-    private void init() {
         if (namePaint == null) {
             namePaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
             namePaint.setTextSize(AndroidUtilities.dp(17));
@@ -107,6 +103,20 @@ public class ProfileSearchCell extends BaseCell {
             lockDrawable = getResources().getDrawable(R.drawable.list_secret);
             groupDrawable = getResources().getDrawable(R.drawable.list_group);
         }
+
+        avatarImage = new ImageReceiver(this);
+        avatarImage.setRoundRadius(AndroidUtilities.dp(26));
+        avatarDrawable = new AvatarDrawable();
+    }
+
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+        if (Build.VERSION.SDK_INT >= 21 && getBackground() != null) {
+            if (event.getAction() == MotionEvent.ACTION_DOWN || event.getAction() == MotionEvent.ACTION_MOVE) {
+                getBackground().setHotspot(event.getX(), event.getY());
+            }
+        }
+        return super.onTouchEvent(event);
     }
 
     public void setData(TLRPC.User u, TLRPC.Chat c, TLRPC.EncryptedChat ec, CharSequence n, CharSequence s) {
@@ -147,7 +157,7 @@ public class ProfileSearchCell extends BaseCell {
     }
 
     public void buildLayout() {
-        CharSequence nameString = "";
+        CharSequence nameString;
         TextPaint currentNamePaint;
 
         drawNameBroadcast = false;
@@ -239,7 +249,7 @@ public class ProfileSearchCell extends BaseCell {
                 onlineLeft = AndroidUtilities.dp(11);
             }
 
-            CharSequence onlineString = "";
+            CharSequence onlineString;
             TextPaint currentOnlinePaint = offlinePaint;
 
             if (subLabel != null) {
@@ -269,8 +279,8 @@ public class ProfileSearchCell extends BaseCell {
 
         avatarImage.setImageCoords(avatarLeft, AndroidUtilities.dp(10), AndroidUtilities.dp(52), AndroidUtilities.dp(52));
 
-        double widthpx = 0;
-        float left = 0;
+        double widthpx;
+        float left;
         if (LocaleController.isRTL) {
             if (nameLayout.getLineCount() > 0) {
                 left = nameLayout.getLineLeft(0);
@@ -374,7 +384,7 @@ public class ProfileSearchCell extends BaseCell {
 
 
         lastAvatar = photo;
-        avatarImage.setImage(photo, "50_50", avatarDrawable, false);
+        avatarImage.setImage(photo, "50_50", avatarDrawable, null, false);
 
         if (getMeasuredWidth() != 0 || getMeasuredHeight() != 0) {
             buildLayout();

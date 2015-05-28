@@ -24,7 +24,6 @@ import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
 import org.telegram.messenger.TLRPC;
-import org.telegram.messenger.Utilities;
 import org.xmlpull.v1.XmlPullParser;
 
 import java.io.File;
@@ -251,6 +250,13 @@ public class LocaleController {
         languagesDict.put(localeInfo.shortName, localeInfo);
 
         localeInfo = new LocaleInfo();
+        localeInfo.name = "עברית";
+        localeInfo.nameEnglish = "Hebrew";
+        localeInfo.shortName = "he";
+        sortedLanguages.add(localeInfo);
+        languagesDict.put(localeInfo.shortName, localeInfo);
+
+        localeInfo = new LocaleInfo();
         localeInfo.name = "Polski";
         localeInfo.nameEnglish = "Polish";
         localeInfo.shortName = "pl";
@@ -428,7 +434,7 @@ public class LocaleController {
                 }
 
                 File finalFile = new File(ApplicationLoader.applicationContext.getFilesDir(), languageCode + ".xml");
-                if (!Utilities.copyFile(file, finalFile)) {
+                if (!AndroidUtilities.copyFile(file, finalFile)) {
                     return false;
                 }
 
@@ -563,7 +569,6 @@ public class LocaleController {
             try {
                 if (stream != null) {
                     stream.close();
-                    stream = null;
                 }
             } catch (Exception e) {
                 FileLog.e("tmessages", e);
@@ -581,7 +586,7 @@ public class LocaleController {
             return;
         }
         try {
-            Locale newLocale = null;
+            Locale newLocale;
             if (localeInfo.shortName != null) {
                 String[] args = localeInfo.shortName.split("_");
                 if (args.length == 1) {
@@ -751,6 +756,7 @@ public class LocaleController {
     }
 
     public static String formatDate(long date) {
+        try {
         Calendar rightNow = Calendar.getInstance();
         int day = rightNow.get(Calendar.DAY_OF_YEAR);
         int year = rightNow.get(Calendar.YEAR);
@@ -767,9 +773,14 @@ public class LocaleController {
         } else {
             return formatterYear.format(new Date(date * 1000));
         }
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
+        return "LOC_ERR";
     }
 
     public static String formatDateOnline(long date) {
+        try {
         Calendar rightNow = Calendar.getInstance();
         int day = rightNow.get(Calendar.DAY_OF_YEAR);
         int year = rightNow.get(Calendar.YEAR);
@@ -788,13 +799,17 @@ public class LocaleController {
             String format = LocaleController.formatString("formatDateAtTime", R.string.formatDateAtTime, formatterYear.format(new Date(date * 1000)), formatterDay.format(new Date(date * 1000)));
             return String.format("%s %s", LocaleController.getString("LastSeenDate", R.string.LastSeenDate), format);
         }
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
+        return "LOC_ERR";
     }
 
     private FastDateFormat createFormatter(Locale locale, String format, String defaultFormat) {
         if (format == null || format.length() == 0) {
             format = defaultFormat;
         }
-        FastDateFormat formatter = null;
+        FastDateFormat formatter;
         try {
             formatter = FastDateFormat.getInstance(format, locale);
         } catch (Exception e) {
@@ -827,6 +842,7 @@ public class LocaleController {
     }
 
     public static String stringForMessageListDate(long date) {
+        try {
         Calendar rightNow = Calendar.getInstance();
         int day = rightNow.get(Calendar.DAY_OF_YEAR);
         int year = rightNow.get(Calendar.YEAR);
@@ -846,6 +862,10 @@ public class LocaleController {
                 return formatterMonth.format(new Date(date * 1000));
             }
         }
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
+        return "LOC_ERR";
     }
 
     public static String formatUserStatus(TLRPC.User user) {

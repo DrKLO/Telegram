@@ -15,17 +15,25 @@ import android.view.ViewGroup;
 
 import org.telegram.android.AndroidUtilities;
 import org.telegram.android.MessagesController;
+import org.telegram.android.support.widget.RecyclerView;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.TLRPC;
 import org.telegram.ui.Cells.DialogCell;
 import org.telegram.ui.Cells.LoadingCell;
 
-public class DialogsAdapter extends BaseFragmentAdapter {
+public class DialogsAdapter extends RecyclerView.Adapter {
 
     private Context mContext;
     private boolean serverOnly;
     private long openedDialogId;
     private int currentCount;
+
+    private class Holder extends RecyclerView.ViewHolder {
+
+        public Holder(View itemView) {
+            super(itemView);
+        }
+    }
 
     public DialogsAdapter(Context context, boolean onlyFromServer) {
         mContext = context;
@@ -38,21 +46,11 @@ public class DialogsAdapter extends BaseFragmentAdapter {
 
     public boolean isDataSetChanged() {
         int current = currentCount;
-        return current != getCount();
+        return current != getItemCount();
     }
 
     @Override
-    public boolean areAllItemsEnabled() {
-        return true;
-    }
-
-    @Override
-    public boolean isEnabled(int i) {
-        return true;
-    }
-
-    @Override
-    public int getCount() {
+    public int getItemCount() {
         int count;
         if (serverOnly) {
             count = MessagesController.getInstance().dialogsServerOnly.size();
@@ -69,7 +67,6 @@ public class DialogsAdapter extends BaseFragmentAdapter {
         return count;
     }
 
-    @Override
     public TLRPC.TL_dialog getItem(int i) {
         if (serverOnly) {
             if (i < 0 || i >= MessagesController.getInstance().dialogsServerOnly.size()) {
@@ -90,47 +87,42 @@ public class DialogsAdapter extends BaseFragmentAdapter {
     }
 
     @Override
-    public boolean hasStableIds() {
-        return true;
+    public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup viewGroup, int viewType) {
+        View view = null;
+        if (viewType == 0) {
+            view = new DialogCell(mContext);
+        } else if (viewType == 1) {
+                view = new LoadingCell(mContext);
+        }
+        SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+        viewGroup.setBackgroundColor(themePrefs.getInt("chatsRowColor", 0xffffffff));
+        return new Holder(view);
     }
 
     @Override
-    public View getView(int i, View view, ViewGroup viewGroup) {
-        int type = getItemViewType(i);
-        if (type == 1) {
-            if (view == null) {
-                view = new LoadingCell(mContext);
-            }
-        } else if (type == 0) {
-            if (view == null) {
-                view = new DialogCell(mContext);
-            }
-            if (view instanceof DialogCell) { //TODO finally i need to find this crash
-            ((DialogCell) view).useSeparator = (i != getCount() - 1);
-            TLRPC.TL_dialog dialog = null;
+    public void onBindViewHolder(RecyclerView.ViewHolder viewHolder, int i) {
+        if (viewHolder.getItemViewType() == 0) {
+            DialogCell cell = (DialogCell) viewHolder.itemView;
+            cell.useSeparator = (i != getItemCount() - 1);
+            TLRPC.TL_dialog dialog;
             if (serverOnly) {
                 dialog = MessagesController.getInstance().dialogsServerOnly.get(i);
             } else {
                 dialog = MessagesController.getInstance().dialogs.get(i);
                 if (AndroidUtilities.isTablet()) {
-                    if (dialog.id == openedDialogId) {
-                        view.setBackgroundColor(0x0f000000);
-                    } else {
-                        view.setBackgroundColor(0);
-                    }
+                    cell.setDialogSelected(dialog.id == openedDialogId);
                 }
             }
-                ((DialogCell) view).setDialog(dialog, i, serverOnly);
-            }
-        }
-        updateTheme(viewGroup);
-        return view;
+            cell.setDialog(dialog, i, serverOnly);
+                    }
+                
+        //updateTheme(viewHolder);
     }
-
-    private void updateTheme(ViewGroup viewGroup){
+/*
+    private void updateTheme(RecyclerView.ViewHolder viewHolder){
         SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
-        viewGroup.setBackgroundColor(themePrefs.getInt("chatsRowColor", 0xffffffff));
-    }
+        viewHolder.setBackgroundColor(themePrefs.getInt("chatsRowColor", 0xffffffff));
+    }*/
 
     @Override
     public int getItemViewType(int i) {
@@ -138,27 +130,5 @@ public class DialogsAdapter extends BaseFragmentAdapter {
             return 1;
         }
         return 0;
-    }
-
-    @Override
-    public int getViewTypeCount() {
-        return 2;
-    }
-
-    @Override
-    public boolean isEmpty() {
-        int count;
-        if (serverOnly) {
-            count = MessagesController.getInstance().dialogsServerOnly.size();
-        } else {
-            count = MessagesController.getInstance().dialogs.size();
-        }
-        if (count == 0 && MessagesController.getInstance().loadingDialogs) {
-            return true;
-        }
-        if (!MessagesController.getInstance().dialogsEndReached) {
-            count++;
-        }
-        return count == 0;
     }
 }

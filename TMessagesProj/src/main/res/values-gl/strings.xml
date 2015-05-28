@@ -611,17 +611,6 @@ http://telegram.org/update</string>
   <string name="formatterDay12H">h:mm a</string>
   <string name="formatDateAtTime">%1$s en %2$s</string>
   <!--Telegram+ Galician-->
-    <!--Smart Notifications-->
-    <string name="SmartNotification">Notificación intelixente</string>
-    <string name="TimeUnitSeconds">segundo(s)</string>
-    <string name="TimeUnitMinutes">minuto(s)</string>
-    <string name="TimeUnitHours">hora(s)</string>
-    <string name="TimeUnitDays">día(s)</string>
-    <string name="settings_smart_notify_begin">Soa máximo</string>
-    <string name="settings_smart_notify_mid1">veces</string>
-    <string name="settings_smart_notify_mid11">vez</string>
-    <string name="settings_smart_notify_mid2">cada</string>
-    <!---->
     <string name="TelegramForAndroid">Plus Messenger para Android</string>
     <string name="Theming">Tematización</string>
     <string name="colorHexInvalid">Cor hexadecimal inválida!</string>
@@ -727,4 +716,6 @@ http://telegram.org/update</string>
   <string name="AvatarSize">Tamaño do avatar</string>
   <string name="AvatarAlignTop">Aliñar o avatar arriba</string>
   <string name="AvatarMarginLeft">Marxe esquerdo do avatar</string>
+  <string name="GroupNameColor">Cor de nombre de grupo</string>
+  <string name="GroupNameSize">Tamaño de nome de grupo</string>
 </resources>

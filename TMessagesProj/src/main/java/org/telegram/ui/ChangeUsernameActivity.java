@@ -217,7 +217,7 @@ public class ChangeUsernameActivity extends BaseFragment {
                 break;
         }
         builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), null);
-        showAlertDialog(builder);
+        showDialog(builder.create());
     }
 
     private boolean checkUserName(final String name, boolean alert) {

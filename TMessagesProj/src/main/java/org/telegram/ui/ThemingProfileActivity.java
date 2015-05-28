@@ -8,7 +8,6 @@
 
 package org.telegram.ui;
 
-import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -25,7 +24,6 @@ import android.widget.ListView;
 
 import org.telegram.android.AndroidUtilities;
 import org.telegram.android.LocaleController;
-import org.telegram.android.MessagesController;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.ActionBar;
@@ -33,7 +31,6 @@ import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.Adapters.BaseFragmentAdapter;
 import org.telegram.ui.Cells.HeaderCell;
 import org.telegram.ui.Cells.ShadowSectionCell;
-import org.telegram.ui.Cells.TextCheckCell;
 import org.telegram.ui.Cells.TextColorCell;
 import org.telegram.ui.Cells.TextSettingsCell;
 import org.telegram.ui.Components.AvatarDrawable;
@@ -62,6 +59,7 @@ public class ThemingProfileActivity extends BaseFragment {
 
     private int titleColorRow;
     private int summaryColorRow;
+    private int avatarRadiusRow;
 
     private int rowCount;
 
@@ -75,6 +73,7 @@ public class ThemingProfileActivity extends BaseFragment {
         headerSection2Row = rowCount++;
         headerColorRow = rowCount++;
         headerIconsColorRow = rowCount++;
+        avatarRadiusRow = rowCount++;
 
         nameSizeRow = rowCount++;
         nameColorRow = rowCount++;
@@ -84,6 +83,7 @@ public class ThemingProfileActivity extends BaseFragment {
         rowsSectionRow = rowCount++;
         rowsSection2Row = rowCount++;
         rowColorRow = rowCount++;
+
         titleColorRow = rowCount++;
         summaryColorRow = rowCount++;
 
@@ -218,7 +218,7 @@ public class ThemingProfileActivity extends BaseFragment {
                                 }
                             }
                         });
-                        showAlertDialog(builder);
+                        showDialog(builder.create());
                     } else if (i == statusSizeRow) {
                         if (getParentActivity() == null) {
                             return;
@@ -239,7 +239,7 @@ public class ThemingProfileActivity extends BaseFragment {
                                 }
                             }
                         });
-                        showAlertDialog(builder);
+                        showDialog(builder.create());
                     } else if (i == rowColorRow) {
                         if (getParentActivity() == null) {
                             return;
@@ -254,6 +254,27 @@ public class ThemingProfileActivity extends BaseFragment {
 
                         },themePrefs.getInt( key, 0xffffffff), CENTER, 0, false);
                         colorDialog.show();
+                    } else if (i == avatarRadiusRow) {
+                        if (getParentActivity() == null) {
+                            return;
+                        }
+                        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                        builder.setTitle(LocaleController.getString("AvatarRadius", R.string.AvatarRadius));
+                        final NumberPicker numberPicker = new NumberPicker(getParentActivity());
+                        final int currentValue = themePrefs.getInt( "profileAvatarRadius", 32);
+                        numberPicker.setMinValue(1);
+                        numberPicker.setMaxValue(32);
+                        numberPicker.setValue(currentValue);
+                        builder.setView(numberPicker);
+                        builder.setNegativeButton(LocaleController.getString("Done", R.string.Done), new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                if (numberPicker.getValue() != currentValue) {
+                                    commitInt( "profileAvatarRadius", numberPicker.getValue());
+                                }
+                            }
+                        });
+                        showDialog(builder.create());
                     } else if (i == titleColorRow) {
                         if (getParentActivity() == null) {
                             return;
@@ -375,7 +396,7 @@ public class ThemingProfileActivity extends BaseFragment {
         @Override
         public boolean isEnabled(int i) {
             return  i == headerColorRow  || i == headerIconsColorRow || i == nameColorRow || i == nameSizeRow || i == statusColorRow || i == statusSizeRow ||
-                    i == rowColorRow || i == titleColorRow || i == summaryColorRow;
+                    i == rowColorRow || i == titleColorRow || i == summaryColorRow || i == avatarRadiusRow;
         }
 
         @Override
@@ -431,6 +452,10 @@ public class ThemingProfileActivity extends BaseFragment {
                     textCell.setTag("profileStatusSize");
                     int size = themePrefs.getInt("profileStatusSize", AndroidUtilities.isTablet() ? 16 : 14);
                     textCell.setTextAndValue(LocaleController.getString("StatusSize", R.string.StatusSize), String.format("%d", size), true);
+                } else if (i == avatarRadiusRow) {
+                    textCell.setTag("profileAvatarRadius");
+                    int size = themePrefs.getInt("profileAvatarRadius", AndroidUtilities.isTablet() ? 35 : 32);
+                    textCell.setTextAndValue(LocaleController.getString("AvatarRadius", R.string.AvatarRadius), String.format("%d", size), true);
                 }
             }
             else if (type == 3){
@@ -474,7 +499,7 @@ public class ThemingProfileActivity extends BaseFragment {
             else if ( i == headerSection2Row || i == rowsSection2Row ) {
                 return 1;
             }
-            else if ( i == nameSizeRow ||  i == statusSizeRow) {
+            else if ( i == nameSizeRow ||  i == statusSizeRow || i == avatarRadiusRow ) {
                 return 2;
             }
 

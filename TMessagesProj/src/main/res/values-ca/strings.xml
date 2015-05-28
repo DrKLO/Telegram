@@ -595,17 +595,6 @@
   <string name="formatterDay12H">h:mm a</string>
   <string name="formatDateAtTime">%1$s a les %2$s</string>
     <!--Telegram+ Catalan-->
-    <!--Smart Notifications-->
-    <string name="SmartNotification">Notificació intel·ligent</string>
-    <string name="TimeUnitSeconds">Segon(s)</string>
-    <string name="TimeUnitMinutes">Minut(s)</string>
-    <string name="TimeUnitHours">hora(es)</string>
-    <string name="TimeUnitDays">Dia(es)</string>
-    <string name="settings_smart_notify_begin">Sona com a màxim</string>
-    <string name="settings_smart_notify_mid1">vegades</string>
-    <string name="settings_smart_notify_mid11">vegada</string>
-    <string name="settings_smart_notify_mid2">en</string>
-    <!---->
     <string name="TelegramForAndroid">Plus Messenger per Android</string>
   <string name="Theming">Aparença</string>
   <string name="colorHexInvalid">Codi de color hexadecimal no vàlid.</string>

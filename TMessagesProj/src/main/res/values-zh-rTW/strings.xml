@@ -12,7 +12,7 @@
     <!--code enter view-->
     <string name="YourCode">您的驗證碼</string>
   <string name="SentSmsCode">我們已經傳送一則包含啟用碼的簡訊到您的電話</string>
-    <string name="CallText">在 %1$d:%2$02d 後，改用電話語音報驗證碼</string>
+  <string name="CallText">我們會在 %1$d:%2$02d 後改用電話語音報驗證碼</string>
     <string name="Calling">正在撥打給您...</string>
     <string name="Code">驗證碼</string>
     <string name="WrongNumber">號碼不對嗎？</string>
@@ -94,7 +94,7 @@
     <string name="ChatTakePhoto">拍攝照片</string>
     <string name="ChatGallery">相簿</string>
     <string name="ChatLocation">位置</string>
-    <string name="ChatVideo">影片</string>
+  <string name="ChatVideo">拍攝影片</string>
     <string name="ChatDocument">檔案</string>
     <string name="NoMessages">這裡還沒有訊息...</string>
     <string name="ForwardedMessage">轉寄的訊息</string>
@@ -107,7 +107,7 @@
     <string name="EncryptedPlaceholderTitleIncoming">%s 已邀請您加入私密聊天。</string>
     <string name="EncryptedPlaceholderTitleOutgoing">您已邀請 %s 加入私密聊天。</string>
     <string name="EncryptedDescriptionTitle">私密聊天：</string>
-    <string name="EncryptedDescription1">使用點對點加密</string>
+  <string name="EncryptedDescription1">使用端點對端點加密</string>
     <string name="EncryptedDescription2">不會在我們伺服器上留下紀錄</string>
     <string name="EncryptedDescription3">使用自動銷毀計時器</string>
     <string name="EncryptedDescription4">不允許轉寄</string>
@@ -123,6 +123,8 @@
     <string name="SetTimer">設定自動銷毀計時器</string>
     <string name="ServiceNotifications">服務通知</string>
   <string name="GettingLinkInfo">正在取得連結資訊...</string>
+  <string name="OpenInBrowser">在瀏覽器中開啟</string>
+  <string name="CopyUrl">複製網址</string>
     <!--notification-->
     <string name="MessageLifetimeChanged">%1$s 將自毀計時器設定為 %2$s</string>
     <string name="MessageLifetimeChangedOutgoing">您將自毀計時器設定為 %1$s</string>
@@ -238,6 +240,21 @@
     <string name="UsernameAvailable">%1$s 是可用的。</string>
     <string name="UsernameEmpty">無</string>
     <string name="ErrorOccurred">發生錯誤。</string>
+  <!--stickers view-->
+  <string name="Stickers">貼圖</string>
+  <string name="GeniusStickerPackName">偉大的人們</string>
+  <string name="StickersInfo">歡迎畫家使用我們的 @Stickers Bot 加入他們自己的貼圖集。\n\n用戶可以通過點擊它們加入貼圖，並選擇 \"加入到貼圖\"。</string>
+  <string name="AddStickers">加入貼圖</string>
+  <string name="AddToStickers">加入到貼圖</string>
+  <string name="AddStickersNotFound">沒有找到貼圖</string>
+  <string name="StickersRemoved">貼圖已刪除</string>
+  <string name="AddStickersInstalled">新貼圖已加入</string>
+  <string name="StickersHide">隱藏</string>
+  <string name="StickersShow">顯示</string>
+  <string name="StickersShare">分享</string>
+  <string name="StickersCopy">複製連結</string>
+  <string name="StickersRemove">刪除</string>
+  <string name="NoStickers">還沒有貼圖</string>
     <!--settings view-->
     <string name="ResetNotificationsText">重設所有通知設定為預設值</string>
     <string name="TextSize">訊息的字體大小</string>
@@ -304,7 +321,7 @@
     <string name="WhenConnectedOnWiFi">使用 Wi-Fi 時</string>
     <string name="WhenRoaming">漫遊時</string>
     <string name="NoMediaAutoDownload">沒有媒體</string>
-    <string name="SaveToGallerySettings">另存到相簿／圖片庫</string>
+  <string name="SaveToGallerySettings">儲存至相簿</string>
     <string name="EditName">編輯名稱</string>
     <string name="NotificationsPriority">優先程度</string>
     <string name="NotificationsPriorityDefault">預設</string>
@@ -376,7 +393,7 @@
   <string name="SendSelectedLocation">傳送選擇的位置</string>
   <string name="ShareLocation">位置</string>
   <string name="AccurateTo">精確到 %1$s</string>
-  <string name="NearbyPlaces">或者選擇一個地方</string>
+  <string name="NearbyPlaces">或者選擇一個地點</string>
     <!--photo gallery view-->
     <string name="ShowAllMedia">顯示所有媒體</string>
     <string name="SaveToGallery">儲存至相簿</string>
@@ -417,9 +434,9 @@
   <string name="ClearButton">清除</string>
   <string name="PickerPhotos">照片</string>
   <string name="PickerVideo">影片</string>
-  <string name="AddCaption">加入一標題...</string>
-  <string name="PhotoCaption">照片標題</string>
-  <string name="VideoCaption">影片標題</string>
+  <string name="AddCaption">加入一說明文字...</string>
+  <string name="PhotoCaption">照片說明文字</string>
+  <string name="VideoCaption">影片說明文字</string>
   <!--password view-->
   <string name="TwoStepVerification">兩步驟驗證</string>
   <string name="SetAdditionalPassword">設定額外的密碼</string>
@@ -505,7 +522,7 @@
     <!--edit video view-->
     <string name="EditVideo">編輯影片</string>
     <string name="OriginalVideo">原始影片</string>
-    <string name="EditedVideo">編輯的影片</string>
+  <string name="EditedVideo">編輯過的影片</string>
     <string name="SendingVideo">傳送影片中…</string>
   <string name="CompressVideo">壓縮影片</string>
     <!--button titles-->
@@ -514,6 +531,7 @@
     <string name="Done">完成</string>
     <string name="Open">開啟</string>
     <string name="Cancel">取消</string>
+  <string name="Close">關閉</string>
     <string name="Add">加入</string>
     <string name="Edit">編輯</string>
     <string name="Send">傳送</string>
@@ -548,6 +566,7 @@
   <string name="ActionKickUserYou">un1 刪除了您</string>
     <string name="ActionAddUserYou">un1 已將您加入</string>
     <string name="ActionAddUserSelf">un1 返回到群組</string>
+  <string name="ActionAddUserSelfYou">您返回到群組</string>
     <string name="UnsuppotedMedia">您使用的 Telegram 版本無法顯示此訊息。請更新應用程式: http://telegram.org/update</string>
     <string name="AttachPhoto">照片</string>
     <string name="AttachVideo">影片</string>
@@ -710,6 +729,12 @@
   <string name="Meters_few">%1$d 公尺</string>
   <string name="Meters_many">%1$d 公尺</string>
   <string name="Meters_other">%1$d 公尺</string>
+  <string name="Stickers_zero">%1$d 張貼圖</string>
+  <string name="Stickers_one">%1$d 張貼圖</string>
+  <string name="Stickers_two">%1$d 張貼圖</string>
+  <string name="Stickers_few">%1$d 張貼圖</string>
+  <string name="Stickers_many">%1$d 張貼圖</string>
+  <string name="Stickers_other">%1$d 張貼圖</string>
     <!--forwarded messages-->
   <string name="ForwardedMessage_zero">%1$d 則轉寄的訊息</string>
     <string name="ForwardedMessage_one">轉寄的訊息</string>
@@ -777,20 +802,9 @@
     <string name="formatterDay12H">a h:mm</string>
     <string name="formatDateAtTime">%1$s 於時間 %2$s</string>
   <!--update text-->
-  <string name="updateText">Android 版的 Plus Messenger 已經更新了。在 2.8 版的新功能：\n\n- 群組聊天室的邀請連結\n- 智慧通知\n- 表情符號選單裡的貼圖分頁\n- 照片的說明文字\n- 位置功能中的地點與方向\n- 語音訊息的「已聽」狀態\n- 進階「輸入」狀態：正在傳送照片、正在錄音等等。\n- 改善的頁面捲動及動畫的超平滑體驗\n\更多關於此次更新的詳情:\ntelegram.org/blog/captions-places</string>
-  <string name="updateBuild">526</string>
+  <string name="updateText">適用於 Android 的 Plus Messenger 已經更新。在 2.9 版中的新功能：\n\n- 安裝和分享自訂貼圖集，像這樣的：https://telegram.me/addstickers/Animals\n- 如果您是一個畫家，您可以使用我們的 @Stickers Bot 建立自訂貼圖集。\n\n- 使用帶有 Android Auto 功能的 Telegram。</string>
+  <string name="updateBuild">543</string>
   <!--Telegram+-->
-  <!--Smart Notifications-->
-  <string name="SmartNotification">智能通知</string>
-  <string name="TimeUnitSeconds">秒</string>
-  <string name="TimeUnitMinutes">分</string>
-  <string name="TimeUnitHours">小時</string>
-  <string name="TimeUnitDays">日</string>
-  <string name="settings_smart_notify_begin">最大音量</string>
-  <string name="settings_smart_notify_mid1">時間</string>
-  <string name="settings_smart_notify_mid11">時間</string>
-  <string name="settings_smart_notify_mid2">在</string>
-  -->
   <string name="TelegramForAndroid">Plus Messenger Android版</string>
   <string name="Theming">佈景主題</string>
   <string name="colorHexInvalid">無效的十六進位顏色代碼！</string>
@@ -856,10 +870,10 @@
   <string name="SendLogs">傳送日誌</string>
   <string name="SendLogsEmpty">空白日誌</string>
   <string name="SendIcon">傳送圖示</string>
-  <string name="HideMobile">於菜單隱藏電話號碼</string>
+  <string name="HideMobile">隱藏選單中的電話號碼</string>
   <string name="FloatingPencilColor">浮動圖標顏色</string>
   <string name="FloatingBGColor">浮動圖標背景顏色</string>
-  <string name="Community">G+社區</string>
+  <string name="Community">G+社群</string>
   <string name="TypingColor">輸入中 顏色</string>
   <string name="EditTextIconsColor">輸入欄圖標顏色</string>
   <string name="NavigationDrawer">導航欄抽屜</string>
@@ -881,10 +895,10 @@
   <string name="SetMemberColor">設定成員顏色</string>
   <string name="ForwardNameColor">轉發名字顏色</string>
   <string name="HeaderTitle">標題文字</string>
-  <string name="ForwardNoQuote">不包含來源的轉發</string>
+  <string name="ForwardNoQuote">轉寄訊息而不引用</string>
   <string name="DisableMessageClick">點擊禁用彈出視窗</string>
-  <string name="ProfileScreen">群組/聯絡人屏幕</string>
-  <string name="HideBackground">隱藏自定義背景</string>
+  <string name="ProfileScreen">群組/聯絡人簡介</string>
+  <string name="HideBackground">隱藏自訂背景</string>
   <string name="RLinkColor">右邊連結顏色</string>
   <string name="LLinkColor">左邊連結顏色</string>
   <string name="ThemeApplied">主題已套用!</string>
@@ -896,4 +910,7 @@
   <string name="AvatarSize">頭像大小</string>
   <string name="AvatarAlignTop">對齊頭像到頂部</string>
   <string name="AvatarMarginLeft">頭像左邊距</string>
+  <string name="GroupNameColor">群組名稱顏色</string>
+  <string name="GroupNameSize">群組名稱大小</string>
+  <string name="UnknownNameColor">名稱顏色 (數量不明)</string>
 </resources>

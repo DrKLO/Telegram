@@ -39,9 +39,6 @@ import android.support.v4.view.accessibility.AccessibilityNodeInfoCompat;
 import android.support.v4.view.accessibility.AccessibilityRecordCompat;
 import android.support.v4.widget.EdgeEffectCompat;
 import android.support.v4.widget.ScrollerCompat;
-import static org.telegram.android.support.widget.AdapterHelper.UpdateOp;
-import static org.telegram.android.support.widget.AdapterHelper.Callback;
-
 import android.util.AttributeSet;
 import android.util.Log;
 import android.util.SparseArray;
@@ -61,6 +58,9 @@ import android.view.animation.Interpolator;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+
+import static org.telegram.android.support.widget.AdapterHelper.Callback;
+import static org.telegram.android.support.widget.AdapterHelper.UpdateOp;
 
 /**
  * A flexible view for providing a limited window into a large data set.

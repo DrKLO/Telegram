@@ -9,7 +9,7 @@
 package org.telegram.ui.ActionBar;
 
 import android.app.Activity;
-import android.app.AlertDialog;
+import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -27,8 +27,9 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
 
 public class BaseFragment {
+
     private boolean isFinished = false;
-    protected AlertDialog visibleDialog = null;
+    protected Dialog visibleDialog = null;
 
     protected View fragmentView;
     protected ActionBarLayout parentLayout;
@@ -199,7 +200,11 @@ public class BaseFragment {
         }
     }
 
-    public void onOpenAnimationEnd() {
+    protected void onOpenAnimationEnd() {
+
+    }
+
+    protected void onOpenAnimationStart() {
 
     }
 
@@ -211,7 +216,7 @@ public class BaseFragment {
         return true;
     }
 
-    public AlertDialog showAlertDialog(AlertDialog.Builder builder) {
+    public Dialog showDialog(Dialog dialog) {
         if (parentLayout == null || parentLayout.animationInProgress || parentLayout.startedTracking || parentLayout.checkTransitionAnimation()) {
             return null;
         }
@@ -224,22 +229,9 @@ public class BaseFragment {
             FileLog.e("tmessages", e);
         }
         try {
-            visibleDialog = builder.show();
-            //Plus
-            int color = AndroidUtilities.getIntColor("themeColor");
-            int id = visibleDialog.getContext().getResources().getIdentifier("android:id/alertTitle", null, null);
-            TextView tv = (TextView) visibleDialog.findViewById(id);
-            tv.setTextColor(color);
-            id = visibleDialog.getContext().getResources().getIdentifier("android:id/titleDivider", null, null);
-            View divider = visibleDialog.findViewById(id);
-            if(divider != null)divider.setBackgroundColor(color);
-            Button btn = visibleDialog.getButton(DialogInterface.BUTTON_NEGATIVE);
-            if(btn != null)btn.setTextColor(color);
-            btn = visibleDialog.getButton(DialogInterface.BUTTON_POSITIVE);
-            if(btn != null)btn.setTextColor(color);
-            btn = visibleDialog.getButton(DialogInterface.BUTTON_NEUTRAL);
-            if(btn != null)btn.setTextColor(color);
-            //
+            visibleDialog = dialog;
+
+
             visibleDialog.setCanceledOnTouchOutside(true);
             visibleDialog.setOnDismissListener(new DialogInterface.OnDismissListener() {
                 @Override
@@ -248,6 +240,23 @@ public class BaseFragment {
                     onDialogDismiss();
                 }
             });
+            visibleDialog.show();
+            //Always after .show()
+            int color = AndroidUtilities.getIntColor("themeColor");
+            int id = visibleDialog.getContext().getResources().getIdentifier("android:id/alertTitle", null, null);
+            TextView tv = (TextView) visibleDialog.findViewById(id);
+            if(tv != null)tv.setTextColor(color);
+            id = visibleDialog.getContext().getResources().getIdentifier("android:id/titleDivider", null, null);
+            View divider = visibleDialog.findViewById(id);
+            if(divider != null)divider.setBackgroundColor(color);
+
+            Button btn = (Button) visibleDialog.findViewById(android.R.id.button1);
+            if(btn != null)btn.setTextColor(color);
+            btn = (Button) visibleDialog.findViewById(android.R.id.button2);
+            if(btn != null)btn.setTextColor(color);
+            btn = (Button) visibleDialog.findViewById(android.R.id.button3);
+            if(btn != null)btn.setTextColor(color);
+            //
             return visibleDialog;
         } catch (Exception e) {
             FileLog.e("tmessages", e);
@@ -257,5 +266,9 @@ public class BaseFragment {
 
     protected void onDialogDismiss() {
 
+    }
+
+    public void setVisibleDialog(Dialog dialog) {
+        visibleDialog = dialog;
     }
 }

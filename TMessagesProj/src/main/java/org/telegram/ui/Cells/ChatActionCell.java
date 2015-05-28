@@ -34,6 +34,7 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.UserConfig;
 import org.telegram.ui.Components.AvatarDrawable;
+import org.telegram.ui.Components.ResourceLoader;
 import org.telegram.ui.ImageListActivity;
 import org.telegram.ui.PhotoViewer;
 
@@ -47,7 +48,7 @@ public class ChatActionCell extends BaseCell {
 
     private static TextPaint textPaint;
 
-    private static Drawable backgroundWhite;
+
 
     private URLSpan pressedLink;
 
@@ -69,7 +70,7 @@ public class ChatActionCell extends BaseCell {
     public ChatActionCell(Context context) {
         super(context);
         if (textPaint == null) {
-            backgroundWhite = getResources().getDrawable(R.drawable.system_white);
+
             textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
             textPaint.setColor(0xffffffff);
             textPaint.linkColor = 0xffffffff;
@@ -109,11 +110,11 @@ public class ChatActionCell extends BaseCell {
             }
             avatarDrawable.setInfo(id, null, null, false);
             if (currentMessageObject.messageOwner.action instanceof TLRPC.TL_messageActionUserUpdatedPhoto) {
-                imageReceiver.setImage(currentMessageObject.messageOwner.action.newUserPhoto.photo_small, "50_50", avatarDrawable, false);
+                imageReceiver.setImage(currentMessageObject.messageOwner.action.newUserPhoto.photo_small, "50_50", avatarDrawable, null, false);
             } else {
                 TLRPC.PhotoSize photo = FileLoader.getClosestPhotoSizeWithSize(currentMessageObject.photoThumbs, AndroidUtilities.dp(64));
                 if (photo != null) {
-                    imageReceiver.setImage(photo.location, "50_50", avatarDrawable, false);
+                    imageReceiver.setImage(photo.location, "50_50", avatarDrawable, null, false);
                 } else {
                     imageReceiver.setImageBitmap(avatarDrawable);
                 }
@@ -237,7 +238,7 @@ public class ChatActionCell extends BaseCell {
             try {
                 int linesCount = textLayout.getLineCount();
                 for (int a = 0; a < linesCount; a++) {
-                    float lineWidth = 0;
+                    float lineWidth;
                     float lineLeft = 0;
                     try {
                         lineWidth = textLayout.getLineWidth(a);
@@ -272,18 +273,18 @@ public class ChatActionCell extends BaseCell {
         }
         textPaint.setTextSize(AndroidUtilities.dp(themePrefs.getInt("chatDateSize", 16)));//16
         setBubbles(themePrefs.getString("chatBubbleStyle", ImageListActivity.getBubbleName(0)));
-        backgroundWhite.setColorFilter(themePrefs.getInt("chatDateBubbleColor", 0x59000000), PorterDuff.Mode.MULTIPLY);
+        ResourceLoader.backgroundWhite.setColorFilter(themePrefs.getInt("chatDateBubbleColor", 0x59000000), PorterDuff.Mode.MULTIPLY);
     }
 
     private void setBubbles(String bubble){
         if(bubble.equals(ImageListActivity.getBubbleName(0))){
-            backgroundWhite = getResources().getDrawable(R.drawable.system_white);
+            ResourceLoader.backgroundWhite = getResources().getDrawable(R.drawable.system_white);
         } else if(bubble.equals(ImageListActivity.getBubbleName(1))){
-            backgroundWhite = getResources().getDrawable(R.drawable.system_white);
+            ResourceLoader.backgroundWhite = getResources().getDrawable(R.drawable.system_white);
         } else if(bubble.equals(ImageListActivity.getBubbleName(2))){
-            backgroundWhite = getResources().getDrawable(R.drawable.system_white_3);
+            ResourceLoader.backgroundWhite = getResources().getDrawable(R.drawable.system_white_3);
         } else if(bubble.equals(ImageListActivity.getBubbleName(3))){
-            backgroundWhite = getResources().getDrawable(R.drawable.system_white_4);
+            ResourceLoader.backgroundWhite = getResources().getDrawable(R.drawable.system_white_4);
         }
     }
     @Override
@@ -292,11 +293,11 @@ public class ChatActionCell extends BaseCell {
             return;
         }
 
-        Drawable backgroundDrawable = null;
+        Drawable backgroundDrawable;
         if (ApplicationLoader.isCustomTheme()) {
-            backgroundDrawable = backgroundWhite;//backgroundBlack;
+            backgroundDrawable = ResourceLoader.backgroundWhite;//backgroundBlack;
         } else {
-            backgroundDrawable = backgroundWhite;//backgroundBlue;
+            backgroundDrawable = ResourceLoader.backgroundWhite;//backgroundBlue;
         }
         backgroundDrawable.setBounds(textX - AndroidUtilities.dp(5), AndroidUtilities.dp(5), textX + textWidth + AndroidUtilities.dp(5), AndroidUtilities.dp(9) + textHeight);
         backgroundDrawable.draw(canvas);

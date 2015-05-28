@@ -8,6 +8,7 @@
 
 package org.telegram.ui.Components;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
@@ -55,6 +56,7 @@ import javax.microedition.khronos.egl.EGLSurface;
 import javax.microedition.khronos.opengles.GL;
 import javax.microedition.khronos.opengles.GL10;
 
+@SuppressLint("NewApi")
 public class PhotoFilterView extends FrameLayout {
 
     private boolean showOriginal;
@@ -1459,58 +1461,58 @@ public class PhotoFilterView extends FrameLayout {
         layoutParams.height = AndroidUtilities.dp(60);
         layoutParams.gravity = Gravity.LEFT | Gravity.TOP;
         recyclerListView.setLayoutParams(layoutParams);
-        recyclerListView.addOnItemTouchListener(new RecyclerListView.RecyclerListViewItemClickListener(context, new RecyclerListView.OnItemClickListener() {
+        recyclerListView.setOnItemClickListener(new RecyclerListView.OnItemClickListener() {
             @Override
-            public void onItemClick(View view, int i) {
-                selectedTool = i;
-                if (i == enhanceTool) {
+            public void onItemClick(View view, int position) {
+                selectedTool = position;
+                if (position == enhanceTool) {
                     previousValue = enhanceValue;
                     valueSeekBar.setMinMax(0, 100);
                     paramTextView.setText(LocaleController.getString("Enhance", R.string.Enhance));
-                } else if (i == highlightsTool) {
+                } else if (position == highlightsTool) {
                     previousValue = highlightsValue;
                     valueSeekBar.setMinMax(0, 100);
                     paramTextView.setText(LocaleController.getString("Highlights", R.string.Highlights));
-                } else if (i == contrastTool) {
+                } else if (position == contrastTool) {
                     previousValue = contrastValue;
                     valueSeekBar.setMinMax(-100, 100);
                     paramTextView.setText(LocaleController.getString("Contrast", R.string.Contrast));
-                } else if (i == exposureTool) {
+                } else if (position == exposureTool) {
                     previousValue = exposureValue;
                     valueSeekBar.setMinMax(-100, 100);
                     paramTextView.setText(LocaleController.getString("Exposure", R.string.Exposure));
-                } else if (i == warmthTool) {
+                } else if (position == warmthTool) {
                     previousValue = warmthValue;
                     valueSeekBar.setMinMax(-100, 100);
                     paramTextView.setText(LocaleController.getString("Warmth", R.string.Warmth));
-                } else if (i == saturationTool) {
+                } else if (position == saturationTool) {
                     previousValue = saturationValue;
                     valueSeekBar.setMinMax(-100, 100);
                     paramTextView.setText(LocaleController.getString("Saturation", R.string.Saturation));
-                } else if (i == vignetteTool) {
+                } else if (position == vignetteTool) {
                     previousValue = vignetteValue;
                     valueSeekBar.setMinMax(0, 100);
                     paramTextView.setText(LocaleController.getString("Vignette", R.string.Vignette));
-                } else if (i == shadowsTool) {
+                } else if (position == shadowsTool) {
                     previousValue = shadowsValue;
                     valueSeekBar.setMinMax(0, 100);
                     paramTextView.setText(LocaleController.getString("Shadows", R.string.Shadows));
-                } else if (i == grainTool) {
+                } else if (position == grainTool) {
                     previousValue = grainValue;
                     valueSeekBar.setMinMax(0, 100);
                     paramTextView.setText(LocaleController.getString("Grain", R.string.Grain));
-                } else if (i == sharpenTool) {
+                } else if (position == sharpenTool) {
                     previousValue = sharpenValue;
                     valueSeekBar.setMinMax(0, 100);
                     paramTextView.setText(LocaleController.getString("Sharpen", R.string.Sharpen));
-                } else if (i == blurTool) {
+                } else if (position == blurTool) {
                     previousValue = blurType;
                 }
                 valueSeekBar.setProgress((int) previousValue, false);
                 updateValueTextView();
                 switchToOrFromEditMode();
             }
-        }));
+        });
 
         editView = new FrameLayout(context);
         editView.setVisibility(GONE);
@@ -1925,8 +1927,8 @@ public class PhotoFilterView extends FrameLayout {
         viewWidth -= AndroidUtilities.dp(28);
         viewHeight -= AndroidUtilities.dp(14 + 140);
 
-        float bitmapW = bitmapToEdit.getWidth();
-        float bitmapH = bitmapToEdit.getHeight();
+        float bitmapW;
+        float bitmapH;
         if (orientation == 90 || orientation == 270) {
             bitmapW = bitmapToEdit.getHeight();
             bitmapH = bitmapToEdit.getWidth();
@@ -2020,7 +2022,7 @@ public class PhotoFilterView extends FrameLayout {
         if (parameterValue > 0) {
             parameterValue *= 1.05f;
         }
-        return parameterValue += 1;
+        return parameterValue + 1;
     }
 
     public FrameLayout getToolsView() {

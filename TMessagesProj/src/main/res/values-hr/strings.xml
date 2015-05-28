@@ -596,17 +596,6 @@ http://telegram.org/update</string>
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s u %2$s</string>
     <!--Telegram+ Croatian-->
-    <!--Smart Notifications-->
-    <string name="SmartNotification">Pametne obavijesti</string>
-    <string name="TimeUnitSeconds">sekunda(e)</string>
-    <string name="TimeUnitMinutes">minuta(e)</string>
-    <string name="TimeUnitHours">sat(i)</string>
-    <string name="TimeUnitDays">dan(a)</string>
-    <string name="settings_smart_notify_begin">Zasviraj najviše</string>
-    <string name="settings_smart_notify_mid1">puta</string>
-    <string name="settings_smart_notify_mid11">put</string>
-    <string name="settings_smart_notify_mid2">tijekom</string>
-    <!---->
   <string name="TelegramForAndroid">Plus Messenger za Android</string>
   <string name="Theming">Izrada teme</string>
   <string name="colorHexInvalid">Neispravan hex kod za boju!</string>
