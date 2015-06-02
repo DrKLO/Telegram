@@ -8,6 +8,11 @@ buildscript {
     }
 }
 
+configurations {
+    all*.exclude group: 'com.android.support', module: 'support-v4'
+    all*.exclude group: 'com.android.support', module: 'appcompat-v7'
+}
+
 allprojects {
     repositories {
         mavenCentral()
@@ -22,13 +27,12 @@ repositories {
 }
 
 dependencies {
-    compile 'com.android.support:support-v4:22.1.1'
-    compile 'com.google.android.gms:play-services-maps:7.3.0'
-    compile 'com.google.android.gms:play-services-location:7.3.0'
-    compile 'com.google.android.gms:play-services-identity:7.3.0'
-    compile 'com.google.android.gms:play-services-appstate:7.3.0'
-    compile 'com.google.android.gms:play-services-wearable:7.3.0'
-    compile 'com.google.android.gms:play-services-gcm:7.3.0'
+    compile 'com.google.android.gms:play-services-maps:7.5.0'
+    compile 'com.google.android.gms:play-services-location:7.5.0'
+    compile 'com.google.android.gms:play-services-identity:7.5.0'
+    compile 'com.google.android.gms:play-services-appstate:7.5.0'
+    compile 'com.google.android.gms:play-services-wearable:7.5.0'
+    compile 'com.google.android.gms:play-services-gcm:7.5.0'
     compile 'net.hockeyapp.android:HockeySDK:3.5.+'
     compile 'com.googlecode.mp4parser:isoparser:1.0.+'
     compile project(':Android-SDK')
