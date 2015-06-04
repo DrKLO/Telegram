@@ -1269,20 +1269,19 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
 
         if (emojiPopup != null && emojiPopup.isShowing()) {
             int newHeight = isWidthGreater ? keyboardHeightLand : keyboardHeight;
-            final WindowManager.LayoutParams layoutParams = (WindowManager.LayoutParams) emojiPopup.getContentView().getLayoutParams();
+            final ViewGroup.LayoutParams layoutParams = emojiPopup.getContentView().getLayoutParams();
             FileLog.e("tmessages", "update emoji height to = " + newHeight);
             if (layoutParams.width != AndroidUtilities.displaySize.x || layoutParams.height != newHeight) {
                 layoutParams.width = AndroidUtilities.displaySize.x;
                 layoutParams.height = newHeight;
-                WindowManager wm = (WindowManager) ApplicationLoader.applicationContext.getSystemService(Activity.WINDOW_SERVICE);
-                if (wm != null) {
-                    wm.updateViewLayout(emojiPopup.getContentView(), layoutParams);
-                    if (!keyboardVisible) {
-                        if (sizeNotifierLayout != null) {
-                            sizeNotifierLayout.setPadding(0, 0, 0, layoutParams.height);
-                            sizeNotifierLayout.requestLayout();
-                            onWindowSizeChanged(sizeNotifierLayout.getHeight() - sizeNotifierLayout.getPaddingBottom());
-                        }
+
+                emojiPopup.getContentView().setLayoutParams(layoutParams);
+                emojiPopup.getContentView().requestLayout();
+                if (!keyboardVisible) {
+                    if (sizeNotifierLayout != null) {
+                        sizeNotifierLayout.setPadding(0, 0, 0, layoutParams.height);
+                        sizeNotifierLayout.requestLayout();
+                        onWindowSizeChanged(sizeNotifierLayout.getHeight() - sizeNotifierLayout.getPaddingBottom());
                     }
                 }
             }
