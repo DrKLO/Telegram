@@ -123,8 +123,9 @@ public class PagerSlidingTabStrip extends HorizontalScrollView {
     private void addIconTab(final int position, int resId) {
         ImageView tab = new ImageView(getContext());
         tab.setFocusable(true);
-        tab.setImageResource(resId);
-
+        paintTabIcons(position);
+        //tab.setImageResource(resId);
+        tab.setImageDrawable(getResources().getDrawable(resId));
         tab.setScaleType(ImageView.ScaleType.CENTER);
         tab.setOnClickListener(new OnClickListener() {
             @Override

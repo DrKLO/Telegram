@@ -805,10 +805,10 @@
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s a las %2$s</string>
     <!--update text-->
-    <string name="updateText">Plus Messenger para Android fue actualizada. Novedades en la versión 2.9:\n\n- Instala y comparte packs de stickers personalizados como estos:\n https://telegram.me/addstickers/Animals\n https://telegram.me/addstickers/forocoches\n https://telegram.me/addstickers/Unofficial\n https://telegram.me/addstickers/ragefaces\n- Si eres un artista, crea packs de stickers personalizados usando nuestro bot @stickers.\n\n- Usa Plus Messenger con Android Auto.</string>
-    <string name="updateBuild">543</string>
+    <string name="updateText">Plus Messenger para Android fue actualizada. Novedades en la versión 2.9:\n\n- Ojea, descarga y aplica temas para Plus Messenger:\n https://play.google.com/store/apps/details?id=es.rafalense.themes</string>
+    <string name="updateBuild">546</string>
     <!--Telegram+ Spanish-->
-    <string name="updatePlusText">\n\nNovedades en 2.9.1.1:\n\n- Añadido MOD para poner color sólido de fondo en pantalla chat\n- Añadido MOD para quitar sombra en fondo de menú de navegación\n- Añadido MOD para ajustar radio de avatar en pantalla de perfil\n- Solución de errores</string>
+    <string name="updatePlusText">\n\nNovedades en 2.9.1.4:\n\n- Opción para cambiar tamaño de la ventana de emoticonos en pantalla chat (opción en Ajustes/Mensajes)\n- Opción para cambiar nivel de compresión al compartir vídeos\n- Añadidos MOD para ajustar colores en pantalla Ajustes/Tematización\n- Añadido MODs distintos para nombre de reenvío en globo derecho e izquierdo en pantalla chat\n- Añadido MOD para ajustar colores de iconos en pantalla Contactos\n- Añadido MOD para cambiar color de texto \'Foto/Sticker\' en pantalla principal\n- Solución de errores</string>
     <string name="TelegramForAndroid">Plus Messenger para Android</string>
     <string name="Theming">Tematización</string>
     <string name="colorHexInvalid">¡Color hexadecimal inválido!</string>
@@ -920,4 +920,16 @@
     <string name="HideBackgroundShadow">Ocultar sombra de fondo personalizado</string>
     <string name="SetSolidBGColor">Fijar color de fondo</string>
     <string name="SolidBGColor">Color de fondo</string>
+    <string name="EmojiPopupSize">Tamaño pop-up de emoticonos</string>
+    <string name="ForwardRightNameColor">Color de nombre de reenvío derecho</string>
+    <string name="ForwardLeftNameColor">Color de nombre de reenvío izquierdo</string>
+    <string name="IconsColor">Color de iconos</string>
+    <string name="SettingsScreen">Pantalla Ajustes/Tematización</string>
+    <string name="BackgroundColor">Color de fondo</string>
+    <string name="ShadowColor">Color de sombra</string>
+    <string name="SectionColor">Color de sección</string>
+    <string name="TitleColor">Color de título</string>
+    <string name="SummaryColor">Color de subtítulo/sumario</string>
+    <string name="MediaColor">Color de texto \'Foto/Sticker\'</string>
+    <string name="ThemesAppMsg">¿Te gustaría ver algunos temas creados por otros usuarios de Plus Messenger?</string>
 </resources>

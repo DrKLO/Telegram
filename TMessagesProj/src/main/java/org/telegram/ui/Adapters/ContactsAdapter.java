@@ -191,6 +191,7 @@ public class ContactsAdapter extends BaseSectionsAdapter {
         SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
         int cColorGrey = themePrefs.getInt("contactsNameColor", 0xff737373);
         int cColorBlack = themePrefs.getInt("contactsNameColor", 0xff000000);
+        int iconsColor = themePrefs.getInt("contactsIconsColor", 0xff737373);
         if (type == 4) {
             if (convertView == null) {
                 convertView = new DividerCell(mContext);
@@ -214,28 +215,28 @@ public class ContactsAdapter extends BaseSectionsAdapter {
             if (needPhonebook) {
                 //actionCell.setTextAndIcon(LocaleController.getString("InviteFriends", R.string.InviteFriends), R.drawable.menu_invite);
                 Drawable invite = mContext.getResources().getDrawable(R.drawable.menu_invite);
-                invite.setColorFilter(cColorGrey, PorterDuff.Mode.SRC_IN);
+                invite.setColorFilter(iconsColor, PorterDuff.Mode.SRC_IN);
                 actionCell.setTextAndIcon(LocaleController.getString("InviteFriends", R.string.InviteFriends), invite);
             } else if (isAdmin) {
                 //actionCell.setTextAndIcon(LocaleController.getString("InviteToGroupByLink", R.string.InviteToGroupByLink), R.drawable.menu_invite);
                 Drawable invite = mContext.getResources().getDrawable(R.drawable.menu_invite);
-                invite.setColorFilter(cColorGrey, PorterDuff.Mode.SRC_IN);
+                invite.setColorFilter(iconsColor, PorterDuff.Mode.SRC_IN);
                 actionCell.setTextAndIcon(LocaleController.getString("InviteToGroupByLink", R.string.InviteToGroupByLink), invite);
             } else {
                 if (position == 0) {
                     //actionCell.setTextAndIcon(LocaleController.getString("NewGroup", R.string.NewGroup), R.drawable.menu_newgroup);
                     Drawable newGroup = mContext.getResources().getDrawable(R.drawable.menu_newgroup);
-                    newGroup.setColorFilter(cColorGrey, PorterDuff.Mode.SRC_IN);
+                    newGroup.setColorFilter(iconsColor, PorterDuff.Mode.SRC_IN);
                     actionCell.setTextAndIcon(LocaleController.getString("NewGroup", R.string.NewGroup), newGroup);
                 } else if (position == 1) {
                     //actionCell.setTextAndIcon(LocaleController.getString("NewSecretChat", R.string.NewSecretChat), R.drawable.menu_secret);
                     Drawable secret = mContext.getResources().getDrawable(R.drawable.menu_secret);
-                    secret.setColorFilter(cColorGrey, PorterDuff.Mode.SRC_IN);
+                    secret.setColorFilter(iconsColor, PorterDuff.Mode.SRC_IN);
                     actionCell.setTextAndIcon(LocaleController.getString("NewSecretChat", R.string.NewSecretChat), secret);
                 } else if (position == 2) {
                     //actionCell.setTextAndIcon(LocaleController.getString("NewBroadcastList", R.string.NewBroadcastList), R.drawable.menu_broadcast);
                     Drawable broadcast = mContext.getResources().getDrawable(R.drawable.menu_broadcast);
-                    broadcast.setColorFilter(cColorGrey, PorterDuff.Mode.SRC_IN);
+                    broadcast.setColorFilter(iconsColor, PorterDuff.Mode.SRC_IN);
                     actionCell.setTextAndIcon(LocaleController.getString("NewBroadcastList", R.string.NewBroadcastList), broadcast);
                 }
             }

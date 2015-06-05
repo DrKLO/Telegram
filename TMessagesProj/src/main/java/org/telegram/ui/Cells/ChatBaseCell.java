@@ -799,11 +799,11 @@ public class ChatBaseCell extends BaseCell {
             int defColor = themePrefs.getInt("themeColor",AndroidUtilities.defColor);
             if (currentMessageObject.isOut()) {
                 //forwardNamePaint.setColor(0xff4a923c);
-                forwardNamePaint.setColor(themePrefs.getInt("chatForwardColor", AndroidUtilities.setDarkColor(defColor, 0x15)));
+                forwardNamePaint.setColor(themePrefs.getInt("chatForwardRColor", AndroidUtilities.setDarkColor(defColor, 0x15)));
                 forwardNameX = currentBackgroundDrawable.getBounds().left + AndroidUtilities.dp(10);
             } else {
                 //forwardNamePaint.setColor(0xff006fc8);
-                forwardNamePaint.setColor(themePrefs.getInt("chatForwardColor", defColor));
+                forwardNamePaint.setColor(themePrefs.getInt("chatForwardLColor", defColor));
                 forwardNameX = currentBackgroundDrawable.getBounds().left + AndroidUtilities.dp(19);
             }
             canvas.save();
@@ -813,47 +813,64 @@ public class ChatBaseCell extends BaseCell {
         }
 
         if (currentMessageObject.isReply()) {
+            int defColor = themePrefs.getInt("themeColor",AndroidUtilities.defColor);
+            int rColor = themePrefs.getInt("chatForwardRColor", AndroidUtilities.setDarkColor(defColor, 0x15));
+            int lColor = themePrefs.getInt("chatForwardLColor", defColor);
+            int outColor = themePrefs.getInt("chatRTextColor", 0xff000000);
+            int inColor = themePrefs.getInt("chatLTextColor", 0xff000000);
+            //int bColor = themePrefs.getInt("chatRBubbleColor", AndroidUtilities.getDefBubbleColor());
+
             if (currentMessageObject.type == 13) {
-                replyLinePaint.setColor(0xffffffff);
-                replyNamePaint.setColor(0xffffffff);
-                replyTextPaint.setColor(0xffffffff);
+                //replyLinePaint.setColor(0xffffffff);
+                //replyNamePaint.setColor(0xffffffff);
+                //replyTextPaint.setColor(0xffffffff);
                 int backWidth;
                 if (currentMessageObject.isOut()) {
+                    //bColor = themePrefs.getInt("chatLBubbleColor", 0xffffffff);//
+                    replyLinePaint.setColor(rColor);
+                    replyNamePaint.setColor(rColor);
+                    replyTextPaint.setColor(outColor);
                     backWidth = currentBackgroundDrawable.getBounds().left - AndroidUtilities.dp(32);
                     replyStartX = currentBackgroundDrawable.getBounds().left - AndroidUtilities.dp(9) - backWidth;
                 } else {
+                    replyLinePaint.setColor(lColor);
+                    replyNamePaint.setColor(lColor);
+                    replyTextPaint.setColor(inColor);
                     backWidth = getWidth() - currentBackgroundDrawable.getBounds().right - AndroidUtilities.dp(32);
                     replyStartX = currentBackgroundDrawable.getBounds().right + AndroidUtilities.dp(23);
                 }
-                Drawable back;
-                if (ApplicationLoader.isCustomTheme()) {
-                    back = ResourceLoader.backgroundBlack;
-                } else {
-                    back = ResourceLoader.backgroundBlue;
-                }
+                //ResourceLoader.mediaBackgroundDrawable.setColorFilter(bColor, PorterDuff.Mode.SRC_IN);
+                Drawable back = ResourceLoader.mediaBackgroundDrawable;
+                //if (ApplicationLoader.isCustomTheme()) {
+                //    back = ResourceLoader.backgroundBlack;
+                //} else {
+                //    back = ResourceLoader.backgroundBlue;
+                //}
                 replyStartY = layoutHeight - AndroidUtilities.dp(58);
                 back.setBounds(replyStartX - AndroidUtilities.dp(7), replyStartY - AndroidUtilities.dp(6), replyStartX - AndroidUtilities.dp(7) + backWidth, replyStartY + AndroidUtilities.dp(41));
                 back.draw(canvas);
             } else {
-                int color = themePrefs.getInt("chatForwardColor", AndroidUtilities.getIntDarkerColor("themeColor", 0x15));
+                //int defColor = themePrefs.getInt("themeColor",AndroidUtilities.defColor);
+                //int rColor = themePrefs.getInt("chatForwardRColor", AndroidUtilities.setDarkColor(defColor, 0x15));
+                //int lColor = themePrefs.getInt("chatForwardLColor", defColor);
                 if (currentMessageObject.isOut()) {
-                    replyLinePaint.setColor(color);//0xff8dc97a);
-                    replyNamePaint.setColor(color);//0xff61a349);
-                    int outColor = themePrefs.getInt("chatRTextColor", 0xff000000);
+                    replyLinePaint.setColor(rColor);//0xff8dc97a);
+                    replyNamePaint.setColor(rColor);//0xff61a349);
+                    //int outColor = themePrefs.getInt("chatRTextColor", 0xff000000);
                     if (currentMessageObject.replyMessageObject != null && currentMessageObject.replyMessageObject.type == 0) {
                         replyTextPaint.setColor(outColor);//0xff000000);
                     } else {
-                        replyTextPaint.setColor(color);//0xff70b15c);
+                        replyTextPaint.setColor(rColor);//0xff70b15c);
                     }
                     replyStartX = currentBackgroundDrawable.getBounds().left + AndroidUtilities.dp(11);
                 } else {
-                    replyLinePaint.setColor(color);//0xff6c9fd2);
-                    replyNamePaint.setColor(color);//0xff377aae);
-                    int inColor = themePrefs.getInt("chatLTextColor", 0xff000000);
+                    replyLinePaint.setColor(lColor);//0xff6c9fd2);
+                    replyNamePaint.setColor(lColor);//0xff377aae);
+                    //int inColor = themePrefs.getInt("chatLTextColor", 0xff000000);
                     if (currentMessageObject.replyMessageObject != null && currentMessageObject.replyMessageObject.type == 0) {
                         replyTextPaint.setColor(inColor);//0xff000000);
                     } else {
-                        replyTextPaint.setColor(color);//0xff999999);
+                        replyTextPaint.setColor(lColor);//0xff999999);
                     }
                     if (currentMessageObject.contentType == 1 && media) {
                         replyStartX = currentBackgroundDrawable.getBounds().left + AndroidUtilities.dp(11);

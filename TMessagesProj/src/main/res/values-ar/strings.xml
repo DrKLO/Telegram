@@ -804,9 +804,10 @@
     <string name="formatterDay24H">HH:mm</string>
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s الساعة %2$s</string>
-    <!--update text-->
-    <string name="updateText">تيليجرام نسخة الـ Android تم تحديثه. الجديد في نسخة ٢.٩:\n\n- تنصيب ومشاركة الملصقات كهذه: https://telegram.me/addstickers/Animals\n- إذا كنت رسام، قم بصنع حزمة ملصقات عن طريق مراسلة @stickers .\n\n - استخدم تيليجرام مع أندرويد أوتو.</string>
-    <string name="updateBuild">543</string>
+    <!--update text--><!--
+    <string name="updateText">تيليجرام نسخة الـ Android تم تحديثه. الجديد في نسخة ٢.٩:\n\n- تنصيب ومشاركة الملصقات كهذه: https://play.google.com/store/apps/details?id=es.rafalense.themes\n- إذا كنت رسام، قم بصنع حزمة ملصقات عن طريق مراسلة @stickers .\n\n - استخدم تيليجرام مع أندرويد أوتو.</string>
+    -->
+  <string name="updateBuild">546</string>
     <!--Telegram+ arabic-->
     <string name="TelegramForAndroid">تلغرام للاندرويد</string>
     <string name="Theming">Theming</string>

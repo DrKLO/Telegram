@@ -13,6 +13,7 @@ import android.app.Dialog;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.SharedPreferences;
 import android.graphics.Typeface;
 import android.os.Vibrator;
 import android.text.InputType;
@@ -43,6 +44,7 @@ import android.widget.Toast;
 import org.telegram.android.AndroidUtilities;
 import org.telegram.android.LocaleController;
 import org.telegram.android.NotificationCenter;
+import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
@@ -385,6 +387,8 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
             progressView.setLayoutParams(layoutParams);
 
             listView = new ListView(context);
+            SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+            listView.setBackgroundColor(preferences.getInt("prefBGColor", 0xffffffff));
             listView.setDivider(null);
             listView.setEmptyView(progressView);
             listView.setDividerHeight(0);

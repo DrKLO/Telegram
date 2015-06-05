@@ -123,6 +123,8 @@ public class ThemingProfileActivity extends BaseFragment {
             FrameLayout frameLayout = (FrameLayout) fragmentView;
 
             listView = new ListView(context);
+            SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+            listView.setBackgroundColor(preferences.getInt("prefBGColor", 0xffffffff));
             listView.setDivider(null);
             listView.setDividerHeight(0);
             listView.setVerticalScrollBarEnabled(false);
@@ -476,7 +478,7 @@ public class ThemingProfileActivity extends BaseFragment {
                     textCell.setTextAndColor(LocaleController.getString("NameColor", R.string.NameColor), themePrefs.getInt(textCell.getTag().toString(), 0xffffffff), true);
                 } else if (i == statusColorRow) {
                     textCell.setTag("profileStatusColor");
-                    textCell.setTextAndColor(LocaleController.getString("StatusColor", R.string.StatusColor), themePrefs.getInt(textCell.getTag().toString(), AndroidUtilities.getIntDarkerColor("themeColor",-0x40)), true);
+                    textCell.setTextAndColor(LocaleController.getString("StatusColor", R.string.StatusColor), themePrefs.getInt(textCell.getTag().toString(), AndroidUtilities.getIntDarkerColor("themeColor",-0x40)), false);
                 } else if (i == rowColorRow) {
                     textCell.setTag("profileRowColor");
                     textCell.setTextAndColor(LocaleController.getString("RowColor", R.string.RowColor), themePrefs.getInt(textCell.getTag().toString(), 0xffffffff), true);
@@ -485,7 +487,7 @@ public class ThemingProfileActivity extends BaseFragment {
                     textCell.setTextAndColor(LocaleController.getString("NameColor", R.string.NameColor), themePrefs.getInt(textCell.getTag().toString(), 0xff000000), true);
                 } else if (i == summaryColorRow) {
                     textCell.setTag("profileSummaryColor");
-                    textCell.setTextAndColor(LocaleController.getString("StatusColor", R.string.StatusColor), themePrefs.getInt(textCell.getTag().toString(), 0xff8a8a8a), true);
+                    textCell.setTextAndColor(LocaleController.getString("StatusColor", R.string.StatusColor), themePrefs.getInt(textCell.getTag().toString(), 0xff8a8a8a), false);
                 }
             }
             return view;

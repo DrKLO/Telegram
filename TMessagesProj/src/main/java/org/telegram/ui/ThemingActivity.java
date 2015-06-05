@@ -68,6 +68,7 @@ public class ThemingActivity extends BaseFragment {
     private int contactsRow;
     private int drawerRow;
     private int profileRow;
+    private int settingsRow;
 
     private int themesSectionRow;
     private int themesSection2Row;
@@ -94,6 +95,7 @@ public class ThemingActivity extends BaseFragment {
         contactsRow = rowCount++;
         drawerRow = rowCount++;
         profileRow = rowCount++;
+        settingsRow = rowCount++;
 
         themesSectionRow = rowCount++;
         themesSection2Row = rowCount++;
@@ -144,6 +146,8 @@ public class ThemingActivity extends BaseFragment {
 
 
             listView = new ListView(context);
+            SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+            listView.setBackgroundColor(preferences.getInt("prefBGColor", 0xffffffff));
             listView.setDivider(null);
             listView.setDividerHeight(0);
             listView.setVerticalScrollBarEnabled(false);
@@ -324,6 +328,8 @@ public class ThemingActivity extends BaseFragment {
                         presentFragment(new ThemingDrawerActivity());
                     } else if (i == profileRow) {
                         presentFragment(new ThemingProfileActivity());
+                    } else if (i == settingsRow) {
+                        presentFragment(new ThemingSettingsActivity());
                     }
                 }
             });
@@ -423,24 +429,26 @@ public class ThemingActivity extends BaseFragment {
         AndroidUtilities.themeColor = i;
         editor.commit();
         //Reset Theme Colors
+        int darkColor = AndroidUtilities.setDarkColor(i, 0x15);
         editor.putInt("chatsHeaderColor", i);
         editor.putInt("chatsCountBGColor", i);
         editor.putInt("chatsChecksColor", i);
-        editor.putInt("chatsMemberColor", AndroidUtilities.setDarkColor(i, 0x15));
+        editor.putInt("chatsMemberColor", darkColor);
+        editor.putInt("chatsMediaColor", preferences.getInt("chatsMemberColor", darkColor));
         editor.putInt("chatsFloatingBGColor", i);
 
         editor.putInt("chatHeaderColor", i);
         editor.putInt("chatRBubbleColor", AndroidUtilities.getDefBubbleColor());
         editor.putInt("chatStatusColor", AndroidUtilities.setDarkColor(i, -0x40));
-        editor.putInt("chatRTimeColor", AndroidUtilities.setDarkColor(i, 0x15));
+        editor.putInt("chatRTimeColor", darkColor);
         editor.putInt("chatEmojiViewTabColor", AndroidUtilities.setDarkColor(i, -0x15));
         editor.putInt("chatChecksColor", i);
         editor.putInt("chatSendIconColor", i);
-        editor.putInt("chatMemberColor", AndroidUtilities.setDarkColor(i, 0x15));
-        editor.putInt("chatForwardColor", AndroidUtilities.setDarkColor(i, 0x15));
+        editor.putInt("chatMemberColor", darkColor);
+        editor.putInt("chatForwardColor", darkColor);
 
         editor.putInt("contactsHeaderColor", i);
-        editor.putInt("contactsOnlineColor", AndroidUtilities.setDarkColor(i, 0x15));
+        editor.putInt("contactsOnlineColor", darkColor);
 
         editor.commit();
         fixLayout();
@@ -495,7 +503,7 @@ public class ThemingActivity extends BaseFragment {
 
         @Override
         public boolean isEnabled(int i) {
-            return  i == themeColorRow || i == chatsRow || i == chatRow || i == contactsRow || i == drawerRow || i == profileRow || i == resetThemeRow || i == saveThemeRow || i == applyThemeRow;
+            return  i == themeColorRow || i == chatsRow || i == chatRow || i == contactsRow || i == drawerRow || i == profileRow || i == settingsRow || i == resetThemeRow || i == saveThemeRow || i == applyThemeRow;
         }
 
         @Override
@@ -529,7 +537,7 @@ public class ThemingActivity extends BaseFragment {
             else if (type == 1) {
                 if (view == null) {
                     view = new HeaderCell(mContext);
-                    view.setBackgroundColor(0xffffffff);
+                    //view.setBackgroundColor(0xffffffff);
                 }
                 if (i == generalSection2Row) {
                     ((HeaderCell) view).setText(LocaleController.getString("General", R.string.General));
@@ -554,6 +562,8 @@ public class ThemingActivity extends BaseFragment {
                     textCell.setText(LocaleController.getString("NavigationDrawer", R.string.NavigationDrawer), true);
                 } else if (i == profileRow) {
                     textCell.setText(LocaleController.getString("ProfileScreen", R.string.ProfileScreen), true);
+                } else if (i == settingsRow) {
+                    textCell.setText(LocaleController.getString("SettingsScreen", R.string.SettingsScreen), false);
                 }
             }
             else if (type == 3) {
@@ -561,15 +571,16 @@ public class ThemingActivity extends BaseFragment {
                     view = new TextDetailSettingsCell(mContext);
                 }
                 TextDetailSettingsCell textCell = (TextDetailSettingsCell) view;
-                if (i == resetThemeRow) {
+                //textCell.setBackgroundColor(0xffffffff);
+                if (i == saveThemeRow) {
+                    textCell.setMultilineDetail(true);
+                    textCell.setTextAndValue(LocaleController.getString("SaveTheme", R.string.SaveTheme), LocaleController.getString("SaveThemeSum", R.string.SaveThemeSum), true);
+                } else if (i == applyThemeRow) {
+                    textCell.setMultilineDetail(true);
+                    textCell.setTextAndValue(LocaleController.getString("ApplyTheme", R.string.ApplyTheme), LocaleController.getString("ApplyThemeSum", R.string.ApplyThemeSum), true);
+                } else if (i == resetThemeRow) {
                     textCell.setMultilineDetail(true);
                     textCell.setTextAndValue(LocaleController.getString("ResetThemeSettings", R.string.ResetThemeSettings), LocaleController.getString("ResetThemeSettingsSum", R.string.ResetThemeSettingsSum), false);
-                } else if (i == saveThemeRow) {
-                    textCell.setMultilineDetail(true);
-                    textCell.setTextAndValue(LocaleController.getString("SaveTheme", R.string.SaveTheme), LocaleController.getString("SaveThemeSum", R.string.SaveThemeSum), false);
-                }  else if (i == applyThemeRow) {
-                    textCell.setMultilineDetail(true);
-                    textCell.setTextAndValue(LocaleController.getString("ApplyTheme", R.string.ApplyTheme), LocaleController.getString("ApplyThemeSum", R.string.ApplyThemeSum), false);
                 }
             }
             else if (type == 4){
@@ -578,7 +589,7 @@ public class ThemingActivity extends BaseFragment {
                 }
                 TextColorCell textCell = (TextColorCell) view;
                 if (i == themeColorRow) {
-                    textCell.setTextAndColor(LocaleController.getString("themeColor", R.string.themeColor), AndroidUtilities.getIntColor("themeColor"), true);
+                    textCell.setTextAndColor(LocaleController.getString("themeColor", R.string.themeColor), AndroidUtilities.getIntColor("themeColor"), false);
                 }
             }
 

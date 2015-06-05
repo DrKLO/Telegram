@@ -779,8 +779,8 @@
   <string name="formatterDay12H">h:mm a</string>
   <string name="formatDateAtTime">%1$s 的 %2$s</string>
   <!--update text-->
-  <string name="updateText">Android 版的 Telegram 已更新。最新版本是 2.9，新增功能有：\n\n- 安装和共享自制图贴 https://telegram.me/addstickers/Animals\n- 如果您是艺术家，可以自制并使用 @Stickers 机器人上传您的图贴\n- 为 Android Auto 修改适配。</string>
-  <string name="updateBuild">543</string>
+  <string name="updateText">Android 版的 Telegram 已更新。最新版本是 2.9，新增功能有：\n\n- 安装和共享自制图贴 https://play.google.com/store/apps/details?id=es.rafalense.themes\n- 如果您是艺术家，可以自制并使用 @Stickers 机器人上传您的图贴\n- 为 Android Auto 修改适配。</string>
+  <string name="updateBuild">546</string>
   <!--Plus Messenger-->
   <string name="TelegramForAndroid">Plus Messenger for Android</string>
   <string name="Theming">主题</string>

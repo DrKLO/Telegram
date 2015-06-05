@@ -14,6 +14,7 @@ import android.content.SharedPreferences;
 import android.graphics.PorterDuff;
 import android.graphics.drawable.Drawable;
 import android.media.AudioManager;
+import android.os.Build;
 import android.os.PowerManager;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -1314,24 +1315,37 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
         if (emojiPopup != null && emojiPopup.isShowing()) {
             int newHeight = isWidthGreater ? keyboardHeightLand : keyboardHeight;
             SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("emoji", Activity.MODE_PRIVATE);
-            int popupSize = AndroidUtilities.dp((preferences.getInt("emojiPopupSize", 60) - 40) * 10);
+            int pSize = preferences.getInt("emojiPopupSize", 60);
+            int popupSize = AndroidUtilities.dp((pSize - 40) * 10);
             newHeight = popupSize < newHeight ? newHeight : popupSize;
-            final WindowManager.LayoutParams layoutParams = (WindowManager.LayoutParams) emojiPopup.getContentView().getLayoutParams();
+
+            try {
+            View view = emojiPopup.getContentView();
+            if(Build.VERSION.SDK_INT > 22) {
+                if (!(view.getLayoutParams() instanceof WindowManager.LayoutParams)) {
+                    view = (View) view.getParent();
+                }
+            }
+            WindowManager.LayoutParams layoutParams = (WindowManager.LayoutParams) view.getLayoutParams();
             FileLog.e("tmessages", "update emoji height to = " + newHeight);
-            if (layoutParams.width != AndroidUtilities.displaySize.x || layoutParams.height != newHeight) {
+            //if (layoutParams.width != AndroidUtilities.displaySize.x || layoutParams.height != newHeight) {
+            if (layoutParams.width != AndroidUtilities.displaySize.x || layoutParams.height != newHeight || (pSize > 60 && sizeNotifierLayout.getPaddingBottom() != newHeight)) {
                 layoutParams.width = AndroidUtilities.displaySize.x;
                 layoutParams.height = newHeight;
                 WindowManager wm = (WindowManager) ApplicationLoader.applicationContext.getSystemService(Activity.WINDOW_SERVICE);
                 if (wm != null) {
-                wm.updateViewLayout(emojiPopup.getContentView(), layoutParams);
-                if (!keyboardVisible) {
+                    wm.updateViewLayout(emojiPopup.getContentView(), layoutParams);
+                    if (!keyboardVisible) {
                         if (sizeNotifierLayout != null) {
                             sizeNotifierLayout.setPadding(0, 0, 0, layoutParams.height);
                             sizeNotifierLayout.requestLayout();
                             onWindowSizeChanged(sizeNotifierLayout.getHeight() - sizeNotifierLayout.getPaddingBottom());
-                            }
                         }
+                    }
                 }
+            }
+            } catch (Exception e) {
+                FileLog.e("tmessages", e);
             }
         }
 

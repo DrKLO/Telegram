@@ -2076,6 +2076,16 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             if (messageObject == null && messageObjects == null && webPage == null) {
                 return;
             }
+            SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+            int defColor = themePrefs.getInt("themeColor", AndroidUtilities.defColor);
+            int bgColor = themePrefs.getInt("chatEditTextBGColor", 0xffffffff);
+            int iColor = themePrefs.getInt("chatEditTextIconsColor", bgColor == 0xffffffff ? defColor : 0xffadadad);
+            int textColor = themePrefs.getInt("chatEditTextColor", 0xff999999);
+            replyObjectTextView.setTextColor(textColor);
+            //int rColor = themePrefs.getInt("chatForwardRColor", defColor);
+            Drawable delete = getParentActivity().getResources().getDrawable(R.drawable.delete_reply);
+            delete.setColorFilter(iColor, PorterDuff.Mode.SRC_IN);
+            deleteIconImageView.setImageDrawable(delete);
             if (messageObject != null) {
                 TLRPC.User user = MessagesController.getInstance().getUser(messageObject.messageOwner.from_id);
                 if (user == null) {
@@ -2088,10 +2098,15 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 if (foundWebPage != null) {
                     return;
                 }
-                replyIconImageView.setImageResource(R.drawable.reply);
+                //replyIconImageView.setImageResource(R.drawable.reply);
+                Drawable reply = getParentActivity().getResources().getDrawable(R.drawable.reply);
+                reply.setColorFilter(iColor, PorterDuff.Mode.SRC_IN);
+                replyIconImageView.setImageDrawable(reply);
+
                 deleteIconImageView.setVisibility(View.VISIBLE);
                 lineView.setVisibility(View.VISIBLE);
                 replyNameTextView.setText(ContactsController.formatName(user.first_name, user.last_name));
+                replyNameTextView.setTextColor(iColor);
                 if (messageObject.messageText != null) {
                     String mess = messageObject.messageText.toString();
                     if (mess.length() > 150) {
@@ -2113,7 +2128,10 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 }
                 chatActivityEnterView.setForceShowSendButton(true, animated);
                 ArrayList<Integer> uids = new ArrayList<>();
-                replyIconImageView.setImageResource(R.drawable.forward_blue);
+                //replyIconImageView.setImageResource(R.drawable.forward_blue);
+                Drawable forward = getParentActivity().getResources().getDrawable(R.drawable.forward_blue);
+                forward.setColorFilter(iColor, PorterDuff.Mode.SRC_IN);
+                replyIconImageView.setImageDrawable(forward);
                 deleteIconImageView.setVisibility(View.VISIBLE);
                 lineView.setVisibility(View.VISIBLE);
                 uids.add(messageObjects.get(0).messageOwner.from_id);
@@ -2154,6 +2172,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     }
                 }
                 replyNameTextView.setText(userNames);
+                replyNameTextView.setTextColor(iColor);//
                 if (type == -1 || type == 0) {
                     if (messageObjects.size() == 1 && messageObjects.get(0).messageText != null) {
                         String mess = messageObjects.get(0).messageText.toString();
@@ -2197,7 +2216,11 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     }
                 }
             } else if (webPage != null) {
-                replyIconImageView.setImageResource(R.drawable.link);
+                //replyIconImageView.setImageResource(R.drawable.link);
+                Drawable link = getParentActivity().getResources().getDrawable(R.drawable.link);
+                link.setColorFilter(iColor, PorterDuff.Mode.SRC_IN);
+                replyIconImageView.setImageDrawable(link);
+                replyNameTextView.setTextColor(iColor);//
                 if (webPage instanceof TLRPC.TL_webPagePending) {
                     replyNameTextView.setText(LocaleController.getString("GettingLinkInfo", R.string.GettingLinkInfo));
                     replyObjectTextView.setText(pendingLinkSearchString);

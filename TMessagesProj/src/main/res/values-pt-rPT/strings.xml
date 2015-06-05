@@ -805,20 +805,9 @@
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s às %2$s</string>
     <!--update text-->
-    <string name="updateText">Plus Messenger para Android acaba de ser atualizado. Novidades da versão 2.9:\n\n- Instale e compartilhe pacotes de stickers customizados como esse: https://telegram.me/addstickers/Animals\n- Se você é um artista, crie stickers customizados usando o @stickers bot.\n\n- Use Telegram com Android Auto.</string>
-    <string name="updateBuild">543</string>
+    <string name="updateText">Plus Messenger para Android acaba de ser atualizado. Novidades da versão 2.9:\n\n- Baixe e use temas para o app Plus Messenger:\n https://play.google.com/store/apps/details?id=es.rafalense.themes</string>
+    <string name="updateBuild">546</string>
     <!--Telegram+ Portuguese(Portugal)-->
-  <!--Smart Notifications
-  <string name="SmartNotification">Notificação Inteligente</string>
-  <string name="TimeUnitSeconds">segundo(s)</string>
-  <string name="TimeUnitMinutes">minuto(s)</string>
-  <string name="TimeUnitHours">hora(s)</string>
-  <string name="TimeUnitDays">dia(s)</string>
-  <string name="settings_smart_notify_begin">Pelo menos som</string>
-  <string name="settings_smart_notify_mid1">vezes</string>
-  <string name="settings_smart_notify_mid11">vez</string>
-  <string name="settings_smart_notify_mid2">dentro de</string>
-  -->
   <string name="TelegramForAndroid">Plus Messenger para Android</string>
   <string name="Theming">Temas</string>
   <string name="colorHexInvalid">O código hexadecimal da cor é inválido!</string>

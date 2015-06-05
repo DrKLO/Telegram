@@ -208,6 +208,10 @@ public class UserCell extends FrameLayout {
         nameColor = color;
     }
 
+    public void setStatusColor(int color) {
+        statusColor = color;
+    }
+
     public void setImageDrawable(Drawable drawable){
         curDrawable = drawable;
     }

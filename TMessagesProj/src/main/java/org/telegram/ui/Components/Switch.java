@@ -17,6 +17,7 @@
 package org.telegram.ui.Components;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.graphics.Canvas;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
@@ -33,6 +34,7 @@ import android.widget.CompoundButton;
 import org.telegram.android.AndroidUtilities;
 import org.telegram.android.AnimationCompat.ObjectAnimatorProxy;
 import org.telegram.android.LocaleController;
+import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.R;
 
 public class Switch extends CompoundButton {
@@ -195,6 +197,21 @@ public class Switch extends CompoundButton {
     public boolean getSplitTrack() {
         return mSplitTrack;
     }
+
+    /*private void setTheme(){
+        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+        int defColor = preferences.getInt("themeColor", AndroidUtilities.defColor);
+        int sColor = preferences.getInt("prefSectionColor", defColor);
+        int sDarkColor = AndroidUtilities.getIntAlphaColor("prefSectionColor", sColor, 0.5f);
+        int darkColor = AndroidUtilities.getIntAlphaColor("themeColor", AndroidUtilities.defColor, 0.5f);
+        int checkColor = sColor == defColor ? darkColor : sDarkColor;
+        if (mTrackDrawable != null) {
+            mTrackDrawable.setColorFilter(new PorterDuffColorFilter(isChecked() ? checkColor : 0xffc7c7c7, PorterDuff.Mode.MULTIPLY));
+        }
+        if (mThumbDrawable != null) {
+            mThumbDrawable.setColorFilter(new PorterDuffColorFilter(isChecked() ? sColor : 0xffededed, PorterDuff.Mode.MULTIPLY));
+        }
+    }*/
 
     @Override
     public void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
@@ -416,14 +433,21 @@ public class Switch extends CompoundButton {
             cancelPositionAnimator();
             setThumbPosition(checked ? 1 : 0);
         }
-
+        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+        int defColor = preferences.getInt("themeColor", AndroidUtilities.defColor);
+        int sColor = preferences.getInt("prefSectionColor", defColor);
+        int sDarkColor = AndroidUtilities.getIntAlphaColor("prefSectionColor", sColor, 0.5f);
+        int darkColor = AndroidUtilities.getIntAlphaColor("themeColor", AndroidUtilities.defColor, 0.5f);
+        int checkColor = sColor == defColor ? darkColor : sDarkColor;
         if (mTrackDrawable != null) {
             //mTrackDrawable.setColorFilter(new PorterDuffColorFilter(checked ? 0xffa0d6fa : 0xffc7c7c7, PorterDuff.Mode.MULTIPLY));
-            mTrackDrawable.setColorFilter(new PorterDuffColorFilter(checked ? AndroidUtilities.getIntAlphaColor("themeColor", AndroidUtilities.defColor, 0.5f) : 0xffc7c7c7, PorterDuff.Mode.MULTIPLY));
+            //mTrackDrawable.setColorFilter(new PorterDuffColorFilter(checked ? AndroidUtilities.getIntAlphaColor("themeColor", AndroidUtilities.defColor, 0.5f) : 0xffc7c7c7, PorterDuff.Mode.MULTIPLY));
+            mTrackDrawable.setColorFilter(new PorterDuffColorFilter(checked ? checkColor : 0xffc7c7c7, PorterDuff.Mode.MULTIPLY));
         }
         if (mThumbDrawable != null) {
             //mThumbDrawable.setColorFilter(new PorterDuffColorFilter(checked ? 0xff45abef : 0xffededed, PorterDuff.Mode.MULTIPLY));
-            mThumbDrawable.setColorFilter(new PorterDuffColorFilter(checked ? AndroidUtilities.getIntColor("themeColor") : 0xffededed, PorterDuff.Mode.MULTIPLY));
+            //mThumbDrawable.setColorFilter(new PorterDuffColorFilter(checked ? AndroidUtilities.getIntColor("themeColor") : 0xffededed, PorterDuff.Mode.MULTIPLY));
+            mThumbDrawable.setColorFilter(new PorterDuffColorFilter(checked ? sColor : 0xffededed, PorterDuff.Mode.MULTIPLY));
         }
     }
 

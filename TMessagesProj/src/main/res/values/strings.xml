@@ -804,10 +804,10 @@
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s at %2$s</string>
     <!--update text-->
-    <string name="updateText">Plus Messenger for Android has been updated. New in version 2.9:\n\n- Install and share custom sticker sets like these ones:\n https://telegram.me/addstickers/Animals\n https://telegram.me/addstickers/Unofficial\n https://telegram.me/addstickers/ragefaces\n- If you\'re an artist, create custom sticker sets using our @stickers bot.\n\n- Use Plus Messenger with Android Auto.</string>
-    <string name="updateBuild">543</string>
+    <string name="updateText">Plus Messenger for Android has been updated. New in version 2.9:\n\n- Check, download and apply themes for Plus Messenger:\n https://play.google.com/store/apps/details?id=es.rafalense.themes</string>
+    <string name="updateBuild">546</string>
     <!--Telegram+ English-->
-    <string name="updatePlusText">\n\nNew in 2.9.1.1:\n\n- Added MOD to set solid color for chat background\n- Added MOD to hide background shadow of navigation menu\n- Added MOD to set avatar radius in profile screen\n- Bug fixes</string>
+    <string name="updatePlusText">\n\nNew in 2.9.1.4:\n\n- Option to change default emoji window size in chat screen (option in Settings/Messages)\n- Option to change level of compression when sharing a video\n- Added MODs to adjust Settings/Theming screen colors\n- Added separated MODs for forward name color for right and left bubble in chat screen\n- Added MOD to change icons colors in Contacts screen\n- Added MOD to change color of \'Photo/Sticker\' text in main screen\n- Bug fixes</string>
     <string name="TelegramForAndroid">Plus Messenger for Android</string>
     <string name="Theming">Theming</string>
     <string name="colorHexInvalid">Invalid color hex code!</string>
@@ -920,4 +920,15 @@
     <string name="SetSolidBGColor">Set background color</string>
     <string name="SolidBGColor">Background color</string>
     <string name="EmojiPopupSize">Emoji Popup size</string>
+    <string name="ForwardRightNameColor">Forward right name color</string>
+    <string name="ForwardLeftNameColor">Forward left name color</string>
+    <string name="IconsColor">Icons color</string>
+    <string name="SettingsScreen">Settings/Theming screen</string>
+    <string name="BackgroundColor">Background Color</string>
+    <string name="ShadowColor">Shadow Color</string>
+    <string name="SectionColor">Section Color</string>
+    <string name="TitleColor">Title Color</string>
+    <string name="SummaryColor">Summary/Subtitle Color</string>
+    <string name="MediaColor">\'Photo/Sticker\' text color</string>
+    <string name="ThemesAppMsg">Would you like to check some themes created by other Plus Messenger users?</string>
 </resources>

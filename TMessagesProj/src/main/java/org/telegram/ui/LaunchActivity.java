@@ -318,9 +318,10 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                     drawerLayoutContainer.closeDrawer(false);
                 } else if (position == communityRow) {
                     try {
-                        String link = "https://plus.google.com/communities/106927015963860485525";//https://plus.google.com/101839105638971401281/posts"
-                        if(Locale.getDefault().getLanguage().contains("es")){
-                            link = "https://plus.google.com/communities/111922519175849600270";
+                        String link = "https://plus.google.com/u/0/communities/106927015963860485525";//https://plus.google.com/101839105638971401281/posts"
+                        String lg = Locale.getDefault().getLanguage();
+                        if(lg.contains("es") || lg.contains("gl") || lg.contains("ca")){
+                            link = "https://plus.google.com/u/0/communities/111922519175849600270";
                         }
                         startActivityForResult(new Intent(Intent.ACTION_VIEW, Uri.parse(link)), 501);
                     } catch (Exception e) {
@@ -1356,6 +1357,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
         }
         AndroidUtilities.checkForCrashes(this);
         AndroidUtilities.checkForUpdates(this);
+        AndroidUtilities.checkForThemes(this);
         ApplicationLoader.mainInterfacePaused = false;
         ConnectionsManager.getInstance().setAppPaused(false, false);
         updateCurrentConnectionState();

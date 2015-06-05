@@ -108,6 +108,9 @@ public class AndroidUtilities {
 
     public static boolean needRestart = false;
 
+    static final long delay = 7 * 24 * 60 * 60 * 1000;
+    static long lastCheck = -1;
+
     static {
         density = ApplicationLoader.applicationContext.getResources().getDisplayMetrics().density;
         leftBaseline = isTablet() ? 80 : 72;
@@ -784,7 +787,7 @@ public class AndroidUtilities {
         }
     }
 
-public static void addMediaToGallery(String fromPath) {
+    public static void addMediaToGallery(String fromPath) {
         if (fromPath == null) {
             return;
         }
@@ -1213,6 +1216,56 @@ public static void addMediaToGallery(String fromPath) {
             color = AndroidUtilities.getIntDarkerColor("themeColor", -0x50);
         }
         return color;
+    }
+
+    public static void checkForThemes(final Activity context) {
+        //if (!BuildConfig.DEBUG) {
+        //}
+        try {
+            String packageName = "es.rafalense.themes";
+            if(BuildConfig.DEBUG)packageName = "es.rafalense.themes.beta";
+            Intent intent = context.getPackageManager().getLaunchIntentForPackage(packageName);
+            if(intent != null){
+                return;
+            } else {
+                SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+                //long last = preferences.getLong("lastTimeActionDone", 0);
+                //Log.e("checkForThemes",":lastCheck:"+lastCheck);
+                //Log.e("checkForThemes", System.currentTimeMillis() - lastCheck + ":");
+                if (lastCheck < 0 || ( System.currentTimeMillis() - lastCheck < delay && lastCheck > 0 ) ) {
+                    //lastCheck++;
+                    lastCheck = preferences.getLong("lastTime", 0);
+                    return;
+                } else {
+                    SharedPreferences.Editor editor = preferences.edit();
+                    editor.putLong("lastTime", System.currentTimeMillis());
+                    editor.commit();
+                    AlertDialog.Builder builder = new AlertDialog.Builder(context);
+                    builder.setTitle(LocaleController.getString("Themes", R.string.Themes));
+                    builder.setMessage(LocaleController.getString("ThemesAppMsg", R.string.ThemesAppMsg));
+                    final String pck = packageName;
+                    builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialogInterface, int i) {
+                            AndroidUtilities.runOnUIThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    Intent in = new Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=" + pck));
+                                    if (BuildConfig.DEBUG)in = new Intent(Intent.ACTION_VIEW, Uri.parse("https://rink.hockeyapp.net/apps/b5860b775ca122d3335685f39917e68f"));
+                                    context.startActivityForResult(in, 503);
+                                }
+                            });
+                        }
+                    });
+                    builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+                    builder.create().show();
+                    lastCheck = preferences.getLong("lastTime", 0);
+                }
+            }
+
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
     }
 
 /*

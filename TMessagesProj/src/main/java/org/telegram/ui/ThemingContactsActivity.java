@@ -58,6 +58,7 @@ public class ThemingContactsActivity extends BaseFragment {
     private int statusColorRow;
     private int statusSizeRow;
     private int onlineColorRow;
+    private int iconsColorRow;
 
     private int rowCount;
 
@@ -77,6 +78,7 @@ public class ThemingContactsActivity extends BaseFragment {
         rowsSection2Row = rowCount++;
         rowColorRow = rowCount++;
         avatarRadiusRow  = rowCount++;
+        iconsColorRow = rowCount++;
         nameColorRow = rowCount++;
         nameSizeRow = rowCount++;
         statusColorRow = rowCount++;
@@ -119,6 +121,8 @@ public class ThemingContactsActivity extends BaseFragment {
             FrameLayout frameLayout = (FrameLayout) fragmentView;
 
             listView = new ListView(context);
+            SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+            listView.setBackgroundColor(preferences.getInt("prefBGColor", 0xffffffff));
             listView.setDivider(null);
             listView.setDividerHeight(0);
             listView.setVerticalScrollBarEnabled(false);
@@ -177,6 +181,19 @@ public class ThemingContactsActivity extends BaseFragment {
                                 commitInt( "contactsHeaderIconsColor", color);
                             }
                         },themePrefs.getInt( "contactsHeaderIconsColor", 0xffffffff), CENTER, 0, false);
+                        colorDialog.show();
+                    } else if (i == iconsColorRow) {
+                        if (getParentActivity() == null) {
+                            return;
+                        }
+                        LayoutInflater li = (LayoutInflater)getParentActivity().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+                        li.inflate(R.layout.colordialog, null, false);
+                        ColorSelectorDialog colorDialog = new ColorSelectorDialog(getParentActivity(), new OnColorChangedListener() {
+                            @Override
+                            public void colorChanged(int color) {
+                                commitInt( "contactsIconsColor", color);
+                            }
+                        },themePrefs.getInt( "contactsIconsColor", 0xff737373), CENTER, 0, false);
                         colorDialog.show();
                     } else if (i == rowColorRow) {
                         if (getParentActivity() == null) {
@@ -312,6 +329,8 @@ public class ThemingContactsActivity extends BaseFragment {
                         resetInt("contactsHeaderTitleColor");
                     } else if (i == headerIconsColorRow) {
                         resetInt("contactsHeaderIconsColor");
+                    } else if (i == iconsColorRow) {
+                        resetInt("contactsIconsColor");
                     } else if (i == rowColorRow) {
                         resetInt("contactsRowColor");
                     } else if (i == avatarRadiusRow) {
@@ -408,7 +427,7 @@ public class ThemingContactsActivity extends BaseFragment {
 
         @Override
         public boolean isEnabled(int i) {
-            return  i == headerColorRow || i == headerTitleColorRow || i == headerIconsColorRow || i == rowColorRow || i == avatarRadiusRow || i == nameColorRow || i == nameSizeRow || i == statusColorRow || i == statusSizeRow ||
+            return  i == headerColorRow || i == headerTitleColorRow || i == headerIconsColorRow || i == iconsColorRow || i == rowColorRow || i == avatarRadiusRow || i == nameColorRow || i == nameSizeRow || i == statusColorRow || i == statusSizeRow ||
                     i == onlineColorRow ;
         }
 
@@ -481,7 +500,9 @@ public class ThemingContactsActivity extends BaseFragment {
                 } else if (i == headerTitleColorRow) {
                     textCell.setTextAndColor(LocaleController.getString("HeaderTitleColor", R.string.HeaderTitleColor), themePrefs.getInt("contactsHeaderTitleColor", 0xffffffff), true);
                 } else if (i == headerIconsColorRow) {
-                    textCell.setTextAndColor(LocaleController.getString("HeaderIconsColor", R.string.HeaderIconsColor), themePrefs.getInt("contactsHeaderIconsColor", 0xffffffff), true);
+                    textCell.setTextAndColor(LocaleController.getString("HeaderIconsColor", R.string.HeaderIconsColor), themePrefs.getInt("contactsHeaderIconsColor", 0xffffffff), false);
+                } else if (i == iconsColorRow) {
+                    textCell.setTextAndColor(LocaleController.getString("IconsColor", R.string.IconsColor), themePrefs.getInt("contactsIconsColor", 0xff737373), true);
                 } else if (i == rowColorRow) {
                     textCell.setTextAndColor(LocaleController.getString("RowColor", R.string.RowColor), themePrefs.getInt("contactsRowColor", 0xffffffff), true);
                 } else if (i == nameColorRow) {
@@ -489,7 +510,7 @@ public class ThemingContactsActivity extends BaseFragment {
                 } else if (i == statusColorRow) {
                     textCell.setTextAndColor(LocaleController.getString("StatusColor", R.string.StatusColor), themePrefs.getInt("contactsStatusColor", 0xffa8a8a8), true);
                 } else if (i == onlineColorRow) {
-                    textCell.setTextAndColor(LocaleController.getString("OnlineColor", R.string.OnlineColor), themePrefs.getInt("contactsOnlineColor", AndroidUtilities.getIntDarkerColor("themeColor",0x15)), true);
+                    textCell.setTextAndColor(LocaleController.getString("OnlineColor", R.string.OnlineColor), themePrefs.getInt("contactsOnlineColor", AndroidUtilities.getIntDarkerColor("themeColor",0x15)), false);
                 }
             }
             return view;
@@ -507,7 +528,7 @@ public class ThemingContactsActivity extends BaseFragment {
                 return 2;
             }
 
-            else if ( i == headerColorRow || i == headerTitleColorRow || i == headerIconsColorRow || i == rowColorRow || i == nameColorRow || i == statusColorRow || i == onlineColorRow) {
+            else if ( i == headerColorRow || i == headerTitleColorRow || i == headerIconsColorRow || i == iconsColorRow || i == rowColorRow || i == nameColorRow || i == statusColorRow || i == onlineColorRow) {
                 return 3;
             }
             else {

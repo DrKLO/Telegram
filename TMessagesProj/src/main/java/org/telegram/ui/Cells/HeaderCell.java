@@ -9,6 +9,7 @@
 package org.telegram.ui.Cells;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.widget.FrameLayout;
@@ -16,6 +17,7 @@ import android.widget.TextView;
 
 import org.telegram.android.AndroidUtilities;
 import org.telegram.android.LocaleController;
+import org.telegram.messenger.ApplicationLoader;
 import org.telegram.ui.Components.LayoutHelper;
 
 public class HeaderCell extends FrameLayout {
@@ -37,9 +39,20 @@ public class HeaderCell extends FrameLayout {
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(38), MeasureSpec.EXACTLY));
+        setTheme();
     }
 
     public void setText(String text) {
         textView.setText(text);
+    }
+
+    private void setTheme(){
+        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+        int defColor = preferences.getInt("themeColor", AndroidUtilities.defColor);
+        int bgColor = preferences.getInt("prefBGColor", 0xffffffff);
+        int sColor = preferences.getInt("prefSectionColor", defColor);
+        setBackgroundColor(bgColor);
+        textView.setTextColor(sColor);
+
     }
 }

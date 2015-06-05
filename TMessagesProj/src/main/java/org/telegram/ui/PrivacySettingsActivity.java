@@ -116,6 +116,8 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
             frameLayout.setBackgroundColor(0xfff0f0f0);
 
         ListView listView = new ListView(context);
+        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+        listView.setBackgroundColor(preferences.getInt("prefBGColor", 0xffffffff));
             listView.setDivider(null);
             listView.setDividerHeight(0);
             listView.setVerticalScrollBarEnabled(false);

@@ -807,15 +807,16 @@ Gebruikers kunnen met een tik stickers toevoegen via \"Toevoegen aan stickers\".
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s om %2$s</string>
     <!--update text-->
-    <string name="updateText">Plus Messenger voor Android is geüpdatet.</string>
-    <string name="updateBuild">543</string>
-    <!--Telegram+ Dutch-->
+    <string name="updateText">Plus Messenger voor Android is geüpdatet. Nieuw in versie 2.9:\n\n Bekijk, download en pas thema\'s toe op de Plus Messenger-app:\n https://play.google.com/store/apps/details?id=es.rafalense.themes</string>
+    <string name="updateBuild">546</string>
+    <!--Telegram+-->
+  <string name="updatePlusText">\n\nNieuw in 2.9.1.4:\n\- Optie om de standaard emoji venstergrootte in het chatscherm te veranderen (optie te vinden in Instellingen -&gt; Berichten)\n- Optie om de compressiegraad te veranderen wanneer je een video verzendt\n- MOD toegevoegd om de kleuren te veranderen in het Instellingen/Thema scherm\n- Aparte MODs toegevoegd voor de kleur van de naam bij het doorsturen van een bericht in het chatscherm. De linker en rechter ballon zijn bij deze optie gescheiden\n- MOD toegevoegd om de icoonkleuren in het contactenscherm te veranderen\n- MOD toegevoegd om de kleur van de \"Photo/Sticker\" tekst in het main scherm\n- Fouten verholpen</string>
     <string name="TelegramForAndroid">Plus Messenger voor Android</string>
-  <string name="Theming">Thema\'s</string>
-    <string name="colorHexInvalid">Ongeldige kleurhexcode!</string>
+  <string name="Theming">Uiterlijk Aanpassen</string>
+  <string name="colorHexInvalid">Ongeldige hexadecimale kleurcode!</string>
     <string name="themeColor">Themakleur</string>
     <string name="ResetThemeSettings">Thema-instellingen herstellen</string>
-    <string name="ResetThemeSettingsSum">Alle thema-instellingen ongedaan make</string>
+  <string name="ResetThemeSettingsSum">Alle thema-instellingen ongedaan maken</string>
   <string name="ResetThemeToastText">Thema-instellingen herstellen naar standaardwaarden!</string>
     <string name="General">Algemeen</string>
     <string name="Screens">Schermen</string>
@@ -870,7 +871,7 @@ Gebruikers kunnen met een tik stickers toevoegen via \"Toevoegen aan stickers\".
     <string name="ApplyTheme">Thema toepassen</string>
     <string name="ApplyThemeSum">XML-thema uit lokale map toepassen</string>
   <string name="MemberColor">Lidkleur</string>
-    <string name="ChecksColor">Kleur van tikken</string>
+  <string name="ChecksColor">Vinkkleur</string>
     <string name="MuteColor">Kleur van gedempt</string>
     <string name="SendLogs">Logbestanden versturen</string>
     <string name="SendLogsEmpty">Er zijn geen logbestanden</string>
@@ -918,4 +919,19 @@ Gebruikers kunnen met een tik stickers toevoegen via \"Toevoegen aan stickers\".
   <string name="GroupNameColor">Kleur van groepsnaam</string>
   <string name="GroupNameSize">Grootte van groepsnaam</string>
   <string name="UnknownNameColor">Naamkleur (onbekend nummer)</string>
+  <string name="HideBackgroundShadow">Aangepaste achtergrondschaduw verbergen</string>
+  <string name="SetSolidBGColor">Achtergrondkleur instellen</string>
+  <string name="SolidBGColor">Achtergrondkleur</string>
+  <string name="EmojiPopupSize">Emoji Popup grootte</string>
+  <string name="ForwardRightNameColor">Forwarded naamkleur rechterbubbel</string>
+  <string name="ForwardLeftNameColor">Forwarded naamkleur linkerbubbel</string>
+  <string name="IconsColor">Iconen kleur</string>
+  <string name="SettingsScreen">Instellingen/Thema scherm</string>
+  <string name="BackgroundColor">Achtergrond Kleur</string>
+  <string name="ShadowColor">Schaduw Kleur</string>
+  <string name="SectionColor">Sectie Kleur</string>
+  <string name="TitleColor">Titelkleur</string>
+  <string name="SummaryColor">Samenvatting/Ondertitel kleur</string>
+  <string name="MediaColor">\'Foto/Sticker\' tekst kleur</string>
+  <string name="ThemesAppMsg">Wilt u thema\'s bekijken van andere Plus Messenger gebruikers?</string>
 </resources>

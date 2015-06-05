@@ -14,6 +14,8 @@ import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.SharedPreferences;
+import android.graphics.PorterDuff;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.text.Spannable;
 import android.text.method.LinkMovementMethod;
@@ -149,6 +151,8 @@ public class LastSeenActivity extends BaseFragment implements NotificationCenter
         frameLayout.setBackgroundColor(0xfff0f0f0);
 
         ListView listView = new ListView(context);
+        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+        listView.setBackgroundColor(preferences.getInt("prefBGColor", 0xffffffff));
         listView.setDivider(null);
         listView.setDividerHeight(0);
         listView.setVerticalScrollBarEnabled(false);
@@ -439,12 +443,19 @@ public class LastSeenActivity extends BaseFragment implements NotificationCenter
                     view.setBackgroundColor(0xffffffff);
                 }
                 TextSettingsCell textCell = (TextSettingsCell) view;
+                Drawable check = mContext.getResources().getDrawable(R.drawable.check_blue);
+                SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+                int color = preferences.getInt("themeColor", AndroidUtilities.defColor);
+                check.setColorFilter(color, PorterDuff.Mode.SRC_IN);
                 if (i == everybodyRow) {
-                    textCell.setTextAndIcon(LocaleController.getString("LastSeenEverybody", R.string.LastSeenEverybody), currentType == 0 ? R.drawable.check_blue : 0, true);
+                    //textCell.setTextAndIcon(LocaleController.getString("LastSeenEverybody", R.string.LastSeenEverybody), currentType == 0 ? R.drawable.check_blue : 0, true);
+                    textCell.setTextAndIcon(LocaleController.getString("LastSeenEverybody", R.string.LastSeenEverybody), currentType == 0 ? check : null, true);
                 } else if (i == myContactsRow) {
-                    textCell.setTextAndIcon(LocaleController.getString("LastSeenContacts", R.string.LastSeenContacts), currentType == 2 ? R.drawable.check_blue : 0, true);
+                    //textCell.setTextAndIcon(LocaleController.getString("LastSeenContacts", R.string.LastSeenContacts), currentType == 2 ? R.drawable.check_blue : 0, true);
+                    textCell.setTextAndIcon(LocaleController.getString("LastSeenContacts", R.string.LastSeenContacts), currentType == 2 ? check : null, true);
                 } else if (i == nobodyRow) {
-                    textCell.setTextAndIcon(LocaleController.getString("LastSeenNobody", R.string.LastSeenNobody), currentType == 1 ? R.drawable.check_blue : 0, false);
+                    //textCell.setTextAndIcon(LocaleController.getString("LastSeenNobody", R.string.LastSeenNobody), currentType == 1 ? R.drawable.check_blue : 0, false);
+                    textCell.setTextAndIcon(LocaleController.getString("LastSeenNobody", R.string.LastSeenNobody), currentType == 1 ? check : null, false);
                 } else if (i == alwaysShareRow) {
                     String value;
                     if (currentPlus.size() != 0) {
@@ -465,7 +476,7 @@ public class LastSeenActivity extends BaseFragment implements NotificationCenter
             } else if (type == 1) {
                 if (view == null) {
                     view = new TextInfoPrivacyCell(mContext);
-                    view.setBackgroundColor(0xffffffff);
+                    //view.setBackgroundColor(0xffffffff);
                 }
                 if (i == lastSeenDetailRow) {
                     ((TextInfoPrivacyCell) view).setText(LocaleController.getString("CustomHelp", R.string.CustomHelp));

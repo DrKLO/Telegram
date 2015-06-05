@@ -55,6 +55,7 @@
     <string name="UnmuteNotifications">Włącz dźwięki</string>
     <string name="WillUnmuteIn">W %1$s</string>
     <string name="MuteDisable">Wyłącz</string>
+  <string name="Hashtags">Hashtagi</string>
     <!--broadcasts-->
     <string name="NewBroadcastList">Nowe ogłoszenie</string>
     <string name="EnterListName">Wprowadź nazwę listy</string>
@@ -81,6 +82,14 @@
     <string name="Typing">pisze...</string>
     <string name="IsTyping">pisze...</string>
     <string name="AreTyping">piszą...</string>
+  <string name="IsRecordingAudio">%1$s nagrywa dźwięk</string>
+  <string name="IsSendingPhoto">%1$s wysyła zdjęcie</string>
+  <string name="IsSendingVideo">%1$s wysyła video</string>
+  <string name="IsSendingFile">%1$s wysyła plik</string>
+  <string name="RecordingAudio">nagrywanie dźwięku</string>
+  <string name="SendingPhoto">wysyłanie zdjęcia</string>
+  <string name="SendingVideoStatus">Wysyłanie wideo...</string>
+  <string name="SendingFile">Wysyłanie pliku...</string>
     <string name="GotAQuestion">Masz pytania/sugestie odnoście Telegram?</string>
     <string name="ChatTakePhoto">Zrób zdjęcie</string>
     <string name="ChatGallery">Galeria</string>
@@ -298,6 +307,10 @@
     <string name="NotificationsOther">Inny</string>
     <string name="NotificationsDisabled">Wyłączone</string>
     <string name="VibrationDisabled">Wyłączone</string>
+  <string name="LedDisabled">Wyłączony</string>
+  <string name="RepeatDisabled">Wyłącz</string>
+  <string name="InChatSound">Dźwięki czatu</string>
+  <!--sessions view-->
     <!--passcode view-->
     <string name="Passcode">Kod dostępu</string>
     <string name="ChangePasscode">Zmień kod dostępu</string>
@@ -356,9 +369,15 @@
     <string name="Grain">Ziarno</string>
     <string name="Sharpen">Ostrość</string>
     <string name="Blur">Rozmycie</string>
+  <string name="BlurOff">Wyłącz</string>
+  <string name="BlurLinear">Liniowy</string>
+  <string name="BlurRadial">Promienisty</string>
     <string name="AreYouSureDeletePhoto">Czy na pewno chcesz usunąć to zdjęcie?</string>
     <string name="AreYouSureDeleteVideo">Czy na pewno chcesz usunąć to video?</string>
     <string name="DiscardChanges">Czy chcesz porzucić zmiany? </string>
+  <string name="ClearSearch">Czy na pewno chcesz wyczyść historię wyszukiwania?</string>
+  <string name="ClearButton">Czysto</string>
+  <!--password view-->
     <!--privacy settings-->
     <string name="PrivacySettings">Prywatność i bezpieczeństwo</string>
     <string name="PrivacyTitle">Prywatność</string>
@@ -455,7 +474,7 @@
     <string name="InvalidLastName">Nieprawidłowe nazwisko</string>
     <string name="Loading">Wczytywanie ...</string>
     <string name="NoPlayerInstalled">Nie masz odtwarzacza wideo, zainstaluj jakiś aby kontynuować</string>
-    <string name="NoMailInstalled">Proszę wyślij email na adres sms@telegram.org i opisz nam swój problem.</string>
+  <string name="NoMailInstalled">Proszę wyślij email na adres sms@stel.com i opisz nam swój problem.</string>
     <string name="NoHandleAppInstalled">Nie posiadasz aplikacji, aby otworzyć ten typ pliku\'%1$s\'. Zainstaluj jedną z nich, aby otworzyć ten plik</string>
     <string name="InviteUser">Ten kontakt nie używa Telegramu, wysłać mu zaproszenie ?</string>
     <string name="AreYouSure">Na pewno ?</string>
@@ -584,6 +603,61 @@
     <string name="Users_few">%1$d użytkowników</string>
     <string name="Users_many">%1$d użytkowników</string>
     <string name="Users_other">%1$d użytkowników</string>
+  <!--forwarded messages-->
+  <string name="ForwardedMessage_zero">%1$d przekazano wiadomość</string>
+  <string name="ForwardedMessage_one">Przekazane wiadomość </string>
+  <string name="ForwardedMessage_two">%1$d przekazano wiadomości</string>
+  <string name="ForwardedMessage_few">%1$d przekazano wiadomości</string>
+  <string name="ForwardedMessage_many">%1$d przekazano wiadomości</string>
+  <string name="ForwardedMessage_other">%1$d przekazano wiadomości</string>
+  <string name="ForwardedFile_zero">%1$d przekazano pliki</string>
+  <string name="ForwardedFile_one">Przekazany plik</string>
+  <string name="ForwardedFile_two">%1$d przekazano pliki</string>
+  <string name="ForwardedFile_few">%1$d przekazano pliki</string>
+  <string name="ForwardedFile_many">%1$d przekazano pliki</string>
+  <string name="ForwardedFile_other">%1$d przekazano pliki</string>
+  <string name="ForwardedPhoto_zero">%1$d przekazano pliki</string>
+  <string name="ForwardedPhoto_one">Przekazano zdjęcie</string>
+  <string name="ForwardedPhoto_two">%1$d przekazano zdjęcia</string>
+  <string name="ForwardedPhoto_few">%1$d przekazano zdjęcia</string>
+  <string name="ForwardedPhoto_many">%1$d przekazano zdjęcia</string>
+  <string name="ForwardedPhoto_other">%1$d przekazano zdjęcia</string>
+  <string name="ForwardedVideo_zero">%1$d przekazano filmy</string>
+  <string name="ForwardedVideo_one">Przekazano film</string>
+  <string name="ForwardedVideo_two">%1$d przekazano filmy</string>
+  <string name="ForwardedVideo_few">%1$d przekazano filmy</string>
+  <string name="ForwardedVideo_many">%1$d przekazano filmy</string>
+  <string name="ForwardedVideo_other">%1$d przekazano filmy</string>
+  <string name="ForwardedAudio_zero">%1$d przekazano dźwięki</string>
+  <string name="ForwardedAudio_one">Przekazano dźwięk</string>
+  <string name="ForwardedAudio_two">%1$d przekazano dźwięki</string>
+  <string name="ForwardedAudio_few">%1$d przekazano dźwięki</string>
+  <string name="ForwardedAudio_many">%1$d przekazano dźwięki</string>
+  <string name="ForwardedAudio_other">%1$d przekazano dźwięki</string>
+  <string name="ForwardedLocation_zero">%1$d przekazano lokalizacje</string>
+  <string name="ForwardedLocation_one">Przekazano lokalizację</string>
+  <string name="ForwardedLocation_two">%1$d przekazano lokalizacje</string>
+  <string name="ForwardedLocation_few">%1$d przekazano lokalizacje</string>
+  <string name="ForwardedLocation_many">%1$d przekazano lokalizacje</string>
+  <string name="ForwardedLocation_other">%1$d przekazano lokalizacje</string>
+  <string name="ForwardedContact_zero">%1$d przekazano kontakty</string>
+  <string name="ForwardedContact_one">Przekazano kontakt</string>
+  <string name="ForwardedContact_two">%1$d przekazano kontakty</string>
+  <string name="ForwardedContact_few">%1$d przekazano kontakty</string>
+  <string name="ForwardedContact_many">%1$d przekazano kontakty</string>
+  <string name="ForwardedContact_other">%1$d przekazano kontakty</string>
+  <string name="ForwardedSticker_zero">%1$d przekazano naklejki</string>
+  <string name="ForwardedSticker_one">Przekazano naklejkę </string>
+  <string name="ForwardedSticker_two">%1$d przekazano naklejki</string>
+  <string name="ForwardedSticker_few">%1$d przekazano naklejki</string>
+  <string name="ForwardedSticker_many">%1$d przekazano naklejki</string>
+  <string name="ForwardedSticker_other">%1$d przekazał Ci naklejkę</string>
+  <string name="AndOther_zero">i %1$d inni</string>
+  <string name="AndOther_one">i %1$d inny</string>
+  <string name="AndOther_two">i %1$d inni</string>
+  <string name="AndOther_few">i %1$d inni</string>
+  <string name="AndOther_many">i %1$d inni</string>
+  <string name="AndOther_other">i %1$d inni</string>
     <!--date formatters-->
     <string name="formatterMonthYear">MMMM yyyy</string>
     <string name="formatterMonth">MMM dd</string>

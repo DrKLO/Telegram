@@ -11,6 +11,7 @@ package org.telegram.ui;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.SharedPreferences;
 import android.os.Build;
 import android.os.Bundle;
 import android.view.Gravity;
@@ -25,9 +26,11 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import org.telegram.PhoneFormat.PhoneFormat;
+import org.telegram.android.AndroidUtilities;
 import org.telegram.android.LocaleController;
 import org.telegram.android.MessagesController;
 import org.telegram.android.NotificationCenter;
+import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.R;
 import org.telegram.messenger.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
@@ -113,6 +116,8 @@ public class BlockedUsersActivity extends BaseFragment implements NotificationCe
         progressView.addView(progressBar, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
 
         listView = new ListView(context);
+        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+        listView.setBackgroundColor(preferences.getInt("prefBGColor", 0xffffffff));
         listView.setEmptyView(emptyTextView);
         listView.setVerticalScrollBarEnabled(false);
         listView.setDivider(null);
@@ -261,10 +266,13 @@ public class BlockedUsersActivity extends BaseFragment implements NotificationCe
         @Override
         public View getView(int i, View view, ViewGroup viewGroup) {
             int type = getItemViewType(i);
+            SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
             if (type == 0) {
                 if (view == null) {
                     view = new UserCell(mContext, 1);
                 }
+                ((UserCell) view).setNameColor(preferences.getInt("prefTitleColor", 0xff212121));
+                ((UserCell) view).setStatusColor(preferences.getInt("prefSummaryColor", 0xff8a8a8a));
                 TLRPC.User user = MessagesController.getInstance().getUser(MessagesController.getInstance().blockedUsers.get(i));
                 if (user != null) {
                     ((UserCell) view).setData(user, null, user.phone != null && user.phone.length() != 0 ? PhoneFormat.getInstance().format("+" + user.phone) : LocaleController.getString("NumberUnknown", R.string.NumberUnknown), 0);
@@ -273,6 +281,7 @@ public class BlockedUsersActivity extends BaseFragment implements NotificationCe
                 if (view == null) {
                     view = new TextInfoCell(mContext);
                     ((TextInfoCell) view).setText(LocaleController.getString("UnblockText", R.string.UnblockText));
+                    ((TextInfoCell) view).setTextColor(preferences.getInt("prefSummaryColor", 0xff8a8a8a));
                 }
             }
             return view;

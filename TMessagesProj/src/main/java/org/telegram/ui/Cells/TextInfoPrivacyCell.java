@@ -9,6 +9,7 @@
 package org.telegram.ui.Cells;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.text.method.LinkMovementMethod;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -17,6 +18,8 @@ import android.widget.TextView;
 
 import org.telegram.android.AndroidUtilities;
 import org.telegram.android.LocaleController;
+import org.telegram.messenger.ApplicationLoader;
+import org.telegram.messenger.R;
 import org.telegram.ui.Components.LayoutHelper;
 
 public class TextInfoPrivacyCell extends FrameLayout {
@@ -39,6 +42,7 @@ public class TextInfoPrivacyCell extends FrameLayout {
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED));
+        setTheme();
     }
 
     public void setText(CharSequence text) {
@@ -47,5 +51,17 @@ public class TextInfoPrivacyCell extends FrameLayout {
 
     public void setTextColor(int color) {
         textView.setTextColor(color);
+    }
+
+    private void setTheme(){
+        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+        int shadowColor = preferences.getInt("prefShadowColor", 0xfff0f0f0);
+        if(shadowColor != 0xfff0f0f0) {
+            setBackgroundColor(shadowColor);
+        } else {
+            setBackgroundResource(R.drawable.greydivider);
+        }
+        int summaryColor = preferences.getInt("prefSummaryColor", 0xff808080);
+        textView.setTextColor(summaryColor);
     }
 }

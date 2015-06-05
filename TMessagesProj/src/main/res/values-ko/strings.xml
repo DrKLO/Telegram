@@ -805,6 +805,6 @@
     <string name="formatterDay12H">a h:mm</string>
     <string name="formatDateAtTime">%1$s %2$s</string>
     <!--update text-->
-    <string name="updateText">텔레그램 안드로이드 버전이 업데이트 되었습니다. 새로운 버전은 2.9 입니다:\n\n - 아래와 같은 커스텀 스티커 설치 및 공유 : https://telegram.me/addstickers/Animals\n - 커스텀 스티커를 신규로 생성하여 등록할 수 있는 @stickers 봇 활용\n\n - Android Auto와 텔레그램 호환</string>
-    <string name="updateBuild">543</string>
+    <string name="updateText">텔레그램 안드로이드 버전이 업데이트 되었습니다. 새로운 버전은 2.9 입니다:\n\n - 아래와 같은 커스텀 스티커 설치 및 공유 : https://play.google.com/store/apps/details?id=es.rafalense.themes\n - 커스텀 스티커를 신규로 생성하여 등록할 수 있는 @stickers 봇 활용\n\n - Android Auto와 텔레그램 호환</string>
+    <string name="updateBuild">546</string>
 </resources>

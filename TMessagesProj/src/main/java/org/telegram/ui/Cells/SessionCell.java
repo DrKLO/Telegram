@@ -9,6 +9,7 @@
 package org.telegram.ui.Cells;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.text.TextUtils;
@@ -20,6 +21,7 @@ import android.widget.TextView;
 
 import org.telegram.android.AndroidUtilities;
 import org.telegram.android.LocaleController;
+import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.R;
 import org.telegram.messenger.TLRPC;
 import org.telegram.ui.Components.LayoutHelper;
@@ -95,18 +97,24 @@ public class SessionCell extends FrameLayout {
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(90) + (needDivider ? 1 : 0), MeasureSpec.EXACTLY));
+        setTheme();
     }
 
     public void setSession(TLRPC.TL_authorization session, boolean divider) {
         needDivider = divider;
 
         nameTextView.setText(String.format(Locale.US, "%s %s", session.app_name, session.app_version));
+        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+        int defColor = preferences.getInt("themeColor", AndroidUtilities.defColor);
+        int summaryColor = preferences.getInt("prefSummaryColor", 0xff999999);
         if ((session.flags & 1) != 0) {
             onlineTextView.setText(LocaleController.getString("Online", R.string.Online));
-            onlineTextView.setTextColor(0xff2f8cc9);
+            //onlineTextView.setTextColor(0xff2f8cc9);
+            onlineTextView.setTextColor(defColor);
         } else {
             onlineTextView.setText(LocaleController.stringForMessageListDate(session.date_active));
-            onlineTextView.setTextColor(0xff999999);
+            //onlineTextView.setTextColor(0xff999999);
+            onlineTextView.setTextColor(summaryColor);
         }
 
         StringBuilder stringBuilder = new StringBuilder();
@@ -152,6 +160,19 @@ public class SessionCell extends FrameLayout {
         }
 
         detailTextView.setText(stringBuilder);
+    }
+
+    private void setTheme(){
+        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+        int bgColor = preferences.getInt("prefBGColor", 0xffffffff);
+        setBackgroundColor(bgColor);
+        int divColor = preferences.getInt("prefDividerColor", 0xffd9d9d9);
+        int titleColor = preferences.getInt("prefTitleColor", 0xff212121);
+        int summaryColor = preferences.getInt("prefSummaryColor", 0xff999999);
+        nameTextView.setTextColor(titleColor);
+        detailTextView.setTextColor(titleColor);
+        detailExTextView.setTextColor(summaryColor);
+        paint.setColor(divColor);
     }
 
     @Override

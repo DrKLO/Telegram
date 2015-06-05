@@ -12,7 +12,6 @@ import android.app.Activity;
 import android.content.Context;
 import android.text.Editable;
 import android.text.InputFilter;
-import android.text.InputType;
 import android.text.TextWatcher;
 import android.text.style.ImageSpan;
 import android.util.TypedValue;
@@ -31,6 +30,8 @@ import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import org.telegram.android.AndroidUtilities;
+import org.telegram.android.AnimationCompat.AnimatorSetProxy;
+import org.telegram.android.AnimationCompat.ObjectAnimatorProxy;
 import org.telegram.android.Emoji;
 import org.telegram.android.LocaleController;
 import org.telegram.android.NotificationCenter;
@@ -38,8 +39,6 @@ import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
 import org.telegram.messenger.TLRPC;
-import org.telegram.android.AnimationCompat.AnimatorSetProxy;
-import org.telegram.android.AnimationCompat.ObjectAnimatorProxy;
 
 public class PhotoViewerCaptionEnterView extends FrameLayoutFixed implements NotificationCenter.NotificationCenterDelegate, SizeNotifierRelativeLayoutPhoto.SizeNotifierRelativeLayoutPhotoDelegate {
 
@@ -122,8 +121,11 @@ public class PhotoViewerCaptionEnterView extends FrameLayoutFixed implements Not
 
         messageEditText = new EditText(context);
         messageEditText.setHint(LocaleController.getString("AddCaption", R.string.AddCaption));
-        messageEditText.setImeOptions(EditorInfo.IME_FLAG_NO_EXTRACT_UI | EditorInfo.IME_ACTION_DONE);
-        messageEditText.setInputType(EditorInfo.TYPE_TEXT_FLAG_CAP_SENTENCES | EditorInfo.TYPE_TEXT_FLAG_MULTI_LINE | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
+        //messageEditText.setImeOptions(EditorInfo.IME_FLAG_NO_EXTRACT_UI | EditorInfo.IME_ACTION_DONE);
+        //messageEditText.setInputType(EditorInfo.TYPE_TEXT_FLAG_CAP_SENTENCES | EditorInfo.TYPE_TEXT_FLAG_MULTI_LINE | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
+        //Show suggestions
+        messageEditText.setImeOptions(EditorInfo.IME_FLAG_NO_EXTRACT_UI);
+        messageEditText.setInputType(messageEditText.getInputType() | EditorInfo.TYPE_TEXT_FLAG_CAP_SENTENCES | EditorInfo.TYPE_TEXT_FLAG_MULTI_LINE);
         messageEditText.setSingleLine(false);
         messageEditText.setMaxLines(4);
         messageEditText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);

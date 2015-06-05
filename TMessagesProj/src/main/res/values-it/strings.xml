@@ -805,12 +805,10 @@
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s alle %2$s</string>
     <!--update text-->
-    <string name="updateText">Plus Messenger per Android è stato aggiornato. Nuovo nella versione 2.9:\n\n- Installa e condividi pacchetti di sticker personalizzati come questo: https://telegram.me/addstickers/Animals\n- Se sei un artista, crea pacchetti di sticker utilizzando il nostro bot @stickers.\n\n- Usa Telegram con Android Auto.</string>
-    <string name="updateBuild">543</string>
-    <!--Telegram+ Italian-->
-      <!--update-->
-    <string name="updatePlusText">\n\nNovità nella 2.9.1.1:\n\n- Aggiunta MOD per impostare un colore a tinta unita come sfondo della chat\n- Aggiunta MOD per nascondere l\'ombra dello sfondo del menu di navigazione\n- Aggiunta MOD per impostare il raggio dell\'avatar nella schermata del profilo\n- Correzioni bug</string>
-    <!--update-->
+    <string name="updateText">Plus Messenger per Android è stato aggiornato. Nuovo nella versione 2.9:\n\n- Scegli, scarica ed applica temi per Plus Messenger:\n https://play.google.com/store/apps/details?id=es.rafalense.themes</string>
+    <string name="updateBuild">546</string>
+    <!--Telegram+-->
+  <string name="updatePlusText">\n\nNovità 2.9.1.4:\n\n- Opzione per cambiare la dimensione predefinita della finestra degli emoji nella schermata della chat (opzione in Impostazioni/Messaggi)\n- Opzione per cambiare il livello di compressione per condividere un video\n- Aggiunte MOD per cambiare i colori della schermata Impostazioni/Temi\n- Aggiunte MOD separate per cambiare il colore del nome del mittente del messaggio inoltrato per la nuvoletta di destra e di sinistra nella schermata della chat\n- Aggiunta MOD per cambiare il colore delle icone nella schermata dei contatti\n- Aggiunta MOD per cambiare il colore del testo \"Photo/Sticker\" nella schermata principale\n- Correzioni bug</string>
     <string name="TelegramForAndroid">Plus Messenger per Android</string>
   <string name="Theming">Personalizzazione</string>
     <string name="colorHexInvalid">Codice del colore esadecimale non valido!</string>
@@ -883,7 +881,7 @@
   <string name="TypingColor">Colore di \"sta scrivendo\"</string>
   <string name="EditTextIconsColor">Colore delle icone del campo di testo</string>
   <string name="NavigationDrawer">Menu di navigazione</string>
-  <string name="OptionsList">Lista delle opzioni</string>
+  <string name="OptionsList">Elenco delle opzioni</string>
   <string name="ListColor">Colore della lista</string>
   <string name="OwnNameSize">Dimensione del nome</string>
   <string name="PhoneColor">Colore del numero di telefono</string>
@@ -922,4 +920,16 @@
     <string name="HideBackgroundShadow">Nascondi ombra sfondo personalizzato</string>
     <string name="SetSolidBGColor">Imposta il colore dello sfondo</string>
     <string name="SolidBGColor">Colore dello sfondo</string>
+  <string name="EmojiPopupSize">Dimensione popup degli Emoji</string>
+  <string name="ForwardRightNameColor">Colore del nome a destra (inoltrato)</string>
+  <string name="ForwardLeftNameColor">Colore del nome a sinistra (inoltrato)</string>
+  <string name="IconsColor">Colore delle icone</string>
+  <string name="SettingsScreen">Impostazioni/Schermata dei temi</string>
+  <string name="BackgroundColor">Colore di sfondo</string>
+  <string name="ShadowColor">Colore dell\'ombreggiatura</string>
+  <string name="SectionColor">Colore della sezione</string>
+  <string name="TitleColor">Colore del titolo</string>
+  <string name="SummaryColor">Colore Sommario/Sottotitolo</string>
+  <string name="MediaColor">Colore del testo \"Foto/Sticker\"</string>
+  <string name="ThemesAppMsg">Ti piacerebbe dare uno sguardo a temi creati da altri utenti di Plus Messenger?</string>
 </resources>

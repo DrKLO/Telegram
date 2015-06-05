@@ -660,7 +660,7 @@
   <string name="SendLogs">Envia registres</string>
   <string name="SendLogsEmpty">No hi ha cap registre</string>
   <string name="SendIcon">Icona d\'enviar</string>
-  <string name="HideMobile">Amaga el número de telèfon al menú</string>
+  <string name="HideMobile">Amaga el telèfon al menú</string>
   <string name="FloatingPencilColor">Color del botó de llapis</string>
   <string name="FloatingBGColor">Color de fons del botó de llapis</string>
     <string name="Community">Comunitat G+</string>
@@ -694,10 +694,16 @@
   <string name="ThemeApplied">S\'ha aplicat el tema!</string>
   <string name="ClickOkToRestart">Premeu D\'acord per reiniciar</string>
   <string name="ShowAndroidEmoji">Mostra les icones del sistema</string>
-  <string name="BubbleStyle">Estil de la bambolla</string>
-  <string name="KeepOriginalFilename">Conserva el nom de fitxer original</string>
+  <string name="BubbleStyle">Estil de la bombolla</string>
+  <string name="KeepOriginalFilename">Conserva el nom original</string>
   <string name="KeepOriginalFilenameHelp">En compte de només números, els fitxers es desaran usant el format nom_data</string>
   <string name="AvatarSize">Mida de l\'avatar</string>
   <string name="AvatarAlignTop">Alinea l\'avatar a sobre</string>
   <string name="AvatarMarginLeft">Marge esquerre de l\'avatar</string>
+  <string name="GroupNameColor">Color del nom del grup</string>
+  <string name="GroupNameSize">Mida del nom del grup</string>
+  <string name="UnknownNameColor">Color del nom (contacte desconegut)</string>
+  <string name="HideBackgroundShadow">Amaga l\'ombra de fons personalitzada</string>
+  <string name="SetSolidBGColor">Estableix un color de fons</string>
+  <string name="SolidBGColor">Color de fons</string>
 </resources>

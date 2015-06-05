@@ -1428,7 +1428,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 ((UserCell) view).setAvatarRadius(themePrefs.getInt("profileAvatarRadius", 32));
             } else if (type == 5) {
                 if (view == null) {
-                    view = new ShadowSectionCell(mContext);
+                    //view = new ShadowSectionCell(mContext);
+                    view = new ShadowSectionCell(mContext, false);
                 }
                 view.setBackgroundColor(themePrefs.getInt("profileRowColor", 0xffffffff));
             } else if (type == 6) {

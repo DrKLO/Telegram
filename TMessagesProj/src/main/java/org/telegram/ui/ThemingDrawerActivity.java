@@ -129,6 +129,8 @@ public class ThemingDrawerActivity extends BaseFragment {
             FrameLayout frameLayout = (FrameLayout) fragmentView;
 
             listView = new ListView(context);
+            SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+            listView.setBackgroundColor(preferences.getInt("prefBGColor", 0xffffffff));
             listView.setDivider(null);
             listView.setDividerHeight(0);
             listView.setVerticalScrollBarEnabled(false);
@@ -576,15 +578,15 @@ public class ThemingDrawerActivity extends BaseFragment {
                 } else if (i == nameSizeRow) {
                     int size = themePrefs.getInt("drawerNameSize", AndroidUtilities.isTablet() ? 17 : 15);
                     textCell.setTextAndValue(LocaleController.getString("OwnNameSize", R.string.OwnNameSize), String.format("%d", size), true);
-                } else if (i == phoneSizeRow) {
-                    int size = themePrefs.getInt("drawerPhoneSize", AndroidUtilities.isTablet() ? 15 : 13);
-                    textCell.setTextAndValue(LocaleController.getString("PhoneSize", R.string.PhoneSize), String.format("%d", size), true);
                 } else if (i == optionSizeRow) {
                     int size = themePrefs.getInt("drawerOptionSize", AndroidUtilities.isTablet() ? 17 : 15);
                     textCell.setTextAndValue(LocaleController.getString("OptionSize", R.string.OptionSize), String.format("%d", size), true);
+                } else if (i == phoneSizeRow) {
+                    int size = themePrefs.getInt("drawerPhoneSize", AndroidUtilities.isTablet() ? 15 : 13);
+                    textCell.setTextAndValue(LocaleController.getString("PhoneSize", R.string.PhoneSize), String.format("%d", size), false);
                 } else if (i == versionSizeRow) {
                     int size = themePrefs.getInt("drawerVersionSize", AndroidUtilities.isTablet() ? 15 : 13);
-                    textCell.setTextAndValue(LocaleController.getString("VersionSize", R.string.VersionSize), String.format("%d", size), true);
+                    textCell.setTextAndValue(LocaleController.getString("VersionSize", R.string.VersionSize), String.format("%d", size), false);
                 }
 
             }
