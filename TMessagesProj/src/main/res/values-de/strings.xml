@@ -6,7 +6,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     tools:ignore="MissingTranslation"
     tools:locale="en">
-    <string name="AppName">Telegram Aniways</string>
+    <string name="AppName">Aniways Messenger</string>
     <string name="LanguageName">Deutsch</string>
     <string name="LanguageNameInEnglish">German</string>
     <string name="LanguageCode">de</string>
@@ -174,7 +174,7 @@
     <!--contacts view-->
     <string name="SelectContact">Kontakt auswählen</string>
     <string name="NoContacts">Noch keine Kontakte</string>
-    <string name="InviteText">Hey, lass uns zu Telegram Aniways wechseln: http://aniways.com/anygram/dl2</string>
+    <string name="InviteText">Hey, lass uns zu Aniways Messenger wechseln: http://aniways.com/anygram/dl2</string>
     <string name="TodayAt">um</string>
     <string name="YesterdayAt">gestern um</string>
     <string name="Online">online</string>
@@ -596,7 +596,7 @@
     <string name="NoPlayerInstalled">Du hast keinen Videoplayer. Bitte installiere einen um fortzufahren.</string>
     <string name="NoMailInstalled">Bitte sende eine Email an sms@stel.com mit einer Beschreibung des Problems.</string>
     <string name="NoHandleAppInstalled">Du hast keine Applikationen, die den Dateityp \'%1$s\' öffnen könnten. Bitte installiere eine entsprechende Anwendung um fortzufahren.</string>
-    <string name="InviteUser">Dieser Benutzer hat noch kein Telegram Aniways. Möchtest du ihn einladen?</string>
+    <string name="InviteUser">Dieser Benutzer hat noch kein Aniways Messenger. Möchtest du ihn einladen?</string>
     <string name="AreYouSure">Bist du sicher?</string>
     <string name="AddToTheGroup">%1$s zur Gruppe hinzufügen?\n\nAnzahl der letzten Nachrichten für die Weiterleitung:</string>
     <string name="ForwardMessagesTo">Nachrichten an %1$s weiterleiten?</string>
@@ -617,7 +617,7 @@
     <string name="ForwardMessagesToGroup">Weiterleiten an %1$s?</string>
     <string name="FeatureUnavailable">Verzeihung, diese Funktion ist derzeit in deinem Land nicht verfügbar.</string>
     <!--Intro view-->
-    <string name="Page1Title">Telegram Aniways</string>
+    <string name="Page1Title">Aniways Messenger</string>
     <string name="Page2Title">Schnell</string>
     <string name="Page3Title">Kostenlos</string>
     <string name="Page4Title">Sicher</string>
@@ -625,12 +625,12 @@
     <string name="Page6Title">Cloud-Basiert</string>
     <string name="Page7Title">Vertraulich</string>
     <string name="Page1Message">Die <![CDATA[<b>schnellste</b>]]> Messaging App der Welt.<![CDATA[<br/><b>Kostenlos</b>]]> und <![CDATA[<b>sicher</b>]]>.</string>
-    <string name="Page2Message"><![CDATA[<b>Telegram Aniways</b>]]> stellt Nachrichten schneller<![CDATA[<br/>]]>zu als andere Anwendungen.</string>
-    <string name="Page3Message"><![CDATA[<b>Telegram Aniways</b>]]> ist für immer kostenlos.<![CDATA[<br/>]]>Keine Werbung. Keine Abo-Gebühr.</string>
-    <string name="Page4Message"><![CDATA[<b>Telegram Aniways</b>]]> schützt deine Nachrichten <![CDATA[<br/>]]>vor Hacker-Angriffen.</string>
-    <string name="Page5Message"><![CDATA[<b>Telegram Aniways</b>]]> unterstützt unbegrenzt große <![CDATA[<br/>]]>Chats und Mediendateien.</string>
-    <string name="Page6Message"><![CDATA[<b>Telegram Aniways</b>]]> lässt sich von verschiedenen Geräten<![CDATA[<br/>]]>gleichzeitig nutzen.</string>
-    <string name="Page7Message"><![CDATA[<b>Telegram Aniways</b>]]>-Nachrichten sind stark verschlüsselt<![CDATA[<br/>]]>und können sich selbst zerstören.</string>
+    <string name="Page2Message"><![CDATA[<b>Aniways Messenger</b>]]> stellt Nachrichten schneller<![CDATA[<br/>]]>zu als andere Anwendungen.</string>
+    <string name="Page3Message"><![CDATA[<b>Aniways Messenger</b>]]> ist für immer kostenlos.<![CDATA[<br/>]]>Keine Werbung. Keine Abo-Gebühr.</string>
+    <string name="Page4Message"><![CDATA[<b>Aniways Messenger</b>]]> schützt deine Nachrichten <![CDATA[<br/>]]>vor Hacker-Angriffen.</string>
+    <string name="Page5Message"><![CDATA[<b>Aniways Messenger</b>]]> unterstützt unbegrenzt große <![CDATA[<br/>]]>Chats und Mediendateien.</string>
+    <string name="Page6Message"><![CDATA[<b>Aniways Messenger</b>]]> lässt sich von verschiedenen Geräten<![CDATA[<br/>]]>gleichzeitig nutzen.</string>
+    <string name="Page7Message"><![CDATA[<b>Aniways Messenger</b>]]>-Nachrichten sind stark verschlüsselt<![CDATA[<br/>]]>und können sich selbst zerstören.</string>
     <string name="StartMessaging">Jetzt beginnen</string>
     <!--plural-->
     <string name="Online_zero">%1$d online</string>

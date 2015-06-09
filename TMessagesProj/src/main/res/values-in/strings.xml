@@ -2,7 +2,7 @@
 <resources
     xmlns:tools="http://schemas.android.com/tools"
     tools:ignore="MissingTranslation" >
-  <string name="AppName">Telegram Aniways</string>
+  <string name="AppName">Aniways Messenger</string>
   <string name="LanguageName">Indonesia</string>
   <string name="LanguageNameInEnglish">Indonesian</string>
   <string name="LanguageCode">id</string>
@@ -161,7 +161,7 @@
   <!--contacts view-->
   <string name="SelectContact">Pilih Kontak</string>
   <string name="NoContacts">Belum ada kontak</string>
-  <string name="InviteText">Hei, mari pindah ke Telegram with Aniways: http://aniways.com/anygram/dl2</string>
+  <string name="InviteText">Hei, mari pindah ke Aniways Messenger: http://aniways.com/anygram/dl2</string>
   <string name="TodayAt">di</string>
   <string name="YesterdayAt">kemarin pada</string>
   <string name="Online">online</string>

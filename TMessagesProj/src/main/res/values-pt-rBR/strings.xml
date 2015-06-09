@@ -5,7 +5,7 @@
 <resources
     xmlns:tools="http://schemas.android.com/tools"
     tools:ignore="MissingTranslation" >
-    <string name="AppName">Telegram Aniways</string>
+    <string name="AppName">Aniways Messenger</string>
     <string name="LanguageName">Português (Brasil)</string>
     <string name="LanguageNameInEnglish">Português (Brasil)</string>
     <string name="LanguageCode">pt_BR</string>
@@ -173,7 +173,7 @@
     <!--contacts view-->
     <string name="SelectContact">Selecionar Contato</string>
     <string name="NoContacts">Ainda não há contatos</string>
-    <string name="InviteText">Ei, vamos mudar para o Telegram Aniways: http://aniways.com/anygram/dl2</string>
+    <string name="InviteText">Ei, vamos mudar para o Aniways Messenger: http://aniways.com/anygram/dl2</string>
     <string name="TodayAt">às</string>
     <string name="YesterdayAt">ontem às</string>
     <string name="Online">online</string>
