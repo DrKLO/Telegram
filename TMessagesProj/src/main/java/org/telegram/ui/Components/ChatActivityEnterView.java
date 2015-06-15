@@ -839,6 +839,12 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
                 }
             }
         }
+        //in-case of a forward message without input text we should call delegate.onMessageSend(null) in order the messages to be processed and send
+        if (messages == null || messages.isEmpty()){
+            if (delegate != null) {
+                delegate.onMessageSend(null);
+            }
+        }
 
         // Send all the Animated Gifs
         SendMessagesHelper.prepareSendingPhotosSearch(new ArrayList<MediaController.SearchImage>(this.mContentuallySelectedGiphys.values()), dialog_id, replyingMessageObject);
@@ -1123,13 +1129,12 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
 
 
     private void showEmojiPopup(boolean show, boolean post) {
-        /*
         if (show) {
             if (emojiPopup == null) {
                 if (parentActivity == null) {
                     return;
                 }
-                emojiView = new EmojiView(allowStickers, parentActivity);
+                /*emojiView = new EmojiView(allowStickers, parentActivity);
                 emojiView.setListener(new EmojiView.Listener() {
                     public boolean onBackspace() {
                         if (messageEditText.length() == 0) {
@@ -1145,7 +1150,7 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
                             i = 0;
                         }
                         try {//TODO check
-                            CharSequence localCharSequence = Emoji.replaceEmoji(symbol/* + "\uFE0F"*/ /*, messageEditText.getPaint().getFontMetricsInt(), AndroidUtilities.dp(20));
+                            CharSequence localCharSequence = Emoji.replaceEmoji(symbol*//* + "\uFE0F"*//*, messageEditText.getPaint().getFontMetricsInt(), AndroidUtilities.dp(20));
                             messageEditText.setText(messageEditText.getText().insert(i, localCharSequence));
                             int j = i + localCharSequence.length();
                             messageEditText.setSelection(j, j);
@@ -1161,7 +1166,7 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
                         }
                     }
                 });
-                emojiPopup = new PopupWindow(emojiView);
+                emojiPopup = new PopupWindow(emojiView);*/
             }
 
             if (keyboardHeight <= 0) {
@@ -1177,7 +1182,7 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
                 emojiPopup.setWidth(View.MeasureSpec.makeMeasureSpec(AndroidUtilities.displaySize.x, View.MeasureSpec.EXACTLY));
             }
 
-            emojiPopup.showAtLocation(parentActivity.getWindow().getDecorView(), Gravity.BOTTOM | Gravity.LEFT, 0, 0);
+//            emojiPopup.showAtLocation(parentActivity.getWindow().getDecorView(), Gravity.BOTTOM | Gravity.LEFT, 0, 0);
 
             if (!keyboardVisible) {
                 if (sizeNotifierLayout != null) {
@@ -1191,7 +1196,6 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
                 setKeyboardTransitionState(2);
                 AndroidUtilities.hideKeyboard(messageEditText);
             }
-    /*
             emojiButton.setImageResource(R.drawable.ic_msg_panel_kb);
             showKeyboardOnEmojiButton = true;
             return;
@@ -1224,14 +1228,13 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
                 }
             }
         }
-        */
     }
 
 
     public void hideEmojiPopup() {
-        //if (emojiPopup != null && emojiPopup.isShowing()) {
-        //    showEmojiPopup(false, true);
-        //}
+        if (emojiPopup != null && emojiPopup.isShowing()) {
+            showEmojiPopup(false, true);
+        }
     }
 
     public void openKeyboard() {
@@ -1339,7 +1342,6 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
 
     @Override
     public void onSizeChanged(int height, boolean isWidthGreater) {
-        /*
         if (height > AndroidUtilities.dp(50) && keyboardVisible) {
             if (isWidthGreater) {
                 keyboardHeightLand = height;
@@ -1389,17 +1391,15 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
         } else {
             return keyboardHeight;
         }
-        */
     }
 
     @Override
     public void didReceivedNotification(int id, Object... args) {
-        //if (id == NotificationCenter.emojiDidLoaded) {
-            //if (emojiView != null) {
-            //    emojiView.invalidateViews();
-            //}
-        //} else
-        if (id == NotificationCenter.recordProgressChanged) {
+        if (id == NotificationCenter.emojiDidLoaded) {
+//            if (emojiView != null) {
+//                emojiView.invalidateViews();
+//            }
+        } else if (id == NotificationCenter.recordProgressChanged) {
             Long time = (Long) args[0] / 1000;
             String str = String.format("%02d:%02d", time / 60, time % 60);
             if (lastTimeString == null || !lastTimeString.equals(str)) {
