@@ -1200,17 +1200,17 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
             showKeyboardOnEmojiButton = true;
             return;
         }
-        if (emojiButton != null) {
-            showKeyboardOnEmojiButton = false;
-            emojiButton.setImageResource(R.drawable.ic_msg_panel_smiles);
-        }
-        if (emojiPopup != null) {
-            try {
-                emojiPopup.dismiss();
-            } catch (Exception e) {
-                //don't promt
-            }
-        }
+//        if (emojiButton != null) {
+//            showKeyboardOnEmojiButton = false;
+//            emojiButton.setImageResource(R.drawable.ic_msg_panel_smiles);
+//        }
+//        if (emojiPopup != null) {
+//            try {
+//                emojiPopup.dismiss();
+//            } catch (Exception e) {
+//                //don't promt
+//            }
+//        }
         if (keyboardTransitionState == 0) {
             if (sizeNotifierLayout != null) {
                 if (post) {
