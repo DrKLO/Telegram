@@ -36,6 +36,7 @@ dependencies {
     compile 'net.hockeyapp.android:HockeySDK:3.5.+'
     compile 'com.googlecode.mp4parser:isoparser:1.0.+'
     compile project(':Android-SDK')
+    //debugCompile 'com.facebook.stetho:stetho:1.0.0'
 }
 
 android {
