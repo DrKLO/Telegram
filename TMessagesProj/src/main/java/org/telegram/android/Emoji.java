@@ -221,7 +221,7 @@ public class Emoji {
 
 	private static void loadEmoji(final int page) {
 		try {
-            float scale = 1.0f;
+            float scale;
             int imageResize = 1;
             if (AndroidUtilities.density <= 1.0f) {
                 scale = 2.0f;
@@ -257,7 +257,7 @@ public class Emoji {
             imageFile = ApplicationLoader.applicationContext.getFileStreamPath(imageName);
             if (!imageFile.exists()) {
                 InputStream is = ApplicationLoader.applicationContext.getAssets().open("emoji/" + imageName);
-                Utilities.copyFile(is, imageFile);
+                AndroidUtilities.copyFile(is, imageFile);
                 is.close();
             }
 
@@ -276,7 +276,7 @@ public class Emoji {
             imageFile = ApplicationLoader.applicationContext.getFileStreamPath(imageName);
             if (!imageFile.exists()) {
                 InputStream is = ApplicationLoader.applicationContext.getAssets().open("emoji/" + imageName);
-                Utilities.copyFile(is, imageFile);
+                AndroidUtilities.copyFile(is, imageFile);
                 is.close();
             }
 

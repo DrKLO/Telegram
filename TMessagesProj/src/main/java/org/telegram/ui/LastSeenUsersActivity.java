@@ -186,7 +186,7 @@ public class LastSeenUsersActivity extends BaseFragment implements NotificationC
                         }
                     }
                 });
-                showAlertDialog(builder);
+                showDialog(builder.create());
                 return true;
             }
         });

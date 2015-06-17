@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 1.3.2.
+ * This is the source code of Telegram for Android v. 2.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013.
+ * Copyright Nikolai Kudashov, 2013-2015.
  */
 
 package org.telegram.messenger;
@@ -46,7 +46,7 @@ public class FileUploadOperation {
     private boolean started = false;
 
     public interface FileUploadOperationDelegate {
-        void didFinishUploadingFile(FileUploadOperation operation, TLRPC.InputFile inputFile, TLRPC.InputEncryptedFile inputEncryptedFile);
+        void didFinishUploadingFile(FileUploadOperation operation, TLRPC.InputFile inputFile, TLRPC.InputEncryptedFile inputEncryptedFile, byte[] key, byte[] iv);
         void didFailedUploadingFile(FileUploadOperation operation);
         void didChangedUploadProgress(FileUploadOperation operation, float progress);
     }
@@ -190,8 +190,12 @@ public class FileUploadOperation {
                         if (ivString != null && keyString != null) {
                             key = Utilities.hexToBytes(keyString);
                             iv = Utilities.hexToBytes(ivString);
-                            ivChange = new byte[32];
-                            System.arraycopy(iv, 0, ivChange, 0, 32);
+                            if (key != null && iv != null && key.length == 32 && iv.length == 32) {
+                                ivChange = new byte[32];
+                                System.arraycopy(iv, 0, ivChange, 0, 32);
+                            } else {
+                                rewrite = true;
+                            }
                         } else {
                             rewrite = true;
                         }
@@ -234,6 +238,11 @@ public class FileUploadOperation {
                                         String ivcString = preferences.getString(fileKey + "_ivc", null);
                                         if (ivcString != null) {
                                             ivChange = Utilities.hexToBytes(ivcString);
+                                            if (ivChange == null || ivChange.length != 32) {
+                                                rewrite = true;
+                                                currentUploaded = 0;
+                                                currentPartNum = 0;
+                                            }
                                         } else {
                                             rewrite = true;
                                             currentUploaded = 0;
@@ -369,7 +378,7 @@ public class FileUploadOperation {
                                 result.parts = currentPartNum;
                                 result.id = currentFileId;
                                 result.name = uploadingFilePath.substring(uploadingFilePath.lastIndexOf("/") + 1);
-                                delegate.didFinishUploadingFile(FileUploadOperation.this, result, null);
+                                delegate.didFinishUploadingFile(FileUploadOperation.this, result, null, null, null);
                                 cleanup();
                             } else {
                                 TLRPC.InputEncryptedFile result;
@@ -382,9 +391,7 @@ public class FileUploadOperation {
                                 result.parts = currentPartNum;
                                 result.id = currentFileId;
                                 result.key_fingerprint = fingerprint;
-                                result.iv = iv;
-                                result.key = key;
-                                delegate.didFinishUploadingFile(FileUploadOperation.this, null, result);
+                                delegate.didFinishUploadingFile(FileUploadOperation.this, null, result, key, iv);
                                 cleanup();
                             }
                         } else {

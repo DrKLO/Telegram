@@ -99,11 +99,11 @@ public class ChatActionCell extends BaseCell {
             }
             avatarDrawable.setInfo(id, null, null, false);
             if (currentMessageObject.messageOwner.action instanceof TLRPC.TL_messageActionUserUpdatedPhoto) {
-                imageReceiver.setImage(currentMessageObject.messageOwner.action.newUserPhoto.photo_small, "50_50", avatarDrawable, false);
+                imageReceiver.setImage(currentMessageObject.messageOwner.action.newUserPhoto.photo_small, "50_50", avatarDrawable, null, false);
             } else {
                 TLRPC.PhotoSize photo = FileLoader.getClosestPhotoSizeWithSize(currentMessageObject.photoThumbs, AndroidUtilities.dp(64));
                 if (photo != null) {
-                    imageReceiver.setImage(photo.location, "50_50", avatarDrawable, false);
+                    imageReceiver.setImage(photo.location, "50_50", avatarDrawable, null, false);
                 } else {
                     imageReceiver.setImageBitmap(avatarDrawable);
                 }
@@ -230,7 +230,7 @@ public class ChatActionCell extends BaseCell {
             try {
                 int linesCount = textLayout.getLineCount();
                 for (int a = 0; a < linesCount; a++) {
-                    float lineWidth = 0;
+                    float lineWidth;
                     float lineLeft = 0;
                     try {
                         lineWidth = textLayout.getLineWidth(a);
@@ -262,7 +262,7 @@ public class ChatActionCell extends BaseCell {
             return;
         }
 
-        Drawable backgroundDrawable = null;
+        Drawable backgroundDrawable;
         if (ApplicationLoader.isCustomTheme()) {
             backgroundDrawable = ResourceLoader.backgroundBlack;
         } else {

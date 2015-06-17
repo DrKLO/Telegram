@@ -2,7 +2,7 @@
 <resources
     xmlns:tools="http://schemas.android.com/tools"
     tools:ignore="MissingTranslation" >
-  <string name="AppName">Telegram Aniways</string>
+  <string name="AppName">Aniways Messenger</string>
   <string name="LanguageName">Türkçe</string>
   <string name="LanguageNameInEnglish">Türkçe</string>
   <string name="LanguageCode">tr</string>

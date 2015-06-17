@@ -29,33 +29,17 @@ public class PhotoPickerPhotoCell extends FrameLayout {
         super(context);
 
         photoImage = new BackupImageView(context);
-        addView(photoImage);
-        LayoutParams layoutParams = (LayoutParams) photoImage.getLayoutParams();
-        layoutParams.width = LayoutHelper.MATCH_PARENT;
-        layoutParams.height = LayoutHelper.MATCH_PARENT;
-        photoImage.setLayoutParams(layoutParams);
+        addView(photoImage, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
         checkFrame = new FrameLayout(context);
-        addView(checkFrame);
-        layoutParams = (LayoutParams) checkFrame.getLayoutParams();
-        layoutParams.width = AndroidUtilities.dp(42);
-        layoutParams.height = AndroidUtilities.dp(42);
-        layoutParams.gravity = Gravity.RIGHT | Gravity.TOP;
-        checkFrame.setLayoutParams(layoutParams);
+        addView(checkFrame, LayoutHelper.createFrame(42, 42, Gravity.RIGHT | Gravity.TOP));
 
         checkBox = new CheckBox(context, R.drawable.checkbig);
         checkBox.setSize(30);
         checkBox.setCheckOffset(AndroidUtilities.dp(1));
         checkBox.setDrawBackground(true);
         checkBox.setColor(0xff3ccaef);
-        addView(checkBox);
-        layoutParams = (LayoutParams) checkBox.getLayoutParams();
-        layoutParams.width = AndroidUtilities.dp(30);
-        layoutParams.height = AndroidUtilities.dp(30);
-        layoutParams.gravity = Gravity.RIGHT | Gravity.TOP;
-        layoutParams.topMargin = AndroidUtilities.dp(6);
-        layoutParams.rightMargin = AndroidUtilities.dp(6);
-        checkBox.setLayoutParams(layoutParams);
+        addView(checkBox, LayoutHelper.createFrame(30, 30, Gravity.RIGHT | Gravity.TOP, 0, 6, 6, 0));
     }
 
     @Override

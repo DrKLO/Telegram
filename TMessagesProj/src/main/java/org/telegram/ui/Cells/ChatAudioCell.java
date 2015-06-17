@@ -166,7 +166,7 @@ public class ChatAudioCell extends ChatBaseCell implements SeekBar.SeekBarDelega
             seekBar.setProgress(currentMessageObject.audioProgress);
         }
 
-        int duration = 0;
+        int duration;
         if (!MediaController.getInstance().isPlayingAudio(currentMessageObject)) {
             duration = currentMessageObject.messageOwner.media.audio.duration;
         } else {
@@ -306,11 +306,6 @@ public class ChatAudioCell extends ChatBaseCell implements SeekBar.SeekBarDelega
                 backgroundWidth = Math.min(AndroidUtilities.getMinTabletSide() - AndroidUtilities.dp(isChat ? 102 : 50), AndroidUtilities.dp(300));
             } else {
                 backgroundWidth = Math.min(AndroidUtilities.displaySize.x - AndroidUtilities.dp(isChat ? 102 : 50), AndroidUtilities.dp(300));
-            }
-
-            int uid = messageObject.messageOwner.media.audio.user_id;
-            if (uid == 0) {
-                uid = messageObject.messageOwner.from_id;
             }
 
             if (messageObject.isOut()) {

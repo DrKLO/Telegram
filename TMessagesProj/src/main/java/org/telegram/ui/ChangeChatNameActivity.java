@@ -80,7 +80,8 @@ public class ChangeChatNameActivity extends BaseFragment {
 
         TLRPC.Chat currentChat = MessagesController.getInstance().getChat(chat_id);
 
-        fragmentView = new LinearLayout(context);
+        LinearLayout linearLayout = new LinearLayout(context);
+        fragmentView = linearLayout;
         fragmentView.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
         ((LinearLayout) fragmentView).setOrientation(LinearLayout.VERTICAL);
         fragmentView.setOnTouchListener(new View.OnTouchListener() {
@@ -113,14 +114,7 @@ public class ChangeChatNameActivity extends BaseFragment {
             }
         });
 
-        ((LinearLayout) fragmentView).addView(firstNameField);
-        LinearLayout.LayoutParams layoutParams = (LinearLayout.LayoutParams) firstNameField.getLayoutParams();
-        layoutParams.topMargin = AndroidUtilities.dp(24);
-        layoutParams.height = AndroidUtilities.dp(36);
-        layoutParams.leftMargin = AndroidUtilities.dp(24);
-        layoutParams.rightMargin = AndroidUtilities.dp(24);
-        layoutParams.width = LayoutHelper.MATCH_PARENT;
-        firstNameField.setLayoutParams(layoutParams);
+        linearLayout.addView(firstNameField, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 36, 24, 24, 24, 0));
 
         if (chat_id > 0) {
             firstNameField.setHint(LocaleController.getString("GroupName", R.string.GroupName));

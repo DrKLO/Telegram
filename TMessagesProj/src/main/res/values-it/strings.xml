@@ -5,7 +5,7 @@
 <resources
     xmlns:tools="http://schemas.android.com/tools"
     tools:ignore="MissingTranslation" >
-    <string name="AppName">Telegram Aniways</string>
+    <string name="AppName">Aniways Messenger</string>
     <string name="LanguageName">Italiano</string>
     <string name="LanguageNameInEnglish">Italian</string>
     <string name="LanguageCode">it</string>
@@ -41,7 +41,7 @@
     <string name="Connecting">Connessione…</string>
     <string name="Updating">Aggiornamento…</string>
     <string name="NewSecretChat">Nuova chat segreta</string>
-    <string name="AwaitingEncryption">In attesa che %s si colleghi…</string>
+    <string name="AwaitingEncryption">Aspettando che %s si colleghi…</string>
     <string name="EncryptionRejected">Chat segreta annullata</string>
     <string name="EncryptionProcessing">Scambio delle chiavi di cifratura...</string>
     <string name="EncryptedChatStartedOutgoing">%s si è unito alla tua chat segreta.</string>
@@ -72,7 +72,7 @@
     <string name="FreeOfTotal">Liberi %1$s di %2$s</string>
     <string name="UnknownError">Errore sconosciuto</string>
     <string name="AccessError">Errore durante l\'accesso</string>
-    <string name="NoFiles">Non ci sono ancora file...</string>
+    <string name="NoFiles">Ancora nessun file...</string>
     <string name="FileUploadLimit">La dimensione del file non dovrebbe superare i %1$s</string>
     <string name="NotMounted">Archiviazione non montata</string>
     <string name="UsbActive">Trasferimento USB attivo</string>
@@ -101,7 +101,7 @@
     <string name="ChatLocation">Posizione</string>
     <string name="ChatVideo">Video</string>
     <string name="ChatDocument">File</string>
-    <string name="NoMessages">Non ci sono ancora messaggi…</string>
+    <string name="NoMessages">Ancora nessun messaggio qui…</string>
     <string name="ForwardedMessage">Messaggio inoltrato</string>
     <string name="From">Da</string>
     <string name="NoRecent">Nessuno recente</string>
@@ -116,7 +116,7 @@
     <string name="EncryptedDescription2">Non lasciano traccia sui nostri server</string>
     <string name="EncryptedDescription3">Hanno un timer di autodistruzione</string>
     <string name="EncryptedDescription4">Non permettono l’inoltro</string>
-    <string name="YouWereKicked">Sei stato espulso da questo gruppo</string>
+    <string name="YouWereKicked">Sei stato rimosso da questo gruppo</string>
     <string name="YouLeft">Hai lasciato il gruppo</string>
     <string name="DeleteThisGroup">Elimina questo gruppo</string>
     <string name="DeleteThisChat">Elimina questa chat</string>
@@ -128,6 +128,8 @@
     <string name="SetTimer">Timer di autodistruzione</string>
     <string name="ServiceNotifications">Notifiche di servizio</string>
     <string name="GettingLinkInfo">Recupero le info del link...</string>
+    <string name="OpenInBrowser">Apri nel Browser</string>
+    <string name="CopyUrl">Copia URL</string>
     <!--notification-->
     <string name="MessageLifetimeChanged">%1$s ha impostato il timer di autodistruzione a %2$s</string>
     <string name="MessageLifetimeChangedOutgoing">Hai impostato il timer di autodistruzione a %1$s</string>
@@ -157,11 +159,11 @@
     <string name="NotificationEditedGroupPhoto">%1$s ha modificato la foto del gruppo %2$s</string>
     <string name="NotificationGroupAddMember">%1$s ha invitato %3$s nel gruppo %2$s</string>
     <string name="NotificationGroupAddSelf">%1$s è rientrato nel gruppo %2$s</string>
-    <string name="NotificationGroupKickMember">%1$s ha espulso %3$s dal gruppo %2$s</string>
-    <string name="NotificationGroupKickYou">%1$s ti ha espulso dal gruppo %2$s</string>
+    <string name="NotificationGroupKickMember">%1$s ha rimosso %3$s dal gruppo %2$s</string>
+    <string name="NotificationGroupKickYou">%1$s ti ha rimosso dal gruppo %2$s</string>
     <string name="NotificationGroupLeftMember">%1$s ha lasciato il gruppo %2$s</string>
     <string name="NotificationContactJoined">%1$s ha iniziato a usare Telegram!</string>
-    <string name="NotificationUnrecognizedDevice">%1$s,\nAbbiamo rilevato un accesso al tuo account da un nuovo dispositivo il %2$s\n\nDispositivo: %3$s\nPosizione: %4$s\n\nSe non sei stato tu, puoi andare su Impostazioni - Privacy e Sicurezza - Sessioni - Termina tutte le sessioni.\n\nSe pensi che qualcuno si sia collegato al tuo account contro il tuo volere, ti raccomandiamo di attivare la verifica in due passaggi nelle impostazioni di Privacy e Sicurezza.\n\nGrazie,\nil team di Telegram</string>
+    <string name="NotificationUnrecognizedDevice">%1$s,\nAbbiamo rilevato un accesso al tuo account da un nuovo dispositivo il %2$s\n\nDispositivo: %3$s\nPosizione: %4$s\n\nSe non sei stato tu, puoi andare su Impostazioni - Privacy e sicurezza - Sessioni - Termina tutte le sessioni.\n\nSe pensi che qualcuno si sia collegato al tuo account contro il tuo volere, ti raccomandiamo di attivare la verifica in due passaggi nelle impostazioni di Privacy e Sicurezza.\n\nGrazie,\nil team di Telegram</string>
     <string name="NotificationContactNewPhoto">%1$s ha aggiornato la foto del profilo</string>
     <string name="NotificationInvitedToGroupByLink">%1$s si è unito al gruppo %2$s tramite link di invito</string>
     <string name="Reply">Rispondi</string>
@@ -171,7 +173,7 @@
     <!--contacts view-->
     <string name="SelectContact">Seleziona contatto</string>
     <string name="NoContacts">Ancora nessun contatto</string>
-    <string name="InviteText">Ehi, è il momento di passare a Telegram Aniways e Aniways: http://aniways.com/anygram/dl2</string>
+    <string name="InviteText">Ehi, è il momento di passare a Aniways Messenger e Aniways: http://aniways.com/anygram/dl2</string>
     <string name="TodayAt">alle</string>
     <string name="YesterdayAt">ieri alle</string>
     <string name="Online">in linea</string>
@@ -208,7 +210,7 @@
     <string name="AddMember">Aggiungi membro</string>
     <string name="DeleteAndExit">Elimina e lascia il gruppo</string>
     <string name="Notifications">Notifiche</string>
-    <string name="KickFromGroup">Espelli dal gruppo</string>
+    <string name="KickFromGroup">Rimuovi dal gruppo</string>
     <!--contact info view-->
     <string name="ShareContact">Condividi</string>
     <string name="AddContact">Aggiungi</string>
@@ -243,6 +245,21 @@
     <string name="UsernameAvailable">%1$s è disponibile.</string>
     <string name="UsernameEmpty">Nessuno</string>
     <string name="ErrorOccurred">Si è verificato un errore.</string>
+    <!--stickers view-->
+    <string name="Stickers">Sticker</string>
+    <string name="GeniusStickerPackName">Grandi menti</string>
+    <string name="StickersInfo">Gli artisti sono invitati ad aggiungere i loro pacchetti di sticker usando il nostro bot @stickers.\n\nGli utenti possono aggiungere sticker premendo su di loro e scegliendo \"Aggiungi agli sticker\".</string>
+    <string name="AddStickers">Aggiungi sticker</string>
+    <string name="AddToStickers">Aggiungi agli sticker</string>
+    <string name="AddStickersNotFound">Sticker non trovati</string>
+    <string name="StickersRemoved">Sticker rimossi</string>
+    <string name="AddStickersInstalled">Nuovi sticker aggiunti</string>
+    <string name="StickersHide">Nascondi</string>
+    <string name="StickersShow">Mostra</string>
+    <string name="StickersShare">Condividi</string>
+    <string name="StickersCopy">Copia link</string>
+    <string name="StickersRemove">Rimuovi</string>
+    <string name="NoStickers">Ancora nessuno sticker</string>
     <!--settings view-->
     <string name="ResetNotificationsText">Ripristina tutte le impostazioni di notifica predefinite</string>
     <string name="TextSize">Dimensione testo messaggi</string>
@@ -273,7 +290,7 @@
     <string name="OnlyIfSilent">Solo se silenzioso</string>
     <string name="ChatBackground">Sfondo chat</string>
     <string name="MessagesSettings">Messaggi</string>
-    <string name="SendByEnter">Spedisci con Invio</string>
+    <string name="SendByEnter">Spedisci con invio</string>
     <string name="TerminateAllSessions">Termina le altre sessioni</string>
     <string name="Events">Eventi</string>
     <string name="ContactJoined">Un contatto ha iniziato a usare Telegram</string>
@@ -390,7 +407,7 @@
     <string name="AllPhotos">Tutte le foto</string>
     <string name="AllVideo">Tutti i video</string>
     <string name="NoPhotos">Ancora nessuna foto</string>
-    <string name="NoVideo">Nessun video</string>
+    <string name="NoVideo">Ancora nessun video</string>
     <string name="PleaseDownload">Scarica prima il file</string>
     <string name="NoRecentPhotos">Nessuna foto recente</string>
     <string name="NoRecentGIFs">Nessuna GIF recente</string>
@@ -519,6 +536,7 @@
     <string name="Done">Fatto</string>
     <string name="Open">Apri</string>
     <string name="Cancel">Annulla</string>
+    <string name="Close">Chiudi</string>
     <string name="Add">Aggiungi</string>
     <string name="Edit">Modifica</string>
     <string name="Send">Invia</string>
@@ -536,24 +554,25 @@
     <!--messages-->
     <string name="ActionInviteYou">Ti sei unito al gruppo tramite link di invito</string>
     <string name="ActionInviteUser">un1 si è unito al gruppo tramite link di invito</string>
-    <string name="ActionKickUser">un1 ha espulso un2</string>
+    <string name="ActionKickUser">un1 ha rimosso un2</string>
     <string name="ActionLeftUser">un1 ha lasciato il gruppo</string>
     <string name="ActionAddUser">un1 ha aggiunto un2</string>
     <string name="ActionRemovedPhoto">un1 ha rimosso la foto del gruppo</string>
     <string name="ActionChangedPhoto">un1 ha cambiato la foto del gruppo</string>
     <string name="ActionChangedTitle">un1 ha cambiato il nome del gruppo in un2</string>
     <string name="ActionCreateGroup">un1 ha creato il gruppo</string>
-    <string name="ActionYouKickUser">Hai espulso un2</string>
+    <string name="ActionYouKickUser">Hai rimosso un2</string>
     <string name="ActionYouLeftUser">Hai lasciato il gruppo</string>
     <string name="ActionYouAddUser">Hai aggiunto un2</string>
     <string name="ActionYouRemovedPhoto">Hai rimosso la foto del gruppo</string>
     <string name="ActionYouChangedPhoto">Hai cambiato la foto del gruppo</string>
     <string name="ActionYouChangedTitle">Hai cambiato il nome del gruppo in un2</string>
     <string name="ActionYouCreateGroup">Hai creato il gruppo</string>
-    <string name="ActionKickUserYou">un1 ti ha espulso</string>
+    <string name="ActionKickUserYou">un1 ti ha rimosso</string>
     <string name="ActionAddUserYou">un1 ti ha aggiunto</string>
-    <string name="ActionAddUserSelf">un1 è ritentrato nel gruppo</string>
     <string name="UnsuppotedMedia">Questo messaggio non è supportato sulla tua versione di Telegram. Aggiorna l\'applicazione per visualizzarlo: http://aniways.com/anygram/dl2</string>
+    <string name="ActionAddUserSelf">un1 è rientrato nel gruppo</string>
+    <string name="ActionAddUserSelfYou">Sei rientrato nel gruppo</string>
     <string name="AttachPhoto">Foto</string>
     <string name="AttachVideo">Video</string>
     <string name="AttachLocation">Posizione</string>
@@ -576,19 +595,19 @@
     <string name="NoPlayerInstalled">Non hai un lettore video, per favore installane uno per continuare</string>
     <string name="NoMailInstalled">Invia un’email a sms@stel.com spiegandoci il problema.</string>
     <string name="NoHandleAppInstalled">Non hai nessuna applicazione che può gestire il tipo di file \'%1$s\': installane una per proseguire</string>
-    <string name="InviteUser">Questo utente non ha ancora Telegram Aniways, vuoi invitarlo?</string>
+    <string name="InviteUser">Questo utente non ha ancora Aniways Messenger, vuoi invitarlo?</string>
     <string name="AreYouSure">Sei sicuro?</string>
     <string name="AddToTheGroup">Aggiungere %1$s al gruppo?\n\nNumero di messaggi recenti da inoltrare:</string>
     <string name="ForwardMessagesTo">Vuoi inoltrare i messaggi a %1$s?</string>
     <string name="SendMessagesTo">Inviare i messaggi a %1$s?</string>
     <string name="AreYouSureLogout">Sei sicuro di volerti disconnettere?\n\nRicorda che puoi usare Telegram su tutti i tuoi device insieme.\n\nRicorda, disconnettersi elimina tutte le Chat Segrete.</string>
     <string name="AreYouSureSessions">Terminare tutte le altre sessioni?</string>
-    <string name="AreYouSureDeleteAndExit">Eliminare il gruppo e uscire da esso?</string>
-    <string name="AreYouSureDeleteThisChat">Eliminare questa chat?</string>
+    <string name="AreYouSureDeleteAndExit">Sei sicuro di voler uscire ed eliminare il gruppo?</string>
+    <string name="AreYouSureDeleteThisChat">Sei sicuro di voler eliminare questa chat?</string>
     <string name="AreYouSureShareMyContactInfo">Condividere le informazioni del proprio contatto?</string>
     <string name="AreYouSureBlockContact">Bloccare questo contatto?</string>
     <string name="AreYouSureUnblockContact">Sbloccare questo contatto?</string>
-    <string name="AreYouSureDeleteContact">Eliminare questo contatto?</string>
+    <string name="AreYouSureDeleteContact">Sei sicuro di voler eliminare questo contatto?</string>
     <string name="AreYouSureSecretChat">Iniziare una chat segreta?</string>
     <string name="AreYouSureRegistration">Sei sicuro di volere eliminare questa registrazione?</string>
     <string name="AreYouSureClearHistory">Sei sicuro di volere eliminare la cronologia?</string>
@@ -597,7 +616,7 @@
     <string name="ForwardMessagesToGroup">Inoltra messaggi a %1$s?</string>
     <string name="FeatureUnavailable">Ci spiace, questa funzione non è disponibile nel tuo paese.</string>
     <!--Intro view-->
-    <string name="Page1Title">Telegram Aniways</string>
+    <string name="Page1Title">Aniways Messenger</string>
     <string name="Page2Title">Veloce</string>
     <string name="Page3Title">Gratuito</string>
     <string name="Page4Title">Sicuro</string>
@@ -605,12 +624,12 @@
     <string name="Page6Title">Basato sul cloud</string>
     <string name="Page7Title">Privato</string>
     <string name="Page1Message">L\'app di messaggi <![CDATA[<b>più veloce</b>]]> al mondo.<![CDATA[<br/>]]>È <![CDATA[<b>gratuita</b>]]> e <![CDATA[<b>sicura</b>]]>.</string>
-    <string name="Page2Message"><![CDATA[<b>Telegram Aniways</b>]]> consegna i messaggi più<![CDATA[<br/>]]>velocemente di qualsiasi altra app.</string>
-    <string name="Page3Message"><![CDATA[<b>Telegram Aniways</b>]]> sarà sempre gratuito.<![CDATA[<br/>]]>Nessuna pubblicità. Nessun abbonamento.</string>
-    <string name="Page4Message"><![CDATA[<b>Telegram Aniways</b>]]> protegge i tuoi messaggi<![CDATA[<br/>]]>dagli attacchi degli hacker.</string>
-    <string name="Page5Message"><![CDATA[<b>Telegram Aniways</b>]]> non ha limiti sulle dimensioni<![CDATA[<br/>]]>dei tuoi file multimediali e delle chat.</string>
-    <string name="Page6Message"><![CDATA[<b>Telegram Aniways</b>]]> ti consente di accedere<![CDATA[<br/>]]>ai messaggi da più dispositivi.</string>
-    <string name="Page7Message"><![CDATA[<b>Telegram Aniways</b>]]> cifra in maniera sicura i messaggi<![CDATA[<br/>]]>e può far sì che si autodistruggano.</string>
+    <string name="Page2Message"><![CDATA[<b>Aniways Messenger</b>]]> consegna i messaggi più<![CDATA[<br/>]]>velocemente di qualsiasi altra app.</string>
+    <string name="Page3Message"><![CDATA[<b>Aniways Messenger</b>]]> sarà sempre gratuito.<![CDATA[<br/>]]>Nessuna pubblicità. Nessun abbonamento.</string>
+    <string name="Page4Message"><![CDATA[<b>Aniways Messenger</b>]]> protegge i tuoi messaggi<![CDATA[<br/>]]>dagli attacchi degli hacker.</string>
+    <string name="Page5Message"><![CDATA[<b>Aniways Messenger</b>]]> non ha limiti sulle dimensioni<![CDATA[<br/>]]>dei tuoi file multimediali e delle chat.</string>
+    <string name="Page6Message"><![CDATA[<b>Aniways Messenger</b>]]> ti consente di accedere<![CDATA[<br/>]]>ai messaggi da più dispositivi.</string>
+    <string name="Page7Message"><![CDATA[<b>Aniways Messenger</b>]]> cifra in maniera sicura i messaggi<![CDATA[<br/>]]>e può far sì che si autodistruggano.</string>
     <string name="StartMessaging">Inizia a inviare messaggi</string>
     <!--plural-->
     <string name="Online_zero">%1$d in linea</string>
@@ -715,6 +734,12 @@
     <string name="Meters_few">%1$d metri</string>
     <string name="Meters_many">%1$d metri</string>
     <string name="Meters_other">%1$d metri</string>
+    <string name="Stickers_zero">%1$d sticker</string>
+    <string name="Stickers_one">%1$d sticker</string>
+    <string name="Stickers_two">%1$d sticker</string>
+    <string name="Stickers_few">%1$d sticker</string>
+    <string name="Stickers_many">%1$d sticker</string>
+    <string name="Stickers_other">%1$d sticker</string>
     <!--forwarded messages-->
     <string name="ForwardedMessage_zero">%1$d messaggi inoltrati</string>
     <string name="ForwardedMessage_one">Messaggio inoltrato</string>
@@ -782,6 +807,6 @@
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s alle %2$s</string>
     <!--update text-->
-    <string name="updateText">Telegram per Android si è aggiornato. Nuovo nella versione 2.8:\n\n- Invita nei gruppi tramite link\n- Notifiche intelligenti\n- Pannello degli sticker nella lista emoji\n- Luoghi e direzioni nelle posizioni\n- Stato \'ascoltato\' per i messaggi vocali\n- Stato di scrittura \'avanzato\': inviando una foto, registrando un audio, etc\n- Animazioni e scorrimento migliorati per un\'esperienza rapidissimaaaa</string>
-    <string name="updateBuild">516</string>
+    <string name="updateText">Telegram per Android è stato aggiornato. Nuovo nella versione 2.9:\n\n- Installa e condividi pacchetti di sticker personalizzati come questo: https://telegram.me/addstickers/Animals\n- Se sei un artista, crea pacchetti di sticker utilizzando il nostro bot @stickers.\n\n- Usa Telegram con Android Auto.</string>
+    <string name="updateBuild">536</string>
 </resources>

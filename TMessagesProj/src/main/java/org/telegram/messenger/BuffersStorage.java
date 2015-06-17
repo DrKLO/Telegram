@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 1.3.x.
+ * This is the source code of Telegram for Android v. 2.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2014.
+ * Copyright Nikolai Kudashov, 2013-2015.
  */
 
 package org.telegram.messenger;
@@ -37,12 +37,12 @@ public class BuffersStorage {
 
     public BuffersStorage(boolean threadSafe) {
         isThreadSafe = threadSafe;
-        freeBuffers128 = new ArrayList<ByteBufferDesc>();
-        freeBuffers1024 = new ArrayList<ByteBufferDesc>();
-        freeBuffers4096 = new ArrayList<ByteBufferDesc>();
-        freeBuffers16384 = new ArrayList<ByteBufferDesc>();
-        freeBuffers32768 = new ArrayList<ByteBufferDesc>();
-        freeBuffersBig = new ArrayList<ByteBufferDesc>();
+        freeBuffers128 = new ArrayList<>();
+        freeBuffers1024 = new ArrayList<>();
+        freeBuffers4096 = new ArrayList<>();
+        freeBuffers16384 = new ArrayList<>();
+        freeBuffers32768 = new ArrayList<>();
+        freeBuffersBig = new ArrayList<>();
 
         for (int a = 0; a < 5; a++) {
             freeBuffers128.add(new ByteBufferDesc(128));

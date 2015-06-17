@@ -46,6 +46,7 @@ import org.telegram.android.ContactsController;
 import org.telegram.android.MessagesController;
 import org.telegram.android.MessagesStorage;
 import org.telegram.android.SendMessagesHelper;
+import org.telegram.android.query.StickersQuery;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLog;
@@ -56,7 +57,6 @@ import org.telegram.messenger.RPCRequest;
 import org.telegram.messenger.TLObject;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.UserConfig;
-import org.telegram.messenger.Utilities;
 import org.telegram.ui.Adapters.DrawerLayoutAdapter;
 import org.telegram.ui.ActionBar.ActionBarLayout;
 import org.telegram.ui.ActionBar.BaseFragment;
@@ -131,6 +131,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         setTheme(R.style.Theme_TMessages);
         getWindow().setBackgroundDrawableResource(R.drawable.transparent);
+
 
         super.onCreate(savedInstanceState);
 
@@ -341,8 +342,6 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
         NotificationCenter.getInstance().addObserver(this, NotificationCenter.didUpdatedConnectionState);
         if (Build.VERSION.SDK_INT < 14) {
             NotificationCenter.getInstance().addObserver(this, NotificationCenter.screenStateChanged);
-        } else {
-            NotificationCenter.getInstance().addObserver(this, NotificationCenter.appSwitchedToForeground);
         }
 
         if (actionBarLayout.fragmentsStack.isEmpty()) {
@@ -403,11 +402,12 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                 FileLog.e("tmessages", e);
             }
         } else {
-            boolean allowOpen = false;
+            boolean allowOpen = true;
             if (AndroidUtilities.isTablet()) {
                 allowOpen = actionBarLayout.fragmentsStack.size() <= 1 && layersActionBarLayout.fragmentsStack.isEmpty();
-            } else {
-                allowOpen = actionBarLayout.fragmentsStack.size() <= 1;
+                if (layersActionBarLayout.fragmentsStack.size() == 1 && layersActionBarLayout.fragmentsStack.get(0) instanceof LoginActivity) {
+                    allowOpen = false;
+                }
             }
             if (actionBarLayout.fragmentsStack.size() == 1 && actionBarLayout.fragmentsStack.get(0) instanceof LoginActivity) {
                 allowOpen = false;
@@ -479,22 +479,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                     if (Intent.ACTION_SEND.equals(intent.getAction())) {
                         boolean error = false;
                         String type = intent.getType();
-                        if (type != null && (type.equals("text/plain") || type.equals("message/rfc822")) && (intent.getStringExtra(Intent.EXTRA_TEXT) != null || intent.getCharSequenceExtra(Intent.EXTRA_TEXT) != null)) {
-                            String text = intent.getStringExtra(Intent.EXTRA_TEXT);
-                            if (text == null) {
-                                text = intent.getCharSequenceExtra(Intent.EXTRA_TEXT).toString();
-                            }
-                            String subject = intent.getStringExtra(Intent.EXTRA_SUBJECT);
-
-                            if (text != null && text.length() != 0) {
-                                if ((text.startsWith("http://") || text.startsWith("https://")) && subject != null && subject.length() != 0) {
-                                    text = subject + "\n" + text;
-                                }
-                                sendingText = text;
-                            } else {
-                                error = true;
-                            }
-                        } else if (type != null && type.equals(ContactsContract.Contacts.CONTENT_VCARD_TYPE)) {
+                        if (type != null && type.equals(ContactsContract.Contacts.CONTENT_VCARD_TYPE)) {
                             try {
                                 Uri uri = (Uri) intent.getExtras().get(Intent.EXTRA_STREAM);
                                 if (uri != null) {
@@ -506,7 +491,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                                     String nameCharset = null;
                                     ArrayList<String> phones = new ArrayList<>();
                                     BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(stream, "UTF-8"));
-                                    String line = null;
+                                    String line;
                                     while ((line = bufferedReader.readLine()) != null) {
                                         String[] args = line.split(":");
                                         if (args.length != 2) {
@@ -535,7 +520,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                                                     }
                                                     name += line;
                                                 }
-                                                byte[] bytes = Utilities.decodeQuotedPrintable(name.getBytes());
+                                                byte[] bytes = AndroidUtilities.decodeQuotedPrintable(name.getBytes());
                                                 if (bytes != null && bytes.length != 0) {
                                                     String decodedName = new String(bytes, nameCharset);
                                                     if (decodedName != null) {
@@ -575,21 +560,40 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                                 error = true;
                             }
                         } else {
+                            if (type != null && (type.equals("text/plain") || type.equals("message/rfc822")) && (intent.getStringExtra(Intent.EXTRA_TEXT) != null || intent.getCharSequenceExtra(Intent.EXTRA_TEXT) != null)) {
+                                String text = intent.getStringExtra(Intent.EXTRA_TEXT);
+                                if (text == null) {
+                                    text = intent.getCharSequenceExtra(Intent.EXTRA_TEXT).toString();
+                                }
+                                String subject = intent.getStringExtra(Intent.EXTRA_SUBJECT);
+
+                                if (text != null && text.length() != 0) {
+                                    if ((text.startsWith("http://") || text.startsWith("https://")) && subject != null && subject.length() != 0) {
+                                        text = subject + "\n" + text;
+                                    }
+                                    sendingText = text;
+                                    if (sendingText.contains("WhatsApp")) { //who needs this sent from ...?
+                                        sendingText = null;
+                                    }
+                                } else {
+                                    error = true;
+                                }
+                            }
                             Parcelable parcelable = intent.getParcelableExtra(Intent.EXTRA_STREAM);
                             if (parcelable != null) {
-                                String path = null;
+                                String path;
                                 if (!(parcelable instanceof Uri)) {
                                     parcelable = Uri.parse(parcelable.toString());
                                 }
                                 Uri uri = (Uri) parcelable;
-                                if (uri != null && type != null && type.startsWith("image/")) {
-                                    String tempPath = Utilities.getPath(uri);
+                                if (uri != null && (type != null && type.startsWith("image/") || uri.toString().toLowerCase().endsWith(".jpg"))) {
+                                    String tempPath = AndroidUtilities.getPath(uri);
                                     if (photoPathsArray == null) {
                                         photoPathsArray = new ArrayList<>();
                                     }
                                     photoPathsArray.add(uri);
                                 } else {
-                                    path = Utilities.getPath(uri);
+                                    path = AndroidUtilities.getPath(uri);
                                     if (path != null) {
                                         if (path.startsWith("file:")) {
                                             path = path.replace("file://", "");
@@ -612,12 +616,12 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                                         documentsMimeType = type;
                                     }
                                 }
-                            } else {
+                            } else if (sendingText == null) {
                                 error = true;
                             }
-                            if (error) {
-                                Toast.makeText(this, "Unsupported content", Toast.LENGTH_SHORT).show();
-                            }
+                        }
+                        if (error) {
+                            Toast.makeText(this, "Unsupported content", Toast.LENGTH_SHORT).show();
                         }
                     } else if (intent.getAction().equals(Intent.ACTION_SEND_MULTIPLE)) {
                         boolean error = false;
@@ -641,7 +645,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                                         if (!(parcelable instanceof Uri)) {
                                             parcelable = Uri.parse(parcelable.toString());
                                         }
-                                        String path = Utilities.getPath((Uri) parcelable);
+                                        String path = AndroidUtilities.getPath((Uri) parcelable);
                                         String originalPath = parcelable.toString();
                                         if (originalPath == null) {
                                             originalPath = path;
@@ -674,6 +678,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                         if (data != null) {
                             String username = null;
                             String group = null;
+                            String sticker = null;
                             String scheme = data.getScheme();
                             if (scheme != null) {
                                 if ((scheme.equals("http") || scheme.equals("https"))) {
@@ -684,6 +689,8 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                                             path = path.substring(1);
                                             if (path.startsWith("joinchat/")) {
                                                 group = path.replace("joinchat/", "");
+                                            } else if (path.startsWith("addstickers/")) {
+                                                sticker = path.replace("addstickers/", "");
                                             } else {
                                                 username = path;
                                             }
@@ -699,11 +706,15 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                                         url = url.replace("tg:join", "tg://telegram.org").replace("tg://join", "tg://telegram.org");
                                         data = Uri.parse(url);
                                         group = data.getQueryParameter("invite");
+                                    } else if (url.startsWith("tg:addstickers") || url.startsWith("tg://addstickers")) {
+                                        url = url.replace("tg:addstickers", "tg://telegram.org").replace("tg://addstickers", "tg://telegram.org");
+                                        data = Uri.parse(url);
+                                        sticker = data.getQueryParameter("set");
                                     }
                                 }
                             }
-                            if (username != null || group != null) {
-                                runLinkRequest(username, group, 0);
+                            if (username != null || group != null || sticker != null) {
+                                runLinkRequest(username, group, sticker, 0);
                             } else {
                                 try {
                                     Cursor cursor = getContentResolver().query(intent.getData(), null, null, null, null);
@@ -743,15 +754,11 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
             }
 
             if (push_user_id != 0) {
-                if (push_user_id == UserConfig.getClientUserId()) {
-                    open_settings = 1;
-                } else {
-                    Bundle args = new Bundle();
-                    args.putInt("user_id", push_user_id);
-                    ChatActivity fragment = new ChatActivity(args);
-                    if (actionBarLayout.presentFragment(fragment, false, true, true)) {
-                        pushOpened = true;
-                    }
+                Bundle args = new Bundle();
+                args.putInt("user_id", push_user_id);
+                ChatActivity fragment = new ChatActivity(args);
+                if (actionBarLayout.presentFragment(fragment, false, true, true)) {
+                    pushOpened = true;
                 }
             } else if (push_chat_id != 0) {
                 Bundle args = new Bundle();
@@ -791,7 +798,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                 args.putString("selectAlertStringGroup", LocaleController.getString("SendMessagesToGroup", R.string.SendMessagesToGroup));
                 MessagesActivity fragment = new MessagesActivity(args);
                 fragment.setDelegate(this);
-                boolean removeLast = false;
+                boolean removeLast;
                 if (AndroidUtilities.isTablet()) {
                     removeLast = layersActionBarLayout.fragmentsStack.size() > 0 && layersActionBarLayout.fragmentsStack.get(layersActionBarLayout.fragmentsStack.size() - 1) instanceof MessagesActivity;
                 } else {
@@ -859,7 +866,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
         return false;
     }
 
-    private void runLinkRequest(final String username, final String group, final int state) {
+    private void runLinkRequest(final String username, final String group, final String sticker, final int state) {
         final ProgressDialog progressDialog = new ProgressDialog(this);
         progressDialog.setMessage(LocaleController.getString("Loading", R.string.Loading));
         progressDialog.setCanceledOnTouchOutside(false);
@@ -933,7 +940,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                                             builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), new DialogInterface.OnClickListener() {
                                                 @Override
                                                 public void onClick(DialogInterface dialogInterface, int i) {
-                                                    runLinkRequest(username, group, 1);
+                                                    runLinkRequest(username, group, sticker, 1);
                                                 }
                                             });
                                             builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
@@ -1000,6 +1007,13 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                     }
                 });
             }
+        } else if (sticker != null) {
+            if (!mainFragmentsStack.isEmpty()) {
+                TLRPC.TL_inputStickerSetShortName stickerset = new TLRPC.TL_inputStickerSetShortName();
+                stickerset.short_name = sticker;
+                StickersQuery.loadStickers(mainFragmentsStack.get(0), stickerset);
+            }
+            return;
         }
 
         final long reqId = requestId;
@@ -1137,8 +1151,6 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.didUpdatedConnectionState);
         if (Build.VERSION.SDK_INT < 14) {
             NotificationCenter.getInstance().removeObserver(this, NotificationCenter.screenStateChanged);
-        } else {
-            NotificationCenter.getInstance().removeObserver(this, NotificationCenter.appSwitchedToForeground);
         }
     }
 
@@ -1275,6 +1287,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
         }
         ApplicationLoader.mainInterfacePaused = true;
         ConnectionsManager.getInstance().setAppPaused(true, false);
+        AndroidUtilities.unregisterUpdates();
     }
 
     @Override
@@ -1306,8 +1319,8 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
         } else {
             passcodeView.onResume();
         }
-        Utilities.checkForCrashes(this);
-        Utilities.checkForUpdates(this);
+        AndroidUtilities.checkForCrashes(this);
+        AndroidUtilities.checkForUpdates(this);
         ApplicationLoader.mainInterfacePaused = false;
         ConnectionsManager.getInstance().setAppPaused(false, false);
         updateCurrentConnectionState();
@@ -1370,8 +1383,6 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                     onPasscodeResume();
                 }
             }
-        } else if (id == NotificationCenter.appSwitchedToForeground) {
-            onPasscodeResume();
         }
     }
 

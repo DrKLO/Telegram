@@ -160,7 +160,7 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
                         }
                     });
                     builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-                    showAlertDialog(builder);
+                    showDialog(builder.create());
                 } else if (i == settingsNotificationsRow) {
                     if (getParentActivity() == null) {
                         return;
@@ -193,7 +193,7 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
                         }
                     });
                     builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-                    showAlertDialog(builder);
+                    showDialog(builder.create());
                 } else if (i == settingsSoundRow) {
                     try {
                         Intent tmpIntent = new Intent(RingtoneManager.ACTION_RINGTONE_PICKER);
@@ -228,9 +228,10 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
                         return;
                     }
 
-                    LayoutInflater li = (LayoutInflater) getParentActivity().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-                    view = li.inflate(R.layout.settings_color_dialog_layout, null, false);
-                    final ColorPickerView colorPickerView = (ColorPickerView) view.findViewById(R.id.color_picker);
+                    LinearLayout linearLayout = new LinearLayout(getParentActivity());
+                    linearLayout.setOrientation(LinearLayout.VERTICAL);
+                    final ColorPickerView colorPickerView = new ColorPickerView(getParentActivity());
+                    linearLayout.addView(colorPickerView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
 
                     SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
                     if (preferences.contains("color_" + dialog_id)) {
@@ -245,7 +246,7 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
 
                     AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                     builder.setTitle(LocaleController.getString("LedColor", R.string.LedColor));
-                    builder.setView(view);
+                    builder.setView(linearLayout);
                     builder.setPositiveButton(LocaleController.getString("Set", R.string.Set), new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialogInterface, int which) {
@@ -276,7 +277,7 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
                             listView.invalidateViews();
                         }
                     });
-                    showAlertDialog(builder);
+                    showDialog(builder.create());
                 } else if (i == settingsPriorityRow) {
                     AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                     builder.setTitle(LocaleController.getString("NotificationsPriority", R.string.NotificationsPriority));
@@ -301,7 +302,7 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
                         }
                     });
                     builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-                    showAlertDialog(builder);
+                    showDialog(builder.create());
                 } else if (i == smartRow) {
                     if (getParentActivity() == null) {
                         return;
@@ -416,7 +417,7 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
                             }
                         }
                     });
-                    showAlertDialog(builder);
+                    showDialog(builder.create());
                 }
             }
         });

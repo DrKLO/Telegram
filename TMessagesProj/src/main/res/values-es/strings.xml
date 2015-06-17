@@ -6,7 +6,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     tools:ignore="MissingTranslation"
     tools:locale="en">
-    <string name="AppName">Telegram Aniways</string>
+    <string name="AppName">Aniways Messenger</string>
     <string name="LanguageName">Español</string>
     <string name="LanguageNameInEnglish">Spanish</string>
     <string name="LanguageCode">es</string>
@@ -129,6 +129,8 @@
     <string name="SetTimer">Establecer autodestrucción</string>
     <string name="ServiceNotifications">Servicio de notificaciones</string>
     <string name="GettingLinkInfo">Obteniendo información...</string>
+    <string name="OpenInBrowser">Abrir en el navegador</string>
+    <string name="CopyUrl">Copiar URL</string>
     <!--notification-->
     <string name="MessageLifetimeChanged">%1$s activó la autodestrucción en %2$s</string>
     <string name="MessageLifetimeChangedOutgoing">Activaste la autodestrucción en %1$s</string>
@@ -172,7 +174,7 @@
     <!--contacts view-->
     <string name="SelectContact">Elegir contacto</string>
     <string name="NoContacts">Aún sin contactos</string>
-    <string name="InviteText">Oye, cambiémonos a Telegram Aniways: http://aniways.com/anygram/dl2</string>
+    <string name="InviteText">Oye, cambiémonos a Aniways Messenger: http://aniways.com/anygram/dl2</string>
     <string name="TodayAt">a las</string>
     <string name="YesterdayAt">ayer a las</string>
     <string name="Online">en línea</string>
@@ -244,6 +246,21 @@
     <string name="UsernameAvailable">%1$s está disponible.</string>
     <string name="UsernameEmpty">Ninguno</string>
     <string name="ErrorOccurred">Ocurrió un error.</string>
+    <!--stickers view-->
+    <string name="Stickers">Stickers</string>
+    <string name="GeniusStickerPackName">Grandes personajes</string>
+    <string name="StickersInfo">Los artistas pueden añadir sus propios packs de stickers usando el bot @stickers.\n\nLos usuarios pueden añadir stickers pulsando y eligiendo \"Añadir stickers\".</string>
+    <string name="AddStickers">Añadir stickers</string>
+    <string name="AddToStickers">Añadir a stickers</string>
+    <string name="AddStickersNotFound">Stickers no encontrados</string>
+    <string name="StickersRemoved">Stickers eliminados</string>
+    <string name="AddStickersInstalled">Nuevos stickers añadidos</string>
+    <string name="StickersHide">Ocultar</string>
+    <string name="StickersShow">Mostrar</string>
+    <string name="StickersShare">Compartir</string>
+    <string name="StickersCopy">Copiar enlace</string>
+    <string name="StickersRemove">Quitar</string>
+    <string name="NoStickers">Sin stickers aún</string>
     <!--settings view-->
     <string name="ResetNotificationsText">Restablecer las notificaciones</string>
     <string name="TextSize">Tamaño del texto</string>
@@ -520,6 +537,7 @@
     <string name="Done">Hecho</string>
     <string name="Open">Abrir</string>
     <string name="Cancel">Cancelar</string>
+    <string name="Close">Cerrar</string>
     <string name="Add">Añadir</string>
     <string name="Edit">Editar</string>
     <string name="Send">Enviar</string>
@@ -555,6 +573,7 @@
     <string name="ActionAddUserYou">un1 te añadió</string>
     <string name="ActionAddUserSelf">un1 volvió al grupo</string>
     <string name="UnsuppotedMedia">Este mensaje no lo admite tu versión de Telegram. Actualiza la app para verlo: http://aniways.com/anygram/dl2</string>
+    <string name="ActionAddUserSelfYou">Volviste al grupo</string>
     <string name="AttachPhoto">Foto</string>
     <string name="AttachVideo">Vídeo</string>
     <string name="AttachLocation">Ubicación</string>
@@ -577,7 +596,7 @@
     <string name="NoPlayerInstalled">No tienes reproductor de vídeo. Por favor, instala uno para continuar.</string>
     <string name="NoMailInstalled">Por favor, envía un correo electrónico a sms@stel.com y cuéntanos tu problema.</string>
     <string name="NoHandleAppInstalled">No tienes aplicaciones que puedan manejar el tipo de archivo \'%1$s\'. Por favor, instala una para continuar.</string>
-    <string name="InviteUser">Este usuario no tiene Telegram Aniways aún. ¿Enviarle una invitación?</string>
+    <string name="InviteUser">Este usuario aún no tiene Telegram. ¿Enviarle una invitación?</string>
     <string name="AreYouSure">¿Quieres hacerlo?</string>
     <string name="AddToTheGroup">¿Añadir a %1$s al grupo?\n\nNúmero de los últimos mensajes para reenviar:</string>
     <string name="ForwardMessagesTo">¿Reenviar mensajes a %1$s?</string>
@@ -598,7 +617,7 @@
     <string name="ForwardMessagesToGroup">¿Reenviar mensajes a %1$s?</string>
     <string name="FeatureUnavailable">Lo siento, esta característica no está disponible en tu país actualmente.</string>
     <!--Intro view-->
-    <string name="Page1Title">Telegram Aniways</string>
+    <string name="Page1Title">Aniways Messenger</string>
     <string name="Page2Title">Rápida</string>
     <string name="Page3Title">Gratis</string>
     <string name="Page4Title">Segura</string>
@@ -606,12 +625,12 @@
     <string name="Page6Title">Basada en la nube</string>
     <string name="Page7Title">Privada</string>
     <string name="Page1Message">La aplicación de mensajería más<![CDATA[<br/><b>veloz</b>]]> del mundo. Es <![CDATA[<b>gratis</b>]]> y <![CDATA[<b>segura</b>]]>.</string>
-    <string name="Page2Message"><![CDATA[<b>Telegram Aniways</b>]]> entrega mensajes más<![CDATA[<br/>]]>rápido que cualquier otra aplicación.</string>
-    <string name="Page3Message"><![CDATA[<b>Telegram Aniways</b>]]> es gratis para siempre.<![CDATA[<br/>]]>Sin publicidad ni suscripciones.</string>
-    <string name="Page4Message"><![CDATA[<b>Telegram Aniways</b>]]> mantiene tus mensajes<![CDATA[<br/>]]>a salvo del ataque de hackers.</string>
-    <string name="Page5Message"><![CDATA[<b>Telegram Aniways</b>]]> no tiene límites en<![CDATA[<br/>]]>el tamaño de tus chats y archivos.</string>
-    <string name="Page6Message"><![CDATA[<b>Telegram Aniways</b>]]> te permite acceder a tus<![CDATA[<br/>]]>mensajes desde múltiples dispositivos.</string>
-    <string name="Page7Message"><![CDATA[<b>Telegram Aniways</b>]]> posee mensajes fuertemente<![CDATA[<br/>]]>cifrados y se pueden autodestruir.</string>
+    <string name="Page2Message"><![CDATA[<b>Aniways Messenger</b>]]> entrega mensajes más<![CDATA[<br/>]]>rápido que cualquier otra aplicación.</string>
+    <string name="Page3Message"><![CDATA[<b>Aniways Messenger</b>]]> es gratis para siempre.<![CDATA[<br/>]]>Sin publicidad ni suscripciones.</string>
+    <string name="Page4Message"><![CDATA[<b>Aniways Messenger</b>]]> mantiene tus mensajes<![CDATA[<br/>]]>a salvo del ataque de hackers.</string>
+    <string name="Page5Message"><![CDATA[<b>Aniways Messenger</b>]]> no tiene límites en<![CDATA[<br/>]]>el tamaño de tus chats y archivos.</string>
+    <string name="Page6Message"><![CDATA[<b>Aniways Messenger</b>]]> te permite acceder a tus<![CDATA[<br/>]]>mensajes desde múltiples dispositivos.</string>
+    <string name="Page7Message"><![CDATA[<b>Aniways Messenger</b>]]> posee mensajes fuertemente<![CDATA[<br/>]]>cifrados y se pueden autodestruir.</string>
     <string name="StartMessaging">Empieza a conversar</string>
     <!--plural-->
     <string name="Online_zero">%1$d en línea</string>
@@ -716,6 +735,12 @@
     <string name="Meters_few">%1$d metros</string>
     <string name="Meters_many">%1$d metros</string>
     <string name="Meters_other">%1$d metros</string>
+    <string name="Stickers_zero">%1$d stickers</string>
+    <string name="Stickers_one">%1$d sticker</string>
+    <string name="Stickers_two">%1$d stickers</string>
+    <string name="Stickers_few">%1$d stickers</string>
+    <string name="Stickers_many">%1$d stickers</string>
+    <string name="Stickers_other">%1$d stickers</string>
     <!--forwarded messages-->
     <string name="ForwardedMessage_zero">%1$d mensajes adjuntos</string>
     <string name="ForwardedMessage_one">Mensaje adjunto</string>
@@ -783,6 +808,6 @@
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s a las %2$s</string>
     <!--update text-->
-    <string name="updateText">Telegram para Android ha sido actualizada. Novedades en la versión 2.8:\n\n- Enlaces de invitación para chats grupales\n- Notificaciones inteligentes\n- Pestaña de stickers en el menú de emojis\n- Comentarios en las fotos\n- Lugares y direcciones en las ubicaciones\n- Estado \'escuchado\' para los mensajes de voz\n- Estado \'escribiendo\' avanzado: enviando foto, grabando audio, etc.\n- Deslizamiento y animaciones mejoradas para una experiencia fluiiiiiiiiiiiiiiiiiida</string>
-    <string name="updateBuild">515</string>
+    <string name="updateText">Telegram para Android fue actualizada. Novedades en la versión 2.9:\n\n- Instala y comparte packs de stickers personalizados como este: https://telegram.me/addstickers/Animals\n- Si eres un artista, crea packs de stickers personalizados usando nuestro bot @stickers.\n\n- Usa Telegram con Android Auto.</string>
+    <string name="updateBuild">536</string>
 </resources>

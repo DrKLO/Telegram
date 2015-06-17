@@ -2,7 +2,7 @@
 <resources
     xmlns:tools="http://schemas.android.com/tools"
     tools:ignore="MissingTranslation" >
-  <string name="AppName">Telegram Aniways</string>
+  <string name="AppName">Aniways Messenger</string>
   <string name="LanguageName">中文（香港）</string>
   <string name="LanguageNameInEnglish">Chinese (Hong Kong)</string>
   <string name="LanguageCode">zh_HK</string>

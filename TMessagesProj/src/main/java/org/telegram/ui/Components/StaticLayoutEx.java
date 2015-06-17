@@ -109,7 +109,13 @@ public class StaticLayoutEx {
                 if (layout.getLineCount() <= maxLines) {
                     return layout;
                 } else {
-                    int off = layout.getOffsetForHorizontal(maxLines - 1, layout.getLineWidth(maxLines - 1));
+                    int off;
+                    float left = layout.getLineLeft(maxLines - 1);
+                    if (left != 0) {
+                        off = layout.getOffsetForHorizontal(maxLines - 1, left);
+                    } else {
+                        off = layout.getOffsetForHorizontal(maxLines - 1, layout.getLineWidth(maxLines - 1));
+                    }
                     SpannableStringBuilder stringBuilder = new SpannableStringBuilder(source.subSequence(0, Math.max(0, off - 1)));
                     stringBuilder.append("\u2026");
                     return new StaticLayout(stringBuilder, paint, outerWidth, align, spacingMult, spacingAdd, includePad);

@@ -1,10 +1,16 @@
 buildscript {
     repositories {
         mavenCentral()
+        maven { url "https://raw.github.com/Raizlabs/maven-releases/master/releases" }
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:1.2.2'
+        classpath 'com.android.tools.build:gradle:1.2.3'
     }
+}
+
+configurations {
+    all*.exclude group: 'com.android.support', module: 'support-v4'
+    all*.exclude group: 'com.android.support', module: 'appcompat-v7'
 }
 
 allprojects {
@@ -13,6 +19,7 @@ allprojects {
         maven {
             url 'https://dl.bintray.com/intercom/intercom-maven'
         }
+        maven { url "https://raw.github.com/Raizlabs/maven-releases/master/releases" }
     }
 }
 
@@ -23,20 +30,19 @@ repositories {
 }
 
 dependencies {
-    compile 'com.android.support:support-v4:22.1.1'
-    compile 'com.google.android.gms:play-services-maps:7.3.0'
-    compile 'com.google.android.gms:play-services-location:7.3.0'
-    compile 'com.google.android.gms:play-services-identity:7.3.0'
-    compile 'com.google.android.gms:play-services-appstate:7.3.0'
-    compile 'com.google.android.gms:play-services-wearable:7.3.0'
-    compile 'com.google.android.gms:play-services-gcm:7.3.0'
+    compile 'com.google.android.gms:play-services-maps:7.5.0'
+    compile 'com.google.android.gms:play-services-location:7.5.0'
+    compile 'com.google.android.gms:play-services-identity:7.5.0'
+    compile 'com.google.android.gms:play-services-appstate:7.5.0'
+    compile 'com.google.android.gms:play-services-wearable:7.5.0'
+    compile 'com.google.android.gms:play-services-gcm:7.5.0'
     compile 'net.hockeyapp.android:HockeySDK:3.5.+'
     compile 'com.googlecode.mp4parser:isoparser:1.0.+'
     compile project(':Android-SDK')
     compile ('io.intercom.android:intercom-sdk:0.9.3@aar') {
         transitive = true
     }
-
+    //debugCompile 'com.facebook.stetho:stetho:1.0.0'
 }
 
 android {
@@ -50,7 +56,7 @@ android {
             flavorDimension "abi"
             ndk {
                 abiFilters "x86", "armeabi-v7a", "armeabi"
-                versionCode = 259;
+                versionCode = 261;
             }
         }
 //        arm {
@@ -142,8 +148,7 @@ android {
         targetSdkVersion 22
         renderscriptTargetApi 22
         renderscriptSupportModeEnabled true
-        versionCode 259
-        versionName "1.7.9"
-        multiDexEnabled true
+        versionCode 261
+        versionName "1.8.1"
     }
 }

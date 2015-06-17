@@ -9,7 +9,9 @@
 package org.telegram.ui;
 
 import android.animation.Animator;
+import android.annotation.SuppressLint;
 import android.app.AlertDialog;
+import android.app.Dialog;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -278,7 +280,7 @@ public class LoginActivity extends BaseFragment {
         } else if (currentViewNum == 3) {
             views[currentViewNum].onBackPressed();
             setPage(0, true, null, true);
-        }  else if (currentViewNum == 4) {
+        } else if (currentViewNum == 4) {
             views[currentViewNum].onBackPressed();
             setPage(3, true, null, true);
         }
@@ -293,7 +295,7 @@ public class LoginActivity extends BaseFragment {
         builder.setTitle(title);
         builder.setMessage(text);
         builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), null);
-        showAlertDialog(builder);
+        showDialog(builder.create());
     }
 
     public void needShowProgress() {
@@ -335,6 +337,7 @@ public class LoginActivity extends BaseFragment {
                 public void onAnimationStart(Animator animator) {
                 }
 
+                @SuppressLint("NewApi")
                 @Override
                 public void onAnimationEnd(Animator animator) {
                     outView.setVisibility(View.GONE);
@@ -845,6 +848,7 @@ public class LoginActivity extends BaseFragment {
                 needShowAlert(LocaleController.getString("AppName", R.string.AppName), LocaleController.getString("InvalidPhoneNumber", R.string.InvalidPhoneNumber));
                 return;
             }
+            ConnectionsManager.getInstance().cleanUp();
             TLRPC.TL_auth_sendCode req = new TLRPC.TL_auth_sendCode();
             String phone = PhoneFormat.stripExceptNumbers("" + codeField.getText() + phoneField.getText());
             ConnectionsManager.getInstance().applyCountryPortNumber(phone);
@@ -1462,18 +1466,13 @@ public class LoginActivity extends BaseFragment {
         @Override
         public void didReceivedNotification(int id, final Object... args) {
             if (id == NotificationCenter.didReceiveSmsCode) {
-                AndroidUtilities.runOnUIThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        if (!waitingForSms) {
-                            return;
-                        }
-                        if (codeField != null) {
-                            codeField.setText("" + args[0]);
-                            onNextPressed();
-                        }
-                    }
-                });
+                if (!waitingForSms) {
+                    return;
+                }
+                if (codeField != null) {
+                    codeField.setText("" + args[0]);
+                    onNextPressed();
+                }
             }
         }
 
@@ -1613,7 +1612,7 @@ public class LoginActivity extends BaseFragment {
                                                     setPage(4, true, bundle, false);
                                                 }
                                             });
-                                            AlertDialog dialog = showAlertDialog(builder);
+                                            Dialog dialog = showDialog(builder.create());
                                             if (dialog != null) {
                                                 dialog.setCanceledOnTouchOutside(false);
                                                 dialog.setCancelable(false);
@@ -1696,7 +1695,7 @@ public class LoginActivity extends BaseFragment {
                         }
                     });
                     builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-                    showAlertDialog(builder);
+                    showDialog(builder.create());
                 }
             });
 
@@ -1975,7 +1974,7 @@ public class LoginActivity extends BaseFragment {
                             setPage(3, true, new Bundle(), true);
                         }
                     });
-                    AlertDialog dialog = showAlertDialog(builder);
+                    Dialog dialog = showDialog(builder.create());
                     if (dialog != null) {
                         dialog.setCanceledOnTouchOutside(false);
                         dialog.setCancelable(false);
@@ -2034,12 +2033,6 @@ public class LoginActivity extends BaseFragment {
                 return;
             }
             nextPressed = true;
-            byte[] oldPasswordBytes = null;
-            try {
-                oldPasswordBytes = oldPassword.getBytes("UTF-8");
-            } catch (Exception e) {
-                FileLog.e("tmessages", e);
-            }
 
             String code = codeField.getText().toString();
             if (code.length() == 0) {
@@ -2245,7 +2238,7 @@ public class LoginActivity extends BaseFragment {
                         }
                     });
                     builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-                    showAlertDialog(builder);
+                    showDialog(builder.create());
                 }
             });
         }

@@ -5,7 +5,7 @@
 <resources
     xmlns:tools="http://schemas.android.com/tools"
     tools:ignore="MissingTranslation" >
-    <string name="AppName">Telegram Aniways</string>
+    <string name="AppName">Aniways Messenger</string>
     <string name="LanguageName">Português (Brasil)</string>
     <string name="LanguageNameInEnglish">Português (Brasil)</string>
     <string name="LanguageCode">pt_BR</string>
@@ -128,6 +128,8 @@
     <string name="SetTimer">Definir timer de autodestruição</string>
     <string name="ServiceNotifications">Notificações de serviço</string>
     <string name="GettingLinkInfo">Obtendo informações...</string>
+    <string name="OpenInBrowser">Abrir no Navegador</string>
+    <string name="CopyUrl">Copiar URL</string>
     <!--notification-->
     <string name="MessageLifetimeChanged">%1$s estabeleceu o tempo de autodestruição para %2$s </string>
     <string name="MessageLifetimeChangedOutgoing">Você estabeleceu o tempo de autodestruição para %1$s</string>
@@ -171,7 +173,7 @@
     <!--contacts view-->
     <string name="SelectContact">Selecionar Contato</string>
     <string name="NoContacts">Ainda não há contatos</string>
-    <string name="InviteText">Ei, vamos mudar para o Telegram Aniways: http://aniways.com/anygram/dl2</string>
+    <string name="InviteText">Ei, vamos mudar para o Aniways Messenger: http://aniways.com/anygram/dl2</string>
     <string name="TodayAt">às</string>
     <string name="YesterdayAt">ontem às</string>
     <string name="Online">online</string>
@@ -243,6 +245,21 @@
     <string name="UsernameAvailable">%1$s está disponível.</string>
     <string name="UsernameEmpty">Nenhum</string>
     <string name="ErrorOccurred">Ocorreu um erro.</string>
+    <!--stickers view-->
+    <string name="Stickers">Stickers</string>
+    <string name="GeniusStickerPackName">Grandes Mentes</string>
+    <string name="StickersInfo">Artistas são bem vindos a adicionar seus próprios pacotes de stickers usando o @stickers bot.\n\nUsuários podem adicionar stickers com um clique sobre eles e então escolher \"Adicionar aos Stickers\".</string>
+    <string name="AddStickers">Adicionar Stickers</string>
+    <string name="AddToStickers">Adicionar aos Stickers</string>
+    <string name="AddStickersNotFound">Stickers não encontrados</string>
+    <string name="StickersRemoved">Stickers removidos</string>
+    <string name="AddStickersInstalled">Novos stickers adicionados</string>
+    <string name="StickersHide">Esconder</string>
+    <string name="StickersShow">Mostrar</string>
+    <string name="StickersShare">Compartilhar</string>
+    <string name="StickersCopy">Copiar link</string>
+    <string name="StickersRemove">Remover</string>
+    <string name="NoStickers">Nenhum sticker</string>
     <!--settings view-->
     <string name="ResetNotificationsText">Restaurar todas as configurações de notificação</string>
     <string name="TextSize">Tamanho do texto nas mensagens</string>
@@ -281,7 +298,7 @@
     <string name="Language">Idioma</string>
     <string name="AskAQuestionInfo">Por favor compreenda que o Suporte do Telegram é feito por voluntários. Tentamos responder o mais rápido possível, mas pode demorar um pouco. <![CDATA[<br><br>]]>Por favor acesse o <![CDATA[<a href=\"http://telegram.org/faq#general\">FAQ do Telegram</a>]]>: temos respostas para algumas questões, assim como dicas importantes à <![CDATA[<a href=\"http://telegram.org/faq#troubleshooting\">resolução de problemas</a>]]>.</string>
     <string name="AskButton">Pergunte a um voluntário</string>
-    <string name="TelegramFaq">FAQ do Telegram</string>
+    <string name="TelegramFaq">Perguntas frequentes</string>
     <string name="TelegramFaqUrl">https://telegram.org/faq</string>
     <string name="DeleteLocalization">Apagar localização?</string>
     <string name="IncorrectLocalization">Arquivo de localização incorreto</string>
@@ -519,6 +536,7 @@
     <string name="Done">Concluído</string>
     <string name="Open">Abrir</string>
     <string name="Cancel">Cancelar</string>
+    <string name="Close">Fechar</string>
     <string name="Add">Adicionar</string>
     <string name="Edit">Editar</string>
     <string name="Send">Enviar</string>
@@ -554,6 +572,7 @@
     <string name="ActionAddUserYou">un1 adicionou você</string>
     <string name="ActionAddUserSelf">un1 retornou ao grupo</string>
     <string name="UnsuppotedMedia">Esta mensagem não é suportada na sua versão do Telegram. Para visualiza-la atualize seu aplicativo em http://aniways.com/anygram/dl2</string>
+    <string name="ActionAddUserSelfYou">Você retornou ao grupo</string>
     <string name="AttachPhoto">Foto</string>
     <string name="AttachVideo">Vídeo</string>
     <string name="AttachLocation">Localização</string>
@@ -715,6 +734,12 @@
     <string name="Meters_few">%1$d metros</string>
     <string name="Meters_many">%1$d metros</string>
     <string name="Meters_other">%1$d metros</string>
+    <string name="Stickers_zero">%1$d stickers</string>
+    <string name="Stickers_one">%1$d sticker</string>
+    <string name="Stickers_two">%1$d stickers</string>
+    <string name="Stickers_few">%1$d stickers</string>
+    <string name="Stickers_many">%1$d stickers</string>
+    <string name="Stickers_other">%1$d stickers</string>
     <!--forwarded messages-->
     <string name="ForwardedMessage_zero">%1$d mensagens encaminhadas</string>
     <string name="ForwardedMessage_one">Mensagem encaminhada</string>
@@ -782,6 +807,6 @@
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s às %2$s</string>
     <!--update text-->
-    <string name="updateText">Telegram para Android atualizado: Novidades na versão 2.8:\n\n- Link de convite para chats em grupo\n- Notificações inteligentes\n- Botão para stickers no menu de emojis\n- Legendas para fotos\n- Lugares e direções nas localizações\n- Status \'ouvido\' para mensagens de voz\n- Status \'escrevendo\' avançado: enviando foto, gravando áudio, etc.\n- Melhorias nas animações de rolagem para uma leeeeeeeve experiência</string>
-    <string name="updateBuild">516</string>
+    <string name="updateText">Seu Telegram para Android acaba de ser atualizado. Novidades da versão 2.9:\n\n- Instale e compartilhe pacotes de stickers customizados como esse: https://telegram.me/addstickers/Animals\n- Se você é um artista, crie stickers customizados usando o @stickers bot.\n\n- Use Telegram com Android Auto.</string>
+    <string name="updateBuild">536</string>
 </resources>
