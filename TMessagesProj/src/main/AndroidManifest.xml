@@ -46,7 +46,7 @@
         android:hardwareAccelerated="@bool/useHardwareAcceleration"
         android:icon="@drawable/ic_launcher"
         android:label="@string/AppName"
-        android:largeHeap="true"
+        android:largeHeap="true">
         android:theme="@style/Theme.TMessages.Start">
 
         <meta-data android:name="com.google.android.gms.version"

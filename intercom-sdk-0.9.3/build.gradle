@@ -1,0 +1,2 @@
+configurations.create("default")
+artifacts.add("default", file('intercom-sdk-0.9.3.aar'))

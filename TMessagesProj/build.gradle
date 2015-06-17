@@ -16,6 +16,9 @@ configurations {
 allprojects {
     repositories {
         mavenCentral()
+        maven {
+            url 'https://dl.bintray.com/intercom/intercom-maven'
+        }
         maven { url "https://raw.github.com/Raizlabs/maven-releases/master/releases" }
     }
 }
@@ -36,6 +39,9 @@ dependencies {
     compile 'net.hockeyapp.android:HockeySDK:3.5.+'
     compile 'com.googlecode.mp4parser:isoparser:1.0.+'
     compile project(':Android-SDK')
+    compile ('io.intercom.android:intercom-sdk:0.9.3@aar') {
+        transitive = true
+    }
     //debugCompile 'com.facebook.stetho:stetho:1.0.0'
 }
 
@@ -99,12 +105,18 @@ android {
             debuggable true
             jniDebuggable true
             signingConfig signingConfigs.debug
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.txt'
         }
 
         release {
             debuggable false
             jniDebuggable false
             signingConfig signingConfigs.release
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.txt'
         }
 
         foss {
