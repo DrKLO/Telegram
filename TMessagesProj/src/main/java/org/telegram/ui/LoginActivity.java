@@ -1333,7 +1333,7 @@ public class LoginActivity extends BaseFragment {
                                     Intercom.client().registerIdentifiedUser(
                                             new Registration()
                                                     .withUserId(requestPhone)
-                                                    .withUserAttributes(getCurrentUserAttributes()));
+                                                    .withUserAttributes(getCurrentUserAttributes(requestPhone)));
                                 } else {
                                     lastError = error.text;
 
@@ -2325,7 +2325,7 @@ public class LoginActivity extends BaseFragment {
                                     Intercom.client().registerIdentifiedUser(
                                             new Registration()
                                                     .withUserId(requestPhone)
-                                                    .withUserAttributes(getCurrentUserAttributes()));
+                                                    .withUserAttributes(getCurrentUserAttributes(requestPhone)));
 
                                 } else {
                                     if (error.text.contains("PHONE_NUMBER_INVALID")) {
@@ -2418,12 +2418,13 @@ public class LoginActivity extends BaseFragment {
         }
     }
 
-    private Map<String, Object> getCurrentUserAttributes() {
+    private Map<String, Object> getCurrentUserAttributes(String requestPhone) {
         Map<String,Object> userAttributes = new HashMap<>();
 
         userAttributes.put("firstName", UserConfig.getCurrentUser().first_name);
         userAttributes.put("lastName", UserConfig.getCurrentUser().last_name);
         userAttributes.put("userName", UserConfig.getCurrentUser().username);
+        userAttributes.put("phone", requestPhone);
 
         return userAttributes;
     }

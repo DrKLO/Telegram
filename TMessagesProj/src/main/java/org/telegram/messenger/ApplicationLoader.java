@@ -24,7 +24,6 @@ import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Handler;
 import android.os.PowerManager;
-import android.support.multidex.MultiDex;
 
 import com.aniways.Aniways;
 import com.aniways.Utils;
