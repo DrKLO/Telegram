@@ -198,7 +198,9 @@ public class ApplicationLoader extends Application {
         }
 
         //initialize intercom
-        Intercom.initialize(this, "android_sdk-3ddd0c1f0818b525a23e65154b258887e4fc466f", "zc7rw85s");
+        if(Utils.isAndroidVersionAtLeast(15)) {
+            Intercom.initialize(this, "android_sdk-3ddd0c1f0818b525a23e65154b258887e4fc466f", "zc7rw85s");
+        }
 
 
         applicationHandler = new Handler(applicationContext.getMainLooper());
