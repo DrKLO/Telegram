@@ -60,6 +60,7 @@ import org.telegram.messenger.FileLog;
 import org.telegram.android.LocaleController;
 
 import com.aniways.Log;
+import com.aniways.Utils;
 import com.aniways.anigram.messenger.R;
 import com.aniways.data.AniwaysNetworkStateChecker;
 import com.aniways.data.AniwaysPrivateConfig;
@@ -1330,10 +1331,12 @@ public class LoginActivity extends BaseFragment {
                                             ConnectionsManager.getInstance().updateDcSettings(0);
                                         }
                                     });
-                                    Intercom.client().registerIdentifiedUser(
-                                            new Registration()
-                                                    .withUserId(requestPhone)
-                                                    .withUserAttributes(getCurrentUserAttributes(requestPhone)));
+                                    if(Utils.isAndroidVersionAtLeast(15)) {
+                                        Intercom.client().registerIdentifiedUser(
+                                                new Registration()
+                                                        .withUserId(requestPhone)
+                                                        .withUserAttributes(getCurrentUserAttributes(requestPhone)));
+                                    }
                                 } else {
                                     lastError = error.text;
 
@@ -2322,10 +2325,12 @@ public class LoginActivity extends BaseFragment {
                                             ConnectionsManager.getInstance().updateDcSettings(0);
                                         }
                                     });
-                                    Intercom.client().registerIdentifiedUser(
-                                            new Registration()
-                                                    .withUserId(requestPhone)
-                                                    .withUserAttributes(getCurrentUserAttributes(requestPhone)));
+                                    if(Utils.isAndroidVersionAtLeast(15)) {
+                                        Intercom.client().registerIdentifiedUser(
+                                                new Registration()
+                                                        .withUserId(requestPhone)
+                                                        .withUserAttributes(getCurrentUserAttributes(requestPhone)));
+                                    }
 
                                 } else {
                                     if (error.text.contains("PHONE_NUMBER_INVALID")) {
