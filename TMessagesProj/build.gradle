@@ -39,7 +39,7 @@ dependencies {
     compile 'net.hockeyapp.android:HockeySDK:3.5.+'
     compile 'com.googlecode.mp4parser:isoparser:1.0.+'
     compile project(':Android-SDK')
-    compile ('io.intercom.android:intercom-sdk:0.9.3@aar') {
+    compile ('io.intercom.android:intercom-sdk:1.0.3@aar') {
         transitive = true
     }
     //debugCompile 'com.facebook.stetho:stetho:1.0.0'
@@ -56,7 +56,7 @@ android {
             flavorDimension "abi"
             ndk {
                 abiFilters "x86", "armeabi-v7a", "armeabi"
-                versionCode = 261;
+                versionCode = 263;
             }
         }
 //        arm {
@@ -148,7 +148,7 @@ android {
         targetSdkVersion 22
         renderscriptTargetApi 22
         renderscriptSupportModeEnabled true
-        versionCode 261
-        versionName "1.8.1"
+        versionCode 263
+        versionName "1.8.2"
     }
 }
