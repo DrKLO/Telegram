@@ -56,7 +56,7 @@ android {
             flavorDimension "abi"
             ndk {
                 abiFilters "x86", "armeabi-v7a", "armeabi"
-                versionCode = 263;
+                versionCode = 264;
             }
         }
 //        arm {
@@ -148,7 +148,7 @@ android {
         targetSdkVersion 22
         renderscriptTargetApi 22
         renderscriptSupportModeEnabled true
-        versionCode 263
-        versionName "1.8.2"
+        versionCode 264
+        versionName "1.8.4"
     }
 }
