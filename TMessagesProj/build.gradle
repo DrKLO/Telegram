@@ -39,7 +39,7 @@ dependencies {
     compile 'net.hockeyapp.android:HockeySDK:3.5.+'
     compile 'com.googlecode.mp4parser:isoparser:1.0.+'
     compile project(':Android-SDK')
-    compile ('io.intercom.android:intercom-sdk:1.0.3@aar') {
+    compile ('io.intercom.android:intercom-sdk:1.0.4@aar') {
         transitive = true
     }
     //debugCompile 'com.facebook.stetho:stetho:1.0.0'
