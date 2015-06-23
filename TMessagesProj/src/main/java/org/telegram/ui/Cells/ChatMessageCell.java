@@ -35,7 +35,6 @@ import com.aniways.IAniwaysTextContainer;
 import com.aniways.IIconInfoDisplayer;
 import com.aniways.Log;
 import com.aniways.anigram.messenger.R;
-import com.aniways.volley.toolbox.IResponseListener;
 
 import org.telegram.android.AndroidUtilities;
 import org.telegram.android.ImageReceiver;
@@ -426,7 +425,7 @@ public class ChatMessageCell extends ChatBaseCell implements IAniwaysTextContain
                 timeMore += AndroidUtilities.dp(20.5f);
             }
 
-            if (messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaWebPage && messageObject.messageOwner.media.webpage instanceof TLRPC.TL_webPage) {
+            if (messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaWebPage && messageObject.messageOwner.media.webpage instanceof TLRPC.TL_webPage && !messageObject.containsAniwaysViralLink()) {
                 int linkPreviewMaxWidth;
                 if (AndroidUtilities.isTablet()) {
                     if (currentMessageObject.messageOwner.to_id.chat_id != 0 && !currentMessageObject.isOut()) {

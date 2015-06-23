@@ -24,6 +24,7 @@ import android.view.MotionEvent;
 
 import org.telegram.android.AndroidUtilities;
 import com.aniways.Aniways;
+import com.aniways.AniwaysFoursquarePlaceSpan;
 import com.aniways.AniwaysIconInfoDisplayer;
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.android.LocaleController;
@@ -42,11 +43,12 @@ import com.aniways.IAniwaysTextContainer;
 import com.aniways.IIconInfoDisplayer;
 import com.aniways.Log;
 import com.aniways.anigram.messenger.R;
+import com.aniways.data.FoursquarePlacesAssetInfo;
 
 import java.util.HashSet;
 
 public class DialogCell extends BaseCell implements IAniwaysTextContainer {
-    private static final String TAG = "DialogCell";
+    private static final String TAG = "AniwaysDialogCell";
     private static TextPaint namePaint;
     private static TextPaint nameEncryptedPaint;
     private static TextPaint nameUnknownPaint;
@@ -612,7 +614,18 @@ public class DialogCell extends BaseCell implements IAniwaysTextContainer {
         }
         else
         {
-            messageStringFinal = Aniways.decodeMessage(messageString, this.mIconInfoDisplayer, this, true);
+            messageStringFinal = Aniways.decodeMessage(messageString, this.mIconInfoDisplayer, this, true, null);
+        }
+        boolean containsPlacesSpan = false;
+        if(messageStringFinal instanceof Spannable){
+            Spannable spannable = (Spannable)messageStringFinal;
+            AniwaysFoursquarePlaceSpan[] spans = spannable.getSpans(0, spannable.length(), AniwaysFoursquarePlaceSpan.class);
+            if(spans != null && spans.length > 0){
+                containsPlacesSpan = true;
+            }
+        }
+        if(!containsPlacesSpan) {
+            messageStringFinal = TextUtils.ellipsize(messageStringFinal, currentMessagePaint, messageWidth - AndroidUtilities.dp(12), TextUtils.TruncateAt.END);
         }
 
         try {

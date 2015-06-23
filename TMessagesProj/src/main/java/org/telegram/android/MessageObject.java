@@ -43,7 +43,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class MessageObject {
-    private static final String TAG = "MessageObject";
+    private static final String TAG = "AniwaysMessageObject";
 
     public static final int MESSAGE_SEND_STATE_SENDING = 1;
     public static final int MESSAGE_SEND_STATE_SENT = 0;
@@ -76,6 +76,7 @@ public class MessageObject {
     public int blockHeight = Integer.MAX_VALUE;
     public Boolean isAniwaysSticker = null;
     private String aniwaysStickerAttachPath;
+    private Boolean containsViralLink;
 
     public boolean isAniwaysSticker() {
         if(isAniwaysSticker != null){
@@ -91,7 +92,17 @@ public class MessageObject {
         this.messageOwner.attachPath = url;
         aniwaysStickerAttachPath = this.messageOwner.attachPath;
         isAniwaysSticker = true;
-        return isAniwaysSticker;
+        return true;
+    }
+
+    public boolean containsAniwaysViralLink() {
+        if(containsViralLink == null){
+            Log.w(true, TAG, "containsAniwaysViralLink called before value is set", new Exception());
+            return false;
+        }
+        else {
+            return containsViralLink;
+        }
     }
 
     public static class TextLayoutBlock {
@@ -453,7 +464,9 @@ public class MessageObject {
 
         if(mDecodedMessageBigIconsCache == null){
             try {
-                mDecodedMessageBigIconsCache = Aniways.decodeMessage(this.messageText, new AniwaysIconInfoDisplayer(), textContainer, false);
+                boolean[] containsViralink = new boolean[1];
+                mDecodedMessageBigIconsCache = Aniways.decodeMessage(this.messageText, new AniwaysIconInfoDisplayer(), textContainer, false, containsViralink);
+                this.containsViralLink = containsViralink[0];
             }
             catch(AniwaysNotInitializedException ex){
                 Log.e(true, TAG, "Caught aniways not initialized exception", ex);
@@ -471,7 +484,9 @@ public class MessageObject {
 
         if(mDecodedMessageSmallIconsCache == null){
             try {
-                mDecodedMessageSmallIconsCache = Aniways.decodeMessage(this.messageText, new AniwaysIconInfoDisplayer(), textContainer, true);
+                boolean[] containsViralink = new boolean[1];
+                mDecodedMessageSmallIconsCache = Aniways.decodeMessage(this.messageText, new AniwaysIconInfoDisplayer(), textContainer, true, containsViralink);
+                this.containsViralLink = containsViralink[0];
             }
             catch(AniwaysNotInitializedException ex){
                 Log.e(true, TAG, "Caught aniways not initialized exception", ex);
