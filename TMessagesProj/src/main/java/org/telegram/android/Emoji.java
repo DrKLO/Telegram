@@ -33,7 +33,8 @@ import org.telegram.messenger.ApplicationLoader;
 
 public class Emoji {
 	private static HashMap<Long, DrawableInfo> rects = new HashMap<>();
-	private static int drawImgSize, bigImgSize;
+	private static int drawImgSize;
+    private static int bigImgSize;
 	private static boolean inited = false;
 	private static Paint placeholderPaint;
 	private static Bitmap emojiBmp[] = new Bitmap[5];
@@ -193,19 +194,19 @@ public class Emoji {
 	static {
         int emojiFullSize;
         if (AndroidUtilities.density <= 1.0f) {
-            emojiFullSize = 30;
+            emojiFullSize = 32;
         } else if (AndroidUtilities.density <= 1.5f) {
-            emojiFullSize = 45;
+            emojiFullSize = 48;
         } else if (AndroidUtilities.density <= 2.0f) {
-            emojiFullSize = 60;
+            emojiFullSize = 64;
         } else {
-            emojiFullSize = 90;
+            emojiFullSize = 96;
         }
 		drawImgSize = AndroidUtilities.dp(20);
         if (AndroidUtilities.isTablet()) {
             bigImgSize = AndroidUtilities.dp(40);
         } else {
-            bigImgSize = AndroidUtilities.dp(30);
+            bigImgSize = AndroidUtilities.dp(32);
         }
 
 		for (int j = 1; j < data.length; j++) {
@@ -220,7 +221,7 @@ public class Emoji {
 
 	private static void loadEmoji(final int page) {
 		try {
-            float scale = 1.0f;
+            float scale;
             int imageResize = 1;
             if (AndroidUtilities.density <= 1.0f) {
                 scale = 2.0f;
@@ -234,11 +235,29 @@ public class Emoji {
                 scale = 3.0f;
             }
 
-            String imageName = String.format(Locale.US, "emoji%.01fx_%d.jpg", scale, page);
-            File imageFile = ApplicationLoader.applicationContext.getFileStreamPath(imageName);
+            String imageName;
+            File imageFile;
+
+            try {
+                imageName = String.format(Locale.US, "emoji%.01fx_%d.jpg", scale, page);
+                imageFile = ApplicationLoader.applicationContext.getFileStreamPath(imageName);
+                if (imageFile.exists()) {
+                    imageFile.delete();
+                }
+                imageName = String.format(Locale.US, "emoji%.01fx_a_%d.jpg", scale, page);
+                imageFile = ApplicationLoader.applicationContext.getFileStreamPath(imageName);
+                if (imageFile.exists()) {
+                    imageFile.delete();
+                }
+            } catch (Exception e) {
+                FileLog.e("tmessages", e);
+            }
+
+            imageName = String.format(Locale.US, "v4_emoji%.01fx_%d.jpg", scale, page);
+            imageFile = ApplicationLoader.applicationContext.getFileStreamPath(imageName);
             if (!imageFile.exists()) {
                 InputStream is = ApplicationLoader.applicationContext.getAssets().open("emoji/" + imageName);
-                Utilities.copyFile(is, imageFile);
+                AndroidUtilities.copyFile(is, imageFile);
                 is.close();
             }
 
@@ -253,11 +272,11 @@ public class Emoji {
             final Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
             Utilities.loadBitmap(imageFile.getAbsolutePath(), bitmap, imageResize, width, height, stride);
 
-            imageName = String.format(Locale.US, "emoji%.01fx_a_%d.jpg", scale, page);
+            imageName = String.format(Locale.US, "v4_emoji%.01fx_a_%d.jpg", scale, page);
             imageFile = ApplicationLoader.applicationContext.getFileStreamPath(imageName);
             if (!imageFile.exists()) {
                 InputStream is = ApplicationLoader.applicationContext.getAssets().open("emoji/" + imageName);
-                Utilities.copyFile(is, imageFile);
+                AndroidUtilities.copyFile(is, imageFile);
                 is.close();
             }
 

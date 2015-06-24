@@ -47,6 +47,7 @@ import org.telegram.ui.Cells.HeaderCell;
 import org.telegram.ui.Cells.SessionCell;
 import org.telegram.ui.Cells.TextInfoPrivacyCell;
 import org.telegram.ui.Cells.TextSettingsCell;
+import org.telegram.ui.Components.LayoutHelper;
 
 import java.util.ArrayList;
 
@@ -114,8 +115,8 @@ public class SessionsActivity extends BaseFragment implements NotificationCenter
         imageView.setImageResource(R.drawable.devices);
         emptyLayout.addView(imageView);
         LinearLayout.LayoutParams layoutParams2 = (LinearLayout.LayoutParams) imageView.getLayoutParams();
-        layoutParams2.width = LinearLayout.LayoutParams.WRAP_CONTENT;
-        layoutParams2.height = LinearLayout.LayoutParams.WRAP_CONTENT;
+        layoutParams2.width = LayoutHelper.WRAP_CONTENT;
+        layoutParams2.height = LayoutHelper.WRAP_CONTENT;
         imageView.setLayoutParams(layoutParams2);
 
         TextView textView = new TextView(context);
@@ -127,8 +128,8 @@ public class SessionsActivity extends BaseFragment implements NotificationCenter
         emptyLayout.addView(textView);
         layoutParams2 = (LinearLayout.LayoutParams) textView.getLayoutParams();
         layoutParams2.topMargin = AndroidUtilities.dp(16);
-        layoutParams2.width = FrameLayout.LayoutParams.WRAP_CONTENT;
-        layoutParams2.height = FrameLayout.LayoutParams.WRAP_CONTENT;
+        layoutParams2.width = LayoutHelper.WRAP_CONTENT;
+        layoutParams2.height = LayoutHelper.WRAP_CONTENT;
         layoutParams2.gravity = Gravity.CENTER;
         textView.setLayoutParams(layoutParams2);
 
@@ -141,16 +142,16 @@ public class SessionsActivity extends BaseFragment implements NotificationCenter
         emptyLayout.addView(textView);
         layoutParams2 = (LinearLayout.LayoutParams) textView.getLayoutParams();
         layoutParams2.topMargin = AndroidUtilities.dp(14);
-        layoutParams2.width = FrameLayout.LayoutParams.WRAP_CONTENT;
-        layoutParams2.height = FrameLayout.LayoutParams.WRAP_CONTENT;
+        layoutParams2.width = LayoutHelper.WRAP_CONTENT;
+        layoutParams2.height = LayoutHelper.WRAP_CONTENT;
         layoutParams2.gravity = Gravity.CENTER;
         textView.setLayoutParams(layoutParams2);
 
         FrameLayout progressView = new FrameLayout(context);
         frameLayout.addView(progressView);
         FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) progressView.getLayoutParams();
-        layoutParams.width = FrameLayout.LayoutParams.MATCH_PARENT;
-        layoutParams.height = FrameLayout.LayoutParams.MATCH_PARENT;
+        layoutParams.width = LayoutHelper.MATCH_PARENT;
+        layoutParams.height = LayoutHelper.MATCH_PARENT;
         progressView.setLayoutParams(layoutParams);
         progressView.setOnTouchListener(new View.OnTouchListener() {
             @Override
@@ -162,8 +163,8 @@ public class SessionsActivity extends BaseFragment implements NotificationCenter
         ProgressBar progressBar = new ProgressBar(context);
         progressView.addView(progressBar);
         layoutParams = (FrameLayout.LayoutParams) progressView.getLayoutParams();
-        layoutParams.width = FrameLayout.LayoutParams.WRAP_CONTENT;
-        layoutParams.height = FrameLayout.LayoutParams.WRAP_CONTENT;
+        layoutParams.width = LayoutHelper.WRAP_CONTENT;
+        layoutParams.height = LayoutHelper.WRAP_CONTENT;
         layoutParams.gravity = Gravity.CENTER;
         progressView.setLayoutParams(layoutParams);
 
@@ -175,8 +176,8 @@ public class SessionsActivity extends BaseFragment implements NotificationCenter
         listView.setEmptyView(progressView);
         frameLayout.addView(listView);
         layoutParams = (FrameLayout.LayoutParams) listView.getLayoutParams();
-        layoutParams.width = FrameLayout.LayoutParams.MATCH_PARENT;
-        layoutParams.height = FrameLayout.LayoutParams.MATCH_PARENT;
+        layoutParams.width = LayoutHelper.MATCH_PARENT;
+        layoutParams.height = LayoutHelper.MATCH_PARENT;
         layoutParams.gravity = Gravity.TOP;
         listView.setLayoutParams(layoutParams);
         listView.setAdapter(listAdapter);
@@ -223,7 +224,7 @@ public class SessionsActivity extends BaseFragment implements NotificationCenter
                         }
                     });
                     builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-                    showAlertDialog(builder);
+                    showDialog(builder.create());
                 } else if (i >= otherSessionsStartRow && i < otherSessionsEndRow) {
                     AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                     builder.setMessage(LocaleController.getString("TerminateSessionQuestion", R.string.TerminateSessionQuestion));
@@ -265,7 +266,7 @@ public class SessionsActivity extends BaseFragment implements NotificationCenter
                         }
                     });
                     builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-                    showAlertDialog(builder);
+                    showDialog(builder.create());
                 }
             }
         });
@@ -335,7 +336,11 @@ public class SessionsActivity extends BaseFragment implements NotificationCenter
             currentSessionSectionRow = -1;
         }
         if (sessions.isEmpty()) {
-            noOtherSessionsRow = -1;
+            if (currentSession != null) {
+                noOtherSessionsRow = rowCount++;
+            } else {
+                noOtherSessionsRow = -1;
+            }
             terminateAllSessionsRow = -1;
             terminateAllSessionsDetailRow = -1;
             otherSessionsSectionRow = -1;

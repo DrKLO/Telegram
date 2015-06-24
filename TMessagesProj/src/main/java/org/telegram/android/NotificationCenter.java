@@ -8,6 +8,10 @@
 
 package org.telegram.android;
 
+import org.telegram.messenger.ApplicationLoader;
+import org.telegram.messenger.BuildVars;
+import org.telegram.messenger.FileLog;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -32,7 +36,7 @@ public class NotificationCenter {
     public static final int mediaDidLoaded = totalEvents++;
     public static final int mediaCountDidLoaded = totalEvents++;
     public static final int encryptedChatUpdated = totalEvents++;
-    public static final int messagesReadedEncrypted = totalEvents++;
+    public static final int messagesReadEncrypted = totalEvents++;
     public static final int encryptedChatCreated = totalEvents++;
     public static final int userPhotosLoaded = totalEvents++;
     public static final int removeAllMessagesFromDialog = totalEvents++;
@@ -51,11 +55,13 @@ public class NotificationCenter {
     public static final int didSetPasscode = totalEvents++;
     public static final int didSetTwoStepPassword = totalEvents++;
     public static final int screenStateChanged = totalEvents++;
-    public static final int appSwitchedToForeground = totalEvents++;
     public static final int didLoadedReplyMessages = totalEvents++;
     public static final int newSessionReceived = totalEvents++;
     public static final int didReceivedWebpages = totalEvents++;
     public static final int didReceivedWebpagesInUpdates = totalEvents++;
+    public static final int stickersDidLoaded = totalEvents++;
+    public static final int didReplacedPhotoInMemCache = totalEvents++;
+    public static final int messagesReadContent = totalEvents++;
 
     public static final int httpFileDidLoaded = totalEvents++;
     public static final int httpFileDidFailedLoad = totalEvents++;
@@ -91,14 +97,31 @@ public class NotificationCenter {
     public static final int audioDidStarted = totalEvents++;
     public static final int audioRouteChanged = totalEvents++;
 
-    final private HashMap<Integer, ArrayList<Object>> observers = new HashMap<>();
-
-    final private HashMap<Integer, Object> removeAfterBroadcast = new HashMap<>();
-    final private HashMap<Integer, Object> addAfterBroadcast = new HashMap<>();
+    private HashMap<Integer, ArrayList<Object>> observers = new HashMap<>();
+    private HashMap<Integer, Object> removeAfterBroadcast = new HashMap<>();
+    private HashMap<Integer, Object> addAfterBroadcast = new HashMap<>();
+    private ArrayList<DelayedPost> delayedPosts = new ArrayList<>(10);
 
     private int broadcasting = 0;
+    private boolean animationInProgress;
+
+    public interface NotificationCenterDelegate {
+        void didReceivedNotification(int id, Object... args);
+    }
+
+    private class DelayedPost {
+
+        private DelayedPost(int id, Object[] args) {
+            this.id = id;
+            this.args = args;
+        }
+
+        private int id;
+        private Object[] args;
+    }
 
     private static volatile NotificationCenter Instance = null;
+
     public static NotificationCenter getInstance() {
         NotificationCenter localInstance = Instance;
         if (localInstance == null) {
@@ -112,66 +135,97 @@ public class NotificationCenter {
         return localInstance;
     }
 
-    public interface NotificationCenterDelegate {
-        void didReceivedNotification(int id, Object... args);
+    public void setAnimationInProgress(boolean value) {
+        animationInProgress = value;
+        if (!animationInProgress && !delayedPosts.isEmpty()) {
+            for (DelayedPost delayedPost : delayedPosts) {
+                postNotificationNameInternal(delayedPost.id, true, delayedPost.args);
+            }
+            delayedPosts.clear();
+        }
     }
 
     public void postNotificationName(int id, Object... args) {
-        synchronized (observers) {
-            broadcasting++;
-            ArrayList<Object> objects = observers.get(id);
-            if (objects != null) {
-                for (Object obj : objects) {
-                    ((NotificationCenterDelegate)obj).didReceivedNotification(id, args);
-                }
+        boolean allowDuringAnimation = false;
+        if (id == dialogsNeedReload || id == closeChats || id == messagesDidLoaded || id == mediaCountDidLoaded || id == mediaDidLoaded) {
+            allowDuringAnimation = true;
+        }
+        postNotificationNameInternal(id, allowDuringAnimation, args);
+    }
+
+    public void postNotificationNameInternal(int id, boolean allowDuringAnimation, Object... args) {
+        if (BuildVars.DEBUG_VERSION) {
+            if (Thread.currentThread() != ApplicationLoader.applicationHandler.getLooper().getThread()) {
+                throw new RuntimeException("postNotificationName allowed only from MAIN thread");
             }
-            broadcasting--;
-            if (broadcasting == 0) {
-                if (!removeAfterBroadcast.isEmpty()) {
-                    for (HashMap.Entry<Integer, Object> entry : removeAfterBroadcast.entrySet()) {
-                        removeObserver(entry.getValue(), entry.getKey());
-                    }
-                    removeAfterBroadcast.clear();
+        }
+        if (!allowDuringAnimation && animationInProgress) {
+            DelayedPost delayedPost = new DelayedPost(id, args);
+            delayedPosts.add(delayedPost);
+            if (BuildVars.DEBUG_VERSION) {
+                FileLog.e("tmessages", "delay post notification " + id + " with args count = " + args.length);
+            }
+            return;
+        }
+        broadcasting++;
+        ArrayList<Object> objects = observers.get(id);
+        if (objects != null) {
+            for (Object obj : objects) {
+                ((NotificationCenterDelegate) obj).didReceivedNotification(id, args);
+            }
+        }
+        broadcasting--;
+        if (broadcasting == 0) {
+            if (!removeAfterBroadcast.isEmpty()) {
+                for (HashMap.Entry<Integer, Object> entry : removeAfterBroadcast.entrySet()) {
+                    removeObserver(entry.getValue(), entry.getKey());
                 }
-                if (!addAfterBroadcast.isEmpty()) {
-                    for (HashMap.Entry<Integer, Object> entry : addAfterBroadcast.entrySet()) {
-                        addObserver(entry.getValue(), entry.getKey());
-                    }
-                    addAfterBroadcast.clear();
+                removeAfterBroadcast.clear();
+            }
+            if (!addAfterBroadcast.isEmpty()) {
+                for (HashMap.Entry<Integer, Object> entry : addAfterBroadcast.entrySet()) {
+                    addObserver(entry.getValue(), entry.getKey());
                 }
+                addAfterBroadcast.clear();
             }
         }
     }
 
     public void addObserver(Object observer, int id) {
-        synchronized (observers) {
-            if (broadcasting != 0) {
-                addAfterBroadcast.put(id, observer);
-                return;
+        if (BuildVars.DEBUG_VERSION) {
+            if (Thread.currentThread() != ApplicationLoader.applicationHandler.getLooper().getThread()) {
+                throw new RuntimeException("addObserver allowed only from MAIN thread");
             }
-            ArrayList<Object> objects = observers.get(id);
-            if (objects == null) {
-                observers.put(id, (objects = new ArrayList<>()));
-            }
-            if (objects.contains(observer)) {
-                return;
-            }
-            objects.add(observer);
         }
+        if (broadcasting != 0) {
+            addAfterBroadcast.put(id, observer);
+            return;
+        }
+        ArrayList<Object> objects = observers.get(id);
+        if (objects == null) {
+            observers.put(id, (objects = new ArrayList<>()));
+        }
+        if (objects.contains(observer)) {
+            return;
+        }
+        objects.add(observer);
     }
 
     public void removeObserver(Object observer, int id) {
-        synchronized (observers) {
-            if (broadcasting != 0) {
-                removeAfterBroadcast.put(id, observer);
-                return;
+        if (BuildVars.DEBUG_VERSION) {
+            if (Thread.currentThread() != ApplicationLoader.applicationHandler.getLooper().getThread()) {
+                throw new RuntimeException("removeObserver allowed only from MAIN thread");
             }
-            ArrayList<Object> objects = observers.get(id);
-            if (objects != null) {
-                objects.remove(observer);
-                if (objects.size() == 0) {
-                    observers.remove(id);
-                }
+        }
+        if (broadcasting != 0) {
+            removeAfterBroadcast.put(id, observer);
+            return;
+        }
+        ArrayList<Object> objects = observers.get(id);
+        if (objects != null) {
+            objects.remove(observer);
+            if (objects.size() == 0) {
+                observers.remove(id);
             }
         }
     }

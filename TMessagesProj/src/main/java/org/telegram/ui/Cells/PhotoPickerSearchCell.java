@@ -23,6 +23,7 @@ import android.widget.TextView;
 import org.telegram.android.AndroidUtilities;
 import org.telegram.android.LocaleController;
 import org.telegram.messenger.R;
+import org.telegram.ui.Components.LayoutHelper;
 
 public class PhotoPickerSearchCell extends LinearLayout {
 
@@ -44,20 +45,11 @@ public class PhotoPickerSearchCell extends LinearLayout {
 
             selector = new View(context);
             selector.setBackgroundResource(R.drawable.list_selector);
-            addView(selector);
-            FrameLayout.LayoutParams layoutParams1 = (FrameLayout.LayoutParams) selector.getLayoutParams();
-            layoutParams1.width = LayoutParams.MATCH_PARENT;
-            layoutParams1.height = LayoutParams.MATCH_PARENT;
-            selector.setLayoutParams(layoutParams1);
+            addView(selector, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
             imageView = new ImageView(context);
             imageView.setScaleType(ImageView.ScaleType.CENTER);
-            addView(imageView);
-            FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) imageView.getLayoutParams();
-            layoutParams.height = AndroidUtilities.dp(48);
-            layoutParams.width = AndroidUtilities.dp(48);
-            layoutParams1.gravity = Gravity.LEFT | Gravity.TOP;
-            imageView.setLayoutParams(layoutParams);
+            addView(imageView, LayoutHelper.createFrame(48, 48, Gravity.LEFT | Gravity.TOP));
 
             textView1 = new TextView(context);
             textView1.setGravity(Gravity.CENTER_VERTICAL);
@@ -66,15 +58,7 @@ public class PhotoPickerSearchCell extends LinearLayout {
             textView1.setTextColor(0xffffffff);
             textView1.setSingleLine(true);
             textView1.setEllipsize(TextUtils.TruncateAt.END);
-            addView(textView1);
-            layoutParams1 = (FrameLayout.LayoutParams) textView1.getLayoutParams();
-            layoutParams1.width = LayoutParams.MATCH_PARENT;
-            layoutParams1.height = LayoutParams.WRAP_CONTENT;
-            layoutParams1.gravity = Gravity.TOP | Gravity.LEFT;
-            layoutParams1.rightMargin = AndroidUtilities.dp(4);
-            layoutParams1.leftMargin = AndroidUtilities.dp(51);
-            layoutParams1.topMargin = AndroidUtilities.dp(8);
-            textView1.setLayoutParams(layoutParams1);
+            addView(textView1, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.LEFT, 51, 8, 4, 0));
 
             textView2 = new TextView(context);
             textView2.setGravity(Gravity.CENTER_VERTICAL);
@@ -83,15 +67,7 @@ public class PhotoPickerSearchCell extends LinearLayout {
             textView2.setTextColor(0xff666666);
             textView2.setSingleLine(true);
             textView2.setEllipsize(TextUtils.TruncateAt.END);
-            addView(textView2);
-            layoutParams1 = (FrameLayout.LayoutParams) textView2.getLayoutParams();
-            layoutParams1.width = LayoutParams.MATCH_PARENT;
-            layoutParams1.height = LayoutParams.WRAP_CONTENT;
-            layoutParams1.gravity = Gravity.TOP | Gravity.LEFT;
-            layoutParams1.leftMargin = AndroidUtilities.dp(51);
-            layoutParams1.rightMargin = AndroidUtilities.dp(4);
-            layoutParams1.topMargin = AndroidUtilities.dp(26);
-            textView2.setLayoutParams(layoutParams1);
+            addView(textView2, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.LEFT, 51, 26, 4, 0));
         }
 
         @Override

@@ -38,7 +38,6 @@ import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import org.telegram.android.AndroidUtilities;
@@ -48,11 +47,10 @@ import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
-import org.telegram.messenger.Utilities;
-import org.telegram.ui.AnimationCompat.AnimatorListenerAdapterProxy;
-import org.telegram.ui.AnimationCompat.AnimatorSetProxy;
-import org.telegram.ui.AnimationCompat.ObjectAnimatorProxy;
-import org.telegram.ui.AnimationCompat.ViewProxy;
+import org.telegram.android.AnimationCompat.AnimatorListenerAdapterProxy;
+import org.telegram.android.AnimationCompat.AnimatorSetProxy;
+import org.telegram.android.AnimationCompat.ObjectAnimatorProxy;
+import org.telegram.android.AnimationCompat.ViewProxy;
 
 import java.util.ArrayList;
 import java.util.Locale;
@@ -424,15 +422,15 @@ public class PasscodeView extends FrameLayout {
         backgroundFrameLayout = new FrameLayout(context);
         addView(backgroundFrameLayout);
         LayoutParams layoutParams = (LayoutParams) backgroundFrameLayout.getLayoutParams();
-        layoutParams.width = LayoutParams.MATCH_PARENT;
-        layoutParams.height = LayoutParams.MATCH_PARENT;
+        layoutParams.width = LayoutHelper.MATCH_PARENT;
+        layoutParams.height = LayoutHelper.MATCH_PARENT;
         backgroundFrameLayout.setLayoutParams(layoutParams);
 
         passwordFrameLayout = new FrameLayout(context);
         addView(passwordFrameLayout);
         layoutParams = (LayoutParams) passwordFrameLayout.getLayoutParams();
-        layoutParams.width = LayoutParams.MATCH_PARENT;
-        layoutParams.height = LayoutParams.MATCH_PARENT;
+        layoutParams.width = LayoutHelper.MATCH_PARENT;
+        layoutParams.height = LayoutHelper.MATCH_PARENT;
         layoutParams.gravity = Gravity.TOP | Gravity.LEFT;
         passwordFrameLayout.setLayoutParams(layoutParams);
 
@@ -458,8 +456,8 @@ public class PasscodeView extends FrameLayout {
         passcodeTextView.setGravity(Gravity.CENTER_HORIZONTAL);
         passwordFrameLayout.addView(passcodeTextView);
         layoutParams = (LayoutParams) passcodeTextView.getLayoutParams();
-        layoutParams.width = LayoutParams.WRAP_CONTENT;
-        layoutParams.height = LayoutParams.WRAP_CONTENT;
+        layoutParams.width = LayoutHelper.WRAP_CONTENT;
+        layoutParams.height = LayoutHelper.WRAP_CONTENT;
         layoutParams.bottomMargin = AndroidUtilities.dp(62);
         layoutParams.gravity = Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL;
         passcodeTextView.setLayoutParams(layoutParams);
@@ -467,8 +465,8 @@ public class PasscodeView extends FrameLayout {
         passwordEditText2 = new AnimatingTextView(context);
         passwordFrameLayout.addView(passwordEditText2);
         layoutParams = (FrameLayout.LayoutParams) passwordEditText2.getLayoutParams();
-        layoutParams.height = LinearLayout.LayoutParams.WRAP_CONTENT;
-        layoutParams.width = LinearLayout.LayoutParams.MATCH_PARENT;
+        layoutParams.height = LayoutHelper.WRAP_CONTENT;
+        layoutParams.width = LayoutHelper.MATCH_PARENT;
         layoutParams.leftMargin = AndroidUtilities.dp(70);
         layoutParams.rightMargin = AndroidUtilities.dp(70);
         layoutParams.bottomMargin = AndroidUtilities.dp(6);
@@ -488,8 +486,8 @@ public class PasscodeView extends FrameLayout {
         AndroidUtilities.clearCursorDrawable(passwordEditText);
         passwordFrameLayout.addView(passwordEditText);
         layoutParams = (FrameLayout.LayoutParams) passwordEditText.getLayoutParams();
-        layoutParams.height = LinearLayout.LayoutParams.WRAP_CONTENT;
-        layoutParams.width = LinearLayout.LayoutParams.MATCH_PARENT;
+        layoutParams.height = LayoutHelper.WRAP_CONTENT;
+        layoutParams.width = LayoutHelper.MATCH_PARENT;
         layoutParams.leftMargin = AndroidUtilities.dp(70);
         layoutParams.rightMargin = AndroidUtilities.dp(70);
         layoutParams.bottomMargin = AndroidUtilities.dp(6);
@@ -571,7 +569,7 @@ public class PasscodeView extends FrameLayout {
         lineFrameLayout.setBackgroundColor(0x26ffffff);
         passwordFrameLayout.addView(lineFrameLayout);
         layoutParams = (LayoutParams) lineFrameLayout.getLayoutParams();
-        layoutParams.width = LayoutParams.MATCH_PARENT;
+        layoutParams.width = LayoutHelper.MATCH_PARENT;
         layoutParams.height = AndroidUtilities.dp(1);
         layoutParams.gravity = Gravity.BOTTOM | Gravity.LEFT;
         layoutParams.leftMargin = AndroidUtilities.dp(20);
@@ -581,8 +579,8 @@ public class PasscodeView extends FrameLayout {
         numbersFrameLayout = new FrameLayout(context);
         addView(numbersFrameLayout);
         layoutParams = (LayoutParams) numbersFrameLayout.getLayoutParams();
-        layoutParams.width = LayoutParams.MATCH_PARENT;
-        layoutParams.height = LayoutParams.MATCH_PARENT;
+        layoutParams.width = LayoutHelper.MATCH_PARENT;
+        layoutParams.height = LayoutHelper.MATCH_PARENT;
         layoutParams.gravity = Gravity.TOP | Gravity.LEFT;
         numbersFrameLayout.setLayoutParams(layoutParams);
 
@@ -676,55 +674,42 @@ public class PasscodeView extends FrameLayout {
                     int key = KeyEvent.KEYCODE_DEL;
                     switch (tag) {
                         case 0:
-                            key = KeyEvent.KEYCODE_0;
                             passwordEditText2.appendCharacter("0");
                             break;
                         case 1:
-                            key = KeyEvent.KEYCODE_1;
                             passwordEditText2.appendCharacter("1");
                             break;
                         case 2:
-                            key = KeyEvent.KEYCODE_2;
                             passwordEditText2.appendCharacter("2");
                             break;
                         case 3:
-                            key = KeyEvent.KEYCODE_3;
                             passwordEditText2.appendCharacter("3");
                             break;
                         case 4:
-                            key = KeyEvent.KEYCODE_4;
                             passwordEditText2.appendCharacter("4");
                             break;
                         case 5:
-                            key = KeyEvent.KEYCODE_5;
                             passwordEditText2.appendCharacter("5");
                             break;
                         case 6:
-                            key = KeyEvent.KEYCODE_6;
                             passwordEditText2.appendCharacter("6");
                             break;
                         case 7:
-                            key = KeyEvent.KEYCODE_7;
                             passwordEditText2.appendCharacter("7");
                             break;
                         case 8:
-                            key = KeyEvent.KEYCODE_8;
                             passwordEditText2.appendCharacter("8");
                             break;
                         case 9:
-                            key = KeyEvent.KEYCODE_9;
                             passwordEditText2.appendCharacter("9");
                             break;
                         case 10:
-                            key = KeyEvent.KEYCODE_DEL;
                             passwordEditText2.eraseLastCharacter();
                             break;
                     }
                     if (passwordEditText2.lenght() == 4) {
                         processDone();
                     }
-                    //passwordEditText.dispatchKeyEvent(new KeyEvent(0, 0, KeyEvent.ACTION_DOWN, key, 0));
-                    //passwordEditText.dispatchKeyEvent(new KeyEvent(0, 0, KeyEvent.ACTION_UP, key, 0));
                 }
             });
             numberFrameLayouts.add(frameLayout);
@@ -755,7 +740,7 @@ public class PasscodeView extends FrameLayout {
             onPasscodeError();
             return;
         }
-        if (!Utilities.MD5(password).equals(UserConfig.passcodeHash)) {
+        if (!UserConfig.checkPasscode(password)) {
             passwordEditText.setText("");
             passwordEditText2.eraseAllCharacters(true);
             onPasscodeError();
@@ -867,7 +852,6 @@ public class PasscodeView extends FrameLayout {
             backgroundDrawable = ApplicationLoader.getCachedWallpaper();
             if (backgroundDrawable != null) {
                 backgroundFrameLayout.setBackgroundColor(0xbf000000);
-                customTheme = true;
             } else {
                 backgroundFrameLayout.setBackgroundColor(0xff517c9e);
             }

@@ -23,6 +23,7 @@ import org.telegram.android.MediaController;
 import org.telegram.messenger.R;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.FrameLayoutFixed;
+import org.telegram.ui.Components.LayoutHelper;
 
 public class PhotoPickerAlbumsCell extends FrameLayoutFixed {
 
@@ -46,21 +47,12 @@ public class PhotoPickerAlbumsCell extends FrameLayoutFixed {
             super(context);
 
             imageView = new BackupImageView(context);
-            addView(imageView);
-            LayoutParams layoutParams = (LayoutParams) imageView.getLayoutParams();
-            layoutParams.width = LayoutParams.MATCH_PARENT;
-            layoutParams.height = LayoutParams.MATCH_PARENT;
-            imageView.setLayoutParams(layoutParams);
+            addView(imageView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
             LinearLayout linearLayout = new LinearLayout(context);
             linearLayout.setOrientation(LinearLayout.HORIZONTAL);
             linearLayout.setBackgroundColor(0x7f000000);
-            addView(linearLayout);
-            layoutParams = (LayoutParams) linearLayout.getLayoutParams();
-            layoutParams.width = LayoutParams.MATCH_PARENT;
-            layoutParams.height = AndroidUtilities.dp(28);
-            layoutParams.gravity = Gravity.BOTTOM;
-            linearLayout.setLayoutParams(layoutParams);
+            addView(linearLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 28, Gravity.LEFT | Gravity.BOTTOM));
 
             nameTextView = new TextView(context);
             nameTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
@@ -69,13 +61,7 @@ public class PhotoPickerAlbumsCell extends FrameLayoutFixed {
             nameTextView.setEllipsize(TextUtils.TruncateAt.END);
             nameTextView.setMaxLines(1);
             nameTextView.setGravity(Gravity.CENTER_VERTICAL);
-            linearLayout.addView(nameTextView);
-            LinearLayout.LayoutParams layoutParams1 = (LinearLayout.LayoutParams) nameTextView.getLayoutParams();
-            layoutParams1.width = 0;
-            layoutParams1.height = LinearLayout.LayoutParams.MATCH_PARENT;
-            layoutParams1.leftMargin = AndroidUtilities.dp(8);
-            layoutParams1.weight = 1;
-            nameTextView.setLayoutParams(layoutParams1);
+            linearLayout.addView(nameTextView, LayoutHelper.createLinear(0, LayoutHelper.MATCH_PARENT, 1.0f, 8, 0, 0, 0));
 
             countTextView = new TextView(context);
             countTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
@@ -84,21 +70,11 @@ public class PhotoPickerAlbumsCell extends FrameLayoutFixed {
             countTextView.setEllipsize(TextUtils.TruncateAt.END);
             countTextView.setMaxLines(1);
             countTextView.setGravity(Gravity.CENTER_VERTICAL);
-            linearLayout.addView(countTextView);
-            layoutParams1 = (LinearLayout.LayoutParams) countTextView.getLayoutParams();
-            layoutParams1.width = LinearLayout.LayoutParams.WRAP_CONTENT;
-            layoutParams1.height = LinearLayout.LayoutParams.MATCH_PARENT;
-            layoutParams1.leftMargin = AndroidUtilities.dp(4);
-            layoutParams1.rightMargin = AndroidUtilities.dp(4);
-            countTextView.setLayoutParams(layoutParams1);
+            linearLayout.addView(countTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, 4, 0, 4, 0));
 
             selector = new View(context);
             selector.setBackgroundResource(R.drawable.list_selector);
-            addView(selector);
-            layoutParams = (LayoutParams) selector.getLayoutParams();
-            layoutParams.width = LayoutParams.MATCH_PARENT;
-            layoutParams.height = LayoutParams.MATCH_PARENT;
-            selector.setLayoutParams(layoutParams);
+            addView(selector, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
         }
 
         @Override
@@ -149,7 +125,11 @@ public class PhotoPickerAlbumsCell extends FrameLayoutFixed {
             albumView.imageView.setOrientation(0, true);
             if (albumEntry.coverPhoto != null && albumEntry.coverPhoto.path != null) {
                 albumView.imageView.setOrientation(albumEntry.coverPhoto.orientation, true);
-                albumView.imageView.setImage("thumb://" + albumEntry.coverPhoto.imageId + ":" + albumEntry.coverPhoto.path, null, getContext().getResources().getDrawable(R.drawable.nophotos));
+                if (albumEntry.coverPhoto.isVideo) {
+                    albumView.imageView.setImage("vthumb://" + albumEntry.coverPhoto.imageId + ":" + albumEntry.coverPhoto.path, null, getContext().getResources().getDrawable(R.drawable.nophotos));
+                } else {
+                    albumView.imageView.setImage("thumb://" + albumEntry.coverPhoto.imageId + ":" + albumEntry.coverPhoto.path, null, getContext().getResources().getDrawable(R.drawable.nophotos));
+                }
             } else {
                 albumView.imageView.setImageResource(R.drawable.nophotos);
             }

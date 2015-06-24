@@ -22,6 +22,7 @@ import org.telegram.android.AndroidUtilities;
 import org.telegram.android.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.TLRPC;
+import org.telegram.ui.Components.LayoutHelper;
 
 import java.util.Locale;
 
@@ -46,15 +47,7 @@ public class SessionCell extends FrameLayout {
         LinearLayout linearLayout = new LinearLayout(context);
         linearLayout.setOrientation(LinearLayout.HORIZONTAL);
         linearLayout.setWeightSum(1);
-        addView(linearLayout);
-        LayoutParams layoutParams = (LayoutParams) linearLayout.getLayoutParams();
-        layoutParams.width = LayoutParams.MATCH_PARENT;
-        layoutParams.height = AndroidUtilities.dp(30);
-        layoutParams.leftMargin = AndroidUtilities.dp(17);
-        layoutParams.rightMargin = AndroidUtilities.dp(17);
-        layoutParams.topMargin = AndroidUtilities.dp(11);
-        layoutParams.gravity = LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT;
-        linearLayout.setLayoutParams(layoutParams);
+        addView(linearLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 30, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, 17, 11, 11, 0));
 
         nameTextView = new TextView(context);
         nameTextView.setTextColor(0xff212121);
@@ -71,31 +64,12 @@ public class SessionCell extends FrameLayout {
         onlineTextView.setGravity((LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.TOP);
 
         if (LocaleController.isRTL) {
-            linearLayout.addView(onlineTextView);
-            linearLayout.addView(nameTextView);
+            linearLayout.addView(onlineTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.TOP, 0, 2, 0, 0));
+            linearLayout.addView(nameTextView, LayoutHelper.createLinear(0, LayoutHelper.MATCH_PARENT, 1.0f, Gravity.RIGHT | Gravity.TOP, 10, 0, 0, 0));
         } else {
-            linearLayout.addView(nameTextView);
-            linearLayout.addView(onlineTextView);
+            linearLayout.addView(nameTextView, LayoutHelper.createLinear(0, LayoutHelper.MATCH_PARENT, 1.0f, Gravity.LEFT | Gravity.TOP, 0, 0, 10, 0));
+            linearLayout.addView(onlineTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.RIGHT | Gravity.TOP, 0, 2, 0, 0));
         }
-
-        LinearLayout.LayoutParams layoutParams2 = (LinearLayout.LayoutParams) nameTextView.getLayoutParams();
-        layoutParams2.width = 0;
-        layoutParams2.height = LayoutParams.MATCH_PARENT;
-        layoutParams2.weight = 1;
-        if (LocaleController.isRTL) {
-            layoutParams2.leftMargin = AndroidUtilities.dp(10);
-        } else {
-            layoutParams2.rightMargin = AndroidUtilities.dp(10);
-        }
-        layoutParams2.gravity = LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT;
-        nameTextView.setLayoutParams(layoutParams2);
-
-        layoutParams2 = (LinearLayout.LayoutParams) onlineTextView.getLayoutParams();
-        layoutParams2.width = LayoutParams.WRAP_CONTENT;
-        layoutParams2.height = LayoutParams.MATCH_PARENT;
-        layoutParams2.topMargin = AndroidUtilities.dp(2);
-        layoutParams2.gravity = (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.TOP;
-        onlineTextView.setLayoutParams(layoutParams2);
 
         detailTextView = new TextView(context);
         detailTextView.setTextColor(0xff212121);
@@ -105,15 +79,7 @@ public class SessionCell extends FrameLayout {
         detailTextView.setSingleLine(true);
         detailTextView.setEllipsize(TextUtils.TruncateAt.END);
         detailTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
-        addView(detailTextView);
-        layoutParams = (LayoutParams) detailTextView.getLayoutParams();
-        layoutParams.width = LayoutParams.MATCH_PARENT;
-        layoutParams.height = LayoutParams.WRAP_CONTENT;
-        layoutParams.leftMargin = AndroidUtilities.dp(17);
-        layoutParams.rightMargin = AndroidUtilities.dp(17);
-        layoutParams.topMargin = AndroidUtilities.dp(36);
-        layoutParams.gravity = (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP;
-        detailTextView.setLayoutParams(layoutParams);
+        addView(detailTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, 17, 36, 17, 0));
 
         detailExTextView = new TextView(context);
         detailExTextView.setTextColor(0xff999999);
@@ -123,15 +89,7 @@ public class SessionCell extends FrameLayout {
         detailExTextView.setSingleLine(true);
         detailExTextView.setEllipsize(TextUtils.TruncateAt.END);
         detailExTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
-        addView(detailExTextView);
-        layoutParams = (LayoutParams) detailExTextView.getLayoutParams();
-        layoutParams.width = LayoutParams.MATCH_PARENT;
-        layoutParams.height = LayoutParams.WRAP_CONTENT;
-        layoutParams.leftMargin = AndroidUtilities.dp(17);
-        layoutParams.rightMargin = AndroidUtilities.dp(17);
-        layoutParams.topMargin = AndroidUtilities.dp(59);
-        layoutParams.gravity = (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP;
-        detailExTextView.setLayoutParams(layoutParams);
+        addView(detailExTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, 17, 59, 17, 0));
     }
 
     @Override

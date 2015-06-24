@@ -9,7 +9,6 @@
 package org.telegram.ui.Cells;
 
 import android.content.Context;
-import android.util.AttributeSet;
 import android.view.View;
 
 import org.telegram.android.AndroidUtilities;
@@ -17,28 +16,9 @@ import org.telegram.messenger.R;
 
 public class ShadowSectionCell extends View {
 
-    private void init() {
-        setBackgroundResource(R.drawable.greydivider);
-    }
-
     public ShadowSectionCell(Context context) {
         super(context);
-        init();
-    }
-
-    public ShadowSectionCell(Context context, AttributeSet attrs) {
-        super(context, attrs);
-        init();
-    }
-
-    public ShadowSectionCell(Context context, AttributeSet attrs, int defStyleAttr) {
-        super(context, attrs, defStyleAttr);
-        init();
-    }
-
-    public ShadowSectionCell(Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes) {
-        super(context, attrs, defStyleAttr, defStyleRes);
-        init();
+        setBackgroundResource(R.drawable.greydivider);
     }
 
     @Override

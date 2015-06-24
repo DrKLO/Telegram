@@ -20,12 +20,16 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
+import android.util.TypedValue;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.FrameLayout;
+import android.widget.LinearLayout;
 import android.widget.ListView;
+import android.widget.TextView;
 
 import org.telegram.android.AndroidUtilities;
 import org.telegram.android.MessagesController;
@@ -45,6 +49,8 @@ import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.ColorPickerView;
+import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.NumberPicker;
 
 public class ProfileNotificationsActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
 
@@ -56,6 +62,7 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
     private int settingsSoundRow;
     private int settingsPriorityRow;
     private int settingsLedRow;
+    private int smartRow;
     private int rowCount = 0;
 
     public ProfileNotificationsActivity(Bundle args) {
@@ -72,6 +79,12 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
             settingsPriorityRow = rowCount++;
         } else {
             settingsPriorityRow = -1;
+        }
+        int lower_id = (int) dialog_id;
+        if (lower_id < 0) {
+            smartRow = rowCount++;
+        } else {
+            smartRow = 1;
         }
         settingsLedRow = rowCount++;
         NotificationCenter.getInstance().addObserver(this, NotificationCenter.notificationsSettingsUpdated);
@@ -107,9 +120,9 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
         listView.setVerticalScrollBarEnabled(false);
         AndroidUtilities.setListViewEdgeEffectColor(listView, AvatarDrawable.getProfileBackColorForId(5));
         frameLayout.addView(listView);
-        FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) listView.getLayoutParams();
-        layoutParams.width = FrameLayout.LayoutParams.MATCH_PARENT;
-        layoutParams.height = FrameLayout.LayoutParams.MATCH_PARENT;
+        final FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) listView.getLayoutParams();
+        layoutParams.width = LayoutHelper.MATCH_PARENT;
+        layoutParams.height = LayoutHelper.MATCH_PARENT;
         listView.setLayoutParams(layoutParams);
         listView.setAdapter(new ListAdapter(context));
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
@@ -147,7 +160,7 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
                         }
                     });
                     builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-                    showAlertDialog(builder);
+                    showDialog(builder.create());
                 } else if (i == settingsNotificationsRow) {
                     if (getParentActivity() == null) {
                         return;
@@ -180,7 +193,7 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
                         }
                     });
                     builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-                    showAlertDialog(builder);
+                    showDialog(builder.create());
                 } else if (i == settingsSoundRow) {
                     try {
                         Intent tmpIntent = new Intent(RingtoneManager.ACTION_RINGTONE_PICKER);
@@ -215,9 +228,10 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
                         return;
                     }
 
-                    LayoutInflater li = (LayoutInflater) getParentActivity().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-                    view = li.inflate(R.layout.settings_color_dialog_layout, null, false);
-                    final ColorPickerView colorPickerView = (ColorPickerView) view.findViewById(R.id.color_picker);
+                    LinearLayout linearLayout = new LinearLayout(getParentActivity());
+                    linearLayout.setOrientation(LinearLayout.VERTICAL);
+                    final ColorPickerView colorPickerView = new ColorPickerView(getParentActivity());
+                    linearLayout.addView(colorPickerView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
 
                     SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
                     if (preferences.contains("color_" + dialog_id)) {
@@ -232,7 +246,7 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
 
                     AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                     builder.setTitle(LocaleController.getString("LedColor", R.string.LedColor));
-                    builder.setView(view);
+                    builder.setView(linearLayout);
                     builder.setPositiveButton(LocaleController.getString("Set", R.string.Set), new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialogInterface, int which) {
@@ -263,7 +277,7 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
                             listView.invalidateViews();
                         }
                     });
-                    showAlertDialog(builder);
+                    showDialog(builder.create());
                 } else if (i == settingsPriorityRow) {
                     AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                     builder.setTitle(LocaleController.getString("NotificationsPriority", R.string.NotificationsPriority));
@@ -288,7 +302,122 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
                         }
                     });
                     builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-                    showAlertDialog(builder);
+                    showDialog(builder.create());
+                } else if (i == smartRow) {
+                    if (getParentActivity() == null) {
+                        return;
+                    }
+                    SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+                    int notifyMaxCount = preferences.getInt("smart_max_count_" + dialog_id, 2);
+                    int notifyDelay = preferences.getInt("smart_delay_" + dialog_id, 3 * 60);
+                    if (notifyMaxCount == 0) {
+                        notifyMaxCount = 2;
+                    }
+
+                    LinearLayout linearLayout = new LinearLayout(getParentActivity());
+                    linearLayout.setOrientation(LinearLayout.VERTICAL);
+
+                    LinearLayout linearLayout2 = new LinearLayout(getParentActivity());
+                    linearLayout2.setOrientation(LinearLayout.HORIZONTAL);
+                    linearLayout.addView(linearLayout2);
+                    LinearLayout.LayoutParams layoutParams1 = (LinearLayout.LayoutParams) linearLayout2.getLayoutParams();
+                    layoutParams1.width = LayoutHelper.WRAP_CONTENT;
+                    layoutParams1.height = LayoutHelper.WRAP_CONTENT;
+                    layoutParams1.gravity = Gravity.CENTER_HORIZONTAL | Gravity.TOP;
+                    linearLayout2.setLayoutParams(layoutParams1);
+
+                    TextView textView = new TextView(getParentActivity());
+                    textView.setText(LocaleController.getString("SmartNotificationsSoundAtMost", R.string.SmartNotificationsSoundAtMost));
+                    textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
+                    linearLayout2.addView(textView);
+                    layoutParams1 = (LinearLayout.LayoutParams) textView.getLayoutParams();
+                    layoutParams1.width = LayoutHelper.WRAP_CONTENT;
+                    layoutParams1.height = LayoutHelper.WRAP_CONTENT;
+                    layoutParams1.gravity = Gravity.CENTER_VERTICAL | Gravity.LEFT;
+                    textView.setLayoutParams(layoutParams1);
+
+                    final NumberPicker numberPickerTimes = new NumberPicker(getParentActivity());
+                    numberPickerTimes.setMinValue(1);
+                    numberPickerTimes.setMaxValue(10);
+                    numberPickerTimes.setValue(notifyMaxCount);
+                    linearLayout2.addView(numberPickerTimes);
+                    layoutParams1 = (LinearLayout.LayoutParams) numberPickerTimes.getLayoutParams();
+                    layoutParams1.width = AndroidUtilities.dp(50);
+                    numberPickerTimes.setLayoutParams(layoutParams1);
+
+                    textView = new TextView(getParentActivity());
+                    textView.setText(LocaleController.getString("SmartNotificationsTimes", R.string.SmartNotificationsTimes));
+                    textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
+                    linearLayout2.addView(textView);
+                    layoutParams1 = (LinearLayout.LayoutParams) textView.getLayoutParams();
+                    layoutParams1.width = LayoutHelper.WRAP_CONTENT;
+                    layoutParams1.height = LayoutHelper.WRAP_CONTENT;
+                    layoutParams1.gravity = Gravity.CENTER_VERTICAL | Gravity.LEFT;
+                    textView.setLayoutParams(layoutParams1);
+
+                    linearLayout2 = new LinearLayout(getParentActivity());
+                    linearLayout2.setOrientation(LinearLayout.HORIZONTAL);
+                    linearLayout.addView(linearLayout2);
+                    layoutParams1 = (LinearLayout.LayoutParams) linearLayout2.getLayoutParams();
+                    layoutParams1.width = LayoutHelper.WRAP_CONTENT;
+                    layoutParams1.height = LayoutHelper.WRAP_CONTENT;
+                    layoutParams1.gravity = Gravity.CENTER_HORIZONTAL | Gravity.TOP;
+                    linearLayout2.setLayoutParams(layoutParams1);
+
+                    textView = new TextView(getParentActivity());
+                    textView.setText(LocaleController.getString("SmartNotificationsWithin", R.string.SmartNotificationsWithin));
+                    textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
+                    linearLayout2.addView(textView);
+                    layoutParams1 = (LinearLayout.LayoutParams) textView.getLayoutParams();
+                    layoutParams1.width = LayoutHelper.WRAP_CONTENT;
+                    layoutParams1.height = LayoutHelper.WRAP_CONTENT;
+                    layoutParams1.gravity = Gravity.CENTER_VERTICAL | Gravity.LEFT;
+                    textView.setLayoutParams(layoutParams1);
+
+                    final NumberPicker numberPickerMinutes = new NumberPicker(getParentActivity());
+                    numberPickerMinutes.setMinValue(1);
+                    numberPickerMinutes.setMaxValue(10);
+                    numberPickerMinutes.setValue(notifyDelay / 60);
+                    linearLayout2.addView(numberPickerMinutes);
+                    layoutParams1 = (LinearLayout.LayoutParams) numberPickerMinutes.getLayoutParams();
+                    layoutParams1.width = AndroidUtilities.dp(50);
+                    numberPickerMinutes.setLayoutParams(layoutParams1);
+
+                    textView = new TextView(getParentActivity());
+                    textView.setText(LocaleController.getString("SmartNotificationsMinutes", R.string.SmartNotificationsMinutes));
+                    textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
+                    linearLayout2.addView(textView);
+                    layoutParams1 = (LinearLayout.LayoutParams) textView.getLayoutParams();
+                    layoutParams1.width = LayoutHelper.WRAP_CONTENT;
+                    layoutParams1.height = LayoutHelper.WRAP_CONTENT;
+                    layoutParams1.gravity = Gravity.CENTER_VERTICAL | Gravity.LEFT;
+                    textView.setLayoutParams(layoutParams1);
+
+                    AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                    builder.setTitle(LocaleController.getString("SmartNotifications", R.string.SmartNotifications));
+                    builder.setView(linearLayout);
+                    builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+                            preferences.edit().putInt("smart_max_count_" + dialog_id, numberPickerTimes.getValue()).commit();
+                            preferences.edit().putInt("smart_delay_" + dialog_id, numberPickerMinutes.getValue() * 60).commit();
+                            if (listView != null) {
+                                listView.invalidateViews();
+                            }
+                        }
+                    });
+                    builder.setNegativeButton(LocaleController.getString("SmartNotificationsDisabled", R.string.SmartNotificationsDisabled), new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+                            preferences.edit().putInt("smart_max_count_" + dialog_id, 0).commit();
+                            if (listView != null) {
+                                listView.invalidateViews();
+                            }
+                        }
+                    });
+                    showDialog(builder.create());
                 }
             }
         });
@@ -447,6 +576,16 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
                     } else if (value == 3) {
                         textCell.setTextAndValue(LocaleController.getString("NotificationsPriority", R.string.NotificationsPriority), LocaleController.getString("SettingsDefault", R.string.SettingsDefault), true);
                     }
+                } else if (i == smartRow) {
+                    int notifyMaxCount = preferences.getInt("smart_max_count_" + dialog_id, 2);
+                    int notifyDelay = preferences.getInt("smart_delay_" + dialog_id, 3 * 60);
+                    if (notifyMaxCount == 0) {
+                        textCell.setTextAndValue(LocaleController.getString("SmartNotifications", R.string.SmartNotifications), LocaleController.getString("SmartNotificationsDisabled", R.string.SmartNotificationsDisabled), true);
+                    } else {
+                        String times = LocaleController.formatPluralString("Times", notifyMaxCount);
+                        String minutes = LocaleController.formatPluralString("Minutes", notifyDelay / 60);
+                        textCell.setTextAndValue(LocaleController.getString("SmartNotifications", R.string.SmartNotifications), LocaleController.formatString("SmartNotificationsInfo", R.string.SmartNotificationsInfo, times, minutes), true);
+                    }
                 }
             } else if (type == 1) {
                 if (view == null) {
@@ -472,7 +611,7 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
 
         @Override
         public int getItemViewType(int i) {
-            if (i == settingsNotificationsRow || i == settingsVibrateRow || i == settingsSoundRow || i == settingsPriorityRow) {
+            if (i == settingsNotificationsRow || i == settingsVibrateRow || i == settingsSoundRow || i == settingsPriorityRow || i == smartRow) {
                 return 0;
             } else if (i == settingsLedRow) {
                 return 1;

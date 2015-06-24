@@ -85,10 +85,14 @@
     <string name="Typing">escrevendo...</string>
     <string name="IsTyping">está escrevendo...</string>
     <string name="AreTyping">estão escrevendo...</string>
-    <string name="IsRecordingAudio">%1$s está gravando uma mensagem...</string>
+    <string name="IsRecordingAudio">%1$s está gravando um áudio...</string>
     <string name="IsSendingPhoto">%1$s está enviando uma foto...</string>
     <string name="IsSendingVideo">%1$s está enviando um vídeo...</string>
     <string name="IsSendingFile">%1$s está enviando um arquivo...</string>
+    <string name="RecordingAudio">gravando áudio...</string>
+    <string name="SendingPhoto">enviando foto...</string>
+    <string name="SendingVideoStatus">enviando vídeo...</string>
+    <string name="SendingFile">enviando arquivo...</string>
     <string name="GotAQuestion">Tem alguma dúvida\nsobre o Telegram?</string>
     <string name="ChatTakePhoto">Tirar foto</string>
     <string name="ChatGallery">Galeria</string>
@@ -122,6 +126,8 @@
     <string name="SetTimer">Definir timer de autodestruição</string>
     <string name="ServiceNotifications">Notificações de serviço</string>
     <string name="GettingLinkInfo">Obtendo informações...</string>
+    <string name="OpenInBrowser">Abrir no Navegador</string>
+    <string name="CopyUrl">Copiar URL</string>
     <!--notification-->
     <string name="MessageLifetimeChanged">%1$s estabeleceu o tempo de autodestruição para %2$s </string>
     <string name="MessageLifetimeChangedOutgoing">Você estabeleceu o tempo de autodestruição para %1$s</string>
@@ -157,6 +163,7 @@
     <string name="NotificationContactJoined">%1$s entrou para o Telegram!</string>
     <string name="NotificationUnrecognizedDevice">%1$s,\nNós detectamos que alguém acessou a sua conta a partir de um novo aparelho em %2$s\n\nAparelho: %3$s\nLocalização: %4$s\n\nSe não foi você, você pode ir em Configurações - Provacidade e Segurança - Sessões, e terminar aquela sessão.\n\nSe você acha que alguém acessou a sua conta contra a sua vontade, você pode habilitar a verificação em duas etapas nas configurações de Privacidade e Segurança.\n\nAtenciosamente,\nEquipe Telegram</string>
     <string name="NotificationContactNewPhoto">%1$s atualizou a foto do perfil</string>
+    <string name="NotificationInvitedToGroupByLink">%1$s entrou para o grupo %2$s via link de convite</string>
     <string name="Reply">Responder</string>
     <string name="ReplyToGroup">Responder para %1$s</string>
     <string name="ReplyToUser">Responder para %1$s</string>
@@ -182,6 +189,19 @@
     <string name="EnterGroupNamePlaceholder">Digite o nome do grupo</string>
     <string name="GroupName">Nome do grupo</string>
     <string name="MembersCount">%1$d/%2$d membros</string>
+    <string name="JoinToGroup">Você deseja entrar no grupo \'%1$s\'?</string>
+    <string name="JoinToGroupErrorFull">Desculpe, este grupo já está lotado.</string>
+    <string name="JoinToGroupErrorNotExist">Desculpe, este grupo não existe.</string>
+    <string name="LinkCopied">Link copiado para área de transferência</string>
+    <string name="InviteToGroupByLink">Convidar para o Grupo via Link</string>
+    <string name="InviteLink">Link de Convite</string>
+    <string name="RevokeAlert">Você tem certeza que deseja desativar o link? Uma vez feito, ninguém conseguirá entrar no grupo usando-o.</string>
+    <string name="RevokeAlertNewLink">Este link de convite está inativo. Um novo link foi gerado.</string>
+    <string name="RevokeButton">Desativar</string>
+    <string name="RevokeLink">Desativar Link</string>
+    <string name="CopyLink">Copiar Link</string>
+    <string name="ShareLink">Compartilhar Link</string>
+    <string name="LinkInfo">Qualquer um com Telegram instalado poderá entrar no seu grupo abrindo este link.</string>
     <!--group info view-->
     <string name="SharedMedia">Mídia Compartilhada</string>
     <string name="SETTINGS">Configurações</string>
@@ -223,6 +243,21 @@
     <string name="UsernameAvailable">%1$s está disponível.</string>
     <string name="UsernameEmpty">Nenhum</string>
     <string name="ErrorOccurred">Ocorreu um erro.</string>
+    <!--stickers view-->
+    <string name="Stickers">Stickers</string>
+    <string name="GeniusStickerPackName">Grandes Mentes</string>
+    <string name="StickersInfo">Artistas são bem vindos a adicionar seus próprios pacotes de stickers usando o @stickers bot.\n\nUsuários podem adicionar stickers com um clique sobre eles e então escolher \"Adicionar aos Stickers\".</string>
+    <string name="AddStickers">Adicionar Stickers</string>
+    <string name="AddToStickers">Adicionar aos Stickers</string>
+    <string name="AddStickersNotFound">Stickers não encontrados</string>
+    <string name="StickersRemoved">Stickers removidos</string>
+    <string name="AddStickersInstalled">Novos stickers adicionados</string>
+    <string name="StickersHide">Esconder</string>
+    <string name="StickersShow">Mostrar</string>
+    <string name="StickersShare">Compartilhar</string>
+    <string name="StickersCopy">Copiar link</string>
+    <string name="StickersRemove">Remover</string>
+    <string name="NoStickers">Nenhum sticker</string>
     <!--settings view-->
     <string name="ResetNotificationsText">Restaurar todas as configurações de notificação</string>
     <string name="TextSize">Tamanho do texto nas mensagens</string>
@@ -261,7 +296,7 @@
     <string name="Language">Idioma</string>
     <string name="AskAQuestionInfo">Por favor compreenda que o Suporte do Telegram é feito por voluntários. Tentamos responder o mais rápido possível, mas pode demorar um pouco. <![CDATA[<br><br>]]>Por favor acesse o <![CDATA[<a href=\"http://telegram.org/faq#general\">FAQ do Telegram</a>]]>: temos respostas para algumas questões, assim como dicas importantes à <![CDATA[<a href=\"http://telegram.org/faq#troubleshooting\">resolução de problemas</a>]]>.</string>
     <string name="AskButton">Pergunte a um voluntário</string>
-    <string name="TelegramFaq">FAQ do Telegram</string>
+    <string name="TelegramFaq">Perguntas frequentes</string>
     <string name="TelegramFaqUrl">https://telegram.org/faq</string>
     <string name="DeleteLocalization">Apagar localização?</string>
     <string name="IncorrectLocalization">Arquivo de localização incorreto</string>
@@ -311,6 +346,13 @@
     <string name="RepeatDisabled">Desativado</string>
     <string name="InChatSound">Sons no Chat</string>
     <string name="SoundDefault">Padrão</string>
+    <string name="SmartNotifications">Notificações Inteligentes</string>
+    <string name="SmartNotificationsDisabled">Desativado</string>
+    <string name="SmartNotificationsInfo">Tocar no máximo %1$s a cada %2$s</string>
+    <string name="SmartNotificationsSoundAtMost">Tocar no máximo</string>
+    <string name="SmartNotificationsTimes">vezes</string>
+    <string name="SmartNotificationsWithin">a cada</string>
+    <string name="SmartNotificationsMinutes">minutos</string>
     <!--sessions view-->
     <string name="SessionsTitle">Sessões Ativas</string>
     <string name="CurrentSession">Sessão atual</string>
@@ -350,15 +392,20 @@
     <string name="Hybrid">Híbrido</string>
     <string name="MetersAway">m de distância</string>
     <string name="KMetersAway">km de distância</string>
-    <string name="SendLocation">Enviar Localização</string>
-    <string name="ShareLocation">Compartilhar Localização</string>
+    <string name="SendLocation">Enviar sua localização atual</string>
+    <string name="SendSelectedLocation">Enviar localização selecionada</string>
+    <string name="ShareLocation">Localização</string>
+    <string name="AccurateTo">Precisão de %1$s</string>
+    <string name="NearbyPlaces">OU ESCOLHA UM LUGAR</string>
     <!--photo gallery view-->
     <string name="ShowAllMedia">Mostrar todas as mídias</string>
     <string name="SaveToGallery">Salvar na galeria</string>
     <string name="Of">%1$d de %2$d</string>
     <string name="Gallery">Galeria</string>
     <string name="AllPhotos">Todas as Fotos</string>
+    <string name="AllVideo">Todos os Vídeos</string>
     <string name="NoPhotos">Ainda não há fotos</string>
+    <string name="NoVideo">Nenhum vídeo ainda</string>
     <string name="PleaseDownload">Baixar o vídeo primeiro</string>
     <string name="NoRecentPhotos">Nenhuma foto recente</string>
     <string name="NoRecentGIFs">Nenhum GIF recente</string>
@@ -388,6 +435,11 @@
     <string name="DiscardChanges">Descartar mudanças?</string>
     <string name="ClearSearch">Limpar histórico de busca?</string>
     <string name="ClearButton">Limpar</string>
+    <string name="PickerPhotos">Fotos</string>
+    <string name="PickerVideo">Vídeo</string>
+    <string name="AddCaption">Adicionar legenda...</string>
+    <string name="PhotoCaption">Legenda da Foto</string>
+    <string name="VideoCaption">Legenda do Vídeo</string>
     <!--password view-->
     <string name="TwoStepVerification">Verificação em duas etapas</string>
     <string name="SetAdditionalPassword">Configurar senha adicional</string>
@@ -424,7 +476,7 @@
     <string name="RestoreEmailSent">O código de recuperação foi enviado para o e-mail fornecido: \n\n%1$s</string>
     <string name="RestoreEmailSentInfo">Por favor, verifique o seu e-mail e digite aqui o código de 6 dígitos recebido.</string>
     <string name="RestoreEmailTrouble">Está tendo problemas para acessar seu e-mail %1$s?</string>
-    <string name="RestoreEmailTroubleText">Se você não puder acessar o seu e-mail, as suas únicas opções são são lembrar a senha ou apagar a sua conta.</string>
+    <string name="RestoreEmailTroubleText">Se você não puder acessar o seu e-mail, as suas únicas opções são lembrar a senha ou apagar a sua conta.</string>
     <string name="ResetMyAccount">APAGAR MINHA CONTA</string>
     <string name="ResetMyAccountText">Se você prosseguir e apagar a sua conta, você perderá todos os seus chats e mensagens, assim como todas as suas mídias e arquivos compartilhados.</string>
     <string name="ResetMyAccountWarning">Aviso</string>
@@ -482,6 +534,7 @@
     <string name="Done">Concluído</string>
     <string name="Open">Abrir</string>
     <string name="Cancel">Cancelar</string>
+    <string name="Close">Fechar</string>
     <string name="Add">Adicionar</string>
     <string name="Edit">Editar</string>
     <string name="Send">Enviar</string>
@@ -497,6 +550,8 @@
     <string name="OK">OK</string>
     <string name="Crop">CORTAR</string>
     <!--messages-->
+    <string name="ActionInviteYou">Você entrou para o grupo via link de convite</string>
+    <string name="ActionInviteUser">un1 entrou para o grupo via link de convite</string>
     <string name="ActionKickUser">un1 removeu un2</string>
     <string name="ActionLeftUser">un1 saiu do grupo</string>
     <string name="ActionAddUser">un1 adicionou un2</string>
@@ -514,6 +569,7 @@
     <string name="ActionKickUserYou">un1 removeu você</string>
     <string name="ActionAddUserYou">un1 adicionou você</string>
     <string name="ActionAddUserSelf">un1 retornou ao grupo</string>
+    <string name="ActionAddUserSelfYou">Você retornou ao grupo</string>
     <string name="UnsuppotedMedia">Esta mensagem não é suportada na sua versão do Telegram. Para visualiza-la atualize seu aplicativo em http://telegram.org/update</string>
     <string name="AttachPhoto">Foto</string>
     <string name="AttachVideo">Vídeo</string>
@@ -664,6 +720,24 @@
     <string name="Users_few">%1$d usuários</string>
     <string name="Users_many">%1$d usuários</string>
     <string name="Users_other">%1$d usuários</string>
+    <string name="Times_zero">%1$d vezes</string>
+    <string name="Times_one">%1$d vez</string>
+    <string name="Times_two">%1$d vezes</string>
+    <string name="Times_few">%1$d vezes</string>
+    <string name="Times_many">%1$d vezes</string>
+    <string name="Times_other">%1$d vezes</string>
+    <string name="Meters_zero">%1$d metros</string>
+    <string name="Meters_one">%1$d metro</string>
+    <string name="Meters_two">%1$d metros</string>
+    <string name="Meters_few">%1$d metros</string>
+    <string name="Meters_many">%1$d metros</string>
+    <string name="Meters_other">%1$d metros</string>
+    <string name="Stickers_zero">%1$d stickers</string>
+    <string name="Stickers_one">%1$d sticker</string>
+    <string name="Stickers_two">%1$d stickers</string>
+    <string name="Stickers_few">%1$d stickers</string>
+    <string name="Stickers_many">%1$d stickers</string>
+    <string name="Stickers_other">%1$d stickers</string>
     <!--forwarded messages-->
     <string name="ForwardedMessage_zero">%1$d mensagens encaminhadas</string>
     <string name="ForwardedMessage_one">Mensagem encaminhada</string>
@@ -730,4 +804,7 @@
     <string name="formatterDay24H">HH:mm</string>
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s às %2$s</string>
+    <!--update text-->
+    <string name="updateText">Seu Telegram para Android acaba de ser atualizado. Novidades da versão 2.9:\n\n- Instale e compartilhe pacotes de stickers customizados como esse: https://telegram.me/addstickers/Animals\n- Se você é um artista, crie stickers customizados usando o @stickers bot.\n\n- Use Telegram com Android Auto.</string>
+    <string name="updateBuild">536</string>
 </resources>

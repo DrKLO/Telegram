@@ -35,6 +35,7 @@ import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.Adapters.BaseFragmentAdapter;
 import org.telegram.ui.Cells.TextInfoCell;
 import org.telegram.ui.Cells.UserCell;
+import org.telegram.ui.Components.LayoutHelper;
 
 import java.util.ArrayList;
 
@@ -126,8 +127,8 @@ public class LastSeenUsersActivity extends BaseFragment implements NotificationC
         emptyTextView.setText(LocaleController.getString("NoContacts", R.string.NoContacts));
         frameLayout.addView(emptyTextView);
         FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) emptyTextView.getLayoutParams();
-        layoutParams.width = FrameLayout.LayoutParams.MATCH_PARENT;
-        layoutParams.height = FrameLayout.LayoutParams.MATCH_PARENT;
+        layoutParams.width = LayoutHelper.MATCH_PARENT;
+        layoutParams.height = LayoutHelper.MATCH_PARENT;
         layoutParams.gravity = Gravity.TOP;
         emptyTextView.setLayoutParams(layoutParams);
         emptyTextView.setOnTouchListener(new View.OnTouchListener() {
@@ -148,8 +149,8 @@ public class LastSeenUsersActivity extends BaseFragment implements NotificationC
         }
         frameLayout.addView(listView);
         layoutParams = (FrameLayout.LayoutParams) listView.getLayoutParams();
-        layoutParams.width = FrameLayout.LayoutParams.MATCH_PARENT;
-        layoutParams.height = FrameLayout.LayoutParams.MATCH_PARENT;
+        layoutParams.width = LayoutHelper.MATCH_PARENT;
+        layoutParams.height = LayoutHelper.MATCH_PARENT;
         listView.setLayoutParams(layoutParams);
 
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
@@ -185,7 +186,7 @@ public class LastSeenUsersActivity extends BaseFragment implements NotificationC
                         }
                     }
                 });
-                showAlertDialog(builder);
+                showDialog(builder.create());
                 return true;
             }
         });

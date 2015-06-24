@@ -28,9 +28,9 @@ import org.telegram.android.MessageObject;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.R;
 import org.telegram.messenger.TLRPC;
-import org.telegram.messenger.Utilities;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.CheckBox;
+import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.LineProgressView;
 
 import java.io.File;
@@ -76,15 +76,7 @@ public class SharedDocumentCell extends FrameLayout implements MediaController.F
         TAG = MediaController.getInstance().generateObserverTag();
 
         placeholderImabeView = new ImageView(context);
-        addView(placeholderImabeView);
-        LayoutParams layoutParams = (LayoutParams) placeholderImabeView.getLayoutParams();
-        layoutParams.width = AndroidUtilities.dp(40);
-        layoutParams.height = AndroidUtilities.dp(40);
-        layoutParams.leftMargin = LocaleController.isRTL ? 0 : AndroidUtilities.dp(12);
-        layoutParams.rightMargin = LocaleController.isRTL ? AndroidUtilities.dp(12) : 0;
-        layoutParams.topMargin = AndroidUtilities.dp(8);
-        layoutParams.gravity = LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT;
-        placeholderImabeView.setLayoutParams(layoutParams);
+        addView(placeholderImabeView, LayoutHelper.createFrame(40, 40, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 0 : 12, 8, LocaleController.isRTL ? 12 : 0, 0));
 
         extTextView = new TextView(context);
         extTextView.setTextColor(0xffffffff);
@@ -95,17 +87,10 @@ public class SharedDocumentCell extends FrameLayout implements MediaController.F
         extTextView.setSingleLine(true);
         extTextView.setGravity(Gravity.CENTER);
         extTextView.setEllipsize(TextUtils.TruncateAt.END);
-        addView(extTextView);
-        layoutParams = (LayoutParams) extTextView.getLayoutParams();
-        layoutParams.width = AndroidUtilities.dp(32);
-        layoutParams.height = LayoutParams.WRAP_CONTENT;
-        layoutParams.topMargin = AndroidUtilities.dp(22);
-        layoutParams.leftMargin = LocaleController.isRTL ? 0 : AndroidUtilities.dp(16);
-        layoutParams.rightMargin = LocaleController.isRTL ? AndroidUtilities.dp(16) : 0;
-        layoutParams.gravity = LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT;
-        extTextView.setLayoutParams(layoutParams);
+        addView(extTextView, LayoutHelper.createFrame(32, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 0 : 16, 22, LocaleController.isRTL ? 16 : 0, 0));
 
         thumbImageView = new BackupImageView(context);
+        addView(thumbImageView, LayoutHelper.createFrame(40, 40, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 0 : 12, 8, LocaleController.isRTL ? 12 : 0, 0));
         thumbImageView.getImageReceiver().setDelegate(new ImageReceiver.ImageReceiverDelegate() {
             @Override
             public void didSetImage(ImageReceiver imageReceiver, boolean set, boolean thumb) {
@@ -113,15 +98,6 @@ public class SharedDocumentCell extends FrameLayout implements MediaController.F
                 placeholderImabeView.setVisibility(set ? INVISIBLE : VISIBLE);
             }
         });
-        addView(thumbImageView);
-        layoutParams = (LayoutParams) thumbImageView.getLayoutParams();
-        layoutParams.width = AndroidUtilities.dp(40);
-        layoutParams.height = AndroidUtilities.dp(40);
-        layoutParams.leftMargin = LocaleController.isRTL ? 0 : AndroidUtilities.dp(12);
-        layoutParams.rightMargin = LocaleController.isRTL ? AndroidUtilities.dp(12) : 0;
-        layoutParams.topMargin = AndroidUtilities.dp(8);
-        layoutParams.gravity = LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT;
-        thumbImageView.setLayoutParams(layoutParams);
 
         nameTextView = new TextView(context);
         nameTextView.setTextColor(0xff222222);
@@ -132,27 +108,11 @@ public class SharedDocumentCell extends FrameLayout implements MediaController.F
         nameTextView.setSingleLine(true);
         nameTextView.setEllipsize(TextUtils.TruncateAt.END);
         nameTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL);
-        addView(nameTextView);
-        layoutParams = (LayoutParams) nameTextView.getLayoutParams();
-        layoutParams.width = LayoutParams.MATCH_PARENT;
-        layoutParams.height = LayoutParams.WRAP_CONTENT;
-        layoutParams.topMargin = AndroidUtilities.dp(5);
-        layoutParams.leftMargin = LocaleController.isRTL ? AndroidUtilities.dp(8) : AndroidUtilities.dp(72);
-        layoutParams.rightMargin = LocaleController.isRTL ? AndroidUtilities.dp(72) : AndroidUtilities.dp(8);
-        layoutParams.gravity = LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT;
-        nameTextView.setLayoutParams(layoutParams);
+        addView(nameTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 8 : 72, 5, LocaleController.isRTL ? 72 : 8, 0));
 
         statusImageView = new ImageView(context);
         statusImageView.setVisibility(INVISIBLE);
-        addView(statusImageView);
-        layoutParams = (LayoutParams) statusImageView.getLayoutParams();
-        layoutParams.width = LayoutParams.WRAP_CONTENT;
-        layoutParams.height = LayoutParams.WRAP_CONTENT;
-        layoutParams.topMargin = AndroidUtilities.dp(35);
-        layoutParams.leftMargin = LocaleController.isRTL ? AndroidUtilities.dp(8) : AndroidUtilities.dp(72);
-        layoutParams.rightMargin = LocaleController.isRTL ? AndroidUtilities.dp(72) : AndroidUtilities.dp(8);
-        layoutParams.gravity = LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT;
-        statusImageView.setLayoutParams(layoutParams);
+        addView(statusImageView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 8 : 72, 35, LocaleController.isRTL ? 72 : 8, 0));
 
         dateTextView = new TextView(context);
         dateTextView.setTextColor(0xff999999);
@@ -162,38 +122,14 @@ public class SharedDocumentCell extends FrameLayout implements MediaController.F
         dateTextView.setSingleLine(true);
         dateTextView.setEllipsize(TextUtils.TruncateAt.END);
         dateTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL);
-        addView(dateTextView);
-        layoutParams = (LayoutParams) dateTextView.getLayoutParams();
-        layoutParams.width = LayoutParams.MATCH_PARENT;
-        layoutParams.height = LayoutParams.WRAP_CONTENT;
-        layoutParams.topMargin = AndroidUtilities.dp(30);
-        layoutParams.leftMargin = LocaleController.isRTL ? AndroidUtilities.dp(8) : AndroidUtilities.dp(72);
-        layoutParams.rightMargin = LocaleController.isRTL ? AndroidUtilities.dp(72) : AndroidUtilities.dp(8);
-        layoutParams.gravity = LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT;
-        dateTextView.setLayoutParams(layoutParams);
+        addView(dateTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 8 : 72, 30, LocaleController.isRTL ? 72 : 8, 0));
 
         progressView = new LineProgressView(context);
-        addView(progressView);
-        layoutParams = (LayoutParams) progressView.getLayoutParams();
-        layoutParams.width = LayoutParams.MATCH_PARENT;
-        layoutParams.height = AndroidUtilities.dp(2);
-        layoutParams.topMargin = AndroidUtilities.dp(54);
-        layoutParams.leftMargin = LocaleController.isRTL ? 0 : AndroidUtilities.dp(72);
-        layoutParams.rightMargin = LocaleController.isRTL ? AndroidUtilities.dp(72) : 0;
-        layoutParams.gravity = LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT;
-        progressView.setLayoutParams(layoutParams);
+        addView(progressView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 2, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 0 : 72, 54, LocaleController.isRTL ? 72 : 0, 0));
 
         checkBox = new CheckBox(context, R.drawable.round_check2);
         checkBox.setVisibility(INVISIBLE);
-        addView(checkBox);
-        layoutParams = (LayoutParams) checkBox.getLayoutParams();
-        layoutParams.width = AndroidUtilities.dp(22);
-        layoutParams.height = AndroidUtilities.dp(22);
-        layoutParams.topMargin = AndroidUtilities.dp(30);
-        layoutParams.leftMargin = LocaleController.isRTL ? 0 : AndroidUtilities.dp(34);
-        layoutParams.rightMargin = LocaleController.isRTL ? AndroidUtilities.dp(34) : 0;
-        layoutParams.gravity = (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
-        checkBox.setLayoutParams(layoutParams);
+        addView(checkBox, LayoutHelper.createFrame(22, 22, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 0 : 34, 30, LocaleController.isRTL ? 34 : 0, 0));
     }
 
     private int getThumbForNameOrMime(String name, String mime) {
@@ -269,7 +205,7 @@ public class SharedDocumentCell extends FrameLayout implements MediaController.F
         loading = false;
 
         if (document != null && document.messageOwner.media != null) {
-            int idx = -1;
+            int idx;
             String name = FileLoader.getDocumentFileName(document.messageOwner.media.document);
             placeholderImabeView.setVisibility(VISIBLE);
             extTextView.setVisibility(VISIBLE);
@@ -284,7 +220,7 @@ public class SharedDocumentCell extends FrameLayout implements MediaController.F
                 thumbImageView.setImage(document.messageOwner.media.document.thumb.location, "40_40", (Drawable) null);
             }
             long date = (long) document.messageOwner.date * 1000;
-            dateTextView.setText(String.format("%s, %s", Utilities.formatFileSize(document.messageOwner.media.document.size), LocaleController.formatString("formatDateAtTime", R.string.formatDateAtTime, LocaleController.formatterYear.format(new Date(date)), LocaleController.formatterDay.format(new Date(date)))));
+            dateTextView.setText(String.format("%s, %s", AndroidUtilities.formatFileSize(document.messageOwner.media.document.size), LocaleController.formatString("formatDateAtTime", R.string.formatDateAtTime, LocaleController.formatterYear.format(new Date(date)), LocaleController.formatterDay.format(new Date(date)))));
         } else {
             nameTextView.setText("");
             extTextView.setText("");
@@ -303,7 +239,7 @@ public class SharedDocumentCell extends FrameLayout implements MediaController.F
     public void updateFileExistIcon() {
         if (message != null && message.messageOwner.media != null) {
             String fileName = null;
-            File cacheFile = null;
+            File cacheFile;
             if (message.messageOwner.attachPath == null || message.messageOwner.attachPath.length() == 0 || !(new File(message.messageOwner.attachPath).exists())) {
                 cacheFile = FileLoader.getPathToMessage(message.messageOwner);
                 if (!cacheFile.exists()) {

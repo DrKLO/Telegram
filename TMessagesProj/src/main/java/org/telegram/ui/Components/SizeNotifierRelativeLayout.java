@@ -77,7 +77,6 @@ public class SizeNotifierRelativeLayout extends RelativeLayout {
             this.getWindowVisibleDisplayFrame(rect);
             keyboardHeight = usableViewHeight - (rect.bottom - rect.top);
             final boolean isWidthGreater = AndroidUtilities.displaySize.x > AndroidUtilities.displaySize.y;
-            FileLog.e("tmessages", "isWidthGreater = " + isWidthGreater + " height = " + keyboardHeight);
             post(new Runnable() {
                 @Override
                 public void run() {

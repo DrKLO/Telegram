@@ -8,6 +8,7 @@
 
 package org.telegram.ui.Components;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
@@ -18,8 +19,6 @@ import android.opengl.GLES20;
 import android.opengl.GLUtils;
 import android.os.Build;
 import android.os.Looper;
-import android.support.v7.widget.LinearLayoutManager;
-import android.support.v7.widget.RecyclerView;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.MotionEvent;
@@ -32,14 +31,16 @@ import android.widget.TextView;
 
 import org.telegram.android.AndroidUtilities;
 import org.telegram.android.LocaleController;
+import org.telegram.android.support.widget.LinearLayoutManager;
+import org.telegram.android.support.widget.RecyclerView;
 import org.telegram.messenger.DispatchQueue;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
-import org.telegram.ui.AnimationCompat.AnimatorListenerAdapterProxy;
-import org.telegram.ui.AnimationCompat.AnimatorSetProxy;
-import org.telegram.ui.AnimationCompat.ObjectAnimatorProxy;
-import org.telegram.ui.AnimationCompat.ViewProxy;
+import org.telegram.android.AnimationCompat.AnimatorListenerAdapterProxy;
+import org.telegram.android.AnimationCompat.AnimatorSetProxy;
+import org.telegram.android.AnimationCompat.ObjectAnimatorProxy;
+import org.telegram.android.AnimationCompat.ViewProxy;
 import org.telegram.ui.Cells.PhotoEditToolCell;
 
 import java.nio.ByteBuffer;
@@ -55,6 +56,7 @@ import javax.microedition.khronos.egl.EGLSurface;
 import javax.microedition.khronos.opengles.GL;
 import javax.microedition.khronos.opengles.GL10;
 
+@SuppressLint("NewApi")
 public class PhotoFilterView extends FrameLayout {
 
     private boolean showOriginal;
@@ -1333,8 +1335,8 @@ public class PhotoFilterView extends FrameLayout {
         addView(textureView);
         textureView.setVisibility(INVISIBLE);
         LayoutParams layoutParams = (LayoutParams) textureView.getLayoutParams();
-        layoutParams.width = FrameLayout.LayoutParams.MATCH_PARENT;
-        layoutParams.height = FrameLayout.LayoutParams.MATCH_PARENT;
+        layoutParams.width = LayoutHelper.MATCH_PARENT;
+        layoutParams.height = LayoutHelper.MATCH_PARENT;
         layoutParams.gravity = Gravity.TOP | Gravity.LEFT;
         textureView.setLayoutParams(layoutParams);
         textureView.setSurfaceTextureListener(new TextureView.SurfaceTextureListener() {
@@ -1380,8 +1382,8 @@ public class PhotoFilterView extends FrameLayout {
         blurControl.setVisibility(INVISIBLE);
         addView(blurControl);
         layoutParams = (LayoutParams) blurControl.getLayoutParams();
-        layoutParams.width = LayoutParams.MATCH_PARENT;
-        layoutParams.height = LayoutParams.MATCH_PARENT;
+        layoutParams.width = LayoutHelper.MATCH_PARENT;
+        layoutParams.height = LayoutHelper.MATCH_PARENT;
         layoutParams.gravity = Gravity.LEFT | Gravity.TOP;
         blurControl.setLayoutParams(layoutParams);
         blurControl.setDelegate(new PhotoFilterBlurControl.PhotoFilterLinearBlurControlDelegate() {
@@ -1400,7 +1402,7 @@ public class PhotoFilterView extends FrameLayout {
         toolsView = new FrameLayout(context);
         addView(toolsView);
         layoutParams = (LayoutParams) toolsView.getLayoutParams();
-        layoutParams.width = LayoutParams.MATCH_PARENT;
+        layoutParams.width = LayoutHelper.MATCH_PARENT;
         layoutParams.height = AndroidUtilities.dp(126);
         layoutParams.gravity = Gravity.LEFT | Gravity.BOTTOM;
         toolsView.setLayoutParams(layoutParams);
@@ -1409,7 +1411,7 @@ public class PhotoFilterView extends FrameLayout {
         frameLayout.setBackgroundColor(0xff1a1a1a);
         toolsView.addView(frameLayout);
         layoutParams = (LayoutParams) frameLayout.getLayoutParams();
-        layoutParams.width = LayoutParams.MATCH_PARENT;
+        layoutParams.width = LayoutHelper.MATCH_PARENT;
         layoutParams.height = AndroidUtilities.dp(48);
         layoutParams.gravity = Gravity.BOTTOM | Gravity.LEFT;
         frameLayout.setLayoutParams(layoutParams);
@@ -1424,8 +1426,8 @@ public class PhotoFilterView extends FrameLayout {
         cancelTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         frameLayout.addView(cancelTextView);
         layoutParams = (LayoutParams) cancelTextView.getLayoutParams();
-        layoutParams.width = LayoutParams.WRAP_CONTENT;
-        layoutParams.height = LayoutParams.MATCH_PARENT;
+        layoutParams.width = LayoutHelper.WRAP_CONTENT;
+        layoutParams.height = LayoutHelper.MATCH_PARENT;
         layoutParams.gravity = Gravity.TOP | Gravity.LEFT;
         cancelTextView.setLayoutParams(layoutParams);
 
@@ -1439,8 +1441,8 @@ public class PhotoFilterView extends FrameLayout {
         doneTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         frameLayout.addView(doneTextView);
         layoutParams = (LayoutParams) doneTextView.getLayoutParams();
-        layoutParams.width = LayoutParams.WRAP_CONTENT;
-        layoutParams.height = LayoutParams.MATCH_PARENT;
+        layoutParams.width = LayoutHelper.WRAP_CONTENT;
+        layoutParams.height = LayoutHelper.MATCH_PARENT;
         layoutParams.gravity = Gravity.TOP | Gravity.RIGHT;
         doneTextView.setLayoutParams(layoutParams);
 
@@ -1455,68 +1457,68 @@ public class PhotoFilterView extends FrameLayout {
         recyclerListView.setAdapter(toolsAdapter = new ToolsAdapter(context));
         toolsView.addView(recyclerListView);
         layoutParams = (FrameLayout.LayoutParams) recyclerListView.getLayoutParams();
-        layoutParams.width = FrameLayout.LayoutParams.MATCH_PARENT;
+        layoutParams.width = LayoutHelper.MATCH_PARENT;
         layoutParams.height = AndroidUtilities.dp(60);
         layoutParams.gravity = Gravity.LEFT | Gravity.TOP;
         recyclerListView.setLayoutParams(layoutParams);
-        recyclerListView.addOnItemTouchListener(new RecyclerListView.RecyclerListViewItemClickListener(context, new RecyclerListView.OnItemClickListener() {
+        recyclerListView.setOnItemClickListener(new RecyclerListView.OnItemClickListener() {
             @Override
-            public void onItemClick(View view, int i) {
-                selectedTool = i;
-                if (i == enhanceTool) {
+            public void onItemClick(View view, int position) {
+                selectedTool = position;
+                if (position == enhanceTool) {
                     previousValue = enhanceValue;
                     valueSeekBar.setMinMax(0, 100);
                     paramTextView.setText(LocaleController.getString("Enhance", R.string.Enhance));
-                } else if (i == highlightsTool) {
+                } else if (position == highlightsTool) {
                     previousValue = highlightsValue;
                     valueSeekBar.setMinMax(0, 100);
                     paramTextView.setText(LocaleController.getString("Highlights", R.string.Highlights));
-                } else if (i == contrastTool) {
+                } else if (position == contrastTool) {
                     previousValue = contrastValue;
                     valueSeekBar.setMinMax(-100, 100);
                     paramTextView.setText(LocaleController.getString("Contrast", R.string.Contrast));
-                } else if (i == exposureTool) {
+                } else if (position == exposureTool) {
                     previousValue = exposureValue;
                     valueSeekBar.setMinMax(-100, 100);
                     paramTextView.setText(LocaleController.getString("Exposure", R.string.Exposure));
-                } else if (i == warmthTool) {
+                } else if (position == warmthTool) {
                     previousValue = warmthValue;
                     valueSeekBar.setMinMax(-100, 100);
                     paramTextView.setText(LocaleController.getString("Warmth", R.string.Warmth));
-                } else if (i == saturationTool) {
+                } else if (position == saturationTool) {
                     previousValue = saturationValue;
                     valueSeekBar.setMinMax(-100, 100);
                     paramTextView.setText(LocaleController.getString("Saturation", R.string.Saturation));
-                } else if (i == vignetteTool) {
+                } else if (position == vignetteTool) {
                     previousValue = vignetteValue;
                     valueSeekBar.setMinMax(0, 100);
                     paramTextView.setText(LocaleController.getString("Vignette", R.string.Vignette));
-                } else if (i == shadowsTool) {
+                } else if (position == shadowsTool) {
                     previousValue = shadowsValue;
                     valueSeekBar.setMinMax(0, 100);
                     paramTextView.setText(LocaleController.getString("Shadows", R.string.Shadows));
-                } else if (i == grainTool) {
+                } else if (position == grainTool) {
                     previousValue = grainValue;
                     valueSeekBar.setMinMax(0, 100);
                     paramTextView.setText(LocaleController.getString("Grain", R.string.Grain));
-                } else if (i == sharpenTool) {
+                } else if (position == sharpenTool) {
                     previousValue = sharpenValue;
                     valueSeekBar.setMinMax(0, 100);
                     paramTextView.setText(LocaleController.getString("Sharpen", R.string.Sharpen));
-                } else if (i == blurTool) {
+                } else if (position == blurTool) {
                     previousValue = blurType;
                 }
                 valueSeekBar.setProgress((int) previousValue, false);
                 updateValueTextView();
                 switchToOrFromEditMode();
             }
-        }));
+        });
 
         editView = new FrameLayout(context);
         editView.setVisibility(GONE);
         addView(editView);
         layoutParams = (LayoutParams) editView.getLayoutParams();
-        layoutParams.width = LayoutParams.MATCH_PARENT;
+        layoutParams.width = LayoutHelper.MATCH_PARENT;
         layoutParams.height = AndroidUtilities.dp(126);
         layoutParams.gravity = Gravity.LEFT | Gravity.BOTTOM;
         editView.setLayoutParams(layoutParams);
@@ -1525,7 +1527,7 @@ public class PhotoFilterView extends FrameLayout {
         frameLayout.setBackgroundColor(0xff1a1a1a);
         editView.addView(frameLayout);
         layoutParams = (LayoutParams) frameLayout.getLayoutParams();
-        layoutParams.width = LayoutParams.MATCH_PARENT;
+        layoutParams.width = LayoutHelper.MATCH_PARENT;
         layoutParams.height = AndroidUtilities.dp(48);
         layoutParams.gravity = Gravity.BOTTOM | Gravity.LEFT;
         frameLayout.setLayoutParams(layoutParams);
@@ -1536,8 +1538,8 @@ public class PhotoFilterView extends FrameLayout {
         imageView.setPadding(AndroidUtilities.dp(22), 0, AndroidUtilities.dp(22), 0);
         frameLayout.addView(imageView);
         layoutParams = (LayoutParams) imageView.getLayoutParams();
-        layoutParams.width = LayoutParams.WRAP_CONTENT;
-        layoutParams.height = LayoutParams.MATCH_PARENT;
+        layoutParams.width = LayoutHelper.WRAP_CONTENT;
+        layoutParams.height = LayoutHelper.MATCH_PARENT;
         layoutParams.gravity = Gravity.TOP | Gravity.LEFT;
         imageView.setLayoutParams(layoutParams);
         imageView.setOnClickListener(new OnClickListener() {
@@ -1579,8 +1581,8 @@ public class PhotoFilterView extends FrameLayout {
         imageView.setPadding(AndroidUtilities.dp(22), AndroidUtilities.dp(1), AndroidUtilities.dp(22), 0);
         frameLayout.addView(imageView);
         layoutParams = (LayoutParams) imageView.getLayoutParams();
-        layoutParams.width = LayoutParams.WRAP_CONTENT;
-        layoutParams.height = LayoutParams.MATCH_PARENT;
+        layoutParams.width = LayoutHelper.WRAP_CONTENT;
+        layoutParams.height = LayoutHelper.MATCH_PARENT;
         layoutParams.gravity = Gravity.TOP | Gravity.RIGHT;
         imageView.setLayoutParams(layoutParams);
         imageView.setOnClickListener(new OnClickListener() {
@@ -1597,8 +1599,8 @@ public class PhotoFilterView extends FrameLayout {
         blurTextView.setText(LocaleController.getString("Blur", R.string.Blur));
         frameLayout.addView(blurTextView);
         layoutParams = (LayoutParams) blurTextView.getLayoutParams();
-        layoutParams.width = LayoutParams.WRAP_CONTENT;
-        layoutParams.height = LayoutParams.WRAP_CONTENT;
+        layoutParams.width = LayoutHelper.WRAP_CONTENT;
+        layoutParams.height = LayoutHelper.WRAP_CONTENT;
         layoutParams.gravity = Gravity.CENTER_HORIZONTAL;
         layoutParams.topMargin = AndroidUtilities.dp(9);
         blurTextView.setLayoutParams(layoutParams);
@@ -1608,8 +1610,8 @@ public class PhotoFilterView extends FrameLayout {
         paramTextView.setTextColor(0xff808080);
         frameLayout.addView(paramTextView);
         layoutParams = (LayoutParams) paramTextView.getLayoutParams();
-        layoutParams.width = LayoutParams.WRAP_CONTENT;
-        layoutParams.height = LayoutParams.WRAP_CONTENT;
+        layoutParams.width = LayoutHelper.WRAP_CONTENT;
+        layoutParams.height = LayoutHelper.WRAP_CONTENT;
         layoutParams.gravity = Gravity.CENTER_HORIZONTAL;
         layoutParams.topMargin = AndroidUtilities.dp(26);
         paramTextView.setLayoutParams(layoutParams);
@@ -1619,8 +1621,8 @@ public class PhotoFilterView extends FrameLayout {
         valueTextView.setTextColor(0xffffffff);
         frameLayout.addView(valueTextView);
         layoutParams = (LayoutParams) valueTextView.getLayoutParams();
-        layoutParams.width = LayoutParams.WRAP_CONTENT;
-        layoutParams.height = LayoutParams.WRAP_CONTENT;
+        layoutParams.width = LayoutHelper.WRAP_CONTENT;
+        layoutParams.height = LayoutHelper.WRAP_CONTENT;
         layoutParams.gravity = Gravity.CENTER_HORIZONTAL;
         layoutParams.topMargin = AndroidUtilities.dp(3);
         valueTextView.setLayoutParams(layoutParams);
@@ -1667,7 +1669,7 @@ public class PhotoFilterView extends FrameLayout {
             layoutParams.width = AndroidUtilities.dp(498);
             layoutParams.gravity = Gravity.CENTER_HORIZONTAL | Gravity.TOP;
         } else {
-            layoutParams.width = FrameLayout.LayoutParams.MATCH_PARENT;
+            layoutParams.width = LayoutHelper.MATCH_PARENT;
             layoutParams.gravity = Gravity.LEFT | Gravity.TOP;
         }
         valueSeekBar.setLayoutParams(layoutParams);
@@ -1925,8 +1927,8 @@ public class PhotoFilterView extends FrameLayout {
         viewWidth -= AndroidUtilities.dp(28);
         viewHeight -= AndroidUtilities.dp(14 + 140);
 
-        float bitmapW = bitmapToEdit.getWidth();
-        float bitmapH = bitmapToEdit.getHeight();
+        float bitmapW;
+        float bitmapH;
         if (orientation == 90 || orientation == 270) {
             bitmapW = bitmapToEdit.getHeight();
             bitmapH = bitmapToEdit.getWidth();
@@ -1966,7 +1968,7 @@ public class PhotoFilterView extends FrameLayout {
                 layoutParams.width = total;
                 layoutParams.leftMargin = (viewWidth - total) / 2;
             } else {
-                layoutParams.width = FrameLayout.LayoutParams.MATCH_PARENT;
+                layoutParams.width = LayoutHelper.MATCH_PARENT;
                 layoutParams.leftMargin = 0;
             }
             recyclerListView.setLayoutParams(layoutParams);
@@ -2020,7 +2022,7 @@ public class PhotoFilterView extends FrameLayout {
         if (parameterValue > 0) {
             parameterValue *= 1.05f;
         }
-        return parameterValue += 1;
+        return parameterValue + 1;
     }
 
     public FrameLayout getToolsView() {

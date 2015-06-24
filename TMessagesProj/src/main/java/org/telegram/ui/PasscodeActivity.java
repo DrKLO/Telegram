@@ -37,7 +37,6 @@ import android.view.inputmethod.EditorInfo;
 import android.widget.AdapterView;
 import android.widget.EditText;
 import android.widget.FrameLayout;
-import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -58,6 +57,7 @@ import org.telegram.ui.Adapters.BaseFragmentAdapter;
 import org.telegram.ui.Cells.TextCheckCell;
 import org.telegram.ui.Cells.TextInfoPrivacyCell;
 import org.telegram.ui.Cells.TextSettingsCell;
+import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.NumberPicker;
 
 public class PasscodeActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
@@ -156,8 +156,8 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
             titleTextView.setGravity(Gravity.CENTER_HORIZONTAL);
             frameLayout.addView(titleTextView);
             FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) titleTextView.getLayoutParams();
-            layoutParams.width = FrameLayout.LayoutParams.WRAP_CONTENT;
-            layoutParams.height = FrameLayout.LayoutParams.WRAP_CONTENT;
+            layoutParams.width = LayoutHelper.WRAP_CONTENT;
+            layoutParams.height = LayoutHelper.WRAP_CONTENT;
             layoutParams.gravity = Gravity.CENTER_HORIZONTAL;
             layoutParams.topMargin = AndroidUtilities.dp(38);
             titleTextView.setLayoutParams(layoutParams);
@@ -184,7 +184,7 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
             layoutParams.leftMargin = AndroidUtilities.dp(40);
             layoutParams.gravity = Gravity.TOP | Gravity.LEFT;
             layoutParams.rightMargin = AndroidUtilities.dp(40);
-            layoutParams.width = LinearLayout.LayoutParams.MATCH_PARENT;
+            layoutParams.width = LayoutHelper.MATCH_PARENT;
             passwordEditText.setLayoutParams(layoutParams);
             passwordEditText.setOnEditorActionListener(new TextView.OnEditorActionListener() {
                 @Override
@@ -257,8 +257,8 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
                 dropDownContainer.addSubItem(password_item, LocaleController.getString("PasscodePassword", R.string.PasscodePassword), 0);
                 actionBar.addView(dropDownContainer);
                 layoutParams = (FrameLayout.LayoutParams) dropDownContainer.getLayoutParams();
-                layoutParams.height = FrameLayout.LayoutParams.MATCH_PARENT;
-                layoutParams.width = FrameLayout.LayoutParams.WRAP_CONTENT;
+                layoutParams.height = LayoutHelper.MATCH_PARENT;
+                layoutParams.width = LayoutHelper.WRAP_CONTENT;
                 layoutParams.rightMargin = AndroidUtilities.dp(40);
                 layoutParams.leftMargin = AndroidUtilities.isTablet() ? AndroidUtilities.dp(64) : AndroidUtilities.dp(56);
                 layoutParams.gravity = Gravity.TOP | Gravity.LEFT;
@@ -283,8 +283,8 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
                 dropDown.setPadding(0, 0, AndroidUtilities.dp(10), 0);
                 dropDownContainer.addView(dropDown);
                 layoutParams = (FrameLayout.LayoutParams) dropDown.getLayoutParams();
-                layoutParams.width = FrameLayout.LayoutParams.WRAP_CONTENT;
-                layoutParams.height = FrameLayout.LayoutParams.WRAP_CONTENT;
+                layoutParams.width = LayoutHelper.WRAP_CONTENT;
+                layoutParams.height = LayoutHelper.WRAP_CONTENT;
                 layoutParams.leftMargin = AndroidUtilities.dp(16);
                 layoutParams.gravity = Gravity.CENTER_VERTICAL;
                 layoutParams.bottomMargin = AndroidUtilities.dp(1);
@@ -304,8 +304,8 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
             listView.setDrawSelectorOnTop(true);
             frameLayout.addView(listView);
             FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) listView.getLayoutParams();
-            layoutParams.width = FrameLayout.LayoutParams.MATCH_PARENT;
-            layoutParams.height = FrameLayout.LayoutParams.MATCH_PARENT;
+            layoutParams.width = LayoutHelper.MATCH_PARENT;
+            layoutParams.height = LayoutHelper.MATCH_PARENT;
             layoutParams.gravity = Gravity.TOP;
             listView.setLayoutParams(layoutParams);
             listView.setAdapter(listAdapter = new ListAdapter(context));
@@ -391,7 +391,7 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
                                 UserConfig.saveConfig(false);
                             }
                         });
-                        showAlertDialog(builder);
+                        showDialog(builder.create());
                     }
                 }
             });
@@ -525,16 +525,28 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
                 passwordEditText.setText("");
                 return;
             }
-            UserConfig.passcodeHash = Utilities.MD5(firstPassword);
+
+            try {
+                UserConfig.passcodeSalt = new byte[16];
+                Utilities.random.nextBytes(UserConfig.passcodeSalt);
+                byte[] passcodeBytes = firstPassword.getBytes("UTF-8");
+                byte[] bytes = new byte[32 + passcodeBytes.length];
+                System.arraycopy(UserConfig.passcodeSalt, 0, bytes, 0, 16);
+                System.arraycopy(passcodeBytes, 0, bytes, 16, passcodeBytes.length);
+                System.arraycopy(UserConfig.passcodeSalt, 0, bytes, passcodeBytes.length + 16, 16);
+                UserConfig.passcodeHash = Utilities.bytesToHex(Utilities.computeSHA256(bytes, 0, bytes.length));
+            } catch (Exception e) {
+                FileLog.e("tmessages", e);
+            }
+
             UserConfig.passcodeType = currentPasswordType;
             UserConfig.saveConfig(false);
-            //TODO show alert
             finishFragment();
             NotificationCenter.getInstance().postNotificationName(NotificationCenter.didSetPasscode);
             passwordEditText.clearFocus();
             AndroidUtilities.hideKeyboard(passwordEditText);
         } else if (type == 2) {
-            if (!Utilities.MD5(passwordEditText.getText().toString()).equals(UserConfig.passcodeHash)) {
+            if (!UserConfig.checkPasscode(passwordEditText.getText().toString())) {
                 passwordEditText.setText("");
                 onPasscodeError();
                 return;

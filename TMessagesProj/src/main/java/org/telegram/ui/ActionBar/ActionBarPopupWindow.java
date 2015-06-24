@@ -11,12 +11,9 @@
 package org.telegram.ui.ActionBar;
 
 import android.content.Context;
-import android.os.Build;
-import android.util.AttributeSet;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.ViewTreeObserver;
-import android.view.WindowManager;
 import android.widget.LinearLayout;
 import android.widget.PopupWindow;
 
@@ -60,14 +57,6 @@ public class ActionBarPopupWindow extends PopupWindow {
             super(context);
         }
 
-        public ActionBarPopupWindowLayout(Context context, AttributeSet attrs) {
-            super(context, attrs);
-        }
-
-        public ActionBarPopupWindowLayout(Context context, AttributeSet attrs, int defStyle) {
-            super(context, attrs, defStyle);
-        }
-
         public void setDispatchKeyEventListener(OnDispatchKeyEventListener listener) {
             mOnDispatchKeyEventListener = listener;
         }
@@ -88,21 +77,6 @@ public class ActionBarPopupWindow extends PopupWindow {
 
     public ActionBarPopupWindow(Context context) {
         super(context);
-        init();
-    }
-
-    public ActionBarPopupWindow(Context context, AttributeSet attrs) {
-        super(context, attrs);
-        init();
-    }
-
-    public ActionBarPopupWindow(Context context, AttributeSet attrs, int defStyle) {
-        super(context, attrs, defStyle);
-        init();
-    }
-
-    public ActionBarPopupWindow(Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes) {
-        super(context, attrs, defStyleAttr, defStyleRes);
         init();
     }
 
@@ -135,15 +109,15 @@ public class ActionBarPopupWindow extends PopupWindow {
                 mSuperScrollListener = null;
             }
         }
-        if (Build.VERSION.SDK_INT >= 21) {
+        /*if (Build.VERSION.SDK_INT >= 21) {
             try {
                 Field field = PopupWindow.class.getDeclaredField("mWindowLayoutType");
                 field.setAccessible(true);
                 field.set(this, WindowManager.LayoutParams.TYPE_SYSTEM_ERROR);
             } catch (Exception e) {
-                /* ignored */
+                //ignored
             }
-        }
+        }*/
     }
 
     private void unregisterListener() {

@@ -22,13 +22,16 @@ import android.widget.TextView;
 import org.telegram.android.AndroidUtilities;
 import org.telegram.android.LocaleController;
 import org.telegram.messenger.R;
+import org.telegram.ui.Components.LayoutHelper;
 
 public class TextColorCell extends FrameLayout {
+
     private TextView textView;
-    private Drawable colorDrawable;
-    private static Paint paint;
     private boolean needDivider;
     private int currentColor;
+
+    private static Drawable colorDrawable;
+    private static Paint paint;
 
     public TextColorCell(Context context) {
         super(context);
@@ -37,6 +40,8 @@ public class TextColorCell extends FrameLayout {
             paint = new Paint();
             paint.setColor(0xffd9d9d9);
             paint.setStrokeWidth(1);
+
+            colorDrawable = getResources().getDrawable(R.drawable.switch_to_on2);
         }
 
         textView = new TextView(context);
@@ -46,16 +51,7 @@ public class TextColorCell extends FrameLayout {
         textView.setMaxLines(1);
         textView.setSingleLine(true);
         textView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL);
-        addView(textView);
-        LayoutParams layoutParams = (LayoutParams) textView.getLayoutParams();
-        layoutParams.width = LayoutParams.MATCH_PARENT;
-        layoutParams.height = LayoutParams.MATCH_PARENT;
-        layoutParams.leftMargin = AndroidUtilities.dp(17);
-        layoutParams.rightMargin = AndroidUtilities.dp(17);
-        layoutParams.gravity = LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT;
-        textView.setLayoutParams(layoutParams);
-
-        colorDrawable = getResources().getDrawable(R.drawable.switch_to_on2);
+        addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, 17, 0, 17, 0));
     }
 
     @Override

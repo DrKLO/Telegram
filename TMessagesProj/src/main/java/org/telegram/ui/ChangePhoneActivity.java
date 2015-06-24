@@ -8,6 +8,7 @@
 
 package org.telegram.ui;
 
+import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.content.Context;
@@ -53,10 +54,11 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.BaseFragment;
-import org.telegram.ui.AnimationCompat.AnimatorListenerAdapterProxy;
-import org.telegram.ui.AnimationCompat.AnimatorSetProxy;
-import org.telegram.ui.AnimationCompat.ObjectAnimatorProxy;
-import org.telegram.ui.AnimationCompat.ViewProxy;
+import org.telegram.android.AnimationCompat.AnimatorListenerAdapterProxy;
+import org.telegram.android.AnimationCompat.AnimatorSetProxy;
+import org.telegram.android.AnimationCompat.ObjectAnimatorProxy;
+import org.telegram.android.AnimationCompat.ViewProxy;
+import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.SlideView;
 import org.telegram.ui.Components.TypefaceSpan;
 
@@ -131,27 +133,11 @@ public class ChangePhoneActivity extends BaseFragment {
 
         views[0] = new PhoneView(context);
         views[0].setVisibility(View.VISIBLE);
-        frameLayout.addView(views[0]);
-        FrameLayout.LayoutParams layoutParams1 = (FrameLayout.LayoutParams) views[0].getLayoutParams();
-        layoutParams1.width = FrameLayout.LayoutParams.MATCH_PARENT;
-        layoutParams1.height = FrameLayout.LayoutParams.WRAP_CONTENT;
-        layoutParams1.leftMargin = AndroidUtilities.dp(16);
-        layoutParams1.rightMargin = AndroidUtilities.dp(16);
-        layoutParams1.topMargin = AndroidUtilities.dp(30);
-        layoutParams1.gravity = Gravity.TOP | Gravity.LEFT;
-        views[0].setLayoutParams(layoutParams1);
+        frameLayout.addView(views[0], LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.LEFT, 16, 30, 16, 0));
 
         views[1] = new LoginActivitySmsView(context);
         views[1].setVisibility(View.GONE);
-        frameLayout.addView(views[1]);
-        layoutParams1 = (FrameLayout.LayoutParams) views[1].getLayoutParams();
-        layoutParams1.width = FrameLayout.LayoutParams.MATCH_PARENT;
-        layoutParams1.height = FrameLayout.LayoutParams.MATCH_PARENT;
-        layoutParams1.leftMargin = AndroidUtilities.dp(16);
-        layoutParams1.rightMargin = AndroidUtilities.dp(16);
-        layoutParams1.topMargin = AndroidUtilities.dp(30);
-        layoutParams1.gravity = Gravity.TOP | Gravity.LEFT;
-        views[1].setLayoutParams(layoutParams1);
+        frameLayout.addView(views[1], LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT, 16, 30, 16, 0));
 
         try {
             if (views[0] == null || views[1] == null) {
@@ -208,7 +194,7 @@ public class ChangePhoneActivity extends BaseFragment {
         builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
         builder.setMessage(text);
         builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), null);
-        showAlertDialog(builder);
+        showDialog(builder.create());
     }
 
     public void needShowProgress() {
@@ -257,6 +243,7 @@ public class ChangePhoneActivity extends BaseFragment {
                     newView.setVisibility(View.VISIBLE);
                 }
 
+                @SuppressLint("NewApi")
                 @Override
                 public void onAnimationEnd(Object animation) {
                     outView.setVisibility(View.GONE);
@@ -307,7 +294,7 @@ public class ChangePhoneActivity extends BaseFragment {
             countryButton.setBackgroundResource(R.drawable.spinner_states);
             addView(countryButton);
             LayoutParams layoutParams = (LayoutParams) countryButton.getLayoutParams();
-            layoutParams.width = LayoutParams.MATCH_PARENT;
+            layoutParams.width = LayoutHelper.MATCH_PARENT;
             layoutParams.height = AndroidUtilities.dp(36);
             layoutParams.leftMargin = AndroidUtilities.dp(20);
             layoutParams.rightMargin = AndroidUtilities.dp(20);
@@ -333,7 +320,7 @@ public class ChangePhoneActivity extends BaseFragment {
             view.setBackgroundColor(0xffdbdbdb);
             addView(view);
             layoutParams = (LayoutParams) view.getLayoutParams();
-            layoutParams.width = LayoutParams.MATCH_PARENT;
+            layoutParams.width = LayoutHelper.MATCH_PARENT;
             layoutParams.height = 1;
             layoutParams.leftMargin = AndroidUtilities.dp(24);
             layoutParams.rightMargin = AndroidUtilities.dp(24);
@@ -344,8 +331,8 @@ public class ChangePhoneActivity extends BaseFragment {
             linearLayout.setOrientation(HORIZONTAL);
             addView(linearLayout);
             layoutParams = (LayoutParams) linearLayout.getLayoutParams();
-            layoutParams.width = LayoutParams.MATCH_PARENT;
-            layoutParams.height = LayoutParams.WRAP_CONTENT;
+            layoutParams.width = LayoutHelper.MATCH_PARENT;
+            layoutParams.height = LayoutHelper.WRAP_CONTENT;
             layoutParams.topMargin = AndroidUtilities.dp(20);
             linearLayout.setLayoutParams(layoutParams);
 
@@ -355,8 +342,8 @@ public class ChangePhoneActivity extends BaseFragment {
             textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
             linearLayout.addView(textView);
             layoutParams = (LayoutParams) textView.getLayoutParams();
-            layoutParams.width = LayoutParams.WRAP_CONTENT;
-            layoutParams.height = LayoutParams.WRAP_CONTENT;
+            layoutParams.width = LayoutHelper.WRAP_CONTENT;
+            layoutParams.height = LayoutHelper.WRAP_CONTENT;
             layoutParams.leftMargin = AndroidUtilities.dp(24);
             textView.setLayoutParams(layoutParams);
 
@@ -447,7 +434,7 @@ public class ChangePhoneActivity extends BaseFragment {
             phoneField.setImeOptions(EditorInfo.IME_ACTION_NEXT | EditorInfo.IME_FLAG_NO_EXTRACT_UI);
             linearLayout.addView(phoneField);
             layoutParams = (LayoutParams) phoneField.getLayoutParams();
-            layoutParams.width = LayoutParams.MATCH_PARENT;
+            layoutParams.width = LayoutHelper.MATCH_PARENT;
             layoutParams.height = AndroidUtilities.dp(36);
             layoutParams.rightMargin = AndroidUtilities.dp(24);
             phoneField.setLayoutParams(layoutParams);
@@ -517,8 +504,8 @@ public class ChangePhoneActivity extends BaseFragment {
             textView.setLineSpacing(AndroidUtilities.dp(2), 1.0f);
             addView(textView);
             layoutParams = (LayoutParams) textView.getLayoutParams();
-            layoutParams.width = LayoutParams.WRAP_CONTENT;
-            layoutParams.height = LayoutParams.WRAP_CONTENT;
+            layoutParams.width = LayoutHelper.WRAP_CONTENT;
+            layoutParams.height = LayoutHelper.WRAP_CONTENT;
             layoutParams.leftMargin = AndroidUtilities.dp(24);
             layoutParams.rightMargin = AndroidUtilities.dp(24);
             layoutParams.topMargin = AndroidUtilities.dp(28);
@@ -747,8 +734,8 @@ public class ChangePhoneActivity extends BaseFragment {
             confirmTextView.setLineSpacing(AndroidUtilities.dp(2), 1.0f);
             addView(confirmTextView);
             LayoutParams layoutParams = (LayoutParams) confirmTextView.getLayoutParams();
-            layoutParams.width = LayoutParams.WRAP_CONTENT;
-            layoutParams.height = LayoutParams.WRAP_CONTENT;
+            layoutParams.width = LayoutHelper.WRAP_CONTENT;
+            layoutParams.height = LayoutHelper.WRAP_CONTENT;
             layoutParams.gravity = Gravity.LEFT;
             layoutParams.leftMargin = AndroidUtilities.dp(24);
             layoutParams.rightMargin = AndroidUtilities.dp(24);
@@ -766,7 +753,7 @@ public class ChangePhoneActivity extends BaseFragment {
             codeField.setPadding(0, 0, 0, 0);
             addView(codeField);
             layoutParams = (LayoutParams) codeField.getLayoutParams();
-            layoutParams.width = LayoutParams.MATCH_PARENT;
+            layoutParams.width = LayoutHelper.MATCH_PARENT;
             layoutParams.height = AndroidUtilities.dp(36);
             layoutParams.gravity = Gravity.CENTER_HORIZONTAL;
             layoutParams.topMargin = AndroidUtilities.dp(20);
@@ -791,8 +778,8 @@ public class ChangePhoneActivity extends BaseFragment {
             timeText.setGravity(Gravity.LEFT);
             addView(timeText);
             layoutParams = (LayoutParams) timeText.getLayoutParams();
-            layoutParams.width = LayoutParams.WRAP_CONTENT;
-            layoutParams.height = LayoutParams.WRAP_CONTENT;
+            layoutParams.width = LayoutHelper.WRAP_CONTENT;
+            layoutParams.height = LayoutHelper.WRAP_CONTENT;
             layoutParams.gravity = Gravity.LEFT;
             layoutParams.topMargin = AndroidUtilities.dp(30);
             layoutParams.leftMargin = AndroidUtilities.dp(24);
@@ -803,8 +790,8 @@ public class ChangePhoneActivity extends BaseFragment {
             linearLayout.setGravity(Gravity.BOTTOM | Gravity.CENTER_VERTICAL);
             addView(linearLayout);
             layoutParams = (LayoutParams) linearLayout.getLayoutParams();
-            layoutParams.width = LayoutParams.MATCH_PARENT;
-            layoutParams.height = LayoutParams.MATCH_PARENT;
+            layoutParams.width = LayoutHelper.MATCH_PARENT;
+            layoutParams.height = LayoutHelper.MATCH_PARENT;
             linearLayout.setLayoutParams(layoutParams);
 
             TextView wrongNumber = new TextView(context);
@@ -815,8 +802,8 @@ public class ChangePhoneActivity extends BaseFragment {
             wrongNumber.setPadding(0, AndroidUtilities.dp(24), 0, 0);
             linearLayout.addView(wrongNumber);
             layoutParams = (LayoutParams) wrongNumber.getLayoutParams();
-            layoutParams.width = LayoutParams.WRAP_CONTENT;
-            layoutParams.height = LayoutParams.WRAP_CONTENT;
+            layoutParams.width = LayoutHelper.WRAP_CONTENT;
+            layoutParams.height = LayoutHelper.WRAP_CONTENT;
             layoutParams.gravity = Gravity.BOTTOM | Gravity.LEFT;
             layoutParams.bottomMargin = AndroidUtilities.dp(10);
             layoutParams.leftMargin = AndroidUtilities.dp(24);
@@ -1065,18 +1052,13 @@ public class ChangePhoneActivity extends BaseFragment {
         @Override
         public void didReceivedNotification(int id, final Object... args) {
             if (id == NotificationCenter.didReceiveSmsCode) {
-                AndroidUtilities.runOnUIThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        if (!waitingForSms) {
-                            return;
-                        }
-                        if (codeField != null) {
-                            codeField.setText("" + args[0]);
-                            onNextPressed();
-                        }
-                    }
-                });
+                if (!waitingForSms) {
+                    return;
+                }
+                if (codeField != null) {
+                    codeField.setText("" + args[0]);
+                    onNextPressed();
+                }
             }
         }
     }

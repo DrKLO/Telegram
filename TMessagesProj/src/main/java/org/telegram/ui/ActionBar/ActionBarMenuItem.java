@@ -33,18 +33,31 @@ import android.widget.TextView;
 import org.telegram.android.AndroidUtilities;
 import org.telegram.android.LocaleController;
 import org.telegram.messenger.R;
-import org.telegram.ui.AnimationCompat.ViewProxy;
+import org.telegram.android.AnimationCompat.ViewProxy;
 import org.telegram.ui.Components.FrameLayoutFixed;
+import org.telegram.ui.Components.LayoutHelper;
 
 import java.lang.reflect.Field;
 
 public class ActionBarMenuItem extends FrameLayoutFixed {
 
     public static class ActionBarMenuItemSearchListener {
-        public void onSearchExpand() { }
-        public boolean onSearchCollapse() { return true; }
-        public void onTextChanged(EditText editText) { }
-        public void onSearchPressed(EditText editText) { }
+        public void onSearchExpand() {
+        }
+
+        public boolean onSearchCollapse() {
+            return true;
+        }
+
+        public void onTextChanged(EditText editText) {
+        }
+
+        public void onSearchPressed(EditText editText) {
+        }
+    }
+
+    public interface ActionBarMenuItemDelegate {
+        void onItemClick(int id);
     }
 
     private ActionBarPopupWindow.ActionBarPopupWindowLayout popupLayout;
@@ -62,8 +75,8 @@ public class ActionBarMenuItem extends FrameLayoutFixed {
     private Runnable showMenuRunnable;
     private boolean showFromBottom;
     private int menuHeight = AndroidUtilities.dp(16);
-    private boolean needOffset = Build.VERSION.SDK_INT >= 21;
     private int subMenuOpenSide = 0;
+    private ActionBarMenuItemDelegate delegate;
 
     public ActionBarMenuItem(Context context, ActionBarMenu menu, int background) {
         super(context);
@@ -74,8 +87,8 @@ public class ActionBarMenuItem extends FrameLayoutFixed {
         iconView.setScaleType(ImageView.ScaleType.CENTER);
         addView(iconView);
         LayoutParams layoutParams = (LayoutParams) iconView.getLayoutParams();
-        layoutParams.width = LayoutParams.MATCH_PARENT;
-        layoutParams.height = LayoutParams.MATCH_PARENT;
+        layoutParams.width = LayoutHelper.MATCH_PARENT;
+        layoutParams.height = LayoutHelper.MATCH_PARENT;
         iconView.setLayoutParams(layoutParams);
     }
 
@@ -114,8 +127,8 @@ public class ActionBarMenuItem extends FrameLayoutFixed {
                 for (int a = 0; a < popupLayout.getChildCount(); a++) {
                     View child = popupLayout.getChildAt(a);
                     child.getHitRect(rect);
-                    if ((Integer)child.getTag() < 100) {
-                        if (!rect.contains((int)x, (int)y)) {
+                    if ((Integer) child.getTag() < 100) {
+                        if (!rect.contains((int) x, (int) y)) {
                             child.setPressed(false);
                             child.setSelected(false);
                             if (Build.VERSION.SDK_INT >= 21) {
@@ -136,7 +149,11 @@ public class ActionBarMenuItem extends FrameLayoutFixed {
         } else if (popupWindow != null && popupWindow.isShowing() && event.getActionMasked() == MotionEvent.ACTION_UP) {
             if (selectedMenuView != null) {
                 selectedMenuView.setSelected(false);
-                parentMenu.onItemClick((Integer) selectedMenuView.getTag());
+                if (parentMenu != null) {
+                    parentMenu.onItemClick((Integer) selectedMenuView.getTag());
+                } else if (delegate != null) {
+                    delegate.onItemClick((Integer) selectedMenuView.getTag());
+                }
             }
             popupWindow.dismiss();
         } else {
@@ -148,12 +165,12 @@ public class ActionBarMenuItem extends FrameLayoutFixed {
         return super.onTouchEvent(event);
     }
 
-    public void setShowFromBottom(boolean value) {
-        showFromBottom = value;
+    public void setDelegate(ActionBarMenuItemDelegate delegate) {
+        this.delegate = delegate;
     }
 
-    public void setNeedOffset(boolean value) {
-        needOffset = Build.VERSION.SDK_INT >= 21 && value;
+    public void setShowFromBottom(boolean value) {
+        showFromBottom = value;
     }
 
     public void setSubMenuOpenSide(int side) {
@@ -173,7 +190,7 @@ public class ActionBarMenuItem extends FrameLayoutFixed {
                     if (event.getActionMasked() == MotionEvent.ACTION_DOWN) {
                         if (popupWindow != null && popupWindow.isShowing()) {
                             v.getHitRect(rect);
-                            if (!rect.contains((int)event.getX(), (int)event.getY())) {
+                            if (!rect.contains((int) event.getX(), (int) event.getY())) {
                                 popupWindow.dismiss();
                             }
                         }
@@ -212,17 +229,21 @@ public class ActionBarMenuItem extends FrameLayoutFixed {
             }
         }
         popupLayout.addView(textView);
-        LinearLayout.LayoutParams layoutParams = (LinearLayout.LayoutParams)textView.getLayoutParams();
+        LinearLayout.LayoutParams layoutParams = (LinearLayout.LayoutParams) textView.getLayoutParams();
         if (LocaleController.isRTL) {
             layoutParams.gravity = Gravity.RIGHT;
         }
-        layoutParams.width = LinearLayout.LayoutParams.MATCH_PARENT;
+        layoutParams.width = LayoutHelper.MATCH_PARENT;
         layoutParams.height = AndroidUtilities.dp(48);
         textView.setLayoutParams(layoutParams);
         textView.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View view) {
-                parentMenu.onItemClick((Integer) view.getTag());
+                if (parentMenu != null) {
+                    parentMenu.onItemClick((Integer) view.getTag());
+                } else if (delegate != null) {
+                    delegate.onItemClick((Integer) view.getTag());
+                }
                 if (popupWindow != null && popupWindow.isShowing()) {
                     popupWindow.dismiss();
                 }
@@ -249,7 +270,7 @@ public class ActionBarMenuItem extends FrameLayoutFixed {
             return;
         }
         if (popupWindow == null) {
-            popupWindow = new ActionBarPopupWindow(popupLayout, FrameLayout.LayoutParams.WRAP_CONTENT, FrameLayout.LayoutParams.WRAP_CONTENT);
+            popupWindow = new ActionBarPopupWindow(popupLayout, LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT);
             //popupWindow.setBackgroundDrawable(new BitmapDrawable());
             popupWindow.setAnimationStyle(R.style.PopupAnimation);
             popupWindow.setOutsideTouchable(true);
@@ -261,7 +282,7 @@ public class ActionBarMenuItem extends FrameLayoutFixed {
             popupWindow.getContentView().setOnKeyListener(new OnKeyListener() {
                 @Override
                 public boolean onKey(View v, int keyCode, KeyEvent event) {
-                    if (keyCode ==  KeyEvent.KEYCODE_MENU && event.getRepeatCount() == 0 && event.getAction() == KeyEvent.ACTION_UP && popupWindow != null && popupWindow.isShowing()) {
+                    if (keyCode == KeyEvent.KEYCODE_MENU && event.getRepeatCount() == 0 && event.getAction() == KeyEvent.ACTION_UP && popupWindow != null && popupWindow.isShowing()) {
                         popupWindow.dismiss();
                         return true;
                     }
@@ -276,8 +297,14 @@ public class ActionBarMenuItem extends FrameLayoutFixed {
                     popupWindow.showAsDropDown(this, -popupLayout.getMeasuredWidth() + getMeasuredWidth(), getOffsetY());
                     popupWindow.update(this, -popupLayout.getMeasuredWidth() + getMeasuredWidth(), getOffsetY(), -1, -1);
                 } else {
-                    popupWindow.showAsDropDown(this, parentMenu.parentActionBar.getMeasuredWidth() - popupLayout.getMeasuredWidth() - getLeft() - parentMenu.getLeft(), getOffsetY());
-                    popupWindow.update(this, parentMenu.parentActionBar.getMeasuredWidth() - popupLayout.getMeasuredWidth() - getLeft() - parentMenu.getLeft(), getOffsetY(), -1, -1);
+                    if (parentMenu != null) {
+                        popupWindow.showAsDropDown(this, parentMenu.parentActionBar.getMeasuredWidth() - popupLayout.getMeasuredWidth() - getLeft() - parentMenu.getLeft(), getOffsetY());
+                        popupWindow.update(this, parentMenu.parentActionBar.getMeasuredWidth() - popupLayout.getMeasuredWidth() - getLeft() - parentMenu.getLeft(), getOffsetY(), -1, -1);
+                    } else if (getParent() != null) {
+                        View parent = (View) getParent();
+                        popupWindow.showAsDropDown(this, parent.getMeasuredWidth() - popupLayout.getMeasuredWidth() - getLeft() - parent.getLeft(), getOffsetY());
+                        popupWindow.update(this, parent.getMeasuredWidth() - popupLayout.getMeasuredWidth() - getLeft() - parent.getLeft(), getOffsetY(), -1, -1);
+                    }
                 }
             } else {
                 popupWindow.showAsDropDown(this, -AndroidUtilities.dp(8), getOffsetY());
@@ -288,7 +315,12 @@ public class ActionBarMenuItem extends FrameLayoutFixed {
                 if (showFromBottom) {
                     popupWindow.showAsDropDown(this, -popupLayout.getMeasuredWidth() + getMeasuredWidth(), getOffsetY());
                 } else {
-                    popupWindow.showAsDropDown(this, parentMenu.parentActionBar.getMeasuredWidth() - popupLayout.getMeasuredWidth() - getLeft() - parentMenu.getLeft(), getOffsetY());
+                    if (parentMenu != null) {
+                        popupWindow.showAsDropDown(this, parentMenu.parentActionBar.getMeasuredWidth() - popupLayout.getMeasuredWidth() - getLeft() - parentMenu.getLeft(), getOffsetY());
+                    } else {
+                        View parent = (View) getParent();
+                        popupWindow.showAsDropDown(this, parent.getMeasuredWidth() - popupLayout.getMeasuredWidth() - getLeft() - parent.getLeft(), getOffsetY());
+                    }
                 }
             } else {
                 popupWindow.showAsDropDown(this, -AndroidUtilities.dp(8), getOffsetY());
@@ -304,14 +336,14 @@ public class ActionBarMenuItem extends FrameLayoutFixed {
             if (diff < 0) {
                 y -= diff;
             }
-            return y - (needOffset ? AndroidUtilities.statusBarHeight : 0);
+            return y;
         } else {
-            return -getMeasuredHeight() - (needOffset ? AndroidUtilities.statusBarHeight : 0);
+            return -getMeasuredHeight();
         }
     }
 
     public void openSearch() {
-        if (searchContainer == null || searchContainer.getVisibility() == VISIBLE) {
+        if (searchContainer == null || searchContainer.getVisibility() == VISIBLE || parentMenu == null) {
             return;
         }
         parentMenu.parentActionBar.onSearchFieldVisibilityChanged(toggleSearch());
@@ -356,13 +388,16 @@ public class ActionBarMenuItem extends FrameLayoutFixed {
     }
 
     public ActionBarMenuItem setIsSearchField(boolean value) {
+        if (parentMenu == null) {
+            return this;
+        }
         if (value && searchContainer == null) {
             searchContainer = new FrameLayout(getContext());
             parentMenu.addView(searchContainer, 0);
-            LinearLayout.LayoutParams layoutParams = (LinearLayout.LayoutParams)searchContainer.getLayoutParams();
+            LinearLayout.LayoutParams layoutParams = (LinearLayout.LayoutParams) searchContainer.getLayoutParams();
             layoutParams.weight = 1;
             layoutParams.width = 0;
-            layoutParams.height = LinearLayout.LayoutParams.MATCH_PARENT;
+            layoutParams.height = LayoutHelper.MATCH_PARENT;
             layoutParams.leftMargin = AndroidUtilities.dp(6);
             searchContainer.setLayoutParams(layoutParams);
             searchContainer.setVisibility(GONE);
@@ -446,7 +481,7 @@ public class ActionBarMenuItem extends FrameLayoutFixed {
             }
             searchContainer.addView(searchField);
             FrameLayout.LayoutParams layoutParams2 = (FrameLayout.LayoutParams) searchField.getLayoutParams();
-            layoutParams2.width = FrameLayout.LayoutParams.MATCH_PARENT;
+            layoutParams2.width = LayoutHelper.MATCH_PARENT;
             layoutParams2.gravity = Gravity.CENTER_VERTICAL;
             layoutParams2.height = AndroidUtilities.dp(36);
             layoutParams2.rightMargin = AndroidUtilities.dp(48);
@@ -466,7 +501,7 @@ public class ActionBarMenuItem extends FrameLayoutFixed {
             layoutParams2 = (FrameLayout.LayoutParams) clearButton.getLayoutParams();
             layoutParams2.width = AndroidUtilities.dp(48);
             layoutParams2.gravity = Gravity.CENTER_VERTICAL | Gravity.RIGHT;
-            layoutParams2.height = FrameLayout.LayoutParams.MATCH_PARENT;
+            layoutParams2.height = LayoutHelper.MATCH_PARENT;
             clearButton.setLayoutParams(layoutParams2);
         }
         isSearchField = value;
@@ -490,7 +525,12 @@ public class ActionBarMenuItem extends FrameLayoutFixed {
                 if (showFromBottom) {
                     popupWindow.update(this, -popupLayout.getMeasuredWidth() + getMeasuredWidth(), getOffsetY(), -1, -1);
                 } else {
-                    popupWindow.update(this, parentMenu.parentActionBar.getMeasuredWidth() - popupLayout.getMeasuredWidth() - getLeft() - parentMenu.getLeft(), getOffsetY(), -1, -1);
+                    if (parentMenu != null) {
+                        popupWindow.update(this, parentMenu.parentActionBar.getMeasuredWidth() - popupLayout.getMeasuredWidth() - getLeft() - parentMenu.getLeft(), getOffsetY(), -1, -1);
+                    } else {
+                        View parent = (View) getParent();
+                        popupWindow.update(this, parent.getMeasuredWidth() - popupLayout.getMeasuredWidth() - getLeft() - parent.getLeft(), getOffsetY(), -1, -1);
+                    }
                 }
             } else {
                 popupWindow.update(this, -AndroidUtilities.dp(8), getOffsetY(), -1, -1);

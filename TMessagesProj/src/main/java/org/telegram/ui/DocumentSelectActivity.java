@@ -8,6 +8,7 @@
 
 package org.telegram.ui;
 
+import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -32,14 +33,14 @@ import org.telegram.android.AndroidUtilities;
 import org.telegram.messenger.FileLog;
 import org.telegram.android.LocaleController;
 import org.telegram.messenger.R;
-import org.telegram.messenger.Utilities;
 import org.telegram.ui.Adapters.BaseFragmentAdapter;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
-import org.telegram.ui.AnimationCompat.AnimatorSetProxy;
-import org.telegram.ui.AnimationCompat.ObjectAnimatorProxy;
+import org.telegram.android.AnimationCompat.AnimatorSetProxy;
+import org.telegram.android.AnimationCompat.ObjectAnimatorProxy;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.Cells.SharedDocumentCell;
+import org.telegram.ui.Components.LayoutHelper;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -188,7 +189,7 @@ public class DocumentSelectActivity extends BaseFragment {
         LinearLayout.LayoutParams layoutParams = (LinearLayout.LayoutParams) selectedMessagesCountTextView.getLayoutParams();
         layoutParams.weight = 1;
         layoutParams.width = 0;
-        layoutParams.height = LinearLayout.LayoutParams.MATCH_PARENT;
+        layoutParams.height = LayoutHelper.MATCH_PARENT;
         selectedMessagesCountTextView.setLayoutParams(layoutParams);
 
         actionModeViews.add(actionMode.addItem(done, R.drawable.ic_ab_done_gray, R.drawable.bar_selector_mode, null, AndroidUtilities.dp(54)));
@@ -233,7 +234,7 @@ public class DocumentSelectActivity extends BaseFragment {
                     }
                     if (sizeLimit != 0) {
                         if (file.length() > sizeLimit) {
-                            showErrorBox(LocaleController.formatString("FileUploadLimit", R.string.FileUploadLimit, Utilities.formatFileSize(sizeLimit)));
+                            showErrorBox(LocaleController.formatString("FileUploadLimit", R.string.FileUploadLimit, AndroidUtilities.formatFileSize(sizeLimit)));
                             return false;
                         }
                     }
@@ -297,7 +298,7 @@ public class DocumentSelectActivity extends BaseFragment {
                     he.scrollItem = listView.getFirstVisiblePosition();
                     he.scrollOffset = listView.getChildAt(0).getTop();
                     he.dir = currentDir;
-                    he.title = actionBar.getTitle().toString();
+                    he.title = actionBar.getTitle();
                     history.add(he);
                     if (!listFiles(file)) {
                         history.remove(he);
@@ -312,7 +313,7 @@ public class DocumentSelectActivity extends BaseFragment {
                     }
                     if (sizeLimit != 0) {
                         if (file.length() > sizeLimit) {
-                            showErrorBox(LocaleController.formatString("FileUploadLimit", R.string.FileUploadLimit, Utilities.formatFileSize(sizeLimit)));
+                            showErrorBox(LocaleController.formatString("FileUploadLimit", R.string.FileUploadLimit, AndroidUtilities.formatFileSize(sizeLimit)));
                             return;
                         }
                     }
@@ -403,7 +404,7 @@ public class DocumentSelectActivity extends BaseFragment {
             return false;
         }
         emptyView.setText(LocaleController.getString("NoFiles", R.string.NoFiles));
-        File[] files = null;
+        File[] files;
         try {
             files = dir.listFiles();
         } catch(Exception e) {
@@ -448,7 +449,7 @@ public class DocumentSelectActivity extends BaseFragment {
                 String fname = file.getName();
                 String[] sp = fname.split("\\.");
                 item.ext = sp.length > 1 ? sp[sp.length - 1] : "?";
-                item.subtitle = Utilities.formatFileSize(file.length());
+                item.subtitle = AndroidUtilities.formatFileSize(file.length());
                 fname = fname.toLowerCase();
                 if (fname.endsWith(".jpg") || fname.endsWith(".png") || fname.endsWith(".gif") || fname.endsWith(".jpeg")) {
                     item.thumb = file.getAbsolutePath();
@@ -484,6 +485,7 @@ public class DocumentSelectActivity extends BaseFragment {
         new AlertDialog.Builder(getParentActivity()).setTitle(LocaleController.getString("AppName", R.string.AppName)).setMessage(error).setPositiveButton(LocaleController.getString("OK", R.string.OK), null).show();
     }
 
+    @SuppressLint("NewApi")
     private void listRoots() {
         currentDir = null;
         items.clear();
@@ -581,7 +583,7 @@ public class DocumentSelectActivity extends BaseFragment {
         if (total == 0) {
             return "";
         }
-        return LocaleController.formatString("FreeOfTotal", R.string.FreeOfTotal, Utilities.formatFileSize(free), Utilities.formatFileSize(total));
+        return LocaleController.formatString("FreeOfTotal", R.string.FreeOfTotal, AndroidUtilities.formatFileSize(free), AndroidUtilities.formatFileSize(total));
     }
 
     private class ListAdapter extends BaseFragmentAdapter {
