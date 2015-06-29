@@ -668,6 +668,7 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
             return false;
         }
 
+
         @Override
         public View getView(int i, View view, ViewGroup viewGroup) {
 			TextCheckCell checkCell = null;

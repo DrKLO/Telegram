@@ -113,6 +113,7 @@ public class NotificationsController {
         return localInstance;
     }
 
+
     public NotificationsController() {
         notificationManager = NotificationManagerCompat.from(ApplicationLoader.applicationContext);
         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Context.MODE_PRIVATE);

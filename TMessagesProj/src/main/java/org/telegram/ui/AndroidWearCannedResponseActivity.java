@@ -400,6 +400,7 @@ public class AndroidWearCannedResponseActivity extends BaseFragment {
 
 
 
+
                     outAnimation.setAnimationListener(new Animation.AnimationListener() {
                         @Override
                         public void onAnimationStart(Animation animation) {
