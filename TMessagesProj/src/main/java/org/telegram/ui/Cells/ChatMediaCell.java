@@ -172,7 +172,7 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
 
         boolean result = false;
         int side = AndroidUtilities.dp(48);
-        if (currentMessageObject.caption instanceof Spannable && !isPressed) {
+        if (currentMessageObject.caption instanceof Spannable && delegate.canPerformActions()) {
             if (event.getAction() == MotionEvent.ACTION_DOWN || (linkPreviewPressed || pressedLink != null) && event.getAction() == MotionEvent.ACTION_UP) {
                 if (nameLayout != null && x >= captionX && x <= captionX + backgroundWidth && y >= captionY && y <= captionY + captionHeight) {
                     if (event.getAction() == MotionEvent.ACTION_DOWN) {
@@ -213,9 +213,9 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
                         try {
                             if (pressedLink instanceof URLSpanNoUnderline) {
                                 String url = ((URLSpanNoUnderline) pressedLink).getURL();
-                                if (url.startsWith("@") || url.startsWith("#")) {
+                                if (url.startsWith("@") || url.startsWith("#") || url.startsWith("/")) {
                                     if (delegate != null) {
-                                        delegate.didPressUrl(url);
+                                        delegate.didPressUrl(currentMessageObject, url);
                                     }
                                 }
                             } else {

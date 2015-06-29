@@ -430,7 +430,7 @@ JNIEXPORT void Java_org_telegram_messenger_Utilities_loadBitmap(JNIEnv *env, jcl
     
     AndroidBitmapInfo info;
     int i;
-    
+
     if ((i = AndroidBitmap_getInfo(env, bitmap, &info)) >= 0) {
         char *fileName = (*env)->GetStringUTFChars(env, path, NULL);
         FILE *infile;
@@ -438,7 +438,7 @@ JNIEXPORT void Java_org_telegram_messenger_Utilities_loadBitmap(JNIEnv *env, jcl
         if ((infile = fopen(fileName, "rb"))) {
             struct my_error_mgr jerr;
             struct jpeg_decompress_struct cinfo;
-            
+
             cinfo.err = jpeg_std_error(&jerr.pub);
             jerr.pub.error_exit = my_error_exit;
             
@@ -557,7 +557,7 @@ JNIEXPORT jobject Java_org_telegram_messenger_Utilities_loadWebpImage(JNIEnv *en
     if (!WebPDecodeRGBAInto((uint8_t*)inputBuffer, len, (uint8_t*)bitmapPixels, bitmapInfo.height * bitmapInfo.stride, bitmapInfo.stride)) {
         AndroidBitmap_unlockPixels(env, outputBitmap);
         (*env)->DeleteLocalRef(env, outputBitmap);
-        (*env)->ThrowNew(env, jclass_RuntimeException, "Failed to unlock Bitmap pixels");
+        (*env)->ThrowNew(env, jclass_RuntimeException, "Failed to decode webp image");
         return 0;
     }
     

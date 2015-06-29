@@ -21,6 +21,7 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
+import android.graphics.Canvas;
 import android.graphics.Outline;
 import android.net.Uri;
 import android.os.Build;
@@ -38,6 +39,8 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewOutlineProvider;
 import android.view.ViewTreeObserver;
+import android.view.animation.AccelerateInterpolator;
+import android.view.animation.DecelerateInterpolator;
 import android.widget.AbsListView;
 import android.widget.AdapterView;
 import android.widget.FrameLayout;
@@ -46,9 +49,12 @@ import android.widget.ListView;
 import android.widget.TextView;
 
 import org.telegram.android.AndroidUtilities;
-import org.telegram.android.ContactsController;
+import org.telegram.android.AnimationCompat.AnimatorListenerAdapterProxy;
+import org.telegram.android.AnimationCompat.AnimatorSetProxy;
+import org.telegram.android.AnimationCompat.ObjectAnimatorProxy;
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.android.MediaController;
+import org.telegram.android.UserObject;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BuildVars;
 import org.telegram.android.LocaleController;
@@ -96,6 +102,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
     private TextView nameTextView;
     private TextView onlineTextView;
     private ImageView writeButton;
+    private AnimatorSetProxy writeButtonAnimation;
     private AvatarUpdater avatarUpdater = new AvatarUpdater();
 
     private int overscrollRow;
@@ -311,7 +318,34 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
 
         listAdapter = new ListAdapter(context);
 
-        fragmentView = new FrameLayout(context);
+        fragmentView = new FrameLayout(context) {
+            @Override
+            protected boolean drawChild(Canvas canvas, View child, long drawingTime) {
+                if (child == listView) {
+                    boolean result = super.drawChild(canvas, child, drawingTime);
+                    if (parentLayout != null) {
+                        int actionBarHeight = 0;
+                        int childCount = getChildCount();
+                        for (int a = 0; a < childCount; a++) {
+                            View view = getChildAt(a);
+                            if (view == child) {
+                                continue;
+                            }
+                            if (view instanceof ActionBar && view.getVisibility() == VISIBLE) {
+                                if (((ActionBar) view).getCastShadows()) {
+                                    actionBarHeight = view.getMeasuredHeight();
+                                }
+                                break;
+                            }
+                        }
+                        parentLayout.drawHeaderShadow(canvas, actionBarHeight);
+                    }
+                    return result;
+                } else {
+                    return super.drawChild(canvas, child, drawingTime);
+                }
+            }
+        };
         FrameLayout frameLayout = (FrameLayout) fragmentView;
 
         avatarImage = new BackupImageView(context);
@@ -882,10 +916,52 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             layoutParams = (FrameLayout.LayoutParams) writeButton.getLayoutParams();
             layoutParams.topMargin = (actionBar.getOccupyStatusBar() ? AndroidUtilities.statusBarHeight : 0) + AndroidUtilities.getCurrentActionBarHeight() + actionBar.getExtraHeight() - AndroidUtilities.dp(29.5f);
             writeButton.setLayoutParams(layoutParams);
-            ViewProxy.setAlpha(writeButton, diff);
-            writeButton.setVisibility(diff <= 0.02 ? View.GONE : View.VISIBLE);
-            if (writeButton.getVisibility() == View.GONE) {
-                writeButton.clearAnimation();
+
+            //ViewProxy.setScaleX(writeButton, diff > 0.2f ? 1.0f : diff / 0.2f);
+            //ViewProxy.setScaleY(writeButton, diff > 0.2f ? 1.0f : diff / 0.2f);
+            //ViewProxy.setAlpha(writeButton, diff > 0.2f ? 1.0f : diff / 0.2f);
+            final boolean setVisible = diff > 0.2f;
+            boolean currentVisible = writeButton.getTag() == null;
+            if (setVisible != currentVisible) {
+                if (setVisible) {
+                    writeButton.setTag(null);
+                    writeButton.setVisibility(View.VISIBLE);
+                } else {
+                    writeButton.setTag(0);
+                }
+                if (writeButtonAnimation != null) {
+                    AnimatorSetProxy old = writeButtonAnimation;
+                    writeButtonAnimation = null;
+                    old.cancel();
+                }
+                writeButtonAnimation = new AnimatorSetProxy();
+                if (setVisible) {
+                    writeButtonAnimation.setInterpolator(new DecelerateInterpolator());
+                    writeButtonAnimation.playTogether(
+                            ObjectAnimatorProxy.ofFloat(writeButton, "scaleX", 1.0f),
+                            ObjectAnimatorProxy.ofFloat(writeButton, "scaleY", 1.0f),
+                            ObjectAnimatorProxy.ofFloat(writeButton, "alpha", 1.0f)
+                    );
+                } else {
+                    writeButtonAnimation.setInterpolator(new AccelerateInterpolator());
+                    writeButtonAnimation.playTogether(
+                            ObjectAnimatorProxy.ofFloat(writeButton, "scaleX", 0.2f),
+                            ObjectAnimatorProxy.ofFloat(writeButton, "scaleY", 0.2f),
+                            ObjectAnimatorProxy.ofFloat(writeButton, "alpha", 0.0f)
+                    );
+                }
+                writeButtonAnimation.setDuration(150);
+                writeButtonAnimation.addListener(new AnimatorListenerAdapterProxy() {
+                    @Override
+                    public void onAnimationEnd(Object animation) {
+                        if (writeButtonAnimation != null && writeButtonAnimation.equals(animation)) {
+                            writeButton.clearAnimation();
+                            writeButton.setVisibility(setVisible ? View.VISIBLE : View.GONE);
+                            writeButtonAnimation = null;
+                        }
+                    }
+                });
+                writeButtonAnimation.start();
             }
 
             avatarImage.setRoundRadius(AndroidUtilities.dp(avatarSize / 2));
@@ -926,7 +1002,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                     needLayout();
                     fragmentView.getViewTreeObserver().removeOnPreDrawListener(this);
                 }
-                return false;
+                return true;
             }
         });
     }
@@ -945,7 +1021,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             avatarImage.setImage(photo, "50_50", avatarDrawable);
             avatarImage.getImageReceiver().setVisible(!PhotoViewer.getInstance().isShowingImage(photoBig), false);
 
-            nameTextView.setText(ContactsController.formatName(user.first_name, user.last_name));
+            nameTextView.setText(UserObject.getUserName(user));
             onlineTextView.setText(LocaleController.getString("Online", R.string.Online));
 
             avatarImage.getImageReceiver().setVisible(!PhotoViewer.getInstance().isShowingImage(photoBig), false);

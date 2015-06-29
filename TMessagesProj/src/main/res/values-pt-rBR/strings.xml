@@ -57,7 +57,7 @@
     <string name="MuteFor">Silenciar por %1$s</string>
     <string name="UnmuteNotifications">Restaurar Som</string>
     <string name="WillUnmuteIn">Em %1$s</string>
-    <string name="MuteDisable">Desativado</string>
+    <string name="MuteDisable">Desativar</string>
     <string name="Hashtags">HASHTAGS</string>
     <!--broadcasts-->
     <string name="NewBroadcastList">Nova Lista de Transmissão</string>
@@ -99,6 +99,7 @@
     <string name="ChatLocation">Localização</string>
     <string name="ChatVideo">Vídeo</string>
     <string name="ChatDocument">Arquivo</string>
+    <string name="ChatCamera">Câmera</string>
     <string name="NoMessages">Ainda não há mensagens aqui...</string>
     <string name="ForwardedMessage">Mensagem encaminhada</string>
     <string name="From">De</string>
@@ -128,6 +129,7 @@
     <string name="GettingLinkInfo">Obtendo informações...</string>
     <string name="OpenInBrowser">Abrir no Navegador</string>
     <string name="CopyUrl">Copiar URL</string>
+    <string name="SendItems">Enviar %1$s</string>
     <!--notification-->
     <string name="MessageLifetimeChanged">%1$s estabeleceu o tempo de autodestruição para %2$s </string>
     <string name="MessageLifetimeChangedOutgoing">Você estabeleceu o tempo de autodestruição para %1$s</string>
@@ -245,7 +247,6 @@
     <string name="ErrorOccurred">Ocorreu um erro.</string>
     <!--stickers view-->
     <string name="Stickers">Stickers</string>
-    <string name="GeniusStickerPackName">Grandes Mentes</string>
     <string name="StickersInfo">Artistas são bem vindos a adicionar seus próprios pacotes de stickers usando o @stickers bot.\n\nUsuários podem adicionar stickers com um clique sobre eles e então escolher \"Adicionar aos Stickers\".</string>
     <string name="AddStickers">Adicionar Stickers</string>
     <string name="AddToStickers">Adicionar aos Stickers</string>
@@ -294,7 +295,7 @@
     <string name="ContactJoined">Contato entrou para o Telegram</string>
     <string name="Pebble">PEBBLE</string>
     <string name="Language">Idioma</string>
-    <string name="AskAQuestionInfo">Por favor compreenda que o Suporte do Telegram é feito por voluntários. Tentamos responder o mais rápido possível, mas pode demorar um pouco. <![CDATA[<br><br>]]>Por favor acesse o <![CDATA[<a href=\"http://telegram.org/faq#general\">FAQ do Telegram</a>]]>: temos respostas para algumas questões, assim como dicas importantes à <![CDATA[<a href=\"http://telegram.org/faq#troubleshooting\">resolução de problemas</a>]]>.</string>
+    <string name="AskAQuestionInfo">Por favor entenda que o suporte do Telegram é feito por voluntários. Tentaremos responder o mais rápido possível, mas poderemos demorar um pouco.<![CDATA[<br><br>]]>Por favor verifique a <![CDATA[<a href=\"https://telegram.org/faq#general\">página de perguntas frequentes do Telegram</a>]]>: há dicas e respostas para a maioria dos <![CDATA[<a href=\"https://telegram.org/faq#troubleshooting\">problemas</a>]]>.</string>
     <string name="AskButton">Pergunte a um voluntário</string>
     <string name="TelegramFaq">Perguntas frequentes</string>
     <string name="TelegramFaqUrl">https://telegram.org/faq</string>
@@ -341,7 +342,7 @@
     <string name="ChangePhoneNumberOccupied">O número %1$s já possui uma conta do Telegram. Por favor, exclua esta conta antes de migrar para o novo número.</string>
     <string name="NotificationsOther">Outro</string>
     <string name="NotificationsDisabled">Desativado</string>
-    <string name="VibrationDisabled">Desativar</string>
+    <string name="VibrationDisabled">Desativado</string>
     <string name="LedDisabled">Desativado</string>
     <string name="RepeatDisabled">Desativado</string>
     <string name="InChatSound">Sons no Chat</string>
@@ -359,7 +360,7 @@
     <string name="NoOtherSessions">Nenhuma outra sessão ativa</string>
     <string name="NoOtherSessionsInfo">Você pode entrar no Telegram a partir de outro celular, tablet ou computador usando o mesmo número de telefone. Todos os seus dados serão sincronizados instantaneamente.</string>
     <string name="OtherSessions">Sessões Ativas</string>
-    <string name="SessionsInfo">Controle suas sessões em outros aparelho.</string>
+    <string name="SessionsInfo">Controle suas sessões em outros aparelhos.</string>
     <string name="TerminateSessionInfo">Toque em uma sessão para terminá-la.</string>
     <string name="TerminateSessionQuestion">Encerrar essa sessão?</string>
     <string name="UnofficialApp">aplicativo não oficial</string>
@@ -528,6 +529,16 @@
     <string name="EditedVideo">Vídeo Editado</string>
     <string name="SendingVideo">Enviando vídeo...</string>
     <string name="CompressVideo">Compactar Vídeo</string>
+    <!--bot-->
+    <string name="Bot">bot</string>
+    <string name="BotShare">Compartilhar</string>
+    <string name="BotInvite">Adicionar Ao Grupo</string>
+    <string name="BotSettings">Configurações</string>
+    <string name="BotHelp">Ajuda</string>
+    <string name="BotStatusRead">tem acesso as mensagens</string>
+    <string name="BotStatusCantRead">não tem acesso as mensagens</string>
+    <string name="BotInfoTitle">O que esse bot pode fazer?</string>
+    <string name="BotStart">COMEÇAR</string>
     <!--button titles-->
     <string name="Next">Próximo</string>
     <string name="Back">Voltar</string>
@@ -570,7 +581,7 @@
     <string name="ActionAddUserYou">un1 adicionou você</string>
     <string name="ActionAddUserSelf">un1 retornou ao grupo</string>
     <string name="ActionAddUserSelfYou">Você retornou ao grupo</string>
-    <string name="UnsuppotedMedia">Esta mensagem não é suportada na sua versão do Telegram. Para visualiza-la atualize seu aplicativo em http://telegram.org/update</string>
+    <string name="UnsuppotedMedia">Esta mensagem não é suportada na sua versão do Telegram. Para visualiza-la atualize seu aplicativo em https://telegram.org/update</string>
     <string name="AttachPhoto">Foto</string>
     <string name="AttachVideo">Vídeo</string>
     <string name="AttachLocation">Localização</string>
@@ -595,7 +606,10 @@
     <string name="NoHandleAppInstalled">Você não possui um aplicativo que suporte o tipo de arquivo \'%1$s\', por favor instale um para continuar</string>
     <string name="InviteUser">Este usuário ainda não possui Telegram, deseja enviar um convite?</string>
     <string name="AreYouSure">Você tem certeza?</string>
-    <string name="AddToTheGroup">Adicionar %1$s para o grupo?\n\nNúmero de últimas mensagens para encaminhar:</string>
+    <string name="AddToTheGroupTitle">Adicionar %1$s ao grupo %2$s?</string>
+    <string name="AddToTheGroupForwardCount">Número de mensagens antigas para encaminhar:</string>
+    <string name="AddToTheGroup">Adicionar %1$s no grupo?</string>
+    <string name="UserAlreadyInGroup">Este usuário já está neste grupo</string>
     <string name="ForwardMessagesTo">Encaminhar mensagem para %1$s?</string>
     <string name="SendMessagesTo">Enviar mensagens para %1$s?</string>
     <string name="AreYouSureLogout">Você tem certeza que desejar sair?\n\nSaiba que você pode usar o Telegram em vários dispositivos de uma vez.\n\nLembre-se, sair apaga todos os seus Chats Secretos.</string>
@@ -613,6 +627,8 @@
     <string name="SendMessagesToGroup">Enviar mensagens para %1$s?</string>
     <string name="ForwardMessagesToGroup">Encaminhar mensagem para %1$s?</string>
     <string name="FeatureUnavailable">Desculpe, esta funcionalidade não está disponível para seu país.</string>
+    <string name="NoUsernameFound">Não há conta do Telegram com esse nome de usuário</string>
+    <string name="BotCantJoinGroups">Esse bot não pode entrar em grupos.</string>
     <!--Intro view-->
     <string name="Page1Title">Telegram</string>
     <string name="Page2Title">Rápido</string>
@@ -738,6 +754,12 @@
     <string name="Stickers_few">%1$d stickers</string>
     <string name="Stickers_many">%1$d stickers</string>
     <string name="Stickers_other">%1$d stickers</string>
+    <string name="Photos_zero">%1$d fotos</string>
+    <string name="Photos_one">%1$d foto</string>
+    <string name="Photos_two">%1$d fotos</string>
+    <string name="Photos_few">%1$d fotos</string>
+    <string name="Photos_many">%1$d fotos</string>
+    <string name="Photos_other">%1$d fotos</string>
     <!--forwarded messages-->
     <string name="ForwardedMessage_zero">%1$d mensagens encaminhadas</string>
     <string name="ForwardedMessage_one">Mensagem encaminhada</string>
@@ -805,6 +827,6 @@
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s às %2$s</string>
     <!--update text-->
-    <string name="updateText">Seu Telegram para Android acaba de ser atualizado. Novidades da versão 2.9:\n\n- Instale e compartilhe pacotes de stickers customizados como esse: https://telegram.me/addstickers/Animals\n- Se você é um artista, crie stickers customizados usando o @stickers bot.\n\n- Use Telegram com Android Auto.</string>
-    <string name="updateBuild">536</string>
+    <string name="updateText">Seu Telegram para Android acaba de ser atualizado. Novo na versão 3.0:\n\n- Abas dedicadas para cada um dos pacotes customizados de stickers no painel de stickers. Adicione stickers customizados como https://telegram.me/addstickers/Animals\n- Nova API de bots, gratuita para todos. Se você for um engenheiro, crie seus próprios bots como @quiz_bot ou @hot_or_bot usando o @botfather. Leia mais em https://telegram.org/blog/bot-revolution</string>
+    <string name="updateBuild">551</string>
 </resources>

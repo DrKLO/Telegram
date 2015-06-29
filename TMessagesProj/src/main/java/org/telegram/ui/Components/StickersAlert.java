@@ -19,9 +19,7 @@ import android.widget.FrameLayout;
 import android.widget.GridView;
 
 import org.telegram.android.AndroidUtilities;
-import org.telegram.android.LocaleController;
 import org.telegram.android.NotificationCenter;
-import org.telegram.messenger.R;
 import org.telegram.messenger.TLRPC;
 import org.telegram.ui.Cells.StickerEmojiCell;
 
@@ -32,9 +30,9 @@ public class StickersAlert extends AlertDialog implements NotificationCenter.Not
     private ArrayList<TLRPC.Document> stickers;
     private GridView gridView;
 
-    public StickersAlert(Context context, TLRPC.TL_stickerSet set, ArrayList<TLRPC.Document> arrayList) {
+    public StickersAlert(Context context, TLRPC.TL_messages_stickerSet set) {
         super(context);
-        stickers = arrayList;
+        stickers = set.documents;
 
         FrameLayout container = new FrameLayout(context) {
             @Override
@@ -50,11 +48,7 @@ public class StickersAlert extends AlertDialog implements NotificationCenter.Not
         gridView.setVerticalScrollBarEnabled(false);
         container.addView(gridView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
-        if (set.id == -1) {
-            setTitle(LocaleController.getString("GeniusStickerPackName", R.string.GeniusStickerPackName));
-        } else {
-            setTitle(set.title);
-        }
+        setTitle(set.set.title);
 
         NotificationCenter.getInstance().addObserver(this, NotificationCenter.emojiDidLoaded);
 

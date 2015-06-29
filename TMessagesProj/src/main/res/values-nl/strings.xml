@@ -99,6 +99,7 @@
     <string name="ChatLocation">Locatie</string>
     <string name="ChatVideo">Video</string>
     <string name="ChatDocument">Bestand</string>
+    <string name="ChatCamera">Camera</string>
     <string name="NoMessages">Nog geen berichten</string>
     <string name="ForwardedMessage">Doorgestuurd bericht</string>
     <string name="From">Van</string>
@@ -128,6 +129,7 @@
     <string name="GettingLinkInfo">Link-preview ophalen...</string>
     <string name="OpenInBrowser">Openen in browser</string>
     <string name="CopyUrl">Link kopiëren</string>
+    <string name="SendItems">%1$s versturen</string>
     <!--notification-->
     <string name="MessageLifetimeChanged">%1$s heeft de zelfvernietigingstimer ingesteld op %2$s</string>
     <string name="MessageLifetimeChangedOutgoing">Je hebt de zelfvernietigingstimer ingesteld op %1$s</string>
@@ -245,10 +247,7 @@
     <string name="ErrorOccurred">Er is een fout opgetreden.</string>
     <!--stickers view-->
     <string name="Stickers">Stickers</string>
-    <string name="GeniusStickerPackName">Grote geesten</string>
-  <string name="StickersInfo">Ontwerpers kunnen stickerbundels toevoegen via onze bot: @stickers.
-
-Gebruikers kunnen met een tik stickers toevoegen via \"Toevoegen aan stickers\".</string>
+    <string name="StickersInfo">Ontwerpers kunnen stickerbundels toevoegen via onze bot: @stickers.\n\nGebruikers kunnen met een tik stickers toevoegen via \"Toevoegen aan stickers\".</string>
     <string name="AddStickers">Stickers toevoegen</string>
     <string name="AddToStickers">Toevoegen aan stickers</string>
     <string name="AddStickersNotFound">Stickers niet gevonden</string>
@@ -282,7 +281,7 @@ Gebruikers kunnen met een tik stickers toevoegen via \"Toevoegen aan stickers\".
     <string name="ResetAllNotifications">Meldingen resetten</string>
     <string name="UndoAllCustom">Aangepaste meldingsinstellingen wissen voor contacten en groepen.</string>
     <string name="NotificationsAndSounds">Meldingen en geluiden</string>
-    <string name="BlockedUsers">Geblokkeerde gebruikers</string>
+    <string name="BlockedUsers">Geblokkeerd</string>
     <string name="LogOut">Uitloggen</string>
     <string name="NoSound">Geen geluid</string>
     <string name="Default">Standaard</string>
@@ -296,7 +295,7 @@ Gebruikers kunnen met een tik stickers toevoegen via \"Toevoegen aan stickers\".
     <string name="ContactJoined">Contact lid van Telegram</string>
     <string name="Pebble">PEBBLE</string>
     <string name="Language">Taal</string>
-    <string name="AskAQuestionInfo">De ondersteuning van Telegram wordt gedaan door vrijwilligers.<![CDATA[<br>]]>We doen ons best om zo snel mogelijk te antwoorden.<![CDATA[<br><br>]]>Bekijk ook de <![CDATA[<a href=\"http://telegram.org/faq#general\">veelgestelde vragen</a>]]>. Hier staan de antwoorden op de meeste vragen en belangrijke tips voor <![CDATA[<a href=\"http://telegram.org/faq#troubleshooting\">het oplossen van problemen</a>]]>.</string>
+    <string name="AskAQuestionInfo">De ondersteuning van Telegram wordt gedaan door vrijwilligers. We doen ons best om zo snel mogelijk te antwoorden.<![CDATA[<br><br>]]>Bekijk ook de <![CDATA[<a href=\"https://telegram.org/faq#general\">veelgestelde vragen</a>]]>: Hierhier staan de antwoorden op de meeste vragen en belangrijke tips voor <![CDATA[<a href=\"https://telegram.org/faq#troubleshooting\">het oplossen van problemen</a>]]>.</string>
     <string name="AskButton">Vraag een vrijwilliger</string>
     <string name="TelegramFaq">Veelgestelde vragen</string>
     <string name="TelegramFaqUrl">https://telegram.org/faq</string>
@@ -530,6 +529,16 @@ Gebruikers kunnen met een tik stickers toevoegen via \"Toevoegen aan stickers\".
     <string name="EditedVideo">Bewerkte video</string>
     <string name="SendingVideo">Video versturen</string>
     <string name="CompressVideo">Video comprimeren</string>
+    <!--bot-->
+    <string name="Bot">bot</string>
+    <string name="BotShare">Delen</string>
+    <string name="BotInvite">Groepslid maken</string>
+    <string name="BotSettings">Instellingen</string>
+    <string name="BotHelp">Help</string>
+    <string name="BotStatusRead">toegang tot berichten</string>
+    <string name="BotStatusCantRead">geen toegang tot berichten</string>
+    <string name="BotInfoTitle">Wat kan deze bot?</string>
+    <string name="BotStart">BEGIN</string>
     <!--button titles-->
     <string name="Next">Volgende</string>
     <string name="Back">Vorige</string>
@@ -572,7 +581,7 @@ Gebruikers kunnen met een tik stickers toevoegen via \"Toevoegen aan stickers\".
     <string name="ActionAddUserYou">un1 heeft je toegevoegd</string>
     <string name="ActionAddUserSelf">un1 is terug in de groep</string>
     <string name="ActionAddUserSelfYou">Je keerde terug naar de groep</string>
-    <string name="UnsuppotedMedia">Dit bericht wordt niet ondersteund door jouw versie van Telegram. Werk Telegram bij om dit bericht te bekijken: http://telegram.org/update</string>
+    <string name="UnsuppotedMedia">Dit bericht wordt niet ondersteund door jouw versie van Telegram. Werk Telegram bij om dit bericht te bekijken: https://telegram.org/update</string>
     <string name="AttachPhoto">Foto</string>
     <string name="AttachVideo">Video</string>
     <string name="AttachLocation">Locatie</string>
@@ -597,7 +606,10 @@ Gebruikers kunnen met een tik stickers toevoegen via \"Toevoegen aan stickers\".
     <string name="NoHandleAppInstalled">Je hebt geen apps die bestandstype \'%1$s\' kunnen verwerken, gelieve een compatibele app te installeren</string>
     <string name="InviteUser">Deze gebruiker heeft nog geen Telegram. Wil je een uitnodiging sturen?</string>
     <string name="AreYouSure">Weet je het zeker?</string>
-    <string name="AddToTheGroup">%1$s toevoegen aan de groep?\n\nAantal recente berichten om door te sturen:</string>
+    <string name="AddToTheGroupTitle">%1$s toevoegen aan de groep %2$s?</string>
+    <string name="AddToTheGroupForwardCount">Aantal recente berichten om door te sturen:</string>
+    <string name="AddToTheGroup">%1$s toevoegen aan de groep?</string>
+    <string name="UserAlreadyInGroup">Gebruiker neemt al deel aan de groep</string>
     <string name="ForwardMessagesTo">Berichten doorsturen naar %1$s?</string>
     <string name="SendMessagesTo">Berichten naar %1$s versturen?</string>
     <string name="AreYouSureLogout">Weet je zeker dat je wilt uitloggen?\n\nTelegram kun je naadloos op al je apparaten tegelijkertijd gebruiken.\n\nLet op! Als je uitlogt worden al je geheime chats verwijderd.</string>
@@ -615,6 +627,8 @@ Gebruikers kunnen met een tik stickers toevoegen via \"Toevoegen aan stickers\".
     <string name="SendMessagesToGroup">Berichten naar %1$s versturen?</string>
     <string name="ForwardMessagesToGroup">Berichten doorsturen naar %1$s?</string>
     <string name="FeatureUnavailable">Sorry, deze functie is momenteel niet beschikbaar in jouw land.</string>
+    <string name="NoUsernameFound">Er is geen Telegram-account met deze gebruikersnaam.</string>
+    <string name="BotCantJoinGroups">Deze bot kan geen groepslid worden.</string>
     <!--Intro view-->
     <string name="Page1Title">Telegram</string>
     <string name="Page2Title">Snel</string>
@@ -740,6 +754,12 @@ Gebruikers kunnen met een tik stickers toevoegen via \"Toevoegen aan stickers\".
     <string name="Stickers_few">%1$d stickers</string>
     <string name="Stickers_many">%1$d stickers</string>
     <string name="Stickers_other">%1$d stickers</string>
+    <string name="Photos_zero">%1$d foto\'s</string>
+    <string name="Photos_one">%1$d foto</string>
+    <string name="Photos_two">%1$d foto\'s</string>
+    <string name="Photos_few">%1$d foto\'s</string>
+    <string name="Photos_many">%1$d foto\'s</string>
+    <string name="Photos_other">%1$d foto\'s</string>
     <!--forwarded messages-->
     <string name="ForwardedMessage_zero">Bijlage: %1$d berichten</string>
     <string name="ForwardedMessage_one">Bijlage: 1 bericht</string>
@@ -807,6 +827,6 @@ Gebruikers kunnen met een tik stickers toevoegen via \"Toevoegen aan stickers\".
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s om %2$s</string>
     <!--update text-->
-    <string name="updateText">Telegram voor Android is geüpdatet. Nieuw in versie 2.9:\n\n- Deel en installeer stickerbundels zoals deze: https://telegram.me/addstickers/Animals\n- Ben je een ontwerper? Maak stickerbundels met onze bot: @stickers.\n\n- Gebruik Telegram met Android Auto.</string>
-    <string name="updateBuild">536</string>
+    <string name="updateText">Telegram voor Android is geüpdatet. Nieuw in versie 3.0:\n\n- Tabbladen voor al je eigen stickerbundels in het stickerpaneel. Voeg stickerbundels zoals: https://telegram.me/addstickers/Animals toe.\n- Nieuwe bot-API, gratis voor iedereen. Handig met programmeren? Maak dan je eigen bots voor spelletjes, diensten of integraties. Meer weten? kijk op: https://telegram.org/blog/bot-revolution</string>
+    <string name="updateBuild">551</string>
 </resources>

@@ -13,7 +13,6 @@ import android.content.Context;
 import android.content.res.Configuration;
 import android.graphics.Canvas;
 import android.graphics.Paint;
-import android.graphics.Path;
 import android.graphics.drawable.Drawable;
 import android.text.Layout;
 import android.text.StaticLayout;
@@ -24,9 +23,9 @@ import android.view.MotionEvent;
 import android.view.SoundEffectConstants;
 
 import org.telegram.android.AndroidUtilities;
-import org.telegram.android.ContactsController;
 import org.telegram.android.Emoji;
 import org.telegram.android.LocaleController;
+import org.telegram.android.UserObject;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
@@ -36,6 +35,7 @@ import org.telegram.messenger.R;
 import org.telegram.android.MessageObject;
 import org.telegram.android.ImageReceiver;
 import org.telegram.ui.Components.AvatarDrawable;
+import org.telegram.ui.Components.LinkPath;
 import org.telegram.ui.Components.ResourceLoader;
 import org.telegram.ui.Components.StaticLayoutEx;
 
@@ -46,49 +46,14 @@ public class ChatBaseCell extends BaseCell {
         void didPressedCancelSendButton(ChatBaseCell cell);
         void didLongPressed(ChatBaseCell cell);
         void didPressReplyMessage(ChatBaseCell cell, int id);
-        void didPressUrl(String url);
+        void didPressUrl(MessageObject messageObject, String url);
         void needOpenWebView(String url, String title, String originalUrl, int w, int h);
         boolean canPerformActions();
     }
 
-    protected class MyPath extends Path {
-
-        private StaticLayout currentLayout;
-        private int currentLine;
-        private float lastTop = -1;
-
-        public void setCurrentLayout(StaticLayout layout, int start) {
-            currentLayout = layout;
-            currentLine = layout.getLineForOffset(start);
-            lastTop = -1;
-        }
-
-        @Override
-        public void addRect(float left, float top, float right, float bottom, Direction dir) {
-            if (lastTop == -1) {
-                lastTop = top;
-            } else if (lastTop != top) {
-                lastTop = top;
-                currentLine++;
-            }
-            float lineRight = currentLayout.getLineRight(currentLine);
-            float lineLeft = currentLayout.getLineLeft(currentLine);
-            if (left >= lineRight) {
-                return;
-            }
-            if (right > lineRight) {
-                right = lineRight;
-            }
-            if (left < lineLeft) {
-                left = lineLeft;
-            }
-            super.addRect(left, top, right, bottom, dir);
-        }
-    }
-
     protected ClickableSpan pressedLink;
     protected boolean linkPreviewPressed;
-    protected MyPath urlPath = new MyPath();
+    protected LinkPath urlPath = new LinkPath();
     protected static Paint urlPaint;
 
     public boolean isChat = false;
@@ -294,7 +259,7 @@ public class ChatBaseCell extends BaseCell {
 
         String newNameString = null;
         if (drawName && isChat && newUser != null && !currentMessageObject.isOut()) {
-            newNameString = ContactsController.formatName(newUser.first_name, newUser.last_name);
+            newNameString = UserObject.getUserName(newUser);
         }
 
         if (currentNameString == null && newNameString != null || currentNameString != null && newNameString == null || currentNameString != null && newNameString != null && !currentNameString.equals(newNameString)) {
@@ -304,7 +269,7 @@ public class ChatBaseCell extends BaseCell {
         newUser = MessagesController.getInstance().getUser(currentMessageObject.messageOwner.fwd_from_id);
         newNameString = null;
         if (newUser != null && drawForwardedName && currentMessageObject.messageOwner.fwd_from_id != 0) {
-            newNameString = ContactsController.formatName(newUser.first_name, newUser.last_name);
+            newNameString = UserObject.getUserName(newUser);
         }
         return currentForwardNameString == null && newNameString != null || currentForwardNameString != null && newNameString == null || currentForwardNameString != null && newNameString != null && !currentForwardNameString.equals(newNameString);
     }
@@ -370,7 +335,7 @@ public class ChatBaseCell extends BaseCell {
         namesOffset = 0;
 
         if (drawName && isChat && currentUser != null && !currentMessageObject.isOut()) {
-            currentNameString = ContactsController.formatName(currentUser.first_name, currentUser.last_name);
+            currentNameString = UserObject.getUserName(currentUser);
             nameWidth = getMaxNameWidth();
 
             CharSequence nameStringFinal = TextUtils.ellipsize(currentNameString.replace("\n", " "), namePaint, nameWidth - AndroidUtilities.dp(12), TextUtils.TruncateAt.END);
@@ -391,7 +356,7 @@ public class ChatBaseCell extends BaseCell {
         if (drawForwardedName && messageObject.isForwarded()) {
             currentForwardUser = MessagesController.getInstance().getUser(messageObject.messageOwner.fwd_from_id);
             if (currentForwardUser != null) {
-                currentForwardNameString = ContactsController.formatName(currentForwardUser.first_name, currentForwardUser.last_name);
+                currentForwardNameString = UserObject.getUserName(currentForwardUser);
 
                 forwardedNameWidth = getMaxNameWidth();
 
@@ -472,7 +437,7 @@ public class ChatBaseCell extends BaseCell {
 
                 TLRPC.User user = MessagesController.getInstance().getUser(messageObject.replyMessageObject.messageOwner.from_id);
                 if (user != null) {
-                    stringFinalName = TextUtils.ellipsize(ContactsController.formatName(user.first_name, user.last_name).replace("\n", " "), replyNamePaint, maxWidth - AndroidUtilities.dp(8), TextUtils.TruncateAt.END);
+                    stringFinalName = TextUtils.ellipsize(UserObject.getUserName(user).replace("\n", " "), replyNamePaint, maxWidth - AndroidUtilities.dp(8), TextUtils.TruncateAt.END);
                 }
                 if (messageObject.replyMessageObject.messageText != null && messageObject.replyMessageObject.messageText.length() > 0) {
                     String mess = messageObject.replyMessageObject.messageText.toString();

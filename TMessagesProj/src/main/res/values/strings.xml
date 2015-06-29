@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 
 
-
 <resources>
     <string name="AppName">Telegram</string>
     <string name="LanguageName">English</string>
@@ -99,6 +98,7 @@
     <string name="ChatLocation">Location</string>
     <string name="ChatVideo">Video</string>
     <string name="ChatDocument">File</string>
+    <string name="ChatCamera">Camera</string>
     <string name="NoMessages">No messages here yet...</string>
     <string name="ForwardedMessage">Forwarded message</string>
     <string name="From">From</string>
@@ -128,6 +128,7 @@
     <string name="GettingLinkInfo">Getting Link Info...</string>
     <string name="OpenInBrowser">Open in Browser</string>
     <string name="CopyUrl">Copy URL</string>
+    <string name="SendItems">Send %1$s</string>
     <!--notification-->
     <string name="MessageLifetimeChanged">%1$s set the self-destruct timer to %2$s</string>
     <string name="MessageLifetimeChangedOutgoing">You set the self-destruct timer to %1$s</string>
@@ -245,7 +246,6 @@
     <string name="ErrorOccurred">An error occurred.</string>
     <!--stickers view-->
     <string name="Stickers">Stickers</string>
-    <string name="GeniusStickerPackName">Great Minds</string>
     <string name="StickersInfo">Artists are welcome to add their own sticker packs using our @stickers bot.\n\nUsers can add stickers by tapping on them and choosing \"Add to Stickers\".</string>
     <string name="AddStickers">Add Stickers</string>
     <string name="AddToStickers">Add to Stickers</string>
@@ -294,7 +294,7 @@
     <string name="ContactJoined">Contact joined Telegram</string>
     <string name="Pebble">PEBBLE</string>
     <string name="Language">Language</string>
-    <string name="AskAQuestionInfo">Please note that Telegram Support is done by volunteers. We try to respond as quickly as possible, but it may take a while.<![CDATA[<br><br>]]>Please take a look at the <![CDATA[<a href=\"http://telegram.org/faq#general\">Telegram FAQ</a>]]>: it has answers to most questions and important tips for <![CDATA[<a href=\"http://telegram.org/faq#troubleshooting\">troubleshooting</a>]]>.</string>
+    <string name="AskAQuestionInfo">Please note that Telegram Support is done by volunteers. We try to respond as quickly as possible, but it may take a while.<![CDATA[<br><br>]]>Please take a look at the <![CDATA[<a href=\"https://telegram.org/faq#general\">Telegram FAQ</a>]]>: it has answers to most questions and important tips for <![CDATA[<a href=\"https://telegram.org/faq#troubleshooting\">troubleshooting</a>]]>.</string>
     <string name="AskButton">Ask a volunteer</string>
     <string name="TelegramFaq">Telegram FAQ</string>
     <string name="TelegramFaqUrl">https://telegram.org/faq</string>
@@ -528,6 +528,16 @@
     <string name="EditedVideo">Edited Video</string>
     <string name="SendingVideo">Sending video...</string>
     <string name="CompressVideo">Compress Video</string>
+    <!--bot-->
+    <string name="Bot">bot</string>
+    <string name="BotShare">Share</string>
+    <string name="BotInvite">Add to group</string>
+    <string name="BotSettings">Settings</string>
+    <string name="BotHelp">Help</string>
+    <string name="BotStatusRead">has access to messages</string>
+    <string name="BotStatusCantRead">has no access to messages</string>
+    <string name="BotInfoTitle">What can this bot do?</string>
+    <string name="BotStart">START</string>
     <!--button titles-->
     <string name="Next">Next</string>
     <string name="Back">Back</string>
@@ -570,7 +580,7 @@
     <string name="ActionAddUserYou">un1 added you</string>
     <string name="ActionAddUserSelf">un1 returned to the group</string>
     <string name="ActionAddUserSelfYou">You returned to the group</string>
-    <string name="UnsuppotedMedia">This message is not supported on your version of Telegram. Update the app to view: http://telegram.org/update</string>
+    <string name="UnsuppotedMedia">This message is not supported on your version of Telegram. Update the app to view: https://telegram.org/update</string>
     <string name="AttachPhoto">Photo</string>
     <string name="AttachVideo">Video</string>
     <string name="AttachLocation">Location</string>
@@ -595,7 +605,10 @@
     <string name="NoHandleAppInstalled">You don\'t have applications that can handle the file type \'%1$s\', please install one to continue</string>
     <string name="InviteUser">This user does not have Telegram yet, send an invitation?</string>
     <string name="AreYouSure">Are you sure?</string>
-    <string name="AddToTheGroup">Add %1$s to the group?\n\nNumber of last messages to forward:</string>
+    <string name="AddToTheGroupTitle">Add %1$s to the group %2$s?</string>
+    <string name="AddToTheGroupForwardCount">Number of last messages to forward:</string>
+    <string name="AddToTheGroup">Add %1$s to the group?</string>
+    <string name="UserAlreadyInGroup">This user is already in this group</string>
     <string name="ForwardMessagesTo">Forward messages to %1$s?</string>
     <string name="SendMessagesTo">Send messages to %1$s?</string>
     <string name="AreYouSureLogout">Are you sure you want to log out?\n\nNote that you can seamlessly use Telegram on all your devices at once.\n\nRemember, logging out kills all your Secret Chats.</string>
@@ -613,6 +626,8 @@
     <string name="SendMessagesToGroup">Send messages to %1$s?</string>
     <string name="ForwardMessagesToGroup">Forward messages to %1$s?</string>
     <string name="FeatureUnavailable">Sorry, this feature is currently not available in your country.</string>
+    <string name="NoUsernameFound">There is no Telegram account with this username.</string>
+    <string name="BotCantJoinGroups">This bot can\'t join groups.</string>
     <!--Intro view-->
     <string name="Page1Title">Telegram</string>
     <string name="Page2Title">Fast</string>
@@ -738,6 +753,12 @@
     <string name="Stickers_few">%1$d stickers</string>
     <string name="Stickers_many">%1$d stickers</string>
     <string name="Stickers_other">%1$d stickers</string>
+    <string name="Photos_zero">%1$d photos</string>
+    <string name="Photos_one">%1$d photo</string>
+    <string name="Photos_two">%1$d photos</string>
+    <string name="Photos_few">%1$d photos</string>
+    <string name="Photos_many">%1$d photos</string>
+    <string name="Photos_other">%1$d photos</string>
     <!--forwarded messages-->
     <string name="ForwardedMessage_zero">%1$d forwarded messages</string>
     <string name="ForwardedMessage_one">Forwarded message</string>
@@ -805,6 +826,6 @@
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s at %2$s</string>
     <!--update text-->
-    <string name="updateText">Telegram for Android has been updated. New in version 2.9:\n\n- Install and share custom sticker sets like this one: https://telegram.me/addstickers/Animals\n- If you\'re an artist, create custom sticker sets using our @stickers bot.\n\n- Use Telegram with Android Auto.</string>
-    <string name="updateBuild">536</string>
+    <string name="updateText">Telegram for Android has been updated. New in version 3.0:\n\n- Dedicated tabs for each one of your custom sticker sets in the sticker panel. Add custom stickers like https://telegram.me/addstickers/Animals\n- New bot API, free for everyone. If you\'re an engineer, create your own bots for games, services or integrations. Learn more at https://telegram.org/blog/bot-revolution</string>
+    <string name="updateBuild">551</string>
 </resources>

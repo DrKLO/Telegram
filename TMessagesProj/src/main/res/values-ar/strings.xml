@@ -99,6 +99,7 @@
     <string name="ChatLocation"> موقع</string>
     <string name="ChatVideo">مقطع مرئي</string>
     <string name="ChatDocument">ملف</string>
+    <string name="ChatCamera">الكاميرا</string>
     <string name="NoMessages">...لا توجد رسائل بعد</string>
     <string name="ForwardedMessage">الرسالة المعاد توجيهها</string>
     <string name="From">من</string>
@@ -128,6 +129,7 @@
     <string name="GettingLinkInfo">جاري جلب معلومات الرابط...</string>
     <string name="OpenInBrowser">فتح في المتصفح</string>
     <string name="CopyUrl">انسخ الرابط</string>
+    <string name="SendItems">أرسل %1$s</string>
     <!--notification-->
     <string name="MessageLifetimeChanged">%1$s قام بتعيين عداد التدمير الذاتي إلى to %2$s</string>
     <string name="MessageLifetimeChangedOutgoing">لقد قمت بتعيين التدمير الذاتي إلى %1$s</string>
@@ -245,7 +247,6 @@
     <string name="ErrorOccurred">حدث خطأ.</string>
     <!--stickers view-->
     <string name="Stickers">ملصقات</string>
-    <string name="GeniusStickerPackName">العقول العظيمة</string>
     <string name="StickersInfo">الرسامون مرحب بهم ليصنعوا حزم ملصقات عن طريق مراسلة @stickers .\n\nيمكن إضافة هذه الحزم بالضغط مرتين على الملصق واختيار \"معلومات\" — \"إضافة الملصقات\".</string>
     <string name="AddStickers">إضافة ملصق</string>
     <string name="AddToStickers">إضافة إلى الملصقات</string>
@@ -294,7 +295,7 @@
     <string name="ContactJoined">اشترك صديق في تيليجرام</string>
     <string name="Pebble">PEBBLE</string>
     <string name="Language">اللغة</string>
-    <string name="AskAQuestionInfo">نرجو الأخذ بالعلم أن الدعم الفني في تيليجرام يقوم به مجموعة من المتطوعين. نحاول الرد بسرعة قدر المستطاع، لكن ربما نستغرق القليل من الوقت.<![CDATA[<br><br>]]>يرجى الإطلاع على <![CDATA[<a href=\"http://telegram.org/faq/ar\">الأسئلة الشائعة عن تيليجرام</a>]]>: يوجد بها حلول للمشاكل وإجابات لمعظم الأسئلة.</string>
+    <string name="AskAQuestionInfo">نرجو الأخذ بالعلم أن الدعم الفني في تيليجرام يقوم به مجموعة من المتطوعين. نحن نحاول الرد بسرعة قدر المستطاع، لكن ربما نستغرق القليل من الوقت.<![CDATA[<br><br>]]> <![CDATA[<a href=\"https://telegram.org/faq/ar\">صفحة الأسئلة الأكثر شيوعًا</a>]]>: يوجد بها حلول للمشاكل وإجابات لمعظم الأسئلة.</string>
     <string name="AskButton">اسأل أحد المتطوعين</string>
     <string name="TelegramFaq">الأسئلة الشائعة عن تيليجرام</string>
     <string name="TelegramFaqUrl">https://telegram.org/faq/ar</string>
@@ -528,6 +529,16 @@
     <string name="EditedVideo">تم تحرير الفيديو</string>
     <string name="SendingVideo">جارٍ إرسال المقطع المرئي...</string>
     <string name="CompressVideo">اضغط المقطع المرئي</string>
+    <!--bot-->
+    <string name="Bot">البوت</string>
+    <string name="BotShare">مشاركة</string>
+    <string name="BotInvite">إضافة إلى المجموعة</string>
+    <string name="BotSettings">الإعدادات</string>
+    <string name="BotHelp">مساعدة</string>
+    <string name="BotStatusRead">يستطيع الوصول للرسائل</string>
+    <string name="BotStatusCantRead">لا يستطيع الوصول للرسائل</string>
+    <string name="BotInfoTitle">ماذا يستطيع هذا البوت عمله؟</string>
+    <string name="BotStart">إبدأ</string>
     <!--button titles-->
     <string name="Next">التالي</string>
     <string name="Back">رجوع</string>
@@ -570,7 +581,7 @@
     <string name="ActionAddUserYou">un1 قام بإضافتك</string>
     <string name="ActionAddUserSelf">un1 عاد إلى المجموعة</string>
     <string name="ActionAddUserSelfYou">لقد عدت إلى المجموعة</string>
-    <string name="UnsuppotedMedia">نسخة تيليجرام الموجودة لديك لا تدعم هذه الرسالة. الرجاء التحديث لأحدث نسخة: http://telegram.org/update</string>
+    <string name="UnsuppotedMedia">نسخة تيليجرام الموجودة لديك لا تدعم هذه الرسالة. الرجاء التحديث لأحدث نسخة لاستعراضها: https://telegram.org/update</string>
     <string name="AttachPhoto">صورة</string>
     <string name="AttachVideo">مقطع مرئي</string>
     <string name="AttachLocation">موقع</string>
@@ -595,13 +606,16 @@
     <string name="NoHandleAppInstalled">لا يوجد لديك تطبيق يمكنه فتح \'%1$s\'، يرجى تنزيل تطبيق مناسب للإستمرار</string>
     <string name="InviteUser">هذا المستخدم ليس لديه تيليجرام بعد ، هل ترغب في دعوته الآن؟</string>
     <string name="AreYouSure">هل أنت متأكد؟</string>
-    <string name="AddToTheGroup">هل ترغب في إضافة %1$s للمجموعة؟\n\nعدد الرسائل الحديثة المراد إعادة تحويلها:</string>
+    <string name="AddToTheGroupTitle">هل ترغب في إضافة %1$s للمجموعة %2$s؟</string>
+    <string name="AddToTheGroupForwardCount">عدد الرسائل الحديثة المراد إعادة تحويلها:</string>
+    <string name="AddToTheGroup">إضافة %1$s للمجموعة؟</string>
+    <string name="UserAlreadyInGroup">هذا المستخدم عضو مسبق في هذه المجموعة</string>
     <string name="ForwardMessagesTo">؟%1$s هل تريد إعادة توجيه الرسائل إلى</string>
     <string name="SendMessagesTo">هل ترغب في إرسال رسالة إلى %1$s؟</string>
     <string name="AreYouSureLogout">نرجو الأخذ بالعلم أنه يمكنك استخدام تيليجرام على أجهزتك المتعددة بسهولة تامة وفي وقت واحد.\n\nوتذكر، تسجيل الخروج يحذف كافة محادثاتك السرية.</string>
     <string name="AreYouSureSessions">هل أنت متأكد من تسجيل الخروج من جميع الأجهزة الأخرى باستثناء هذا الجهاز؟</string>
     <string name="AreYouSureDeleteAndExit">هل أنت متأكد من أنك تريد حذف المجموعة والخروج منها؟</string>
-    <string name="AreYouSureDeleteThisChat">هل أنت متأكد من رغبتك في حذف المجموعة؟</string>
+    <string name="AreYouSureDeleteThisChat">هل أنت متأكد من رغبتك في حذف المحادثة؟</string>
     <string name="AreYouSureShareMyContactInfo">هل أنت متأكد من أنك تريد مشاركة معلومات جهة الاتصال الخاصة بك؟</string>
     <string name="AreYouSureBlockContact">هل أنت متأكد من رغبتك في حظر جهة الاتصال هذه؟</string>
     <string name="AreYouSureUnblockContact">هل أنت متأكد من رغبتك في إزالة الحظر عن جهة الاتصال هذه؟</string>
@@ -613,6 +627,8 @@
     <string name="SendMessagesToGroup">هل ترغب في إرسال رسالة إلى %1$s؟</string>
     <string name="ForwardMessagesToGroup">؟%1$s هل تريد إعادة توجيه الرسائل إلى</string>
     <string name="FeatureUnavailable">.Sorry, this feature is currently not available in your country</string>
+    <string name="NoUsernameFound">لا يوجد حساب تيليجرام بهذا الاسم.</string>
+    <string name="BotCantJoinGroups">هذا البوت لا يستطيع الدخول للمجموعات.</string>
     <!--Intro view-->
     <string name="Page1Title">تيليجرام</string>
     <string name="Page2Title">سريع</string>
@@ -738,6 +754,12 @@
     <string name="Stickers_few">%1$d ملصقات</string>
     <string name="Stickers_many">%1$d ملصق</string>
     <string name="Stickers_other">%1$d ملصق</string>
+    <string name="Photos_zero">%1$d صور</string>
+    <string name="Photos_one">%1$d صورة</string>
+    <string name="Photos_two">%1$d صور</string>
+    <string name="Photos_few">%1$d صور</string>
+    <string name="Photos_many">%1$d صور</string>
+    <string name="Photos_other">%1$d صور</string>
     <!--forwarded messages-->
     <string name="ForwardedMessage_zero">%1$d رسالة معاد توجيهها</string>
     <string name="ForwardedMessage_one">الرسالة المعاد توجيهها</string>
@@ -805,6 +827,6 @@
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s الساعة %2$s</string>
     <!--update text-->
-    <string name="updateText">تيليجرام نسخة الـ Android تم تحديثه. الجديد في نسخة ٢.٩:\n\n- تنصيب ومشاركة الملصقات كهذه: https://telegram.me/addstickers/Animals\n- إذا كنت رسام، قم بصنع حزمة ملصقات عن طريق مراسلة @stickers .\n\n - استخدم تيليجرام مع أندرويد أوتو.</string>
-    <string name="updateBuild">536</string>
+    <string name="updateText">تيليجرام نسخة الأندرويد تم تحديثه. الجديد في نسخة ٣.٠:\n\n- أقسام مخصصة خاصة ومرتبة لكل لحزم الملصقات. يمكنك إضافة حزم الملصقات كهذه https://telegram.me/addstickers/Animals\n- واجهة برمجية خاصة جديدة بالبوت، مجانًا للجميع. إذا كنت مبرمج، اصنع البوت الخاص بك مثل @quiz_bot و @hot_or_bot باستخدام حساب @botfather. للإستزادة، فضلًا اطلع على https://telegram.org/blog/bot-revolution</string>
+    <string name="updateBuild">551</string>
 </resources>

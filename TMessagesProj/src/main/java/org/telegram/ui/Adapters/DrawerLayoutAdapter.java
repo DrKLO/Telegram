@@ -13,6 +13,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 
+import org.telegram.android.AndroidUtilities;
 import org.telegram.android.LocaleController;
 import org.telegram.android.MessagesController;
 import org.telegram.messenger.R;
@@ -70,7 +71,7 @@ public class DrawerLayoutAdapter extends BaseAdapter {
             ((DrawerProfileCell) view).setUser(MessagesController.getInstance().getUser(UserConfig.getClientUserId()));
         } else if (type == 1) {
             if (view == null) {
-                view = new EmptyCell(mContext, 8);
+                view = new EmptyCell(mContext, AndroidUtilities.dp(8));
             }
         } else if (type == 2) {
             if (view == null) {

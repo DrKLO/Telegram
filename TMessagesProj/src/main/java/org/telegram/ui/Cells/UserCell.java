@@ -14,9 +14,9 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 
 import org.telegram.android.AndroidUtilities;
-import org.telegram.android.ContactsController;
 import org.telegram.android.LocaleController;
 import org.telegram.android.MessagesController;
+import org.telegram.android.UserObject;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.R;
 import org.telegram.messenger.TLRPC;
@@ -140,7 +140,7 @@ public class UserCell extends FrameLayout {
                 }
             }
             if (!continueUpdate && currentName == null && lastName != null && (mask & MessagesController.UPDATE_MASK_NAME) != 0) {
-                newName = ContactsController.formatName(currentUser.first_name, currentUser.last_name);
+                newName = UserObject.getUserName(currentUser);
                 if (!newName.equals(lastName)) {
                     continueUpdate = true;
                 }
@@ -161,19 +161,28 @@ public class UserCell extends FrameLayout {
             lastName = null;
             nameTextView.setText(currentName);
         } else {
-            lastName = newName == null ? ContactsController.formatName(currentUser.first_name, currentUser.last_name) : newName;
+            lastName = newName == null ? UserObject.getUserName(currentUser) : newName;
             nameTextView.setText(lastName);
         }
         if (currrntStatus != null) {
             statusTextView.setTextColor(statusColor);
             statusTextView.setText(currrntStatus);
         } else {
-            if (currentUser.id == UserConfig.getClientUserId() || currentUser.status != null && currentUser.status.expires > ConnectionsManager.getInstance().getCurrentTime()) {
-                statusTextView.setTextColor(statusOnlineColor);
-                statusTextView.setText(LocaleController.getString("Online", R.string.Online));
-            } else {
+            if ((currentUser.flags & TLRPC.USER_FLAG_BOT) != 0) {
                 statusTextView.setTextColor(statusColor);
-                statusTextView.setText(LocaleController.formatUserStatus(currentUser));
+                if ((currentUser.flags & TLRPC.USER_FLAG_BOT_READING_HISTORY) != 0) {
+                    statusTextView.setText(LocaleController.getString("BotStatusRead", R.string.BotStatusRead));
+                } else {
+                    statusTextView.setText(LocaleController.getString("BotStatusCantRead", R.string.BotStatusCantRead));
+                }
+            } else {
+                if (currentUser.id == UserConfig.getClientUserId() || currentUser.status != null && currentUser.status.expires > ConnectionsManager.getInstance().getCurrentTime() || MessagesController.getInstance().onlinePrivacy.containsKey(currentUser.id)) {
+                    statusTextView.setTextColor(statusOnlineColor);
+                    statusTextView.setText(LocaleController.getString("Online", R.string.Online));
+                } else {
+                    statusTextView.setTextColor(statusColor);
+                    statusTextView.setText(LocaleController.formatUserStatus(currentUser));
+                }
             }
         }
 

@@ -8,26 +8,20 @@
 
 package org.telegram.ui.Components;
 
-import android.app.Activity;
 import android.content.Context;
 import android.text.Editable;
 import android.text.InputFilter;
-import android.text.InputType;
 import android.text.TextWatcher;
 import android.text.style.ImageSpan;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.KeyEvent;
-import android.view.MotionEvent;
 import android.view.View;
-import android.view.ViewTreeObserver;
-import android.view.WindowManager;
 import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.PopupWindow;
-import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import org.telegram.android.AndroidUtilities;
@@ -41,25 +35,18 @@ import org.telegram.messenger.TLRPC;
 import org.telegram.android.AnimationCompat.AnimatorSetProxy;
 import org.telegram.android.AnimationCompat.ObjectAnimatorProxy;
 
-public class PhotoViewerCaptionEnterView extends FrameLayoutFixed implements NotificationCenter.NotificationCenterDelegate, SizeNotifierRelativeLayoutPhoto.SizeNotifierRelativeLayoutPhotoDelegate {
+public class PhotoViewerCaptionEnterView extends FrameLayoutFixed implements NotificationCenter.NotificationCenterDelegate, SizeNotifierFrameLayoutPhoto.SizeNotifierFrameLayoutPhotoDelegate {
 
     public interface PhotoViewerCaptionEnterViewDelegate {
         void onCaptionEnter();
-        void onTextChanged(CharSequence text, boolean bigChange);
+        void onTextChanged(CharSequence text);
         void onWindowSizeChanged(int size);
     }
 
     private EditText messageEditText;
-    private PopupWindow emojiPopup;
     private ImageView emojiButton;
     private EmojiView emojiView;
-    private SizeNotifierRelativeLayoutPhoto sizeNotifierFrameLayout;
-
-    private int framesDroped;
-
-    private int keyboardTransitionState;
-    private boolean showKeyboardOnEmojiButton;
-    private ViewTreeObserver.OnPreDrawListener onPreDrawListener;
+    private SizeNotifierFrameLayoutPhoto sizeNotifierLayout;
 
     private AnimatorSetProxy runningAnimation;
     private AnimatorSetProxy runningAnimation2;
@@ -67,22 +54,23 @@ public class PhotoViewerCaptionEnterView extends FrameLayoutFixed implements Not
     private int runningAnimationType;
     private int audioInterfaceState;
 
+    private int lastSizeChangeValue1;
+    private boolean lastSizeChangeValue2;
+
     private int keyboardHeight;
     private int keyboardHeightLand;
     private boolean keyboardVisible;
+    private int emojiPadding;
 
-    private View window;
     private PhotoViewerCaptionEnterViewDelegate delegate;
-    private boolean wasFocus;
 
-    public PhotoViewerCaptionEnterView(Context context, View windowView, SizeNotifierRelativeLayoutPhoto parent) {
+    public PhotoViewerCaptionEnterView(Context context, SizeNotifierFrameLayoutPhoto parent) {
         super(context);
         setBackgroundColor(0x7f000000);
         setFocusable(true);
         setFocusableInTouchMode(true);
 
-        window = windowView;
-        sizeNotifierFrameLayout = parent;
+        sizeNotifierLayout = parent;
 
         LinearLayout textFieldContainer = new LinearLayout(context);
         textFieldContainer.setOrientation(LinearLayout.HORIZONTAL);
@@ -99,23 +87,10 @@ public class PhotoViewerCaptionEnterView extends FrameLayoutFixed implements Not
         emojiButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if (showKeyboardOnEmojiButton) {
-                    setKeyboardTransitionState(1);
-                    showEmojiPopup(false, false);
-                    int selection = messageEditText.getSelectionStart();
-                    MotionEvent event = MotionEvent.obtain(0, 0, MotionEvent.ACTION_UP, 0, 0, 0);
-                    messageEditText.onTouchEvent(event);
-                    event.recycle();
-                    messageEditText.setSelection(selection);
+                if (!isPopupShowing()) {
+                    showPopup(1);
                 } else {
-                    boolean show = emojiPopup == null || !emojiPopup.isShowing();
-                    if (show) {
-                        setKeyboardTransitionState(5);
-                        showEmojiPopup(show, true);
-                    } else {
-                        showEmojiPopup(show, true);
-                        setKeyboardTransitionState(1);
-                    }
+                    openKeyboardInternal();
                 }
             }
         });
@@ -123,9 +98,9 @@ public class PhotoViewerCaptionEnterView extends FrameLayoutFixed implements Not
         messageEditText = new EditText(context);
         messageEditText.setHint(LocaleController.getString("AddCaption", R.string.AddCaption));
         messageEditText.setImeOptions(EditorInfo.IME_FLAG_NO_EXTRACT_UI | EditorInfo.IME_ACTION_DONE);
-        messageEditText.setInputType(EditorInfo.TYPE_TEXT_FLAG_CAP_SENTENCES | EditorInfo.TYPE_TEXT_FLAG_MULTI_LINE | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
-        messageEditText.setSingleLine(false);
+        messageEditText.setInputType(EditorInfo.TYPE_TEXT_FLAG_CAP_SENTENCES | EditorInfo.TYPE_CLASS_TEXT);
         messageEditText.setMaxLines(4);
+        messageEditText.setHorizontallyScrolling(false);
         messageEditText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
         messageEditText.setGravity(Gravity.BOTTOM);
         messageEditText.setPadding(0, AndroidUtilities.dp(11), 0, AndroidUtilities.dp(12));
@@ -140,9 +115,9 @@ public class PhotoViewerCaptionEnterView extends FrameLayoutFixed implements Not
         messageEditText.setOnKeyListener(new OnKeyListener() {
             @Override
             public boolean onKey(View view, int i, KeyEvent keyEvent) {
-                if (i == 4 && !keyboardVisible && emojiPopup != null && emojiPopup.isShowing()) {
+                if (i == KeyEvent.KEYCODE_BACK && !keyboardVisible && isPopupShowing()) {
                     if (keyEvent.getAction() == 1) {
-                        showEmojiPopup(false, true);
+                        showPopup(0);
                     }
                     return true;
                 } else if (i == KeyEvent.KEYCODE_ENTER && keyEvent.getAction() == KeyEvent.ACTION_DOWN) {
@@ -152,30 +127,18 @@ public class PhotoViewerCaptionEnterView extends FrameLayoutFixed implements Not
                 return false;
             }
         });
-        messageEditText.setOnFocusChangeListener(new OnFocusChangeListener() {
-            @Override
-            public void onFocusChange(View v, boolean hasFocus) {
-                if (!wasFocus) {
-                    setKeyboardTransitionState(3);
-                }
-                wasFocus = hasFocus;
-            }
-        });
         messageEditText.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View view) {
-                if (emojiPopup != null && emojiPopup.isShowing()) {
-                    setKeyboardTransitionState(1);
-                    showEmojiPopup(false, false);
-                } else {
-                    setKeyboardTransitionState(3);
+                if (isPopupShowing()) {
+                    showPopup(AndroidUtilities.usingHardwareInput ? 0 : 2);
                 }
             }
         });
         messageEditText.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             @Override
             public boolean onEditorAction(TextView textView, int i, KeyEvent keyEvent) {
-                if (i == EditorInfo.IME_ACTION_DONE) {
+                if (i == EditorInfo.IME_ACTION_DONE || i == EditorInfo.IME_ACTION_NEXT) {
                     delegate.onCaptionEnter();
                     return true;
                 } else if (keyEvent != null && i == EditorInfo.IME_NULL && keyEvent.getAction() == KeyEvent.ACTION_DOWN) {
@@ -193,10 +156,8 @@ public class PhotoViewerCaptionEnterView extends FrameLayoutFixed implements Not
 
             @Override
             public void onTextChanged(CharSequence charSequence, int start, int before, int count) {
-                String message = getTrimmedString(charSequence.toString());
-
                 if (delegate != null) {
-                    delegate.onTextChanged(charSequence, before > count || count > 2);
+                    delegate.onTextChanged(charSequence);
                 }
             }
 
@@ -217,48 +178,11 @@ public class PhotoViewerCaptionEnterView extends FrameLayoutFixed implements Not
         });
     }
 
-    private void setKeyboardTransitionState(int state) {
-        if (AndroidUtilities.usingHardwareInput) {
-            if (state == 1) {
-                showEmojiPopup(false, false);
-                RelativeLayout.LayoutParams layoutParams = (RelativeLayout.LayoutParams) getLayoutParams();
-                layoutParams.bottomMargin = 0;//AndroidUtilities.dp(48);
-                setLayoutParams(layoutParams);
-                keyboardTransitionState = 0;
-            } else if (state == 2) {
-                int currentHeight = AndroidUtilities.displaySize.x > AndroidUtilities.displaySize.y ? keyboardHeightLand : keyboardHeight;
-                sizeNotifierFrameLayout.setPadding(0, 0, 0, currentHeight);
-                keyboardTransitionState = 0;
-            } else if (state == 3) {
-                RelativeLayout.LayoutParams layoutParams = (RelativeLayout.LayoutParams) getLayoutParams();
-                layoutParams.bottomMargin = 0;//AndroidUtilities.dp(48);
-                setLayoutParams(layoutParams);
-                keyboardTransitionState = 0;
-            } else if (state == 4) {
-                RelativeLayout.LayoutParams layoutParams = (RelativeLayout.LayoutParams) getLayoutParams();
-                layoutParams.bottomMargin = -AndroidUtilities.dp(400);
-                setLayoutParams(layoutParams);
-                keyboardTransitionState = 0;
-            } else if (state == 5) {
-                RelativeLayout.LayoutParams layoutParams = (RelativeLayout.LayoutParams) getLayoutParams();
-                layoutParams.bottomMargin = 0;
-                setLayoutParams(layoutParams);
-                keyboardTransitionState = 0;
-            }
-        } else {
-            framesDroped = 0;
-            keyboardTransitionState = state;
-            if (state == 1) {
-                sizeNotifierFrameLayout.setPadding(0, 0, 0, 0);
-            }
+    private void onWindowSizeChanged() {
+        int size = sizeNotifierLayout.getHeight();
+        if (!keyboardVisible) {
+            size -= emojiPadding;
         }
-    }
-
-    public int getKeyboardTransitionState() {
-        return keyboardTransitionState;
-    }
-
-    private void onWindowSizeChanged(int size) {
         if (delegate != null) {
             delegate.onWindowSizeChanged(size);
         }
@@ -266,200 +190,19 @@ public class PhotoViewerCaptionEnterView extends FrameLayoutFixed implements Not
 
     public void onCreate() {
         NotificationCenter.getInstance().addObserver(this, NotificationCenter.emojiDidLoaded);
-        NotificationCenter.getInstance().addObserver(this, NotificationCenter.hideEmojiKeyboard);
-        sizeNotifierFrameLayout.getViewTreeObserver().addOnPreDrawListener(onPreDrawListener = new ViewTreeObserver.OnPreDrawListener() {
-            @Override
-            public boolean onPreDraw() {
-                if (keyboardTransitionState == 1) {
-                    if (keyboardVisible || framesDroped >= 60) {
-                        showEmojiPopup(false, false);
-                        keyboardTransitionState = 0;
-                    } else {
-                        if (messageEditText != null) {
-                            messageEditText.requestFocus();
-                            AndroidUtilities.showKeyboard(messageEditText);
-                        }
-                    }
-                    framesDroped++;
-                    return false;
-                } else if (keyboardTransitionState == 2) {
-                    if (!keyboardVisible || framesDroped >= 60) {
-                        int currentHeight = AndroidUtilities.displaySize.x > AndroidUtilities.displaySize.y ? keyboardHeightLand : keyboardHeight;
-                        sizeNotifierFrameLayout.setPadding(0, 0, 0, currentHeight);
-                        keyboardTransitionState = 0;
-                    }
-                    framesDroped++;
-                    return false;
-                } else if (keyboardTransitionState == 3) {
-                    if (keyboardVisible) {
-                        RelativeLayout.LayoutParams layoutParams = (RelativeLayout.LayoutParams) getLayoutParams();
-                        layoutParams.bottomMargin = 0;//AndroidUtilities.usingHardwareInput ? AndroidUtilities.dp(48) : 0;
-                        setLayoutParams(layoutParams);
-                        keyboardTransitionState = 0;
-                    }
-                } else if (keyboardTransitionState == 4) {
-                    if (!keyboardVisible && (emojiPopup == null || !emojiPopup.isShowing())) {
-                        RelativeLayout.LayoutParams layoutParams = (RelativeLayout.LayoutParams) getLayoutParams();
-                        layoutParams.bottomMargin = -AndroidUtilities.dp(400);
-                        setLayoutParams(layoutParams);
-                        keyboardTransitionState = 0;
-                    }
-                } else if (keyboardTransitionState == 5) {
-                    if (emojiPopup != null && emojiPopup.isShowing()) {
-                        RelativeLayout.LayoutParams layoutParams = (RelativeLayout.LayoutParams) getLayoutParams();
-                        layoutParams.bottomMargin = 0;
-                        setLayoutParams(layoutParams);
-                        keyboardTransitionState = 0;
-                    }
-                }
-                return true;
-            }
-        });
-        sizeNotifierFrameLayout.setDelegate(this);
+        sizeNotifierLayout.setDelegate(this);
     }
 
     public void onDestroy() {
-        if (isEmojiPopupShowing()) {
-            hideEmojiPopup();
-        }
+        hidePopup();
         if (isKeyboardVisible()) {
             closeKeyboard();
         }
         keyboardVisible = false;
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.emojiDidLoaded);
-        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.hideEmojiKeyboard);
-        if (sizeNotifierFrameLayout != null) {
-            sizeNotifierFrameLayout.getViewTreeObserver().removeOnPreDrawListener(onPreDrawListener);
-            sizeNotifierFrameLayout.setDelegate(null);
+        if (sizeNotifierLayout != null) {
+            sizeNotifierLayout.setDelegate(null);
         }
-    }
-
-    private String getTrimmedString(String src) {
-        String result = src.trim();
-        if (result.length() == 0) {
-            return result;
-        }
-        while (src.startsWith("\n")) {
-            src = src.substring(1);
-        }
-        while (src.endsWith("\n")) {
-            src = src.substring(0, src.length() - 1);
-        }
-        return src;
-    }
-
-    private void showEmojiPopup(boolean show, boolean post) {
-        if (show) {
-            if (emojiPopup == null) {
-                emojiView = new EmojiView(false, getContext());
-                emojiView.setListener(new EmojiView.Listener() {
-                    public boolean onBackspace() {
-                        if (messageEditText.length() == 0) {
-                            return false;
-                        }
-                        messageEditText.dispatchKeyEvent(new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DEL));
-                        return true;
-                    }
-
-                    public void onEmojiSelected(String symbol) {
-                        int i = messageEditText.getSelectionEnd();
-                        if (i < 0) {
-                            i = 0;
-                        }
-                        try {
-                            CharSequence localCharSequence = Emoji.replaceEmoji(symbol, messageEditText.getPaint().getFontMetricsInt(), AndroidUtilities.dp(20));
-                            messageEditText.setText(messageEditText.getText().insert(i, localCharSequence));
-                            int j = i + localCharSequence.length();
-                            messageEditText.setSelection(j, j);
-                        } catch (Exception e) {
-                            FileLog.e("tmessages", e);
-                        }
-                    }
-
-                    public void onStickerSelected(TLRPC.Document sticker) {
-
-                    }
-                });
-                emojiPopup = new PopupWindow(emojiView);
-            }
-
-            if (keyboardHeight <= 0) {
-                keyboardHeight = ApplicationLoader.applicationContext.getSharedPreferences("emoji", 0).getInt("kbd_height", AndroidUtilities.dp(200));
-            }
-            if (keyboardHeightLand <= 0) {
-                keyboardHeightLand = ApplicationLoader.applicationContext.getSharedPreferences("emoji", 0).getInt("kbd_height_land3", AndroidUtilities.dp(200));
-            }
-            int currentHeight = AndroidUtilities.displaySize.x > AndroidUtilities.displaySize.y ? keyboardHeightLand : keyboardHeight;
-            FileLog.e("tmessages", "show emoji with height = " + currentHeight);
-            emojiPopup.setHeight(View.MeasureSpec.makeMeasureSpec(currentHeight, View.MeasureSpec.EXACTLY));
-            if (sizeNotifierFrameLayout != null) {
-                emojiPopup.setWidth(View.MeasureSpec.makeMeasureSpec(AndroidUtilities.displaySize.x, View.MeasureSpec.EXACTLY));
-            }
-
-            emojiPopup.showAtLocation(window, Gravity.BOTTOM | Gravity.LEFT, 0, 0);
-
-            if (!keyboardVisible) {
-                if (sizeNotifierFrameLayout != null) {
-                    sizeNotifierFrameLayout.setPadding(0, 0, 0, currentHeight);
-                    emojiButton.setImageResource(R.drawable.arrow_down_w);
-                    showKeyboardOnEmojiButton = false;
-                    onWindowSizeChanged(sizeNotifierFrameLayout.getHeight() - sizeNotifierFrameLayout.getPaddingBottom());
-                }
-                return;
-            } else {
-                setKeyboardTransitionState(2);
-                AndroidUtilities.hideKeyboard(messageEditText);
-            }
-            emojiButton.setImageResource(R.drawable.ic_keyboard_w);
-            showKeyboardOnEmojiButton = true;
-            return;
-        }
-        if (emojiButton != null) {
-            showKeyboardOnEmojiButton = false;
-            emojiButton.setImageResource(R.drawable.ic_smile_w);
-        }
-        if (emojiPopup != null) {
-            try {
-                emojiPopup.dismiss();
-            } catch (Exception e) {
-                //don't promt
-            }
-        }
-        if (keyboardTransitionState == 0) {
-            if (sizeNotifierFrameLayout != null) {
-                if (post) {
-                    sizeNotifierFrameLayout.post(new Runnable() {
-                        public void run() {
-                            if (sizeNotifierFrameLayout != null) {
-                                sizeNotifierFrameLayout.setPadding(0, 0, 0, 0);
-                                onWindowSizeChanged(sizeNotifierFrameLayout.getHeight());
-                            }
-                        }
-                    });
-                } else {
-                    sizeNotifierFrameLayout.setPadding(0, 0, 0, 0);
-                    onWindowSizeChanged(sizeNotifierFrameLayout.getHeight());
-                }
-            }
-        }
-    }
-
-    public void hideEmojiPopup() {
-        if (emojiPopup != null && emojiPopup.isShowing()) {
-            showEmojiPopup(false, true);
-        }
-        setKeyboardTransitionState(4);
-    }
-
-    public void openKeyboard() {
-        setKeyboardTransitionState(3);
-        messageEditText.requestFocus();
-        AndroidUtilities.showKeyboard(messageEditText);
-    }
-
-    public void closeKeyboard() {
-        setKeyboardTransitionState(4);
-        AndroidUtilities.hideKeyboard(messageEditText);
     }
 
     public void setDelegate(PhotoViewerCaptionEnterViewDelegate delegate) {
@@ -473,7 +216,7 @@ public class PhotoViewerCaptionEnterView extends FrameLayoutFixed implements Not
         messageEditText.setText(text);
         messageEditText.setSelection(messageEditText.getText().length());
         if (delegate != null) {
-            delegate.onTextChanged(messageEditText.getText(), true);
+            delegate.onTextChanged(messageEditText.getText());
         }
     }
 
@@ -525,27 +268,122 @@ public class PhotoViewerCaptionEnterView extends FrameLayoutFixed implements Not
         }
     }
 
-    public boolean hasText() {
-        return messageEditText != null && messageEditText.length() > 0;
-    }
-
-    public String getFieldText() {
-        if (messageEditText != null && messageEditText.length() > 0) {
-            return getTrimmedString(messageEditText.getText().toString());
-        }
-        return null;
-    }
-
     public CharSequence getFieldCharSequence() {
         return messageEditText.getText();
     }
 
-    public boolean isEmojiPopupShowing() {
-        return emojiPopup != null && emojiPopup.isShowing();
+    public int getEmojiPadding() {
+        return emojiPadding;
+    }
+
+    public boolean isPopupView(View view) {
+        return view == emojiView;
+    }
+
+    private void showPopup(int show) {
+        if (show == 1) {
+            if (emojiView == null) {
+                emojiView = new EmojiView(false, getContext());
+                emojiView.setListener(new EmojiView.Listener() {
+                    public boolean onBackspace() {
+                        if (messageEditText.length() == 0) {
+                            return false;
+                        }
+                        messageEditText.dispatchKeyEvent(new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DEL));
+                        return true;
+                    }
+
+                    public void onEmojiSelected(String symbol) {
+                        int i = messageEditText.getSelectionEnd();
+                        if (i < 0) {
+                            i = 0;
+                        }
+                        try {
+                            CharSequence localCharSequence = Emoji.replaceEmoji(symbol, messageEditText.getPaint().getFontMetricsInt(), AndroidUtilities.dp(20));
+                            messageEditText.setText(messageEditText.getText().insert(i, localCharSequence));
+                            int j = i + localCharSequence.length();
+                            messageEditText.setSelection(j, j);
+                        } catch (Exception e) {
+                            FileLog.e("tmessages", e);
+                        }
+                    }
+
+                    public void onStickerSelected(TLRPC.Document sticker) {
+
+                    }
+                });
+                sizeNotifierLayout.addView(emojiView);
+            }
+
+            emojiView.setVisibility(VISIBLE);
+
+            if (keyboardHeight <= 0) {
+                keyboardHeight = ApplicationLoader.applicationContext.getSharedPreferences("emoji", 0).getInt("kbd_height", AndroidUtilities.dp(200));
+            }
+            if (keyboardHeightLand <= 0) {
+                keyboardHeightLand = ApplicationLoader.applicationContext.getSharedPreferences("emoji", 0).getInt("kbd_height_land3", AndroidUtilities.dp(200));
+            }
+            int currentHeight = AndroidUtilities.displaySize.x > AndroidUtilities.displaySize.y ? keyboardHeightLand : keyboardHeight;
+
+            FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) emojiView.getLayoutParams();
+            layoutParams.width = AndroidUtilities.displaySize.x;
+            layoutParams.height = currentHeight;
+            emojiView.setLayoutParams(layoutParams);
+            AndroidUtilities.hideKeyboard(messageEditText);
+            if (sizeNotifierLayout != null) {
+                emojiPadding = currentHeight;
+                sizeNotifierLayout.requestLayout();
+                emojiButton.setImageResource(R.drawable.ic_keyboard_w);
+                onWindowSizeChanged();
+            }
+        } else {
+            if (emojiButton != null) {
+                emojiButton.setImageResource(R.drawable.ic_smile_w);
+            }
+            if (emojiView != null) {
+                emojiView.setVisibility(GONE);
+            }
+            if (sizeNotifierLayout != null) {
+                if (show == 0) {
+                    emojiPadding = 0;
+                }
+                sizeNotifierLayout.requestLayout();
+                onWindowSizeChanged();
+            }
+        }
+    }
+
+    public void hidePopup() {
+        if (isPopupShowing()) {
+            showPopup(0);
+        }
+    }
+
+    private void openKeyboardInternal() {
+        showPopup(AndroidUtilities.usingHardwareInput ? 0 : 2);
+        /*int selection = messageEditText.getSelectionStart();
+        MotionEvent event = MotionEvent.obtain(0, 0, MotionEvent.ACTION_UP, 0, 0, 0);
+        messageEditText.onTouchEvent(event);
+        event.recycle();
+        messageEditText.setSelection(selection);*/
+        AndroidUtilities.showKeyboard(messageEditText);
+    }
+
+    public void openKeyboard() {
+        messageEditText.requestFocus();
+        AndroidUtilities.showKeyboard(messageEditText);
+    }
+
+    public boolean isPopupShowing() {
+        return emojiView != null && emojiView.getVisibility() == VISIBLE;
+    }
+
+    public void closeKeyboard() {
+        AndroidUtilities.hideKeyboard(messageEditText);
     }
 
     public boolean isKeyboardVisible() {
-        return AndroidUtilities.usingHardwareInput && getLayoutParams() != null && ((RelativeLayout.LayoutParams) getLayoutParams()).bottomMargin == 0 || keyboardVisible;
+        return AndroidUtilities.usingHardwareInput && getLayoutParams() != null && ((FrameLayout.LayoutParams) getLayoutParams()).bottomMargin == 0 || keyboardVisible;
     }
 
     @Override
@@ -560,41 +398,44 @@ public class PhotoViewerCaptionEnterView extends FrameLayoutFixed implements Not
             }
         }
 
-        if (emojiPopup != null && emojiPopup.isShowing()) {
-            int newHeight = 0;
+        if (isPopupShowing()) {
+            int newHeight;
             if (isWidthGreater) {
                 newHeight = keyboardHeightLand;
             } else {
                 newHeight = keyboardHeight;
             }
-            WindowManager.LayoutParams layoutParams = (WindowManager.LayoutParams) emojiPopup.getContentView().getLayoutParams();
+
+            FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) emojiView.getLayoutParams();
             if (layoutParams.width != AndroidUtilities.displaySize.x || layoutParams.height != newHeight) {
                 layoutParams.width = AndroidUtilities.displaySize.x;
                 layoutParams.height = newHeight;
-                WindowManager wm = (WindowManager) ApplicationLoader.applicationContext.getSystemService(Activity.WINDOW_SERVICE);
-                if (wm != null) {
-                    wm.updateViewLayout(emojiPopup.getContentView(), layoutParams);
-                    if (!keyboardVisible) {
-                        if (sizeNotifierFrameLayout != null) {
-                            sizeNotifierFrameLayout.setPadding(0, 0, 0, layoutParams.height);
-                            sizeNotifierFrameLayout.requestLayout();
-                            onWindowSizeChanged(sizeNotifierFrameLayout.getHeight() - sizeNotifierFrameLayout.getPaddingBottom());
-                        }
-                    }
+                emojiView.setLayoutParams(layoutParams);
+                if (sizeNotifierLayout != null) {
+                    emojiPadding = layoutParams.height;
+                    sizeNotifierLayout.requestLayout();
+                    onWindowSizeChanged();
                 }
             }
         }
 
+        if (lastSizeChangeValue1 == height && lastSizeChangeValue2 == isWidthGreater) {
+            onWindowSizeChanged();
+            return;
+        }
+        lastSizeChangeValue1 = height;
+        lastSizeChangeValue2 = isWidthGreater;
+
         boolean oldValue = keyboardVisible;
         keyboardVisible = height > 0;
-        if (keyboardVisible && (sizeNotifierFrameLayout.getPaddingBottom() > 0 || keyboardTransitionState == 1)) {
-            setKeyboardTransitionState(1);
-        } else if (keyboardTransitionState != 2 && !keyboardVisible && keyboardVisible != oldValue && emojiPopup != null && emojiPopup.isShowing()) {
-            showEmojiPopup(false, true);
+        if (keyboardVisible && isPopupShowing()) {
+            showPopup(0);
         }
-        if (keyboardTransitionState == 0) {
-            onWindowSizeChanged(sizeNotifierFrameLayout.getHeight() - sizeNotifierFrameLayout.getPaddingBottom());
+        if (emojiPadding != 0 && !keyboardVisible && keyboardVisible != oldValue && !isPopupShowing()) {
+            emojiPadding = 0;
+            sizeNotifierLayout.requestLayout();
         }
+        onWindowSizeChanged();
     }
 
     @Override
@@ -603,8 +444,6 @@ public class PhotoViewerCaptionEnterView extends FrameLayoutFixed implements Not
             if (emojiView != null) {
                 emojiView.invalidateViews();
             }
-        } else if (id == NotificationCenter.hideEmojiKeyboard) {
-            hideEmojiPopup();
         }
     }
 }

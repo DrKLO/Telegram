@@ -497,7 +497,7 @@ public class ChangePhoneActivity extends BaseFragment {
             });
 
             textView = new TextView(context);
-            textView.setText(LocaleController.getString("StartText", R.string.StartText));
+            textView.setText(LocaleController.getString("ChangePhoneHelp", R.string.ChangePhoneHelp));
             textView.setTextColor(0xff757575);
             textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             textView.setGravity(Gravity.LEFT);

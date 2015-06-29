@@ -21,6 +21,7 @@ import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.text.Spannable;
+import android.text.Spanned;
 import android.text.style.DynamicDrawableSpan;
 import android.text.style.ImageSpan;
 import android.view.View;
@@ -416,6 +417,14 @@ public class Emoji {
         return false;
     }
 
+    private static boolean isNextCharIsColor(CharSequence cs, int i) {
+        if (i + 2 >= cs.length()) {
+            return false;
+        }
+        int value = cs.charAt(i + 1) << 16 | cs.charAt(i + 2);
+        return value == 0xd83cdffb || value == 0xd83cdffc || value == 0xd83cdffd || value == 0xd83cdffe || value == 0xd83cdfff;
+    }
+
     public static CharSequence replaceEmoji(CharSequence cs, Paint.FontMetricsInt fontMetrics, int size) {
         if (cs == null || cs.length() == 0) {
             return cs;
@@ -439,12 +448,16 @@ public class Emoji {
                     buf |= c;
                     EmojiDrawable d = Emoji.getEmojiDrawable(buf);
                     if (d != null) {
+                        boolean nextIsSkinTone = isNextCharIsColor(cs, i);
                         EmojiSpan span = new EmojiSpan(d, DynamicDrawableSpan.ALIGN_BOTTOM, size, fontMetrics);
                         emojiCount++;
                         if (c >= 0xDDE6 && c <= 0xDDFA) {
-                            s.setSpan(span, i - 3, i + 1, 0);
+                            s.setSpan(span, i - 3, i + (nextIsSkinTone ? 3 : 1), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                         } else {
-                            s.setSpan(span, i - 1, i + 1, 0);
+                            s.setSpan(span, i - 1, i + (nextIsSkinTone ? 3 : 1), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                        }
+                        if (nextIsSkinTone) {
+                            i += 2;
                         }
                     }
                     buf = 0;
@@ -457,9 +470,13 @@ public class Emoji {
                             buf |= c;
                             EmojiDrawable d = Emoji.getEmojiDrawable(buf);
                             if (d != null) {
+                                boolean nextIsSkinTone = isNextCharIsColor(cs, i);
                                 EmojiSpan span = new EmojiSpan(d, DynamicDrawableSpan.ALIGN_BOTTOM, size, fontMetrics);
                                 emojiCount++;
-                                s.setSpan(span, i - 1, i + 1, 0);
+                                s.setSpan(span, i - 1, i + (nextIsSkinTone ? 3 : 1), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                                if (nextIsSkinTone) {
+                                    i += 2;
+                                }
                             }
                             buf = 0;
                         }
@@ -467,9 +484,13 @@ public class Emoji {
                 } else if (inArray(c, emojiChars)) {
                     EmojiDrawable d = Emoji.getEmojiDrawable(c);
                     if (d != null) {
+                        boolean nextIsSkinTone = isNextCharIsColor(cs, i);
                         EmojiSpan span = new EmojiSpan(d, DynamicDrawableSpan.ALIGN_BOTTOM, size, fontMetrics);
                         emojiCount++;
-                        s.setSpan(span, i, i + 1, 0);
+                        s.setSpan(span, i, i + (nextIsSkinTone ? 3 : 1), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                        if (nextIsSkinTone) {
+                            i += 2;
+                        }
                     }
                 }
                 if (emojiCount >= 50) {

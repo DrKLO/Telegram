@@ -46,6 +46,7 @@ import java.lang.reflect.Method;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLConnection;
+import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
@@ -140,62 +141,67 @@ public class ImageLoader {
 
                 fileOutputStream = new RandomAccessFile(tempFile, "rws");
             } catch (Throwable e) {
-                FileLog.e("tmessages", e);
-            }
-
-            try {
-                if (httpConnection != null && httpConnection instanceof HttpURLConnection) {
-                    int code = ((HttpURLConnection) httpConnection).getResponseCode();
-                    if (code != HttpURLConnection.HTTP_OK && code != HttpURLConnection.HTTP_ACCEPTED && code != HttpURLConnection.HTTP_NOT_MODIFIED) {
-                        canRetry = false;
-                    }
+                if (e instanceof UnknownHostException) {
+                    canRetry = false;
                 }
-            } catch (Exception e) {
                 FileLog.e("tmessages", e);
             }
 
-            if (httpConnectionStream != null) {
+            if (canRetry) {
                 try {
-                    byte[] data = new byte[1024 * 4];
-                    while (true) {
-                        if (isCancelled()) {
-                            break;
+                    if (httpConnection != null && httpConnection instanceof HttpURLConnection) {
+                        int code = ((HttpURLConnection) httpConnection).getResponseCode();
+                        if (code != HttpURLConnection.HTTP_OK && code != HttpURLConnection.HTTP_ACCEPTED && code != HttpURLConnection.HTTP_NOT_MODIFIED) {
+                            canRetry = false;
                         }
-                        try {
-                            int read = httpConnectionStream.read(data);
-                            if (read > 0) {
-                                fileOutputStream.write(data, 0, read);
-                            } else if (read == -1) {
-                                done = true;
-                                break;
-                            } else {
+                    }
+                } catch (Exception e) {
+                    FileLog.e("tmessages", e);
+                }
+
+                if (httpConnectionStream != null) {
+                    try {
+                        byte[] data = new byte[1024 * 4];
+                        while (true) {
+                            if (isCancelled()) {
                                 break;
                             }
-                        } catch (Exception e) {
-                            FileLog.e("tmessages", e);
-                            break;
+                            try {
+                                int read = httpConnectionStream.read(data);
+                                if (read > 0) {
+                                    fileOutputStream.write(data, 0, read);
+                                } else if (read == -1) {
+                                    done = true;
+                                    break;
+                                } else {
+                                    break;
+                                }
+                            } catch (Exception e) {
+                                FileLog.e("tmessages", e);
+                                break;
+                            }
                         }
+                    } catch (Throwable e) {
+                        FileLog.e("tmessages", e);
+                    }
+                }
+
+                try {
+                    if (fileOutputStream != null) {
+                        fileOutputStream.close();
+                        fileOutputStream = null;
                     }
                 } catch (Throwable e) {
                     FileLog.e("tmessages", e);
                 }
-            }
 
-            try {
-                if (fileOutputStream != null) {
-                    fileOutputStream.close();
-                    fileOutputStream = null;
+                try {
+                    if (httpConnectionStream != null) {
+                        httpConnectionStream.close();
+                    }
+                } catch (Throwable e) {
+                    FileLog.e("tmessages", e);
                 }
-            } catch (Throwable e) {
-                FileLog.e("tmessages", e);
-            }
-
-            try {
-                if (httpConnectionStream != null) {
-                    httpConnectionStream.close();
-                }
-            } catch (Throwable e) {
-                FileLog.e("tmessages", e);
             }
 
             return done;
@@ -537,7 +543,7 @@ public class ImageLoader {
             boolean canDeleteFile = true;
             boolean useNativeWebpLoaded = false;
 
-            if (Build.VERSION.SDK_INT < 18) {
+            if (Build.VERSION.SDK_INT < 19) {
                 RandomAccessFile randomAccessFile = null;
                 try {
                     randomAccessFile = new RandomAccessFile(cacheFileFinal, "r");
@@ -1892,13 +1898,6 @@ public class ImageLoader {
                 BitmapFactory.decodeFileDescriptor(fileDescriptor, null, bmOptions);
             } catch (Throwable e) {
                 FileLog.e("tmessages", e);
-                try {
-                    if (parcelFD != null) {
-                        parcelFD.close();
-                    }
-                } catch (Throwable e2) {
-                    FileLog.e("tmessages", e2);
-                }
                 return null;
             }
         }

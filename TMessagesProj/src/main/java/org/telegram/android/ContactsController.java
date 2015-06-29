@@ -956,14 +956,8 @@ public class ContactsController {
                             public int compare(TLRPC.TL_contact tl_contact, TLRPC.TL_contact tl_contact2) {
                                 TLRPC.User user1 = usersDict.get(tl_contact.user_id);
                                 TLRPC.User user2 = usersDict.get(tl_contact2.user_id);
-                                String name1 = user1.first_name;
-                                if (name1 == null || name1.length() == 0) {
-                                    name1 = user1.last_name;
-                                }
-                                String name2 = user2.first_name;
-                                if (name2 == null || name2.length() == 0) {
-                                    name2 = user2.last_name;
-                                }
+                                String name1 = UserObject.getFirstName(user1);
+                                String name2 = UserObject.getFirstName(user2);
                                 return name1.compareTo(name2);
                             }
                         });
@@ -989,10 +983,7 @@ public class ContactsController {
                                 contactsByPhonesDict.put(user.phone, value);
                             }
 
-                            String key = user.first_name;
-                            if (key == null || key.length() == 0) {
-                                key = user.last_name;
-                            }
+                            String key = UserObject.getFirstName(user);
                             if (key.length() > 1) {
                                 key = key.substring(0, 1);
                             }
@@ -1160,14 +1151,8 @@ public class ContactsController {
                 public int compare(TLRPC.TL_contact tl_contact, TLRPC.TL_contact tl_contact2) {
                     TLRPC.User user1 = MessagesController.getInstance().getUser(tl_contact.user_id);
                     TLRPC.User user2 = MessagesController.getInstance().getUser(tl_contact2.user_id);
-                    String name1 = user1.first_name;
-                    if (name1 == null || name1.length() == 0) {
-                        name1 = user1.last_name;
-                    }
-                    String name2 = user2.first_name;
-                    if (name2 == null || name2.length() == 0) {
-                        name2 = user2.last_name;
-                    }
+                    String name1 = UserObject.getFirstName(user1);
+                    String name2 = UserObject.getFirstName(user2);
                     return name1.compareTo(name2);
                 }
             });
@@ -1183,10 +1168,7 @@ public class ContactsController {
                 continue;
             }
 
-            String key = user.first_name;
-            if (key == null || key.length() == 0) {
-                key = user.last_name;
-            }
+            String key = UserObject.getFirstName(user);
             if (key.length() > 1) {
                 key = key.substring(0, 1);
             }
@@ -1638,7 +1620,7 @@ public class ContactsController {
 
                 for (TLRPC.User user : users) {
                     if (user.phone != null && user.phone.length() > 0) {
-                        CharSequence name = ContactsController.formatName(user.first_name, user.last_name);
+                        CharSequence name = UserObject.getUserName(user);
                         MessagesStorage.getInstance().applyPhoneBookUpdates(user.phone, "");
                         Contact contact = contactsBookSPhones.get(user.phone);
                         if (contact != null) {

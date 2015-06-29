@@ -33,6 +33,7 @@ import android.widget.Toast;
 import org.telegram.android.AndroidUtilities;
 import org.telegram.android.LocaleController;
 import org.telegram.messenger.ApplicationLoader;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.BottomSheet;
 
@@ -106,13 +107,17 @@ public class WebFrameLayout extends FrameLayout {
         textView.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (Build.VERSION.SDK_INT < 11) {
-                    android.text.ClipboardManager clipboard = (android.text.ClipboardManager) ApplicationLoader.applicationContext.getSystemService(Context.CLIPBOARD_SERVICE);
-                    clipboard.setText(openUrl);
-                } else {
-                    android.content.ClipboardManager clipboard = (android.content.ClipboardManager) ApplicationLoader.applicationContext.getSystemService(Context.CLIPBOARD_SERVICE);
-                    android.content.ClipData clip = android.content.ClipData.newPlainText("label", openUrl);
-                    clipboard.setPrimaryClip(clip);
+                try {
+                    if (Build.VERSION.SDK_INT < 11) {
+                        android.text.ClipboardManager clipboard = (android.text.ClipboardManager) ApplicationLoader.applicationContext.getSystemService(Context.CLIPBOARD_SERVICE);
+                        clipboard.setText(openUrl);
+                    } else {
+                        android.content.ClipboardManager clipboard = (android.content.ClipboardManager) ApplicationLoader.applicationContext.getSystemService(Context.CLIPBOARD_SERVICE);
+                        android.content.ClipData clip = android.content.ClipData.newPlainText("label", openUrl);
+                        clipboard.setPrimaryClip(clip);
+                    }
+                } catch (Exception e) {
+                    FileLog.e("tmessages", e);
                 }
                 Toast.makeText(getContext(), LocaleController.getString("LinkCopied", R.string.LinkCopied), Toast.LENGTH_SHORT).show();
                 if (dialog != null) {
@@ -127,6 +132,7 @@ public class WebFrameLayout extends FrameLayout {
 
         webView = new WebView(context);
         webView.getSettings().setJavaScriptEnabled(true);
+        webView.getSettings().setDomStorageEnabled(true);
         String userAgent = webView.getSettings().getUserAgentString();
         if (userAgent != null) {
             userAgent = userAgent.replace("Android", "");
@@ -206,10 +212,19 @@ public class WebFrameLayout extends FrameLayout {
 
         parentDialog.setDelegate(new BottomSheet.BottomSheetDelegate() {
             @Override
+            public void onOpenAnimationStart() {
+
+            }
+
+            @Override
             public void onOpenAnimationEnd() {
                 HashMap<String, String> args = new HashMap<>();
                 args.put("Referer", "http://youtube.com");
-                webView.loadUrl(url, args);
+                try {
+                    webView.loadUrl(url, args);
+                } catch (Exception e) {
+                    FileLog.e("tmessages", e);
+                }
             }
         });
     }

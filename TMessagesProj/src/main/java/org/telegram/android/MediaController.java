@@ -41,6 +41,7 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
 import android.os.ParcelFileDescriptor;
+import android.os.PowerManager;
 import android.os.Vibrator;
 import android.provider.MediaStore;
 import android.view.View;
@@ -198,6 +199,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
     private SensorManager sensorManager;
     private Sensor proximitySensor;
     private boolean ignoreProximity;
+    private PowerManager.WakeLock proximityWakeLock;
 
     private ArrayList<MessageObject> videoConvertQueue = new ArrayList<>();
     private final Object videoQueueSync = new Object();
@@ -219,6 +221,8 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
     private HashMap<String, DownloadObject> downloadQueueKeys = new HashMap<>();
 
     private boolean saveToGallery = true;
+
+    public static AlbumEntry allPhotosAlbumEntry;
 
     private HashMap<String, ArrayList<WeakReference<FileDownloadProgressListener>>> loadingFileObservers = new HashMap<>();
     private HashMap<Integer, String> observersByTag = new HashMap<>();
@@ -355,6 +359,40 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
         }
     }
 
+    /*private class GalleryObserverInternal extends ContentObserver {
+        public GalleryObserverInternal() {
+            super(null);
+        }
+
+        @Override
+        public void onChange(boolean selfChange) {
+            super.onChange(selfChange);
+            AndroidUtilities.runOnUIThread(new Runnable() {
+                @Override
+                public void run() {
+                    loadGalleryPhotosAlbums(0);
+                }
+            }, 2000);
+        }
+    }
+
+    private class GalleryObserverExternal extends ContentObserver {
+        public GalleryObserverExternal() {
+            super(null);
+        }
+
+        @Override
+        public void onChange(boolean selfChange) {
+            super.onChange(selfChange);
+            AndroidUtilities.runOnUIThread(new Runnable() {
+                @Override
+                public void run() {
+                    loadGalleryPhotosAlbums(0);
+                }
+            }, 2000);
+        }
+    }*/
+
     private ExternalObserver externalObserver = null;
     private InternalObserver internalObserver = null;
     private long lastSecretChatEnterTime = 0;
@@ -428,6 +466,8 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
         try {
             sensorManager = (SensorManager) ApplicationLoader.applicationContext.getSystemService(Context.SENSOR_SERVICE);
             proximitySensor = sensorManager.getDefaultSensor(Sensor.TYPE_PROXIMITY);
+            PowerManager powerManager = (PowerManager) ApplicationLoader.applicationContext.getSystemService(Context.POWER_SERVICE);
+            proximityWakeLock = powerManager.newWakeLock(0x00000020, "proximity");
         } catch (Exception e) {
             FileLog.e("tmessages", e);
         }
@@ -484,6 +524,17 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                     MediaStore.Images.ImageColumns.TITLE
             };
         }
+
+        /*try {
+            ApplicationLoader.applicationContext.getContentResolver().registerContentObserver(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, false, new GalleryObserverExternal());
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
+        try {
+            ApplicationLoader.applicationContext.getContentResolver().registerContentObserver(MediaStore.Images.Media.INTERNAL_CONTENT_URI, false, new GalleryObserverInternal());
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }*/
     }
 
     private void startProgressTimer() {
@@ -1191,7 +1242,10 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
             if (sensorManager != null && proximitySensor != null) {
                 sensorManager.unregisterListener(this);
             }
-        } catch (Exception e) {
+            if (proximityWakeLock != null && proximityWakeLock.isHeld()) {
+                proximityWakeLock.release();
+            }
+        } catch (Throwable e) {
             FileLog.e("tmessages", e);
         }
     }
@@ -1203,6 +1257,9 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
         try {
             if (sensorManager != null && proximitySensor != null) {
                 sensorManager.registerListener(this, proximitySensor, SensorManager.SENSOR_DELAY_NORMAL);
+            }
+            if (!NotificationsController.getInstance().audioManager.isWiredHeadsetOn() && proximityWakeLock != null && !proximityWakeLock.isHeld()) {
+                proximityWakeLock.acquire();
             }
         } catch (Exception e) {
             FileLog.e("tmessages", e);
@@ -1319,7 +1376,14 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
         }
         NotificationCenter.getInstance().postNotificationName(NotificationCenter.audioDidStarted, messageObject);
         clenupPlayer(true);
-        final File cacheFile = FileLoader.getPathToMessage(messageObject.messageOwner);
+        File file = null;
+        if (messageObject.messageOwner.attachPath != null && messageObject.messageOwner.attachPath.length() > 0) {
+            file = new File(messageObject.messageOwner.attachPath);
+            if (!file.exists()) {
+                file = null;
+            }
+        }
+        final File cacheFile = file != null ? file : FileLoader.getPathToMessage(messageObject.messageOwner);
 
         if (isOpusFile(cacheFile.getAbsolutePath()) == 1) {
             synchronized (playerObjectSync) {
@@ -2094,7 +2158,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
 
                 try {
                     albums.clear();
-                    allPhotosAlbum = null;
+                    AlbumEntry allVideosAlbum = null;
                     cursor = MediaStore.Images.Media.query(ApplicationLoader.applicationContext.getContentResolver(), MediaStore.Video.Media.EXTERNAL_CONTENT_URI, projectionVideo, "", null, MediaStore.Video.Media.DATE_TAKEN + " DESC");
                     if (cursor != null) {
                         int imageIdColumn = cursor.getColumnIndex(MediaStore.Video.Media._ID);
@@ -2116,12 +2180,12 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
 
                             PhotoEntry photoEntry = new PhotoEntry(bucketId, imageId, dateTaken, path, 0, true);
 
-                            if (allPhotosAlbum == null) {
-                                allPhotosAlbum = new AlbumEntry(0, LocaleController.getString("AllVideo", R.string.AllVideo), photoEntry, true);
-                                videoAlbumsSorted.add(0, allPhotosAlbum);
+                            if (allVideosAlbum == null) {
+                                allVideosAlbum = new AlbumEntry(0, LocaleController.getString("AllVideo", R.string.AllVideo), photoEntry, true);
+                                videoAlbumsSorted.add(0, allVideosAlbum);
                             }
-                            if (allPhotosAlbum != null) {
-                                allPhotosAlbum.addPhoto(photoEntry);
+                            if (allVideosAlbum != null) {
+                                allVideosAlbum.addPhoto(photoEntry);
                             }
 
                             AlbumEntry albumEntry = albums.get(bucketId);
@@ -2153,9 +2217,11 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
 
                 final Integer cameraAlbumIdFinal = cameraAlbumId;
                 final Integer cameraAlbumVideoIdFinal = cameraAlbumVideoId;
+                final AlbumEntry allPhotosAlbumFinal = allPhotosAlbum;
                 AndroidUtilities.runOnUIThread(new Runnable() {
                     @Override
                     public void run() {
+                        allPhotosAlbumEntry = allPhotosAlbumFinal;
                         NotificationCenter.getInstance().postNotificationName(NotificationCenter.albumsDidLoaded, guid, albumsSorted, cameraAlbumIdFinal, videoAlbumsSorted, cameraAlbumVideoIdFinal);
                     }
                 });

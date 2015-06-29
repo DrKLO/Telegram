@@ -78,7 +78,7 @@ public class LanguageSelectActivity extends BaseFragment {
             }
 
             @Override
-            public boolean onSearchCollapse() {
+            public void onSearchCollapse() {
                 search(null);
                 searching = false;
                 searchWas = false;
@@ -86,8 +86,6 @@ public class LanguageSelectActivity extends BaseFragment {
                     emptyTextView.setVisibility(View.GONE);
                     listView.setAdapter(listAdapter);
                 }
-
-                return true;
             }
 
             @Override

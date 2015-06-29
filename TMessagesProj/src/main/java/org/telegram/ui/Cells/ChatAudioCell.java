@@ -144,14 +144,14 @@ public class ChatAudioCell extends ChatBaseCell implements SeekBar.SeekBarDelega
             buttonState = 3;
             invalidate();
         } else if (buttonState == 3) {
+            FileLoader.getInstance().cancelLoadFile(currentMessageObject.messageOwner.media.audio);
+            buttonState = 2;
+            invalidate();
+        } else if (buttonState == 4) {
             if (currentMessageObject.isOut() && currentMessageObject.isSending()) {
                 if (delegate != null) {
                     delegate.didPressedCancelSendButton(this);
                 }
-            } else {
-                FileLoader.getInstance().cancelLoadFile(currentMessageObject.messageOwner.media.audio);
-                buttonState = 2;
-                invalidate();
             }
         }
     }
@@ -194,8 +194,16 @@ public class ChatAudioCell extends ChatBaseCell implements SeekBar.SeekBarDelega
         if (currentMessageObject.isOut() && currentMessageObject.isSending()) {
             buttonState = 4;
         } else {
-            String fileName = currentMessageObject.getFileName();
-            File cacheFile = FileLoader.getPathToMessage(currentMessageObject.messageOwner);
+            File cacheFile = null;
+            if (currentMessageObject.messageOwner.attachPath != null && currentMessageObject.messageOwner.attachPath.length() > 0) {
+                cacheFile = new File(currentMessageObject.messageOwner.attachPath);
+                if(!cacheFile.exists()) {
+                    cacheFile = null;
+                }
+            }
+            if (cacheFile == null) {
+                cacheFile = FileLoader.getPathToMessage(currentMessageObject.messageOwner);
+            }
             if (cacheFile.exists()) {
                 MediaController.getInstance().removeLoadingFileObserver(this);
                 boolean playing = MediaController.getInstance().isPlayingAudio(currentMessageObject);
@@ -206,6 +214,7 @@ public class ChatAudioCell extends ChatBaseCell implements SeekBar.SeekBarDelega
                 }
                 progressView.setProgress(0);
             } else {
+                String fileName = currentMessageObject.getFileName();
                 MediaController.getInstance().addLoadingFileObserver(fileName, this);
                 if (!FileLoader.getInstance().isLoadingFile(fileName)) {
                     buttonState = 2;

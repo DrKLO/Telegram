@@ -99,6 +99,7 @@
     <string name="ChatLocation">위치</string>
     <string name="ChatVideo">동영상</string>
     <string name="ChatDocument">파일</string>
+    <string name="ChatCamera">카메라</string>
     <string name="NoMessages">메시지가 없습니다...</string>
     <string name="ForwardedMessage">전달된 메시지</string>
     <string name="From">보낸 사람</string>
@@ -128,6 +129,7 @@
     <string name="GettingLinkInfo">링크 정보를 가져오는 중...</string>
     <string name="OpenInBrowser">브라우져에서 열기</string>
     <string name="CopyUrl">URL 복사</string>
+    <string name="SendItems">%1$s 전송</string>
     <!--notification-->
     <string name="MessageLifetimeChanged">%1$s님이 자동삭제를 %2$s 후로 설정했습니다</string>
     <string name="MessageLifetimeChangedOutgoing">자동삭제를 %1$s 후로 설정했습니다</string>
@@ -245,8 +247,7 @@
     <string name="ErrorOccurred">오류가 발생했습니다.</string>
     <!--stickers view-->
     <string name="Stickers">스티커</string>
-    <string name="GeniusStickerPackName">Great Minds</string>
-    <string name="StickersInfo">\@stickers 봇을 통하여 누구든지 스스로 제작한 스티커를 등록 할 수 있습니다.\n\n스티커는  더블탭하여 \"스티커 추가\" 를 통하여 추가할 수 있습니다.</string>
+    <string name="StickersInfo">/@stickers 봇을 통하여 누구든지 스스로 제작한 스티커를 등록 할 수 있습니다.\n\n스티커는  더블탭하여 \"스티커 추가\" 를 통하여 추가할 수 있습니다.</string>
     <string name="AddStickers">스티커 추가</string>
     <string name="AddToStickers">스티커 추가</string>
     <string name="AddStickersNotFound">스티커를 찾을 수 없음</string>
@@ -294,7 +295,7 @@
     <string name="ContactJoined">친구의 텔레그램 가입 알림</string>
     <string name="Pebble">PEBBLE 스마트워치 지원</string>
     <string name="Language">언어</string>
-    <string name="AskAQuestionInfo">텔레그램에 관한 질문은 자원봉사자들이 답변해 드립니다. 신속한 답변을 위해 노력하지만 답변이 다소 늦을 수 있습니다.<![CDATA[<br><br>]]>일반적인 문제와 <![CDATA[<a href=\"http://telegram.org/faq/ko#g\">해결방법</a>]]>에 대해서는 \'<![CDATA[<a href=\"http://telegram.org/faq/ko#a\">자주 묻는 질문</a>]]>\'을 확인해 보세요.</string>
+    <string name="AskAQuestionInfo">텔레그램에 관한 질문은 자원봉사자들이 답변해 드립니다. 신속한 답변을 위해 노력하지만 답변이 다소 늦을 수 있습니다.<![CDATA[<br><br>]]>일반적인 문제와 <![CDATA[<a href=\"https://telegram.org/faq/ko#g\">해결방법</a>]]>에 대해서는 \'<![CDATA[<a href=\"https://telegram.org/faq/ko#a\">자주 묻는 질문</a>]]>\'을 확인해 보세요.</string>
     <string name="AskButton">질문하기</string>
     <string name="TelegramFaq">자주 묻는 질문</string>
     <string name="TelegramFaqUrl">https://telegram.org/faq/ko</string>
@@ -528,6 +529,16 @@
     <string name="EditedVideo">편집한 동영상</string>
     <string name="SendingVideo">동영상 보내는 중...</string>
     <string name="CompressVideo">동영상 크기 줄이기</string>
+    <!--bot-->
+    <string name="Bot">봇</string>
+    <string name="BotShare">공유</string>
+    <string name="BotInvite">그룹에 추가</string>
+    <string name="BotSettings">설정</string>
+    <string name="BotHelp">도움말</string>
+    <string name="BotStatusRead">메시지 접근 권한이 있습니다.</string>
+    <string name="BotStatusCantRead">메시지 접근 권한이 없습니다</string>
+    <string name="BotInfoTitle">이 봇은 무엇을 할 수 있나요?</string>
+    <string name="BotStart">시작</string>
     <!--button titles-->
     <string name="Next">다음</string>
     <string name="Back">뒤로</string>
@@ -570,7 +581,7 @@
     <string name="ActionAddUserYou">un1님이 그룹에 초대했습니다</string>
     <string name="ActionAddUserSelf">un1 님께서 그룹에 돌아오셨습니다</string>
     <string name="ActionAddUserSelfYou">그룹에 돌아오셨습니다.</string>
-    <string name="UnsuppotedMedia">이 메시지는 사용 중인 텔레그램의 버전이 낮아 지원하지 않습니다. 앱을 업데이트 하세요: http://telegram.org/update</string>
+    <string name="UnsuppotedMedia">이 메시지는 현재 사용 중인 버전의 Telegram에서 지원되지 않습니다. 메시지를 보려면 https://telegram.org/update 에서 앱을 업데이트하세요.</string>
     <string name="AttachPhoto">사진</string>
     <string name="AttachVideo">동영상</string>
     <string name="AttachLocation">위치</string>
@@ -595,7 +606,10 @@
     <string name="NoHandleAppInstalled">\'%1$s\' 파일 형식을 처리할 앱이 없습니다. 계속하려면 앱을 설치해 주세요.</string>
     <string name="InviteUser">친구가 아직 텔레그램을 사용하지 않네요. 초대해 보세요!</string>
     <string name="AreYouSure">확실합니까?</string>
-    <string name="AddToTheGroup">%1$s님을 그룹에 초대할까요?\n\n전달할 최근 메시지 개수:</string>
+    <string name="AddToTheGroupTitle">%2$s 그룹에 %1$s님을 추가할까요?</string>
+    <string name="AddToTheGroupForwardCount">전달할 마지막 대화내용 개수:</string>
+    <string name="AddToTheGroup">%1$s 님을 그룹에 추가할까요?</string>
+    <string name="UserAlreadyInGroup">이 사용자는 이미 그룹에 추가되었습니다.</string>
     <string name="ForwardMessagesTo">%1$s님에게 메시지를 전달할까요?</string>
     <string name="SendMessagesTo">%1$s님에게 메시지를 보낼까요?</string>
     <string name="AreYouSureLogout">정말로 로그아웃하시겠습니까?\n\n텔레그램은 여러 기기에서 동시에 사용이 가능합니다.\n\n로그아웃하시면 비밀대화가 삭제되는 점 유의해주세요.</string>
@@ -613,6 +627,8 @@
     <string name="SendMessagesToGroup">%1$s 그룹에 메시지를 보낼까요?</string>
     <string name="ForwardMessagesToGroup">%1$s 그룹에 메시지를 전달할까요?</string>
     <string name="FeatureUnavailable">이 기능은 회원님의 국가에서는 사용할 수 없습니다.</string>
+    <string name="NoUsernameFound">입력된 아이디와 일치하는 텔레그램 계정이 없습니다.</string>
+    <string name="BotCantJoinGroups">이 봇은 그룹에 참여 할 수 없습니다.</string>
     <!--Intro view-->
     <string name="Page1Title">텔레그램</string>
     <string name="Page2Title">눈부신 속도</string>
@@ -738,6 +754,12 @@
     <string name="Stickers_few">스티커 %1$d개</string>
     <string name="Stickers_many">스티커 %1$d개</string>
     <string name="Stickers_other">스티커 %1$d개</string>
+    <string name="Photos_zero">%1$d 개의 사진</string>
+    <string name="Photos_one">%1$d 개의 사진</string>
+    <string name="Photos_two">%1$d 개의 사진</string>
+    <string name="Photos_few">%1$d 개의 사진</string>
+    <string name="Photos_many">%1$d 개의 사진</string>
+    <string name="Photos_other">%1$d 개의 사진</string>
     <!--forwarded messages-->
     <string name="ForwardedMessage_zero">%1$d 개의 전달된 메시지</string>
     <string name="ForwardedMessage_one">전달된 메시지</string>
@@ -805,6 +827,6 @@
     <string name="formatterDay12H">a h:mm</string>
     <string name="formatDateAtTime">%1$s %2$s</string>
     <!--update text-->
-    <string name="updateText">텔레그램 안드로이드 버전이 업데이트 되었습니다. 새로운 버전은 2.9 입니다:\n\n - 아래와 같은 커스텀 스티커 설치 및 공유 : https://telegram.me/addstickers/Animals\n - 커스텀 스티커를 신규로 생성하여 등록할 수 있는 @stickers 봇 활용\n\n - Android Auto와 텔레그램 호환</string>
-    <string name="updateBuild">536</string>
+    <string name="updateText">텔레그램 안드로이드 버전이 업데이트 되었습니다. 새로운 버전은 3.0 입니다:\n\n- 스티커 패널에 커스텀 스티커별 탭 지원. https://telegram.me/addstickers/Animals 와 같은 커스텀 스티커 추가 기능\n- 신규 봇 API를 무료로 공개합니다. 개발자라면 누구나 게임, 서비스나 통합 봇등 개발이 가능합니다. https://telegram.org/blog/bot-revolution 에서 자세한 사항을 알아보세요.</string>
+    <string name="updateBuild">551</string>
 </resources>

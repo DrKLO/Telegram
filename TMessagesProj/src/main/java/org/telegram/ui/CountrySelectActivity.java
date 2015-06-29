@@ -84,7 +84,7 @@ public class CountrySelectActivity extends BaseFragment {
             }
 
             @Override
-            public boolean onSearchCollapse() {
+            public void onSearchCollapse() {
                 searchListViewAdapter.search(null);
                 searching = false;
                 searchWas = false;
@@ -96,8 +96,6 @@ public class CountrySelectActivity extends BaseFragment {
                 listView.setVerticalScrollBarEnabled(false);
 
                 emptyTextView.setText(LocaleController.getString("ChooseCountry", R.string.ChooseCountry));
-
-                return true;
             }
 
             @Override
