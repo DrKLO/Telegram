@@ -89,7 +89,6 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
     private int otherSectionRow;
     private int badgeNumberRow;
     private int pebbleAlertRow;
-    private int androidWearRow;
     private int androidAutoAlertRow;
     private int repeatRow;
     private int resetSectionRow2;
@@ -145,7 +144,6 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
         badgeNumberRow = rowCount++;
         androidAutoAlertRow = -1;
         pebbleAlertRow = rowCount++;
-		androidWearRow = rowCount++;
         repeatRow = rowCount++;
         resetSectionRow2 = rowCount++;
         resetSectionRow = rowCount++;
@@ -329,9 +327,6 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
                     enabled = preferences.getBoolean("EnablePebbleNotifications", false);
                     editor.putBoolean("EnablePebbleNotifications", !enabled);
                     editor.commit();
-				} else if (i == androidWearRow) {
-
-                      presentFragment(new AndroidWearCannedResponseActivity());
                 } else if (i == androidAutoAlertRow) {
                     SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
                     SharedPreferences.Editor editor = preferences.edit();
@@ -670,9 +665,6 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
 
         @Override
         public View getView(int i, View view, ViewGroup viewGroup) {
-			TextCheckCell checkCell = null;
-            TextDetailSettingsCell textCell = null;
-
             int type = getItemViewType(i);
             if (type == 0) {
                 if (view == null) {
@@ -693,17 +685,10 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
                 }
             } if (type == 1) {
                 if (view == null) {
-                    if(i!=androidWearRow)
                     view = new TextCheckCell(mContext);
-                    else
-                    view = new TextDetailSettingsCell(mContext);
                 }
-				if(i!=androidWearRow) {
-                    checkCell  = (TextCheckCell) view;
-                }
-                else {
-                    textCell = (TextDetailSettingsCell) view;
-                }
+                TextCheckCell checkCell = (TextCheckCell) view;
+
                 SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
                 if (i == messageAlertRow) {
                     checkCell.setTextAndCheck(LocaleController.getString("Alert", R.string.Alert), preferences.getBoolean("EnableAll", true), true);
@@ -725,9 +710,6 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
                     checkCell.setTextAndCheck(LocaleController.getString("ContactJoined", R.string.ContactJoined), preferences.getBoolean("EnableContactJoined", true), false);
                 } else if (i == pebbleAlertRow) {
                     checkCell.setTextAndCheck(LocaleController.getString("Pebble", R.string.Pebble), preferences.getBoolean("EnablePebbleNotifications", false), true);
-				} else if (i == androidWearRow) {
-                    String value = LocaleController.getString("Android Wear", R.string.AndroidWear);
-                    textCell.setTextAndValue(value, LocaleController.getString("AndroidWearSubTitle", R.string.AndroidWearSubTitle), true);	
                 } else if (i == androidAutoAlertRow) {
                     checkCell.setTextAndCheck("Android Auto", preferences.getBoolean("EnableAutoNotifications", false), true);
                 } else if (i == notificationsServiceRow) {
@@ -741,8 +723,8 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
                 if (view == null) {
                     view = new TextDetailSettingsCell(mContext);
                 }
-                textCell = (TextDetailSettingsCell) view;
 
+                TextDetailSettingsCell textCell = (TextDetailSettingsCell) view;
 
                 SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
 
@@ -832,13 +814,13 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
                     view = new TextColorCell(mContext);
                 }
 
-                TextColorCell textColorCell = (TextColorCell) view;
+                TextColorCell textCell = (TextColorCell) view;
 
                 SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
                 if (i == messageLedRow) {
-                    textColorCell.setTextAndColor(LocaleController.getString("LedColor", R.string.LedColor), preferences.getInt("MessagesLed", 0xff00ff00), true);
+                    textCell.setTextAndColor(LocaleController.getString("LedColor", R.string.LedColor), preferences.getInt("MessagesLed", 0xff00ff00), true);
                 } else if (i == groupLedRow) {
-                    textColorCell.setTextAndColor(LocaleController.getString("LedColor", R.string.LedColor), preferences.getInt("GroupLed", 0xff00ff00), true);
+                    textCell.setTextAndColor(LocaleController.getString("LedColor", R.string.LedColor), preferences.getInt("GroupLed", 0xff00ff00), true);
                 }
             } else if (type == 4) {
                 if (view == null) {
@@ -855,7 +837,7 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
                 return 0;
             } else if (i == messageAlertRow || i == messagePreviewRow || i == groupAlertRow ||
                     i == groupPreviewRow || i == inappSoundRow || i == inappVibrateRow ||
-                    i == inappPreviewRow || i == contactJoinedRow || i == pebbleAlertRow || i == androidWearRow ||
+                    i == inappPreviewRow || i == contactJoinedRow || i == pebbleAlertRow ||
                     i == notificationsServiceRow || i == badgeNumberRow || i == inappPriorityRow ||
                     i == inchatSoundRow || i == androidAutoAlertRow) {
                 return 1;

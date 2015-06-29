@@ -49,15 +49,11 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 public class NotificationsController {
 
     public static final String EXTRA_VOICE_REPLY = "extra_voice_reply";
 
-	private String ANDROIDWEAR_SHAREDPREFS_RESPONSE = "androidwearresponse";
-    private static ArrayList<String> replyChoices = new ArrayList<String>();
-    private SharedPreferences wearPreferences;
     private DispatchQueue notificationsQueue = new DispatchQueue("notificationsQueue");
     private ArrayList<MessageObject> pushMessages = new ArrayList<>();
     private ArrayList<MessageObject> delayedPushMessages = new ArrayList<>();
@@ -94,12 +90,6 @@ public class NotificationsController {
     private AlarmManager alarmManager;
 
     private static volatile NotificationsController Instance = null;
-	
-	 public static void setAndroidWearResponse (ArrayList<String> newReply) {
-
-        replyChoices = newReply;
-
-    }
     public static NotificationsController getInstance() {
         NotificationsController localInstance = Instance;
         if (localInstance == null) {
@@ -117,16 +107,6 @@ public class NotificationsController {
         notificationManager = NotificationManagerCompat.from(ApplicationLoader.applicationContext);
         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Context.MODE_PRIVATE);
         inChatSoundEnabled = preferences.getBoolean("EnableInChatSound", true);
-		
-		 wearPreferences = ApplicationLoader.applicationContext.getSharedPreferences(ANDROIDWEAR_SHAREDPREFS_RESPONSE,Activity.MODE_PRIVATE);
-        Map<String,?> keys = wearPreferences.getAll();
-
-        for(Map.Entry<String,?> entry : keys.entrySet()){
-            if( entry.getValue().toString()!=null){
-                replyChoices.add(entry.getValue().toString());
-
-            }
-        }
 
         try {
             audioManager = (AudioManager) ApplicationLoader.applicationContext.getSystemService(Context.AUDIO_SERVICE);
@@ -813,14 +793,11 @@ public class NotificationsController {
                     .setReplyAction(msgReplyPendingIntent, remoteInputAuto)
                     .setLatestTimestamp((long) max_date * 1000);
 
-			 String[]replyArray =  replyChoices.toArray(new String[replyChoices.size()]);		
-					
             Intent replyIntent = new Intent(ApplicationLoader.applicationContext, WearReplyReceiver.class);
             replyIntent.putExtra("dialog_id", dialog_id);
             replyIntent.putExtra("max_id", max_id);
-			
             PendingIntent replyPendingIntent = PendingIntent.getBroadcast(ApplicationLoader.applicationContext, notificationIdWear, replyIntent, PendingIntent.FLAG_UPDATE_CURRENT);
-            RemoteInput remoteInputWear = new RemoteInput.Builder(EXTRA_VOICE_REPLY).setLabel(LocaleController.getString("Reply", R.string.Reply)).setChoices(replyArray).build();
+            RemoteInput remoteInputWear = new RemoteInput.Builder(EXTRA_VOICE_REPLY).setLabel(LocaleController.getString("Reply", R.string.Reply)).build();
             String replyToString;
             if (chat != null) {
                 replyToString = LocaleController.formatString("ReplyToGroup", R.string.ReplyToGroup, name);

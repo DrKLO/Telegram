@@ -1,7 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="background_tab_pressed">#6633B5E5</color>
     <color name="divider">#dcdcdc</color>
-    <color name="primary_color">#54759e</color>
-    <color name="lightgrey_bg">#f0f0f0</color>
 </resources>
