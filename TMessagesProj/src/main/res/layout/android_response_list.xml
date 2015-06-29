@@ -37,10 +37,12 @@
         android:layout_height="wrap_content"
         android:id="@+id/editText1"
         android:textColor="#ff8a8a8a"
-        android:textColorHint="@android:color/secondary_text_dark"
+        android:textColorHint="#ff8a8a8a"
         android:hint="@string/insertCustomWearResponse"
-        android:ems="10"
+        android:gravity="center_vertical"
+        android:textSize="14dp"
         android:background="@null"
+        android:singleLine="false"
         >
 
 

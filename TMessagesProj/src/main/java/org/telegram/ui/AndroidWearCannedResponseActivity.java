@@ -34,6 +34,8 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewOutlineProvider;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
 import android.view.inputmethod.EditorInfo;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -280,12 +282,19 @@ public class AndroidWearCannedResponseActivity extends BaseFragment {
         private Context context;
         private ArrayList<String> editTextList;
         private LinearLayout.LayoutParams layoutParams;
+        private Animation inAnimation;
+        private Animation outAnimation;
         public CustomAdapter(Context context, ArrayList<String> editTextList) {
             this.context = context;
             this.editTextList = editTextList;
             paint = new Paint();
             paint.setColor(0xffd9d9d9);
             paint.setStrokeWidth(1);
+
+            outAnimation = AnimationUtils.loadAnimation(context, R.anim.icon_anim_fade_out);
+
+
+
         }
 
         @Override
@@ -321,7 +330,7 @@ public class AndroidWearCannedResponseActivity extends BaseFragment {
                 view = vi.inflate(R.layout.android_response_list, null);
                 vh.editText = (EditText) view.findViewById(R.id.editText1);
                 vh.deleteEditText = (ImageView) view.findViewById(R.id.deleteEditText);
-
+                vh.listItem = (LinearLayout) view.findViewById(R.id.listItem);
                 vh.deleteEditText.setBackgroundResource(R.drawable.floating);
                 vh.deleteEditText.setImageResource(R.drawable.ic_close_white);
                 vh.deleteEditText.setScaleType(ImageView.ScaleType.CENTER);
@@ -342,6 +351,7 @@ public class AndroidWearCannedResponseActivity extends BaseFragment {
                 vh.editText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
                 vh.editText.setHintTextColor(0xff979797);
                 vh.editText.setTextColor(0xff212121);
+
                 vh.editText.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
                 vh.editText.setInputType(InputType.TYPE_TEXT_FLAG_CAP_SENTENCES | InputType.TYPE_TEXT_FLAG_AUTO_CORRECT);
                 vh.editText.setImeOptions(EditorInfo.IME_ACTION_NEXT);
@@ -365,7 +375,7 @@ public class AndroidWearCannedResponseActivity extends BaseFragment {
 
         }
 
-
+            vh.listItem.setVisibility(View.VISIBLE);
              vh.editText.setText(getItem(i));
              vh.editText.addTextChangedListener(new TextWatcher() {
                  @Override
@@ -388,8 +398,29 @@ public class AndroidWearCannedResponseActivity extends BaseFragment {
                 @Override
                 public void onClick(View view) {
 
-                    editTextList.remove(p);
-                    notifyDataSetChanged();
+
+
+                    outAnimation.setAnimationListener(new Animation.AnimationListener() {
+                        @Override
+                        public void onAnimationStart(Animation animation) {
+                        }
+
+                        @Override
+                        public void onAnimationEnd(Animation animation) {
+                            vh.listItem.setVisibility(View.GONE);
+                            editTextList.remove(p);
+                            notifyDataSetChanged();
+                        }
+
+                        @Override
+                        public void onAnimationRepeat(Animation animation) {
+
+                        }
+                    });
+
+                    vh.listItem.startAnimation(outAnimation);
+
+
                 }
             });
 
