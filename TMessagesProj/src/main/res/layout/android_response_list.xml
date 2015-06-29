@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:id="@+id/listItem"
+    android:padding="4dp"
+    android:layout_marginRight="10dp"
+    android:layout_marginLeft="10dp"
+    android:orientation="horizontal"
+    android:gravity="center_vertical|center_horizontal"
+    >
+
+    <ImageView
+        android:id="@+id/deleteEditText"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:layout_gravity="center_vertical|center_horizontal"
+        android:layout_marginLeft="10dp"
+        android:layout_marginRight="10dp"
+        android:padding="4dp"
+
+        />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_weight="4"
+        android:layout_height="wrap_content"
+        android:paddingLeft="10dp"
+        android:paddingRight="10dp"
+        android:background="#ffffffff"
+        android:layout_marginRight="24dp"
+        android:layout_marginLeft="10dp"
+        >
+
+
+    <EditText
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/editText1"
+        android:textColor="#ff8a8a8a"
+        android:textColorHint="#ff8a8a8a"
+        android:hint="@string/insertCustomWearResponse"
+        android:gravity="center_vertical"
+        android:textSize="14dp"
+        android:background="@null"
+        android:singleLine="false"
+        >
+
+
+
+    </EditText>
+
+   </LinearLayout>
+
+
+
+
+
+
+
+
+</LinearLayout>
