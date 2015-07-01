@@ -17,6 +17,7 @@ import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.SQLite.SQLiteCursor;
 import org.telegram.SQLite.SQLiteDatabase;
 import org.telegram.SQLite.SQLitePreparedStatement;
+import org.telegram.android.query.BotQuery;
 import org.telegram.android.query.SharedMediaQuery;
 import org.telegram.messenger.BuffersStorage;
 import org.telegram.messenger.ByteBufferDesc;
@@ -121,7 +122,7 @@ public class MessagesStorage {
                 database.executeFast("CREATE TABLE dialog_settings(did INTEGER PRIMARY KEY, flags INTEGER);").stepThis().dispose();
                 database.executeFast("CREATE TABLE messages_seq(mid INTEGER PRIMARY KEY, seq_in INTEGER, seq_out INTEGER);").stepThis().dispose();
                 database.executeFast("CREATE TABLE web_recent_v3(id TEXT, type INTEGER, image_url TEXT, thumb_url TEXT, local_url TEXT, width INTEGER, height INTEGER, size INTEGER, date INTEGER, PRIMARY KEY (id, type));").stepThis().dispose();
-                database.executeFast("CREATE TABLE stickers(id INTEGER PRIMARY KEY, data BLOB, date INTEGER);").stepThis().dispose();
+                database.executeFast("CREATE TABLE stickers_v2(id INTEGER PRIMARY KEY, data BLOB, date INTEGER, hash TEXT);").stepThis().dispose();
                 database.executeFast("CREATE TABLE hashtag_recent_v2(id TEXT PRIMARY KEY, date INTEGER);").stepThis().dispose();
                 database.executeFast("CREATE TABLE webpage_pending(id INTEGER, mid INTEGER, PRIMARY KEY (id, mid));").stepThis().dispose();
 
@@ -163,8 +164,13 @@ public class MessagesStorage {
                 //kev-value
                 database.executeFast("CREATE TABLE keyvalue(id TEXT PRIMARY KEY, value TEXT)").stepThis().dispose();
 
+                //bots
+                database.executeFast("CREATE TABLE bot_info(uid INTEGER PRIMARY KEY, info BLOB)").stepThis().dispose();
+                database.executeFast("CREATE TABLE bot_keyboard(uid INTEGER PRIMARY KEY, mid INTEGER, info BLOB)").stepThis().dispose();
+                database.executeFast("CREATE INDEX IF NOT EXISTS bot_keyboard_idx_mid ON bot_keyboard(mid);").stepThis().dispose();
+
                 //version
-                database.executeFast("PRAGMA user_version = 17").stepThis().dispose();
+                database.executeFast("PRAGMA user_version = 20").stepThis().dispose();
             } else {
                 try {
                     SQLiteCursor cursor = database.queryFinalized("SELECT seq, pts, date, qts, lsv, sg, pbytes FROM params WHERE id = 1");
@@ -195,7 +201,7 @@ public class MessagesStorage {
                     }
                 }
                 int version = database.executeInt("PRAGMA user_version");
-                if (version < 17) {
+                if (version < 20) {
                     updateDbToLastVersion(version);
                 }
             }
@@ -349,8 +355,6 @@ public class MessagesStorage {
                         version = 11;
                     }
                     if (version == 11) {
-                        database.executeFast("CREATE TABLE IF NOT EXISTS stickers(id INTEGER PRIMARY KEY, data BLOB, date INTEGER);").stepThis().dispose();
-                        database.executeFast("PRAGMA user_version = 12").stepThis().dispose();
                         version = 12;
                     }
                     if (version == 12) {
@@ -389,7 +393,24 @@ public class MessagesStorage {
                         database.executeFast("ALTER TABLE dialogs ADD COLUMN inbox_max INTEGER default 0").stepThis().dispose();
                         database.executeFast("ALTER TABLE dialogs ADD COLUMN outbox_max INTEGER default 0").stepThis().dispose();
                         database.executeFast("PRAGMA user_version = 17").stepThis().dispose();
-                        //version = 17;
+                        version = 17;
+                    }
+                    if (version == 17) {
+                        database.executeFast("CREATE TABLE bot_info(uid INTEGER PRIMARY KEY, info BLOB)").stepThis().dispose();
+                        database.executeFast("PRAGMA user_version = 18").stepThis().dispose();
+                        version = 18;
+                    }
+                    if (version == 18) {
+                        database.executeFast("DROP TABLE IF EXISTS stickers;").stepThis().dispose();
+                        database.executeFast("CREATE TABLE IF NOT EXISTS stickers_v2(id INTEGER PRIMARY KEY, data BLOB, date INTEGER, hash TEXT);").stepThis().dispose();
+                        database.executeFast("PRAGMA user_version = 19").stepThis().dispose();
+                        version = 19;
+                    }
+                    if (version == 19) {
+                        database.executeFast("CREATE TABLE IF NOT EXISTS bot_keyboard(uid INTEGER PRIMARY KEY, mid INTEGER, info BLOB)").stepThis().dispose();
+                        database.executeFast("CREATE INDEX IF NOT EXISTS bot_keyboard_idx_mid ON bot_keyboard(mid);").stepThis().dispose();
+                        database.executeFast("PRAGMA user_version = 20").stepThis().dispose();
+                        //version = 20;
                     }
                 } catch (Exception e) {
                     FileLog.e("tmessages", e);
@@ -934,8 +955,10 @@ public class MessagesStorage {
 
                     database.executeFast("UPDATE dialogs SET unread_count = 0 WHERE did = " + did).stepThis().dispose();
                     database.executeFast("DELETE FROM messages WHERE uid = " + did).stepThis().dispose();
+                    database.executeFast("DELETE FROM bot_keyboard WHERE uid = " + did).stepThis().dispose();
                     database.executeFast("DELETE FROM media_counts_v2 WHERE uid = " + did).stepThis().dispose();
                     database.executeFast("DELETE FROM media_v2 WHERE uid = " + did).stepThis().dispose();
+                    BotQuery.clearBotKeyboard(did, null);
                 } catch (Exception e) {
                     FileLog.e("tmessages", e);
                 }
@@ -2762,6 +2785,7 @@ public class MessagesStorage {
             HashMap<Integer, Integer> mediaTypes = new HashMap<>();
             HashMap<Integer, Long> messagesIdsMap = new HashMap<>();
             HashMap<Integer, Long> messagesMediaIdsMap = new HashMap<>();
+            HashMap<Long, TLRPC.Message> botKeyboards = new HashMap<>();
             StringBuilder messageIds = new StringBuilder();
             StringBuilder messageMediaIds = new StringBuilder();
             SQLitePreparedStatement state = database.executeFast("REPLACE INTO messages VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)");
@@ -2796,6 +2820,17 @@ public class MessagesStorage {
                     messagesMediaIdsMap.put(message.id, dialog_id);
                     mediaTypes.put(message.id, SharedMediaQuery.getMediaType(message));
                 }
+
+                if (message.reply_markup != null && ((message.reply_markup.flags & 4) == 0 || (message.flags & 16) != 0)) {
+                    TLRPC.Message oldMessage = botKeyboards.get(dialog_id);
+                    if (oldMessage == null || oldMessage.id < message.id) {
+                        botKeyboards.put(dialog_id, message);
+                    }
+                }
+            }
+
+            for (HashMap.Entry<Long, TLRPC.Message> entry : botKeyboards.entrySet()) {
+                BotQuery.putBotKeyboard(entry.getKey(), entry.getValue());
             }
 
             if (messageMediaIds.length() > 0) {
@@ -2842,7 +2877,8 @@ public class MessagesStorage {
             }
 
             int downloadMediaMask = 0;
-            for (TLRPC.Message message : messages) {
+            for (int a = 0; a < messages.size(); a++) {
+                TLRPC.Message message = messages.get(a);
                 fixUnsupportedMedia(message);
 
                 long dialog_id = message.dialog_id;
@@ -3307,7 +3343,7 @@ public class MessagesStorage {
                     TLRPC.User updateUser = usersDict.get(user.id);
                     if (updateUser != null) {
                         if (updateUser.first_name != null && updateUser.last_name != null) {
-                            if (!(user instanceof TLRPC.TL_userContact)) {
+                            if (!UserObject.isContact(user)) {
                                 user.first_name = updateUser.first_name;
                                 user.last_name = updateUser.last_name;
                             }
@@ -3505,9 +3541,11 @@ public class MessagesStorage {
             cursor.dispose();
             FileLoader.getInstance().deleteFiles(filesToDelete);
             database.executeFast(String.format(Locale.US, "DELETE FROM messages WHERE mid IN(%s)", ids)).stepThis().dispose();
+            database.executeFast(String.format(Locale.US, "DELETE FROM bot_keyboard WHERE mid IN(%s)", ids)).stepThis().dispose();
             database.executeFast(String.format(Locale.US, "DELETE FROM messages_seq WHERE mid IN(%s)", ids)).stepThis().dispose();
             database.executeFast(String.format(Locale.US, "DELETE FROM media_v2 WHERE mid IN(%s)", ids)).stepThis().dispose();
             database.executeFast("DELETE FROM media_counts_v2 WHERE 1").stepThis().dispose();
+            BotQuery.clearBotKeyboard(0, messages);
         } catch (Exception e) {
             FileLog.e("tmessages", e);
         }
@@ -3526,7 +3564,7 @@ public class MessagesStorage {
             }
             cursor.dispose();
             database.beginTransaction();
-            SQLitePreparedStatement state = database.executeFast("UPDATE dialogs SET last_mid = (SELECT mid FROM messages WHERE uid = ? AND date = (SELECT MAX(date) FROM messages WHERE uid = ? )) WHERE did = ?");
+            SQLitePreparedStatement state = database.executeFast("UPDATE dialogs SET unread_count = 0, last_mid = (SELECT mid FROM messages WHERE uid = ? AND date = (SELECT MAX(date) FROM messages WHERE uid = ? )) WHERE did = ?");
             for (long did : dialogsToUpdate) {
                 state.requery();
                 state.bindLong(1, did);
@@ -3688,7 +3726,9 @@ public class MessagesStorage {
                     if (!messages.messages.isEmpty()) {
                         SQLitePreparedStatement state = database.executeFast("REPLACE INTO messages VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)");
                         SQLitePreparedStatement state2 = database.executeFast("REPLACE INTO media_v2 VALUES(?, ?, ?, ?, ?)");
-                        for (TLRPC.Message message : messages.messages) {
+                        TLRPC.Message botKeyboard = null;
+                        for (int a = 0; a < messages.messages.size(); a++) {
+                            TLRPC.Message message = messages.messages.get(a);
                             fixUnsupportedMedia(message);
                             state.requery();
                             ByteBufferDesc data = buffersStorage.getFreeBuffer(message.getObjectSize());
@@ -3714,9 +3754,18 @@ public class MessagesStorage {
                                 state2.step();
                             }
                             buffersStorage.reuseFreeBuffer(data);
+
+                            if (message.reply_markup != null && ((message.reply_markup.flags & 4) == 0 || (message.flags & 16) != 0)) {
+                                if (botKeyboard == null || botKeyboard.id < message.id) {
+                                    botKeyboard = message;
+                                }
+                            }
                         }
                         state.dispose();
                         state2.dispose();
+                        if (botKeyboard != null) {
+                            BotQuery.putBotKeyboard(dialog_id, botKeyboard);
+                        }
                     }
                     putUsersInternal(messages.users);
                     putChatsInternal(messages.chats);
@@ -3853,7 +3902,8 @@ public class MessagesStorage {
                 try {
                     database.beginTransaction();
                     final HashMap<Integer, TLRPC.Message> new_dialogMessage = new HashMap<>();
-                    for (TLRPC.Message message : dialogs.messages) {
+                    for (int a = 0; a < dialogs.messages.size(); a++) {
+                        TLRPC.Message message = dialogs.messages.get(a);
                         new_dialogMessage.put(message.id, message);
                     }
 
@@ -3863,7 +3913,9 @@ public class MessagesStorage {
                         SQLitePreparedStatement state3 = database.executeFast("REPLACE INTO media_v2 VALUES(?, ?, ?, ?, ?)");
                         SQLitePreparedStatement state4 = database.executeFast("REPLACE INTO dialog_settings VALUES(?, ?)");
 
-                        for (TLRPC.TL_dialog dialog : dialogs.dialogs) {
+                        for (int a = 0; a < dialogs.dialogs.size(); a++) {
+                            TLRPC.TL_dialog dialog = dialogs.dialogs.get(a);
+
                             state.requery();
                             state2.requery();
                             state4.requery();
@@ -3872,23 +3924,41 @@ public class MessagesStorage {
                                 uid = -dialog.peer.chat_id;
                             }
                             TLRPC.Message message = new_dialogMessage.get(dialog.top_message);
-                            fixUnsupportedMedia(message);
-                            ByteBufferDesc data = buffersStorage.getFreeBuffer(message.getObjectSize());
-                            message.serializeToStream(data);
 
-                            state.bindInteger(1, message.id);
-                            state.bindInteger(2, uid);
-                            state.bindInteger(3, MessageObject.getUnreadFlags(message));
-                            state.bindInteger(4, message.send_state);
-                            state.bindInteger(5, message.date);
-                            state.bindByteBuffer(6, data.buffer);
-                            state.bindInteger(7, (MessageObject.isOut(message) ? 1 : 0));
-                            state.bindInteger(8, 0);
-                            state.bindInteger(9, 0);
-                            state.step();
+                            if (message != null) {
+                                if (message.reply_markup != null && ((message.reply_markup.flags & 4) == 0 || (message.flags & 16) != 0)) {
+                                    BotQuery.putBotKeyboard(uid, message);
+                                }
+
+                                fixUnsupportedMedia(message);
+                                ByteBufferDesc data = buffersStorage.getFreeBuffer(message.getObjectSize());
+                                message.serializeToStream(data);
+
+                                state.bindInteger(1, message.id);
+                                state.bindInteger(2, uid);
+                                state.bindInteger(3, MessageObject.getUnreadFlags(message));
+                                state.bindInteger(4, message.send_state);
+                                state.bindInteger(5, message.date);
+                                state.bindByteBuffer(6, data.buffer);
+                                state.bindInteger(7, (MessageObject.isOut(message) ? 1 : 0));
+                                state.bindInteger(8, 0);
+                                state.bindInteger(9, 0);
+                                state.step();
+
+                                if (SharedMediaQuery.canAddMessageToMedia(message)) {
+                                    state3.requery();
+                                    state3.bindLong(1, message.id);
+                                    state3.bindInteger(2, uid);
+                                    state3.bindInteger(3, message.date);
+                                    state3.bindInteger(4, SharedMediaQuery.getMediaType(message));
+                                    state3.bindByteBuffer(5, data.buffer);
+                                    state3.step();
+                                }
+                                buffersStorage.reuseFreeBuffer(data);
+                            }
 
                             state2.bindLong(1, uid);
-                            state2.bindInteger(2, message.date);
+                            state2.bindInteger(2, message != null ? message.date : 0);
                             state2.bindInteger(3, dialog.unread_count);
                             state2.bindInteger(4, dialog.top_message);
                             state2.bindInteger(5, dialog.read_inbox_max_id);
@@ -3898,17 +3968,6 @@ public class MessagesStorage {
                             state4.bindLong(1, uid);
                             state4.bindInteger(2, dialog.notify_settings.mute_until != 0 ? 1 : 0);
                             state4.step();
-
-                            if (SharedMediaQuery.canAddMessageToMedia(message)) {
-                                state3.requery();
-                                state3.bindLong(1, message.id);
-                                state3.bindInteger(2, uid);
-                                state3.bindInteger(3, message.date);
-                                state3.bindInteger(4, SharedMediaQuery.getMediaType(message));
-                                state3.bindByteBuffer(5, data.buffer);
-                                state3.step();
-                            }
-                            buffersStorage.reuseFreeBuffer(data);
                         }
                         state.dispose();
                         state2.dispose();

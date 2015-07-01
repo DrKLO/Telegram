@@ -616,22 +616,31 @@ public class AndroidUtilities {
         }
     }
 
+    public static final int FLAG_TAG_BR = 1;
+    public static final int FLAG_TAG_BOLD = 2;
+    public static final int FLAG_TAG_COLOR = 4;
+    public static final int FLAG_TAG_ALL = FLAG_TAG_BR | FLAG_TAG_BOLD | FLAG_TAG_COLOR;
+
     public static Spannable replaceTags(String str) {
+        return replaceTags(str, FLAG_TAG_ALL);
+    }
+
+    public static Spannable replaceTags(String str, int flag) {
         try {
             int start;
-            int startColor = -1;
             int end;
             StringBuilder stringBuilder = new StringBuilder(str);
-            while ((start = stringBuilder.indexOf("<br>")) != -1) {
-                stringBuilder.replace(start, start + 4, "\n");
-            }
-            while ((start = stringBuilder.indexOf("<br/>")) != -1) {
-                stringBuilder.replace(start, start + 5, "\n");
+            if ((flag & FLAG_TAG_BR) != 0) {
+                while ((start = stringBuilder.indexOf("<br>")) != -1) {
+                    stringBuilder.replace(start, start + 4, "\n");
+                }
+                while ((start = stringBuilder.indexOf("<br/>")) != -1) {
+                    stringBuilder.replace(start, start + 5, "\n");
+                }
             }
             ArrayList<Integer> bolds = new ArrayList<>();
-            ArrayList<Integer> colors = new ArrayList<>();
-            while ((start = stringBuilder.indexOf("<b>")) != -1 || (startColor = stringBuilder.indexOf("<c#")) != -1) {
-                if (start != -1) {
+            if ((flag & FLAG_TAG_BOLD) != 0) {
+                while ((start = stringBuilder.indexOf("<b>")) != -1) {
                     stringBuilder.replace(start, start + 3, "");
                     end = stringBuilder.indexOf("</b>");
                     if (end == -1) {
@@ -640,17 +649,20 @@ public class AndroidUtilities {
                     stringBuilder.replace(end, end + 4, "");
                     bolds.add(start);
                     bolds.add(end);
-                } else if (startColor != -1) {
-                    stringBuilder.replace(startColor, startColor + 2, "");
-                    end = stringBuilder.indexOf(">", startColor);
-                    int color = Color.parseColor(stringBuilder.substring(startColor, end));
-                    stringBuilder.replace(startColor, end + 1, "");
+                }
+            }
+            ArrayList<Integer> colors = new ArrayList<>();
+            if ((flag & FLAG_TAG_COLOR) != 0) {
+                while ((start = stringBuilder.indexOf("<c#")) != -1) {
+                    stringBuilder.replace(start, start + 2, "");
+                    end = stringBuilder.indexOf(">", start);
+                    int color = Color.parseColor(stringBuilder.substring(start, end));
+                    stringBuilder.replace(start, end + 1, "");
                     end = stringBuilder.indexOf("</c>");
                     stringBuilder.replace(end, end + 4, "");
-                    colors.add(startColor);
+                    colors.add(start);
                     colors.add(end);
                     colors.add(color);
-                    startColor = -1;
                 }
             }
             SpannableStringBuilder spannableStringBuilder = new SpannableStringBuilder(stringBuilder);

@@ -55,7 +55,10 @@ public class SharedMediaQuery {
                 req.peer.chat_id = -lower_part;
             } else {
                 TLRPC.User user = MessagesController.getInstance().getUser(lower_part);
-                if (user instanceof TLRPC.TL_userForeign || user instanceof TLRPC.TL_userRequest) {
+                if (user == null) {
+                    return;
+                }
+                if (user.access_hash != 0) {
                     req.peer = new TLRPC.TL_inputPeerForeign();
                     req.peer.access_hash = user.access_hash;
                 } else {
@@ -98,7 +101,10 @@ public class SharedMediaQuery {
                 req.peer.chat_id = -lower_part;
             } else {
                 TLRPC.User user = MessagesController.getInstance().getUser(lower_part);
-                if (user instanceof TLRPC.TL_userForeign || user instanceof TLRPC.TL_userRequest) {
+                if (user == null) {
+                    return;
+                }
+                if (user.access_hash != 0) {
                     req.peer = new TLRPC.TL_inputPeerForeign();
                     req.peer.access_hash = user.access_hash;
                 } else {

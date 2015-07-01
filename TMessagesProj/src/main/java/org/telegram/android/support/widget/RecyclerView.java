@@ -5030,7 +5030,7 @@ public class RecyclerView extends ViewGroup implements ScrollingView {
          * @see #notifyItemRangeInserted(int, int)
          * @see #notifyItemRangeRemoved(int, int)
          */
-        public final void notifyDataSetChanged() {
+        public void notifyDataSetChanged() {
             mObservable.notifyChanged();
         }
 
@@ -5045,7 +5045,7 @@ public class RecyclerView extends ViewGroup implements ScrollingView {
          *
          * @see #notifyItemRangeChanged(int, int)
          */
-        public final void notifyItemChanged(int position) {
+        public void notifyItemChanged(int position) {
             mObservable.notifyItemRangeChanged(position, 1);
         }
 
@@ -5062,7 +5062,7 @@ public class RecyclerView extends ViewGroup implements ScrollingView {
          *
          * @see #notifyItemChanged(int)
          */
-        public final void notifyItemRangeChanged(int positionStart, int itemCount) {
+        public void notifyItemRangeChanged(int positionStart, int itemCount) {
             mObservable.notifyItemRangeChanged(positionStart, itemCount);
         }
 
@@ -5079,7 +5079,7 @@ public class RecyclerView extends ViewGroup implements ScrollingView {
          *
          * @see #notifyItemRangeInserted(int, int)
          */
-        public final void notifyItemInserted(int position) {
+        public void notifyItemInserted(int position) {
             mObservable.notifyItemRangeInserted(position, 1);
         }
 
@@ -5094,7 +5094,7 @@ public class RecyclerView extends ViewGroup implements ScrollingView {
          * @param fromPosition Previous position of the item.
          * @param toPosition New position of the item.
          */
-        public final void notifyItemMoved(int fromPosition, int toPosition) {
+        public void notifyItemMoved(int fromPosition, int toPosition) {
             mObservable.notifyItemMoved(fromPosition, toPosition);
         }
 
@@ -5113,7 +5113,7 @@ public class RecyclerView extends ViewGroup implements ScrollingView {
          *
          * @see #notifyItemInserted(int)
          */
-        public final void notifyItemRangeInserted(int positionStart, int itemCount) {
+        public void notifyItemRangeInserted(int positionStart, int itemCount) {
             mObservable.notifyItemRangeInserted(positionStart, itemCount);
         }
 
@@ -5130,7 +5130,7 @@ public class RecyclerView extends ViewGroup implements ScrollingView {
          *
          * @see #notifyItemRangeRemoved(int, int)
          */
-        public final void notifyItemRemoved(int position) {
+        public void notifyItemRemoved(int position) {
             mObservable.notifyItemRangeRemoved(position, 1);
         }
 
@@ -5147,7 +5147,7 @@ public class RecyclerView extends ViewGroup implements ScrollingView {
          * @param positionStart Previous position of the first item that was removed
          * @param itemCount Number of items removed from the data set
          */
-        public final void notifyItemRangeRemoved(int positionStart, int itemCount) {
+        public void notifyItemRangeRemoved(int positionStart, int itemCount) {
             mObservable.notifyItemRangeRemoved(positionStart, itemCount);
         }
     }

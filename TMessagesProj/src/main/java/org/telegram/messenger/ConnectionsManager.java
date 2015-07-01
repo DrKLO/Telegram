@@ -33,6 +33,7 @@ import java.net.NetworkInterface;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
@@ -132,7 +133,8 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
             if (lastPauseTime != 0 && lastPauseTime < currentTime - nextSleepTimeout) {
                 boolean dontSleep = !pushMessagesReceived;
                 if (!dontSleep) {
-                    for (RPCRequest request : runningRequests) {
+                    for (int a = 0; a < runningRequests.size(); a++) {
+                        RPCRequest request = runningRequests.get(a);
                         if (request.rawRequest instanceof TLRPC.TL_get_future_salts) {
                             dontSleep = true;
                         } else if (request.retryCount < 10 && (request.runningStartTime + 60 > (int) (currentTime / 1000)) && ((request.flags & RPCRequest.RPCRequestClassDownloadMedia) != 0 || (request.flags & RPCRequest.RPCRequestClassUploadMedia) != 0)) {
@@ -142,7 +144,8 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                     }
                 }
                 if (!dontSleep) {
-                    for (RPCRequest request : requestQueue) {
+                    for (int a = 0; a < requestQueue.size(); a++) {
+                        RPCRequest request = requestQueue.get(a);
                         if (request.rawRequest instanceof TLRPC.TL_get_future_salts) {
                             dontSleep = true;
                         } else if ((request.flags & RPCRequest.RPCRequestClassDownloadMedia) != 0 || (request.flags & RPCRequest.RPCRequestClassUploadMedia) != 0) {
@@ -190,7 +193,8 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                         processRequestQueue(0, 0);
                     } else {
                         boolean notFound = true;
-                        for (Action actor : actionQueue) {
+                        for (int a = 0; a < actionQueue.size(); a++) {
+                            Action actor = actionQueue.get(a);
                             if (actor instanceof HandshakeAction) {
                                 HandshakeAction eactor = (HandshakeAction) actor;
                                 if (eactor.datacenter.datacenterId == datacenter.datacenterId) {
@@ -536,7 +540,9 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                         continue;
                     }
                     FileLog.e("tmessages", "valid interface: " + networkInterface);
-                    for (InterfaceAddress address : networkInterface.getInterfaceAddresses()) {
+                    List<InterfaceAddress> interfaceAddresses = networkInterface.getInterfaceAddresses();
+                    for (int a = 0; a < interfaceAddresses.size(); a++) {
+                        InterfaceAddress address = interfaceAddresses.get(a);
                         InetAddress inetAddress = address.getAddress();
                         if (BuildVars.DEBUG_VERSION) {
                             FileLog.e("tmessages", "address: " + inetAddress.getHostAddress());
@@ -553,20 +559,22 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                 FileLog.e("tmessages", e);
             }
         }
-        if (Build.VERSION.SDK_INT < 50) {
+        if (Build.VERSION.SDK_INT < 19) {
             return false;
         }
         try {
             NetworkInterface networkInterface;
             Enumeration<NetworkInterface> networkInterfaces = NetworkInterface.getNetworkInterfaces();
+            boolean hasIpv4 = false;
+            boolean hasIpv6 = false;
             while (networkInterfaces.hasMoreElements()) {
                 networkInterface = networkInterfaces.nextElement();
                 if (!networkInterface.isUp() || networkInterface.isLoopback()) {
                     continue;
                 }
-                boolean hasIpv4 = false;
-                boolean hasIpv6 = false;
-                for (InterfaceAddress address : networkInterface.getInterfaceAddresses()) {
+                List<InterfaceAddress> interfaceAddresses = networkInterface.getInterfaceAddresses();
+                for (int a = 0; a < interfaceAddresses.size(); a++) {
+                    InterfaceAddress address = interfaceAddresses.get(a);
                     InetAddress inetAddress = address.getAddress();
                     if (inetAddress.isLinkLocalAddress() || inetAddress.isLoopbackAddress() || inetAddress.isMulticastAddress()) {
                         continue;
@@ -574,12 +582,15 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                     if (inetAddress instanceof Inet6Address) {
                         hasIpv6 = true;
                     } else if (inetAddress instanceof Inet4Address) {
-                        hasIpv4 = true;
+                        String addrr = inetAddress.getHostAddress();
+                        if (!addrr.startsWith("192.0.0.")) {
+                            hasIpv4 = true;
+                        }
                     }
                 }
-                if (!hasIpv4 && hasIpv6) {
-                    return true;
-                }
+            }
+            if (!hasIpv4 && hasIpv6) {
+                return true;
             }
         } catch (Throwable e) {
             FileLog.e("tmessages", e);
@@ -609,8 +620,8 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                         if (!sessions.isEmpty()) {
                             SerializedData data = new SerializedData(sessions.size() * 8 + 4);
                             data.writeInt32(sessions.size());
-                            for (long session : sessions) {
-                                data.writeInt64(session);
+                            for (int a = 0; a < sessions.size(); a++) {
+                                data.writeInt64(sessions.get(a));
                             }
                             editor.putString("sessionsToDestroy", Base64.encodeToString(data.toByteArray(), Base64.DEFAULT));
                             data.cleanup();
@@ -648,7 +659,8 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
     }
 
     void clearRequestsForRequestClass(int requestClass, Datacenter datacenter) {
-        for (RPCRequest request : runningRequests) {
+        for (int a = 0; a < runningRequests.size(); a++) {
+            RPCRequest request = runningRequests.get(a);
             Datacenter dcenter = datacenterWithId(request.runningDatacenterId);
             if ((request.flags & requestClass) != 0 && dcenter != null && dcenter.datacenterId == datacenter.datacenterId) {
                 request.runningMessageId = 0;
@@ -736,7 +748,8 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
     public void cancelRpcsForClassGuid(int guid) {
         ArrayList<Long> requests = requestsByGuids.get(guid);
         if (requests != null) {
-            for (Long request : requests) {
+            for (int a = 0; a < requests.size(); a++) {
+                Long request = requests.get(a);
                 cancelRpc(request, true);
             }
             requestsByGuids.remove(guid);
@@ -858,7 +871,8 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                     lastDcUpdateTime = (int) (System.currentTimeMillis() / 1000) - DC_UPDATE_TIME + updateIn;
                     ArrayList<Datacenter> datacentersArr = new ArrayList<>();
                     HashMap<Integer, Datacenter> datacenterMap = new HashMap<>();
-                    for (TLRPC.TL_dcOption datacenterDesc : config.dc_options) {
+                    for (int a = 0; a < config.dc_options.size(); a++) {
+                        TLRPC.TL_dcOption datacenterDesc = config.dc_options.get(a);
                         Datacenter existing = datacenterMap.get(datacenterDesc.id);
                         if (existing == null) {
                             existing = new Datacenter();
@@ -870,7 +884,8 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                     }
 
                     if (!datacentersArr.isEmpty()) {
-                        for (Datacenter datacenter : datacentersArr) {
+                        for (int a = 0; a < datacentersArr.size(); a++) {
+                            Datacenter datacenter = datacentersArr.get(a);
                             Datacenter exist = datacenterWithId(datacenter.datacenterId);
                             if (exist == null) {
                                 datacenters.put(datacenter.datacenterId, datacenter);
@@ -1281,7 +1296,8 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
         if (genericConnection != null && genericConnection.channelToken != 0) {
             Datacenter currentDatacenter = datacenterWithId(currentDatacenterId);
 
-            for (Long it : sessionsToDestroy) {
+            for (int a = 0; a < sessionsToDestroy.size(); a++) {
+                Long it = sessionsToDestroy.get(a);
                 if (destroyingSessions.contains(it)) {
                     continue;
                 }
@@ -1304,7 +1320,8 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
         int uploadRunningRequestCount = 0;
         int downloadRunningRequestCount = 0;
 
-        for (RPCRequest request : runningRequests) {
+        for (int a = 0; a < runningRequests.size(); a++) {
+            RPCRequest request = runningRequests.get(a);
             if ((request.flags & RPCRequest.RPCRequestClassGeneric) != 0) {
                 genericRunningRequestCount++;
             } else if ((request.flags & RPCRequest.RPCRequestClassUploadMedia) != 0) {
@@ -1481,7 +1498,8 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
 
                 boolean hasSendMessage = false;
                 ArrayList<NetworkMessage> arr = genericMessagesToDatacenters.get(iter);
-                for (NetworkMessage networkMessage : arr) {
+                for (int b = 0; b < arr.size(); b++) {
+                    NetworkMessage networkMessage = arr.get(b);
                     TLRPC.TL_protoMessage message = networkMessage.protoMessage;
 
                     Object rawRequest = networkMessage.rawRequest;
@@ -1502,7 +1520,8 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                             scannedPreviousRequests = true;
 
                             ArrayList<Long> currentRequests = new ArrayList<>();
-                            for (NetworkMessage currentNetworkMessage : arr) {
+                            for (int a = 0; a < arr.size(); a++) {
+                                NetworkMessage currentNetworkMessage = arr.get(a);
                                 TLRPC.TL_protoMessage currentMessage = currentNetworkMessage.protoMessage;
 
                                 Object currentRawRequest = currentNetworkMessage.rawRequest;
@@ -1519,7 +1538,8 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                             }
 
                             long maxRequestId = 0;
-                            for (RPCRequest request : runningRequests) {
+                            for (int a = 0; a < runningRequests.size(); a++) {
+                                RPCRequest request = runningRequests.get(a);
                                 if (request.rawRequest instanceof TLRPC.TL_messages_sendMessage ||
                                         request.rawRequest instanceof TLRPC.TL_messages_sendMedia ||
                                         request.rawRequest instanceof TLRPC.TL_messages_forwardMessages ||
@@ -1564,10 +1584,12 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
             updateDcSettings(0);
         }
 
-        for (int num : neededDatacenterIds) {
+        for (int a = 0; a < neededDatacenterIds.size(); a++) {
+            int num = neededDatacenterIds.get(a);
             if (num != movingToDatacenterId) {
                 boolean notFound = true;
-                for (Action actor : actionQueue) {
+                for (int b = 0; b < actionQueue.size(); b++) {
+                    Action actor = actionQueue.get(b);
                     if (actor instanceof HandshakeAction) {
                         HandshakeAction eactor = (HandshakeAction) actor;
                         if (eactor.datacenter.datacenterId == num) {
@@ -1584,10 +1606,12 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
             }
         }
 
-        for (int num : unauthorizedDatacenterIds) {
+        for (int a = 0; a < unauthorizedDatacenterIds.size(); a++) {
+            int num = unauthorizedDatacenterIds.get(a);
             if (num != currentDatacenterId && num != movingToDatacenterId && UserConfig.isClientActivated()) {
                 boolean notFound = true;
-                for (Action actor : actionQueue) {
+                for (int b = 0; b < actionQueue.size(); b++) {
+                    Action actor = actionQueue.get(b);
                     if (actor instanceof ExportAuthorizationAction) {
                         ExportAuthorizationAction eactor = (ExportAuthorizationAction) actor;
                         if (eactor.datacenter.datacenterId == num) {
@@ -1677,7 +1701,8 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                     if (reportAck && quickAckId.size() != 0) {
                         ArrayList<Long> requestIds = new ArrayList<>();
 
-                        for (NetworkMessage message : messagesToSend) {
+                        for (int b = 0; b < messagesToSend.size(); b++) {
+                            NetworkMessage message = messagesToSend.get(b);
                             if (message.requestId != 0) {
                                 requestIds.add(message.requestId);
                             }
@@ -1756,7 +1781,8 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
 
             ArrayList<TLRPC.TL_protoMessage> containerMessages = new ArrayList<>(messages.size());
 
-            for (NetworkMessage networkMessage : messages) {
+            for (int a = 0; a < messages.size(); a++) {
+                NetworkMessage networkMessage = messages.get(a);
                 TLRPC.TL_protoMessage message = networkMessage.protoMessage;
                 containerMessages.add(message);
                 if (BuildVars.DEBUG_VERSION) {
@@ -1841,7 +1867,8 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
         Utilities.stageQueue.postRunnable(new Runnable() {
             @Override
             public void run() {
-                for (RPCRequest request : requestQueue) {
+                for (int a = 0; a < requestQueue.size(); a++) {
+                    RPCRequest request = requestQueue.get(a);
                     if (request.rawRequest instanceof TLRPC.TL_get_future_salts) {
                         Datacenter requestDatacenter = datacenterWithId(request.runningDatacenterId);
                         if (requestDatacenter.datacenterId == datacenter.datacenterId) {
@@ -1850,7 +1877,8 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                     }
                 }
 
-                for (RPCRequest request : runningRequests) {
+                for (int a = 0; a < runningRequests.size(); a++) {
+                    RPCRequest request = runningRequests.get(a);
                     if (request.rawRequest instanceof TLRPC.TL_get_future_salts) {
                         Datacenter requestDatacenter = datacenterWithId(request.runningDatacenterId);
                         if (requestDatacenter.datacenterId == datacenter.datacenterId) {
@@ -1881,7 +1909,8 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
         Utilities.stageQueue.postRunnable(new Runnable() {
             @Override
             public void run() {
-                for (RPCRequest request : runningRequests) {
+                for (int a = 0; a < runningRequests.size(); a++) {
+                    RPCRequest request = runningRequests.get(a);
                     if (requestMsgId == request.runningMessageId) {
                         request.confirmed = true;
                     }
@@ -1991,7 +2020,8 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                 serverSaltDesc.value = serverSalt;
                 datacenter.addServerSalt(serverSaltDesc);
 
-                for (RPCRequest request : runningRequests) {
+                for (int a = 0; a < runningRequests.size(); a++) {
+                    RPCRequest request = runningRequests.get(a);
                     Datacenter dcenter = datacenterWithId(request.runningDatacenterId);
                     if (request.runningMessageId < newSession.first_msg_id && (request.flags & connection.transportRequestClass) != 0 && dcenter != null && dcenter.datacenterId == datacenter.datacenterId) {
                         request.runningMessageId = 0;
@@ -2021,7 +2051,8 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
             }*/
 
             TLRPC.TL_msg_container messageContainer = (TLRPC.TL_msg_container) message;
-            for (TLRPC.TL_protoMessage innerMessage : messageContainer.messages) {
+            for (int a = 0; a < messageContainer.messages.size(); a++) {
+                TLRPC.TL_protoMessage innerMessage = messageContainer.messages.get(a);
                 long innerMessageId = innerMessage.msg_id;
                 if (innerMessage.seqno % 2 != 0) {
                     connection.addMessageToConfirm(innerMessageId);
@@ -2060,8 +2091,8 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                         itemsToDelete.add(pid);
                     }
                 }
-                for (Long pid : itemsToDelete) {
-                    pingIdToDate.remove(pid);
+                for (int a = 0; a < itemsToDelete.size(); a++) {
+                    pingIdToDate.remove(itemsToDelete.get(a));
                 }
             } else {
                 FileLog.e("tmessages", "received push ping");
@@ -2070,7 +2101,8 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
         } else if (message instanceof TLRPC.TL_futuresalts) {
             TLRPC.TL_futuresalts futureSalts = (TLRPC.TL_futuresalts) message;
             long requestMid = futureSalts.req_msg_id;
-            for (RPCRequest request : runningRequests) {
+            for (int a = 0; a < runningRequests.size(); a++) {
+                RPCRequest request = runningRequests.get(a);
                 if (request.respondsToMessageId(requestMid)) {
                     if (request.completionBlock != null) {
                         request.completionBlock.run(futureSalts, null);
@@ -2090,7 +2122,8 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
             ArrayList<Long> lst = new ArrayList<>();
             lst.addAll(sessionsToDestroy);
             destroyingSessions.remove(res.session_id);
-            for (long session : lst) {
+            for (int a = 0; a < lst.size(); a++) {
+                long session = lst.get(a);
                 if (session == res.session_id) {
                     sessionsToDestroy.remove(session);
                     FileLog.d("tmessages", String.format("Destroyed session %d (%s)", res.session_id, res instanceof TLRPC.TL_destroy_session_ok ? "ok" : "not found"));
@@ -2114,7 +2147,8 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                     migrateErrors.add("NETWORK_MIGRATE_");
                     migrateErrors.add("PHONE_MIGRATE_");
                     migrateErrors.add("USER_MIGRATE_");
-                    for (String possibleError : migrateErrors) {
+                    for (int a = 0; a < migrateErrors.size(); a++) {
+                        String possibleError = migrateErrors.get(a);
                         if (errorMessage.contains(possibleError)) {
                             String errorMsg = errorMessage.replace(possibleError, "");
 
@@ -2152,7 +2186,8 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
             if (!ignoreResult) {
                 boolean found = false;
 
-                for (RPCRequest request : runningRequests) {
+                for (int a = 0; a < runningRequests.size(); a++) {
+                    RPCRequest request = runningRequests.get(a);
                     if (request.respondsToMessageId(resultMid)) {
                         found = true;
 
@@ -2356,7 +2391,8 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
             }
             long resultMid = ((TLRPC.TL_bad_server_salt) message).bad_msg_id;
             if (resultMid != 0) {
-                for (RPCRequest request : runningRequests) {
+                for (int a = 0; a < runningRequests.size(); a++) {
+                    RPCRequest request = runningRequests.get(a);
                     if ((request.flags & RPCRequest.RPCRequestClassDownloadMedia) == 0) {
                         continue;
                     }
@@ -2389,7 +2425,8 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
             boolean confirm = true;
 
             if (detailedInfo instanceof TLRPC.TL_msg_detailed_info) {
-                for (RPCRequest request : runningRequests) {
+                for (int a = 0; a < runningRequests.size(); a++) {
+                    RPCRequest request = runningRequests.get(a);
                     if (request.respondsToMessageId(detailedInfo.msg_id)) {
                         if (request.completed) {
                             break;
@@ -2486,8 +2523,8 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                         itemsToDelete.add(pid);
                     }
                 }
-                for (Long pid : itemsToDelete) {
-                    pingIdToDate.remove(pid);
+                for (int a = 0; a < itemsToDelete.size(); a++) {
+                    pingIdToDate.remove(itemsToDelete.get(a));
                 }
             }
         }
@@ -2605,7 +2642,8 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
     public void tcpConnectionQuiackAckReceived(TcpConnection connection, int ack) {
         ArrayList<Long> arr = quickAckIdToRequestIds.get(ack);
         if (arr != null) {
-            for (RPCRequest request : runningRequests) {
+            for (int a = 0; a < runningRequests.size(); a++) {
+                RPCRequest request = runningRequests.get(a);
                 if (arr.contains(request.token)) {
                     if (request.quickAckBlock != null) {
                         request.quickAckBlock.quickAck();
@@ -2699,14 +2737,6 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
             int messageSeqNo = data.readInt32(false);
             int messageLength = data.readInt32(false);
 
-            if (connection.isMessageIdProcessed(messageId)) {
-                doNotProcess = true;
-            }
-
-            if (messageSeqNo % 2 != 0) {
-                connection.addMessageToConfirm(messageId);
-            }
-
             byte[] realMessageKeyFull = Utilities.computeSHA1(data.buffer, 24, Math.min(messageLength + 32 + 24, data.limit()));
             if (realMessageKeyFull == null) {
                 return;
@@ -2718,6 +2748,14 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                 connection.suspendConnection(true);
                 connection.connect();
                 return;
+            }
+
+            if (connection.isMessageIdProcessed(messageId)) {
+                doNotProcess = true;
+            }
+
+            if (messageSeqNo % 2 != 0) {
+                connection.addMessageToConfirm(messageId);
             }
 
             if (!doNotProcess) {
@@ -2776,7 +2814,8 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
     }
 
     public TLObject getRequestWithMessageId(long msgId) {
-        for (RPCRequest request : runningRequests) {
+        for (int a = 0; a < runningRequests.size(); a++) {
+            RPCRequest request = runningRequests.get(a);
             if (msgId == request.runningMessageId) {
                 return request.rawRequest;
             }

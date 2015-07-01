@@ -83,7 +83,7 @@ public class SharedPhotoVideoCell extends FrameLayoutFixed {
 
             checkBox = new CheckBox(context, R.drawable.round_check2);
             checkBox.setVisibility(INVISIBLE);
-            addView(checkBox, LayoutHelper.createFrame(22, 22, Gravity.RIGHT | Gravity.TOP, 6, 0, 6, 0));
+            addView(checkBox, LayoutHelper.createFrame(22, 22, Gravity.RIGHT | Gravity.TOP, 0, 6, 6, 0));
         }
 
         @Override

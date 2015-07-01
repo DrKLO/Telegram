@@ -19,10 +19,12 @@ import org.telegram.messenger.TLRPC;
 import org.telegram.ui.Cells.DialogCell;
 import org.telegram.ui.Cells.LoadingCell;
 
+import java.util.ArrayList;
+
 public class DialogsAdapter extends RecyclerView.Adapter {
 
     private Context mContext;
-    private boolean serverOnly;
+    private int dialogsType;
     private long openedDialogId;
     private int currentCount;
 
@@ -33,9 +35,9 @@ public class DialogsAdapter extends RecyclerView.Adapter {
         }
     }
 
-    public DialogsAdapter(Context context, boolean onlyFromServer) {
+    public DialogsAdapter(Context context, int type) {
         mContext = context;
-        serverOnly = onlyFromServer;
+        dialogsType = type;
     }
 
     public void setOpenedDialogId(long id) {
@@ -47,14 +49,20 @@ public class DialogsAdapter extends RecyclerView.Adapter {
         return current != getItemCount();
     }
 
+    private ArrayList<TLRPC.TL_dialog> getDialogsArray() {
+        if (dialogsType == 0) {
+            return MessagesController.getInstance().dialogs;
+        } else if (dialogsType == 1) {
+            return MessagesController.getInstance().dialogsServerOnly;
+        } else if (dialogsType == 2) {
+            return MessagesController.getInstance().dialogsGroupsOnly;
+        }
+        return null;
+    }
+
     @Override
     public int getItemCount() {
-        int count;
-        if (serverOnly) {
-            count = MessagesController.getInstance().dialogsServerOnly.size();
-        } else {
-            count = MessagesController.getInstance().dialogs.size();
-        }
+        int count = getDialogsArray().size();
         if (count == 0 && MessagesController.getInstance().loadingDialogs) {
             return 0;
         }
@@ -66,17 +74,11 @@ public class DialogsAdapter extends RecyclerView.Adapter {
     }
 
     public TLRPC.TL_dialog getItem(int i) {
-        if (serverOnly) {
-            if (i < 0 || i >= MessagesController.getInstance().dialogsServerOnly.size()) {
-                return null;
-            }
-            return MessagesController.getInstance().dialogsServerOnly.get(i);
-        } else {
-            if (i < 0 || i >= MessagesController.getInstance().dialogs.size()) {
-                return null;
-            }
-            return MessagesController.getInstance().dialogs.get(i);
+        ArrayList<TLRPC.TL_dialog> arrayList = getDialogsArray();
+        if (i < 0 || i >= arrayList.size()) {
+            return null;
         }
+        return arrayList.get(i);
     }
 
     @Override
@@ -100,22 +102,19 @@ public class DialogsAdapter extends RecyclerView.Adapter {
         if (viewHolder.getItemViewType() == 0) {
             DialogCell cell = (DialogCell) viewHolder.itemView;
             cell.useSeparator = (i != getItemCount() - 1);
-            TLRPC.TL_dialog dialog;
-            if (serverOnly) {
-                dialog = MessagesController.getInstance().dialogsServerOnly.get(i);
-            } else {
-                dialog = MessagesController.getInstance().dialogs.get(i);
+            TLRPC.TL_dialog dialog = getItem(i);
+            if (dialogsType == 0) {
                 if (AndroidUtilities.isTablet()) {
                     cell.setDialogSelected(dialog.id == openedDialogId);
                 }
             }
-            cell.setDialog(dialog, i, serverOnly);
+            cell.setDialog(dialog, i, dialogsType);
         }
     }
 
     @Override
     public int getItemViewType(int i) {
-        if (serverOnly && i == MessagesController.getInstance().dialogsServerOnly.size() || !serverOnly && i == MessagesController.getInstance().dialogs.size()) {
+        if (i == getDialogsArray().size()) {
             return 1;
         }
         return 0;

@@ -132,7 +132,7 @@ public class UserConfig {
                     int ver = data.readInt32(false);
                     if (ver == 1) {
                         int constructor = data.readInt32(false);
-                        currentUser = TLRPC.TL_userSelf.TLdeserialize(data, constructor, false);
+                        currentUser = TLRPC.User.TLdeserialize(data, constructor, false);
                         MessagesStorage.lastDateValue = data.readInt32(false);
                         MessagesStorage.lastPtsValue = data.readInt32(false);
                         MessagesStorage.lastSeqValue = data.readInt32(false);
@@ -159,7 +159,7 @@ public class UserConfig {
                         });
                     } else if (ver == 2) {
                         int constructor = data.readInt32(false);
-                        currentUser = TLRPC.TL_userSelf.TLdeserialize(data, constructor, false);
+                        currentUser = TLRPC.User.TLdeserialize(data, constructor, false);
 
                         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("userconfing", Context.MODE_PRIVATE);
                         registeredForPush = preferences.getBoolean("registeredForPush", false);
@@ -211,7 +211,7 @@ public class UserConfig {
                     byte[] userBytes = Base64.decode(user, Base64.DEFAULT);
                     if (userBytes != null) {
                         SerializedData data = new SerializedData(userBytes);
-                        currentUser = TLRPC.TL_userSelf.TLdeserialize(data, data.readInt32(false), false);
+                        currentUser = TLRPC.User.TLdeserialize(data, data.readInt32(false), false);
                         data.cleanup();
                     }
                 }

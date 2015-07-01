@@ -26,6 +26,7 @@ import android.widget.ListView;
 
 import org.telegram.android.AndroidUtilities;
 import com.aniways.anigram.messenger.R;
+import org.telegram.messenger.FileLog;
 import org.telegram.android.AnimationCompat.AnimatorListenerAdapterProxy;
 import org.telegram.android.AnimationCompat.AnimatorSetProxy;
 import org.telegram.android.AnimationCompat.ObjectAnimatorProxy;
@@ -147,7 +148,7 @@ public class DrawerLayoutContainer extends FrameLayout {
         }
         requestLayout();
 
-        final int newVisibility = drawerPosition > 0 ? VISIBLE : INVISIBLE;
+        final int newVisibility = drawerPosition > 0 ? VISIBLE : GONE;
         if (drawerLayout.getVisibility() != newVisibility) {
             drawerLayout.setVisibility(newVisibility);
         }
@@ -393,10 +394,14 @@ public class DrawerLayoutContainer extends FrameLayout {
 
             final LayoutParams lp = (LayoutParams) child.getLayoutParams();
 
-            if (drawerLayout != child) {
-                child.layout(lp.leftMargin, lp.topMargin, lp.leftMargin + child.getMeasuredWidth(), lp.topMargin + child.getMeasuredHeight());
-            } else {
-                child.layout(-child.getMeasuredWidth() + (int)drawerPosition, lp.topMargin, (int)drawerPosition, lp.topMargin + child.getMeasuredHeight());
+            try {
+                if (drawerLayout != child) {
+                    child.layout(lp.leftMargin, lp.topMargin, lp.leftMargin + child.getMeasuredWidth(), lp.topMargin + child.getMeasuredHeight());
+                } else {
+                    child.layout(-child.getMeasuredWidth() + (int)drawerPosition, lp.topMargin, (int)drawerPosition, lp.topMargin + child.getMeasuredHeight());
+                }
+            } catch (Exception e) {
+                FileLog.e("tmessages", e);
             }
         }
         inLayout = false;

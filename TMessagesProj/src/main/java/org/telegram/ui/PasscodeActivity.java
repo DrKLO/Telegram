@@ -456,7 +456,7 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
                 public boolean onPreDraw() {
                     listView.getViewTreeObserver().removeOnPreDrawListener(this);
                     fixLayoutInternal();
-                    return false;
+                    return true;
                 }
             });
         }

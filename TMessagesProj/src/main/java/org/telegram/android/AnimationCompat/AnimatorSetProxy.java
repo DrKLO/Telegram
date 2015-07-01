@@ -89,6 +89,15 @@ public class AnimatorSetProxy {
         return this;
     }
 
+    public AnimatorSetProxy setStartDelay(long delay) {
+        if (View10.NEED_PROXY) {
+            ((AnimatorSet10) animatorSet).setStartDelay(delay);
+        } else {
+            ((AnimatorSet) animatorSet).setStartDelay(delay);
+        }
+        return this;
+    }
+
     public void start() {
         if (View10.NEED_PROXY) {
             ((AnimatorSet10) animatorSet).start();
