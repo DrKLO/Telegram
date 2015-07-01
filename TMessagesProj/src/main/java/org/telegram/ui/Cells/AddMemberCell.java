@@ -21,6 +21,8 @@ import org.telegram.ui.Components.SimpleTextView;
 
 public class AddMemberCell extends FrameLayout {
 
+    private SimpleTextView textView;
+
     public AddMemberCell(Context context) {
         super(context);
 
@@ -29,10 +31,9 @@ public class AddMemberCell extends FrameLayout {
         imageView.setScaleType(ImageView.ScaleType.CENTER);
         addView(imageView, LayoutHelper.createFrame(48, 48, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 0 : 68, 8, LocaleController.isRTL ? 68 : 0, 0));
 
-        SimpleTextView textView = new SimpleTextView(context);
+        textView = new SimpleTextView(context);
         textView.setTextColor(0xff212121);
         textView.setTextSize(17);
-        textView.setText(LocaleController.getString("AddMember", R.string.AddMember));
         textView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
         addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 20, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 28 : 129, 22.5f, LocaleController.isRTL ? 129 : 28, 0));
     }
@@ -40,5 +41,9 @@ public class AddMemberCell extends FrameLayout {
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(64), MeasureSpec.EXACTLY));
+    }
+
+    public void setText(String text) {
+        textView.setText(text);
     }
 }

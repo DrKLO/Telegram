@@ -80,6 +80,11 @@ public class BaseCell extends View {
         }
     }
 
+    @Override
+    public boolean hasOverlappingRendering() {
+        return false;
+    }
+
     protected void onLongPress() {
 
     }

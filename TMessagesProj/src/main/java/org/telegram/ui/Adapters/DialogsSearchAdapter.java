@@ -160,7 +160,7 @@ public class DialogsSearchAdapter extends BaseSearchAdapterRecycler {
         }, true, RPCRequest.RPCRequestClassGeneric | RPCRequest.RPCRequestClassFailOnServerErrors);
     }
 
-    private void searchDialogsInternal(final String query, final boolean serverOnly, final int searchId) {
+    private void searchDialogsInternal(final String query, final int dialogsType, final int searchId) {
         if (needMessagesSearch == 2) {
             return;
         }
@@ -202,12 +202,12 @@ public class DialogsSearchAdapter extends BaseSearchAdapterRecycler {
                         int high_id = (int) (id >> 32);
                         if (lower_id != 0) {
                             if (high_id == 1) {
-                                if (!serverOnly && !chatsToLoad.contains(lower_id)) {
+                                if (dialogsType == 0 && !chatsToLoad.contains(lower_id)) {
                                     chatsToLoad.add(lower_id);
                                 }
                             } else {
                                 if (lower_id > 0) {
-                                    if (!usersToLoad.contains(lower_id)) {
+                                    if (dialogsType != 2 && !usersToLoad.contains(lower_id)) {
                                         usersToLoad.add(lower_id);
                                     }
                                 } else {
@@ -216,7 +216,7 @@ public class DialogsSearchAdapter extends BaseSearchAdapterRecycler {
                                     }
                                 }
                             }
-                        } else if (!serverOnly) {
+                        } else if (dialogsType == 0) {
                             if (!encryptedToLoad.contains(high_id)) {
                                 encryptedToLoad.add(high_id);
                             }
@@ -394,49 +394,51 @@ public class DialogsSearchAdapter extends BaseSearchAdapterRecycler {
                         resultArrayNames.add(dialogSearchResult.name);
                     }
 
-                    cursor = MessagesStorage.getInstance().getDatabase().queryFinalized("SELECT u.data, u.status, u.name, u.uid FROM users as u INNER JOIN contacts as c ON u.uid = c.uid");
-                    while (cursor.next()) {
-                        int uid = cursor.intValue(3);
-                        if (dialogsResult.containsKey((long) uid)) {
-                            continue;
-                        }
-                        String name = cursor.stringValue(2);
-                        String tName = LocaleController.getInstance().getTranslitString(name);
-                        if (name.equals(tName)) {
-                            tName = null;
-                        }
-                        String username = null;
-                        int usernamePos = name.lastIndexOf(";;;");
-                        if (usernamePos != -1) {
-                            username = name.substring(usernamePos + 3);
-                        }
-                        int found = 0;
-                        for (String q : search) {
-                            if (name.startsWith(q) || name.contains(" " + q) || tName != null && (tName.startsWith(q) || tName.contains(" " + q))) {
-                                found = 1;
-                            } else if (username != null && username.startsWith(q)) {
-                                found = 2;
+                    if (dialogsType != 2) {
+                        cursor = MessagesStorage.getInstance().getDatabase().queryFinalized("SELECT u.data, u.status, u.name, u.uid FROM users as u INNER JOIN contacts as c ON u.uid = c.uid");
+                        while (cursor.next()) {
+                            int uid = cursor.intValue(3);
+                            if (dialogsResult.containsKey((long) uid)) {
+                                continue;
                             }
-                            if (found != 0) {
-                                ByteBufferDesc data = MessagesStorage.getInstance().getBuffersStorage().getFreeBuffer(cursor.byteArrayLength(0));
-                                if (data != null && cursor.byteBufferValue(0, data.buffer) != 0) {
-                                    TLRPC.User user = TLRPC.User.TLdeserialize(data, data.readInt32(false), false);
-                                    if (user.status != null) {
-                                        user.status.expires = cursor.intValue(1);
-                                    }
-                                    if (found == 1) {
-                                        resultArrayNames.add(AndroidUtilities.generateSearchName(user.first_name, user.last_name, q));
-                                    } else {
-                                        resultArrayNames.add(AndroidUtilities.generateSearchName("@" + user.username, null, "@" + q));
-                                    }
-                                    resultArray.add(user);
+                            String name = cursor.stringValue(2);
+                            String tName = LocaleController.getInstance().getTranslitString(name);
+                            if (name.equals(tName)) {
+                                tName = null;
+                            }
+                            String username = null;
+                            int usernamePos = name.lastIndexOf(";;;");
+                            if (usernamePos != -1) {
+                                username = name.substring(usernamePos + 3);
+                            }
+                            int found = 0;
+                            for (String q : search) {
+                                if (name.startsWith(q) || name.contains(" " + q) || tName != null && (tName.startsWith(q) || tName.contains(" " + q))) {
+                                    found = 1;
+                                } else if (username != null && username.startsWith(q)) {
+                                    found = 2;
                                 }
-                                MessagesStorage.getInstance().getBuffersStorage().reuseFreeBuffer(data);
-                                break;
+                                if (found != 0) {
+                                    ByteBufferDesc data = MessagesStorage.getInstance().getBuffersStorage().getFreeBuffer(cursor.byteArrayLength(0));
+                                    if (data != null && cursor.byteBufferValue(0, data.buffer) != 0) {
+                                        TLRPC.User user = TLRPC.User.TLdeserialize(data, data.readInt32(false), false);
+                                        if (user.status != null) {
+                                            user.status.expires = cursor.intValue(1);
+                                        }
+                                        if (found == 1) {
+                                            resultArrayNames.add(AndroidUtilities.generateSearchName(user.first_name, user.last_name, q));
+                                        } else {
+                                            resultArrayNames.add(AndroidUtilities.generateSearchName("@" + user.username, null, "@" + q));
+                                        }
+                                        resultArray.add(user);
+                                    }
+                                    MessagesStorage.getInstance().getBuffersStorage().reuseFreeBuffer(data);
+                                    break;
+                                }
                             }
                         }
+                        cursor.dispose();
                     }
-                    cursor.dispose();
 
                     updateSearchResults(resultArray, resultArrayNames, encUsers, searchId);
                 } catch (Exception e) {
@@ -502,13 +504,14 @@ public class DialogsSearchAdapter extends BaseSearchAdapterRecycler {
         notifyDataSetChanged();
     }
 
-    public void searchDialogs(final String query, final boolean serverOnly) {
+    public void searchDialogs(final String query, final int dialogsType) {
         if (query != null && lastSearchText != null && query.equals(lastSearchText)) {
             return;
         }
         try {
             if (searchTimer != null) {
                 searchTimer.cancel();
+                searchTimer = null;
             }
         } catch (Exception e) {
             FileLog.e("tmessages", e);
@@ -524,7 +527,7 @@ public class DialogsSearchAdapter extends BaseSearchAdapterRecycler {
             searchMessagesInternal(null);
             notifyDataSetChanged();
         } else {
-            if (query.startsWith("#") && query.length() == 1) {
+            if (needMessagesSearch != 2 && (query.startsWith("#") && query.length() == 1)) {
                 messagesSearchEndReached = true;
                 if (!hashtagsLoadedFromDb) {
                     loadRecentHashtags();
@@ -553,12 +556,13 @@ public class DialogsSearchAdapter extends BaseSearchAdapterRecycler {
                 @Override
                 public void run() {
                     try {
+                        cancel();
                         searchTimer.cancel();
                         searchTimer = null;
                     } catch (Exception e) {
                         FileLog.e("tmessages", e);
                     }
-                    searchDialogsInternal(query, serverOnly, searchId);
+                    searchDialogsInternal(query, dialogsType, searchId);
                     AndroidUtilities.runOnUIThread(new Runnable() {
                         @Override
                         public void run() {

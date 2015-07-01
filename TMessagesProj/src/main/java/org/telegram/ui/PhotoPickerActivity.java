@@ -184,7 +184,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
                 }
 
                 @Override
-                public boolean onSearchCollapse() {
+                public boolean canCollapseSearch() {
                     finishFragment();
                     return false;
                 }
@@ -899,7 +899,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
                     if (listView != null) {
                         listView.getViewTreeObserver().removeOnPreDrawListener(this);
                     }
-                    return false;
+                    return true;
                 }
             });
         }

@@ -8,7 +8,6 @@
 
 package org.telegram.ui.Components;
 
-import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Rect;
@@ -25,20 +24,15 @@ public class SizeNotifierFrameLayout extends FrameLayout {
     private Rect rect = new Rect();
     private Drawable backgroundDrawable;
     private int keyboardHeight;
-    private SizeNotifierRelativeLayout.SizeNotifierRelativeLayoutDelegate delegate;
+    private int bottomClip;
+    private SizeNotifierFrameLayoutDelegate delegate;
+
+    public interface SizeNotifierFrameLayoutDelegate {
+        void onSizeChanged(int keyboardHeight, boolean isWidthGreater);
+    }
 
     public SizeNotifierFrameLayout(Context context) {
         super(context);
-        setWillNotDraw(false);
-    }
-
-    public SizeNotifierFrameLayout(Context context, android.util.AttributeSet attrs) {
-        super(context, attrs);
-        setWillNotDraw(false);
-    }
-
-    public SizeNotifierFrameLayout(Context context, android.util.AttributeSet attrs, int defStyle) {
-        super(context, attrs, defStyle);
         setWillNotDraw(false);
     }
 
@@ -58,23 +52,26 @@ public class SizeNotifierFrameLayout extends FrameLayout {
         return backgroundDrawable;
     }
 
-    public void setDelegate(SizeNotifierRelativeLayout.SizeNotifierRelativeLayoutDelegate delegate) {
+    public void setDelegate(SizeNotifierFrameLayoutDelegate delegate) {
         this.delegate = delegate;
     }
 
-    @SuppressLint("DrawAllocation")
     @Override
     protected void onLayout(boolean changed, int l, int t, int r, int b) {
         super.onLayout(changed, l, t, r, b);
         notifyHeightChanged();
     }
 
+    public int getKeyboardHeight() {
+        View rootView = getRootView();
+        getWindowVisibleDisplayFrame(rect);
+        int usableViewHeight = rootView.getHeight() - (rect.top != 0 ? AndroidUtilities.statusBarHeight : 0) - AndroidUtilities.getViewInset(rootView);
+        return usableViewHeight - (rect.bottom - rect.top);
+    }
+
     public void notifyHeightChanged() {
         if (delegate != null) {
-            View rootView = this.getRootView();
-            int usableViewHeight = rootView.getHeight() - AndroidUtilities.statusBarHeight - AndroidUtilities.getViewInset(rootView);
-            this.getWindowVisibleDisplayFrame(rect);
-            keyboardHeight = usableViewHeight - (rect.bottom - rect.top);
+            keyboardHeight = getKeyboardHeight();
             final boolean isWidthGreater = AndroidUtilities.displaySize.x > AndroidUtilities.displaySize.y;
             post(new Runnable() {
                 @Override
@@ -87,12 +84,23 @@ public class SizeNotifierFrameLayout extends FrameLayout {
         }
     }
 
+    public void setBottomClip(int value) {
+        bottomClip = value;
+    }
+
     @Override
     protected void onDraw(Canvas canvas) {
         if (backgroundDrawable != null) {
             if (backgroundDrawable instanceof ColorDrawable) {
+                if (bottomClip != 0) {
+                    canvas.save();
+                    canvas.clipRect(0, 0, getMeasuredWidth(), getMeasuredHeight() - bottomClip);
+                }
                 backgroundDrawable.setBounds(0, 0, getMeasuredWidth(), getMeasuredHeight());
                 backgroundDrawable.draw(canvas);
+                if (bottomClip != 0) {
+                    canvas.restore();
+                }
             } else {
                 float scaleX = (float) getMeasuredWidth() / (float) backgroundDrawable.getIntrinsicWidth();
                 float scaleY = (float) (getMeasuredHeight() + keyboardHeight) / (float) backgroundDrawable.getIntrinsicHeight();
@@ -101,8 +109,15 @@ public class SizeNotifierFrameLayout extends FrameLayout {
                 int height = (int) Math.ceil(backgroundDrawable.getIntrinsicHeight() * scale);
                 int x = (getMeasuredWidth() - width) / 2;
                 int y = (getMeasuredHeight() - height + keyboardHeight) / 2;
+                if (bottomClip != 0) {
+                    canvas.save();
+                    canvas.clipRect(0, 0, width, getMeasuredHeight() - bottomClip);
+                }
                 backgroundDrawable.setBounds(x, y, x + width, y + height);
                 backgroundDrawable.draw(canvas);
+                if (bottomClip != 0) {
+                    canvas.restore();
+                }
             }
         } else {
             super.onDraw(canvas);

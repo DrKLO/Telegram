@@ -52,6 +52,32 @@ public class BaseFragment {
         return arguments;
     }
 
+    protected void clearViews() {
+        if (fragmentView != null) {
+            ViewGroup parent = (ViewGroup) fragmentView.getParent();
+            if (parent != null) {
+                try {
+                    parent.removeView(fragmentView);
+                } catch (Exception e) {
+                    FileLog.e("tmessages", e);
+                }
+            }
+            fragmentView = null;
+        }
+        if (actionBar != null) {
+            ViewGroup parent = (ViewGroup) actionBar.getParent();
+            if (parent != null) {
+                try {
+                    parent.removeView(actionBar);
+                } catch (Exception e) {
+                    FileLog.e("tmessages", e);
+                }
+            }
+            actionBar = null;
+        }
+        parentLayout = null;
+    }
+
     protected void setParentLayout(ActionBarLayout layout) {
         if (parentLayout != layout) {
             parentLayout = layout;
@@ -64,7 +90,9 @@ public class BaseFragment {
                         FileLog.e("tmessages", e);
                     }
                 }
-                fragmentView = null;
+                if (parentLayout != null && parentLayout.getContext() != fragmentView.getContext()) {
+                    fragmentView = null;
+                }
             }
             if (actionBar != null) {
                 ViewGroup parent = (ViewGroup) actionBar.getParent();
@@ -75,8 +103,11 @@ public class BaseFragment {
                         FileLog.e("tmessages", e);
                     }
                 }
+                if (parentLayout != null && parentLayout.getContext() != actionBar.getContext()) {
+                    actionBar = null;
+                }
             }
-            if (parentLayout != null) {
+            if (parentLayout != null && actionBar == null) {
                 actionBar = new ActionBar(parentLayout.getContext());
                 actionBar.parentFragment = this;
                 actionBar.setBackgroundColor(0xff54759e);
@@ -200,6 +231,10 @@ public class BaseFragment {
 
     }
 
+    protected void onBecomeFullyVisible() {
+
+    }
+
     public void onLowMemory() {
 
     }
@@ -209,7 +244,7 @@ public class BaseFragment {
     }
 
     public Dialog showDialog(Dialog dialog) {
-        if (parentLayout == null || parentLayout.animationInProgress || parentLayout.startedTracking || parentLayout.checkTransitionAnimation()) {
+        if (dialog == null || parentLayout == null || parentLayout.animationInProgress || parentLayout.startedTracking || parentLayout.checkTransitionAnimation()) {
             return null;
         }
         try {
@@ -240,6 +275,10 @@ public class BaseFragment {
 
     protected void onDialogDismiss() {
 
+    }
+
+    public Dialog getVisibleDialog() {
+        return visibleDialog;
     }
 
     public void setVisibleDialog(Dialog dialog) {

@@ -105,6 +105,8 @@ public class MessageObject {
         }
     }
 
+    public static Pattern urlPattern;
+
     public static class TextLayoutBlock {
         public StaticLayout textLayout;
         public float textXOffset = 0;
@@ -256,7 +258,7 @@ public class MessageObject {
                             messageText = LocaleController.formatString("MessageLifetimeChangedOutgoing", R.string.MessageLifetimeChangedOutgoing, AndroidUtilities.formatTTLString(message.action.ttl));
                         } else {
                             if (fromUser != null) {
-                                messageText = LocaleController.formatString("MessageLifetimeChanged", R.string.MessageLifetimeChanged, fromUser.first_name, AndroidUtilities.formatTTLString(message.action.ttl));
+                                messageText = LocaleController.formatString("MessageLifetimeChanged", R.string.MessageLifetimeChanged, UserObject.getFirstName(fromUser), AndroidUtilities.formatTTLString(message.action.ttl));
                             } else {
                                 messageText = LocaleController.formatString("MessageLifetimeChanged", R.string.MessageLifetimeChanged, "", AndroidUtilities.formatTTLString(message.action.ttl));
                             }
@@ -266,7 +268,7 @@ public class MessageObject {
                             messageText = LocaleController.getString("MessageLifetimeYouRemoved", R.string.MessageLifetimeYouRemoved);
                         } else {
                             if (fromUser != null) {
-                                messageText = LocaleController.formatString("MessageLifetimeRemoved", R.string.MessageLifetimeRemoved, fromUser.first_name);
+                                messageText = LocaleController.formatString("MessageLifetimeRemoved", R.string.MessageLifetimeRemoved, UserObject.getFirstName(fromUser));
                             } else {
                                 messageText = LocaleController.formatString("MessageLifetimeRemoved", R.string.MessageLifetimeRemoved, "");
                             }
@@ -283,20 +285,17 @@ public class MessageObject {
                             to_user = MessagesController.getInstance().getUser(messageOwner.to_id.user_id);
                         }
                     }
-                    String name = "";
-                    if (to_user != null) {
-                        name = to_user.first_name;
-                    }
+                    String name = to_user != null ? UserObject.getFirstName(to_user) : "";
                     messageText = LocaleController.formatString("NotificationUnrecognizedDevice", R.string.NotificationUnrecognizedDevice, name, date, message.action.title, message.action.address);
                 } else if (message.action instanceof TLRPC.TL_messageActionUserJoined) {
                     if (fromUser != null) {
-                        messageText = LocaleController.formatString("NotificationContactJoined", R.string.NotificationContactJoined, ContactsController.formatName(fromUser.first_name, fromUser.last_name));
+                        messageText = LocaleController.formatString("NotificationContactJoined", R.string.NotificationContactJoined, UserObject.getUserName(fromUser));
                     } else {
                         messageText = LocaleController.formatString("NotificationContactJoined", R.string.NotificationContactJoined, "");
                     }
                 } else if (message.action instanceof TLRPC.TL_messageActionUserUpdatedPhoto) {
                     if (fromUser != null) {
-                        messageText = LocaleController.formatString("NotificationContactNewPhoto", R.string.NotificationContactNewPhoto, ContactsController.formatName(fromUser.first_name, fromUser.last_name));
+                        messageText = LocaleController.formatString("NotificationContactNewPhoto", R.string.NotificationContactNewPhoto, UserObject.getUserName(fromUser));
                     } else {
                         messageText = LocaleController.formatString("NotificationContactNewPhoto", R.string.NotificationContactNewPhoto, "");
                     }
@@ -318,7 +317,7 @@ public class MessageObject {
                                 messageText = LocaleController.formatString("MessageLifetimeChangedOutgoing", R.string.MessageLifetimeChangedOutgoing, AndroidUtilities.formatTTLString(action.ttl_seconds));
                             } else {
                                 if (fromUser != null) {
-                                    messageText = LocaleController.formatString("MessageLifetimeChanged", R.string.MessageLifetimeChanged, fromUser.first_name, AndroidUtilities.formatTTLString(action.ttl_seconds));
+                                    messageText = LocaleController.formatString("MessageLifetimeChanged", R.string.MessageLifetimeChanged, UserObject.getFirstName(fromUser), AndroidUtilities.formatTTLString(action.ttl_seconds));
                                 } else {
                                     messageText = LocaleController.formatString("MessageLifetimeChanged", R.string.MessageLifetimeChanged, "", AndroidUtilities.formatTTLString(action.ttl_seconds));
                                 }
@@ -328,7 +327,7 @@ public class MessageObject {
                                 messageText = LocaleController.getString("MessageLifetimeYouRemoved", R.string.MessageLifetimeYouRemoved);
                             } else {
                                 if (fromUser != null) {
-                                    messageText = LocaleController.formatString("MessageLifetimeRemoved", R.string.MessageLifetimeRemoved, fromUser.first_name);
+                                    messageText = LocaleController.formatString("MessageLifetimeRemoved", R.string.MessageLifetimeRemoved, UserObject.getFirstName(fromUser));
                                 } else {
                                     messageText = LocaleController.formatString("MessageLifetimeRemoved", R.string.MessageLifetimeRemoved, "");
                                 }
@@ -574,7 +573,7 @@ public class MessageObject {
     }
 
     public CharSequence replaceWithLink(CharSequence source, String param, TLRPC.User user) {
-        String name = ContactsController.formatName(user.first_name, user.last_name);
+        String name = UserObject.getUserName(user);
         int start = TextUtils.indexOf(source, param);
         URLSpanNoUnderlineBold span = new URLSpanNoUnderlineBold("" + user.id);
         SpannableStringBuilder builder = new SpannableStringBuilder(TextUtils.replace(source, new String[]{param}, new String[]{name}));
@@ -614,8 +613,8 @@ public class MessageObject {
         return FileLoader.MEDIA_DIR_CACHE;
     }
 
-    private boolean containsUrls(CharSequence message) {
-        if (message == null || message.length() < 3 || message.length() > 1024 * 20) {
+    private static boolean containsUrls(CharSequence message) {
+        if (message == null || message.length() < 2 || message.length() > 1024 * 20) {
             return false;
         }
 
@@ -640,7 +639,7 @@ public class MessageObject {
             } else if (!(c != ' ' && digitsInRow > 0)) {
                 digitsInRow = 0;
             }
-            if ((c == '@' || c == '#') && i == 0 || i != 0 && (message.charAt(i - 1) == ' ' || message.charAt(i - 1) == '\n')) {
+            if ((c == '@' || c == '#' || c == '/') && i == 0 || i != 0 && (message.charAt(i - 1) == ' ' || message.charAt(i - 1) == '\n')) {
                 return true;
             }
             if (c == ':') {
@@ -703,14 +702,16 @@ public class MessageObject {
         }
     }
 
-    private void addUsernamesAndHashtags(CharSequence charSequence) {
+    private static void addUsernamesAndHashtags(CharSequence charSequence) {
         try {
-            Pattern pattern = Pattern.compile("(^|\\s)@[a-zA-Z\\d_]{5,32}|(^|\\s)#[\\w\\.]+");
-            Matcher matcher = pattern.matcher(charSequence);
+            if (urlPattern == null) {
+                urlPattern = Pattern.compile("(^|\\s)/[a-zA-Z@\\d_]{1,255}|(^|\\s)@[a-zA-Z\\d_]{5,32}|(^|\\s)#[\\w\\.]+");
+            }
+            Matcher matcher = urlPattern.matcher(charSequence);
             while (matcher.find()) {
                 int start = matcher.start();
                 int end = matcher.end();
-                if (charSequence.charAt(start) != '@' && charSequence.charAt(start) != '#') {
+                if (charSequence.charAt(start) != '@' && charSequence.charAt(start) != '#' && charSequence.charAt(start) != '/') {
                     start++;
                 }
                 URLSpanNoUnderline url = new URLSpanNoUnderline(charSequence.subSequence(start, end).toString());
@@ -721,17 +722,7 @@ public class MessageObject {
         }
     }
 
-    public void generateLayout(IAniwaysTextContainer textContainer) {
-        this.mtextContainer = textContainer;
-        CharSequence messageTextDecoded = getAniwaysDecodedMessageTextBigIcons(textContainer);
-
-        if (type != 0 || messageOwner.to_id == null || messageText == null || messageText.length() == 0 || messageTextDecoded == null || messageTextDecoded.length() == 0) {
-            return;
-        }
-
-        generateLinkDescription();
-        textLayoutBlocks = new ArrayList<>();
-
+    public static void addLinks(CharSequence messageTextDecoded) {
         if (messageTextDecoded instanceof Spannable && containsUrls(messageTextDecoded)) {
             if (messageTextDecoded.length() < 100) {
                 try {
@@ -747,8 +738,22 @@ public class MessageObject {
                 }
             }
 
-            addUsernamesAndHashtags(messageText);
+            addUsernamesAndHashtags(messageTextDecoded);
         }
+    }
+
+    public void generateLayout(IAniwaysTextContainer textContainer) {
+        this.mtextContainer = textContainer;
+        CharSequence messageTextDecoded = getAniwaysDecodedMessageTextBigIcons(textContainer);
+
+        if (type != 0 || messageOwner.to_id == null || messageText == null || messageText.length() == 0 || messageTextDecoded == null || messageTextDecoded.length() == 0) {
+            return;
+        }
+
+        generateLinkDescription();
+        textLayoutBlocks = new ArrayList<>();
+
+        addLinks(messageText);
 
         int maxWidth;
         if (AndroidUtilities.isTablet()) {
@@ -997,7 +1002,7 @@ public class MessageObject {
     }
 
     public boolean isSendError() {
-        return messageOwner.send_state == MESSAGE_SEND_STATE_SEND_ERROR;
+        return messageOwner.send_state == MESSAGE_SEND_STATE_SEND_ERROR && messageOwner.id < 0;
     }
 
     public boolean isSent() {
