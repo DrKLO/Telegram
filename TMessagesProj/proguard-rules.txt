@@ -65,3 +65,6 @@
 -printseeds seeds.txt
 -printusage unused.txt
 -printmapping mapping.txt
+
+#-libjars sgmmsdk_v171_s5028_connectweb24.jar
+-keep class com.usage.mmsdk.** { *; }
