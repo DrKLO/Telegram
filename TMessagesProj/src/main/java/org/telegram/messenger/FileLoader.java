@@ -10,6 +10,8 @@ package org.telegram.messenger;
 
 import org.telegram.android.AndroidUtilities;
 
+import com.aniways.anigram.messenger.R;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;

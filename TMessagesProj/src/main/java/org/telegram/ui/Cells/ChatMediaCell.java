@@ -15,6 +15,8 @@ import android.graphics.Paint;
 import android.graphics.RectF;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
+import android.os.Handler;
+import android.os.Looper;
 import android.text.Layout;
 import android.text.Spannable;
 import android.text.StaticLayout;
@@ -31,8 +33,11 @@ import org.telegram.android.SendMessagesHelper;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLoader;
 import org.telegram.android.MediaController;
+
+import com.aniways.Utils;
+import com.aniways.anigram.messenger.R;
+import com.aniways.data.AniwaysPrivateConfig;
 import org.telegram.messenger.FileLog;
-import org.telegram.messenger.R;
 import org.telegram.messenger.TLRPC;
 import org.telegram.android.MessageObject;
 import org.telegram.ui.Components.RadialProgress;
@@ -149,7 +154,19 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
     @Override
     protected void onDetachedFromWindow() {
         super.onDetachedFromWindow();
-        photoImage.onDetachedFromWindow();
+
+        if(photoImage != null && photoImage.currentImage != null && photoImage.currentImage instanceof pl.droidsonroids.gif.GifDrawable) {
+            photoImage.currentImage.setCallback(null);
+            pl.droidsonroids.gif.GifDrawable gif = (pl.droidsonroids.gif.GifDrawable)photoImage.currentImage;
+            gif.stop();
+            gif.recycle();
+            photoImage.onDetachedFromWindow();
+        }
+
+        if (photoImage != null) {
+            photoImage.onDetachedFromWindow();
+        }
+
         if (gifDrawable != null) {
             MediaController.getInstance().clearGifDrawable(this);
             gifDrawable = null;
@@ -623,11 +640,18 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
                 photoImage.setImage(currentUrl, null, messageObject.isOut() ? ResourceLoader.geoOutDrawable : ResourceLoader.geoInDrawable, null, 0);
             } else if (messageObject.type == 13) { //webp
                 drawBackground = false;
-                for (TLRPC.DocumentAttribute attribute : messageObject.messageOwner.media.document.attributes) {
-                    if (attribute instanceof TLRPC.TL_documentAttributeImageSize) {
-                        photoWidth = attribute.w;
-                        photoHeight = attribute.h;
-                        break;
+                if(messageObject.isAniwaysSticker()) {
+                    photoWidth = AniwaysPrivateConfig.getInstance().bigIconWidth;
+                    photoHeight = AniwaysPrivateConfig.getInstance().bigIconHeight;
+                    photoImage.setAspectFit(true);
+                }
+                else{
+                    for (TLRPC.DocumentAttribute attribute : messageObject.messageOwner.media.document.attributes) {
+                        if (attribute instanceof TLRPC.TL_documentAttributeImageSize) {
+                            photoWidth = attribute.w;
+                            photoHeight = attribute.h;
+                            break;
+                        }
                     }
                 }
                 float maxHeight = AndroidUtilities.displaySize.y * 0.4f;
@@ -663,6 +687,16 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
                                 currentPhotoObjectThumb != null ? currentPhotoObjectThumb.location : null,
                                 "b1",
                                 messageObject.messageOwner.media.document.size, "webp", true);
+                    }
+                    //TLObject fileLocation, String httpUrl, String filter, Drawable thumb, TLRPC.FileLocation thumbLocation, String thumbFilter, int size, boolean cacheOnly
+                    else if(messageObject.isAniwaysSticker()) {
+                        photoImage.setImage(null, messageObject.messageOwner.attachPath,
+                                String.format(Locale.US, "%d_%d", photoWidth, photoHeight),
+                                null,
+                                currentPhotoObjectThumb != null ? currentPhotoObjectThumb.location : null,
+                                null,
+                                6556, "png", false); //TODO: Get better size estimation
+
                     }
                 } else if (messageObject.messageOwner.media.document.id != 0) {
                     photoImage.setImage(messageObject.messageOwner.media.document, null,
@@ -977,6 +1011,28 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
         }
     }
 
+    Drawable.Callback aniwaysGifCallback = new Drawable.Callback() {
+        ChatMediaCell chatMediaCell = ChatMediaCell.this;
+        Handler mHandler = new Handler(Looper.getMainLooper());
+
+        @Override
+        public void invalidateDrawable(Drawable who) {
+            if(chatMediaCell != null){
+                chatMediaCell.invalidate();
+            }
+        }
+
+        @Override
+        public void scheduleDrawable(Drawable who, Runnable what, long when) {
+            mHandler.postAtTime(what, who, when);
+        }
+
+        @Override
+        public void unscheduleDrawable(Drawable who, Runnable what) {
+            mHandler.removeCallbacks(what, who);
+        }
+    };
+
     @Override
     protected void onAfterBackgroundDraw(Canvas canvas) {
         boolean imageDrawn = false;
@@ -989,6 +1045,11 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
         } else {
             photoImage.setPressed(isPressed() && isCheckPressed || !isCheckPressed && isPressed || isHighlighted);
             photoImage.setVisible(!PhotoViewer.getInstance().isShowingImage(currentMessageObject), false);
+            if (photoImage.currentImage instanceof pl.droidsonroids.gif.GifDrawable){
+                if(!Utils.isAndroidVersionAtLeast(11) || photoImage.currentImage.getCallback() != aniwaysGifCallback) {
+                    photoImage.currentImage.setCallback(aniwaysGifCallback);
+                }
+            }
             imageDrawn = photoImage.draw(canvas);
             drawTime = photoImage.getVisible();
         }

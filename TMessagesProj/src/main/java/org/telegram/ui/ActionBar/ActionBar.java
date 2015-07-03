@@ -23,7 +23,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import org.telegram.android.AndroidUtilities;
-import org.telegram.messenger.R;
+import com.aniways.anigram.messenger.R;
 import org.telegram.ui.Components.LayoutHelper;
 
 public class ActionBar extends FrameLayout {

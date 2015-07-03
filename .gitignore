@@ -1,10 +1,19 @@
 .idea/
 .gradle/
+Aniways/
 build/
 obj/
 *.iml
 local.properties
 *.keystore
+*.trace
 gradle.properties
 
 TMessagesProj/src/main/java/org/telegram/messenger/BuildVars.java
+aniways/
+TMessagesProj/TMessagesProj-release.apk
+TMessagesProj/manifest-merger-release-report.txt
+
+TMessagesProj/mapping.txt
+TMessagesProj/seeds.txt
+TMessagesProj/unused.txt

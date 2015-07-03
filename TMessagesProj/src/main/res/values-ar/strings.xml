@@ -2,8 +2,11 @@
 
 <!--Translation by Khalid Alaraifi-->
 
-<resources>
-    <string name="AppName">Telegram</string>
+<resources
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:ignore="MissingTranslation"
+    tools:locale="en">
+    <string name="AppName">Aniways Messenger</string>
     <string name="LanguageName">العربية</string>
     <string name="LanguageNameInEnglish">Arabic</string>
     <string name="LanguageCode">ar</string>
@@ -173,7 +176,7 @@
     <!--contacts view-->
     <string name="SelectContact">اختر جهة اتصال</string>
     <string name="NoContacts">لا توجد جهات اتصال بعد</string>
-    <string name="InviteText">https://telegram.org/dl مرحبا! هيا نستخدم تيليجرام: </string>
+    <string name="InviteText">http://aniways.com/anygram/dl2 مرحبا! هيا نستخدم تيليجرام: </string>
     <string name="TodayAt">في</string>
     <string name="YesterdayAt">أمس الساعة</string>
     <string name="Online">متصل</string>
@@ -580,8 +583,8 @@
     <string name="ActionKickUserYou">un1 قام بإخراجك</string>
     <string name="ActionAddUserYou">un1 قام بإضافتك</string>
     <string name="ActionAddUserSelf">un1 عاد إلى المجموعة</string>
+    <string name="UnsuppotedMedia">نسخة تيليجرام الموجودة لديك لا تدعم هذه الرسالة. الرجاء التحديث لأحدث نسخة: http://aniways.com/anygram/dl2</string>
     <string name="ActionAddUserSelfYou">لقد عدت إلى المجموعة</string>
-    <string name="UnsuppotedMedia">نسخة تيليجرام الموجودة لديك لا تدعم هذه الرسالة. الرجاء التحديث لأحدث نسخة لاستعراضها: https://telegram.org/update</string>
     <string name="AttachPhoto">صورة</string>
     <string name="AttachVideo">مقطع مرئي</string>
     <string name="AttachLocation">موقع</string>

@@ -23,10 +23,19 @@ import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.view.View;
 
+import com.aniways.data.AniwaysPrivateConfig;
+import com.aniways.volley.VolleyError;
+import com.aniways.volley.toolbox.Volley;
+
 import org.telegram.messenger.TLObject;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.Utilities;
+import org.telegram.ui.Cells.ChatMediaCell;
+
+import java.io.IOException;
+
+import pl.droidsonroids.gif.GifDrawable;
 
 public class ImageReceiver implements NotificationCenter.NotificationCenterDelegate {
 
@@ -64,7 +73,7 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
     private TLRPC.FileLocation currentThumbLocation;
     private int currentSize;
     private boolean currentCacheOnly;
-    private BitmapDrawable currentImage;
+    public Drawable currentImage;
     private BitmapDrawable currentThumb;
     private Drawable staticThumb;
 
@@ -231,7 +240,62 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
             delegate.didSetImage(this, currentImage != null || currentThumb != null || staticThumb != null, currentImage == null);
         }
 
-        ImageLoader.getInstance().loadImageForImageReceiver(this);
+        if(httpUrl != null && httpUrl.endsWith(".gif")) {
+            byte[] data;
+            GifDrawable gif = null;
+            if(httpUrl != null && httpUrl.endsWith(".gif")) {
+                data = (byte[])Volley.getImageLoader().getCached(httpUrl, AniwaysPrivateConfig.getInstance().bigIconWidth, AniwaysPrivateConfig.getInstance().bigIconHeight, httpUrl);
+                if(data != null){
+                    try {
+                        gif = new GifDrawable(data);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+            if(gif == null){
+                Volley.getImageLoader().get(httpUrl, new com.aniways.volley.toolbox.ImageLoader.ImageListener() {
+                    @Override
+                    public void onResponse(com.aniways.volley.toolbox.ImageLoader.ImageContainer response, boolean isImmediate) {
+                        byte[] data = (byte[])response.getRawData();
+                        if(data != null){
+                            try {
+                                //TODO: make the reference to the chatMediaCell weak..
+                                //gif.parentView = new WeakReference<View>(chatMediaCell);
+                                GifDrawable gif = new GifDrawable(data);
+                                currentImage = gif;
+                                //TODO: need to know when to saver this link to no leak memory and tax CPU with endless animation
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                        else{
+                            //TODO: Log
+                        }
+                    }
+
+                    @Override
+                    public void onErrorResponse(VolleyError error) {
+                        //TODO: log
+                    }
+                });
+
+                if (parentView != null) {
+                    parentView.invalidate();
+                }
+            }
+            else{
+                //TODO: need to know when to saver this link to no leak memory and tax CPU with endless animation
+                //TODO: make the reference to the chatMediaCell weak..
+                //gif.parentView = new WeakReference<View>(chatMediaCell);
+
+
+                currentImage = gif;
+            }
+        }
+        else {
+            ImageLoader.getInstance().loadImageForImageReceiver(this);
+        }
         if (parentView != null) {
             if (invalidateAll) {
                 parentView.invalidate();
@@ -526,7 +590,7 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
 
     public boolean draw(Canvas canvas) {
         try {
-            BitmapDrawable bitmapDrawable = null;
+            Drawable bitmapDrawable = null;
             if (!forcePreview && currentImage != null) {
                 bitmapDrawable = currentImage;
             } else if (staticThumb instanceof BitmapDrawable) {
@@ -572,8 +636,8 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
     }
 
     public Bitmap getBitmap() {
-        if (currentImage != null) {
-            return currentImage.getBitmap();
+        if (currentImage != null && currentImage instanceof BitmapDrawable) {
+            return ((BitmapDrawable)currentImage).getBitmap();
         } else if (currentThumb != null) {
             return currentThumb.getBitmap();
         } else if (staticThumb instanceof BitmapDrawable) {
@@ -849,7 +913,7 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
 
     private void recycleBitmap(String newKey, boolean thumb) {
         String key;
-        BitmapDrawable image;
+        Drawable image;
         if (thumb) {
             if (currentThumb == null) {
                 return;
@@ -870,15 +934,22 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
         if (key == null || image == null || image == newBitmap) {
             return;
         }
-        Bitmap bitmap = image.getBitmap();
-        boolean canDelete = ImageLoader.getInstance().decrementUseCount(key);
-        if (!ImageLoader.getInstance().isInCache(key)) {
-            if (ImageLoader.getInstance().runtimeHack != null) {
-                ImageLoader.getInstance().runtimeHack.trackAlloc(bitmap.getRowBytes() * bitmap.getHeight());
+        Bitmap bitmap = null;
+        if(image instanceof BitmapDrawable) {
+            bitmap = ((BitmapDrawable) image).getBitmap();
+
+            boolean canDelete = ImageLoader.getInstance().decrementUseCount(key);
+            if (!ImageLoader.getInstance().isInCache(key)) {
+                if (ImageLoader.getInstance().runtimeHack != null) {
+                    ImageLoader.getInstance().runtimeHack.trackAlloc(bitmap.getRowBytes() * bitmap.getHeight());
+                }
+                if (canDelete) {
+                    bitmap.recycle();
+                }
             }
-            if (canDelete) {
-                bitmap.recycle();
-            }
+        }
+        else if(image instanceof GifDrawable){
+            ((GifDrawable) image).recycle();
         }
         if (thumb) {
             currentThumb = null;

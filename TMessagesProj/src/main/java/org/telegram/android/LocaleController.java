@@ -21,7 +21,7 @@ import android.util.Xml;
 import org.telegram.android.time.FastDateFormat;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLog;
-import org.telegram.messenger.R;
+import com.aniways.anigram.messenger.R;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.ApplicationLoader;
 import org.xmlpull.v1.XmlPullParser;
@@ -223,6 +223,78 @@ public class LocaleController {
         localeInfo.name = "한국어";
         localeInfo.nameEnglish = "Korean";
         localeInfo.shortName = "ko";
+        localeInfo.pathToFile = null;
+        sortedLanguages.add(localeInfo);
+        languagesDict.put(localeInfo.shortName, localeInfo);
+
+        localeInfo = new LocaleInfo();
+        localeInfo.name = "עברית";
+        localeInfo.nameEnglish = "Hebrew";
+        localeInfo.shortName = "he";
+        localeInfo.pathToFile = null;
+        sortedLanguages.add(localeInfo);
+        languagesDict.put(localeInfo.shortName, localeInfo);
+
+        localeInfo = new LocaleInfo();
+        localeInfo.name = "Русский";
+        localeInfo.nameEnglish = "Russian";
+        localeInfo.shortName = "ru";
+        localeInfo.pathToFile = null;
+        sortedLanguages.add(localeInfo);
+        languagesDict.put(localeInfo.shortName, localeInfo);
+
+        localeInfo = new LocaleInfo();
+        localeInfo.name = "پارسی";
+        localeInfo.nameEnglish = "Pasrsi";
+        localeInfo.shortName = "fa";
+        localeInfo.pathToFile = null;
+        sortedLanguages.add(localeInfo);
+        languagesDict.put(localeInfo.shortName, localeInfo);
+
+        localeInfo = new LocaleInfo();
+        localeInfo.name = "Indonesia";
+        localeInfo.nameEnglish = "Indonesian";
+        localeInfo.shortName = "id";
+        localeInfo.pathToFile = null;
+        sortedLanguages.add(localeInfo);
+        languagesDict.put(localeInfo.shortName, localeInfo);
+
+        localeInfo = new LocaleInfo();
+        localeInfo.name = "Türkçe";
+        localeInfo.nameEnglish = "Türkçe";
+        localeInfo.shortName = "tr";
+        localeInfo.pathToFile = null;
+        sortedLanguages.add(localeInfo);
+        languagesDict.put(localeInfo.shortName, localeInfo);
+
+        localeInfo = new LocaleInfo();
+        localeInfo.name = "Ўзбекча (кирилл)";
+        localeInfo.nameEnglish = "Uzbek (Cyrillic)";
+        localeInfo.shortName = "uz";
+        localeInfo.pathToFile = null;
+        sortedLanguages.add(localeInfo);
+        languagesDict.put(localeInfo.shortName, localeInfo);
+
+        localeInfo = new LocaleInfo();
+        localeInfo.name = "中文";
+        localeInfo.nameEnglish = "Chinese (China)";
+        localeInfo.shortName = "zh_CN";
+        localeInfo.pathToFile = null;
+        sortedLanguages.add(localeInfo);
+        languagesDict.put(localeInfo.shortName, localeInfo);
+
+        localeInfo = new LocaleInfo();
+        localeInfo.name = "中文（香港）";
+        localeInfo.nameEnglish = "Chinese (Hong Kong)";
+        localeInfo.shortName = "zh_HK";
+        localeInfo.pathToFile = null;
+        sortedLanguages.add(localeInfo);
+        languagesDict.put(localeInfo.shortName, localeInfo);
+
+        localeInfo = new LocaleInfo();
+        localeInfo.name = "中文";
+        localeInfo.nameEnglish = "Chinese";
+        localeInfo.shortName = "zh";
         localeInfo.pathToFile = null;
         sortedLanguages.add(localeInfo);
         languagesDict.put(localeInfo.shortName, localeInfo);
@@ -550,7 +622,7 @@ public class LocaleController {
                 }
             }
             if (newLocale != null) {
-                if (localeInfo.pathToFile == null) {
+                 if (localeInfo.pathToFile == null) {
                     localeValues.clear();
                 } else if (!fromFile) {
                     localeValues = getLocaleFileStrings(new File(localeInfo.pathToFile));

@@ -27,6 +27,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.provider.ContactsContract;
 import android.provider.MediaStore;
+import android.text.Editable;
 import android.text.TextUtils;
 import android.util.Base64;
 import android.util.SparseArray;
@@ -47,6 +48,9 @@ import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import com.aniways.Aniways;
+import com.aniways.anigram.messenger.R;
 
 import org.telegram.android.AndroidUtilities;
 import org.telegram.PhoneFormat.PhoneFormat;
@@ -77,7 +81,6 @@ import org.telegram.android.MessageObject;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.android.MessagesController;
 import org.telegram.android.NotificationCenter;
-import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.Adapters.MentionsAdapter;
@@ -4479,11 +4482,11 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         NotificationsController.getInstance().setOpennedDialogId(0);
         if (chatActivityEnterView != null) {
             chatActivityEnterView.onPause();
-            String text = chatActivityEnterView.getFieldText();
+            Editable text = chatActivityEnterView.getFieldEditableText();
             if (text != null) {
                 SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
                 SharedPreferences.Editor editor = preferences.edit();
-                editor.putString("dialog_" + dialog_id, text);
+                editor.putString("dialog_" + dialog_id, Aniways.serializeMessage(text));
                 editor.commit();
             }
             chatActivityEnterView.setFieldFocused(false);

@@ -11,15 +11,21 @@ package org.telegram.ui.Cells;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.graphics.Point;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.text.Layout;
+import android.text.Spannable;
 import android.text.StaticLayout;
 import android.text.TextPaint;
 import android.text.TextUtils;
+import android.view.View;
 import android.view.MotionEvent;
 
 import org.telegram.android.AndroidUtilities;
+import com.aniways.Aniways;
+import com.aniways.AniwaysFoursquarePlaceSpan;
+import com.aniways.AniwaysIconInfoDisplayer;
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.android.LocaleController;
 import org.telegram.android.MessageObject;
@@ -27,17 +33,24 @@ import org.telegram.android.UserObject;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.TLRPC;
 import org.telegram.android.ContactsController;
-import org.telegram.android.Emoji;
 import org.telegram.android.MessagesController;
-import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.android.ImageReceiver;
 import org.telegram.ui.Components.AvatarDrawable;
 
+import com.aniways.AniwaysDynamicImageSpansContainer;
+import com.aniways.AniwaysMessageListViewItemWrapperLayout;
+import com.aniways.IAniwaysTextContainer;
+import com.aniways.IIconInfoDisplayer;
+import com.aniways.Log;
+import com.aniways.anigram.messenger.R;
+import com.aniways.data.FoursquarePlacesAssetInfo;
 import java.util.ArrayList;
 
-public class DialogCell extends BaseCell {
+import java.util.HashSet;
 
+public class DialogCell extends BaseCell implements IAniwaysTextContainer {
+    private static final String TAG = "AniwaysDialogCell";
     private static TextPaint namePaint;
     private static TextPaint nameEncryptedPaint;
     private static TextPaint nameUnknownPaint;
@@ -67,6 +80,8 @@ public class DialogCell extends BaseCell {
     private int lastSendState;
     private boolean dialogMuted;
     private MessageObject message;
+    private AniwaysIconInfoDisplayer mIconInfoDisplayer;
+    private HashSet<AniwaysMessageListViewItemWrapperLayout.OnSetTextListener> mSetTextListeners = new HashSet<AniwaysMessageListViewItemWrapperLayout.OnSetTextListener>();
     private int index;
     private int dialogsType;
 
@@ -77,6 +92,7 @@ public class DialogCell extends BaseCell {
     private TLRPC.Chat chat = null;
     private TLRPC.EncryptedChat encryptedChat = null;
     private CharSequence lastPrintString = null;
+    private AniwaysDynamicImageSpansContainer mDynamicImageSpansContainer;
 
     public boolean useSeparator = false;
 
@@ -120,6 +136,8 @@ public class DialogCell extends BaseCell {
 
     public DialogCell(Context context) {
         super(context);
+        mDynamicImageSpansContainer = new AniwaysDynamicImageSpansContainer(this);
+        mIconInfoDisplayer = new AniwaysIconInfoDisplayer();
 
         if (namePaint == null) {
             namePaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
@@ -198,6 +216,7 @@ public class DialogCell extends BaseCell {
             lastSendState = message.messageOwner.send_state;
         }
         update(0);
+        //this.mLoadingImageSpansContainer.onSetText(this.getText(), oldText);
     }
 
     public long getDialogId() {
@@ -206,6 +225,7 @@ public class DialogCell extends BaseCell {
 
     @Override
     protected void onDetachedFromWindow() {
+        this.mDynamicImageSpansContainer.onDetachFromWindowCalled();
         super.onDetachedFromWindow();
         avatarImage.onDetachedFromWindow();
     }
@@ -227,6 +247,9 @@ public class DialogCell extends BaseCell {
             super.onLayout(changed, left, top, right, bottom);
             return;
         }
+
+        this.mDynamicImageSpansContainer.onLayoutCalled();
+
         if (changed) {
             buildLayout();
         }
@@ -370,14 +393,14 @@ public class DialogCell extends BaseCell {
                         if (message.caption != null) {
                             String mess = message.caption.toString();
                             if (mess.length() > 150) {
-                                mess = mess.substring(0, 150);
+                                //mess = mess.substring(0, 150);
                             }
                             mess = mess.replace("\n", " ");
-                            messageString = Emoji.replaceEmoji(AndroidUtilities.replaceTags(String.format("<c#ff4d83b3>%s:</c> <c#ff808080>%s</c>", name, mess), AndroidUtilities.FLAG_TAG_COLOR), messagePaint.getFontMetricsInt(), AndroidUtilities.dp(20));
+                            messageString = AndroidUtilities.replaceTags(String.format("<c#ff4d83b3>%s:</c> <c#ff808080>%s</c>", name, mess), AndroidUtilities.FLAG_TAG_COLOR);
                         } else {
                             if (message.messageOwner.media != null && !message.isMediaEmpty()) {
                                 currentMessagePaint = messagePrintingPaint;
-                                messageString = Emoji.replaceEmoji(AndroidUtilities.replaceTags(String.format("<c#ff4d83b3>%s:</c> <c#ff4d83b3>%s</c>", name, message.messageText), AndroidUtilities.FLAG_TAG_COLOR), messagePaint.getFontMetricsInt(), AndroidUtilities.dp(20));
+                                messageString = AndroidUtilities.replaceTags(String.format("<c#ff4d83b3>%s:</c> <c#ff4d83b3>%s</c>", name, message.messageText), AndroidUtilities.FLAG_TAG_COLOR);
                             } else {
                                 if (message.messageOwner.message != null) {
                                     String mess = message.messageOwner.message;
@@ -385,7 +408,7 @@ public class DialogCell extends BaseCell {
                                         mess = mess.substring(0, 150);
                                     }
                                     mess = mess.replace("\n", " ");
-                                    messageString = Emoji.replaceEmoji(AndroidUtilities.replaceTags(String.format("<c#ff4d83b3>%s:</c> <c#ff808080>%s</c>", name, mess), AndroidUtilities.FLAG_TAG_COLOR), messagePaint.getFontMetricsInt(), AndroidUtilities.dp(20));
+                                    messageString = AndroidUtilities.replaceTags(String.format("<c#ff4d83b3>%s:</c> <c#ff808080>%s</c>", name, mess));
                                 }
                             }
                         }
@@ -576,18 +599,52 @@ public class DialogCell extends BaseCell {
                 messageString = "";
             }
             String mess = messageString.toString();
-            if (mess.length() > 150) {
-                mess = mess.substring(0, 150);
-            }
+            //if (mess.length() > 150) {
+            //    mess = mess.substring(0, 150);
+            //}
             mess = mess.replace("\n", " ");
-            messageString = Emoji.replaceEmoji(mess, messagePaint.getFontMetricsInt(), AndroidUtilities.dp(17));
+            //messageString = Emoji.replaceEmoji(mess, messagePaint.getFontMetricsInt(), AndroidUtilities.dp(17));
+            messageString = mess;
         }
         messageWidth = Math.max(AndroidUtilities.dp(12), messageWidth);
-        CharSequence messageStringFinal = TextUtils.ellipsize(messageString, currentMessagePaint, messageWidth - AndroidUtilities.dp(12), TextUtils.TruncateAt.END);
+        //CharSequence messageStringFinal = TextUtils.ellipsize(messageString, currentMessagePaint, messageWidth - AndroidUtilities.dp(12), TextUtils.TruncateAt.END);
+        Spannable oldText = this.getText();
+        //CharSequence messageStringFinal = Aniways.decodeMessage(messageString, this.mIconInfoDisplayer, this, true);
+        CharSequence messageStringFinal;
+
+        if (message != null)
+        {
+            messageStringFinal = message.getAniwaysDecodedMessageTextSmallIcons(this);
+        }
+        else
+        {
+            messageStringFinal = Aniways.decodeMessage(messageString, this.mIconInfoDisplayer, this, true, null);
+        }
+        boolean containsPlacesSpan = false;
+        if(messageStringFinal instanceof Spannable){
+            Spannable spannable = (Spannable)messageStringFinal;
+            AniwaysFoursquarePlaceSpan[] spans = spannable.getSpans(0, spannable.length(), AniwaysFoursquarePlaceSpan.class);
+            if(spans != null && spans.length > 0){
+                containsPlacesSpan = true;
+            }
+        }
+        if(!containsPlacesSpan) {
+            messageStringFinal = TextUtils.ellipsize(messageStringFinal, currentMessagePaint, messageWidth - AndroidUtilities.dp(12), TextUtils.TruncateAt.END);
+        }
+
         try {
             messageLayout = new StaticLayout(messageStringFinal, currentMessagePaint, messageWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
         } catch (Exception e) {
             FileLog.e("tmessages", e);
+        }
+
+        this.getDynamicImageSpansContainer().onSetText(this.getText(), oldText);
+
+        // Call liteners
+        if(mSetTextListeners != null){
+            for(AniwaysMessageListViewItemWrapperLayout.OnSetTextListener listener : mSetTextListeners){
+                listener.onSetText(this.getText());
+            }
         }
 
         double widthpx;
@@ -818,7 +875,10 @@ public class DialogCell extends BaseCell {
         if (messageLayout != null) {
             canvas.save();
             canvas.translate(messageLeft, messageTop);
-            messageLayout.draw(canvas);
+            try {
+                messageLayout.draw(canvas);
+            }
+            catch (IndexOutOfBoundsException ex){}
             canvas.restore();
         }
 
@@ -863,5 +923,74 @@ public class DialogCell extends BaseCell {
         }
 
         avatarImage.draw(canvas);
+    }
+
+    @Override
+    public Spannable getText() {
+        if(message == null){
+            return null;
+        }
+        return (Spannable) this.message.getAniwaysDecodedMessageTextSmallIcons(this);
+    }
+
+    /** Return the point (in pixels) of the received char position as it is displayed
+     * relative to the upper left corner of the widget, or lower left if fromTop == false.
+     * It accounts for scroll position and paddings
+     * !! Be careful, it can return null!!
+     **/
+    @Override
+    public Point getPointOfPositionInText(int position, boolean fromTop) {
+        return null;
+    }
+
+    @Override
+    public View getView() {
+        return this;
+    }
+
+    @Override
+    public AniwaysDynamicImageSpansContainer getDynamicImageSpansContainer() {
+        return this.mDynamicImageSpansContainer;
+    }
+
+    @Override
+    public void removeTextWatchers() {
+
+    }
+
+    @Override
+    public void addBackTheTextWatchers() {
+        message.generateLayout(this);
+        setDialog(currentDialogId, message, lastMessageDate);
+    }
+
+    @Override
+    public void onLoadedImageSuccessfuly() {
+        Log.i("AniwaysDialogCell", "Successfully loaded image");
+        message.generateLayout(this);
+        setDialog(currentDialogId, message, lastMessageDate);
+    }
+
+    @Override
+    public void onErrorLoadingImage() {
+
+    }
+
+    @Override
+    public void registerSetTextListener(AniwaysMessageListViewItemWrapperLayout.OnSetTextListener textChangedListener) {
+        this.mSetTextListeners.add(textChangedListener);
+        textChangedListener.onSetText(getText());
+
+    }
+
+    @Override
+    public void unregisterSetTextListener(AniwaysMessageListViewItemWrapperLayout.OnSetTextListener listener) {
+        this.mSetTextListeners.remove(listener);
+
+    }
+
+    @Override
+    public IIconInfoDisplayer getIconInfoDisplayer() {
+        return mIconInfoDisplayer;
     }
 }

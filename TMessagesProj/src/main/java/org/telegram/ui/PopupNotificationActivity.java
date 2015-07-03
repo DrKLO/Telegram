@@ -44,7 +44,10 @@ import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.android.NotificationCenter;
-import org.telegram.messenger.R;
+
+import com.aniways.AniwaysTextView;
+import com.aniways.Log;
+import com.aniways.anigram.messenger.R;
 import org.telegram.messenger.TLRPC;
 import org.telegram.android.MessageObject;
 import org.telegram.ui.ActionBar.ActionBar;
@@ -626,6 +629,14 @@ public class PopupNotificationActivity extends Activity implements NotificationC
             }
 
             TextView messageText = (TextView)view.findViewById(R.id.message_text);
+            if(messageText instanceof AniwaysTextView) {
+                AniwaysTextView aniwaysTextView = (AniwaysTextView)messageText;
+                aniwaysTextView.setUseSmallIcons(true);
+                aniwaysTextView.setIconsClickable(false);
+            }
+            else{
+                Log.w(true,"AniwaysPopupNotificationActivity","messageText is not AniwaysTextView");
+            }
             BackupImageView imageView = (BackupImageView) view.findViewById(R.id.message_image);
             imageView.setAspectFit(true);
 

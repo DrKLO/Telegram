@@ -8,7 +8,7 @@
 
 package org.telegram.android;
 
-import org.telegram.messenger.R;
+import com.aniways.anigram.messenger.R;
 import org.telegram.messenger.TLRPC;
 
 public class UserObject {

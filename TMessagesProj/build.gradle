@@ -1,3 +1,28 @@
+buildscript {
+    repositories {
+        mavenCentral()
+        maven { url "https://raw.github.com/Raizlabs/maven-releases/master/releases" }
+    }
+    dependencies {
+        classpath 'com.android.tools.build:gradle:1.2.3'
+    }
+}
+
+configurations {
+    all*.exclude group: 'com.android.support', module: 'support-v4'
+    all*.exclude group: 'com.android.support', module: 'appcompat-v7'
+}
+
+allprojects {
+    repositories {
+        mavenCentral()
+        maven {
+            url 'https://dl.bintray.com/intercom/intercom-maven'
+        }
+        maven { url "https://raw.github.com/Raizlabs/maven-releases/master/releases" }
+    }
+}
+
 apply plugin: 'com.android.application'
 
 repositories {
@@ -5,15 +30,57 @@ repositories {
 }
 
 dependencies {
-    compile 'com.android.support:support-v4:22.2.+'
-    compile 'com.google.android.gms:play-services:3.2.+'
+    compile 'com.google.android.gms:play-services-maps:7.5.0'
+    compile 'com.google.android.gms:play-services-location:7.5.0'
+    compile 'com.google.android.gms:play-services-identity:7.5.0'
+    compile 'com.google.android.gms:play-services-appstate:7.5.0'
+    compile 'com.google.android.gms:play-services-wearable:7.5.0'
+    compile 'com.google.android.gms:play-services-gcm:7.5.0'
     compile 'net.hockeyapp.android:HockeySDK:3.5.+'
     compile 'com.googlecode.mp4parser:isoparser:1.0.+'
+    compile project(':Android-SDK')
+    compile ('io.intercom.android:intercom-sdk:1.0.4@aar') {
+        transitive = true
+    }
+    //debugCompile 'com.facebook.stetho:stetho:1.0.0'
 }
 
 android {
     compileSdkVersion 22
     buildToolsVersion '22.0.1'
+
+    flavorDimensions "abi"
+
+    productFlavors {
+        fat {
+            flavorDimension "abi"
+            ndk {
+                abiFilters "x86", "armeabi-v7a", "armeabi"
+                versionCode = 265;
+            }
+        }
+//        arm {
+//            flavorDimension "abi"
+//            ndk {
+//                abiFilter "armeabi"
+//                versionCode = 1;
+//            }
+//        }
+//        armv7a {
+//            flavorDimension "abi"
+//            ndk {
+//                abiFilter "armeabi-v7a"
+//                versionCode = 3;
+//            }
+//        }
+//        x86 {
+//            flavorDimension "abi"
+//            ndk {
+//                abiFilter "x86"
+//                versionCode = 6;
+//            }
+//        }
+    }
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_7
@@ -26,7 +93,7 @@ android {
         }
 
         release {
-            storeFile file("config/release.keystore")
+            //storeFile file("config/release.keystore")
             storePassword RELEASE_STORE_PASSWORD
             keyAlias RELEASE_KEY_ALIAS
             keyPassword RELEASE_KEY_PASSWORD
@@ -38,12 +105,18 @@ android {
             debuggable true
             jniDebuggable true
             signingConfig signingConfigs.debug
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.txt'
         }
 
         release {
             debuggable false
             jniDebuggable false
             signingConfig signingConfigs.release
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.txt'
         }
 
         foss {
@@ -71,9 +144,11 @@ android {
     }
 
     defaultConfig {
-        minSdkVersion 8
+        minSdkVersion 9
         targetSdkVersion 22
-        versionCode 572
-        versionName "3.0.1"
+        renderscriptTargetApi 22
+        renderscriptSupportModeEnabled true
+        versionCode 265
+        versionName "1.8.5"
     }
 }

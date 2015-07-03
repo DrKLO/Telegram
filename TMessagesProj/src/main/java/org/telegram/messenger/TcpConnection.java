@@ -8,6 +8,8 @@
 
 package org.telegram.messenger;
 
+import com.aniways.anigram.messenger.BuildConfig;
+
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketTimeoutException;

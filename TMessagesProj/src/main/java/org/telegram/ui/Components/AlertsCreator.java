@@ -20,7 +20,7 @@ import org.telegram.android.MessagesStorage;
 import org.telegram.android.NotificationsController;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.ConnectionsManager;
-import org.telegram.messenger.R;
+import com.aniways.anigram.messenger.R;
 import org.telegram.messenger.TLRPC;
 import org.telegram.ui.ActionBar.BottomSheet;
 

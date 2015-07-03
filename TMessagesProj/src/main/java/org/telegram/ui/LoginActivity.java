@@ -45,6 +45,7 @@ import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.android.AndroidUtilities;
@@ -57,7 +58,12 @@ import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLog;
 import org.telegram.android.LocaleController;
-import org.telegram.messenger.R;
+
+import com.aniways.Log;
+import com.aniways.anigram.messenger.R;
+import com.aniways.data.AniwaysNetworkStateChecker;
+import com.aniways.data.AniwaysPrivateConfig;
+
 import org.telegram.messenger.RPCRequest;
 import org.telegram.messenger.TLObject;
 import org.telegram.messenger.TLRPC;
@@ -81,6 +87,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
+
+import io.intercom.android.sdk.Intercom;
+import io.intercom.android.sdk.identity.Registration;
 
 public class LoginActivity extends BaseFragment {
 
@@ -394,13 +403,79 @@ public class LoginActivity extends BaseFragment {
     }
 
     public void needFinishActivity() {
+
+        // Terminate all other sessions on this device, so we get push notifications here..
+        TLRPC.TL_account_getAuthorizations req = new TLRPC.TL_account_getAuthorizations();
+        long reqId = ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
+            @Override
+            public void run(final TLObject response, final TLRPC.TL_error error) {
+                AndroidUtilities.runOnUIThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (error == null) {
+                            Log.i("LoginActivity", "Terminate all other sessions on this device");
+                            TLRPC.TL_account_authorizations res = (TLRPC.TL_account_authorizations) response;
+                            String device = "";
+                            for (TLRPC.TL_authorization authorization : res.authorizations) {
+                                if ((authorization.flags & 1) != 0) {
+                                    Log.i("LoginActivity", "Found current session. Device: " + authorization.device_model + ". Session hash: " + authorization.hash);
+                                    device = authorization.device_model;
+                                } else {
+                                    // Doing nothing, will remove sessions which are not current on this device in the next round
+                                }
+                            }
+                            for (TLRPC.TL_authorization authorization : res.authorizations) {
+                                if ((authorization.flags & 1) != 0) {
+                                    // Doing nothing..
+                                } else {
+                                    Log.i("LoginActivity", "Found non-current session. Device: " + authorization.device_model);
+                                    final TLRPC.TL_authorization finalAuthorization = authorization;
+                                    if(authorization.device_model.equals(device)) {
+                                        Log.i("LoginActivity", "Same device as the current session, so terminating it: " + authorization.device_model + ". Session hash: " + authorization.hash);
+                                        TLRPC.TL_account_resetAuthorization req = new TLRPC.TL_account_resetAuthorization();
+                                        req.hash = authorization.hash;
+                                        ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
+                                            @Override
+                                            public void run(final TLObject response, final TLRPC.TL_error error) {
+                                                AndroidUtilities.runOnUIThread(new Runnable() {
+                                                    @Override
+                                                    public void run() {
+                                                        try {
+                                                            //progressDialog.dismiss();
+                                                        } catch (Exception e) {
+                                                            FileLog.e("tmessages", e);
+                                                        }
+                                                        if (error == null) {
+                                                            Log.i("LoginActivity", "Terminated session on same device: " + finalAuthorization.device_model + ". Session hash: " + finalAuthorization.hash);
+                                                        }
+                                                        else{
+                                                            Log.e(true, "LoginActivity", "Failed to terminate other session on device. Error code: " + (error == null ? "null" : error.code) + ". Error text: " + (error == null ? "null" : error.text) + ". Session hash: " + finalAuthorization.hash);
+                                                        }
+                                                    }
+                                                });
+                                            }
+                                        });
+                                    }
+                                }
+                            }
+                        }
+                        else{
+                            Log.e(true, "LoginActivity", "Failed to list other sessions. Error code: " + (error == null ? "null" : error.code) + ". Error text: " + (error == null ? "null" : error.text));
+                        }
+                    }
+                });
+            }
+        });
+        ConnectionsManager.getInstance().bindRequestToGuid(reqId, classGuid);
+
         clearCurrentState();
         presentFragment(new MessagesActivity(null), true);
         NotificationCenter.getInstance().postNotificationName(NotificationCenter.mainUserInfoChanged);
     }
 
     public class PhoneView extends SlideView implements AdapterView.OnItemSelectedListener {
-
+        private static final String TAG = "AniwaysPhoneView"; //This is the one that matters!
+        private boolean requestInprogress = false;
         private EditText codeField;
         private EditText phoneField;
         private TextView countryButton;
@@ -796,39 +871,79 @@ public class LoginActivity extends BaseFragment {
             }
             params.putString("phoneFormated", phone);
             nextPressed = true;
+            this.requestInprogress = true;
             needShowProgress();
+            final long startReqTime = System.currentTimeMillis();
             ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
                 @Override
                 public void run(final TLObject response, final TLRPC.TL_error error) {
                     AndroidUtilities.runOnUIThread(new Runnable() {
                         @Override
                         public void run() {
-                            nextPressed = false;
-                            if (error == null) {
-                                final TLRPC.TL_auth_sentCode res = (TLRPC.TL_auth_sentCode) response;
-                                params.putString("phoneHash", res.phone_code_hash);
-                                params.putInt("calltime", res.send_call_timeout * 1000);
-                                setPage(1, true, params, false);
-                            } else {
-                                if (error.text != null) {
-                                    if (error.text.contains("PHONE_NUMBER_INVALID")) {
-                                        needShowAlert(LocaleController.getString("AppName", R.string.AppName), LocaleController.getString("InvalidPhoneNumber", R.string.InvalidPhoneNumber));
-                                    } else if (error.text.contains("PHONE_CODE_EMPTY") || error.text.contains("PHONE_CODE_INVALID")) {
-                                        needShowAlert(LocaleController.getString("AppName", R.string.AppName), LocaleController.getString("InvalidCode", R.string.InvalidCode));
-                                    } else if (error.text.contains("PHONE_CODE_EXPIRED")) {
-                                        needShowAlert(LocaleController.getString("AppName", R.string.AppName), LocaleController.getString("CodeExpired", R.string.CodeExpired));
-                                    } else if (error.text.startsWith("FLOOD_WAIT")) {
-                                        needShowAlert(LocaleController.getString("AppName", R.string.AppName), LocaleController.getString("FloodWait", R.string.FloodWait));
-                                    } else if (error.code != -1000) {
-                                        needShowAlert(LocaleController.getString("AppName", R.string.AppName), error.text);
+                            try {
+                                nextPressed = false;
+                                if (error == null) {
+                                    final TLRPC.TL_auth_sentCode res = (TLRPC.TL_auth_sentCode) response;
+                                    params.putString("phoneHash", res.phone_code_hash);
+                                    params.putInt("calltime", res.send_call_timeout * 1000);
+                                    setPage(1, true, params, false);
+                                } else {
+                                    if (error.text != null) {
+                                        if (error.text.contains("PHONE_NUMBER_INVALID")) {
+                                            needShowAlert(LocaleController.getString("AppName", R.string.AppName), LocaleController.getString("InvalidPhoneNumber", R.string.InvalidPhoneNumber));
+                                        } else if (error.text.contains("PHONE_CODE_EMPTY") || error.text.contains("PHONE_CODE_INVALID")) {
+                                            needShowAlert(LocaleController.getString("AppName", R.string.AppName), LocaleController.getString("InvalidCode", R.string.InvalidCode));
+                                        } else if (error.text.contains("PHONE_CODE_EXPIRED")) {
+                                            needShowAlert(LocaleController.getString("AppName", R.string.AppName), LocaleController.getString("CodeExpired", R.string.CodeExpired));
+                                        } else if (error.text.startsWith("FLOOD_WAIT")) {
+                                            needShowAlert(LocaleController.getString("AppName", R.string.AppName), LocaleController.getString("FloodWait", R.string.FloodWait));
+                                        } else if (error.code != -1000) {
+                                            needShowAlert(LocaleController.getString("AppName", R.string.AppName), error.text);
+                                        }
                                     }
                                 }
+                                needHideProgress();
+                            } catch (Throwable ex) {
+                                Log.e(true, TAG, "Caught exception in phone reg", ex);
+                            } finally {
+                                requestInprogress = false;
                             }
-                            needHideProgress();
                         }
                     });
                 }
             }, true, RPCRequest.RPCRequestClassGeneric | RPCRequest.RPCRequestClassFailOnServerErrors | RPCRequest.RPCRequestClassWithoutLogin | RPCRequest.RPCRequestClassTryDifferentDc | RPCRequest.RPCRequestClassEnableUnauthorized);
+            checkConnection(startReqTime);
+        }
+
+        private void checkConnection(final long startReqTime) {
+            AniwaysNetworkStateChecker.checkInternet(new AniwaysNetworkStateChecker.AniwaysNetworkSateCheckCallback() {
+
+                @Override
+                public void run(boolean connectionAvailable) {
+                    if (!requestInprogress) {
+                        return;
+                    }
+                    if (connectionAvailable) {
+                        long now = System.currentTimeMillis();
+                        if ((now - startReqTime) > AniwaysPrivateConfig.getInstance().phoneRegTimeout) {
+                            Log.e(true, TAG, "Takes long time receiving response in reg process: " + Long.toString(now - startReqTime));
+                            Toast toast = Toast.makeText(getContext(), "Process takes too long. Please re-install app and try again", Toast.LENGTH_LONG);
+                            toast.setGravity(Gravity.CENTER, 0, 0);
+                            toast.show();
+                            needHideProgress();
+                        } else {
+                            Log.i(TAG, "Starting connectivity check again..");
+                            checkConnection(startReqTime);
+                        }
+                    } else {
+                        Log.e(false, TAG, "Error registering phone cause no internet");
+                        Toast toast = Toast.makeText(getContext(), "No internet connection. Please try again once connected", Toast.LENGTH_LONG);
+                        toast.setGravity(Gravity.CENTER, 0, 0);
+                        toast.show();
+                        needHideProgress();
+                    }
+                }
+            });
         }
 
         @Override
@@ -871,7 +986,8 @@ public class LoginActivity extends BaseFragment {
     }
 
     public class LoginActivitySmsView extends SlideView implements NotificationCenter.NotificationCenterDelegate {
-
+        private static final String TAG = "AniwaysLoginActivitySmsView";
+        private boolean requestInprogress = false;
         private String phoneHash;
         private String requestPhone;
         private String emailPhone;
@@ -1179,99 +1295,143 @@ public class LoginActivity extends BaseFragment {
             req.phone_code = codeField.getText().toString();
             req.phone_code_hash = phoneHash;
             destroyTimer();
+            this.requestInprogress = true;
             needShowProgress();
+            final long startReqTime = System.currentTimeMillis();
             ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
                 @Override
                 public void run(final TLObject response, final TLRPC.TL_error error) {
                     AndroidUtilities.runOnUIThread(new Runnable() {
                         @Override
                         public void run() {
-                            nextPressed = false;
-                            if (error == null) {
-                                needHideProgress();
-                                TLRPC.TL_auth_authorization res = (TLRPC.TL_auth_authorization) response;
-                                destroyTimer();
-                                destroyCodeTimer();
-                                UserConfig.clearConfig();
-                                MessagesController.getInstance().cleanUp();
-                                UserConfig.setCurrentUser(res.user);
-                                UserConfig.saveConfig(true);
-                                MessagesStorage.getInstance().cleanUp(true);
-                                ArrayList<TLRPC.User> users = new ArrayList<>();
-                                users.add(res.user);
-                                MessagesStorage.getInstance().putUsersAndChats(users, null, true, true);
-                                MessagesController.getInstance().putUser(res.user, false);
-                                ContactsController.getInstance().checkAppAccount();
-                                MessagesController.getInstance().getBlockedUsers(true);
-                                needFinishActivity();
-                                ConnectionsManager.getInstance().initPushConnection();
-                                Utilities.stageQueue.postRunnable(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        ConnectionsManager.getInstance().updateDcSettings(0);
-                                    }
-                                });
-                            } else {
-                                lastError = error.text;
-
-                                if (error.text.contains("PHONE_NUMBER_UNOCCUPIED")) {
+                            try {
+                                nextPressed = false;
+                                if (error == null) {
                                     needHideProgress();
-                                    Bundle params = new Bundle();
-                                    params.putString("phoneFormated", requestPhone);
-                                    params.putString("phoneHash", phoneHash);
-                                    params.putString("code", req.phone_code);
-                                    setPage(2, true, params, false);
+                                    TLRPC.TL_auth_authorization res = (TLRPC.TL_auth_authorization) response;
                                     destroyTimer();
                                     destroyCodeTimer();
-                                } else if (error.text.contains("SESSION_PASSWORD_NEEDED")) {
-                                    TLRPC.TL_account_getPassword req2 = new TLRPC.TL_account_getPassword();
-                                    ConnectionsManager.getInstance().performRpc(req2, new RPCRequest.RPCRequestDelegate() {
+                                    UserConfig.clearConfig();
+                                    MessagesController.getInstance().cleanUp();
+                                    UserConfig.setCurrentUser(res.user);
+                                    UserConfig.saveConfig(true);
+                                    MessagesStorage.getInstance().cleanUp(true);
+                                    ArrayList<TLRPC.User> users = new ArrayList<>();
+                                    users.add(res.user);
+                                    MessagesStorage.getInstance().putUsersAndChats(users, null, true, true);
+                                    MessagesController.getInstance().putUser(res.user, false);
+                                    ContactsController.getInstance().checkAppAccount();
+                                    MessagesController.getInstance().getBlockedUsers(true);
+                                    needFinishActivity();
+                                    ConnectionsManager.getInstance().initPushConnection();
+                                    Utilities.stageQueue.postRunnable(new Runnable() {
                                         @Override
-                                        public void run(final TLObject response, final TLRPC.TL_error error) {
-                                            AndroidUtilities.runOnUIThread(new Runnable() {
-                                                @Override
-                                                public void run() {
-                                                    needHideProgress();
-                                                    if (error == null) {
-                                                        TLRPC.TL_account_password password = (TLRPC.TL_account_password) response;
-                                                        Bundle bundle = new Bundle();
-                                                        bundle.putString("current_salt", Utilities.bytesToHex(password.current_salt));
-                                                        bundle.putString("hint", password.hint);
-                                                        bundle.putString("email_unconfirmed_pattern", password.email_unconfirmed_pattern);
-                                                        bundle.putString("phoneFormated", requestPhone);
-                                                        bundle.putString("phoneHash", phoneHash);
-                                                        bundle.putString("code", req.phone_code);
-                                                        bundle.putInt("has_recovery", password.has_recovery ? 1 : 0);
-                                                        setPage(3, true, bundle, false);
-                                                    } else {
-                                                        needShowAlert(LocaleController.getString("AppName", R.string.AppName), error.text);
-                                                    }
-                                                }
-                                            });
+                                        public void run() {
+                                            ConnectionsManager.getInstance().updateDcSettings(0);
                                         }
-                                    }, true, RPCRequest.RPCRequestClassGeneric | RPCRequest.RPCRequestClassFailOnServerErrors | RPCRequest.RPCRequestClassWithoutLogin);
-                                    destroyTimer();
-                                    destroyCodeTimer();
+                                    });
+                                    Intercom.client().registerIdentifiedUser(
+                                            new Registration()
+                                                    .withUserId(requestPhone)
+                                                    .withUserAttributes(getCurrentUserAttributes(requestPhone)));
                                 } else {
-                                    needHideProgress();
-                                    createTimer();
-                                    if (error.text.contains("PHONE_NUMBER_INVALID")) {
-                                        needShowAlert(LocaleController.getString("AppName", R.string.AppName), LocaleController.getString("InvalidPhoneNumber", R.string.InvalidPhoneNumber));
-                                    } else if (error.text.contains("PHONE_CODE_EMPTY") || error.text.contains("PHONE_CODE_INVALID")) {
-                                        needShowAlert(LocaleController.getString("AppName", R.string.AppName), LocaleController.getString("InvalidCode", R.string.InvalidCode));
-                                    } else if (error.text.contains("PHONE_CODE_EXPIRED")) {
-                                        needShowAlert(LocaleController.getString("AppName", R.string.AppName), LocaleController.getString("CodeExpired", R.string.CodeExpired));
-                                    } else if (error.text.startsWith("FLOOD_WAIT")) {
-                                        needShowAlert(LocaleController.getString("AppName", R.string.AppName), LocaleController.getString("FloodWait", R.string.FloodWait));
+                                    lastError = error.text;
+
+                                    if (error.text.contains("PHONE_NUMBER_UNOCCUPIED")) {
+                                        needHideProgress();
+                                        Bundle params = new Bundle();
+                                        params.putString("phoneFormated", requestPhone);
+                                        params.putString("phoneHash", phoneHash);
+                                        params.putString("code", req.phone_code);
+                                        setPage(2, true, params, false);
+                                        destroyTimer();
+                                        destroyCodeTimer();
+                                    } else if (error.text.contains("SESSION_PASSWORD_NEEDED")) {
+                                        TLRPC.TL_account_getPassword req2 = new TLRPC.TL_account_getPassword();
+                                        ConnectionsManager.getInstance().performRpc(req2, new RPCRequest.RPCRequestDelegate() {
+                                            @Override
+                                            public void run(final TLObject response, final TLRPC.TL_error error) {
+                                                AndroidUtilities.runOnUIThread(new Runnable() {
+                                                    @Override
+                                                    public void run() {
+                                                        needHideProgress();
+                                                        if (error == null) {
+                                                            TLRPC.TL_account_password password = (TLRPC.TL_account_password) response;
+                                                            Bundle bundle = new Bundle();
+                                                            bundle.putString("current_salt", Utilities.bytesToHex(password.current_salt));
+                                                            bundle.putString("hint", password.hint);
+                                                            bundle.putString("email_unconfirmed_pattern", password.email_unconfirmed_pattern);
+                                                            bundle.putString("phoneFormated", requestPhone);
+                                                            bundle.putString("phoneHash", phoneHash);
+                                                            bundle.putString("code", req.phone_code);
+                                                            bundle.putInt("has_recovery", password.has_recovery ? 1 : 0);
+                                                            setPage(3, true, bundle, false);
+                                                        } else {
+                                                            needShowAlert(LocaleController.getString("AppName", R.string.AppName), error.text);
+                                                        }
+                                                    }
+                                                });
+                                            }
+                                        }, true, RPCRequest.RPCRequestClassGeneric | RPCRequest.RPCRequestClassFailOnServerErrors | RPCRequest.RPCRequestClassWithoutLogin);
+                                        destroyTimer();
+                                        destroyCodeTimer();
                                     } else {
-                                        needShowAlert(LocaleController.getString("AppName", R.string.AppName), error.text);
+                                        needHideProgress();
+                                        createTimer();
+                                        if (error.text.contains("PHONE_NUMBER_INVALID")) {
+                                            needShowAlert(LocaleController.getString("AppName", R.string.AppName), LocaleController.getString("InvalidPhoneNumber", R.string.InvalidPhoneNumber));
+                                        } else if (error.text.contains("PHONE_CODE_EMPTY") || error.text.contains("PHONE_CODE_INVALID")) {
+                                            needShowAlert(LocaleController.getString("AppName", R.string.AppName), LocaleController.getString("InvalidCode", R.string.InvalidCode));
+                                        } else if (error.text.contains("PHONE_CODE_EXPIRED")) {
+                                            needShowAlert(LocaleController.getString("AppName", R.string.AppName), LocaleController.getString("CodeExpired", R.string.CodeExpired));
+                                        } else if (error.text.startsWith("FLOOD_WAIT")) {
+                                            needShowAlert(LocaleController.getString("AppName", R.string.AppName), LocaleController.getString("FloodWait", R.string.FloodWait));
+                                        } else {
+                                            needShowAlert(LocaleController.getString("AppName", R.string.AppName), error.text);
+                                        }
                                     }
                                 }
+                            } catch (Throwable ex) {
+                                Log.e(true, TAG, "Caught exception in phone reg", ex);
+                            } finally {
+                                requestInprogress = false;
                             }
                         }
                     });
                 }
             }, true, RPCRequest.RPCRequestClassGeneric | RPCRequest.RPCRequestClassFailOnServerErrors | RPCRequest.RPCRequestClassWithoutLogin);
+            checkConnection(startReqTime);
+        }
+
+        private void checkConnection(final long startReqTime) {
+            AniwaysNetworkStateChecker.checkInternet(new AniwaysNetworkStateChecker.AniwaysNetworkSateCheckCallback() {
+
+                @Override
+                public void run(boolean connectionAvailable) {
+                    if (!requestInprogress) {
+                        return;
+                    }
+                    if (connectionAvailable) {
+                        long now = System.currentTimeMillis();
+                        if ((now - startReqTime) > AniwaysPrivateConfig.getInstance().phoneRegTimeout) {
+                            Log.e(true, TAG, "Takes long time receiving response in reg process: " + Long.toString(now - startReqTime));
+                            Toast toast = Toast.makeText(getContext(), "Process takes too long. Please re-install app and try again", Toast.LENGTH_LONG);
+                            toast.setGravity(Gravity.CENTER, 0, 0);
+                            toast.show();
+                            needHideProgress();
+                        } else {
+                            Log.i(TAG, "Starting connectivity check again..");
+                            checkConnection(startReqTime);
+                        }
+                    } else {
+                        Log.e(false, TAG, "Error registering phone cause no internet");
+                        Toast toast = Toast.makeText(getContext(), "No internet connection. Please try again once connected", Toast.LENGTH_LONG);
+                        toast.setGravity(Gravity.CENTER, 0, 0);
+                        toast.show();
+                        needHideProgress();
+                    }
+                }
+            });
         }
 
         @Override
@@ -1972,7 +2132,7 @@ public class LoginActivity extends BaseFragment {
     }
 
     public class LoginActivityRegisterView extends SlideView {
-
+        private static final String TAG = "AniwaysRegisterView";
         private EditText firstNameField;
         private EditText lastNameField;
         private String requestPhone;
@@ -1980,6 +2140,7 @@ public class LoginActivity extends BaseFragment {
         private String phoneCode;
         private Bundle currentParams;
         private boolean nextPressed = false;
+        private boolean requestInprogress = false;
 
         public LoginActivityRegisterView(Context context) {
             super(context);
@@ -2126,56 +2287,102 @@ public class LoginActivity extends BaseFragment {
             req.phone_number = requestPhone;
             req.first_name = firstNameField.getText().toString();
             req.last_name = lastNameField.getText().toString();
+            this.requestInprogress = true;
             needShowProgress();
+            final long startReqTime = System.currentTimeMillis();
             ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
                 @Override
                 public void run(final TLObject response, final TLRPC.TL_error error) {
                     AndroidUtilities.runOnUIThread(new Runnable() {
                         @Override
                         public void run() {
-                            nextPressed = false;
-                            needHideProgress();
-                            if (error == null) {
-                                final TLRPC.TL_auth_authorization res = (TLRPC.TL_auth_authorization) response;
-                                UserConfig.clearConfig();
-                                MessagesController.getInstance().cleanUp();
-                                UserConfig.setCurrentUser(res.user);
-                                UserConfig.saveConfig(true);
-                                MessagesStorage.getInstance().cleanUp(true);
-                                ArrayList<TLRPC.User> users = new ArrayList<>();
-                                users.add(res.user);
-                                MessagesStorage.getInstance().putUsersAndChats(users, null, true, true);
-                                //MessagesController.getInstance().uploadAndApplyUserAvatar(avatarPhotoBig);
-                                MessagesController.getInstance().putUser(res.user, false);
-                                ContactsController.getInstance().checkAppAccount();
-                                MessagesController.getInstance().getBlockedUsers(true);
-                                needFinishActivity();
-                                ConnectionsManager.getInstance().initPushConnection();
-                                Utilities.stageQueue.postRunnable(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        ConnectionsManager.getInstance().updateDcSettings(0);
-                                    }
-                                });
-                            } else {
-                                if (error.text.contains("PHONE_NUMBER_INVALID")) {
-                                    needShowAlert(LocaleController.getString("AppName", R.string.AppName), LocaleController.getString("InvalidPhoneNumber", R.string.InvalidPhoneNumber));
-                                } else if (error.text.contains("PHONE_CODE_EMPTY") || error.text.contains("PHONE_CODE_INVALID")) {
-                                    needShowAlert(LocaleController.getString("AppName", R.string.AppName), LocaleController.getString("InvalidCode", R.string.InvalidCode));
-                                } else if (error.text.contains("PHONE_CODE_EXPIRED")) {
-                                    needShowAlert(LocaleController.getString("AppName", R.string.AppName), LocaleController.getString("CodeExpired", R.string.CodeExpired));
-                                } else if (error.text.contains("FIRSTNAME_INVALID")) {
-                                    needShowAlert(LocaleController.getString("AppName", R.string.AppName), LocaleController.getString("InvalidFirstName", R.string.InvalidFirstName));
-                                } else if (error.text.contains("LASTNAME_INVALID")) {
-                                    needShowAlert(LocaleController.getString("AppName", R.string.AppName), LocaleController.getString("InvalidLastName", R.string.InvalidLastName));
+                            try {
+                                nextPressed = false;
+                                needHideProgress();
+                                if (error == null) {
+                                    final TLRPC.TL_auth_authorization res = (TLRPC.TL_auth_authorization) response;
+                                    UserConfig.clearConfig();
+                                    MessagesController.getInstance().cleanUp();
+                                    UserConfig.setCurrentUser(res.user);
+                                    UserConfig.saveConfig(true);
+                                    MessagesStorage.getInstance().cleanUp(true);
+                                    ArrayList<TLRPC.User> users = new ArrayList<>();
+                                    users.add(res.user);
+                                    MessagesStorage.getInstance().putUsersAndChats(users, null, true, true);
+                                    //MessagesController.getInstance().uploadAndApplyUserAvatar(avatarPhotoBig);
+                                    MessagesController.getInstance().putUser(res.user, false);
+                                    ContactsController.getInstance().checkAppAccount();
+                                    MessagesController.getInstance().getBlockedUsers(true);
+                                    needFinishActivity();
+                                    ConnectionsManager.getInstance().initPushConnection();
+                                    Utilities.stageQueue.postRunnable(new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            ConnectionsManager.getInstance().updateDcSettings(0);
+                                        }
+                                    });
+                                    Intercom.client().registerIdentifiedUser(
+                                            new Registration()
+                                                    .withUserId(requestPhone)
+                                                    .withUserAttributes(getCurrentUserAttributes(requestPhone)));
+
                                 } else {
-                                    needShowAlert(LocaleController.getString("AppName", R.string.AppName), error.text);
+                                    if (error.text.contains("PHONE_NUMBER_INVALID")) {
+                                        needShowAlert(LocaleController.getString("AppName", R.string.AppName), LocaleController.getString("InvalidPhoneNumber", R.string.InvalidPhoneNumber));
+                                    } else if (error.text.contains("PHONE_CODE_EMPTY") || error.text.contains("PHONE_CODE_INVALID")) {
+                                        needShowAlert(LocaleController.getString("AppName", R.string.AppName), LocaleController.getString("InvalidCode", R.string.InvalidCode));
+                                    } else if (error.text.contains("PHONE_CODE_EXPIRED")) {
+                                        needShowAlert(LocaleController.getString("AppName", R.string.AppName), LocaleController.getString("CodeExpired", R.string.CodeExpired));
+                                    } else if (error.text.contains("FIRSTNAME_INVALID")) {
+                                        needShowAlert(LocaleController.getString("AppName", R.string.AppName), LocaleController.getString("InvalidFirstName", R.string.InvalidFirstName));
+                                    } else if (error.text.contains("LASTNAME_INVALID")) {
+                                        needShowAlert(LocaleController.getString("AppName", R.string.AppName), LocaleController.getString("InvalidLastName", R.string.InvalidLastName));
+                                    } else {
+                                        needShowAlert(LocaleController.getString("AppName", R.string.AppName), error.text);
+                                    }
                                 }
+                            } catch (Throwable ex) {
+                                Log.e(true, TAG, "Caught exception in phone reg", ex);
+                            } finally {
+                                requestInprogress = false;
                             }
                         }
                     });
                 }
+
             }, true, RPCRequest.RPCRequestClassGeneric | RPCRequest.RPCRequestClassWithoutLogin | RPCRequest.RPCRequestClassFailOnServerErrors);
+            checkConnection(startReqTime);
+        }
+
+        private void checkConnection(final long startReqTime) {
+            AniwaysNetworkStateChecker.checkInternet(new AniwaysNetworkStateChecker.AniwaysNetworkSateCheckCallback() {
+
+                @Override
+                public void run(boolean connectionAvailable) {
+                    if (!requestInprogress) {
+                        return;
+                    }
+                    if (connectionAvailable) {
+                        long now = System.currentTimeMillis();
+                        if ((now - startReqTime) > AniwaysPrivateConfig.getInstance().phoneRegTimeout) {
+                            Log.e(true, TAG, "Takes long time receiving response in reg process: " + Long.toString(now - startReqTime));
+                            Toast toast = Toast.makeText(getContext(), "Process takes too long. Please re-install app and try again", Toast.LENGTH_LONG);
+                            toast.setGravity(Gravity.CENTER, 0, 0);
+                            toast.show();
+                            needHideProgress();
+                        } else {
+                            Log.i(TAG, "Starting connectivity check again..");
+                            checkConnection(startReqTime);
+                        }
+                    } else {
+                        Log.e(false, TAG, "Error registering phone cause no internet");
+                        Toast toast = Toast.makeText(getContext(), "No internet connection. Please try again once connected", Toast.LENGTH_LONG);
+                        toast.setGravity(Gravity.CENTER, 0, 0);
+                        toast.show();
+                        needHideProgress();
+                    }
+                }
+            });
         }
 
         @Override
@@ -2208,5 +2415,16 @@ public class LoginActivity extends BaseFragment {
                 lastNameField.setText(last);
             }
         }
+    }
+
+    private Map<String, Object> getCurrentUserAttributes(String requestPhone) {
+        Map<String,Object> userAttributes = new HashMap<>();
+
+        userAttributes.put("firstName", UserConfig.getCurrentUser().first_name);
+        userAttributes.put("lastName", UserConfig.getCurrentUser().last_name);
+        userAttributes.put("userName", UserConfig.getCurrentUser().username);
+        userAttributes.put("phone", requestPhone);
+
+        return userAttributes;
     }
 }

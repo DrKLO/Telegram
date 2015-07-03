@@ -13,7 +13,7 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 
 import org.telegram.android.AndroidUtilities;
-import org.telegram.messenger.R;
+import com.aniways.anigram.messenger.R;
 import org.telegram.ui.Components.LayoutHelper;
 
 public class PhotoAttachCameraCell extends FrameLayout {

@@ -31,6 +31,7 @@ import android.widget.LinearLayout;
 import android.widget.PopupWindow;
 import android.widget.TextView;
 
+import org.json.JSONObject;
 import org.telegram.android.AndroidUtilities;
 import org.telegram.android.Emoji;
 import org.telegram.android.LocaleController;
@@ -41,7 +42,11 @@ import org.telegram.android.SendMessagesHelper;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLog;
 import org.telegram.android.NotificationCenter;
-import org.telegram.messenger.R;
+
+import com.aniways.Aniways;
+import com.aniways.AniwaysEditText;
+import com.aniways.Log;
+import com.aniways.anigram.messenger.R;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.UserConfig;
 import org.telegram.ui.ActionBar.BaseFragment;
@@ -51,9 +56,15 @@ import org.telegram.android.AnimationCompat.ObjectAnimatorProxy;
 import org.telegram.android.AnimationCompat.ViewProxy;
 import org.telegram.messenger.ApplicationLoader;
 
+import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Locale;
 
 public class ChatActivityEnterView extends FrameLayoutFixed implements NotificationCenter.NotificationCenterDelegate, SizeNotifierFrameLayout.SizeNotifierFrameLayoutDelegate {
+
+    private static final String TAG = "AniwaysChatActivityEnterView";
 
     public interface ChatActivityEnterViewDelegate {
         void onMessageSend(String message);
@@ -67,7 +78,7 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
     private EditText messageEditText;
     private ImageView sendButton;
     private ImageView emojiButton;
-    private EmojiView emojiView;
+    //private EmojiView emojiView;
     private TextView recordTimeText;
     private ImageView audioSendButton;
     private FrameLayout recordPanel;
@@ -123,6 +134,7 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
     private boolean messageWebPageSearch = true;
     private ChatActivityEnterViewDelegate delegate;
 
+    private LinkedHashMap<String, MediaController.SearchImage> mContentuallySelectedGiphys = new LinkedHashMap<>();
     private float topViewAnimation;
     private boolean topViewShowed;
     private boolean needShowTopView;
@@ -171,11 +183,13 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
         FrameLayoutFixed frameLayout = new FrameLayoutFixed(context);
         textFieldContainer.addView(frameLayout, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1.0f));
 
+
         emojiButton = new ImageView(context);
         emojiButton.setImageResource(R.drawable.ic_msg_panel_smiles);
         emojiButton.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
         emojiButton.setPadding(AndroidUtilities.dp(4), AndroidUtilities.dp(1), 0, 0);
         frameLayout.addView(emojiButton, LayoutHelper.createFrame(48, 48, Gravity.BOTTOM));
+        /*
         emojiButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -186,8 +200,46 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
                 }
             }
         });
+        */
 
-        messageEditText = new EditText(context);
+        messageEditText = new AniwaysEditText(context);
+        Aniways.makeButtonAniwaysEmoticonsButton(emojiButton, (ViewGroup) sizeNotifierLayout, (AniwaysEditText) messageEditText, null, true);
+        ((AniwaysEditText) messageEditText).registerContentSelectedListener(new AniwaysEditText.onContentSelectedListener() {
+            @Override
+            public void onGiphySelected(AniwaysEditText.onContentSelectedListener.GiphySelectedData data) {
+                try {
+                    JSONObject object = data.jsonEntry; //result.getJSONObject(a);
+                    String id = object.getString("id");
+                    //String id = object.getString("id");
+                    if (mContentuallySelectedGiphys.containsKey(id)) {
+                        // Remove to put it in the end
+                        mContentuallySelectedGiphys.remove(id);
+                    }
+                    JSONObject images = object.getJSONObject("images");
+                    JSONObject thumb = images.getJSONObject("downsized_still");
+                    JSONObject original = images.getJSONObject("fixed_height");
+                    MediaController.SearchImage bingImage = new MediaController.SearchImage();
+                    bingImage.id = id;
+                    bingImage.width = original.getInt("width");
+                    bingImage.height = original.getInt("height");
+                    bingImage.size = original.optInt("size");
+                    if(bingImage.size == 0){
+                        bingImage.size = data.size;
+                    }
+                    bingImage.imageUrl = original.getString("url");
+                    bingImage.thumbUrl = thumb.getString("url");
+                    bingImage.type = 1;
+                    mContentuallySelectedGiphys.put(id, bingImage);
+                } catch (Exception e) {
+                    Log.e(true, TAG, "Error in handling a selected Giphy", e);
+                }
+            }
+
+            @Override
+            public void onGiphyRemoved(GiphySelectedData data) {
+
+            }
+        }, true);
         messageEditText.setHint(LocaleController.getString("TypeMessage", R.string.TypeMessage));
         messageEditText.setImeOptions(EditorInfo.IME_FLAG_NO_EXTRACT_UI);
         messageEditText.setInputType(messageEditText.getInputType() | EditorInfo.TYPE_TEXT_FLAG_CAP_SENTENCES | EditorInfo.TYPE_TEXT_FLAG_MULTI_LINE);
@@ -204,23 +256,25 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
         messageEditText.setOnKeyListener(new View.OnKeyListener() {
             @Override
             public boolean onKey(View view, int i, KeyEvent keyEvent) {
-                if (i == KeyEvent.KEYCODE_BACK && !keyboardVisible && isPopupShowing()) {
-                    if (keyEvent.getAction() == 1) {
-                        showPopup(0, 0);
-                    }
-                    return true;
-                } else if (i == KeyEvent.KEYCODE_ENTER && sendByEnter && keyEvent.getAction() == KeyEvent.ACTION_DOWN) {
+                //if (i == KeyEvent.KEYCODE_BACK && !keyboardVisible && isPopupShowing()) {
+                //    if (keyEvent.getAction() == 1) {
+                //        showPopup(0, 0);
+                //    }
+                //    return true;
+                //} else
+                if (i == KeyEvent.KEYCODE_ENTER && sendByEnter && keyEvent.getAction() == KeyEvent.ACTION_DOWN) {
                     sendMessage();
                     return true;
                 }
                 return false;
             }
         });
+
         messageEditText.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 if (isPopupShowing()) {
-                    showPopup(AndroidUtilities.usingHardwareInput ? 0 : 2, 0);
+                    //showPopup(AndroidUtilities.usingHardwareInput ? 0 : 2, 0);
                 }
             }
         });
@@ -278,6 +332,7 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
                 if (sendByEnter && editable.length() > 0 && editable.charAt(editable.length() - 1) == '\n') {
                     sendMessage();
                 }
+                /*
                 int i = 0;
                 ImageSpan[] arrayOfImageSpan = editable.getSpans(0, editable.length(), ImageSpan.class);
                 int j = arrayOfImageSpan.length;
@@ -289,6 +344,7 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
                     editable.removeSpan(arrayOfImageSpan[i]);
                     i++;
                 }
+                */
             }
         });
 
@@ -697,18 +753,34 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
                 return;
             }
         }
-        String message = messageEditText.getText().toString();
-        if (processSendingText(message)) {
-            messageEditText.setText("");
-            lastTypingTimeSend = 0;
-            if (delegate != null) {
-                delegate.onMessageSend(message);
+        List<String> messages = Aniways.encodeMessage(messageEditText.getText());
+        boolean firstProcessed = false;
+        for (String message : messages) {
+            if (processSendingText(message) && !firstProcessed) {
+                messageEditText.setText("");
+                lastTypingTimeSend = 0;
+                if (delegate != null) {
+                    delegate.onMessageSend(message);
+                    firstProcessed = true;
+                }
             }
-        } else if (forceShowSendButton) {
+            else if (forceShowSendButton && !firstProcessed) {
+                if (delegate != null) {
+                    delegate.onMessageSend(null);
+                    firstProcessed = true;
+                }
+            }
+        }
+        //in-case of a forward message without input text we should call delegate.onMessageSend(null) in order the messages to be processed and send
+        if (messages == null || messages.isEmpty()){
             if (delegate != null) {
                 delegate.onMessageSend(null);
             }
         }
+
+        // Send all the Animated Gifs
+        SendMessagesHelper.prepareSendingPhotosSearch(new ArrayList<MediaController.SearchImage>(this.mContentuallySelectedGiphys.values()), dialog_id, replyingMessageObject);
+        mContentuallySelectedGiphys.clear();
     }
 
     public boolean processSendingText(String text) {
@@ -995,6 +1067,7 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
         if (command == null) {
             return;
         }
+
         TLRPC.User user = messageObject != null && (int) dialog_id < 0 ? MessagesController.getInstance().getUser(messageObject.messageOwner.from_id) : null;
         if (botCount != 1 && user != null && (user.flags & TLRPC.USER_FLAG_BOT) != 0 && !command.contains("@")) {
             SendMessagesHelper.getInstance().sendMessage(String.format(Locale.US, "%s@%s", command, user.username), dialog_id, null, null, false);
@@ -1073,6 +1146,13 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
     public String getFieldText() {
         if (messageEditText != null && messageEditText.length() > 0) {
             return messageEditText.getText().toString();
+        }
+        return null;
+    }
+
+    public Editable getFieldEditableText() {
+        if (messageEditText != null && messageEditText.length() > 0) {
+            return messageEditText.getText();
         }
         return null;
     }
@@ -1183,15 +1263,16 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
     }
 
     public boolean isPopupView(View view) {
-        return view == botKeyboardView || view == emojiView;
+        return view == botKeyboardView;// || view == emojiView;
     }
 
     private void showPopup(int show, int contentType) {
         if (show == 1) {
-            if (contentType == 0 && emojiView == null) {
+            if (contentType == 0){ // && emojiView == null) {
                 if (parentActivity == null) {
                     return;
                 }
+                /*
                 emojiView = new EmojiView(allowStickers, parentActivity);
                 emojiView.setVisibility(GONE);
                 emojiView.setListener(new EmojiView.Listener() {
@@ -1209,8 +1290,9 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
                             i = 0;
                         }
                         try {
-                            CharSequence localCharSequence = Emoji.replaceEmoji(symbol/* + "\uFE0F"*/, messageEditText.getPaint().getFontMetricsInt(), AndroidUtilities.dp(20));
-                            messageEditText.setText(messageEditText.getText().insert(i, localCharSequence));
+                            //CharSequence localCharSequence = Emoji.replaceEmoji(symbol/* + "\uFE0F"*/ //, messageEditText.getPaint().getFontMetricsInt(), AndroidUtilities.dp(20));
+                /*
+                messageEditText.setText(messageEditText.getText().insert(i, localCharSequence));
                             int j = i + localCharSequence.length();
                             messageEditText.setSelection(j, j);
                         } catch (Exception e) {
@@ -1226,19 +1308,20 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
                     }
                 });
                 sizeNotifierLayout.addView(emojiView);
+                */
             }
 
             View currentView = null;
             if (contentType == 0) {
-                emojiView.setVisibility(VISIBLE);
+               // emojiView.setVisibility(VISIBLE);
                 if (botKeyboardView != null && botKeyboardView.getVisibility() != GONE) {
                     botKeyboardView.setVisibility(GONE);
                 }
-                currentView = emojiView;
+                //currentView = emojiView;
             } else if (contentType == 1) {
-                if (emojiView != null && emojiView.getVisibility() != GONE) {
-                    emojiView.setVisibility(GONE);
-                }
+                //if (emojiView != null && emojiView.getVisibility() != GONE) {
+                //    emojiView.setVisibility(GONE);
+                //}
                 botKeyboardView.setVisibility(VISIBLE);
                 currentView = botKeyboardView;
             }
@@ -1278,9 +1361,9 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
             if (emojiButton != null) {
                 emojiButton.setImageResource(R.drawable.ic_msg_panel_smiles);
             }
-            if (emojiView != null) {
-                emojiView.setVisibility(GONE);
-            }
+            //if (emojiView != null) {
+            //    emojiView.setVisibility(GONE);
+            //}
             if (botKeyboardView != null) {
                 botKeyboardView.setVisibility(GONE);
             }
@@ -1319,7 +1402,7 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
     }
 
     public boolean isPopupShowing() {
-        return emojiView != null && emojiView.getVisibility() == VISIBLE || botKeyboardView != null && botKeyboardView.getVisibility() == VISIBLE;
+        return /*emojiView != null && emojiView.getVisibility() == VISIBLE || */ botKeyboardView != null && botKeyboardView.getVisibility() == VISIBLE;
     }
 
     @Override
@@ -1342,7 +1425,7 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
 
             View currentView = null;
             if (currentPopupContentType == 0) {
-                currentView = emojiView;
+                //currentView = emojiView;
             } else if (currentPopupContentType == 1) {
                 currentView = botKeyboardView;
             }
@@ -1401,9 +1484,9 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
     @Override
     public void didReceivedNotification(int id, Object... args) {
         if (id == NotificationCenter.emojiDidLoaded) {
-            if (emojiView != null) {
-                emojiView.invalidateViews();
-            }
+            //if (emojiView != null) {
+            //    emojiView.invalidateViews();
+            //}
             if (botKeyboardView != null) {
                 botKeyboardView.invalidateViews();
             }

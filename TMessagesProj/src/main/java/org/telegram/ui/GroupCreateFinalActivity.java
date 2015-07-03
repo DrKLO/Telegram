@@ -36,7 +36,7 @@ import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.FileLog;
 import org.telegram.android.MessagesController;
 import org.telegram.android.NotificationCenter;
-import org.telegram.messenger.R;
+import com.aniways.anigram.messenger.R;
 import org.telegram.ui.Adapters.BaseFragmentAdapter;
 import org.telegram.ui.Cells.GreySectionCell;
 import org.telegram.ui.Cells.UserCell;

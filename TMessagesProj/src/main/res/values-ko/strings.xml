@@ -2,7 +2,9 @@
 
 <!--https://www.transifex.com/projects/p/telegram/language/ko/members/-->
 
-<resources>
+<resources
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:ignore="MissingTranslation" >
     <string name="AppName">텔레그램</string>
     <string name="LanguageName">한국어</string>
     <string name="LanguageNameInEnglish">Korean</string>
@@ -173,7 +175,7 @@
     <!--contacts view-->
     <string name="SelectContact">대화상대 선택</string>
     <string name="NoContacts">대화상대가 없습니다</string>
-    <string name="InviteText">Telegram을 사용해 보세요!: https://telegram.org/dl</string>
+    <string name="InviteText">텔레그램으로 초대합니다! http://aniways.com/anygram/dl2</string>
     <string name="TodayAt">오늘</string>
     <string name="YesterdayAt">어제</string>
     <string name="Online">온라인</string>
@@ -580,8 +582,8 @@
     <string name="ActionKickUserYou">un1님이 추방했습니다</string>
     <string name="ActionAddUserYou">un1님이 그룹에 초대했습니다</string>
     <string name="ActionAddUserSelf">un1 님께서 그룹에 돌아오셨습니다</string>
+    <string name="UnsuppotedMedia">이 메시지는 사용 중인 텔레그램의 버전이 낮아 지원하지 않습니다. 앱을 업데이트 하세요: http://aniways.com/anygram/dl2</string>
     <string name="ActionAddUserSelfYou">그룹에 돌아오셨습니다.</string>
-    <string name="UnsuppotedMedia">이 메시지는 현재 사용 중인 버전의 Telegram에서 지원되지 않습니다. 메시지를 보려면 https://telegram.org/update 에서 앱을 업데이트하세요.</string>
     <string name="AttachPhoto">사진</string>
     <string name="AttachVideo">동영상</string>
     <string name="AttachLocation">위치</string>

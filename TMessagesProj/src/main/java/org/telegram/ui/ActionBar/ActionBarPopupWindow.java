@@ -24,9 +24,10 @@ import android.view.animation.DecelerateInterpolator;
 import android.widget.LinearLayout;
 import android.widget.PopupWindow;
 
+import com.aniways.anigram.messenger.R;
+
 import org.telegram.android.AndroidUtilities;
 import org.telegram.messenger.FileLog;
-import org.telegram.messenger.R;
 
 import java.lang.reflect.Field;
 import java.util.HashMap;

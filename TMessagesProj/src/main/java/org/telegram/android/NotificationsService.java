@@ -13,6 +13,8 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.IBinder;
 
+import com.aniways.Log;
+
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ApplicationLoader;
 
@@ -21,6 +23,7 @@ public class NotificationsService extends Service {
     @Override
     public void onCreate() {
         FileLog.e("tmessages", "service started");
+        Log.i("AniwaysNotificationsService", "Notifications service started to receive GCM intents");
         ApplicationLoader.postInitApplication();
     }
 

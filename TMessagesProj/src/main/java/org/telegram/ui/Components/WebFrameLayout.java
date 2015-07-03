@@ -33,8 +33,8 @@ import android.widget.Toast;
 import org.telegram.android.AndroidUtilities;
 import org.telegram.android.LocaleController;
 import org.telegram.messenger.ApplicationLoader;
+import com.aniways.anigram.messenger.R;
 import org.telegram.messenger.FileLog;
-import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.BottomSheet;
 
 import java.util.HashMap;

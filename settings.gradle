@@ -1,1 +1,2 @@
-include ':TMessagesProj'
+include ':TMessagesProj', ':Android-SDK', ':intercom-sdk-0.9.3'
+project(':Android-SDK').projectDir = new File('../Android-SDK')

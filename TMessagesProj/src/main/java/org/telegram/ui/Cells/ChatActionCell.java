@@ -28,6 +28,7 @@ import org.telegram.android.MessagesController;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
+
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.UserConfig;
 import org.telegram.ui.Components.ResourceLoader;
@@ -175,10 +176,14 @@ public class ChatActionCell extends BaseCell {
                     final int off = textLayout.getOffsetForHorizontal(line, x);
                     final float left = textLayout.getLineLeft(line);
                     if (left <= x && left + textLayout.getLineWidth(line) >= x) {
-                        Spannable buffer = (Spannable)currentMessageObject.messageText;
-                        URLSpan[] link = buffer.getSpans(off, off, URLSpan.class);
+                        URLSpan[] link = null;
 
-                        if (link.length != 0) {
+                        if(currentMessageObject.messageText instanceof Spannable) {
+                            Spannable buffer = (Spannable) currentMessageObject.messageText;
+                            link = buffer.getSpans(off, off, URLSpan.class);
+                        }
+
+                        if (link != null && link.length != 0) {
                             if (event.getAction() == MotionEvent.ACTION_DOWN) {
                                 pressedLink = link[0];
                                 result = true;

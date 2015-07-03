@@ -25,6 +25,9 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.PowerManager;
 
+import com.aniways.Aniways;
+import com.aniways.Utils;
+import com.aniways.anigram.messenger.R;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GooglePlayServicesUtil;
 import com.google.android.gms.gcm.GoogleCloudMessaging;
@@ -42,6 +45,9 @@ import org.telegram.ui.Components.ForegroundDetector;
 
 import java.io.File;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import io.intercom.android.sdk.Intercom;
+import io.intercom.android.sdk.identity.Registration;
 
 public class ApplicationLoader extends Application {
 
@@ -186,9 +192,14 @@ public class ApplicationLoader extends Application {
         applicationContext = getApplicationContext();
         NativeLoader.initNativeLibs(ApplicationLoader.applicationContext);
 
+        Aniways.init(this);
         if (Build.VERSION.SDK_INT >= 14) {
             new ForegroundDetector(this);
         }
+
+        //initialize intercom
+        Intercom.initialize(this, "android_sdk-3ddd0c1f0818b525a23e65154b258887e4fc466f", "zc7rw85s");
+
 
         applicationHandler = new Handler(applicationContext.getMainLooper());
 

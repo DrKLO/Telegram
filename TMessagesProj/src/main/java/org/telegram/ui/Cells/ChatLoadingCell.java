@@ -15,7 +15,7 @@ import android.widget.ProgressBar;
 
 import org.telegram.android.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.R;
+import com.aniways.anigram.messenger.R;
 import org.telegram.ui.Components.LayoutHelper;
 
 public class ChatLoadingCell extends FrameLayout {

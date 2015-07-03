@@ -29,7 +29,11 @@ import android.widget.TextView;
 
 import org.telegram.android.AndroidUtilities;
 import org.telegram.android.LocaleController;
-import org.telegram.messenger.R;
+
+import com.aniways.AniwaysTextView;
+import com.aniways.Log;
+import com.aniways.anigram.messenger.R;
+import com.aniways.Aniways;
 
 public class IntroActivity extends Activity {
     private ViewPager viewPager;
@@ -256,6 +260,14 @@ public class IntroActivity extends Activity {
             View view = View.inflate(container.getContext(), R.layout.intro_view_layout, null);
             TextView headerTextView = (TextView)view.findViewById(R.id.header_text);
             TextView messageTextView = (TextView)view.findViewById(R.id.message_text);
+            if(messageTextView instanceof AniwaysTextView) {
+                AniwaysTextView aniwaysTextView = (AniwaysTextView)messageTextView;
+                aniwaysTextView.setUseSmallIcons(true);
+                aniwaysTextView.setIconsClickable(false);
+            }
+            else{
+                Log.w(true, "AniwaysIntroActivity", "messageText is not AniwaysTextView");
+            }
             container.addView(view, 0);
 
             headerTextView.setText(getString(titles[position]));

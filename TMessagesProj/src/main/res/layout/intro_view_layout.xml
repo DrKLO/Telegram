@@ -14,7 +14,7 @@
         android:textColor="#ff000000"
         android:layout_marginTop="224dp"/>
 
-    <TextView android:layout_height="wrap_content"
+    <com.aniways.AniwaysTextView android:layout_height="wrap_content"
         android:layout_width="match_parent"
         android:id="@+id/message_text"
         android:textSize="15dp"

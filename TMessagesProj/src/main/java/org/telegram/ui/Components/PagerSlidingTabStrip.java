@@ -23,6 +23,7 @@ import android.widget.HorizontalScrollView;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 
+import com.aniways.anigram.messenger.R;
 import org.telegram.android.AndroidUtilities;
 
 public class PagerSlidingTabStrip extends HorizontalScrollView {

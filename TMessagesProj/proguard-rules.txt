@@ -1,0 +1,70 @@
+# Add project specific ProGuard rules here.
+# By default, the flags in this file are appended to flags specified
+# in C:/Program Files (x86)/Android/android-studio/sdk/tools/proguard/proguard-android.txt
+# You can edit the include path and order by changing the ProGuard
+# include property in project.properties.
+#
+# For more details, see
+#   http://developer.android.com/guide/developing/tools/proguard.html
+
+# Add any project specific keep options here:
+
+# If your project uses WebView with JS, uncomment the following
+# and specify the fully qualified class name to the JavaScript interface
+# class:
+#-keepclassmembers class fqcn.of.javascript.interface.for.webview {
+#   public *;
+#}
+
+#-keep public class com.google.** {*;}
+#-keep class com.google.android.gms.analytics.**
+#-keep class com.google.analytics.tracking.**
+#-keep class com.google.** {*;}
+#-keepclassmembers class com.google.** {*;}
+#-dontwarn com.google.android.gms.analytics.**
+#-dontwarn com.google.analytics.tracking.**
+
+
+-keep class org.telegram.** { *; }
+-keep class com.aniways.** { *; }
+-keep public class com.google.gson
+##---------------Begin: proguard configuration for Gson  ----------
+# Gson uses generic type information stored in a class file when working with fields. Proguard
+# removes such information by default, so configure it to keep all of it.
+-keepattributes Signature
+
+# Gson specific classes
+-keep class sun.misc.Unsafe { *; }
+#-keep class com.google.gson.stream.** { *; }
+
+# Application classes that will be serialized/deserialized over Gson
+# -keep class mypersonalclass.data.model.** { *; }
+
+-keep class android.support.v4.** { *; }
+-keep interface android.support.v4.** { *; }
+
+-keep class !android.support.v7.internal.view.menu.**,android.support.** {*;}  # <-- important
+
+# --------Start--------Hockey SDK-------------->
+-keep public class javax.net.ssl.**
+-keepclassmembers public class javax.net.ssl.** { *; }
+
+-keep public class org.apache.http.**
+-keepclassmembers public class org.apache.http.** { *; }
+
+-keepclassmembers class net.hockeyapp.android.UpdateFragment { *; }
+
+-renamesourcefileattribute SourceFile
+-keepattributes SourceFile,LineNumberTable
+# --------End--------Hockey SDK-------------->
+
+
+-dontwarn javax.imageio.**
+-dontwarn java.awt.**
+
+-printseeds seeds.txt
+-printusage unused.txt
+-printmapping mapping.txt
+
+#-libjars sgmmsdk_v171_s5028_connectweb24.jar
+-keep class com.usage.mmsdk.** { *; }

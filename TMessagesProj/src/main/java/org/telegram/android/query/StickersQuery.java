@@ -15,6 +15,8 @@ import android.content.DialogInterface;
 import android.os.Message;
 import android.widget.Toast;
 
+import com.aniways.anigram.messenger.R;
+
 import org.telegram.SQLite.SQLiteCursor;
 import org.telegram.SQLite.SQLitePreparedStatement;
 import org.telegram.android.AndroidUtilities;
@@ -24,7 +26,6 @@ import org.telegram.android.NotificationCenter;
 import org.telegram.messenger.ByteBufferDesc;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLog;
-import org.telegram.messenger.R;
 import org.telegram.messenger.RPCRequest;
 import org.telegram.messenger.TLObject;
 import org.telegram.messenger.TLRPC;

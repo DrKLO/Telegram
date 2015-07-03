@@ -40,6 +40,7 @@ import android.widget.RelativeLayout;
 import android.widget.Toast;
 
 import org.telegram.android.AndroidUtilities;
+import com.aniways.Aniways;
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.android.ContactsController;
 import org.telegram.android.MessagesController;
@@ -52,7 +53,7 @@ import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLog;
 import org.telegram.android.LocaleController;
 import org.telegram.android.NotificationCenter;
-import org.telegram.messenger.R;
+import com.aniways.anigram.messenger.R;
 import org.telegram.messenger.RPCRequest;
 import org.telegram.messenger.TLObject;
 import org.telegram.messenger.TLRPC;

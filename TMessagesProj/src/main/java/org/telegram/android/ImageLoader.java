@@ -52,6 +52,7 @@ import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.NoSuchElementException;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class ImageLoader {
@@ -1779,13 +1780,20 @@ public class ImageLoader {
             currentHttpTasksCount--;
         }
         while (currentHttpTasksCount < 1 && !httpTasks.isEmpty()) {
-            HttpImageTask task = httpTasks.poll();
-            if (android.os.Build.VERSION.SDK_INT >= 11) {
-                task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, null, null, null);
-            } else {
-                task.execute(null, null, null);
+            HttpImageTask task;
+            try {
+                task = httpTasks.poll();
+                if(task != null) {
+                    if (android.os.Build.VERSION.SDK_INT >= 11) {
+                        task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, null, null, null);
+                    } else {
+                        task.execute(null, null, null);
+                    }
+                    currentHttpTasksCount++;
+                }
             }
-            currentHttpTasksCount++;
+            catch (NoSuchElementException ex){}
+            catch (IllegalStateException ex2){}
         }
     }
 

@@ -22,11 +22,13 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.aniways.anigram.messenger.R;
+
 import org.telegram.android.AndroidUtilities;
 import org.telegram.android.LocaleController;
 import org.telegram.android.MediaController;
 import org.telegram.android.support.widget.LinearLayoutManager;
-import org.telegram.messenger.R;
+
 import org.telegram.ui.Adapters.PhotoAttachAdapter;
 import org.telegram.ui.ChatActivity;
 

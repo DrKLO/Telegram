@@ -18,6 +18,7 @@ import android.graphics.drawable.Drawable;
 import android.view.View;
 
 import org.telegram.android.AndroidUtilities;
+
 import org.telegram.android.AnimationCompat.ObjectAnimatorProxy;
 
 public class CheckBox extends View {

@@ -18,7 +18,7 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import org.telegram.android.LocaleController;
-import org.telegram.messenger.R;
+import com.aniways.anigram.messenger.R;
 
 public class EmptyTextProgressView extends FrameLayout {
 

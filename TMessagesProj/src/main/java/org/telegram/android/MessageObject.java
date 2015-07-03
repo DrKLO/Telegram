@@ -9,6 +9,7 @@
 package org.telegram.android;
 
 import android.graphics.Paint;
+import android.text.Editable;
 import android.text.Layout;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
@@ -22,7 +23,14 @@ import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.TLRPC;
-import org.telegram.messenger.R;
+
+import com.aniways.Aniways;
+import com.aniways.AniwaysIconInfoDisplayer;
+import com.aniways.AniwaysNotInitializedException;
+import com.aniways.IAniwaysTextContainer;
+import com.aniways.Log;
+import com.aniways.anigram.messenger.R;
+
 import org.telegram.messenger.UserConfig;
 import org.telegram.ui.Components.URLSpanNoUnderline;
 import org.telegram.ui.Components.URLSpanNoUnderlineBold;
@@ -35,10 +43,14 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class MessageObject {
+    private static final String TAG = "AniwaysMessageObject";
 
     public static final int MESSAGE_SEND_STATE_SENDING = 1;
     public static final int MESSAGE_SEND_STATE_SENT = 0;
     public static final int MESSAGE_SEND_STATE_SEND_ERROR = 2;
+
+    private Editable mDecodedMessageBigIconsCache;
+    private Editable mDecodedMessageSmallIconsCache;
 
     public TLRPC.Message messageOwner;
     public CharSequence messageText;
@@ -55,11 +67,43 @@ public class MessageObject {
     public ArrayList<TLRPC.PhotoSize> photoThumbs;
     public VideoEditedInfo videoEditedInfo;
 
+    public IAniwaysTextContainer mtextContainer;
+
     public static TextPaint textPaint;
     public int lastLineWidth;
     public int textWidth;
     public int textHeight;
     public int blockHeight = Integer.MAX_VALUE;
+    public Boolean isAniwaysSticker = null;
+    private String aniwaysStickerAttachPath;
+    private Boolean containsViralLink;
+
+    public boolean isAniwaysSticker() {
+        if(isAniwaysSticker != null){
+            return isAniwaysSticker;
+        }
+
+        isAniwaysSticker = false;
+        String url = Aniways.getAniwaysStickerUrl(this.messageText);
+        if(url == null){
+            return isAniwaysSticker;
+        }
+
+        this.messageOwner.attachPath = url;
+        aniwaysStickerAttachPath = this.messageOwner.attachPath;
+        isAniwaysSticker = true;
+        return true;
+    }
+
+    public boolean containsAniwaysViralLink() {
+        if(containsViralLink == null){
+            Log.w(true, TAG, "containsAniwaysViralLink called before value is set", new Exception());
+            return false;
+        }
+        else {
+            return containsViralLink;
+        }
+    }
 
     public static Pattern urlPattern;
 
@@ -304,7 +348,7 @@ public class MessageObject {
             } else if (message.media instanceof TLRPC.TL_messageMediaContact) {
                 messageText = LocaleController.getString("AttachContact", R.string.AttachContact);
             } else if (message.media instanceof TLRPC.TL_messageMediaUnsupported) {
-                messageText = LocaleController.getString("UnsuppotedMedia", R.string.UnsuppotedMedia);
+                messageText = "Unsupported message, will be supported soon";LocaleController.getString("UnsuppotedMedia", R.string.UnsuppotedMedia);
             } else if (message.media instanceof TLRPC.TL_messageMediaDocument) {
                 if (isSticker()) {
                     String sch = getStrickerChar();
@@ -327,7 +371,7 @@ public class MessageObject {
         } else {
             messageText = message.message;
         }
-        messageText = Emoji.replaceEmoji(messageText, textPaint.getFontMetricsInt(), AndroidUtilities.dp(20));
+        //messageText = Emoji.replaceEmoji(messageText, textPaint.getFontMetricsInt(), AndroidUtilities.dp(20));
 
         if (message instanceof TLRPC.TL_message || message instanceof TLRPC.TL_messageForwarded_old2) {
             if (isMediaEmpty()) {
@@ -384,6 +428,12 @@ public class MessageObject {
             }
         }
 
+        if(type == 0 && contentType == 0 && isAniwaysSticker()){
+            type = 13;
+            contentType = 1;
+            this.messageOwner.attachPath = aniwaysStickerAttachPath;
+        }
+
         Calendar rightNow = new GregorianCalendar();
         rightNow.setTimeInMillis((long) (messageOwner.date) * 1000);
         int dateDay = rightNow.get(Calendar.DAY_OF_YEAR);
@@ -401,9 +451,49 @@ public class MessageObject {
 
         generateCaption();
         if (generateLayout) {
-            generateLayout();
+            generateLayout(null);
         }
         generateThumbs(false);
+    }
+
+    public CharSequence getAniwaysDecodedMessageTextBigIcons(IAniwaysTextContainer textContainer){
+        if(textContainer == null){
+            return this.messageText;
+        }
+
+        if(mDecodedMessageBigIconsCache == null){
+            try {
+                boolean[] containsViralink = new boolean[1];
+                mDecodedMessageBigIconsCache = Aniways.decodeMessage(this.messageText, new AniwaysIconInfoDisplayer(), textContainer, false, containsViralink);
+                this.containsViralLink = containsViralink[0];
+            }
+            catch(AniwaysNotInitializedException ex){
+                Log.e(true, TAG, "Caught aniways not initialized exception", ex);
+                return this.messageText;
+            }
+        }
+
+        return mDecodedMessageBigIconsCache;
+    }
+
+    public CharSequence getAniwaysDecodedMessageTextSmallIcons(IAniwaysTextContainer textContainer){
+        if(textContainer == null){
+            return this.messageText;
+        }
+
+        if(mDecodedMessageSmallIconsCache == null){
+            try {
+                boolean[] containsViralink = new boolean[1];
+                mDecodedMessageSmallIconsCache = Aniways.decodeMessage(this.messageText, new AniwaysIconInfoDisplayer(), textContainer, true, containsViralink);
+                this.containsViralLink = containsViralink[0];
+            }
+            catch(AniwaysNotInitializedException ex){
+                Log.e(true, TAG, "Caught aniways not initialized exception", ex);
+                return this.messageText;
+            }
+        }
+
+        return mDecodedMessageSmallIconsCache;
     }
 
     public void generateThumbs(boolean update) {
@@ -632,27 +722,31 @@ public class MessageObject {
         }
     }
 
-    public static void addLinks(CharSequence messageText) {
-        if (messageText instanceof Spannable && containsUrls(messageText)) {
-            if (messageText.length() < 100) {
+    public static void addLinks(CharSequence messageTextDecoded) {
+        if (messageTextDecoded instanceof Spannable && containsUrls(messageTextDecoded)) {
+            if (messageTextDecoded.length() < 100) {
                 try {
-                    Linkify.addLinks((Spannable) messageText, Linkify.WEB_URLS | Linkify.PHONE_NUMBERS);
+                    Linkify.addLinks((Spannable) messageTextDecoded, Linkify.WEB_URLS | Linkify.PHONE_NUMBERS);
                 } catch (Exception e) {
                     FileLog.e("tmessages", e);
                 }
             } else {
                 try {
-                    Linkify.addLinks((Spannable) messageText, Linkify.WEB_URLS);
+                    Linkify.addLinks((Spannable) messageTextDecoded, Linkify.WEB_URLS);
                 } catch (Exception e) {
                     FileLog.e("tmessages", e);
                 }
             }
-            addUsernamesAndHashtags(messageText);
+
+            addUsernamesAndHashtags(messageTextDecoded);
         }
     }
 
-    private void generateLayout() {
-        if (type != 0 || messageOwner.to_id == null || messageText == null || messageText.length() == 0) {
+    public void generateLayout(IAniwaysTextContainer textContainer) {
+        this.mtextContainer = textContainer;
+        CharSequence messageTextDecoded = getAniwaysDecodedMessageTextBigIcons(textContainer);
+
+        if (type != 0 || messageOwner.to_id == null || messageText == null || messageText.length() == 0 || messageTextDecoded == null || messageTextDecoded.length() == 0) {
             return;
         }
 
@@ -679,7 +773,7 @@ public class MessageObject {
         StaticLayout textLayout;
 
         try {
-            textLayout = new StaticLayout(messageText, textPaint, maxWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+            textLayout = new StaticLayout(messageTextDecoded, textPaint, maxWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
         } catch (Exception e) {
             FileLog.e("tmessages", e);
             return;
@@ -709,7 +803,7 @@ public class MessageObject {
                 }
                 block.charactersOffset = startCharacter;
                 try {
-                    CharSequence str = messageText.subSequence(startCharacter, endCharacter);
+                    CharSequence str = messageTextDecoded.subSequence(startCharacter, endCharacter);
                     block.textLayout = new StaticLayout(str, textPaint, maxWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
                     block.textYOffset = textLayout.getLineTop(linesOffset);
                     if (a != 0) {
