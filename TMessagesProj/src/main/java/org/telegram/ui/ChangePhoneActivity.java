@@ -12,7 +12,9 @@ import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.graphics.PorterDuff;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.telephony.TelephonyManager;
 import android.text.Editable;
@@ -39,10 +41,6 @@ import android.widget.TextView;
 
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.android.AndroidUtilities;
-import org.telegram.android.AnimationCompat.AnimatorListenerAdapterProxy;
-import org.telegram.android.AnimationCompat.AnimatorSetProxy;
-import org.telegram.android.AnimationCompat.ObjectAnimatorProxy;
-import org.telegram.android.AnimationCompat.ViewProxy;
 import org.telegram.android.LocaleController;
 import org.telegram.android.MessagesController;
 import org.telegram.android.MessagesStorage;
@@ -59,6 +57,10 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.android.AnimationCompat.AnimatorListenerAdapterProxy;
+import org.telegram.android.AnimationCompat.AnimatorSetProxy;
+import org.telegram.android.AnimationCompat.ObjectAnimatorProxy;
+import org.telegram.android.AnimationCompat.ViewProxy;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.SlideView;
 import org.telegram.ui.Components.TypefaceSpan;
@@ -118,7 +120,12 @@ public class ChangePhoneActivity extends BaseFragment {
             });
 
             ActionBarMenu menu = actionBar.createMenu();
-            menu.addItemWithWidth(done_button, R.drawable.ic_done, AndroidUtilities.dp(56));
+            //menu.addItemWithWidth(done_button, R.drawable.ic_done, AndroidUtilities.dp(56));
+
+        SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+        Drawable done = getParentActivity().getResources().getDrawable(R.drawable.ic_done);
+        done.setColorFilter(themePrefs.getInt("prefHeaderIconsColor", 0xffffffff), PorterDuff.Mode.SRC_IN);
+        menu.addItemWithWidth(done_button, done, AndroidUtilities.dp(56));
 
         fragmentView = new ScrollView(context);
             ScrollView scrollView = (ScrollView) fragmentView;
@@ -164,6 +171,18 @@ public class ChangePhoneActivity extends BaseFragment {
         if (!AndroidUtilities.isTablet()) {
             getParentActivity().getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
         }
+        updateTheme();
+    }
+
+    private void updateTheme(){
+        SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+        int def = themePrefs.getInt("themeColor", AndroidUtilities.defColor);
+        actionBar.setBackgroundColor(themePrefs.getInt("prefHeaderColor", def));
+        actionBar.setTitleColor(themePrefs.getInt("prefHeaderTitleColor", 0xffffffff));
+
+        Drawable back = getParentActivity().getResources().getDrawable(R.drawable.ic_ab_back);
+        back.setColorFilter(themePrefs.getInt("prefHeaderIconsColor", 0xffffffff), PorterDuff.Mode.MULTIPLY);
+        actionBar.setBackButtonDrawable(back);
     }
 
     @Override
@@ -499,7 +518,7 @@ public class ChangePhoneActivity extends BaseFragment {
             });
 
             textView = new TextView(context);
-            textView.setText(LocaleController.getString("StartText", R.string.StartText));
+            textView.setText(LocaleController.getString("ChangePhoneHelp", R.string.ChangePhoneHelp));
             textView.setTextColor(0xff757575);
             textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             textView.setGravity(Gravity.LEFT);

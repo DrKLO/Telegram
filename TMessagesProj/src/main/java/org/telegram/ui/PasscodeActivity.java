@@ -13,7 +13,9 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
+import android.graphics.PorterDuff;
 import android.graphics.Typeface;
+import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Vibrator;
 import android.text.Editable;
@@ -140,7 +142,11 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
 
         if (type != 0) {
             ActionBarMenu menu = actionBar.createMenu();
-            menu.addItemWithWidth(done_button, R.drawable.ic_done, AndroidUtilities.dp(56));
+            //menu.addItemWithWidth(done_button, R.drawable.ic_done, AndroidUtilities.dp(56));
+            SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+            Drawable done = getParentActivity().getResources().getDrawable(R.drawable.ic_done);
+            done.setColorFilter(themePrefs.getInt("prefHeaderIconsColor", 0xffffffff), PorterDuff.Mode.SRC_IN);
+            menu.addItemWithWidth(done_button, done, AndroidUtilities.dp(56));
 
             titleTextView = new TextView(context);
             titleTextView.setTextColor(0xff757575);
@@ -421,6 +427,18 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
             }, 200);
         }
         fixLayoutInternal();
+        updateTheme();
+    }
+
+    private void updateTheme(){
+        SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+        int def = themePrefs.getInt("themeColor", AndroidUtilities.defColor);
+        actionBar.setBackgroundColor(themePrefs.getInt("prefHeaderColor", def));
+        actionBar.setTitleColor(themePrefs.getInt("prefHeaderTitleColor", 0xffffffff));
+
+        Drawable back = getParentActivity().getResources().getDrawable(R.drawable.ic_ab_back);
+        back.setColorFilter(themePrefs.getInt("prefHeaderIconsColor", 0xffffffff), PorterDuff.Mode.MULTIPLY);
+        actionBar.setBackButtonDrawable(back);
     }
 
     @Override
@@ -459,7 +477,7 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
                 public boolean onPreDraw() {
                     listView.getViewTreeObserver().removeOnPreDrawListener(this);
                     fixLayoutInternal();
-                    return false;
+                    return true;
                 }
             });
         }

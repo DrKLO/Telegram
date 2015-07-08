@@ -25,13 +25,13 @@ import android.widget.TextView;
 import org.telegram.android.AndroidUtilities;
 import org.telegram.android.LocaleController;
 import org.telegram.messenger.R;
+import org.telegram.ui.Adapters.CountryAdapter;
+import org.telegram.ui.Adapters.CountryAdapter.Country;
+import org.telegram.ui.Adapters.CountrySearchAdapter;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.ActionBar.BaseFragment;
-import org.telegram.ui.Adapters.CountryAdapter;
-import org.telegram.ui.Adapters.CountryAdapter.Country;
-import org.telegram.ui.Adapters.CountrySearchAdapter;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.LetterSectionsListView;
 
@@ -84,7 +84,7 @@ public class CountrySelectActivity extends BaseFragment {
             }
 
             @Override
-            public boolean onSearchCollapse() {
+            public void onSearchCollapse() {
                 searchListViewAdapter.search(null);
                 searching = false;
                 searchWas = false;
@@ -96,8 +96,6 @@ public class CountrySelectActivity extends BaseFragment {
                 listView.setVerticalScrollBarEnabled(false);
 
                 emptyTextView.setText(LocaleController.getString("ChooseCountry", R.string.ChooseCountry));
-
-                return true;
             }
 
             @Override

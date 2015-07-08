@@ -30,10 +30,6 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import org.telegram.android.AndroidUtilities;
-import org.telegram.android.AnimationCompat.AnimatorListenerAdapterProxy;
-import org.telegram.android.AnimationCompat.AnimatorSetProxy;
-import org.telegram.android.AnimationCompat.ObjectAnimatorProxy;
-import org.telegram.android.AnimationCompat.ViewProxy;
 import org.telegram.android.LocaleController;
 import org.telegram.android.support.widget.LinearLayoutManager;
 import org.telegram.android.support.widget.RecyclerView;
@@ -41,6 +37,10 @@ import org.telegram.messenger.DispatchQueue;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
+import org.telegram.android.AnimationCompat.AnimatorListenerAdapterProxy;
+import org.telegram.android.AnimationCompat.AnimatorSetProxy;
+import org.telegram.android.AnimationCompat.ObjectAnimatorProxy;
+import org.telegram.android.AnimationCompat.ViewProxy;
 import org.telegram.ui.Cells.PhotoEditToolCell;
 
 import java.nio.ByteBuffer;

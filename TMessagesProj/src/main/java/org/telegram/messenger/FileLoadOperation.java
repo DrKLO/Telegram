@@ -8,8 +8,8 @@
 
 package org.telegram.messenger;
 
-import java.io.File;
 import java.io.RandomAccessFile;
+import java.io.File;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.Scanner;

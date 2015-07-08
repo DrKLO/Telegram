@@ -39,21 +39,21 @@ import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
 
-import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.android.AndroidUtilities;
-import org.telegram.android.ContactsController;
+import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.android.LocaleController;
+import org.telegram.android.UserObject;
+import org.telegram.messenger.ApplicationLoader;
+import org.telegram.messenger.TLRPC;
+import org.telegram.messenger.FileLog;
 import org.telegram.android.MessagesController;
 import org.telegram.android.NotificationCenter;
-import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
-import org.telegram.messenger.TLRPC;
+import org.telegram.ui.Adapters.ContactsAdapter;
+import org.telegram.ui.Adapters.SearchAdapter;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.BaseFragment;
-import org.telegram.ui.Adapters.ContactsAdapter;
-import org.telegram.ui.Adapters.SearchAdapter;
 import org.telegram.ui.Cells.UserCell;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.LetterSectionsListView;
@@ -508,7 +508,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
         LayoutInflater lf = (LayoutInflater) ApplicationLoader.applicationContext.getSystemService(Activity.LAYOUT_INFLATER_SERVICE);
         View textView = lf.inflate(R.layout.group_create_bubble, null);
         TextView text = (TextView)textView.findViewById(R.id.bubble_text_view);
-        String name = ContactsController.formatName(user.first_name, user.last_name);
+        String name = UserObject.getUserName(user);
         if (name.length() == 0 && user.phone != null && user.phone.length() != 0) {
             name = PhoneFormat.getInstance().format("+" + user.phone);
         }

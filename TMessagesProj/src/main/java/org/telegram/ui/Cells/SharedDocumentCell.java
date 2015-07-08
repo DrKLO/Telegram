@@ -212,7 +212,7 @@ public class SharedDocumentCell extends FrameLayout implements MediaController.F
             placeholderImabeView.setImageResource(getThumbForNameOrMime(name, document.messageOwner.media.document.mime_type));
             nameTextView.setText(name);
             extTextView.setText((idx = name.lastIndexOf(".")) == -1 ? "" : name.substring(idx + 1).toLowerCase());
-            if (document.messageOwner.media.document.thumb instanceof TLRPC.TL_photoSizeEmpty) {
+            if (document.messageOwner.media.document.thumb instanceof TLRPC.TL_photoSizeEmpty || document.messageOwner.media.document.thumb == null) {
                 thumbImageView.setVisibility(INVISIBLE);
                 thumbImageView.setImageBitmap(null);
             } else {

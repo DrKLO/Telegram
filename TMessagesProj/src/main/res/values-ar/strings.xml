@@ -99,6 +99,7 @@
     <string name="ChatLocation"> موقع</string>
     <string name="ChatVideo">مقطع مرئي</string>
     <string name="ChatDocument">ملف</string>
+    <string name="ChatCamera">الكاميرا</string>
     <string name="NoMessages">...لا توجد رسائل بعد</string>
     <string name="ForwardedMessage">الرسالة المعاد توجيهها</string>
     <string name="From">من</string>
@@ -128,6 +129,7 @@
     <string name="GettingLinkInfo">جاري جلب معلومات الرابط...</string>
     <string name="OpenInBrowser">فتح في المتصفح</string>
     <string name="CopyUrl">انسخ الرابط</string>
+    <string name="SendItems">أرسل %1$s</string>
     <!--notification-->
     <string name="MessageLifetimeChanged">%1$s قام بتعيين عداد التدمير الذاتي إلى to %2$s</string>
     <string name="MessageLifetimeChangedOutgoing">لقد قمت بتعيين التدمير الذاتي إلى %1$s</string>
@@ -245,7 +247,6 @@
     <string name="ErrorOccurred">حدث خطأ.</string>
     <!--stickers view-->
     <string name="Stickers">ملصقات</string>
-    <string name="GeniusStickerPackName">العقول العظيمة</string>
     <string name="StickersInfo">الرسامون مرحب بهم ليصنعوا حزم ملصقات عن طريق مراسلة @stickers .\n\nيمكن إضافة هذه الحزم بالضغط مرتين على الملصق واختيار \"معلومات\" — \"إضافة الملصقات\".</string>
     <string name="AddStickers">إضافة ملصق</string>
     <string name="AddToStickers">إضافة إلى الملصقات</string>
@@ -294,7 +295,7 @@
     <string name="ContactJoined">اشترك صديق في تيليجرام</string>
     <string name="Pebble">PEBBLE</string>
     <string name="Language">اللغة</string>
-    <string name="AskAQuestionInfo">نرجو الأخذ بالعلم أن الدعم الفني في تيليجرام يقوم به مجموعة من المتطوعين. نحاول الرد بسرعة قدر المستطاع، لكن ربما نستغرق القليل من الوقت.<![CDATA[<br><br>]]>يرجى الإطلاع على <![CDATA[<a href=\"http://telegram.org/faq/ar\">الأسئلة الشائعة عن تيليجرام</a>]]>: يوجد بها حلول للمشاكل وإجابات لمعظم الأسئلة.</string>
+    <string name="AskAQuestionInfo">نرجو الأخذ بالعلم أن الدعم الفني في تيليجرام يقوم به مجموعة من المتطوعين. نحن نحاول الرد بسرعة قدر المستطاع، لكن ربما نستغرق القليل من الوقت.<![CDATA[<br><br>]]> <![CDATA[<a href=\"https://telegram.org/faq/ar\">صفحة الأسئلة الأكثر شيوعًا</a>]]>: يوجد بها حلول للمشاكل وإجابات لمعظم الأسئلة.</string>
     <string name="AskButton">اسأل أحد المتطوعين</string>
     <string name="TelegramFaq">الأسئلة الشائعة عن تيليجرام</string>
     <string name="TelegramFaqUrl">https://telegram.org/faq/ar</string>
@@ -528,6 +529,16 @@
     <string name="EditedVideo">تم تحرير الفيديو</string>
     <string name="SendingVideo">جارٍ إرسال المقطع المرئي...</string>
     <string name="CompressVideo">اضغط المقطع المرئي</string>
+    <!--bot-->
+    <string name="Bot">البوت</string>
+    <string name="BotShare">مشاركة</string>
+    <string name="BotInvite">إضافة إلى المجموعة</string>
+    <string name="BotSettings">الإعدادات</string>
+    <string name="BotHelp">مساعدة</string>
+    <string name="BotStatusRead">يستطيع الوصول للرسائل</string>
+    <string name="BotStatusCantRead">لا يستطيع الوصول للرسائل</string>
+    <string name="BotInfoTitle">ماذا يستطيع هذا البوت عمله؟</string>
+    <string name="BotStart">إبدأ</string>
     <!--button titles-->
     <string name="Next">التالي</string>
     <string name="Back">رجوع</string>
@@ -570,7 +581,7 @@
     <string name="ActionAddUserYou">un1 قام بإضافتك</string>
     <string name="ActionAddUserSelf">un1 عاد إلى المجموعة</string>
     <string name="ActionAddUserSelfYou">لقد عدت إلى المجموعة</string>
-    <string name="UnsuppotedMedia">نسخة تيليجرام الموجودة لديك لا تدعم هذه الرسالة. الرجاء التحديث لأحدث نسخة: http://telegram.org/update</string>
+    <string name="UnsuppotedMedia">نسخة تيليجرام الموجودة لديك لا تدعم هذه الرسالة. الرجاء التحديث لأحدث نسخة لاستعراضها: https://telegram.org/update</string>
     <string name="AttachPhoto">صورة</string>
     <string name="AttachVideo">مقطع مرئي</string>
     <string name="AttachLocation">موقع</string>
@@ -595,13 +606,16 @@
     <string name="NoHandleAppInstalled">لا يوجد لديك تطبيق يمكنه فتح \'%1$s\'، يرجى تنزيل تطبيق مناسب للإستمرار</string>
     <string name="InviteUser">هذا المستخدم ليس لديه تيليجرام بعد ، هل ترغب في دعوته الآن؟</string>
     <string name="AreYouSure">هل أنت متأكد؟</string>
-    <string name="AddToTheGroup">هل ترغب في إضافة %1$s للمجموعة؟\n\nعدد الرسائل الحديثة المراد إعادة تحويلها:</string>
-    <string name="ForwardMessagesTo">هل تريد إعادة توجيه الرسائل إلى %1$s؟</string>
+    <string name="AddToTheGroupTitle">هل ترغب في إضافة %1$s للمجموعة %2$s؟</string>
+    <string name="AddToTheGroupForwardCount">عدد الرسائل الحديثة المراد إعادة تحويلها:</string>
+    <string name="AddToTheGroup">إضافة %1$s للمجموعة؟</string>
+    <string name="UserAlreadyInGroup">هذا المستخدم عضو مسبق في هذه المجموعة</string>
+    <string name="ForwardMessagesTo">؟%1$s هل تريد إعادة توجيه الرسائل إلى</string>
     <string name="SendMessagesTo">هل ترغب في إرسال رسالة إلى %1$s؟</string>
     <string name="AreYouSureLogout">نرجو الأخذ بالعلم أنه يمكنك استخدام تيليجرام على أجهزتك المتعددة بسهولة تامة وفي وقت واحد.\n\nوتذكر، تسجيل الخروج يحذف كافة محادثاتك السرية.</string>
     <string name="AreYouSureSessions">هل أنت متأكد من تسجيل الخروج من جميع الأجهزة الأخرى باستثناء هذا الجهاز؟</string>
     <string name="AreYouSureDeleteAndExit">هل أنت متأكد من أنك تريد حذف المجموعة والخروج منها؟</string>
-    <string name="AreYouSureDeleteThisChat">هل أنت متأكد من رغبتك في حذف المجموعة؟</string>
+    <string name="AreYouSureDeleteThisChat">هل أنت متأكد من رغبتك في حذف المحادثة؟</string>
     <string name="AreYouSureShareMyContactInfo">هل أنت متأكد من أنك تريد مشاركة معلومات جهة الاتصال الخاصة بك؟</string>
     <string name="AreYouSureBlockContact">هل أنت متأكد من رغبتك في حظر جهة الاتصال هذه؟</string>
     <string name="AreYouSureUnblockContact">هل أنت متأكد من رغبتك في إزالة الحظر عن جهة الاتصال هذه؟</string>
@@ -611,8 +625,10 @@
     <string name="AreYouSureClearHistory">هل أنت متأكد من رغبتك في حذف سجل المحادثات؟</string>
     <string name="AreYouSureDeleteMessages">هل أنت متأكد من رغبتك في حذف %1$s؟</string>
     <string name="SendMessagesToGroup">هل ترغب في إرسال رسالة إلى %1$s؟</string>
-    <string name="ForwardMessagesToGroup">هل تريد إعادة توجيه الرسائل إلى %1$s؟</string>
+    <string name="ForwardMessagesToGroup">؟%1$s هل تريد إعادة توجيه الرسائل إلى</string>
     <string name="FeatureUnavailable">.Sorry, this feature is currently not available in your country</string>
+    <string name="NoUsernameFound">لا يوجد حساب تيليجرام بهذا الاسم.</string>
+    <string name="BotCantJoinGroups">هذا البوت لا يستطيع الدخول للمجموعات.</string>
     <!--Intro view-->
     <string name="Page1Title">تيليجرام</string>
     <string name="Page2Title">سريع</string>
@@ -738,6 +754,12 @@
     <string name="Stickers_few">%1$d ملصقات</string>
     <string name="Stickers_many">%1$d ملصق</string>
     <string name="Stickers_other">%1$d ملصق</string>
+    <string name="Photos_zero">%1$d صور</string>
+    <string name="Photos_one">%1$d صورة</string>
+    <string name="Photos_two">%1$d صور</string>
+    <string name="Photos_few">%1$d صور</string>
+    <string name="Photos_many">%1$d صور</string>
+    <string name="Photos_other">%1$d صور</string>
     <!--forwarded messages-->
     <string name="ForwardedMessage_zero">%1$d رسالة معاد توجيهها</string>
     <string name="ForwardedMessage_one">الرسالة المعاد توجيهها</string>
@@ -804,30 +826,31 @@
     <string name="formatterDay24H">HH:mm</string>
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s الساعة %2$s</string>
-    <!--update text--><!--
-    <string name="updateText">تيليجرام نسخة الـ Android تم تحديثه. الجديد في نسخة ٢.٩:\n\n- تنصيب ومشاركة الملصقات كهذه: https://play.google.com/store/apps/details?id=es.rafalense.themes\n- إذا كنت رسام، قم بصنع حزمة ملصقات عن طريق مراسلة @stickers .\n\n - استخدم تيليجرام مع أندرويد أوتو.</string>
-    -->
-  <string name="updateBuild">546</string>
-    <!--Telegram+ arabic-->
-    <string name="TelegramForAndroid">تلغرام للاندرويد</string>
-    <string name="Theming">Theming</string>
-    <string name="colorHexInvalid">Invalid color hex code!</string>
-    <string name="ResetThemeSettings">اعاة الضبط الافتراضي</string>
+    <!--update text-->
+    <string name="updateText">تيليجرام نسخة الأندرويد تم تحديثه. الجديد في نسخة ٣.٠:\n\n- أقسام مخصصة خاصة ومرتبة لكل لحزم الملصقات. يمكنك إضافة حزم الملصقات كهذه https://telegram.me/addstickers/Animals\n- واجهة برمجية خاصة جديدة بالبوت، مجانًا للجميع. إذا كنت مبرمج، اصنع البوت الخاص بك مثل @quiz_bot و @hot_or_bot باستخدام حساب @botfather. للإستزادة، فضلًا اطلع على https://telegram.org/blog/bot-revolution</string>
+  <string name="updateBuild">576</string>
+    <!--Telegram+-->
+  <string name="updatePlusText"></string>
+  <string name="TelegramForAndroid">بلاس مسنجر للأندرويد</string>
+  <string name="Theming">الثيمات</string>
+  <string name="colorHexInvalid">شفرة تعريف اللون غير صحيحه!</string>
+  <string name="themeColor">لون الثيم</string>
+  <string name="ResetThemeSettings">اعادة الضبط الافتراضي</string>
     <string name="ResetThemeSettingsSum">التراجع عن كافة ضبط الثيمات</string>
-    <string name="ResetThemeToastText">اعادة ضبط الثيمات الي الافتراضي</string>
+  <string name="ResetThemeToastText">إعادة ضبط الإعدادت الإفتراضي</string>
     <string name="General">عام</string>
     <string name="Screens">شاشات</string>
     <string name="MainScreen">الشاشة الرئيسية</string>
     <string name="ChatScreen">شاشة المحادثة</string>
-    <string name="ContactsScreen">شاشة الاسماء</string>
+  <string name="ContactsScreen">شاشة الأسماء</string>
     <string name="Header">الشريط العلوي</string>
     <string name="Rows">الصفوف</string>
     <string name="ChatList">قائمة المحادثة</string>
     <string name="ChatsList">قائمة المحادثات</string>
     <string name="ContactsList">قائمة الاسماء</string>
     <string name="HeaderColor">لون الشريط العلوي</string>
-    <string name="NameColor">لون جهات الاتصال</string>
-    <string name="NameSize">حجم اسماء جهات الاتصال</string>
+  <string name="NameColor">لون الإسم</string>
+  <string name="NameSize">حجم اللإسم</string>
     <string name="MessageColor">لون الرسالة</string>
     <string name="MessageSize">حجم الرسالة</string>
     <string name="TimeDateColor">لون الزمن/التاريخ</string>
@@ -843,7 +866,7 @@
     <string name="DateColor">لون التريخ</string>
     <string name="DateSize">حجم التاريخ</string>
     <string name="DateBubbleColor">لون فقاعة التاريخ</string>
-    <string name="RTextColor">لون الخط</string>
+  <string name="RTextColor">لون النص اليمين</string>
     <string name="LTextColor">لون الخط اليسار</string>
     <string name="RTimeColor">لون الزمن اليمين</string>
     <string name="LTimeColor">لون الزمن اليسار</string>
@@ -851,30 +874,84 @@
     <string name="EditTextColor">لون نص الادخال</string>
     <string name="EditTextSize">حجم نص الادخال</string>
     <string name="EditTextBGColor">لون خلفية نص الادخال</string>
-    <string name="EmojiViewBGColor">لون خلفية الفيسات</string>
-    <string name="EmojiViewTabColor">لون تبويب الفيسات</string>
-    <string name="OnlineColor">لون حالة الاتصال</string>
+  <string name="EmojiViewBGColor">لون خلفية الإبتسامات</string>
+  <string name="EmojiViewTabColor">لون تبويب الإبتسامات</string>
+  <string name="OnlineColor">لون حالة الإتصال</string>
     <string name="ChatMusic">موسيقى</string>
     <string name="SaveTheme">حفظ الثيم</string>
     <string name="SaveThemeSum">حفظ الثيمات في مجلد Telegram/Themes</string>
-    <string name="SaveThemeToastText">تم حفظ الثيم</string>
-    <string name="SavedTo">%1$s saved to %2$s</string>
-    <string name="SaveErrorMsg0">Theme not created yet. Apply any MOD first, please</string>
-    <string name="restoreOkMsg">Preferences restored from sdcard</string>
-    <string name="restoreErrorMsg">No preferences file found in %s</string>
+  <string name="SaveThemeToastText">تم حفظ الثيم!</string>
+  <string name="SavedTo">%1$s حفظ في %2$s</string>
+  <string name="SaveErrorMsg0">لم يتم إنشاء ثيم لحد الآن. الرجاء إختيار أي تعديل بالأول.</string>
+  <string name="restoreOkMsg">التفضيلات المسترجعه من الذاكره</string>
+  <string name="restoreErrorMsg">لا يوجد ملف تفضيلات في %s </string>
     <string name="NoMediaMessage">لاتوجد بطاقة ذاكرة</string>
-    <string name="EnterName">ادخل الاسم</string>
+  <string name="EnterName">أدخل الإسم</string>
     <string name="Themes">الثيمات</string>
     <string name="ApplyTheme">تطبيق الثيم</string>
-    <string name="ApplyThemeSum">Apply xml theme from local folder</string>
-    <string name="MemberColor">Participant Color</string>
-    <string name="ChecksColor">Ticks Color</string>
-    <string name="MuteColor">Mute Color</string>
-    <string name="SendLogs">Send Logs</string>
-    <string name="SendLogsEmpty">There aren\'t logs</string>
-    <string name="SendIcon">Send Icon</string>
-    <string name="HideMobile">Hide Mobile Number</string>
-    <string name="FloatingPencilColor">Floating Pencil Color</string>
-    <string name="FloatingBGColor">Floating Background Color</string>
-    <string name="Community">G+ Community</string>
+  <string name="ApplyThemeSum">تطبيق ثيم XML من ملف على الجهاز</string>
+  <string name="MemberColor">لون العضو</string>
+  <string name="ChecksColor">لون علامة اللإختيار</string>
+  <string name="MuteColor">لون الوضع الصامت</string>
+  <string name="SendLogs">إرسال ملفات تتبع الإستخدام</string>
+  <string name="SendLogsEmpty">لا يوجد ملفات تتبع للإستخدام</string>
+  <string name="SendIcon">أيقونة الإرسال</string>
+  <string name="HideMobile">إخفاء رقم الهاتف من القائمة</string>
+  <string name="FloatingPencilColor">لون قلم الرصاص </string>
+  <string name="FloatingBGColor">لون الخلفية</string>
+  <string name="Community">مجتمع G+ </string>
+  <string name="TypingColor">لون الكتابة</string>
+  <string name="EditTextIconsColor">لون أيقونة النص المدخل</string>
+  <string name="NavigationDrawer">درج التصفح</string>
+  <string name="OptionsList">قائمة الخيارات</string>
+  <string name="ListColor">قائمة الألوان</string>
+  <string name="OwnNameSize">حجم اللإسم</string>
+  <string name="PhoneColor">لون الهاتف</string>
+  <string name="PhoneSize">حجم الهاتف</string>
+  <string name="AvatarColor">لون الصورة الشخصية</string>
+  <string name="IconColor">لون أيقونة الخيارات</string>
+  <string name="OptionColor">لون الخيارات</string>
+  <string name="OptionSize">حجم الخيارات</string>
+  <string name="VersionColor">لون الإصدار</string>
+  <string name="VersionSize">حجم الإصدار</string>
+  <string name="HeaderTitleColor">لون عنوان الصفحة</string>
+  <string name="HeaderIconsColor">لون أيقونات الصفحة</string>
+  <string name="DividerColor">لون المقسم</string>
+  <string name="AvatarRadius">قطر الصورة الشخصية</string>
+  <string name="SetMemberColor">تعيين لون العضو</string>
+  <string name="ForwardNameColor">لون تحويل الإسم</string>
+  <string name="HeaderTitle">عنوان الصفحة</string>
+  <string name="ForwardNoQuote">تحويل بدون الرسالة المسبقه</string>
+  <string name="DisableMessageClick">تعطيل الصفحات المنبثقه بالضغط</string>
+  <string name="ProfileScreen">بيانات المجموعه / المتصل</string>
+  <string name="HideBackground">إخفاء الخلفيه المُعينه</string>
+  <string name="RLinkColor">لون الرابط اليمين</string>
+  <string name="LLinkColor">لون الرابط اليسار</string>
+  <string name="ThemeApplied">تم تعيين الثيم!</string>
+  <string name="ClickOkToRestart">إضغط موافق لإعادة تشغيل البرنامج</string>
+  <string name="ShowAndroidEmoji">إظهار إبتسامات الجهاز</string>
+  <string name="BubbleStyle">تشكيلة فقاعيه</string>
+  <string name="KeepOriginalFilename">لا تغير الإسم الأصلي</string>
+  <string name="KeepOriginalFilenameHelp">بدلاً من ملفات مُرقمة سوف يستخدم طريقة اللإسم_اليوم</string>
+  <string name="AvatarSize">حجم الصورة الشخصية</string>
+  <string name="AvatarAlignTop">محاذات الصورة الشخصيه للأعلى</string>
+  <string name="AvatarMarginLeft">هامش الصورة الشخصيه اليسار</string>
+  <string name="GroupNameColor">لون إسم المجموعة</string>
+  <string name="GroupNameSize">حجم إسم المجموعة</string>
+  <string name="UnknownNameColor">لون اللإسم (للرقم الغير معروف)</string>
+  <string name="HideBackgroundShadow">إخفاء ظل الخلفية المعينه</string>
+  <string name="SetSolidBGColor">تعيين لون الخلفية</string>
+  <string name="SolidBGColor">لون الخلفية</string>
+  <string name="EmojiPopupSize">حجم الابتسامة المنبثقة</string>
+  <string name="ForwardRightNameColor">تحويل فقاعة لون الإسم اليمين</string>
+  <string name="ForwardLeftNameColor">تحويل فقاعة لون الإسم اليسار</string>
+  <string name="IconsColor">لون الأيقونات</string>
+  <string name="SettingsScreen">الإعدادات / ثيم الشاشة</string>
+  <string name="BackgroundColor">لون الخلفية</string>
+  <string name="ShadowColor">لون الظل</string>
+  <string name="SectionColor">لون الخيار</string>
+  <string name="TitleColor">لون العنوان</string>
+  <string name="SummaryColor">لون الملخص / الترجمة</string>
+  <string name="MediaColor">لون نص الصورة / الملصق</string>
+  <string name="ThemesAppMsg">هل تريد إستكشاف ثيمات أنشئها مستخدمين آخرين لبلس مسنجر؟</string>
 </resources>

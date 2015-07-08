@@ -26,7 +26,6 @@ import android.os.Environment;
 import android.os.ParcelFileDescriptor;
 import android.provider.MediaStore;
 
-import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.DispatchQueue;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
@@ -34,6 +33,7 @@ import org.telegram.messenger.TLObject;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
+import org.telegram.messenger.ApplicationLoader;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -46,6 +46,7 @@ import java.lang.reflect.Method;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLConnection;
+import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
@@ -140,9 +141,13 @@ public class ImageLoader {
 
                 fileOutputStream = new RandomAccessFile(tempFile, "rws");
             } catch (Throwable e) {
+                if (e instanceof UnknownHostException) {
+                    canRetry = false;
+                }
                 FileLog.e("tmessages", e);
             }
 
+            if (canRetry) {
             try {
                 if (httpConnection != null && httpConnection instanceof HttpURLConnection) {
                     int code = ((HttpURLConnection) httpConnection).getResponseCode();
@@ -196,6 +201,7 @@ public class ImageLoader {
                 }
             } catch (Throwable e) {
                 FileLog.e("tmessages", e);
+            }
             }
 
             return done;
@@ -537,7 +543,7 @@ public class ImageLoader {
             boolean canDeleteFile = true;
             boolean useNativeWebpLoaded = false;
 
-            if (Build.VERSION.SDK_INT < 18) {
+            if (Build.VERSION.SDK_INT < 19) {
                 RandomAccessFile randomAccessFile = null;
                 try {
                     randomAccessFile = new RandomAccessFile(cacheFileFinal, "r");
@@ -1905,13 +1911,6 @@ public class ImageLoader {
                 BitmapFactory.decodeFileDescriptor(fileDescriptor, null, bmOptions);
             } catch (Throwable e) {
                 FileLog.e("tmessages", e);
-                try {
-                    if (parcelFD != null) {
-                        parcelFD.close();
-                    }
-                } catch (Throwable e2) {
-                    FileLog.e("tmessages", e2);
-                }
                 return null;
             }
         }

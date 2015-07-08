@@ -50,7 +50,6 @@ import android.widget.TextView;
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.android.AndroidUtilities;
 import org.telegram.android.ContactsController;
-import org.telegram.android.LocaleController;
 import org.telegram.android.MessagesController;
 import org.telegram.android.MessagesStorage;
 import org.telegram.android.NotificationCenter;
@@ -58,6 +57,7 @@ import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLog;
+import org.telegram.android.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.RPCRequest;
 import org.telegram.messenger.TLObject;
@@ -633,7 +633,7 @@ public class LoginActivity extends BaseFragment {
             });
 
             textView = new TextView(context);
-            textView.setText(LocaleController.getString("ChangePhoneHelp", R.string.ChangePhoneHelp));
+            textView.setText(LocaleController.getString("StartText", R.string.StartText));
             textView.setTextColor(0xff757575);
             textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             textView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
@@ -2144,14 +2144,13 @@ public class LoginActivity extends BaseFragment {
                             needHideProgress();
                             if (error == null) {
                                 final TLRPC.TL_auth_authorization res = (TLRPC.TL_auth_authorization) response;
-                                TLRPC.TL_userSelf user = (TLRPC.TL_userSelf) res.user;
                                 UserConfig.clearConfig();
                                 MessagesController.getInstance().cleanUp();
-                                UserConfig.setCurrentUser(user);
+                                UserConfig.setCurrentUser(res.user);
                                 UserConfig.saveConfig(true);
                                 MessagesStorage.getInstance().cleanUp(true);
                                 ArrayList<TLRPC.User> users = new ArrayList<>();
-                                users.add(user);
+                                users.add(res.user);
                                 MessagesStorage.getInstance().putUsersAndChats(users, null, true, true);
                                 //MessagesController.getInstance().uploadAndApplyUserAvatar(avatarPhotoBig);
                                 MessagesController.getInstance().putUser(res.user, false);

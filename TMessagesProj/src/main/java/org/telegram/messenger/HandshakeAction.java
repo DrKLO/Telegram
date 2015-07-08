@@ -297,6 +297,9 @@ public class HandshakeAction extends Action implements TcpConnection.TcpConnecti
             }
         } else if (message instanceof TLRPC.Server_DH_Params) {
             if (message instanceof TLRPC.TL_server_DH_params_ok) {
+                if (authNewNonce == null) {
+                    return;
+                }
                 TLRPC.TL_server_DH_params_ok serverDhParams = (TLRPC.TL_server_DH_params_ok)message;
 
                 SerializedData tmpAesKey = new SerializedData();

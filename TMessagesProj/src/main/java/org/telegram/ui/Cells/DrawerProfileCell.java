@@ -28,9 +28,9 @@ import android.widget.TextView;
 
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.android.AndroidUtilities;
-import org.telegram.android.ContactsController;
 import org.telegram.android.MessageObject;
 import org.telegram.android.MessagesController;
+import org.telegram.android.UserObject;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
@@ -63,7 +63,10 @@ public class DrawerProfileCell extends FrameLayout implements PhotoViewer.PhotoV
 
         avatarImageView = new BackupImageView(context);
         avatarImageView.getImageReceiver().setRoundRadius(AndroidUtilities.dp(32));
-                addView(avatarImageView, LayoutHelper.createFrame(64, 64, Gravity.LEFT | Gravity.BOTTOM, 16, 0, 0, 67));
+        SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+        int aSize = themePrefs.getInt("drawerAvatarSize", 64);
+        //addView(avatarImageView, LayoutHelper.createFrame(64, 64, Gravity.LEFT | Gravity.BOTTOM, 16, 0, 0, 67));
+        addView(avatarImageView, LayoutHelper.createFrame(aSize, aSize, Gravity.LEFT | Gravity.BOTTOM, 16, 0, 0, 67));
 
         final Activity activity = (Activity) context;
         avatarImageView.setOnClickListener(new View.OnClickListener() {
@@ -156,7 +159,7 @@ public class DrawerProfileCell extends FrameLayout implements PhotoViewer.PhotoV
         if (user.photo != null) {
             photo = user.photo.photo_small;
         }
-        nameTextView.setText(ContactsController.formatName(user.first_name, user.last_name));
+        nameTextView.setText(UserObject.getUserName(user));
         phoneTextView.setText(PhoneFormat.getInstance().format("+" + user.phone));
         AvatarDrawable avatarDrawable = new AvatarDrawable(user);
         avatarDrawable.setColor(0xff5c98cd);
@@ -238,6 +241,8 @@ public class DrawerProfileCell extends FrameLayout implements PhotoViewer.PhotoV
         avatarDrawable.setColor(themePrefs.getInt("drawerAvatarColor", AndroidUtilities.getIntDarkerColor("themeColor", 0x15)));
         int radius = AndroidUtilities.dp(themePrefs.getInt("drawerAvatarRadius", 32));
         avatarDrawable.setRadius(radius);
+        //avatarImageView.getImageReceiver().setImageCoords(avatarImageView.getImageReceiver(), avatarTop, avatarSize, avatarSize);
+
         avatarImageView.getImageReceiver().setRoundRadius(radius);
         avatarImageView.setImage(photo, "50_50", avatarDrawable);
         if(AndroidUtilities.getBoolMain("hideMobile")){

@@ -34,6 +34,7 @@ import org.telegram.android.MediaController;
 import org.telegram.android.MessageObject;
 import org.telegram.android.MessagesController;
 import org.telegram.android.SendMessagesHelper;
+import org.telegram.android.UserObject;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLoader;
@@ -187,7 +188,7 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
 
         boolean result = false;
         int side = AndroidUtilities.dp(48);
-        if (currentMessageObject.caption instanceof Spannable && !isPressed) {
+        if (currentMessageObject.caption instanceof Spannable && delegate.canPerformActions()) {
             if (event.getAction() == MotionEvent.ACTION_DOWN || (linkPreviewPressed || pressedLink != null) && event.getAction() == MotionEvent.ACTION_UP) {
                 if (nameLayout != null && x >= captionX && x <= captionX + backgroundWidth && y >= captionY && y <= captionY + captionHeight) {
         if (event.getAction() == MotionEvent.ACTION_DOWN) {
@@ -228,9 +229,9 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
                         try {
                             if (pressedLink instanceof URLSpanNoUnderline) {
                                 String url = ((URLSpanNoUnderline) pressedLink).getURL();
-                                if (url.startsWith("@") || url.startsWith("#")) {
+                                if (url.startsWith("@") || url.startsWith("#") || url.startsWith("/")) {
                                     if (delegate != null) {
-                                        delegate.didPressUrl(url);
+                                        delegate.didPressUrl(currentMessageObject, url);
                                     }
                                 }
                             } else {
@@ -554,7 +555,17 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
 
                     if(isChat){
                         TLRPC.User fromUser = MessagesController.getInstance().getUser(messageObject.messageOwner.from_id);
-                        String senderName = String.format("%s %s", fromUser.first_name, fromUser.last_name);
+                        //String senderName = String.format("%s %s", fromUser.first_name, fromUser.last_name);
+                        String senderName = "";
+                        if (UserObject.isDeleted(fromUser)) {
+                            senderName = "Deleted";
+                        } else {
+                            if (fromUser.first_name != null && fromUser.first_name.length() > 0) {
+                                senderName = fromUser.first_name;
+                            } else {
+                                senderName = fromUser.last_name;
+                            }
+                        }
                         infoWidth2 = Math.min(maxWidth, (int) Math.ceil(senderPaint.measureText(senderName)));
                         CharSequence str2 = TextUtils.ellipsize(senderName, senderPaint, infoWidth2, TextUtils.TruncateAt.END);
                         infoLayout2 = new StaticLayout(str2, senderPaint, infoWidth2, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
@@ -607,7 +618,16 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
             }//Plus: member name in photos
             else if (messageObject.type == 1) {   //PHOTO
                 TLRPC.User fromUser = MessagesController.getInstance().getUser(messageObject.messageOwner.from_id);
-                String senderName = String.format("%s %s", fromUser.first_name, fromUser.last_name);
+                String senderName = "";
+                if (UserObject.isDeleted(fromUser)) {
+                    senderName = "Deleted";
+                } else {
+                    if (fromUser.first_name != null && fromUser.first_name.length() > 0) {
+                        senderName = fromUser.first_name;
+                    } else {
+                        senderName = fromUser.last_name;
+                    }
+                }
                 if (currentInfoString == null || !currentInfoString.equals(senderName)) {
                     currentInfoString = senderName;
                     infoOffset = 0;

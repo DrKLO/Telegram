@@ -20,10 +20,10 @@ import android.view.SoundEffectConstants;
 
 import org.telegram.android.AndroidUtilities;
 import org.telegram.android.ImageLoader;
-import org.telegram.android.MediaController;
-import org.telegram.android.MessageObject;
 import org.telegram.android.MessagesController;
 import org.telegram.messenger.FileLoader;
+import org.telegram.android.MediaController;
+import org.telegram.android.MessageObject;
 import org.telegram.ui.Components.ProgressView;
 import org.telegram.ui.Components.ResourceLoader;
 import org.telegram.ui.Components.SeekBar;
@@ -149,14 +149,14 @@ public class ChatAudioCell extends ChatBaseCell implements SeekBar.SeekBarDelega
             buttonState = 3;
             invalidate();
         } else if (buttonState == 3) {
+            FileLoader.getInstance().cancelLoadFile(currentMessageObject.messageOwner.media.audio);
+            buttonState = 2;
+            invalidate();
+        } else if (buttonState == 4) {
             if (currentMessageObject.isOut() && currentMessageObject.isSending()) {
                 if (delegate != null) {
                     delegate.didPressedCancelSendButton(this);
                 }
-            } else {
-            FileLoader.getInstance().cancelLoadFile(currentMessageObject.messageOwner.media.audio);
-            buttonState = 2;
-            invalidate();
         }
     }
     }
@@ -199,8 +199,16 @@ public class ChatAudioCell extends ChatBaseCell implements SeekBar.SeekBarDelega
         if (currentMessageObject.isOut() && currentMessageObject.isSending()) {
             buttonState = 4;
         } else {
-        String fileName = currentMessageObject.getFileName();
-        File cacheFile = FileLoader.getPathToMessage(currentMessageObject.messageOwner);
+            File cacheFile = null;
+            if (currentMessageObject.messageOwner.attachPath != null && currentMessageObject.messageOwner.attachPath.length() > 0) {
+                cacheFile = new File(currentMessageObject.messageOwner.attachPath);
+                if(!cacheFile.exists()) {
+                    cacheFile = null;
+                }
+            }
+            if (cacheFile == null) {
+                cacheFile = FileLoader.getPathToMessage(currentMessageObject.messageOwner);
+            }
         if (cacheFile.exists()) {
             MediaController.getInstance().removeLoadingFileObserver(this);
             boolean playing = MediaController.getInstance().isPlayingAudio(currentMessageObject);
@@ -211,6 +219,7 @@ public class ChatAudioCell extends ChatBaseCell implements SeekBar.SeekBarDelega
             }
             progressView.setProgress(0);
         } else {
+                String fileName = currentMessageObject.getFileName();
             MediaController.getInstance().addLoadingFileObserver(fileName, this);
             if (!FileLoader.getInstance().isLoadingFile(fileName)) {
                 buttonState = 2;

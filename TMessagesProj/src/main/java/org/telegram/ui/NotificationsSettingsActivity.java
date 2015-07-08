@@ -14,6 +14,8 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.PorterDuff;
+import android.graphics.drawable.Drawable;
 import android.media.Ringtone;
 import android.media.RingtoneManager;
 import android.net.Uri;
@@ -89,6 +91,7 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
     private int otherSectionRow;
     private int badgeNumberRow;
     private int pebbleAlertRow;
+    private int androidAutoAlertRow;
     private int repeatRow;
     private int resetSectionRow2;
     private int resetSectionRow;
@@ -141,6 +144,7 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
         otherSectionRow2 = rowCount++;
         otherSectionRow = rowCount++;
         badgeNumberRow = rowCount++;
+        androidAutoAlertRow = -1;
         pebbleAlertRow = rowCount++;
         repeatRow = rowCount++;
         resetSectionRow2 = rowCount++;
@@ -326,6 +330,12 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
                     SharedPreferences.Editor editor = preferences.edit();
                     enabled = preferences.getBoolean("EnablePebbleNotifications", false);
                     editor.putBoolean("EnablePebbleNotifications", !enabled);
+                    editor.commit();
+                } else if (i == androidAutoAlertRow) {
+                    SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+                    SharedPreferences.Editor editor = preferences.edit();
+                    enabled = preferences.getBoolean("EnableAutoNotifications", false);
+                    editor.putBoolean("EnableAutoNotifications", !enabled);
                     editor.commit();
                 } else if (i == badgeNumberRow) {
                     SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
@@ -617,6 +627,23 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
         }
     }
 
+    @Override
+    public void onResume() {
+        super.onResume();
+        updateTheme();
+    }
+
+    private void updateTheme(){
+        SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+        int def = themePrefs.getInt("themeColor", AndroidUtilities.defColor);
+        actionBar.setBackgroundColor(themePrefs.getInt("prefHeaderColor", def));
+        actionBar.setTitleColor(themePrefs.getInt("prefHeaderTitleColor", 0xffffffff));
+
+        Drawable back = getParentActivity().getResources().getDrawable(R.drawable.ic_ab_back);
+        back.setColorFilter(themePrefs.getInt("prefHeaderIconsColor", 0xffffffff), PorterDuff.Mode.MULTIPLY);
+        actionBar.setBackButtonDrawable(back);
+    }
+
     private class ListAdapter extends BaseFragmentAdapter {
         private Context mContext;
 
@@ -704,6 +731,8 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
                     checkCell.setTextAndCheck(LocaleController.getString("ContactJoined", R.string.ContactJoined), preferences.getBoolean("EnableContactJoined", true), false);
                 } else if (i == pebbleAlertRow) {
                     checkCell.setTextAndCheck(LocaleController.getString("Pebble", R.string.Pebble), preferences.getBoolean("EnablePebbleNotifications", false), true);
+                } else if (i == androidAutoAlertRow) {
+                    checkCell.setTextAndCheck("Android Auto", preferences.getBoolean("EnableAutoNotifications", false), true);
                 } else if (i == notificationsServiceRow) {
                     checkCell.setTextAndCheck(LocaleController.getString("NotificationsService", R.string.NotificationsService), preferences.getBoolean("pushService", true), false);
                 } else if (i == badgeNumberRow) {
@@ -831,7 +860,7 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
                     i == groupPreviewRow || i == inappSoundRow || i == inappVibrateRow ||
                     i == inappPreviewRow || i == contactJoinedRow || i == pebbleAlertRow ||
                     i == notificationsServiceRow || i == badgeNumberRow || i == inappPriorityRow ||
-                    i == inchatSoundRow) {
+                    i == inchatSoundRow || i == androidAutoAlertRow) {
                 return 1;
             } else if (i == messageLedRow || i == groupLedRow) {
                 return 3;

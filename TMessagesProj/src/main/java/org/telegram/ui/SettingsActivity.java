@@ -21,6 +21,7 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
+import android.graphics.Canvas;
 import android.graphics.Outline;
 import android.graphics.PorterDuff;
 import android.graphics.drawable.Drawable;
@@ -40,6 +41,8 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewOutlineProvider;
 import android.view.ViewTreeObserver;
+import android.view.animation.AccelerateInterpolator;
+import android.view.animation.DecelerateInterpolator;
 import android.widget.AbsListView;
 import android.widget.AdapterView;
 import android.widget.FrameLayout;
@@ -50,14 +53,17 @@ import android.widget.Toast;
 
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.android.AndroidUtilities;
+import org.telegram.android.AnimationCompat.AnimatorListenerAdapterProxy;
+import org.telegram.android.AnimationCompat.AnimatorSetProxy;
+import org.telegram.android.AnimationCompat.ObjectAnimatorProxy;
 import org.telegram.android.AnimationCompat.ViewProxy;
-import org.telegram.android.ContactsController;
 import org.telegram.android.LocaleController;
 import org.telegram.android.MediaController;
 import org.telegram.android.MessageObject;
 import org.telegram.android.MessagesController;
 import org.telegram.android.MessagesStorage;
 import org.telegram.android.NotificationCenter;
+import org.telegram.android.UserObject;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BuildConfig;
 import org.telegram.messenger.BuildVars;
@@ -101,6 +107,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
     private TextView nameTextView;
     private TextView onlineTextView;
     private ImageView writeButton;
+    private AnimatorSetProxy writeButtonAnimation;
     private AvatarUpdater avatarUpdater = new AvatarUpdater();
 
     private int overscrollRow;
@@ -140,6 +147,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
     private int rowCount;
     private int disableMessageClickRow;
     private int showAndroidEmojiRow;
+    private int useDeviceFontRow;
     private int keepOriginalFilenameRow;
     private int keepOriginalFilenameDetailRow;
     private int emojiPopupSize;
@@ -241,6 +249,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         } else {
             showAndroidEmojiRow = -1;
         }
+        useDeviceFontRow = rowCount++;
         mediaDownloadSection = rowCount++;
         mediaDownloadSection2 = rowCount++;
         mobileDownloadRow = rowCount++;
@@ -249,7 +258,10 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         saveToGalleryRow = rowCount++;
         keepOriginalFilenameRow = rowCount++;
         keepOriginalFilenameDetailRow = rowCount++;
-        messagesSectionRow = -1;
+                messagesSectionRow = rowCount++;
+
+
+
         messagesSectionRow2 = rowCount++;
         textSizeRow = rowCount++;
         stickersRow = rowCount++;
@@ -297,6 +309,10 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             actionBar.setBackgroundColor(AvatarDrawable.getProfileBackColorForId(5));
             actionBar.setItemsBackground(AvatarDrawable.getButtonColorForId(5));
             actionBar.setBackButtonImage(R.drawable.ic_ab_back);
+            //Drawable back = getParentActivity().getResources().getDrawable(R.drawable.ic_ab_back);
+            //SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+            //back.setColorFilter(themePrefs.getInt("prefHeaderIconsColor", 0xffffffff), PorterDuff.Mode.MULTIPLY);
+            //actionBar.setBackButtonDrawable(back);
             actionBar.setExtraHeight(AndroidUtilities.dp(88), false);
             if (AndroidUtilities.isTablet()) {
                 actionBar.setOccupyStatusBar(false);
@@ -327,13 +343,44 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 }
             });
             ActionBarMenu menu = actionBar.createMenu();
-            ActionBarMenuItem item = menu.addItem(0, R.drawable.ic_ab_other);
+            //ActionBarMenuItem item = menu.addItem(0, R.drawable.ic_ab_other);
+
+            Drawable other = getParentActivity().getResources().getDrawable(R.drawable.ic_ab_other);
+            ActionBarMenuItem item = menu.addItem(0, other);
+
             item.addSubItem(edit_name, LocaleController.getString("EditName", R.string.EditName), 0);
             item.addSubItem(logout, LocaleController.getString("LogOut", R.string.LogOut), 0);
 
         listAdapter = new ListAdapter(context);
 
-        fragmentView = new FrameLayout(context);
+        fragmentView = new FrameLayout(context) {
+            @Override
+            protected boolean drawChild(Canvas canvas, View child, long drawingTime) {
+                if (child == listView) {
+                    boolean result = super.drawChild(canvas, child, drawingTime);
+                    if (parentLayout != null) {
+                        int actionBarHeight = 0;
+                        int childCount = getChildCount();
+                        for (int a = 0; a < childCount; a++) {
+                            View view = getChildAt(a);
+                            if (view == child) {
+                                continue;
+                            }
+                            if (view instanceof ActionBar && view.getVisibility() == VISIBLE) {
+                                if (((ActionBar) view).getCastShadows()) {
+                                    actionBarHeight = view.getMeasuredHeight();
+                                }
+                                break;
+                            }
+                        }
+                        parentLayout.drawHeaderShadow(canvas, actionBarHeight);
+                    }
+                    return result;
+                } else {
+                    return super.drawChild(canvas, child, drawingTime);
+                }
+            }
+        };
             FrameLayout frameLayout = (FrameLayout) fragmentView;
 
         avatarImage = new BackupImageView(context);
@@ -349,9 +396,11 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 }
             }
         });
-
+        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
         nameTextView = new TextView(context);
-            nameTextView.setTextColor(0xffffffff);
+            //nameTextView.setTextColor(0xffffffff);
+            nameTextView.setTextColor(preferences.getInt("prefHeaderTitleColor", 0xffffffff));
+
             nameTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
             nameTextView.setLines(1);
             nameTextView.setMaxLines(1);
@@ -373,7 +422,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         actionBar.addView(onlineTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.BOTTOM, LocaleController.isRTL ? 16 : 97, 0, LocaleController.isRTL ? 97 : 16, 30));
 
         listView = new ListView(context);
-        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+
         int bgColor = preferences.getInt("prefBGColor", 0xffffffff);
         listView.setBackgroundColor(bgColor);
             listView.setDivider(null);
@@ -456,6 +505,26 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                         editor.putBoolean("showAndroidEmoji", !enabled);
                         editor.commit();
                         ApplicationLoader.SHOW_ANDROID_EMOJI = !enabled;
+                        if (view instanceof TextCheckCell) {
+                            ((TextCheckCell) view).setChecked(!enabled);
+                        }
+                    } else if (i == useDeviceFontRow) {
+                        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+                        SharedPreferences.Editor editor = preferences.edit();
+                        boolean enabled = preferences.getBoolean("useDeviceFont", false);
+                        editor.putBoolean("useDeviceFont", !enabled);
+                        editor.commit();
+                        ApplicationLoader.USE_DEVICE_FONT = !enabled;
+                        AndroidUtilities.needRestart = true;
+                        AndroidUtilities.runOnUIThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                if (getParentActivity() != null) {
+                                    Toast toast = Toast.makeText(getParentActivity(), LocaleController.getString("AppWillRestart", R.string.AppWillRestart), Toast.LENGTH_SHORT);
+                                    toast.show();
+                                }
+                            }
+                        });
                         if (view instanceof TextCheckCell) {
                             ((TextCheckCell) view).setChecked(!enabled);
                         }
@@ -945,7 +1014,23 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             listAdapter.notifyDataSetChanged();
         }
         updateUserData();
+        updateTheme();
         fixLayout();
+    }
+
+    private void updateTheme(){
+        SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+        int def = themePrefs.getInt("themeColor", AndroidUtilities.defColor);
+        actionBar.setBackgroundColor(themePrefs.getInt("prefHeaderColor", def));
+        actionBar.setTitleColor(themePrefs.getInt("prefHeaderTitleColor", 0xffffffff));
+
+        Drawable back = getParentActivity().getResources().getDrawable(R.drawable.ic_ab_back);
+        back.setColorFilter(themePrefs.getInt("prefHeaderIconsColor", 0xffffffff), PorterDuff.Mode.MULTIPLY);
+        actionBar.setBackButtonDrawable(back);
+
+        Drawable other = getParentActivity().getResources().getDrawable(R.drawable.ic_ab_other);
+        other.setColorFilter(themePrefs.getInt("prefHeaderIconsColor", 0xffffffff), PorterDuff.Mode.MULTIPLY);
+
     }
 
     @Override
@@ -978,10 +1063,52 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             layoutParams = (FrameLayout.LayoutParams) writeButton.getLayoutParams();
             layoutParams.topMargin = (actionBar.getOccupyStatusBar() ? AndroidUtilities.statusBarHeight : 0) + AndroidUtilities.getCurrentActionBarHeight() + actionBar.getExtraHeight() - AndroidUtilities.dp(29.5f);
             writeButton.setLayoutParams(layoutParams);
-            ViewProxy.setAlpha(writeButton, diff);
-            writeButton.setVisibility(diff <= 0.02 ? View.GONE : View.VISIBLE);
-            if (writeButton.getVisibility() == View.GONE) {
+
+            //ViewProxy.setScaleX(writeButton, diff > 0.2f ? 1.0f : diff / 0.2f);
+            //ViewProxy.setScaleY(writeButton, diff > 0.2f ? 1.0f : diff / 0.2f);
+            //ViewProxy.setAlpha(writeButton, diff > 0.2f ? 1.0f : diff / 0.2f);
+            final boolean setVisible = diff > 0.2f;
+            boolean currentVisible = writeButton.getTag() == null;
+            if (setVisible != currentVisible) {
+                if (setVisible) {
+                    writeButton.setTag(null);
+                    writeButton.setVisibility(View.VISIBLE);
+                } else {
+                    writeButton.setTag(0);
+                }
+                if (writeButtonAnimation != null) {
+                    AnimatorSetProxy old = writeButtonAnimation;
+                    writeButtonAnimation = null;
+                    old.cancel();
+                }
+                writeButtonAnimation = new AnimatorSetProxy();
+                if (setVisible) {
+                    writeButtonAnimation.setInterpolator(new DecelerateInterpolator());
+                    writeButtonAnimation.playTogether(
+                            ObjectAnimatorProxy.ofFloat(writeButton, "scaleX", 1.0f),
+                            ObjectAnimatorProxy.ofFloat(writeButton, "scaleY", 1.0f),
+                            ObjectAnimatorProxy.ofFloat(writeButton, "alpha", 1.0f)
+                    );
+                } else {
+                    writeButtonAnimation.setInterpolator(new AccelerateInterpolator());
+                    writeButtonAnimation.playTogether(
+                            ObjectAnimatorProxy.ofFloat(writeButton, "scaleX", 0.2f),
+                            ObjectAnimatorProxy.ofFloat(writeButton, "scaleY", 0.2f),
+                            ObjectAnimatorProxy.ofFloat(writeButton, "alpha", 0.0f)
+                    );
+                }
+                writeButtonAnimation.setDuration(150);
+                writeButtonAnimation.addListener(new AnimatorListenerAdapterProxy() {
+                    @Override
+                    public void onAnimationEnd(Object animation) {
+                        if (writeButtonAnimation != null && writeButtonAnimation.equals(animation)) {
                 writeButton.clearAnimation();
+                            writeButton.setVisibility(setVisible ? View.VISIBLE : View.GONE);
+                            writeButtonAnimation = null;
+                        }
+                    }
+                });
+                writeButtonAnimation.start();
             }
 
             avatarImage.setRoundRadius(AndroidUtilities.dp(avatarSize / 2));
@@ -1022,7 +1149,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                     needLayout();
                     fragmentView.getViewTreeObserver().removeOnPreDrawListener(this);
                 }
-                return false;
+                return true;
             }
         });
     }
@@ -1044,7 +1171,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         avatarImage.setImage(photo, "50_50", avatarDrawable);
             avatarImage.getImageReceiver().setVisible(!PhotoViewer.getInstance().isShowingImage(photoBig), false);
 
-        nameTextView.setText(ContactsController.formatName(user.first_name, user.last_name));
+            nameTextView.setText(UserObject.getUserName(user));
         onlineTextView.setText(LocaleController.getString("Online", R.string.Online));
 
             avatarImage.getImageReceiver().setVisible(!PhotoViewer.getInstance().isShowingImage(photoBig), false);
@@ -1098,7 +1225,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
 
         @Override
         public boolean isEnabled(int i) {
-            return i == textSizeRow || i == enableAnimationsRow || i == notificationRow || i == backgroundRow || i == numberRow || i == showAndroidEmojiRow || i == emojiPopupSize ||
+            return i == textSizeRow || i == enableAnimationsRow || i == notificationRow || i == backgroundRow || i == numberRow || i == showAndroidEmojiRow || i == useDeviceFontRow || i == emojiPopupSize ||
                     i == askQuestionRow || i == sendLogsRow || i == sendByEnterRow || i == privacyRow || i == wifiDownloadRow || i == disableMessageClickRow ||
                     i == mobileDownloadRow || i == clearLogsRow || i == roamingDownloadRow || i == languageRow || i == usernameRow ||
                     i == switchBackendButtonRow || i == telegramFaqRow || i == contactsSortRow || i == contactsReimportRow || i == saveToGalleryRow || i == keepOriginalFilenameRow ||
@@ -1209,7 +1336,9 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 } else if (i == keepOriginalFilenameRow) {
                     textCell.setTextAndCheck(LocaleController.getString("KeepOriginalFilename", R.string.KeepOriginalFilename), ApplicationLoader.KEEP_ORIGINAL_FILENAME, false);
                 } else if (i == showAndroidEmojiRow) {
-                    textCell.setTextAndCheck(LocaleController.getString("ShowAndroidEmoji", R.string.ShowAndroidEmoji), ApplicationLoader.SHOW_ANDROID_EMOJI, false);
+                    textCell.setTextAndCheck(LocaleController.getString("ShowAndroidEmoji", R.string.ShowAndroidEmoji), ApplicationLoader.SHOW_ANDROID_EMOJI, true);
+                } else if (i == useDeviceFontRow) {
+                    textCell.setTextAndCheck(LocaleController.getString("UseDeviceFont", R.string.UseDeviceFont), ApplicationLoader.USE_DEVICE_FONT, false);
                 }
             } else if (type == 4) {
                 if (view == null) {
@@ -1320,7 +1449,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             } 
             if (i == settingsSectionRow || i == supportSectionRow || i == messagesSectionRow || i == mediaDownloadSection || i == contactsSectionRow) {
                 return 1;
-            } else if (i == enableAnimationsRow || i == sendByEnterRow || i == saveToGalleryRow || i == disableMessageClickRow || i == showAndroidEmojiRow || i == keepOriginalFilenameRow ) {
+            } else if (i == enableAnimationsRow || i == sendByEnterRow || i == saveToGalleryRow || i == disableMessageClickRow || i == showAndroidEmojiRow || i == useDeviceFontRow || i == keepOriginalFilenameRow ) {
                 return 3;
             } else if (i == notificationRow || i == backgroundRow || i == askQuestionRow || i == sendLogsRow || i == privacyRow || i == clearLogsRow || i == switchBackendButtonRow || i == telegramFaqRow || i == contactsReimportRow || i == textSizeRow || i == emojiPopupSize || i == languageRow || i == contactsSortRow || i == stickersRow) {
                 return 2;

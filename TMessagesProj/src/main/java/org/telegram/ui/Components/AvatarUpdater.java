@@ -19,15 +19,15 @@ import android.provider.MediaStore;
 import org.telegram.android.AndroidUtilities;
 import org.telegram.android.ImageLoader;
 import org.telegram.android.MediaController;
-import org.telegram.android.NotificationCenter;
+import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
-import org.telegram.messenger.TLRPC;
+import org.telegram.android.NotificationCenter;
 import org.telegram.messenger.UserConfig;
-import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.PhotoAlbumPickerActivity;
 import org.telegram.ui.PhotoCropActivity;
+import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.PhotoViewer;
 
 import java.io.File;
@@ -204,28 +204,28 @@ public class AvatarUpdater implements NotificationCenter.NotificationCenterDeleg
         if (id == NotificationCenter.FileDidUpload) {
             String location = (String)args[0];
             if (uploadingAvatar != null && location.equals(uploadingAvatar)) {
-                        NotificationCenter.getInstance().removeObserver(AvatarUpdater.this, NotificationCenter.FileDidUpload);
-                        NotificationCenter.getInstance().removeObserver(AvatarUpdater.this, NotificationCenter.FileDidFailUpload);
-                        if (delegate != null) {
-                            delegate.didUploadedPhoto((TLRPC.InputFile)args[1], smallPhoto, bigPhoto);
-                        }
-                        uploadingAvatar = null;
-                        if (clearAfterUpdate) {
-                            parentFragment = null;
-                            delegate = null;
-                        }
-                    }
+                NotificationCenter.getInstance().removeObserver(AvatarUpdater.this, NotificationCenter.FileDidUpload);
+                NotificationCenter.getInstance().removeObserver(AvatarUpdater.this, NotificationCenter.FileDidFailUpload);
+                if (delegate != null) {
+                    delegate.didUploadedPhoto((TLRPC.InputFile)args[1], smallPhoto, bigPhoto);
+                }
+                uploadingAvatar = null;
+                if (clearAfterUpdate) {
+                    parentFragment = null;
+                    delegate = null;
+                }
+            }
         } else if (id == NotificationCenter.FileDidFailUpload) {
             String location = (String)args[0];
             if (uploadingAvatar != null && location.equals(uploadingAvatar)) {
-                        NotificationCenter.getInstance().removeObserver(AvatarUpdater.this, NotificationCenter.FileDidUpload);
-                        NotificationCenter.getInstance().removeObserver(AvatarUpdater.this, NotificationCenter.FileDidFailUpload);
-                        uploadingAvatar = null;
-                        if (clearAfterUpdate) {
-                            parentFragment = null;
-                            delegate = null;
-                        }
-                    }
-        }
+                NotificationCenter.getInstance().removeObserver(AvatarUpdater.this, NotificationCenter.FileDidUpload);
+                NotificationCenter.getInstance().removeObserver(AvatarUpdater.this, NotificationCenter.FileDidFailUpload);
+                uploadingAvatar = null;
+                if (clearAfterUpdate) {
+                    parentFragment = null;
+                    delegate = null;
+                }
             }
         }
+    }
+}

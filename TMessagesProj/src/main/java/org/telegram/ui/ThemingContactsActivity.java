@@ -13,6 +13,8 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
+import android.graphics.PorterDuff;
+import android.graphics.drawable.Drawable;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -386,7 +388,19 @@ public class ThemingContactsActivity extends BaseFragment {
         if (listAdapter != null) {
             listAdapter.notifyDataSetChanged();
         }
+        updateTheme();
         fixLayout();
+    }
+
+    private void updateTheme(){
+        SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+        int def = themePrefs.getInt("themeColor", AndroidUtilities.defColor);
+        actionBar.setBackgroundColor(themePrefs.getInt("prefHeaderColor", def));
+        actionBar.setTitleColor(themePrefs.getInt("prefHeaderTitleColor", 0xffffffff));
+
+        Drawable back = getParentActivity().getResources().getDrawable(R.drawable.ic_ab_back);
+        back.setColorFilter(themePrefs.getInt("prefHeaderIconsColor", 0xffffffff), PorterDuff.Mode.MULTIPLY);
+        actionBar.setBackButtonDrawable(back);
     }
 
     @Override

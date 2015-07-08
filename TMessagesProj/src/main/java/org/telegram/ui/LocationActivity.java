@@ -24,6 +24,7 @@ import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.ViewOutlineProvider;
 import android.view.WindowManager;
 import android.widget.AbsListView;
@@ -46,24 +47,24 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 
 import org.telegram.android.AndroidUtilities;
-import org.telegram.android.ContactsController;
+import org.telegram.android.UserObject;
+import org.telegram.messenger.ApplicationLoader;
+import org.telegram.messenger.FileLog;
 import org.telegram.android.LocaleController;
+import org.telegram.messenger.TLRPC;
 import org.telegram.android.MessageObject;
 import org.telegram.android.MessagesController;
 import org.telegram.android.NotificationCenter;
-import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
-import org.telegram.messenger.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
-import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.Adapters.BaseLocationAdapter;
 import org.telegram.ui.Adapters.LocationActivityAdapter;
 import org.telegram.ui.Adapters.LocationActivitySearchAdapter;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
+import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.MapPlaceholderDrawable;
 
@@ -211,7 +212,7 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
                 }
 
                 @Override
-                public boolean onSearchCollapse() {
+                public void onSearchCollapse() {
                     searching = false;
                     searchWas = false;
                     searchListView.setEmptyView(null);
@@ -220,7 +221,6 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
                     searchListView.setVisibility(View.GONE);
                     emptyTextLayout.setVisibility(View.GONE);
                     searchAdapter.searchDelayed(null, null);
-                    return true;
                 }
 
                 @Override
@@ -617,6 +617,14 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
 
     @Override
     public void onOpenAnimationEnd() {
+        try {
+            if (mapView.getParent() instanceof ViewGroup) {
+                ViewGroup viewGroup = (ViewGroup) mapView.getParent();
+                viewGroup.removeView(mapView);
+            }
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
         if (mapViewClip != null) {
             mapViewClip.addView(mapView, 0, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, overScrollHeight + AndroidUtilities.dp(10), Gravity.TOP | Gravity.LEFT));
             updateClipView(listView.getFirstVisiblePosition());
@@ -758,7 +766,7 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
                     photo = user.photo.photo_small;
                 }
                 avatarImageView.setImage(photo, null, new AvatarDrawable(user));
-                nameTextView.setText(ContactsController.formatName(user.first_name, user.last_name));
+                nameTextView.setText(UserObject.getUserName(user));
             } else {
                 avatarImageView.setImageDrawable(null);
             }

@@ -12,9 +12,9 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 
-import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLog;
+import org.telegram.messenger.ApplicationLoader;
 
 public class ScreenReceiver extends BroadcastReceiver {
 

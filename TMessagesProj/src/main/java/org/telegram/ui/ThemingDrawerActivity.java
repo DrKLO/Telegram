@@ -13,6 +13,8 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
+import android.graphics.PorterDuff;
+import android.graphics.drawable.Drawable;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -63,6 +65,7 @@ public class ThemingDrawerActivity extends BaseFragment {
     private int optionSizeRow;
     private int versionColorRow;
     private int versionSizeRow;
+    private int avatarSizeRow;
 
     private int rowCount;
 
@@ -79,6 +82,7 @@ public class ThemingDrawerActivity extends BaseFragment {
         headerColorRow = rowCount++;
         avatarColorRow  = rowCount++;
         avatarRadiusRow  = rowCount++;
+        avatarSizeRow = rowCount++;
         nameColorRow = rowCount++;
         nameSizeRow = rowCount++;
         phoneColorRow = rowCount++;
@@ -307,6 +311,27 @@ public class ThemingDrawerActivity extends BaseFragment {
                             }
                         });
                         showDialog(builder.create());
+                    } else if (i == avatarSizeRow) {
+                        if (getParentActivity() == null) {
+                            return;
+                        }
+                        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                        builder.setTitle(LocaleController.getString("AvatarSize", R.string.AvatarSize));
+                        final NumberPicker numberPicker = new NumberPicker(getParentActivity());
+                        final int currentValue = themePrefs.getInt("drawerAvatarSize", 64);
+                        numberPicker.setMinValue(1);
+                        numberPicker.setMaxValue(75);
+                        numberPicker.setValue(currentValue);
+                        builder.setView(numberPicker);
+                        builder.setNegativeButton(LocaleController.getString("Done", R.string.Done), new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                if (numberPicker.getValue() != currentValue) {
+                                    commitInt("drawerAvatarSize", numberPicker.getValue());
+                                }
+                            }
+                        });
+                        showDialog(builder.create());
                     } else if (i == nameSizeRow) {
                         if (getParentActivity() == null) {
                             return;
@@ -411,6 +436,8 @@ public class ThemingDrawerActivity extends BaseFragment {
                         resetInt("drawerAvatarRadius");
                     } else if (i == nameColorRow) {
                         resetInt("drawerNameColor");
+                    } else if (i == avatarSizeRow) {
+                        resetInt("drawerAvatarSize");
                     } else if (i == nameSizeRow) {
                         resetInt("drawerNameSize");
                     } else if (i == phoneColorRow) {
@@ -482,7 +509,19 @@ public class ThemingDrawerActivity extends BaseFragment {
         if (listAdapter != null) {
             listAdapter.notifyDataSetChanged();
         }
+        updateTheme();
         fixLayout();
+    }
+
+    private void updateTheme(){
+        SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+        int def = themePrefs.getInt("themeColor", AndroidUtilities.defColor);
+        actionBar.setBackgroundColor(themePrefs.getInt("prefHeaderColor", def));
+        actionBar.setTitleColor(themePrefs.getInt("prefHeaderTitleColor", 0xffffffff));
+
+        Drawable back = getParentActivity().getResources().getDrawable(R.drawable.ic_ab_back);
+        back.setColorFilter(themePrefs.getInt("prefHeaderIconsColor", 0xffffffff), PorterDuff.Mode.MULTIPLY);
+        actionBar.setBackButtonDrawable(back);
     }
 
     @Override
@@ -523,7 +562,7 @@ public class ThemingDrawerActivity extends BaseFragment {
 
         @Override
         public boolean isEnabled(int i) {
-            return  i == headerColorRow || i == headerBackgroundCheckRow || i == hideBackgroundShadowRow || i == listColorRow || i == iconColorRow || i == optionColorRow || i == optionSizeRow || i == avatarColorRow || i == avatarRadiusRow || i == nameColorRow || i == nameSizeRow || i == phoneColorRow || i == phoneSizeRow ||
+            return  i == headerColorRow || i == headerBackgroundCheckRow || i == hideBackgroundShadowRow || i == listColorRow || i == iconColorRow || i == optionColorRow || i == optionSizeRow || i == avatarColorRow || i == avatarRadiusRow || i == nameColorRow || i == avatarSizeRow || i == nameSizeRow || i == phoneColorRow || i == phoneSizeRow ||
                     i == versionColorRow || i == versionSizeRow;
         }
 
@@ -575,6 +614,9 @@ public class ThemingDrawerActivity extends BaseFragment {
                 if (i == avatarRadiusRow) {
                     int size = themePrefs.getInt("drawerAvatarRadius", AndroidUtilities.isTablet() ? 35 : 32);
                     textCell.setTextAndValue(LocaleController.getString("AvatarRadius", R.string.AvatarRadius), String.format("%d", size), true);
+                } else if (i == avatarSizeRow) {
+                    int size = themePrefs.getInt("drawerAvatarSize", AndroidUtilities.isTablet() ? 68 : 64);
+                    textCell.setTextAndValue(LocaleController.getString("AvatarSize", R.string.AvatarSize), String.format("%d", size), true);
                 } else if (i == nameSizeRow) {
                     int size = themePrefs.getInt("drawerNameSize", AndroidUtilities.isTablet() ? 17 : 15);
                     textCell.setTextAndValue(LocaleController.getString("OwnNameSize", R.string.OwnNameSize), String.format("%d", size), true);
@@ -638,7 +680,7 @@ public class ThemingDrawerActivity extends BaseFragment {
             else if ( i == headerSection2Row || i == rowsSection2Row ) {
                 return 1;
             }
-            else if ( i == avatarRadiusRow || i == nameSizeRow ||  i == phoneSizeRow ||  i == optionSizeRow ||  i == versionSizeRow) {
+            else if ( i == avatarRadiusRow || i == avatarSizeRow || i == nameSizeRow ||  i == phoneSizeRow ||  i == optionSizeRow ||  i == versionSizeRow) {
                 return 2;
             }
             else if ( i == headerColorRow || i == listColorRow || i == iconColorRow || i == optionColorRow || i == versionColorRow  || i == avatarColorRow  || i == nameColorRow || i == phoneColorRow) {

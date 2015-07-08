@@ -51,7 +51,7 @@ public class StickersAdapter extends RecyclerView.Adapter implements Notificatio
         NotificationCenter.getInstance().addObserver(this, NotificationCenter.FileDidFailedLoad);
     }
 
-    public void destroy() {
+    public void onDestroy() {
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.FileDidLoaded);
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.FileDidFailedLoad);
     }

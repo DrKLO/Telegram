@@ -29,10 +29,10 @@ import android.view.MotionEvent;
 import org.telegram.android.AndroidUtilities;
 import org.telegram.android.ImageReceiver;
 import org.telegram.android.MediaController;
-import org.telegram.android.MessageObject;
-import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
+import org.telegram.android.MessageObject;
+import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.R;
 import org.telegram.messenger.TLRPC;
 import org.telegram.ui.Components.ResourceLoader;
@@ -81,7 +81,7 @@ public class ChatMessageCell extends ChatBaseCell {
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         boolean result = false;
-        if (currentMessageObject != null && currentMessageObject.textLayoutBlocks != null && !currentMessageObject.textLayoutBlocks.isEmpty() && currentMessageObject.messageText instanceof Spannable && !isPressed) {
+        if (currentMessageObject != null && currentMessageObject.textLayoutBlocks != null && !currentMessageObject.textLayoutBlocks.isEmpty() && currentMessageObject.messageText instanceof Spannable && delegate.canPerformActions()) {
             if (event.getAction() == MotionEvent.ACTION_DOWN || (linkPreviewPressed || pressedLink != null) && event.getAction() == MotionEvent.ACTION_UP) {
                 int x = (int) event.getX();
                 int y = (int) event.getY();
@@ -118,9 +118,9 @@ public class ChatMessageCell extends ChatBaseCell {
                                             try {
                                                 if (pressedLink instanceof URLSpanNoUnderline) {
                                                     String url = ((URLSpanNoUnderline) pressedLink).getURL();
-                                                    if (url.startsWith("@") || url.startsWith("#")) {
+                                                    if (url.startsWith("@") || url.startsWith("#") || url.startsWith("/")) {
                                                         if (delegate != null) {
-                                                            delegate.didPressUrl(url);
+                                                            delegate.didPressUrl(currentMessageObject, url);
                                                         }
                                                     }
                                                 } else {
@@ -620,7 +620,7 @@ public class ChatMessageCell extends ChatBaseCell {
                         }
                     }
 
-                    if (webPage.duration != 0) {
+                    if (webPage.type != null && webPage.type.equals("video") && webPage.duration != 0) {
                         if (durationPaint == null) {
                             durationPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
                             durationPaint.setTextSize(AndroidUtilities.dp(12));

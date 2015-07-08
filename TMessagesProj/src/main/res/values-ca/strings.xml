@@ -706,4 +706,16 @@
   <string name="HideBackgroundShadow">Amaga l\'ombra de fons personalitzada</string>
   <string name="SetSolidBGColor">Estableix un color de fons</string>
   <string name="SolidBGColor">Color de fons</string>
+  <string name="EmojiPopupSize">Mida de la finestra d\'Emojis</string>
+  <string name="ForwardRightNameColor">Color del nom als reenviaments drets</string>
+  <string name="ForwardLeftNameColor">Color del nom als reenviaments esquerres</string>
+  <string name="IconsColor">Color de les icones</string>
+  <string name="SettingsScreen">Pantalla de Configuració/Aparença</string>
+  <string name="BackgroundColor">Color de fons</string>
+  <string name="ShadowColor">Color de l\'ombra</string>
+  <string name="SectionColor">Color de la secció</string>
+  <string name="TitleColor">Color del títol</string>
+  <string name="SummaryColor">Color del resum/subtítol</string>
+  <string name="MediaColor">Color del text «Foto/Adhesiu»</string>
+  <string name="ThemesAppMsg">Voleu veure alguns temes creats per altes usuaris de Plus Messenger?</string>
 </resources>

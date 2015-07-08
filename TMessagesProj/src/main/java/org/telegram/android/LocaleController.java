@@ -19,11 +19,11 @@ import android.text.format.DateFormat;
 import android.util.Xml;
 
 import org.telegram.android.time.FastDateFormat;
-import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
 import org.telegram.messenger.TLRPC;
+import org.telegram.messenger.ApplicationLoader;
 import org.xmlpull.v1.XmlPullParser;
 
 import java.io.File;
@@ -199,6 +199,22 @@ public class LocaleController {
         localeInfo.name = "العربية";
         localeInfo.nameEnglish = "Arabic";
         localeInfo.shortName = "ar";
+        localeInfo.pathToFile = null;
+        sortedLanguages.add(localeInfo);
+        languagesDict.put(localeInfo.shortName, localeInfo);
+
+        localeInfo = new LocaleInfo();
+        localeInfo.name = "پارسی";
+        localeInfo.nameEnglish = "Parsi";
+        localeInfo.shortName = "fa_IR";
+        localeInfo.pathToFile = null;
+        sortedLanguages.add(localeInfo);
+        languagesDict.put(localeInfo.shortName, localeInfo);
+
+        localeInfo = new LocaleInfo();
+        localeInfo.name = "अंग्रेजी";
+        localeInfo.nameEnglish = "Hindi";
+        localeInfo.shortName = "hi";
         localeInfo.pathToFile = null;
         sortedLanguages.add(localeInfo);
         languagesDict.put(localeInfo.shortName, localeInfo);
@@ -883,7 +899,7 @@ public class LocaleController {
                 return getString("Online", R.string.Online);
             }
         }
-        if (user == null || user.status == null || user.status.expires == 0 || user instanceof TLRPC.TL_userDeleted || user instanceof TLRPC.TL_userEmpty) {
+        if (user == null || user.status == null || user.status.expires == 0 || UserObject.isDeleted(user) || user instanceof TLRPC.TL_userEmpty) {
             return getString("ALongTimeAgo", R.string.ALongTimeAgo);
         } else {
             int currentTime = ConnectionsManager.getInstance().getCurrentTime();

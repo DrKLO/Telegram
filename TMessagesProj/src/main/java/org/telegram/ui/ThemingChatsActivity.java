@@ -13,6 +13,8 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
+import android.graphics.PorterDuff;
+import android.graphics.drawable.Drawable;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
@@ -85,6 +87,7 @@ public class ThemingChatsActivity extends BaseFragment {
     private int groupNameColorRow;
     private int groupNameSizeRow;
     private int mediaColorRow;
+    private int groupIconColorRow;
 
     private int rowCount;
 
@@ -114,6 +117,7 @@ public class ThemingChatsActivity extends BaseFragment {
         nameSizeRow = rowCount++;
         groupNameColorRow = rowCount++;
         groupNameSizeRow = rowCount++;
+        groupIconColorRow = rowCount++;
         muteColorRow = rowCount++;
         checksColorRow = rowCount++;
 
@@ -342,6 +346,20 @@ public class ThemingChatsActivity extends BaseFragment {
 
                         },themePrefs.getInt( key, themePrefs.getInt("chatsNameColor", 0xff212121)), CENTER, 0, false);
 
+                        colorDialog.show();
+                    } else if (i == groupIconColorRow) {
+                        if (getParentActivity() == null) {
+                            return;
+                        }
+                        LayoutInflater li = (LayoutInflater)getParentActivity().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+                        li.inflate(R.layout.colordialog, null, false);
+                        ColorSelectorDialog colorDialog = new ColorSelectorDialog(getParentActivity(), new OnColorChangedListener() {
+                            @Override
+                            public void colorChanged(int color) {
+                                commitInt( key, color);
+                            }
+
+                        },themePrefs.getInt( key, themePrefs.getInt("chatsGroupNameColor", 0xff000000)), CENTER, 0, true);
                         colorDialog.show();
                     } else if (i == muteColorRow) {
                         if (getParentActivity() == null) {
@@ -732,7 +750,19 @@ public class ThemingChatsActivity extends BaseFragment {
         if (listAdapter != null) {
             listAdapter.notifyDataSetChanged();
         }
+        updateTheme();
         fixLayout();
+    }
+
+    private void updateTheme(){
+        SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+        int def = themePrefs.getInt("themeColor", AndroidUtilities.defColor);
+        actionBar.setBackgroundColor(themePrefs.getInt("prefHeaderColor", def));
+        actionBar.setTitleColor(themePrefs.getInt("prefHeaderTitleColor", 0xffffffff));
+
+        Drawable back = getParentActivity().getResources().getDrawable(R.drawable.ic_ab_back);
+        back.setColorFilter(themePrefs.getInt("prefHeaderIconsColor", 0xffffffff), PorterDuff.Mode.MULTIPLY);
+        actionBar.setBackButtonDrawable(back);
     }
 
     @Override
@@ -775,7 +805,7 @@ public class ThemingChatsActivity extends BaseFragment {
         public boolean isEnabled(int i) {
             return  i == headerColorRow || i == headerTitleColorRow || i == headerIconsColorRow || i == headerTitleRow ||
                     i == rowColorRow || i == dividerColorRow || i == avatarRadiusRow ||  i == avatarSizeRow ||   i == avatarMarginLeftRow ||
-                    i == nameColorRow || i == groupNameColorRow || i == unknownNameColorRow || i == muteColorRow || i == checksColorRow || i == nameSizeRow || i == groupNameSizeRow || i == messageColorRow || i == memberColorRow || i == mediaColorRow || i == typingColorRow || i == messageSizeRow ||
+                    i == nameColorRow || i == groupNameColorRow || i == unknownNameColorRow || i == groupIconColorRow || i == muteColorRow || i == checksColorRow || i == nameSizeRow || i == groupNameSizeRow || i == messageColorRow || i == memberColorRow || i == mediaColorRow || i == typingColorRow || i == messageSizeRow ||
                     i == timeColorRow || i == timeSizeRow || i == countColorRow || i == countSizeRow || i == countBGColorRow || i == floatingPencilColorRow || i == floatingBGColorRow;
         }
 
@@ -889,6 +919,9 @@ public class ThemingChatsActivity extends BaseFragment {
                 } else if (i == unknownNameColorRow) {
                     textCell.setTag("chatsUnknownNameColor");
                     textCell.setTextAndColor(LocaleController.getString("UnknownNameColor", R.string.UnknownNameColor), themePrefs.getInt("chatsUnknownNameColor", themePrefs.getInt("chatsNameColor", 0xff212121)), true);
+                } else if (i == groupIconColorRow) {
+                    textCell.setTag("chatsGroupIconColor");
+                    textCell.setTextAndColor(LocaleController.getString("GroupIconColor", R.string.GroupIconColor), themePrefs.getInt("chatsGroupIconColor", themePrefs.getInt("chatsGroupNameColor", 0xff000000)), true);
                 } else if (i == muteColorRow) {
                     textCell.setTag("chatsMuteColor");
                     textCell.setTextAndColor(LocaleController.getString("MuteColor", R.string.MuteColor), themePrefs.getInt("chatsMuteColor", 0xffa8a8a8), true);
@@ -978,7 +1011,7 @@ public class ThemingChatsActivity extends BaseFragment {
             } else if ( i == avatarRadiusRow || i == avatarSizeRow || i == avatarMarginLeftRow || i == nameSizeRow || i == groupNameSizeRow ||  i == messageSizeRow || i == timeSizeRow || i == countSizeRow ) {
                 return 2;
             } else if ( i == headerColorRow || i == headerTitleColorRow || i == headerIconsColorRow  ||
-                        i == rowColorRow || i == dividerColorRow || i == nameColorRow || i == groupNameColorRow || i == unknownNameColorRow || i == muteColorRow || i == checksColorRow || i == messageColorRow  || i == memberColorRow || i == mediaColorRow || i == typingColorRow || i == timeColorRow || i == countColorRow ||
+                        i == rowColorRow || i == dividerColorRow || i == nameColorRow || i == groupNameColorRow || i == unknownNameColorRow || i == groupIconColorRow || i == muteColorRow || i == checksColorRow || i == messageColorRow  || i == memberColorRow || i == mediaColorRow || i == typingColorRow || i == timeColorRow || i == countColorRow ||
                         i == countBGColorRow || i == floatingPencilColorRow || i == floatingBGColorRow) {
                 return 3;
             }/* else if (i == usernameTitleRow) {

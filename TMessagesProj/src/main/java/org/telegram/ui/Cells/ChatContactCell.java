@@ -9,6 +9,7 @@
 package org.telegram.ui.Cells;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.graphics.Canvas;
 import android.graphics.drawable.Drawable;
 import android.text.Layout;
@@ -25,6 +26,7 @@ import org.telegram.android.ImageReceiver;
 import org.telegram.android.LocaleController;
 import org.telegram.android.MessageObject;
 import org.telegram.android.MessagesController;
+import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.R;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.UserConfig;
@@ -283,6 +285,12 @@ public class ChatContactCell extends ChatBaseCell {
             canvas.restore();
         }
         if (phoneLayout != null) {
+            SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+            int color = themePrefs.getInt("chatLTextColor", 0xff000000);
+            if (currentMessageObject.isOut()) {
+                color = themePrefs.getInt("chatRTextColor", 0xff000000);
+            }
+            phonePaint.setColor(color);
             canvas.save();
             canvas.translate(avatarImage.getImageX() + avatarImage.getImageWidth() + AndroidUtilities.dp(9), AndroidUtilities.dp(31) + namesOffset);
             phoneLayout.draw(canvas);

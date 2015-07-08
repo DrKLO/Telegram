@@ -422,7 +422,7 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
                     if (listView != null) {
                         listView.getViewTreeObserver().removeOnPreDrawListener(this);
                     }
-                    return false;
+                    return true;
                 }
             });
         }

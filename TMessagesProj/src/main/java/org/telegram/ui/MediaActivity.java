@@ -283,7 +283,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                 } else if (id == forward) {
                     Bundle args = new Bundle();
                     args.putBoolean("onlySelect", true);
-                    args.putBoolean("serverOnly", true);
+                    args.putInt("dialogsType", 1);
                     MessagesActivity fragment = new MessagesActivity(args);
                     fragment.setDelegate(new MessagesActivity.MessagesActivityDelegate() {
                         @Override
@@ -346,14 +346,12 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
             }
 
             @Override
-            public boolean onSearchCollapse() {
+            public void onSearchCollapse() {
                 dropDownContainer.setVisibility(View.VISIBLE);
                 documentsSearchAdapter.searchDocuments(null);
                 searching = false;
                 searchWas = false;
                 switchToCurrentSelectedMode();
-
-                return true;
             }
 
             @Override
@@ -702,7 +700,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                 public boolean onPreDraw() {
                     listView.getViewTreeObserver().removeOnPreDrawListener(this);
                     fixLayoutInternal();
-                    return false;
+                    return true;
                 }
             });
         }
@@ -1246,7 +1244,10 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                 req.peer.chat_id = -uid;
             } else {
                 TLRPC.User user = MessagesController.getInstance().getUser(uid);
-                if (user instanceof TLRPC.TL_userForeign || user instanceof TLRPC.TL_userRequest) {
+                if (user == null) {
+                    return;
+                }
+                if (user.access_hash != 0) {
                     req.peer = new TLRPC.TL_inputPeerForeign();
                     req.peer.access_hash = user.access_hash;
                 } else {

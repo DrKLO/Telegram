@@ -16,6 +16,8 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.Point;
+import android.graphics.PorterDuff;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -161,7 +163,12 @@ public class WallpapersActivity extends BaseFragment implements NotificationCent
         });
 
         ActionBarMenu menu = actionBar.createMenu();
-        doneButton = menu.addItemWithWidth(done_button, R.drawable.ic_done, AndroidUtilities.dp(56));
+        //doneButton = menu.addItemWithWidth(done_button, R.drawable.ic_done, AndroidUtilities.dp(56));
+
+        SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+        Drawable done = getParentActivity().getResources().getDrawable(R.drawable.ic_done);
+        done.setColorFilter(themePrefs.getInt("prefHeaderIconsColor", 0xffffffff), PorterDuff.Mode.SRC_IN);
+        doneButton = menu.addItemWithWidth(done_button, done, AndroidUtilities.dp(56));
 
         FrameLayout frameLayout = new FrameLayout(context);
         fragmentView = frameLayout;
@@ -464,6 +471,18 @@ public class WallpapersActivity extends BaseFragment implements NotificationCent
             listAdapter.notifyDataSetChanged();
         }
         processSelectedBackground();
+        updateTheme();
+    }
+
+    private void updateTheme(){
+        SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+        int def = themePrefs.getInt("themeColor", AndroidUtilities.defColor);
+        actionBar.setBackgroundColor(themePrefs.getInt("prefHeaderColor", def));
+        actionBar.setTitleColor(themePrefs.getInt("prefHeaderTitleColor", 0xffffffff));
+
+        Drawable back = getParentActivity().getResources().getDrawable(R.drawable.ic_ab_back);
+        back.setColorFilter(themePrefs.getInt("prefHeaderIconsColor", 0xffffffff), PorterDuff.Mode.MULTIPLY);
+        actionBar.setBackButtonDrawable(back);
     }
 
     private class ListAdapter extends RecyclerView.Adapter {

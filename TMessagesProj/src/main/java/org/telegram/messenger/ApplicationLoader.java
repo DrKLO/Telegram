@@ -31,13 +31,13 @@ import com.google.android.gms.gcm.GoogleCloudMessaging;
 
 import org.telegram.android.AndroidUtilities;
 import org.telegram.android.ContactsController;
-import org.telegram.android.LocaleController;
 import org.telegram.android.MediaController;
+import org.telegram.android.NotificationsService;
+import org.telegram.android.SendMessagesHelper;
+import org.telegram.android.LocaleController;
 import org.telegram.android.MessagesController;
 import org.telegram.android.NativeLoader;
-import org.telegram.android.NotificationsService;
 import org.telegram.android.ScreenReceiver;
-import org.telegram.android.SendMessagesHelper;
 import org.telegram.ui.Components.ForegroundDetector;
 
 import java.io.File;
@@ -66,6 +66,7 @@ public class ApplicationLoader extends Application {
 
     public static boolean SHOW_ANDROID_EMOJI;
     public static boolean KEEP_ORIGINAL_FILENAME;
+    public static boolean USE_DEVICE_FONT;
 
     public static boolean isCustomTheme() {
         return isCustomTheme;
@@ -205,6 +206,7 @@ public class ApplicationLoader extends Application {
         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
         SHOW_ANDROID_EMOJI = preferences.getBoolean("showAndroidEmoji", false);
         KEEP_ORIGINAL_FILENAME = preferences.getBoolean("keepOriginalFilename", false);
+        USE_DEVICE_FONT = preferences.getBoolean("useDeviceFont", false);
         //
         startPushService();
     }

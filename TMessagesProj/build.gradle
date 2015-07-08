@@ -1,11 +1,4 @@
-buildscript {
-    repositories {
-        mavenCentral()
-    }
-    dependencies {
-        classpath 'com.android.tools.build:gradle:1.2.3'
-    }
-}
+
 apply plugin: 'com.android.application'
 
 repositories {
@@ -13,8 +6,9 @@ repositories {
 }
 
 dependencies {
-    compile 'com.android.support:support-v4:22.1.+'
+    compile 'com.android.support:support-v4:22.2.+'
     compile 'com.google.android.gms:play-services:3.2.+'
+    //compile 'com.google.android.gms:play-services:7.5.0'
     compile 'net.hockeyapp.android:HockeySDK:3.5.+'
     compile 'com.googlecode.mp4parser:isoparser:1.0.+'
 }
@@ -88,7 +82,7 @@ android {
         applicationId "org.telegram.plus"
         minSdkVersion 8
         targetSdkVersion 22
-        versionCode 546
-        versionName "2.9.1.4"
+        versionCode 576
+        versionName "3.0.1.5"
     }
 }

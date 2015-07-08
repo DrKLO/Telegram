@@ -12,6 +12,8 @@ import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.SharedPreferences;
+import android.graphics.PorterDuff;
+import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
 import android.view.Gravity;
@@ -90,7 +92,12 @@ public class BlockedUsersActivity extends BaseFragment implements NotificationCe
         });
 
         ActionBarMenu menu = actionBar.createMenu();
-        menu.addItem(block_user, R.drawable.plus);
+        //menu.addItem(block_user, R.drawable.plus);
+
+        SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+        Drawable plus = getParentActivity().getResources().getDrawable(R.drawable.plus);
+        plus.setColorFilter(themePrefs.getInt("prefHeaderIconsColor", 0xffffffff), PorterDuff.Mode.SRC_IN);
+        menu.addItem(block_user, plus);
 
         fragmentView = new FrameLayout(context);
         FrameLayout frameLayout = (FrameLayout) fragmentView;
@@ -213,6 +220,18 @@ public class BlockedUsersActivity extends BaseFragment implements NotificationCe
         if (listViewAdapter != null) {
             listViewAdapter.notifyDataSetChanged();
         }
+        updateTheme();
+    }
+
+    private void updateTheme(){
+        SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+        int def = themePrefs.getInt("themeColor", AndroidUtilities.defColor);
+        actionBar.setBackgroundColor(themePrefs.getInt("prefHeaderColor", def));
+        actionBar.setTitleColor(themePrefs.getInt("prefHeaderTitleColor", 0xffffffff));
+
+        Drawable back = getParentActivity().getResources().getDrawable(R.drawable.ic_ab_back);
+        back.setColorFilter(themePrefs.getInt("prefHeaderIconsColor", 0xffffffff), PorterDuff.Mode.MULTIPLY);
+        actionBar.setBackButtonDrawable(back);
     }
 
     @Override

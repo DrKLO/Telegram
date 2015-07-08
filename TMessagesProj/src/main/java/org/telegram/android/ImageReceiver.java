@@ -23,9 +23,9 @@ import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.view.View;
 
-import org.telegram.messenger.FileLog;
 import org.telegram.messenger.TLObject;
 import org.telegram.messenger.TLRPC;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.Utilities;
 
 public class ImageReceiver implements NotificationCenter.NotificationCenterDelegate {

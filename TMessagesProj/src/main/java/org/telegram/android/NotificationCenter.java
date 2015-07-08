@@ -44,7 +44,6 @@ public class NotificationCenter {
     public static final int pushMessagesUpdated = totalEvents++;
     public static final int blockedUsersDidLoaded = totalEvents++;
     public static final int openedChatChanged = totalEvents++;
-    public static final int hideEmojiKeyboard = totalEvents++;
     public static final int stopEncodingService = totalEvents++;
     public static final int didCreatedNewDeleteTask = totalEvents++;
     public static final int mainUserInfoChanged = totalEvents++;
@@ -62,6 +61,9 @@ public class NotificationCenter {
     public static final int stickersDidLoaded = totalEvents++;
     public static final int didReplacedPhotoInMemCache = totalEvents++;
     public static final int messagesReadContent = totalEvents++;
+    public static final int botInfoDidLoaded = totalEvents++;
+    public static final int botKeyboardDidLoaded = totalEvents++;
+    public static final int chatSearchResultsAvailable = totalEvents++;
 
     public static final int httpFileDidLoaded = totalEvents++;
     public static final int httpFileDidFailedLoad = totalEvents++;
@@ -147,7 +149,7 @@ public class NotificationCenter {
 
     public void postNotificationName(int id, Object... args) {
         boolean allowDuringAnimation = false;
-        if (id == dialogsNeedReload || id == closeChats || id == messagesDidLoaded || id == mediaCountDidLoaded || id == mediaDidLoaded) {
+        if (id == dialogsNeedReload || id == closeChats || id == messagesDidLoaded || id == mediaCountDidLoaded || id == mediaDidLoaded || id == botInfoDidLoaded || id == botKeyboardDidLoaded) {
             allowDuringAnimation = true;
         }
         postNotificationNameInternal(id, allowDuringAnimation, args);

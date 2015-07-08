@@ -242,7 +242,6 @@
     <string name="ErrorOccurred">發生錯誤。</string>
   <!--stickers view-->
   <string name="Stickers">貼圖</string>
-  <string name="GeniusStickerPackName">偉大的人們</string>
   <string name="StickersInfo">歡迎畫家使用我們的 @Stickers Bot 加入他們自己的貼圖集。\n\n用戶可以通過點擊它們加入貼圖，並選擇 \"加入到貼圖\"。</string>
   <string name="AddStickers">加入貼圖</string>
   <string name="AddToStickers">加入到貼圖</string>
@@ -802,11 +801,13 @@
     <string name="formatterDay12H">a h:mm</string>
     <string name="formatDateAtTime">%1$s 於時間 %2$s</string>
   <!--update text-->
-  <string name="updateText">適用於 Android 的 Plus Messenger 已經更新。在 2.9 版中的新功能：\n\n- 安裝和分享自訂貼圖集，像這樣的：https://play.google.com/store/apps/details?id=es.rafalense.themes\n- 如果您是一個畫家，您可以使用我們的 @Stickers Bot 建立自訂貼圖集。\n\n- 使用帶有 Android Auto 功能的 Telegram。</string>
-  <string name="updateBuild">546</string>
-  <!--Telegram+-->
-  <string name="TelegramForAndroid">Plus Messenger Android版</string>
-  <string name="Theming">佈景主題</string>
+  <string name="updateText">檢查，下載並套用給 Plus Messenger 使用的主題。每天都有新的主題。當新的主題發布時，收到通知。與世界各地的所有 Plus Messenger 用戶分享您的主題：\n https://play.google.com/store/apps/details?id=es.rafalense.themes</string>
+  <string name="updateBuild">576</string>
+  <!--Telegram+--><!--
+  <string name="updatePlusText">
+\n\n在 3.0.1.3 版的新功能：\n\n- 在「設定」中使用手機字型的選項\n- 在聊天室/群組聊天室內部搜尋的選項\n- 加入模組以變更在「設定」與「自製佈景主題」中的標頭顏色、標頭標題顏色和標頭圖示顏色\n- 模組用於變更在主畫面中群組圖示的顏色\n- 模組用於在導航選單變更大頭照大小\n- 錯誤修正</string>-->
+  <string name="TelegramForAndroid">適用於 Android 的 Plus Messenger</string>
+  <string name="Theming">自製佈景主題</string>
   <string name="colorHexInvalid">無效的十六進位顏色代碼！</string>
   <string name="themeColor">主題顏色</string>
   <string name="ResetThemeSettings">重置主題設定</string>
@@ -817,18 +818,18 @@
   <string name="MainScreen">主畫面</string>
   <string name="ChatScreen">聊天室畫面</string>
   <string name="ContactsScreen">聯絡人畫面</string>
-  <string name="Header">標題</string>
+  <string name="Header">標頭</string>
   <string name="Rows">行</string>
   <string name="ChatList">聊天清單</string>
   <string name="ChatsList">聊天清單</string>
   <string name="ContactsList">聯絡人清單</string>
-  <string name="HeaderColor">標題顏色</string>
+  <string name="HeaderColor">標頭顏色</string>
   <string name="NameColor">名稱顏色</string>
   <string name="NameSize">名稱字體大小</string>
   <string name="MessageColor">訊息顏色</string>
   <string name="MessageSize">訊息字體大小</string>
-  <string name="TimeDateColor">時間/日期顏色</string>
-  <string name="TimeDateSize">時間/日期字體大小</string>
+  <string name="TimeDateColor">時間＆日期顏色</string>
+  <string name="TimeDateSize">時間＆日期字體大小</string>
   <string name="CountColor">訊息數顏色</string>
   <string name="CountSize">訊息數字體大小</string>
   <string name="RowColor">行顏色</string>
@@ -876,28 +877,28 @@
   <string name="Community">G+社群</string>
   <string name="TypingColor">輸入中顏色</string>
   <string name="EditTextIconsColor">輸入欄圖示顏色</string>
-  <string name="NavigationDrawer">導航欄抽屜</string>
+  <string name="NavigationDrawer">導航抽屜</string>
   <string name="OptionsList">選項清單</string>
   <string name="ListColor">清單顏色</string>
   <string name="OwnNameSize">名稱大小</string>
   <string name="PhoneColor">電話號碼顏色</string>
   <string name="PhoneSize">電話號碼大小</string>
-  <string name="AvatarColor">頭像顏色</string>
+  <string name="AvatarColor">大頭照顏色</string>
   <string name="IconColor">選項圖示的顏色</string>
   <string name="OptionColor">選擇字體顏色</string>
   <string name="OptionSize">選擇字體大小</string>
   <string name="VersionColor">版本號字體顏色</string>
   <string name="VersionSize">版本號字體大小</string>
-  <string name="HeaderTitleColor">標題顏色</string>
-  <string name="HeaderIconsColor">標題圖示顏色</string>
+  <string name="HeaderTitleColor">標頭的標題顏色</string>
+  <string name="HeaderIconsColor">標頭圖示顏色</string>
   <string name="DividerColor">分隔線顏色</string>
-  <string name="AvatarRadius">頭像半徑</string>
+  <string name="AvatarRadius">大頭照半徑</string>
   <string name="SetMemberColor">設定成員顏色</string>
   <string name="ForwardNameColor">轉發名字顏色</string>
-  <string name="HeaderTitle">標題文字</string>
+  <string name="HeaderTitle">標頭的標題</string>
   <string name="ForwardNoQuote">轉寄訊息而不引用</string>
   <string name="DisableMessageClick">點擊禁用彈出視窗</string>
-  <string name="ProfileScreen">群組/聯絡人簡介</string>
+  <string name="ProfileScreen">群組＆聯絡人簡介</string>
   <string name="HideBackground">隱藏自訂背景</string>
   <string name="RLinkColor">右邊連結顏色</string>
   <string name="LLinkColor">左邊連結顏色</string>
@@ -907,13 +908,28 @@
   <string name="BubbleStyle">對話氣泡風格</string>
   <string name="KeepOriginalFilename">保留原始檔名</string>
   <string name="KeepOriginalFilenameHelp">取代僅僅是數字的方式，檔案將被儲存為「名稱_日期」的格式</string>
-  <string name="AvatarSize">頭像大小</string>
-  <string name="AvatarAlignTop">對齊頭像到頂部</string>
-  <string name="AvatarMarginLeft">頭像左邊距</string>
+  <string name="AvatarSize">大頭照大小</string>
+  <string name="AvatarAlignTop">對齊大頭照到頂端</string>
+  <string name="AvatarMarginLeft">大頭照左邊距</string>
   <string name="GroupNameColor">群組名稱顏色</string>
   <string name="GroupNameSize">群組名稱大小</string>
   <string name="UnknownNameColor">名稱顏色 (數量不明)</string>
   <string name="HideBackgroundShadow">隱藏自訂背景陰影</string>
   <string name="SetSolidBGColor">設定背景色</string>
   <string name="SolidBGColor">背景色</string>
+  <string name="EmojiPopupSize">表情符號彈出大小</string>
+  <string name="ForwardRightNameColor">轉寄右邊對話氣泡名稱的顏色</string>
+  <string name="ForwardLeftNameColor">轉寄左邊對話氣泡名稱的顏色</string>
+  <string name="IconsColor">圖示顏色</string>
+  <string name="SettingsScreen">設定＆自製佈景主題畫面</string>
+  <string name="BackgroundColor">背景色</string>
+  <string name="ShadowColor">陰影顏色</string>
+  <string name="SectionColor">區塊主題顏色</string>
+  <string name="TitleColor">標題顏色</string>
+  <string name="SummaryColor">說明摘要＆字幕顏色</string>
+  <string name="MediaColor">\'照片/貼圖\' 文字顏色</string>
+  <string name="ThemesAppMsg">您想查詢其他 Plus Messenger 用戶創建的一些主題嗎？</string>
+  <string name="UseDeviceFont">使用裝置字型</string>
+  <string name="AppWillRestart">Plus Messenger 將重新啟動</string>
+  <string name="GroupIconColor">群組圖示顏色</string>
 </resources>

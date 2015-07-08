@@ -12,6 +12,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.PorterDuff;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.text.InputType;
 import android.util.TypedValue;
@@ -28,10 +29,10 @@ import android.widget.TextView;
 
 import org.telegram.android.AndroidUtilities;
 import org.telegram.android.LocaleController;
-import org.telegram.android.MessagesController;
 import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.R;
 import org.telegram.messenger.TLRPC;
+import org.telegram.android.MessagesController;
+import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.BaseFragment;
@@ -77,7 +78,11 @@ public class ChangeChatNameActivity extends BaseFragment {
             });
 
             ActionBarMenu menu = actionBar.createMenu();
-            doneButton = menu.addItemWithWidth(done_button, R.drawable.ic_done, AndroidUtilities.dp(56));
+            //doneButton = menu.addItemWithWidth(done_button, R.drawable.ic_done, AndroidUtilities.dp(56));
+            Drawable done = getParentActivity().getResources().getDrawable(R.drawable.ic_done);
+            SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+            done.setColorFilter(themePrefs.getInt("prefHeaderIconsColor", 0xffffffff), PorterDuff.Mode.MULTIPLY);
+            doneButton = menu.addItemWithWidth(done_button, done, AndroidUtilities.dp(56));
 
             TLRPC.Chat currentChat = MessagesController.getInstance().getChat(chat_id);
 
@@ -137,6 +142,21 @@ public class ChangeChatNameActivity extends BaseFragment {
             firstNameField.requestFocus();
             AndroidUtilities.showKeyboard(firstNameField);
         }
+        updateTheme();
+    }
+
+    private void updateTheme(){
+        SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+        int def = themePrefs.getInt("themeColor", AndroidUtilities.defColor);
+        actionBar.setBackgroundColor(themePrefs.getInt("prefHeaderColor", def));
+        actionBar.setTitleColor(themePrefs.getInt("prefHeaderTitleColor", 0xffffffff));
+
+        Drawable back = getParentActivity().getResources().getDrawable(R.drawable.ic_ab_back);
+        back.setColorFilter(themePrefs.getInt("prefHeaderIconsColor", 0xffffffff), PorterDuff.Mode.MULTIPLY);
+        actionBar.setBackButtonDrawable(back);
+
+        Drawable done = getParentActivity().getResources().getDrawable(R.drawable.ic_done);
+        done.setColorFilter(themePrefs.getInt("prefHeaderIconsColor", 0xffffffff), PorterDuff.Mode.MULTIPLY);
     }
 
     @Override

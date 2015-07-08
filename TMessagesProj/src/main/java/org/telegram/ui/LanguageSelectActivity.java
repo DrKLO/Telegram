@@ -12,6 +12,8 @@ import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.SharedPreferences;
+import android.graphics.PorterDuff;
+import android.graphics.drawable.Drawable;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
@@ -26,17 +28,17 @@ import android.widget.ListView;
 import android.widget.TextView;
 
 import org.telegram.android.AndroidUtilities;
-import org.telegram.android.LocaleController;
-import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLog;
+import org.telegram.messenger.ApplicationLoader;
+import org.telegram.android.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
+import org.telegram.ui.Adapters.BaseFragmentAdapter;
+import org.telegram.ui.Cells.TextSettingsCell;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.ActionBar.BaseFragment;
-import org.telegram.ui.Adapters.BaseFragmentAdapter;
-import org.telegram.ui.Cells.TextSettingsCell;
 import org.telegram.ui.Components.LayoutHelper;
 
 import java.util.ArrayList;
@@ -73,14 +75,16 @@ public class LanguageSelectActivity extends BaseFragment {
         });
 
         ActionBarMenu menu = actionBar.createMenu();
-        ActionBarMenuItem item = menu.addItem(0, R.drawable.ic_ab_search).setIsSearchField(true).setActionBarMenuItemSearchListener(new ActionBarMenuItem.ActionBarMenuItemSearchListener() {
+        //ActionBarMenuItem item = menu.addItem(0, R.drawable.ic_ab_search).setIsSearchField(true).setActionBarMenuItemSearchListener(new ActionBarMenuItem.ActionBarMenuItemSearchListener() {
+        Drawable search = getParentActivity().getResources().getDrawable(R.drawable.ic_ab_search);
+        ActionBarMenuItem item = menu.addItem(0, search).setIsSearchField(true).setActionBarMenuItemSearchListener(new ActionBarMenuItem.ActionBarMenuItemSearchListener() {
             @Override
             public void onSearchExpand() {
                 searching = true;
             }
 
             @Override
-            public boolean onSearchCollapse() {
+            public void onSearchCollapse() {
                 search(null);
                 searching = false;
                 searchWas = false;
@@ -88,8 +92,6 @@ public class LanguageSelectActivity extends BaseFragment {
                     emptyTextView.setVisibility(View.GONE);
                     listView.setAdapter(listAdapter);
                 }
-
-                return true;
             }
 
             @Override
@@ -246,6 +248,21 @@ public class LanguageSelectActivity extends BaseFragment {
         if (listAdapter != null) {
             listAdapter.notifyDataSetChanged();
         }
+        updateTheme();
+    }
+
+    private void updateTheme(){
+        SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+        int def = themePrefs.getInt("themeColor", AndroidUtilities.defColor);
+        actionBar.setBackgroundColor(themePrefs.getInt("prefHeaderColor", def));
+        actionBar.setTitleColor(themePrefs.getInt("prefHeaderTitleColor", 0xffffffff));
+
+        Drawable back = getParentActivity().getResources().getDrawable(R.drawable.ic_ab_back);
+        back.setColorFilter(themePrefs.getInt("prefHeaderIconsColor", 0xffffffff), PorterDuff.Mode.MULTIPLY);
+        actionBar.setBackButtonDrawable(back);
+
+        Drawable search = getParentActivity().getResources().getDrawable(R.drawable.ic_ab_search);
+        search.setColorFilter(themePrefs.getInt("prefHeaderIconsColor", 0xffffffff), PorterDuff.Mode.MULTIPLY);
     }
 
     public void search(final String query) {

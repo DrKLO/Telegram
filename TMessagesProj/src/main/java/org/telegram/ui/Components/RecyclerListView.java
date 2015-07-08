@@ -290,7 +290,7 @@ public class RecyclerListView extends RecyclerView {
             return;
         }
         boolean emptyViewVisible = getAdapter().getItemCount() == 0;
-        emptyView.setVisibility(emptyViewVisible ? VISIBLE : INVISIBLE);
+        emptyView.setVisibility(emptyViewVisible ? VISIBLE : GONE);
         setVisibility(emptyViewVisible ? INVISIBLE : VISIBLE);
     }
 

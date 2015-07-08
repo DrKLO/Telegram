@@ -22,10 +22,10 @@ import android.widget.TextView;
 
 import org.telegram.android.AndroidUtilities;
 import org.telegram.android.LocaleController;
-import org.telegram.android.MessagesController;
 import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.R;
 import org.telegram.messenger.TLRPC;
+import org.telegram.android.MessagesController;
+import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.Components.IdenticonDrawable;
@@ -97,12 +97,10 @@ public class IdenticonActivity extends BaseFragment {
         obs.addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
             @Override
             public boolean onPreDraw() {
-                if (fragmentView != null) {
-                    fragmentView.getViewTreeObserver().removeOnPreDrawListener(this);
-                }
-                if (getParentActivity() == null || fragmentView == null) {
+                if (fragmentView == null) {
                     return true;
                 }
+                    fragmentView.getViewTreeObserver().removeOnPreDrawListener(this);
                 LinearLayout layout = (LinearLayout)fragmentView;
                 WindowManager manager = (WindowManager) ApplicationLoader.applicationContext.getSystemService(Context.WINDOW_SERVICE);
                 int rotation = manager.getDefaultDisplay().getRotation();
@@ -114,7 +112,7 @@ public class IdenticonActivity extends BaseFragment {
                 }
 
                 fragmentView.setPadding(fragmentView.getPaddingLeft(), 0, fragmentView.getPaddingRight(), fragmentView.getPaddingBottom());
-                return false;
+                return true;
             }
         });
     }

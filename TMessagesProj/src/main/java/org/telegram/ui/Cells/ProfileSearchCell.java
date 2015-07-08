@@ -26,6 +26,7 @@ import org.telegram.android.ContactsController;
 import org.telegram.android.ImageReceiver;
 import org.telegram.android.LocaleController;
 import org.telegram.android.MessagesController;
+import org.telegram.android.UserObject;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.R;
@@ -207,7 +208,7 @@ public class ProfileSearchCell extends BaseCell {
             if (chat != null) {
                 nameString2 = chat.title;
             } else if (user != null) {
-                nameString2 = ContactsController.formatName(user.first_name, user.last_name);
+                nameString2 = UserObject.getUserName(user);
             }
             nameString = nameString2.replace("\n", " ");
         }
@@ -255,11 +256,15 @@ public class ProfileSearchCell extends BaseCell {
             if (subLabel != null) {
                 onlineString = subLabel;
             } else {
+                if ((user.flags & TLRPC.USER_FLAG_BOT) != 0) {
+                    onlineString = LocaleController.getString("Bot", R.string.Bot);
+                } else {
                 onlineString = LocaleController.formatUserStatus(user);
                 if (user != null && (user.id == UserConfig.getClientUserId() || user.status != null && user.status.expires > ConnectionsManager.getInstance().getCurrentTime())) {
                     currentOnlinePaint = onlinePaint;
                     onlineString = LocaleController.getString("Online", R.string.Online);
                 }
+            }
             }
 
             CharSequence onlineStringFinal = TextUtils.ellipsize(onlineString, currentOnlinePaint, onlineWidth - AndroidUtilities.dp(12), TextUtils.TruncateAt.END);

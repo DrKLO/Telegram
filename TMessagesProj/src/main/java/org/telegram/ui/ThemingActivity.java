@@ -16,6 +16,7 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.content.res.Configuration;
 import android.graphics.PorterDuff;
+import android.graphics.drawable.Drawable;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -119,16 +120,13 @@ public class ThemingActivity extends BaseFragment {
     public View createView(Context context, LayoutInflater inflater) {
         if (fragmentView == null) {
 
-
             actionBar.setItemsBackground(AvatarDrawable.getButtonColorForId(5));
             actionBar.setBackButtonImage(R.drawable.ic_ab_back);
-
 
             if (AndroidUtilities.isTablet()) {
                 actionBar.setOccupyStatusBar(false);
             }
             actionBar.setTitle(LocaleController.getString("Theming", R.string.Theming));
-
 
             actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
                 @Override
@@ -314,6 +312,15 @@ public class ThemingActivity extends BaseFragment {
                                             }
                                 });
                                 AndroidUtilities.needRestart = true;
+                                AndroidUtilities.runOnUIThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        if (getParentActivity() != null) {
+                                            Toast toast = Toast.makeText(getParentActivity(), LocaleController.getString("AppWillRestart", R.string.AppWillRestart), Toast.LENGTH_SHORT);
+                                            toast.show();
+                                        }
+                                    }
+                                });
                             }
                         });
                         builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
@@ -358,70 +365,6 @@ public class ThemingActivity extends BaseFragment {
         return fragmentView;
     }
 
-    private void showAttachmentError() {
-        if (getParentActivity() == null) {
-            return;
-        }
-        Toast toast = Toast.makeText(getParentActivity(), LocaleController.getString("UnsupportedAttachment", R.string.UnsupportedAttachment), Toast.LENGTH_SHORT);
-        toast.show();
-    }
-/*
-    @Override
-    public void onActivityResultFragment(int requestCode, int resultCode, Intent data) {
-        if (resultCode == Activity.RESULT_OK) {
-            if (requestCode == 0) {
-
-            } else if (requestCode == 22) {
-                if (data == null || data.getData() == null) {
-                    showAttachmentError();
-                    return;
-                }
-                String tempPath = Utilities.getPath(data.getData());
-                String originalPath = tempPath;
-                if (tempPath == null) {
-                    originalPath = data.toString();
-                    tempPath = MediaController.copyDocumentToCache(data.getData(), "file");
-                }
-                if (tempPath == null) {
-                    showAttachmentError();
-                    return;
-                }
-                Toast toast = Toast.makeText(getParentActivity(), tempPath + "\n " + originalPath, Toast.LENGTH_SHORT);
-                toast.show();
-                //SendMessagesHelper.prepareSendingDocument(tempPath, originalPath, null, null, Long.parseLong(null));
-            }
-        }
-    }*/
-/*
-    private void saveThemeDialog(){
-
-        LayoutInflater li = LayoutInflater.from(getParentActivity());
-        View promptsView = li.inflate(R.layout.editbox_dialog, null);
-        AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(getParentActivity());
-        alertDialogBuilder.setView(promptsView);
-        final EditText userInput = (EditText) promptsView.findViewById(R.id.editTextDialogUserInput);
-
-        alertDialogBuilder
-                .setCancelable(false)
-                .setPositiveButton(R.string.ok,
-                        new DialogInterface.OnClickListener() {
-                            public void onClick(DialogInterface dialog,int id) {
-                                savePrefs(Utils.this);
-                                String pName = userInput.getText().toString();
-                                functions.savePreferencesToSD(Utils.this,my_pref_file_name+".xml",pName+".xml",true);
-                                functions.copyWallpaperToSD(Utils.this,pName,true);
-                            }
-                        })
-                .setNegativeButton(R.string.cancel,
-                        new DialogInterface.OnClickListener() {
-                            public void onClick(DialogInterface dialog,int id) {
-                                dialog.cancel();
-                            }
-                        });
-        AlertDialog alertDialog = alertDialogBuilder.create();
-        alertDialog.show();
-    }*/
-
     private void commitInt(int i){
         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
         SharedPreferences.Editor editor = preferences.edit();
@@ -450,6 +393,8 @@ public class ThemingActivity extends BaseFragment {
         editor.putInt("contactsHeaderColor", i);
         editor.putInt("contactsOnlineColor", darkColor);
 
+        editor.putInt("prefHeaderColor", i);
+
         editor.commit();
         fixLayout();
         AndroidUtilities.themeColor = i;
@@ -462,6 +407,18 @@ public class ThemingActivity extends BaseFragment {
             listAdapter.notifyDataSetChanged();
         }
         fixLayout();
+        updateTheme();
+    }
+
+    private void updateTheme(){
+        SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+        int def = themePrefs.getInt("themeColor", AndroidUtilities.defColor);
+        actionBar.setBackgroundColor(themePrefs.getInt("prefHeaderColor", def));
+        actionBar.setTitleColor(themePrefs.getInt("prefHeaderTitleColor", 0xffffffff));
+
+        Drawable back = getParentActivity().getResources().getDrawable(R.drawable.ic_ab_back);
+        back.setColorFilter(themePrefs.getInt("prefHeaderIconsColor", 0xffffffff), PorterDuff.Mode.MULTIPLY);
+        actionBar.setBackButtonDrawable(back);
     }
 
     @Override

@@ -36,7 +36,6 @@ import org.json.JSONObject;
 import org.telegram.android.AndroidUtilities;
 import org.telegram.android.LocaleController;
 import org.telegram.android.MediaController;
-import org.telegram.android.MessageObject;
 import org.telegram.android.MessagesStorage;
 import org.telegram.android.NotificationCenter;
 import org.telegram.android.volley.AuthFailureError;
@@ -51,13 +50,14 @@ import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
 import org.telegram.messenger.TLRPC;
+import org.telegram.android.MessageObject;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
-import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
-import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.Adapters.BaseFragmentAdapter;
+import org.telegram.ui.ActionBar.ActionBar;
+import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.Cells.PhotoPickerPhotoCell;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.LayoutHelper;
@@ -184,7 +184,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
                 }
 
                 @Override
-                public boolean onSearchCollapse() {
+                public boolean canCollapseSearch() {
                     finishFragment();
                     return false;
                 }
@@ -899,7 +899,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
                     if (listView != null) {
                         listView.getViewTreeObserver().removeOnPreDrawListener(this);
                     }
-                    return false;
+                    return true;
                 }
             });
         }
