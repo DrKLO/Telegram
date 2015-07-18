@@ -99,6 +99,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
 
     public boolean enableJoined = true;
     public int fontSize = AndroidUtilities.dp(16);
+    public int inputFontSize = AndroidUtilities.dp(18);
     public int maxGroupCount = 200;
     public int maxBroadcastCount = 100;
     public int groupBigSize;
@@ -165,6 +166,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         maxBroadcastCount = preferences.getInt("maxBroadcastCount", 100);
         groupBigSize = preferences.getInt("groupBigSize", 10);
         fontSize = preferences.getInt("fons_size", AndroidUtilities.isTablet() ? 18 : 16);
+        inputFontSize = preferences.getInt("input_fons_size", 18);
         String disabledFeaturesString = preferences.getString("disabledFeatures", null);
         if (disabledFeaturesString != null && disabledFeaturesString.length() != 0) {
             try {

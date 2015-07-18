@@ -220,7 +220,7 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
         messageEditText.setInputType(messageEditText.getInputType() | EditorInfo.TYPE_TEXT_FLAG_CAP_SENTENCES | EditorInfo.TYPE_TEXT_FLAG_MULTI_LINE);
         messageEditText.setSingleLine(false);
         messageEditText.setMaxLines(4);
-        messageEditText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
+        messageEditText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, preferences.getInt("input_fons_size",18));
         messageEditText.setGravity(Gravity.BOTTOM);
         messageEditText.setPadding(0, AndroidUtilities.dp(11), 0, AndroidUtilities.dp(12));
         messageEditText.setBackgroundDrawable(null);
