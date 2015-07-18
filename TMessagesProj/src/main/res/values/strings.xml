@@ -261,6 +261,7 @@
     <!--settings view-->
     <string name="ResetNotificationsText">Reset all notification settings to default</string>
     <string name="TextSize">Messages Text Size</string>
+    <string name="InputTextSize">Input Message Text Size</string>
     <string name="AskAQuestion">Ask a Question</string>
     <string name="EnableAnimations">Enable Animations</string>
     <string name="Unblock">Unblock</string>

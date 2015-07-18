@@ -119,6 +119,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
     private int messagesSectionRow;
     private int messagesSectionRow2;
     private int textSizeRow;
+    private int inputTextSizeRow;
     private int stickersRow;
     private int sendByEnterRow;
     private int supportSectionRow;
@@ -233,6 +234,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         messagesSectionRow = rowCount++;
         messagesSectionRow2 = rowCount++;
         textSizeRow = rowCount++;
+        inputTextSizeRow = rowCount++;
         stickersRow = rowCount++;
         sendByEnterRow = rowCount++;
         supportSectionRow = rowCount++;
@@ -377,6 +379,31 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                             SharedPreferences.Editor editor = preferences.edit();
                             editor.putInt("fons_size", numberPicker.getValue());
                             MessagesController.getInstance().fontSize = numberPicker.getValue();
+                            editor.commit();
+                            if (listView != null) {
+                                listView.invalidateViews();
+                            }
+                        }
+                    });
+                    showDialog(builder.create());
+                } else if (i == inputTextSizeRow) {
+                    if (getParentActivity() == null) {
+                        return;
+                    }
+                    AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                    builder.setTitle(LocaleController.getString("InputTextSize", R.string.InputTextSize));
+                    final NumberPicker numberPicker = new NumberPicker(getParentActivity());
+                    numberPicker.setMinValue(12);
+                    numberPicker.setMaxValue(24);
+                    numberPicker.setValue(MessagesController.getInstance().inputFontSize);
+                    builder.setView(numberPicker);
+                    builder.setNegativeButton(LocaleController.getString("Done", R.string.Done), new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+                            SharedPreferences.Editor editor = preferences.edit();
+                            editor.putInt("input_fons_size", numberPicker.getValue());
+                            MessagesController.getInstance().inputFontSize= numberPicker.getValue();
                             editor.commit();
                             if (listView != null) {
                                 listView.invalidateViews();
@@ -990,7 +1017,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
 
         @Override
         public boolean isEnabled(int i) {
-            return i == textSizeRow || i == enableAnimationsRow || i == notificationRow || i == backgroundRow || i == numberRow ||
+            return i == textSizeRow || i == inputTextSizeRow || i == enableAnimationsRow || i == notificationRow || i == backgroundRow || i == numberRow ||
                     i == askQuestionRow || i == sendLogsRow || i == sendByEnterRow || i == privacyRow || i == wifiDownloadRow ||
                     i == mobileDownloadRow || i == clearLogsRow || i == roamingDownloadRow || i == languageRow || i == usernameRow ||
                     i == switchBackendButtonRow || i == telegramFaqRow || i == contactsSortRow || i == contactsReimportRow || i == saveToGalleryRow ||
@@ -1042,6 +1069,10 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                     SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
                     int size = preferences.getInt("fons_size", AndroidUtilities.isTablet() ? 18 : 16);
                     textCell.setTextAndValue(LocaleController.getString("TextSize", R.string.TextSize), String.format("%d", size), true);
+                } else if (i == inputTextSizeRow) {
+                    SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+                    int size = preferences.getInt("input_fons_size", 18);
+                    textCell.setTextAndValue(LocaleController.getString("InputTextSize", R.string.InputTextSize), String.format("%d", size), true);
                 } else if (i == languageRow) {
                     textCell.setTextAndValue(LocaleController.getString("Language", R.string.Language), LocaleController.getCurrentLanguageName(), true);
                 } else if (i == contactsSortRow) {
@@ -1194,7 +1225,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 return 1;
             } else if (i == enableAnimationsRow || i == sendByEnterRow || i == saveToGalleryRow) {
                 return 3;
-            } else if (i == notificationRow || i == backgroundRow || i == askQuestionRow || i == sendLogsRow || i == privacyRow || i == clearLogsRow || i == switchBackendButtonRow || i == telegramFaqRow || i == contactsReimportRow || i == textSizeRow || i == languageRow || i == contactsSortRow || i == stickersRow) {
+            } else if (i == notificationRow || i == backgroundRow || i == askQuestionRow || i == sendLogsRow || i == privacyRow || i == clearLogsRow || i == switchBackendButtonRow || i == telegramFaqRow || i == contactsReimportRow || i == textSizeRow || i == inputTextSizeRow || i == languageRow || i == contactsSortRow || i == stickersRow) {
                 return 2;
             } else if (i == versionRow) {
                 return 5;
