@@ -65,6 +65,11 @@
     <string name="YouCreatedBroadcastList">단체 메시지 리스트를 만들었습니다</string>
     <string name="AddRecipient">받는 사람 추가</string>
     <string name="KickFromBroadcast">리스트에서 제외</string>
+    <!--audio view-->
+    <string name="NoAudio">음악 라이브러리에 파일을 추가하셔야지만 볼 수 있습니다.</string>
+    <string name="AttachMusic">음악</string>
+    <string name="AudioUnknownArtist">알수 없는 아티스트</string>
+    <string name="AudioUnknownTitle">알 수 없는 제목</string>
     <!--documents view-->
     <string name="SelectFile">파일 선택</string>
     <string name="FreeOfTotal">%2$s 중 %1$s 남음</string>
@@ -121,6 +126,7 @@
     <string name="DeleteThisChat">이 채팅방 삭제</string>
     <string name="SlideToCancel">밀어서 취소</string>
     <string name="SaveToDownloads">다운로드 폴더에 저장</string>
+    <string name="SaveToMusic">음악으로 저장</string>
     <string name="ShareFile">공유</string>
     <string name="ApplyLocalizationFile">언어 파일 적용</string>
     <string name="UnsupportedAttachment">지원하지 않는 형식입니다</string>
@@ -347,6 +353,7 @@
     <string name="RepeatDisabled">끔</string>
     <string name="InChatSound">채팅중 소리 설정</string>
     <string name="SoundDefault">기본값</string>
+    <string name="VibrationDefault">기본값</string>
     <string name="SmartNotifications">스마트 알림</string>
     <string name="SmartNotificationsDisabled">비활성화됨</string>
     <string name="SmartNotificationsInfo">최대 %1$s번, %2$s번 이내 알림</string>
@@ -827,6 +834,6 @@
     <string name="formatterDay12H">a h:mm</string>
     <string name="formatDateAtTime">%1$s %2$s</string>
     <!--update text-->
-    <string name="updateText">텔레그램 안드로이드 버전이 업데이트 되었습니다. 새로운 버전은 3.0 입니다:\n\n- 스티커 패널에 커스텀 스티커별 탭 지원. https://telegram.me/addstickers/Animals 와 같은 커스텀 스티커 추가 기능\n- 신규 봇 API를 무료로 공개합니다. 개발자라면 누구나 게임, 서비스나 통합 봇등 개발이 가능합니다. https://telegram.org/blog/bot-revolution 에서 자세한 사항을 알아보세요.</string>
-    <string name="updateBuild">551</string>
+    <string name="updateText">텔레그램 안드로이드 버전이 업데이트 되었습니다. 새로운 버전은 3.1 입니다:\n\n- 특정 대화창에서 검색. \n- 첨부 메뉴 개선. 해당 메뉴에서 바로 연락처, 오디오를 전송 가능. \n- 인앱 미디어 재생 기능 향상 (YouTube, Vimeo, SoundCloud etc). 대용량 오디오 파일 별도 플레이어 기능. \n\nhttps://telegram.org/blog/search-and-media에서 자세한 사항을 알아보세요.</string>
+    <string name="updateBuild">577</string>
 </resources>

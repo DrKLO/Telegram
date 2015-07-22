@@ -3900,7 +3900,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         }
         if (!markAsReadMessagesInbox.isEmpty() || !markAsReadMessagesOutbox.isEmpty() || !markAsReadEncrypted.isEmpty()) {
             if (!markAsReadMessagesInbox.isEmpty() || !markAsReadMessagesOutbox.isEmpty()) {
-                MessagesStorage.getInstance().updateDialogsWithReadedMessages(markAsReadMessagesInbox, true);
+                MessagesStorage.getInstance().updateDialogsWithReadMessages(markAsReadMessagesInbox, true);
             }
             MessagesStorage.getInstance().markMessagesAsRead(markAsReadMessagesInbox, markAsReadMessagesOutbox, markAsReadEncrypted, true);
         }

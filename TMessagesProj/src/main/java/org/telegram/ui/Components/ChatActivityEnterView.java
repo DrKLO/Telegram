@@ -44,6 +44,7 @@ import org.telegram.android.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.UserConfig;
+import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.android.AnimationCompat.AnimatorListenerAdapterProxy;
 import org.telegram.android.AnimationCompat.AnimatorSetProxy;
@@ -117,6 +118,7 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
     private BaseFragment parentFragment;
     private long dialog_id;
     private boolean ignoreTextChange;
+    private int innerTextChange;
     private MessageObject replyingMessageObject;
     private MessageObject botMessageObject;
     private TLRPC.WebPage messageWebPage;
@@ -187,7 +189,16 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
             }
         });
 
-        messageEditText = new EditText(context);
+        messageEditText = new EditText(context) {
+            @Override
+            public boolean onTouchEvent(MotionEvent event) {
+                if (isPopupShowing() && event.getAction() == MotionEvent.ACTION_DOWN) {
+                    showPopup(AndroidUtilities.usingHardwareInput ? 0 : 2, 0);
+                    openKeyboardInternal();
+                }
+                return super.onTouchEvent(event);
+            }
+        };
         messageEditText.setHint(LocaleController.getString("TypeMessage", R.string.TypeMessage));
         messageEditText.setImeOptions(EditorInfo.IME_FLAG_NO_EXTRACT_UI);
         messageEditText.setInputType(messageEditText.getInputType() | EditorInfo.TYPE_TEXT_FLAG_CAP_SENTENCES | EditorInfo.TYPE_TEXT_FLAG_MULTI_LINE);
@@ -216,14 +227,6 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
                 return false;
             }
         });
-        messageEditText.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                if (isPopupShowing()) {
-                    showPopup(AndroidUtilities.usingHardwareInput ? 0 : 2, 0);
-                }
-            }
-        });
         messageEditText.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             @Override
             public boolean onEditorAction(TextView textView, int i, KeyEvent keyEvent) {
@@ -240,6 +243,8 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
             }
         });
         messageEditText.addTextChangedListener(new TextWatcher() {
+            boolean processChange = false;
+
             @Override
             public void beforeTextChanged(CharSequence charSequence, int i, int i2, int i3) {
 
@@ -247,16 +252,20 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
 
             @Override
             public void onTextChanged(CharSequence charSequence, int start, int before, int count) {
-                String message = getTrimmedString(charSequence.toString());
+                if (innerTextChange == 1) {
+                    return;
+                }
                 checkSendButton(true);
-
+                String message = getTrimmedString(charSequence.toString());
                 if (delegate != null) {
                     if (count > 2 || charSequence == null || charSequence.length() == 0) {
                         messageWebPageSearch = true;
                     }
                     delegate.onTextChanged(charSequence, before > count + 1 || (count - before) > 2);
                 }
-
+                if (innerTextChange != 2 && before != count && (count - before) > 1) {
+                    processChange = true;
+                }
                 if (message.length() != 0 && lastTypingTimeSend < System.currentTimeMillis() - 5000 && !ignoreTextChange) {
                     int currentTime = ConnectionsManager.getInstance().getCurrentTime();
                     TLRPC.User currentUser = null;
@@ -275,19 +284,19 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
 
             @Override
             public void afterTextChanged(Editable editable) {
+                if (innerTextChange != 0) {
+                    return;
+                }
                 if (sendByEnter && editable.length() > 0 && editable.charAt(editable.length() - 1) == '\n') {
                     sendMessage();
                 }
-                int i = 0;
-                ImageSpan[] arrayOfImageSpan = editable.getSpans(0, editable.length(), ImageSpan.class);
-                int j = arrayOfImageSpan.length;
-                while (true) {
-                    if (i >= j) {
-                        Emoji.replaceEmoji(editable, messageEditText.getPaint().getFontMetricsInt(), AndroidUtilities.dp(20));
-                        return;
+                if (processChange) {
+                    ImageSpan[] spans = editable.getSpans(0, editable.length(), ImageSpan.class);
+                    for (int i = 0; i < spans.length; i++) {
+                        editable.removeSpan(spans[i]);
                     }
-                    editable.removeSpan(arrayOfImageSpan[i]);
-                    i++;
+                    Emoji.replaceEmoji(editable, messageEditText.getPaint().getFontMetricsInt(), AndroidUtilities.dp(20), false);
+                    processChange = false;
                 }
             }
         });
@@ -590,7 +599,7 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
             delegate.onWindowSizeChanged(size);
         }
         if (topView != null) {
-            if (size < AndroidUtilities.dp(72) + AndroidUtilities.getCurrentActionBarHeight()) {
+            if (size < AndroidUtilities.dp(72) + ActionBar.getCurrentActionBarHeight()) {
                 if (allowShowTopView) {
                     allowShowTopView = false;
                     if (needShowTopView) {
@@ -773,11 +782,7 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
                         });
                         runningAnimation2.start();
 
-                        if (messageEditText != null) {
-                            FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) messageEditText.getLayoutParams();
-                            layoutParams.rightMargin = AndroidUtilities.dp(0);
-                            messageEditText.setLayoutParams(layoutParams);
-                        }
+                        updateFieldRight(0);
 
                         delegate.onAttachButtonHidden();
                     }
@@ -823,9 +828,7 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
                         attachButton.setVisibility(View.GONE);
                         attachButton.clearAnimation();
                         delegate.onAttachButtonHidden();
-                        FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) messageEditText.getLayoutParams();
-                        layoutParams.rightMargin = AndroidUtilities.dp(0);
-                        messageEditText.setLayoutParams(layoutParams);
+                        updateFieldRight(0);
                     }
                 }
             }
@@ -854,11 +857,7 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
                     runningAnimation2.setDuration(100);
                     runningAnimation2.start();
 
-                    if (messageEditText != null) {
-                        FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) messageEditText.getLayoutParams();
-                        layoutParams.rightMargin = AndroidUtilities.dp(50);
-                        messageEditText.setLayoutParams(layoutParams);
-                    }
+                    updateFieldRight(1);
 
                     delegate.onAttachButtonShow();
                 }
@@ -903,12 +902,35 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
                 if (attachButton != null) {
                     delegate.onAttachButtonShow();
                     attachButton.setVisibility(View.VISIBLE);
-                    FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) messageEditText.getLayoutParams();
-                    layoutParams.rightMargin = AndroidUtilities.dp(50);
-                    messageEditText.setLayoutParams(layoutParams);
+                    updateFieldRight(1);
                 }
             }
         }
+    }
+
+    private void updateFieldRight(int attachVisible) {
+        if (messageEditText == null) {
+            return;
+        }
+        FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) messageEditText.getLayoutParams();
+        if (attachVisible == 1) {
+            if (botButton != null && botButton.getVisibility() == VISIBLE) {
+                layoutParams.rightMargin = AndroidUtilities.dp(98);
+            } else {
+                layoutParams.rightMargin = AndroidUtilities.dp(50);
+            }
+        } else if (attachVisible == 2) {
+            if (layoutParams.rightMargin != AndroidUtilities.dp(2)) {
+                if (botButton != null && botButton.getVisibility() == VISIBLE) {
+                    layoutParams.rightMargin = AndroidUtilities.dp(98);
+                } else {
+                    layoutParams.rightMargin = AndroidUtilities.dp(50);
+                }
+            }
+        } else {
+            layoutParams.rightMargin = AndroidUtilities.dp(2);
+        }
+        messageEditText.setLayoutParams(layoutParams);
     }
 
     private void updateAudioRecordIntefrace() {
@@ -1108,6 +1130,7 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
         } else {
             botButton.setVisibility(GONE);
         }
+        updateFieldRight(2);
         ViewProxy.setPivotX(attachButton, AndroidUtilities.dp(botButton.getVisibility() == GONE ? 48 : 96));
         attachButton.clearAnimation();
     }
@@ -1209,12 +1232,15 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
                             i = 0;
                         }
                         try {
-                            CharSequence localCharSequence = Emoji.replaceEmoji(symbol/* + "\uFE0F"*/, messageEditText.getPaint().getFontMetricsInt(), AndroidUtilities.dp(20));
+                            innerTextChange = 2;
+                            CharSequence localCharSequence = Emoji.replaceEmoji(symbol/* + "\uFE0F"*/, messageEditText.getPaint().getFontMetricsInt(), AndroidUtilities.dp(20), false);
                             messageEditText.setText(messageEditText.getText().insert(i, localCharSequence));
                             int j = i + localCharSequence.length();
                             messageEditText.setSelection(j, j);
                         } catch (Exception e) {
                             FileLog.e("tmessages", e);
+                        } finally {
+                            innerTextChange = 0;
                         }
                     }
 

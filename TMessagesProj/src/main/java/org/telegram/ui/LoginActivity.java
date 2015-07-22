@@ -34,7 +34,6 @@ import android.text.method.PasswordTransformationMethod;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.KeyEvent;
-import android.view.LayoutInflater;
 import android.view.View;
 import android.view.WindowManager;
 import android.view.animation.AccelerateDecelerateInterpolator;
@@ -109,7 +108,7 @@ public class LoginActivity extends BaseFragment {
     }
 
     @Override
-    public View createView(Context context, LayoutInflater inflater) {
+    public View createView(Context context) {
         actionBar.setTitle(LocaleController.getString("AppName", R.string.AppName));
 
         actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
@@ -395,7 +394,7 @@ public class LoginActivity extends BaseFragment {
 
     public void needFinishActivity() {
         clearCurrentState();
-        presentFragment(new MessagesActivity(null), true);
+        presentFragment(new DialogsActivity(null), true);
         NotificationCenter.getInstance().postNotificationName(NotificationCenter.mainUserInfoChanged);
     }
 
@@ -724,11 +723,9 @@ public class LoginActivity extends BaseFragment {
                     if (!codeText.equals(resultCode)) {
                         phone = PhoneFormat.getInstance().format(phoneField.getText().toString()).trim();
                         phoneField.setText(phone);
-                        int len = phoneField.length();
                         phoneField.setSelection(phoneField.length());
                     } else {
                         phoneField.setText(phone.substring(idx).trim());
-                        int len = phoneField.length();
                         phoneField.setSelection(phoneField.length());
                     }
                 } else {

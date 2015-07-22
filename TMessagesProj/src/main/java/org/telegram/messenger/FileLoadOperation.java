@@ -28,6 +28,7 @@ public class FileLoadOperation {
     private final static int stateFinished = 3;
 
     private final static int downloadChunkSize = 1024 * 32;
+    private final static int downloadChunkSizeBig = 1024 * 128;
     private final static int maxDownloadRequests = 3;
 
     private int datacenter_id;
@@ -38,6 +39,7 @@ public class FileLoadOperation {
     private FileLoadOperationDelegate delegate;
     private byte[] key;
     private byte[] iv;
+    private int currentDownloadChunkSize;
 
     private int nextDownloadOffset = 0;
     private ArrayList<RequestInfo> requestInfos = new ArrayList<>(maxDownloadRequests);
@@ -165,6 +167,7 @@ public class FileLoadOperation {
         if (state != stateIdle) {
             return;
         }
+        currentDownloadChunkSize = totalBytesCount >= 1024 * 1024 * 30 ? downloadChunkSizeBig : downloadChunkSize;
         state = stateDownloading;
         if (location == null) {
             Utilities.stageQueue.postRunnable(new Runnable() {
@@ -175,7 +178,6 @@ public class FileLoadOperation {
             });
             return;
         }
-        Long mediaId = null;
         String fileNameFinal;
         String fileNameTemp;
         String fileNameIv = null;
@@ -223,7 +225,7 @@ public class FileLoadOperation {
             cacheFileTemp = new File(tempPath, fileNameTemp);
             if (cacheFileTemp.exists()) {
                 downloadedBytes = (int)cacheFileTemp.length();
-                nextDownloadOffset = downloadedBytes = downloadedBytes / 1024 * 1024;
+                nextDownloadOffset = downloadedBytes = downloadedBytes / currentDownloadChunkSize * currentDownloadChunkSize;
             }
             if (fileNameIv != null) {
                 cacheIvTemp = new File(tempPath, fileNameIv);
@@ -388,10 +390,10 @@ public class FileLoadOperation {
                     }
                 }
 
-                if (currentBytesSize != downloadChunkSize) {
+                if (currentBytesSize != currentDownloadChunkSize) {
                     onFinishLoadingFile();
                 } else {
-                    if (totalBytesCount != downloadedBytes && downloadedBytes % downloadChunkSize == 0 || totalBytesCount > 0 && totalBytesCount > downloadedBytes) {
+                    if (totalBytesCount != downloadedBytes && downloadedBytes % currentDownloadChunkSize == 0 || totalBytesCount > 0 && totalBytesCount > downloadedBytes) {
                         startDownloadRequest();
                     } else {
                         onFinishLoadingFile();
@@ -422,7 +424,7 @@ public class FileLoadOperation {
                     startDownloadRequest();
                 }
             } else if (error.text.contains("OFFSET_INVALID")) {
-                if (downloadedBytes % downloadChunkSize == 0) {
+                if (downloadedBytes % currentDownloadChunkSize == 0) {
                     try {
                         onFinishLoadingFile();
                     } catch (Exception e) {
@@ -460,12 +462,12 @@ public class FileLoadOperation {
             if (totalBytesCount > 0 && nextDownloadOffset >= totalBytesCount) {
                 break;
             }
-            boolean isLast = totalBytesCount <= 0 || a == count - 1 || totalBytesCount > 0 && nextDownloadOffset + downloadChunkSize >= totalBytesCount;
+            boolean isLast = totalBytesCount <= 0 || a == count - 1 || totalBytesCount > 0 && nextDownloadOffset + currentDownloadChunkSize >= totalBytesCount;
             TLRPC.TL_upload_getFile req = new TLRPC.TL_upload_getFile();
             req.location = location;
             req.offset = nextDownloadOffset;
-            req.limit = downloadChunkSize;
-            nextDownloadOffset += downloadChunkSize;
+            req.limit = currentDownloadChunkSize;
+            nextDownloadOffset += currentDownloadChunkSize;
 
             final RequestInfo requestInfo = new RequestInfo();
             requestInfos.add(requestInfo);

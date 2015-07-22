@@ -533,7 +533,6 @@ public class NumberPicker extends LinearLayout {
             }
             maxTextWidth = (int) (numberOfDigits * maxDigitWidth);
         } else {
-            final int valueCount = mDisplayedValues.length;
             for (String mDisplayedValue : mDisplayedValues) {
                 final float textWidth = mSelectorWheelPaint.measureText(mDisplayedValue);
                 if (textWidth > maxTextWidth) {

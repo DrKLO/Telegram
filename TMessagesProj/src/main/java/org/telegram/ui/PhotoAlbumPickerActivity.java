@@ -15,7 +15,6 @@ import android.graphics.drawable.ColorDrawable;
 import android.os.Build;
 import android.text.TextUtils;
 import android.view.Gravity;
-import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.Surface;
 import android.view.View;
@@ -42,7 +41,7 @@ import org.telegram.ui.Adapters.BaseFragmentAdapter;
 import org.telegram.ui.Cells.PhotoPickerAlbumsCell;
 import org.telegram.ui.Cells.PhotoPickerSearchCell;
 import org.telegram.ui.Components.LayoutHelper;
-import org.telegram.ui.Components.PhotoPickerBottomLayout;
+import org.telegram.ui.Components.PickerBottomLayout;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -72,7 +71,7 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
     private TextView emptyView;
     private TextView dropDown;
     private ActionBarMenuItem dropDownContainer;
-    private PhotoPickerBottomLayout photoPickerBottomLayout;
+    private PickerBottomLayout pickerBottomLayout;
     private boolean sendPressed = false;
     private boolean singlePhoto = false;
     private int selectedMode;
@@ -109,7 +108,7 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
 
     @SuppressWarnings("unchecked")
     @Override
-    public View createView(Context context, LayoutInflater inflater) {
+    public View createView(Context context) {
         actionBar.setBackgroundColor(0xff333333);
         actionBar.setItemsBackground(R.drawable.bar_selector_picker);
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
@@ -256,20 +255,20 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
         layoutParams.gravity = Gravity.CENTER;
         progressView.setLayoutParams(layoutParams);
 
-        photoPickerBottomLayout = new PhotoPickerBottomLayout(context);
-        frameLayout.addView(photoPickerBottomLayout);
-        layoutParams = (FrameLayout.LayoutParams) photoPickerBottomLayout.getLayoutParams();
+        pickerBottomLayout = new PickerBottomLayout(context);
+        frameLayout.addView(pickerBottomLayout);
+        layoutParams = (FrameLayout.LayoutParams) pickerBottomLayout.getLayoutParams();
         layoutParams.width = LayoutHelper.MATCH_PARENT;
         layoutParams.height = AndroidUtilities.dp(48);
         layoutParams.gravity = Gravity.BOTTOM;
-        photoPickerBottomLayout.setLayoutParams(layoutParams);
-        photoPickerBottomLayout.cancelButton.setOnClickListener(new View.OnClickListener() {
+        pickerBottomLayout.setLayoutParams(layoutParams);
+        pickerBottomLayout.cancelButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 finishFragment();
             }
         });
-        photoPickerBottomLayout.doneButton.setOnClickListener(new View.OnClickListener() {
+        pickerBottomLayout.doneButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 sendSelectedPhotos();
@@ -284,7 +283,7 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
             progressView.setVisibility(View.GONE);
             listView.setEmptyView(emptyView);
         }
-        photoPickerBottomLayout.updateSelectedCount(selectedPhotos.size() + selectedWebPhotos.size(), true);
+        pickerBottomLayout.updateSelectedCount(selectedPhotos.size() + selectedWebPhotos.size(), true);
 
         return fragmentView;
     }
@@ -464,8 +463,8 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
         fragment.setDelegate(new PhotoPickerActivity.PhotoPickerActivityDelegate() {
             @Override
             public void selectedPhotosChanged() {
-                if (photoPickerBottomLayout != null) {
-                    photoPickerBottomLayout.updateSelectedCount(selectedPhotos.size() + selectedWebPhotos.size(), true);
+                if (pickerBottomLayout != null) {
+                    pickerBottomLayout.updateSelectedCount(selectedPhotos.size() + selectedWebPhotos.size(), true);
                 }
             }
 

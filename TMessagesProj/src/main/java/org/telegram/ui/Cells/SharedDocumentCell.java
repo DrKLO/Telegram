@@ -100,7 +100,7 @@ public class SharedDocumentCell extends FrameLayout implements MediaController.F
         });
 
         nameTextView = new TextView(context);
-        nameTextView.setTextColor(0xff222222);
+        nameTextView.setTextColor(0xff212121);
         nameTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         nameTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         nameTextView.setLines(1);
@@ -318,6 +318,9 @@ public class SharedDocumentCell extends FrameLayout implements MediaController.F
 
     @Override
     public void onProgressDownload(String fileName, float progress) {
+        if (progressView.getVisibility() != VISIBLE) {
+            updateFileExistIcon();
+        }
         progressView.setProgress(progress, true);
     }
 

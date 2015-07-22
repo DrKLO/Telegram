@@ -19,6 +19,7 @@ import android.provider.MediaStore;
 import android.webkit.MimeTypeMap;
 import android.widget.Toast;
 
+import org.telegram.android.audioinfo.AudioInfo;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
@@ -557,6 +558,9 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
 
         for (int a = 0; a < messages.size(); a++) {
             MessageObject msgObj = messages.get(a);
+            if (msgObj.getId() <= 0) {
+                continue;
+            }
 
             final TLRPC.Message newMsg = new TLRPC.TL_message();
             newMsg.flags |= TLRPC.MESSAGE_FLAG_FWD;
@@ -1858,6 +1862,7 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
             return false;
         }
         MimeTypeMap myMime = MimeTypeMap.getSingleton();
+        TLRPC.TL_documentAttributeAudio attributeAudio = null;
         if (uri != null) {
             String extension = null;
             if (mime != null) {
@@ -1885,8 +1890,31 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
         if (idx != -1) {
             ext = path.substring(idx + 1);
         }
+        if (ext.toLowerCase().equals("mp3") || ext.toLowerCase().equals("m4a")) {
+            AudioInfo audioInfo = AudioInfo.getAudioInfo(f);
+            if (audioInfo != null && audioInfo.getDuration() != 0) {
+                if (isEncrypted) {
+                    attributeAudio = new TLRPC.TL_documentAttributeAudio_old();
+                } else {
+                    attributeAudio = new TLRPC.TL_documentAttributeAudio();
+                }
+                attributeAudio.duration = (int) (audioInfo.getDuration() / 1000);
+                attributeAudio.title = audioInfo.getTitle();
+                attributeAudio.performer = audioInfo.getArtist();
+                if (attributeAudio.title == null) {
+                    attributeAudio.title = "";
+                }
+                if (attributeAudio.performer == null) {
+                    attributeAudio.performer = "";
+                }
+            }
+        }
         if (originalPath != null) {
-            originalPath += "" + f.length();
+            if (attributeAudio != null) {
+                originalPath += "audio" + f.length();
+            } else {
+                originalPath += "" + f.length();
+            }
         }
 
         TLRPC.TL_document document = null;
@@ -1905,6 +1933,9 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
             document.attributes.add(fileName);
             document.size = (int) f.length();
             document.dc_id = 0;
+            if (attributeAudio != null) {
+                document.attributes.add(attributeAudio);
+            }
             if (ext.length() != 0) {
                 if (ext.toLowerCase().equals("webp")) {
                     document.mime_type = "image/webp";
@@ -1988,6 +2019,56 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
         paths.add(path);
         originalPaths.add(originalPath);
         prepareSendingDocuments(paths, originalPaths, uris, mine, dialog_id, reply_to_msg);
+    }
+
+    public static void prepareSendingAudioDocuments(final ArrayList<MessageObject> messageObjects, final long dialog_id, final MessageObject reply_to_msg) {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                int size = messageObjects.size();
+                for (int a = 0; a < size; a++) {
+                    final MessageObject messageObject = messageObjects.get(a);
+                    String originalPath = messageObject.messageOwner.attachPath;
+                    final File f = new File(originalPath);
+
+                    boolean isEncrypted = (int) dialog_id == 0;
+
+
+                    if (originalPath != null) {
+                        originalPath += "audio" + f.length();
+                    }
+
+                    TLRPC.TL_document document = null;
+                    if (!isEncrypted) {
+                        document = (TLRPC.TL_document) MessagesStorage.getInstance().getSentFile(originalPath, !isEncrypted ? 1 : 4);
+                    }
+                    if (document == null) {
+                        document = (TLRPC.TL_document) messageObject.messageOwner.media.document;
+                    }
+
+                    if (isEncrypted) {
+                        for (int b = 0; b < document.attributes.size(); b++) {
+                            if (document.attributes.get(b) instanceof TLRPC.TL_documentAttributeAudio) {
+                                TLRPC.TL_documentAttributeAudio_old old = new TLRPC.TL_documentAttributeAudio_old();
+                                old.duration = document.attributes.get(b).duration;
+                                document.attributes.remove(b);
+                                document.attributes.add(old);
+                                break;
+                            }
+                        }
+                    }
+
+                    final String originalPathFinal = originalPath;
+                    final TLRPC.TL_document documentFinal = document;
+                    AndroidUtilities.runOnUIThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            SendMessagesHelper.getInstance().sendMessage(documentFinal, originalPathFinal, messageObject.messageOwner.attachPath, dialog_id, reply_to_msg);
+                        }
+                    });
+                }
+            }
+        }).start();
     }
 
     public static void prepareSendingDocuments(final ArrayList<String> paths, final ArrayList<String> originalPaths, final ArrayList<Uri> uris, final String mime, final long dialog_id, final MessageObject reply_to_msg) {

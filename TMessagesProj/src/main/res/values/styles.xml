@@ -73,8 +73,8 @@
     <!--ALERT DIALOG-->
 
     <style name="DialogNoAnimation">
-        <item name="android:windowEnterAnimation">@null</item>
-        <item name="android:windowExitAnimation">@null</item>
+        <item name="android:windowEnterAnimation">@anim/no_animation</item>
+        <item name="android:windowExitAnimation">@anim/no_animation</item>
     </style>
 
 </resources>

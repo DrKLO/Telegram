@@ -8,8 +8,11 @@
 
 package org.telegram.ui.Components;
 
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.os.Build;
 import android.text.TextUtils;
@@ -18,6 +21,7 @@ import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.DecelerateInterpolator;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -25,14 +29,16 @@ import android.widget.TextView;
 import org.telegram.android.AndroidUtilities;
 import org.telegram.android.LocaleController;
 import org.telegram.android.MediaController;
+import org.telegram.android.NotificationCenter;
 import org.telegram.android.support.widget.LinearLayoutManager;
 import org.telegram.messenger.R;
 import org.telegram.ui.Adapters.PhotoAttachAdapter;
 import org.telegram.ui.ChatActivity;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 
-public class ChatAttachView extends FrameLayout {
+public class ChatAttachView extends FrameLayout implements NotificationCenter.NotificationCenterDelegate {
 
     public interface ChatAttachViewDelegate {
         void didPressedButton(int button);
@@ -42,7 +48,16 @@ public class ChatAttachView extends FrameLayout {
     private PhotoAttachAdapter photoAttachAdapter;
     private ChatActivity baseFragment;
     private AttachButton sendPhotosButton;
-    private AttachButton buttons[] = new AttachButton[8];
+    private View views[] = new View[20];
+    private RecyclerListView attachPhotoRecyclerView;
+    private View lineView;
+    private EmptyTextProgressView progressView;
+
+    private float[] distCache = new float[20];
+
+    private DecelerateInterpolator decelerateInterpolator = new DecelerateInterpolator();
+
+    private boolean loading;
 
     private ChatAttachViewDelegate delegate;
 
@@ -56,7 +71,6 @@ public class ChatAttachView extends FrameLayout {
 
             imageView = new ImageView(context);
             imageView.setScaleType(ImageView.ScaleType.CENTER);
-            //imageView.setColorFilter(0x33000000);
             addView(imageView, LayoutHelper.createFrame(64, 64, Gravity.CENTER_HORIZONTAL | Gravity.TOP));
 
             textView = new TextView(context);
@@ -83,10 +97,15 @@ public class ChatAttachView extends FrameLayout {
     public ChatAttachView(Context context) {
         super(context);
 
-        RecyclerListView attachPhotoRecyclerView = new RecyclerListView(context);
-        if (photoAttachAdapter != null) {
-            photoAttachAdapter.onDestroy();
+        NotificationCenter.getInstance().addObserver(this, NotificationCenter.albumsDidLoaded);
+        if (MediaController.allPhotosAlbumEntry == null) {
+            if (Build.VERSION.SDK_INT >= 21) {
+                MediaController.loadGalleryPhotosAlbums(0);
+            }
+            loading = true;
         }
+
+        views[8] = attachPhotoRecyclerView = new RecyclerListView(context);
         attachPhotoRecyclerView.setVerticalScrollBarEnabled(true);
         attachPhotoRecyclerView.setAdapter(photoAttachAdapter = new PhotoAttachAdapter(context));
         attachPhotoRecyclerView.setClipToPadding(false);
@@ -112,11 +131,14 @@ public class ChatAttachView extends FrameLayout {
             }
         });
 
-        View lineView = new View(getContext());
+        views[9] = progressView = new EmptyTextProgressView(context);
+        progressView.setText(LocaleController.getString("NoPhotos", R.string.NoPhotos));
+        addView(progressView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 80));
+        attachPhotoRecyclerView.setEmptyView(progressView);
+
+        views[10] = lineView = new View(getContext());
         lineView.setBackgroundColor(0xffd2d2d2);
-        FrameLayout.LayoutParams layoutParams = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 1, Gravity.TOP | Gravity.LEFT);
-        layoutParams.topMargin = AndroidUtilities.dp(88);
-        addView(lineView, layoutParams);
+        addView(lineView, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 1, Gravity.TOP | Gravity.LEFT));
         CharSequence[] items = new CharSequence[]{
                 LocaleController.getString("ChatCamera", R.string.ChatCamera),
                 LocaleController.getString("ChatGallery", R.string.ChatGallery),
@@ -128,23 +150,21 @@ public class ChatAttachView extends FrameLayout {
                 ""
         };
         int itemIcons[] = new int[] {
-                R.drawable.ic_attach_photo_big,
-                R.drawable.ic_attach_gallery_big,
-                R.drawable.ic_attach_video_big,
-                R.drawable.ic_attach_music_big,
-                R.drawable.ic_attach_file_big,
-                R.drawable.ic_attach_contact_big,
-                R.drawable.ic_attach_location_big,
-                R.drawable.ic_attach_hide_big,
+                R.drawable.attach_camera_states,
+                R.drawable.attach_gallery_states,
+                R.drawable.attach_video_states,
+                R.drawable.attach_audio_states,
+                R.drawable.attach_file_states,
+                R.drawable.attach_contact_states,
+                R.drawable.attach_location_states,
+                R.drawable.attach_hide_states,
         };
         for (int a = 0; a < 8; a++) {
             AttachButton attachButton = new AttachButton(context);
             attachButton.setTextAndIcon(items[a], itemIcons[a]);
-            int y = 97 + 95 * (a / 4);
-            int x = 10 + (a % 4) * 85;
-            addView(attachButton, LayoutHelper.createFrame(85, 90, Gravity.LEFT | Gravity.TOP, x, y, 0, 0));
+            addView(attachButton, LayoutHelper.createFrame(85, 90, Gravity.LEFT | Gravity.TOP));
             attachButton.setTag(a);
-            buttons[a] = attachButton;
+            views[a] = attachButton;
             if (a == 7) {
                 sendPhotosButton = attachButton;
                 sendPhotosButton.imageView.setPadding(0, AndroidUtilities.dp(4), 0, 0);
@@ -164,24 +184,58 @@ public class ChatAttachView extends FrameLayout {
                 return true;
             }
         });
+
+        if (loading) {
+            progressView.showProgress();
+        } else {
+            progressView.showTextView();
+        }
+    }
+
+    @Override
+    public void didReceivedNotification(int id, Object... args) {
+        if (id == NotificationCenter.albumsDidLoaded) {
+            if (photoAttachAdapter != null) {
+                loading = false;
+                progressView.showTextView();
+                photoAttachAdapter.notifyDataSetChanged();
+            }
+        }
     }
 
     @Override
     protected void onMeasure(int widthSpec, int heightSpec) {
-        super.onMeasure(widthSpec, MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(278), MeasureSpec.EXACTLY));
+        super.onMeasure(widthSpec, MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(294), MeasureSpec.EXACTLY));
+    }
+
+    @Override
+    protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
+        int width = right - left;
+
+        int t = AndroidUtilities.dp(8);
+        attachPhotoRecyclerView.layout(0, t, width, t + attachPhotoRecyclerView.getMeasuredHeight());
+        progressView.layout(0, t, width, t + progressView.getMeasuredHeight());
+        lineView.layout(0, AndroidUtilities.dp(96), width, AndroidUtilities.dp(96) + lineView.getMeasuredHeight());
+
+        int diff = (width - AndroidUtilities.dp(85 * 4 + 20)) / 3;
+        for (int a = 0; a < 8; a++) {
+            int y = AndroidUtilities.dp(105 + 95 * (a / 4));
+            int x = AndroidUtilities.dp(10) + (a % 4) * (AndroidUtilities.dp(85) + diff);
+            views[a].layout(x, y, x + views[a].getMeasuredWidth(), y + views[a].getMeasuredHeight());
+        }
     }
 
     public void updatePhotosButton() {
         int count = photoAttachAdapter.getSelectedPhotos().size();
         if (count == 0) {
             sendPhotosButton.imageView.setPadding(0, AndroidUtilities.dp(4), 0, 0);
-            sendPhotosButton.imageView.setBackgroundResource(R.drawable.ic_attach_hide_big);
-            sendPhotosButton.imageView.setImageResource(R.drawable.ic_attach_hide_big_icon);
+            sendPhotosButton.imageView.setBackgroundResource(R.drawable.attach_hide_states);
+            sendPhotosButton.imageView.setImageResource(R.drawable.attach_hide2);
             sendPhotosButton.textView.setText("");
         } else {
             sendPhotosButton.imageView.setPadding(AndroidUtilities.dp(2), 0, 0, 0);
-            sendPhotosButton.imageView.setBackgroundResource(R.drawable.ic_attach_send_big);
-            sendPhotosButton.imageView.setImageResource(R.drawable.ic_attach_send_big_icon);
+            sendPhotosButton.imageView.setBackgroundResource(R.drawable.attach_send_states);
+            sendPhotosButton.imageView.setImageResource(R.drawable.attach_send2);
             sendPhotosButton.textView.setText(LocaleController.formatString("SendItems", R.string.SendItems, String.format("(%d)", count)));
         }
     }
@@ -190,22 +244,83 @@ public class ChatAttachView extends FrameLayout {
         delegate = chatAttachViewDelegate;
     }
 
-    public void startAnimations(boolean up) {
-        for (int a = 0; a < 4; a++) {
-            //buttons[a].setTranslationY(AndroidUtilities.dp(up ? 20 : -20));
-            //buttons[a + 4].setTranslationY(AndroidUtilities.dp(up ? 20 : -20));
-            buttons[a].setScaleX(0.8f);
-            buttons[a].setScaleY(0.8f);
-            buttons[a + 4].setScaleX(0.8f);
-            buttons[a + 4].setScaleY(0.8f);
-            AnimatorSet animatorSet = new AnimatorSet();
-            animatorSet.playTogether(ObjectAnimator.ofFloat(buttons[a], "scaleX", 1),
-                    ObjectAnimator.ofFloat(buttons[a + 4], "scaleX", 1),
-                    ObjectAnimator.ofFloat(buttons[a], "scaleY", 1),
-                    ObjectAnimator.ofFloat(buttons[a + 4], "scaleY", 1));
-            animatorSet.setDuration(150);
-            animatorSet.setStartDelay((3 - a) * 40);
-            animatorSet.start();
+    public void onRevealAnimationEnd(boolean open) {
+        if (open && Build.VERSION.SDK_INT <= 19 && MediaController.allPhotosAlbumEntry == null) {
+            MediaController.loadGalleryPhotosAlbums(0);
+        }
+    }
+
+    @SuppressLint("NewApi")
+    public void onRevealAnimationStart(boolean open) {
+        if (!open) {
+            return;
+        }
+        int count = Build.VERSION.SDK_INT <= 19 ? 11 : 8;
+        for (int a = 0; a < count; a++) {
+            if (Build.VERSION.SDK_INT <= 19) {
+                if (a < 8) {
+                    views[a].setScaleX(0.1f);
+                    views[a].setScaleY(0.1f);
+                }
+                views[a].setAlpha(0.0f);
+            } else {
+                views[a].setScaleX(0.7f);
+                views[a].setScaleY(0.7f);
+            }
+            views[a].setTag(R.string.AppName, null);
+            distCache[a] = 0;
+        }
+    }
+
+    @SuppressLint("NewApi")
+    public void onRevealAnimationProgress(boolean open, float radius, int x, int y) {
+        if (!open) {
+            return;
+        }
+        int count = Build.VERSION.SDK_INT <= 19 ? 11 : 8;
+        for (int a = 0; a < count; a++) {
+            if (views[a].getTag(R.string.AppName) == null) {
+                if (distCache[a] == 0) {
+                    int buttonX = views[a].getLeft() + views[a].getMeasuredWidth() / 2;
+                    int buttonY = views[a].getTop() + views[a].getMeasuredHeight() / 2;
+                    distCache[a] = (float) Math.sqrt((x - buttonX) * (x - buttonX) + (y - buttonY) * (y - buttonY));
+                    float vecX = (x - buttonX) / distCache[a];
+                    float vecY = (y - buttonY) / distCache[a];
+                    views[a].setPivotX(views[a].getMeasuredWidth() / 2 + vecX * AndroidUtilities.dp(20));
+                    views[a].setPivotY(views[a].getMeasuredHeight() / 2 + vecY * AndroidUtilities.dp(20));
+                }
+                if (distCache[a] > radius + AndroidUtilities.dp(27)) {
+                    continue;
+                }
+
+                views[a].setTag(R.string.AppName, 1);
+                final ArrayList<Animator> animators = new ArrayList<>();
+                final ArrayList<Animator> animators2 = new ArrayList<>();
+                if (a < 8) {
+                    animators.add(ObjectAnimator.ofFloat(views[a], "scaleX", 0.7f, 1.05f));
+                    animators.add(ObjectAnimator.ofFloat(views[a], "scaleY", 0.7f, 1.05f));
+                    animators2.add(ObjectAnimator.ofFloat(views[a], "scaleX", 1.0f));
+                    animators2.add(ObjectAnimator.ofFloat(views[a], "scaleY", 1.0f));
+                }
+                if (Build.VERSION.SDK_INT <= 19) {
+                    animators.add(ObjectAnimator.ofFloat(views[a], "alpha", 1.0f));
+                }
+                AnimatorSet animatorSet = new AnimatorSet();
+                animatorSet.playTogether(animators);
+                animatorSet.setDuration(150);
+                animatorSet.setInterpolator(decelerateInterpolator);
+                animatorSet.addListener(new AnimatorListenerAdapter() {
+                    @Override
+                    public void onAnimationEnd(Animator animation) {
+                        AnimatorSet animatorSet = new AnimatorSet();
+                        animatorSet.playTogether(animators2);
+                        animatorSet.setDuration(100);
+                        animatorSet.setInterpolator(decelerateInterpolator);
+                        animatorSet.start();
+                    }
+                });
+                animatorSet.start();
+            }
         }
     }
 
@@ -221,7 +336,7 @@ public class ChatAttachView extends FrameLayout {
     }
 
     public void onDestroy() {
-        photoAttachAdapter.onDestroy();
+        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.albumsDidLoaded);
         baseFragment = null;
     }
 }

@@ -88,7 +88,7 @@ public class TypingDotsDrawable extends Drawable {
 
     @Override
     public void draw(Canvas canvas) {
-        int y = 0;
+        int y;
         if (isChat) {
             y = AndroidUtilities.dp(6);
         } else {

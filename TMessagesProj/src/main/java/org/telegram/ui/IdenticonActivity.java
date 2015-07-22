@@ -10,7 +10,6 @@ package org.telegram.ui;
 
 import android.content.Context;
 import android.os.Bundle;
-import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.Surface;
 import android.view.View;
@@ -44,7 +43,7 @@ public class IdenticonActivity extends BaseFragment {
     }
 
     @Override
-    public View createView(Context context, LayoutInflater inflater) {
+    public View createView(Context context) {
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBar.setAllowOverlayTitle(true);
         actionBar.setTitle(LocaleController.getString("EncryptionKey", R.string.EncryptionKey));
@@ -58,7 +57,7 @@ public class IdenticonActivity extends BaseFragment {
             }
         });
 
-        fragmentView = inflater.inflate(R.layout.identicon_layout, null, false);
+        fragmentView = getParentActivity().getLayoutInflater().inflate(R.layout.identicon_layout, null, false);
         ImageView identiconView = (ImageView) fragmentView.findViewById(R.id.identicon_view);
         TextView textView = (TextView) fragmentView.findViewById(R.id.identicon_text);
         TLRPC.EncryptedChat encryptedChat = MessagesController.getInstance().getEncryptedChat(chat_id);

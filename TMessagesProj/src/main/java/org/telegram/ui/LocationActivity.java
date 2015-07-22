@@ -21,7 +21,6 @@ import android.os.Build;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
-import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
@@ -107,7 +106,7 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
     private CircleOptions circleOptions;
     private LocationActivityDelegate delegate;
 
-    private int overScrollHeight = AndroidUtilities.displaySize.x - AndroidUtilities.getCurrentActionBarHeight() - AndroidUtilities.dp(66);
+    private int overScrollHeight = AndroidUtilities.displaySize.x - ActionBar.getCurrentActionBarHeight() - AndroidUtilities.dp(66);
     private int halfHeight;
 
     private final static int share = 1;
@@ -152,7 +151,7 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
     }
 
     @Override
-    public View createView(Context context, LayoutInflater inflater) {
+    public View createView(Context context) {
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBar.setAllowOverlayTitle(true);
         if (AndroidUtilities.isTablet()) {
@@ -501,7 +500,7 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
 
             View shadow = new View(context);
             shadow.setBackgroundResource(R.drawable.header_shadow_reverse);
-            mapViewClip.addView(shadow, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, AndroidUtilities.dp(3), Gravity.LEFT | Gravity.BOTTOM));
+            mapViewClip.addView(shadow, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 3, Gravity.LEFT | Gravity.BOTTOM));
 
             markerImageView = new ImageView(context);
             markerImageView.setImageResource(R.drawable.map_pin);
@@ -696,7 +695,7 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
 
     private void fixLayoutInternal(final boolean resume) {
         if (listView != null) {
-            int height = (actionBar.getOccupyStatusBar() ? AndroidUtilities.statusBarHeight : 0) + AndroidUtilities.getCurrentActionBarHeight();
+            int height = (actionBar.getOccupyStatusBar() ? AndroidUtilities.statusBarHeight : 0) + ActionBar.getCurrentActionBarHeight();
             int viewHeight = fragmentView.getMeasuredHeight();
             if (viewHeight == 0) {
                 return;

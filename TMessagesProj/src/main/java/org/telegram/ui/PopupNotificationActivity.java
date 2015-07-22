@@ -153,6 +153,12 @@ public class PopupNotificationActivity extends Activity implements NotificationC
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        int resourceId = getResources().getIdentifier("status_bar_height", "dimen", "android");
+        if (resourceId > 0) {
+            AndroidUtilities.statusBarHeight = getResources().getDimensionPixelSize(resourceId);
+        }
+
         classGuid = ConnectionsManager.getInstance().generateClassGuid();
         NotificationCenter.getInstance().addObserver(this, NotificationCenter.appDidLogout);
         NotificationCenter.getInstance().addObserver(this, NotificationCenter.pushMessagesUpdated);
@@ -822,7 +828,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
                     if (avatarContainer != null) {
                         avatarContainer.getViewTreeObserver().removeOnPreDrawListener(this);
                     }
-                    int padding = (AndroidUtilities.getCurrentActionBarHeight() - AndroidUtilities.dp(48)) / 2;
+                    int padding = (ActionBar.getCurrentActionBarHeight() - AndroidUtilities.dp(48)) / 2;
                     avatarContainer.setPadding(avatarContainer.getPaddingLeft(), padding, avatarContainer.getPaddingRight(), padding);
                     return true;
                 }
@@ -835,7 +841,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
                     messageContainer.getViewTreeObserver().removeOnPreDrawListener(this);
                     if (!checkTransitionAnimation() && !startedMoving) {
                         ViewGroup.MarginLayoutParams layoutParams = (ViewGroup.MarginLayoutParams) messageContainer.getLayoutParams();
-                        layoutParams.topMargin = AndroidUtilities.getCurrentActionBarHeight();
+                        layoutParams.topMargin = ActionBar.getCurrentActionBarHeight();
                         layoutParams.bottomMargin = AndroidUtilities.dp(48);
                         layoutParams.width = ViewGroup.MarginLayoutParams.MATCH_PARENT;
                         layoutParams.height = ViewGroup.MarginLayoutParams.MATCH_PARENT;

@@ -21,10 +21,11 @@ import android.view.SoundEffectConstants;
 import org.telegram.android.AndroidUtilities;
 import org.telegram.android.ImageLoader;
 import org.telegram.android.MessagesController;
+import org.telegram.android.SendMessagesHelper;
 import org.telegram.messenger.FileLoader;
 import org.telegram.android.MediaController;
 import org.telegram.android.MessageObject;
-import org.telegram.ui.Components.ProgressView;
+import org.telegram.ui.Components.RadialProgress;
 import org.telegram.ui.Components.ResourceLoader;
 import org.telegram.ui.Components.SeekBar;
 
@@ -36,10 +37,10 @@ public class ChatAudioCell extends ChatBaseCell implements SeekBar.SeekBarDelega
     private static Paint circlePaint;
 
     private SeekBar seekBar;
-    private ProgressView progressView;
     private int seekBarX;
     private int seekBarY;
 
+    private RadialProgress radialProgress;
     private int buttonState = 0;
     private int buttonX;
     private int buttonY;
@@ -58,7 +59,7 @@ public class ChatAudioCell extends ChatBaseCell implements SeekBar.SeekBarDelega
 
         seekBar = new SeekBar(context);
         seekBar.delegate = this;
-        progressView = new ProgressView();
+        radialProgress = new RadialProgress(this);
         drawForwardedName = true;
 
         if (timePaint == null) {
@@ -78,7 +79,7 @@ public class ChatAudioCell extends ChatBaseCell implements SeekBar.SeekBarDelega
     @Override
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
-        updateButtonState();
+        updateButtonState(false);
     }
 
     @Override
@@ -131,21 +132,25 @@ public class ChatAudioCell extends ChatBaseCell implements SeekBar.SeekBarDelega
             }
             if (result) {
                 buttonState = 1;
+                radialProgress.setBackground(getDrawableForCurrentState(), false, false);
                 invalidate();
             }
         } else if (buttonState == 1) {
             boolean result = MediaController.getInstance().pauseAudio(currentMessageObject);
             if (result) {
                 buttonState = 0;
+                radialProgress.setBackground(getDrawableForCurrentState(), false, false);
                 invalidate();
             }
         } else if (buttonState == 2) {
             FileLoader.getInstance().loadFile(currentMessageObject.messageOwner.media.audio, true);
             buttonState = 3;
+            radialProgress.setBackground(getDrawableForCurrentState(), true, false);
             invalidate();
         } else if (buttonState == 3) {
             FileLoader.getInstance().cancelLoadFile(currentMessageObject.messageOwner.media.audio);
             buttonState = 2;
+            radialProgress.setBackground(getDrawableForCurrentState(), false, false);
             invalidate();
         } else if (buttonState == 4) {
             if (currentMessageObject.isOut() && currentMessageObject.isSending()) {
@@ -173,6 +178,7 @@ public class ChatAudioCell extends ChatBaseCell implements SeekBar.SeekBarDelega
         }
         String timeString = String.format("%02d:%02d", duration / 60, duration % 60);
         if (lastTimeString == null || lastTimeString != null && !lastTimeString.equals(timeString)) {
+            lastTimeString = timeString;
             timeWidth = (int)Math.ceil(timePaint.measureText(timeString));
             timeLayout = new StaticLayout(timeString, timePaint, timeWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
         }
@@ -183,16 +189,23 @@ public class ChatAudioCell extends ChatBaseCell implements SeekBar.SeekBarDelega
         if (buttonState == 2) {
             FileLoader.getInstance().loadFile(currentMessageObject.messageOwner.media.audio, true);
             buttonState = 3;
-            invalidate();
+            radialProgress.setBackground(getDrawableForCurrentState(), false, false);
         }
     }
 
-    public void updateButtonState() {
+    public void updateButtonState(boolean animated) {
         if (currentMessageObject == null) {
             return;
         }
         if (currentMessageObject.isOut() && currentMessageObject.isSending()) {
+            MediaController.getInstance().addLoadingFileObserver(currentMessageObject.messageOwner.attachPath, this);
             buttonState = 4;
+            radialProgress.setBackground(getDrawableForCurrentState(), true, animated);
+            Float progress = ImageLoader.getInstance().getFileProgress(currentMessageObject.messageOwner.attachPath);
+            if (progress == null && SendMessagesHelper.getInstance().isSendingMessage(currentMessageObject.getId())) {
+                progress = 1.0f;
+            }
+            radialProgress.setProgress(progress != null ? progress : 0, false);
         } else {
             File cacheFile = null;
             if (currentMessageObject.messageOwner.attachPath != null && currentMessageObject.messageOwner.attachPath.length() > 0) {
@@ -212,21 +225,24 @@ public class ChatAudioCell extends ChatBaseCell implements SeekBar.SeekBarDelega
                 } else {
                     buttonState = 1;
                 }
-                progressView.setProgress(0);
+                radialProgress.setProgress(0, animated);
+                radialProgress.setBackground(getDrawableForCurrentState(), false, animated);
             } else {
                 String fileName = currentMessageObject.getFileName();
                 MediaController.getInstance().addLoadingFileObserver(fileName, this);
                 if (!FileLoader.getInstance().isLoadingFile(fileName)) {
                     buttonState = 2;
-                    progressView.setProgress(0);
+                    radialProgress.setProgress(0, animated);
+                    radialProgress.setBackground(getDrawableForCurrentState(), false, animated);
                 } else {
                     buttonState = 3;
                     Float progress = ImageLoader.getInstance().getFileProgress(fileName);
                     if (progress != null) {
-                        progressView.setProgress(progress);
+                        radialProgress.setProgress(progress, animated);
                     } else {
-                        progressView.setProgress(0);
+                        radialProgress.setProgress(0, animated);
                     }
+                    radialProgress.setBackground(getDrawableForCurrentState(), true, animated);
                 }
             }
         }
@@ -235,26 +251,25 @@ public class ChatAudioCell extends ChatBaseCell implements SeekBar.SeekBarDelega
 
     @Override
     public void onFailedDownload(String fileName) {
-        updateButtonState();
+        updateButtonState(true);
     }
 
     @Override
     public void onSuccessDownload(String fileName) {
-        updateButtonState();
+        updateButtonState(true);
     }
 
     @Override
     public void onProgressDownload(String fileName, float progress) {
-        progressView.setProgress(progress);
+        radialProgress.setProgress(progress, true);
         if (buttonState != 3) {
-            updateButtonState();
+            updateButtonState(false);
         }
-        invalidate();
     }
 
     @Override
     public void onProgressUpload(String fileName, float progress, boolean isEncrypted) {
-
+        radialProgress.setProgress(progress, true);
     }
 
     @Override
@@ -299,17 +314,17 @@ public class ChatAudioCell extends ChatBaseCell implements SeekBar.SeekBarDelega
 
         seekBar.width = backgroundWidth - AndroidUtilities.dp(70);
         seekBar.height = AndroidUtilities.dp(30);
-        progressView.width = backgroundWidth - AndroidUtilities.dp(94);
-        progressView.height = AndroidUtilities.dp(30);
         seekBarY = AndroidUtilities.dp(11) + namesOffset;
         buttonY = AndroidUtilities.dp(13) + namesOffset;
+        radialProgress.setProgressRect(buttonX, buttonY, buttonX + AndroidUtilities.dp(40), buttonY + AndroidUtilities.dp(40));
 
         updateProgress();
     }
 
     @Override
     public void setMessageObject(MessageObject messageObject) {
-        if (currentMessageObject != messageObject || isUserDataChanged()) {
+        boolean dataChanged = currentMessageObject == messageObject && isUserDataChanged();
+        if (currentMessageObject != messageObject || dataChanged) {
             if (AndroidUtilities.isTablet()) {
                 backgroundWidth = Math.min(AndroidUtilities.getMinTabletSide() - AndroidUtilities.dp(isChat ? 102 : 50), AndroidUtilities.dp(300));
             } else {
@@ -318,15 +333,20 @@ public class ChatAudioCell extends ChatBaseCell implements SeekBar.SeekBarDelega
 
             if (messageObject.isOut()) {
                 seekBar.type = 0;
-                progressView.setProgressColors(0xffb4e396, 0xff6ac453);
+                radialProgress.setProgressColor(0xff87bf78);
             } else {
                 seekBar.type = 1;
-                progressView.setProgressColors(0xffd9e2eb, 0xff86c5f8);
+                radialProgress.setProgressColor(0xffa2b5c7);
             }
 
             super.setMessageObject(messageObject);
         }
-        updateButtonState();
+        updateButtonState(dataChanged);
+    }
+
+    private Drawable getDrawableForCurrentState() {
+        return ResourceLoader.audioStatesDrawable[currentMessageObject.isOut() ? buttonState : buttonState + 5][0];
+        //buttonPressed ? 1 :
     }
 
     @Override
@@ -338,27 +358,18 @@ public class ChatAudioCell extends ChatBaseCell implements SeekBar.SeekBarDelega
         }
 
         canvas.save();
-        if (buttonState == 0 || buttonState == 1) {
-            canvas.translate(seekBarX, seekBarY);
-            seekBar.draw(canvas);
-        } else {
-            canvas.translate(seekBarX + AndroidUtilities.dp(12), seekBarY);
-            progressView.draw(canvas);
-        }
+        canvas.translate(seekBarX, seekBarY);
+        seekBar.draw(canvas);
         canvas.restore();
 
-        int state = buttonState;
         if (currentMessageObject.isOut()) {
             timePaint.setColor(0xff70b15c);
             circlePaint.setColor(0xff87bf78);
         } else {
-            state += 5;
             timePaint.setColor(0xffa1aab3);
             circlePaint.setColor(0xff4195e5);
         }
-        Drawable buttonDrawable = ResourceLoader.audioStatesDrawable[state][buttonPressed ? 1 : 0];
-        setDrawableBounds(buttonDrawable, buttonX, buttonY);
-        buttonDrawable.draw(canvas);
+        radialProgress.onDraw(canvas);
 
         canvas.save();
         canvas.translate(timeX, AndroidUtilities.dp(42) + namesOffset);

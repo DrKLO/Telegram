@@ -65,6 +65,11 @@
     <string name="YouCreatedBroadcastList">Je hebt een verzendlijst gemaakt</string>
     <string name="AddRecipient">Ontvanger toevoegen</string>
     <string name="KickFromBroadcast">Verwijder van verzendlijst</string>
+    <!--audio view-->
+    <string name="NoAudio">Voeg bestanden toe aan de muziekbibliotheek op je apparaat om ze hier te zien.</string>
+    <string name="AttachMusic">Muziek</string>
+    <string name="AudioUnknownArtist">Onbekende artiest</string>
+    <string name="AudioUnknownTitle">Onbekende titel</string>
     <!--documents view-->
     <string name="SelectFile">Kies een bestand</string>
     <string name="FreeOfTotal">Vrij: %1$s van %2$s</string>
@@ -121,6 +126,7 @@
     <string name="DeleteThisChat">Chat verwijderen</string>
     <string name="SlideToCancel">SLEEP OM TE ANNULEREN</string>
     <string name="SaveToDownloads">Opslaan in Downloads</string>
+    <string name="SaveToMusic">Opslaan in muziek</string>
     <string name="ShareFile">Delen</string>
     <string name="ApplyLocalizationFile">Vertaling toepassen</string>
     <string name="UnsupportedAttachment">Bestandstype niet ondersteund</string>
@@ -347,6 +353,7 @@
     <string name="RepeatDisabled">Uit</string>
     <string name="InChatSound">Chatgeluiden</string>
     <string name="SoundDefault">Standaard</string>
+    <string name="VibrationDefault">Standaard</string>
     <string name="SmartNotifications">Slimme meldingen</string>
     <string name="SmartNotificationsDisabled">Uitgeschakeld</string>
     <string name="SmartNotificationsInfo">Geluid maximaal %1$s per %2$s</string>
@@ -827,6 +834,6 @@
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s om %2$s</string>
     <!--update text-->
-    <string name="updateText">Telegram voor Android is geüpdatet. Nieuw in versie 3.0:\n\n- Tabbladen voor al je eigen stickerbundels in het stickerpaneel. Voeg stickerbundels zoals: https://telegram.me/addstickers/Animals toe.\n- Nieuwe bot-API, gratis voor iedereen. Handig met programmeren? Maak dan je eigen bots voor spelletjes, diensten of integraties. Meer weten? kijk op: https://telegram.org/blog/bot-revolution</string>
-    <string name="updateBuild">551</string>
+    <string name="updateText">Telegram voor Android is bijgewerkt. Nieuw in versie 3.1:\n\n- Zoek naar berichten in een specifieke chat.\n- Volledig opnieuw ontworpen bijlagemenu. Verstuur contacten en audiobestanden rechtstreeks vanuit het bijlagemenu.\n- Afspelen van media in de app verbeterd (YouTube, Vimeo, SoundCloud, etc.), nieuwe speler voor grote audiobestanden.\n\nMeer weten? Kijk op:\nhttps://telegram.org/blog/search-and-media</string>
+    <string name="updateBuild">577</string>
 </resources>

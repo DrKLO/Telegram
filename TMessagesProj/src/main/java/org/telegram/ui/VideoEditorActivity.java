@@ -19,7 +19,6 @@ import android.media.MediaPlayer;
 import android.os.Build;
 import android.os.Bundle;
 import android.view.Gravity;
-import android.view.LayoutInflater;
 import android.view.Surface;
 import android.view.TextureView;
 import android.view.View;
@@ -224,7 +223,7 @@ public class VideoEditorActivity extends BaseFragment implements TextureView.Sur
     }
 
     @Override
-    public View createView(Context context, LayoutInflater inflater) {
+    public View createView(Context context) {
         actionBar.setBackgroundColor(0xff333333);
         actionBar.setItemsBackground(R.drawable.bar_selector_white);
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
@@ -261,7 +260,7 @@ public class VideoEditorActivity extends BaseFragment implements TextureView.Sur
         ActionBarMenu menu = actionBar.createMenu();
         menu.addItemWithWidth(1, R.drawable.ic_done, AndroidUtilities.dp(56));
 
-        fragmentView = inflater.inflate(R.layout.video_editor_layout, null, false);
+        fragmentView = getParentActivity().getLayoutInflater().inflate(R.layout.video_editor_layout, null, false);
         originalSizeTextView = (TextView) fragmentView.findViewById(R.id.original_size);
         editedSizeTextView = (TextView) fragmentView.findViewById(R.id.edited_size);
         videoContainerView = fragmentView.findViewById(R.id.video_container);
@@ -539,7 +538,7 @@ public class VideoEditorActivity extends BaseFragment implements TextureView.Sur
         if (AndroidUtilities.isTablet()) {
             viewHeight = AndroidUtilities.dp(472);
         } else {
-            viewHeight = AndroidUtilities.displaySize.y - AndroidUtilities.statusBarHeight - AndroidUtilities.getCurrentActionBarHeight();
+            viewHeight = AndroidUtilities.displaySize.y - AndroidUtilities.statusBarHeight - ActionBar.getCurrentActionBarHeight();
         }
 
         int width;

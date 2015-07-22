@@ -25,7 +25,6 @@ import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
-import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewOutlineProvider;
@@ -87,7 +86,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.concurrent.Semaphore;
 
-public class ProfileActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate, MessagesActivity.MessagesActivityDelegate, PhotoViewer.PhotoViewerProvider {
+public class ProfileActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate, DialogsActivity.MessagesActivityDelegate, PhotoViewer.PhotoViewerProvider {
 
     private ListView listView;
     private ListAdapter listAdapter;
@@ -245,7 +244,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     }
 
     @Override
-    public View createView(Context context, LayoutInflater inflater) {
+    public View createView(Context context) {
         actionBar.setBackgroundColor(AvatarDrawable.getProfileBackColorForId(user_id != 0 ? 5 : chat_id));
         actionBar.setItemsBackground(AvatarDrawable.getButtonColorForId(user_id != 0 ? 5 : chat_id));
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
@@ -290,7 +289,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     Bundle args = new Bundle();
                     args.putBoolean("onlySelect", true);
                     args.putInt("dialogsType", 1);
-                    MessagesActivity fragment = new MessagesActivity(args);
+                    DialogsActivity fragment = new DialogsActivity(args);
                     fragment.setDelegate(ProfileActivity.this);
                     presentFragment(fragment);
                 } else if (id == edit_contact) {
@@ -342,10 +341,10 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     args.putBoolean("onlySelect", true);
                     args.putInt("dialogsType", 2);
                     args.putString("addToGroupAlertString", LocaleController.formatString("AddToTheGroupTitle", R.string.AddToTheGroupTitle, UserObject.getUserName(user), "%1$s"));
-                    MessagesActivity fragment = new MessagesActivity(args);
-                    fragment.setDelegate(new MessagesActivity.MessagesActivityDelegate() {
+                    DialogsActivity fragment = new DialogsActivity(args);
+                    fragment.setDelegate(new DialogsActivity.MessagesActivityDelegate() {
                         @Override
-                        public void didSelectDialog(MessagesActivity fragment, long did, boolean param) {
+                        public void didSelectDialog(DialogsActivity fragment, long did, boolean param) {
                             NotificationCenter.getInstance().removeObserver(ProfileActivity.this, NotificationCenter.closeChats);
                             NotificationCenter.getInstance().postNotificationName(NotificationCenter.closeChats);
                             MessagesController.getInstance().addUserToChat(-(int) did, user, null, 0, null);
@@ -689,7 +688,6 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         builder.setItems(items, new DialogInterface.OnClickListener() {
                             @Override
                             public void onClick(DialogInterface dialogInterface, int i) {
-                                int action = 0;
                                 if (i == 0) {
                                     avatarUpdater.openCamera();
                                 } else if (i == 1) {
@@ -796,7 +794,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         FrameLayout.LayoutParams layoutParams;
         if (listView != null) {
             layoutParams = (FrameLayout.LayoutParams) listView.getLayoutParams();
-            layoutParams.topMargin = (actionBar.getOccupyStatusBar() ? AndroidUtilities.statusBarHeight : 0) + AndroidUtilities.getCurrentActionBarHeight();
+            layoutParams.topMargin = (actionBar.getOccupyStatusBar() ? AndroidUtilities.statusBarHeight : 0) + ActionBar.getCurrentActionBarHeight();
             listView.setLayoutParams(layoutParams);
         }
 
@@ -806,7 +804,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
 
             int avatarSize = 42 + (int)(18 * diff);
             int avatarX = 17 + (int)(47 * diffm);
-            int avatarY = AndroidUtilities.dp(22) - (int)((AndroidUtilities.dp(22) - (AndroidUtilities.getCurrentActionBarHeight() - AndroidUtilities.dp(42)) / 2) * (1.0f - diff));
+            int avatarY = AndroidUtilities.dp(22) - (int)((AndroidUtilities.dp(22) - (ActionBar.getCurrentActionBarHeight() - AndroidUtilities.dp(42)) / 2) * (1.0f - diff));
             int nameX = 97 + (int)(21 * diffm);
             int nameEndX = 16 + (int)(32 * diffm);
             int nameY = avatarY + AndroidUtilities.dp(29 - 10 * diffm);
@@ -815,7 +813,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
 
             if (writeButton != null) {
                 layoutParams = (FrameLayout.LayoutParams) writeButton.getLayoutParams();
-                layoutParams.topMargin = (actionBar.getOccupyStatusBar() ? AndroidUtilities.statusBarHeight : 0) + AndroidUtilities.getCurrentActionBarHeight() + actionBar.getExtraHeight() - AndroidUtilities.dp(29.5f);
+                layoutParams.topMargin = (actionBar.getOccupyStatusBar() ? AndroidUtilities.statusBarHeight : 0) + ActionBar.getCurrentActionBarHeight() + actionBar.getExtraHeight() - AndroidUtilities.dp(29.5f);
                 writeButton.setLayoutParams(layoutParams);
                 /*ViewProxy.setAlpha(writeButton, diff);
                 writeButton.setVisibility(diff <= 0.02 ? View.GONE : View.VISIBLE);
@@ -1240,7 +1238,6 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 emptyRowChat2 = rowCount++;
                 rowCount += info.participants.size();
                 membersEndRow = rowCount;
-                int maxCount = chat_id > 0 ? MessagesController.getInstance().maxGroupCount : MessagesController.getInstance().maxBroadcastCount;
                 addMemberRow = rowCount++;
             } else {
                 membersEndRow = -1;
@@ -1358,7 +1355,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     }
 
     @Override
-    public void didSelectDialog(MessagesActivity messageFragment, long dialog_id, boolean param) {
+    public void didSelectDialog(DialogsActivity messageFragment, long dialog_id, boolean param) {
         if (dialog_id != 0) {
             Bundle args = new Bundle();
             args.putBoolean("scrollToTopOnResume", true);

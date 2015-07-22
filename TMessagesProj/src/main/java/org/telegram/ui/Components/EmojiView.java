@@ -196,6 +196,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
             scrollSlidingTabStrip.setUnderlineHeight(AndroidUtilities.dp(1));
             scrollSlidingTabStrip.setIndicatorColor(0xffe2e5e7);
             scrollSlidingTabStrip.setUnderlineColor(0xffe2e5e7);
+            scrollSlidingTabStrip.setVisibility(INVISIBLE);
             addView(scrollSlidingTabStrip, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.LEFT | Gravity.TOP));
             ViewProxy.setTranslationX(scrollSlidingTabStrip, AndroidUtilities.displaySize.x);
             updateStickerTabs();
@@ -360,6 +361,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
         if (ViewProxy.getTranslationX(pagerSlidingTabStripContainer) != margin) {
             ViewProxy.setTranslationX(pagerSlidingTabStripContainer, margin);
             ViewProxy.setTranslationX(scrollSlidingTabStrip, width + margin);
+            scrollSlidingTabStrip.setVisibility(margin < 0 ? VISIBLE : INVISIBLE);
             if (Build.VERSION.SDK_INT < 11) {
                 if (margin <= -width) {
                     pagerSlidingTabStripContainer.clearAnimation();
@@ -449,7 +451,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
             stringBuilder.append("=");
             stringBuilder.append(entry.getValue());
         }
-        getContext().getSharedPreferences("emoji", 0).edit().putString("stickers", stringBuilder.toString()).commit();
+        preferences.edit().putString("stickers", stringBuilder.toString()).commit();
     }
 
     private void sortStickers() {
@@ -565,10 +567,12 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
         layoutParams.width = View.MeasureSpec.getSize(widthMeasureSpec);
         if (scrollSlidingTabStrip != null) {
             layoutParams1 = (FrameLayout.LayoutParams) scrollSlidingTabStrip.getLayoutParams();
-            layoutParams1.width = layoutParams.width;
+            if (layoutParams1 != null) {
+                layoutParams1.width = layoutParams.width;
+            }
         }
         if (layoutParams.width != oldWidth) {
-            if (scrollSlidingTabStrip != null) {
+            if (scrollSlidingTabStrip != null && layoutParams1 != null) {
                 onPageScrolled(pager.getCurrentItem(), layoutParams.width, 0);
                 scrollSlidingTabStrip.setLayoutParams(layoutParams1);
             }

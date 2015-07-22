@@ -16,7 +16,6 @@ import android.os.Build;
 import android.os.Message;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
-import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
@@ -69,7 +68,7 @@ public class StickersActivity extends BaseFragment implements NotificationCenter
     }
 
     @Override
-    public View createView(Context context, LayoutInflater inflater) {
+    public View createView(Context context) {
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBar.setAllowOverlayTitle(true);
         actionBar.setTitle(LocaleController.getString("Stickers", R.string.Stickers));

@@ -60,11 +60,14 @@ class LayoutState {
     int mLayoutDirection;
 
     /**
-     * Used if you want to pre-layout items that are not yet visible.
-     * The difference with {@link #mAvailable} is that, when recycling, distance rendered for
-     * {@link #mExtra} is not considered not to recycle visible children.
+     * This is the target pixel closest to the start of the layout that we are trying to fill
      */
-    int mExtra = 0;
+    int mStartLine = 0;
+
+    /**
+     * This is the target pixel closest to the end of the layout that we are trying to fill
+     */
+    int mEndLine = 0;
 
     /**
      * @return true if there are more items in the data adapter
@@ -83,5 +86,17 @@ class LayoutState {
         final View view = recycler.getViewForPosition(mCurrentPosition);
         mCurrentPosition += mItemDirection;
         return view;
+    }
+
+    @Override
+    public String toString() {
+        return "LayoutState{" +
+                "mAvailable=" + mAvailable +
+                ", mCurrentPosition=" + mCurrentPosition +
+                ", mItemDirection=" + mItemDirection +
+                ", mLayoutDirection=" + mLayoutDirection +
+                ", mStartLine=" + mStartLine +
+                ", mEndLine=" + mEndLine +
+                '}';
     }
 }

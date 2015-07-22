@@ -81,5 +81,6 @@ public class PhotoAttachPhotoCell extends FrameLayout {
 
     public void setOnCheckClickLisnener(OnClickListener onCheckClickLisnener) {
         checkFrame.setOnClickListener(onCheckClickLisnener);
+        imageView.setOnClickListener(onCheckClickLisnener);
     }
 }

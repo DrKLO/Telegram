@@ -19,7 +19,6 @@ import android.os.Environment;
 import android.os.StatFs;
 import android.text.TextUtils;
 import android.view.Gravity;
-import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
@@ -126,7 +125,7 @@ public class DocumentSelectActivity extends BaseFragment {
     }
 
     @Override
-    public View createView(Context context, LayoutInflater inflater) {
+    public View createView(Context context) {
         if (!receiverRegistered) {
             receiverRegistered = true;
             IntentFilter filter = new IntentFilter();
@@ -194,7 +193,7 @@ public class DocumentSelectActivity extends BaseFragment {
 
         actionModeViews.add(actionMode.addItem(done, R.drawable.ic_ab_done_gray, R.drawable.bar_selector_mode, null, AndroidUtilities.dp(54)));
 
-        fragmentView = inflater.inflate(R.layout.document_select_layout, null, false);
+        fragmentView = getParentActivity().getLayoutInflater().inflate(R.layout.document_select_layout, null, false);
         listAdapter = new ListAdapter(context);
         emptyView = (TextView) fragmentView.findViewById(R.id.searchEmptyView);
         emptyView.setOnTouchListener(new View.OnTouchListener() {

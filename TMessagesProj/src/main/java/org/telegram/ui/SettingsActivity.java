@@ -33,7 +33,6 @@ import android.text.method.LinkMovementMethod;
 import android.util.Base64;
 import android.util.TypedValue;
 import android.view.Gravity;
-import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
@@ -278,7 +277,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
     }
 
     @Override
-    public View createView(Context context, LayoutInflater inflater) {
+    public View createView(Context context) {
         actionBar.setBackgroundColor(AvatarDrawable.getProfileBackColorForId(5));
         actionBar.setItemsBackground(AvatarDrawable.getButtonColorForId(5));
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
@@ -896,7 +895,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         FrameLayout.LayoutParams layoutParams;
         if (listView != null) {
             layoutParams = (FrameLayout.LayoutParams) listView.getLayoutParams();
-            layoutParams.topMargin = (actionBar.getOccupyStatusBar() ? AndroidUtilities.statusBarHeight : 0) + AndroidUtilities.getCurrentActionBarHeight();
+            layoutParams.topMargin = (actionBar.getOccupyStatusBar() ? AndroidUtilities.statusBarHeight : 0) + ActionBar.getCurrentActionBarHeight();
             listView.setLayoutParams(layoutParams);
         }
 
@@ -906,7 +905,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
 
             int avatarSize = 42 + (int) (18 * diff);
             int avatarX = 17 + (int) (47 * diffm);
-            int avatarY = AndroidUtilities.dp(22) - (int) ((AndroidUtilities.dp(22) - (AndroidUtilities.getCurrentActionBarHeight() - AndroidUtilities.dp(42)) / 2) * (1.0f - diff));
+            int avatarY = AndroidUtilities.dp(22) - (int) ((AndroidUtilities.dp(22) - (ActionBar.getCurrentActionBarHeight() - AndroidUtilities.dp(42)) / 2) * (1.0f - diff));
             int nameX = 97 + (int) (21 * diffm);
             int nameEndX = 16 + (int) (32 * diffm);
             int nameY = avatarY + AndroidUtilities.dp(29 - 13 * diffm);
@@ -914,7 +913,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             float scale = 1.0f - 0.12f * diffm;
 
             layoutParams = (FrameLayout.LayoutParams) writeButton.getLayoutParams();
-            layoutParams.topMargin = (actionBar.getOccupyStatusBar() ? AndroidUtilities.statusBarHeight : 0) + AndroidUtilities.getCurrentActionBarHeight() + actionBar.getExtraHeight() - AndroidUtilities.dp(29.5f);
+            layoutParams.topMargin = (actionBar.getOccupyStatusBar() ? AndroidUtilities.statusBarHeight : 0) + ActionBar.getCurrentActionBarHeight() + actionBar.getExtraHeight() - AndroidUtilities.dp(29.5f);
             writeButton.setLayoutParams(layoutParams);
 
             //ViewProxy.setScaleX(writeButton, diff > 0.2f ? 1.0f : diff / 0.2f);

@@ -16,7 +16,7 @@
 
 package org.telegram.android.support.widget.util;
 
-import android.support.v7.util.SortedList;
+import org.telegram.android.support.util.SortedList;
 import org.telegram.android.support.widget.RecyclerView;
 
 /**

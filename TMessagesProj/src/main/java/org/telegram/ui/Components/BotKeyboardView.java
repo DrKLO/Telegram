@@ -57,7 +57,7 @@ public class BotKeyboardView extends LinearLayout {
 
     public void setPanelHeight(int height) {
         panelHeight = height;
-        if (isFullSize && botButtons != null) {
+        if (isFullSize && botButtons != null && botButtons.rows.size() != 0) {
             buttonHeight = !isFullSize ? 42 : (int) Math.max(42, (panelHeight - AndroidUtilities.dp(30) - (botButtons.rows.size() - 1) * AndroidUtilities.dp(10)) / botButtons.rows.size() / AndroidUtilities.density);
             int count = container.getChildCount();
             int newHeight = AndroidUtilities.dp(buttonHeight);
@@ -87,7 +87,7 @@ public class BotKeyboardView extends LinearLayout {
         container.removeAllViews();
         buttonViews.clear();
 
-        if (buttons != null) {
+        if (buttons != null && botButtons.rows.size() != 0) {
             isFullSize = (buttons.flags & 1) == 0;
             buttonHeight = !isFullSize ? 42 : (int) Math.max(42, (panelHeight - AndroidUtilities.dp(30) - (botButtons.rows.size() - 1) * AndroidUtilities.dp(10)) / botButtons.rows.size() / AndroidUtilities.density);
             for (int a = 0; a < buttons.rows.size(); a++) {
@@ -106,7 +106,7 @@ public class BotKeyboardView extends LinearLayout {
                     textView.setGravity(Gravity.CENTER);
                     textView.setBackgroundResource(R.drawable.bot_keyboard_states);
                     textView.setPadding(AndroidUtilities.dp(4), 0, AndroidUtilities.dp(4), 0);
-                    textView.setText(Emoji.replaceEmoji(button.text, textView.getPaint().getFontMetricsInt(), AndroidUtilities.dp(16)));
+                    textView.setText(Emoji.replaceEmoji(button.text, textView.getPaint().getFontMetricsInt(), AndroidUtilities.dp(16), false));
                     layout.addView(textView, LayoutHelper.createLinear(0, LayoutHelper.MATCH_PARENT, weight, 0, 0, b != row.buttons.size() - 1 ? 10 : 0, 0));
                     textView.setOnClickListener(new OnClickListener() {
                         @Override

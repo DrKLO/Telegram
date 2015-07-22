@@ -82,6 +82,8 @@ public class ActionBarMenuItem extends FrameLayoutFixed {
     private int subMenuOpenSide = 0;
     private ActionBarMenuItemDelegate delegate;
     private boolean allowCloseAnimation = true;
+    protected boolean overrideMenuClick;
+    private boolean processedPopupClick;
 
     public ActionBarMenuItem(Context context, ActionBarMenu menu, int background) {
         super(context);
@@ -129,21 +131,23 @@ public class ActionBarMenuItem extends FrameLayoutFixed {
                 x -= location[0];
                 y -= location[1];
                 selectedMenuView = null;
-                for (int a = 0; a < popupLayout.getChildCount(); a++) {
-                    View child = popupLayout.getChildAt(a);
+                for (int a = 0; a < popupLayout.getItemsCount(); a++) {
+                    View child = popupLayout.getItemAt(a);
                     child.getHitRect(rect);
                     if ((Integer) child.getTag() < 100) {
                         if (!rect.contains((int) x, (int) y)) {
                             child.setPressed(false);
                             child.setSelected(false);
-                            if (Build.VERSION.SDK_INT >= 21) {
+                            if (Build.VERSION.SDK_INT == 21) {
                                 child.getBackground().setVisible(false, false);
                             }
                         } else {
                             child.setPressed(true);
                             child.setSelected(true);
                             if (Build.VERSION.SDK_INT >= 21) {
-                                child.getBackground().setVisible(true, false);
+                                if (Build.VERSION.SDK_INT == 21) {
+                                    child.getBackground().setVisible(true, false);
+                                }
                                 child.drawableHotspotChanged(x, y - child.getTop());
                             }
                             selectedMenuView = child;
@@ -192,9 +196,6 @@ public class ActionBarMenuItem extends FrameLayoutFixed {
             rect = new Rect();
             location = new int[2];
             popupLayout = new ActionBarPopupWindow.ActionBarPopupWindowLayout(getContext());
-            popupLayout.setOrientation(LinearLayout.VERTICAL);
-            popupLayout.setPadding(AndroidUtilities.dp(8), AndroidUtilities.dp(8), AndroidUtilities.dp(8), AndroidUtilities.dp(8));
-            //popupLayout.setBackgroundResource(R.drawable.popup_fixed);
             popupLayout.setOnTouchListener(new OnTouchListener() {
                 @Override
                 public boolean onTouch(View v, MotionEvent event) {
@@ -252,6 +253,10 @@ public class ActionBarMenuItem extends FrameLayoutFixed {
             @Override
             public void onClick(View view) {
                 if (popupWindow != null && popupWindow.isShowing()) {
+                    if (processedPopupClick) {
+                        return;
+                    }
+                    processedPopupClick = true;
                     popupWindow.dismiss(allowCloseAnimation);
                 }
                 if (parentMenu != null) {
@@ -306,6 +311,7 @@ public class ActionBarMenuItem extends FrameLayoutFixed {
                 }
             });
         }
+        processedPopupClick = false;
         popupWindow.setFocusable(true);
         if (popupLayout.getMeasuredWidth() == 0) {
             updateOrShowPopup(true, true);
@@ -367,6 +373,11 @@ public class ActionBarMenuItem extends FrameLayoutFixed {
         return setIsSearchField(value, true);
     }
 
+    public ActionBarMenuItem setOverrideMenuClick(boolean value) {
+        overrideMenuClick = value;
+        return this;
+    }
+
     public ActionBarMenuItem setIsSearchField(boolean value, boolean needClearButton) {
         if (parentMenu == null) {
             return this;
@@ -389,7 +400,8 @@ public class ActionBarMenuItem extends FrameLayoutFixed {
             searchField.setSingleLine(true);
             searchField.setBackgroundResource(0);
             searchField.setPadding(0, 0, 0, 0);
-            searchField.setInputType(EditorInfo.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
+            int inputType = searchField.getInputType() | EditorInfo.TYPE_TEXT_FLAG_NO_SUGGESTIONS;
+            searchField.setInputType(inputType);
             if (android.os.Build.VERSION.SDK_INT < 11) {
                 searchField.setOnCreateContextMenuListener(new OnCreateContextMenuListener() {
                     public void onCreateContextMenu(ContextMenu menu, View v, ContextMenu.ContextMenuInfo menuInfo) {
@@ -467,7 +479,7 @@ public class ActionBarMenuItem extends FrameLayoutFixed {
             layoutParams2.width = LayoutHelper.MATCH_PARENT;
             layoutParams2.gravity = Gravity.CENTER_VERTICAL;
             layoutParams2.height = AndroidUtilities.dp(36);
-            layoutParams2.rightMargin = AndroidUtilities.dp(48);
+            layoutParams2.rightMargin = needClearButton ? AndroidUtilities.dp(48) : 0;
             searchField.setLayoutParams(layoutParams2);
 
             if (needClearButton) {
@@ -532,6 +544,10 @@ public class ActionBarMenuItem extends FrameLayoutFixed {
             }
         }
 
+        if (show) {
+            popupLayout.scrollToTop();
+        }
+
         if (subMenuOpenSide == 0) {
             if (showFromBottom) {
                 if (show) {
@@ -574,18 +590,10 @@ public class ActionBarMenuItem extends FrameLayoutFixed {
         if (view != null) {
             view.setVisibility(GONE);
         }
-        view = popupLayout.findViewWithTag(100 + id);
-        if (view != null) {
-            view.setVisibility(GONE);
-        }
     }
 
     public void showSubItem(int id) {
         View view = popupLayout.findViewWithTag(id);
-        if (view != null) {
-            view.setVisibility(VISIBLE);
-        }
-        view = popupLayout.findViewWithTag(100 + id);
         if (view != null) {
             view.setVisibility(VISIBLE);
         }

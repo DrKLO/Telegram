@@ -59,6 +59,10 @@ public class WebFrameLayout extends FrameLayout {
         openUrl = originalUrl;
         width = w;
         height = h;
+        if (width == 0 || height == 0) {
+            width = AndroidUtilities.displaySize.x;
+            height = AndroidUtilities.displaySize.y / 2;
+        }
         dialog = parentDialog;
 
         fullscreenVideoContainer = new FrameLayout(context);
@@ -211,10 +215,6 @@ public class WebFrameLayout extends FrameLayout {
         });
 
         parentDialog.setDelegate(new BottomSheet.BottomSheetDelegate() {
-            @Override
-            public void onOpenAnimationStart() {
-
-            }
 
             @Override
             public void onOpenAnimationEnd() {

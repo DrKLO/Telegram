@@ -108,7 +108,6 @@ public class ChatContactCell extends ChatBaseCell {
         float y = event.getY();
 
         boolean result = false;
-        int side = AndroidUtilities.dp(36);
         if (event.getAction() == MotionEvent.ACTION_DOWN) {
             if (x >= avatarImage.getImageX() && x <= avatarImage.getImageX() + namesWidth + AndroidUtilities.dp(42) && y >= avatarImage.getImageY() && y <= avatarImage.getImageY() + avatarImage.getImageHeight()) {
                 avatarPressed = true;

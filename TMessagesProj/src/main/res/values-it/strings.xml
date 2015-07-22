@@ -65,6 +65,11 @@
     <string name="YouCreatedBroadcastList">Hai creato una lista broadcast</string>
     <string name="AddRecipient">Aggiungi destinatario</string>
     <string name="KickFromBroadcast">Rimuovi dalla lista broadcast</string>
+    <!--audio view-->
+    <string name="NoAudio">Aggiungi file nella libreria musicale del tuo dispositivo per vederli qui.</string>
+    <string name="AttachMusic">Musica</string>
+    <string name="AudioUnknownArtist">Artista sconosciuto</string>
+    <string name="AudioUnknownTitle">Titolo sconosciuto</string>
     <!--documents view-->
     <string name="SelectFile">Seleziona file</string>
     <string name="FreeOfTotal">Liberi %1$s di %2$s</string>
@@ -121,6 +126,7 @@
     <string name="DeleteThisChat">Elimina questa chat</string>
     <string name="SlideToCancel">ANNULLA</string>
     <string name="SaveToDownloads">Salva nei download</string>
+    <string name="SaveToMusic">Salva nella musica</string>
     <string name="ShareFile">Condividi</string>
     <string name="ApplyLocalizationFile">Applica traduzione</string>
     <string name="UnsupportedAttachment">Allegato non supportato</string>
@@ -284,7 +290,7 @@
     <string name="BlockedUsers">Utenti bloccati</string>
     <string name="LogOut">Disconnetti</string>
     <string name="NoSound">Nessun suono</string>
-    <string name="Default">Predefinita</string>
+    <string name="Default">Predefinite</string>
     <string name="Support">Supporto</string>
     <string name="OnlyIfSilent">Solo se silenzioso</string>
     <string name="ChatBackground">Sfondo chat</string>
@@ -295,7 +301,7 @@
     <string name="ContactJoined">Un contatto si è unito a Telegram</string>
     <string name="Pebble">PEBBLE</string>
     <string name="Language">Lingua</string>
-    <string name="AskAQuestionInfo">Nota che il supporto di Telegram è fornito da volontari. Proviamo a rispondere non appena possibile, ma potrebbe volerci un pò.<![CDATA[<br><br>]]>Dai un\'occhiata alle <![CDATA[<a href=\"https://telegram.org/faq/it#domande-generali\">FAQdi Telegram</a>]]>: troverai risposte alla maggior parte delle domande e suggerimenti importanti per <![CDATA[<a href=\"https://telegram.org/faq/it#risoluzione-dei-problemi\">l\'individuazione del problema</a>]]></string>
+    <string name="AskAQuestionInfo">Nota che il supporto di Telegram è fornito da volontari. Proviamo a rispondere non appena possibile, ma potrebbe volerci un pò.<![CDATA[<br><br>]]>Dai un\'occhiata alle <![CDATA[<a href=\"https://telegram.org/faq/it#domande-generali\">FAQ di Telegram</a>]]>: troverai risposte alla maggior parte delle domande e suggerimenti importanti per <![CDATA[<a href=\"https://telegram.org/faq/it#risoluzione-dei-problemi\">l\'individuazione del problema</a>]]></string>
     <string name="AskButton">Chiedi a un volontario</string>
     <string name="TelegramFaq">FAQ di Telegram</string>
     <string name="TelegramFaqUrl">https://telegram.org/faq/it</string>
@@ -347,6 +353,7 @@
     <string name="RepeatDisabled">No</string>
     <string name="InChatSound">Suoni in-chat</string>
     <string name="SoundDefault">Predefinito</string>
+    <string name="VibrationDefault">Predefinita</string>
     <string name="SmartNotifications">Notifiche intelligenti</string>
     <string name="SmartNotificationsDisabled">Disabilitate</string>
     <string name="SmartNotificationsInfo">Suona al massimo %1$s in %2$s</string>
@@ -452,12 +459,12 @@
     <string name="PleaseReEnterPassword">Reinserisci la tua password</string>
     <string name="RecoveryEmail">E-mail di recupero</string>
     <string name="YourEmail">La tua e-mail</string>
-    <string name="YourEmailInfo">Per favore inserisci un\'e-mail valida. È l\'unico modo di recuperare una password dimenticata.</string>
+    <string name="YourEmailInfo">Inserisci un\'e-mail valida. È l\'unico modo di recuperare una password dimenticata.</string>
     <string name="YourEmailSkip">Salta</string>
     <string name="YourEmailSkipWarning">Attenzione</string>
     <string name="YourEmailSkipWarningText">No, seriamente.\n\nSe dimentichi la tua password, perderai l\'accesso al tuo account Telegram. Non ci sarà modo di ripristinarlo.</string>
     <string name="YourEmailAlmostThere">Ci siamo quasi!</string>
-    <string name="YourEmailAlmostThereText">Per favore controlla la tua e-mail (anche lo spam) per completare la configurazione della verifica in due passaggi.</string>
+    <string name="YourEmailAlmostThereText">Controlla la tua e-mail (anche lo spam) per completare la configurazione della verifica in due passaggi.</string>
     <string name="YourPasswordSuccess">Fatto!</string>
     <string name="YourPasswordSuccessText">La password per la verifica in due passaggi è ora attiva.</string>
     <string name="ChangePassword">Cambia password</string>
@@ -466,16 +473,16 @@
     <string name="ChangeRecoveryEmail">Cambia e-mail di recupero</string>
     <string name="TurnPasswordOffQuestion">Sei sicuro di voler disabilitare la tua password?</string>
     <string name="PasswordHint">Suggerimento password</string>
-    <string name="PasswordHintText">Per favore crea un suggerimento per la tua password</string>
+    <string name="PasswordHintText">Crea un suggerimento per la tua password</string>
     <string name="PasswordDoNotMatch">Le password non corrispondono</string>
     <string name="AbortPassword">Annulla configurazione della verifica in due passaggi</string>
-    <string name="EmailPasswordConfirmText">Per favore segui questi step per completare la configurazione della verifica in due passaggi:\n\n1. Controlla la tua e-mail (anche lo spam)\n%1$s\n\n2. Clicca sul link di conferma.</string>
+    <string name="EmailPasswordConfirmText">Segui questi step per completare la configurazione della verifica in due passaggi:\n\n1. Controlla la tua e-mail (anche lo spam)\n%1$s\n\n2. Clicca sul link di conferma.</string>
     <string name="PasswordAsHintError">Il suggerimento deve essere diverso dalla password</string>
     <string name="PasswordEmailInvalid">E-mail non valida</string>
     <string name="RestorePasswordNoEmailTitle">Scusa</string>
     <string name="RestorePasswordNoEmailText">Siccome non hai fornito un\'email di recupero quando hai impostato la  tua password, non ti resta che ricordarti la password o ripristinare il tuo account.</string>
     <string name="RestoreEmailSent">Abbiamo inviato un codice di ripristino alla e-mail che ci hai fornito:\n\n%1$s</string>
-    <string name="RestoreEmailSentInfo">Per favore controlla la tua e-mail e inserisci il codice a 6 cifre che ti abbiamo inviato.</string>
+    <string name="RestoreEmailSentInfo">Controlla la tua e-mail e inserisci il codice a 6 cifre che ti abbiamo inviato.</string>
     <string name="RestoreEmailTrouble">Hai problemi ad accedere alla tua e-mail %1$s?</string>
     <string name="RestoreEmailTroubleText">Se non puoi ripristinare l\'accesso alla tua e-mail, non ti resta che ricordarti la password o ripristinare il tuo account.</string>
     <string name="ResetMyAccount">RIPRISTINA IL MIO ACCOUNT</string>
@@ -508,10 +515,10 @@
     <string name="DeleteAccountIfAwayFor">Se lontano per</string>
     <string name="DeleteAccountHelp">Se non ti connetti almeno una volta in questo periodo, il tuo account verrà eliminato insieme a tutti i gruppi, messaggi e contatti.</string>
     <string name="DeleteAccountNowConfirmation">Eliminare il tuo account?</string>
-    <string name="LastSeenHelp">Cambia chi può vedere il tuo Ultimo Accesso.</string>
-    <string name="LastSeenTitle">Chi può vedere il tuo Ultimo Accesso?</string>
+    <string name="LastSeenHelp">Cambia chi può vedere il tuo ultimo accesso.</string>
+    <string name="LastSeenTitle">Chi può vedere il tuo ultimo accesso?</string>
     <string name="AddExceptions">Aggiungi eccezioni</string>
-    <string name="CustomHelp">Importante: non sarai in grado di vedere l\'Ultimo Accesso delle persone con le quali non condividi l\'Ultimo Accesso. Verrà mostrato un orario approssimativo (di recente, entro una settimana, entro un mese).</string>
+    <string name="CustomHelp">Importante: non sarai in grado di vedere l\'ultimo accesso delle persone con le quali non condividi l\'ultimo accesso. Verrà mostrato un orario approssimativo (di recente, entro una settimana, entro un mese).</string>
     <string name="AlwaysShareWith">Condividi con</string>
     <string name="NeverShareWith">Non condividere con</string>
     <string name="CustomShareSettingsHelp">Queste impostazioni annulleranno i valori precedenti.</string>
@@ -519,7 +526,7 @@
     <string name="AlwaysShareWithPlaceholder">Condividi con gli utenti...</string>
     <string name="NeverShareWithTitle">Non condividere</string>
     <string name="NeverShareWithPlaceholder">Non condividere con gli utenti...</string>
-    <string name="EmpryUsersPlaceholder">Aggiungi Utenti</string>
+    <string name="EmpryUsersPlaceholder">Aggiungi utenti</string>
     <string name="PrivacyFloodControlError">Ci spiace, troppe richieste. Impossibile cambiare le impostazioni di privacy ora, attendi.</string>
     <string name="ClearOtherSessionsHelp">Disconnette tutti i dispositivi tranne questo.</string>
     <string name="RemoveFromListText">Tieni premuto sull\'utente per eliminarlo.</string>
@@ -682,12 +689,12 @@
     <string name="items_few">%1$d oggetti</string>
     <string name="items_many">%1$d oggetti</string>
     <string name="items_other">%1$d oggetti</string>
-    <string name="FromChats_zero">in nessuna chat</string>
-    <string name="FromChats_one">in %1$d chat</string>
-    <string name="FromChats_two">in %1$d chat</string>
-    <string name="FromChats_few">in %1$d chat</string>
-    <string name="FromChats_many">in %1$d chat</string>
-    <string name="FromChats_other">in %1$d chat</string>
+    <string name="FromChats_zero">da nessuna chat</string>
+    <string name="FromChats_one">da %1$d chat</string>
+    <string name="FromChats_two">da %1$d chat</string>
+    <string name="FromChats_few">da %1$d chat</string>
+    <string name="FromChats_many">da %1$d chat</string>
+    <string name="FromChats_other">da %1$d chat</string>
     <string name="Seconds_zero">%1$d secondi</string>
     <string name="Seconds_one">%1$d secondo</string>
     <string name="Seconds_two">%1$d secondi</string>
@@ -827,6 +834,6 @@
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s alle %2$s</string>
     <!--update text-->
-    <string name="updateText">Telegram per Android è stato aggiornato. Nuovo nella versione 3.0:\n\n- Pagine dedicate per ognuno dei tuoi pacchetti sticker nel pannello sticker. Aggiunti sticker personalizzati come https://telegram.me/addstickers/Animals\n- Nuova API per i bot, gratis per tutti. Se sei un ingegnere, crea i tuoi bot per giochi, servizi o integrazioni. Scopri di più su https://telegram.org/blog/bot-revolution</string>
-    <string name="updateBuild">551</string>
+    <string name="updateText">Telegram per Android si è aggiornato. Nuovo nella versione 3.1:\n\n- Cerca messaggi all\'interno di una specifica chat.\n- Menu degli allegati completamente ridisegnato. Invia contatti e audio direttamente dal menu degli allegati.\n- Riproduzione in-app migliorata (YouTube, Vimeo, SoundCloud etc.), nuovo player per i file audio.\n\nMaggiori informazioni su questo aggiornamento:\nhttps://telegram.org/blog/search-and-media</string>
+    <string name="updateBuild">577</string>
 </resources>

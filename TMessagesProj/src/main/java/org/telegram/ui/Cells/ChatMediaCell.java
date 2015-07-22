@@ -379,7 +379,6 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
 
     private Drawable getDrawableForCurrentState() {
         if (buttonState >= 0 && buttonState < 4) {
-            Drawable currentButtonDrawable = null;
             if (currentMessageObject.type == 9 && gifDrawable == null) {
                 if (buttonState == 1 && !currentMessageObject.isSending()) {
                     return ResourceLoader.buttonStatesDrawablesDoc[2][currentMessageObject.isOut() ? 1 : 0];

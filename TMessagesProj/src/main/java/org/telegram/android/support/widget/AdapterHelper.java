@@ -19,6 +19,9 @@ package org.telegram.android.support.widget;
 import android.support.v4.util.Pools;
 import android.util.Log;
 
+import org.telegram.android.support.widget.OpReorderer;
+import org.telegram.android.support.widget.RecyclerView;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;

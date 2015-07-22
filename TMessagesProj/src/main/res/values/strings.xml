@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 
 
+
 <resources>
     <string name="AppName">Telegram</string>
     <string name="LanguageName">English</string>
@@ -64,6 +65,11 @@
     <string name="YouCreatedBroadcastList">You created a broadcast list</string>
     <string name="AddRecipient">Add recipient</string>
     <string name="KickFromBroadcast">Remove from broadcast list</string>
+    <!--audio view-->
+    <string name="NoAudio">Please add files to the music library on your device to see them here.</string>
+    <string name="AttachMusic">Music</string>
+    <string name="AudioUnknownArtist">Unknown artist</string>
+    <string name="AudioUnknownTitle">Unknown title</string>
     <!--documents view-->
     <string name="SelectFile">Select File</string>
     <string name="FreeOfTotal">Free %1$s of %2$s</string>
@@ -120,6 +126,7 @@
     <string name="DeleteThisChat">Delete this chat</string>
     <string name="SlideToCancel">SLIDE TO CANCEL</string>
     <string name="SaveToDownloads">Save to downloads</string>
+    <string name="SaveToMusic">Save to music</string>
     <string name="ShareFile">Share</string>
     <string name="ApplyLocalizationFile">Apply localization file</string>
     <string name="UnsupportedAttachment">Unsupported attachment</string>
@@ -346,6 +353,7 @@
     <string name="RepeatDisabled">Off</string>
     <string name="InChatSound">In-Chat Sounds</string>
     <string name="SoundDefault">Default</string>
+    <string name="VibrationDefault">Default</string>
     <string name="SmartNotifications">Smart Notifications</string>
     <string name="SmartNotificationsDisabled">Disabled</string>
     <string name="SmartNotificationsInfo">Sound at most %1$s within %2$s</string>
@@ -826,6 +834,6 @@
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s at %2$s</string>
     <!--update text-->
-    <string name="updateText">Telegram for Android has been updated. New in version 3.0:\n\n- Dedicated tabs for each one of your custom sticker sets in the sticker panel. Add custom stickers like https://telegram.me/addstickers/Animals\n- New bot API, free for everyone. If you\'re an engineer, create your own bots for games, services or integrations. Learn more at https://telegram.org/blog/bot-revolution</string>
-    <string name="updateBuild">551</string>
+    <string name="updateText">Telegram for Android has been updated. New in version 3.1:\n\n- Search for messages inside a specific chat.\n- Fully redesigned attachment menu. Send contacts and audio files straight from the attachment menu.\n- Improved in-app media playback (YouTube, Vimeo, SoundCloud etc.), new player for large audio files.\n\nMore about this update:\nhttps://telegram.org/blog/search-and-media</string>
+    <string name="updateBuild">577</string>
 </resources>

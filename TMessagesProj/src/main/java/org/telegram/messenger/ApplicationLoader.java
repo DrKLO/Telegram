@@ -90,7 +90,6 @@ public class ApplicationLoader extends Application {
                         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
                         int selectedBackground = preferences.getInt("selectedBackground", 1000001);
                         selectedColor = preferences.getInt("selectedColor", 0);
-                        int cacheColorHint = 0;
                         if (selectedColor == 0) {
                             if (selectedBackground == 1000001) {
                                 cachedWallpaper = applicationContext.getResources().getDrawable(R.drawable.background_hd);

@@ -400,4 +400,38 @@ public class SharedMediaQuery {
             }
         });
     }
+
+    public static void loadMusic(final long uid, final int max_id) {
+        MessagesStorage.getInstance().getStorageQueue().postRunnable(new Runnable() {
+            @Override
+            public void run() {
+                final ArrayList<MessageObject> arrayList = new ArrayList<>();
+                try {
+                    SQLiteCursor cursor = MessagesStorage.getInstance().getDatabase().queryFinalized(String.format(Locale.US, "SELECT data, mid FROM media_v2 WHERE uid = %d AND mid < %d AND type = %d ORDER BY date DESC, mid DESC LIMIT 1000", uid, max_id, MEDIA_FILE));
+
+                    while (cursor.next()) {
+                        ByteBufferDesc data = MessagesStorage.getInstance().getBuffersStorage().getFreeBuffer(cursor.byteArrayLength(0));
+                        if (data != null && cursor.byteBufferValue(0, data.buffer) != 0) {
+                            TLRPC.Message message = TLRPC.Message.TLdeserialize(data, data.readInt32(false), false);
+                            if (MessageObject.isMusicMessage(message)) {
+                                message.id = cursor.intValue(1);
+                                message.dialog_id = uid;
+                                arrayList.add(0, new MessageObject(message, null, false));
+                            }
+                        }
+                        MessagesStorage.getInstance().getBuffersStorage().reuseFreeBuffer(data);
+                    }
+                    cursor.dispose();
+                } catch (Exception e) {
+                    FileLog.e("tmessages", e);
+                }
+                AndroidUtilities.runOnUIThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        NotificationCenter.getInstance().postNotificationName(NotificationCenter.musicDidLoaded, uid, arrayList);
+                    }
+                });
+            }
+        });
+    }
 }

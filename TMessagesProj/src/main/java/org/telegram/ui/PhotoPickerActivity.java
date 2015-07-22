@@ -61,7 +61,7 @@ import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.Cells.PhotoPickerPhotoCell;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.LayoutHelper;
-import org.telegram.ui.Components.PhotoPickerBottomLayout;
+import org.telegram.ui.Components.PickerBottomLayout;
 
 import java.net.URLEncoder;
 import java.util.ArrayList;
@@ -98,7 +98,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
 
     private GridView listView;
     private ListAdapter listAdapter;
-    private PhotoPickerBottomLayout photoPickerBottomLayout;
+    private PickerBottomLayout pickerBottomLayout;
     private FrameLayout progressView;
     private TextView emptyView;
     private ActionBarMenuItem searchItem;
@@ -150,7 +150,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
 
     @SuppressWarnings("unchecked")
     @Override
-    public View createView(Context context, LayoutInflater inflater) {
+    public View createView(Context context) {
         actionBar.setBackgroundColor(0xff333333);
         actionBar.setItemsBackground(R.drawable.bar_selector_picker);
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
@@ -395,32 +395,32 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
             updateSearchInterface();
         }
 
-        photoPickerBottomLayout = new PhotoPickerBottomLayout(context);
-        frameLayout.addView(photoPickerBottomLayout);
-        layoutParams = (FrameLayout.LayoutParams) photoPickerBottomLayout.getLayoutParams();
+        pickerBottomLayout = new PickerBottomLayout(context);
+        frameLayout.addView(pickerBottomLayout);
+        layoutParams = (FrameLayout.LayoutParams) pickerBottomLayout.getLayoutParams();
         layoutParams.width = LayoutHelper.MATCH_PARENT;
         layoutParams.height = AndroidUtilities.dp(48);
         layoutParams.gravity = Gravity.BOTTOM;
-        photoPickerBottomLayout.setLayoutParams(layoutParams);
-        photoPickerBottomLayout.cancelButton.setOnClickListener(new View.OnClickListener() {
+        pickerBottomLayout.setLayoutParams(layoutParams);
+        pickerBottomLayout.cancelButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 delegate.actionButtonPressed(true);
                 finishFragment();
             }
         });
-        photoPickerBottomLayout.doneButton.setOnClickListener(new View.OnClickListener() {
+        pickerBottomLayout.doneButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 sendSelectedPhotos();
             }
         });
         if (singlePhoto) {
-            photoPickerBottomLayout.setVisibility(View.GONE);
+            pickerBottomLayout.setVisibility(View.GONE);
         }
 
         listView.setEmptyView(emptyView);
-        photoPickerBottomLayout.updateSelectedCount(selectedPhotos.size() + selectedWebPhotos.size(), true);
+        pickerBottomLayout.updateSelectedCount(selectedPhotos.size() + selectedWebPhotos.size(), true);
 
         return fragmentView;
     }
@@ -650,7 +650,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
                 break;
             }
         }
-        photoPickerBottomLayout.updateSelectedCount(selectedPhotos.size() + selectedWebPhotos.size(), true);
+        pickerBottomLayout.updateSelectedCount(selectedPhotos.size() + selectedWebPhotos.size(), true);
         delegate.selectedPhotosChanged();
     }
 
@@ -935,7 +935,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
         listView.setSelection(position);
 
         if (selectedAlbum == null) {
-            emptyView.setPadding(0, 0, 0, (int)((AndroidUtilities.displaySize.y - AndroidUtilities.getCurrentActionBarHeight()) * 0.4f));
+            emptyView.setPadding(0, 0, 0, (int)((AndroidUtilities.displaySize.y - ActionBar.getCurrentActionBarHeight()) * 0.4f));
         }
     }
 
@@ -1033,7 +1033,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
                                 }
                                 ((PhotoPickerPhotoCell) v.getParent()).checkBox.setChecked(selectedWebPhotos.containsKey(photoEntry.id), true);
                             }
-                            photoPickerBottomLayout.updateSelectedCount(selectedPhotos.size() + selectedWebPhotos.size(), true);
+                            pickerBottomLayout.updateSelectedCount(selectedPhotos.size() + selectedWebPhotos.size(), true);
                             delegate.selectedPhotosChanged();
                         }
                     });

@@ -16,13 +16,13 @@
 
 package org.telegram.android.support.widget;
 
-import java.util.List;
-
 import org.telegram.android.support.widget.AdapterHelper.UpdateOp;
 import static org.telegram.android.support.widget.AdapterHelper.UpdateOp.ADD;
 import static org.telegram.android.support.widget.AdapterHelper.UpdateOp.MOVE;
 import static org.telegram.android.support.widget.AdapterHelper.UpdateOp.REMOVE;
 import static org.telegram.android.support.widget.AdapterHelper.UpdateOp.UPDATE;
+
+import java.util.List;
 
 class OpReorderer {
 
@@ -58,7 +58,7 @@ class OpReorderer {
     }
 
     void swapMoveRemove(List<UpdateOp> list, int movePos, UpdateOp moveOp,
-            int removePos, UpdateOp removeOp) {
+                        int removePos, UpdateOp removeOp) {
         UpdateOp extraRm = null;
         // check if move is nulled out by remove
         boolean revertedMove = false;
@@ -83,7 +83,7 @@ class OpReorderer {
             removeOp.positionStart--;
         } else if (moveOp.itemCount < removeOp.positionStart + removeOp.itemCount) {
             // move is removed.
-            removeOp.itemCount --;
+            removeOp.itemCount--;
             moveOp.cmd = REMOVE;
             moveOp.itemCount = 1;
             if (removeOp.itemCount == 0) {
@@ -157,7 +157,7 @@ class OpReorderer {
     }
 
     private void swapMoveAdd(List<UpdateOp> list, int move, UpdateOp moveOp, int add,
-            UpdateOp addOp) {
+                             UpdateOp addOp) {
         int offset = 0;
         // going in reverse, first revert the effect of add
         if (moveOp.itemCount < addOp.positionStart) {
@@ -178,7 +178,7 @@ class OpReorderer {
     }
 
     void swapMoveUpdate(List<UpdateOp> list, int move, UpdateOp moveOp, int update,
-            UpdateOp updateOp) {
+                        UpdateOp updateOp) {
         UpdateOp extraUp1 = null;
         UpdateOp extraUp2 = null;
         // going in reverse, first revert the effect of add
@@ -228,7 +228,7 @@ class OpReorderer {
         return -1;
     }
 
-    static interface Callback {
+    interface Callback {
 
         UpdateOp obtainUpdateOp(int cmd, int startPosition, int itemCount);
 

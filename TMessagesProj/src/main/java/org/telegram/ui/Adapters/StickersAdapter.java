@@ -87,7 +87,7 @@ public class StickersAdapter extends RecyclerView.Adapter implements Notificatio
     }
 
     public void loadStikersForEmoji(CharSequence emoji) {
-        boolean search = emoji != null && emoji.length() != 0 && emoji.length() <= 2;
+        boolean search = emoji != null && emoji.length() > 0 && emoji.length() <= 4;
         if (search) {
             lastSticker = emoji.toString();
             HashMap<String, ArrayList<TLRPC.Document>> allStickers = StickersQuery.getAllStickers();

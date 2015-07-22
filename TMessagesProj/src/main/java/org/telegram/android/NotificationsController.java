@@ -31,8 +31,6 @@ import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.NotificationManagerCompat;
 import android.support.v4.app.RemoteInput;
 
-import org.json.JSONArray;
-import org.json.JSONObject;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.DispatchQueue;
 import org.telegram.messenger.FileLog;
@@ -602,11 +600,8 @@ public class NotificationsController {
             }
 
             String lastMessage = null;
-            String lastMessageFull = null;
             if (pushMessages.size() == 1) {
-                String message = lastMessageFull = getStringForMessage(pushMessages.get(0), false);
-                //lastMessage = getStringForMessage(pushMessages.get(0), true);
-                lastMessage = lastMessageFull;
+                String message = lastMessage = getStringForMessage(pushMessages.get(0), false);
                 if (message == null) {
                     return;
                 }
@@ -630,8 +625,7 @@ public class NotificationsController {
                         continue;
                     }
                     if (i == 0) {
-                        lastMessageFull = message;
-                        lastMessage = lastMessageFull;
+                        lastMessage = message;
                     }
                     if (pushDialogs.size() == 1) {
                         if (replace) {
@@ -692,9 +686,6 @@ public class NotificationsController {
 
             showExtraNotifications(mBuilder, notifyAboutLast);
             notificationManager.notify(1, mBuilder.build());
-            if (preferences.getBoolean("EnablePebbleNotifications", false)) {
-                sendAlertToPebble(lastMessageFull);
-            }
 
             scheduleNotificationRepeat();
         } catch (Exception e) {
@@ -892,26 +883,6 @@ public class NotificationsController {
             }
             wearNotificationsIds.clear();
             NotificationCenter.getInstance().postNotificationName(NotificationCenter.pushMessagesUpdated);
-        } catch (Exception e) {
-            FileLog.e("tmessages", e);
-        }
-    }
-
-    private void sendAlertToPebble(String message) {
-        try {
-            final Intent i = new Intent("com.getpebble.action.SEND_NOTIFICATION");
-
-            final HashMap<String, String> data = new HashMap<>();
-            data.put("title", LocaleController.getString("AppName", R.string.AppName));
-            data.put("body", message);
-            final JSONObject jsonData = new JSONObject(data);
-            final String notificationData = new JSONArray().put(jsonData).toString();
-
-            i.putExtra("messageType", "PEBBLE_ALERT");
-            i.putExtra("sender", LocaleController.formatString("AppName", R.string.AppName));
-            i.putExtra("notificationData", notificationData);
-
-            ApplicationLoader.applicationContext.sendBroadcast(i);
         } catch (Exception e) {
             FileLog.e("tmessages", e);
         }

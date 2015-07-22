@@ -21,7 +21,6 @@ import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
-import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.Surface;
 import android.view.View;
@@ -40,6 +39,7 @@ import android.widget.TextView;
 
 import org.telegram.android.AndroidUtilities;
 import org.telegram.android.LocaleController;
+import org.telegram.android.MediaController;
 import org.telegram.android.MessagesController;
 import org.telegram.android.query.SharedMediaQuery;
 import org.telegram.messenger.ApplicationLoader;
@@ -217,7 +217,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
     }
 
     @Override
-    public View createView(Context context, LayoutInflater inflater) {
+    public View createView(Context context) {
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBar.setTitle("");
         actionBar.setAllowOverlayTitle(false);
@@ -284,10 +284,10 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                     Bundle args = new Bundle();
                     args.putBoolean("onlySelect", true);
                     args.putInt("dialogsType", 1);
-                    MessagesActivity fragment = new MessagesActivity(args);
-                    fragment.setDelegate(new MessagesActivity.MessagesActivityDelegate() {
+                    DialogsActivity fragment = new DialogsActivity(args);
+                    fragment.setDelegate(new DialogsActivity.MessagesActivityDelegate() {
                         @Override
-                        public void didSelectDialog(MessagesActivity fragment, long did, boolean param) {
+                        public void didSelectDialog(DialogsActivity fragment, long did, boolean param) {
                             int lower_part = (int) did;
                             if (lower_part != 0) {
                                 Bundle args = new Bundle();
@@ -374,14 +374,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
         dropDownContainer.setSubMenuOpenSide(1);
         dropDownContainer.addSubItem(shared_media_item, LocaleController.getString("SharedMediaTitle", R.string.SharedMediaTitle), 0);
         dropDownContainer.addSubItem(files_item, LocaleController.getString("DocumentsTitle", R.string.DocumentsTitle), 0);
-        actionBar.addView(dropDownContainer);
-        FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) dropDownContainer.getLayoutParams();
-        layoutParams.height = LayoutHelper.MATCH_PARENT;
-        layoutParams.width = LayoutHelper.WRAP_CONTENT;
-        layoutParams.rightMargin = AndroidUtilities.dp(40);
-        layoutParams.leftMargin = AndroidUtilities.isTablet() ? AndroidUtilities.dp(64) : AndroidUtilities.dp(56);
-        layoutParams.gravity = Gravity.TOP | Gravity.LEFT;
-        dropDownContainer.setLayoutParams(layoutParams);
+        actionBar.addView(dropDownContainer, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT, AndroidUtilities.isTablet() ? 64 : 56, 0, 40, 0));
         dropDownContainer.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -400,13 +393,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
         dropDown.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.ic_arrow_drop_down, 0);
         dropDown.setCompoundDrawablePadding(AndroidUtilities.dp(4));
         dropDown.setPadding(0, 0, AndroidUtilities.dp(10), 0);
-        dropDownContainer.addView(dropDown);
-        layoutParams = (FrameLayout.LayoutParams) dropDown.getLayoutParams();
-        layoutParams.width = LayoutHelper.WRAP_CONTENT;
-        layoutParams.height = LayoutHelper.WRAP_CONTENT;
-        layoutParams.leftMargin = AndroidUtilities.dp(16);
-        layoutParams.gravity = Gravity.CENTER_VERTICAL;
-        dropDown.setLayoutParams(layoutParams);
+        dropDownContainer.addView(dropDown, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL, 16, 0, 0, 0));
 
         final ActionBarMenu actionMode = actionBar.createActionMode();
         actionModeViews.add(actionMode.addItem(-2, R.drawable.ic_ab_back_grey, R.drawable.bar_selector_mode, null, AndroidUtilities.dp(54)));
@@ -426,12 +413,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                 return true;
             }
         });
-        actionMode.addView(selectedMessagesCountTextView);
-        LinearLayout.LayoutParams layoutParams1 = (LinearLayout.LayoutParams) selectedMessagesCountTextView.getLayoutParams();
-        layoutParams1.weight = 1;
-        layoutParams1.width = 0;
-        layoutParams1.height = LayoutHelper.MATCH_PARENT;
-        selectedMessagesCountTextView.setLayoutParams(layoutParams1);
+        actionMode.addView(selectedMessagesCountTextView, LayoutHelper.createLinear(0, LayoutHelper.MATCH_PARENT, 1.0f));
 
         if ((int) dialog_id != 0) {
             actionModeViews.add(actionMode.addItem(forward, R.drawable.ic_ab_fwd_forward, R.drawable.bar_selector_mode, null, AndroidUtilities.dp(54)));
@@ -450,12 +432,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
         listView.setDividerHeight(0);
         listView.setDrawSelectorOnTop(true);
         listView.setClipToPadding(false);
-        frameLayout.addView(listView);
-        layoutParams = (FrameLayout.LayoutParams) listView.getLayoutParams();
-        layoutParams.width = LayoutHelper.MATCH_PARENT;
-        layoutParams.height = LayoutHelper.MATCH_PARENT;
-        layoutParams.gravity = Gravity.TOP;
-        listView.setLayoutParams(layoutParams);
+        frameLayout.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, final int i, long l) {
@@ -515,11 +492,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
         emptyView.setGravity(Gravity.CENTER);
         emptyView.setVisibility(View.GONE);
         emptyView.setBackgroundColor(0xfff0f0f0);
-        frameLayout.addView(emptyView);
-        layoutParams = (FrameLayout.LayoutParams) emptyView.getLayoutParams();
-        layoutParams.width = LayoutHelper.MATCH_PARENT;
-        layoutParams.height = LayoutHelper.MATCH_PARENT;
-        emptyView.setLayoutParams(layoutParams);
+        frameLayout.addView(emptyView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
         emptyView.setOnTouchListener(new View.OnTouchListener() {
             @Override
             public boolean onTouch(View v, MotionEvent event) {
@@ -528,42 +501,24 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
         });
 
         emptyImageView = new ImageView(context);
-        emptyView.addView(emptyImageView);
-        layoutParams1 = (LinearLayout.LayoutParams) emptyImageView.getLayoutParams();
-        layoutParams1.width = LayoutHelper.WRAP_CONTENT;
-        layoutParams1.height = LayoutHelper.WRAP_CONTENT;
-        emptyImageView.setLayoutParams(layoutParams1);
+        emptyView.addView(emptyImageView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
 
         emptyTextView = new TextView(context);
         emptyTextView.setTextColor(0xff8a8a8a);
         emptyTextView.setGravity(Gravity.CENTER);
         emptyTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 17);
         emptyTextView.setPadding(AndroidUtilities.dp(40), 0, AndroidUtilities.dp(40), AndroidUtilities.dp(128));
-        emptyView.addView(emptyTextView);
-        layoutParams1 = (LinearLayout.LayoutParams) emptyTextView.getLayoutParams();
-        layoutParams1.topMargin = AndroidUtilities.dp(24);
-        layoutParams1.width = LayoutHelper.WRAP_CONTENT;
-        layoutParams1.height = LayoutHelper.WRAP_CONTENT;
-        layoutParams1.gravity = Gravity.CENTER;
-        emptyTextView.setLayoutParams(layoutParams1);
+        emptyView.addView(emptyTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER, 0, 24, 0, 0));
 
         progressView = new LinearLayout(context);
         progressView.setGravity(Gravity.CENTER);
         progressView.setOrientation(LinearLayout.VERTICAL);
         progressView.setVisibility(View.GONE);
         progressView.setBackgroundColor(0xfff0f0f0);
-        frameLayout.addView(progressView);
-        layoutParams = (FrameLayout.LayoutParams) progressView.getLayoutParams();
-        layoutParams.width = LayoutHelper.MATCH_PARENT;
-        layoutParams.height = LayoutHelper.MATCH_PARENT;
-        progressView.setLayoutParams(layoutParams);
+        frameLayout.addView(progressView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
         ProgressBar progressBar = new ProgressBar(context);
-        progressView.addView(progressBar);
-        layoutParams1 = (LinearLayout.LayoutParams) progressBar.getLayoutParams();
-        layoutParams1.width = LayoutHelper.WRAP_CONTENT;
-        layoutParams1.height = LayoutHelper.WRAP_CONTENT;
-        progressBar.setLayoutParams(layoutParams1);
+        progressView.addView(progressBar, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
 
         switchToCurrentSelectedMode();
 
@@ -639,7 +594,6 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
         } else if (id == NotificationCenter.didReceivedNewMessages) {
             long uid = (Long) args[0];
             if (uid == dialog_id) {
-                boolean markAsRead = false;
                 ArrayList<MessageObject> arr = (ArrayList<MessageObject>) args[1];
                 boolean enc = ((int) dialog_id) == 0;
                 boolean updated = false;
@@ -804,7 +758,6 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
             } else if (selectedMode == 1) {
                 listView.setAdapter(documentsAdapter);
                 dropDown.setText(LocaleController.getString("DocumentsTitle", R.string.DocumentsTitle));
-                int lower_id = (int) dialog_id;
                 emptyImageView.setImageResource(R.drawable.tip2);
                 emptyTextView.setText(LocaleController.getString("NoSharedFiles", R.string.NoSharedFiles));
                 searchItem.setVisibility(!sharedMediaData[1].messages.isEmpty() ? View.VISIBLE : View.GONE);
@@ -887,6 +840,11 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                 if (view instanceof SharedDocumentCell) {
                     SharedDocumentCell cell = (SharedDocumentCell) view;
                     if (cell.isLoaded()) {
+                        if (message.isMusic()) {
+                            if (MediaController.getInstance().setPlaylist(sharedMediaData[1].messages, message)) {
+                                return;
+                            }
+                        }
                         File f = null;
                         String fileName = FileLoader.getAttachFileName(message.messageOwner.media.document);
                         if (message.messageOwner.attachPath != null && message.messageOwner.attachPath.length() != 0) {

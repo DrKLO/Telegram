@@ -671,7 +671,6 @@ public class PasscodeView extends FrameLayout {
                 @Override
                 public void onClick(View v) {
                     int tag = (Integer) v.getTag();
-                    int key = KeyEvent.KEYCODE_DEL;
                     switch (tag) {
                         case 0:
                             passwordEditText2.appendCharacter("0");
@@ -845,7 +844,6 @@ public class PasscodeView extends FrameLayout {
         }
         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
         int selectedBackground = preferences.getInt("selectedBackground", 1000001);
-        boolean customTheme = false;
         if (selectedBackground == 1000001) {
             backgroundFrameLayout.setBackgroundColor(0xff517c9e);
         } else {

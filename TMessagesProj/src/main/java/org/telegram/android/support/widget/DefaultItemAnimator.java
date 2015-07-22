@@ -18,6 +18,7 @@ package org.telegram.android.support.widget;
 import android.support.v4.view.ViewCompat;
 import android.support.v4.view.ViewPropertyAnimatorCompat;
 import android.support.v4.view.ViewPropertyAnimatorListener;
+
 import org.telegram.android.support.widget.RecyclerView.ViewHolder;
 import android.view.View;
 

@@ -65,6 +65,11 @@
     <string name="YouCreatedBroadcastList">Você criou uma lista de transmissão</string>
     <string name="AddRecipient">Adicionar destinatário</string>
     <string name="KickFromBroadcast">Remover da lista de transmissão</string>
+    <!--audio view-->
+    <string name="NoAudio">Por favor, adicione arquivos à biblioteca de música de seu dispositivo para vê-los aqui.</string>
+    <string name="AttachMusic">Música</string>
+    <string name="AudioUnknownArtist">Artista desconhecido</string>
+    <string name="AudioUnknownTitle">Título desconhecido</string>
     <!--documents view-->
     <string name="SelectFile">Selecione um Arquivo</string>
     <string name="FreeOfTotal">Disponível %1$s de %2$s</string>
@@ -121,6 +126,7 @@
     <string name="DeleteThisChat">Apagar este chat</string>
     <string name="SlideToCancel">DESLIZE PARA CANCELAR</string>
     <string name="SaveToDownloads">Salvar em downloads</string>
+    <string name="SaveToMusic">Salvar em músicas</string>
     <string name="ShareFile">Compartilhar</string>
     <string name="ApplyLocalizationFile">Aplicar arquivo de localização</string>
     <string name="UnsupportedAttachment">Anexo não suportado</string>
@@ -347,6 +353,7 @@
     <string name="RepeatDisabled">Desativado</string>
     <string name="InChatSound">Sons no Chat</string>
     <string name="SoundDefault">Padrão</string>
+    <string name="VibrationDefault">Padrão</string>
     <string name="SmartNotifications">Notificações Inteligentes</string>
     <string name="SmartNotificationsDisabled">Desativado</string>
     <string name="SmartNotificationsInfo">Tocar no máximo %1$s a cada %2$s</string>
@@ -827,6 +834,6 @@
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s às %2$s</string>
     <!--update text-->
-    <string name="updateText">Seu Telegram para Android acaba de ser atualizado. Novo na versão 3.0:\n\n- Abas dedicadas para cada um dos pacotes customizados de stickers no painel de stickers. Adicione stickers customizados como https://telegram.me/addstickers/Animals\n- Nova API de bots, gratuita para todos. Se você for um engenheiro, crie seus próprios bots como @quiz_bot ou @hot_or_bot usando o @botfather. Leia mais em https://telegram.org/blog/bot-revolution</string>
-    <string name="updateBuild">551</string>
+    <string name="updateText">Telegram para Android foi atualizado. Novo na versão 3.1:\n\n- Busca por mensagens dentro de um chat específico.\n-Menu de anexo totalmente redesenhado. Envie contatos e arquivos de áudio diretamente do menu de anexo.\n- Reprodução melhorada de mídia dentro do aplicativo (YouTube, Vimeo, SoundCloud, etc.), novo player para grandes arquivos de áudio.\n\nMais sobre a atualização:\nhttps://telegram.org/blog/search-and-media</string>
+    <string name="updateBuild">577</string>
 </resources>

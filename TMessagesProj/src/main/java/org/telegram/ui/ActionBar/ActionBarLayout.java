@@ -59,7 +59,7 @@ public class ActionBarLayout extends FrameLayout {
             if (child instanceof ActionBar) {
                 return super.drawChild(canvas, child, drawingTime);
             } else {
-                boolean wasActionBar = false;
+                //boolean wasActionBar = false;
                 int actionBarHeight = 0;
                 int childCount = getChildCount();
                 for (int a = 0; a < childCount; a++) {
@@ -339,7 +339,7 @@ public class ActionBarLayout extends FrameLayout {
         BaseFragment lastFragment = fragmentsStack.get(fragmentsStack.size() - 2);
         View fragmentView = lastFragment.fragmentView;
         if (fragmentView == null) {
-            fragmentView = lastFragment.createView(parentActivity, parentActivity.getLayoutInflater());
+            fragmentView = lastFragment.createView(parentActivity);
         } else {
             ViewGroup parent = (ViewGroup) fragmentView.getParent();
             if (parent != null) {
@@ -625,7 +625,7 @@ public class ActionBarLayout extends FrameLayout {
         fragment.setParentLayout(this);
         View fragmentView = fragment.fragmentView;
         if (fragmentView == null) {
-            fragmentView = fragment.createView(parentActivity, parentActivity.getLayoutInflater());
+            fragmentView = fragment.createView(parentActivity);
         } else {
             ViewGroup parent = (ViewGroup) fragmentView.getParent();
             if (parent != null) {
@@ -829,7 +829,7 @@ public class ActionBarLayout extends FrameLayout {
             previousFragment.setParentLayout(this);
             View fragmentView = previousFragment.fragmentView;
             if (fragmentView == null) {
-                fragmentView = previousFragment.createView(parentActivity, parentActivity.getLayoutInflater());
+                fragmentView = previousFragment.createView(parentActivity);
             } else {
                 ViewGroup parent = (ViewGroup) fragmentView.getParent();
                 if (parent != null) {
@@ -972,7 +972,7 @@ public class ActionBarLayout extends FrameLayout {
         previousFragment.setParentLayout(this);
         View fragmentView = previousFragment.fragmentView;
         if (fragmentView == null) {
-            fragmentView = previousFragment.createView(parentActivity, parentActivity.getLayoutInflater());
+            fragmentView = previousFragment.createView(parentActivity);
         } else {
             ViewGroup parent = (ViewGroup) fragmentView.getParent();
             if (parent != null) {

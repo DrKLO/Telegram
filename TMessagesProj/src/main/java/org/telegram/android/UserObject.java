@@ -8,6 +8,7 @@
 
 package org.telegram.android;
 
+import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.R;
 import org.telegram.messenger.TLRPC;
 
@@ -29,7 +30,8 @@ public class UserObject {
         if (user == null || isDeleted(user)) {
             return LocaleController.getString("HiddenName", R.string.HiddenName);
         }
-        return ContactsController.formatName(user.first_name, user.last_name);
+        String name = ContactsController.formatName(user.first_name, user.last_name);
+        return name.length() != 0 || user.phone == null || user.phone.length() == 0 ? name : PhoneFormat.getInstance().format("+" + user.phone);
     }
 
     public static String getFirstName(TLRPC.User user) {
@@ -40,6 +42,6 @@ public class UserObject {
         if (name == null || name.length() == 0) {
             name = user.last_name;
         }
-        return name != null && name.length() > 0 ? name : "DELETED";
+        return name != null && name.length() > 0 ? name : LocaleController.getString("HiddenName", R.string.HiddenName);
     }
 }

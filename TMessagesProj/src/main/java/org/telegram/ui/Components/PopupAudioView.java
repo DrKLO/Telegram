@@ -90,11 +90,6 @@ public class PopupAudioView extends BaseCell implements SeekBar.SeekBarDelegate,
 
     public void setMessageObject(MessageObject messageObject) {
         if (currentMessageObject != messageObject) {
-            int uid = messageObject.messageOwner.media.audio.user_id;
-            if (uid == 0) {
-                uid = messageObject.messageOwner.from_id;
-            }
-
             seekBar.type = 1;
             progressView.setProgressColors(0xffd9e2eb, 0xff86c5f8);
 
@@ -269,7 +264,7 @@ public class PopupAudioView extends BaseCell implements SeekBar.SeekBarDelegate,
             seekBar.setProgress(currentMessageObject.audioProgress);
         }
 
-        int duration = 0;
+        int duration;
         if (!MediaController.getInstance().isPlayingAudio(currentMessageObject)) {
             duration = currentMessageObject.messageOwner.media.audio.duration;
         } else {

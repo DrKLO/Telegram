@@ -16,7 +16,6 @@ import android.graphics.drawable.BitmapDrawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.util.AttributeSet;
-import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.FrameLayout;
@@ -400,7 +399,7 @@ public class PhotoCropActivity extends BaseFragment {
                     return false;
                 }
             }
-            int size = 0;
+            int size;
             if (AndroidUtilities.isTablet()) {
                 size = AndroidUtilities.dp(520);
             } else {
@@ -432,7 +431,7 @@ public class PhotoCropActivity extends BaseFragment {
     }
 
     @Override
-    public View createView(Context context, LayoutInflater inflater) {
+    public View createView(Context context) {
         actionBar.setBackgroundColor(0xff333333);
         actionBar.setItemsBackground(R.drawable.bar_selector_picker);
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);

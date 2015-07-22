@@ -19,7 +19,7 @@ import org.telegram.ui.Cells.PhotoAttachPhotoCell;
 
 import java.util.HashMap;
 
-public class PhotoAttachAdapter extends RecyclerView.Adapter implements NotificationCenter.NotificationCenterDelegate {
+public class PhotoAttachAdapter extends RecyclerView.Adapter {
 
     private Context mContext;
     private PhotoAttachAdapterDelegate delegate;
@@ -38,14 +38,6 @@ public class PhotoAttachAdapter extends RecyclerView.Adapter implements Notifica
 
     public PhotoAttachAdapter(Context context) {
         mContext = context;
-        NotificationCenter.getInstance().addObserver(this, NotificationCenter.albumsDidLoaded);
-        if (MediaController.allPhotosAlbumEntry == null) {
-            MediaController.loadGalleryPhotosAlbums(0);
-        }
-    }
-
-    public void onDestroy() {
-        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.albumsDidLoaded);
     }
 
     public void clearSelectedPhotos() {
@@ -62,13 +54,6 @@ public class PhotoAttachAdapter extends RecyclerView.Adapter implements Notifica
 
     public void setDelegate(PhotoAttachAdapterDelegate photoAttachAdapterDelegate) {
         delegate = photoAttachAdapterDelegate;
-    }
-
-    @Override
-    public void didReceivedNotification(int id, Object... args) {
-        if (id == NotificationCenter.albumsDidLoaded) {
-            notifyDataSetChanged();
-        }
     }
 
     @Override

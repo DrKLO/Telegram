@@ -42,6 +42,7 @@ public class BotHelpCell extends View {
     private int height;
     private int textX;
     private int textY;
+    private int textXOffset;
 
     private ClickableSpan pressedLink;
     private LinkPath urlPath = new LinkPath();
@@ -101,7 +102,9 @@ public class BotHelpCell extends View {
         width = 0;
         height = textLayout.getHeight() + AndroidUtilities.dp(4 + 18);
         int count = textLayout.getLineCount();
+        textXOffset = Integer.MAX_VALUE;
         for (int a = 0; a < count; a++) {
+            textXOffset = (int) Math.ceil(Math.min(textXOffset, textLayout.getLineLeft(a)));
             width = (int) Math.ceil(Math.max(width, textLayout.getLineWidth(a) - textLayout.getLineLeft(a)));
         }
         width += AndroidUtilities.dp(4 + 18);
@@ -113,7 +116,6 @@ public class BotHelpCell extends View {
         float y = event.getY();
 
         boolean result = false;
-        int side = AndroidUtilities.dp(48);
         if (textLayout != null) {
             if (event.getAction() == MotionEvent.ACTION_DOWN || pressedLink != null && event.getAction() == MotionEvent.ACTION_UP) {
                 if (event.getAction() == MotionEvent.ACTION_DOWN) {
@@ -186,7 +188,7 @@ public class BotHelpCell extends View {
         ResourceLoader.backgroundMediaDrawableIn.setBounds(x, y, width + x, height + y);
         ResourceLoader.backgroundMediaDrawableIn.draw(canvas);
         canvas.save();
-        canvas.translate(textX = AndroidUtilities.dp(2 + 9) + x, textY = AndroidUtilities.dp(2 + 9) + y);
+        canvas.translate(textX = AndroidUtilities.dp(2 + 9) + x - textXOffset, textY = AndroidUtilities.dp(2 + 9) + y);
         if (pressedLink != null) {
             canvas.drawPath(urlPath, urlPaint);
         }

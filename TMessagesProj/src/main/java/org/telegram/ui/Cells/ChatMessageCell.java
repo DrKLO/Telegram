@@ -193,7 +193,7 @@ public class ChatMessageCell extends ChatBaseCell {
                                 pressedLink.onClick(this);
                             } else {
                                 TLRPC.WebPage webPage = currentMessageObject.messageOwner.media.webpage;
-                                if (Build.VERSION.SDK_INT >= 16 && webPage.embed_url != null && webPage.embed_url.length() != 0) {
+                                if (Build.VERSION.SDK_INT >= 19 && webPage.embed_url != null && webPage.embed_url.length() != 0) {
                                     delegate.needOpenWebView(webPage.embed_url, webPage.site_name, webPage.url, webPage.embed_width, webPage.embed_height);
                                 } else {
                                     Uri uri = Uri.parse(webPage.url);
@@ -536,7 +536,7 @@ public class ChatMessageCell extends ChatBaseCell {
 
                 if (webPage.photo != null) {
                     boolean smallImage = webPage.type != null && (webPage.type.equals("app") || webPage.type.equals("profile") || webPage.type.equals("article"));
-                    if (smallImage && descriptionLayout != null && descriptionLayout.getLineCount() == 1) {
+                    if (smallImage && (descriptionLayout == null || descriptionLayout != null && descriptionLayout.getLineCount() == 1)) {
                         smallImage = false;
                         isSmallImage = false;
                     }

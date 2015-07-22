@@ -555,8 +555,6 @@ public class Switch extends CompoundButton {
 
         final int switchTop = mSwitchTop;
         final int switchBottom = mSwitchBottom;
-        final int switchInnerTop = switchTop + padding.top;
-        final int switchInnerBottom = switchBottom - padding.bottom;
 
         final Drawable thumbDrawable = mThumbDrawable;
         if (trackDrawable != null) {

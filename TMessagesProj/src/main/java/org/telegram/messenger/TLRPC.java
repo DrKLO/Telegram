@@ -11634,6 +11634,9 @@ public class TLRPC {
                 case 0x9eddf188:
                     result = new TL_inputMessagesFilterDocument();
                     break;
+                case 0x5afbf764:
+                    result = new TL_inputMessagesFilterAudioDocuments();
+                    break;
                 case 0x9fc00e65:
                     result = new TL_inputMessagesFilterVideo();
                     break;
@@ -11665,6 +11668,15 @@ public class TLRPC {
 
     public static class TL_inputMessagesFilterDocument extends MessagesFilter {
         public static int constructor = 0x9eddf188;
+
+
+        public void serializeToStream(AbsSerializedData stream) {
+            stream.writeInt32(constructor);
+        }
+    }
+
+    public static class TL_inputMessagesFilterAudioDocuments extends MessagesFilter {
+        public static int constructor = 0x5afbf764;
 
 
         public void serializeToStream(AbsSerializedData stream) {

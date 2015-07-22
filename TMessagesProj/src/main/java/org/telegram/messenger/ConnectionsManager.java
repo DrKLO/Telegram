@@ -363,7 +363,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                     try {
                         SerializedData data = new SerializedData(configFile);
                         isTestBackend = data.readInt32(false);
-                        int version = data.readInt32(false);
+                        data.readInt32(false);
                         sessionsToDestroy.clear();
                         int count = data.readInt32(false);
                         for (int a = 0; a < count; a++) {
@@ -2700,7 +2700,7 @@ public class ConnectionsManager implements Action.ActionDelegate, TcpConnection.
                 return;
             }
 
-            int messageLength = data.readInt32(false);
+            data.readInt32(false);
 
             TLObject message = deserialize(getRequestWithMessageId(messageId), data, true);
 

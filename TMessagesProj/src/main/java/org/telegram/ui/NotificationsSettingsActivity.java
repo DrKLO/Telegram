@@ -20,7 +20,6 @@ import android.net.Uri;
 import android.os.Build;
 import android.provider.Settings;
 import android.view.Gravity;
-import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
@@ -88,7 +87,6 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
     private int otherSectionRow2;
     private int otherSectionRow;
     private int badgeNumberRow;
-    private int pebbleAlertRow;
     private int androidAutoAlertRow;
     private int repeatRow;
     private int resetSectionRow2;
@@ -143,7 +141,6 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
         otherSectionRow = rowCount++;
         badgeNumberRow = rowCount++;
         androidAutoAlertRow = -1;
-        pebbleAlertRow = rowCount++;
         repeatRow = rowCount++;
         resetSectionRow2 = rowCount++;
         resetSectionRow = rowCount++;
@@ -161,7 +158,7 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
     }
 
     @Override
-    public View createView(Context context, LayoutInflater inflater) {
+    public View createView(Context context) {
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBar.setAllowOverlayTitle(true);
         actionBar.setTitle(LocaleController.getString("NotificationsAndSounds", R.string.NotificationsAndSounds));
@@ -321,12 +318,6 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
                     MessagesController.getInstance().enableJoined = !enabled;
                     editor.putBoolean("EnableContactJoined", !enabled);
                     editor.commit();
-                } else if (i == pebbleAlertRow) {
-                    SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
-                    SharedPreferences.Editor editor = preferences.edit();
-                    enabled = preferences.getBoolean("EnablePebbleNotifications", false);
-                    editor.putBoolean("EnablePebbleNotifications", !enabled);
-                    editor.commit();
                 } else if (i == androidAutoAlertRow) {
                     SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
                     SharedPreferences.Editor editor = preferences.edit();
@@ -448,7 +439,7 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
                     builder.setTitle(LocaleController.getString("Vibrate", R.string.Vibrate));
                     builder.setItems(new CharSequence[]{
                             LocaleController.getString("VibrationDisabled", R.string.VibrationDisabled),
-                            LocaleController.getString("Default", R.string.Default),
+                            LocaleController.getString("VibrationDefault", R.string.VibrationDefault),
                             LocaleController.getString("Short", R.string.Short),
                             LocaleController.getString("Long", R.string.Long),
                             LocaleController.getString("OnlyIfSilent", R.string.OnlyIfSilent)
@@ -708,8 +699,6 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
                     checkCell.setTextAndCheck(LocaleController.getString("NotificationsPriority", R.string.NotificationsPriority), preferences.getBoolean("EnableInAppPriority", false), false);
                 } else if (i == contactJoinedRow) {
                     checkCell.setTextAndCheck(LocaleController.getString("ContactJoined", R.string.ContactJoined), preferences.getBoolean("EnableContactJoined", true), false);
-                } else if (i == pebbleAlertRow) {
-                    checkCell.setTextAndCheck(LocaleController.getString("Pebble", R.string.Pebble), preferences.getBoolean("EnablePebbleNotifications", false), true);
                 } else if (i == androidAutoAlertRow) {
                     checkCell.setTextAndCheck("Android Auto", preferences.getBoolean("EnableAutoNotifications", false), true);
                 } else if (i == notificationsServiceRow) {
@@ -771,7 +760,7 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
                         value = preferences.getInt("vibrate_group", 0);
                     }
                     if (value == 0) {
-                        textCell.setTextAndValue(LocaleController.getString("Vibrate", R.string.Vibrate), LocaleController.getString("Default", R.string.Default), true);
+                        textCell.setTextAndValue(LocaleController.getString("Vibrate", R.string.Vibrate), LocaleController.getString("VibrationDefault", R.string.VibrationDefault), true);
                     } else if (value == 1) {
                         textCell.setTextAndValue(LocaleController.getString("Vibrate", R.string.Vibrate), LocaleController.getString("Short", R.string.Short), true);
                     } else if (value == 2) {
@@ -837,7 +826,7 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
                 return 0;
             } else if (i == messageAlertRow || i == messagePreviewRow || i == groupAlertRow ||
                     i == groupPreviewRow || i == inappSoundRow || i == inappVibrateRow ||
-                    i == inappPreviewRow || i == contactJoinedRow || i == pebbleAlertRow ||
+                    i == inappPreviewRow || i == contactJoinedRow ||
                     i == notificationsServiceRow || i == badgeNumberRow || i == inappPriorityRow ||
                     i == inchatSoundRow || i == androidAutoAlertRow) {
                 return 1;

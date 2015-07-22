@@ -17,6 +17,7 @@ import android.widget.FrameLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
+import org.telegram.android.AndroidUtilities;
 import org.telegram.android.LocaleController;
 import org.telegram.messenger.R;
 
@@ -39,6 +40,7 @@ public class EmptyTextProgressView extends FrameLayout {
         textView.setTextColor(0xff808080);
         textView.setGravity(Gravity.CENTER);
         textView.setVisibility(INVISIBLE);
+        textView.setPadding(AndroidUtilities.dp(20), 0, AndroidUtilities.dp(20), 0);
         textView.setText(LocaleController.getString("NoResult", R.string.NoResult));
         addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
 
@@ -81,7 +83,6 @@ public class EmptyTextProgressView extends FrameLayout {
                 continue;
             }
 
-            LayoutParams lp = (LayoutParams) child.getLayoutParams();
             int x = (width - child.getMeasuredWidth()) / 2;
             int y;
             if (showAtCenter) {

@@ -15,7 +15,6 @@ import android.content.DialogInterface;
 import android.os.Build;
 import android.util.TypedValue;
 import android.view.Gravity;
-import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
@@ -86,7 +85,7 @@ public class SessionsActivity extends BaseFragment implements NotificationCenter
     }
 
     @Override
-    public View createView(Context context, LayoutInflater inflater) {
+    public View createView(Context context) {
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBar.setAllowOverlayTitle(true);
         actionBar.setTitle(LocaleController.getString("SessionsTitle", R.string.SessionsTitle));
@@ -109,7 +108,7 @@ public class SessionsActivity extends BaseFragment implements NotificationCenter
         emptyLayout.setOrientation(LinearLayout.VERTICAL);
         emptyLayout.setGravity(Gravity.CENTER);
         emptyLayout.setBackgroundResource(R.drawable.greydivider_bottom);
-        emptyLayout.setLayoutParams(new AbsListView.LayoutParams(AbsListView.LayoutParams.MATCH_PARENT, AndroidUtilities.displaySize.y - AndroidUtilities.getCurrentActionBarHeight()));
+        emptyLayout.setLayoutParams(new AbsListView.LayoutParams(AbsListView.LayoutParams.MATCH_PARENT, AndroidUtilities.displaySize.y - ActionBar.getCurrentActionBarHeight()));
 
         ImageView imageView = new ImageView(context);
         imageView.setImageResource(R.drawable.devices);
@@ -433,7 +432,7 @@ public class SessionsActivity extends BaseFragment implements NotificationCenter
             } else if (type == 3) {
                 ViewGroup.LayoutParams layoutParams = emptyLayout.getLayoutParams();
                 if (layoutParams != null) {
-                    layoutParams.height = Math.max(AndroidUtilities.dp(220), AndroidUtilities.displaySize.y - AndroidUtilities.getCurrentActionBarHeight() - AndroidUtilities.dp(128) - (Build.VERSION.SDK_INT >= 21 ? AndroidUtilities.statusBarHeight : 0));
+                    layoutParams.height = Math.max(AndroidUtilities.dp(220), AndroidUtilities.displaySize.y - ActionBar.getCurrentActionBarHeight() - AndroidUtilities.dp(128) - (Build.VERSION.SDK_INT >= 21 ? AndroidUtilities.statusBarHeight : 0));
                     emptyLayout.setLayoutParams(layoutParams);
                 }
                 return emptyLayout;

@@ -13,7 +13,6 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.util.TypedValue;
 import android.view.Gravity;
-import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.ImageView;
@@ -36,7 +35,7 @@ import org.telegram.ui.Components.LayoutHelper;
 public class ChangePhoneHelpActivity extends BaseFragment {
 
     @Override
-    public View createView(Context context, LayoutInflater inflater) {
+    public View createView(Context context) {
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBar.setAllowOverlayTitle(true);
 

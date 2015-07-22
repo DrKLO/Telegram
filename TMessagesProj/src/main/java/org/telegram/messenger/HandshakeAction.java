@@ -637,7 +637,7 @@ public class HandshakeAction extends Action implements TcpConnection.TcpConnecti
                 FileLog.d("tmessages", String.format("===== Duplicate message id %d received, ignoring", messageId));
                 return;
             }
-            int messageLength = data.readInt32(false);
+            data.readInt32(false);
 
             int constructor = data.readInt32(false);
             TLObject object = TLClassStore.Instance().TLdeserialize(data, constructor, false);

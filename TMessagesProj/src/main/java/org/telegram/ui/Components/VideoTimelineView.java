@@ -202,7 +202,6 @@ public class VideoTimelineView extends View {
                         int h = (int) (bitmap.getHeight() * scale);
                         Rect srcRect = new Rect(0, 0, bitmap.getWidth(), bitmap.getHeight());
                         Rect destRect = new Rect((frameWidth - w) / 2, (frameHeight - h) / 2, w, h);
-                        Paint paint = new Paint();
                         canvas.drawBitmap(bitmap, srcRect, destRect, null);
                         bitmap.recycle();
                         bitmap = result;

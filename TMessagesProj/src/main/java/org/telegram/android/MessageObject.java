@@ -313,6 +313,8 @@ public class MessageObject {
                     } else {
                         messageText = LocaleController.getString("AttachSticker", R.string.AttachSticker);
                     }
+                } else if (isMusic()) {
+                    messageText = LocaleController.getString("AttachMusic", R.string.AttachMusic);
                 } else {
                     String name = FileLoader.getDocumentFileName(message.media.document);
                     if (name != null && name.length() > 0) {
@@ -327,7 +329,9 @@ public class MessageObject {
         } else {
             messageText = message.message;
         }
-        messageText = Emoji.replaceEmoji(messageText, textPaint.getFontMetricsInt(), AndroidUtilities.dp(20));
+        if (generateLayout) {
+            messageText = Emoji.replaceEmoji(messageText, textPaint.getFontMetricsInt(), AndroidUtilities.dp(20), false);
+        }
 
         if (message instanceof TLRPC.TL_message || message instanceof TLRPC.TL_messageForwarded_old2) {
             if (isMediaEmpty()) {
@@ -355,6 +359,9 @@ public class MessageObject {
                         type = 8;
                     } else if (message.media.document.mime_type.equals("image/webp") && isSticker()) {
                         type = 13;
+                    } else if (isMusic()) {
+                        type = 14;
+                        contentType = 8;
                     } else {
                         type = 9;
                     }
@@ -600,7 +607,7 @@ public class MessageObject {
             return;
         }
         if (messageOwner.media != null && messageOwner.media.caption != null && messageOwner.media.caption.length() > 0) {
-            caption = Emoji.replaceEmoji(messageOwner.media.caption, textPaint.getFontMetricsInt(), AndroidUtilities.dp(20));
+            caption = Emoji.replaceEmoji(messageOwner.media.caption, textPaint.getFontMetricsInt(), AndroidUtilities.dp(20), false);
             if (containsUrls(caption)) {
                 try {
                     Linkify.addLinks((Spannable) caption, Linkify.WEB_URLS);
@@ -950,6 +957,17 @@ public class MessageObject {
         return false;
     }
 
+    public static boolean isMusicMessage(TLRPC.Message message) {
+        if (message.media != null && message.media.document != null) {
+            for (TLRPC.DocumentAttribute attribute : message.media.document.attributes) {
+                if (attribute instanceof TLRPC.TL_documentAttributeAudio) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     public static TLRPC.InputStickerSet getInputStickerSet(TLRPC.Message message) {
         if (message.media != null && message.media.document != null) {
             for (TLRPC.DocumentAttribute attribute : message.media.document.attributes) {
@@ -986,6 +1004,8 @@ public class MessageObject {
             return AndroidUtilities.dp(100);
         } else if (type == 4) {
             return AndroidUtilities.dp(114);
+        } else if (type == 14) {
+            return AndroidUtilities.dp(78);
         } else if (type == 13) {
             float maxHeight = AndroidUtilities.displaySize.y * 0.4f;
             float maxWidth;
@@ -1059,6 +1079,39 @@ public class MessageObject {
 
     public boolean isSticker() {
         return isStickerMessage(messageOwner);
+    }
+
+    public boolean isMusic() {
+        return isMusicMessage(messageOwner);
+    }
+
+    public String getMusicTitle() {
+        for (TLRPC.DocumentAttribute attribute : messageOwner.media.document.attributes) {
+            if (attribute instanceof TLRPC.TL_documentAttributeAudio) {
+                String title = attribute.title;
+                if (title == null || title.length() == 0) {
+                    title = FileLoader.getDocumentFileName(messageOwner.media.document);
+                    if (title == null || title.length() == 0) {
+                        title = LocaleController.getString("AudioUnknownTitle", R.string.AudioUnknownTitle);
+                    }
+                }
+                return title;
+            }
+        }
+        return "";
+    }
+
+    public String getMusicAuthor() {
+        for (TLRPC.DocumentAttribute attribute : messageOwner.media.document.attributes) {
+            if (attribute instanceof TLRPC.TL_documentAttributeAudio) {
+                String performer = attribute.performer;
+                if (performer == null || performer.length() == 0) {
+                    performer = LocaleController.getString("AudioUnknownArtist", R.string.AudioUnknownArtist);
+                }
+                return performer;
+            }
+        }
+        return "";
     }
 
     public TLRPC.InputStickerSet getInputStickerSet() {

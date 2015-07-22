@@ -161,8 +161,20 @@
 
         <service android:name="org.telegram.android.NotificationsService" android:enabled="true"/>
         <service android:name="org.telegram.android.NotificationRepeat" android:exported="false"/>
-        <service android:name="org.telegram.android.NotificationDelay" android:exported="false"/>
         <service android:name="org.telegram.android.VideoEncodingService" android:enabled="true"/>
+        <service android:name="org.telegram.android.MusicPlayerService" android:exported="true" android:enabled="true"/>
+
+        <receiver android:name="org.telegram.android.MusicPlayerReceiver" >
+            <intent-filter>
+                <action android:name="org.telegram.android.musicplayer.close" />
+                <action android:name="org.telegram.android.musicplayer.pause" />
+                <action android:name="org.telegram.android.musicplayer.next" />
+                <action android:name="org.telegram.android.musicplayer.play" />
+                <action android:name="org.telegram.android.musicplayer.previous" />
+                <action android:name="android.intent.action.MEDIA_BUTTON" />
+                <action android:name="android.media.AUDIO_BECOMING_NOISY" />
+            </intent-filter>
+        </receiver>
 
         <receiver android:name="org.telegram.android.AppStartReceiver" android:enabled="true">
             <intent-filter>

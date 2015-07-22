@@ -65,6 +65,11 @@
     <string name="YouCreatedBroadcastList">Du hast eine Broadcast Liste erstellt</string>
     <string name="AddRecipient">Empfänger hinzufügen</string>
     <string name="KickFromBroadcast">Aus Broadcast Liste entfernen</string>
+    <!--audio view-->
+    <string name="NoAudio">Bitte füge Musikdateien einfach deiner Android Musikbibliothek hinzu, um sie hier zu sehen.</string>
+    <string name="AttachMusic">Musik</string>
+    <string name="AudioUnknownArtist">Unbekannter Künstler</string>
+    <string name="AudioUnknownTitle">Unbekannter Titel</string>
     <!--documents view-->
     <string name="SelectFile">Datei auswählen</string>
     <string name="FreeOfTotal">Freier Speicher: %1$s von %2$s</string>
@@ -121,6 +126,7 @@
     <string name="DeleteThisChat">Diesen Chat löschen</string>
     <string name="SlideToCancel">WISCHEN UM ABZUBRECHEN</string>
     <string name="SaveToDownloads">In Downloads speichern</string>
+    <string name="SaveToMusic">Musik speichern</string>
     <string name="ShareFile">Teilen</string>
     <string name="ApplyLocalizationFile">Sprachdatei benutzen</string>
     <string name="UnsupportedAttachment">Nicht unterstützte Datei</string>
@@ -208,7 +214,7 @@
     <string name="SharedMedia">Geteilte Medien</string>
     <string name="SETTINGS">Einstellungen</string>
     <string name="AddMember">Mitglied hinzufügen</string>
-    <string name="DeleteAndExit">Gruppe löschen und verlassen</string>
+    <string name="DeleteAndExit">Löschen und Gruppe verlassen</string>
     <string name="Notifications">Mitteilungen</string>
     <string name="KickFromGroup">Aus der Gruppe entfernen</string>
     <!--contact info view-->
@@ -347,6 +353,7 @@
     <string name="RepeatDisabled">Aus</string>
     <string name="InChatSound">In-Chat-Töne</string>
     <string name="SoundDefault">Standard</string>
+    <string name="VibrationDefault">Standard</string>
     <string name="SmartNotifications">Intelligente Benachrichtigungen</string>
     <string name="SmartNotificationsDisabled">Deaktiviert</string>
     <string name="SmartNotificationsInfo">Höchstens %1$s innerhalb von %2$s</string>
@@ -827,6 +834,6 @@
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s um %2$s</string>
     <!--update text-->
-    <string name="updateText">Telegram für Android wurde aktualisiert. Neu in Version 3.0:\n\n- Neue Tabs im Sticker Panel für alle deine eigenen Sticker-Pakete. Füge neue Sticker wie beispielsweise https://telegram.me/addstickers/Animals hinzu.\n- Neue Bot API, für alle kostenlos verfügbar. Kannst du programmieren? Erstelle deine eigenen Bots für Spiele, Dienste oder Integrationen. Mehr dazu unter https://telegram.org/blog/bot-revolution</string>
-    <string name="updateBuild">551</string>
+    <string name="updateText">Telegram für Android wurde aktualisiert. Neu in Version 3.1:\n\n- Direkte Suche in Chats.\n- In Chats versteckt sich ein komplett neues Menü hinter der Büroklammer. Nun kann man dort auch Musik und Kontakte versenden.\n- In-App Medienwiedergabe für YouTube, Vimeo, SoundCloud, etc. optimiert und neuer Player für Audiodateien.\n\nMehr dazu unter:\nhttps://telegram.org/blog/search-and-media</string>
+    <string name="updateBuild">577</string>
 </resources>
