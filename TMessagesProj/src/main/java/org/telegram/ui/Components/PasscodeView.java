@@ -993,7 +993,7 @@ public class PasscodeView extends FrameLayout {
 
         if (UserConfig.passcodeType == 1 && (AndroidUtilities.isTablet() || getContext().getResources().getConfiguration().orientation != Configuration.ORIENTATION_LANDSCAPE)) {
             int t = 0;
-            if (passwordFrameLayout.getTag() != 0) {
+            if ((Integer) passwordFrameLayout.getTag() != 0) {
                 t = (Integer) passwordFrameLayout.getTag();
             }
             LayoutParams layoutParams = (LayoutParams) passwordFrameLayout.getLayoutParams();
