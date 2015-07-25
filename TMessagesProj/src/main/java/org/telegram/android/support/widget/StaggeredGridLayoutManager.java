@@ -537,7 +537,6 @@ public class StaggeredGridLayoutManager extends RecyclerView.LayoutManager {
     @Override
     public void onLayoutChildren(RecyclerView.Recycler recycler, RecyclerView.State state) {
         ensureOrientationHelper();
-
         final AnchorInfo anchorInfo = mAnchorInfo;
         anchorInfo.reset();
 
@@ -577,21 +576,22 @@ public class StaggeredGridLayoutManager extends RecyclerView.LayoutManager {
         detachAndScrapAttachedViews(recycler);
         mLaidOutInvalidFullSpan = false;
         updateMeasureSpecs();
+        updateLayoutState(anchorInfo.mPosition, state);
         if (anchorInfo.mLayoutFromEnd) {
             // Layout start.
-            updateLayoutStateToFillStart(anchorInfo.mPosition, state);
+            setLayoutStateDirection(LAYOUT_START);
             fill(recycler, mLayoutState, state);
             // Layout end.
-            updateLayoutStateToFillEnd(anchorInfo.mPosition, state);
-            mLayoutState.mCurrentPosition += mLayoutState.mItemDirection;
+            setLayoutStateDirection(LAYOUT_END);
+            mLayoutState.mCurrentPosition = anchorInfo.mPosition + mLayoutState.mItemDirection;
             fill(recycler, mLayoutState, state);
         } else {
             // Layout end.
-            updateLayoutStateToFillEnd(anchorInfo.mPosition, state);
+            setLayoutStateDirection(LAYOUT_END);
             fill(recycler, mLayoutState, state);
             // Layout start.
-            updateLayoutStateToFillStart(anchorInfo.mPosition, state);
-            mLayoutState.mCurrentPosition += mLayoutState.mItemDirection;
+            setLayoutStateDirection(LAYOUT_START);
+            mLayoutState.mCurrentPosition = anchorInfo.mPosition + mLayoutState.mItemDirection;
             fill(recycler, mLayoutState, state);
         }
 
@@ -1254,40 +1254,37 @@ public class StaggeredGridLayoutManager extends RecyclerView.LayoutManager {
         }
     }
 
-    private void updateLayoutStateToFillStart(int anchorPosition, RecyclerView.State state) {
+    private void updateLayoutState(int anchorPosition, RecyclerView.State state) {
         mLayoutState.mAvailable = 0;
         mLayoutState.mCurrentPosition = anchorPosition;
+        int startExtra = 0;
+        int endExtra = 0;
         if (isSmoothScrolling()) {
             final int targetPos = state.getTargetScrollPosition();
-            if (mShouldReverseLayout == targetPos < anchorPosition) {
-                mLayoutState.mExtra = 0;
-            } else {
-                mLayoutState.mExtra = mPrimaryOrientation.getTotalSpace();
+            if (targetPos != NO_POSITION) {
+                if (mShouldReverseLayout == targetPos < anchorPosition) {
+                    endExtra = mPrimaryOrientation.getTotalSpace();
+                } else {
+                    startExtra = mPrimaryOrientation.getTotalSpace();
+                }
             }
-        } else {
-            mLayoutState.mExtra = 0;
         }
-        mLayoutState.mLayoutDirection = LAYOUT_START;
-        mLayoutState.mItemDirection = mShouldReverseLayout ? ITEM_DIRECTION_TAIL
-                : ITEM_DIRECTION_HEAD;
+
+        // Line of the furthest row.
+        final boolean clipToPadding = getClipToPadding();
+        if (clipToPadding) {
+            mLayoutState.mStartLine = mPrimaryOrientation.getStartAfterPadding() - startExtra;
+            mLayoutState.mEndLine = mPrimaryOrientation.getEndAfterPadding() + endExtra;
+        } else {
+            mLayoutState.mEndLine = mPrimaryOrientation.getEnd() + endExtra;
+            mLayoutState.mStartLine = -startExtra;
+        }
     }
 
-    private void updateLayoutStateToFillEnd(int anchorPosition, RecyclerView.State state) {
-        mLayoutState.mAvailable = 0;
-        mLayoutState.mCurrentPosition = anchorPosition;
-        if (isSmoothScrolling()) {
-            final int targetPos = state.getTargetScrollPosition();
-            if (mShouldReverseLayout == targetPos > anchorPosition) {
-                mLayoutState.mExtra = 0;
-            } else {
-                mLayoutState.mExtra = mPrimaryOrientation.getTotalSpace();
-            }
-        } else {
-            mLayoutState.mExtra = 0;
-        }
-        mLayoutState.mLayoutDirection = LAYOUT_END;
-        mLayoutState.mItemDirection = mShouldReverseLayout ? ITEM_DIRECTION_HEAD
-                : ITEM_DIRECTION_TAIL;
+    private void setLayoutStateDirection(int direction) {
+        mLayoutState.mLayoutDirection = direction;
+        mLayoutState.mItemDirection = (mShouldReverseLayout == (direction == LAYOUT_START)) ?
+                ITEM_DIRECTION_TAIL : ITEM_DIRECTION_HEAD;
     }
 
     @Override
@@ -1383,31 +1380,25 @@ public class StaggeredGridLayoutManager extends RecyclerView.LayoutManager {
         mRemainingSpans.set(0, mSpanCount, true);
         // The target position we are trying to reach.
         final int targetLine;
-        /*
-        * The line until which we can recycle, as long as we add views.
-        * Keep in mind, it is still the line in layout direction which means; to calculate the
-        * actual recycle line, we should subtract/add the size in orientation.
-        */
-        final int recycleLine;
+
         // Line of the furthest row.
         if (layoutState.mLayoutDirection == LAYOUT_END) {
-            // ignore padding for recycler
-            recycleLine = mPrimaryOrientation.getEndAfterPadding() + mLayoutState.mAvailable;
-            targetLine = recycleLine + mLayoutState.mExtra + mPrimaryOrientation.getEndPadding();
-
+            targetLine = layoutState.mEndLine + layoutState.mAvailable;
         } else { // LAYOUT_START
-            // ignore padding for recycler
-            recycleLine = mPrimaryOrientation.getStartAfterPadding() - mLayoutState.mAvailable;
-            targetLine = recycleLine - mLayoutState.mExtra -
-                    mPrimaryOrientation.getStartAfterPadding();
+            targetLine = layoutState.mStartLine - layoutState.mAvailable;
         }
+
         updateAllRemainingSpans(layoutState.mLayoutDirection, targetLine);
+        if (DEBUG) {
+            Log.d(TAG, "FILLING targetLine: " + targetLine + "," +
+                    "remaining spans:" + mRemainingSpans + ", state: " + layoutState);
+        }
 
         // the default coordinate to add new view.
         final int defaultNewViewLine = mShouldReverseLayout
                 ? mPrimaryOrientation.getEndAfterPadding()
                 : mPrimaryOrientation.getStartAfterPadding();
-
+        boolean added = false;
         while (layoutState.hasMore(state) && !mRemainingSpans.isEmpty()) {
             View view = layoutState.next(recycler);
             LayoutParams lp = ((LayoutParams) view.getLayoutParams());
@@ -1500,18 +1491,21 @@ public class StaggeredGridLayoutManager extends RecyclerView.LayoutManager {
             } else {
                 updateRemainingSpans(currentSpan, mLayoutState.mLayoutDirection, targetLine);
             }
-            recycle(recycler, mLayoutState, currentSpan, recycleLine);
+            recycle(recycler, mLayoutState);
+            added = true;
         }
-        if (DEBUG) {
-            Log.d(TAG, "fill, " + getChildCount());
+        if (!added) {
+            recycle(recycler, mLayoutState);
         }
+        final int diff;
         if (mLayoutState.mLayoutDirection == LAYOUT_START) {
             final int minStart = getMinStart(mPrimaryOrientation.getStartAfterPadding());
-            return Math.max(0, mLayoutState.mAvailable + (recycleLine - minStart));
+            diff = mPrimaryOrientation.getStartAfterPadding() - minStart;
         } else {
-            final int max = getMaxEnd(mPrimaryOrientation.getEndAfterPadding());
-            return Math.max(0, mLayoutState.mAvailable + (max - recycleLine));
+            final int maxEnd = getMaxEnd(mPrimaryOrientation.getEndAfterPadding());
+            diff = maxEnd - mPrimaryOrientation.getEndAfterPadding();
         }
+        return diff > 0 ? Math.min(layoutState.mAvailable, diff) : 0;
     }
 
     private LazySpanLookup.FullSpanItem createFullSpanItemFromEnd(int newItemTop) {
@@ -1548,19 +1542,40 @@ public class StaggeredGridLayoutManager extends RecyclerView.LayoutManager {
         }
     }
 
-    private void recycle(RecyclerView.Recycler recycler, LayoutState layoutState,
-            Span updatedSpan, int recycleLine) {
-        if (layoutState.mLayoutDirection == LAYOUT_START) {
-            // calculate recycle line
-            int maxStart = getMaxStart(updatedSpan.getStartLine());
-            recycleFromEnd(recycler, Math.max(recycleLine, maxStart) +
-                    (mPrimaryOrientation.getEnd() - mPrimaryOrientation.getStartAfterPadding()));
+    private void recycle(RecyclerView.Recycler recycler, LayoutState layoutState) {
+        if (layoutState.mAvailable == 0) {
+            // easy, recycle line is still valid
+            if (layoutState.mLayoutDirection == LAYOUT_START) {
+                recycleFromEnd(recycler, layoutState.mEndLine);
+            } else {
+                recycleFromStart(recycler, layoutState.mStartLine);
+            }
         } else {
-            // calculate recycle line
-            int minEnd = getMinEnd(updatedSpan.getEndLine());
-            recycleFromStart(recycler, Math.min(recycleLine, minEnd) -
-                    (mPrimaryOrientation.getEnd() - mPrimaryOrientation.getStartAfterPadding()));
+            // scrolling case, recycle line can be shifted by how much space we could cover
+            // by adding new views
+            if (layoutState.mLayoutDirection == LAYOUT_START) {
+                // calculate recycle line
+                int scrolled = layoutState.mStartLine - getMaxStart(layoutState.mStartLine);
+                final int line;
+                if (scrolled < 0) {
+                    line = layoutState.mEndLine;
+                } else {
+                    line = layoutState.mEndLine - Math.min(scrolled, layoutState.mAvailable);
+                }
+                recycleFromEnd(recycler, line);
+            } else {
+                // calculate recycle line
+                int scrolled = getMinEnd(layoutState.mEndLine) - layoutState.mEndLine;
+                final int line;
+                if (scrolled < 0) {
+                    line = layoutState.mStartLine;
+                } else {
+                    line = layoutState.mStartLine + Math.min(scrolled, layoutState.mAvailable);
+                }
+                recycleFromStart(recycler, line);
+            }
         }
+
     }
 
     private void appendViewToAllSpans(View view) {
@@ -1602,12 +1617,12 @@ public class StaggeredGridLayoutManager extends RecyclerView.LayoutManager {
         final int deletedSize = span.getDeletedSize();
         if (layoutDir == LAYOUT_START) {
             final int line = span.getStartLine();
-            if (line + deletedSize < targetLine) {
+            if (line + deletedSize <= targetLine) {
                 mRemainingSpans.set(span.mIndex, false);
             }
         } else {
             final int line = span.getEndLine();
-            if (line - deletedSize > targetLine) {
+            if (line - deletedSize >= targetLine) {
                 mRemainingSpans.set(span.mIndex, false);
             }
         }
@@ -1678,18 +1693,24 @@ public class StaggeredGridLayoutManager extends RecyclerView.LayoutManager {
     }
 
     private void recycleFromStart(RecyclerView.Recycler recycler, int line) {
-        if (DEBUG) {
-            Log.d(TAG, "recycling from start for line " + line);
-        }
         while (getChildCount() > 0) {
             View child = getChildAt(0);
-            if (mPrimaryOrientation.getDecoratedEnd(child) < line) {
+            if (mPrimaryOrientation.getDecoratedEnd(child) <= line) {
                 LayoutParams lp = (LayoutParams) child.getLayoutParams();
+                // Don't recycle the last View in a span not to lose span's start/end lines
                 if (lp.mFullSpan) {
+                    for (int j = 0; j < mSpanCount; j++) {
+                        if (mSpans[j].mViews.size() == 1) {
+                            return;
+                        }
+                    }
                     for (int j = 0; j < mSpanCount; j++) {
                         mSpans[j].popStart();
                     }
                 } else {
+                    if (lp.mSpan.mViews.size() == 1) {
+                        return;
+                    }
                     lp.mSpan.popStart();
                 }
                 removeAndRecycleView(child, recycler);
@@ -1704,13 +1725,22 @@ public class StaggeredGridLayoutManager extends RecyclerView.LayoutManager {
         int i;
         for (i = childCount - 1; i >= 0; i--) {
             View child = getChildAt(i);
-            if (mPrimaryOrientation.getDecoratedStart(child) > line) {
+            if (mPrimaryOrientation.getDecoratedStart(child) >= line) {
                 LayoutParams lp = (LayoutParams) child.getLayoutParams();
+                // Don't recycle the last View in a span not to lose span's start/end lines
                 if (lp.mFullSpan) {
+                    for (int j = 0; j < mSpanCount; j++) {
+                        if (mSpans[j].mViews.size() == 1) {
+                            return;
+                        }
+                    }
                     for (int j = 0; j < mSpanCount; j++) {
                         mSpans[j].popEnd();
                     }
                 } else {
+                    if (lp.mSpan.mViews.size() == 1) {
+                        return;
+                    }
                     lp.mSpan.popEnd();
                 }
                 removeAndRecycleView(child, recycler);
@@ -1860,21 +1890,19 @@ public class StaggeredGridLayoutManager extends RecyclerView.LayoutManager {
     int scrollBy(int dt, RecyclerView.Recycler recycler, RecyclerView.State state) {
         ensureOrientationHelper();
         final int referenceChildPosition;
+        final int layoutDir;
         if (dt > 0) { // layout towards end
-            mLayoutState.mLayoutDirection = LAYOUT_END;
-            mLayoutState.mItemDirection = mShouldReverseLayout ? ITEM_DIRECTION_HEAD
-                    : ITEM_DIRECTION_TAIL;
+            layoutDir = LAYOUT_END;
             referenceChildPosition = getLastChildPosition();
         } else {
-            mLayoutState.mLayoutDirection = LAYOUT_START;
-            mLayoutState.mItemDirection = mShouldReverseLayout ? ITEM_DIRECTION_TAIL
-                    : ITEM_DIRECTION_HEAD;
+            layoutDir = LAYOUT_START;
             referenceChildPosition = getFirstChildPosition();
         }
+        updateLayoutState(referenceChildPosition, state);
+        setLayoutStateDirection(layoutDir);
         mLayoutState.mCurrentPosition = referenceChildPosition + mLayoutState.mItemDirection;
         final int absDt = Math.abs(dt);
         mLayoutState.mAvailable = absDt;
-        mLayoutState.mExtra = isSmoothScrolling() ? mPrimaryOrientation.getTotalSpace() : 0;
         int consumed = fill(recycler, mLayoutState, state);
         final int totalScroll;
         if (absDt < consumed) {

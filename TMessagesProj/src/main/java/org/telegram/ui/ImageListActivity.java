@@ -2,8 +2,6 @@ package org.telegram.ui;
 
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.graphics.PorterDuff;
-import android.graphics.drawable.Drawable;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -48,7 +46,7 @@ public class ImageListActivity extends BaseFragment {
     }
 
     @Override
-    public View createView(Context context, LayoutInflater inflater){
+    public View createView(Context context){
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBar.setAllowOverlayTitle(true);
         actionBar.setTitle(LocaleController.getString("BubbleStyle", R.string.BubbleStyle));
@@ -61,7 +59,7 @@ public class ImageListActivity extends BaseFragment {
             }
         });
 
-        fragmentView = inflater.inflate(R.layout.imagelistlayout, null, false);
+        fragmentView = getParentActivity().getLayoutInflater().inflate(R.layout.imagelistlayout, null, false);
 
         listAdapter = new CustomListAdapter(context, bubblesNamesArray, imgid);
         list=(ListView) fragmentView.findViewById(R.id.list);

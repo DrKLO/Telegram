@@ -62,6 +62,8 @@ public class PhotoViewerCaptionEnterView extends FrameLayoutFixed implements Not
     private boolean keyboardVisible;
     private int emojiPadding;
 
+    private boolean innerTextChange;
+
     private PhotoViewerCaptionEnterViewDelegate delegate;
 
     public PhotoViewerCaptionEnterView(Context context, SizeNotifierFrameLayoutPhoto parent) {
@@ -149,6 +151,8 @@ public class PhotoViewerCaptionEnterView extends FrameLayoutFixed implements Not
             }
         });
         messageEditText.addTextChangedListener(new TextWatcher() {
+            boolean processChange = false;
+
             @Override
             public void beforeTextChanged(CharSequence charSequence, int i, int i2, int i3) {
 
@@ -156,23 +160,31 @@ public class PhotoViewerCaptionEnterView extends FrameLayoutFixed implements Not
 
             @Override
             public void onTextChanged(CharSequence charSequence, int start, int before, int count) {
+                if (innerTextChange) {
+                    return;
+                }
+
                 if (delegate != null) {
                     delegate.onTextChanged(charSequence);
+                }
+
+                if (before != count && (count - before) > 1) {
+                    processChange = true;
                 }
             }
 
             @Override
             public void afterTextChanged(Editable editable) {
-                int i = 0;
-                ImageSpan[] arrayOfImageSpan = editable.getSpans(0, editable.length(), ImageSpan.class);
-                int j = arrayOfImageSpan.length;
-                while (true) {
-                    if (i >= j) {
-                        Emoji.replaceEmoji(editable, messageEditText.getPaint().getFontMetricsInt(), AndroidUtilities.dp(20));
-                        return;
+                if (innerTextChange) {
+                    return;
+                }
+                if (processChange) {
+                    ImageSpan[] spans = editable.getSpans(0, editable.length(), ImageSpan.class);
+                    for (int i = 0; i < spans.length; i++) {
+                        editable.removeSpan(spans[i]);
                     }
-                    editable.removeSpan(arrayOfImageSpan[i]);
-                    i++;
+                    Emoji.replaceEmoji(editable, messageEditText.getPaint().getFontMetricsInt(), AndroidUtilities.dp(20), false);
+                    processChange = false;
                 }
             }
         });
@@ -299,12 +311,15 @@ public class PhotoViewerCaptionEnterView extends FrameLayoutFixed implements Not
                             i = 0;
                         }
                         try {
-                            CharSequence localCharSequence = Emoji.replaceEmoji(symbol, messageEditText.getPaint().getFontMetricsInt(), AndroidUtilities.dp(20));
+                            innerTextChange = true;
+                            CharSequence localCharSequence = Emoji.replaceEmoji(symbol/* + "\uFE0F"*/, messageEditText.getPaint().getFontMetricsInt(), AndroidUtilities.dp(20), false);
                             messageEditText.setText(messageEditText.getText().insert(i, localCharSequence));
                             int j = i + localCharSequence.length();
                             messageEditText.setSelection(j, j);
                         } catch (Exception e) {
                             FileLog.e("tmessages", e);
+                        } finally {
+                            innerTextChange = false;
                         }
                     }
 

@@ -110,7 +110,7 @@ public class LoginActivity extends BaseFragment {
     }
 
     @Override
-    public View createView(Context context, LayoutInflater inflater) {
+    public View createView(Context context) {
             actionBar.setTitle(LocaleController.getString("AppName", R.string.AppName));
 
             actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
@@ -396,9 +396,9 @@ public class LoginActivity extends BaseFragment {
 
     public void needFinishActivity() {
         clearCurrentState();
-            presentFragment(new MessagesActivity(null), true);
-            NotificationCenter.getInstance().postNotificationName(NotificationCenter.mainUserInfoChanged);
-        }
+        presentFragment(new DialogsActivity(null), true);
+        NotificationCenter.getInstance().postNotificationName(NotificationCenter.mainUserInfoChanged);
+    }
 
     public class PhoneView extends SlideView implements AdapterView.OnItemSelectedListener {
 

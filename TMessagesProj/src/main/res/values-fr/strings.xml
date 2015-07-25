@@ -62,6 +62,11 @@
   <string name="YouCreatedBroadcastList">Vous avez créé un liste de diffusion</string>
   <string name="AddRecipient">Ajouter un destinataire</string>
   <string name="KickFromBroadcast">Supprimer de la liste de diffusion</string>
+  <!--audio view-->
+  <string name="NoAudio">Merci d\'ajouter des fichiers à votre bibliothèque musicale sur votre appareil pour les voir ici.</string>
+  <string name="AttachMusic">Musique</string>
+  <string name="AudioUnknownArtist">Artiste inconnu</string>
+  <string name="AudioUnknownTitle">Titre inconnu</string>
   <!--documents view-->
   <string name="SelectFile">Sélectionnez un fichier</string>
   <string name="FreeOfTotal">%1$s sur %2$s disponible</string>
@@ -96,6 +101,7 @@
   <string name="ChatLocation">Localisation</string>
   <string name="ChatVideo">Vidéo</string>
   <string name="ChatDocument">Fichier</string>
+  <string name="ChatCamera">Appareil photo</string>
   <string name="NoMessages">Aucun message pour l\'instant…</string>
   <string name="ForwardedMessage">Message transféré</string>
   <string name="From">De</string>
@@ -118,6 +124,7 @@
   <string name="SlideToCancel">GLISSER POUR ANNULER
 </string>
   <string name="SaveToDownloads">Enregistrer dans les téléchargements</string>
+  <string name="SaveToMusic">Enregistrer dans musique</string>
   <string name="ShareFile">Partager</string>
   <string name="ApplyLocalizationFile">Appliquer le fichier de localisation</string>
   <string name="UnsupportedAttachment">Type de pièce-jointe inconnu</string>
@@ -126,6 +133,7 @@
   <string name="GettingLinkInfo">Obtention d\'informations sur le lien…</string>
   <string name="OpenInBrowser">Ouvrir dans un navigateur</string>
   <string name="CopyUrl">Copier l\'URL</string>
+  <string name="SendItems">Envoyer %1$s</string>
   <!--notification-->
   <string name="MessageLifetimeChanged">%1$s a défini l\'auto-destruction des messages à %2$s</string>
   <string name="MessageLifetimeChangedOutgoing">Vous avez défini l\'auto-destruction des messages à %1$s</string>
@@ -525,6 +533,16 @@
   <string name="EditedVideo">Vidéo éditée</string>
   <string name="SendingVideo">Envoi de la vidéo...</string>
   <string name="CompressVideo">Compresser la vidéo</string>
+  <!--bot-->
+  <string name="Bot">bot</string>
+  <string name="BotShare">Partager</string>
+  <string name="BotInvite">Ajouter au groupe</string>
+  <string name="BotSettings">Paramètres</string>
+  <string name="BotHelp">Aide</string>
+  <string name="BotStatusRead">a accès aux messages</string>
+  <string name="BotStatusCantRead">n\'a pas accès aux messages</string>
+  <string name="BotInfoTitle">Que peux faire ce bot ?</string>
+  <string name="BotStart">DEMARRER</string>
   <!--button titles-->
   <string name="Next">Suivant</string>
   <string name="Back">Précédent</string>
@@ -567,7 +585,7 @@
   <string name="ActionAddUserYou">un1 vous a ajouté</string>
   <string name="ActionAddUserSelf">un1 est revenu dans le groupe</string>
   <string name="ActionAddUserSelfYou">Vous êtes revenu au groupe</string>
-  <string name="UnsuppotedMedia">Ce message n\'est pas supporté dans votre version de Telegram. Veuillez mettre à jour l\'appli pour le voir: http://telegram.org/update</string>
+  <string name="UnsuppotedMedia">Ce message n\'est pas supporté sur votre version de Telegram. Mettez à jour l\'application pour le voir: https://telegram.org/update</string>
   <string name="AttachPhoto">Photo</string>
   <string name="AttachVideo">Vidéo</string>
   <string name="AttachLocation">Localisation</string>
@@ -592,7 +610,10 @@
   <string name="NoHandleAppInstalled">Vous ne disposez d\'aucune application compatible avec le type de fichier \'%1$s\'. Veuillez en installer une pour continuer</string>
   <string name="InviteUser">Cet utilisateur ne dispose pas de Telegram, envoyer une invitation ?</string>
   <string name="AreYouSure">Êtes-vous sûr ?</string>
-  <string name="AddToTheGroup">Ajouter %1$s au groupe?\n\nNombre des derniers messages à transmettre :</string>
+  <string name="AddToTheGroupTitle">Ajouter %1$s au groupe %2$s?</string>
+  <string name="AddToTheGroupForwardCount">Nombre des derniers messages à transmettre :</string>
+  <string name="AddToTheGroup">Ajouter %1$s au groupe ?</string>
+  <string name="UserAlreadyInGroup">L\'utilisateur est déjà dans le groupe.</string>
   <string name="ForwardMessagesTo">Transférer le message à %1$s ?</string>
   <string name="SendMessagesTo">Envoyer des messages à %1$s ?</string>
   <string name="AreYouSureLogout">Êtes-vous sûr de vouloir vous déconnecter?\n\nNotez que vous pouvez utiliser Telegram simultanément sur tous vos appareils.\n\nPour rappel, une déconnexion détruit toutes vos Conversations Secrètes.</string>
@@ -610,6 +631,8 @@
   <string name="SendMessagesToGroup">Envoyer des messages à %1$s ?</string>
   <string name="ForwardMessagesToGroup">Transférer les messages à %1$s ?</string>
   <string name="FeatureUnavailable">Désolé, cette option n\'est actuellement pas disponible dans votre pays.</string>
+  <string name="NoUsernameFound">Il n\'y a pas de compte Telegram associé à cet utilisateur.</string>
+  <string name="BotCantJoinGroups">Ce bot ne peut pas rejoindre des groupes.</string>
   <!--Intro view-->
   <string name="Page1Title">Plus Messenger</string>
   <string name="Page2Title">Rapide</string>
@@ -735,6 +758,12 @@
   <string name="Stickers_few">%1$d stickers</string>
   <string name="Stickers_many">%1$d stickers</string>
   <string name="Stickers_other">%1$d stickers</string>
+  <string name="Photos_zero">%1$d photos</string>
+  <string name="Photos_one">%1$d photo</string>
+  <string name="Photos_two">%1$d photos</string>
+  <string name="Photos_few">%1$d photos</string>
+  <string name="Photos_many">%1$d photos</string>
+  <string name="Photos_other">%1$d photos</string>
   <!--forwarded messages-->
   <string name="ForwardedMessage_zero">%1$d messages transférés</string>
   <string name="ForwardedMessage_one">Message transféré</string>
@@ -803,7 +832,7 @@
   <string name="formatDateAtTime">%1$s à %2$s</string>
   <!--update text--><!--
   <string name="updateText">Plus Messenger pour Android vient d\'être mis à jour. Nouveautés de la version 2.9: \n\n- Installez et partagez des paquets de stickers personnalisés comme celui-ci: this one: https://play.google.com/store/apps/details?id=es.rafalense.themes\n- Si vous êtes un artiste, créez vos paquets de stickers, en utilisant notre robot @stickers. \n\n- Utilisez Telegram avec Android Auto.</string>-->
-  <string name="updateBuild">547</string>
+  <string name="updateBuild">583</string>
     <!--Telegram+ French-->
     <string name="TelegramForAndroid">Plus Messenger pour Android</string>
     <string name="Theming">Thème</string>

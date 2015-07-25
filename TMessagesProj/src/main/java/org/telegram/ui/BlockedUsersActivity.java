@@ -17,7 +17,6 @@ import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
 import android.view.Gravity;
-import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
@@ -70,7 +69,7 @@ public class BlockedUsersActivity extends BaseFragment implements NotificationCe
     }
 
     @Override
-    public View createView(Context context, LayoutInflater inflater) {
+    public View createView(Context context) {
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBar.setAllowOverlayTitle(true);
         actionBar.setTitle(LocaleController.getString("BlockedUsers", R.string.BlockedUsers));

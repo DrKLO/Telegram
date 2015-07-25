@@ -9,6 +9,7 @@
 package org.telegram.ui.Adapters;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.text.TextUtils;
 import android.view.View;
 import android.view.ViewGroup;
@@ -21,6 +22,7 @@ import org.telegram.android.MessageObject;
 import org.telegram.android.MessagesController;
 import org.telegram.android.MessagesStorage;
 import org.telegram.android.support.widget.RecyclerView;
+import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.ByteBufferDesc;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLog;
@@ -642,6 +644,7 @@ public class DialogsSearchAdapter extends BaseSearchAdapterRecycler {
 
     @Override
     public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
+        SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
         switch (holder.getItemViewType()) {
             case 0: {
                 ProfileSearchCell cell = (ProfileSearchCell) holder.itemView;
@@ -693,6 +696,8 @@ public class DialogsSearchAdapter extends BaseSearchAdapterRecycler {
             }
             case 1: {
                 GreySectionCell cell = (GreySectionCell) holder.itemView;
+                cell.setBackgroundColor(themePrefs.getInt("chatsRowColor", 0xfff2f2f2));
+                cell.setTextColor(themePrefs.getInt("chatsNameColor", 0xff8a8a8a));
                 if (!searchResultHashtags.isEmpty()) {
                     cell.setText(LocaleController.getString("Hashtags", R.string.Hashtags).toUpperCase());
                 }  else if (!globalSearch.isEmpty() && position == searchResult.size()) {
@@ -714,6 +719,7 @@ public class DialogsSearchAdapter extends BaseSearchAdapterRecycler {
             }
             case 4: {
                 HashtagSearchCell cell = (HashtagSearchCell) holder.itemView;
+                cell.setTextColor(themePrefs.getInt("chatsMessageColor", 0xff000000));
                 cell.setText(searchResultHashtags.get(position - 1));
                 cell.setNeedDivider(position != searchResultHashtags.size());
                 break;

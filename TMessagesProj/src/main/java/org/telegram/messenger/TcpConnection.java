@@ -143,7 +143,7 @@ public class TcpConnection extends ConnectionContext {
                         FileLog.e("tmessages", e2);
                     }
 
-                    FileLog.d("tmessages", String.format(TcpConnection.this + " Connecting (%s:%d)", hostAddress, hostPort));
+                    FileLog.d("tmessages", String.format(TcpConnection.this + " Connecting (%s:%d), connection class %d", hostAddress, hostPort, transportRequestClass));
                     firstPacket = true;
                     if (restOfTheData != null) {
                         BuffersStorage.getInstance().reuseFreeBuffer(restOfTheData);

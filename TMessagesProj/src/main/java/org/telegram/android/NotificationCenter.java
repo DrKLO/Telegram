@@ -64,6 +64,7 @@ public class NotificationCenter {
     public static final int botInfoDidLoaded = totalEvents++;
     public static final int botKeyboardDidLoaded = totalEvents++;
     public static final int chatSearchResultsAvailable = totalEvents++;
+    public static final int musicDidLoaded = totalEvents++;
 
     public static final int httpFileDidLoaded = totalEvents++;
     public static final int httpFileDidFailedLoad = totalEvents++;
@@ -89,6 +90,7 @@ public class NotificationCenter {
 
     public static final int audioProgressDidChanged = totalEvents++;
     public static final int audioDidReset = totalEvents++;
+    public static final int audioPlayStateChanged = totalEvents++;
     public static final int recordProgressChanged = totalEvents++;
     public static final int recordStarted = totalEvents++;
     public static final int recordStartError = totalEvents++;

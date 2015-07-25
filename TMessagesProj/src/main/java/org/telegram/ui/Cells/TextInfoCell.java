@@ -16,7 +16,6 @@ import android.widget.TextView;
 
 import org.telegram.android.AndroidUtilities;
 import org.telegram.ui.Components.LayoutHelper;
-import org.telegram.ui.LaunchActivity;
 
 public class TextInfoCell extends FrameLayout {
 
@@ -36,10 +35,10 @@ public class TextInfoCell extends FrameLayout {
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED));
-        if( textView.getContext() instanceof LaunchActivity ){
-            textView.setTextColor(AndroidUtilities.getIntDef("drawerVersionColor", 0xffa3a3a3));
-            textView.setTextSize(AndroidUtilities.getIntDef("drawerVersionSize", 13));
-        }
+        //if( textView.getContext() instanceof LaunchActivity ){
+            //textView.setTextColor(AndroidUtilities.getIntDef("drawerVersionColor", 0xffa3a3a3));
+            //textView.setTextSize(AndroidUtilities.getIntDef("drawerVersionSize", 13));
+        //}
     }
 
     public void setText(String text) {

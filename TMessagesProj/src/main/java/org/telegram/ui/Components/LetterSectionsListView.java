@@ -113,7 +113,7 @@ public class LetterSectionsListView extends ListView implements AbsListView.OnSc
                     header.setTag(-header.getHeight());
                 } else if (pos == count - 2) {
                     View child = getChildAt(itemNum - firstVisibleItem);
-                    int headerTop = 0;
+                    int headerTop;
                     if (child != null) {
                         headerTop = child.getTop();
                     } else {

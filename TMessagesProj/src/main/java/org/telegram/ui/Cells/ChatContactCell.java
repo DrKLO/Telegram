@@ -115,7 +115,6 @@ public class ChatContactCell extends ChatBaseCell {
         float y = event.getY();
 
         boolean result = false;
-        int side = AndroidUtilities.dp(36);
         if (event.getAction() == MotionEvent.ACTION_DOWN) {
             if (x >= avatarImage.getImageX() && x <= avatarImage.getImageX() + namesWidth + AndroidUtilities.dp(42) && y >= avatarImage.getImageY() && y <= avatarImage.getImageY() + avatarImage.getImageHeight()) {
                 avatarPressed = true;
@@ -202,6 +201,11 @@ public class ChatContactCell extends ChatBaseCell {
                 currentPhoto = null;
                 avatarDrawable.setInfo(uid, null, null, false);
             }
+            if(uid == 0) {
+                SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+                int color = themePrefs.getInt("chatContactNameColor", themePrefs.getInt("themeColor", AndroidUtilities.defColor));
+                avatarDrawable.setColor(color);
+            }
             avatarImage.setImage(currentPhoto, "50_50", avatarDrawable, null, false);
 
             String currentNameString = ContactsController.formatName(messageObject.messageOwner.media.first_name, messageObject.messageOwner.media.last_name);
@@ -258,7 +262,7 @@ public class ChatContactCell extends ChatBaseCell {
         if (currentMessageObject.isOut()) {
             x = layoutWidth - backgroundWidth + AndroidUtilities.dp(8);
         } else {
-            if (isChat) {
+            if (isChat || showAvatar) {
                 x = AndroidUtilities.dp(69);
             } else {
                 x = AndroidUtilities.dp(16);
@@ -276,16 +280,31 @@ public class ChatContactCell extends ChatBaseCell {
         }
 
         avatarImage.draw(canvas);
-
+        SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
         if (nameLayout != null) {
             canvas.save();
             canvas.translate(avatarImage.getImageX() + avatarImage.getImageWidth() + AndroidUtilities.dp(9), AndroidUtilities.dp(10) + namesOffset);
-            namePaint.setColor(AvatarDrawable.getColorForId(currentMessageObject.messageOwner.media.user_id));
+            //namePaint.setColor(AvatarDrawable.getColorForId(currentMessageObject.messageOwner.media.user_id));
+            namePaint.setColor(AvatarDrawable.getNameColorForId(currentMessageObject.messageOwner.media.user_id));
+            int id = currentMessageObject.messageOwner.media.user_id;
+            int defColor = themePrefs.getInt("themeColor", AndroidUtilities.defColor);
+            int color = themePrefs.getInt("chatContactNameColor", defColor);
+            if(id == 0 || color != defColor){
+                namePaint.setColor(color);
+                //avatarDrawable.setColor(color);
+            }/*else{
+                //if(color == defColor){
+                    namePaint.setColor(AvatarDrawable.getNameColorForId(currentMessageObject.messageOwner.media.user_id));
+                //}else{
+                //    namePaint.setColor(color);
+                //}
+            }*/
+
             nameLayout.draw(canvas);
             canvas.restore();
         }
         if (phoneLayout != null) {
-            SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+
             int color = themePrefs.getInt("chatLTextColor", 0xff000000);
             if (currentMessageObject.isOut()) {
                 color = themePrefs.getInt("chatRTextColor", 0xff000000);

@@ -15,7 +15,6 @@ import android.content.SharedPreferences;
 import android.graphics.PorterDuff;
 import android.graphics.drawable.Drawable;
 import android.view.Gravity;
-import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
@@ -57,7 +56,7 @@ public class LanguageSelectActivity extends BaseFragment {
     public ArrayList<LocaleController.LocaleInfo> searchResult;
 
     @Override
-    public View createView(Context context, LayoutInflater inflater) {
+    public View createView(Context context) {
         searching = false;
         searchWas = false;
 

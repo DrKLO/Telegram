@@ -9,6 +9,7 @@
 package org.telegram.ui.Adapters;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.view.View;
 import android.view.ViewGroup;
@@ -80,11 +81,13 @@ public class DrawerLayoutAdapter extends BaseAdapter {
     @Override
     public View getView(int i, View view, ViewGroup viewGroup) {
         int type = getItemViewType(i);
+        SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
         if (type == 0) {
             if (view == null) {
                 view = new DrawerProfileCell(mContext);
             }
             ((DrawerProfileCell) view).setUser(MessagesController.getInstance().getUser(UserConfig.getClientUserId()));
+            ((DrawerProfileCell) view).refreshAvatar(themePrefs.getInt("drawerAvatarSize", 64), themePrefs.getInt("drawerAvatarRadius", 32));
         } else if (type == 1) {
             if (view == null) {
                 view = new EmptyCell(mContext, AndroidUtilities.dp(8));
@@ -99,24 +102,28 @@ public class DrawerLayoutAdapter extends BaseAdapter {
                 view = new DrawerActionCell(mContext);
             }
             DrawerActionCell actionCell = (DrawerActionCell) view;
+            actionCell.setTextColor(themePrefs.getInt("drawerOptionColor", 0xff444444));
+            actionCell.setTextSize(themePrefs.getInt("drawerOptionSize", 15));
+            //actionCell.setIconColor(themePrefs.getInt("drawerIconColor", 0xff737373));
+            int color = themePrefs.getInt("drawerIconColor", 0xff737373);
             if (i == 2) {
-                actionCell.setTextAndIcon(LocaleController.getString("NewGroup", R.string.NewGroup), R.drawable.menu_newgroup);
+                actionCell.setTextAndIcon(LocaleController.getString("NewGroup", R.string.NewGroup), R.drawable.menu_newgroup, color);
             } else if (i == 3) {
-                actionCell.setTextAndIcon(LocaleController.getString("NewSecretChat", R.string.NewSecretChat), R.drawable.menu_secret);
+                actionCell.setTextAndIcon(LocaleController.getString("NewSecretChat", R.string.NewSecretChat), R.drawable.menu_secret, color);
             } else if (i == 4) {
-                actionCell.setTextAndIcon(LocaleController.getString("NewBroadcastList", R.string.NewBroadcastList), R.drawable.menu_broadcast);
+                actionCell.setTextAndIcon(LocaleController.getString("NewBroadcastList", R.string.NewBroadcastList), R.drawable.menu_broadcast, color);
             } else if (i == contactsRow) {
-                actionCell.setTextAndIcon(LocaleController.getString("Contacts", R.string.Contacts), R.drawable.menu_contacts);
+                actionCell.setTextAndIcon(LocaleController.getString("Contacts", R.string.Contacts), R.drawable.menu_contacts, color);
             }/* else if (i == 7) {
                 actionCell.setTextAndIcon(LocaleController.getString("InviteFriends", R.string.InviteFriends), R.drawable.menu_invite);
             }*/ else if (i == themesRow) {
-                actionCell.setTextAndIcon(LocaleController.getString("Themes", R.string.Themes), R.drawable.menu_themes);
+                actionCell.setTextAndIcon(LocaleController.getString("Themes", R.string.Themes), R.drawable.menu_themes, color);
             } else if (i == themingRow) {
-                actionCell.setTextAndIcon(LocaleController.getString("Theming", R.string.Theming), R.drawable.menu_theming);
+                actionCell.setTextAndIcon(LocaleController.getString("Theming", R.string.Theming), R.drawable.menu_theming, color);
             } else if (i == settingsRow) {
-                actionCell.setTextAndIcon(LocaleController.getString("Settings", R.string.Settings), R.drawable.menu_settings);
+                actionCell.setTextAndIcon(LocaleController.getString("Settings", R.string.Settings), R.drawable.menu_settings, color);
             } else if (i == communityRow) {
-                actionCell.setTextAndIcon(LocaleController.getString("Community", R.string.Community), R.drawable.menu_forum);
+                actionCell.setTextAndIcon(LocaleController.getString("Community", R.string.Community), R.drawable.menu_forum, color);
             } /*else if (i == 10) {
                 actionCell.setTextAndIcon(LocaleController.getString("TelegramFaq", R.string.TelegramFaq), R.drawable.menu_help);
             }*/
@@ -126,8 +133,8 @@ public class DrawerLayoutAdapter extends BaseAdapter {
                 try {
                     PackageInfo pInfo = ApplicationLoader.applicationContext.getPackageManager().getPackageInfo(ApplicationLoader.applicationContext.getPackageName(), 0);
                     ((TextInfoCell) view).setText(String.format(Locale.US, LocaleController.getString("TelegramForAndroid", R.string.TelegramForAndroid)+" v%s (%d)", pInfo.versionName, pInfo.versionCode));
-                    //((TextInfoCell) view).setTextColor(AndroidUtilities.getIntDef("drawerVersionColor",0xffa3a3a3));
-                    //((TextInfoCell) view).setTextSize(AndroidUtilities.getIntDef("drawerVersionSize",13));
+                    ((TextInfoCell) view).setTextColor(themePrefs.getInt("drawerVersionColor", 0xffa3a3a3));
+                    ((TextInfoCell) view).setTextSize(themePrefs.getInt("drawerVersionSize", 13));
                 } catch (Exception e) {
                     FileLog.e("tmessages", e);
                 }

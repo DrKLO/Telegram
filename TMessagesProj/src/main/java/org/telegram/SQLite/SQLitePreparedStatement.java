@@ -30,7 +30,7 @@ public class SQLitePreparedStatement {
 	public SQLitePreparedStatement(SQLiteDatabase db, String sql, boolean finalize) throws SQLiteException {
 		finalizeAfterQuery = finalize;
 		sqliteStatementHandle = prepare(db.getSQLiteHandle(), sql);
-        //if (BuildVars.DEBUG_VERSION) {
+        /*//if (BuildVars.DEBUG_VERSION) {
         if (BuildConfig.DEBUG) {
             if (hashMap == null) {
                 hashMap = new HashMap<>();
@@ -39,7 +39,7 @@ public class SQLitePreparedStatement {
             for (HashMap.Entry<SQLitePreparedStatement, String> entry : hashMap.entrySet()) {
                 FileLog.d("tmessages", "exist entry = " + entry.getValue());
             }
-        }
+        }*/
 	}
 
 
@@ -102,10 +102,10 @@ public class SQLitePreparedStatement {
             return;
         }
 		try {
-            //if (BuildVars.DEBUG_VERSION) {
+            /*//if (BuildVars.DEBUG_VERSION) {
             if (BuildConfig.DEBUG) {
                 hashMap.remove(this);
-            }
+            }*/
 			isFinalized = true;
 			finalize(sqliteStatementHandle);
 		} catch (SQLiteException e) {

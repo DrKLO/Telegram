@@ -60,10 +60,10 @@ public class DrawerProfileCell extends FrameLayout implements PhotoViewer.PhotoV
         shadowView.setScaleType(ImageView.ScaleType.FIT_XY);
         shadowView.setImageResource(R.drawable.bottom_shadow);
         addView(shadowView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 70, Gravity.LEFT | Gravity.BOTTOM));
-
+        SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
         avatarImageView = new BackupImageView(context);
         avatarImageView.getImageReceiver().setRoundRadius(AndroidUtilities.dp(32));
-        SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+
         int aSize = themePrefs.getInt("drawerAvatarSize", 64);
         //addView(avatarImageView, LayoutHelper.createFrame(64, 64, Gravity.LEFT | Gravity.BOTTOM, 16, 0, 0, 67));
         addView(avatarImageView, LayoutHelper.createFrame(aSize, aSize, Gravity.LEFT | Gravity.BOTTOM, 16, 0, 0, 67));
@@ -102,6 +102,13 @@ public class DrawerProfileCell extends FrameLayout implements PhotoViewer.PhotoV
         addView(phoneTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.BOTTOM, 16, 0, 16, 9));
     }
 
+    public void refreshAvatar(int size, int radius){
+        //SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+        removeView(avatarImageView);
+        avatarImageView.getImageReceiver().setRoundRadius(AndroidUtilities.dp(radius));
+        addView(avatarImageView, LayoutHelper.createFrame(size, size, Gravity.LEFT | Gravity.BOTTOM, 16, 0, 0, 67));
+    }
+
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         if (Build.VERSION.SDK_INT >= 21) {
@@ -113,7 +120,11 @@ public class DrawerProfileCell extends FrameLayout implements PhotoViewer.PhotoV
                 FileLog.e("tmessages", e);
             }
         }
-        updateTheme();
+        if(AndroidUtilities.getBoolMain("hideMobile")){
+            phoneTextView.setVisibility(GONE);
+        }else{
+            phoneTextView.setVisibility(VISIBLE);
+        }
     }
 
     @Override
@@ -164,7 +175,9 @@ public class DrawerProfileCell extends FrameLayout implements PhotoViewer.PhotoV
         AvatarDrawable avatarDrawable = new AvatarDrawable(user);
         avatarDrawable.setColor(0xff5c98cd);
         avatarImageView.setImage(photo, "50_50", avatarDrawable);
+        updateTheme();
     }
+
 
     @Override
     public void updatePhotoAtIndex(int index) {}
@@ -232,10 +245,15 @@ public class DrawerProfileCell extends FrameLayout implements PhotoViewer.PhotoV
         nameTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, themePrefs.getInt("drawerNameSize", 15));
         phoneTextView.setTextColor(themePrefs.getInt("drawerPhoneColor", dColor));
         phoneTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, themePrefs.getInt("drawerPhoneSize", 13));
+        if(AndroidUtilities.getBoolMain("hideMobile")){
+            phoneTextView.setVisibility(GONE);
+        }else{
+            phoneTextView.setVisibility(VISIBLE);
+        }
         TLRPC.User user = MessagesController.getInstance().getUser(UserConfig.getClientUserId());
         TLRPC.FileLocation photo = null;
         if (user != null && user.photo != null && user.photo.photo_small != null ) {
-            photo = user.photo.photo_small;
+           photo = user.photo.photo_small;
         }
         AvatarDrawable avatarDrawable = new AvatarDrawable(user);
         avatarDrawable.setColor(themePrefs.getInt("drawerAvatarColor", AndroidUtilities.getIntDarkerColor("themeColor", 0x15)));
@@ -245,10 +263,6 @@ public class DrawerProfileCell extends FrameLayout implements PhotoViewer.PhotoV
 
         avatarImageView.getImageReceiver().setRoundRadius(radius);
         avatarImageView.setImage(photo, "50_50", avatarDrawable);
-        if(AndroidUtilities.getBoolMain("hideMobile")){
-            phoneTextView.setVisibility(GONE);
-        }else{
-            phoneTextView.setVisibility(VISIBLE);
-        }
+
     }
 }

@@ -41,23 +41,30 @@ public class DrawerActionCell extends FrameLayout {
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(48), MeasureSpec.EXACTLY));
-        updateTheme();
     }
 
     public void setTextAndIcon(String text, int resId) {
         textView.setText(text);
-        //textView.setCompoundDrawablesWithIntrinsicBounds(resId, 0, 0, 0);
-        textView.setCompoundDrawablesWithIntrinsicBounds(getResources().getDrawable(resId), null, null, null);
+        textView.setCompoundDrawablesWithIntrinsicBounds(resId, 0, 0, 0);
     }
 
-    private void updateTheme(){
-        textView.setTextColor(AndroidUtilities.getIntDef("drawerOptionColor", 0xff444444));
-        textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, AndroidUtilities.getIntDef("drawerOptionSize", 15));
-        Drawable[] drawables = textView.getCompoundDrawables();
-        //if(drawables[0].getConstantState().equals(getResources().getDrawable(R.drawable.menu_themes).getConstantState())){
-        //    return;
-        //}
-        int color = AndroidUtilities.getIntDef("drawerIconColor", 0xff737373);
-        if(drawables[0] != null)drawables[0].setColorFilter(color, PorterDuff.Mode.SRC_IN);
+    public void setTextAndIcon(String text, int resId, int color) {
+        textView.setText(text);
+        Drawable d = getResources().getDrawable(resId);
+        d.setColorFilter(color, PorterDuff.Mode.SRC_IN);
+        textView.setCompoundDrawablesWithIntrinsicBounds(d, null, null, null);
     }
+
+    public void setTextColor(int color) {
+        textView.setTextColor(color);
+    }
+
+    public void setTextSize(int size) {
+        textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, size);
+    }
+/*
+    public void setIconColor(int color) {
+        Drawable[] drawables = textView.getCompoundDrawables();
+        if(drawables[0] != null)drawables[0].setColorFilter(color, PorterDuff.Mode.SRC_IN);
+    }*/
 }

@@ -48,8 +48,6 @@ public class ChatActionCell extends BaseCell {
 
     private static TextPaint textPaint;
 
-
-
     private URLSpan pressedLink;
 
     private ImageReceiver imageReceiver;
@@ -70,7 +68,6 @@ public class ChatActionCell extends BaseCell {
     public ChatActionCell(Context context) {
         super(context);
         if (textPaint == null) {
-
             textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
             textPaint.setColor(0xffffffff);
             textPaint.linkColor = 0xffffffff;
@@ -186,8 +183,8 @@ public class ChatActionCell extends BaseCell {
                     final int line = textLayout.getLineForVertical((int)y);
                     final int off = textLayout.getOffsetForHorizontal(line, x);
                     final float left = textLayout.getLineLeft(line);
-                    if (left <= x && left + textLayout.getLineWidth(line) >= x) {
-                        Spannable buffer = (Spannable)currentMessageObject.messageText;
+                    if (left <= x && left + textLayout.getLineWidth(line) >= x && currentMessageObject.messageText instanceof Spannable) {
+                        Spannable buffer = (Spannable) currentMessageObject.messageText;
                         URLSpan[] link = buffer.getSpans(off, off, URLSpan.class);
 
                         if (link.length != 0) {
@@ -239,7 +236,6 @@ public class ChatActionCell extends BaseCell {
                 int linesCount = textLayout.getLineCount();
                 for (int a = 0; a < linesCount; a++) {
                     float lineWidth;
-                    float lineLeft = 0;
                     try {
                         lineWidth = textLayout.getLineWidth(a);
                         textHeight = (int)Math.max(textHeight, Math.ceil(textLayout.getLineBottom(a)));

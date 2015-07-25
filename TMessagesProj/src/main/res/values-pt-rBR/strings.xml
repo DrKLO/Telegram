@@ -65,6 +65,11 @@
     <string name="YouCreatedBroadcastList">Você criou uma lista de transmissão</string>
     <string name="AddRecipient">Adicionar destinatário</string>
     <string name="KickFromBroadcast">Remover da lista de transmissão</string>
+    <!--audio view-->
+    <string name="NoAudio">Por favor, adicione arquivos à biblioteca de música de seu dispositivo para vê-los aqui.</string>
+    <string name="AttachMusic">Música</string>
+    <string name="AudioUnknownArtist">Artista desconhecido</string>
+    <string name="AudioUnknownTitle">Título desconhecido</string>
     <!--documents view-->
     <string name="SelectFile">Selecione um Arquivo</string>
     <string name="FreeOfTotal">Disponível %1$s de %2$s</string>
@@ -121,6 +126,7 @@
     <string name="DeleteThisChat">Apagar este chat</string>
     <string name="SlideToCancel">DESLIZE PARA CANCELAR</string>
     <string name="SaveToDownloads">Salvar em downloads</string>
+    <string name="SaveToMusic">Salvar em músicas</string>
     <string name="ShareFile">Compartilhar</string>
     <string name="ApplyLocalizationFile">Aplicar arquivo de localização</string>
     <string name="UnsupportedAttachment">Anexo não suportado</string>
@@ -347,6 +353,7 @@
     <string name="RepeatDisabled">Desativado</string>
     <string name="InChatSound">Sons no Chat</string>
     <string name="SoundDefault">Padrão</string>
+    <string name="VibrationDefault">Padrão</string>
     <string name="SmartNotifications">Notificações Inteligentes</string>
     <string name="SmartNotificationsDisabled">Desativado</string>
     <string name="SmartNotificationsInfo">Tocar no máximo %1$s a cada %2$s</string>
@@ -827,11 +834,10 @@
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s às %2$s</string>
     <!--update text-->
-    <string name="updateText">Plus Messenger para Android acaba de ser atualizado. Novo na versão 3.0:\n\n- Abas dedicadas para cada um dos pacotes customizados de stickers no painel de stickers. Adicione stickers customizados como https://telegram.me/addstickers/Animals\n- Nova API de bots, gratuita para todos. Se você for um engenheiro, crie seus próprios bots como @quiz_bot ou @hot_or_bot usando o @botfather. Leia mais em https://telegram.org/blog/bot-revolution\n- Confira, baixe e aplique temas para o app Plus Messenger. Novos temas todos os dias:\n https://play.google.com/store/apps/details?id=es.rafalense.themes</string>
-    <string name="updateBuild">576</string>
-    <!--Telegram+--><!--
-  <string name="updatePlusText">
-\n\nNovo em 3.0.1.3:\n\n- Opção em Configurações para usar fonte do dispositivo\n- Opção para pesquisar dentro da conversa/group\n- Adicionado MOD para mudar cor do cabeçalho, cor do título do cabeçalho e ícones do cabeçalho cor em Tela de Configurações/Personalizações\n- MOD para mudar a cor do ícone de grupo na tela principal\n- MOD para mudar o tamanho do avatar no menu de navegação\n- Correções de erros</string>-->
+    <string name="updateText">Plus Messenger para Android foi atualizado. Novo na versão 3.1:\n\n- Busca por mensagens dentro de um chat específico.\n-Menu de anexo totalmente redesenhado. Envie contatos e arquivos de áudio diretamente do menu de anexo.\n- Reprodução melhorada de mídia dentro do aplicativo (YouTube, Vimeo, SoundCloud, etc.), novo player para grandes arquivos de áudio.\n\nMais sobre a atualização:\nhttps://telegram.org/blog/search-and-media</string>
+    <string name="updateBuild">583</string>
+    <!--Telegram+-->
+  <string name="updatePlusText">\n\nNovidades na versão 3.1.1.3:\n\n- Novo MOD para mudar a cor, tamanho e arredondamento do avatar nas configurações\n- Novo MOD para mudar a cor do nome de contatos compartilhados na tela de conversas\n- Correção de bugs</string>
     <string name="TelegramForAndroid">Plus Messenger para Android</string>
     <string name="Theming">Personalização</string>
     <string name="colorHexInvalid">Código de cor hexadecimal inválido!</string>
@@ -958,4 +964,5 @@
   <string name="UseDeviceFont">Usar Fonte do Dispositivo</string>
   <string name="AppWillRestart">O Plus Messenger irá reiniciar</string>
   <string name="GroupIconColor">Cor do Ícone de Grupo</string>
+  <string name="SharedContactNameColor">Cor do Nome do Contato Compartilhado</string>
 </resources>

@@ -23,7 +23,6 @@ import android.text.InputType;
 import android.text.TextWatcher;
 import android.util.TypedValue;
 import android.view.Gravity;
-import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
@@ -129,7 +128,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
     }
 
     @Override
-    public View createView(Context context, LayoutInflater inflater) {
+    public View createView(Context context) {
 
             searching = false;
             searchWas = false;

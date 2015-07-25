@@ -35,6 +35,7 @@ public class RadialProgress {
     private Drawable currentDrawable;
     private Drawable previousDrawable;
     private boolean hideCurrentDrawable;
+    private int progressColor = 0xffffffff;
 
     private static DecelerateInterpolator decelerateInterpolator = null;
     private static Paint progressPaint = null;
@@ -46,7 +47,6 @@ public class RadialProgress {
             progressPaint.setStyle(Paint.Style.STROKE);
             progressPaint.setStrokeCap(Paint.Cap.ROUND);
             progressPaint.setStrokeWidth(AndroidUtilities.dp(2));
-            progressPaint.setColor(0xffffffff);
         }
         parent = parentView;
     }
@@ -86,7 +86,7 @@ public class RadialProgress {
     }
 
     public void setProgressColor(int color) {
-        progressPaint.setColor(color);
+        progressColor = color;
     }
 
     public void setHideCurrentDrawable(boolean value) {
@@ -154,6 +154,7 @@ public class RadialProgress {
 
         if (currentWithRound || previousWithRound) {
             int diff = AndroidUtilities.dp(1);
+            progressPaint.setColor(progressColor);
             if (previousWithRound) {
                 progressPaint.setAlpha((int)(255 * animatedAlphaValue));
             } else {

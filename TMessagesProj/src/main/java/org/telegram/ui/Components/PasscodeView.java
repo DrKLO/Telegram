@@ -41,16 +41,16 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import org.telegram.android.AndroidUtilities;
-import org.telegram.android.AnimationCompat.AnimatorListenerAdapterProxy;
-import org.telegram.android.AnimationCompat.AnimatorSetProxy;
-import org.telegram.android.AnimationCompat.ObjectAnimatorProxy;
-import org.telegram.android.AnimationCompat.ViewProxy;
 import org.telegram.android.LocaleController;
 import org.telegram.android.NotificationCenter;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
+import org.telegram.android.AnimationCompat.AnimatorListenerAdapterProxy;
+import org.telegram.android.AnimationCompat.AnimatorSetProxy;
+import org.telegram.android.AnimationCompat.ObjectAnimatorProxy;
+import org.telegram.android.AnimationCompat.ViewProxy;
 
 import java.util.ArrayList;
 import java.util.Locale;
@@ -671,7 +671,6 @@ public class PasscodeView extends FrameLayout {
                 @Override
                 public void onClick(View v) {
                     int tag = (Integer) v.getTag();
-                    int key = KeyEvent.KEYCODE_DEL;
                     switch (tag) {
                         case 0:
                             passwordEditText2.appendCharacter("0");
@@ -845,7 +844,6 @@ public class PasscodeView extends FrameLayout {
         }
         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
         int selectedBackground = preferences.getInt("selectedBackground", 1000001);
-        boolean customTheme = false;
         if (selectedBackground == 1000001) {
             //backgroundFrameLayout.setBackgroundColor(0xff517c9e);
             backgroundFrameLayout.setBackgroundColor(AndroidUtilities.getIntDarkerColor("themeColor", 0x15));

@@ -395,7 +395,6 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
 
     private Drawable getDrawableForCurrentState() {
         if (buttonState >= 0 && buttonState < 4) {
-            Drawable currentButtonDrawable = null;
             if (currentMessageObject.type == 9 && gifDrawable == null) {
                 if (buttonState == 1 && !currentMessageObject.isSending()) {
                     return ResourceLoader.buttonStatesDrawablesDoc[2][currentMessageObject.isOut() ? 1 : 0];
@@ -618,13 +617,13 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
             }//Plus: member name in photos
             else if (messageObject.type == 1) {   //PHOTO
                 TLRPC.User fromUser = MessagesController.getInstance().getUser(messageObject.messageOwner.from_id);
-                String senderName = "";
+                String senderName = String.format("%s %s", fromUser.first_name, fromUser.last_name);
                 if (UserObject.isDeleted(fromUser)) {
                     senderName = "Deleted";
                 } else {
                     if (fromUser.first_name != null && fromUser.first_name.length() > 0) {
                         senderName = fromUser.first_name;
-                    } else {
+                    } else if (fromUser.last_name != null && fromUser.last_name.length() > 0){
                         senderName = fromUser.last_name;
                     }
                 }
@@ -668,7 +667,7 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
                 double lon = messageObject.messageOwner.media.geo._long;
 
                 if (messageObject.messageOwner.media.title != null && messageObject.messageOwner.media.title.length() > 0) {
-                    int maxWidth = (AndroidUtilities.isTablet() ? AndroidUtilities.getMinTabletSide() : Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y)) - AndroidUtilities.dp((isChat && !messageObject.isOut() ? 102 : 40) + 86 + 24);
+                    int maxWidth = (AndroidUtilities.isTablet() ? AndroidUtilities.getMinTabletSide() : Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y)) - AndroidUtilities.dp(((isChat || showAvatar) && !messageObject.isOut() ? 102 : 40) + 86 + 24);
                     nameLayout = StaticLayoutEx.createStaticLayout(messageObject.messageOwner.media.title, locationTitlePaint, maxWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false, TextUtils.TruncateAt.END, maxWidth - AndroidUtilities.dp(4), 3);
                     int lineCount = nameLayout.getLineCount();
                     if (messageObject.messageOwner.media.address != null && messageObject.messageOwner.media.address.length() > 0) {
@@ -1023,7 +1022,7 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
                 x = layoutWidth - backgroundWidth + AndroidUtilities.dp(6);
             }
         } else {
-            if (isChat) {
+            if (isChat || showAvatar) {
                 x = AndroidUtilities.dp(67);
             } else {
                 x = AndroidUtilities.dp(15);

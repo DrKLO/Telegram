@@ -16,7 +16,6 @@ import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.graphics.PorterDuff;
 import android.graphics.drawable.Drawable;
-import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
@@ -98,7 +97,7 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
     }
 
     @Override
-    public View createView(Context context, LayoutInflater inflater) {
+    public View createView(Context context) {
             actionBar.setBackButtonImage(R.drawable.ic_ab_back);
             actionBar.setAllowOverlayTitle(true);
             actionBar.setTitle(LocaleController.getString("PrivacySettings", R.string.PrivacySettings));
@@ -209,6 +208,7 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                         if (view instanceof TextCheckCell) {
                             ((TextCheckCell) view).setChecked(!scr);
                         }
+                        NotificationCenter.getInstance().postNotificationName(NotificationCenter.mainUserInfoChanged);
                     }
                 }
             });

@@ -11,11 +11,9 @@ package org.telegram.ui.Components;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
-import android.graphics.drawable.Drawable;
 import android.view.MotionEvent;
 
 import org.telegram.android.AndroidUtilities;
-import org.telegram.messenger.R;
 
 public class SeekBar {
 
@@ -23,14 +21,10 @@ public class SeekBar {
         void onSeekBarDrag(float progress);
     }
 
-    private static Drawable thumbDrawable1;
-    private static Drawable thumbDrawablePressed1;
-    private static Drawable thumbDrawable2;
-    private static Drawable thumbDrawablePressed2;
-    private static Paint innerPaint1 = new Paint();
-    private static Paint outerPaint1 = new Paint();
-    private static Paint innerPaint2 = new Paint();
-    private static Paint outerPaint2 = new Paint();
+    private static Paint innerPaint1;
+    private static Paint outerPaint1;
+    private static Paint innerPaint2;
+    private static Paint outerPaint2;
     private static int thumbWidth;
     private static int thumbHeight;
     public int type;
@@ -42,17 +36,21 @@ public class SeekBar {
     public SeekBarDelegate delegate;
 
     public SeekBar(Context context) {
-        if (thumbDrawable1 == null) {
-            thumbDrawable1 = context.getResources().getDrawable(R.drawable.player1);
-            thumbDrawablePressed1 = context.getResources().getDrawable(R.drawable.player1_pressed);
-            thumbDrawable2 = context.getResources().getDrawable(R.drawable.player2);
-            thumbDrawablePressed2 = context.getResources().getDrawable(R.drawable.player2_pressed);
-            innerPaint1.setColor(0xffb4e396);
-            outerPaint1.setColor(0xff6ac453);
-            innerPaint2.setColor(0xffd9e2eb);
-            outerPaint2.setColor(0xff86c5f8);
-            thumbWidth = thumbDrawable1.getIntrinsicWidth();
-            thumbHeight = thumbDrawable1.getIntrinsicHeight();
+        if (innerPaint1 == null) {
+            innerPaint1 = new Paint(Paint.ANTI_ALIAS_FLAG);
+            innerPaint1.setColor(0xffc3e3ab);
+
+            outerPaint1 = new Paint(Paint.ANTI_ALIAS_FLAG);
+            outerPaint1.setColor(0xff87bf78);
+
+            innerPaint2 = new Paint(Paint.ANTI_ALIAS_FLAG);
+            innerPaint2.setColor(0xffe4eaf0);
+
+            outerPaint2 = new Paint(Paint.ANTI_ALIAS_FLAG);
+            outerPaint2.setColor(0xff4195e5);
+
+            thumbWidth = AndroidUtilities.dp(24);
+            thumbHeight = AndroidUtilities.dp(24);
         }
     }
 
@@ -100,30 +98,18 @@ public class SeekBar {
     }
 
     public void draw(Canvas canvas) {
-        Drawable thumb = null;
         Paint inner = null;
         Paint outer = null;
         if (type == 0) {
-            if (!pressed) {
-                thumb = thumbDrawable1;
-            } else {
-                thumb = thumbDrawablePressed1;
-            }
             inner = innerPaint1;
             outer = outerPaint1;
         } else if (type == 1) {
-            if (!pressed) {
-                thumb = thumbDrawable2;
-            } else {
-                thumb = thumbDrawablePressed2;
-            }
             inner = innerPaint2;
             outer = outerPaint2;
         }
         int y = (height - thumbHeight) / 2;
         canvas.drawRect(thumbWidth / 2, height / 2 - AndroidUtilities.dp(1), width - thumbWidth / 2, height / 2 + AndroidUtilities.dp(1), inner);
         canvas.drawRect(thumbWidth / 2, height / 2 - AndroidUtilities.dp(1), thumbWidth / 2 + thumbX, height / 2 + AndroidUtilities.dp(1), outer);
-        thumb.setBounds(thumbX, y, thumbX + thumbWidth, y + thumbHeight);
-        thumb.draw(canvas);
+        canvas.drawCircle(thumbX + thumbWidth / 2, y + thumbHeight / 2, AndroidUtilities.dp(pressed ? 8 : 6), outer);
     }
 }

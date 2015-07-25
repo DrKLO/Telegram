@@ -46,4 +46,5 @@ public class GreySectionCell extends FrameLayout {
     public void setTextColor(int color) {
         textView.setTextColor(color);
     }
+
 }

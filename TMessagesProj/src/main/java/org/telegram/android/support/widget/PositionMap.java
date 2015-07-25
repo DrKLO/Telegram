@@ -456,5 +456,4 @@ class PositionMap<E> implements Cloneable {
             return ~lo;  // value not present
         }
     }
-
 }

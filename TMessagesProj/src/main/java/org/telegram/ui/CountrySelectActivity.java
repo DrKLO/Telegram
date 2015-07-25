@@ -11,7 +11,6 @@ package org.telegram.ui;
 import android.content.Context;
 import android.os.Build;
 import android.view.Gravity;
-import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.AbsListView;
@@ -62,7 +61,7 @@ public class CountrySelectActivity extends BaseFragment {
     }
 
     @Override
-    public View createView(Context context, LayoutInflater inflater) {
+    public View createView(Context context) {
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBar.setAllowOverlayTitle(true);
         actionBar.setTitle(LocaleController.getString("ChooseCountry", R.string.ChooseCountry));
@@ -185,7 +184,7 @@ public class CountrySelectActivity extends BaseFragment {
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
-                Country country = null;
+                Country country;
                 if (searching && searchWas) {
                     country = searchListViewAdapter.getItem(i);
                 } else {

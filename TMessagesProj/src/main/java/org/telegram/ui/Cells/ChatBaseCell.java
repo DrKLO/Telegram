@@ -139,6 +139,8 @@ public class ChatBaseCell extends BaseCell {
     protected boolean avatarAlignTop = false;
     private int avatarLeft = AndroidUtilities.dp(6);
 
+    boolean showAvatar = false;
+
     public ChatBaseCell(Context context) {
         super(context);
         if (timePaintIn == null) {
@@ -379,7 +381,9 @@ public class ChatBaseCell extends BaseCell {
         currentReplyPhoto = null;
 
         currentUser = MessagesController.getInstance().getUser(messageObject.messageOwner.from_id);
-        if (isChat && !messageObject.isOut()) {
+
+        //if (isChat && !messageObject.isOut()) {
+        if ((isChat || showAvatar) && !messageObject.isOut()) {
             isAvatarVisible = true;
             if (currentUser != null) {
                 if (currentUser.photo != null) {
@@ -493,7 +497,7 @@ public class ChatBaseCell extends BaseCell {
                 if (messageObject.isOut()) {
                     maxWidth = width - backgroundWidth - AndroidUtilities.dp(60);
                 } else {
-                    maxWidth = width - backgroundWidth - AndroidUtilities.dp(56 + (isChat ? 61 : 0));
+                    maxWidth = width - backgroundWidth - AndroidUtilities.dp(56 + (isChat || showAvatar ? 61 : 0));
                 }
             } else {
                 maxWidth = getMaxNameWidth() - AndroidUtilities.dp(22);
@@ -526,7 +530,7 @@ public class ChatBaseCell extends BaseCell {
                         mess = mess.substring(0, 150);
                     }
                     mess = mess.replace("\n", " ");
-                    stringFinalText = Emoji.replaceEmoji(mess, replyTextPaint.getFontMetricsInt(), AndroidUtilities.dp(14));
+                    stringFinalText = Emoji.replaceEmoji(mess, replyTextPaint.getFontMetricsInt(), AndroidUtilities.dp(14), false);
                     stringFinalText = TextUtils.ellipsize(stringFinalText, replyTextPaint, maxWidth - AndroidUtilities.dp(8), TextUtils.TruncateAt.END);
                 }
             }
@@ -657,13 +661,13 @@ public class ChatBaseCell extends BaseCell {
             timeLayout = new StaticLayout(currentTimeString, currentTimePaint, timeWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
             if (!media) {
                 if (!currentMessageObject.isOut()) {
-                    timeX = backgroundWidth - AndroidUtilities.dp(9) - timeWidth + (isChat ? AndroidUtilities.dp(leftBound) : 0);
+                    timeX = backgroundWidth - AndroidUtilities.dp(9) - timeWidth + (isChat || showAvatar ? AndroidUtilities.dp(leftBound) : 0);
                 } else {
                     timeX = layoutWidth - timeWidth - AndroidUtilities.dp(38.5f);
                 }
             } else {
                 if (!currentMessageObject.isOut()) {
-                    timeX = backgroundWidth - AndroidUtilities.dp(4) - timeWidth + (isChat ? AndroidUtilities.dp(leftBound) : 0);
+                    timeX = backgroundWidth - AndroidUtilities.dp(4) - timeWidth + (isChat || showAvatar ? AndroidUtilities.dp(leftBound) : 0);
                 } else {
                     timeX = layoutWidth - timeWidth - AndroidUtilities.dp(42.0f);
                 }
@@ -734,7 +738,7 @@ public class ChatBaseCell extends BaseCell {
                     currentBackgroundDrawable = ResourceLoader.backgroundMediaDrawableIn;
                 }
             }
-            if (isChat) {
+            if (isChat || showAvatar) {
                 setDrawableBounds(currentBackgroundDrawable, AndroidUtilities.dp(leftBound + (!media ? 0 : 9)), AndroidUtilities.dp(1), backgroundWidth, layoutHeight - AndroidUtilities.dp(2));
             } else {
                 setDrawableBounds(currentBackgroundDrawable, (!media ? 0 : AndroidUtilities.dp(9)), AndroidUtilities.dp(1), backgroundWidth, layoutHeight - AndroidUtilities.dp(2));

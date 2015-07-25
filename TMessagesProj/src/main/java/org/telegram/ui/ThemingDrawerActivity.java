@@ -26,6 +26,8 @@ import android.widget.ListView;
 
 import org.telegram.android.AndroidUtilities;
 import org.telegram.android.LocaleController;
+import org.telegram.android.MediaController;
+import org.telegram.android.NotificationCenter;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.ActionBar;
@@ -71,6 +73,9 @@ public class ThemingDrawerActivity extends BaseFragment {
 
     public final static int CENTER = 0;
 
+    private boolean player = false;
+    private boolean drawer = false;
+
     @Override
     public boolean onFragmentCreate() {
         super.onFragmentCreate();
@@ -103,11 +108,16 @@ public class ThemingDrawerActivity extends BaseFragment {
     @Override
     public void onFragmentDestroy() {
         super.onFragmentDestroy();
-
+        if(player){
+            if(MediaController.getInstance().getPlayingMessageObject() != null)NotificationCenter.getInstance().postNotificationName(NotificationCenter.audioPlayStateChanged, MediaController.getInstance().getPlayingMessageObject().getId());
+        }
+        if(drawer){
+            NotificationCenter.getInstance().postNotificationName(NotificationCenter.mainUserInfoChanged);
+        }
     }
 
     @Override
-    public View createView(Context context, LayoutInflater inflater) {
+    public View createView(Context context) {
         if (fragmentView == null) {
 
             actionBar.setItemsBackground(AvatarDrawable.getButtonColorForId(5));
@@ -200,6 +210,7 @@ public class ThemingDrawerActivity extends BaseFragment {
                             @Override
                             public void colorChanged(int color) {
                                 commitInt("drawerListColor", color);
+                                player = true;
                             }
 
                         },themePrefs.getInt("drawerListColor", 0xffffffff), CENTER, 0, false);
@@ -214,6 +225,7 @@ public class ThemingDrawerActivity extends BaseFragment {
                             @Override
                             public void colorChanged(int color) {
                                 commitInt("drawerIconColor", color);
+                                player = true;
 
                             }
 
@@ -229,6 +241,7 @@ public class ThemingDrawerActivity extends BaseFragment {
                             @Override
                             public void colorChanged(int color) {
                                 commitInt("drawerOptionColor", color);
+                                player = true;
                             }
 
                         },themePrefs.getInt("drawerOptionColor", 0xff444444), CENTER, 0, false);
@@ -417,6 +430,7 @@ public class ThemingDrawerActivity extends BaseFragment {
                         });
                         showDialog(builder.create());
                     }
+                    drawer = true;
                 }
             });
 
@@ -430,6 +444,7 @@ public class ThemingDrawerActivity extends BaseFragment {
                         resetInt("drawerHeaderColor");
                     } else if (i == listColorRow) {
                         resetInt("drawerListColor");
+                        player = true;
                     } else if (i == avatarColorRow) {
                         resetInt("drawerAvatarColor");
                     } else if (i == avatarRadiusRow) {
@@ -446,8 +461,10 @@ public class ThemingDrawerActivity extends BaseFragment {
                         resetInt("drawerPhoneSize");
                     } else if (i == iconColorRow) {
                         resetInt("drawerIconColor");
+                        player = true;
                     } else if (i == optionColorRow) {
                         resetInt("drawerOptionColor");
+                        player = true;
                     } else if (i == optionSizeRow) {
                         resetInt("drawerOptionSize");
                     } else if (i == versionColorRow) {
@@ -459,6 +476,8 @@ public class ThemingDrawerActivity extends BaseFragment {
                             resetPref(view.getTag().toString());
                         }
                     }
+                    drawer = true;
+
                     return true;
                 }
             });
@@ -546,6 +565,9 @@ public class ThemingDrawerActivity extends BaseFragment {
         });
         listView.setAdapter(listAdapter);
         //actionBar.setBackgroundColor(AndroidUtilities.getIntColor("themeColor"));
+        if(drawer){
+
+        }
     }
 
     private class ListAdapter extends BaseFragmentAdapter {

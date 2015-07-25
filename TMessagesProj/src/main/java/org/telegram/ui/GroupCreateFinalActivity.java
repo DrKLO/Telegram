@@ -19,7 +19,6 @@ import android.text.InputType;
 import android.text.TextWatcher;
 import android.util.TypedValue;
 import android.view.Gravity;
-import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
@@ -29,23 +28,23 @@ import android.widget.LinearLayout;
 import android.widget.ListView;
 
 import org.telegram.android.AndroidUtilities;
-import org.telegram.android.LocaleController;
-import org.telegram.android.MessagesController;
-import org.telegram.android.MessagesStorage;
-import org.telegram.android.NotificationCenter;
 import org.telegram.messenger.ConnectionsManager;
-import org.telegram.messenger.FileLog;
-import org.telegram.messenger.R;
+import org.telegram.android.LocaleController;
+import org.telegram.android.MessagesStorage;
 import org.telegram.messenger.TLRPC;
-import org.telegram.ui.ActionBar.ActionBar;
-import org.telegram.ui.ActionBar.ActionBarMenu;
-import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.messenger.FileLog;
+import org.telegram.android.MessagesController;
+import org.telegram.android.NotificationCenter;
+import org.telegram.messenger.R;
 import org.telegram.ui.Adapters.BaseFragmentAdapter;
 import org.telegram.ui.Cells.GreySectionCell;
 import org.telegram.ui.Cells.UserCell;
+import org.telegram.ui.ActionBar.ActionBar;
+import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.AvatarUpdater;
 import org.telegram.ui.Components.BackupImageView;
+import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.Components.FrameLayoutFixed;
 import org.telegram.ui.Components.LayoutHelper;
 
@@ -139,7 +138,7 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
     }
 
     @Override
-    public View createView(Context context, LayoutInflater inflater) {
+    public View createView(Context context) {
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBar.setAllowOverlayTitle(true);
         if (isBroadcast) {

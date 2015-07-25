@@ -322,6 +322,7 @@
   <string name="RepeatDisabled">关闭</string>
   <string name="InChatSound">聊天音效</string>
   <string name="SoundDefault">默认</string>
+  <string name="VibrationDefault">默认</string>
   <string name="SmartNotifications">智能通知</string>
   <string name="SmartNotificationsDisabled">禁用智能通知</string>
   <string name="SmartNotificationsInfo">在 %2$s 分钟内，至少通知 %1$s 次</string>
@@ -504,12 +505,23 @@
 <string name="EditedVideo">编辑过的视频</string>
 <string name="SendingVideo">正在发送视频...</string>
 <string name="CompressVideo">压缩视频</string>
+  <!--bot-->
+  <string name="Bot">接口</string>
+  <string name="BotShare">分享</string>
+  <string name="BotInvite">加入群组</string>
+  <string name="BotSettings">设置</string>
+  <string name="BotHelp">帮助</string>
+  <string name="BotStatusRead">具有读取消息权限</string>
+  <string name="BotStatusCantRead">没有读取消息权限</string>
+  <string name="BotInfoTitle">本接口的作用</string>
+  <string name="BotStart">开始</string>
     <!--button titles-->
-<string name="Next">下一个</string>
+  <string name="Next">下一步</string>
 <string name="Back">返回</string>
 <string name="Done">完成</string>
 <string name="Open">打开</string>
 <string name="Cancel">取消</string>
+  <string name="Close">关闭</string>
 <string name="Add">添加</string>
 <string name="Edit">编辑</string>
 <string name="Send">发送</string>
@@ -518,11 +530,12 @@
 <string name="Delete">删除</string>
 <string name="Forward">转发</string>
 <string name="Retry">重试</string>
-<string name="FromCamera">来自相机</string>
-<string name="FromGalley">来自相册</string>
-<string name="DeletePhoto">删除照片</string>
+  <string name="FromCamera">拍照</string>
+  <string name="FromGalley">从相册中选择</string>
+  <string name="DeletePhoto">删除图片</string>
 <string name="Set">设置</string>
-<string name="OK">OK</string>
+  <string name="OK">确定</string>
+  <string name="Crop">剪切</string>
     <!--messages-->
   <string name="ActionInviteYou">您通过邀请链接方式加入了这个群组</string>
   <string name="ActionInviteUser">un1 通过邀请链接方式加入了这个群组</string>
@@ -547,7 +560,7 @@
   <string name="UnsuppotedMedia">当前版本不支持查看此条消息。请前往更新版本: http://telegram.org/update</string>
   <string name="AttachPhoto">图片</string>
 <string name="AttachVideo">视频</string>
-<string name="AttachLocation">地理位置</string>
+  <string name="AttachLocation">位置</string>
 <string name="AttachContact">联系人</string>
 <string name="AttachDocument">文件</string>
   <string name="AttachSticker">图贴</string>
@@ -556,36 +569,42 @@
   <string name="ActionTakeScreenshootYou">您截了一张图！</string>
   <string name="ActionTakeScreenshoot">un1 截了一张图！</string>
     <!--Alert messages-->
-<string name="InvalidPhoneNumber">无效电话号码</string>
-<string name="CodeExpired">密码过期，请重新输入</string>
-<string name="FloodWait">请求过多，请稍候重试</string>
-<string name="InvalidCode">密码无效</string>
-<string name="InvalidFirstName">无效的名</string>
-<string name="InvalidLastName">无效的姓</string>
-<string name="Loading">加载中...</string>
-<string name="NoPlayerInstalled">缺少视频播放器，请安装视频播放器后继续</string>
-<string name="NoMailInstalled">请发送邮件到 sms@telegram.org 并告诉我们你的问题。</string>
-<string name="NoHandleAppInstalled">没有可以打开文件\'%1$s\'的应用，请安装之后继续</string>
-<string name="InviteUser">该用户还未加入 Telegram，发送一封邀请？</string>
-<string name="AreYouSure">你确定吗？</string>
-<string name="AddToTheGroup">添加 %1$s 到群吗？\n\n最近的消息转发数:</string>
-<string name="ForwardMessagesTo">转发给 %1$s 吗？</string>
-<string name="SendMessagesTo">发送信息给 %1$s 吗？</string>
-<string name="AreYouSureLogout">你确定登出吗？\n\n注意：你可以立即在所有设备上无缝使用 Telegram。\n\n登出后所有私密会话都将被删除。</string>
-<string name="AreYouSureSessions">你确定终止其他所有会话吗？</string>
-<string name="AreYouSureDeleteAndExit">你确定删除并离开群吗？</string>
-<string name="AreYouSureDeleteThisChat">你确定删除这个会话吗？</string>
-<string name="AreYouSureShareMyContactInfo">你确定共享你的联系人信息吗？</string>
-<string name="AreYouSureBlockContact">你确定屏蔽该联系人吗？</string>
-<string name="AreYouSureUnblockContact">对该联系人解除屏蔽吗？</string>
-<string name="AreYouSureDeleteContact">你确定删除这个联系人吗？</string>
-<string name="AreYouSureSecretChat">你确定开始私密会话吗？</string>
-<string name="AreYouSureRegistration">你确定要取消登录吗？</string>
-<string name="AreYouSureClearHistory">你确定要清除历史吗？</string>
-<string name="AreYouSureDeleteMessages">你确定要删除 %1$s ？</string>
-<string name="SendMessagesToGroup">发送消息给 %1$s 吗？</string>
-<string name="ForwardMessagesToGroup">转发消息给 %1$s ？</string>
-<string name="FeatureUnavailable">抱歉，该功能在你所在国家尚未启用。</string>
+  <string name="InvalidPhoneNumber">无效的手机号码</string>
+  <string name="CodeExpired">验证码已过期，请重新登录</string>
+  <string name="FloodWait">尝试次数过多，请稍后再试</string>
+  <string name="FloodWaitTime">尝试次数过多，请于 %1$s 后再试</string>
+  <string name="InvalidCode">无效的验证码</string>
+  <string name="InvalidFirstName">无效的名字</string>
+  <string name="InvalidLastName">无效的姓氏</string>
+  <string name="Loading">载入中……</string>
+  <string name="NoPlayerInstalled">没有可用的视频播放器，请先安装</string>
+  <string name="NoMailInstalled">请发送电子邮件到 sms@telegram.org 告诉我们您遇到的问题。</string>
+  <string name="NoHandleAppInstalled">您没有安装可执行 \'%1$s\' 类型文件的软件，请先安装以继续。</string>
+  <string name="InviteUser">该用户还未加入Telegram，是否发送邀请？</string>
+  <string name="AreYouSure">您确定吗？</string>
+  <string name="AddToTheGroupTitle">将 %1$s 加入到 %2$s 群组？</string>
+  <string name="AddToTheGroupForwardCount">最近要转发的消息数：</string>
+  <string name="AddToTheGroup">将 %1$s 添加到群组？</string>
+  <string name="UserAlreadyInGroup">此用户已是本群组成员</string>
+  <string name="ForwardMessagesTo">转发信息给%1$s？</string>
+  <string name="SendMessagesTo">要把消息发送给 %1$s 吗？</string>
+  <string name="AreYouSureLogout">确认退出登录？</string>
+  <string name="AreYouSureSessions">您确定要注销所有其它设备上的会话吗？</string>
+  <string name="AreYouSureDeleteAndExit">您确定要删除并退出这个群组吗？</string>
+  <string name="AreYouSureDeleteThisChat">您确定要删除这个对话吗？</string>
+  <string name="AreYouSureShareMyContactInfo">您确定要共享您的联系信息吗？</string>
+  <string name="AreYouSureBlockContact">您确定要屏蔽该联系人吗？</string>
+  <string name="AreYouSureUnblockContact">您确定要取消对该联系人的屏蔽吗？</string>
+  <string name="AreYouSureDeleteContact">您确定要删除该联系人吗？</string>
+  <string name="AreYouSureSecretChat">您确定要开始加密对话吗？</string>
+  <string name="AreYouSureRegistration">确认取消注册？</string>
+  <string name="AreYouSureClearHistory">确认清除聊天记录？</string>
+  <string name="AreYouSureDeleteMessages">确认删除 %1$s ？</string>
+  <string name="SendMessagesToGroup">要发送消息给 %1$s 吗？</string>
+  <string name="ForwardMessagesToGroup">要转发消息给 %1$s 吗？</string>
+  <string name="FeatureUnavailable">对不起，本功能在您的国家暂不可用。</string>
+  <string name="NoUsernameFound">没有使用这个昵称的 Telegram 账号。</string>
+  <string name="BotCantJoinGroups">此接口账号无法加入群组。</string>
     <!--Intro view-->
 <string name="Page1Title">Plus Messenger</string>
 <string name="Page2Title">快速</string>
@@ -711,6 +730,12 @@
   <string name="Stickers_few">%1$d 张图贴</string>
   <string name="Stickers_many">%1$d 张图贴</string>
   <string name="Stickers_other">%1$d 张图贴</string>
+  <string name="Photos_zero">没有照片</string>
+  <string name="Photos_one">一张照片</string>
+  <string name="Photos_two">两张照片</string>
+  <string name="Photos_few">%1$d 张照片</string>
+  <string name="Photos_many">%1$d 张照片</string>
+  <string name="Photos_other">%1$d 张照片</string>
   <!--forwarded messages-->
   <string name="ForwardedMessage_zero">无转发消息</string>
   <string name="ForwardedMessage_one">一条转发的消息</string>
@@ -778,8 +803,8 @@
   <string name="formatterDay12H">h:mm a</string>
   <string name="formatDateAtTime">%1$s 的 %2$s</string>
   <!--update text-->
-  <string name="updateText">为 Plus Messenger 查找、下载并应用主题。每天都有新主题，当有新的主题发布时能够立即获得通知。分享您的主题给全世界所有的 Plus Messenger 用户。\n https://play.google.com/store/apps/details?id=es.rafalense.themes</string>
-  <string name="updateBuild">576</string>
+  <string name="updateText">Android 版的 Plus Messenger 已更新。最新版本 3.1 的新增功能有：\n\n- 在特定聊天中搜索消息内容。\n- 全新设计的附件选择菜单。从附件选择菜单中直接发送联系人资料或语音文件。\n- 改进的程序内媒体播放功能 （YouTube, Vimoe, Soundcloud 等）, 新播放器适用于大型语音文件。\n\n更多更新请查看：\nhttps://telegram.org/blog/search-and-media</string>
+  <string name="updateBuild">583</string>
   <!--Telegram+--><!--
   <string name="updatePlusText">\n\n在 3.0.1.3 版的新功能：\n\n- 添加设置使用手机字体选项\n- 添加聊天/群组聊天内搜索聊天记录选项\n- 在设置/主题调整界面里添加标头颜色、标题颜色和标头图标颜色的设置\n- 添加主界面群组图标颜色的设置\n- 添加导航栏中头像大小的设置\n- 错误修复</string>-->
   <string name="TelegramForAndroid">Plus Messenger for Android</string>

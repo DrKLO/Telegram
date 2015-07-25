@@ -65,6 +65,11 @@
     <string name="YouCreatedBroadcastList">Hai creato una lista broadcast</string>
     <string name="AddRecipient">Aggiungi destinatario</string>
     <string name="KickFromBroadcast">Rimuovi dalla lista broadcast</string>
+    <!--audio view-->
+    <string name="NoAudio">Aggiungi file nella libreria musicale del tuo dispositivo per vederli qui.</string>
+    <string name="AttachMusic">Musica</string>
+    <string name="AudioUnknownArtist">Artista sconosciuto</string>
+    <string name="AudioUnknownTitle">Titolo sconosciuto</string>
     <!--documents view-->
     <string name="SelectFile">Seleziona file</string>
     <string name="FreeOfTotal">Liberi %1$s di %2$s</string>
@@ -121,6 +126,7 @@
     <string name="DeleteThisChat">Elimina questa chat</string>
     <string name="SlideToCancel">ANNULLA</string>
     <string name="SaveToDownloads">Salva nei download</string>
+    <string name="SaveToMusic">Salva nella musica</string>
     <string name="ShareFile">Condividi</string>
     <string name="ApplyLocalizationFile">Applica traduzione</string>
     <string name="UnsupportedAttachment">Allegato non supportato</string>
@@ -158,7 +164,7 @@
     <string name="NotificationEditedGroupName">%1$s ha modificato il nome del gruppo %2$s</string>
     <string name="NotificationEditedGroupPhoto">%1$s ha modificato la foto del gruppo %2$s</string>
     <string name="NotificationGroupAddMember">%1$s ha invitato %3$s nel gruppo %2$s</string>
-    <string name="NotificationGroupAddSelf">%1$s è rientrato nel gruppo %2$s</string>
+  <string name="NotificationGroupAddSelf">%1$s è tornato nel gruppo %2$s</string>
     <string name="NotificationGroupKickMember">%1$s ha rimosso %3$s dal gruppo %2$s</string>
     <string name="NotificationGroupKickYou">%1$s ti ha rimosso dal gruppo %2$s</string>
     <string name="NotificationGroupLeftMember">%1$s ha lasciato il gruppo %2$s</string>
@@ -284,7 +290,7 @@
     <string name="BlockedUsers">Utenti bloccati</string>
     <string name="LogOut">Disconnetti</string>
     <string name="NoSound">Nessun suono</string>
-    <string name="Default">Predefinita</string>
+    <string name="Default">Predefinite</string>
     <string name="Support">Supporto</string>
     <string name="OnlyIfSilent">Solo se silenzioso</string>
     <string name="ChatBackground">Sfondo chat</string>
@@ -347,6 +353,7 @@
     <string name="RepeatDisabled">No</string>
     <string name="InChatSound">Suoni in-chat</string>
     <string name="SoundDefault">Predefinito</string>
+    <string name="VibrationDefault">Predefinita</string>
     <string name="SmartNotifications">Notifiche intelligenti</string>
     <string name="SmartNotificationsDisabled">Disabilitate</string>
     <string name="SmartNotificationsInfo">Suona al massimo %1$s in %2$s</string>
@@ -452,12 +459,12 @@
     <string name="PleaseReEnterPassword">Reinserisci la tua password</string>
     <string name="RecoveryEmail">E-mail di recupero</string>
     <string name="YourEmail">La tua e-mail</string>
-    <string name="YourEmailInfo">Per favore inserisci un\'e-mail valida. È l\'unico modo di recuperare una password dimenticata.</string>
+    <string name="YourEmailInfo">Inserisci un\'e-mail valida. È l\'unico modo di recuperare una password dimenticata.</string>
     <string name="YourEmailSkip">Salta</string>
     <string name="YourEmailSkipWarning">Attenzione</string>
     <string name="YourEmailSkipWarningText">No, seriamente.\n\nSe dimentichi la tua password, perderai l\'accesso al tuo account Telegram. Non ci sarà modo di ripristinarlo.</string>
     <string name="YourEmailAlmostThere">Ci siamo quasi!</string>
-    <string name="YourEmailAlmostThereText">Per favore controlla la tua e-mail (anche lo spam) per completare la configurazione della verifica in due passaggi.</string>
+    <string name="YourEmailAlmostThereText">Controlla la tua e-mail (anche lo spam) per completare la configurazione della verifica in due passaggi.</string>
     <string name="YourPasswordSuccess">Fatto!</string>
     <string name="YourPasswordSuccessText">La password per la verifica in due passaggi è ora attiva.</string>
     <string name="ChangePassword">Cambia password</string>
@@ -466,16 +473,16 @@
     <string name="ChangeRecoveryEmail">Cambia e-mail di recupero</string>
     <string name="TurnPasswordOffQuestion">Sei sicuro di voler disabilitare la tua password?</string>
     <string name="PasswordHint">Suggerimento password</string>
-    <string name="PasswordHintText">Per favore crea un suggerimento per la tua password</string>
+    <string name="PasswordHintText">Crea un suggerimento per la tua password</string>
     <string name="PasswordDoNotMatch">Le password non corrispondono</string>
     <string name="AbortPassword">Annulla configurazione della verifica in due passaggi</string>
-    <string name="EmailPasswordConfirmText">Per favore segui questi step per completare la configurazione della verifica in due passaggi:\n\n1. Controlla la tua e-mail (anche lo spam)\n%1$s\n\n2. Clicca sul link di conferma.</string>
+    <string name="EmailPasswordConfirmText">Segui questi step per completare la configurazione della verifica in due passaggi:\n\n1. Controlla la tua e-mail (anche lo spam)\n%1$s\n\n2. Clicca sul link di conferma.</string>
     <string name="PasswordAsHintError">Il suggerimento deve essere diverso dalla password</string>
     <string name="PasswordEmailInvalid">E-mail non valida</string>
     <string name="RestorePasswordNoEmailTitle">Scusa</string>
     <string name="RestorePasswordNoEmailText">Siccome non hai fornito un\'email di recupero quando hai impostato la  tua password, non ti resta che ricordarti la password o ripristinare il tuo account.</string>
     <string name="RestoreEmailSent">Abbiamo inviato un codice di ripristino alla e-mail che ci hai fornito:\n\n%1$s</string>
-    <string name="RestoreEmailSentInfo">Per favore controlla la tua e-mail e inserisci il codice a 6 cifre che ti abbiamo inviato.</string>
+    <string name="RestoreEmailSentInfo">Controlla la tua e-mail e inserisci il codice a 6 cifre che ti abbiamo inviato.</string>
     <string name="RestoreEmailTrouble">Hai problemi ad accedere alla tua e-mail %1$s?</string>
     <string name="RestoreEmailTroubleText">Se non puoi ripristinare l\'accesso alla tua e-mail, non ti resta che ricordarti la password o ripristinare il tuo account.</string>
     <string name="ResetMyAccount">RIPRISTINA IL MIO ACCOUNT</string>
@@ -579,8 +586,8 @@
     <string name="ActionYouCreateGroup">Hai creato il gruppo</string>
     <string name="ActionKickUserYou">un1 ti ha rimosso</string>
     <string name="ActionAddUserYou">un1 ti ha aggiunto</string>
-    <string name="ActionAddUserSelf">un1 è rientrato nel gruppo</string>
-    <string name="ActionAddUserSelfYou">Sei rientrato nel gruppo</string>
+  <string name="ActionAddUserSelf">un1 è tornato nel gruppo</string>
+  <string name="ActionAddUserSelfYou">Sei tornato nel gruppo</string>
     <string name="UnsuppotedMedia">Questo messaggio non è supportato sulla tua versione di Telegram. Aggiorna l\'applicazione per visualizzarlo: https://telegram.org/update</string>
     <string name="AttachPhoto">Foto</string>
     <string name="AttachVideo">Video</string>
@@ -641,7 +648,7 @@
     <string name="Page2Message"><![CDATA[<b>Plus Messenger</b>]]> consegna i messaggi più<![CDATA[<br/>]]>velocemente di qualsiasi altra app.</string>
     <string name="Page3Message"><![CDATA[<b>Plus Messenger</b>]]> sarà sempre gratuito.<![CDATA[<br/>]]>Nessuna pubblicità. Nessun abbonamento.</string>
     <string name="Page4Message"><![CDATA[<b>Plus Messenger</b>]]> protegge i tuoi messaggi<![CDATA[<br/>]]>dagli attacchi degli hacker.</string>
-    <string name="Page5Message"><![CDATA[<b>Plus Messenger</b>]]> non ha limiti sulle dimensioni<![CDATA[<br/>]]>dei tuoi file multimediali e delle chat.</string>
+    <string name="Page5Message"><![CDATA[<b>Plus Messenger</b>]]> non ha limiti di dimensione<![CDATA[<br/>]]>per le tue chat e i file multimediali.</string>
     <string name="Page6Message"><![CDATA[<b>Plus Messenger</b>]]> ti consente di accedere<![CDATA[<br/>]]>ai messaggi da più dispositivi.</string>
     <string name="Page7Message"><![CDATA[<b>Plus Messenger</b>]]> cifra in maniera sicura i messaggi<![CDATA[<br/>]]>e può far sì che si autodistruggano.</string>
     <string name="StartMessaging">Inizia a inviare messaggi</string>
@@ -682,12 +689,12 @@
     <string name="items_few">%1$d oggetti</string>
     <string name="items_many">%1$d oggetti</string>
     <string name="items_other">%1$d oggetti</string>
-    <string name="FromChats_zero">in nessuna chat</string>
-    <string name="FromChats_one">in %1$d chat</string>
-    <string name="FromChats_two">in %1$d chat</string>
-    <string name="FromChats_few">in %1$d chat</string>
-    <string name="FromChats_many">in %1$d chat</string>
-    <string name="FromChats_other">in %1$d chat</string>
+    <string name="FromChats_zero">da nessuna chat</string>
+    <string name="FromChats_one">da %1$d chat</string>
+    <string name="FromChats_two">da %1$d chat</string>
+    <string name="FromChats_few">da %1$d chat</string>
+    <string name="FromChats_many">da %1$d chat</string>
+    <string name="FromChats_other">da %1$d chat</string>
     <string name="Seconds_zero">%1$d secondi</string>
     <string name="Seconds_one">%1$d secondo</string>
     <string name="Seconds_two">%1$d secondi</string>
@@ -827,8 +834,8 @@
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s alle %2$s</string>
     <!--update text-->
-    <string name="updateText">Plus Messenger per Android è stato aggiornato. Nuovo nella versione 3.0:\n\n- Pagine dedicate per ognuno dei tuoi pacchetti sticker nel pannello sticker. Aggiunti sticker personalizzati come https://telegram.me/addstickers/Animals\n- Nuova API per i bot, gratis per tutti. Se sei un ingegnere, crea i tuoi bot per giochi, servizi o integrazioni. Scopri di più su https://telegram.org/blog/bot-revolution\n- Scegli, scarica ed applica temi per Plus Messenger. Nuovi temi ogni giorno\n https://play.google.com/store/apps/details?id=es.rafalense.themes</string>
-    <string name="updateBuild">576</string>
+    <string name="updateText">Plus Messenger per Android si è aggiornato. Nuovo nella versione 3.1:\n\n- Cerca messaggi all\'interno di una specifica chat.\n- Menu degli allegati completamente ridisegnato. Invia contatti e audio direttamente dal menu degli allegati.\n- Riproduzione in-app migliorata (YouTube, Vimeo, SoundCloud etc.), nuovo player per i file audio.\n\nMaggiori informazioni su questo aggiornamento:\nhttps://telegram.org/blog/search-and-media</string>
+    <string name="updateBuild">583</string>
     <!--Telegram+--><!--
   <string name="updatePlusText">\n\nNovità nella v3.0.1.5:\n\n- Opzione nelle Impostazioni per utilizzare il font di sistema\n- Opzione per la ricerca all\'interno di chat/gruppi\n- Aggiunta MOD per cambiare il colore dell\'intestazione, del titolo dell\'intestazione ed il colore delle icone dell\'intestazione (Impostazioni/Schermata dei temi)\n- MOD per cambiare il colore dell\'icona di gruppo nella schermata principale\n- MOD per cambiare la dimensione dell\'avatar nel menù di navigazione\n- Bug fixes</string>-->
     <string name="TelegramForAndroid">Plus Messenger per Android</string>

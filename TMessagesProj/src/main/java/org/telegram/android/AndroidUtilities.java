@@ -54,18 +54,18 @@ import net.hockeyapp.android.CrashManager;
 import net.hockeyapp.android.CrashManagerListener;
 import net.hockeyapp.android.UpdateManager;
 
-import org.telegram.android.AnimationCompat.AnimatorListenerAdapterProxy;
-import org.telegram.android.AnimationCompat.AnimatorSetProxy;
-import org.telegram.android.AnimationCompat.ObjectAnimatorProxy;
-import org.telegram.android.AnimationCompat.ViewProxy;
-import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BuildConfig;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
 import org.telegram.messenger.TLRPC;
+import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.UserConfig;
+import org.telegram.android.AnimationCompat.AnimatorListenerAdapterProxy;
+import org.telegram.android.AnimationCompat.AnimatorSetProxy;
+import org.telegram.android.AnimationCompat.ObjectAnimatorProxy;
+import org.telegram.android.AnimationCompat.ViewProxy;
 import org.telegram.ui.Components.ForegroundDetector;
 import org.telegram.ui.Components.NumberPicker;
 import org.telegram.ui.Components.TypefaceSpan;
@@ -558,16 +558,6 @@ public class AndroidUtilities {
         return 0;
     }
 
-    public static int getCurrentActionBarHeight() {
-        if (isTablet()) {
-            return dp(64);
-        } else if (ApplicationLoader.applicationContext.getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
-            return dp(48);
-        } else {
-            return dp(56);
-        }
-    }
-
     public static Point getRealScreenSize() {
         Point size = new Point();
         try {
@@ -965,8 +955,8 @@ public class AndroidUtilities {
                 builder.append(" ");
             }
             query = query.trim();
-            builder.append(AndroidUtilities.replaceTags("<c" + hexDarkColor + ">" + query + "</c>"));
-            //builder.append(AndroidUtilities.replaceTags("<c#ff4d83b3>" + query + "</c>"));
+          //builder.append(AndroidUtilities.replaceTags("<c#ff4d83b3>" + query + "</c>"));
+            builder.append(AndroidUtilities.replaceTags("<c" + hexDarkColor + ">" + query + "</c>"));      
 
             lastIndex = end;
         }

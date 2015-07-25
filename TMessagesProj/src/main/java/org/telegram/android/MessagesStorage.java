@@ -1149,7 +1149,7 @@ public class MessagesStorage {
         });
     }
 
-    private void updateDialogsWithReadedMessagesInternal(final ArrayList<Integer> messages, final HashMap<Integer, Integer> inbox) {
+    private void updateDialogsWithReadMessagesInternal(final ArrayList<Integer> messages, final HashMap<Integer, Integer> inbox) {
         try {
             HashMap<Long, Integer> dialogsToUpdate = new HashMap<>();
             StringBuilder dialogsToReload = new StringBuilder();
@@ -1184,14 +1184,13 @@ public class MessagesStorage {
                     SQLiteCursor cursor = database.queryFinalized(String.format(Locale.US, "SELECT COUNT(mid) FROM messages WHERE uid = %d AND mid <= %d AND read_state IN(0,2) AND out = 0", entry.getKey(), entry.getValue()));
                     if (cursor.next()) {
                         int count = cursor.intValue(0);
-                        if (count == 0) {
-                            continue;
+                        if (count != 0) {
+                            dialogsToUpdate.put((long) entry.getKey(), count);
+                            if (dialogsToReload.length() != 0) {
+                                dialogsToReload.append(",");
+                            }
+                            dialogsToReload.append(entry.getKey());
                         }
-                        dialogsToUpdate.put((long) entry.getKey(), count);
-                        if (dialogsToReload.length() != 0) {
-                            dialogsToReload.append(",");
-                        }
-                        dialogsToReload.append(entry.getKey());
                     }
                     cursor.dispose();
                 }
@@ -1231,7 +1230,7 @@ public class MessagesStorage {
         }
     }
 
-    public void updateDialogsWithReadedMessages(final HashMap<Integer, Integer> inbox, boolean useQueue) {
+    public void updateDialogsWithReadMessages(final HashMap<Integer, Integer> inbox, boolean useQueue) {
         if (inbox.isEmpty()) {
             return;
         }
@@ -1239,11 +1238,11 @@ public class MessagesStorage {
             storageQueue.postRunnable(new Runnable() {
                 @Override
                 public void run() {
-                    updateDialogsWithReadedMessagesInternal(null, inbox);
+                    updateDialogsWithReadMessagesInternal(null, inbox);
                 }
             });
         } else {
-            updateDialogsWithReadedMessagesInternal(null, inbox);
+            updateDialogsWithReadMessagesInternal(null, inbox);
         }
     }
 
@@ -3473,7 +3472,7 @@ public class MessagesStorage {
                                 NotificationCenter.getInstance().postNotificationName(NotificationCenter.messagesDeleted, mids);
                             }
                         });
-                        MessagesStorage.getInstance().updateDialogsWithReadedMessagesInternal(mids, null);
+                        MessagesStorage.getInstance().updateDialogsWithReadMessagesInternal(mids, null);
                         MessagesStorage.getInstance().markMessagesAsDeletedInternal(mids);
                         MessagesStorage.getInstance().updateDialogsWithDeletedMessagesInternal(mids);
                     }

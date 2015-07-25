@@ -23,7 +23,6 @@ import android.os.Build;
 import android.os.Bundle;
 import android.provider.MediaStore;
 import android.view.Gravity;
-import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
@@ -34,22 +33,23 @@ import android.widget.ProgressBar;
 import org.telegram.android.AndroidUtilities;
 import org.telegram.android.ImageLoader;
 import org.telegram.android.LocaleController;
-import org.telegram.android.MessagesStorage;
-import org.telegram.android.NotificationCenter;
 import org.telegram.android.support.widget.LinearLayoutManager;
 import org.telegram.android.support.widget.RecyclerView;
 import org.telegram.messenger.ApplicationLoader;
+import org.telegram.messenger.TLObject;
+import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
+import org.telegram.android.MessagesStorage;
+import org.telegram.android.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.RPCRequest;
-import org.telegram.messenger.TLObject;
-import org.telegram.messenger.TLRPC;
+
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
-import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.Cells.WallpaperCell;
+import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
 
@@ -103,7 +103,7 @@ public class WallpapersActivity extends BaseFragment implements NotificationCent
     }
 
     @Override
-    public View createView(Context context, LayoutInflater inflater) {
+    public View createView(Context context) {
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBar.setAllowOverlayTitle(true);
         actionBar.setTitle(LocaleController.getString("ChatBackground", R.string.ChatBackground));

@@ -19,7 +19,6 @@ import android.media.MediaPlayer;
 import android.os.Build;
 import android.os.Bundle;
 import android.view.Gravity;
-import android.view.LayoutInflater;
 import android.view.Surface;
 import android.view.TextureView;
 import android.view.View;
@@ -229,7 +228,7 @@ public class VideoEditorActivity extends BaseFragment implements TextureView.Sur
     }
 
     @Override
-    public View createView(Context context, LayoutInflater inflater) {
+    public View createView(Context context) {
         actionBar.setBackgroundColor(0xff333333);
         actionBar.setItemsBackground(R.drawable.bar_selector_white);
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
@@ -266,7 +265,7 @@ public class VideoEditorActivity extends BaseFragment implements TextureView.Sur
         ActionBarMenu menu = actionBar.createMenu();
         menu.addItemWithWidth(1, R.drawable.ic_done, AndroidUtilities.dp(56));
 
-        fragmentView = inflater.inflate(R.layout.video_editor_layout, null, false);
+        fragmentView = getParentActivity().getLayoutInflater().inflate(R.layout.video_editor_layout, null, false);
         originalSizeTextView = (TextView) fragmentView.findViewById(R.id.original_size);
         editedSizeTextView = (TextView) fragmentView.findViewById(R.id.edited_size);
         videoContainerView = fragmentView.findViewById(R.id.video_container);
@@ -583,7 +582,7 @@ public class VideoEditorActivity extends BaseFragment implements TextureView.Sur
         if (AndroidUtilities.isTablet()) {
             viewHeight = AndroidUtilities.dp(472);
         } else {
-            viewHeight = AndroidUtilities.displaySize.y - AndroidUtilities.statusBarHeight - AndroidUtilities.getCurrentActionBarHeight();
+            viewHeight = AndroidUtilities.displaySize.y - AndroidUtilities.statusBarHeight - ActionBar.getCurrentActionBarHeight();
         }
 
         int width;
@@ -781,7 +780,6 @@ public class VideoEditorActivity extends BaseFragment implements TextureView.Sur
                     }
                     videoDuration = (float)mediaHeaderBox.getDuration() / (float)mediaHeaderBox.getTimescale();
                     trackBitrate = (int)(sampleSizes * 8 / videoDuration);
-
                 } catch (Exception e) {
                     FileLog.e("tmessages", e);
                 }
@@ -812,13 +810,14 @@ public class VideoEditorActivity extends BaseFragment implements TextureView.Sur
             }
             resultWidth = originalWidth = (int)trackHeaderBox.getWidth();
             resultHeight = originalHeight = (int)trackHeaderBox.getHeight();
+
             if (resultWidth > 640 || resultHeight > 640) {
                 float scale = resultWidth > resultHeight ? 640.0f / resultWidth : 640.0f / resultHeight;
                 resultWidth *= scale;
                 resultHeight *= scale;
                 if (bitrate != 0) {
                     bitrate *= Math.max(0.5f, scale);
-                    videoFramesSize = (long) (bitrate / 8 * videoDuration);
+                    videoFramesSize = (long)(bitrate / 8 * videoDuration);
                 }
             }
 

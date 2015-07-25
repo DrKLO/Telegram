@@ -22,7 +22,6 @@ import android.os.Bundle;
 import android.provider.Settings;
 import android.util.TypedValue;
 import android.view.Gravity;
-import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
@@ -32,21 +31,21 @@ import android.widget.ListView;
 import android.widget.TextView;
 
 import org.telegram.android.AndroidUtilities;
-import org.telegram.android.LocaleController;
 import org.telegram.android.MessagesController;
 import org.telegram.android.MessagesStorage;
-import org.telegram.android.NotificationCenter;
 import org.telegram.android.NotificationsController;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLog;
+import org.telegram.android.LocaleController;
+import org.telegram.android.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.TLRPC;
-import org.telegram.ui.ActionBar.ActionBar;
-import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.Adapters.BaseFragmentAdapter;
 import org.telegram.ui.Cells.TextColorCell;
 import org.telegram.ui.Cells.TextDetailSettingsCell;
+import org.telegram.ui.ActionBar.ActionBar;
+import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.ColorPickerView;
 import org.telegram.ui.Components.LayoutHelper;
@@ -98,7 +97,7 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
     }
 
     @Override
-    public View createView(Context context, LayoutInflater inflater) {
+    public View createView(Context context) {
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBar.setAllowOverlayTitle(true);
         actionBar.setTitle(LocaleController.getString("NotificationsAndSounds", R.string.NotificationsAndSounds));

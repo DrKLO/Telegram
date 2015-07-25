@@ -395,7 +395,7 @@
   <string name="formatterDay24H">SS:dd</string>
   <!--update text-->
   <string name="updateText">Plus Messenger için temalar indirin ve uygulayın. Hergün yeni temalar ekleniyor:\n https://play.google.com/store/apps/details?id=es.rafalense.themes</string>
-  <string name="updateBuild">576</string>
+  <string name="updateBuild">583</string>
   <!--Telegram+--><!--
   <string name="updatePlusText">
 \n\n3.0.1.3\'daki yenilikler:\n\n- Ayarlara telefon yazı tipini kullanma opsiyonu eklendi\n- Sohbet/Grup içinde arama opsiyonu eklendi\n- Ayarlar/Tema ekranında başlık rengi, başlık yazı rengi ve başlık ikonları değiştirme modu eklendi\n- Ana ekranda grup ikon rengini değiştirme modu eklendi\n- Sol menüdeki avatar büyüklüğünü değiştirme modu eklendi\n- Hata düzeltmeleri</string>-->

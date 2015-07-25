@@ -17,7 +17,6 @@ import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.KeyEvent;
-import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
@@ -27,20 +26,20 @@ import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
 
-import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.android.AndroidUtilities;
+import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.android.ContactsController;
 import org.telegram.android.LocaleController;
+import org.telegram.messenger.ApplicationLoader;
+import org.telegram.messenger.TLRPC;
 import org.telegram.android.MessagesController;
 import org.telegram.android.NotificationCenter;
-import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.R;
-import org.telegram.messenger.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
-import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
+import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.Components.LayoutHelper;
 
 public class ContactAddActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
@@ -79,7 +78,7 @@ public class ContactAddActivity extends BaseFragment implements NotificationCent
     }
 
     @Override
-    public View createView(Context context, LayoutInflater inflater) {
+    public View createView(Context context) {
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBar.setAllowOverlayTitle(true);
         if (addContact) {

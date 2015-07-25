@@ -11,9 +11,7 @@ package org.telegram.ui.Components;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Bitmap;
-import android.graphics.Canvas;
 import android.graphics.Matrix;
-import android.graphics.Paint;
 import android.graphics.SurfaceTexture;
 import android.opengl.GLES20;
 import android.opengl.GLUtils;
@@ -1205,28 +1203,29 @@ public class PhotoFilterView extends FrameLayout {
         }
 
         private Bitmap createBitmap(Bitmap bitmap, int w, int h, float scale) {
-            Bitmap result = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
-            Canvas canvas = new Canvas(result);
-            Paint paint = new Paint();
-            paint.setFilterBitmap(true);
+            //Bitmap result = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
+            //Canvas canvas = new Canvas(result);
+            //Paint paint = new Paint();
+            //paint.setFilterBitmap(true);
 
             Matrix matrix = new Matrix();
             matrix.setScale(scale, scale);
-            matrix.postTranslate(-bitmap.getWidth() / 2, -bitmap.getHeight() / 2);
+            //matrix.postTranslate(-bitmap.getWidth() / 2, -bitmap.getHeight() / 2);
             matrix.postRotate(orientation);
-            if (orientation == 90 || orientation == 270) {
+            /*if (orientation == 90 || orientation == 270) {
                 matrix.postTranslate(bitmap.getHeight() / 2, bitmap.getWidth() / 2);
             } else {
                 matrix.postTranslate(bitmap.getWidth() / 2, bitmap.getHeight() / 2);
-            }
-            canvas.drawBitmap(bitmap, matrix, paint);
-            try {
-                canvas.setBitmap(null);
-            } catch (Exception e) {
+            }*/
+            //canvas.drawBitmap(bitmap, matrix, paint);
+            //try {
+            //    canvas.setBitmap(null);
+            //} catch (Exception e) {
                 //don't promt, this will crash on 2.x
-            }
+            //}
+            return Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, true);
 
-            return result;
+            //return result;
         }
 
         private void loadTexture(Bitmap bitmap) {
