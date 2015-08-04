@@ -515,7 +515,7 @@
   <string name="formatDateAtTime">%1$s पर %2$s</string>
   <!--update text-->
   <string name="updateText">Plus Messenger for Android has been updated. New in Version 3.0:\n\n\n\n- Dedicated tabs for each one of your custom sticker sets in the sticker panel. Add custom stickers like https://telegram.me/addstickers/Animals\n- New bot API, free for everyone. If you\'re an engineer, create your own bots for games, services or integrations. Learn more at https://telegram.org/blog/bot-revolution\n https://play.google.com/store/apps/details?id=es.rafalense.themes</string>
-  <string name="updateBuild">583</string>
+  <string name="updateBuild">586</string>
   <!--Telegram+-->
   <string name="updatePlusText"></string>
   <string name="TelegramForAndroid">Android  के लिए प्लस मैसेंजर</string>
@@ -535,7 +535,7 @@
   <string name="ChatList">वार्तालाप की सूची </string>
   <string name="ChatsList">वार्तालापों की सूची</string>
   <string name="ContactsList">संपर्क  लिस्ट</string>
-  <string name="HeaderColor">हैडर रंग</string>
+  <string name="HeaderColor">हैडर का रंग</string>
   <string name="NameColor">नाम का रंग</string>
   <string name="NameSize">नाम का माप</string>
   <string name="MessageColor">संदेश का रंग</string>
@@ -641,4 +641,7 @@
   <string name="SummaryColor">सारांश/उपशीर्षक का रंग</string>
   <string name="MediaColor">फोटो/स्टीकर के शब्दों का रंग</string>
   <string name="ThemesAppMsg"> क्या आप प्लस मैसेंजर के दूसरे उपभोग्ताओं द्वारा बनायीं गयी थीम देखना पसंद करेंगे?</string>
+  <string name="UseDeviceFont">फ़ोन की लिपि दिखाए</string>
+  <string name="AppWillRestart">प्लस मैसेंजर पुनप्रारंभ होरहा है </string>
+  <string name="GroupIconColor">समूह चिह्नों का रंग</string>
 </resources>

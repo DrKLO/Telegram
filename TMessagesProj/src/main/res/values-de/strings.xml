@@ -835,10 +835,10 @@
     <string name="formatDateAtTime">%1$s um %2$s</string>
     <!--update text-->
     <string name="updateText">Plus Messenger für Android wurde aktualisiert. Neu in Version 3.1:\n\n- Direkte Suche in Chats.\n- In Chats versteckt sich ein komplett neues Menü hinter der Büroklammer. Nun kann man dort auch Musik und Kontakte versenden.\n- In-App Medienwiedergabe für YouTube, Vimeo, SoundCloud, etc. optimiert und neuer Player für Audiodateien.\n\nMehr dazu unter:\nhttps://telegram.org/blog/search-and-media</string>
-    <string name="updateBuild">583</string>
-    <!--Telegram+--><!--
+    <string name="updateBuild">586</string>
+    <!--Telegram+-->
   <string name="updatePlusText">
-\n\nNew in 3.0.1.3:\n\n- Option in den Einstellungen Systemschrift verwenden\n- Option Suchen im Chat/Gruppe\n- Hinzugefügt: MOD Farbe Kopfzeile , Titelfarbe  Kopfzeile und Symbolefarbe in Farbeinstellungen ändern / Themen bearbeiten\n- MOD Gruppen Symbol Farbe in der Chatübersicht ändern\n- MOD  Symbolgröße in Navigationsmenü ändern \n- Fehlerbehebung</string>-->
+\n\nNeu in 3.1.1.6:\n\n- Neuer MOD Zeige eigenes Profilbild im Gruppenchat \n- Neuer MOD eigenes Profilbild nach oben ausrichten\n- Hinzugefügt MOD Farbe der Dialogtitel/Taste ändern\n- Fehlerbehebung</string>
     <string name="TelegramForAndroid">Plus Messenger für Android</string>
   <string name="Theming">Themen bearbeiten</string>
   <string name="colorHexInvalid">Ungültiger Hex-Code!</string>
@@ -867,8 +867,8 @@
   <string name="CountSize">Benachrichtigungszähler</string>
   <string name="RowColor">Hintergrund</string>
   <string name="CountBGColor">Hintergrund Benachrichtigungszähler</string>
-  <string name="StatusColor">Onlinestatus</string>
-  <string name="StatusSize">Onlinestatus</string>
+  <string name="StatusColor">Online Status</string>
+  <string name="StatusSize">Online Status</string>
   <string name="RBubbleColor">rechte Sprechblasen</string>
   <string name="LBubbleColor">linke Sprechblasen</string>
   <string name="DateColor">Datum</string>
@@ -884,7 +884,7 @@
   <string name="EditTextBGColor">Hintergrund Texteingabefeld</string>
   <string name="EmojiViewBGColor">Hintergrund Emojis</string>
   <string name="EmojiViewTabColor">Tab Emojis</string>
-  <string name="OnlineColor">Onlinestatus</string>
+  <string name="OnlineColor">Online</string>
     <string name="ChatMusic">Musik</string>
   <string name="SaveTheme">Thema speichern</string>
   <string name="SaveThemeSum">Thema im Ordner Telegram/Themen speichern</string>
@@ -941,9 +941,9 @@
   <string name="BubbleStyle">Sprechblasen Form</string>
   <string name="KeepOriginalFilename">original Dateinamen speichern</string>
   <string name="KeepOriginalFilenameHelp">Statt Zahlen wird Dateiname_Datum gespeichert</string>
-  <string name="AvatarSize">Profilbild Gruppenchat</string>
-  <string name="AvatarAlignTop">Profilbild Gruppenchat nach oben</string>
-  <string name="AvatarMarginLeft">Profilbild Randabstand Gruppenchat </string>
+  <string name="AvatarSize">Profilbild Rand</string>
+  <string name="AvatarAlignTop">Kontakt Profibild nach oben</string>
+  <string name="AvatarMarginLeft">Profilbild Rand</string>
   <string name="GroupNameColor">Gruppenname</string>
   <string name="GroupNameSize">Gruppenname</string>
   <string name="UnknownNameColor">Name (unbekannte Nummer)</string>
@@ -965,4 +965,12 @@
   <string name="UseDeviceFont">Systemschrift verwenden</string>
   <string name="AppWillRestart">Der Plus Messenger wird neu gestartet</string>
   <string name="GroupIconColor">Gruppensymbole</string>
+  <string name="SharedContactNameColor">gemeinsame Kontaktnamen</string>
+  <string name="AttachBGColor">Hintergrundfarbe Anhang</string>
+  <string name="AttachTextColor">Textfarbe Anhang</string>
+  <string name="ShowContactAvatar">Zeigt Kontakt Profilbild im Chat</string>
+  <string name="ShowOwnAvatar">Zeige eigenes Profilbild im Chat</string>
+  <string name="ShowOwnAvatarGroup">Zeige eigenes Profilbild im Gruppenchat</string>
+  <string name="OwnAvatarAlignTop">Eigenes Profilbild nach oben</string>
+  <string name="DialogColor">Dialog Titel/Schaltfläche</string>
 </resources>

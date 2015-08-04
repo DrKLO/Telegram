@@ -667,7 +667,8 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
                 double lon = messageObject.messageOwner.media.geo._long;
 
                 if (messageObject.messageOwner.media.title != null && messageObject.messageOwner.media.title.length() > 0) {
-                    int maxWidth = (AndroidUtilities.isTablet() ? AndroidUtilities.getMinTabletSide() : Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y)) - AndroidUtilities.dp(((isChat || showAvatar) && !messageObject.isOut() ? 102 : 40) + 86 + 24);
+                    //int maxWidth = (AndroidUtilities.isTablet() ? AndroidUtilities.getMinTabletSide() : Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y)) - AndroidUtilities.dp((isChat && !messageObject.isOut() ? 102 : 40) + 86 + 24);
+                    int maxWidth = (AndroidUtilities.isTablet() ? AndroidUtilities.getMinTabletSide() : Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y)) - AndroidUtilities.dp(((isChat || showAvatar) && !messageObject.isOut() ? leftBound + 50 : 40) + 86 + 24);
                     nameLayout = StaticLayoutEx.createStaticLayout(messageObject.messageOwner.media.title, locationTitlePaint, maxWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false, TextUtils.TruncateAt.END, maxWidth - AndroidUtilities.dp(4), 3);
                     int lineCount = nameLayout.getLineCount();
                     if (messageObject.messageOwner.media.address != null && messageObject.messageOwner.media.address.length() > 0) {
@@ -1017,13 +1018,16 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
         int x;
         if (currentMessageObject.isOut()) {
             if (media) {
-                x = layoutWidth - backgroundWidth - AndroidUtilities.dp(3);
+                //x = layoutWidth - backgroundWidth - AndroidUtilities.dp(3);
+                x = layoutWidth - backgroundWidth - AndroidUtilities.dp(3) - (((showMyAvatar && !isChat) || (showMyAvatarGroup && isChat)) ? AndroidUtilities.dp(leftBound) : 0);
             } else {
-                x = layoutWidth - backgroundWidth + AndroidUtilities.dp(6);
+                //x = layoutWidth - backgroundWidth + AndroidUtilities.dp(6);
+                x = layoutWidth - backgroundWidth + AndroidUtilities.dp(6) - (((showMyAvatar && !isChat) || (showMyAvatarGroup && isChat)) ? AndroidUtilities.dp(leftBound) : 0);
             }
         } else {
             if (isChat || showAvatar) {
-                x = AndroidUtilities.dp(67);
+                //x = AndroidUtilities.dp(67);
+                x = AndroidUtilities.dp(leftBound + 15);
             } else {
                 x = AndroidUtilities.dp(15);
             }

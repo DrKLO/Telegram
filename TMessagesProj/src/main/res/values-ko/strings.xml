@@ -835,5 +835,5 @@
     <string name="formatDateAtTime">%1$s %2$s</string>
     <!--update text-->
     <string name="updateText">텔레그램 안드로이드 버전이 업데이트 되었습니다. 새로운 버전은 3.1 입니다:\n\n- 특정 대화창에서 검색. \n- 첨부 메뉴 개선. 해당 메뉴에서 바로 연락처, 오디오를 전송 가능. \n- 인앱 미디어 재생 기능 향상 (YouTube, Vimeo, SoundCloud etc). 대용량 오디오 파일 별도 플레이어 기능. \n\nhttps://telegram.org/blog/search-and-media에서 자세한 사항을 알아보세요.</string>
-    <string name="updateBuild">583</string>
+    <string name="updateBuild">586</string>
 </resources>

@@ -832,7 +832,7 @@
   <string name="formatDateAtTime">%1$s à %2$s</string>
   <!--update text--><!--
   <string name="updateText">Plus Messenger pour Android vient d\'être mis à jour. Nouveautés de la version 2.9: \n\n- Installez et partagez des paquets de stickers personnalisés comme celui-ci: this one: https://play.google.com/store/apps/details?id=es.rafalense.themes\n- Si vous êtes un artiste, créez vos paquets de stickers, en utilisant notre robot @stickers. \n\n- Utilisez Telegram avec Android Auto.</string>-->
-  <string name="updateBuild">583</string>
+  <string name="updateBuild">586</string>
     <!--Telegram+ French-->
     <string name="TelegramForAndroid">Plus Messenger pour Android</string>
     <string name="Theming">Thème</string>

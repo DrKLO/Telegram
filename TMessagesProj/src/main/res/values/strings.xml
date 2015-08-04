@@ -836,9 +836,9 @@
     <string name="formatDateAtTime">%1$s at %2$s</string>
     <!--update text-->
     <string name="updateText">Plus Messenger for Android has been updated. New in version 3.1:\n\n- Search for messages inside a specific chat.\n- Fully redesigned attachment menu. Send contacts and audio files straight from the attachment menu.\n- Improved in-app media playback (YouTube, Vimeo, SoundCloud etc.), new player for large audio files.\n\nMore about this update:\nhttps://telegram.org/blog/search-and-media</string>
-    <string name="updateBuild">583</string>
+    <string name="updateBuild">586</string>
     <!--Telegram+-->
-    <string name="updatePlusText">\n\nNew in 3.1.1.3:\n\n- New MOD to change status color in Settings screen\n- Bug fixes</string>
+    <string name="updatePlusText">\n\nNew in 3.1.1.6:\n\n- New MOD to show contact avatar in chat screen\n- New MOD to show own avatar in chat and group screen\n- New MOD to align own avatar to top\n- Added new bubbles Ed and Edge (thanks to Edwin Macalopu)\n- New MOD to change background and text color in attach view in chat screen\n- Added MOD to change color of dialog title and button\n- Bug fixes</string>
     <string name="TelegramForAndroid">Plus Messenger for Android</string>
     <string name="Theming">Theming</string>
     <string name="colorHexInvalid">Invalid color hex code!</string>
@@ -942,8 +942,8 @@
     <string name="KeepOriginalFilename">Keep original filename</string>
     <string name="KeepOriginalFilenameHelp">Instead of just numbers files will be saved using name_date format</string>
     <string name="AvatarSize">Avatar size</string>
-    <string name="AvatarAlignTop">Align avatar to top</string>
-    <string name="AvatarMarginLeft">Avatar left margin</string>
+    <string name="AvatarAlignTop">Align contact avatar to top</string>
+    <string name="AvatarMarginLeft">Avatar margin</string>
     <string name="GroupNameColor">Group name color</string>
     <string name="GroupNameSize">Group name size</string>
     <string name="UnknownNameColor">Name color (unknown number)</string>
@@ -966,4 +966,11 @@
     <string name="AppWillRestart">Plus Messenger will restart</string>
     <string name="GroupIconColor">Group icon color</string>
     <string name="SharedContactNameColor">Shared contact name color</string>
+    <string name="AttachBGColor">Attach background color</string>
+    <string name="AttachTextColor">Attach text color</string>
+    <string name="ShowContactAvatar">Show contact avatar in chat screen</string>
+    <string name="ShowOwnAvatar">Show own avatar in chat screen</string>
+    <string name="ShowOwnAvatarGroup">Show own avatar in group screen</string>
+    <string name="OwnAvatarAlignTop">Align own avatar to top</string>
+    <string name="DialogColor">Dialog title/button color</string>
 </resources>

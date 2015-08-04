@@ -120,6 +120,9 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
     @Override
     public void onFragmentDestroy() {
         super.onFragmentDestroy();
+        //Plus to paint drawerAction icons (refresh drawerLayoutAdapter)
+        NotificationCenter.getInstance().postNotificationName(NotificationCenter.mainUserInfoChanged);
+        //
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.contactsDidLoaded);
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.updateInterfaces);
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.encryptedChatCreated);
@@ -171,7 +174,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                 }
 
                 @Override
-            public void onSearchCollapse() {
+                public void onSearchCollapse() {
                     searchListViewAdapter.searchDialogs(null);
                     searching = false;
                     searchWas = false;
@@ -196,7 +199,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                         if (listView != null) {
                             listView.setAdapter(searchListViewAdapter);
                             searchListViewAdapter.notifyDataSetChanged();
-                        if (android.os.Build.VERSION.SDK_INT >= 11) {
+                            if (android.os.Build.VERSION.SDK_INT >= 11) {
                                 listView.setFastScrollAlwaysVisible(false);
                             }
                             listView.setFastScrollEnabled(false);
@@ -309,7 +312,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                         if (row < 0 || section < 0) {
                             return;
                         }
-                    if ((!onlyUsers || chat_id != 0) && section == 0) {
+                        if ((!onlyUsers || chat_id != 0) && section == 0) {
                             if (needPhonebook) {
                                 if (row == 0) {
                                     try {
@@ -321,10 +324,10 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                                         FileLog.e("tmessages", e);
                                     }
                                 }
-                        } else if (chat_id != 0) {
-                            if (row == 0) {
-                                presentFragment(new GroupInviteActivity(chat_id));
-                            }
+                            } else if (chat_id != 0) {
+                                if (row == 0) {
+                                    presentFragment(new GroupInviteActivity(chat_id));
+                                }
                             } else {
                                 if (row == 0) {
                                     if (!MessagesController.isFeatureEnabled("chat_create", ContactsActivity.this)) {
@@ -392,7 +395,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                                     }
                                 });
                                 builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-                            showDialog(builder.create());
+                                showDialog(builder.create());
                             }
                         }
                     }
@@ -414,7 +417,6 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                     }
                 }
             });
-
         return fragmentView;
     }
 

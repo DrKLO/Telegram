@@ -24,6 +24,7 @@ import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Handler;
 import android.os.PowerManager;
+import android.support.multidex.MultiDex;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GooglePlayServicesUtil;
@@ -97,7 +98,7 @@ public class ApplicationLoader extends Application {
                         int cacheColorHint = 0;
                         //
                         SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
-                        if(themePrefs.getBoolean("chatSolidBGColorCheck", false)){
+                        if (themePrefs.getBoolean("chatSolidBGColorCheck", false)) {
                             cachedWallpaper = null;
                             selectedColor = themePrefs.getInt("chatSolidBGColor", 0xffffffff);
                         }
@@ -355,6 +356,12 @@ public class ApplicationLoader extends Application {
                 }
             }
         });
+    }
+
+    @Override
+    protected void attachBaseContext(Context base) {
+        super.attachBaseContext(base);
+        MultiDex.install(this);
     }
 
     private void storeRegistrationId(Context context, String regId) {

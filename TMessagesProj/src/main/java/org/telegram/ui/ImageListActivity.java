@@ -27,7 +27,9 @@ public class ImageListActivity extends BaseFragment {
             "Telegram",
             "Lex",
             "Hangouts",
-            "Notepad"
+            "Notepad",
+            "Ed",
+            "Edge"
     };
 
     Integer[] imgid ={
@@ -35,10 +37,14 @@ public class ImageListActivity extends BaseFragment {
             R.drawable.msg_in_2,
             R.drawable.msg_in_3,
             R.drawable.msg_in_4,
+            R.drawable.msg_in_5,
+            R.drawable.msg_in_6,
             R.drawable.msg_out,
             R.drawable.msg_out_2,
             R.drawable.msg_out_3,
-            R.drawable.msg_out_4
+            R.drawable.msg_out_4,
+            R.drawable.msg_out_5,
+            R.drawable.msg_out_6
     };
 
     public static String getBubbleName(int i){

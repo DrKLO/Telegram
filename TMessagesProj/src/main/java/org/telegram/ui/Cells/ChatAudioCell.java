@@ -302,14 +302,20 @@ public class ChatAudioCell extends ChatBaseCell implements SeekBar.SeekBarDelega
         super.onLayout(changed, left, top, right, bottom);
 
         if (currentMessageObject.isOut()) {
-            seekBarX = layoutWidth - backgroundWidth + AndroidUtilities.dp(55);
-            buttonX = layoutWidth - backgroundWidth + AndroidUtilities.dp(13);
-            timeX = layoutWidth - backgroundWidth + AndroidUtilities.dp(66);
+            //seekBarX = layoutWidth - backgroundWidth + AndroidUtilities.dp(55);
+            //buttonX = layoutWidth - backgroundWidth + AndroidUtilities.dp(13);
+            //timeX = layoutWidth - backgroundWidth + AndroidUtilities.dp(66);
+            seekBarX = layoutWidth - backgroundWidth + AndroidUtilities.dp(55) - (((showMyAvatar && !isChat) || (showMyAvatarGroup && isChat)) ? AndroidUtilities.dp(leftBound) : 0);
+            buttonX = layoutWidth - backgroundWidth + AndroidUtilities.dp(13) - (((showMyAvatar && !isChat) || (showMyAvatarGroup && isChat)) ? AndroidUtilities.dp(leftBound) : 0);
+            timeX = layoutWidth - backgroundWidth + AndroidUtilities.dp(66) - (((showMyAvatar && !isChat) || (showMyAvatarGroup && isChat)) ? AndroidUtilities.dp(leftBound) : 0);
         } else {
             if (isChat || showAvatar) {
-                seekBarX = AndroidUtilities.dp(116);
-                buttonX = AndroidUtilities.dp(74);
-                timeX = AndroidUtilities.dp(127);
+                //seekBarX = AndroidUtilities.dp(116);
+                //buttonX = AndroidUtilities.dp(74);
+                //timeX = AndroidUtilities.dp(127);
+                seekBarX = AndroidUtilities.dp(leftBound + 64);
+                buttonX = AndroidUtilities.dp(leftBound + 22);
+                timeX = AndroidUtilities.dp(leftBound + 75);
             } else {
                 seekBarX = AndroidUtilities.dp(64);
                 buttonX = AndroidUtilities.dp(22);
@@ -331,9 +337,11 @@ public class ChatAudioCell extends ChatBaseCell implements SeekBar.SeekBarDelega
         boolean dataChanged = currentMessageObject == messageObject && isUserDataChanged();
         if (currentMessageObject != messageObject || dataChanged) {
             if (AndroidUtilities.isTablet()) {
-                backgroundWidth = Math.min(AndroidUtilities.getMinTabletSide() - AndroidUtilities.dp(isChat || showAvatar ? 102 : 50), AndroidUtilities.dp(300));
+                //backgroundWidth = Math.min(AndroidUtilities.getMinTabletSide() - AndroidUtilities.dp(isChat ? 102 : 50), AndroidUtilities.dp(300));
+                backgroundWidth = Math.min(AndroidUtilities.getMinTabletSide() - AndroidUtilities.dp((isChat || showAvatar) || (messageObject.isOut() && ((showMyAvatar && !isChat) || (showMyAvatarGroup && isChat))) ? leftBound + 50 : 50), AndroidUtilities.dp(300));
             } else {
-                backgroundWidth = Math.min(AndroidUtilities.displaySize.x - AndroidUtilities.dp(isChat || showAvatar ? 102 : 50), AndroidUtilities.dp(300));
+                //backgroundWidth = Math.min(AndroidUtilities.displaySize.x - AndroidUtilities.dp(isChat ? 102 : 50), AndroidUtilities.dp(300));
+                backgroundWidth = Math.min(AndroidUtilities.displaySize.x - AndroidUtilities.dp((isChat || showAvatar) || (messageObject.isOut() && ((showMyAvatar && !isChat) || (showMyAvatarGroup && isChat))) ? leftBound + 50 : 50), AndroidUtilities.dp(300));
             }
 
             if (messageObject.isOut()) {

@@ -1471,7 +1471,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
     @Override
     @SuppressWarnings("unchecked")
     public void didReceivedNotification(int id, Object... args) {
-        //Log.e("didReceivedNotification",id+"");
+        //Log.e("didReceivedNotification", id + "");
         if (id == NotificationCenter.appDidLogout) {
             if (drawerLayoutAdapter != null) {
                 drawerLayoutAdapter.notifyDataSetChanged();

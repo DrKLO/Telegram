@@ -134,12 +134,17 @@ public class ChatBaseCell extends BaseCell {
     private int last_send_state = 0;
     private int last_delete_date = 0;
 
-    private int leftBound = 52;//52
-    private int avatarSize = AndroidUtilities.dp(42);
+    protected int leftBound = 52;//52
+    //private int avatarSize = AndroidUtilities.dp(42);
+    protected int avatarSize = AndroidUtilities.dp(42);
     protected boolean avatarAlignTop = false;
+    protected boolean ownAvatarAlignTop = false;
     private int avatarLeft = AndroidUtilities.dp(6);
 
     boolean showAvatar = false;
+    boolean showMyAvatar = false;
+    boolean showMyAvatarGroup = true;
+    private int checkX = 0;
 
     public ChatBaseCell(Context context) {
         super(context);
@@ -185,67 +190,78 @@ public class ChatBaseCell extends BaseCell {
         int radius = AndroidUtilities.dp(themePrefs.getInt("chatAvatarRadius", 32));
         avatarImage.setRoundRadius(radius);
         avatarDrawable.setRadius(radius);
-        avatarSize = AndroidUtilities.dp(themePrefs.getInt("chatAvatarSize", 42));
+        int aSize = themePrefs.getInt("chatAvatarSize", 42);
+        avatarSize = AndroidUtilities.dp(aSize);
         avatarLeft  = AndroidUtilities.dp(themePrefs.getInt("chatAvatarMarginLeft", 6));
         avatarAlignTop = themePrefs.getBoolean("chatAvatarAlignTop", false);
+        ownAvatarAlignTop = themePrefs.getBoolean("chatOwnAvatarAlignTop", false);
         //setBubbles(themePrefs.getString("chatBubbleStyle", ImageListActivity.getBubbleName(0)));
+        showMyAvatar = themePrefs.getBoolean("chatShowOwnAvatar", false);
+        showMyAvatarGroup = themePrefs.getBoolean("chatShowOwnAvatarGroup", false);
+        showAvatar = themePrefs.getBoolean("chatShowContactAvatar", false);
+        leftBound = aSize + AndroidUtilities.dp(3);
+        //Log.e("ChatBaseCell", "leftBound " + leftBound);
     }
 
     private void updateTheme(){
         SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
         int defColor = themePrefs.getInt("themeColor", AndroidUtilities.defColor);
-        int lColor = AndroidUtilities.getDefBubbleColor();
-        int dColor = AndroidUtilities.setDarkColor(defColor, 0x15);
-        int rBubbleColor = themePrefs.getInt("chatRBubbleColor", lColor);
-        int rBubbleSColor = AndroidUtilities.setDarkColor(rBubbleColor, 0x15);
-        int lBubbleColor = themePrefs.getInt("chatLBubbleColor", 0xffffffff);
-        int lBubbleSColor = AndroidUtilities.setDarkColor(lBubbleColor, 0x15);
+        try{
+            int lColor = AndroidUtilities.getDefBubbleColor();
+            int dColor = AndroidUtilities.setDarkColor(defColor, 0x15);
+            int rBubbleColor = themePrefs.getInt("chatRBubbleColor", lColor);
+            int rBubbleSColor = AndroidUtilities.setDarkColor(rBubbleColor, 0x15);
+            int lBubbleColor = themePrefs.getInt("chatLBubbleColor", 0xffffffff);
+            int lBubbleSColor = AndroidUtilities.setDarkColor(lBubbleColor, 0x15);
 
-        timePaintOut.setColor(themePrefs.getInt("chatRTimeColor", dColor));
-        timePaintOut.setTextSize(AndroidUtilities.dp(themePrefs.getInt("chatTimeSize", 12)));
-        timePaintIn.setColor(themePrefs.getInt("chatLTimeColor", 0xffa1aab3));
-        timePaintIn.setTextSize(AndroidUtilities.dp(themePrefs.getInt("chatTimeSize", 12)));
+            timePaintOut.setColor(themePrefs.getInt("chatRTimeColor", dColor));
+            timePaintOut.setTextSize(AndroidUtilities.dp(themePrefs.getInt("chatTimeSize", 12)));
+            timePaintIn.setColor(themePrefs.getInt("chatLTimeColor", 0xffa1aab3));
+            timePaintIn.setTextSize(AndroidUtilities.dp(themePrefs.getInt("chatTimeSize", 12)));
 
-        int linkColor = themePrefs.getInt("chatLLinkColor", defColor);
-        int bColor = AndroidUtilities.getIntAlphaColor("chatLBubbleColor", 0xffffffff, 0.9f);
-        if(currentMessageObject.isOut()){
-            bColor = AndroidUtilities.getIntAlphaColor("chatRBubbleColor", lColor, 0.9f);
-            linkColor = themePrefs.getInt("chatRLinkColor", defColor);
+            int linkColor = themePrefs.getInt("chatLLinkColor", defColor);
+            int bColor = AndroidUtilities.getIntAlphaColor("chatLBubbleColor", 0xffffffff, 0.9f);
+            if(currentMessageObject.isOut()){
+                bColor = AndroidUtilities.getIntAlphaColor("chatRBubbleColor", lColor, 0.9f);
+                linkColor = themePrefs.getInt("chatRLinkColor", defColor);
+            }
+            replyTextPaint.linkColor = linkColor;
+            //ResourceLoader.loadRecources(getContext());
+            /*if(ResourceLoader.mediaBackgroundDrawable == null){
+                ResourceLoader.mediaBackgroundDrawable = getResources().getDrawable(R.drawable.phototime);
+                ResourceLoader.checkDrawable = getResources().getDrawable(R.drawable.msg_check);
+                ResourceLoader.halfCheckDrawable = getResources().getDrawable(R.drawable.msg_halfcheck);
+                ResourceLoader.clockDrawable = getResources().getDrawable(R.drawable.msg_clock);
+                ResourceLoader.checkMediaDrawable = getResources().getDrawable(R.drawable.msg_check_w);
+                ResourceLoader.halfCheckMediaDrawable = getResources().getDrawable(R.drawable.msg_halfcheck_w);
+                ResourceLoader.clockMediaDrawable = getResources().getDrawable(R.drawable.msg_clock_photo);
+                //ResourceLoader.videoIconDrawable = getResources().getDrawable(R.drawable.ic_video);
+                ResourceLoader.docMenuInDrawable = getResources().getDrawable(R.drawable.doc_actions_b);
+                ResourceLoader.docMenuOutDrawable = getResources().getDrawable(R.drawable.doc_actions_g);
+            }*/
+
+            ResourceLoader.mediaBackgroundDrawable.setColorFilter(bColor, PorterDuff.Mode.SRC_IN);
+
+            ResourceLoader.backgroundDrawableOut.setColorFilter(rBubbleColor, PorterDuff.Mode.SRC_IN);
+            ResourceLoader.backgroundMediaDrawableOut.setColorFilter(rBubbleColor, PorterDuff.Mode.SRC_IN);
+            ResourceLoader.backgroundDrawableOutSelected.setColorFilter(rBubbleSColor, PorterDuff.Mode.SRC_IN);
+            ResourceLoader.backgroundMediaDrawableOutSelected.setColorFilter(rBubbleSColor, PorterDuff.Mode.SRC_IN);
+
+            ResourceLoader.backgroundDrawableIn.setColorFilter(lBubbleColor, PorterDuff.Mode.SRC_IN);
+            ResourceLoader.backgroundMediaDrawableIn.setColorFilter(lBubbleColor, PorterDuff.Mode.SRC_IN);
+            ResourceLoader.backgroundDrawableInSelected.setColorFilter(lBubbleSColor, PorterDuff.Mode.SRC_IN);
+            ResourceLoader.backgroundMediaDrawableInSelected.setColorFilter(lBubbleSColor, PorterDuff.Mode.SRC_IN);
+
+            int checksColor = themePrefs.getInt("chatChecksColor", defColor);
+            ResourceLoader.checkDrawable.setColorFilter(checksColor, PorterDuff.Mode.SRC_IN);
+            ResourceLoader.halfCheckDrawable.setColorFilter(checksColor, PorterDuff.Mode.SRC_IN);
+            ResourceLoader.clockDrawable.setColorFilter(checksColor, PorterDuff.Mode.SRC_IN);
+            ResourceLoader.checkMediaDrawable.setColorFilter(checksColor, PorterDuff.Mode.MULTIPLY);
+            ResourceLoader.halfCheckMediaDrawable.setColorFilter(checksColor, PorterDuff.Mode.MULTIPLY);
+            ResourceLoader.halfCheckMediaDrawable.setColorFilter(checksColor, PorterDuff.Mode.MULTIPLY);
+        } catch (NullPointerException e) {
+            FileLog.e("tmessages", e);
         }
-        replyTextPaint.linkColor = linkColor;
-        //ResourceLoader.loadRecources(getContext());
-        /*if(ResourceLoader.mediaBackgroundDrawable == null){
-            ResourceLoader.mediaBackgroundDrawable = getResources().getDrawable(R.drawable.phototime);
-            ResourceLoader.checkDrawable = getResources().getDrawable(R.drawable.msg_check);
-            ResourceLoader.halfCheckDrawable = getResources().getDrawable(R.drawable.msg_halfcheck);
-            ResourceLoader.clockDrawable = getResources().getDrawable(R.drawable.msg_clock);
-            ResourceLoader.checkMediaDrawable = getResources().getDrawable(R.drawable.msg_check_w);
-            ResourceLoader.halfCheckMediaDrawable = getResources().getDrawable(R.drawable.msg_halfcheck_w);
-            ResourceLoader.clockMediaDrawable = getResources().getDrawable(R.drawable.msg_clock_photo);
-            //ResourceLoader.videoIconDrawable = getResources().getDrawable(R.drawable.ic_video);
-            ResourceLoader.docMenuInDrawable = getResources().getDrawable(R.drawable.doc_actions_b);
-            ResourceLoader.docMenuOutDrawable = getResources().getDrawable(R.drawable.doc_actions_g);
-        }*/
-
-        ResourceLoader.mediaBackgroundDrawable.setColorFilter(bColor, PorterDuff.Mode.SRC_IN);
-
-        ResourceLoader.backgroundDrawableOut.setColorFilter(rBubbleColor, PorterDuff.Mode.SRC_IN);
-        ResourceLoader.backgroundMediaDrawableOut.setColorFilter(rBubbleColor, PorterDuff.Mode.SRC_IN);
-        ResourceLoader.backgroundDrawableOutSelected.setColorFilter(rBubbleSColor, PorterDuff.Mode.SRC_IN);
-        ResourceLoader.backgroundMediaDrawableOutSelected.setColorFilter(rBubbleSColor, PorterDuff.Mode.SRC_IN);
-
-        ResourceLoader.backgroundDrawableIn.setColorFilter(lBubbleColor, PorterDuff.Mode.SRC_IN);
-        ResourceLoader.backgroundMediaDrawableIn.setColorFilter(lBubbleColor, PorterDuff.Mode.SRC_IN);
-        ResourceLoader.backgroundDrawableInSelected.setColorFilter(lBubbleSColor, PorterDuff.Mode.SRC_IN);
-        ResourceLoader.backgroundMediaDrawableInSelected.setColorFilter(lBubbleSColor, PorterDuff.Mode.SRC_IN);
-
-        int checksColor = themePrefs.getInt("chatChecksColor", defColor);
-        ResourceLoader.checkDrawable.setColorFilter(checksColor, PorterDuff.Mode.SRC_IN);
-        ResourceLoader.halfCheckDrawable.setColorFilter(checksColor, PorterDuff.Mode.SRC_IN);
-        ResourceLoader.clockDrawable.setColorFilter(checksColor, PorterDuff.Mode.SRC_IN);
-        ResourceLoader.checkMediaDrawable.setColorFilter(checksColor, PorterDuff.Mode.MULTIPLY);
-        ResourceLoader.halfCheckMediaDrawable.setColorFilter(checksColor, PorterDuff.Mode.MULTIPLY);
-        ResourceLoader.halfCheckMediaDrawable.setColorFilter(checksColor, PorterDuff.Mode.MULTIPLY);
     }
 
 
@@ -383,7 +399,7 @@ public class ChatBaseCell extends BaseCell {
         currentUser = MessagesController.getInstance().getUser(messageObject.messageOwner.from_id);
 
         //if (isChat && !messageObject.isOut()) {
-        if ((isChat || showAvatar) && !messageObject.isOut()) {
+        if ( ( (isChat || showAvatar) && !messageObject.isOut() ) || ((showMyAvatar && !isChat) || (showMyAvatarGroup && isChat)) && messageObject.isOut()) {
             isAvatarVisible = true;
             if (currentUser != null) {
                 if (currentUser.photo != null) {
@@ -495,9 +511,11 @@ public class ChatBaseCell extends BaseCell {
                     width = AndroidUtilities.displaySize.x;
                 }
                 if (messageObject.isOut()) {
-                    maxWidth = width - backgroundWidth - AndroidUtilities.dp(60);
+                    //maxWidth = width - backgroundWidth - AndroidUtilities.dp(60);
+                    maxWidth = width - backgroundWidth - AndroidUtilities.dp(60 + ((showMyAvatar && !isChat) || (showMyAvatarGroup && isChat) ? (leftBound + 10) : 0));
                 } else {
-                    maxWidth = width - backgroundWidth - AndroidUtilities.dp(56 + (isChat || showAvatar ? 61 : 0));
+                    //maxWidth = width - backgroundWidth - AndroidUtilities.dp(56 + (isChat ? 61 : 0));
+                    maxWidth = width - backgroundWidth - AndroidUtilities.dp(56 + (isChat || showAvatar ? (leftBound + 10) : 0));
                 }
             } else {
                 maxWidth = getMaxNameWidth() - AndroidUtilities.dp(22);
@@ -664,18 +682,26 @@ public class ChatBaseCell extends BaseCell {
                     timeX = backgroundWidth - AndroidUtilities.dp(9) - timeWidth + (isChat || showAvatar ? AndroidUtilities.dp(leftBound) : 0);
                 } else {
                     timeX = layoutWidth - timeWidth - AndroidUtilities.dp(38.5f);
+                    if((showMyAvatar && !isChat) || (showMyAvatarGroup && isChat))timeX = layoutWidth - timeWidth - AndroidUtilities.dp(38.5f) - AndroidUtilities.dp(leftBound);
+                    checkX = timeX + timeWidth;
                 }
             } else {
                 if (!currentMessageObject.isOut()) {
                     timeX = backgroundWidth - AndroidUtilities.dp(4) - timeWidth + (isChat || showAvatar ? AndroidUtilities.dp(leftBound) : 0);
                 } else {
                     timeX = layoutWidth - timeWidth - AndroidUtilities.dp(42.0f);
+                    if((showMyAvatar && !isChat) || (showMyAvatarGroup && isChat))timeX = layoutWidth - timeWidth - AndroidUtilities.dp(42.0f) - AndroidUtilities.dp(leftBound);
+                    checkX = timeX + timeWidth;
                 }
             }
 
             if (isAvatarVisible) {
                 //avatarImage.setImageCoords(AndroidUtilities.dp(6), layoutHeight - AndroidUtilities.dp(45), AndroidUtilities.dp(42), AndroidUtilities.dp(42));
-                avatarImage.setImageCoords(avatarLeft, avatarAlignTop ? AndroidUtilities.dp(3) : layoutHeight - AndroidUtilities.dp(3) - avatarSize, avatarSize, avatarSize);
+                if(((showMyAvatar && !isChat) || (showMyAvatarGroup && isChat)) && currentMessageObject.isOut()){
+                    avatarImage.setImageCoords(layoutWidth - avatarSize - avatarLeft, ownAvatarAlignTop ? AndroidUtilities.dp(3) : layoutHeight - AndroidUtilities.dp(3) - avatarSize, avatarSize, avatarSize);
+                }else{
+                    avatarImage.setImageCoords(avatarLeft, avatarAlignTop ? AndroidUtilities.dp(3) : layoutHeight - AndroidUtilities.dp(3) - avatarSize, avatarSize, avatarSize);
+                }
             }
 
             wasLayout = true;
@@ -723,7 +749,13 @@ public class ChatBaseCell extends BaseCell {
                     currentBackgroundDrawable = ResourceLoader.backgroundMediaDrawableOut;
                 }
             }
-            setDrawableBounds(currentBackgroundDrawable, layoutWidth - backgroundWidth - (!media ? 0 : AndroidUtilities.dp(9)), AndroidUtilities.dp(1), backgroundWidth, layoutHeight - AndroidUtilities.dp(2));
+
+            if ((showMyAvatar && !isChat) || (showMyAvatarGroup && isChat)) {
+                setDrawableBounds(currentBackgroundDrawable, layoutWidth - backgroundWidth - (!media ? 0 : AndroidUtilities.dp(9)) - AndroidUtilities.dp(leftBound), AndroidUtilities.dp(1), backgroundWidth, layoutHeight - AndroidUtilities.dp(2));
+            }else{
+                setDrawableBounds(currentBackgroundDrawable, layoutWidth - backgroundWidth - (!media ? 0 : AndroidUtilities.dp(9)), AndroidUtilities.dp(1), backgroundWidth, layoutHeight - AndroidUtilities.dp(2));
+            }
+
         } else {
             if (isPressed() && isCheckPressed || !isCheckPressed && isPressed || isHighlighted) {
                 if (!media) {
@@ -769,10 +801,13 @@ public class ChatBaseCell extends BaseCell {
                 //forwardNamePaint.setColor(0xff4a923c);
                 forwardNamePaint.setColor(themePrefs.getInt("chatForwardRColor", AndroidUtilities.setDarkColor(defColor, 0x15)));
                 forwardNameX = currentBackgroundDrawable.getBounds().left + AndroidUtilities.dp(10);
+                if((showMyAvatar && !isChat) || (showMyAvatarGroup && isChat))forwardNameY = AndroidUtilities.dp((drawName ? 10 : 0));
             } else {
                 //forwardNamePaint.setColor(0xff006fc8);
                 forwardNamePaint.setColor(themePrefs.getInt("chatForwardLColor", defColor));
                 forwardNameX = currentBackgroundDrawable.getBounds().left + AndroidUtilities.dp(19);
+                //Plus
+                if((!isChat && showAvatar))forwardNameY = AndroidUtilities.dp((drawName ? 10 : 0));
             }
             canvas.save();
             canvas.translate(forwardNameX - forwardNameOffsetX, forwardNameY);
@@ -914,20 +949,36 @@ public class ChatBaseCell extends BaseCell {
 
                 if (drawClock) {
                     if (!media) {
-                        setDrawableBounds(ResourceLoader.clockDrawable, layoutWidth - AndroidUtilities.dp(18.5f) - ResourceLoader.clockDrawable.getIntrinsicWidth(), layoutHeight - AndroidUtilities.dp(8.5f) - ResourceLoader.clockDrawable.getIntrinsicHeight());
+                        if((showMyAvatar && !isChat) || (showMyAvatarGroup && isChat)){
+                            setDrawableBounds(ResourceLoader.clockDrawable, checkX - AndroidUtilities.dp(3.5f) + ResourceLoader.clockDrawable.getIntrinsicWidth(), layoutHeight - AndroidUtilities.dp(8.5f) - ResourceLoader.clockDrawable.getIntrinsicHeight());
+                        }else{
+                            setDrawableBounds(ResourceLoader.clockDrawable, layoutWidth - AndroidUtilities.dp(18.5f) - ResourceLoader.clockDrawable.getIntrinsicWidth(), layoutHeight - AndroidUtilities.dp(8.5f) - ResourceLoader.clockDrawable.getIntrinsicHeight());
+                        }
                         ResourceLoader.clockDrawable.draw(canvas);
                     } else {
-                        setDrawableBounds(ResourceLoader.clockMediaDrawable, layoutWidth - AndroidUtilities.dp(22.0f) - ResourceLoader.clockMediaDrawable.getIntrinsicWidth(), layoutHeight - AndroidUtilities.dp(13.0f) - ResourceLoader.clockMediaDrawable.getIntrinsicHeight());
+                        if((showMyAvatar && !isChat) || (showMyAvatarGroup && isChat)){
+                            setDrawableBounds(ResourceLoader.clockMediaDrawable, checkX - AndroidUtilities.dp(7.0f) + ResourceLoader.clockMediaDrawable.getIntrinsicWidth(), layoutHeight - AndroidUtilities.dp(13.0f) - ResourceLoader.clockMediaDrawable.getIntrinsicHeight());
+                        }else{
+                            setDrawableBounds(ResourceLoader.clockMediaDrawable, layoutWidth - AndroidUtilities.dp(22.0f) - ResourceLoader.clockMediaDrawable.getIntrinsicWidth(), layoutHeight - AndroidUtilities.dp(13.0f) - ResourceLoader.clockMediaDrawable.getIntrinsicHeight());
+                        }
                         ResourceLoader.clockMediaDrawable.draw(canvas);
                     }
                 }
                 if (isBroadcast) {
                     if (drawCheck1 || drawCheck2) {
                         if (!media) {
-                            setDrawableBounds(ResourceLoader.broadcastDrawable, layoutWidth - AndroidUtilities.dp(20.5f) - ResourceLoader.broadcastDrawable.getIntrinsicWidth(), layoutHeight - AndroidUtilities.dp(8.0f) - ResourceLoader.broadcastDrawable.getIntrinsicHeight());
+                            if((showMyAvatar && !isChat) || (showMyAvatarGroup && isChat)){
+                                setDrawableBounds(ResourceLoader.broadcastDrawable, checkX - AndroidUtilities.dp(5.5f) + ResourceLoader.broadcastDrawable.getIntrinsicWidth(), layoutHeight - AndroidUtilities.dp(8.0f) - ResourceLoader.broadcastDrawable.getIntrinsicHeight());
+                            }else{
+                                setDrawableBounds(ResourceLoader.broadcastDrawable, layoutWidth - AndroidUtilities.dp(20.5f) - ResourceLoader.broadcastDrawable.getIntrinsicWidth(), layoutHeight - AndroidUtilities.dp(8.0f) - ResourceLoader.broadcastDrawable.getIntrinsicHeight());
+                            }
                             ResourceLoader.broadcastDrawable.draw(canvas);
                         } else {
-                            setDrawableBounds(ResourceLoader.broadcastMediaDrawable, layoutWidth - AndroidUtilities.dp(24.0f) - ResourceLoader.broadcastMediaDrawable.getIntrinsicWidth(), layoutHeight - AndroidUtilities.dp(13.0f) - ResourceLoader.broadcastMediaDrawable.getIntrinsicHeight());
+                            if((showMyAvatar && !isChat) || (showMyAvatarGroup && isChat)){
+                                setDrawableBounds(ResourceLoader.broadcastMediaDrawable, checkX - AndroidUtilities.dp(9.0f) + ResourceLoader.broadcastMediaDrawable.getIntrinsicWidth(), layoutHeight - AndroidUtilities.dp(13.0f) - ResourceLoader.broadcastMediaDrawable.getIntrinsicHeight());
+                            }else{
+                                setDrawableBounds(ResourceLoader.broadcastMediaDrawable, layoutWidth - AndroidUtilities.dp(24.0f) - ResourceLoader.broadcastMediaDrawable.getIntrinsicWidth(), layoutHeight - AndroidUtilities.dp(13.0f) - ResourceLoader.broadcastMediaDrawable.getIntrinsicHeight());
+                            }
                             ResourceLoader.broadcastMediaDrawable.draw(canvas);
                         }
                     }
@@ -935,36 +986,68 @@ public class ChatBaseCell extends BaseCell {
                     if (drawCheck2) {
                         if (!media) {
                             if (drawCheck1) {
-                                setDrawableBounds(ResourceLoader.checkDrawable, layoutWidth - AndroidUtilities.dp(22.5f) - ResourceLoader.checkDrawable.getIntrinsicWidth(), layoutHeight - AndroidUtilities.dp(8.0f) - ResourceLoader.checkDrawable.getIntrinsicHeight());
+                                if((showMyAvatar && !isChat) || (showMyAvatarGroup && isChat)){
+                                    setDrawableBounds(ResourceLoader.checkDrawable, checkX - AndroidUtilities.dp(7.5f) + ResourceLoader.checkDrawable.getIntrinsicWidth(), layoutHeight - AndroidUtilities.dp(8.0f) - ResourceLoader.checkDrawable.getIntrinsicHeight());
+                                }else{
+                                    setDrawableBounds(ResourceLoader.checkDrawable, layoutWidth - AndroidUtilities.dp(22.5f) - ResourceLoader.checkDrawable.getIntrinsicWidth(), layoutHeight - AndroidUtilities.dp(8.0f) - ResourceLoader.checkDrawable.getIntrinsicHeight());
+                                }
                             } else {
-                                setDrawableBounds(ResourceLoader.checkDrawable, layoutWidth - AndroidUtilities.dp(18.5f) - ResourceLoader.checkDrawable.getIntrinsicWidth(), layoutHeight - AndroidUtilities.dp(8.0f) - ResourceLoader.checkDrawable.getIntrinsicHeight());
+                                if((showMyAvatar && !isChat) || (showMyAvatarGroup && isChat)){
+                                    setDrawableBounds(ResourceLoader.checkDrawable, checkX - AndroidUtilities.dp(3.5f) + ResourceLoader.checkDrawable.getIntrinsicWidth(), layoutHeight - AndroidUtilities.dp(8.0f) - ResourceLoader.checkDrawable.getIntrinsicHeight());
+                                }else{
+                                    setDrawableBounds(ResourceLoader.checkDrawable, layoutWidth - AndroidUtilities.dp(18.5f) - ResourceLoader.checkDrawable.getIntrinsicWidth(), layoutHeight - AndroidUtilities.dp(8.0f) - ResourceLoader.checkDrawable.getIntrinsicHeight());
+                                }
                             }
                             ResourceLoader.checkDrawable.draw(canvas);
                         } else {
                             if (drawCheck1) {
-                                setDrawableBounds(ResourceLoader.checkMediaDrawable, layoutWidth - AndroidUtilities.dp(26.0f) - ResourceLoader.checkMediaDrawable.getIntrinsicWidth(), layoutHeight - AndroidUtilities.dp(13.0f) - ResourceLoader.checkMediaDrawable.getIntrinsicHeight());
+                                if((showMyAvatar && !isChat) || (showMyAvatarGroup && isChat)){
+                                    setDrawableBounds(ResourceLoader.checkMediaDrawable, checkX - AndroidUtilities.dp(8.0f) + ResourceLoader.checkMediaDrawable.getIntrinsicWidth(), layoutHeight - AndroidUtilities.dp(13.0f) - ResourceLoader.checkMediaDrawable.getIntrinsicHeight());
+                                }else{
+                                    setDrawableBounds(ResourceLoader.checkMediaDrawable, layoutWidth - AndroidUtilities.dp(26.0f) - ResourceLoader.checkMediaDrawable.getIntrinsicWidth(), layoutHeight - AndroidUtilities.dp(13.0f) - ResourceLoader.checkMediaDrawable.getIntrinsicHeight());
+                                }
                             } else {
-                                setDrawableBounds(ResourceLoader.checkMediaDrawable, layoutWidth - AndroidUtilities.dp(22.0f) - ResourceLoader.checkMediaDrawable.getIntrinsicWidth(), layoutHeight - AndroidUtilities.dp(13.0f) - ResourceLoader.checkMediaDrawable.getIntrinsicHeight());
+                                if((showMyAvatar && !isChat) || (showMyAvatarGroup && isChat)){
+                                    setDrawableBounds(ResourceLoader.checkMediaDrawable, checkX - AndroidUtilities.dp(7.0f) + ResourceLoader.checkMediaDrawable.getIntrinsicWidth(), layoutHeight - AndroidUtilities.dp(13.0f) - ResourceLoader.checkMediaDrawable.getIntrinsicHeight());
+                                }else{
+                                    setDrawableBounds(ResourceLoader.checkMediaDrawable, layoutWidth - AndroidUtilities.dp(22.0f) - ResourceLoader.checkMediaDrawable.getIntrinsicWidth(), layoutHeight - AndroidUtilities.dp(13.0f) - ResourceLoader.checkMediaDrawable.getIntrinsicHeight());
+                                }
                             }
                             ResourceLoader.checkMediaDrawable.draw(canvas);
                         }
                     }
                     if (drawCheck1) {
                         if (!media) {
-                            setDrawableBounds(ResourceLoader.halfCheckDrawable, layoutWidth - AndroidUtilities.dp(18) - ResourceLoader.halfCheckDrawable.getIntrinsicWidth(), layoutHeight - AndroidUtilities.dp(8.0f) - ResourceLoader.halfCheckDrawable.getIntrinsicHeight());
+                            if((showMyAvatar && !isChat) || (showMyAvatarGroup && isChat)){
+                                setDrawableBounds(ResourceLoader.halfCheckDrawable, checkX - AndroidUtilities.dp(3) + ResourceLoader.halfCheckDrawable.getIntrinsicWidth() , layoutHeight - AndroidUtilities.dp(8.0f) - ResourceLoader.halfCheckDrawable.getIntrinsicHeight());
+                            }else{
+                                setDrawableBounds(ResourceLoader.halfCheckDrawable, layoutWidth - AndroidUtilities.dp(18) - ResourceLoader.halfCheckDrawable.getIntrinsicWidth(), layoutHeight - AndroidUtilities.dp(8.0f) - ResourceLoader.halfCheckDrawable.getIntrinsicHeight());
+                            }
                             ResourceLoader.halfCheckDrawable.draw(canvas);
                         } else {
-                            setDrawableBounds(ResourceLoader.halfCheckMediaDrawable, layoutWidth - AndroidUtilities.dp(20.5f) - ResourceLoader.halfCheckMediaDrawable.getIntrinsicWidth(), layoutHeight - AndroidUtilities.dp(13.0f) - ResourceLoader.halfCheckMediaDrawable.getIntrinsicHeight());
+                            if((showMyAvatar && !isChat) || (showMyAvatarGroup && isChat)){
+                                setDrawableBounds(ResourceLoader.halfCheckMediaDrawable, checkX - AndroidUtilities.dp(3.0f) + ResourceLoader.halfCheckMediaDrawable.getIntrinsicWidth(), layoutHeight - AndroidUtilities.dp(13.0f) - ResourceLoader.halfCheckMediaDrawable.getIntrinsicHeight());
+                            }else{
+                                setDrawableBounds(ResourceLoader.halfCheckMediaDrawable, layoutWidth - AndroidUtilities.dp(20.5f) - ResourceLoader.halfCheckMediaDrawable.getIntrinsicWidth(), layoutHeight - AndroidUtilities.dp(13.0f) - ResourceLoader.halfCheckMediaDrawable.getIntrinsicHeight());
+                            }
                             ResourceLoader.halfCheckMediaDrawable.draw(canvas);
                         }
                     }
                 }
                 if (drawError) {
                     if (!media) {
-                        setDrawableBounds(ResourceLoader.errorDrawable, layoutWidth - AndroidUtilities.dp(18) - ResourceLoader.errorDrawable.getIntrinsicWidth(), layoutHeight - AndroidUtilities.dp(6.5f) - ResourceLoader.errorDrawable.getIntrinsicHeight());
+                        if((showMyAvatar && !isChat) || (showMyAvatarGroup && isChat)){
+                            setDrawableBounds(ResourceLoader.errorDrawable, checkX - AndroidUtilities.dp(3) + ResourceLoader.errorDrawable.getIntrinsicWidth(), layoutHeight - AndroidUtilities.dp(6.5f) - ResourceLoader.errorDrawable.getIntrinsicHeight());
+                        }else{
+                            setDrawableBounds(ResourceLoader.errorDrawable, layoutWidth - AndroidUtilities.dp(18) - ResourceLoader.errorDrawable.getIntrinsicWidth(), layoutHeight - AndroidUtilities.dp(6.5f) - ResourceLoader.errorDrawable.getIntrinsicHeight());
+                        }
                         ResourceLoader.errorDrawable.draw(canvas);
                     } else {
-                        setDrawableBounds(ResourceLoader.errorDrawable, layoutWidth - AndroidUtilities.dp(20.5f) - ResourceLoader.errorDrawable.getIntrinsicWidth(), layoutHeight - AndroidUtilities.dp(12.5f) - ResourceLoader.errorDrawable.getIntrinsicHeight());
+                        if((showMyAvatar && !isChat) || (showMyAvatarGroup && isChat)){
+                            setDrawableBounds(ResourceLoader.errorDrawable, checkX - AndroidUtilities.dp(5.5f) + ResourceLoader.errorDrawable.getIntrinsicWidth(), layoutHeight - AndroidUtilities.dp(12.5f) - ResourceLoader.errorDrawable.getIntrinsicHeight());
+                        }else{
+                            setDrawableBounds(ResourceLoader.errorDrawable, layoutWidth - AndroidUtilities.dp(20.5f) - ResourceLoader.errorDrawable.getIntrinsicWidth(), layoutHeight - AndroidUtilities.dp(12.5f) - ResourceLoader.errorDrawable.getIntrinsicHeight());
+                        }
                         ResourceLoader.errorDrawable.draw(canvas);
                     }
                 }

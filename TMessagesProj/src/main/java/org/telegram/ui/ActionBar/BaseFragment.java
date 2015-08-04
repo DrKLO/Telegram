@@ -13,6 +13,7 @@ import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.View;
 import android.view.ViewGroup;
@@ -20,6 +21,7 @@ import android.widget.Button;
 import android.widget.TextView;
 
 import org.telegram.android.AndroidUtilities;
+import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
@@ -274,7 +276,8 @@ public class BaseFragment {
             });
             visibleDialog.show();
             //Always after .show()
-            int color = AndroidUtilities.getIntColor("themeColor");
+            SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+            int color = preferences.getInt("dialogColor", preferences.getInt("themeColor", AndroidUtilities.defColor));
             int id = visibleDialog.getContext().getResources().getIdentifier("android:id/alertTitle", null, null);
             TextView tv = (TextView) visibleDialog.findViewById(id);
             if(tv != null)tv.setTextColor(color);

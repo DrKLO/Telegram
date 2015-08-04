@@ -395,10 +395,10 @@
   <string name="formatterDay24H">SS:dd</string>
   <!--update text-->
   <string name="updateText">Plus Messenger için temalar indirin ve uygulayın. Hergün yeni temalar ekleniyor:\n https://play.google.com/store/apps/details?id=es.rafalense.themes</string>
-  <string name="updateBuild">583</string>
+  <string name="updateBuild">586</string>
   <!--Telegram+--><!--
   <string name="updatePlusText">
-\n\n3.0.1.3\'daki yenilikler:\n\n- Ayarlara telefon yazı tipini kullanma opsiyonu eklendi\n- Sohbet/Grup içinde arama opsiyonu eklendi\n- Ayarlar/Tema ekranında başlık rengi, başlık yazı rengi ve başlık ikonları değiştirme modu eklendi\n- Ana ekranda grup ikon rengini değiştirme modu eklendi\n- Sol menüdeki avatar büyüklüğünü değiştirme modu eklendi\n- Hata düzeltmeleri</string>-->
+\n\nNew in 3.1.1.6:\n\n- Yeni MOD sohbet ekranında konuşmacıların profil fotoğrafları artık görünür olarak ayarlanıyor\n- Yeni balon eklendi (Teşekkürler bay Edwin Macalopu)\n- Yeni MOD sohbet ekranına duvar kağıdı ve yazı rengi eklenebiliniyor.\n- Küçük hata düzeltmeleri yapıldı ama Türkler sizin için saatin düzeldiği sözünü henüz veremem k bakmayın, ihsan.</string>-->
   <string name="TelegramForAndroid">Android için Plus Messenger</string>
   <string name="Theming">Tema</string>
   <string name="colorHexInvalid">Geçersiz renk hex kodu!</string>
@@ -502,7 +502,7 @@
   <string name="KeepOriginalFilename">Orijinal dosya ismini tut</string>
   <string name="KeepOriginalFilenameHelp">Dosyalar sadece sayısal değer yerine isim_tarih şeklinde isimlendirilerek kaydedilecek</string>
   <string name="AvatarSize">Avatar Boyutu</string>
-  <string name="AvatarAlignTop">Avatarı Üste Hizala</string>
+  <string name="AvatarAlignTop">Fotoğrafı başa hizala</string>
   <string name="AvatarMarginLeft">Avatar Sol Kenar Boşluğu</string>
   <string name="GroupNameColor">Grup isim rengi</string>
   <string name="GroupNameSize">Grup isim boyutu</string>
@@ -525,4 +525,12 @@
   <string name="UseDeviceFont">Aygıt yazı tipini kullan</string>
   <string name="AppWillRestart">Plus Messenger yeniden başlayacak</string>
   <string name="GroupIconColor">Grup ikon rengi</string>
+  <string name="SharedContactNameColor">Paylaşılan kişi ismi rengi</string>
+  <string name="AttachBGColor">Arka plan rengi ekle</string>
+  <string name="AttachTextColor">Metin rengi ekle</string>
+  <string name="ShowContactAvatar">Kişi fotoğrafını sohbet ekranda göster</string>
+  <string name="ShowOwnAvatar">Sohbette kendi fotoğrafını göster</string>
+  <string name="ShowOwnAvatarGroup">Grupta kendi fotoğrafını göster</string>
+  <string name="OwnAvatarAlignTop">Fotoğrafını başa hizala</string>
+  <string name="DialogColor">Başlık/buton rengi</string>
 </resources>

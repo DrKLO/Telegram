@@ -23,8 +23,8 @@ import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
-import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.R;
+import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.UserConfig;
 import org.telegram.ui.Components.URLSpanNoUnderline;
 import org.telegram.ui.Components.URLSpanNoUnderlineBold;
@@ -78,6 +78,11 @@ public class MessageObject {
 
     public ArrayList<TextLayoutBlock> textLayoutBlocks;
 
+    protected int leftBound = 52;//52
+    public boolean showAvatar = false;
+    public boolean showMyAvatar = false;
+    public boolean showMyAvatarGroup = true;
+
     public MessageObject(TLRPC.Message message, AbstractMap<Integer, TLRPC.User> users, boolean generateLayout) {
         if (textPaint == null) {
             textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
@@ -97,6 +102,12 @@ public class MessageObject {
         textPaintRight.setColor(themePrefs.getInt("chatRTextColor", 0xff000000));
         textPaintRight.linkColor = themePrefs.getInt("chatRLinkColor", def);
         textPaintRight.setTextSize(AndroidUtilities.dp(MessagesController.getInstance().fontSize));
+
+        showMyAvatar = themePrefs.getBoolean("chatShowOwnAvatar", false);
+        showMyAvatarGroup = themePrefs.getBoolean("chatShowOwnAvatarGroup", false);
+        showAvatar = themePrefs.getBoolean("chatShowContactAvatar", false);
+        int aSize = themePrefs.getInt("chatAvatarSize", 42);
+        leftBound = aSize + AndroidUtilities.dp(3);
 
         messageOwner = message;
 
@@ -695,14 +706,18 @@ public class MessageObject {
 
         int maxWidth;
         if (AndroidUtilities.isTablet()) {
-            if (messageOwner.to_id.chat_id != 0 && !isOut()) {
-                maxWidth = AndroidUtilities.getMinTabletSide() - AndroidUtilities.dp(122);
+            //if (messageOwner.to_id.chat_id != 0 && !isOut()) {
+            if (( (messageOwner.to_id.chat_id != 0 || showAvatar) && !isOut() ) || ( messageOwner.to_id.chat_id == 0 && showMyAvatar && isOut() ) || ( messageOwner.to_id.chat_id != 0 && showMyAvatarGroup && isOut())) {
+                //maxWidth = AndroidUtilities.getMinTabletSide() - AndroidUtilities.dp(122);
+                maxWidth = AndroidUtilities.getMinTabletSide() - AndroidUtilities.dp(leftBound + 70);
             } else {
                 maxWidth = AndroidUtilities.getMinTabletSide() - AndroidUtilities.dp(80);
             }
         } else {
-            if (messageOwner.to_id.chat_id != 0 && !isOut()) {
-                maxWidth = Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y) - AndroidUtilities.dp(122);
+            //if (messageOwner.to_id.chat_id != 0 && !isOut()) {
+            if (((messageOwner.to_id.chat_id != 0 || showAvatar) && !isOut())|| ( messageOwner.to_id.chat_id == 0 && showMyAvatar && isOut() ) || ( messageOwner.to_id.chat_id != 0 && showMyAvatarGroup && isOut())) {
+                //maxWidth = Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y) - AndroidUtilities.dp(122);
+                maxWidth = Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y) - AndroidUtilities.dp(leftBound + 70);
             } else {
                 maxWidth = Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y) - AndroidUtilities.dp(80);
             }

@@ -77,6 +77,8 @@ public class ThemingActivity extends BaseFragment {
     private int saveThemeRow;
     private int applyThemeRow;
 
+    private int dialogColorRow;
+
     private int rowCount;
 
     public final static int CENTER = 0;
@@ -88,6 +90,7 @@ public class ThemingActivity extends BaseFragment {
         rowCount = 0;
         generalSection2Row = rowCount++;
         themeColorRow = rowCount++;
+        dialogColorRow = rowCount++;
 
         screensSectionRow = rowCount++;
         screensSection2Row = rowCount++;
@@ -161,11 +164,14 @@ public class ThemingActivity extends BaseFragment {
                 @Override
                 public void onItemClick(AdapterView<?> adapterView, View view, final int i, long l) {
 
+                    SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+                    int defColor = preferences.getInt("themeColor", AndroidUtilities.defColor);
+
                     if (i == themeColorRow) {
                         if (getParentActivity() == null) {
                             return;
                         }
-                        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+                        //SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
                         LayoutInflater li = (LayoutInflater)getParentActivity().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
 
                         li.inflate(R.layout.colordialog, null, false);
@@ -176,8 +182,22 @@ public class ThemingActivity extends BaseFragment {
                                 commitInt(color);
                             }
 
-                        },preferences.getInt("themeColor", AndroidUtilities.defColor), CENTER, 0, false);
+                        }, defColor, CENTER, 0, false);
 
+                        colorDialog.show();
+                    } else if (i == dialogColorRow) {
+                        if (getParentActivity() == null) {
+                            return;
+                        }
+                        //SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+                        LayoutInflater li = (LayoutInflater)getParentActivity().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+                        li.inflate(R.layout.colordialog, null, false);
+                        ColorSelectorDialog colorDialog = new ColorSelectorDialog(getParentActivity(), new OnColorChangedListener() {
+                            @Override
+                            public void colorChanged(int color) {
+                                commitInt("dialogColor", color);
+                            }
+                        },preferences.getInt("dialogColor", defColor), CENTER, 0, false);
                         colorDialog.show();
                     } else if(i == saveThemeRow){
                         LayoutInflater li = LayoutInflater.from(getParentActivity());
@@ -187,7 +207,7 @@ public class ThemingActivity extends BaseFragment {
                         final EditText userInput = (EditText) promptsView.findViewById(R.id.editTextDialogUserInput);
                         userInput.setHint(LocaleController.getString("EnterName", R.string.EnterName));
                         userInput.setHintTextColor(0xff979797);
-                        userInput.getBackground().setColorFilter(AndroidUtilities.getIntColor("themeColor"), PorterDuff.Mode.SRC_IN);
+                        userInput.getBackground().setColorFilter(preferences.getInt("dialogColor", defColor), PorterDuff.Mode.SRC_IN);
                         AndroidUtilities.clearCursorDrawable(userInput);
                         //builder.setMessage(LocaleController.getString("EnterName", R.string.EnterName));
                         builder.setTitle(LocaleController.getString("SaveTheme", R.string.SaveTheme));
@@ -204,7 +224,7 @@ public class ThemingActivity extends BaseFragment {
                                         saving = false;
                                         if (getParentActivity() != null) {
                                             String pName = userInput.getText().toString();
-                                            AndroidUtilities.setStringPref(getParentActivity(),"themeName", pName);
+                                            AndroidUtilities.setStringPref(getParentActivity(), "themeName", pName);
                                             try{
                                                 PackageInfo pInfo = ApplicationLoader.applicationContext.getPackageManager().getPackageInfo(ApplicationLoader.applicationContext.getPackageName(), 0);
                                                 AndroidUtilities.setStringPref(getParentActivity(),"version", pInfo.versionName);
@@ -349,6 +369,8 @@ public class ThemingActivity extends BaseFragment {
                     }
                     if (i == themeColorRow) {
                         commitInt(AndroidUtilities.defColor);
+                    } else if(i == dialogColorRow){
+                        resetPref("dialogColor");
                     }
                     return true;
                 }
@@ -363,6 +385,26 @@ public class ThemingActivity extends BaseFragment {
             }
         }
         return fragmentView;
+    }
+
+    private void resetPref(String key){
+        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+        SharedPreferences.Editor editor = preferences.edit();
+        editor.remove(key);
+        editor.commit();
+        if (listView != null) {
+            listView.invalidateViews();
+        }
+    }
+
+    private void commitInt(String key, int value){
+        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+        SharedPreferences.Editor editor = preferences.edit();
+        editor.putInt(key, value);
+        editor.commit();
+        if (listView != null) {
+            listView.invalidateViews();
+        }
     }
 
     private void commitInt(int i){
@@ -394,6 +436,8 @@ public class ThemingActivity extends BaseFragment {
         editor.putInt("contactsOnlineColor", darkColor);
 
         editor.putInt("prefHeaderColor", i);
+
+        editor.putInt("dialogColor", i);
 
         editor.commit();
         fixLayout();
@@ -460,7 +504,7 @@ public class ThemingActivity extends BaseFragment {
 
         @Override
         public boolean isEnabled(int i) {
-            return  i == themeColorRow || i == chatsRow || i == chatRow || i == contactsRow || i == drawerRow || i == profileRow || i == settingsRow || i == resetThemeRow || i == saveThemeRow || i == applyThemeRow;
+            return  i == themeColorRow || i == dialogColorRow || i == chatsRow || i == chatRow || i == contactsRow || i == drawerRow || i == profileRow || i == settingsRow || i == resetThemeRow || i == saveThemeRow || i == applyThemeRow;
         }
 
         @Override
@@ -545,8 +589,14 @@ public class ThemingActivity extends BaseFragment {
                     view = new TextColorCell(mContext);
                 }
                 TextColorCell textCell = (TextColorCell) view;
+
+                SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+                int defColor = preferences.getInt("themeColor", AndroidUtilities.defColor);
+
                 if (i == themeColorRow) {
-                    textCell.setTextAndColor(LocaleController.getString("themeColor", R.string.themeColor), AndroidUtilities.getIntColor("themeColor"), false);
+                    textCell.setTextAndColor(LocaleController.getString("themeColor", R.string.themeColor), defColor, true);
+                } else if (i == dialogColorRow) {
+                    textCell.setTextAndColor(LocaleController.getString("DialogColor", R.string.DialogColor), preferences.getInt("dialogColor", defColor), false);
                 }
             }
 
@@ -567,7 +617,7 @@ public class ThemingActivity extends BaseFragment {
             else if ( i == resetThemeRow || i == saveThemeRow || i == applyThemeRow) {
                 return 3;
             }
-            else if ( i == themeColorRow) {
+            else if ( i == themeColorRow || i == dialogColorRow) {
                 return 4;
             }
             else {

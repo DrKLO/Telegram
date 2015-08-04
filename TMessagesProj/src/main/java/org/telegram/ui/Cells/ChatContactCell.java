@@ -260,10 +260,12 @@ public class ChatContactCell extends ChatBaseCell {
         int x;
 
         if (currentMessageObject.isOut()) {
-            x = layoutWidth - backgroundWidth + AndroidUtilities.dp(8);
+            //x = layoutWidth - backgroundWidth + AndroidUtilities.dp(8);
+            x = layoutWidth - backgroundWidth + AndroidUtilities.dp(8)  - (((showMyAvatar && !isChat) || (showMyAvatarGroup && isChat)) ? AndroidUtilities.dp(leftBound) : 0);
         } else {
             if (isChat || showAvatar) {
-                x = AndroidUtilities.dp(69);
+                //x = AndroidUtilities.dp(69);
+                x = AndroidUtilities.dp(leftBound + 17);
             } else {
                 x = AndroidUtilities.dp(16);
             }

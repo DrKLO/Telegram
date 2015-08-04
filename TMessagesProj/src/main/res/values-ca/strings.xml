@@ -953,4 +953,8 @@
   <string name="SummaryColor">Color del resum/subtítol</string>
   <string name="MediaColor">Color del text «Foto/Adhesiu»</string>
   <string name="ThemesAppMsg">Voleu veure alguns temes creats per altes usuaris de Plus Messenger?</string>
+  <string name="UseDeviceFont">Usa la font del dispositiu</string>
+  <string name="AppWillRestart">Plus Messenger es reiniciarà</string>
+  <string name="GroupIconColor">Color de la icona de grup</string>
+  <string name="SharedContactNameColor">Color del nom de contacte compartit</string>
 </resources>

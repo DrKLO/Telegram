@@ -835,9 +835,9 @@
     <string name="formatDateAtTime">%1$s a las %2$s</string>
     <!--update text-->
     <string name="updateText">Plus Messenger para Android fue actualizada. Novedades en la versión 3.1:\n\n- Busca mensajes dentro de un chat en específico.\n- Menú para adjuntar completamente rediseñado. Envía contactos y archivos de audio directamente desde el menú para adjuntar.\n- Reproducción de multimedia dentro de la aplicación mejorada (YouTube, Vimeo, SoundCloud etc.), nuevo reproductor para archivos de audio largos.\n\nMás sobre esta actualización:\nhttps://telegram.org/blog/search-and-media</string>
-    <string name="updateBuild">583</string>
+    <string name="updateBuild">586</string>
     <!--Telegram+ Spanish-->
-    <string name="updatePlusText">\n\nNovedades en 3.1.1.3:\n\n- Nuevo MOD para ajustar color de estado en pantalla Ajustes\n- Solución de errores</string>
+    <string name="updatePlusText">\n\nNovedades en 3.1.1.6:\n\n- Nuevo MOD para mostrar foto de contacto en pantalla chat\n- Nuevo MOD para mostrar foto propia en pantalla de chat y grupo\n- Nuevo MOD para alinear foto propia arriba de bocadillo en chat\n- Añadidos nuevos bocadillos Ed y Edge (gracias a Edwin Macalopu)\n- Nuevo MOD para ajustar color de fondo y de texto en vista adjuntar en pantalla chat\n- Nuevo MOD para ajustar color de título y botón de diálogo\n- Solución de errores</string>
     <string name="TelegramForAndroid">Plus Messenger para Android</string>
     <string name="Theming">Tematización</string>
     <string name="colorHexInvalid">¡Color hexadecimal inválido!</string>
@@ -941,8 +941,8 @@
     <string name="KeepOriginalFilename">Mantener nombre de archivo original</string>
     <string name="KeepOriginalFilenameHelp">En lugar de solo números los archivos se guardarán usando el formato nombre_fecha</string>
     <string name="AvatarSize">Tamaño de avatar</string>
-    <string name="AvatarAlignTop">Alinear avatar arriba</string>
-    <string name="AvatarMarginLeft">Margen izquierdo de avatar</string>
+    <string name="AvatarAlignTop">Alinear foto de contacto arriba</string>
+    <string name="AvatarMarginLeft">Margen lateral de avatar</string>
     <string name="GroupNameColor">Color de nombre de grupo</string>
     <string name="GroupNameSize">Tamaño de nombre de grupo</string>
     <string name="UnknownNameColor">Color de nombre (nº desconocido)</string>
@@ -965,4 +965,11 @@
     <string name="AppWillRestart">Plus Messenger se reiniciará</string>
     <string name="GroupIconColor">Color de icono de grupo</string>
     <string name="SharedContactNameColor">Color de nombre de contacto compartido</string>
+    <string name="AttachBGColor">Color de fondo de adjuntar</string>
+    <string name="AttachTextColor">Color de texto de adjuntar</string>
+    <string name="ShowContactAvatar">Muestra foto de contacto en chat</string>
+    <string name="ShowOwnAvatar">Muestra foto propia en chat</string>
+    <string name="ShowOwnAvatarGroup">Muestra foto propia en grupo</string>
+    <string name="OwnAvatarAlignTop">Alinear foto propia arriba</string>
+    <string name="DialogColor">Color de título/botón de diálogo</string>
 </resources>

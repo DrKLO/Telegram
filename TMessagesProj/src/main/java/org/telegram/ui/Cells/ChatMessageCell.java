@@ -29,10 +29,10 @@ import android.view.MotionEvent;
 import org.telegram.android.AndroidUtilities;
 import org.telegram.android.ImageReceiver;
 import org.telegram.android.MediaController;
-import org.telegram.messenger.FileLoader;
-import org.telegram.messenger.FileLog;
 import org.telegram.android.MessageObject;
 import org.telegram.messenger.ApplicationLoader;
+import org.telegram.messenger.FileLoader;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
 import org.telegram.messenger.TLRPC;
 import org.telegram.ui.Components.ResourceLoader;
@@ -331,16 +331,18 @@ public class ChatMessageCell extends ChatBaseCell {
             int maxWidth;
 
             if (AndroidUtilities.isTablet()) {
-                if ((isChat ||  showAvatar) && !messageObject.isOut()) {
-                    maxWidth = AndroidUtilities.getMinTabletSide() - AndroidUtilities.dp(122);
+                if (( (isChat || showAvatar) && !messageObject.isOut() ) || (((showMyAvatar && !isChat) || (showMyAvatarGroup && isChat)) && messageObject.isOut())) {
+                    //maxWidth = AndroidUtilities.getMinTabletSide() - AndroidUtilities.dp(122);
+                    maxWidth = AndroidUtilities.getMinTabletSide() - AndroidUtilities.dp(leftBound + 70);
                     drawName = true;
                 } else {
                     maxWidth = AndroidUtilities.getMinTabletSide() - AndroidUtilities.dp(80);
                     drawName = false;
                 }
             } else {
-                if ((isChat || showAvatar) && !messageObject.isOut()) {
-                    maxWidth = Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y) - AndroidUtilities.dp(122);
+                if (( (isChat || showAvatar) && !messageObject.isOut() ) || (((showMyAvatar && !isChat) || (showMyAvatarGroup && isChat)) && messageObject.isOut())) {
+                    //maxWidth = Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y) - AndroidUtilities.dp(122);
+                    maxWidth = Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y) - AndroidUtilities.dp(leftBound + 70);
                     drawName = true;
                 } else {
                     maxWidth = Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y) - AndroidUtilities.dp(80);
@@ -350,10 +352,13 @@ public class ChatMessageCell extends ChatBaseCell {
 
             backgroundWidth = maxWidth;
 
+            //Log.e("setMessageObject 1", "backgroundWidth " + backgroundWidth+" layoutWidth " + layoutWidth);
+
             super.setMessageObject(messageObject);
 
             backgroundWidth = messageObject.textWidth;
             totalHeight = messageObject.textHeight + AndroidUtilities.dp(19.5f) + namesOffset;
+            //Log.e("setMessageObject 2", "backgroundWidth " + backgroundWidth+" namesOffset " + namesOffset);
 
             int maxChildWidth = Math.max(backgroundWidth, nameWidth);
             maxChildWidth = Math.max(maxChildWidth, forwardedNameWidth);
@@ -369,14 +374,18 @@ public class ChatMessageCell extends ChatBaseCell {
             if (messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaWebPage && messageObject.messageOwner.media.webpage instanceof TLRPC.TL_webPage) {
                 int linkPreviewMaxWidth;
                 if (AndroidUtilities.isTablet()) {
-                    if (currentMessageObject.messageOwner.to_id.chat_id != 0 && !currentMessageObject.isOut()) {
-                        linkPreviewMaxWidth = AndroidUtilities.getMinTabletSide() - AndroidUtilities.dp(122);
+                    //if (currentMessageObject.messageOwner.to_id.chat_id != 0 && !currentMessageObject.isOut()) {
+                    if (( (currentMessageObject.messageOwner.to_id.chat_id != 0 || showAvatar) && !currentMessageObject.isOut() ) || (currentMessageObject.messageOwner.to_id.chat_id == 0 && showMyAvatar && currentMessageObject.isOut()) || (currentMessageObject.messageOwner.to_id.chat_id != 0 && showMyAvatarGroup && currentMessageObject.isOut()) ) {
+                        //linkPreviewMaxWidth = AndroidUtilities.getMinTabletSide() - AndroidUtilities.dp(122);
+                        linkPreviewMaxWidth = AndroidUtilities.getMinTabletSide() - AndroidUtilities.dp(leftBound + 70);
                     } else {
                         linkPreviewMaxWidth = AndroidUtilities.getMinTabletSide() - AndroidUtilities.dp(80);
                     }
                 } else {
-                    if (currentMessageObject.messageOwner.to_id.chat_id != 0 && !currentMessageObject.isOut()) {
-                        linkPreviewMaxWidth = Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y) - AndroidUtilities.dp(122);
+                    //if (currentMessageObject.messageOwner.to_id.chat_id != 0 && !currentMessageObject.isOut()) {
+                    if (( (currentMessageObject.messageOwner.to_id.chat_id != 0 || showAvatar) && !currentMessageObject.isOut() ) || (currentMessageObject.messageOwner.to_id.chat_id == 0 && showMyAvatar && currentMessageObject.isOut()) || (currentMessageObject.messageOwner.to_id.chat_id != 0 && showMyAvatarGroup && currentMessageObject.isOut())) {
+                        //linkPreviewMaxWidth = Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y) - AndroidUtilities.dp(122);
+                        linkPreviewMaxWidth = Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y) - AndroidUtilities.dp(leftBound + 70);
                     } else {
                         linkPreviewMaxWidth = Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y) - AndroidUtilities.dp(80);
                     }
@@ -649,6 +658,18 @@ public class ChatMessageCell extends ChatBaseCell {
                     backgroundWidth = Math.max(maxChildWidth, messageObject.lastLineWidth + timeMore) + AndroidUtilities.dp(29);
                 }
             }
+            //Plus
+            //Log.e("setMessageObject3", "totalHeight " + totalHeight + " namesOffset " + namesOffset + " messageObject.textHeight: " + messageObject.textHeight);
+            if( ( showAvatar && !isChat && !messageObject.isOut() ) || ((( (showMyAvatar && !isChat) || (showMyAvatarGroup && isChat)) && messageObject.isOut()))){
+                if ((totalHeight < avatarSize)) {
+                    totalHeight = avatarSize + AndroidUtilities.dp(10);
+                    //Log.e("setMessageObject2","totalHeight "+totalHeight);
+                }
+                //totalHeight = messageObject.textHeight + AndroidUtilities.dp(19.5f) + namesOffset;
+
+            }
+
+            //Log.e("setMessageObject 3", "backgroundWidth " + backgroundWidth+" maxChildWidth " + maxChildWidth);
         }
     }
 
@@ -662,10 +683,12 @@ public class ChatMessageCell extends ChatBaseCell {
         super.onLayout(changed, left, top, right, bottom);
 
         if (currentMessageObject.isOut()) {
-            textX = layoutWidth - backgroundWidth + AndroidUtilities.dp(10);
+            //textX = layoutWidth - backgroundWidth + AndroidUtilities.dp(10);
+            textX = layoutWidth - backgroundWidth + AndroidUtilities.dp(10) - ((showMyAvatar && !isChat) || (showMyAvatarGroup && isChat) ? AndroidUtilities.dp(leftBound) : 0);
             textY = AndroidUtilities.dp(10) + namesOffset;
         } else {
-            textX = AndroidUtilities.dp(19) + (isChat || showAvatar ? AndroidUtilities.dp(52) : 0);
+            //textX = AndroidUtilities.dp(19) + (isChat ? AndroidUtilities.dp(52) : 0);
+            textX = AndroidUtilities.dp(19) + (isChat || showAvatar ? AndroidUtilities.dp(leftBound) : 0);
             textY = AndroidUtilities.dp(10) + namesOffset;
         }
     }
@@ -678,10 +701,12 @@ public class ChatMessageCell extends ChatBaseCell {
         }
 
         if (currentMessageObject.isOut()) {
-            textX = layoutWidth - backgroundWidth + AndroidUtilities.dp(10);
+            //textX = layoutWidth - backgroundWidth + AndroidUtilities.dp(10);
+            textX = layoutWidth - backgroundWidth + AndroidUtilities.dp(10) - ( (showMyAvatar && !isChat) || (showMyAvatarGroup && isChat) ? AndroidUtilities.dp(leftBound) : 0);
             textY = AndroidUtilities.dp(10) + namesOffset;
         } else {
-            textX = AndroidUtilities.dp(19) + (isChat || showAvatar ? AndroidUtilities.dp(52) : 0);
+            //textX = AndroidUtilities.dp(19) + (isChat ? AndroidUtilities.dp(52) : 0);
+            textX = AndroidUtilities.dp(19) + (isChat || showAvatar ? AndroidUtilities.dp(leftBound) : 0);
             textY = AndroidUtilities.dp(10) + namesOffset;
         }
 

@@ -835,7 +835,7 @@
     <string name="formatDateAtTime">%1$s om %2$s</string>
     <!--update text-->
     <string name="updateText">Plus Messenger voor Android is bijgewerkt. Nieuw in versie 3.1:\n\n- Zoek naar berichten in een specifieke chat.\n- Volledig opnieuw ontworpen bijlagemenu. Verstuur contacten en audiobestanden rechtstreeks vanuit het bijlagemenu.\n- Afspelen van media in de app verbeterd (YouTube, Vimeo, SoundCloud, etc.), nieuwe speler voor grote audiobestanden.\n\nMeer weten? Kijk op:\nhttps://telegram.org/blog/search-and-media</string>
-    <string name="updateBuild">583</string>
+    <string name="updateBuild">586</string>
     <!--Telegram+-->
   <string name="updatePlusText"></string>
     <string name="TelegramForAndroid">Plus Messenger voor Android</string>

@@ -91,8 +91,14 @@ public class ThemingChatActivity extends BaseFragment {
     private int bubblesRow;
     private int avatarSizeRow;
     private int avatarAlignTopRow;
+    private int ownAvatarAlignTopRow;
     private int avatarMarginLeftRow;
     private int contactNameColorRow;
+    private int attachBGColorRow;
+    private int attachTextColorRow;
+    private int showContactAvatar;
+    private int showOwnAvatar;
+    private int showOwnAvatarGroup;
 
     private int rowCount;
 
@@ -118,10 +124,17 @@ public class ThemingChatActivity extends BaseFragment {
 
         solidBGColorCheckRow = rowCount++;
         solidBGColorRow = rowCount++;
+
+        showContactAvatar = rowCount++;
+        avatarAlignTopRow = rowCount++;
+        showOwnAvatar = rowCount++;
+        showOwnAvatarGroup = rowCount++;
+        ownAvatarAlignTopRow = rowCount++;
         avatarRadiusRow = rowCount++;
         avatarSizeRow = rowCount++;
         avatarMarginLeftRow = rowCount++;
-        avatarAlignTopRow = rowCount++;
+
+
         textSizeRow = rowCount++;
         rTextColorRow = rowCount++;
         rLinkColorRow = rowCount++;
@@ -152,6 +165,9 @@ public class ThemingChatActivity extends BaseFragment {
         editTextColorRow = rowCount++;
         editTextBGColorRow = rowCount++;
         editTextIconsColorRow = rowCount++;
+
+        attachBGColorRow = rowCount++;
+        attachTextColorRow = rowCount++;
 
         emojiViewBGColorRow = rowCount++;
         emojiViewTabColorRow = rowCount++;
@@ -257,6 +273,50 @@ public class ThemingChatActivity extends BaseFragment {
                             listView.invalidateViews();
                         }
                     } else if (i == avatarAlignTopRow) {
+                        boolean b = themePrefs.getBoolean( key, true);
+                        SharedPreferences.Editor editor = themePrefs.edit();
+                        editor.putBoolean( key, !b);
+                        editor.commit();
+                        if (view instanceof TextCheckCell) {
+                            ((TextCheckCell) view).setChecked(!b);
+                        }
+                        if (listView != null) {
+                            listView.invalidateViews();
+                        }
+                    } else if (i == ownAvatarAlignTopRow) {
+                        boolean b = themePrefs.getBoolean( key, true);
+                        SharedPreferences.Editor editor = themePrefs.edit();
+                        editor.putBoolean( key, !b);
+                        editor.commit();
+                        if (view instanceof TextCheckCell) {
+                            ((TextCheckCell) view).setChecked(!b);
+                        }
+                        if (listView != null) {
+                            listView.invalidateViews();
+                        }
+                    } else if (i == showContactAvatar) {
+                        boolean b = themePrefs.getBoolean( key, true);
+                        SharedPreferences.Editor editor = themePrefs.edit();
+                        editor.putBoolean( key, !b);
+                        editor.commit();
+                        if (view instanceof TextCheckCell) {
+                            ((TextCheckCell) view).setChecked(!b);
+                        }
+                        if (listView != null) {
+                            listView.invalidateViews();
+                        }
+                    } else if (i == showOwnAvatar) {
+                        boolean b = themePrefs.getBoolean( key, true);
+                        SharedPreferences.Editor editor = themePrefs.edit();
+                        editor.putBoolean( key, !b);
+                        editor.commit();
+                        if (view instanceof TextCheckCell) {
+                            ((TextCheckCell) view).setChecked(!b);
+                        }
+                        if (listView != null) {
+                            listView.invalidateViews();
+                        }
+                    } else if (i == showOwnAvatarGroup) {
                         boolean b = themePrefs.getBoolean( key, true);
                         SharedPreferences.Editor editor = themePrefs.edit();
                         editor.putBoolean( key, !b);
@@ -584,6 +644,34 @@ public class ThemingChatActivity extends BaseFragment {
 
                         },themePrefs.getInt("chatEditTextBGColor", 0xffffffff), CENTER, 0, true);
 
+                        colorDialog.show();
+                    } else if (i == attachBGColorRow) {
+                        if (getParentActivity() == null) {
+                            return;
+                        }
+                        LayoutInflater li = (LayoutInflater)getParentActivity().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+                        li.inflate(R.layout.colordialog, null, false);
+                        ColorSelectorDialog colorDialog = new ColorSelectorDialog(getParentActivity(), new OnColorChangedListener() {
+                            @Override
+                            public void colorChanged(int color) {
+                                commitInt("chatAttachBGColor", color);
+                            }
+
+                        },themePrefs.getInt("chatAttachBGColor", 0xffffffff), CENTER, 0, true);
+                        colorDialog.show();
+                    } else if (i == attachTextColorRow) {
+                        if (getParentActivity() == null) {
+                            return;
+                        }
+                        LayoutInflater li = (LayoutInflater)getParentActivity().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+                        li.inflate(R.layout.colordialog, null, false);
+                        ColorSelectorDialog colorDialog = new ColorSelectorDialog(getParentActivity(), new OnColorChangedListener() {
+                            @Override
+                            public void colorChanged(int color) {
+                                commitInt("chatAttachTextColor", color);
+                            }
+
+                        },themePrefs.getInt("chatAttachTextColor", 0xff757575), CENTER, 0, true);
                         colorDialog.show();
                     } else if (i == editTextIconsColorRow) {
                         if (getParentActivity() == null) {
@@ -931,6 +1019,10 @@ public class ThemingChatActivity extends BaseFragment {
                         resetPref("chatEditTextSize");
                     } else if (i == editTextBGColorRow) {
                         resetPref("chatEditTextBGColor");
+                    } else if (i == attachBGColorRow) {
+                        resetPref("chatAttachBGColor");
+                    } else if (i == attachTextColorRow) {
+                        resetPref("chatAttachTextColor");
                     } else if (i == emojiViewBGColorRow) {
                         resetPref("chatEmojiViewBGColor");
                     } else if (i == emojiViewTabColorRow) {
@@ -1045,10 +1137,10 @@ public class ThemingChatActivity extends BaseFragment {
         @Override
         public boolean isEnabled(int i) {
             return  i == headerColorRow || i == muteColorRow || i == headerIconsColorRow || i == rBubbleColorRow || i == lBubbleColorRow ||  i == bubblesRow ||
-                    i == solidBGColorCheckRow || AndroidUtilities.getBoolPref("chatSolidBGColorCheck") && i == solidBGColorRow || i == avatarRadiusRow || i == avatarSizeRow || i == avatarMarginLeftRow || i == avatarAlignTopRow || i == nameColorRow || i == nameSizeRow || i == statusColorRow || i == statusSizeRow ||
+                    i == solidBGColorCheckRow || AndroidUtilities.getBoolPref("chatSolidBGColorCheck") && i == solidBGColorRow || i == avatarRadiusRow || i == avatarSizeRow || i == avatarMarginLeftRow || i == avatarAlignTopRow || i == ownAvatarAlignTopRow || i == showContactAvatar || i == showOwnAvatar || i == showOwnAvatarGroup || i == nameColorRow || i == nameSizeRow || i == statusColorRow || i == statusSizeRow ||
                     i == textSizeRow || i == timeSizeRow || i == dateColorRow || i == dateSizeRow || i == dateBubbleColorRow || i == rTextColorRow || i == rLinkColorRow || i == lTextColorRow || i == lLinkColorRow ||
                     i == rTimeColorRow|| i == lTimeColorRow || i == checksColorRow || i == memberColorCheckRow || AndroidUtilities.getBoolPref("chatMemberColorCheck") && i == memberColorRow || i == contactNameColorRow || i == forwardRightNameColorRow || i == forwardLeftNameColorRow ||
-                    i == editTextSizeRow || i == editTextColorRow || i == editTextIconsColorRow || i == sendColorRow || i == editTextBGColorRow ||
+                    i == editTextSizeRow || i == editTextColorRow || i == editTextIconsColorRow || i == sendColorRow || i == editTextBGColorRow || i == attachBGColorRow || i == attachTextColorRow ||
                     i == emojiViewBGColorRow || i == emojiViewTabColorRow;
         }
 
@@ -1145,6 +1237,18 @@ public class ThemingChatActivity extends BaseFragment {
                 } else if (i == avatarAlignTopRow) {
                     textCell.setTag("chatAvatarAlignTop");
                     textCell.setTextAndCheck(LocaleController.getString("AvatarAlignTop", R.string.AvatarAlignTop), themePrefs.getBoolean("chatAvatarAlignTop", false), true);
+                } else if (i == ownAvatarAlignTopRow) {
+                    textCell.setTag("chatOwnAvatarAlignTop");
+                    textCell.setTextAndCheck(LocaleController.getString("OwnAvatarAlignTop", R.string.OwnAvatarAlignTop), themePrefs.getBoolean("chatOwnAvatarAlignTop", false), true);
+                } else if (i == showContactAvatar) {
+                    textCell.setTag("chatShowContactAvatar");
+                    textCell.setTextAndCheck(LocaleController.getString("ShowContactAvatar", R.string.ShowContactAvatar), themePrefs.getBoolean("chatShowContactAvatar", false), true);
+                } else if (i == showOwnAvatar) {
+                    textCell.setTag("chatShowOwnAvatar");
+                    textCell.setTextAndCheck(LocaleController.getString("ShowOwnAvatar", R.string.ShowOwnAvatar), themePrefs.getBoolean("chatShowOwnAvatar", false), true);
+                } else if (i == showOwnAvatarGroup) {
+                    textCell.setTag("chatShowOwnAvatarGroup");
+                    textCell.setTextAndCheck(LocaleController.getString("ShowOwnAvatarGroup", R.string.ShowOwnAvatarGroup), themePrefs.getBoolean("chatShowOwnAvatarGroup", false), true);
                 }
             }
             else if (type == 3){
@@ -1212,6 +1316,10 @@ public class ThemingChatActivity extends BaseFragment {
                     textCell.setTextAndColor(LocaleController.getString("EditTextColor", R.string.EditTextColor), themePrefs.getInt("chatEditTextColor", 0xff000000), true);
                 } else if (i == editTextBGColorRow) {
                     textCell.setTextAndColor(LocaleController.getString("EditTextBGColor", R.string.EditTextBGColor), themePrefs.getInt("chatEditTextBGColor", 0xffffffff), true);
+                } else if (i == attachBGColorRow) {
+                    textCell.setTextAndColor(LocaleController.getString("AttachBGColor", R.string.AttachBGColor), themePrefs.getInt("chatAttachBGColor", 0xffffffff), true);
+                } else if (i == attachTextColorRow) {
+                    textCell.setTextAndColor(LocaleController.getString("AttachTextColor", R.string.AttachTextColor), themePrefs.getInt("chatAttachTextColor", 0xff757575), true);
                 } else if (i == editTextIconsColorRow) {
                     textCell.setTag("chatEditTextIconsColor");
                     textCell.setTextAndColor(LocaleController.getString("EditTextIconsColor", R.string.EditTextIconsColor), themePrefs.getInt("chatEditTextIconsColor", 0xffadadad), true);
@@ -1239,10 +1347,10 @@ public class ThemingChatActivity extends BaseFragment {
             else if ( i == headerColorRow  || i == muteColorRow || i == headerIconsColorRow ||
                     i == solidBGColorRow || i == rBubbleColorRow || i == lBubbleColorRow || i == nameColorRow || i == statusColorRow || i == dateColorRow || i == dateBubbleColorRow ||
                     i == rTextColorRow || i == rLinkColorRow || i == lTextColorRow || i == lLinkColorRow || i == rLinkColorRow || i == rTimeColorRow || i == lTimeColorRow || i == checksColorRow || i == memberColorRow || i == contactNameColorRow || i == forwardRightNameColorRow || i == forwardLeftNameColorRow ||
-                    i == sendColorRow || i == editTextColorRow || i == editTextBGColorRow || i == editTextIconsColorRow ||
+                    i == sendColorRow || i == editTextColorRow || i == editTextBGColorRow || i == editTextIconsColorRow ||  i == attachBGColorRow || i == attachTextColorRow ||
                     i == emojiViewBGColorRow || i == emojiViewTabColorRow) {
                 return 3;
-            } else if (i == solidBGColorCheckRow || i == memberColorCheckRow || i == avatarAlignTopRow) {
+            } else if (i == solidBGColorCheckRow || i == memberColorCheckRow || i == avatarAlignTopRow || i == ownAvatarAlignTopRow || i == showContactAvatar || i == showOwnAvatar || i == showOwnAvatarGroup) {
                 return 4;
             }
             else {
