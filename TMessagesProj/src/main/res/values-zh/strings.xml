@@ -17,22 +17,22 @@
     <string name="CallText">我们会在 %1$d:%2$02d 后呼叫您。</string>
     <string name="Calling">正在呼叫...</string>
     <string name="Code">验证码</string>
-    <string name="WrongNumber">Wrong number?</string>
-    <string name="DidNotGetTheCode">Didn\'t get the code?</string>
+    <string name="WrongNumber">错误的号码？</string>
+    <string name="DidNotGetTheCode">没有收到激活码？</string>
     <!--signup view-->
-    <string name="YourName">Your name</string>
-    <string name="RegisterText">Set up your first and last name</string>
+    <string name="YourName">您的名字</string>
+    <string name="RegisterText">设置您的姓氏与名字</string>
     <!--<string name="RegisterText">Set up your name and picture</string>-->
-    <string name="FirstName">First name (required)</string>
-    <string name="LastName">Last name (optional)</string>
-    <string name="CancelRegistration">Cancel registration</string>
+    <string name="FirstName">名字 (必须)</string>
+    <string name="LastName">姓氏 (可选)</string>
+    <string name="CancelRegistration">取消注册</string>
     <!--chats view-->
-    <string name="Settings">Settings</string>
-    <string name="Contacts">Contacts</string>
-    <string name="NewGroup">New Group</string>
-    <string name="Yesterday">yesterday</string>
-    <string name="NoResult">No results</string>
-    <string name="NoChats">No chats yet...</string>
+    <string name="Settings">设定</string>
+    <string name="Contacts">联系人</string>
+    <string name="NewGroup">新建群组</string>
+    <string name="Yesterday">昨天</string>
+    <string name="NoResult">没有结果</string>
+    <string name="NoChats">还没有聊天...</string>
     <string name="NoChatsHelp">Start messaging by pressing the\nnew message button in the bottom right corner\nor tap the menu button for more options.</string>
     <string name="WaitingForNetwork">Waiting for network...</string>
     <string name="Connecting">Connecting...</string>
