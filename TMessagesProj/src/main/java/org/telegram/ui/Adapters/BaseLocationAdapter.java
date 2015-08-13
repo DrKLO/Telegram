@@ -208,6 +208,7 @@ public class BaseLocationAdapter extends BaseFragmentAdapter {
                             }
                         }
                     });
+            jsonObjReq.setShouldCache(false);
             jsonObjReq.setTag("search");
             requestQueue.add(jsonObjReq);
         } catch (Exception e) {

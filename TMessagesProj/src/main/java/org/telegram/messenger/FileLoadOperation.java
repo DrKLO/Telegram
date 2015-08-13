@@ -227,6 +227,11 @@ public class FileLoadOperation {
                 downloadedBytes = (int)cacheFileTemp.length();
                 nextDownloadOffset = downloadedBytes = downloadedBytes / currentDownloadChunkSize * currentDownloadChunkSize;
             }
+
+            if (BuildVars.DEBUG_VERSION) {
+                FileLog.d("tmessages", "start loading file to temp = " + cacheFileTemp + " final = " + cacheFileFinal);
+            }
+
             if (fileNameIv != null) {
                 cacheIvTemp = new File(tempPath, fileNameIv);
                 try {
@@ -291,6 +296,9 @@ public class FileLoadOperation {
                     return;
                 }
                 state = stateFailed;
+                if (BuildVars.DEBUG_VERSION) {
+                    FileLog.e("tmessages", "cancel downloading file to " + cacheFileFinal);
+                }
                 cleanup();
                 for (RequestInfo requestInfo : requestInfos) {
                     if (requestInfo.requestToken != 0) {
@@ -340,8 +348,14 @@ public class FileLoadOperation {
         }
         if (cacheFileTemp != null) {
             if (!cacheFileTemp.renameTo(cacheFileFinal)) {
+                if (BuildVars.DEBUG_VERSION) {
+                    FileLog.e("tmessages", "unable to rename temp = " + cacheFileTemp + " to final = " + cacheFileFinal);
+                }
                 cacheFileFinal = cacheFileTemp;
             }
+        }
+        if (BuildVars.DEBUG_VERSION) {
+            FileLog.e("tmessages", "finished downloading file to " + cacheFileFinal);
         }
         delegate.didFinishLoadingFile(FileLoadOperation.this, cacheFileFinal);
     }

@@ -573,6 +573,14 @@ public class FileLoader {
                         return getPathToAttach(sizeFull);
                     }
                 }
+            } else if (message.media instanceof TLRPC.TL_messageMediaWebPage && message.media.webpage.photo != null) {
+                ArrayList<TLRPC.PhotoSize> sizes = message.media.webpage.photo.sizes;
+                if (sizes.size() > 0) {
+                    TLRPC.PhotoSize sizeFull = getClosestPhotoSizeWithSize(sizes, AndroidUtilities.getPhotoSize());
+                    if (sizeFull != null) {
+                        return getPathToAttach(sizeFull);
+                    }
+                }
             }
         }
         return new File("");
@@ -617,7 +625,7 @@ public class FileLoader {
                 }
             } else if (attach instanceof TLRPC.PhotoSize) {
                 TLRPC.PhotoSize photoSize = (TLRPC.PhotoSize) attach;
-                if (photoSize.location == null || photoSize.location.key != null || photoSize.location.volume_id == Integer.MIN_VALUE && photoSize.location.local_id < 0) {
+                if (photoSize.location == null || photoSize.location.key != null || photoSize.location.volume_id == Integer.MIN_VALUE && photoSize.location.local_id < 0 || photoSize.size < 0) {
                     dir = getInstance().getDirectory(MEDIA_DIR_CACHE);
                 } else {
                     dir = getInstance().getDirectory(MEDIA_DIR_IMAGE);

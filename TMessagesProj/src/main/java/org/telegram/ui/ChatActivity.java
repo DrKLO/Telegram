@@ -812,22 +812,30 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
 
                             @Override
                             public void onRevealAnimationStart(boolean open) {
-                                chatAttachView.onRevealAnimationStart(open);
+                                if (chatAttachView != null) {
+                                    chatAttachView.onRevealAnimationStart(open);
+                                }
                             }
 
                             @Override
                             public void onRevealAnimationProgress(boolean open, float radius, int x, int y) {
-                                chatAttachView.onRevealAnimationProgress(open, radius, x, y);
+                                if (chatAttachView != null) {
+                                    chatAttachView.onRevealAnimationProgress(open, radius, x, y);
+                                }
                             }
 
                             @Override
                             public void onRevealAnimationEnd(boolean open) {
-                                chatAttachView.onRevealAnimationEnd(open);
+                                if (chatAttachView != null) {
+                                    chatAttachView.onRevealAnimationEnd(open);
+                                }
                             }
 
                             @Override
                             public void onOpenAnimationEnd() {
-                                chatAttachView.onRevealAnimationEnd(true);
+                                if (chatAttachView != null) {
+                                    chatAttachView.onRevealAnimationEnd(true);
+                                }
                             }
 
                             @Override
@@ -1379,17 +1387,15 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                             } catch (Exception e) {
                                 FileLog.e("tmessages", e);
                             }
-                        } else {
-                            if (SecretPhotoViewer.getInstance().isVisible()) {
-                                AndroidUtilities.runOnUIThread(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        chatListView.setOnItemLongClickListener(onItemLongClickListener);
-                                        chatListView.setLongClickable(true);
-                                    }
-                                });
-                                SecretPhotoViewer.getInstance().closePhoto();
-                            }
+                        } else if (SecretPhotoViewer.getInstance().isVisible()) {
+                            AndroidUtilities.runOnUIThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    chatListView.setOnItemLongClickListener(onItemLongClickListener);
+                                    chatListView.setLongClickable(true);
+                                }
+                            });
+                            SecretPhotoViewer.getInstance().closePhoto();
                         }
                     } else if (event.getAction() != MotionEvent.ACTION_DOWN) {
                         if (SecretPhotoViewer.getInstance().isVisible()) {
@@ -1420,12 +1426,10 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     int x = (int) event.getX();
                     int y = (int) event.getY();
                     int count = chatListView.getChildCount();
-                    Rect rect = new Rect();
                     for (int a = 0; a < count; a++) {
                         View view = chatListView.getChildAt(a);
                         int top = view.getTop();
                         int bottom = view.getBottom();
-                        view.getLocalVisibleRect(rect);
                         if (top > y || bottom < y) {
                             continue;
                         }
@@ -3195,8 +3199,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 if (extractUriFrom.contains("com.google.android.apps.photos.contentprovider")) {
                     try {
                         String firstExtraction = extractUriFrom.split("/1/")[1];
-                        if (firstExtraction.contains("/ACTUAL")) {
-                            firstExtraction = firstExtraction.replace("/ACTUAL", "");
+                        int index = firstExtraction.indexOf("/ACTUAL");
+                        if (index != -1) {
+                            firstExtraction = firstExtraction.substring(0, index);
                             String secondExtraction = URLDecoder.decode(firstExtraction, "UTF-8");
                             uri = Uri.parse(secondExtraction);
                         }
@@ -4067,9 +4072,11 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         if (cell.getMessageObject() != null && cell.getMessageObject().getId() == mid) {
                             MessageObject playing = cell.getMessageObject();
                             MessageObject player = MediaController.getInstance().getPlayingMessageObject();
-                            playing.audioProgress = player.audioProgress;
-                            playing.audioProgressSec = player.audioProgressSec;
-                            cell.updateProgress();
+                            if (player != null) {
+                                playing.audioProgress = player.audioProgress;
+                                playing.audioProgressSec = player.audioProgressSec;
+                                cell.updateProgress();
+                            }
                             break;
                         }
                     }
@@ -4823,6 +4830,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 moveScrollToLastMessage();
             }
         } else if (option == 1) {
+            if (getParentActivity() == null) {
+                return;
+            }
             final MessageObject finalSelectedObject = selectedObject;
             AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
             builder.setMessage(LocaleController.formatString("AreYouSureDeleteMessages", R.string.AreYouSureDeleteMessages, LocaleController.formatPluralString("messages", 1)));
@@ -5125,8 +5135,8 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             MessageObject messageToOpen = null;
             ImageReceiver imageReceiver = null;
             View view = chatListView.getChildAt(a);
-            if (view instanceof ChatMediaCell) {
-                ChatMediaCell cell = (ChatMediaCell) view;
+            if (view instanceof ChatBaseCell) {
+                ChatBaseCell cell = (ChatBaseCell) view;
                 MessageObject message = cell.getMessageObject();
                 if (message != null && message.getId() == messageObject.getId()) {
                     messageToOpen = message;
@@ -5359,96 +5369,96 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     public void didPressReplyMessage(ChatBaseCell cell, int id) {
                         scrollToMessageId(id, cell.getMessageObject().getId(), true);
                     }
-                });
-                if (view instanceof ChatMediaCell) {
-                    ((ChatMediaCell) view).setAllowedToSetPhoto(openAnimationEnded);
-                    ((ChatMediaCell) view).setMediaDelegate(new ChatMediaCell.ChatMediaCellDelegate() {
-                        @Override
-                        public void didClickedImage(ChatMediaCell cell) {
-                            MessageObject message = cell.getMessageObject();
-                            if (message.isSendError()) {
-                                createMenu(cell, false);
-                                return;
-                            } else if (message.isSending()) {
-                                return;
-                            }
-                            if (message.type == 1) {
-                                PhotoViewer.getInstance().setParentActivity(getParentActivity());
-                                PhotoViewer.getInstance().openPhoto(message, ChatActivity.this);
-                            } else if (message.type == 3) {
-                                sendSecretMessageRead(message);
-                                try {
-                                    File f = null;
-                                    if (message.messageOwner.attachPath != null && message.messageOwner.attachPath.length() != 0) {
-                                        f = new File(message.messageOwner.attachPath);
-                                    }
-                                    if (f == null || f != null && !f.exists()) {
-                                        f = FileLoader.getPathToMessage(message.messageOwner);
-                                    }
-                                    Intent intent = new Intent(Intent.ACTION_VIEW);
-                                    intent.setDataAndType(Uri.fromFile(f), "video/mp4");
-                                    getParentActivity().startActivityForResult(intent, 500);
-                                } catch (Exception e) {
-                                    alertUserOpenError(message);
-                                }
-                            } else if (message.type == 4) {
-                                if (!isGoogleMapsInstalled()) {
-                                    return;
-                                }
-                                LocationActivity fragment = new LocationActivity();
-                                fragment.setMessageObject(message);
-                                presentFragment(fragment);
-                            } else if (message.type == 9) {
+
+                    @Override
+                    public void didClickedImage(ChatBaseCell cell) {
+                        MessageObject message = cell.getMessageObject();
+                        if (message.isSendError()) {
+                            createMenu(cell, false);
+                            return;
+                        } else if (message.isSending()) {
+                            return;
+                        }
+                        if (message.type == 1 || message.type == 0) {
+                            PhotoViewer.getInstance().setParentActivity(getParentActivity());
+                            PhotoViewer.getInstance().openPhoto(message, ChatActivity.this);
+                        } else if (message.type == 3) {
+                            sendSecretMessageRead(message);
+                            try {
                                 File f = null;
-                                String fileName = message.getFileName();
                                 if (message.messageOwner.attachPath != null && message.messageOwner.attachPath.length() != 0) {
                                     f = new File(message.messageOwner.attachPath);
                                 }
                                 if (f == null || f != null && !f.exists()) {
                                     f = FileLoader.getPathToMessage(message.messageOwner);
                                 }
-                                if (f != null && f.exists()) {
-                                    String realMimeType = null;
-                                    try {
-                                        Intent intent = new Intent(Intent.ACTION_VIEW);
-                                        if (message.type == 8 || message.type == 9) {
-                                            MimeTypeMap myMime = MimeTypeMap.getSingleton();
-                                            int idx = fileName.lastIndexOf(".");
-                                            if (idx != -1) {
-                                                String ext = fileName.substring(idx + 1);
-                                                realMimeType = myMime.getMimeTypeFromExtension(ext.toLowerCase());
-                                                if (realMimeType == null) {
-                                                    realMimeType = message.messageOwner.media.document.mime_type;
-                                                    if (realMimeType == null || realMimeType.length() == 0) {
-                                                        realMimeType = null;
-                                                    }
+                                Intent intent = new Intent(Intent.ACTION_VIEW);
+                                intent.setDataAndType(Uri.fromFile(f), "video/mp4");
+                                getParentActivity().startActivityForResult(intent, 500);
+                            } catch (Exception e) {
+                                alertUserOpenError(message);
+                            }
+                        } else if (message.type == 4) {
+                            if (!isGoogleMapsInstalled()) {
+                                return;
+                            }
+                            LocationActivity fragment = new LocationActivity();
+                            fragment.setMessageObject(message);
+                            presentFragment(fragment);
+                        } else if (message.type == 9) {
+                            File f = null;
+                            String fileName = message.getFileName();
+                            if (message.messageOwner.attachPath != null && message.messageOwner.attachPath.length() != 0) {
+                                f = new File(message.messageOwner.attachPath);
+                            }
+                            if (f == null || f != null && !f.exists()) {
+                                f = FileLoader.getPathToMessage(message.messageOwner);
+                            }
+                            if (f != null && f.exists()) {
+                                String realMimeType = null;
+                                try {
+                                    Intent intent = new Intent(Intent.ACTION_VIEW);
+                                    if (message.type == 8 || message.type == 9) {
+                                        MimeTypeMap myMime = MimeTypeMap.getSingleton();
+                                        int idx = fileName.lastIndexOf(".");
+                                        if (idx != -1) {
+                                            String ext = fileName.substring(idx + 1);
+                                            realMimeType = myMime.getMimeTypeFromExtension(ext.toLowerCase());
+                                            if (realMimeType == null) {
+                                                realMimeType = message.messageOwner.media.document.mime_type;
+                                                if (realMimeType == null || realMimeType.length() == 0) {
+                                                    realMimeType = null;
                                                 }
-                                                if (realMimeType != null) {
-                                                    intent.setDataAndType(Uri.fromFile(f), realMimeType);
-                                                } else {
-                                                    intent.setDataAndType(Uri.fromFile(f), "text/plain");
-                                                }
+                                            }
+                                            if (realMimeType != null) {
+                                                intent.setDataAndType(Uri.fromFile(f), realMimeType);
                                             } else {
                                                 intent.setDataAndType(Uri.fromFile(f), "text/plain");
                                             }
-                                        }
-                                        if (realMimeType != null) {
-                                            try {
-                                                getParentActivity().startActivityForResult(intent, 500);
-                                            } catch (Exception e) {
-                                                intent.setDataAndType(Uri.fromFile(f), "text/plain");
-                                                getParentActivity().startActivityForResult(intent, 500);
-                                            }
                                         } else {
+                                            intent.setDataAndType(Uri.fromFile(f), "text/plain");
+                                        }
+                                    }
+                                    if (realMimeType != null) {
+                                        try {
+                                            getParentActivity().startActivityForResult(intent, 500);
+                                        } catch (Exception e) {
+                                            intent.setDataAndType(Uri.fromFile(f), "text/plain");
                                             getParentActivity().startActivityForResult(intent, 500);
                                         }
-                                    } catch (Exception e) {
-                                        alertUserOpenError(message);
+                                    } else {
+                                        getParentActivity().startActivityForResult(intent, 500);
                                     }
+                                } catch (Exception e) {
+                                    alertUserOpenError(message);
                                 }
                             }
                         }
-
+                    }
+                });
+                if (view instanceof ChatMediaCell) {
+                    ((ChatMediaCell) view).setAllowedToSetPhoto(openAnimationEnded);
+                    ((ChatMediaCell) view).setMediaDelegate(new ChatMediaCell.ChatMediaCellDelegate() {
                         @Override
                         public void didPressedOther(ChatMediaCell cell) {
                             createMenu(cell, true);

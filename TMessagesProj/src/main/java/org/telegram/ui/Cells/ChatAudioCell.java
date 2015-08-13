@@ -22,16 +22,18 @@ import org.telegram.android.AndroidUtilities;
 import org.telegram.android.ImageLoader;
 import org.telegram.android.MessagesController;
 import org.telegram.android.SendMessagesHelper;
+import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.FileLoader;
 import org.telegram.android.MediaController;
 import org.telegram.android.MessageObject;
+import org.telegram.messenger.FileLog;
 import org.telegram.ui.Components.RadialProgress;
 import org.telegram.ui.Components.ResourceLoader;
 import org.telegram.ui.Components.SeekBar;
 
 import java.io.File;
 
-public class ChatAudioCell extends ChatBaseCell implements SeekBar.SeekBarDelegate, MediaController.FileDownloadProgressListener {
+public class ChatAudioCell extends ChatBaseCell implements SeekBar.SeekBarDelegate {
 
     private static TextPaint timePaint;
     private static Paint circlePaint;
@@ -51,11 +53,8 @@ public class ChatAudioCell extends ChatBaseCell implements SeekBar.SeekBarDelega
     private int timeWidth;
     private String lastTimeString = null;
 
-    private int TAG;
-
     public ChatAudioCell(Context context) {
         super(context);
-        TAG = MediaController.getInstance().generateObserverTag();
 
         seekBar = new SeekBar(context);
         seekBar.delegate = this;
@@ -217,6 +216,9 @@ public class ChatAudioCell extends ChatBaseCell implements SeekBar.SeekBarDelega
             if (cacheFile == null) {
                 cacheFile = FileLoader.getPathToMessage(currentMessageObject.messageOwner);
             }
+            if (BuildVars.DEBUG_VERSION) {
+                FileLog.d("tmessages", "looking for audio in " + cacheFile);
+            }
             if (cacheFile.exists()) {
                 MediaController.getInstance().removeLoadingFileObserver(this);
                 boolean playing = MediaController.getInstance().isPlayingAudio(currentMessageObject);
@@ -270,11 +272,6 @@ public class ChatAudioCell extends ChatBaseCell implements SeekBar.SeekBarDelega
     @Override
     public void onProgressUpload(String fileName, float progress, boolean isEncrypted) {
         radialProgress.setProgress(progress, true);
-    }
-
-    @Override
-    public int getObserverTag() {
-        return TAG;
     }
 
     @Override
@@ -369,7 +366,7 @@ public class ChatAudioCell extends ChatBaseCell implements SeekBar.SeekBarDelega
             timePaint.setColor(0xffa1aab3);
             circlePaint.setColor(0xff4195e5);
         }
-        radialProgress.onDraw(canvas);
+        radialProgress.draw(canvas);
 
         canvas.save();
         canvas.translate(timeX, AndroidUtilities.dp(42) + namesOffset);

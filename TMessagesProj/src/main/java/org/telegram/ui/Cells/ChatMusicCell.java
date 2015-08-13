@@ -32,7 +32,7 @@ import org.telegram.ui.Components.SeekBar;
 
 import java.io.File;
 
-public class ChatMusicCell extends ChatBaseCell implements SeekBar.SeekBarDelegate, MediaController.FileDownloadProgressListener {
+public class ChatMusicCell extends ChatBaseCell implements SeekBar.SeekBarDelegate {
 
     public interface ChatMusicCellDelegate {
         boolean needPlayMusic(MessageObject messageObject);
@@ -62,13 +62,10 @@ public class ChatMusicCell extends ChatBaseCell implements SeekBar.SeekBarDelega
     private StaticLayout authorLayout;
     private int authorX;
 
-    private int TAG;
-
     private ChatMusicCellDelegate musicDelegate;
 
     public ChatMusicCell(Context context) {
         super(context);
-        TAG = MediaController.getInstance().generateObserverTag();
 
         seekBar = new SeekBar(context);
         seekBar.delegate = this;
@@ -300,11 +297,6 @@ public class ChatMusicCell extends ChatBaseCell implements SeekBar.SeekBarDelega
     }
 
     @Override
-    public int getObserverTag() {
-        return TAG;
-    }
-
-    @Override
     public void onSeekBarDrag(float progress) {
         if (currentMessageObject == null) {
             return;
@@ -403,7 +395,7 @@ public class ChatMusicCell extends ChatBaseCell implements SeekBar.SeekBarDelega
         } else {
             timePaint.setColor(0xffa1aab3);
         }
-        radialProgress.onDraw(canvas);
+        radialProgress.draw(canvas);
 
         canvas.save();
         canvas.translate(timeX + titleX, AndroidUtilities.dp(12) + namesOffset);

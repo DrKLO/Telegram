@@ -18,15 +18,9 @@ package org.telegram.android.volley.toolbox;
 
 import android.os.SystemClock;
 
-import org.apache.http.Header;
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
-import org.apache.http.HttpStatus;
-import org.apache.http.StatusLine;
-import org.apache.http.conn.ConnectTimeoutException;
-import org.apache.http.impl.cookie.DateUtils;
 import org.telegram.android.volley.AuthFailureError;
 import org.telegram.android.volley.Cache;
+import org.telegram.android.volley.Cache.Entry;
 import org.telegram.android.volley.Network;
 import org.telegram.android.volley.NetworkError;
 import org.telegram.android.volley.NetworkResponse;
@@ -37,6 +31,14 @@ import org.telegram.android.volley.ServerError;
 import org.telegram.android.volley.TimeoutError;
 import org.telegram.android.volley.VolleyError;
 import org.telegram.android.volley.VolleyLog;
+
+import org.apache.http.Header;
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.HttpStatus;
+import org.apache.http.StatusLine;
+import org.apache.http.conn.ConnectTimeoutException;
+import org.apache.http.impl.cookie.DateUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -49,14 +51,14 @@ import java.util.Map;
 import java.util.TreeMap;
 
 /**
- * A network performing Volley requests over an {@link org.telegram.android.volley.toolbox.HttpStack}.
+ * A network performing Volley requests over an {@link HttpStack}.
  */
 public class BasicNetwork implements Network {
     protected static final boolean DEBUG = VolleyLog.DEBUG;
 
-    private static final int SLOW_REQUEST_THRESHOLD_MS = 3000;
+    private static int SLOW_REQUEST_THRESHOLD_MS = 3000;
 
-    private static final int DEFAULT_POOL_SIZE = 4096;
+    private static int DEFAULT_POOL_SIZE = 4096;
 
     protected final HttpStack mHttpStack;
 
@@ -99,7 +101,7 @@ public class BasicNetwork implements Network {
                 // Handle cache validation.
                 if (statusCode == HttpStatus.SC_NOT_MODIFIED) {
 
-                    Cache.Entry entry = request.getCacheEntry();
+                    Entry entry = request.getCacheEntry();
                     if (entry == null) {
                         return new NetworkResponse(HttpStatus.SC_NOT_MODIFIED, null,
                                 responseHeaders, true,
@@ -210,8 +212,8 @@ public class BasicNetwork implements Network {
             headers.put("If-None-Match", entry.etag);
         }
 
-        if (entry.serverDate > 0) {
-            Date refTime = new Date(entry.serverDate);
+        if (entry.lastModified > 0) {
+            Date refTime = new Date(entry.lastModified);
             headers.put("If-Modified-Since", DateUtils.formatDate(refTime));
         }
     }
@@ -256,8 +258,8 @@ public class BasicNetwork implements Network {
      */
     protected static Map<String, String> convertHeaders(Header[] headers) {
         Map<String, String> result = new TreeMap<String, String>(String.CASE_INSENSITIVE_ORDER);
-        for (Header header : headers) {
-            result.put(header.getName(), header.getValue());
+        for (int i = 0; i < headers.length; i++) {
+            result.put(headers[i].getName(), headers[i].getValue());
         }
         return result;
     }

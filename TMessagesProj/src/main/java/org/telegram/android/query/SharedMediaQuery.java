@@ -32,6 +32,7 @@ public class SharedMediaQuery {
     public final static int MEDIA_PHOTOVIDEO = 0;
     public final static int MEDIA_FILE = 1;
     public final static int MEDIA_AUDIO = 2;
+    public final static int MEDIA_URL = 3;
 
     public static void loadMedia(final long uid, final int offset, final int count, final int max_id, final int type, final boolean fromCache, final int classGuid) {
         int lower_part = (int)uid;
@@ -48,6 +49,8 @@ public class SharedMediaQuery {
                 req.filter = new TLRPC.TL_inputMessagesFilterDocument();
             } else if (type == MEDIA_AUDIO) {
                 req.filter = new TLRPC.TL_inputMessagesFilterAudio();
+            } else if (type == MEDIA_URL) {
+                req.filter = new TLRPC.TL_inputMessagesFilterUrl();
             }
             req.q = "";
             if (uid < 0) {
@@ -94,6 +97,8 @@ public class SharedMediaQuery {
                 req.filter = new TLRPC.TL_inputMessagesFilterDocument();
             } else if (type == MEDIA_AUDIO) {
                 req.filter = new TLRPC.TL_inputMessagesFilterAudio();
+            } else if (type == MEDIA_URL) {
+                req.filter = new TLRPC.TL_inputMessagesFilterUrl();
             }
             req.q = "";
             if (uid < 0) {
@@ -144,15 +149,17 @@ public class SharedMediaQuery {
             return -1;
         }
         if (message.media instanceof TLRPC.TL_messageMediaPhoto || message.media instanceof TLRPC.TL_messageMediaVideo) {
-            return SharedMediaQuery.MEDIA_PHOTOVIDEO;
+            return MEDIA_PHOTOVIDEO;
         } else if (message.media instanceof TLRPC.TL_messageMediaDocument) {
             if (MessageObject.isStickerMessage(message)) {
                 return -1;
             } else {
-                return SharedMediaQuery.MEDIA_FILE;
+                return MEDIA_FILE;
             }
         } else if (message.media instanceof TLRPC.TL_messageMediaAudio) {
-            return SharedMediaQuery.MEDIA_AUDIO;
+            return MEDIA_AUDIO;
+        } else if (message.media instanceof TLRPC.TL_messageMediaWebPage) {
+            return MEDIA_URL;
         }
         return -1;
     }
@@ -160,7 +167,11 @@ public class SharedMediaQuery {
     public static boolean canAddMessageToMedia(TLRPC.Message message) {
         if (message instanceof TLRPC.TL_message_secret && message.media instanceof TLRPC.TL_messageMediaPhoto && message.ttl != 0 && message.ttl <= 60) {
             return false;
-        } else if (message.media instanceof TLRPC.TL_messageMediaPhoto || message.media instanceof TLRPC.TL_messageMediaVideo || message.media instanceof TLRPC.TL_messageMediaDocument || message.media instanceof TLRPC.TL_messageMediaAudio) {
+        } else if (message.media instanceof TLRPC.TL_messageMediaPhoto ||
+                message.media instanceof TLRPC.TL_messageMediaVideo ||
+                message.media instanceof TLRPC.TL_messageMediaDocument ||
+                message.media instanceof TLRPC.TL_messageMediaAudio/* ||
+                message.media instanceof TLRPC.TL_messageMediaWebPage && !(message.media.webpage instanceof TLRPC.TL_webPageEmpty)*/) {
             return true;
         }
         return false;

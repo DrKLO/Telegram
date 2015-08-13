@@ -13,7 +13,6 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import org.telegram.android.MediaController;
-import org.telegram.android.NotificationCenter;
 import org.telegram.android.support.widget.RecyclerView;
 import org.telegram.ui.Cells.PhotoAttachPhotoCell;
 
@@ -73,24 +72,27 @@ public class PhotoAttachAdapter extends RecyclerView.Adapter {
             view = new PhotoAttachCameraCell(mContext);
         } else {*/
             PhotoAttachPhotoCell cell = new PhotoAttachPhotoCell(mContext);
-            cell.setOnCheckClickLisnener(new View.OnClickListener() {
+            /*cell.setOnCheckClickLisnener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    PhotoAttachPhotoCell cell = (PhotoAttachPhotoCell) v.getParent();
-                    MediaController.PhotoEntry photoEntry = cell.getPhotoEntry();
-                    if (selectedPhotos.containsKey(photoEntry.imageId)) {
-                        selectedPhotos.remove(photoEntry.imageId);
-                        cell.setChecked(false, true);
-                    } else {
-                        selectedPhotos.put(photoEntry.imageId, photoEntry);
-                        cell.setChecked(true, true);
-                    }
-                    delegate.selectedPhotosChanged();
+                    onItemClick((PhotoAttachPhotoCell) v.getParent());
                 }
             });
-            view = cell;
+            view = cell;*/
         //}
-        return new Holder(view);
+        return new Holder(cell);
+    }
+
+    public void onItemClick(PhotoAttachPhotoCell cell) {
+        MediaController.PhotoEntry photoEntry = cell.getPhotoEntry();
+        if (selectedPhotos.containsKey(photoEntry.imageId)) {
+            selectedPhotos.remove(photoEntry.imageId);
+            cell.setChecked(false, true);
+        } else {
+            selectedPhotos.put(photoEntry.imageId, photoEntry);
+            cell.setChecked(true, true);
+        }
+        delegate.selectedPhotosChanged();
     }
 
     @Override

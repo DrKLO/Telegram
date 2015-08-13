@@ -16,17 +16,20 @@
 
 package org.telegram.android.volley.toolbox;
 
+import org.telegram.android.volley.AuthFailureError;
+import org.telegram.android.volley.Request;
+import org.telegram.android.volley.Request.Method;
+
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
+import org.apache.http.HttpStatus;
 import org.apache.http.ProtocolVersion;
 import org.apache.http.StatusLine;
 import org.apache.http.entity.BasicHttpEntity;
 import org.apache.http.message.BasicHeader;
 import org.apache.http.message.BasicHttpResponse;
 import org.apache.http.message.BasicStatusLine;
-import org.telegram.android.volley.AuthFailureError;
-import org.telegram.android.volley.Request;
 
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -42,7 +45,7 @@ import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLSocketFactory;
 
 /**
- * An {@link org.telegram.android.volley.toolbox.HttpStack} based on {@link HttpURLConnection}.
+ * An {@link HttpStack} based on {@link HttpURLConnection}.
  */
 public class HurlStack implements HttpStack {
 
@@ -56,7 +59,7 @@ public class HurlStack implements HttpStack {
          * Returns a URL to use instead of the provided one, or null to indicate
          * this URL should not be used at all.
          */
-        String rewriteUrl(String originalUrl);
+        public String rewriteUrl(String originalUrl);
     }
 
     private final UrlRewriter mUrlRewriter;
@@ -113,7 +116,9 @@ public class HurlStack implements HttpStack {
         StatusLine responseStatus = new BasicStatusLine(protocolVersion,
                 connection.getResponseCode(), connection.getResponseMessage());
         BasicHttpResponse response = new BasicHttpResponse(responseStatus);
-        response.setEntity(entityFromConnection(connection));
+        if (hasResponseBody(request.getMethod(), responseStatus.getStatusCode())) {
+            response.setEntity(entityFromConnection(connection));
+        }
         for (Entry<String, List<String>> header : connection.getHeaderFields().entrySet()) {
             if (header.getKey() != null) {
                 Header h = new BasicHeader(header.getKey(), header.getValue().get(0));
@@ -121,6 +126,20 @@ public class HurlStack implements HttpStack {
             }
         }
         return response;
+    }
+
+    /**
+     * Checks if a response message contains a body.
+     * @see <a href="https://tools.ietf.org/html/rfc7230#section-3.3">RFC 7230 section 3.3</a>
+     * @param requestMethod request method
+     * @param responseCode response status code
+     * @return whether the response has a body
+     */
+    private static boolean hasResponseBody(int requestMethod, int responseCode) {
+        return requestMethod != Request.Method.HEAD
+            && !(HttpStatus.SC_CONTINUE <= responseCode && responseCode < HttpStatus.SC_OK)
+            && responseCode != HttpStatus.SC_NO_CONTENT
+            && responseCode != HttpStatus.SC_NOT_MODIFIED;
     }
 
     /**
@@ -177,7 +196,7 @@ public class HurlStack implements HttpStack {
     /* package */ static void setConnectionParametersForRequest(HttpURLConnection connection,
             Request<?> request) throws IOException, AuthFailureError {
         switch (request.getMethod()) {
-            case Request.Method.DEPRECATED_GET_OR_POST:
+            case Method.DEPRECATED_GET_OR_POST:
                 // This is the deprecated way that needs to be handled for backwards compatibility.
                 // If the request's post body is null, then the assumption is that the request is
                 // GET.  Otherwise, it is assumed that the request is a POST.
@@ -195,32 +214,32 @@ public class HurlStack implements HttpStack {
                     out.close();
                 }
                 break;
-            case Request.Method.GET:
+            case Method.GET:
                 // Not necessary to set the request method because connection defaults to GET but
                 // being explicit here.
                 connection.setRequestMethod("GET");
                 break;
-            case Request.Method.DELETE:
+            case Method.DELETE:
                 connection.setRequestMethod("DELETE");
                 break;
-            case Request.Method.POST:
+            case Method.POST:
                 connection.setRequestMethod("POST");
                 addBodyIfExists(connection, request);
                 break;
-            case Request.Method.PUT:
+            case Method.PUT:
                 connection.setRequestMethod("PUT");
                 addBodyIfExists(connection, request);
                 break;
-            case Request.Method.HEAD:
+            case Method.HEAD:
                 connection.setRequestMethod("HEAD");
                 break;
-            case Request.Method.OPTIONS:
+            case Method.OPTIONS:
                 connection.setRequestMethod("OPTIONS");
                 break;
-            case Request.Method.TRACE:
+            case Method.TRACE:
                 connection.setRequestMethod("TRACE");
                 break;
-            case Request.Method.PATCH:
+            case Method.PATCH:
                 connection.setRequestMethod("PATCH");
                 addBodyIfExists(connection, request);
                 break;

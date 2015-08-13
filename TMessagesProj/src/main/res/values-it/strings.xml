@@ -59,6 +59,7 @@
     <string name="WillUnmuteIn">Tra %1$s</string>
     <string name="MuteDisable">Disabilita</string>
     <string name="Hashtags">HASHTAG</string>
+    <string name="Recent">RECENTI</string>
     <!--broadcasts-->
     <string name="NewBroadcastList">Nuova lista broadcast</string>
     <string name="EnterListName">Immetti il nome della lista</string>
@@ -164,7 +165,7 @@
     <string name="NotificationEditedGroupName">%1$s ha modificato il nome del gruppo %2$s</string>
     <string name="NotificationEditedGroupPhoto">%1$s ha modificato la foto del gruppo %2$s</string>
     <string name="NotificationGroupAddMember">%1$s ha invitato %3$s nel gruppo %2$s</string>
-    <string name="NotificationGroupAddSelf">%1$s è rientrato nel gruppo %2$s</string>
+    <string name="NotificationGroupAddSelf">%1$s è tornato nel gruppo %2$s</string>
     <string name="NotificationGroupKickMember">%1$s ha rimosso %3$s dal gruppo %2$s</string>
     <string name="NotificationGroupKickYou">%1$s ti ha rimosso dal gruppo %2$s</string>
     <string name="NotificationGroupLeftMember">%1$s ha lasciato il gruppo %2$s</string>
@@ -391,9 +392,11 @@
     <string name="AutoLockDisabled">Disabilitato</string>
     <!--media view-->
     <string name="NoMedia">Condividi foto e video in questa chat e accedi ad essi da ogni tuo dispositivo.</string>
-    <string name="DocumentsTitle">File</string>
+    <string name="DocumentsTitle">File condivisi</string>
     <string name="SharedMediaTitle">Media condivisi</string>
+    <string name="LinksTitle">Link condivisi</string>
     <string name="NoSharedFiles">Condividi file e documenti in questa chat e accedi ad essi da ogni tuo dispositivo.</string>
+    <string name="NoSharedLinks">Condividi link in questa chat ed accedi ad essi da ogni tuo dispositivo.</string>
     <!--map view-->
     <string name="Map">Mappa</string>
     <string name="Satellite">Satellite</string>
@@ -586,8 +589,8 @@
     <string name="ActionYouCreateGroup">Hai creato il gruppo</string>
     <string name="ActionKickUserYou">un1 ti ha rimosso</string>
     <string name="ActionAddUserYou">un1 ti ha aggiunto</string>
-    <string name="ActionAddUserSelf">un1 è rientrato nel gruppo</string>
-    <string name="ActionAddUserSelfYou">Sei rientrato nel gruppo</string>
+    <string name="ActionAddUserSelf">un1 è tornato nel gruppo</string>
+    <string name="ActionAddUserSelfYou">Sei tornato nel gruppo</string>
     <string name="UnsuppotedMedia">Questo messaggio non è supportato sulla tua versione di Telegram. Aggiorna l\'applicazione per visualizzarlo: https://telegram.org/update</string>
     <string name="AttachPhoto">Foto</string>
     <string name="AttachVideo">Video</string>
@@ -834,6 +837,6 @@
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s alle %2$s</string>
     <!--update text-->
-    <string name="updateText">Telegram per Android si è aggiornato. Nuovo nella versione 3.1:\n\n- Cerca messaggi all\'interno di una specifica chat.\n- Menu degli allegati completamente ridisegnato. Invia contatti e audio direttamente dal menu degli allegati.\n- Riproduzione in-app migliorata (YouTube, Vimeo, SoundCloud etc.), nuovo player per i file audio.\n\nMaggiori informazioni su questo aggiornamento:\nhttps://telegram.org/blog/search-and-media</string>
-    <string name="updateBuild">577</string>
+    <string name="updateText">Telegram per Android si è aggiornato. Nuovo nella versione 3.1.2:\n\n- Risultati recenti nella ricerca\n- Tieni premuto su uno sticker per visualizzare l\'anteprima prima di inviarlo</string>
+    <string name="updateBuild">583</string>
 </resources>

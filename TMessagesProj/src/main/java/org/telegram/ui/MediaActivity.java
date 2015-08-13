@@ -18,6 +18,7 @@ import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.provider.Browser;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -57,6 +58,7 @@ import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.ActionBar.ActionBarPopupWindow;
 import org.telegram.ui.ActionBar.ActionBar;
+import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.Adapters.BaseFragmentAdapter;
 import org.telegram.ui.Adapters.BaseSectionsAdapter;
 import org.telegram.android.AnimationCompat.AnimatorSetProxy;
@@ -64,12 +66,14 @@ import org.telegram.android.AnimationCompat.ObjectAnimatorProxy;
 import org.telegram.ui.Cells.GreySectionCell;
 import org.telegram.ui.Cells.LoadingCell;
 import org.telegram.ui.Cells.SharedDocumentCell;
+import org.telegram.ui.Cells.SharedLinkCell;
 import org.telegram.ui.Cells.SharedMediaSectionCell;
 import org.telegram.ui.Cells.SharedPhotoVideoCell;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.SectionsListView;
+import org.telegram.ui.Components.WebFrameLayout;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -81,8 +85,10 @@ import java.util.TimerTask;
 public class MediaActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate, PhotoViewer.PhotoViewerProvider {
 
     private SharedPhotoVideoAdapter photoVideoAdapter;
+    private SharedLinksAdapter linksAdapter;
     private SharedDocumentsAdapter documentsAdapter;
-    private DocumentsSearchAdapter documentsSearchAdapter;
+    private MediaSearchAdapter documentsSearchAdapter;
+    private MediaSearchAdapter linksSearchAdapter;
     private SectionsListView listView;
     private LinearLayout progressView;
     private TextView emptyTextView;
@@ -179,10 +185,11 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
         }
     }
 
-    private SharedMediaData sharedMediaData[] = new SharedMediaData[3];
+    private SharedMediaData sharedMediaData[] = new SharedMediaData[4];
 
     private final static int shared_media_item = 1;
     private final static int files_item = 2;
+    private final static int links_item = 5;
     private final static int forward = 3;
     private final static int delete = 4;
 
@@ -230,6 +237,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                         listView = null;
                         photoVideoAdapter = null;
                         documentsAdapter = null;
+                        linksAdapter = null;
                     }
                     finishFragment();
                 } else if (id == -2) {
@@ -247,6 +255,12 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                         return;
                     }
                     selectedMode = 1;
+                    switchToCurrentSelectedMode();
+                } else if (id == links_item) {
+                    if (selectedMode == 3) {
+                        return;
+                    }
+                    selectedMode = 3;
                     switchToCurrentSelectedMode();
                 } else if (id == delete) {
                     if (getParentActivity() == null) {
@@ -348,7 +362,11 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
             @Override
             public void onSearchCollapse() {
                 dropDownContainer.setVisibility(View.VISIBLE);
-                documentsSearchAdapter.searchDocuments(null);
+                if (selectedMode == 1) {
+                    documentsSearchAdapter.search(null);
+                } else if (selectedMode == 3) {
+                    linksSearchAdapter.search(null);
+                }
                 searching = false;
                 searchWas = false;
                 switchToCurrentSelectedMode();
@@ -356,15 +374,22 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
 
             @Override
             public void onTextChanged(EditText editText) {
-                if (documentsSearchAdapter == null) {
-                    return;
-                }
                 String text = editText.getText().toString();
                 if (text.length() != 0) {
                     searchWas = true;
                     switchToCurrentSelectedMode();
                 }
-                documentsSearchAdapter.searchDocuments(text);
+                if (selectedMode == 1) {
+                    if (documentsSearchAdapter == null) {
+                        return;
+                    }
+                    documentsSearchAdapter.search(text);
+                } else if (selectedMode == 3) {
+                    if (linksSearchAdapter == null) {
+                        return;
+                    }
+                    linksSearchAdapter.search(text);
+                }
             }
         });
         searchItem.getSearchField().setHint(LocaleController.getString("Search", R.string.Search));
@@ -374,6 +399,9 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
         dropDownContainer.setSubMenuOpenSide(1);
         dropDownContainer.addSubItem(shared_media_item, LocaleController.getString("SharedMediaTitle", R.string.SharedMediaTitle), 0);
         dropDownContainer.addSubItem(files_item, LocaleController.getString("DocumentsTitle", R.string.DocumentsTitle), 0);
+        //if ((int) dialog_id != 0) {
+        //    dropDownContainer.addSubItem(links_item, LocaleController.getString("LinksTitle", R.string.LinksTitle), 0);
+        //}
         actionBar.addView(dropDownContainer, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT, AndroidUtilities.isTablet() ? 64 : 56, 0, 40, 0));
         dropDownContainer.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -422,7 +450,9 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
 
         photoVideoAdapter = new SharedPhotoVideoAdapter(context);
         documentsAdapter = new SharedDocumentsAdapter(context);
-        documentsSearchAdapter = new DocumentsSearchAdapter(context);
+        documentsSearchAdapter = new MediaSearchAdapter(context, 1);
+        linksSearchAdapter = new MediaSearchAdapter(context, 3);
+        linksAdapter = new SharedLinksAdapter(context);
 
         FrameLayout frameLayout;
         fragmentView = frameLayout = new FrameLayout(context);
@@ -437,9 +467,9 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, final int i, long l) {
                 if (selectedMode == 1 && view instanceof SharedDocumentCell) {
-                    SharedDocumentCell cell = (SharedDocumentCell) view;
-                    MessageObject message = cell.getDocument();
-                    MediaActivity.this.onItemClick(i, view, message, 0);
+                    MediaActivity.this.onItemClick(i, view, ((SharedDocumentCell) view).getDocument(), 0);
+                } else if (selectedMode == 3 && view instanceof SharedLinkCell) {
+                    MediaActivity.this.onItemClick(i, view, ((SharedLinkCell) view).getMessage(), 0);
                 }
             }
         });
@@ -464,8 +494,10 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                         type = SharedMediaQuery.MEDIA_PHOTOVIDEO;
                     } else if (selectedMode == 1) {
                         type = SharedMediaQuery.MEDIA_FILE;
-                    } else {
+                    } else if (selectedMode == 2) {
                         type = SharedMediaQuery.MEDIA_AUDIO;
+                    } else {
+                        type = SharedMediaQuery.MEDIA_URL;
                     }
                     SharedMediaQuery.loadMedia(dialog_id, 0, 50, sharedMediaData[selectedMode].max_id, type, !sharedMediaData[selectedMode].cacheEndReached, classGuid);
                 }
@@ -564,8 +596,12 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                     if (documentsAdapter != null) {
                         documentsAdapter.notifyDataSetChanged();
                     }
+                }  else if (selectedMode == 3 && type == 3) {
+                    if (linksAdapter != null) {
+                        linksAdapter.notifyDataSetChanged();
+                    }
                 }
-                if (selectedMode == 1) {
+                if (selectedMode == 1 || selectedMode == 3) {
                     searchItem.setVisibility(!sharedMediaData[selectedMode].messages.isEmpty() && !searching ? View.VISIBLE : View.GONE);
                 }
             }
@@ -587,7 +623,10 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                 if (documentsAdapter != null) {
                     documentsAdapter.notifyDataSetChanged();
                 }
-                if (selectedMode == 1) {
+                if (linksAdapter != null) {
+                    linksAdapter.notifyDataSetChanged();
+                }
+                if (selectedMode == 1 || selectedMode == 3) {
                     searchItem.setVisibility(!sharedMediaData[selectedMode].messages.isEmpty() && !searching ? View.VISIBLE : View.GONE);
                 }
             }
@@ -617,7 +656,10 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                     if (documentsAdapter != null) {
                         documentsAdapter.notifyDataSetChanged();
                     }
-                    if (selectedMode == 1) {
+                    if (linksAdapter != null) {
+                        linksAdapter.notifyDataSetChanged();
+                    }
+                    if (selectedMode == 1 || selectedMode == 3) {
                         searchItem.setVisibility(!sharedMediaData[selectedMode].messages.isEmpty() && !searching ? View.VISIBLE : View.GONE);
                     }
                 }
@@ -640,6 +682,9 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
         }
         if (documentsAdapter != null) {
             documentsAdapter.notifyDataSetChanged();
+        }
+        if (linksAdapter != null) {
+            linksAdapter.notifyDataSetChanged();
         }
         fixLayoutInternal();
     }
@@ -728,8 +773,13 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
     private void switchToCurrentSelectedMode() {
         if (searching && searchWas) {
             if (listView != null) {
-                listView.setAdapter(documentsSearchAdapter);
-                documentsSearchAdapter.notifyDataSetChanged();
+                if (selectedMode == 1) {
+                    listView.setAdapter(documentsSearchAdapter);
+                    documentsSearchAdapter.notifyDataSetChanged();
+                } else if (selectedMode == 3) {
+                    listView.setAdapter(linksSearchAdapter);
+                    linksSearchAdapter.notifyDataSetChanged();
+                }
             }
             if (emptyTextView != null) {
                 emptyTextView.setText(LocaleController.getString("NoResult", R.string.NoResult));
@@ -760,10 +810,30 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                 dropDown.setText(LocaleController.getString("DocumentsTitle", R.string.DocumentsTitle));
                 emptyImageView.setImageResource(R.drawable.tip2);
                 emptyTextView.setText(LocaleController.getString("NoSharedFiles", R.string.NoSharedFiles));
-                searchItem.setVisibility(!sharedMediaData[1].messages.isEmpty() ? View.VISIBLE : View.GONE);
-                if (!sharedMediaData[1].loading && !sharedMediaData[1].endReached && sharedMediaData[1].messages.isEmpty()) {
+                searchItem.setVisibility(!sharedMediaData[selectedMode].messages.isEmpty() ? View.VISIBLE : View.GONE);
+                if (!sharedMediaData[selectedMode].loading && !sharedMediaData[selectedMode].endReached && sharedMediaData[selectedMode].messages.isEmpty()) {
                     sharedMediaData[selectedMode].loading = true;
                     SharedMediaQuery.loadMedia(dialog_id, 0, 50, 0, SharedMediaQuery.MEDIA_FILE, true, classGuid);
+                }
+                listView.setVisibility(View.VISIBLE);
+                if (sharedMediaData[selectedMode].loading && sharedMediaData[selectedMode].messages.isEmpty()) {
+                    progressView.setVisibility(View.VISIBLE);
+                    listView.setEmptyView(null);
+                    emptyView.setVisibility(View.GONE);
+                } else {
+                    progressView.setVisibility(View.GONE);
+                    listView.setEmptyView(emptyView);
+                }
+                listView.setPadding(0, 0, 0, AndroidUtilities.dp(4));
+            } else if (selectedMode == 3) {
+                listView.setAdapter(linksAdapter);
+                dropDown.setText(LocaleController.getString("LinksTitle", R.string.LinksTitle));
+                emptyImageView.setImageResource(R.drawable.tip2);
+                emptyTextView.setText(LocaleController.getString("NoSharedLinks", R.string.NoSharedLinks));
+                searchItem.setVisibility(!sharedMediaData[3].messages.isEmpty() ? View.VISIBLE : View.GONE);
+                if (!sharedMediaData[selectedMode].loading && !sharedMediaData[selectedMode].endReached && sharedMediaData[selectedMode].messages.isEmpty()) {
+                    sharedMediaData[selectedMode].loading = true;
+                    SharedMediaQuery.loadMedia(dialog_id, 0, 50, 0, SharedMediaQuery.MEDIA_URL, false, classGuid);
                 }
                 listView.setVisibility(View.VISIBLE);
                 if (sharedMediaData[selectedMode].loading && sharedMediaData[selectedMode].messages.isEmpty()) {
@@ -905,6 +975,23 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                         cell.updateFileExistIcon();
                     }
                 }
+            } else if (selectedMode == 3) {
+                try {
+                    TLRPC.WebPage webPage = message.messageOwner.media.webpage;
+                    if (Build.VERSION.SDK_INT >= 16 && webPage.embed_url != null && webPage.embed_url.length() != 0) {
+                        BottomSheet.Builder builder = new BottomSheet.Builder(getParentActivity());
+                        builder.setCustomView(new WebFrameLayout(getParentActivity(), builder.create(), webPage.title, webPage.url, webPage.embed_url, webPage.embed_width, webPage.embed_height));
+                        builder.setUseFullWidth(true);
+                        showDialog(builder.create());
+                    } else {
+                        Uri uri = Uri.parse(webPage.url);
+                        Intent intent = new Intent(Intent.ACTION_VIEW, uri);
+                        intent.putExtra(Browser.EXTRA_APPLICATION_ID, getParentActivity().getPackageName());
+                        getParentActivity().startActivity(intent);
+                    }
+                } catch (Exception e) {
+                    FileLog.e("tmessages", e);
+                }
             }
         }
     }
@@ -942,6 +1029,100 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
             } else {
                 dropDown.setTextSize(20);
             }
+        }
+    }
+
+    private class SharedLinksAdapter extends BaseSectionsAdapter {
+        private Context mContext;
+
+        public SharedLinksAdapter(Context context) {
+            mContext = context;
+        }
+
+        @Override
+        public Object getItem(int section, int position) {
+            return null;
+        }
+
+        @Override
+        public boolean isRowEnabled(int section, int row) {
+            return row != 0;
+        }
+
+        @Override
+        public int getSectionCount() {
+            return sharedMediaData[3].sections.size() + (sharedMediaData[3].sections.isEmpty() || sharedMediaData[3].endReached ? 0 : 1);
+        }
+
+        @Override
+        public int getCountForSection(int section) {
+            if (section < sharedMediaData[3].sections.size()) {
+                return sharedMediaData[3].sectionArrays.get(sharedMediaData[3].sections.get(section)).size() + 1;
+            }
+            return 1;
+        }
+
+        @Override
+        public View getSectionHeaderView(int section, View convertView, ViewGroup parent) {
+            if (convertView == null) {
+                convertView = new GreySectionCell(mContext);
+            }
+            if (section < sharedMediaData[3].sections.size()) {
+                String name = sharedMediaData[3].sections.get(section);
+                ArrayList<MessageObject> messageObjects = sharedMediaData[3].sectionArrays.get(name);
+                MessageObject messageObject = messageObjects.get(0);
+                ((GreySectionCell) convertView).setText(LocaleController.formatterMonthYear.format((long) messageObject.messageOwner.date * 1000).toUpperCase());
+            }
+            return convertView;
+        }
+
+        @Override
+        public View getItemView(int section, int position, View convertView, ViewGroup parent) {
+            if (section < sharedMediaData[3].sections.size()) {
+                String name = sharedMediaData[3].sections.get(section);
+                ArrayList<MessageObject> messageObjects = sharedMediaData[3].sectionArrays.get(name);
+                if (position == 0) {
+                    if (convertView == null) {
+                        convertView = new GreySectionCell(mContext);
+                    }
+                    MessageObject messageObject = messageObjects.get(0);
+                    ((GreySectionCell) convertView).setText(LocaleController.formatterMonthYear.format((long) messageObject.messageOwner.date * 1000).toUpperCase());
+                } else {
+                    if (convertView == null) {
+                        convertView = new SharedLinkCell(mContext);
+                    }
+                    SharedLinkCell sharedDocumentCell = (SharedLinkCell) convertView;
+                    MessageObject messageObject = messageObjects.get(position - 1);
+                    sharedDocumentCell.setLink(messageObject, position != messageObjects.size() || section == sharedMediaData[3].sections.size() - 1 && sharedMediaData[3].loading);
+                    /*if (actionBar.isActionModeShowed()) {
+                        sharedDocumentCell.setChecked(selectedFiles.containsKey(messageObject.getId()), !scrolling);
+                    } else {
+                        sharedDocumentCell.setChecked(false, !scrolling);
+                    }*/
+                }
+            } else {
+                if (convertView == null) {
+                    convertView = new LoadingCell(mContext);
+                }
+            }
+            return convertView;
+        }
+
+        @Override
+        public int getItemViewType(int section, int position) {
+            if (section < sharedMediaData[3].sections.size()) {
+                if (position == 0) {
+                    return 0;
+                } else {
+                    return 1;
+                }
+            }
+            return 2;
+        }
+
+        @Override
+        public int getViewTypeCount() {
+            return 3;
         }
     }
 
@@ -1164,16 +1345,18 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
         }
     }
 
-    public class DocumentsSearchAdapter extends BaseFragmentAdapter {
+    public class MediaSearchAdapter extends BaseFragmentAdapter {
         private Context mContext;
         private ArrayList<MessageObject> searchResult = new ArrayList<>();
         private Timer searchTimer;
         protected ArrayList<MessageObject> globalSearch = new ArrayList<>();
         private long reqId = 0;
         private int lastReqId;
+        private int currentType;
 
-        public DocumentsSearchAdapter(Context context) {
+        public MediaSearchAdapter(Context context, int type) {
             mContext = context;
+            currentType = type;
         }
 
         public void queryServerSearch(final String query, final int max_id) {
@@ -1195,7 +1378,11 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
             req.offset = 0;
             req.limit = 50;
             req.max_id = max_id;
-            req.filter = new TLRPC.TL_inputMessagesFilterDocument();
+            if (currentType == 1) {
+                req.filter = new TLRPC.TL_inputMessagesFilterDocument();
+            } else if (currentType == 3) {
+                req.filter = new TLRPC.TL_inputMessagesFilterUrl();
+            }
             req.q = query;
             if (uid < 0) {
                 req.peer = new TLRPC.TL_inputPeerChat();
@@ -1239,7 +1426,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
             ConnectionsManager.getInstance().bindRequestToGuid(reqId, classGuid);
         }
 
-        public void searchDocuments(final String query) {
+        public void search(final String query) {
             try {
                 if (searchTimer != null) {
                     searchTimer.cancel();
@@ -1271,49 +1458,55 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
             AndroidUtilities.runOnUIThread(new Runnable() {
                 @Override
                 public void run() {
-                    if (!sharedMediaData[1].messages.isEmpty()) {
-                        MessageObject messageObject = sharedMediaData[1].messages.get(sharedMediaData[1].messages.size() - 1);
-                        queryServerSearch(query, messageObject.getId());
+                    if (!sharedMediaData[currentType].messages.isEmpty()) {
+                        if (currentType == 1) {
+                            MessageObject messageObject = sharedMediaData[currentType].messages.get(sharedMediaData[currentType].messages.size() - 1);
+                            queryServerSearch(query, messageObject.getId());
+                        } else if (currentType == 3) {
+                            queryServerSearch(query, 0);
+                        }
                     }
-                    final ArrayList<MessageObject> copy = new ArrayList<>();
-                    copy.addAll(sharedMediaData[1].messages);
-                    Utilities.searchQueue.postRunnable(new Runnable() {
-                        @Override
-                        public void run() {
-                            String search1 = query.trim().toLowerCase();
-                            if (search1.length() == 0) {
-                                updateSearchResults(new ArrayList<MessageObject>());
-                                return;
-                            }
-                            String search2 = LocaleController.getInstance().getTranslitString(search1);
-                            if (search1.equals(search2) || search2.length() == 0) {
-                                search2 = null;
-                            }
-                            String search[] = new String[1 + (search2 != null ? 1 : 0)];
-                            search[0] = search1;
-                            if (search2 != null) {
-                                search[1] = search2;
-                            }
+                    if (currentType == 1) {
+                        final ArrayList<MessageObject> copy = new ArrayList<>();
+                        copy.addAll(sharedMediaData[1].messages);
+                        Utilities.searchQueue.postRunnable(new Runnable() {
+                            @Override
+                            public void run() {
+                                String search1 = query.trim().toLowerCase();
+                                if (search1.length() == 0) {
+                                    updateSearchResults(new ArrayList<MessageObject>());
+                                    return;
+                                }
+                                String search2 = LocaleController.getInstance().getTranslitString(search1);
+                                if (search1.equals(search2) || search2.length() == 0) {
+                                    search2 = null;
+                                }
+                                String search[] = new String[1 + (search2 != null ? 1 : 0)];
+                                search[0] = search1;
+                                if (search2 != null) {
+                                    search[1] = search2;
+                                }
 
-                            ArrayList<MessageObject> resultArray = new ArrayList<>();
+                                ArrayList<MessageObject> resultArray = new ArrayList<>();
 
-                            for (MessageObject messageObject : copy) {
-                                for (String q : search) {
-                                    String name = messageObject.getDocumentName();
-                                    if (name == null || name.length() == 0) {
-                                        continue;
-                                    }
-                                    name = name.toLowerCase();
-                                    if (name.contains(q)) {
-                                        resultArray.add(messageObject);
-                                        break;
+                                for (MessageObject messageObject : copy) {
+                                    for (String q : search) {
+                                        String name = messageObject.getDocumentName();
+                                        if (name == null || name.length() == 0) {
+                                            continue;
+                                        }
+                                        name = name.toLowerCase();
+                                        if (name.contains(q)) {
+                                            resultArray.add(messageObject);
+                                            break;
+                                        }
                                     }
                                 }
-                            }
 
-                            updateSearchResults(resultArray);
-                        }
-                    });
+                                updateSearchResults(resultArray);
+                            }
+                        });
+                    }
                 }
             });
         }
@@ -1380,16 +1573,30 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
 
         @Override
         public View getView(int i, View view, ViewGroup viewGroup) {
-            if (view == null) {
-                view = new SharedDocumentCell(mContext);
-            }
-            SharedDocumentCell sharedDocumentCell = (SharedDocumentCell) view;
-            MessageObject messageObject = getItem(i);
-            sharedDocumentCell.setDocument(messageObject, i != getCount() - 1);
-            if (actionBar.isActionModeShowed()) {
-                sharedDocumentCell.setChecked(selectedFiles.containsKey(messageObject.getId()), !scrolling);
-            } else {
-                sharedDocumentCell.setChecked(false, !scrolling);
+            if (currentType == 1) {
+                if (view == null) {
+                    view = new SharedDocumentCell(mContext);
+                }
+                SharedDocumentCell sharedDocumentCell = (SharedDocumentCell) view;
+                MessageObject messageObject = getItem(i);
+                sharedDocumentCell.setDocument(messageObject, i != getCount() - 1);
+                if (actionBar.isActionModeShowed()) {
+                    sharedDocumentCell.setChecked(selectedFiles.containsKey(messageObject.getId()), !scrolling);
+                } else {
+                    sharedDocumentCell.setChecked(false, !scrolling);
+                }
+            } else if (currentType == 3) {
+                if (view == null) {
+                    view = new SharedLinkCell(mContext);
+                }
+                SharedLinkCell sharedLinkCell = (SharedLinkCell) view;
+                MessageObject messageObject = getItem(i);
+                sharedLinkCell.setLink(messageObject, i != getCount() - 1);
+                /*if (actionBar.isActionModeShowed()) {
+                    sharedDocumentCell.setChecked(selectedFiles.containsKey(messageObject.getId()), !scrolling);
+                } else {
+                    sharedDocumentCell.setChecked(false, !scrolling);
+                }*/
             }
             return view;
         }

@@ -269,7 +269,7 @@ public class SearchAdapter extends BaseSearchAdapter {
                         ((UserCell) view).setChecked(checkedMap.containsKey(user.id), false);
                     }
                 } else {
-                    ((ProfileSearchCell) view).setData(user, null, null, name, username);
+                    ((ProfileSearchCell) view).setData(user, null, null, name, username, false);
                     ((ProfileSearchCell) view).useSeparator = (i != getCount() - 1 && i != searchResult.size() - 1);
                     if (ignoreUsers != null) {
                         if (ignoreUsers.containsKey(user.id)) {

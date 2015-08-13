@@ -219,6 +219,14 @@ public class BottomSheet extends Dialog {
                         containerView.measure(MeasureSpec.makeMeasureSpec(width + left * 2, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(height, MeasureSpec.AT_MOST));
                     }
                 }
+                int childCount = getChildCount();
+                for (int i = 0; i < childCount; i++) {
+                    View child = getChildAt(i);
+                    if (child.getVisibility() == GONE || child == containerView) {
+                        continue;
+                    }
+                    measureChildWithMargins(child, widthMeasureSpec, 0, heightMeasureSpec, 0);
+                }
             }
 
             @Override
@@ -227,6 +235,56 @@ public class BottomSheet extends Dialog {
                     int l = ((right - left) - containerView.getMeasuredWidth()) / 2;
                     int t = (bottom - top) - containerView.getMeasuredHeight();
                     containerView.layout(l, t, l + containerView.getMeasuredWidth(), t + getMeasuredHeight());
+                }
+
+                final int count = getChildCount();
+                for (int i = 0; i < count; i++) {
+                    final View child = getChildAt(i);
+                    if (child.getVisibility() == GONE || child == containerView) {
+                        continue;
+                    }
+                    final LayoutParams lp = (LayoutParams) child.getLayoutParams();
+
+                    final int width = child.getMeasuredWidth();
+                    final int height = child.getMeasuredHeight();
+
+                    int childLeft;
+                    int childTop;
+
+                    int gravity = lp.gravity;
+                    if (gravity == -1) {
+                        gravity = Gravity.TOP | Gravity.LEFT;
+                    }
+
+                    final int absoluteGravity = gravity & Gravity.HORIZONTAL_GRAVITY_MASK;
+                    final int verticalGravity = gravity & Gravity.VERTICAL_GRAVITY_MASK;
+
+                    switch (absoluteGravity & Gravity.HORIZONTAL_GRAVITY_MASK) {
+                        case Gravity.CENTER_HORIZONTAL:
+                            childLeft = (right - left - width) / 2 + lp.leftMargin - lp.rightMargin;
+                            break;
+                        case Gravity.RIGHT:
+                            childLeft = right - width - lp.rightMargin;
+                            break;
+                        case Gravity.LEFT:
+                        default:
+                            childLeft = lp.leftMargin;
+                    }
+
+                    switch (verticalGravity) {
+                        case Gravity.TOP:
+                            childTop = lp.topMargin;
+                            break;
+                        case Gravity.CENTER_VERTICAL:
+                            childTop = (bottom - top - height) / 2 + lp.topMargin - lp.bottomMargin;
+                            break;
+                        case Gravity.BOTTOM:
+                            childTop = (bottom - top) - height - lp.bottomMargin;
+                            break;
+                        default:
+                            childTop = lp.topMargin;
+                    }
+                    child.layout(childLeft, childTop, childLeft + width, childTop + height);
                 }
             }
         };
@@ -371,15 +429,6 @@ public class BottomSheet extends Dialog {
             params.type = WindowManager.LayoutParams.TYPE_SYSTEM_ERROR;
         }
         getWindow().setAttributes(params);
-
-        setOnShowListener(new OnShowListener() {
-            @Override
-            public void onShow(DialogInterface dialog) {
-                if (Build.VERSION.SDK_INT >= 21) {
-                    startOpenAnimation();
-                }
-            }
-        });
     }
 
     @Override
@@ -394,7 +443,14 @@ public class BottomSheet extends Dialog {
         int left = useRevealAnimation && Build.VERSION.SDK_INT <= 19 ? 0 : backgroundPaddingLeft;
         int top = useRevealAnimation && Build.VERSION.SDK_INT <= 19 ? 0 : backgroundPaddingTop;
         containerView.setPadding(left, (applyTopPaddings ? AndroidUtilities.dp(8) : 0) + top, left, (applyTopPaddings ? AndroidUtilities.dp(isGrid ? 16 : 8) : 0));
-        if (Build.VERSION.SDK_INT < 21) {
+        if (Build.VERSION.SDK_INT >= 21) {
+            AndroidUtilities.runOnUIThread(new Runnable() {
+                @Override
+                public void run() {
+                    startOpenAnimation();
+                }
+            });
+        } else {
             startOpenAnimation();
         }
     }
@@ -413,7 +469,6 @@ public class BottomSheet extends Dialog {
 
     @SuppressLint("NewApi")
     private void startRevealAnimation(final boolean open) {
-
         if (open) {
             backgroundDrawable.setAlpha(0);
             containerView.setVisibility(View.VISIBLE);
@@ -460,7 +515,11 @@ public class BottomSheet extends Dialog {
         animators.add(ObjectAnimator.ofInt(backgroundDrawable, "alpha", open ? 51 : 0));
         if (Build.VERSION.SDK_INT >= 21) {
             containerView.setElevation(AndroidUtilities.dp(10));
-            animators.add(ViewAnimationUtils.createCircularReveal(containerView, revealX <= containerView.getMeasuredWidth() ? revealX : containerView.getMeasuredWidth(), revealY, open ? 0 : finalRevealRadius, open ? finalRevealRadius : 0));
+            try {
+                animators.add(ViewAnimationUtils.createCircularReveal(containerView, revealX <= containerView.getMeasuredWidth() ? revealX : containerView.getMeasuredWidth(), revealY, open ? 0 : finalRevealRadius, open ? finalRevealRadius : 0));
+            } catch (Exception e) {
+                FileLog.e("tmessages", e);
+            }
             animatorSet.setDuration(300);
         } else {
             if (!open) {

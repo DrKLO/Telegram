@@ -58,18 +58,6 @@ public class SecretPhotoViewer implements NotificationCenter.NotificationCenterD
         }
     }
 
-    private class FrameLayoutTouchListener extends FrameLayout {
-        public FrameLayoutTouchListener(Context context) {
-            super(context);
-        }
-
-        @Override
-        public boolean onTouchEvent(MotionEvent event) {
-            FileLog.e("tmessages", event.toString());
-            return super.onTouchEvent(event);
-        }
-    }
-
     private class SecretDeleteTimer extends FrameLayout {
         private String currentInfoString;
         private int infoWidth;
@@ -147,7 +135,7 @@ public class SecretPhotoViewer implements NotificationCenter.NotificationCenterD
 
     private Activity parentActivity;
     private WindowManager.LayoutParams windowLayoutParams;
-    private FrameLayoutTouchListener windowView;
+    private FrameLayout windowView;
     private FrameLayoutDrawer containerView;
     private ImageReceiver centerImage = new ImageReceiver();
     private SecretDeleteTimer secretDeleteTimer;
@@ -205,7 +193,7 @@ public class SecretPhotoViewer implements NotificationCenter.NotificationCenterD
         }
         parentActivity = activity;
 
-        windowView = new FrameLayoutTouchListener(activity);
+        windowView = new FrameLayout(activity);
         windowView.setBackgroundColor(0xff000000);
         windowView.setFocusable(true);
         windowView.setFocusableInTouchMode(true);

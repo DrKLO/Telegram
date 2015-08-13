@@ -110,8 +110,9 @@ public class StickersQuery {
                     ArrayList<TLRPC.TL_messages_stickerSet> newStickerArray = null;
                     int date = 0;
                     String hash = null;
+                    SQLiteCursor cursor = null;
                     try {
-                        SQLiteCursor cursor = MessagesStorage.getInstance().getDatabase().queryFinalized("SELECT data, date, hash FROM stickers_v2 WHERE 1");
+                        cursor = MessagesStorage.getInstance().getDatabase().queryFinalized("SELECT data, date, hash FROM stickers_v2 WHERE 1");
                         if (cursor.next()) {
                             ByteBufferDesc data = MessagesStorage.getInstance().getBuffersStorage().getFreeBuffer(cursor.byteArrayLength(0));
                             if (data != null && cursor.byteBufferValue(0, data.buffer) != 0) {
@@ -128,9 +129,12 @@ public class StickersQuery {
                             hash = cursor.stringValue(2);
                             MessagesStorage.getInstance().getBuffersStorage().reuseFreeBuffer(data);
                         }
-                        cursor.dispose();
-                    } catch (Exception e) {
+                    } catch (Throwable e) {
                         FileLog.e("tmessages", e);
+                    } finally {
+                        if (cursor != null) {
+                            cursor.dispose();
+                        }
                     }
                     processLoadedStickers(newStickerArray, true, date, hash);
                 }
@@ -229,7 +233,7 @@ public class StickersQuery {
         });
     }
 
-    private static long getStickerSetId(TLRPC.Document document) {
+    public static long getStickerSetId(TLRPC.Document document) {
         for (TLRPC.DocumentAttribute attribute : document.attributes) {
             if (attribute instanceof TLRPC.TL_documentAttributeSticker) {
                 if (attribute.stickerset instanceof TLRPC.TL_inputStickerSetID) {

@@ -52,6 +52,7 @@ import org.telegram.ui.Adapters.DialogsAdapter;
 import org.telegram.ui.Adapters.DialogsSearchAdapter;
 import org.telegram.android.AnimationCompat.ObjectAnimatorProxy;
 import org.telegram.android.AnimationCompat.ViewProxy;
+import org.telegram.ui.Cells.ProfileSearchCell;
 import org.telegram.ui.Cells.UserCell;
 import org.telegram.ui.Cells.DialogCell;
 import org.telegram.ui.ActionBar.ActionBar;
@@ -226,7 +227,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     }
                 }
                 if (dialogsSearchAdapter != null) {
-                    dialogsSearchAdapter.searchDialogs(null, dialogsType);
+                    dialogsSearchAdapter.searchDialogs(null);
                 }
                 updatePasscodeButton();
             }
@@ -234,7 +235,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             @Override
             public void onTextChanged(EditText editText) {
                 String text = editText.getText().toString();
-                if (text.length() != 0) {
+                if (text.length() != 0 || dialogsSearchAdapter != null && dialogsSearchAdapter.hasRecentRearch()) {
                     searchWas = true;
                     if (dialogsSearchAdapter != null) {
                         listView.setAdapter(dialogsSearchAdapter);
@@ -248,7 +249,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     }
                 }
                 if (dialogsSearchAdapter != null) {
-                    dialogsSearchAdapter.searchDialogs(text, dialogsType);
+                    dialogsSearchAdapter.searchDialogs(text);
                 }
             }
         });
@@ -329,14 +330,17 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                             MessagesController.getInstance().putUsers(users, false);
                             MessagesStorage.getInstance().putUsersAndChats(users, null, false, true);
                         }
+                        dialogsSearchAdapter.putRecentSearch(dialog_id, (TLRPC.User) obj);
                     } else if (obj instanceof TLRPC.Chat) {
                         if (((TLRPC.Chat) obj).id > 0) {
                             dialog_id = -((TLRPC.Chat) obj).id;
                         } else {
                             dialog_id = AndroidUtilities.makeBroadcastId(((TLRPC.Chat) obj).id);
                         }
+                        dialogsSearchAdapter.putRecentSearch(dialog_id, (TLRPC.Chat) obj);
                     } else if (obj instanceof TLRPC.EncryptedChat) {
                         dialog_id = ((long) ((TLRPC.EncryptedChat) obj).id) << 32;
+                        dialogsSearchAdapter.putRecentSearch(dialog_id, (TLRPC.EncryptedChat) obj);
                     } else if (obj instanceof MessageObject) {
                         MessageObject messageObject = (MessageObject) obj;
                         dialog_id = messageObject.getDialogId();
@@ -399,18 +403,22 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             @Override
             public void onItemClick(View view, int position) {
                 if (onlySelect || searching && searchWas || getParentActivity() == null) {
-                    if (searchWas && searching) {
+                    if (searchWas && searching || dialogsSearchAdapter.isRecentSearchDisplayed()) {
                         RecyclerView.Adapter adapter = listView.getAdapter();
                         if (adapter == dialogsSearchAdapter) {
                             Object item = dialogsSearchAdapter.getItem(position);
-                            if (item instanceof String) {
+                            if (item instanceof String || dialogsSearchAdapter.isRecentSearchDisplayed()) {
                                 AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                                 builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
                                 builder.setMessage(LocaleController.getString("ClearSearch", R.string.ClearSearch));
                                 builder.setPositiveButton(LocaleController.getString("ClearButton", R.string.ClearButton).toUpperCase(), new DialogInterface.OnClickListener() {
                                     @Override
                                     public void onClick(DialogInterface dialogInterface, int i) {
-                                        dialogsSearchAdapter.clearRecentHashtags();
+                                        if (dialogsSearchAdapter.isRecentSearchDisplayed()) {
+                                            dialogsSearchAdapter.clearRecentSearch();
+                                        } else {
+                                            dialogsSearchAdapter.clearRecentHashtags();
+                                        }
                                     }
                                 });
                                 builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
@@ -620,7 +628,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         } else if (!onlySelect) {
             type = 1;
         }
-        dialogsSearchAdapter = new DialogsSearchAdapter(context, type);
+        dialogsSearchAdapter = new DialogsSearchAdapter(context, type, dialogsType);
         dialogsSearchAdapter.setDelegate(new DialogsSearchAdapter.MessagesActivitySearchAdapterDelegate() {
             @Override
             public void searchStateChanged(boolean search) {
@@ -816,6 +824,8 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 }
             } else if (child instanceof UserCell) {
                 ((UserCell) child).update(mask);
+            } else if (child instanceof ProfileSearchCell) {
+                ((ProfileSearchCell) child).update(mask);
             }
         }
     }

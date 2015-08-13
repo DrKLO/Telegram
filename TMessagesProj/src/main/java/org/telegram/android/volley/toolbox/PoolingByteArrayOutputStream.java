@@ -25,7 +25,7 @@ import java.io.IOException;
  */
 public class PoolingByteArrayOutputStream extends ByteArrayOutputStream {
     /**
-     * If the {@link #PoolingByteArrayOutputStream(org.telegram.android.volley.toolbox.ByteArrayPool)} constructor is called, this is
+     * If the {@link #PoolingByteArrayOutputStream(ByteArrayPool)} constructor is called, this is
      * the default size to which the underlying byte array is initialized.
      */
     private static final int DEFAULT_SIZE = 256;

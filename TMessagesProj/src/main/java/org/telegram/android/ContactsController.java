@@ -939,9 +939,13 @@ public class ContactsController {
                     @Override
                     public void run() {
                         FileLog.e("tmessages", "done loading contacts");
-                        if (from == 1 && contactsArr.isEmpty()) {
+                        if (from == 1 && (contactsArr.isEmpty() || UserConfig.lastContactsSyncTime < (int) (System.currentTimeMillis() / 1000) - 24 * 60 * 60)) {
                             loadContacts(false, true);
                             return;
+                        }
+                        if (from == 0) {
+                            UserConfig.lastContactsSyncTime = (int) (System.currentTimeMillis() / 1000);
+                            UserConfig.saveConfig(false);
                         }
 
                         for (TLRPC.TL_contact contact : contactsArr) {

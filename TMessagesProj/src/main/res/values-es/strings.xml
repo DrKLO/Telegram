@@ -59,6 +59,7 @@
     <string name="WillUnmuteIn">En %1$s</string>
     <string name="MuteDisable">Desactivar</string>
     <string name="Hashtags">HASHTAGS</string>
+    <string name="Recent">RECIENTES</string>
     <!--broadcasts-->
     <string name="NewBroadcastList">Nueva difusión</string>
     <string name="EnterListName">Nombre de la lista</string>
@@ -393,7 +394,9 @@
     <string name="NoMedia">Comparte fotos y vídeos en este chat y accede a ellos desde cualquier dispositivo.</string>
     <string name="DocumentsTitle">Archivos</string>
     <string name="SharedMediaTitle">Multimedia</string>
+    <string name="LinksTitle">Enlaces</string>
     <string name="NoSharedFiles">Comparte archivos en este chat y accede a ellos desde cualquier dispositivo.</string>
+    <string name="NoSharedLinks">Comparte enlaces en este chat y accede a ellos desde cualquiera de tus dispositivos.</string>
     <!--map view-->
     <string name="Map">Mapa</string>
     <string name="Satellite">Satélite</string>
@@ -834,6 +837,6 @@
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s a las %2$s</string>
     <!--update text-->
-    <string name="updateText">Telegram para Android fue actualizada. Novedades en la versión 3.1:\n\n- Busca mensajes dentro de un chat en específico.\n- Menú para adjuntar completamente rediseñado. Envía contactos y archivos de audio directamente desde el menú para adjuntar.\n- Reproducción de multimedia dentro de la aplicación mejorada (YouTube, Vimeo, SoundCloud etc.), nuevo reproductor para archivos de audio largos.\n\nMás sobre esta actualización:\nhttps://telegram.org/blog/search-and-media</string>
-    <string name="updateBuild">577</string>
+    <string name="updateText">Telegram para Android fue actualizada. Novedades en la versión 3.1.2:\n\n- Búsquedas recientes\n- Mantén pulsado sobre un sticker para obtener una vista previa antes de enviarlo</string>
+    <string name="updateBuild">583</string>
 </resources>

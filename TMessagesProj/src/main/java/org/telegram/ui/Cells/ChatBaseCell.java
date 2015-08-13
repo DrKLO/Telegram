@@ -25,6 +25,7 @@ import android.view.SoundEffectConstants;
 import org.telegram.android.AndroidUtilities;
 import org.telegram.android.Emoji;
 import org.telegram.android.LocaleController;
+import org.telegram.android.MediaController;
 import org.telegram.android.UserObject;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLoader;
@@ -39,7 +40,7 @@ import org.telegram.ui.Components.LinkPath;
 import org.telegram.ui.Components.ResourceLoader;
 import org.telegram.ui.Components.StaticLayoutEx;
 
-public class ChatBaseCell extends BaseCell {
+public class ChatBaseCell extends BaseCell implements MediaController.FileDownloadProgressListener {
 
     public interface ChatBaseCellDelegate {
         void didPressedUserAvatar(ChatBaseCell cell, TLRPC.User user);
@@ -48,6 +49,7 @@ public class ChatBaseCell extends BaseCell {
         void didPressReplyMessage(ChatBaseCell cell, int id);
         void didPressUrl(MessageObject messageObject, String url);
         void needOpenWebView(String url, String title, String originalUrl, int w, int h);
+        void didClickedImage(ChatBaseCell cell);
         boolean canPerformActions();
     }
 
@@ -55,6 +57,7 @@ public class ChatBaseCell extends BaseCell {
     protected boolean linkPreviewPressed;
     protected LinkPath urlPath = new LinkPath();
     protected static Paint urlPaint;
+    private int TAG;
 
     public boolean isChat = false;
     protected boolean isPressed = false;
@@ -170,6 +173,7 @@ public class ChatBaseCell extends BaseCell {
         avatarImage.setRoundRadius(AndroidUtilities.dp(21));
         avatarDrawable = new AvatarDrawable();
         replyImageReceiver = new ImageReceiver(this);
+        TAG = MediaController.getInstance().generateObserverTag();
     }
 
     @Override
@@ -600,6 +604,10 @@ public class ChatBaseCell extends BaseCell {
 
     }
 
+    public ImageReceiver getPhotoImage() {
+        return null;
+    }
+
     @Override
     protected void onLongPress() {
         if (delegate != null) {
@@ -658,7 +666,7 @@ public class ChatBaseCell extends BaseCell {
                 setDrawableBounds(currentBackgroundDrawable, (!media ? 0 : AndroidUtilities.dp(9)), AndroidUtilities.dp(1), backgroundWidth, layoutHeight - AndroidUtilities.dp(2));
             }
         }
-        if (drawBackground) {
+        if (drawBackground && currentBackgroundDrawable != null) {
             currentBackgroundDrawable.draw(canvas);
         }
 
@@ -857,5 +865,30 @@ public class ChatBaseCell extends BaseCell {
                 }
             }
         }
+    }
+
+    @Override
+    public void onFailedDownload(String fileName) {
+
+    }
+
+    @Override
+    public void onSuccessDownload(String fileName) {
+
+    }
+
+    @Override
+    public void onProgressDownload(String fileName, float progress) {
+
+    }
+
+    @Override
+    public void onProgressUpload(String fileName, float progress, boolean isEncrypted) {
+
+    }
+
+    @Override
+    public int getObserverTag() {
+        return TAG;
     }
 }

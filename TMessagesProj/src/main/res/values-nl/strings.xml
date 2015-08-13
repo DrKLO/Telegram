@@ -59,6 +59,7 @@
     <string name="WillUnmuteIn">Over %1$s</string>
     <string name="MuteDisable">Uitschakelen</string>
     <string name="Hashtags">HASHTAGS</string>
+    <string name="Recent">RECENT</string>
     <!--broadcasts-->
     <string name="NewBroadcastList">Nieuwe verzendlijst</string>
     <string name="EnterListName">Naam van lijst</string>
@@ -391,9 +392,11 @@
     <string name="AutoLockDisabled">Uitgeschakeld</string>
     <!--media view-->
     <string name="NoMedia">Deel foto\'s en video\'s in deze chat om ze op al je apparaten te kunnen benaderen.</string>
-    <string name="DocumentsTitle">Bestanden</string>
+    <string name="DocumentsTitle">Gedeelde bestanden</string>
     <string name="SharedMediaTitle">Gedeelde media</string>
+    <string name="LinksTitle">Gedeelde links</string>
     <string name="NoSharedFiles">Deel bestanden en documenten in deze chat om ze op al je apparaten te kunnen benaderen.</string>
+    <string name="NoSharedLinks">Deel links in deze chat om ze op al je apparaten te kunnen benaderen.</string>
     <!--map view-->
     <string name="Map">Kaart</string>
     <string name="Satellite">Satelliet</string>
@@ -834,6 +837,6 @@
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s om %2$s</string>
     <!--update text-->
-    <string name="updateText">Telegram voor Android is bijgewerkt. Nieuw in versie 3.1:\n\n- Zoek naar berichten in een specifieke chat.\n- Volledig opnieuw ontworpen bijlagemenu. Verstuur contacten en audiobestanden rechtstreeks vanuit het bijlagemenu.\n- Afspelen van media in de app verbeterd (YouTube, Vimeo, SoundCloud, etc.), nieuwe speler voor grote audiobestanden.\n\nMeer weten? Kijk op:\nhttps://telegram.org/blog/search-and-media</string>
-    <string name="updateBuild">577</string>
+    <string name="updateText">Telegram voor Android is bijgewerkt. Nieuw in versie 3.1.2:\n\n- Recente zoekresultaten\n- Stickers aantikken en vasthouden om een voorbeeld weer te geven voor het versturen.</string>
+    <string name="updateBuild">583</string>
 </resources>

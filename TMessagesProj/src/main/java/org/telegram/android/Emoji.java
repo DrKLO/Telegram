@@ -61,8 +61,6 @@ public class Emoji {
     };
 
     public static long[][] data = {
-            new long[]
-                    {},
             new long[]//189
                     {
                             0x00000000D83DDE04L, 0x00000000D83DDE03L, 0x00000000D83DDE00L, 0x00000000D83DDE0AL, 0x000000000000263AL, 0x00000000D83DDE09L, 0x00000000D83DDE0DL,
@@ -215,10 +213,10 @@ public class Emoji {
             bigImgSize = AndroidUtilities.dp(32);
         }
 
-        for (int j = 1; j < data.length; j++) {
+        for (int j = 0; j < data.length; j++) {
             for (int i = 0; i < data[j].length; i++) {
-                Rect rect = new Rect((i % cols[j - 1]) * emojiFullSize, (i / cols[j - 1]) * emojiFullSize, (i % cols[j - 1] + 1) * emojiFullSize, (i / cols[j - 1] + 1) * emojiFullSize);
-                rects.put(data[j][i], new DrawableInfo(rect, (byte) (j - 1)));
+                Rect rect = new Rect((i % cols[j]) * emojiFullSize, (i / cols[j]) * emojiFullSize, (i % cols[j] + 1) * emojiFullSize, (i / cols[j] + 1) * emojiFullSize);
+                rects.put(data[j][i], new DrawableInfo(rect, (byte) j));
             }
         }
         placeholderPaint = new Paint();

@@ -19,6 +19,8 @@ package org.telegram.android.volley.toolbox;
 import org.telegram.android.volley.NetworkResponse;
 import org.telegram.android.volley.Request;
 import org.telegram.android.volley.Response;
+import org.telegram.android.volley.Response.ErrorListener;
+import org.telegram.android.volley.Response.Listener;
 
 import java.io.UnsupportedEncodingException;
 
@@ -26,7 +28,7 @@ import java.io.UnsupportedEncodingException;
  * A canned request for retrieving the response body at a given URL as a String.
  */
 public class StringRequest extends Request<String> {
-    private final Response.Listener<String> mListener;
+    private final Listener<String> mListener;
 
     /**
      * Creates a new request with the given method.
@@ -36,8 +38,8 @@ public class StringRequest extends Request<String> {
      * @param listener Listener to receive the String response
      * @param errorListener Error listener, or null to ignore errors
      */
-    public StringRequest(int method, String url, Response.Listener<String> listener,
-            Response.ErrorListener errorListener) {
+    public StringRequest(int method, String url, Listener<String> listener,
+            ErrorListener errorListener) {
         super(method, url, errorListener);
         mListener = listener;
     }
@@ -49,7 +51,7 @@ public class StringRequest extends Request<String> {
      * @param listener Listener to receive the String response
      * @param errorListener Error listener, or null to ignore errors
      */
-    public StringRequest(String url, Response.Listener<String> listener, Response.ErrorListener errorListener) {
+    public StringRequest(String url, Listener<String> listener, ErrorListener errorListener) {
         this(Method.GET, url, listener, errorListener);
     }
 

@@ -22,7 +22,7 @@ import java.util.Collections;
 import java.util.Map;
 
 /**
- * Data and headers returned from {@link org.telegram.android.volley.Network#performRequest(org.telegram.android.volley.Request)}.
+ * Data and headers returned from {@link Network#performRequest(Request)}.
  */
 public class NetworkResponse {
     /**

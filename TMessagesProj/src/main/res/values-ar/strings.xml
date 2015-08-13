@@ -59,6 +59,7 @@
     <string name="WillUnmuteIn">خلال %1$s</string>
     <string name="MuteDisable">تعطيل</string>
     <string name="Hashtags">الأوسمة</string>
+    <string name="Recent">حديث</string>
     <!--broadcasts-->
     <string name="NewBroadcastList">رسالة جماعية جديدة</string>
     <string name="EnterListName">أدخل اسم القائمة</string>
@@ -391,9 +392,11 @@
     <string name="AutoLockDisabled">معطّل</string>
     <!--media view-->
     <string name="NoMedia">شارك المقاطع المرئية والصور في هذه المحادثة لتستطيع الوصول إليها من أية جهاز من أجهزتك</string>
-    <string name="DocumentsTitle">ملفات</string>
+    <string name="DocumentsTitle">الملفات المشاركة</string>
     <string name="SharedMediaTitle">الوسائط المشتركة</string>
+    <string name="LinksTitle">الروابط المشاركة</string>
     <string name="NoSharedFiles">شارك الملفات والمستندات في هذه المحادثة لتستطيع الوصول إليها من أية جهاز من أجهزتك</string>
+    <string name="NoSharedLinks">شارك الروابط في هذه المحادثة لتستطيع الوصول إليها من أية جهاز من أجهزتك</string>
     <!--map view-->
     <string name="Map">الخريطة</string>
     <string name="Satellite">قمر صناعي</string>
@@ -834,6 +837,6 @@
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s الساعة %2$s</string>
     <!--update text-->
-    <string name="updateText">تم تحديث تيليجرام نسخة الأندرويد.  الجديد في النسخة رقم 3.1:\n\n- بحث عن الرسائل داخل محادثات محددة. \n- إعادة تصميم كاملة لشاشة ارفاق الملفات. إرسال جهات اتصال وملفات صوتية مباشرة من خيار المرفقات. \n- تطوير لتشغيل الوسائط داخل التطبيق (يوتيوب, ڤيميو, ساوندكلاود وغيرها.),.\n\nللاستزادة،  اطلع هنا:\nhttps://telegram.org/blog/search-and-media</string>
-    <string name="updateBuild">577</string>
+    <string name="updateText">تم تحديث تيليجرام نسخة الاندرويد. الجديد في نسخة ٣.١.٢: \n\n- كلمات البحث الحديثة. \n- اضغط باستمرار لاستعراض الملصق قبل إرساله.</string>
+    <string name="updateBuild">583</string>
 </resources>

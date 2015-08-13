@@ -18,8 +18,12 @@ package org.telegram.android.volley;
 
 import android.net.TrafficStats;
 import android.net.Uri;
+import android.os.Handler;
+import android.os.Looper;
 import android.os.SystemClock;
 import android.text.TextUtils;
+
+import org.telegram.android.volley.VolleyLog.MarkerLog;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
@@ -53,6 +57,9 @@ public abstract class Request<T> implements Comparable<Request<T>> {
         int PATCH = 7;
     }
 
+    /** An event log tracing the lifetime of this request; for debugging. */
+    private final MarkerLog mEventLog = MarkerLog.ENABLED ? new MarkerLog() : null;
+
     /**
      * Request method of this request.  Currently supports GET, POST, PUT, DELETE, HEAD, OPTIONS,
      * TRACE, and PATCH.
@@ -83,12 +90,6 @@ public abstract class Request<T> implements Comparable<Request<T>> {
     /** Whether or not a response has been delivered for this request yet. */
     private boolean mResponseDelivered = false;
 
-    // A cheap variant of request tracing used to dump slow requests.
-    private long mRequestBirthTime = 0;
-
-    /** Threshold at which we should log the request (even when debug logging is not enabled). */
-    private static final long SLOW_REQUEST_THRESHOLD_MS = 3000;
-
     /** The retry policy for this request. */
     private RetryPolicy mRetryPolicy;
 
@@ -108,6 +109,7 @@ public abstract class Request<T> implements Comparable<Request<T>> {
      * is provided by subclasses, who have a better idea of how to deliver an
      * already-parsed response.
      *
+     * @deprecated Use {@link #Request(int, String, com.android.volley.Response.ErrorListener)}.
      */
     @Deprecated
     public Request(String url, Response.ErrorListener listener) {
@@ -155,6 +157,9 @@ public abstract class Request<T> implements Comparable<Request<T>> {
         return mTag;
     }
 
+    /**
+     * @return this request's {@link com.android.volley.Response.ErrorListener}.
+     */
     public Response.ErrorListener getErrorListener() {
         return mErrorListener;
     }
@@ -196,8 +201,8 @@ public abstract class Request<T> implements Comparable<Request<T>> {
      * Adds an event to this request's event log; for debugging.
      */
     public void addMarker(String tag) {
-        if (mRequestBirthTime == 0) {
-            mRequestBirthTime = SystemClock.elapsedRealtime();
+        if (MarkerLog.ENABLED) {
+            mEventLog.add(tag, Thread.currentThread().getId());
         }
     }
 
@@ -210,9 +215,24 @@ public abstract class Request<T> implements Comparable<Request<T>> {
         if (mRequestQueue != null) {
             mRequestQueue.finish(this);
         }
-        long requestTime = SystemClock.elapsedRealtime() - mRequestBirthTime;
-        if (requestTime >= SLOW_REQUEST_THRESHOLD_MS) {
-            VolleyLog.d("%d ms: %s", requestTime, this.toString());
+        if (MarkerLog.ENABLED) {
+            final long threadId = Thread.currentThread().getId();
+            if (Looper.myLooper() != Looper.getMainLooper()) {
+                // If we finish marking off of the main thread, we need to
+                // actually do it on the main thread to ensure correct ordering.
+                Handler mainThread = new Handler(Looper.getMainLooper());
+                mainThread.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        mEventLog.add(tag, threadId);
+                        mEventLog.finish(this.toString());
+                    }
+                });
+                return;
+            }
+
+            mEventLog.add(tag, threadId);
+            mEventLog.finish(this.toString());
         }
     }
 

@@ -780,6 +780,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
                             updateSearchInterface();
                         }
                     });
+            jsonObjReq.setShouldCache(false);
             jsonObjReq.setTag("search");
             requestQueue.add(jsonObjReq);
         } catch (Exception e) {
@@ -866,6 +867,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
                     return headers;
                 }
             };
+            jsonObjReq.setShouldCache(false);
             jsonObjReq.setTag("search");
             requestQueue.add(jsonObjReq);
         } catch (Exception e) {

@@ -135,8 +135,8 @@ public class ActionBarPopupWindow extends PopupWindow {
                         if (child.getVisibility() != VISIBLE) {
                             continue;
                         }
-                        int position = positions.get(child);
-                        if (height - (position * AndroidUtilities.dp(48) + AndroidUtilities.dp(32)) > value * height) {
+                        Integer position = positions.get(child);
+                        if (position != null && height - (position * AndroidUtilities.dp(48) + AndroidUtilities.dp(32)) > value * height) {
                             break;
                         }
                         lastStartedChild = a - 1;
@@ -148,8 +148,8 @@ public class ActionBarPopupWindow extends PopupWindow {
                         if (child.getVisibility() != VISIBLE) {
                             continue;
                         }
-                        int position = positions.get(child);
-                        if ((position + 1) * AndroidUtilities.dp(48) - AndroidUtilities.dp(24) > value * height) {
+                        Integer position = positions.get(child);
+                        if (position != null && (position + 1) * AndroidUtilities.dp(48) - AndroidUtilities.dp(24) > value * height) {
                             break;
                         }
                         lastStartedChild = a + 1;

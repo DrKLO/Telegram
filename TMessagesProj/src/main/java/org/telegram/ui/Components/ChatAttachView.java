@@ -33,6 +33,7 @@ import org.telegram.android.NotificationCenter;
 import org.telegram.android.support.widget.LinearLayoutManager;
 import org.telegram.messenger.R;
 import org.telegram.ui.Adapters.PhotoAttachAdapter;
+import org.telegram.ui.Cells.PhotoAttachPhotoCell;
 import org.telegram.ui.ChatActivity;
 
 import java.util.ArrayList;
@@ -128,6 +129,12 @@ public class ChatAttachView extends FrameLayout implements NotificationCenter.No
             @Override
             public void selectedPhotosChanged() {
                 updatePhotosButton();
+            }
+        });
+        attachPhotoRecyclerView.setOnItemClickListener(new RecyclerListView.OnItemClickListener() {
+            @Override
+            public void onItemClick(View view, int position) {
+                photoAttachAdapter.onItemClick((PhotoAttachPhotoCell) view);
             }
         });
 

@@ -59,6 +59,7 @@
     <string name="WillUnmuteIn">%1$s 후</string>
     <string name="MuteDisable">비활성화</string>
     <string name="Hashtags">해시태그</string>
+    <string name="Recent">최신</string>
     <!--broadcasts-->
     <string name="NewBroadcastList">새 단체 메시지 리스트</string>
     <string name="EnterListName">리스트 이름을 입력하세요</string>
@@ -391,9 +392,11 @@
     <string name="AutoLockDisabled">비활성화됨</string>
     <!--media view-->
     <string name="NoMedia">이 채팅방에서 사진이나 동영상을 공유하면 다른 기기에서도 보실 수 있습니다.</string>
-    <string name="DocumentsTitle">파일</string>
+    <string name="DocumentsTitle">공유한 파일</string>
     <string name="SharedMediaTitle">공유된 미디어</string>
+    <string name="LinksTitle">공유한 링크</string>
     <string name="NoSharedFiles">이 채팅방에서 파일이나 문서를 공유하면 다른 기기에서도 보실 수 있습니다.</string>
+    <string name="NoSharedLinks">이 채팅방에서 파일이나 문서를 공유하면 다른 기기에서도 보실 수 있습니다.</string>
     <!--map view-->
     <string name="Map">지도</string>
     <string name="Satellite">위성</string>
@@ -834,6 +837,6 @@
     <string name="formatterDay12H">a h:mm</string>
     <string name="formatDateAtTime">%1$s %2$s</string>
     <!--update text-->
-    <string name="updateText">텔레그램 안드로이드 버전이 업데이트 되었습니다. 새로운 버전은 3.1 입니다:\n\n- 특정 대화창에서 검색. \n- 첨부 메뉴 개선. 해당 메뉴에서 바로 연락처, 오디오를 전송 가능. \n- 인앱 미디어 재생 기능 향상 (YouTube, Vimeo, SoundCloud etc). 대용량 오디오 파일 별도 플레이어 기능. \n\nhttps://telegram.org/blog/search-and-media에서 자세한 사항을 알아보세요.</string>
-    <string name="updateBuild">577</string>
+    <string name="updateText">텔레그램 안드로이드 버전이 업데이트 되었습니다. 새로운 버전은 3.1.2 입니다:\n\n- 최신 검색 결과\n- 스티커를 꾹 누를 경우 미리보기 기능</string>
+    <string name="updateBuild">583</string>
 </resources>

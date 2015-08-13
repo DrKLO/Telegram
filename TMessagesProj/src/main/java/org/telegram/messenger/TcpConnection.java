@@ -300,10 +300,6 @@ public class TcpConnection extends ConnectionContext {
         }
     }
 
-    public void resumeConnection() {
-
-    }
-
     private void reconnect() {
         suspendConnection(false);
         connectionState = TcpConnectionState.TcpConnectionStageReconnecting;

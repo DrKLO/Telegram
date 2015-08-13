@@ -16,13 +16,13 @@
 
 package org.telegram.android.volley.toolbox;
 
-import android.os.Handler;
-import android.os.Looper;
-
 import org.telegram.android.volley.Cache;
 import org.telegram.android.volley.NetworkResponse;
 import org.telegram.android.volley.Request;
 import org.telegram.android.volley.Response;
+
+import android.os.Handler;
+import android.os.Looper;
 
 /**
  * A synthetic request used for clearing the cache.

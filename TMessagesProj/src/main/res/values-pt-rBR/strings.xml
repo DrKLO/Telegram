@@ -59,6 +59,7 @@
     <string name="WillUnmuteIn">Em %1$s</string>
     <string name="MuteDisable">Desativar</string>
     <string name="Hashtags">HASHTAGS</string>
+    <string name="Recent">RECENTE</string>
     <!--broadcasts-->
     <string name="NewBroadcastList">Nova Lista de Transmissão</string>
     <string name="EnterListName">Digite o nome da lista</string>
@@ -391,9 +392,11 @@
     <string name="AutoLockDisabled">Desativado</string>
     <!--media view-->
     <string name="NoMedia">Compartilhar fotos e vídeos no chat e acessá-los em qualquer um de seus dispositivos.</string>
-    <string name="DocumentsTitle">Arquivos</string>
+    <string name="DocumentsTitle">Arquivos Compartilhados</string>
     <string name="SharedMediaTitle">Mídia Compartilhada</string>
+    <string name="LinksTitle">Links Compartilhados</string>
     <string name="NoSharedFiles">Compartilhar arquivos e documentos no chat e acessá-los de qualquer um de seus dispositivos.</string>
+    <string name="NoSharedLinks">Compartilhe links nesse chat e os acesse de qualquer um de seus dispositivos</string>
     <!--map view-->
     <string name="Map">Mapa</string>
     <string name="Satellite">Satélite</string>
@@ -834,6 +837,6 @@
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s às %2$s</string>
     <!--update text-->
-    <string name="updateText">Telegram para Android foi atualizado. Novo na versão 3.1:\n\n- Busca por mensagens dentro de um chat específico.\n-Menu de anexo totalmente redesenhado. Envie contatos e arquivos de áudio diretamente do menu de anexo.\n- Reprodução melhorada de mídia dentro do aplicativo (YouTube, Vimeo, SoundCloud, etc.), novo player para grandes arquivos de áudio.\n\nMais sobre a atualização:\nhttps://telegram.org/blog/search-and-media</string>
-    <string name="updateBuild">577</string>
+    <string name="updateText">Seu Telegram para Android acaba de ser atualizado. Novo na versão 3.1.2\n\n- Resultados das buscas recentes\n- Pressione e mantenha em um sticker para pré-visualizar antes do envio</string>
+    <string name="updateBuild">583</string>
 </resources>
