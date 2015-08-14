@@ -336,7 +336,7 @@ public class ThemingContactsActivity extends BaseFragment {
                     } else if (i == rowColorRow) {
                         resetInt("contactsRowColor");
                     } else if (i == avatarRadiusRow) {
-                        resetInt("contactsAvatarSize");
+                        resetInt("contactsAvatarRadius");
                     } else if (i == nameColorRow) {
                         resetInt("contactsNameColor");
                     } else if (i == nameSizeRow) {

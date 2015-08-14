@@ -65,8 +65,13 @@ public class DrawerProfileCell extends FrameLayout implements PhotoViewer.PhotoV
         avatarImageView.getImageReceiver().setRoundRadius(AndroidUtilities.dp(32));
 
         int aSize = themePrefs.getInt("drawerAvatarSize", 64);
+        boolean centerAvatar = themePrefs.getBoolean("drawerCenterAvatarCheck", false);
         //addView(avatarImageView, LayoutHelper.createFrame(64, 64, Gravity.LEFT | Gravity.BOTTOM, 16, 0, 0, 67));
-        addView(avatarImageView, LayoutHelper.createFrame(aSize, aSize, Gravity.LEFT | Gravity.BOTTOM, 16, 0, 0, 67));
+        if(!centerAvatar){
+            addView(avatarImageView, LayoutHelper.createFrame(aSize, aSize, Gravity.LEFT | Gravity.BOTTOM, 16, 0, 0, 67));
+        }else{
+            addView(avatarImageView, LayoutHelper.createFrame(aSize, aSize, Gravity.CENTER | Gravity.BOTTOM, 0, 0, 0, 67));
+        }
 
         final Activity activity = (Activity) context;
         avatarImageView.setOnClickListener(new View.OnClickListener() {
@@ -89,8 +94,13 @@ public class DrawerProfileCell extends FrameLayout implements PhotoViewer.PhotoV
         nameTextView.setLines(1);
         nameTextView.setMaxLines(1);
         nameTextView.setSingleLine(true);
-        nameTextView.setGravity(Gravity.LEFT);
-        addView(nameTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.BOTTOM, 16, 0, 16, 28));
+        if(!centerAvatar){
+            nameTextView.setGravity(Gravity.LEFT);
+            addView(nameTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.BOTTOM, 16, 0, 16, 28));
+        }else{
+            nameTextView.setGravity(Gravity.CENTER);
+            addView(nameTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER | Gravity.BOTTOM, 0, 0, 0, 28));
+        }
 
         phoneTextView = new TextView(context);
         phoneTextView.setTextColor(0xffc2e5ff);
@@ -98,15 +108,36 @@ public class DrawerProfileCell extends FrameLayout implements PhotoViewer.PhotoV
         phoneTextView.setLines(1);
         phoneTextView.setMaxLines(1);
         phoneTextView.setSingleLine(true);
-        phoneTextView.setGravity(Gravity.LEFT);
-        addView(phoneTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.BOTTOM, 16, 0, 16, 9));
+        if(!centerAvatar){
+            phoneTextView.setGravity(Gravity.LEFT);
+            addView(phoneTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.BOTTOM, 16, 0, 16, 9));
+        }else{
+            phoneTextView.setGravity(Gravity.CENTER);
+            addView(phoneTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER | Gravity.BOTTOM, 0, 0, 0, 9));
+        }
     }
 
     public void refreshAvatar(int size, int radius){
         //SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
         removeView(avatarImageView);
+        removeView(nameTextView);
+        removeView(phoneTextView);
         avatarImageView.getImageReceiver().setRoundRadius(AndroidUtilities.dp(radius));
-        addView(avatarImageView, LayoutHelper.createFrame(size, size, Gravity.LEFT | Gravity.BOTTOM, 16, 0, 0, 67));
+
+        SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+        if(!themePrefs.getBoolean("drawerCenterAvatarCheck", false)){
+            addView(avatarImageView, LayoutHelper.createFrame(size, size, Gravity.LEFT | Gravity.BOTTOM, 16, 0, 0, 67));
+            nameTextView.setGravity(Gravity.LEFT);
+            addView(nameTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.BOTTOM, 16, 0, 16, 28));
+            phoneTextView.setGravity(Gravity.LEFT);
+            addView(phoneTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.BOTTOM, 16, 0, 16, 9));
+        }else{
+            addView(avatarImageView, LayoutHelper.createFrame(size, size, Gravity.CENTER | Gravity.BOTTOM, 0, 0, 0, 67));
+            nameTextView.setGravity(Gravity.CENTER);
+            addView(nameTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER | Gravity.BOTTOM, 0, 0, 0, 28));
+            phoneTextView.setGravity(Gravity.CENTER);
+            addView(phoneTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER | Gravity.BOTTOM, 0, 0, 0, 9));
+        }
     }
 
     @Override

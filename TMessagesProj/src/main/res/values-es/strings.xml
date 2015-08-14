@@ -835,9 +835,9 @@
     <string name="formatDateAtTime">%1$s a las %2$s</string>
     <!--update text-->
     <string name="updateText">Plus Messenger para Android fue actualizada. Novedades en la versión 3.1:\n\n- Busca mensajes dentro de un chat en específico.\n- Menú para adjuntar completamente rediseñado. Envía contactos y archivos de audio directamente desde el menú para adjuntar.\n- Reproducción de multimedia dentro de la aplicación mejorada (YouTube, Vimeo, SoundCloud etc.), nuevo reproductor para archivos de audio largos.\n\nMás sobre esta actualización:\nhttps://telegram.org/blog/search-and-media</string>
-    <string name="updateBuild">586</string>
-    <!--Telegram+ Spanish-->
-    <string name="updatePlusText">\n\nNovedades en 3.1.1.6:\n\n- Nuevo MOD para mostrar foto de contacto en pantalla chat\n- Nuevo MOD para mostrar foto propia en pantalla de chat y grupo\n- Nuevo MOD para alinear foto propia arriba de bocadillo en chat\n- Añadidos nuevos bocadillos Ed y Edge (gracias a Edwin Macalopu)\n- Nuevo MOD para ajustar color de fondo y de texto en vista adjuntar en pantalla chat\n- Nuevo MOD para ajustar color de título y botón de diálogo\n- Solución de errores</string>
+    <string name="updateBuild">590</string>
+    <!--Telegram+-->
+    <string name="updatePlusText">\n\nNovedades en 3.1.1.9:\n\n- Añadidos nuevos bocadillos iOs (gracias a Edwin Macalopu)\n- Nuevo MOD para mostrar nombre de usuario junto con nombre de miembro en grupos\n- Se muestra admin en perfil de grupo\n- Nuevo MOD para centrar foto, nombre y número en menú de navegación\n- Nuevo MOD para no parar audio en chat desactivando actuación de sensor de proximidad\n- Nuevo MOD para cambiar color de iconos en pantalla perfil\n- Solución de errores\n\n- Revisa, descarga y aplica temas para Plus Messenger: https://play.google.com/store/apps/details?id=es.rafalense.themes</string>
     <string name="TelegramForAndroid">Plus Messenger para Android</string>
     <string name="Theming">Tematización</string>
     <string name="colorHexInvalid">¡Color hexadecimal inválido!</string>
@@ -972,4 +972,8 @@
     <string name="ShowOwnAvatarGroup">Muestra foto propia en grupo</string>
     <string name="OwnAvatarAlignTop">Alinear foto propia arriba</string>
     <string name="DialogColor">Color de título/botón de diálogo</string>
+    <string name="ShowUsername">Muestra apodo junto a nombre de miembro</string>
+    <string name="DisableAudioStop">No parar audio</string>
+    <string name="ListDividerColor">Color de divisor de lista</string>
+    <string name="CenterAvatar">Centrar avatar, nombre y móvil</string>
 </resources>

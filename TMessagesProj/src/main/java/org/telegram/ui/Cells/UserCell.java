@@ -10,6 +10,7 @@ package org.telegram.ui.Cells;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.graphics.PorterDuff;
 import android.graphics.drawable.Drawable;
 import android.view.Gravity;
 import android.widget.FrameLayout;
@@ -105,6 +106,31 @@ public class UserCell extends FrameLayout {
         update(0);
     }
 
+    private void updateTheme(){
+        SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+        String tag = getTag() != null ? getTag().toString() : "";
+        if(tag.contains("Contacts")){
+            setStatusColors(themePrefs.getInt("contactsStatusColor", 0xffa8a8a8), themePrefs.getInt("contactsOnlineColor", AndroidUtilities.getIntDarkerColor("themeColor", 0x15)));
+            nameColor = themePrefs.getInt("contactsNameColor", 0xff212121);
+            nameTextView.setTextColor(nameColor);
+            nameTextView.setTextSize(themePrefs.getInt("contactsNameSize", 17));
+            setStatusSize(themePrefs.getInt("contactsStatusSize", 14));
+            setAvatarRadius(themePrefs.getInt("contactsAvatarRadius", 32));
+        }else if(tag.contains("Profile")){
+            setStatusColors(themePrefs.getInt("profileSummaryColor", 0xff8a8a8a), AndroidUtilities.getIntDarkerColor("themeColor", -0x40));
+            nameColor = themePrefs.getInt("profileTitleColor", 0xff212121);
+            nameTextView.setTextColor(nameColor);
+            nameTextView.setTextSize(17);
+            setStatusSize(14);
+            setAvatarRadius(32);
+            if(currentDrawable != 0) {
+                int dColor = themePrefs.getInt("profileIconsColor", 0xff737373);
+                Drawable d = getResources().getDrawable(currentDrawable);
+                d.setColorFilter(dColor, PorterDuff.Mode.SRC_IN);
+            }
+        }
+    }
+
     public void setChecked(boolean checked, boolean animated) {
         if (checkBox.getVisibility() != VISIBLE) {
             checkBox.setVisibility(VISIBLE);
@@ -131,7 +157,7 @@ public class UserCell extends FrameLayout {
         if (currentUser.photo != null) {
             photo = currentUser.photo.photo_small;
         }
-
+        updateTheme();
         if (mask != 0) {
             boolean continueUpdate = false;
             if ((mask & MessagesController.UPDATE_MASK_AVATAR) != 0) {
@@ -158,7 +184,7 @@ public class UserCell extends FrameLayout {
                 return;
             }
         }
-        SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+        ////SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
         avatarDrawable.setInfo(currentUser);
         if (currentUser.status != null) {
             lastStatus = currentUser.status.expires;
@@ -172,8 +198,8 @@ public class UserCell extends FrameLayout {
         } else {
             lastName = newName == null ? UserObject.getUserName(currentUser) : newName;
             nameTextView.setText(lastName);
-            nameTextView.setTextColor(nameColor);
-            nameTextView.setTextSize(themePrefs.getInt("contactsNameSize", 17));
+            ////nameTextView.setTextColor(nameColor);
+            ////nameTextView.setTextSize(themePrefs.getInt("contactsNameSize", 17));
         }
         if (currrntStatus != null) {
             statusTextView.setTextColor(statusColor);
@@ -200,8 +226,10 @@ public class UserCell extends FrameLayout {
         if (imageView.getVisibility() == VISIBLE && currentDrawable == 0 || imageView.getVisibility() == GONE && currentDrawable != 0) {
             imageView.setVisibility(currentDrawable == 0 ? GONE : VISIBLE);
             imageView.setImageResource(currentDrawable);
+            if(currentDrawable != 0)imageView.setImageDrawable(getResources().getDrawable(currentDrawable));
         }
-        statusTextView.setTextSize(themePrefs.getInt("contactsStatusSize", 14));
+        //Plus
+        ////statusTextView.setTextSize(themePrefs.getInt("contactsStatusSize", 14));
         //imageView.setVisibility(currentDrawable == 0 ? INVISIBLE : VISIBLE);
         //imageView.setImageResource(currentDrawable);
         if(curDrawable != null)imageView.setImageDrawable(curDrawable);
@@ -209,7 +237,7 @@ public class UserCell extends FrameLayout {
         //int radius = AndroidUtilities.dp(themePrefs.getInt("contactsAvatarRadius", 32));
         avatarImageView.getImageReceiver().setRoundRadius(AndroidUtilities.dp(radius));
         avatarDrawable.setRadius(AndroidUtilities.dp(radius));
-
+        //
         avatarImageView.setImage(photo, "50_50", avatarDrawable);
     }
 
@@ -217,8 +245,16 @@ public class UserCell extends FrameLayout {
         nameColor = color;
     }
 
+    public void setNameSize(int size) {
+        nameTextView.setTextSize(size);
+    }
+
     public void setStatusColor(int color) {
         statusColor = color;
+    }
+
+    public void setStatusSize(int size) {
+        statusTextView.setTextSize(size);
     }
 
     public void setImageDrawable(Drawable drawable){

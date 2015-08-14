@@ -32,8 +32,8 @@ public class DividerCell extends BaseCell {
         setMeasuredDimension(MeasureSpec.getSize(widthMeasureSpec), AndroidUtilities.dp(16) + 1);
         String key = getTag() != null ? getTag().toString() : null;
         if(key != null){
-            int color = AndroidUtilities.getIntDef(key, 0xffffffff);
-            paint.setColor(color == 0xffffffff ? 0xffd9d9d9 : color);
+            int color = AndroidUtilities.getIntDef(key, 0xffd9d9d9);
+            paint.setColor(color);
         }
     }
 

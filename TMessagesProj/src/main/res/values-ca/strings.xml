@@ -829,7 +829,8 @@
   <string name="formatterDay24H">HH:mm</string>
   <string name="formatterDay12H">h:mm a</string>
   <string name="formatDateAtTime">%1$s a les %2$s</string>
-    <!--Telegram+ Catalan-->
+    <!--Telegram+--><!--
+  <string name="updatePlusText">\n\nNovetats a la versió 3.1.1.6\n\n- Nou MOD per mostrar l\'avatar dels contactes als xats\n- Nou MOD per mostrar l\'avatar propi als xats i grups\n- Nou MOD per alinear l\'avatar propi a dalt\n- S\'han afegit les noves bombolles Ed i Edge (gràcies a Edwin Macalopu)\n- Nou MOD per canviar el color de fons i de text del menú d\'adjuntar als xats\n- Nou MOD per canviar el color del títol i botons dels diàlegs\n- Correcció d\'errors</string>-->
     <string name="TelegramForAndroid">Plus Messenger per Android</string>
   <string name="Theming">Aparença</string>
   <string name="colorHexInvalid">Codi de color hexadecimal no vàlid.</string>
@@ -927,14 +928,14 @@
   <string name="RLinkColor">Color de l\'enllaç dret</string>
   <string name="LLinkColor">Color de l\'enllaç esquerre</string>
   <string name="ThemeApplied">S\'ha aplicat el tema!</string>
-  <string name="ClickOkToRestart">Premeu D\'acord per reiniciar</string>
-  <string name="ShowAndroidEmoji">Mostra les icones del sistema</string>
+  <string name="ClickOkToRestart">Premeu «D\'acord» per reiniciar</string>
+  <string name="ShowAndroidEmoji">Mostra els emojis del sistema</string>
   <string name="BubbleStyle">Estil de la bombolla</string>
   <string name="KeepOriginalFilename">Conserva el nom original</string>
   <string name="KeepOriginalFilenameHelp">En compte de només números, els fitxers es desaran usant el format nom_data</string>
   <string name="AvatarSize">Mida de l\'avatar</string>
-  <string name="AvatarAlignTop">Alinea l\'avatar a sobre</string>
-  <string name="AvatarMarginLeft">Marge esquerre de l\'avatar</string>
+  <string name="AvatarAlignTop">Alinea l\'avatar dels contactes a dalt</string>
+  <string name="AvatarMarginLeft">Marge de l\'avatar</string>
   <string name="GroupNameColor">Color del nom del grup</string>
   <string name="GroupNameSize">Mida del nom del grup</string>
   <string name="UnknownNameColor">Color del nom (contacte desconegut)</string>
@@ -952,9 +953,17 @@
   <string name="TitleColor">Color del títol</string>
   <string name="SummaryColor">Color del resum/subtítol</string>
   <string name="MediaColor">Color del text «Foto/Adhesiu»</string>
-  <string name="ThemesAppMsg">Voleu veure alguns temes creats per altes usuaris de Plus Messenger?</string>
+  <string name="ThemesAppMsg">Vols veure alguns temes creats per altes usuaris de Plus Messenger?</string>
   <string name="UseDeviceFont">Usa la font del dispositiu</string>
   <string name="AppWillRestart">Plus Messenger es reiniciarà</string>
   <string name="GroupIconColor">Color de la icona de grup</string>
   <string name="SharedContactNameColor">Color del nom de contacte compartit</string>
+  <string name="AttachBGColor">Color del fons del menú Adjuntar</string>
+  <string name="AttachTextColor">Color del text del menú Adjuntar</string>
+  <string name="ShowContactAvatar">Mostra l\'avatar dels contactes al xat</string>
+  <string name="ShowOwnAvatar">Mostra el meu propi avatar al xat</string>
+  <string name="ShowOwnAvatarGroup">Mostra el meu avatar als grups</string>
+  <string name="OwnAvatarAlignTop">Alinea el meu avatar a dalt</string>
+  <string name="DialogColor">Color del títol/botó dels diàlegs</string>
+  <string name="ShowUsername">Mostra el nom d\'usuari dels membres</string>
 </resources>

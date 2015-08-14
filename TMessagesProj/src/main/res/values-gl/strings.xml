@@ -825,7 +825,7 @@ e introduce o teu número.</string>
   <string name="formatterDay24H">HH:mm</string>
   <string name="formatterDay12H">h:mm a</string>
   <string name="formatDateAtTime">%1$s ás %2$s</string>
-  <!--Telegram+ Galician-->
+  <!--Telegram+-->
     <string name="TelegramForAndroid">Plus Messenger para Android</string>
     <string name="Theming">Tematización</string>
     <string name="colorHexInvalid">Cor hexadecimal inválida!</string>

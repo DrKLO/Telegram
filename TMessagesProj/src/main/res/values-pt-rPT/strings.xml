@@ -835,8 +835,8 @@
     <string name="formatDateAtTime">%1$s às %2$s</string>
     <!--update text-->
     <string name="updateText">Plus Messenger para Android foi atualizado. Novo na versão 3.1:\n\n- Busca por mensagens dentro de um chat específico.\n-Menu de anexo totalmente redesenhado. Envie contatos e arquivos de áudio diretamente do menu de anexo.\n- Reprodução melhorada de mídia dentro do aplicativo (YouTube, Vimeo, SoundCloud, etc.), novo player para grandes arquivos de áudio.\n\nMais sobre a atualização:\nhttps://telegram.org/blog/search-and-media</string>
-    <string name="updateBuild">586</string>
-    <!--Telegram+ Portuguese(Portugal)-->
+    <string name="updateBuild">590</string>
+    <!--Telegram+-->
   <string name="TelegramForAndroid">Plus Messenger para Android</string>
   <string name="Theming">Temas</string>
   <string name="colorHexInvalid">O código hexadecimal da cor é inválido!</string>

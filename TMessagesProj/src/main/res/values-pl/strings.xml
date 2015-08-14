@@ -669,7 +669,7 @@
     <string name="formatterDay24H">HH:mm</string>
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s podczas %2$s</string>
-    <!--Telegram+ Polish-->
+    <!--Telegram+-->
   <string name="TelegramForAndroid">Plus Messenger dla Androida</string>
   <string name="Theming">Motywy</string>
   <string name="colorHexInvalid">Zły kod hex</string>

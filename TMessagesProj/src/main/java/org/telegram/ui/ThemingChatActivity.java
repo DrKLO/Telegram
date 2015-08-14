@@ -99,6 +99,7 @@ public class ThemingChatActivity extends BaseFragment {
     private int showContactAvatar;
     private int showOwnAvatar;
     private int showOwnAvatarGroup;
+    private int showUsernameCheckRow;
 
     private int rowCount;
 
@@ -159,6 +160,8 @@ public class ThemingChatActivity extends BaseFragment {
         contactNameColorRow = rowCount++;
         forwardRightNameColorRow = rowCount++;
         forwardLeftNameColorRow = rowCount++;
+
+        showUsernameCheckRow = rowCount++;
 
         sendColorRow = rowCount++;
         editTextSizeRow = rowCount++;
@@ -262,6 +265,17 @@ public class ThemingChatActivity extends BaseFragment {
                             listView.invalidateViews();
                         }
                     } else if (i == memberColorCheckRow) {
+                        boolean b = themePrefs.getBoolean( key, true);
+                        SharedPreferences.Editor editor = themePrefs.edit();
+                        editor.putBoolean( key, !b);
+                        editor.commit();
+                        if (view instanceof TextCheckCell) {
+                            ((TextCheckCell) view).setChecked(!b);
+                        }
+                        if (listView != null) {
+                            listView.invalidateViews();
+                        }
+                    } else if (i == showUsernameCheckRow) {
                         boolean b = themePrefs.getBoolean( key, true);
                         SharedPreferences.Editor editor = themePrefs.edit();
                         editor.putBoolean( key, !b);
@@ -1139,7 +1153,7 @@ public class ThemingChatActivity extends BaseFragment {
             return  i == headerColorRow || i == muteColorRow || i == headerIconsColorRow || i == rBubbleColorRow || i == lBubbleColorRow ||  i == bubblesRow ||
                     i == solidBGColorCheckRow || AndroidUtilities.getBoolPref("chatSolidBGColorCheck") && i == solidBGColorRow || i == avatarRadiusRow || i == avatarSizeRow || i == avatarMarginLeftRow || i == avatarAlignTopRow || i == ownAvatarAlignTopRow || i == showContactAvatar || i == showOwnAvatar || i == showOwnAvatarGroup || i == nameColorRow || i == nameSizeRow || i == statusColorRow || i == statusSizeRow ||
                     i == textSizeRow || i == timeSizeRow || i == dateColorRow || i == dateSizeRow || i == dateBubbleColorRow || i == rTextColorRow || i == rLinkColorRow || i == lTextColorRow || i == lLinkColorRow ||
-                    i == rTimeColorRow|| i == lTimeColorRow || i == checksColorRow || i == memberColorCheckRow || AndroidUtilities.getBoolPref("chatMemberColorCheck") && i == memberColorRow || i == contactNameColorRow || i == forwardRightNameColorRow || i == forwardLeftNameColorRow ||
+                    i == rTimeColorRow|| i == lTimeColorRow || i == checksColorRow || i == memberColorCheckRow || AndroidUtilities.getBoolPref("chatMemberColorCheck") && i == memberColorRow || i == contactNameColorRow || i == forwardRightNameColorRow || i == forwardLeftNameColorRow || i == showUsernameCheckRow ||
                     i == editTextSizeRow || i == editTextColorRow || i == editTextIconsColorRow || i == sendColorRow || i == editTextBGColorRow || i == attachBGColorRow || i == attachTextColorRow ||
                     i == emojiViewBGColorRow || i == emojiViewTabColorRow;
         }
@@ -1234,6 +1248,9 @@ public class ThemingChatActivity extends BaseFragment {
                 } else if (i == memberColorCheckRow) {
                     textCell.setTag("chatMemberColorCheck");
                     textCell.setTextAndCheck(LocaleController.getString("SetMemberColor", R.string.SetMemberColor), themePrefs.getBoolean("chatMemberColorCheck", false), false);
+                } else if (i == showUsernameCheckRow) {
+                    textCell.setTag("chatShowUsernameCheck");
+                    textCell.setTextAndCheck(LocaleController.getString("ShowUsername", R.string.ShowUsername), themePrefs.getBoolean("chatShowUsernameCheck", false), true);
                 } else if (i == avatarAlignTopRow) {
                     textCell.setTag("chatAvatarAlignTop");
                     textCell.setTextAndCheck(LocaleController.getString("AvatarAlignTop", R.string.AvatarAlignTop), themePrefs.getBoolean("chatAvatarAlignTop", false), true);
@@ -1350,7 +1367,7 @@ public class ThemingChatActivity extends BaseFragment {
                     i == sendColorRow || i == editTextColorRow || i == editTextBGColorRow || i == editTextIconsColorRow ||  i == attachBGColorRow || i == attachTextColorRow ||
                     i == emojiViewBGColorRow || i == emojiViewTabColorRow) {
                 return 3;
-            } else if (i == solidBGColorCheckRow || i == memberColorCheckRow || i == avatarAlignTopRow || i == ownAvatarAlignTopRow || i == showContactAvatar || i == showOwnAvatar || i == showOwnAvatarGroup) {
+            } else if (i == solidBGColorCheckRow || i == memberColorCheckRow || i == showUsernameCheckRow || i == avatarAlignTopRow || i == ownAvatarAlignTopRow || i == showContactAvatar || i == showOwnAvatar || i == showOwnAvatarGroup) {
                 return 4;
             }
             else {

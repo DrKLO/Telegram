@@ -192,6 +192,7 @@ public class ContactsAdapter extends BaseSectionsAdapter {
         int cColorGrey = themePrefs.getInt("contactsNameColor", 0xff737373);
         int cColorBlack = themePrefs.getInt("contactsNameColor", 0xff000000);
         int iconsColor = themePrefs.getInt("contactsIconsColor", 0xff737373);
+
         if (type == 4) {
             if (convertView == null) {
                 convertView = new DividerCell(mContext);
@@ -257,15 +258,12 @@ public class ContactsAdapter extends BaseSectionsAdapter {
         } else if (type == 0) {
             if (convertView == null) {
                 convertView = new UserCell(mContext, 58);
-                //((UserCell) convertView).setStatusColors(0xffa8a8a8, 0xff3b84c0);
-                ((UserCell) convertView).setStatusColors(themePrefs.getInt("contactsStatusColor", 0xffa8a8a8), themePrefs.getInt("contactsOnlineColor", AndroidUtilities.getIntDarkerColor("themeColor", 0x15)));
-                ((UserCell) convertView).setNameColor(cColorBlack);
-                ((UserCell) convertView).setAvatarRadius(themePrefs.getInt("contactsAvatarRadius", 32));
+                convertView.setTag("Contacts");
             }
 
             ArrayList<TLRPC.TL_contact> arr = ContactsController.getInstance().usersSectionsDict.get(ContactsController.getInstance().sortedUsersSectionsArray.get(section - (onlyUsers && !isAdmin ? 0 : 1)));
             TLRPC.User user = MessagesController.getInstance().getUser(arr.get(position).user_id);
-            ((UserCell)convertView).setData(user, null, null, 0);
+            ((UserCell) convertView).setData(user, null, null, 0);
             if (checkedMap != null) {
                 ((UserCell) convertView).setChecked(checkedMap.containsKey(user.id), !scrolling  && Build.VERSION.SDK_INT > 10);
             }
@@ -276,6 +274,12 @@ public class ContactsAdapter extends BaseSectionsAdapter {
                     ViewProxy.setAlpha(convertView, 1.0f);
                 }
             }
+            //((UserCell) convertView).setStatusColors(0xffa8a8a8, 0xff3b84c0);
+            //((UserCell) convertView).setStatusColors(themePrefs.getInt("contactsStatusColor", 0xffa8a8a8), themePrefs.getInt("contactsOnlineColor", AndroidUtilities.getIntDarkerColor("themeColor", 0x15)));
+            //((UserCell) convertView).setNameColor(cColorBlack);
+            //((UserCell) convertView).setNameSize(themePrefs.getInt("contactsNameSize", 17));
+            //((UserCell) convertView).setStatusSize(themePrefs.getInt("contactsStatusSize", 14));
+            //((UserCell) convertView).setAvatarRadius(themePrefs.getInt("contactsAvatarRadius", 32));
         }
         parent.setBackgroundColor(themePrefs.getInt("contactsRowColor", 0xffffffff)); //Plus
         return convertView;

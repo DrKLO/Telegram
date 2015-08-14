@@ -437,7 +437,14 @@ public class ChatBaseCell extends BaseCell {
 
         if (drawName && isChat && currentUser != null && !currentMessageObject.isOut()) {
             currentNameString = UserObject.getUserName(currentUser);
+
+            String currentUsernameString = currentUser.username;
+
             nameWidth = getMaxNameWidth();
+            if(currentUsernameString != null && AndroidUtilities.getBoolPref("chatShowUsernameCheck")){
+                currentNameString = currentNameString.replaceAll("\\p{C}", " ");
+                currentNameString = currentNameString.trim().replaceAll(" +", " ") + " [@"+currentUsernameString+"]";
+            }
 
             CharSequence nameStringFinal = TextUtils.ellipsize(currentNameString.replace("\n", " "), namePaint, nameWidth - AndroidUtilities.dp(12), TextUtils.TruncateAt.END);
             nameLayout = new StaticLayout(nameStringFinal, namePaint, nameWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);

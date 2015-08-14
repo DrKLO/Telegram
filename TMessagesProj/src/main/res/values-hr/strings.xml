@@ -595,7 +595,7 @@ http://telegram.org/update</string>
     <string name="formatterDay24H">HH:mm</string>
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s u %2$s</string>
-    <!--Telegram+ Croatian-->
+    <!--Telegram+-->
   <string name="TelegramForAndroid">Plus Messenger za Android</string>
   <string name="Theming">Izrada teme</string>
   <string name="colorHexInvalid">Neispravan hex kod za boju!</string>

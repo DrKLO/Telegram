@@ -835,10 +835,10 @@
     <string name="formatDateAtTime">%1$s alle %2$s</string>
     <!--update text-->
     <string name="updateText">Plus Messenger per Android si è aggiornato. Nuovo nella versione 3.1:\n\n- Cerca messaggi all\'interno di una specifica chat.\n- Menu degli allegati completamente ridisegnato. Invia contatti e audio direttamente dal menu degli allegati.\n- Riproduzione in-app migliorata (YouTube, Vimeo, SoundCloud etc.), nuovo player per i file audio.\n\nMaggiori informazioni su questo aggiornamento:\nhttps://telegram.org/blog/search-and-media</string>
-    <string name="updateBuild">586</string>
+    <string name="updateBuild">590</string>
     <!--Telegram+-->
   <string name="updatePlusText">
-\n\nNovità 3.1.1.6:\n\n- Nuova MOD per visualizzare il proprio avatar nella schermata del gruppo\n- Nuova MOD per allineare il proprio avatar all\'intestazione\n- Aggiunta MOD per cambiare il colore di titolo e pulsante dei dialog\n- Correzioni bug</string>
+\n\nNew in 3.1.1.9:\n\n- Nuove bolle in stile iOS aggiunte (tgrazie a Edwin Macalopu)\n- Nuova MOD per mostrare l\'username assieme al nome del partecipante del gruppo\n- Mostra l\'amministratore del gruppo nella schermata del profilo del gruppo. L\'amministratore ha un\'icona particolare\n- Nuova MOD per centrare l\'avatar, il nome ed il telefono nel menu di navigazione\n- Nuova MOD per continuare a riprodurre gli audio nelle chat disabilitndo l\'azione del sensore di prossimità\n- Nuova MOD per cambiare il colore delle icone nella schermata profilo\n- Bug fixes\n\nEsplora e scarica temi per Plus Messenger: https://play.google.com/store/apps/details?id=es.rafalense.themes</string>
     <string name="TelegramForAndroid">Plus Messenger per Android</string>
   <string name="Theming">Personalizzazione</string>
     <string name="colorHexInvalid">Codice del colore esadecimale non valido!</string>
@@ -973,4 +973,8 @@
   <string name="ShowOwnAvatarGroup">Visualizza il proprio avatar nella schermata del gruppo</string>
   <string name="OwnAvatarAlignTop">Allinea il proprio avatar all\'intestazione</string>
   <string name="DialogColor">Colore titolo/pulsante dei dialog</string>
+  <string name="ShowUsername">Visualizza lo username con il nome del membro</string>
+  <string name="DisableAudioStop">Non interrompere l\'audio</string>
+  <string name="ListDividerColor">Colore del divisore delle liste</string>
+  <string name="CenterAvatar">Centra l\'avatar, il nome ed il numero di telefono</string>
 </resources>

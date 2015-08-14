@@ -808,10 +808,10 @@
     <string name="formatDateAtTime">%1$s 於時間 %2$s</string>
   <!--update text-->
   <string name="updateText">Android 版的 Plus Messenger 已經更新。在版本 3.1 的新功能：\n\n- 在特定的聊天室裡搜尋訊息。\n- 完全重新設計的附件選單。從附件選單直接傳送「聯絡人」資訊和「音訊檔」。\n- 改進的程式內媒體播放( YouTube、Vimoe、SoundCloud 等 )，新的播放器適用於大型音訊檔。\n\n更多關於這次的更新：\nhttps://telegram.org/blog/search-and-media</string>
-  <string name="updateBuild">586</string>
+  <string name="updateBuild">590</string>
   <!--Telegram+-->
   <string name="updatePlusText">
-\n\n在 3.1.1.6 版的新功能：\n\n- 新的模組在聊天畫面顯示擁有的大頭照\n- 加入新的泡泡邊緣 (感謝 Edwin Macalopu)\n- 錯誤修復</string>
+\n\n在 3.1.1.9 版的新功能：\n\n- 新的模組在聊天畫面顯示擁有的大頭照\n- 加入新的泡泡邊緣 (感謝 Edwin Macalopu)\n- 錯誤修復</string>
   <string name="TelegramForAndroid">適用於 Android 的 Plus Messenger</string>
   <string name="Theming">自製佈景主題</string>
   <string name="colorHexInvalid">無效的十六進位顏色代碼！</string>
@@ -916,7 +916,7 @@
   <string name="KeepOriginalFilenameHelp">取代僅僅是數字的方式，檔案將被儲存為「名稱_日期」的格式</string>
   <string name="AvatarSize">大頭照大小</string>
   <string name="AvatarAlignTop">對齊大頭照到頂端</string>
-  <string name="AvatarMarginLeft">大頭照左邊距</string>
+  <string name="AvatarMarginLeft">大頭照邊緣</string>
   <string name="GroupNameColor">群組名稱顏色</string>
   <string name="GroupNameSize">群組名稱大小</string>
   <string name="UnknownNameColor">名稱顏色 (數量不明)</string>
@@ -943,5 +943,7 @@
   <string name="AttachTextColor">附加文字顏色</string>
   <string name="ShowContactAvatar">在聊天畫面中顯示聯絡人大頭照</string>
   <string name="ShowOwnAvatar">在聊天畫面中顯示擁有的大頭照</string>
+  <string name="ShowOwnAvatarGroup">在群組畫面中顯示擁有的大頭照</string>
   <string name="OwnAvatarAlignTop">對齊擁有的大頭照到頂端</string>
+  <string name="DialogColor">對話框標題/按鈕顏色</string>
 </resources>

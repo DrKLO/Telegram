@@ -554,7 +554,9 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
 
                     if(isChat){
                         TLRPC.User fromUser = MessagesController.getInstance().getUser(messageObject.messageOwner.from_id);
-                        //String senderName = String.format("%s %s", fromUser.first_name, fromUser.last_name);
+
+                        String senderName = UserObject.getUserName(fromUser);
+                        /*//String senderName = String.format("%s %s", fromUser.first_name, fromUser.last_name);
                         String senderName = "";
                         if (UserObject.isDeleted(fromUser)) {
                             senderName = "Deleted";
@@ -564,7 +566,7 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
                             } else {
                                 senderName = fromUser.last_name;
                             }
-                        }
+                        }*/
                         infoWidth2 = Math.min(maxWidth, (int) Math.ceil(senderPaint.measureText(senderName)));
                         CharSequence str2 = TextUtils.ellipsize(senderName, senderPaint, infoWidth2, TextUtils.TruncateAt.END);
                         infoLayout2 = new StaticLayout(str2, senderPaint, infoWidth2, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
@@ -602,7 +604,10 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
                         infoOffset2 = ResourceLoader.videoIconDrawable.getIntrinsicWidth() + AndroidUtilities.dp(5);
                         infoOffset = 0;
                         TLRPC.User fromUser = MessagesController.getInstance().getUser(messageObject.messageOwner.from_id);
-                        String senderName = String.format("%s %s", fromUser.first_name, fromUser.last_name);
+                        //String senderName = String.format("%s %s", fromUser.first_name, fromUser.last_name);
+
+                        String senderName = UserObject.getUserName(fromUser);
+
                         infoWidth2 = (int) Math.ceil(infoPaint.measureText(currentInfoString));
                         //infoWidth = (int) Math.ceil(senderPaint.measureText(senderName));
                         infoWidth = Math.max(infoWidth2, (int) Math.ceil(senderPaint.measureText(senderName)));
@@ -617,6 +622,16 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
             }//Plus: member name in photos
             else if (messageObject.type == 1) {   //PHOTO
                 TLRPC.User fromUser = MessagesController.getInstance().getUser(messageObject.messageOwner.from_id);
+
+                String senderName = UserObject.getUserName(fromUser);
+                /*
+                String currentUsernameString = fromUser.username;
+
+                if(currentUsernameString != null && AndroidUtilities.getBoolPref("chatShowUsernameCheck")){
+                    senderName = senderName.replaceAll("\\p{C}", " ");
+                    senderName = senderName.trim().replaceAll(" +", " ") + " [@"+currentUsernameString+"]";
+                }*/
+                /*
                 String senderName = String.format("%s %s", fromUser.first_name, fromUser.last_name);
                 if (UserObject.isDeleted(fromUser)) {
                     senderName = "Deleted";
@@ -626,7 +641,7 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
                     } else if (fromUser.last_name != null && fromUser.last_name.length() > 0){
                         senderName = fromUser.last_name;
                     }
-                }
+                }*/
                 if (currentInfoString == null || !currentInfoString.equals(senderName)) {
                     currentInfoString = senderName;
                     infoOffset = 0;
@@ -1173,10 +1188,14 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
         }
 
         radialProgress.onDraw(canvas);
-        if(themePrefs.getBoolean("chatMemberColorCheck", false)){
-            senderPaint.setColor(themePrefs.getInt("chatMemberColor", AndroidUtilities.getIntDarkerColor("themeColor", 0x15)));
-        }else{
-            senderPaint.setColor(AvatarDrawable.getNameColorForId(MessagesController.getInstance().getUser(currentMessageObject.messageOwner.from_id).id));
+        try{
+            if(themePrefs.getBoolean("chatMemberColorCheck", false)){
+                senderPaint.setColor(themePrefs.getInt("chatMemberColor", AndroidUtilities.getIntDarkerColor("themeColor", 0x15)));
+            }else{
+                senderPaint.setColor(AvatarDrawable.getNameColorForId(MessagesController.getInstance().getUser(currentMessageObject.messageOwner.from_id).id));
+            }
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
         }
         if (currentMessageObject.type == 1 || currentMessageObject.type == 3) {//1: photo  3: video
             if (nameLayout != null) {

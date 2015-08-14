@@ -62,6 +62,7 @@ public class ThemingProfileActivity extends BaseFragment {
     private int titleColorRow;
     private int summaryColorRow;
     private int avatarRadiusRow;
+    private int iconsColorRow;
 
     private int rowCount;
 
@@ -88,6 +89,7 @@ public class ThemingProfileActivity extends BaseFragment {
 
         titleColorRow = rowCount++;
         summaryColorRow = rowCount++;
+        iconsColorRow = rowCount++;
 
         return true;
     }
@@ -174,6 +176,19 @@ public class ThemingProfileActivity extends BaseFragment {
                             }
                         },themePrefs.getInt( key, 0xffffffff), CENTER, 0, false);
                         colorDialog.show();
+                    } else if (i == iconsColorRow) {
+                        if (getParentActivity() == null) {
+                            return;
+                        }
+                        LayoutInflater li = (LayoutInflater)getParentActivity().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+                        li.inflate(R.layout.colordialog, null, false);
+                        ColorSelectorDialog colorDialog = new ColorSelectorDialog(getParentActivity(), new OnColorChangedListener() {
+                            @Override
+                            public void colorChanged(int color) {
+                                commitInt( key, color);
+                            }
+                        },themePrefs.getInt( key, 0xff737373), CENTER, 0, false);
+                        colorDialog.show();
                     } else if (i == nameColorRow) {
                         if (getParentActivity() == null) {
                             return;
@@ -238,7 +253,7 @@ public class ThemingProfileActivity extends BaseFragment {
                         builder.setNegativeButton(LocaleController.getString("Done", R.string.Done), new DialogInterface.OnClickListener() {
                             @Override
                             public void onClick(DialogInterface dialog, int which) {
-                                if(numberPicker.getValue() != currentValue){
+                                if (numberPicker.getValue() != currentValue) {
                                     commitInt(key, numberPicker.getValue());
                                 }
                             }
@@ -274,7 +289,7 @@ public class ThemingProfileActivity extends BaseFragment {
                             @Override
                             public void onClick(DialogInterface dialog, int which) {
                                 if (numberPicker.getValue() != currentValue) {
-                                    commitInt( "profileAvatarRadius", numberPicker.getValue());
+                                    commitInt("profileAvatarRadius", numberPicker.getValue());
                                 }
                             }
                         });
@@ -411,7 +426,7 @@ public class ThemingProfileActivity extends BaseFragment {
 
         @Override
         public boolean isEnabled(int i) {
-            return  i == headerColorRow  || i == headerIconsColorRow || i == nameColorRow || i == nameSizeRow || i == statusColorRow || i == statusSizeRow ||
+            return  i == headerColorRow  || i == headerIconsColorRow || i == iconsColorRow || i == nameColorRow || i == nameSizeRow || i == statusColorRow || i == statusSizeRow ||
                     i == rowColorRow || i == titleColorRow || i == summaryColorRow || i == avatarRadiusRow;
         }
 
@@ -487,6 +502,9 @@ public class ThemingProfileActivity extends BaseFragment {
                 } else if (i == headerIconsColorRow) {
                     textCell.setTag("profileHeaderIconsColor");
                     textCell.setTextAndColor(LocaleController.getString("HeaderIconsColor", R.string.HeaderIconsColor), themePrefs.getInt(textCell.getTag().toString(), 0xffffffff), true);
+                } else if (i == iconsColorRow) {
+                    textCell.setTag("profileIconsColor");
+                    textCell.setTextAndColor(LocaleController.getString("IconsColor", R.string.IconsColor), themePrefs.getInt(textCell.getTag().toString(), 0xff737373), false);
                 } else if (i == nameColorRow) {
                     textCell.setTag("profileNameColor");
                     textCell.setTextAndColor(LocaleController.getString("NameColor", R.string.NameColor), themePrefs.getInt(textCell.getTag().toString(), 0xffffffff), true);
@@ -501,7 +519,7 @@ public class ThemingProfileActivity extends BaseFragment {
                     textCell.setTextAndColor(LocaleController.getString("NameColor", R.string.NameColor), themePrefs.getInt(textCell.getTag().toString(), 0xff000000), true);
                 } else if (i == summaryColorRow) {
                     textCell.setTag("profileSummaryColor");
-                    textCell.setTextAndColor(LocaleController.getString("StatusColor", R.string.StatusColor), themePrefs.getInt(textCell.getTag().toString(), 0xff8a8a8a), false);
+                    textCell.setTextAndColor(LocaleController.getString("StatusColor", R.string.StatusColor), themePrefs.getInt(textCell.getTag().toString(), 0xff8a8a8a), true);
                 }
             }
             return view;
@@ -519,7 +537,7 @@ public class ThemingProfileActivity extends BaseFragment {
                 return 2;
             }
 
-            else if ( i == headerColorRow  || i == headerIconsColorRow || i == nameColorRow || i == statusColorRow ||
+            else if ( i == headerColorRow  || i == headerIconsColorRow || i == iconsColorRow || i == nameColorRow || i == statusColorRow ||
                       i == rowColorRow || i == titleColorRow || i == summaryColorRow) {
                 return 3;
             }

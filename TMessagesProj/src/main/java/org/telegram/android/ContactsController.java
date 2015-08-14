@@ -1809,14 +1809,18 @@ public class ContactsController {
     }
 
     public static String formatName(String firstName, String lastName) {
-        /*if ((firstName == null || firstName.length() == 0) && (lastName == null || lastName.length() == 0)) {
+        if ((firstName == null || firstName.length() == 0) && (lastName == null || lastName.length() == 0)) {
             return LocaleController.getString("HiddenName", R.string.HiddenName);
-        }*/
+        }
         if (firstName != null) {
             firstName = firstName.trim();
+            //firstName = firstName.replaceAll("[^\\x00-\\x7F]", "");
+            //firstName = firstName.trim().replaceAll(" +", " ");
         }
         if (lastName != null) {
             lastName = lastName.trim();
+            //lastName = lastName.replaceAll("[^\\x00-\\x7F]", "");
+            //lastName = lastName.trim().replaceAll(" +", " ");
         }
         StringBuilder result = new StringBuilder((firstName != null ? firstName.length() : 0) + (lastName != null ? lastName.length() : 0) + 1);
         if (LocaleController.nameDisplayOrder == 1) {

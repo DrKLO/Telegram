@@ -835,10 +835,10 @@
     <string name="formatDateAtTime">%1$s um %2$s</string>
     <!--update text-->
     <string name="updateText">Plus Messenger für Android wurde aktualisiert. Neu in Version 3.1:\n\n- Direkte Suche in Chats.\n- In Chats versteckt sich ein komplett neues Menü hinter der Büroklammer. Nun kann man dort auch Musik und Kontakte versenden.\n- In-App Medienwiedergabe für YouTube, Vimeo, SoundCloud, etc. optimiert und neuer Player für Audiodateien.\n\nMehr dazu unter:\nhttps://telegram.org/blog/search-and-media</string>
-    <string name="updateBuild">586</string>
+    <string name="updateBuild">590</string>
     <!--Telegram+-->
   <string name="updatePlusText">
-\n\nNeu in 3.1.1.6:\n\n- Neuer MOD Zeige eigenes Profilbild im Gruppenchat \n- Neuer MOD eigenes Profilbild nach oben ausrichten\n- Hinzugefügt MOD Farbe der Dialogtitel/Taste ändern\n- Fehlerbehebung</string>
+\n\nNeu in 3.1.1.9:\n\n- Neue Sprechblase iOS hinzugefügt (Dank an Edwin Macalopu)\n- Neuer MOD Benutzernamen zusammen mit Mitgliedsnamen in Gruppen anzeigen\n- Zeigt Gruppe Admin im Gruppenprofil. Der Admin Benutzer hat ein eigenes Symbol\n- Neuer MOD Profilbild, Name und Telefonnummer im Hauptmenü zentrieren\n- Neuer MOD um Wiedergabe von Audio im Chat zu halten wird der Näherungssensor deaktiviert\n- Neuer MOD ändert Profilbild Farbe in Profilübersicht \n- Fehlerbeseitigung\n\n Prüfen und Anwenden von Themen für den Plus Messenger: https://play.google.com/store/apps/details?id=es.rafalense.themes</string>
     <string name="TelegramForAndroid">Plus Messenger für Android</string>
   <string name="Theming">Themen bearbeiten</string>
   <string name="colorHexInvalid">Ungültiger Hex-Code!</string>
@@ -941,7 +941,7 @@
   <string name="BubbleStyle">Sprechblasen Form</string>
   <string name="KeepOriginalFilename">original Dateinamen speichern</string>
   <string name="KeepOriginalFilenameHelp">Statt Zahlen wird Dateiname_Datum gespeichert</string>
-  <string name="AvatarSize">Profilbild Rand</string>
+  <string name="AvatarSize">Profilbild</string>
   <string name="AvatarAlignTop">Kontakt Profibild nach oben</string>
   <string name="AvatarMarginLeft">Profilbild Rand</string>
   <string name="GroupNameColor">Gruppenname</string>
@@ -972,5 +972,9 @@
   <string name="ShowOwnAvatar">Zeige eigenes Profilbild im Chat</string>
   <string name="ShowOwnAvatarGroup">Zeige eigenes Profilbild im Gruppenchat</string>
   <string name="OwnAvatarAlignTop">Eigenes Profilbild nach oben</string>
-  <string name="DialogColor">Dialog Titel/Schaltfläche</string>
+  <string name="DialogColor">Dialoge Titel/Schaltflächen</string>
+  <string name="ShowUsername">Zeige Benutzernamen mit Mitgliedsnamen</string>
+  <string name="DisableAudioStop">Audio nicht stoppen</string>
+  <string name="ListDividerColor">Optionliste Trennstrich</string>
+  <string name="CenterAvatar">Profilbild, Name und Telefonnummer zentriert</string>
 </resources>

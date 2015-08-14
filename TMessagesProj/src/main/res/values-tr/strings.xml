@@ -11,6 +11,7 @@
   <!--code enter view-->
   <string name="YourCode">Kodunuz</string>
   <string name="SentSmsCode">Telefonunuza bir etkinleştirme mesajı gönderdik</string>
+  <string name="CallText">%1$d:%2$02d içinde sizi arayacağız</string>
   <string name="Calling">Sizi arıyoruz...</string>
   <string name="Code">Kod</string>
   <string name="WrongNumber">Numara yanlış mı?</string>
@@ -41,15 +42,20 @@
   <string name="ClearHistory">Geçmişi temizle</string>
   <string name="DeleteChat">Sil ve çık</string>
   <string name="DeleteChatUser">Sohbeti sil</string>
+  <string name="HiddenName">Silinmiş Hesap</string>
   <string name="SelectChat">Sohbet Seç</string>
   <string name="SearchMessages">MESAJLAR</string>
   <string name="Search">Ara</string>
+  <string name="MuteNotifications">Bildirimleri sustur</string>
+  <string name="UnmuteNotifications">Sesi aç</string>
+  <string name="MuteDisable">Devre dışı</string>
   <!--broadcasts-->
   <string name="NewBroadcastList">Yeni Yayın Listesi</string>
   <string name="EnterListName">Liste adı girin</string>
   <string name="YouCreatedBroadcastList">Bir yayın listesi oluşturdunuz</string>
   <string name="AddRecipient">Alıcı ekle</string>
   <string name="KickFromBroadcast">Yayın listesinden kaldır</string>
+  <!--audio view-->
   <!--documents view-->
   <string name="SelectFile">Dosya Seç</string>
   <string name="FreeOfTotal">%1$s - %2$s</string>
@@ -69,6 +75,9 @@
   <string name="Typing">yazıyor...</string>
   <string name="IsTyping">yazıyor...</string>
   <string name="AreTyping">yazıyorlar...</string>
+  <string name="IsSendingVideo">%1$s bir video gönderiyor...</string>
+  <string name="RecordingAudio">Ses kaydediliyor...</string>
+  <string name="SendingPhoto">fotoğraf gönderiliyor...</string>
   <string name="ChatTakePhoto">Fotoğraf çek</string>
   <string name="ChatGallery">Galeri</string>
   <string name="ChatLocation">Konum</string>
@@ -94,6 +103,7 @@
   <string name="SaveToDownloads">İndirilenleri kaydet</string>
   <string name="ApplyLocalizationFile">Dosya yerleştirmeyi uygula</string>
   <string name="UnsupportedAttachment">Desteklenmeyen eklenti</string>
+  <string name="ServiceNotifications">Servis uyarıları</string>
   <!--notification-->
   <string name="MessageLifetimeChanged">%1$s kendini yok etme zamanlayıcısı %2$s olarak belirledi</string>
   <string name="MessageLifetimeChangedOutgoing">Kendini yok etme zamanlayıcısını %1$s olarak belirlediniz</string>
@@ -127,6 +137,7 @@
   <!--contacts view-->
   <string name="SelectContact">Kişi Seç</string>
   <string name="NoContacts">Henüz kişi yok</string>
+  <string name="TodayAt">bugün</string>
   <string name="YesterdayAt">dün</string>
   <string name="Online">çevrimiçi</string>
   <string name="LastSeen">son görülme</string>
@@ -138,6 +149,8 @@
   <string name="EnterGroupNamePlaceholder">Grup adını girin</string>
   <string name="GroupName">Grup adı</string>
   <string name="MembersCount">%1$d/%2$d üye</string>
+  <string name="JoinToGroup">\'%1$s\' grubuna katılmak istiyor musunuz?</string>
+  <string name="JoinToGroupErrorNotExist">Üzgünüz, bu grup mevcut gibi görünmüyor.</string>
   <!--group info view-->
   <string name="SharedMedia">Paylaşılan İçerik</string>
   <string name="AddMember">Üye ekle</string>
@@ -157,10 +170,28 @@
   <string name="ShortMessageLifetimeForever">Kapalı</string>
   <string name="EncryptionKeyDescription">Bu resim <![CDATA[<b>]]>%1$s<![CDATA[</b>]]> ile yapılan bu gizli konuşmanın şifreleme anahtarının bir görselleştirmesidir.<![CDATA[<br><br>]]>Eğer resim <![CDATA[<b>]]>%2$s<![CDATA[</b>]]> kişisinin cihazında da tamamen aynı görünüyorsa, sohbetiniz %%200 güvenli demektir.<![CDATA[<br><br>]]>Daha fazla bilgi için telegram.org</string>
   <string name="NumberUnknown">Bilinmeyen</string>
+  <string name="Info">Bilgi</string>
   <string name="Phone">Telefon</string>
   <!--usernames-->
   <string name="Username">Kullanıcı adı</string>
   <string name="UsernamePlaceholder">Kullanıcı Adınız</string>
+  <string name="UsernameChecking">Kullanıcı adı kontrol ediliyor...</string>
+  <string name="UsernameAvailable">%1$s kullanılabilir.</string>
+  <string name="UsernameEmpty">Yok</string>
+  <string name="ErrorOccurred">Bir hata oluştu.</string>
+  <!--stickers view-->
+  <string name="Stickers">Etiketler</string>
+  <string name="AddStickers">Etiket ekle</string>
+  <string name="AddToStickers">Etiketlere ekle</string>
+  <string name="AddStickersNotFound">Etiket bulunamadı</string>
+  <string name="StickersRemoved">Etiket kaldırıldı</string>
+  <string name="AddStickersInstalled">Yeni etiket eklendi</string>
+  <string name="StickersHide">Gizle</string>
+  <string name="StickersShow">Göster</string>
+  <string name="StickersShare">Paylaş</string>
+  <string name="StickersCopy">Linki kopyala</string>
+  <string name="StickersRemove">Kaldır</string>
+  <string name="NoStickers">Henüz etiket yok</string>
   <!--settings view-->
   <string name="ResetNotificationsText">Tüm bildirim ayarlarını varsayılana sıfırla</string>
   <string name="TextSize">Mesaj Yazı Boyutu</string>
@@ -169,9 +200,12 @@
   <string name="Unblock">Engeli kaldır</string>
   <string name="UnblockText">Engeli kaldırmak için kullanıcıya dokunun ve bekleyin.</string>
   <string name="NoBlocked">Henüz engelli kullanıcı yok</string>
+  <string name="MessageNotifications">Mesaj bildirimleri</string>
   <string name="Alert">Uyarı</string>
   <string name="MessagePreview">Mesaj Ön İzlemesi</string>
+  <string name="GroupNotifications">Grup bildirimleri</string>
   <string name="Sound">Ses</string>
+  <string name="InAppNotifications">Uygulama İçi bildirimler</string>
   <string name="InAppSounds">Sesler</string>
   <string name="InAppVibrate">Titreşim</string>
   <string name="Vibrate">Titreşim</string>
@@ -181,12 +215,16 @@
   <string name="UndoAllCustom">Tüm kişi ve gruplarınız için yapılan bildirim ayarlarını geri alın</string>
   <string name="NotificationsAndSounds">Bildirimler ve Sesler</string>
   <string name="BlockedUsers">Engellenen Kullanıcılar</string>
+  <string name="LogOut">Oturumu kapat</string>
   <string name="NoSound">Ses yok</string>
   <string name="Default">Varsayılan</string>
   <string name="Support">Destek</string>
+  <string name="OnlyIfSilent">Sadece sessizdeyken</string>
   <string name="ChatBackground">Sohbet Arka Planı</string>
+  <string name="MessagesSettings">Mesajlar</string>
   <string name="SendByEnter">Giriş (Enter) Tuşu ile Gönderir</string>
   <string name="TerminateAllSessions">Diğer tüm oturumları kapat</string>
+  <string name="Events">Etkinlikler</string>
   <string name="ContactJoined"> Kişi Telegram\'a katıldı!</string>
   <string name="Pebble">PEBBLE</string>
   <string name="Language">Dil</string>
@@ -215,16 +253,33 @@
   <string name="Long">Uzun</string>
   <string name="SystemDefault">Varsyılan</string>
   <string name="SettingsDefault">Varsayılan ayarlar</string>
+  <string name="AutomaticMediaDownload">Medyayı otomatik indir</string>
   <string name="WhenUsingMobileData">Mobil veri kullanıldığında</string>
   <string name="WhenConnectedOnWiFi">Wi-Fi kullanıldığında</string>
   <string name="WhenRoaming">Dolaşımdayken</string>
   <string name="NoMediaAutoDownload">Medya Yok</string>
   <string name="SaveToGallerySettings">Galeriye kaydet</string>
+  <string name="EditName">Adı düzenle</string>
+  <string name="NotificationsPriority">Öncelik</string>
   <string name="NotificationsPriorityDefault">Varsayılan</string>
+  <string name="NotificationsPriorityLow">Düşük</string>
+  <string name="NotificationsPriorityHigh">Yüksek</string>
+  <string name="NotificationsPriorityMax">En fazla</string>
   <string name="RepeatNotificationsNever">Asla</string>
+  <string name="RepeatNotifications">Uyarıları tekrarla</string>
+  <string name="PhoneNumberChange">NUMARA DEĞİŞTİR</string>
   <string name="ChangePhoneNewNumber">Yeni numara</string>
   <string name="NotificationsOther">Diğer</string>
+  <string name="NotificationsDisabled">Devre dışı</string>
+  <string name="VibrationDisabled">Devre dışı</string>
+  <string name="LedDisabled">Devre dışı</string>
+  <string name="RepeatDisabled">Kapalı</string>
+  <string name="SoundDefault">Öntanımlı</string>
+  <string name="SmartNotificationsDisabled">Engellenmiş</string>
+  <!--sessions view-->
+  <string name="OtherSessions">Aktif hesaplar</string>
   <!--passcode view-->
+  <string name="EnterYourPasscode">Passcode\'unuzu giriniz</string>
   <!--media view-->
   <!--map view-->
   <string name="Map">Harita</string>
@@ -241,6 +296,13 @@
   <string name="Gallery">Galeri</string>
   <string name="AllPhotos">Tüm Fotoğraflar</string>
   <string name="NoPhotos">Henüz fotoğraf yok</string>
+  <string name="ClearSearch">Arama geçmişini sil?</string>
+  <string name="PickerPhotos">Fotoğraflar</string>
+  <string name="PickerVideo">Video</string>
+  <!--password view-->
+  <string name="PleaseEnterPassword">Lütfen yeni şifrenizi girin</string>
+  <string name="ChangeRecoveryEmail">Kurtarma e-posta adresini değiştir</string>
+  <string name="ResetMyAccountWarning">Uyarı</string>
   <!--privacy settings-->
   <string name="PrivacyTitle">Gizlilik</string>
   <string name="PrivacyLastSeen">Son Görülme</string>
@@ -253,6 +315,7 @@
   <string name="EditVideo">Videoyu Düzenle</string>
   <string name="OriginalVideo">Orijinal Video</string>
   <string name="EditedVideo">Düzenlenmiş Video</string>
+  <!--bot-->
   <!--button titles-->
   <string name="Next">İleri</string>
   <string name="Back">Geri</string>
@@ -294,6 +357,7 @@
   <string name="AttachVideo">Video</string>
   <string name="AttachLocation">Konum</string>
   <string name="AttachContact">Kişi</string>
+  <string name="AttachDocument">Dosya</string>
   <string name="AttachAudio">Ses</string>
   <string name="FromYou">Siz</string>
   <string name="ActionTakeScreenshootYou">Ekran görüntüsü aldınız!</string>
@@ -391,14 +455,16 @@
   <string name="Weeks_few">%1$d hafta</string>
   <string name="Weeks_many">%1$d hafta</string>
   <string name="Weeks_other">%1$d hafta</string>
+  <!--forwarded messages-->
+  <string name="ForwardedAudio_two">%1$d gönderilmiş fotoğraf</string>
   <!--date formatters-->
-  <string name="formatterDay24H">SS:dd</string>
+  <string name="formatterDay24H">HH:mm</string>
   <!--update text-->
   <string name="updateText">Plus Messenger için temalar indirin ve uygulayın. Hergün yeni temalar ekleniyor:\n https://play.google.com/store/apps/details?id=es.rafalense.themes</string>
-  <string name="updateBuild">586</string>
-  <!--Telegram+--><!--
+  <string name="updateBuild">590</string>
+  <!--Telegram+-->
   <string name="updatePlusText">
-\n\nNew in 3.1.1.6:\n\n- Yeni MOD sohbet ekranında konuşmacıların profil fotoğrafları artık görünür olarak ayarlanıyor\n- Yeni balon eklendi (Teşekkürler bay Edwin Macalopu)\n- Yeni MOD sohbet ekranına duvar kağıdı ve yazı rengi eklenebiliniyor.\n- Küçük hata düzeltmeleri yapıldı ama Türkler sizin için saatin düzeldiği sözünü henüz veremem k bakmayın, ihsan.</string>-->
+\n\n3.1.1.9\'daki Yenilikler\n\n- Yeni iOS baloncuğu eklendi (Edwin Macalopu\'ya teşekkürler)\n- Gruplarda kullanıcı adı iler beraber üye ismini birlikte gösteren yeni MOD eklendi\n- Grup profilinde admin gösterilir. Admin kendi ikonuna sahiptir\n- Sol menüde avatar,isim ve telefonu ortalamayı sağlayan yeni MOD eklendi\n- Sohbete yakınlık sensörü eylemlerini kapatmayı ve çalan sesleri devam ettirmeyi sağlayan yeni MOD eklendi \n- Profil ekranına ikon renklerini değiştirmeyi sağlayan yeni MOD eklendi\n- Hata düzeltmeleri \n\n Plus Messenger için temalar: https://play.google.com/store/apps/details?id=es.rafalense.themes</string>
   <string name="TelegramForAndroid">Android için Plus Messenger</string>
   <string name="Theming">Tema</string>
   <string name="colorHexInvalid">Geçersiz renk hex kodu!</string>
@@ -502,8 +568,8 @@
   <string name="KeepOriginalFilename">Orijinal dosya ismini tut</string>
   <string name="KeepOriginalFilenameHelp">Dosyalar sadece sayısal değer yerine isim_tarih şeklinde isimlendirilerek kaydedilecek</string>
   <string name="AvatarSize">Avatar Boyutu</string>
-  <string name="AvatarAlignTop">Fotoğrafı başa hizala</string>
-  <string name="AvatarMarginLeft">Avatar Sol Kenar Boşluğu</string>
+  <string name="AvatarAlignTop">Fotoğrafı üste hizala</string>
+  <string name="AvatarMarginLeft">Avatar kenar boşluğu</string>
   <string name="GroupNameColor">Grup isim rengi</string>
   <string name="GroupNameSize">Grup isim boyutu</string>
   <string name="UnknownNameColor">İsim Rengi (Bilinmeyen Numara)</string>
@@ -529,8 +595,12 @@
   <string name="AttachBGColor">Arka plan rengi ekle</string>
   <string name="AttachTextColor">Metin rengi ekle</string>
   <string name="ShowContactAvatar">Kişi fotoğrafını sohbet ekranda göster</string>
-  <string name="ShowOwnAvatar">Sohbette kendi fotoğrafını göster</string>
-  <string name="ShowOwnAvatarGroup">Grupta kendi fotoğrafını göster</string>
-  <string name="OwnAvatarAlignTop">Fotoğrafını başa hizala</string>
-  <string name="DialogColor">Başlık/buton rengi</string>
+  <string name="ShowOwnAvatar">Sohbet ekranında kendi avatarını göster</string>
+  <string name="ShowOwnAvatarGroup">Grup ekranında kendi avatarını göster</string>
+  <string name="OwnAvatarAlignTop">Avatarı üste hizala</string>
+  <string name="DialogColor">Diyalog başlık/buton rengi</string>
+  <string name="ShowUsername">Kullanıcı adını üye ismiyle birlikte göster</string>
+  <string name="DisableAudioStop">Sesi durdurma</string>
+  <string name="ListDividerColor">Liste ayırıcı rengi</string>
+  <string name="CenterAvatar">Avatarı, ismi ve telefonu ortala</string>
 </resources>

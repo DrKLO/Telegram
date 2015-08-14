@@ -1,7 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 
-
-
 <resources>
     <string name="AppName">Plus Messenger</string>
     <string name="ShortAppName">Plus</string>
@@ -836,9 +834,9 @@
     <string name="formatDateAtTime">%1$s at %2$s</string>
     <!--update text-->
     <string name="updateText">Plus Messenger for Android has been updated. New in version 3.1:\n\n- Search for messages inside a specific chat.\n- Fully redesigned attachment menu. Send contacts and audio files straight from the attachment menu.\n- Improved in-app media playback (YouTube, Vimeo, SoundCloud etc.), new player for large audio files.\n\nMore about this update:\nhttps://telegram.org/blog/search-and-media</string>
-    <string name="updateBuild">586</string>
+    <string name="updateBuild">590</string>
     <!--Telegram+-->
-    <string name="updatePlusText">\n\nNew in 3.1.1.6:\n\n- New MOD to show contact avatar in chat screen\n- New MOD to show own avatar in chat and group screen\n- New MOD to align own avatar to top\n- Added new bubbles Ed and Edge (thanks to Edwin Macalopu)\n- New MOD to change background and text color in attach view in chat screen\n- Added MOD to change color of dialog title and button\n- Bug fixes</string>
+    <string name="updatePlusText">\n\nNew in 3.1.1.9:\n\n- New bubble iOS added (thanks to Edwin Macalopu)\n- New MOD to show username together with member name in groups\n- Shows group admin in group profile. Admin user has its own icon\n- New MOD to center avatar, name and phone in navigation menu\n- New MOD to keep playing audio in chat disabling proximity sensor action\n- New MOD to change icons color in profile screen\n- Bug fixes\n\nCheck and apply themes for Plus Messenger: https://play.google.com/store/apps/details?id=es.rafalense.themes</string>
     <string name="TelegramForAndroid">Plus Messenger for Android</string>
     <string name="Theming">Theming</string>
     <string name="colorHexInvalid">Invalid color hex code!</string>
@@ -973,4 +971,8 @@
     <string name="ShowOwnAvatarGroup">Show own avatar in group screen</string>
     <string name="OwnAvatarAlignTop">Align own avatar to top</string>
     <string name="DialogColor">Dialog title/button color</string>
+    <string name="ShowUsername">Show username with member name</string>
+    <string name="DisableAudioStop">Don\'t stop audio</string>
+    <string name="ListDividerColor">List divider color</string>
+    <string name="CenterAvatar">Center avatar, name and phone</string>
 </resources>

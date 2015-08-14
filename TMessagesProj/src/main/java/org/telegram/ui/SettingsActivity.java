@@ -150,6 +150,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
     private int keepOriginalFilenameRow;
     private int keepOriginalFilenameDetailRow;
     private int emojiPopupSize;
+    private int disableAudioStopRow;
 
     private final static int edit_name = 1;
     private final static int logout = 2;
@@ -264,7 +265,9 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         stickersRow = rowCount++;
         emojiPopupSize = rowCount++;
         sendByEnterRow = rowCount++;
+        disableAudioStopRow = rowCount++;
         disableMessageClickRow = rowCount++;
+
         supportSectionRow = rowCount++;
         supportSectionRow2 = rowCount++;
         askQuestionRow = rowCount++;
@@ -558,6 +561,15 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                         boolean send = preferences.getBoolean("send_by_enter", false);
                         SharedPreferences.Editor editor = preferences.edit();
                         editor.putBoolean("send_by_enter", !send);
+                        editor.commit();
+                        if (view instanceof TextCheckCell) {
+                            ((TextCheckCell) view).setChecked(!send);
+                        }
+                    } else if (i == disableAudioStopRow) {
+                        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+                        boolean send = preferences.getBoolean("disableAudioStop", false);
+                        SharedPreferences.Editor editor = preferences.edit();
+                        editor.putBoolean("disableAudioStop", !send);
                         editor.commit();
                         if (view instanceof TextCheckCell) {
                             ((TextCheckCell) view).setChecked(!send);
@@ -1227,7 +1239,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         @Override
         public boolean isEnabled(int i) {
             return i == textSizeRow || i == enableAnimationsRow || i == notificationRow || i == backgroundRow || i == numberRow || i == showAndroidEmojiRow || i == useDeviceFontRow || i == emojiPopupSize ||
-                    i == askQuestionRow || i == sendLogsRow || i == sendByEnterRow || i == privacyRow || i == wifiDownloadRow || i == disableMessageClickRow ||
+                    i == askQuestionRow || i == sendLogsRow || i == sendByEnterRow || i == privacyRow || i == wifiDownloadRow || i == disableAudioStopRow || i == disableMessageClickRow ||
                     i == mobileDownloadRow || i == clearLogsRow || i == roamingDownloadRow || i == languageRow || i == usernameRow ||
                     i == switchBackendButtonRow || i == telegramFaqRow || i == contactsSortRow || i == contactsReimportRow || i == saveToGalleryRow || i == keepOriginalFilenameRow ||
                     i == stickersRow;
@@ -1330,6 +1342,8 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                     textCell.setTextAndCheck(LocaleController.getString("EnableAnimations", R.string.EnableAnimations), preferences.getBoolean("view_animations", true), true);
                 } else if (i == sendByEnterRow) {
                     textCell.setTextAndCheck(LocaleController.getString("SendByEnter", R.string.SendByEnter), preferences.getBoolean("send_by_enter", false), true);
+                } else if (i == disableAudioStopRow) {
+                    textCell.setTextAndCheck(LocaleController.getString("DisableAudioStop", R.string.DisableAudioStop), preferences.getBoolean("disableAudioStop", false), true);
                 } else if (i == disableMessageClickRow) {
                     textCell.setTextAndCheck(LocaleController.getString("DisableMessageClick", R.string.DisableMessageClick), preferences.getBoolean("disableMessageClick", false), false);
                 } else if (i == saveToGalleryRow) {
@@ -1450,7 +1464,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             } 
             if (i == settingsSectionRow || i == supportSectionRow /*|| i == messagesSectionRow*/ || i == mediaDownloadSection || i == contactsSectionRow) {
                 return 1;
-            } else if (i == enableAnimationsRow || i == sendByEnterRow || i == saveToGalleryRow || i == disableMessageClickRow || i == showAndroidEmojiRow || i == useDeviceFontRow || i == keepOriginalFilenameRow ) {
+            } else if (i == enableAnimationsRow || i == sendByEnterRow || i == saveToGalleryRow || i == disableAudioStopRow || i == disableMessageClickRow || i == showAndroidEmojiRow || i == useDeviceFontRow || i == keepOriginalFilenameRow ) {
                 return 3;
             } else if (i == notificationRow || i == backgroundRow || i == askQuestionRow || i == sendLogsRow || i == privacyRow || i == clearLogsRow || i == switchBackendButtonRow || i == telegramFaqRow || i == contactsReimportRow || i == textSizeRow || i == emojiPopupSize || i == languageRow || i == contactsSortRow || i == stickersRow) {
                 return 2;

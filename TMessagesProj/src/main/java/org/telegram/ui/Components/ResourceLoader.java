@@ -185,6 +185,24 @@ public class ResourceLoader {
             backgroundMediaDrawableInSelected = context.getResources().getDrawable(R.drawable.msg_in_6_photo_selected);
             backgroundMediaDrawableOut = context.getResources().getDrawable(R.drawable.msg_out_6_photo);
             backgroundMediaDrawableOutSelected = context.getResources().getDrawable(R.drawable.msg_out_6_photo_selected);
+        } else if(bubble.equals(ImageListActivity.getBubbleName(6))){
+            backgroundDrawableIn = context.getResources().getDrawable(R.drawable.msg_in_7);
+            backgroundDrawableInSelected = context.getResources().getDrawable(R.drawable.msg_in_7_selected);
+            backgroundDrawableOut = context.getResources().getDrawable(R.drawable.msg_out_7);
+            backgroundDrawableOutSelected = context.getResources().getDrawable(R.drawable.msg_out_7_selected);
+            backgroundMediaDrawableIn = context.getResources().getDrawable(R.drawable.msg_in_7_photo);
+            backgroundMediaDrawableInSelected = context.getResources().getDrawable(R.drawable.msg_in_7_photo_selected);
+            backgroundMediaDrawableOut = context.getResources().getDrawable(R.drawable.msg_out_7_photo);
+            backgroundMediaDrawableOutSelected = context.getResources().getDrawable(R.drawable.msg_out_7_photo_selected);
+        } else{
+            backgroundDrawableIn = context.getResources().getDrawable(R.drawable.msg_in);
+            backgroundDrawableInSelected = context.getResources().getDrawable(R.drawable.msg_in_selected);
+            backgroundDrawableOut = context.getResources().getDrawable(R.drawable.msg_out);
+            backgroundDrawableOutSelected = context.getResources().getDrawable(R.drawable.msg_out_selected);
+            backgroundMediaDrawableIn = context.getResources().getDrawable(R.drawable.msg_in_photo);
+            backgroundMediaDrawableInSelected = context.getResources().getDrawable(R.drawable.msg_in_photo_selected);
+            backgroundMediaDrawableOut = context.getResources().getDrawable(R.drawable.msg_out_photo);
+            backgroundMediaDrawableOutSelected = context.getResources().getDrawable(R.drawable.msg_out_photo_selected);
         }
     }
 }

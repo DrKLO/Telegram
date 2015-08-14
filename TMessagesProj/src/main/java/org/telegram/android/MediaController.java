@@ -1269,6 +1269,8 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
     }
 
     private boolean isNearToSensor(float value) {
+        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+        if(preferences.getBoolean("disableAudioStop", false))return false;
         return value < 5.0f && value != proximitySensor.getMaximumRange();
     }
 

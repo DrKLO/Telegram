@@ -1044,13 +1044,16 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             Drawable dots = getParentActivity().getResources().getDrawable(R.drawable.ic_ab_other);
             dots.setColorFilter(AndroidUtilities.getIntDef("chatHeaderIconsColor", 0xffffffff), PorterDuff.Mode.MULTIPLY);
             headerItem = menu.addItem(0, dots);
-
-            final boolean isChat = (int) dialog_id < 0 && (int) (dialog_id >> 32) != 1;
-            if(isChat)headerItem.addSubItem(add_member, LocaleController.getString("AddMember", R.string.AddMember), 0);
-            //headerItem.addSubItem(chat_background, LocaleController.getString("ChatBackground", R.string.ChatBackground), 0);
-            //!Plus
-            if (searchItem != null) {
-                headerItem.addSubItem(search, LocaleController.getString("Search", R.string.Search), 0);
+            try{
+                final boolean isChat = (int) dialog_id < 0 && (int) (dialog_id >> 32) != 1;
+                if(isChat)headerItem.addSubItem(add_member, LocaleController.getString("AddMember", R.string.AddMember), 0);
+                //headerItem.addSubItem(chat_background, LocaleController.getString("ChatBackground", R.string.ChatBackground), 0);
+                //!Plus
+                if (searchItem != null) {
+                    headerItem.addSubItem(search, LocaleController.getString("Search", R.string.Search), 0);
+                }
+            } catch (Exception e) {
+                FileLog.e("tmessages", e);
             }
             if (currentUser != null) {
                 addContactItem = headerItem.addSubItem(share_contact, "", 0);
@@ -5668,6 +5671,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         @Override
                     public void needOpenWebView(String url, String title, String originalUrl, int w, int h) {
                         BottomSheet.Builder builder = new BottomSheet.Builder(mContext);
+
                         builder.setCustomView(new WebFrameLayout(mContext, builder.create(), title, originalUrl, url, w, h));
                         builder.setUseFullWidth(true);
                         showDialog(builder.create());

@@ -835,9 +835,10 @@
     <string name="formatDateAtTime">%1$s às %2$s</string>
     <!--update text-->
     <string name="updateText">Plus Messenger para Android foi atualizado. Novo na versão 3.1:\n\n- Busca por mensagens dentro de um chat específico.\n-Menu de anexo totalmente redesenhado. Envie contatos e arquivos de áudio diretamente do menu de anexo.\n- Reprodução melhorada de mídia dentro do aplicativo (YouTube, Vimeo, SoundCloud, etc.), novo player para grandes arquivos de áudio.\n\nMais sobre a atualização:\nhttps://telegram.org/blog/search-and-media</string>
-    <string name="updateBuild">586</string>
+    <string name="updateBuild">590</string>
     <!--Telegram+-->
-  <string name="updatePlusText">\n\nNovo em 3.1.1.6:\n\n- Novo MOD para mostrar o próprio avatar na tela de grupos\n- Novo MOD para alinhar o próprio avatar no topo\n- Adicionado o MOD para mudar a cor do titulo do dialogo e botão\n- Concertos de Bugs</string>
+  <string name="updatePlusText">
+\n\nNew in 3.1.1.9:\n\n- New MOD to center avatar, name and phone in navigation menu\n- New MOD to don\'t stop audio in chat (disables proximity sensor action)\n-New MOD to change icons color in profile screen\n- Bug fixes</string>
     <string name="TelegramForAndroid">Plus Messenger para Android</string>
     <string name="Theming">Personalização</string>
     <string name="colorHexInvalid">Código de cor hexadecimal inválido!</string>
@@ -965,11 +966,15 @@
   <string name="AppWillRestart">O Plus Messenger irá reiniciar</string>
   <string name="GroupIconColor">Cor do Ícone de Grupo</string>
   <string name="SharedContactNameColor">Cor do Nome do Contato Compartilhado</string>
-  <string name="AttachBGColor">Atribuir a cor do fundo</string>
-  <string name="AttachTextColor">Atribuir à cor do texto</string>
-  <string name="ShowContactAvatar">Mostrar avatar do contato na tela de conversa</string>
-  <string name="ShowOwnAvatar">Mostrar o próprio avatar na tela de conversa</string>
-  <string name="ShowOwnAvatarGroup">Mostrar o próprio avatar na tela de grupo</string>
-  <string name="OwnAvatarAlignTop">Alinhar o próprio avatar no topo</string>
-  <string name="DialogColor">Cor do titulo/botão de dialogo </string>
+  <string name="AttachBGColor">Cor de Fundo do Anexar</string>
+  <string name="AttachTextColor">Cor de Texto do Anexar</string>
+  <string name="ShowContactAvatar">Mostrar Avatar do Contato</string>
+  <string name="ShowOwnAvatar">Mostrar Próprio Avatar no Chat</string>
+  <string name="ShowOwnAvatarGroup">Mostrar Próprio Avatar em Grupos</string>
+  <string name="OwnAvatarAlignTop">Alinhar Próprio Avatar no Topo</string>
+  <string name="DialogColor">Cor do Título/Botão de Diálogo</string>
+  <string name="ShowUsername">Exibir Nome de Usuário com Nome do Membro</string>
+  <string name="DisableAudioStop">Não Parar Áudio</string>
+  <string name="ListDividerColor">Cor do Divisor de Lista</string>
+  <string name="CenterAvatar">Centralizar Avatar, Nome e Telefone</string>
 </resources>

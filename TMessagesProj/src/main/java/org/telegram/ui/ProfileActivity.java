@@ -146,6 +146,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     private int addMemberRow;
     private int rowCount = 0;
 
+    private TextView adminTextView;
+
     public ProfileActivity(Bundle args) {
         super(args);
     }
@@ -230,6 +232,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     @Override
     public void onFragmentDestroy() {
         super.onFragmentDestroy();
+        //Plus to paint drawerAction icons (refresh drawerLayoutAdapter)
+        NotificationCenter.getInstance().postNotificationName(NotificationCenter.mainUserInfoChanged);
+        //
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.mediaCountDidLoaded);
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.updateInterfaces);
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.closeChats);
@@ -471,7 +476,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
 
             onlineTextView = new TextView(context);
             //onlineTextView.setTextColor(AvatarDrawable.getProfileTextColorForId(user_id != 0 ? 5 : chat_id));
-            onlineTextView.setTextColor(AndroidUtilities.getIntDarkerColor("themeColor",-0x40));
+            onlineTextView.setTextColor(AndroidUtilities.getIntDarkerColor("themeColor", -0x40));
             onlineTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             onlineTextView.setLines(1);
             onlineTextView.setMaxLines(1);
@@ -485,8 +490,29 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             layoutParams.leftMargin = AndroidUtilities.dp(LocaleController.isRTL ? 16 : 97);
             layoutParams.rightMargin = AndroidUtilities.dp(LocaleController.isRTL ? 97 : 16);
             layoutParams.bottomMargin = AndroidUtilities.dp(30);
+
             layoutParams.gravity = (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.BOTTOM;
             onlineTextView.setLayoutParams(layoutParams);
+
+        adminTextView = new TextView(context);
+        //adminTextView.setTextColor(AvatarDrawable.getProfileTextColorForId(user_id != 0 ? 5 : chat_id));
+        adminTextView.setTextColor(AndroidUtilities.getIntDarkerColor("themeColor",-0x40));
+        adminTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+        adminTextView.setLines(1);
+        adminTextView.setMaxLines(1);
+        adminTextView.setSingleLine(true);
+        adminTextView.setEllipsize(TextUtils.TruncateAt.END);
+        adminTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT));
+        adminTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        actionBar.addView(adminTextView);
+        layoutParams = (FrameLayout.LayoutParams) adminTextView.getLayoutParams();
+        layoutParams.width = LayoutHelper.WRAP_CONTENT;
+        layoutParams.height = LayoutHelper.WRAP_CONTENT;
+        layoutParams.leftMargin = AndroidUtilities.dp(LocaleController.isRTL ? 75 : 97);
+        layoutParams.rightMargin = AndroidUtilities.dp(LocaleController.isRTL ? 97 : 75);
+        layoutParams.bottomMargin = AndroidUtilities.dp(10);
+        layoutParams.gravity = (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.BOTTOM;
+        adminTextView.setLayoutParams(layoutParams);
 
             listView = new ListView(context);
             listView.setDivider(null);
@@ -648,13 +674,13 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 if (user_id != 0) {
                     //writeButton.setImageResource(R.drawable.floating_message);
                     Drawable message = context.getResources().getDrawable(R.drawable.floating_message);
-                    message.setColorFilter(themePrefs.getInt("profileTitleColor", 0xff737373), PorterDuff.Mode.SRC_IN);
+                    message.setColorFilter(themePrefs.getInt("profileIconsColor", 0xff737373), PorterDuff.Mode.SRC_IN);
                     writeButton.setImageDrawable(message);
                     writeButton.setPadding(0, AndroidUtilities.dp(3), 0, 0);
                 } else if (chat_id != 0) {
                     //writeButton.setImageResource(R.drawable.floating_camera);
                     Drawable camera = context.getResources().getDrawable(R.drawable.floating_camera);
-                    camera.setColorFilter(themePrefs.getInt("profileTitleColor", 0xff737373), PorterDuff.Mode.SRC_IN);
+                    camera.setColorFilter(themePrefs.getInt("profileIconsColor", 0xff737373), PorterDuff.Mode.SRC_IN);
                     writeButton.setImageDrawable(camera);
                 }
                 frameLayout.addView(writeButton);
@@ -911,6 +937,12 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             layoutParams.rightMargin = AndroidUtilities.dp(LocaleController.isRTL ? nameX : nameEndX);
             layoutParams.bottomMargin = statusY;
             onlineTextView.setLayoutParams(layoutParams);
+
+            if(diff > 0.85){
+                adminTextView.setVisibility(View.VISIBLE);
+            }else{
+                adminTextView.setVisibility(View.GONE);
+            }
         }
     }
 
@@ -1154,12 +1186,20 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         } else {
                             status1 = user1.status.expires;
                         }
+                        //Plus admin
+                        if (user1.id == info.admin_id) {
+                            status1 = ConnectionsManager.getInstance().getCurrentTime() + 50000 - 100;
+                        }
                     }
                     if (user2 != null && user2.status != null) {
                         if (user2.id == UserConfig.getClientUserId()) {
                             status2 = ConnectionsManager.getInstance().getCurrentTime() + 50000;
                         } else {
                             status2 = user2.status.expires;
+                        }
+                        //Plus admin
+                        if (user2.id == info.admin_id) {
+                            status2 = ConnectionsManager.getInstance().getCurrentTime() + 50000 - 100;
                         }
                     }
                     if (status1 > 0 && status2 > 0) {
@@ -1320,6 +1360,10 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 onlineTextView.setText(LocaleController.formatPluralString("Members", count));
             }
 
+            if (info != null) {
+                adminTextView.setText("Admin: "+UserObject.getUserName(MessagesController.getInstance().getUser(info.admin_id)));
+            }
+
             TLRPC.FileLocation photo = null;
             TLRPC.FileLocation photoBig = null;
             if (chat.photo != null) {
@@ -1342,11 +1386,15 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     private void updateTheme(){
         SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
         int def = themePrefs.getInt("themeColor", AndroidUtilities.defColor);
+        int dark = themePrefs.getInt("profileStatusColor", AndroidUtilities.getIntDarkerColor("themeColor", -0x40));
         actionBar.setBackgroundColor(themePrefs.getInt("profileHeaderColor", def));
         nameTextView.setTextColor(themePrefs.getInt("profileNameColor", 0xffffffff));
         nameTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, themePrefs.getInt("profileNameSize", 18));
-        onlineTextView.setTextColor(themePrefs.getInt("profileStatusColor", AndroidUtilities.getIntDarkerColor("themeColor", -0x40)));
-        onlineTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, themePrefs.getInt("profileStatusSize", 14));
+        onlineTextView.setTextColor(dark);
+        int oSize = themePrefs.getInt("profileStatusSize", 14);
+        onlineTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, oSize);
+        adminTextView.setTextColor(dark);
+        if(oSize < 14)adminTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, oSize);
     }
 
     private void createActionBarMenu() {
@@ -1474,7 +1522,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
             int def = themePrefs.getInt("themeColor", AndroidUtilities.defColor);
             int tColor = themePrefs.getInt("profileTitleColor", 0xff212121);
-            int dColor = themePrefs.getInt("profileTitleColor", 0xff737373);
+            int dColor = themePrefs.getInt("profileIconsColor", 0xff737373);
             if (type == 0) {
                 if (view == null) {
                     view = new EmptyCell(mContext);
@@ -1566,24 +1614,27 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     textCell.setTextAndValueDrawable(LocaleController.getString("EncryptionKey", R.string.EncryptionKey), identiconDrawable);
                 } else if (i == botInfoRow) {
                     textCell.setMultiline(true);
-                    textCell.setTextAndIcon(botInfo.share_text, R.drawable.bot_info);
+                    //textCell.setTextAndIcon(botInfo.share_text, R.drawable.bot_info);
+                    Drawable bot = mContext.getResources().getDrawable(R.drawable.bot_info);
+                    bot.setColorFilter(dColor, PorterDuff.Mode.SRC_IN);
+                    textCell.setTextAndIcon(botInfo.share_text, bot);
                 }
             } else if (type == 4) {
                 if (view == null) {
                     view = new UserCell(mContext, 61);
+                    view.setTag("Profile");
                 }
 
                 TLRPC.TL_chatParticipant part = info.participants.get(sortedUsers.get(i - emptyRowChat2 - 1));
-                ((UserCell)view).setData(MessagesController.getInstance().getUser(part.user_id), null, null, i == emptyRowChat2 + 1 ? R.drawable.menu_newgroup : 0);
-                ((UserCell)view).setNameColor(tColor);
-                ((UserCell) view).setStatusColors(themePrefs.getInt("profileSummaryColor", 0xff8a8a8a), AndroidUtilities.getIntDarkerColor("themeColor", -0x40));
-                //((UserCell) view).setAvatarRadius(AndroidUtilities.dp(themePrefs.getInt("profileAvatarRadius", 32)));
-                if(i == emptyRowChat2 + 1){
-                    Drawable newGroup = mContext.getResources().getDrawable(R.drawable.menu_newgroup);
-                    newGroup.setColorFilter(dColor, PorterDuff.Mode.SRC_IN);
-                    ((UserCell)view).setImageDrawable(newGroup);
+                //((UserCell)view).setData(MessagesController.getInstance().getUser(part.user_id), null, null, i == emptyRowChat2 + 1 ? R.drawable.menu_newgroup : 0);
+                int icon = 0;
+                if(info.admin_id == part.user_id){
+                    icon = R.drawable.menu_admin;
+                } else if(part.user_id == UserConfig.getClientUserId()){
+                    icon = R.drawable.menu_newgroup;
                 }
-                ((UserCell) view).setAvatarRadius(themePrefs.getInt("profileAvatarRadius", 32));
+                ((UserCell)view).setData(MessagesController.getInstance().getUser(part.user_id), null, null, icon);
+
             } else if (type == 5) {
                 if (view == null) {
                     //view = new ShadowSectionCell(mContext);
