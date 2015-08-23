@@ -10,9 +10,11 @@ package org.telegram.ui.Components;
 
 import android.app.Activity;
 import android.app.Dialog;
+import android.app.TimePickerDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.SharedPreferences;
+import android.widget.TimePicker;
 
 import org.telegram.android.LocaleController;
 import org.telegram.android.MessagesController;
@@ -24,9 +26,11 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.TLRPC;
 import org.telegram.ui.ActionBar.BottomSheet;
 
+import java.util.Calendar;
+
 public class AlertsCreator {
 
-    public static Dialog createMuteAlert(Context context, final long dialog_id) {
+    public static Dialog createMuteAlert(final Context context, final long dialog_id) {
         if (context == null) {
             return null;
         }
@@ -37,7 +41,8 @@ public class AlertsCreator {
                 LocaleController.formatString("MuteFor", R.string.MuteFor, LocaleController.formatPluralString("Hours", 1)),
                 LocaleController.formatString("MuteFor", R.string.MuteFor, LocaleController.formatPluralString("Hours", 8)),
                 LocaleController.formatString("MuteFor", R.string.MuteFor, LocaleController.formatPluralString("Days", 2)),
-                LocaleController.getString("MuteDisable", R.string.MuteDisable)
+                LocaleController.getString("MuteDisable", R.string.MuteDisable),
+                LocaleController.getString("NotificationsOther", R.string.NotificationsOther)/*FIXME MuteOther?*/
         };
         builder.setItems(items, new DialogInterface.OnClickListener() {
                     @Override
@@ -51,6 +56,16 @@ public class AlertsCreator {
                             untilTime += 60 * 60 * 48;
                         } else if (i == 3) {
                             untilTime = Integer.MAX_VALUE;
+                        } else if (i == 4) {
+                            final Calendar userTime = Calendar.getInstance();
+                            new TimePickerDialog(context, new TimePickerDialog.OnTimeSetListener() {
+                                @Override
+                                public void onTimeSet(TimePicker view, int hourOfDay, int minute) {
+                                    userTime.set(Calendar.HOUR_OF_DAY, hourOfDay);
+                                    userTime.set(Calendar.MINUTE,minute);
+                                }
+                            }, userTime.get(Calendar.HOUR_OF_DAY), userTime.get(Calendar.MINUTE), true).show();
+                            untilTime = (int) userTime.getTimeInMillis() / 1000;
                         }
 
                         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
