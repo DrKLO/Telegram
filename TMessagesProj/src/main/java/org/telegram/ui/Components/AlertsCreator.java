@@ -14,6 +14,7 @@ import android.app.TimePickerDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.SharedPreferences;
+import android.text.format.DateFormat;
 import android.widget.TimePicker;
 
 import org.telegram.android.LocaleController;
@@ -48,6 +49,7 @@ public class AlertsCreator {
                     @Override
                     public void onClick(DialogInterface dialogInterface, int i) {
                         int untilTime = ConnectionsManager.getInstance().getCurrentTime();
+                        final int currentTime = untilTime;
                         if (i == 0) {
                             untilTime += 60 * 60;
                         } else if (i == 1) {
@@ -59,37 +61,47 @@ public class AlertsCreator {
                         } else if (i == 4) {
                             final Calendar userTime = Calendar.getInstance();
                             new TimePickerDialog(context, new TimePickerDialog.OnTimeSetListener() {
-                                @Override
-                                public void onTimeSet(TimePicker view, int hourOfDay, int minute) {
-                                    userTime.set(Calendar.HOUR_OF_DAY, hourOfDay);
-                                    userTime.set(Calendar.MINUTE,minute);
-                                }
-                            }, userTime.get(Calendar.HOUR_OF_DAY), userTime.get(Calendar.MINUTE), true).show();
-                            untilTime = (int) userTime.getTimeInMillis() / 1000;
-                        }
+                                    @Override
+                                    public void onTimeSet(TimePicker view, int hourOfDay, int minute) {
+                                        long startTime = userTime.getTimeInMillis();
 
-                        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
-                        SharedPreferences.Editor editor = preferences.edit();
-                        long flags;
-                        if (i == 3) {
-                            editor.putInt("notify2_" + dialog_id, 2);
-                            flags = 1;
-                        } else {
-                            editor.putInt("notify2_" + dialog_id, 3);
-                            editor.putInt("notifyuntil_" + dialog_id, untilTime);
-                            flags = ((long) untilTime << 32) | 1;
+                                        userTime.set(Calendar.HOUR_OF_DAY, hourOfDay);
+                                        userTime.set(Calendar.MINUTE, minute);
+                                        userTime.set(Calendar.SECOND, 0);
+
+                                        int diffInSec = (int) ((userTime.getTimeInMillis() - startTime) / 1000);
+                                        changePreferences(false, currentTime + diffInSec, dialog_id);
+                                    }
+                                }, userTime.get(Calendar.HOUR_OF_DAY), userTime.get(Calendar.MINUTE),
+                                DateFormat.is24HourFormat(context)).show();
                         }
-                        MessagesStorage.getInstance().setDialogFlags(dialog_id, flags);
-                        editor.commit();
-                        TLRPC.TL_dialog dialog = MessagesController.getInstance().dialogs_dict.get(dialog_id);
-                        if (dialog != null) {
-                            dialog.notify_settings = new TLRPC.TL_peerNotifySettings();
-                            dialog.notify_settings.mute_until = untilTime;
-                        }
-                        NotificationsController.updateServerNotificationsSettings(dialog_id);
+                        if (i != 4)
+                            changePreferences(i == 3, untilTime, dialog_id);
                     }
                 }
         );
         return builder.create();
+    }
+
+    private static void changePreferences(boolean max, int untilTime, long dialog_id) {
+        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+        SharedPreferences.Editor editor = preferences.edit();
+        long flags;
+        if (max) {
+            editor.putInt("notify2_" + dialog_id, 2);
+            flags = 1;
+        } else {
+            editor.putInt("notify2_" + dialog_id, 3);
+            editor.putInt("notifyuntil_" + dialog_id, untilTime);
+            flags = ((long) untilTime << 32) | 1;
+        }
+        MessagesStorage.getInstance().setDialogFlags(dialog_id, flags);
+        editor.commit();
+        TLRPC.TL_dialog dialog = MessagesController.getInstance().dialogs_dict.get(dialog_id);
+        if (dialog != null) {
+            dialog.notify_settings = new TLRPC.TL_peerNotifySettings();
+            dialog.notify_settings.mute_until = untilTime;
+        }
+        NotificationsController.updateServerNotificationsSettings(dialog_id);
     }
 }
