@@ -9,12 +9,14 @@
 package org.telegram.ui.Components;
 
 import android.app.Activity;
+import android.app.DatePickerDialog;
 import android.app.Dialog;
 import android.app.TimePickerDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.text.format.DateFormat;
+import android.widget.DatePicker;
 import android.widget.TimePicker;
 
 import org.telegram.android.LocaleController;
@@ -60,20 +62,28 @@ public class AlertsCreator {
                             untilTime = Integer.MAX_VALUE;
                         } else if (i == 4) {
                             final Calendar userTime = Calendar.getInstance();
-                            new TimePickerDialog(context, new TimePickerDialog.OnTimeSetListener() {
+                            new DatePickerDialog(context, new DatePickerDialog.OnDateSetListener() {
                                     @Override
-                                    public void onTimeSet(TimePicker view, int hourOfDay, int minute) {
-                                        long startTime = userTime.getTimeInMillis();
+                                    public void onDateSet(DatePicker view, int year, int month, int dayOfMonth) {
+                                        final long startTime = userTime.getTimeInMillis();
+                                        userTime.set(Calendar.YEAR, year);
+                                        userTime.set(Calendar.MONTH, month);
+                                        userTime.set(Calendar.DAY_OF_MONTH, dayOfMonth);
 
-                                        userTime.set(Calendar.HOUR_OF_DAY, hourOfDay);
-                                        userTime.set(Calendar.MINUTE, minute);
-                                        userTime.set(Calendar.SECOND, 0);
+                                        new TimePickerDialog(context, new TimePickerDialog.OnTimeSetListener() {
+                                            @Override
+                                            public void onTimeSet(TimePicker view, int hourOfDay, int minute) {
+                                                userTime.set(Calendar.HOUR_OF_DAY, hourOfDay);
+                                                userTime.set(Calendar.MINUTE, minute);
+                                                userTime.set(Calendar.SECOND, 0);
 
-                                        int diffInSec = (int) ((userTime.getTimeInMillis() - startTime) / 1000);
-                                        changePreferences(false, currentTime + diffInSec, dialog_id);
+                                                int diffInSec = (int) ((userTime.getTimeInMillis() - startTime) / 1000);
+                                                changePreferences(false, currentTime + diffInSec, dialog_id);
+                                            }
+                                        }, userTime.get(Calendar.HOUR_OF_DAY), userTime.get(Calendar.MINUTE),
+                                        DateFormat.is24HourFormat(context)).show();
                                     }
-                                }, userTime.get(Calendar.HOUR_OF_DAY), userTime.get(Calendar.MINUTE),
-                                DateFormat.is24HourFormat(context)).show();
+                            }, userTime.get(Calendar.YEAR), userTime.get(Calendar.MONTH), userTime.get(Calendar.DAY_OF_MONTH)).show();
                         }
                         if (i != 4)
                             changePreferences(i == 3, untilTime, dialog_id);
