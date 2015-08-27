@@ -316,7 +316,7 @@ public class ThemingDrawerActivity extends BaseFragment {
                                 commitInt("drawerNameColor", color);
                             }
 
-                        },themePrefs.getInt("drawerNameColor", 0xffffffff), CENTER, 0, false);
+                        },themePrefs.getInt("drawerNameColor", 0xffffffff), CENTER, 0, true);
                         colorDialog.show();
                     } else if (i == phoneColorRow) {
                         if (getParentActivity() == null) {
@@ -330,7 +330,7 @@ public class ThemingDrawerActivity extends BaseFragment {
                                 commitInt("drawerPhoneColor", color);
                             }
 
-                        },themePrefs.getInt("drawerPhoneColor", AndroidUtilities.getIntDarkerColor("themeColor",-0x40)), CENTER, 0, false);
+                        },themePrefs.getInt("drawerPhoneColor", AndroidUtilities.getIntDarkerColor("themeColor",-0x40)), CENTER, 0, true);
 
                         colorDialog.show();
                     } else if (i == avatarRadiusRow) {

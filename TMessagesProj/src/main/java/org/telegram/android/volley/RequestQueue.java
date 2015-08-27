@@ -19,9 +19,11 @@ package org.telegram.android.volley;
 import android.os.Handler;
 import android.os.Looper;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
@@ -31,11 +33,17 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * A request dispatch queue with a thread pool of dispatchers.
  *
- * Calling {@link #add(org.telegram.android.volley.Request)} will enqueue the given Request for dispatch,
+ * Calling {@link #add(Request)} will enqueue the given Request for dispatch,
  * resolving from either cache or network on a worker thread, and then delivering
  * a parsed response on the main thread.
  */
 public class RequestQueue {
+
+    /** Callback interface for completed requests. */
+    public static interface RequestFinishedListener<T> {
+        /** Called when a request has finished processing. */
+        public void onRequestFinished(Request<T> request);
+    }
 
     /** Used for generating monotonically-increasing sequence numbers for requests. */
     private AtomicInteger mSequenceGenerator = new AtomicInteger();
@@ -85,6 +93,9 @@ public class RequestQueue {
 
     /** The cache dispatcher. */
     private CacheDispatcher mCacheDispatcher;
+
+    private List<RequestFinishedListener> mFinishedListeners =
+            new ArrayList<RequestFinishedListener>();
 
     /**
      * Creates the worker pool. Processing will not begin until {@link #start()} is called.
@@ -149,9 +160,9 @@ public class RequestQueue {
         if (mCacheDispatcher != null) {
             mCacheDispatcher.quit();
         }
-        for (NetworkDispatcher mDispatcher : mDispatchers) {
-            if (mDispatcher != null) {
-                mDispatcher.quit();
+        for (int i = 0; i < mDispatchers.length; i++) {
+            if (mDispatchers[i] != null) {
+                mDispatchers[i].quit();
             }
         }
     }
@@ -175,7 +186,7 @@ public class RequestQueue {
      * {@link RequestQueue#cancelAll(RequestFilter)}.
      */
     public interface RequestFilter {
-        boolean apply(Request<?> request);
+        public boolean apply(Request<?> request);
     }
 
     /**
@@ -261,10 +272,15 @@ public class RequestQueue {
      * <p>Releases waiting requests for <code>request.getCacheKey()</code> if
      *      <code>request.shouldCache()</code>.</p>
      */
-    void finish(Request<?> request) {
+    <T> void finish(Request<T> request) {
         // Remove from the set of requests currently being processed.
         synchronized (mCurrentRequests) {
             mCurrentRequests.remove(request);
+        }
+        synchronized (mFinishedListeners) {
+          for (RequestFinishedListener<T> listener : mFinishedListeners) {
+            listener.onRequestFinished(request);
+          }
         }
 
         if (request.shouldCache()) {
@@ -282,5 +298,20 @@ public class RequestQueue {
                 }
             }
         }
+    }
+
+    public  <T> void addRequestFinishedListener(RequestFinishedListener<T> listener) {
+      synchronized (mFinishedListeners) {
+        mFinishedListeners.add(listener);
+      }
+    }
+
+    /**
+     * Remove a RequestFinishedListener. Has no effect if listener was not previously added.
+     */
+    public  <T> void removeRequestFinishedListener(RequestFinishedListener<T> listener) {
+      synchronized (mFinishedListeners) {
+        mFinishedListeners.remove(listener);
+      }
     }
 }

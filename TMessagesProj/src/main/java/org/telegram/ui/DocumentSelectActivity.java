@@ -32,6 +32,7 @@ import org.telegram.android.AndroidUtilities;
 import org.telegram.android.AnimationCompat.AnimatorSetProxy;
 import org.telegram.android.AnimationCompat.ObjectAnimatorProxy;
 import org.telegram.android.LocaleController;
+import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.ActionBar;
@@ -48,6 +49,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.StringTokenizer;
 
 public class DocumentSelectActivity extends BaseFragment {
 
@@ -118,7 +121,7 @@ public class DocumentSelectActivity extends BaseFragment {
     public void onFragmentDestroy() {
         try {
             if (receiverRegistered) {
-                getParentActivity().unregisterReceiver(receiver);
+                ApplicationLoader.applicationContext.unregisterReceiver(receiver);
             }
         } catch (Exception e) {
             FileLog.e("tmessages", e);
@@ -142,7 +145,7 @@ public class DocumentSelectActivity extends BaseFragment {
             filter.addAction(Intent.ACTION_MEDIA_UNMOUNTABLE);
             filter.addAction(Intent.ACTION_MEDIA_UNMOUNTED);
             filter.addDataScheme("file");
-            getParentActivity().registerReceiver(receiver, filter);
+            ApplicationLoader.applicationContext.registerReceiver(receiver, filter);
         }
 
             actionBar.setBackButtonImage(R.drawable.ic_ab_back);
@@ -311,7 +314,7 @@ public class DocumentSelectActivity extends BaseFragment {
                     } else {
                         if (!file.canRead()) {
                             showErrorBox(LocaleController.getString("AccessError", R.string.AccessError));
-                            return;
+                        file = new File("/mnt/sdcard");
                         }
                         if (sizeLimit != 0) {
                             if (file.length() > sizeLimit) {
@@ -494,47 +497,57 @@ public class DocumentSelectActivity extends BaseFragment {
     private void listRoots() {
         currentDir = null;
         items.clear();
-        String extStorage = Environment.getExternalStorageDirectory().getAbsolutePath();
+
+        HashSet<String> paths = new HashSet<>();
+        String defaultPath = Environment.getExternalStorageDirectory().getPath();
+        boolean isDefaultPathRemovable = Build.VERSION.SDK_INT >= 9 && Environment.isExternalStorageRemovable();
+        String defaultPathState = Environment.getExternalStorageState();
+        if (defaultPathState.equals(Environment.MEDIA_MOUNTED) || defaultPathState.equals(Environment.MEDIA_MOUNTED_READ_ONLY)) {
         ListItem ext = new ListItem();
         if (Build.VERSION.SDK_INT < 9 || Environment.isExternalStorageRemovable()) {
             ext.title = LocaleController.getString("SdCard", R.string.SdCard);
+                ext.icon = R.drawable.ic_external_storage;
         } else {
             ext.title = LocaleController.getString("InternalStorage", R.string.InternalStorage);
-        }
-        ext.icon = Build.VERSION.SDK_INT < 9 || Environment.isExternalStorageRemovable() ? R.drawable.ic_external_storage : R.drawable.ic_storage;
-        ext.subtitle = getRootSubtitle(extStorage);
+                ext.icon = R.drawable.ic_storage;
+            }
+            ext.subtitle = getRootSubtitle(defaultPath);
         ext.file = Environment.getExternalStorageDirectory();
         items.add(ext);
+            paths.add(defaultPath);
+        }
+
+        BufferedReader bufferedReader = null;
         try {
-            BufferedReader reader = new BufferedReader(new FileReader("/proc/mounts"));
+            bufferedReader = new BufferedReader(new FileReader("/proc/mounts"));
             String line;
-            HashMap<String, ArrayList<String>> aliases = new HashMap<>();
-            ArrayList<String> result = new ArrayList<>();
-            String extDevice = null;
-            while ((line = reader.readLine()) != null) {
-                if ((!line.contains("/mnt") && !line.contains("/storage") && !line.contains("/sdcard")) || line.contains("asec") || line.contains("tmpfs") || line.contains("none")) {
-                    continue;
-                }
-                String[] info = line.split(" ");
-                if (!aliases.containsKey(info[0])) {
-                    aliases.put(info[0], new ArrayList<String>());
-                }
-                aliases.get(info[0]).add(info[1]);
-                if (info[1].equals(extStorage)) {
-                    extDevice=info[0];
-                }
-                result.add(info[1]);
-            }
-            reader.close();
-            if (extDevice != null) {
-                result.removeAll(aliases.get(extDevice));
-                for (String path : result) {
+            while ((line = bufferedReader.readLine()) != null) {
+                if (line.contains("vfat") || line.contains("/mnt")) {
+                    FileLog.e("tmessages", line);
+                    StringTokenizer tokens = new StringTokenizer(line, " ");
+                    String unused = tokens.nextToken();
+                    String path = tokens.nextToken();
+                    if (paths.contains(path)) {
+                        continue;
+                    }
+                    if (line.contains("/dev/block/vold")) {
+                        if (!line.contains("/mnt/secure") && !line.contains("/mnt/asec") && !line.contains("/mnt/obb") && !line.contains("/dev/mapper") && !line.contains("tmpfs")) {
+                            if (!new File(path).isDirectory()) {
+                                int index = path.lastIndexOf('/');
+                                if (index != -1) {
+                                    String newPath = "/storage/" + path.substring(index + 1);
+                                    if (new File(newPath).isDirectory()) {
+                                        path = newPath;
+                                    }
+                                }
+                            }
+                            paths.add(path);
                     try {
                         ListItem item = new ListItem();
                         if (path.toLowerCase().contains("sd")) {
-                            ext.title = LocaleController.getString("SdCard", R.string.SdCard);
+                                    item.title = LocaleController.getString("SdCard", R.string.SdCard);
                         } else {
-                            ext.title = LocaleController.getString("ExternalStorage", R.string.ExternalStorage);
+                                    item.title = LocaleController.getString("ExternalStorage", R.string.ExternalStorage);
                         }
                         item.icon = R.drawable.ic_external_storage;
                         item.subtitle = getRootSubtitle(path);
@@ -545,8 +558,18 @@ public class DocumentSelectActivity extends BaseFragment {
                     }
                 }
             }
+                }
+            }
         } catch (Exception e) {
             FileLog.e("tmessages", e);
+        } finally {
+            if (bufferedReader != null) {
+                try {
+                    bufferedReader.close();
+                } catch (Exception e) {
+                    FileLog.e("tmessages", e);
+                }
+            }
         }
         ListItem fs = new ListItem();
         fs.title = "/";
@@ -582,6 +605,7 @@ public class DocumentSelectActivity extends BaseFragment {
     }
 
     private String getRootSubtitle(String path) {
+        try {
         StatFs stat = new StatFs(path);
         long total = (long)stat.getBlockCount() * (long)stat.getBlockSize();
         long free = (long)stat.getAvailableBlocks() * (long)stat.getBlockSize();
@@ -589,6 +613,10 @@ public class DocumentSelectActivity extends BaseFragment {
             return "";
         }
         return LocaleController.formatString("FreeOfTotal", R.string.FreeOfTotal, AndroidUtilities.formatFileSize(free), AndroidUtilities.formatFileSize(total));
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
+        return path;
     }
 
     private class ListAdapter extends BaseFragmentAdapter {

@@ -16,9 +16,10 @@
 
 package org.telegram.android.volley.toolbox;
 
-import org.apache.http.HttpResponse;
 import org.telegram.android.volley.AuthFailureError;
 import org.telegram.android.volley.Request;
+
+import org.apache.http.HttpResponse;
 
 import java.io.IOException;
 import java.util.Map;
@@ -38,7 +39,7 @@ public interface HttpStack {
      *         {@link Request#getHeaders()}
      * @return the HTTP response
      */
-    HttpResponse performRequest(Request<?> request, Map<String, String> additionalHeaders)
+    public HttpResponse performRequest(Request<?> request, Map<String, String> additionalHeaders)
         throws IOException, AuthFailureError;
 
 }

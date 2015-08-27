@@ -16,6 +16,10 @@
 
 package org.telegram.android.volley.toolbox;
 
+import org.telegram.android.volley.AuthFailureError;
+import org.telegram.android.volley.Request;
+import org.telegram.android.volley.Request.Method;
+
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
@@ -33,8 +37,6 @@ import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.params.HttpConnectionParams;
 import org.apache.http.params.HttpParams;
-import org.telegram.android.volley.AuthFailureError;
-import org.telegram.android.volley.Request;
 
 import java.io.IOException;
 import java.net.URI;
@@ -92,7 +94,7 @@ public class HttpClientStack implements HttpStack {
     /* protected */ static HttpUriRequest createHttpRequest(Request<?> request,
             Map<String, String> additionalHeaders) throws AuthFailureError {
         switch (request.getMethod()) {
-            case Request.Method.DEPRECATED_GET_OR_POST: {
+            case Method.DEPRECATED_GET_OR_POST: {
                 // This is the deprecated way that needs to be handled for backwards compatibility.
                 // If the request's post body is null, then the assumption is that the request is
                 // GET.  Otherwise, it is assumed that the request is a POST.
@@ -108,29 +110,29 @@ public class HttpClientStack implements HttpStack {
                     return new HttpGet(request.getUrl());
                 }
             }
-            case Request.Method.GET:
+            case Method.GET:
                 return new HttpGet(request.getUrl());
-            case Request.Method.DELETE:
+            case Method.DELETE:
                 return new HttpDelete(request.getUrl());
-            case Request.Method.POST: {
+            case Method.POST: {
                 HttpPost postRequest = new HttpPost(request.getUrl());
                 postRequest.addHeader(HEADER_CONTENT_TYPE, request.getBodyContentType());
                 setEntityIfNonEmptyBody(postRequest, request);
                 return postRequest;
             }
-            case Request.Method.PUT: {
+            case Method.PUT: {
                 HttpPut putRequest = new HttpPut(request.getUrl());
                 putRequest.addHeader(HEADER_CONTENT_TYPE, request.getBodyContentType());
                 setEntityIfNonEmptyBody(putRequest, request);
                 return putRequest;
             }
-            case Request.Method.HEAD:
+            case Method.HEAD:
                 return new HttpHead(request.getUrl());
-            case Request.Method.OPTIONS:
+            case Method.OPTIONS:
                 return new HttpOptions(request.getUrl());
-            case Request.Method.TRACE:
+            case Method.TRACE:
                 return new HttpTrace(request.getUrl());
-            case Request.Method.PATCH: {
+            case Method.PATCH: {
                 HttpPatch patchRequest = new HttpPatch(request.getUrl());
                 patchRequest.addHeader(HEADER_CONTENT_TYPE, request.getBodyContentType());
                 setEntityIfNonEmptyBody(patchRequest, request);

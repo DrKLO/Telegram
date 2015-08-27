@@ -27,10 +27,10 @@ public interface Authenticator {
      *
      * @throws AuthFailureError If authentication did not succeed
      */
-    String getAuthToken() throws AuthFailureError;
+    public String getAuthToken() throws AuthFailureError;
 
     /**
      * Invalidates the provided auth token.
      */
-    void invalidateAuthToken(String authToken);
+    public void invalidateAuthToken(String authToken);
 }

@@ -629,7 +629,7 @@ public class Utilities {
                         editor.commit();
                         //}
                     }
-                    Utilities.loadWallpaperFromSDPath(ApplicationLoader.applicationContext, wName);
+                    loadWallpaperFromSDPath(ApplicationLoader.applicationContext, wName);
                 }
                 return themeName;
             }

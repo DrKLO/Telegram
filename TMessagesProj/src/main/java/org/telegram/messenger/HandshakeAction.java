@@ -89,6 +89,7 @@ public class HandshakeAction extends Action implements TcpConnection.TcpConnecti
 
     final Object lock = new Object();
     static ArrayList<HashMap<String, Object>> serverPublicKeys = null;
+
     HashMap<String, Object> selectPublicKey(ArrayList<Long> fingerprints) {
         synchronized (lock) {
             if (serverPublicKeys == null) {
@@ -150,7 +151,7 @@ public class HandshakeAction extends Action implements TcpConnection.TcpConnecti
         }
 
         for (HashMap<String, Object> keyDesc : serverPublicKeys) {
-            long keyFingerprint = (Long)keyDesc.get("fingerprint");
+            long keyFingerprint = (Long) keyDesc.get("fingerprint");
             for (long nFingerprint : fingerprints) {
                 if (nFingerprint == keyFingerprint) {
                     return keyDesc;
@@ -161,7 +162,7 @@ public class HandshakeAction extends Action implements TcpConnection.TcpConnecti
     }
 
     long generateMessageId() {
-        long messageId = (long)((((double)System.currentTimeMillis()) * 4294967296.0) / 1000.0);
+        long messageId = (long) ((((double) System.currentTimeMillis()) * 4294967296.0) / 1000.0);
         if (messageId <= lastOutgoingMessageId) {
             messageId = lastOutgoingMessageId + 1;
         }
@@ -197,7 +198,7 @@ public class HandshakeAction extends Action implements TcpConnection.TcpConnecti
             }
 
             processedPQRes = true;
-            final TLRPC.TL_resPQ resPq = (TLRPC.TL_resPQ)message;
+            final TLRPC.TL_resPQ resPq = (TLRPC.TL_resPQ) message;
             if (Utilities.arraysEquals(authNonce, 0, resPq.nonce, 0)) {
                 final HashMap<String, Object> publicKey = selectPublicKey(resPq.server_public_key_fingerprints);
                 if (publicKey == null) {
@@ -221,11 +222,11 @@ public class HandshakeAction extends Action implements TcpConnection.TcpConnecti
                             @Override
                             public void run() {
                                 ByteBuffer pBytes = ByteBuffer.allocate(4);
-                                pBytes.putInt((int)factorizedPq.p);
+                                pBytes.putInt((int) factorizedPq.p);
                                 byte[] pData = pBytes.array();
 
                                 ByteBuffer qBytes = ByteBuffer.allocate(4);
-                                qBytes.putInt((int)factorizedPq.q);
+                                qBytes.putInt((int) factorizedPq.q);
                                 byte[] qData = qBytes.array();
 
                                 TLRPC.TL_req_DH_params reqDH = new TLRPC.TL_req_DH_params();
@@ -233,7 +234,7 @@ public class HandshakeAction extends Action implements TcpConnection.TcpConnecti
                                 reqDH.server_nonce = authServerNonce;
                                 reqDH.p = pData;
                                 reqDH.q = qData;
-                                reqDH.public_key_fingerprint = (Long)publicKey.get("fingerprint");
+                                reqDH.public_key_fingerprint = (Long) publicKey.get("fingerprint");
 
                                 SerializedData os = new SerializedData();
 
@@ -261,7 +262,7 @@ public class HandshakeAction extends Action implements TcpConnection.TcpConnecti
                                     dataWithHash.writeByte(b[0]);
                                 }
 
-                                byte[] encryptedBytes = Utilities.encryptWithRSA((BigInteger[])publicKey.get("key"), dataWithHash.toByteArray());
+                                byte[] encryptedBytes = Utilities.encryptWithRSA((BigInteger[]) publicKey.get("key"), dataWithHash.toByteArray());
                                 dataWithHash.cleanup();
                                 SerializedData encryptedData = new SerializedData();
                                 encryptedData.writeRaw(encryptedBytes);
@@ -300,7 +301,7 @@ public class HandshakeAction extends Action implements TcpConnection.TcpConnecti
                 if (authNewNonce == null) {
                     return;
                 }
-                TLRPC.TL_server_DH_params_ok serverDhParams = (TLRPC.TL_server_DH_params_ok)message;
+                TLRPC.TL_server_DH_params_ok serverDhParams = (TLRPC.TL_server_DH_params_ok) message;
 
                 SerializedData tmpAesKey = new SerializedData();
 
@@ -423,17 +424,17 @@ public class HandshakeAction extends Action implements TcpConnection.TcpConnecti
                 for (int i = 7; i >= 0; i--) {
                     byte a_ = authNewNonce[i];
                     byte b_ = authServerNonce[i];
-                    byte x = (byte)(a_ ^ b_);
+                    byte x = (byte) (a_ ^ b_);
                     serverSaltData.writeByte(x);
                 }
                 ByteBuffer saltBuffer = ByteBuffer.wrap(serverSaltData.toByteArray());
                 serverSaltData.cleanup();
 
-                timeDifference = dhInnerData.server_time - (int)(System.currentTimeMillis() / 1000);
+                timeDifference = dhInnerData.server_time - (int) (System.currentTimeMillis() / 1000);
 
                 serverSalt = new ServerSalt();
-                serverSalt.validSince = (int)(System.currentTimeMillis() / 1000) + timeDifference;
-                serverSalt.validUntil = (int)(System.currentTimeMillis() / 1000) + timeDifference + 30 * 60;
+                serverSalt.validSince = (int) (System.currentTimeMillis() / 1000) + timeDifference;
+                serverSalt.validUntil = (int) (System.currentTimeMillis() / 1000) + timeDifference + 30 * 60;
                 serverSalt.value = saltBuffer.getLong();
 
                 FileLog.d("tmessages", String.format(Locale.US, "===== Time difference: %d", timeDifference));
@@ -489,7 +490,7 @@ public class HandshakeAction extends Action implements TcpConnection.TcpConnecti
                 setClientDHParamsMsgData = null;
             }
 
-            TLRPC.Set_client_DH_params_answer dhAnswer = (TLRPC.Set_client_DH_params_answer)message;
+            TLRPC.Set_client_DH_params_answer dhAnswer = (TLRPC.Set_client_DH_params_answer) message;
 
             if (!Utilities.arraysEquals(authNonce, 0, dhAnswer.nonce, 0)) {
                 FileLog.e("tmessages", "***** Invalid DH answer nonce");
@@ -544,7 +545,7 @@ public class HandshakeAction extends Action implements TcpConnection.TcpConnecti
             System.arraycopy(newNonceHash3Full, newNonceHash3Full.length - 16, newNonceHash3, 0, 16);
 
             if (message instanceof TLRPC.TL_dh_gen_ok) {
-                TLRPC.TL_dh_gen_ok dhGenOk = (TLRPC.TL_dh_gen_ok)message;
+                TLRPC.TL_dh_gen_ok dhGenOk = (TLRPC.TL_dh_gen_ok) message;
                 if (!Utilities.arraysEquals(newNonceHash1, 0, dhGenOk.new_nonce_hash1, 0)) {
                     FileLog.e("tmessages", "***** Invalid DH answer nonce hash 1");
                     beginHandshake(false);
@@ -569,7 +570,7 @@ public class HandshakeAction extends Action implements TcpConnection.TcpConnecti
                     }
                 });
             } else if (message instanceof TLRPC.TL_dh_gen_retry) {
-                TLRPC.TL_dh_gen_retry dhRetry = (TLRPC.TL_dh_gen_retry)message;
+                TLRPC.TL_dh_gen_retry dhRetry = (TLRPC.TL_dh_gen_retry) message;
                 if (!Utilities.arraysEquals(newNonceHash2, 0, dhRetry.new_nonce_hash2, 0)) {
                     FileLog.e("tmessages", "***** Invalid DH answer nonce hash 2");
                     beginHandshake(false);
@@ -578,7 +579,7 @@ public class HandshakeAction extends Action implements TcpConnection.TcpConnecti
                 FileLog.d("tmessages", "***** Retry DH");
                 beginHandshake(false);
             } else if (message instanceof TLRPC.TL_dh_gen_fail) {
-                TLRPC.TL_dh_gen_fail dhFail = (TLRPC.TL_dh_gen_fail)message;
+                TLRPC.TL_dh_gen_fail dhFail = (TLRPC.TL_dh_gen_fail) message;
                 if (!Utilities.arraysEquals(newNonceHash3, 0, dhFail.new_nonce_hash3, 0)) {
                     FileLog.e("tmessages", "***** Invalid DH answer nonce hash 3");
                     beginHandshake(false);

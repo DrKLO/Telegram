@@ -49,8 +49,9 @@ public class DrawerActionCell extends FrameLayout {
         textView.setText(text);
         //textView.setCompoundDrawablesWithIntrinsicBounds(resId, 0, 0, 0);
         int color = AndroidUtilities.getIntDef("drawerIconColor", 0xff737373);
-        getResources().getDrawable(resId).setColorFilter(color, PorterDuff.Mode.SRC_IN);
-        textView.setCompoundDrawablesWithIntrinsicBounds(getResources().getDrawable(resId), null, null, null);
+        Drawable d = getResources().getDrawable(resId);
+        d.setColorFilter(color, PorterDuff.Mode.SRC_IN);
+        textView.setCompoundDrawablesWithIntrinsicBounds(d, null, null, null);
     }
 
     public void setTextAndIcon(String text, Drawable drawable) {

@@ -1449,6 +1449,9 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
     }
 
     private void buildShuffledPlayList() {
+        if (playlist.isEmpty()) {
+            return;
+        }
         ArrayList<MessageObject> all = new ArrayList<>(playlist);
         shuffledPlaylist.clear();
 
@@ -2496,7 +2499,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                             albumEntry.addPhoto(photoEntry);
                         }
                     }
-                } catch (Exception e) {
+                } catch (Throwable e) {
                     FileLog.e("tmessages", e);
                 } finally {
                     if (cursor != null) {
@@ -2555,7 +2558,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                             albumEntry.addPhoto(photoEntry);
                         }
                     }
-                } catch (Exception e) {
+                } catch (Throwable e) {
                     FileLog.e("tmessages", e);
                 } finally {
                     if (cursor != null) {

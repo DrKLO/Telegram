@@ -14,10 +14,12 @@ import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.PixelFormat;
+import android.graphics.PorterDuff;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.drawable.BitmapDrawable;
@@ -26,6 +28,7 @@ import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.provider.Browser;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.GestureDetector;
@@ -893,9 +896,17 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
 
         actionBar = new ActionBar(activity);
         actionBar.setBackgroundColor(0x7F000000);
+        SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+        int def = themePrefs.getInt("themeColor", AndroidUtilities.defColor);
+        actionBar.setBackgroundColor(themePrefs.getInt("chatHeaderColor", def));
         actionBar.setOccupyStatusBar(false);
         actionBar.setItemsBackground(R.drawable.bar_selector_white);
-        actionBar.setBackButtonImage(R.drawable.ic_ab_back);
+        //actionBar.setBackButtonImage(R.drawable.ic_ab_back);
+        Drawable back = parentActivity.getResources().getDrawable(R.drawable.ic_ab_back);
+        int iconsColor = themePrefs.getInt("chatHeaderIconsColor", 0xffffffff);
+        back.setColorFilter(iconsColor, PorterDuff.Mode.MULTIPLY);
+        actionBar.setBackButtonDrawable(back);
+        actionBar.setTitleColor(iconsColor);
         actionBar.setTitle(LocaleController.formatString("Of", R.string.Of, 1, 1));
         containerView.addView(actionBar, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
@@ -1101,7 +1112,10 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
 
         ActionBarMenu menu = actionBar.createMenu();
 
-        menuItem = menu.addItem(0, R.drawable.ic_ab_other);
+        //menuItem = menu.addItem(0, R.drawable.ic_ab_other);
+        Drawable dots = parentActivity.getResources().getDrawable(R.drawable.ic_ab_other);
+        dots.setColorFilter(AndroidUtilities.getIntDef("chatHeaderIconsColor", 0xffffffff), PorterDuff.Mode.MULTIPLY);
+        menuItem = menu.addItem(0, dots);
         menuItem.addSubItem(gallery_menu_showall, LocaleController.getString("ShowAllMedia", R.string.ShowAllMedia), 0);
         menuItem.addSubItem(gallery_menu_save, LocaleController.getString("SaveToGallery", R.string.SaveToGallery), 0);
         menuItem.addSubItem(gallery_menu_delete, LocaleController.getString("Delete", R.string.Delete), 0);
@@ -1159,6 +1173,13 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                     File f = null;
 
                     if (currentMessageObject != null) {
+                        if (currentMessageObject.messageOwner.media instanceof TLRPC.TL_messageMediaWebPage) {
+                            Uri uri = Uri.parse(currentMessageObject.messageOwner.media.webpage.url);
+                            Intent intent = new Intent(Intent.ACTION_VIEW, uri);
+                            intent.putExtra(Browser.EXTRA_APPLICATION_ID, parentActivity.getPackageName());
+                            parentActivity.startActivity(intent);
+                            return;
+                        }
                         f = FileLoader.getPathToMessage(currentMessageObject.messageOwner);
                     } else if (currentFileLocation != null) {
                         f = FileLoader.getPathToAttach(currentFileLocation, avatarsUserId != 0);
@@ -2020,7 +2041,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 } else if (message.messageOwner.media != null) {
                     if (message.messageOwner.media instanceof TLRPC.TL_messageMediaVideo) {
                         return file.volume_id + "_" + file.id + ".mp4";
-                    } else if (message.messageOwner.media instanceof TLRPC.TL_messageMediaPhoto) {
+                    } else if (message.messageOwner.media instanceof TLRPC.TL_messageMediaPhoto || message.messageOwner.media instanceof TLRPC.TL_messageMediaWebPage) {
                         return file.volume_id + "_" + file.local_id + ".jpg";
                     }
                 }
@@ -2076,7 +2097,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                         size[0] = -1;
                     }
                 }
-            } else if (message.messageOwner.media instanceof TLRPC.TL_messageMediaPhoto && message.messageOwner.media.photo != null) {
+            } else if (message.messageOwner.media instanceof TLRPC.TL_messageMediaPhoto && message.messageOwner.media.photo != null || message.messageOwner.media instanceof TLRPC.TL_messageMediaWebPage && message.messageOwner.media.webpage != null) {
                 TLRPC.PhotoSize sizeFull = FileLoader.getClosestPhotoSizeWithSize(message.photoThumbs, AndroidUtilities.getPhotoSize());
                 if (sizeFull != null) {
                     size[0] = sizeFull.size;
@@ -2138,7 +2159,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                         return location;
                     }
                 }
-            } else if (message.messageOwner.media instanceof TLRPC.TL_messageMediaPhoto) {
+            } else if (message.messageOwner.media instanceof TLRPC.TL_messageMediaPhoto || message.messageOwner.media instanceof TLRPC.TL_messageMediaWebPage) {
                 TLRPC.PhotoSize sizeFull = FileLoader.getClosestPhotoSizeWithSize(message.photoThumbs, AndroidUtilities.getPhotoSize());
                 if (sizeFull != null) {
                     TLRPC.TL_inputFileLocation location = new TLRPC.TL_inputFileLocation();
@@ -2237,7 +2258,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
 
         if (messageObject != null && messages == null) {
             imagesArr.add(messageObject);
-            if (messageObject.messageOwner.action == null || messageObject.messageOwner.action instanceof TLRPC.TL_messageActionEmpty) {
+            if (!(messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaWebPage) && (messageObject.messageOwner.action == null || messageObject.messageOwner.action instanceof TLRPC.TL_messageActionEmpty)) {
                 needSearchImageInArr = true;
                 imagesByIds.put(messageObject.getId(), messageObject);
                 if (messageObject.messageOwner.dialog_id != 0) {
@@ -2397,6 +2418,8 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                     }
                     actionBar.setTitle(LocaleController.formatString("Of", R.string.Of, (totalImagesCount - imagesArr.size()) + currentIndex + 1, totalImagesCount));
                 }
+            } else if (currentMessageObject.messageOwner.media instanceof TLRPC.TL_messageMediaWebPage) {
+                actionBar.setTitle(LocaleController.getString("AttachPhoto", R.string.AttachPhoto));
             }
             if (currentMessageObject.messageOwner.ttl != 0) {
                 menuItem.hideSubItem(gallery_menu_save);

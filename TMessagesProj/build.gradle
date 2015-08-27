@@ -82,8 +82,8 @@ android {
         applicationId "org.telegram.plus"
         minSdkVersion 8
         targetSdkVersion 22
-        versionCode 590
-        versionName "3.1.1.9"
+        versionCode 592
+        versionName "3.1.2.0"
         multiDexEnabled true
     }
 }

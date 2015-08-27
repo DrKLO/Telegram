@@ -59,6 +59,7 @@
     <string name="WillUnmuteIn">En %1$s</string>
     <string name="MuteDisable">Desactivar</string>
     <string name="Hashtags">HASHTAGS</string>
+    <string name="Recent">RECIENTES</string>
     <!--broadcasts-->
     <string name="NewBroadcastList">Nueva difusión</string>
     <string name="EnterListName">Nombre de la lista</string>
@@ -393,7 +394,9 @@
     <string name="NoMedia">Comparte fotos y vídeos en este chat y accede a ellos desde cualquier dispositivo.</string>
     <string name="DocumentsTitle">Archivos</string>
     <string name="SharedMediaTitle">Multimedia</string>
+    <string name="LinksTitle">Enlaces</string>
     <string name="NoSharedFiles">Comparte archivos en este chat y accede a ellos desde cualquier dispositivo.</string>
+    <string name="NoSharedLinks">Comparte enlaces en este chat y accede a ellos desde cualquiera de tus dispositivos.</string>
     <!--map view-->
     <string name="Map">Mapa</string>
     <string name="Satellite">Satélite</string>
@@ -834,10 +837,10 @@
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s a las %2$s</string>
     <!--update text-->
-    <string name="updateText">Plus Messenger para Android fue actualizada. Novedades en la versión 3.1:\n\n- Busca mensajes dentro de un chat en específico.\n- Menú para adjuntar completamente rediseñado. Envía contactos y archivos de audio directamente desde el menú para adjuntar.\n- Reproducción de multimedia dentro de la aplicación mejorada (YouTube, Vimeo, SoundCloud etc.), nuevo reproductor para archivos de audio largos.\n\nMás sobre esta actualización:\nhttps://telegram.org/blog/search-and-media</string>
-    <string name="updateBuild">590</string>
+    <string name="updateText">Plus Messenger para Android fue actualizada. Novedades en la versión 3.1.2:\n\n- Búsquedas recientes\n- Mantén pulsado sobre un sticker para obtener una vista previa antes de enviarlo</string>
+    <string name="updateBuild">591</string>
     <!--Telegram+-->
-    <string name="updatePlusText">\n\nNovedades en 3.1.1.9:\n\n- Añadidos nuevos bocadillos iOs (gracias a Edwin Macalopu)\n- Nuevo MOD para mostrar nombre de usuario junto con nombre de miembro en grupos\n- Se muestra admin en perfil de grupo\n- Nuevo MOD para centrar foto, nombre y número en menú de navegación\n- Nuevo MOD para no parar audio en chat desactivando actuación de sensor de proximidad\n- Nuevo MOD para cambiar color de iconos en pantalla perfil\n- Solución de errores\n\n- Revisa, descarga y aplica temas para Plus Messenger: https://play.google.com/store/apps/details?id=es.rafalense.themes</string>
+    <string name="updatePlusText">Novedades en 3.1.2.0:\n\n- Solución de errores</string>
     <string name="TelegramForAndroid">Plus Messenger para Android</string>
     <string name="Theming">Tematización</string>
     <string name="colorHexInvalid">¡Color hexadecimal inválido!</string>

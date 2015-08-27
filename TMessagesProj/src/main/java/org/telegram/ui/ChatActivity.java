@@ -287,10 +287,10 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     private final static int bot_help = 30;
     private final static int bot_settings = 31;
 
-
     private final static int attach_photo = 0;//6;
     private final static int attach_gallery = 1;//7;
     private final static int attach_video = 2;//8;
+
     private final static int attach_audio = 3;
     private final static int attach_document = 4;//9;
     private final static int attach_contact = 5;
@@ -841,23 +841,31 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
 
                             @Override
                             public void onRevealAnimationStart(boolean open) {
+                                if (chatAttachView != null) {
                                 chatAttachView.onRevealAnimationStart(open);
+                            }
                             }
 
                             @Override
                             public void onRevealAnimationProgress(boolean open, float radius, int x, int y) {
+                                if (chatAttachView != null) {
                                 chatAttachView.onRevealAnimationProgress(open, radius, x, y);
+                            }
                             }
 
                             @Override
                             public void onRevealAnimationEnd(boolean open) {
+                                if (chatAttachView != null) {
                                 chatAttachView.onRevealAnimationEnd(open);
                         }
+                            }
 
                         @Override
                         public void onOpenAnimationEnd() {
+                                if (chatAttachView != null) {
                                 chatAttachView.onRevealAnimationEnd(true);
                         }
+                            }
 
                             @Override
                             public View getRevealView() {
@@ -1134,8 +1142,6 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
 
             @Override
             protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-                int widthMode = MeasureSpec.getMode(widthMeasureSpec);
-                int heightMode = MeasureSpec.getMode(heightMeasureSpec);
                 int widthSize = MeasureSpec.getSize(widthMeasureSpec);
                 int heightSize = MeasureSpec.getSize(heightMeasureSpec);
 
@@ -1436,8 +1442,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                             } catch (Exception e) {
                                 FileLog.e("tmessages", e);
                             }
-                        } else {
-                            if (SecretPhotoViewer.getInstance().isVisible()) {
+                        } else if (SecretPhotoViewer.getInstance().isVisible()) {
                                 AndroidUtilities.runOnUIThread(new Runnable() {
                                     @Override
                                     public void run() {
@@ -1447,7 +1452,6 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                                 });
                                 SecretPhotoViewer.getInstance().closePhoto();
                             }
-                        }
                     } else if (event.getAction() != MotionEvent.ACTION_DOWN) {
                         if (SecretPhotoViewer.getInstance().isVisible()) {
                             return true;
@@ -1477,12 +1481,10 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     int x = (int) event.getX();
                     int y = (int) event.getY();
                         int count = chatListView.getChildCount();
-                        Rect rect = new Rect();
                         for (int a = 0; a < count; a++) {
                             View view = chatListView.getChildAt(a);
                             int top = view.getTop();
                             int bottom = view.getBottom();
-                            view.getLocalVisibleRect(rect);
                             if (top > y || bottom < y) {
                                 continue;
                             }
@@ -3372,8 +3374,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 if (extractUriFrom.contains("com.google.android.apps.photos.contentprovider")) {
                     try {
                         String firstExtraction = extractUriFrom.split("/1/")[1];
-                        if (firstExtraction.contains("/ACTUAL")) {
-                            firstExtraction = firstExtraction.replace("/ACTUAL", "");
+                        int index = firstExtraction.indexOf("/ACTUAL");
+                        if (index != -1) {
+                            firstExtraction = firstExtraction.substring(0, index);
                             String secondExtraction = URLDecoder.decode(firstExtraction, "UTF-8");
                             uri = Uri.parse(secondExtraction);
                         }
@@ -4267,9 +4270,11 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         if (cell.getMessageObject() != null && cell.getMessageObject().getId() == mid) {
                             MessageObject playing = cell.getMessageObject();
                             MessageObject player = MediaController.getInstance().getPlayingMessageObject();
+                            if (player != null) {
                             playing.audioProgress = player.audioProgress;
                             playing.audioProgressSec = player.audioProgressSec;
                             cell.updateProgress();
+                            }
                             break;
                         }
                     }
@@ -5061,6 +5066,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 moveScrollToLastMessage();
             }
         } else if (option == 1) {
+            if (getParentActivity() == null) {
+                return;
+            }
             final MessageObject finalSelectedObject = selectedObject;
             AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
             builder.setMessage(LocaleController.formatString("AreYouSureDeleteMessages", R.string.AreYouSureDeleteMessages, LocaleController.formatPluralString("messages", 1)));
@@ -5108,7 +5116,6 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 FileLog.e("tmessages", e);
             }
         } else if (option == 4) {
-            String fileName = selectedObject.getFileName();
             String path = selectedObject.messageOwner.attachPath;
             if (path != null && path.length() > 0) {
                 File temp = new File(path);
@@ -5446,8 +5453,8 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             MessageObject messageToOpen = null;
             ImageReceiver imageReceiver = null;
             View view = chatListView.getChildAt(a);
-            if (view instanceof ChatMediaCell) {
-                ChatMediaCell cell = (ChatMediaCell) view;
+            if (view instanceof ChatBaseCell) {
+                ChatBaseCell cell = (ChatBaseCell) view;
                 MessageObject message = cell.getMessageObject();
                 if (message != null && message.getId() == messageObject.getId()) {
                     messageToOpen = message;
@@ -5671,7 +5678,6 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         @Override
                     public void needOpenWebView(String url, String title, String originalUrl, int w, int h) {
                         BottomSheet.Builder builder = new BottomSheet.Builder(mContext);
-
                         builder.setCustomView(new WebFrameLayout(mContext, builder.create(), title, originalUrl, url, w, h));
                         builder.setUseFullWidth(true);
                         showDialog(builder.create());
@@ -5681,12 +5687,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         public void didPressReplyMessage(ChatBaseCell cell, int id) {
                             scrollToMessageId(id, cell.getMessageObject().getId(), true);
                         }
-                    });
-                    if (view instanceof ChatMediaCell) {
-                        ((ChatMediaCell) view).setAllowedToSetPhoto(openAnimationEnded);
-                        ((ChatMediaCell) view).setMediaDelegate(new ChatMediaCell.ChatMediaCellDelegate() {
-                            @Override
-                            public void didClickedImage(ChatMediaCell cell) {
+
+                    @Override
+                    public void didClickedImage(ChatBaseCell cell) {
                                 MessageObject message = cell.getMessageObject();
                                 if (message.isSendError()) {
                                     createMenu(cell, false);
@@ -5694,7 +5697,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                                 } else if (message.isSending()) {
                                     return;
                                 }
-                                if (message.type == 1) {
+                        if (message.type == 1 || message.type == 0) {
                                     PhotoViewer.getInstance().setParentActivity(getParentActivity());
                                     PhotoViewer.getInstance().openPhoto(message, ChatActivity.this);
                                 } else if (message.type == 3) {
@@ -5770,7 +5773,10 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                                     }
                                 }
                             }
-
+                });
+                if (view instanceof ChatMediaCell) {
+                    ((ChatMediaCell) view).setAllowedToSetPhoto(openAnimationEnded);
+                    ((ChatMediaCell) view).setMediaDelegate(new ChatMediaCell.ChatMediaCellDelegate() {
                             @Override
                             public void didPressedOther(ChatMediaCell cell) {
                                 createMenu(cell, true);

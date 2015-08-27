@@ -461,10 +461,10 @@
   <string name="formatterDay24H">HH:mm</string>
   <!--update text-->
   <string name="updateText">Plus Messenger için temalar indirin ve uygulayın. Hergün yeni temalar ekleniyor:\n https://play.google.com/store/apps/details?id=es.rafalense.themes</string>
-  <string name="updateBuild">590</string>
-  <!--Telegram+-->
+  <string name="updateBuild">591</string>
+  <!--Telegram+--><!--
   <string name="updatePlusText">
-\n\n3.1.1.9\'daki Yenilikler\n\n- Yeni iOS baloncuğu eklendi (Edwin Macalopu\'ya teşekkürler)\n- Gruplarda kullanıcı adı iler beraber üye ismini birlikte gösteren yeni MOD eklendi\n- Grup profilinde admin gösterilir. Admin kendi ikonuna sahiptir\n- Sol menüde avatar,isim ve telefonu ortalamayı sağlayan yeni MOD eklendi\n- Sohbete yakınlık sensörü eylemlerini kapatmayı ve çalan sesleri devam ettirmeyi sağlayan yeni MOD eklendi \n- Profil ekranına ikon renklerini değiştirmeyi sağlayan yeni MOD eklendi\n- Hata düzeltmeleri \n\n Plus Messenger için temalar: https://play.google.com/store/apps/details?id=es.rafalense.themes</string>
+\n\n3.1.1.9\'daki Yenilikler\n\n- Yeni iOS baloncuğu eklendi (Edwin Macalopu\'ya teşekkürler)\n- Gruplarda kullanıcı adı iler beraber üye ismini birlikte gösteren yeni MOD eklendi\n- Grup profilinde admin gösterilir. Admin kendi ikonuna sahiptir\n- Sol menüde avatar,isim ve telefonu ortalamayı sağlayan yeni MOD eklendi\n- Sohbete yakınlık sensörü eylemlerini kapatmayı ve çalan sesleri devam ettirmeyi sağlayan yeni MOD eklendi \n- Profil ekranına ikon renklerini değiştirmeyi sağlayan yeni MOD eklendi\n- Hata düzeltmeleri \n\n Plus Messenger için temalar: https://play.google.com/store/apps/details?id=es.rafalense.themes</string>-->
   <string name="TelegramForAndroid">Android için Plus Messenger</string>
   <string name="Theming">Tema</string>
   <string name="colorHexInvalid">Geçersiz renk hex kodu!</string>

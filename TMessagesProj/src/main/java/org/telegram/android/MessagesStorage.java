@@ -131,6 +131,8 @@ public class MessagesStorage {
 
                 database.executeFast("CREATE TABLE sent_files_v2(uid TEXT, type INTEGER, data BLOB, PRIMARY KEY (uid, type))").stepThis().dispose();
 
+                database.executeFast("CREATE TABLE search_recent(did INTEGER PRIMARY KEY, date INTEGER);").stepThis().dispose();
+
                 //database.executeFast("CREATE TABLE messages_holes(uid INTEGER, start INTEGER, end INTEGER, PRIMARY KEY(uid, start));").stepThis().dispose();
                 //database.executeFast("CREATE INDEX IF NOT EXISTS type_uid_end_messages_holes ON messages_holes(uid, end);").stepThis().dispose();
                 //database.executeFast("CREATE TABLE secret_holes(uid INTEGER, seq_in INTEGER, seq_out INTEGER, data BLOB, PRIMARY KEY (uid, seq_in, seq_out));").stepThis().dispose();
@@ -170,7 +172,7 @@ public class MessagesStorage {
                 database.executeFast("CREATE INDEX IF NOT EXISTS bot_keyboard_idx_mid ON bot_keyboard(mid);").stepThis().dispose();
 
                 //version
-                database.executeFast("PRAGMA user_version = 20").stepThis().dispose();
+                database.executeFast("PRAGMA user_version = 21").stepThis().dispose();
             } else {
                 try {
                     SQLiteCursor cursor = database.queryFinalized("SELECT seq, pts, date, qts, lsv, sg, pbytes FROM params WHERE id = 1");
@@ -201,7 +203,7 @@ public class MessagesStorage {
                     }
                 }
                 int version = database.executeInt("PRAGMA user_version");
-                if (version < 20) {
+                if (version < 21) {
                     updateDbToLastVersion(version);
                 }
             }
@@ -410,7 +412,12 @@ public class MessagesStorage {
                         database.executeFast("CREATE TABLE IF NOT EXISTS bot_keyboard(uid INTEGER PRIMARY KEY, mid INTEGER, info BLOB)").stepThis().dispose();
                         database.executeFast("CREATE INDEX IF NOT EXISTS bot_keyboard_idx_mid ON bot_keyboard(mid);").stepThis().dispose();
                         database.executeFast("PRAGMA user_version = 20").stepThis().dispose();
-                        //version = 20;
+                        version = 20;
+                    }
+                    if (version == 20) {
+                        database.executeFast("CREATE TABLE search_recent(did INTEGER PRIMARY KEY, date INTEGER);").stepThis().dispose();
+                        database.executeFast("PRAGMA user_version = 21").stepThis().dispose();
+                        //version = 21;
                     }
                 } catch (Exception e) {
                     FileLog.e("tmessages", e);
@@ -887,6 +894,7 @@ public class MessagesStorage {
                     if (!messagesOnly) {
                         database.executeFast("DELETE FROM dialogs WHERE did = " + did).stepThis().dispose();
                         database.executeFast("DELETE FROM chat_settings WHERE uid = " + did).stepThis().dispose();
+                        database.executeFast("DELETE FROM search_recent WHERE did = " + did).stepThis().dispose();
                         int lower_id = (int)did;
                         int high_id = (int)(did >> 32);
                         if (lower_id != 0) {
@@ -2100,11 +2108,19 @@ public class MessagesStorage {
             storageQueue.postRunnable(new Runnable() {
                 @Override
                 public void run() {
-                    database.commitTransaction();
+                    try {
+                        database.commitTransaction();
+                    } catch (Exception e) {
+                        FileLog.e("tmessages", e);
+                    }
                 }
             });
         } else {
-            database.commitTransaction();
+            try {
+                database.commitTransaction();
+            } catch (Exception e) {
+                FileLog.e("tmessages", e);
+            }
         }
     }
 
@@ -2745,6 +2761,7 @@ public class MessagesStorage {
                     database.beginTransaction();
 
                     SQLitePreparedStatement state = database.executeFast("UPDATE messages SET data = ? WHERE mid = ?");
+                    SQLitePreparedStatement state2 = database.executeFast("UPDATE media_v2 SET data = ? WHERE mid = ?");
                     for (TLRPC.Message message : messages) {
                         ByteBufferDesc data = buffersStorage.getFreeBuffer(message.getObjectSize());
                         message.serializeToStream(data);
@@ -2754,9 +2771,15 @@ public class MessagesStorage {
                         state.bindInteger(2, message.id);
                         state.step();
 
+                        state2.requery();
+                        state2.bindByteBuffer(1, data.buffer);
+                        state2.bindInteger(2, message.id);
+                        state2.step();
+
                         buffersStorage.reuseFreeBuffer(data);
                     }
                     state.dispose();
+                    state2.dispose();
 
                     database.commitTransaction();
 

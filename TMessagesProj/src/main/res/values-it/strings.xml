@@ -59,6 +59,7 @@
     <string name="WillUnmuteIn">Tra %1$s</string>
     <string name="MuteDisable">Disabilita</string>
     <string name="Hashtags">HASHTAG</string>
+    <string name="Recent">RECENTI</string>
     <!--broadcasts-->
     <string name="NewBroadcastList">Nuova lista broadcast</string>
     <string name="EnterListName">Immetti il nome della lista</string>
@@ -301,7 +302,7 @@
     <string name="ContactJoined">Un contatto si è unito a Telegram</string>
     <string name="Pebble">PEBBLE</string>
     <string name="Language">Lingua</string>
-    <string name="AskAQuestionInfo">Nota che il supporto di Telegram è fornito da volontari. Proviamo a rispondere non appena possibile, ma potrebbe volerci un pò.<![CDATA[<br><br>]]>Dai un\'occhiata alle <![CDATA[<a href=\"https://telegram.org/faq/it#domande-generali\">FAQdi Telegram</a>]]>: troverai risposte alla maggior parte delle domande e suggerimenti importanti per <![CDATA[<a href=\"https://telegram.org/faq/it#risoluzione-dei-problemi\">l\'individuazione del problema</a>]]></string>
+    <string name="AskAQuestionInfo">Nota che il supporto di Telegram è fornito da volontari. Proviamo a rispondere non appena possibile, ma potrebbe volerci un pò.<![CDATA[<br><br>]]>Dai un\'occhiata alle <![CDATA[<a href=\"https://telegram.org/faq/it#domande-generali\">FAQ di Telegram</a>]]>: troverai risposte alla maggior parte delle domande e suggerimenti importanti per <![CDATA[<a href=\"https://telegram.org/faq/it#risoluzione-dei-problemi\">l\'individuazione del problema</a>]]></string>
     <string name="AskButton">Chiedi a un volontario</string>
     <string name="TelegramFaq">FAQ di Telegram</string>
     <string name="TelegramFaqUrl">https://telegram.org/faq/it</string>
@@ -391,9 +392,11 @@
     <string name="AutoLockDisabled">Disabilitato</string>
     <!--media view-->
     <string name="NoMedia">Condividi foto e video in questa chat e accedi ad essi da ogni tuo dispositivo.</string>
-    <string name="DocumentsTitle">File</string>
+    <string name="DocumentsTitle">File condivisi</string>
     <string name="SharedMediaTitle">Media condivisi</string>
+    <string name="LinksTitle">Link condivisi</string>
     <string name="NoSharedFiles">Condividi file e documenti in questa chat e accedi ad essi da ogni tuo dispositivo.</string>
+    <string name="NoSharedLinks">Condividi link in questa chat ed accedi ad essi da ogni tuo dispositivo.</string>
     <!--map view-->
     <string name="Map">Mappa</string>
     <string name="Satellite">Satellite</string>
@@ -834,11 +837,11 @@
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s alle %2$s</string>
     <!--update text-->
-    <string name="updateText">Plus Messenger per Android si è aggiornato. Nuovo nella versione 3.1:\n\n- Cerca messaggi all\'interno di una specifica chat.\n- Menu degli allegati completamente ridisegnato. Invia contatti e audio direttamente dal menu degli allegati.\n- Riproduzione in-app migliorata (YouTube, Vimeo, SoundCloud etc.), nuovo player per i file audio.\n\nMaggiori informazioni su questo aggiornamento:\nhttps://telegram.org/blog/search-and-media</string>
-    <string name="updateBuild">590</string>
-    <!--Telegram+-->
+    <string name="updateText">Plus Messenger per Android si è aggiornato. Nuovo nella versione 3.1.2:\n\n- Risultati recenti nella ricerca\n- Tieni premuto su uno sticker per visualizzare l\'anteprima prima di inviarlo</string>
+    <string name="updateBuild">591</string>
+    <!--Telegram+--><!--
   <string name="updatePlusText">
-\n\nNew in 3.1.1.9:\n\n- Nuove bolle in stile iOS aggiunte (tgrazie a Edwin Macalopu)\n- Nuova MOD per mostrare l\'username assieme al nome del partecipante del gruppo\n- Mostra l\'amministratore del gruppo nella schermata del profilo del gruppo. L\'amministratore ha un\'icona particolare\n- Nuova MOD per centrare l\'avatar, il nome ed il telefono nel menu di navigazione\n- Nuova MOD per continuare a riprodurre gli audio nelle chat disabilitndo l\'azione del sensore di prossimità\n- Nuova MOD per cambiare il colore delle icone nella schermata profilo\n- Bug fixes\n\nEsplora e scarica temi per Plus Messenger: https://play.google.com/store/apps/details?id=es.rafalense.themes</string>
+\n\nNew in 3.1.1.9:\n\n- Nuove bolle in stile iOS aggiunte (tgrazie a Edwin Macalopu)\n- Nuova MOD per mostrare l\'username assieme al nome del partecipante del gruppo\n- Mostra l\'amministratore del gruppo nella schermata del profilo del gruppo. L\'amministratore ha un\'icona particolare\n- Nuova MOD per centrare l\'avatar, il nome ed il telefono nel menu di navigazione\n- Nuova MOD per continuare a riprodurre gli audio nelle chat disabilitndo l\'azione del sensore di prossimità\n- Nuova MOD per cambiare il colore delle icone nella schermata profilo\n- Bug fixes\n\nEsplora e scarica temi per Plus Messenger: https://play.google.com/store/apps/details?id=es.rafalense.themes</string>-->
     <string name="TelegramForAndroid">Plus Messenger per Android</string>
   <string name="Theming">Personalizzazione</string>
     <string name="colorHexInvalid">Codice del colore esadecimale non valido!</string>

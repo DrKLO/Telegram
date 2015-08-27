@@ -128,6 +128,10 @@ public class UserCell extends FrameLayout {
                 Drawable d = getResources().getDrawable(currentDrawable);
                 d.setColorFilter(dColor, PorterDuff.Mode.SRC_IN);
             }
+        }else if(tag.contains("Pref")){
+            setStatusColors(themePrefs.getInt("prefSummaryColor", 0xff8a8a8a), AndroidUtilities.getIntDarkerColor("themeColor", -0x40));
+            nameColor = themePrefs.getInt("prefTitleColor", 0xff212121);
+            nameTextView.setTextColor(nameColor);
         }
     }
 

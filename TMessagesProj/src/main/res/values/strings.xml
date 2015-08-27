@@ -58,6 +58,7 @@
     <string name="WillUnmuteIn">In %1$s</string>
     <string name="MuteDisable">Disable</string>
     <string name="Hashtags">HASHTAGS</string>
+    <string name="Recent">RECENT</string>
     <!--broadcasts-->
     <string name="NewBroadcastList">New Broadcast List</string>
     <string name="EnterListName">Enter list name</string>
@@ -390,9 +391,11 @@
     <string name="AutoLockDisabled">Disabled</string>
     <!--media view-->
     <string name="NoMedia">Share photos and videos in this chat and access them on any of your devices.</string>
-    <string name="DocumentsTitle">Files</string>
+    <string name="DocumentsTitle">Shared Files</string>
     <string name="SharedMediaTitle">Shared Media</string>
+    <string name="LinksTitle">Shared Links</string>
     <string name="NoSharedFiles">Share files and documents in this chat and access them on any of your devices.</string>
+    <string name="NoSharedLinks">Share links in this chat and access them on any of your devices.</string>
     <!--map view-->
     <string name="Map">Map</string>
     <string name="Satellite">Satellite</string>
@@ -833,10 +836,10 @@
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s at %2$s</string>
     <!--update text-->
-    <string name="updateText">Plus Messenger for Android has been updated. New in version 3.1:\n\n- Search for messages inside a specific chat.\n- Fully redesigned attachment menu. Send contacts and audio files straight from the attachment menu.\n- Improved in-app media playback (YouTube, Vimeo, SoundCloud etc.), new player for large audio files.\n\nMore about this update:\nhttps://telegram.org/blog/search-and-media</string>
-    <string name="updateBuild">590</string>
+    <string name="updateText">Plus Messenger for Android has been updated. New in version 3.1.2:\n\n- Recent search results\n- Tap and hold sticker to preview before sending</string>
+    <string name="updateBuild">591</string>
     <!--Telegram+-->
-    <string name="updatePlusText">\n\nNew in 3.1.1.9:\n\n- New bubble iOS added (thanks to Edwin Macalopu)\n- New MOD to show username together with member name in groups\n- Shows group admin in group profile. Admin user has its own icon\n- New MOD to center avatar, name and phone in navigation menu\n- New MOD to keep playing audio in chat disabling proximity sensor action\n- New MOD to change icons color in profile screen\n- Bug fixes\n\nCheck and apply themes for Plus Messenger: https://play.google.com/store/apps/details?id=es.rafalense.themes</string>
+    <string name="updatePlusText">\n\nNew in 3.1.2.0:\n\n- Bug fixes</string>
     <string name="TelegramForAndroid">Plus Messenger for Android</string>
     <string name="Theming">Theming</string>
     <string name="colorHexInvalid">Invalid color hex code!</string>

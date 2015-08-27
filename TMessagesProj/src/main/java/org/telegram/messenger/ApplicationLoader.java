@@ -10,7 +10,6 @@ package org.telegram.messenger;
 
 import android.app.Activity;
 import android.app.AlarmManager;
-import android.app.Application;
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -25,6 +24,7 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.PowerManager;
 import android.support.multidex.MultiDex;
+import android.support.multidex.MultiDexApplication;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GooglePlayServicesUtil;
@@ -44,7 +44,8 @@ import org.telegram.ui.Components.ForegroundDetector;
 import java.io.File;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class ApplicationLoader extends Application {
+//public class ApplicationLoader extends Application {
+public class ApplicationLoader extends MultiDexApplication {
 
     private GoogleCloudMessaging gcm;
     private AtomicInteger msgId = new AtomicInteger();
@@ -360,8 +361,15 @@ public class ApplicationLoader extends Application {
 
     @Override
     protected void attachBaseContext(Context base) {
-        super.attachBaseContext(base);
-        MultiDex.install(this);
+        try{
+            super.attachBaseContext(base);
+            MultiDex.install(this);
+        } catch (Exception e) {
+            String vmName = System.getProperty("java.vm.name");
+            if (!vmName.startsWith("Java")) {
+                throw e;
+            }
+        }
     }
 
     private void storeRegistrationId(Context context, String regId) {

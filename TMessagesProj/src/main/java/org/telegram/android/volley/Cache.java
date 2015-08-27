@@ -28,43 +28,43 @@ public interface Cache {
      * @param key Cache key
      * @return An {@link Entry} or null in the event of a cache miss
      */
-    Entry get(String key);
+    public Entry get(String key);
 
     /**
      * Adds or replaces an entry to the cache.
      * @param key Cache key
      * @param entry Data to store and metadata for cache coherency, TTL, etc.
      */
-    void put(String key, Entry entry);
+    public void put(String key, Entry entry);
 
     /**
      * Performs any potentially long-running actions needed to initialize the cache;
      * will be called from a worker thread.
      */
-    void initialize();
+    public void initialize();
 
     /**
      * Invalidates an entry in the cache.
      * @param key Cache key
      * @param fullExpire True to fully expire the entry, false to soft expire
      */
-    void invalidate(String key, boolean fullExpire);
+    public void invalidate(String key, boolean fullExpire);
 
     /**
      * Removes an entry from the cache.
      * @param key Cache key
      */
-    void remove(String key);
+    public void remove(String key);
 
     /**
      * Empties the cache.
      */
-    void clear();
+    public void clear();
 
     /**
      * Data and metadata for an entry returned by the cache.
      */
-    class Entry {
+    public static class Entry {
         /** The data returned from cache. */
         public byte[] data;
 
@@ -73,6 +73,9 @@ public interface Cache {
 
         /** Date of this response as reported by the server. */
         public long serverDate;
+
+        /** The last modified date for the requested object. */
+        public long lastModified;
 
         /** TTL for this record. */
         public long ttl;

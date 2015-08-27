@@ -135,7 +135,7 @@ public class RadialProgress {
         return previousDrawable != null || currentDrawable != null ? animatedAlphaValue : 0.0f;
     }
 
-    public void onDraw(Canvas canvas) {
+    public void draw(Canvas canvas) {
         if (previousDrawable != null) {
             previousDrawable.setAlpha((int)(255 * animatedAlphaValue));
             previousDrawable.setBounds((int)progressRect.left, (int)progressRect.top, (int)progressRect.right, (int)progressRect.bottom);

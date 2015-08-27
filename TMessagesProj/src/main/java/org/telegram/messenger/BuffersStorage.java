@@ -113,7 +113,7 @@ public class BuffersStorage {
             arrayToReuse = freeBuffers128;
         } else if (buffer.buffer.capacity() == 1024 + 200) {
             arrayToReuse = freeBuffers1024;
-        } if (buffer.buffer.capacity() == 4096 + 200) {
+        } else if (buffer.buffer.capacity() == 4096 + 200) {
             arrayToReuse = freeBuffers4096;
         } else if (buffer.buffer.capacity() == 16384 + 200) {
             arrayToReuse = freeBuffers16384;

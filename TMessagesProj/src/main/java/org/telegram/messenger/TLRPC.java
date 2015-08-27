@@ -11729,6 +11729,15 @@ public class TLRPC {
         }
     }
 
+    public static class TL_inputMessagesFilterUrl extends MessagesFilter {
+        public static int constructor = 0x7ef0dd87;
+
+
+        public void serializeToStream(AbsSerializedData stream) {
+            stream.writeInt32(constructor);
+        }
+    }
+
     public static class TL_inputMessagesFilterPhotoVideo extends MessagesFilter {
         public static int constructor = 0x56e9f0e4;
 

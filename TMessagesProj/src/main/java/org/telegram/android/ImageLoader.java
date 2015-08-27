@@ -1206,30 +1206,11 @@ public class ImageLoader {
                 telegramPath = new File(Environment.getExternalStorageDirectory(), "Telegram");
                 telegramPath.mkdirs();
 
-                boolean canRename = false;
-
-                try {
-                    for (int a = 0; a < 5; a++) {
-                        File srcFile = new File(cachePath, "temp.file");
-                        srcFile.createNewFile();
-                        File dstFile = new File(telegramPath, "temp.file");
-                        canRename = srcFile.renameTo(dstFile);
-                        srcFile.delete();
-                        dstFile.delete();
-                        if (canRename) {
-                            break;
-                        }
-                    }
-                } catch (Exception e) {
-                    FileLog.e("tmessages", e);
-                }
-
-                if (canRename) {
                     if (telegramPath.isDirectory()) {
                         try {
                             File imagePath = new File(telegramPath, "Telegram Images");
                             imagePath.mkdir();
-                            if (imagePath.isDirectory()) {
+                        if (imagePath.isDirectory() && canMoveFiles(cachePath, imagePath)) {
                                 mediaDirs.put(FileLoader.MEDIA_DIR_IMAGE, imagePath);
                                 FileLog.e("tmessages", "image path = " + imagePath);
                             }
@@ -1240,7 +1221,7 @@ public class ImageLoader {
                         try {
                             File videoPath = new File(telegramPath, "Telegram Video");
                             videoPath.mkdir();
-                            if (videoPath.isDirectory()) {
+                        if (videoPath.isDirectory() && canMoveFiles(cachePath, videoPath)) {
                                 mediaDirs.put(FileLoader.MEDIA_DIR_VIDEO, videoPath);
                                 FileLog.e("tmessages", "video path = " + videoPath);
                             }
@@ -1251,7 +1232,7 @@ public class ImageLoader {
                         try {
                             File audioPath = new File(telegramPath, "Telegram Audio");
                             audioPath.mkdir();
-                            if (audioPath.isDirectory()) {
+                        if (audioPath.isDirectory() && canMoveFiles(cachePath, audioPath)) {
                                 new File(audioPath, ".nomedia").createNewFile();
                                 mediaDirs.put(FileLoader.MEDIA_DIR_AUDIO, audioPath);
                                 FileLog.e("tmessages", "audio path = " + audioPath);
@@ -1263,7 +1244,7 @@ public class ImageLoader {
                         try {
                             File documentPath = new File(telegramPath, "Telegram Documents");
                             documentPath.mkdir();
-                            if (documentPath.isDirectory()) {
+                        if (documentPath.isDirectory() && canMoveFiles(cachePath, documentPath)) {
                                 new File(documentPath, ".nomedia").createNewFile();
                                 mediaDirs.put(FileLoader.MEDIA_DIR_DOCUMENT, documentPath);
                                 FileLog.e("tmessages", "documents path = " + documentPath);
@@ -1275,7 +1256,7 @@ public class ImageLoader {
                         try {
                             File themesPath = new File(telegramPath, "Themes");
                             themesPath.mkdir();
-                            if (themesPath.isDirectory()) {
+                            if (themesPath.isDirectory() && canMoveFiles(cachePath, themesPath)) {
                                 new File(themesPath, ".nomedia").createNewFile();
                                 mediaDirs.put(FileLoader.MEDIA_DIR_THEME, themesPath);
                                 FileLog.e("tmessages", "themes path = " + themesPath);
@@ -1288,13 +1269,44 @@ public class ImageLoader {
                 } else {
                     FileLog.e("tmessages", "this Android can't rename files");
                 }
-            }
             MediaController.getInstance().checkSaveToGalleryFiles();
         } catch (Exception e) {
             FileLog.e("tmessages", e);
         }
 
         return mediaDirs;
+    }
+
+    private boolean canMoveFiles(File from, File to) {
+        RandomAccessFile file = null;
+        try {
+            for (int a = 0; a < 5; a++) {
+                File srcFile = new File(from, "temp.file");
+                srcFile.createNewFile();
+                file = new RandomAccessFile(srcFile, "rws");
+                file.write(1);
+                file.close();
+                file = null;
+                File dstFile = new File(to, "temp.file");
+                boolean canRename = srcFile.renameTo(dstFile);
+                srcFile.delete();
+                dstFile.delete();
+                if (canRename) {
+                    return true;
+                }
+            }
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        } finally {
+            try {
+                if (file != null) {
+                    file.close();
+                }
+            } catch (Exception e) {
+                FileLog.e("tmessages", e);
+            }
+        }
+        return false;
     }
 
     public Float getFileProgress(String location) {

@@ -288,6 +288,7 @@ public class BlockedUsersActivity extends BaseFragment implements NotificationCe
             if (type == 0) {
                 if (view == null) {
                     view = new UserCell(mContext, 1);
+                    view.setTag("Pref");
                 }
                 ((UserCell) view).setNameColor(preferences.getInt("prefTitleColor", 0xff212121));
                 ((UserCell) view).setStatusColor(preferences.getInt("prefSummaryColor", 0xff8a8a8a));

@@ -19,6 +19,8 @@ package org.telegram.android.volley.toolbox;
 import org.telegram.android.volley.NetworkResponse;
 import org.telegram.android.volley.Request;
 import org.telegram.android.volley.Response;
+import org.telegram.android.volley.Response.ErrorListener;
+import org.telegram.android.volley.Response.Listener;
 import org.telegram.android.volley.VolleyLog;
 
 import java.io.UnsupportedEncodingException;
@@ -30,28 +32,29 @@ import java.io.UnsupportedEncodingException;
  * @param <T> JSON type of response expected
  */
 public abstract class JsonRequest<T> extends Request<T> {
-    /** Charset for request. */
-    private static final String PROTOCOL_CHARSET = "utf-8";
+    /** Default charset for JSON request. */
+    protected static final String PROTOCOL_CHARSET = "utf-8";
 
     /** Content type for request. */
     private static final String PROTOCOL_CONTENT_TYPE =
         String.format("application/json; charset=%s", PROTOCOL_CHARSET);
 
-    private final Response.Listener<T> mListener;
+    private final Listener<T> mListener;
     private final String mRequestBody;
 
     /**
      * Deprecated constructor for a JsonRequest which defaults to GET unless {@link #getPostBody()}
      * or {@link #getPostParams()} is overridden (which defaults to POST).
      *
+     * @deprecated Use {@link #JsonRequest(int, String, String, Listener, ErrorListener)}.
      */
-    public JsonRequest(String url, String requestBody, Response.Listener<T> listener,
-            Response.ErrorListener errorListener) {
+    public JsonRequest(String url, String requestBody, Listener<T> listener,
+            ErrorListener errorListener) {
         this(Method.DEPRECATED_GET_OR_POST, url, requestBody, listener, errorListener);
     }
 
-    public JsonRequest(int method, String url, String requestBody, Response.Listener<T> listener,
-            Response.ErrorListener errorListener) {
+    public JsonRequest(int method, String url, String requestBody, Listener<T> listener,
+            ErrorListener errorListener) {
         super(method, url, errorListener);
         mListener = listener;
         mRequestBody = requestBody;

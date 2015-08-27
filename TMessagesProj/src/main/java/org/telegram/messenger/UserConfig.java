@@ -39,6 +39,7 @@ public class UserConfig {
     public static int lastPauseTime = 0;
     public static boolean isWaitingForPasscodeEnter = false;
     public static int lastUpdateVersion;
+    public static int lastContactsSyncTime;
 
     public static int getNewMessageId() {
         int id;
@@ -76,6 +77,7 @@ public class UserConfig {
                 editor.putInt("autoLockIn", autoLockIn);
                 editor.putInt("lastPauseTime", lastPauseTime);
                 editor.putInt("lastUpdateVersion", lastUpdateVersion);
+                editor.putInt("lastContactsSyncTime", lastContactsSyncTime);
 
                 if (currentUser != null) {
                     if (withFile) {
@@ -206,6 +208,7 @@ public class UserConfig {
                 autoLockIn = preferences.getInt("autoLockIn", 60 * 60);
                 lastPauseTime = preferences.getInt("lastPauseTime", 0);
                 lastUpdateVersion = preferences.getInt("lastUpdateVersion", 511);
+                lastContactsSyncTime = preferences.getInt("lastContactsSyncTime", (int) (System.currentTimeMillis() / 1000) - 23 * 60 * 60);
                 String user = preferences.getString("user", null);
                 if (user != null) {
                     byte[] userBytes = Base64.decode(user, Base64.DEFAULT);
@@ -279,6 +282,7 @@ public class UserConfig {
         lastPauseTime = 0;
         isWaitingForPasscodeEnter = false;
         lastUpdateVersion = BuildVars.BUILD_VERSION;
+        lastContactsSyncTime = (int) (System.currentTimeMillis() / 1000) - 23 * 60 * 60;
         saveConfig(true);
     }
 }

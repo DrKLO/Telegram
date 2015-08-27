@@ -177,7 +177,7 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
 
         emojiButton = new ImageView(context);
         //emojiButton.setImageResource(R.drawable.ic_msg_panel_smiles);
-        Drawable emoji = parentActivity.getResources().getDrawable(R.drawable.ic_msg_panel_smiles);
+        Drawable emoji = getResources().getDrawable(R.drawable.ic_msg_panel_smiles);
         SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
         final int color = themePrefs.getInt("chatEditTextIconsColor", 0xffadadad);
         emoji.setColorFilter(color, PorterDuff.Mode.SRC_IN);
@@ -380,7 +380,7 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
         //audioSendButton.setImageResource(R.drawable.mic_button_states);
         //audioSendButton.setBackgroundColor(0xffffffff);
         audioSendButton.setSoundEffectsEnabled(false);
-        Drawable mic = parentActivity.getResources().getDrawable(R.drawable.mic);
+        Drawable mic = getResources().getDrawable(R.drawable.mic);
         mic.setColorFilter(color, PorterDuff.Mode.SRC_IN);
         audioSendButton.setImageDrawable(mic);
         audioSendButton.setBackgroundColor(0x00000000);
@@ -389,7 +389,7 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
         audioSendButton.setOnTouchListener(new View.OnTouchListener() {
             @Override
             public boolean onTouch(View view, MotionEvent motionEvent) {
-                Drawable mic = parentActivity.getResources().getDrawable(R.drawable.mic);
+                Drawable mic = getResources().getDrawable(R.drawable.mic);
                 if (motionEvent.getAction() == MotionEvent.ACTION_DOWN) {
                     mic.setColorFilter(0xffda564d, PorterDuff.Mode.SRC_IN);
                     audioSendButton.setImageDrawable(mic);
@@ -495,7 +495,7 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
     private void updateTheme() {
         SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
         int def = themePrefs.getInt("themeColor", AndroidUtilities.defColor);
-        Drawable send = parentActivity.getResources().getDrawable(R.drawable.ic_send);
+        Drawable send = getResources().getDrawable(R.drawable.ic_send);
         send.setColorFilter(themePrefs.getInt("chatSendIconColor", themePrefs.getInt("chatEditTextIconsColor", def)), PorterDuff.Mode.SRC_IN);
         sendButton.setImageDrawable(send);
         messageEditText.setTextColor(themePrefs.getInt("chatEditTextColor", 0xff000000));
@@ -1257,7 +1257,6 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
     private void showPopup(int show, int contentType) {
         SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
         int color = themePrefs.getInt("chatEditTextIconsColor", 0xffadadad);
-        Drawable d;
         if (show == 1) {
             if (contentType == 0 && emojiView == null) {
                 if (parentActivity == null) {
@@ -1340,23 +1339,27 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
             if (sizeNotifierLayout != null) {
                 emojiPadding = currentHeight;
                 sizeNotifierLayout.requestLayout();
+                try{
                 if (contentType == 0) {
-                    d = getResources().getDrawable(R.drawable.ic_msg_panel_kb);
+                    Drawable d = getResources().getDrawable(R.drawable.ic_msg_panel_kb);
                     d.setColorFilter(color, PorterDuff.Mode.SRC_IN);
                     emojiButton.setImageDrawable(d);
                     //emojiButton.setImageResource(R.drawable.ic_msg_panel_kb);
                 } else if (contentType == 1) {
-                    d = getResources().getDrawable(R.drawable.ic_msg_panel_smiles);
+                    Drawable d = getResources().getDrawable(R.drawable.ic_msg_panel_smiles);
                     d.setColorFilter(color, PorterDuff.Mode.SRC_IN);
                     emojiButton.setImageDrawable(d);
                     //emojiButton.setImageResource(R.drawable.ic_msg_panel_smiles);
+                }
+                } catch (Exception e) {
+                    FileLog.e("tmessages", e);
                 }
                 updateBotButton();
                 onWindowSizeChanged();
             }
         } else {
             if (emojiButton != null) {
-                d = getResources().getDrawable(R.drawable.ic_msg_panel_smiles);
+                Drawable d = getResources().getDrawable(R.drawable.ic_msg_panel_smiles);
                 d.setColorFilter(color, PorterDuff.Mode.SRC_IN);
                 emojiButton.setImageDrawable(d);
                 //emojiButton.setImageResource(R.drawable.ic_msg_panel_smiles);

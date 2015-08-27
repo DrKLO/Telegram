@@ -808,10 +808,10 @@
     <string name="formatDateAtTime">%1$s 於時間 %2$s</string>
   <!--update text-->
   <string name="updateText">Android 版的 Plus Messenger 已經更新。在版本 3.1 的新功能：\n\n- 在特定的聊天室裡搜尋訊息。\n- 完全重新設計的附件選單。從附件選單直接傳送「聯絡人」資訊和「音訊檔」。\n- 改進的程式內媒體播放( YouTube、Vimoe、SoundCloud 等 )，新的播放器適用於大型音訊檔。\n\n更多關於這次的更新：\nhttps://telegram.org/blog/search-and-media</string>
-  <string name="updateBuild">590</string>
-  <!--Telegram+-->
+  <string name="updateBuild">591</string>
+  <!--Telegram+--><!--
   <string name="updatePlusText">
-\n\n在 3.1.1.9 版的新功能：\n\n- 新的模組在聊天畫面顯示擁有的大頭照\n- 加入新的泡泡邊緣 (感謝 Edwin Macalopu)\n- 錯誤修復</string>
+\n\n在 3.1.1.9 版的新功能：\n\n- 新的模組在聊天畫面顯示擁有的大頭照\n- 加入新的泡泡邊緣 (感謝 Edwin Macalopu)\n- 錯誤修復</string>-->
   <string name="TelegramForAndroid">適用於 Android 的 Plus Messenger</string>
   <string name="Theming">自製佈景主題</string>
   <string name="colorHexInvalid">無效的十六進位顏色代碼！</string>

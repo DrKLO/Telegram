@@ -274,7 +274,7 @@ public class VideoEditorActivity extends BaseFragment implements TextureView.Sur
         compressVideo = (CheckBox) fragmentView.findViewById(R.id.compress_video);
         compressVideo.setText(LocaleController.getString("CompressVideo", R.string.CompressVideo));
         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
-        //compressVideo.setVisibility(originalHeight != resultHeight || originalWidth != resultWidth ? View.VISIBLE : View.GONE);
+        compressVideo.setVisibility(originalHeight != resultHeight || originalWidth != resultWidth ? View.VISIBLE : View.GONE);
         compressVideo.setChecked(preferences.getBoolean("compress_video", true));
         compressVideo.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override

@@ -52,11 +52,9 @@ import org.telegram.ui.PhotoViewer;
 import java.io.File;
 import java.util.Locale;
 
-public class ChatMediaCell extends ChatBaseCell implements MediaController.FileDownloadProgressListener {
+public class ChatMediaCell extends ChatBaseCell {
 
     public interface ChatMediaCellDelegate {
-        void didClickedImage(ChatMediaCell cell);
-
         void didPressedOther(ChatMediaCell cell);
     }
 
@@ -83,8 +81,6 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
     private int additionHeight;
 
     private boolean allowedToSetPhoto = true;
-
-    private int TAG;
 
     private int buttonState = 0;
     private int buttonPressed = 0;
@@ -142,8 +138,6 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
             locationAddressPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
             locationAddressPaint.setTextSize(AndroidUtilities.dp(14));
         }
-
-        TAG = MediaController.getInstance().generateObserverTag();
 
         photoImage = new ImageReceiver(this);
         radialProgress = new RadialProgress(this);
@@ -359,8 +353,8 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
     private void didClickedImage() {
         if (currentMessageObject.type == 1) {
             if (buttonState == -1) {
-                if (mediaDelegate != null) {
-                    mediaDelegate.didClickedImage(this);
+                if (delegate != null) {
+                    delegate.didClickedImage(this);
                 }
             } else if (buttonState == 0) {
                 didPressedButton(false);
@@ -381,13 +375,13 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
                 didPressedButton(false);
             }
         } else if (currentMessageObject.type == 4) {
-            if (mediaDelegate != null) {
-                mediaDelegate.didClickedImage(this);
+            if (delegate != null) {
+                delegate.didClickedImage(this);
             }
         } else if (currentMessageObject.type == 9) {
             if (buttonState == -1) {
-                if (mediaDelegate != null) {
-                    mediaDelegate.didClickedImage(this);
+                if (delegate != null) {
+                    delegate.didClickedImage(this);
                 }
             }
         }
@@ -463,8 +457,8 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
                 radialProgress.setBackground(getDrawableForCurrentState(), false, animated);
             }
         } else if (buttonState == 3) {
-            if (mediaDelegate != null) {
-                mediaDelegate.didClickedImage(this);
+            if (delegate != null) {
+                delegate.didClickedImage(this);
             }
         }
     }
@@ -931,6 +925,7 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
         updateButtonState(dataChanged);
     }
 
+    @Override
     public ImageReceiver getPhotoImage() {
         return photoImage;
     }
@@ -981,10 +976,11 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
             if (cacheFile.exists() && cacheFile.length() == 0) {
                 cacheFile.delete();
             }
-            //
-            if (!currentMessageObject.isOut() && cacheFile.exists() && cacheFile.length() != 0 && currentMessageObject.messageOwner.media.document != null) {
-                if(cacheFile.lastModified()/1000 < currentMessageObject.messageOwner.media.document.date)cacheFile.delete();
-            }
+            //Plus
+            //if (!currentMessageObject.isOut() && cacheFile.exists() && cacheFile.length() != 0 && currentMessageObject.messageOwner.media.document != null) {
+            //    Log.e("ChatMediaCell", cacheFile.getAbsolutePath().toString());
+            //    if(cacheFile.lastModified()/1000 < currentMessageObject.messageOwner.media.document.date)cacheFile.delete();
+            //}
             //
             if (!cacheFile.exists()) {
                 MediaController.getInstance().addLoadingFileObserver(fileName, this);
@@ -1187,7 +1183,7 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
             }
         }
 
-        radialProgress.onDraw(canvas);
+        radialProgress.draw(canvas);
         try{
             if(themePrefs.getBoolean("chatMemberColorCheck", false)){
                 senderPaint.setColor(themePrefs.getInt("chatMemberColor", AndroidUtilities.getIntDarkerColor("themeColor", 0x15)));
@@ -1320,10 +1316,5 @@ public class ChatMediaCell extends ChatBaseCell implements MediaController.FileD
     @Override
     public void onProgressUpload(String fileName, float progress, boolean isEncrypted) {
         radialProgress.setProgress(progress, true);
-    }
-
-    @Override
-    public int getObserverTag() {
-        return TAG;
     }
 }
