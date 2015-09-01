@@ -9,6 +9,7 @@
 package org.telegram.android;
 
 import android.graphics.Paint;
+import android.graphics.Typeface;
 import android.text.Layout;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
@@ -16,6 +17,7 @@ import android.text.Spanned;
 import android.text.StaticLayout;
 import android.text.TextPaint;
 import android.text.TextUtils;
+import android.text.style.URLSpan;
 import android.text.util.Linkify;
 
 import org.telegram.messenger.ConnectionsManager;
@@ -24,8 +26,10 @@ import org.telegram.messenger.FileLog;
 import org.telegram.messenger.TLRPC;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
+import org.telegram.ui.Components.TypefaceSpan;
 import org.telegram.ui.Components.URLSpanNoUnderline;
 import org.telegram.ui.Components.URLSpanNoUnderlineBold;
+import org.telegram.ui.Components.URLSpanReplacement;
 
 import java.util.AbstractMap;
 import java.util.ArrayList;
@@ -397,7 +401,7 @@ public class MessageObject {
         int dateYear = rightNow.get(Calendar.YEAR);
         int dateMonth = rightNow.get(Calendar.MONTH);
         dateKey = String.format("%d_%02d_%02d", dateYear, dateMonth, dateDay);
-        if (contentType == 1 || contentType == 2) {
+        if (contentType == 1 || contentType == 2 || contentType == 0) {
             monthKey = String.format("%d_%02d", dateYear, dateMonth);
         }
 
@@ -666,7 +670,54 @@ public class MessageObject {
         generateLinkDescription();
         textLayoutBlocks = new ArrayList<>();
 
-        addLinks(messageText);
+        boolean useManualParse = messageOwner.entities.isEmpty() && (
+                messageOwner instanceof TLRPC.TL_message_old ||
+                messageOwner instanceof TLRPC.TL_message_old2 ||
+                messageOwner instanceof TLRPC.TL_message_old3 ||
+                messageOwner instanceof TLRPC.TL_message_old4 ||
+                messageOwner instanceof TLRPC.TL_messageForwarded_old ||
+                messageOwner instanceof TLRPC.TL_messageForwarded_old2 ||
+                messageOwner instanceof TLRPC.TL_message_secret ||
+                isOut() && messageOwner.send_state != MESSAGE_SEND_STATE_SENT || messageOwner.id < 0);
+
+        if (useManualParse) {
+            addLinks(messageText);
+        }
+
+        if (messageText instanceof Spannable) {
+            Spannable spannable = (Spannable) messageText;
+            int count = messageOwner.entities.size();
+            for (int a = 0; a < count; a++) {
+                TLRPC.MessageEntity entity = messageOwner.entities.get(a);
+                if (entity.length <= 0 || entity.offset < 0 || entity.offset >= messageOwner.message.length()) {
+                    continue;
+                } else if (entity.offset + entity.length > messageOwner.message.length()) {
+                    entity.length = messageOwner.message.length() - entity.offset;
+                }
+                if (entity instanceof TLRPC.TL_messageEntityBold) {
+                    spannable.setSpan(new TypefaceSpan(AndroidUtilities.getTypeface("fonts/rmedium.ttf")), entity.offset, entity.offset + entity.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                } else if (entity instanceof TLRPC.TL_messageEntityItalic) {
+                    spannable.setSpan(new TypefaceSpan(AndroidUtilities.getTypeface("fonts/ritalic.ttf")), entity.offset, entity.offset + entity.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                } else if (entity instanceof TLRPC.TL_messageEntityCode) {
+                    spannable.setSpan(new TypefaceSpan(Typeface.MONOSPACE), entity.offset, entity.offset + entity.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                } else if (!useManualParse) {
+                    String url = messageOwner.message.substring(entity.offset, entity.offset + entity.length);
+                    if (entity instanceof TLRPC.TL_messageEntityBotCommand || entity instanceof TLRPC.TL_messageEntityHashtag || entity instanceof TLRPC.TL_messageEntityMention) {
+                        spannable.setSpan(new URLSpanNoUnderline(url), entity.offset, entity.offset + entity.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                    } else if (entity instanceof TLRPC.TL_messageEntityEmail) {
+                        spannable.setSpan(new URLSpanReplacement("mailto:" + url), entity.offset, entity.offset + entity.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                    } else if (entity instanceof TLRPC.TL_messageEntityUrl) {
+                        if (!url.toLowerCase().startsWith("http")) {
+                            spannable.setSpan(new URLSpan("http://" + url), entity.offset, entity.offset + entity.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                        } else {
+                            spannable.setSpan(new URLSpan(url), entity.offset, entity.offset + entity.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                        }
+                    } else if (entity instanceof TLRPC.TL_messageEntityTextUrl) {
+                        spannable.setSpan(new URLSpanReplacement(entity.url), entity.offset, entity.offset + entity.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                    }
+                }
+            }
+        }
 
         int maxWidth;
         if (AndroidUtilities.isTablet()) {

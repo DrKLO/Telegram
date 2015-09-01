@@ -137,6 +137,7 @@
     <string name="OpenInBrowser">Apri nel Browser</string>
     <string name="CopyUrl">Copia URL</string>
     <string name="SendItems">Invia %1$s</string>
+    <string name="OpenUrlAlert">Aprire url %1$s?</string>
     <!--notification-->
     <string name="MessageLifetimeChanged">%1$s ha impostato il timer di autodistruzione a %2$s</string>
     <string name="MessageLifetimeChangedOutgoing">Hai impostato il timer di autodistruzione a %1$s</string>
@@ -549,6 +550,9 @@
     <string name="BotStatusCantRead">non ha accesso ai messaggi</string>
     <string name="BotInfoTitle">Cosa può fare questo bot?</string>
     <string name="BotStart">AVVIA</string>
+    <string name="BotUnblock">RIAVVIA</string>
+    <string name="BotStop">Arresta bot</string>
+    <string name="BotRestart">Riavvia bot</string>
     <!--button titles-->
     <string name="Next">Avanti</string>
     <string name="Back">Indietro</string>
@@ -837,6 +841,6 @@
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s alle %2$s</string>
     <!--update text-->
-    <string name="updateText">Telegram per Android si è aggiornato. Nuovo nella versione 3.1.2:\n\n- Risultati recenti nella ricerca\n- Tieni premuto su uno sticker per visualizzare l\'anteprima prima di inviarlo</string>
-    <string name="updateBuild">583</string>
+    <string name="updateText">Telegram per Android si è aggiornato. Nuovo nella versione 3.1.3:\n\n- Nuova sezione \"Link condivisi\" nelle info della chat\n- Anteprima in-app delle foto dei link</string>
+    <string name="updateBuild">590</string>
 </resources>

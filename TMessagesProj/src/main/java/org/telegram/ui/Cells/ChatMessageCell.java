@@ -38,7 +38,6 @@ import org.telegram.messenger.TLRPC;
 import org.telegram.ui.Components.RadialProgress;
 import org.telegram.ui.Components.ResourceLoader;
 import org.telegram.ui.Components.StaticLayoutEx;
-import org.telegram.ui.Components.URLSpanNoUnderline;
 
 import java.io.File;
 import java.util.Locale;
@@ -131,16 +130,7 @@ public class ChatMessageCell extends ChatBaseCell {
                                     } else {
                                         if (link[0] == pressedLink) {
                                             try {
-                                                if (pressedLink instanceof URLSpanNoUnderline) {
-                                                    String url = ((URLSpanNoUnderline) pressedLink).getURL();
-                                                    if (url.startsWith("@") || url.startsWith("#") || url.startsWith("/")) {
-                                                        if (delegate != null) {
-                                                            delegate.didPressUrl(currentMessageObject, url);
-                                                        }
-                                                    }
-                                                } else {
-                                                    pressedLink.onClick(this);
-                                                }
+                                                delegate.didPressUrl(currentMessageObject, pressedLink);
                                             } catch (Exception e) {
                                                 FileLog.e("tmessages", e);
                                             }
@@ -215,7 +205,10 @@ public class ChatMessageCell extends ChatBaseCell {
                                 pressedLink.onClick(this);
                             } else {
                                 if (drawImageButton && delegate != null) {
-                                    delegate.didClickedImage(this);
+                                    if (buttonState == -1) {
+                                        playSoundEffect(SoundEffectConstants.CLICK);
+                                        delegate.didClickedImage(this);
+                                    }
                                 } else {
                                     TLRPC.WebPage webPage = currentMessageObject.messageOwner.media.webpage;
                                     if (Build.VERSION.SDK_INT >= 16 && webPage.embed_url != null && webPage.embed_url.length() != 0) {
@@ -839,7 +832,7 @@ public class ChatMessageCell extends ChatBaseCell {
                     if (drawImageButton) {
                         int size = AndroidUtilities.dp(48);
                         buttonX = (int) (linkImageView.getImageX() + (linkImageView.getImageWidth() - size) / 2.0f);
-                        buttonY = (int) (linkImageView.getImageY() + (linkImageView.getImageHeight() - size) / 2.0f) + namesOffset;
+                        buttonY = (int) (linkImageView.getImageY() + (linkImageView.getImageHeight() - size) / 2.0f);
                         radialProgress.setProgressRect(buttonX, buttonY, buttonX + AndroidUtilities.dp(48), buttonY + AndroidUtilities.dp(48));
                     }
                 }

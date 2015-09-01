@@ -540,14 +540,9 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
             if (sendToUser == null) {
                 return;
             }
-            if (sendToUser.access_hash != 0) {
-                sendToPeer = new TLRPC.TL_inputPeerForeign();
-                sendToPeer.user_id = sendToUser.id;
-                sendToPeer.access_hash = sendToUser.access_hash;
-            } else {
-                sendToPeer = new TLRPC.TL_inputPeerContact();
-                sendToPeer.user_id = sendToUser.id;
-            }
+            sendToPeer = new TLRPC.TL_inputPeerUser();
+            sendToPeer.user_id = sendToUser.id;
+            sendToPeer.access_hash = sendToUser.access_hash;
         }
 
         ArrayList<MessageObject> objArr = new ArrayList<>();
@@ -575,6 +570,10 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
             newMsg.message = msgObj.messageOwner.message;
             newMsg.fwd_msg_id = msgObj.getId();
             newMsg.attachPath = msgObj.messageOwner.attachPath;
+            newMsg.entities = msgObj.messageOwner.entities;
+            if (!newMsg.entities.isEmpty()) {
+                newMsg.flags |= TLRPC.MESSAGE_FLAG_HAS_ENTITIES;
+            }
             if (newMsg.attachPath == null) {
                 newMsg.attachPath = "";
             }
@@ -965,14 +964,9 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                     if ((sendToUser.flags & TLRPC.USER_FLAG_BOT) != 0) {
                         newMsg.flags &= ~TLRPC.MESSAGE_FLAG_UNREAD;
                     }
-                    if (sendToUser.access_hash != 0) {
-                        sendToPeer = new TLRPC.TL_inputPeerForeign();
-                        sendToPeer.user_id = sendToUser.id;
-                        sendToPeer.access_hash = sendToUser.access_hash;
-                    } else {
-                        sendToPeer = new TLRPC.TL_inputPeerContact();
-                        sendToPeer.user_id = sendToUser.id;
-                    }
+                    sendToPeer = new TLRPC.TL_inputPeerUser();
+                    sendToPeer.user_id = sendToUser.id;
+                    sendToPeer.access_hash = sendToUser.access_hash;
                 }
             }
         } else {
@@ -1563,6 +1557,10 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                         newMsgObj.local_id = newMsgObj.id = res.id;
                         newMsgObj.date = res.date;
                         newMsgObj.media = res.media;
+                        newMsgObj.entities = res.entities;
+                        if (!newMsgObj.entities.isEmpty()) {
+                            newMsgObj.flags |= TLRPC.MESSAGE_FLAG_HAS_ENTITIES;
+                        }
                         if (res instanceof TLRPC.TL_messages_sentMessage) {
                             MessagesController.getInstance().processNewDifferenceParams(-1, res.pts, res.date, res.pts_count);
                         } else if (res instanceof TLRPC.TL_messages_sentMessageLink) {
@@ -1849,10 +1847,8 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
         } else {
             UserConfig.saveConfig(false);
             TLRPC.TL_photo photo = new TLRPC.TL_photo();
-            photo.user_id = UserConfig.getClientUserId();
             photo.date = ConnectionsManager.getInstance().getCurrentTime();
             photo.sizes = sizes;
-            photo.geo = new TLRPC.TL_geoPointEmpty();
             return photo;
         }
     }
@@ -2218,9 +2214,7 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                                 }
                                 if (photo == null) {
                                     photo = new TLRPC.TL_photo();
-                                    photo.user_id = UserConfig.getClientUserId();
                                     photo.date = ConnectionsManager.getInstance().getCurrentTime();
-                                    photo.geo = new TLRPC.TL_geoPointEmpty();
                                     TLRPC.TL_photoSize photoSize = new TLRPC.TL_photoSize();
                                     photoSize.w = searchImage.width;
                                     photoSize.h = searchImage.height;

@@ -5,7 +5,7 @@ repositories {
 }
 
 dependencies {
-    compile 'com.android.support:support-v4:22.2.+'
+    compile 'com.android.support:support-v4:23.0.+'
     compile 'com.google.android.gms:play-services:3.2.+'
     compile 'net.hockeyapp.android:HockeySDK:3.5.+'
     compile 'com.googlecode.mp4parser:isoparser:1.0.+'
@@ -13,7 +13,7 @@ dependencies {
 
 android {
     compileSdkVersion 22
-    buildToolsVersion '22.0.1'
+    buildToolsVersion '23.0.0'
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_7
@@ -73,7 +73,7 @@ android {
     defaultConfig {
         minSdkVersion 8
         targetSdkVersion 22
-        versionCode 586
-        versionName "3.1.2"
+        versionCode 592
+        versionName "3.1.3"
     }
 }

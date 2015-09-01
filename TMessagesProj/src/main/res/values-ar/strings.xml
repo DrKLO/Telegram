@@ -137,6 +137,7 @@
     <string name="OpenInBrowser">فتح في المتصفح</string>
     <string name="CopyUrl">انسخ الرابط</string>
     <string name="SendItems">أرسل %1$s</string>
+    <string name="OpenUrlAlert">هل ترغب في فتح الرابط باستخدام %1$s ؟</string>
     <!--notification-->
     <string name="MessageLifetimeChanged">%1$s قام بتعيين عداد التدمير الذاتي إلى to %2$s</string>
     <string name="MessageLifetimeChangedOutgoing">لقد قمت بتعيين التدمير الذاتي إلى %1$s</string>
@@ -549,6 +550,9 @@
     <string name="BotStatusCantRead">لا يستطيع الوصول للرسائل</string>
     <string name="BotInfoTitle">ماذا يستطيع هذا البوت عمله؟</string>
     <string name="BotStart">إبدأ</string>
+    <string name="BotUnblock">إعادة تشغيل</string>
+    <string name="BotStop">إيقاف البوت</string>
+    <string name="BotRestart">إعادة تعيين البوت</string>
     <!--button titles-->
     <string name="Next">التالي</string>
     <string name="Back">رجوع</string>
@@ -837,6 +841,6 @@
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s الساعة %2$s</string>
     <!--update text-->
-    <string name="updateText">تم تحديث تيليجرام نسخة الاندرويد. الجديد في نسخة ٣.١.٢: \n\n- كلمات البحث الحديثة. \n- اضغط باستمرار لاستعراض الملصق قبل إرساله.</string>
-    <string name="updateBuild">583</string>
+    <string name="updateText">تم تحديث تيليجرام نسخة الآندرويد. الجديد في نسخة 3.1.3:\n\n-  قسم جديد للروابط المشاركة في معلومات المحادثة \n- استعراض لروابط الصور داخل التطبيق.</string>
+    <string name="updateBuild">590</string>
 </resources>

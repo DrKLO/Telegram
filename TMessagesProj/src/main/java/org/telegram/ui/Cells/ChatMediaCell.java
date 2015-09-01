@@ -38,7 +38,6 @@ import org.telegram.android.MessageObject;
 import org.telegram.ui.Components.RadialProgress;
 import org.telegram.ui.Components.ResourceLoader;
 import org.telegram.ui.Components.StaticLayoutEx;
-import org.telegram.ui.Components.URLSpanNoUnderline;
 import org.telegram.ui.PhotoViewer;
 import org.telegram.ui.Components.GifDrawable;
 import org.telegram.android.ImageReceiver;
@@ -205,16 +204,7 @@ public class ChatMediaCell extends ChatBaseCell {
                         }
                     } else if (linkPreviewPressed) {
                         try {
-                            if (pressedLink instanceof URLSpanNoUnderline) {
-                                String url = ((URLSpanNoUnderline) pressedLink).getURL();
-                                if (url.startsWith("@") || url.startsWith("#") || url.startsWith("/")) {
-                                    if (delegate != null) {
-                                        delegate.didPressUrl(currentMessageObject, url);
-                                    }
-                                }
-                            } else {
-                                pressedLink.onClick(this);
-                            }
+                            delegate.didPressUrl(currentMessageObject, pressedLink);
                         } catch (Exception e) {
                             FileLog.e("tmessages", e);
                         }

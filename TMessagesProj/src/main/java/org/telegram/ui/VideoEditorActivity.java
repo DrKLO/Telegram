@@ -87,6 +87,7 @@ public class VideoEditorActivity extends BaseFragment implements TextureView.Sur
     private int resultWidth = 0;
     private int resultHeight = 0;
     private int bitrate = 0;
+    private int originalBitrate = 0;
     private float videoDuration = 0;
     private long startTime = 0;
     private long endTime = 0;
@@ -247,7 +248,7 @@ public class VideoEditorActivity extends BaseFragment implements TextureView.Sur
                     }
                     if (delegate != null) {
                         if (compressVideo.getVisibility() == View.GONE || compressVideo.getVisibility() == View.VISIBLE && !compressVideo.isChecked()) {
-                            delegate.didFinishEditVideo(videoPath, startTime, endTime, originalWidth, originalHeight, rotationValue, originalWidth, originalHeight, bitrate, estimatedSize, esimatedDuration);
+                            delegate.didFinishEditVideo(videoPath, startTime, endTime, originalWidth, originalHeight, rotationValue, originalWidth, originalHeight, originalBitrate, estimatedSize, esimatedDuration);
                         } else {
                             delegate.didFinishEditVideo(videoPath, startTime, endTime, resultWidth, resultHeight, rotationValue, originalWidth, originalHeight, bitrate, estimatedSize, esimatedDuration);
                         }
@@ -742,7 +743,7 @@ public class VideoEditorActivity extends BaseFragment implements TextureView.Sur
                 TrackHeaderBox headerBox = trackBox.getTrackHeaderBox();
                 if (headerBox.getWidth() != 0 && headerBox.getHeight() != 0) {
                     trackHeaderBox = headerBox;
-                    bitrate = (int)(trackBitrate / 100000 * 100000);
+                    originalBitrate = bitrate = (int)(trackBitrate / 100000 * 100000);
                     if (bitrate > 900000) {
                         bitrate = 900000;
                     }

@@ -46,8 +46,8 @@
     <string name="EncryptedChatStartedIncoming">Você entrou no chat secreto</string>
     <string name="ClearHistory">Limpar histórico</string>
     <string name="DeleteChat">Apagar e sair</string>
-    <string name="DeleteChatUser">Excluir conversa</string>
-    <string name="HiddenName">Excluir Conta</string>
+    <string name="DeleteChatUser">Apagar conversa</string>
+    <string name="HiddenName">Conta Excluída</string>
     <string name="SelectChat">Selecione um Chat</string>
     <string name="PhotoTip">Toque e segure para ver</string>
     <string name="CompatibilityChat">%1$s está usando uma versão mais antiga do Telegram, por isso fotos secretas serão mostradas em modo de compatibilidade.\n\nAssim que %2$s atualizar o Telegram, fotos com timers de 1 minuto ou menos passarão a funcionar no modo ‘Toque e segure para ver’, e você será notificado caso a outra pessoa salve a tela.</string>
@@ -137,6 +137,7 @@
     <string name="OpenInBrowser">Abrir no Navegador</string>
     <string name="CopyUrl">Copiar URL</string>
     <string name="SendItems">Enviar %1$s</string>
+    <string name="OpenUrlAlert">Abrir URL em %1$s?</string>
     <!--notification-->
     <string name="MessageLifetimeChanged">%1$s estabeleceu o tempo de autodestruição para %2$s </string>
     <string name="MessageLifetimeChangedOutgoing">Você estabeleceu o tempo de autodestruição para %1$s</string>
@@ -549,6 +550,9 @@
     <string name="BotStatusCantRead">não tem acesso as mensagens</string>
     <string name="BotInfoTitle">O que esse bot pode fazer?</string>
     <string name="BotStart">COMEÇAR</string>
+    <string name="BotUnblock">REINICIAR</string>
+    <string name="BotStop">Parar bot</string>
+    <string name="BotRestart">Reiniciar bot</string>
     <!--button titles-->
     <string name="Next">Próximo</string>
     <string name="Back">Voltar</string>
@@ -837,6 +841,6 @@
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s às %2$s</string>
     <!--update text-->
-    <string name="updateText">Seu Telegram para Android acaba de ser atualizado. Novo na versão 3.1.2\n\n- Resultados das buscas recentes\n- Pressione e mantenha em um sticker para pré-visualizar antes do envio</string>
-    <string name="updateBuild">583</string>
+    <string name="updateText">Telegram para Android foi atualizado. Novidade na versão 3.1.3\n\n- Nova sessão \"Links Compartilhados\" na informação do chat\n- Pré-visualizaçãp de fotos em links no aplicativo.</string>
+    <string name="updateBuild">590</string>
 </resources>

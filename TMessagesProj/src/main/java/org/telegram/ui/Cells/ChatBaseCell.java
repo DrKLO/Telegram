@@ -47,7 +47,7 @@ public class ChatBaseCell extends BaseCell implements MediaController.FileDownlo
         void didPressedCancelSendButton(ChatBaseCell cell);
         void didLongPressed(ChatBaseCell cell);
         void didPressReplyMessage(ChatBaseCell cell, int id);
-        void didPressUrl(MessageObject messageObject, String url);
+        void didPressUrl(MessageObject messageObject, ClickableSpan url);
         void needOpenWebView(String url, String title, String originalUrl, int w, int h);
         void didClickedImage(ChatBaseCell cell);
         boolean canPerformActions();

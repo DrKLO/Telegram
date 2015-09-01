@@ -261,25 +261,39 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 if (id == -1) {
                     finishFragment();
                 } else if (id == block_contact) {
-                    AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-                    if (!userBlocked) {
-                        builder.setMessage(LocaleController.getString("AreYouSureBlockContact", R.string.AreYouSureBlockContact));
-                    } else {
-                        builder.setMessage(LocaleController.getString("AreYouSureUnblockContact", R.string.AreYouSureUnblockContact));
+                    TLRPC.User user = MessagesController.getInstance().getUser(user_id);
+                    if (user == null) {
+                        return;
                     }
-                    builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
-                    builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialogInterface, int i) {
-                            if (!userBlocked) {
-                                MessagesController.getInstance().blockUser(user_id);
-                            } else {
-                                MessagesController.getInstance().unblockUser(user_id);
-                            }
+                    if ((user.flags & TLRPC.USER_FLAG_BOT) == 0) {
+                        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                        if (!userBlocked) {
+                            builder.setMessage(LocaleController.getString("AreYouSureBlockContact", R.string.AreYouSureBlockContact));
+                        } else {
+                            builder.setMessage(LocaleController.getString("AreYouSureUnblockContact", R.string.AreYouSureUnblockContact));
                         }
-                    });
-                    builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-                    showDialog(builder.create());
+                        builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
+                        builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialogInterface, int i) {
+                                if (!userBlocked) {
+                                    MessagesController.getInstance().blockUser(user_id);
+                                } else {
+                                    MessagesController.getInstance().unblockUser(user_id);
+                                }
+                            }
+                        });
+                        builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+                        showDialog(builder.create());
+                    } else {
+                        if (!userBlocked) {
+                            MessagesController.getInstance().blockUser(user_id);
+                        } else {
+                            MessagesController.getInstance().unblockUser(user_id);
+                            SendMessagesHelper.getInstance().sendMessage("/start", user_id, null, null, false);
+                            finishFragment();
+                        }
+                    }
                 } else if (id == add_contact) {
                     TLRPC.User user = MessagesController.getInstance().getUser(user_id);
                     Bundle args = new Bundle();
@@ -1308,6 +1322,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         menu.clearItems();
 
         if (user_id != 0) {
+
             if (ContactsController.getInstance().contactsDict.get(user_id) == null) {
                 TLRPC.User user = MessagesController.getInstance().getUser(user_id);
                 if (user == null) {
@@ -1325,7 +1340,11 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     item.addSubItem(share_contact, LocaleController.getString("ShareContact", R.string.ShareContact), 0);
                     item.addSubItem(block_contact, !userBlocked ? LocaleController.getString("BlockContact", R.string.BlockContact) : LocaleController.getString("Unblock", R.string.Unblock), 0);
                 } else {
-                    item.addSubItem(block_contact, !userBlocked ? LocaleController.getString("BlockContact", R.string.BlockContact) : LocaleController.getString("Unblock", R.string.Unblock), 0);
+                    if ((user.flags & TLRPC.USER_FLAG_BOT) != 0) {
+                        item.addSubItem(block_contact, !userBlocked ? LocaleController.getString("BotStop", R.string.BotStop) : LocaleController.getString("BotRestart", R.string.BotRestart), 0);
+                    } else {
+                        item.addSubItem(block_contact, !userBlocked ? LocaleController.getString("BlockContact", R.string.BlockContact) : LocaleController.getString("Unblock", R.string.Unblock), 0);
+                    }
                 }
             } else {
                 ActionBarMenuItem item = menu.addItem(0, R.drawable.ic_ab_other);
@@ -1361,7 +1380,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             args.putBoolean("scrollToTopOnResume", true);
             NotificationCenter.getInstance().removeObserver(this, NotificationCenter.closeChats);
             NotificationCenter.getInstance().postNotificationName(NotificationCenter.closeChats);
-            int lower_part = (int)dialog_id;
+            int lower_part = (int) dialog_id;
             if (lower_part != 0) {
                 if (lower_part > 0) {
                     args.putInt("user_id", lower_part);
@@ -1369,7 +1388,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     args.putInt("chat_id", -lower_part);
                 }
             } else {
-                args.putInt("enc_id", (int)(dialog_id >> 32));
+                args.putInt("enc_id", (int) (dialog_id >> 32));
             }
             presentFragment(new ChatActivity(args), true);
             removeSelfFromStack();
