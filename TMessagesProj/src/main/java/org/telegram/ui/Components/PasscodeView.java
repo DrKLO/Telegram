@@ -992,10 +992,8 @@ public class PasscodeView extends FrameLayout {
         keyboardHeight = usableViewHeight - (rect.bottom - rect.top);
 
         if (UserConfig.passcodeType == 1 && (AndroidUtilities.isTablet() || getContext().getResources().getConfiguration().orientation != Configuration.ORIENTATION_LANDSCAPE)) {
-            int t = 0;
-            if (passwordFrameLayout.getTag() != 0) {
-                t = (Integer) passwordFrameLayout.getTag();
-            }
+            int t = (Integer) passwordFrameLayout.getTag();
+
             LayoutParams layoutParams = (LayoutParams) passwordFrameLayout.getLayoutParams();
             layoutParams.topMargin = t + layoutParams.height - keyboardHeight / 2 - (Build.VERSION.SDK_INT >= 21 ? AndroidUtilities.statusBarHeight : 0);
             passwordFrameLayout.setLayoutParams(layoutParams);
