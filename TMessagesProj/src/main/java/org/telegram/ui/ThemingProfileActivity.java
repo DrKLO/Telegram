@@ -467,7 +467,7 @@ public class ThemingProfileActivity extends BaseFragment {
                 if (i == headerSection2Row) {
                     ((HeaderCell) view).setText(LocaleController.getString("Header", R.string.Header));
                 } else if (i == rowsSection2Row) {
-                    ((HeaderCell) view).setText(LocaleController.getString("ChatList", R.string.ChatList));
+                    ((HeaderCell) view).setText(LocaleController.getString("OptionsList", R.string.OptionsList));
                 }
             }
             else if (type == 2) {

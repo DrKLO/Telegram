@@ -1067,7 +1067,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
     @Override
     public void onBackPressed() {
         if (chatActivityEnterView.isPopupShowing()) {
-            chatActivityEnterView.hidePopup();
+            chatActivityEnterView.hidePopup(true);
             return;
         }
         super.onBackPressed();
@@ -1090,7 +1090,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
         super.onPause();
         overridePendingTransition(0, 0);
         if (chatActivityEnterView != null) {
-            chatActivityEnterView.hidePopup();
+            chatActivityEnterView.hidePopup(false);
             chatActivityEnterView.setFieldFocused(false);
         }
         ConnectionsManager.getInstance().setAppPaused(true, false);

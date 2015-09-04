@@ -1,7 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
-
-<!--https://www.transifex.com/projects/p/telegram/language/nl/members/-->
-
+<?xml version='1.0' encoding='UTF-8'?>
 <resources>
     <string name="AppName">Plus Messenger</string>
     <string name="LanguageName">Nederlands</string>
@@ -137,6 +134,7 @@
     <string name="OpenInBrowser">Openen in browser</string>
     <string name="CopyUrl">Link kopiëren</string>
     <string name="SendItems">%1$s versturen</string>
+    <string name="OpenUrlAlert">URL %1$s openen?</string>
     <!--notification-->
     <string name="MessageLifetimeChanged">%1$s heeft de zelfvernietigingstimer ingesteld op %2$s</string>
     <string name="MessageLifetimeChangedOutgoing">Je hebt de zelfvernietigingstimer ingesteld op %1$s</string>
@@ -170,7 +168,7 @@
     <string name="NotificationGroupKickYou">%1$s heeft je verwijderd uit de groep %2$s</string>
     <string name="NotificationGroupLeftMember">%1$s heeft de groep %2$s verlaten</string>
     <string name="NotificationContactJoined">%1$s heeft nu Telegram!</string>
-    <string name="NotificationUnrecognizedDevice">%1$s,\nEr is op je account ingelogd vanaf een nieuw apparaat op %2$s\n\nApparaat: %3$s\nLocatie: %4$s\n\nAls jij dit niet was, kun je die sessie beëindigen via Instellingen - Privacy en veiligheid - Sessies.\n\nAls je dat denkt dat iemand anders zonder jouw toestemming is ingelogd kun je twee-staps-verificatie activeren via instellingen - privacy en veiligheid .\n\nBedankt,\nHet Telegram-team</string>
+    <string name="NotificationUnrecognizedDevice">%1$s,\nEr is op je account ingelogd vanaf een nieuw apparaat op %2$s\n\nApparaat: %3$s\nLocatie: %4$s\n\nAls jij dit niet was, kun je die sessie beëindigen via Instellingen - Privacy en veiligheid - Sessies.\n\nAls je dat denkt dat iemand anders zonder jouw toestemming is ingelogd kun je twee-staps-verificatie activeren via instellingen - privacy en veiligheid.\n\nBedankt,\nHet Telegram-team</string>
     <string name="NotificationContactNewPhoto">%1$s heeft zijn/haar profielfoto gewijzigd</string>
     <string name="NotificationInvitedToGroupByLink">%1$s neemt deel aan de groep %2$s via uitnodigingslink</string>
     <string name="Reply">Antwoord</string>
@@ -366,7 +364,7 @@
     <string name="SessionsTitle">Actieve sessies</string>
     <string name="CurrentSession">Huidige sessie</string>
     <string name="NoOtherSessions">Geen andere actieve sessies</string>
-    <string name="NoOtherSessionsInfo">Je kunt in Telegram inloggen vanaf andere apparaten (mobiel,tablet,desktop) met hetzelfde telefoonnummer. Al je data zal direct worden gesynchroniseerd.</string>
+    <string name="NoOtherSessionsInfo">Je kunt in Telegram inloggen vanaf andere apparaten (mobiel, tablet, desktop) met hetzelfde telefoonnummer. Al je data zal direct worden gesynchroniseerd.</string>
     <string name="OtherSessions">Actieve sessies</string>
     <string name="SessionsInfo">Beheer je sessies van andere apparaten.</string>
     <string name="TerminateSessionInfo">Tik op een sessie om deze te beëindigen.</string>
@@ -549,6 +547,9 @@
     <string name="BotStatusCantRead">geen toegang tot berichten</string>
     <string name="BotInfoTitle">Wat kan deze bot?</string>
     <string name="BotStart">BEGIN</string>
+    <string name="BotUnblock">HERSTART</string>
+    <string name="BotStop">Bot stoppen</string>
+    <string name="BotRestart">Bot herstarten</string>
     <!--button titles-->
     <string name="Next">Volgende</string>
     <string name="Back">Vorige</string>
@@ -837,8 +838,8 @@
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s om %2$s</string>
     <!--update text-->
-    <string name="updateText">Plus Messenger voor Android is bijgewerkt. Nieuw in versie 3.1.2:\n\n- Recente zoekresultaten\n- Stickers aantikken en vasthouden om een voorbeeld weer te geven voor het versturen.</string>
-    <string name="updateBuild">591</string>
+    <string name="updateText">Plus Messenger voor Android is bijgewerkt. Nieuw in versie 3.1.3:\n\n- Nieuw \'Gedeelde links\'-gedeelte in chatinformatie\n- In-app voorvertoning voor links naar foto\'s</string>
+    <string name="updateBuild">594</string>
     <!--Telegram+--><!--
   <string name="updatePlusText"></string>-->
     <string name="TelegramForAndroid">Plus Messenger voor Android</string>
@@ -964,4 +965,7 @@
   <string name="SummaryColor">Samenvatting/Ondertitel kleur</string>
   <string name="MediaColor">\'Foto/Sticker\' tekst kleur</string>
   <string name="ThemesAppMsg">Wilt u thema\'s bekijken van andere Plus Messenger gebruikers?</string>
+  <string name="UseDeviceFont">Gebruik het apparaat lettertype</string>
+  <string name="AppWillRestart">Plus Messenger zal nu herstarten</string>
+  <string name="GroupIconColor">Kleur van het icoontje</string>
 </resources>

@@ -56,6 +56,7 @@
   <string name="WillUnmuteIn">D\'aquí %1$s</string>
   <string name="MuteDisable">Inhabilita</string>
   <string name="Hashtags">ETIQUETES</string>
+  <string name="Recent">RECENT</string>
   <!--broadcasts-->
   <string name="NewBroadcastList">Llista de difusió nova</string>
   <string name="EnterListName">Introduïu el nom de la llista</string>
@@ -63,6 +64,7 @@
   <string name="AddRecipient">Afegeix un destinatari</string>
   <string name="KickFromBroadcast">Treu de la llista de difusió</string>
   <!--audio view-->
+  <string name="NoAudio">Afegiu fitxers a la biblioteca de música del dispositiu per veure\'ls aquí.</string>
   <string name="AttachMusic">Música</string>
   <string name="AudioUnknownArtist">Artista desconegut</string>
   <string name="AudioUnknownTitle">Títol desconegut</string>
@@ -122,7 +124,7 @@
   <string name="DeleteThisChat">Elimina aquest xat</string>
   <string name="SlideToCancel">LLISQUEU PER CANCEL·LAR</string>
   <string name="SaveToDownloads">Desa a «Baixades»</string>
-  <string name="SaveToMusic">Desa a música</string>
+  <string name="SaveToMusic">Desa-ho a música</string>
   <string name="ShareFile">Comparteix</string>
   <string name="ApplyLocalizationFile">Aplica la localització</string>
   <string name="UnsupportedAttachment">El fitxer adjunt no és compatible</string>
@@ -132,6 +134,7 @@
   <string name="OpenInBrowser">Obre al navegador</string>
   <string name="CopyUrl">Copia la URL</string>
   <string name="SendItems">Envia %1$s</string>
+  <string name="OpenUrlAlert">Voleu obrir la url %1$s?</string>
   <!--notification-->
   <string name="MessageLifetimeChanged">%1$s ha definit l\'autodestrucció en %2$s</string>
   <string name="MessageLifetimeChangedOutgoing">Heu definit l\'autodestrucció en %1$s</string>
@@ -202,12 +205,12 @@
   <string name="RevokeAlert">Voleu revocar l\'enllaç? Un cop ho feu, ningú podrà unir-se al grup utilitzant-lo.</string>
   <string name="RevokeAlertNewLink">L\'enllaç d\'invitació anterior no està actiu. S\'ha generat un enllaç nou.</string>
   <string name="RevokeButton">Revoca</string>
-  <string name="RevokeLink">Enllaç de revocació</string>
+  <string name="RevokeLink">Revoca l\'enllaç</string>
   <string name="CopyLink">Copia l\'enllaç</string>
   <string name="ShareLink">Comparteix l\'enllaç</string>
   <string name="LinkInfo">Qualsevol qui tingui Telegram instal·lat serà capaç d\'unir-se al grup tot seguint l\'enllaç.</string>
   <!--group info view-->
-  <string name="SharedMedia">Fitxers compartits</string>
+  <string name="SharedMedia">Elements compartits</string>
   <string name="SETTINGS">Configuració</string>
   <string name="AddMember">Afegeix un membre</string>
   <string name="DeleteAndExit">Elimina i surt del grup</string>
@@ -280,7 +283,7 @@
   <string name="Vibrate">Vibració</string>
   <string name="InAppPreview">Vista prèvia</string>
   <string name="Reset">Reinicialitza</string>
-  <string name="ResetAllNotifications">Reinicialitza totes les notificacions</string>
+  <string name="ResetAllNotifications">Restaura totes les notificacions</string>
   <string name="UndoAllCustom">Desfà la configuració de les notificacions personalitzades per a tots els contactes i grups.</string>
   <string name="NotificationsAndSounds">Notificacions i sons</string>
   <string name="BlockedUsers">Usuaris blocats</string>
@@ -297,7 +300,7 @@
   <string name="ContactJoined">En unir-se un contacte al Telegram</string>
   <string name="Pebble">PEBBLE</string>
   <string name="Language">Llengua</string>
-  <string name="AskAQuestionInfo">Tingueu present que el suport del Telegram és fet per voluntaris. Intentem respondre tan ràpid com és possible, però podem trigar una mica.<![CDATA[<br><br>]]>Sisplau, feu una ullada a les <![CDATA[<a href=\"https://telegram.org/faq#general\">PMF del Telegram</a>]]>. Tenen resposta a la majoria de preguntes i també consells importants per a la <![CDATA[<a href=\"https://telegram.org/faq#troubleshooting\">resolució de problemes</a>]]>.</string>
+  <string name="AskAQuestionInfo">Tingueu present que el suport del Telegram és ofert per voluntaris. Intentem respondre tan ràpid com ens és possible, però podem trigar una mica.<![CDATA[<br><br>]]>Sisplau, feu una ullada a les <![CDATA[<a href=\"https://telegram.org/faq#general\">PMF del Telegram</a>]]>. Tenen la resposta a la majoria de preguntes i també consells importants per a la <![CDATA[<a href=\"https://telegram.org/faq#troubleshooting\">resolució de problemes</a>]]>.</string>
   <string name="AskButton">Pregunta-ho a un voluntari</string>
   <string name="TelegramFaq">PMF del Telegram</string>
   <string name="TelegramFaqUrl">https://telegram.org/faq</string>
@@ -387,9 +390,11 @@
   <string name="AutoLockDisabled">Inhabilitat</string>
   <!--media view-->
   <string name="NoMedia">Compartiu fotos i vídeos a aquest xat i accediu-hi des de qualsevol dispositiu.</string>
-  <string name="DocumentsTitle">Documents</string>
-  <string name="SharedMediaTitle">Fitxers compartits</string>
-  <string name="NoSharedFiles">Compartiu fitxers i documents a aquest xat i accediu-hi des de qualsevol dispositiu.</string>
+  <string name="DocumentsTitle">Fitxers</string>
+  <string name="SharedMediaTitle">Multimèdia</string>
+  <string name="LinksTitle">Enllaços</string>
+  <string name="NoSharedFiles">Compartiu fitxers i documents a aquí i accediu-hi des de qualsevol dels vostres dispositiu.</string>
+  <string name="NoSharedLinks">Compartiu enllaços aquí i accediu-hi des de qualsevol dels vostres dispositius.</string>
   <!--map view-->
   <string name="Map">Mapa</string>
   <string name="Satellite">Satèl·lit</string>
@@ -542,6 +547,9 @@
   <string name="BotStatusCantRead">no té accés als missatges</string>
   <string name="BotInfoTitle">Què pot fer aquest bot?</string>
   <string name="BotStart">INICIA</string>
+  <string name="BotUnblock">REINICIA</string>
+  <string name="BotStop">Atura el bot</string>
+  <string name="BotRestart">Reinicia el bot</string>
   <!--button titles-->
   <string name="Next">Endavant</string>
   <string name="Back">Enrere</string>
@@ -829,6 +837,9 @@
   <string name="formatterDay24H">HH:mm</string>
   <string name="formatterDay12H">h:mm a</string>
   <string name="formatDateAtTime">%1$s a les %2$s</string>
+  <!--update text-->
+  <string name="updateText">S\'ha actualitzat el Telegram per a l\'Android. Novetats a la versió 3.1.3:\n\n- Nova secció \'Enllaços compartits\' a la informació del xat\n- Previsualització, dins de l\'aplicació, per a enllaços a fotos</string>
+  <string name="updateBuild">594</string>
     <!--Telegram+--><!--
   <string name="updatePlusText">\n\nNovetats a la versió 3.1.1.6\n\n- Nou MOD per mostrar l\'avatar dels contactes als xats\n- Nou MOD per mostrar l\'avatar propi als xats i grups\n- Nou MOD per alinear l\'avatar propi a dalt\n- S\'han afegit les noves bombolles Ed i Edge (gràcies a Edwin Macalopu)\n- Nou MOD per canviar el color de fons i de text del menú d\'adjuntar als xats\n- Nou MOD per canviar el color del títol i botons dels diàlegs\n- Correcció d\'errors</string>-->
     <string name="TelegramForAndroid">Plus Messenger per Android</string>
@@ -841,7 +852,7 @@
     <string name="General">General</string>
     <string name="Screens">Pantalles</string>
     <string name="MainScreen">Pantalla principal</string>
-  <string name="ChatScreen">Pantalla de xats</string>
+  <string name="ChatScreen">Pantalla de xat</string>
   <string name="ContactsScreen">Pantalla de contactes</string>
     <string name="Header">Capçalera</string>
     <string name="Rows">Files</string>
@@ -965,5 +976,8 @@
   <string name="ShowOwnAvatarGroup">Mostra el meu avatar als grups</string>
   <string name="OwnAvatarAlignTop">Alinea el meu avatar a dalt</string>
   <string name="DialogColor">Color del títol/botó dels diàlegs</string>
-  <string name="ShowUsername">Mostra el nom d\'usuari dels membres</string>
+  <string name="ShowUsername">Mostra el nom d\'usuari als missatges</string>
+  <string name="DisableAudioStop">No aturis els àudios</string>
+  <string name="ListDividerColor">Color del divisor de llista</string>
+  <string name="CenterAvatar">Centra l\'avatar, el nom i el número de telèfon</string>
 </resources>

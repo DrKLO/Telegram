@@ -1,7 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
-
-<!--Translation by Borja Campina, Edited by Victor Espinoza and Francisco Vila-->
-
+<?xml version='1.0' encoding='UTF-8'?>
 <resources>
     <string name="AppName">Plus Messenger</string>
     <string name="LanguageName">Español</string>
@@ -137,6 +134,7 @@
     <string name="OpenInBrowser">Abrir en el navegador</string>
     <string name="CopyUrl">Copiar URL</string>
     <string name="SendItems">Enviar %1$s</string>
+    <string name="OpenUrlAlert">¿Abrir %1$s?</string>
     <!--notification-->
     <string name="MessageLifetimeChanged">%1$s activó la autodestrucción en %2$s</string>
     <string name="MessageLifetimeChangedOutgoing">Activaste la autodestrucción en %1$s</string>
@@ -549,6 +547,9 @@
     <string name="BotStatusCantRead">no tiene acceso a los mensajes</string>
     <string name="BotInfoTitle">¿Qué puede hacer este bot?</string>
     <string name="BotStart">INICIAR</string>
+    <string name="BotUnblock">REINICIAR</string>
+    <string name="BotStop">Detener bot</string>
+    <string name="BotRestart">Reiniciar bot</string>
     <!--button titles-->
     <string name="Next">Siguiente</string>
     <string name="Back">Atrás</string>
@@ -837,10 +838,10 @@
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s a las %2$s</string>
     <!--update text-->
-    <string name="updateText">Plus Messenger para Android fue actualizada. Novedades en la versión 3.1.2:\n\n- Búsquedas recientes\n- Mantén pulsado sobre un sticker para obtener una vista previa antes de enviarlo</string>
-    <string name="updateBuild">591</string>
+    <string name="updateText">Plus Messenger para Android ha sido actualizada. Novedades en la versión 3.1.3:\n\n- Nueva sección de \'Enlaces\' en la información del chat\n- Vista previa en la app para enlaces a fotos</string>
+    <string name="updateBuild">594</string>
     <!--Telegram+-->
-    <string name="updatePlusText">Novedades en 3.1.2.0:\n\n- Solución de errores</string>
+    <string name="updatePlusText">\n\nNovedades en 3.1.3.0:\n\n- Nuevo MOD para ajustar color por defecto de icono de pestaña de emoticonos\n- Solución de errores</string>
     <string name="TelegramForAndroid">Plus Messenger para Android</string>
     <string name="Theming">Tematización</string>
     <string name="colorHexInvalid">¡Color hexadecimal inválido!</string>
@@ -856,7 +857,7 @@
     <string name="Header">Cabecera</string>
     <string name="Rows">Lista</string>
     <string name="ChatList">Lista de chat</string>
-    <string name="ChatsList">Lista de chats</string>
+    <string name="ChatsList">Lista de mensajes</string>
     <string name="ContactsList">Lista de contactos</string>
     <string name="HeaderColor">Color de cabecera</string>
     <string name="NameColor">Color de nombre</string>
@@ -885,7 +886,8 @@
     <string name="EditTextSize">Tamaño de entrada de texto</string>
     <string name="EditTextBGColor">Color de fondo de entrada de texto</string>
     <string name="EmojiViewBGColor">Color de fondo de emoticonos</string>
-    <string name="EmojiViewTabColor">Color de pestaña de emoticonos</string>
+    <string name="EmojiViewTabColor">Color de pestaña seleccionada de emoticonos</string>
+    <string name="EmojiViewTabIconColor">Color de icono de pestaña de emoticonos</string>
     <string name="OnlineColor">Color en línea</string>
     <string name="ChatMusic">Música</string>
     <string name="SaveTheme">Guardar tema</string>
@@ -975,7 +977,7 @@
     <string name="ShowOwnAvatarGroup">Muestra foto propia en grupo</string>
     <string name="OwnAvatarAlignTop">Alinear foto propia arriba</string>
     <string name="DialogColor">Color de título/botón de diálogo</string>
-    <string name="ShowUsername">Muestra apodo junto a nombre de miembro</string>
+  <string name="ShowUsername">Muestra alias junto a nombre de miembro</string>
     <string name="DisableAudioStop">No parar audio</string>
     <string name="ListDividerColor">Color de divisor de lista</string>
     <string name="CenterAvatar">Centrar avatar, nombre y móvil</string>

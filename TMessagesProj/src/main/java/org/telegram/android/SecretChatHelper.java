@@ -559,7 +559,6 @@ public class SecretChatHelper {
                 newMsg.media.video.h = video.h;
                 newMsg.media.video.date = video.date;
                 newMsg.media.caption = video.caption != null ? video.caption : "";
-                newMsg.media.video.user_id = video.user_id;
                 newMsg.media.video.size = file.size;
                 newMsg.media.video.id = file.id;
                 newMsg.media.video.access_hash = file.access_hash;
@@ -897,9 +896,7 @@ public class SecretChatHelper {
                     newMessage.media = new TLRPC.TL_messageMediaPhoto();
                     newMessage.media.caption = "";
                     newMessage.media.photo = new TLRPC.TL_photo();
-                    newMessage.media.photo.user_id = newMessage.from_id;
                     newMessage.media.photo.date = newMessage.date;
-                    newMessage.media.photo.geo = new TLRPC.TL_geoPointEmpty();
                     byte[] thumb = ((TLRPC.TL_decryptedMessageMediaPhoto) decryptedMessage.media).thumb;
                     if (thumb != null && thumb.length != 0 && thumb.length <= 6000 && decryptedMessage.media.thumb_w <= 100 && decryptedMessage.media.thumb_h <= 100) {
                         TLRPC.TL_photoCachedSize small = new TLRPC.TL_photoCachedSize();
@@ -948,7 +945,6 @@ public class SecretChatHelper {
                     newMessage.media.video.w = decryptedMessage.media.w;
                     newMessage.media.video.h = decryptedMessage.media.h;
                     newMessage.media.video.date = date;
-                    newMessage.media.video.user_id = from_id;
                     newMessage.media.video.size = file.size;
                     newMessage.media.video.id = file.id;
                     newMessage.media.video.access_hash = file.access_hash;

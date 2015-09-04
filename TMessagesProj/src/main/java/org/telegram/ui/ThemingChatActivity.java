@@ -82,6 +82,7 @@ public class ThemingChatActivity extends BaseFragment {
     private int editTextIconsColorRow;
     private int emojiViewBGColorRow;
     private int emojiViewTabColorRow;
+    private int emojiViewTabIconColorRow;
     private int sendColorRow;
     private int memberColorCheckRow;
     private int memberColorRow;
@@ -173,6 +174,7 @@ public class ThemingChatActivity extends BaseFragment {
         attachTextColorRow = rowCount++;
 
         emojiViewBGColorRow = rowCount++;
+        emojiViewTabIconColorRow = rowCount++;
         emojiViewTabColorRow = rowCount++;
 
         return true;
@@ -720,6 +722,20 @@ public class ThemingChatActivity extends BaseFragment {
                         },themePrefs.getInt("chatEmojiViewBGColor", 0xfff5f6f7), CENTER, 0, true);
 
                         colorDialog.show();
+                    } else if (i == emojiViewTabIconColorRow) {
+                        if (getParentActivity() == null) {
+                            return;
+                        }
+                        LayoutInflater li = (LayoutInflater)getParentActivity().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+                        li.inflate(R.layout.colordialog, null, false);
+                        ColorSelectorDialog colorDialog = new ColorSelectorDialog(getParentActivity(), new OnColorChangedListener() {
+                            @Override
+                            public void colorChanged(int color) {
+                                commitInt("chatEmojiViewTabIconColor", color);
+                            }
+
+                        },themePrefs.getInt("chatEmojiViewTabIconColor", 0xffa8a8a8), CENTER, 0, true);
+                        colorDialog.show();
                     } else if (i == emojiViewTabColorRow) {
                         if (getParentActivity() == null) {
                             return;
@@ -1039,6 +1055,8 @@ public class ThemingChatActivity extends BaseFragment {
                         resetPref("chatAttachTextColor");
                     } else if (i == emojiViewBGColorRow) {
                         resetPref("chatEmojiViewBGColor");
+                    } else if (i == emojiViewTabIconColorRow) {
+                        resetPref("chatEmojiViewTabIconColor");
                     } else if (i == emojiViewTabColorRow) {
                         resetPref("chatEmojiViewTabColor");
                     } else{
@@ -1155,7 +1173,7 @@ public class ThemingChatActivity extends BaseFragment {
                     i == textSizeRow || i == timeSizeRow || i == dateColorRow || i == dateSizeRow || i == dateBubbleColorRow || i == rTextColorRow || i == rLinkColorRow || i == lTextColorRow || i == lLinkColorRow ||
                     i == rTimeColorRow|| i == lTimeColorRow || i == checksColorRow || i == memberColorCheckRow || AndroidUtilities.getBoolPref("chatMemberColorCheck") && i == memberColorRow || i == contactNameColorRow || i == forwardRightNameColorRow || i == forwardLeftNameColorRow || i == showUsernameCheckRow ||
                     i == editTextSizeRow || i == editTextColorRow || i == editTextIconsColorRow || i == sendColorRow || i == editTextBGColorRow || i == attachBGColorRow || i == attachTextColorRow ||
-                    i == emojiViewBGColorRow || i == emojiViewTabColorRow;
+                    i == emojiViewBGColorRow || i == emojiViewTabIconColorRow || i == emojiViewTabColorRow;
         }
 
         @Override
@@ -1342,6 +1360,8 @@ public class ThemingChatActivity extends BaseFragment {
                     textCell.setTextAndColor(LocaleController.getString("EditTextIconsColor", R.string.EditTextIconsColor), themePrefs.getInt("chatEditTextIconsColor", 0xffadadad), true);
                 } else if (i == emojiViewBGColorRow) {
                     textCell.setTextAndColor(LocaleController.getString("EmojiViewBGColor", R.string.EmojiViewBGColor), themePrefs.getInt("chatEmojiViewBGColor", 0xfff5f6f7), true);
+                } else if (i == emojiViewTabIconColorRow) {
+                    textCell.setTextAndColor(LocaleController.getString("EmojiViewTabIconColor", R.string.EmojiViewTabIconColor), themePrefs.getInt("chatEmojiViewTabIconColor", 0xffa8a8a8), false);
                 } else if (i == emojiViewTabColorRow) {
                     textCell.setTextAndColor(LocaleController.getString("EmojiViewTabColor", R.string.EmojiViewTabColor), themePrefs.getInt("chatEmojiViewTabColor", AndroidUtilities.getIntDarkerColor("themeColor",-0x15)), false);
                 }
@@ -1365,7 +1385,7 @@ public class ThemingChatActivity extends BaseFragment {
                     i == solidBGColorRow || i == rBubbleColorRow || i == lBubbleColorRow || i == nameColorRow || i == statusColorRow || i == dateColorRow || i == dateBubbleColorRow ||
                     i == rTextColorRow || i == rLinkColorRow || i == lTextColorRow || i == lLinkColorRow || i == rLinkColorRow || i == rTimeColorRow || i == lTimeColorRow || i == checksColorRow || i == memberColorRow || i == contactNameColorRow || i == forwardRightNameColorRow || i == forwardLeftNameColorRow ||
                     i == sendColorRow || i == editTextColorRow || i == editTextBGColorRow || i == editTextIconsColorRow ||  i == attachBGColorRow || i == attachTextColorRow ||
-                    i == emojiViewBGColorRow || i == emojiViewTabColorRow) {
+                    i == emojiViewBGColorRow || i == emojiViewTabIconColorRow || i == emojiViewTabColorRow) {
                 return 3;
             } else if (i == solidBGColorCheckRow || i == memberColorCheckRow || i == showUsernameCheckRow || i == avatarAlignTopRow || i == ownAvatarAlignTopRow || i == showContactAvatar || i == showOwnAvatar || i == showOwnAvatarGroup) {
                 return 4;

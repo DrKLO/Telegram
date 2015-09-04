@@ -35,7 +35,7 @@
   <string name="WaitingForNetwork">En attente du réseau…</string>
   <string name="Connecting">Connexion…</string>
   <string name="Updating">Mise à jour…</string>
-  <string name="NewSecretChat">Nouvelle conversation secrète</string>
+  <string name="NewSecretChat">Nv. chat secret</string>
   <string name="AwaitingEncryption">En attente de la connexion de %s…</string>
   <string name="EncryptionRejected">Conversation secrète annulée</string>
   <string name="EncryptionProcessing">Échange des clés de chiffrement…</string>
@@ -50,14 +50,15 @@
   <string name="CompatibilityChat">%1$s utilise une version plus ancienne de Telegram, par conséquent les photos secrètes seront affichées en mode compatibilité.\n\Une fois que %2$s aura mis à jour son application, les photos avec compte-à-rebours de 1 minute ou moins seront visibles en mode \"toucher-pour-voir\" et vous serez averti si votre interlocuteur fait une capture d\'écran.</string>
   <string name="SearchMessages">MESSAGES</string>
   <string name="Search">Recherche</string>
-  <string name="MuteNotifications">Notifications muettes</string>
+  <string name="MuteNotifications">Notifications</string>
   <string name="MuteFor">Muet pendant %1$s</string>
   <string name="UnmuteNotifications">Activer les notifications</string>
   <string name="WillUnmuteIn">Dans %1$s</string>
   <string name="MuteDisable">Désactiver</string>
   <string name="Hashtags">HASHTAGS</string>
+  <string name="Recent">RÉCENT</string>
   <!--broadcasts-->
-  <string name="NewBroadcastList">Nouvelle liste de diffusion</string>
+  <string name="NewBroadcastList">Nv. liste de diffusion</string>
   <string name="EnterListName">Saisissez le nom de la liste</string>
   <string name="YouCreatedBroadcastList">Vous avez créé un liste de diffusion</string>
   <string name="AddRecipient">Ajouter un destinataire</string>
@@ -87,18 +88,18 @@
   <string name="Typing">écrit…</string>
   <string name="IsTyping">écrit…</string>
   <string name="AreTyping">écrivent…</string>
-  <string name="IsRecordingAudio">%1$s enregistre de l\'audio...</string>
+  <string name="IsRecordingAudio">%1$s enregistre du son...</string>
   <string name="IsSendingPhoto">%1$s envoie une photo...</string>
   <string name="IsSendingVideo">%1$s envoie une vidéo...</string>
   <string name="IsSendingFile">%1$s envoie un fichier...</string>
-  <string name="RecordingAudio">enregistrement de l\'audio...</string>
+  <string name="RecordingAudio">enregistrement...</string>
   <string name="SendingPhoto">envoi de la photo...</string>
   <string name="SendingVideoStatus">envoi de la vidéo...</string>
-  <string name="SendingFile">envoi d\'un fichier...</string>
+  <string name="SendingFile">envoi du fichier...</string>
   <string name="GotAQuestion">Une question\nsur Telegram?</string>
   <string name="ChatTakePhoto">Prendre une photo</string>
   <string name="ChatGallery">Galerie</string>
-  <string name="ChatLocation">Localisation</string>
+  <string name="ChatLocation">Position</string>
   <string name="ChatVideo">Vidéo</string>
   <string name="ChatDocument">Fichier</string>
   <string name="ChatCamera">Appareil photo</string>
@@ -126,14 +127,15 @@
   <string name="SaveToDownloads">Enregistrer dans les téléchargements</string>
   <string name="SaveToMusic">Enregistrer dans musique</string>
   <string name="ShareFile">Partager</string>
-  <string name="ApplyLocalizationFile">Appliquer le fichier de localisation</string>
+  <string name="ApplyLocalizationFile">Installer le pack linguistique</string>
   <string name="UnsupportedAttachment">Type de pièce-jointe inconnu</string>
   <string name="SetTimer">Temps avant auto-destruction</string>
   <string name="ServiceNotifications">Notifications de Service</string>
-  <string name="GettingLinkInfo">Obtention d\'informations sur le lien…</string>
-  <string name="OpenInBrowser">Ouvrir dans un navigateur</string>
+  <string name="GettingLinkInfo">Obtention d\'infos sur le lien…</string>
+  <string name="OpenInBrowser">Ouvrir dans le navigateur</string>
   <string name="CopyUrl">Copier l\'URL</string>
   <string name="SendItems">Envoyer %1$s</string>
+  <string name="OpenUrlAlert">Ouvrir l\'url %1$s?</string>
   <!--notification-->
   <string name="MessageLifetimeChanged">%1$s a défini l\'auto-destruction des messages à %2$s</string>
   <string name="MessageLifetimeChangedOutgoing">Vous avez défini l\'auto-destruction des messages à %1$s</string>
@@ -145,7 +147,7 @@
   <string name="NotificationMessagePhoto">%1$s vous a envoyé une photo</string>
   <string name="NotificationMessageVideo">%1$s vous a envoyé une vidéo</string>
   <string name="NotificationMessageContact">%1$s a partagé un contact avec vous</string>
-  <string name="NotificationMessageMap">%1$s vous a envoyé une localisation</string>
+  <string name="NotificationMessageMap">%1$s vous a envoyé une position</string>
   <string name="NotificationMessageDocument">%1$s vous a envoyé un fichier</string>
   <string name="NotificationMessageAudio">%1$s vous a envoyé un fichier audio</string>
   <string name="NotificationMessageSticker">%1$s vous a envoyé un sticker</string>
@@ -154,7 +156,7 @@
   <string name="NotificationMessageGroupPhoto">%1$s a envoyé une photo au groupe %2$s</string>
   <string name="NotificationMessageGroupVideo">%1$s a envoyé une vidéo au groupe %2$s</string>
   <string name="NotificationMessageGroupContact">%1$s a partagé un contact avec le groupe %2$s</string>
-  <string name="NotificationMessageGroupMap">%1$s a envoyé une localisation au groupe %2$s</string>
+  <string name="NotificationMessageGroupMap">%1$s a envoyé une position au groupe %2$s</string>
   <string name="NotificationMessageGroupDocument">%1$s a envoyé un fichier au groupe %2$s</string>
   <string name="NotificationMessageGroupAudio">%1$s a envoyé un fichier audio au groupe %2$s</string>
   <string name="NotificationMessageGroupSticker">%1$s a envoyé un sticker au groupe %2$s</string>
@@ -184,7 +186,7 @@
   <string name="LastSeen">vu</string>
   <string name="LastSeenDate">vu</string>
   <string name="InviteFriends">Inviter des amis</string>
-  <string name="GlobalSearch">RECHERCHE GENERALE</string>
+  <string name="GlobalSearch">RECHERCHE GÉNÉRALE</string>
   <string name="Lately">vu récemment</string>
   <string name="WithinAWeek">vu dans la semaine</string>
   <string name="WithinAMonth">vu au cours du dernier mois</string>
@@ -227,11 +229,11 @@
   <string name="PhoneWork">Travail</string>
   <string name="PhoneOther">Autre</string>
   <string name="PhoneMain">Principal</string>
-  <string name="StartEncryptedChat">Démarrer une conversation secrète</string>
+  <string name="StartEncryptedChat">Démarrer un chat secret</string>
   <string name="CreateEncryptedChatError">Une erreur s\'est produite.</string>
   <string name="EncryptionKey">Clé de chiffrement</string>
   <string name="MessageLifetime">Temps avant auto-destruction</string>
-  <string name="ShortMessageLifetimeForever">Désactivé</string>
+  <string name="ShortMessageLifetimeForever">Non</string>
   <string name="EncryptionKeyDescription">Cette image est une visualisation de la clé de chiffrement pour cette conversation secrète avec <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>.<![CDATA[<br><br>]]>Si l\'image sur le téléphone de <![CDATA[<b>]]>%2$s<![CDATA[</b>]]> est identique, votre conversation est sécurisée à 200%%.<![CDATA[<br><br>]]>Plus d\'informations sur telegram.org</string>
   <string name="NumberUnknown">Inconnu</string>
   <string name="Info">Info</string>
@@ -247,22 +249,22 @@
   <string name="UsernameHelp">Vous pouvez choisir un nom d\'utilisateur sur <![CDATA[<b>]]>Telegram<![CDATA[</b>]]>. Si vous le faites, d\'autres personnes pourront vous trouver à l\'aide de celui-ci, et vous contacter sans connaitre votre numéro de téléphone.<![CDATA[<br><br>]]>Vous pouvez utiliser <![CDATA[<b>]]>a–z<![CDATA[</b>]]>, <![CDATA[<b>]]>0–9<![CDATA[</b>]]> et _. La longueur minimale est de <![CDATA[<b>]]>5<![CDATA[</b>]]> caractères.</string>
   <string name="UsernameChecking">Vérification du nom d\'utilisateur...</string>
   <string name="UsernameAvailable">%1$s est disponible.</string>
-  <string name="UsernameEmpty">Vide</string>
+  <string name="UsernameEmpty">Aucun</string>
   <string name="ErrorOccurred">Une erreur est survenue.</string>
   <!--stickers view-->
-  <string name="Stickers">Autocollants</string>
-  <string name="StickersInfo">Les artistes peuvent ajouter leur propre paquet d\'autocollants en utilisant notre robot @stickers.\n\nLes utilisateurs peuvent ajouter des autocollants en les touchant et en choisissant \"Ajouter aux autocollants\".</string>
+  <string name="Stickers">Stickers</string>
+  <string name="StickersInfo">Les artistes peuvent ajouter leur propre série de stickers en utilisant notre bot @stickers.\n\nLes utilisateurs peuvent ajouter des stickers en les touchant et en choisissant \"Ajouter aux Stickers\".</string>
   <string name="AddStickers">Ajouter des autocollants</string>
   <string name="AddToStickers">Ajouter aux autocollants</string>
   <string name="AddStickersNotFound">Autocollants introuvables</string>
-  <string name="StickersRemoved">Autocollants retirés</string>
+  <string name="StickersRemoved">Stickers supprimés</string>
   <string name="AddStickersInstalled">Nouveaux autocollants ajoutés</string>
   <string name="StickersHide">Cacher</string>
   <string name="StickersShow">Afficher</string>
   <string name="StickersShare">Partager</string>
   <string name="StickersCopy">Copier le lien</string>
   <string name="StickersRemove">Retirer</string>
-  <string name="NoStickers">Aucun autocollant actuellement</string>
+  <string name="NoStickers">Aucun sticker pour l\'instant</string>
   <!--settings view-->
   <string name="ResetNotificationsText">Rétablir tous les paramètres de notification par défaut</string>
   <string name="TextSize">Taille de police des messages</string>
@@ -278,8 +280,8 @@
   <string name="Sound">Son</string>
   <string name="InAppNotifications">Notifications internes</string>
   <string name="InAppSounds">Sons dans l\'app</string>
-  <string name="InAppVibrate">Vibration dans l\'app</string>
-  <string name="Vibrate">Vibrer</string>
+  <string name="InAppVibrate">Vibrations dans l\'app</string>
+  <string name="Vibrate">Vibreur</string>
   <string name="InAppPreview">Prévisualisation dans l\'app</string>
   <string name="Reset">Réinitialiser</string>
   <string name="ResetAllNotifications">Réinitialiser toutes les notifications</string>
@@ -290,21 +292,21 @@
   <string name="NoSound">Pas de son</string>
   <string name="Default">Par défaut</string>
   <string name="Support">Support</string>
-  <string name="OnlyIfSilent">Seulement si silencieux</string>
-  <string name="ChatBackground">Arrière-plan de conversation</string>
+  <string name="OnlyIfSilent">Seulement en silencieux</string>
+  <string name="ChatBackground">Arrière-plan</string>
   <string name="MessagesSettings">Messages</string>
-  <string name="SendByEnter">Envoyer en pressant la touche entrée</string>
+  <string name="SendByEnter">Touche Entrée pour envoyer</string>
   <string name="TerminateAllSessions">Terminer toutes les autres sessions</string>
   <string name="Events">Évènements</string>
   <string name="ContactJoined">Un contact a rejoint Telegram</string>
   <string name="Pebble">PEBBLE</string>
   <string name="Language">Langue</string>
-  <string name="AskAQuestionInfo">Veuillez noter que le support Telegram est assuré par des bénévoles. Nous essayons de répondre aussi vite que possible, mais cela peut prendre un peu de temps. <![CDATA[<br><br>]]>Veuillez consulter la <![CDATA[<a href=\"http://telegram.org/faq#general\">FAQ Telegram</a>]]> : cela répond à la plupart des questions et donne des conseils pour les <![CDATA[<a href=\"http://telegram.org/faq#troubleshooting\">problèmes</a>]]>.</string>
+  <string name="AskAQuestionInfo">Veuillez noter que le support Telegram est assuré par des bénévoles. Nous essayons de répondre aussi vite que possible, mais cela peut prendre un peu de temps. <![CDATA[<br><br>]]>Veuillez consulter la <![CDATA[<a href=\"https://telegram.org/faq#general\">FAQ Telegram</a>]]> : cela répond à la plupart des questions et donne des conseils pour les <![CDATA[<a href=\"https://telegram.org/faq#troubleshooting\">problèmes</a>]]>.</string>
   <string name="AskButton">Demandez à un bénévole</string>
   <string name="TelegramFaq">FAQ de Telegram</string>
   <string name="TelegramFaqUrl">https://telegram.org/faq</string>
-  <string name="DeleteLocalization">Supprimer la localisation ?</string>
-  <string name="IncorrectLocalization">Fichier de localisation incorrect</string>
+  <string name="DeleteLocalization">Supprimer la langue ?</string>
+  <string name="IncorrectLocalization">Fichier linguistique incorrect</string>
   <string name="Enabled">Activé</string>
   <string name="Disabled">Désactivé</string>
   <string name="NotificationsService">Service de notifications</string>
@@ -316,17 +318,17 @@
   <string name="LedColor">Couleur de la LED</string>
   <string name="PopupNotification">Notifications popup</string>
   <string name="NoPopup">Pas de popup</string>
-  <string name="OnlyWhenScreenOn">Uniquement lorsque l\'écran est allumé</string>
-  <string name="OnlyWhenScreenOff">Uniquement lorsque l\'écran est éteint</string>
+  <string name="OnlyWhenScreenOn">Si l\'écran est allumé</string>
+  <string name="OnlyWhenScreenOff">Si l\'écran est éteint</string>
   <string name="AlwaysShowPopup">Toujours afficher les popups</string>
   <string name="BadgeNumber">Compteur de Badge</string>
   <string name="Short">Bref</string>
   <string name="Long">Long</string>
   <string name="SystemDefault">Paramètres par défaut</string>
   <string name="SettingsDefault">Réglages par défaut</string>
-  <string name="AutomaticMediaDownload">Téléchargement automatique des médias</string>
-  <string name="WhenUsingMobileData">Lors de la connexion aux données mobiles</string>
-  <string name="WhenConnectedOnWiFi">Lors d\'une connexion WIFI</string>
+  <string name="AutomaticMediaDownload">Téléchargement auto. des médias</string>
+  <string name="WhenUsingMobileData">En connexion au réseau mobile</string>
+  <string name="WhenConnectedOnWiFi">En connexion Wi-Fi</string>
   <string name="WhenRoaming">En itinérance</string>
   <string name="NoMediaAutoDownload">Aucun média</string>
   <string name="SaveToGallerySettings">Enregistrer dans la galerie</string>
@@ -348,13 +350,14 @@
   <string name="NotificationsDisabled">Désactivé</string>
   <string name="VibrationDisabled">Désactivé</string>
   <string name="LedDisabled">Désactivé</string>
-  <string name="RepeatDisabled">Désactiver</string>
+  <string name="RepeatDisabled">Non</string>
   <string name="InChatSound">Sons des conversations</string>
   <string name="SoundDefault">Par défaut</string>
+  <string name="VibrationDefault">Par défaut</string>
   <string name="SmartNotifications">Notifications intelligentes</string>
   <string name="SmartNotificationsDisabled">Désactivé</string>
   <string name="SmartNotificationsInfo">Ne pas sonner plus de %1$s par %2$s</string>
-  <string name="SmartNotificationsSoundAtMost">Ne pas sonner plus de...</string>
+  <string name="SmartNotificationsSoundAtMost">Sonner au plus</string>
   <string name="SmartNotificationsTimes">fois</string>
   <string name="SmartNotificationsWithin">dans</string>
   <string name="SmartNotificationsMinutes">minutes</string>
@@ -364,14 +367,14 @@
   <string name="NoOtherSessions">Aucune autre session active</string>
   <string name="NoOtherSessionsInfo">Vous pouvez vous connecter depuis d\'autres téléphones, tablettes et ordinateurs avec ce même numéro de téléphone. Vos données seront automatiquement synchronisées.</string>
   <string name="OtherSessions">Sessions actives</string>
-  <string name="SessionsInfo">Contrôlez vos sessions sur d\'autres appareils.</string>
+  <string name="SessionsInfo">Gérez vos sessions sur d\'autres périphériques</string>
   <string name="TerminateSessionInfo">Appuyez sur une session pour la terminer.</string>
   <string name="TerminateSessionQuestion">Terminer cette session ?</string>
   <string name="UnofficialApp">app non-officielle</string>
   <!--passcode view-->
   <string name="Passcode">Verrouillage par code d\'accès</string>
   <string name="ChangePasscode">Changer le code d\'accès</string>
-  <string name="ChangePasscodeInfo">Lorsque vous configurez un code d\'accès supplémentaire, une icône de verrouillage s\'affiche sur la page des chats. Touchez-la pour verrouiller et déverrouiller votre application Telegram. \ n \ nNote: si vous oubliez le code d\'accès, vous devrez supprimer et réinstaller l\'application. Toutes les conversations secrètes seront perdues.</string>
+  <string name="ChangePasscodeInfo">Lorsque vous configurez un code d\'accès supplémentaire, une icône de verrouillage s\'affiche sur la page des chats. Touchez-la pour verrouiller et déverrouiller votre application Telegram.\n\nNote: si vous oubliez le code d\'accès, vous devrez supprimer et réinstaller l\'application. Toutes les conversations secrètes seront perdues.</string>
   <string name="ChangePasscodeAlert">Vous allez à présent voir une icône de verrouillage sur la page des chats. Touchez-la pour verrouiller votre application Telegram avec votre nouveau code d\'accès.</string>
   <string name="PasscodePIN">PIN</string>
   <string name="PasscodePassword">Mot de passe</string>
@@ -379,27 +382,29 @@
   <string name="EnterNewFirstPasscode">Saisissez un code d\'accès</string>
   <string name="EnterNewPasscode">Saisissez votre nouveau code d\'accès</string>
   <string name="EnterYourPasscode">Saisissez votre code d\'accès</string>
-  <string name="ReEnterYourPasscode">Saisissez à nouveau votre nouveau code d\'accès</string>
+  <string name="ReEnterYourPasscode">Confirmez votre nouveau code d\'accès</string>
   <string name="InvalidPasscode">Code d\'accès invalide</string>
   <string name="PasscodeDoNotMatch">Les codes d\'accès ne correspondent pas</string>
-  <string name="AutoLock">Verrouillage automatique</string>
+  <string name="AutoLock">Auto-verrouillage</string>
   <string name="AutoLockInfo">Code d\'accès requis en cas d\'absence</string>
-  <string name="AutoLockInTime">dans %1$s</string>
-  <string name="AutoLockDisabled">Verrouillage désactivé</string>
+  <string name="AutoLockInTime">après %1$s</string>
+  <string name="AutoLockDisabled">Désactivé</string>
   <!--media view-->
   <string name="NoMedia">Partager des photos et des vidéos dans cette conversation et y accéder sur chacun de vos appareils. </string>
-  <string name="DocumentsTitle">Fichiers</string>
-  <string name="SharedMediaTitle">Média partagé</string>
+  <string name="DocumentsTitle">Fichiers partagés</string>
+  <string name="SharedMediaTitle">Médias partagés</string>
+  <string name="LinksTitle">Liens Partagés</string>
   <string name="NoSharedFiles">Partager des fichiers et des documents dans cette conversation et y accéder sur chacun de vos appareils. </string>
+  <string name="NoSharedLinks">Partager des liens dans cette discussion et y accéder sur n\'importe lequel de vos appareils .</string>
   <!--map view-->
   <string name="Map">Carte</string>
   <string name="Satellite">Satellite</string>
   <string name="Hybrid">Hybride</string>
   <string name="MetersAway">m de distance</string>
   <string name="KMetersAway">km de distance</string>
-  <string name="SendLocation">Envoyer votre localisation actuelle</string>
-  <string name="SendSelectedLocation">Envoyer la localisation selectionnée</string>
-  <string name="ShareLocation">Localisation</string>
+  <string name="SendLocation">Envoyer votre position actuelle</string>
+  <string name="SendSelectedLocation">Envoyer la position selectionnée</string>
+  <string name="ShareLocation">Position</string>
   <string name="AccurateTo">Exact à %1$s</string>
   <string name="NearbyPlaces">OU CHOISIR UN LIEU</string>
   <!--photo gallery view-->
@@ -427,17 +432,17 @@
   <string name="Exposure">Exposition</string>
   <string name="Warmth">Température</string>
   <string name="Saturation">Saturation</string>
-  <string name="Vignette">Vignetage</string>
+  <string name="Vignette">Vignettage</string>
   <string name="Shadows">Ombres</string>
   <string name="Grain">Grain</string>
   <string name="Sharpen">Netteté</string>
   <string name="Blur">Flou</string>
-  <string name="BlurOff">Désactiver</string>
+  <string name="BlurOff">Désactivé</string>
   <string name="BlurLinear">Linéaire</string>
   <string name="BlurRadial">Radial</string>
   <string name="AreYouSureDeletePhoto">Êtes-vous sûr(e) de vouloir supprimer cette photo?</string>
   <string name="AreYouSureDeleteVideo">Êtes-vous sûr(e) de vouloir supprimer cette vidéo?</string>
-  <string name="DiscardChanges">Annuler les modifications?</string>
+  <string name="DiscardChanges">Annuler les changements?</string>
   <string name="ClearSearch">Supprimer l\'historique de recherche ?</string>
   <string name="ClearButton">Effacer</string>
   <string name="PickerPhotos">Photos</string>
@@ -467,7 +472,7 @@
   <string name="ChangePassword">Changer le mot de passe</string>
   <string name="TurnPasswordOff">Désactiver le mot de passe</string>
   <string name="SetRecoveryEmail">Définir l\'e-mail de récupération</string>
-  <string name="ChangeRecoveryEmail">Modifier l\'e-mail de récupération</string>
+  <string name="ChangeRecoveryEmail">Changer l\'e-mail de récupération</string>
   <string name="TurnPasswordOffQuestion">Êtes-vous sûr(e) de vouloir désactiver le mot de passe ?</string>
   <string name="PasswordHint">Indice du mot de passe</string>
   <string name="PasswordHintText">Veuillez créer un indice pour votre mot de passe</string>
@@ -498,7 +503,7 @@
   <!--privacy settings-->
   <string name="PrivacySettings">Vie privée et Sécurité</string>
   <string name="PrivacyTitle">Vie privée</string>
-  <string name="PrivacyLastSeen">Vu pour la dernière fois</string>
+  <string name="PrivacyLastSeen">Dernière visite</string>
   <string name="LastSeenEverybody">Tout le monde</string>
   <string name="LastSeenContacts">Mes Contacts</string>
   <string name="LastSeenNobody">Personne</string>
@@ -513,17 +518,17 @@
   <string name="DeleteAccountHelp">Si vous ne vous connectez pas au moins une fois durant cette période, votre compte sera effacé ainsi que tous vos groupes, messages et contacts.</string>
   <string name="DeleteAccountNowConfirmation">Supprimer votre compte ?</string>
   <string name="LastSeenHelp">Choisir qui peut voir la date de votre dernière connexion.</string>
-  <string name="LastSeenTitle">Qui peut voir la date votre dernière connexion ?</string>
-  <string name="AddExceptions">Ajouter des exceptions</string>
-  <string name="CustomHelp">Important: Vous ne pourrez plus voir la date de dernière connexion des utilisateurs qui ne peuvent pas voir la vôtre. À la place, une indication approximative sera affichée (récemment, dans la semaine, dans le dernier mois). </string>
-  <string name="AlwaysShareWith">Toujours Partager Avec</string>
-  <string name="NeverShareWith">Ne Jamais Partager Avec</string>
-  <string name="CustomShareSettingsHelp">Ces paramètres écraseront les valeurs ci-dessus</string>
+  <string name="LastSeenTitle">Qui peut voir quand c\'était ?</string>
+  <string name="AddExceptions">Exceptions</string>
+  <string name="CustomHelp">Important: Vous ne pourrez plus voir la date de dernière visite des personnes qui ne peuvent pas voir la vôtre. À la place, une vague indication sera affichée (récemment, dans la semaine, dans le dernier mois). </string>
+  <string name="AlwaysShareWith">Visible par </string>
+  <string name="NeverShareWith">Masqué à</string>
+  <string name="CustomShareSettingsHelp">Ces paramètres écraseront les valeurs précédentes</string>
   <string name="AlwaysShareWithTitle">Toujours Partager</string>
-  <string name="AlwaysShareWithPlaceholder">Toujours partager avec les utilisateurs...</string>
-  <string name="NeverShareWithTitle">Ne Jamais Partager</string>
-  <string name="NeverShareWithPlaceholder">Ne jamais partager avec les utilisateurs...</string>
-  <string name="EmpryUsersPlaceholder">Ajouter des Utilisateurs</string>
+  <string name="AlwaysShareWithPlaceholder">Toujours partager avec les personnes...</string>
+  <string name="NeverShareWithTitle">Ne pas montrer</string>
+  <string name="NeverShareWithPlaceholder">Ne pas partager avec les personnes...</string>
+  <string name="EmpryUsersPlaceholder">Personne</string>
   <string name="PrivacyFloodControlError">Désolé, requêtes trop nombreuses. Impossible de modifier vos réglages de Vie Privée pour le moment, veuillez patienter.</string>
   <string name="ClearOtherSessionsHelp">Déconnecte tous les appareils sauf celui-ci.</string>
   <string name="RemoveFromListText">Presser et maintenir sur un utilisateur pour le supprimer.</string>
@@ -542,7 +547,10 @@
   <string name="BotStatusRead">a accès aux messages</string>
   <string name="BotStatusCantRead">n\'a pas accès aux messages</string>
   <string name="BotInfoTitle">Que peux faire ce bot ?</string>
-  <string name="BotStart">DEMARRER</string>
+  <string name="BotStart">DÉMARRER</string>
+  <string name="BotUnblock">REDÉMARRER</string>
+  <string name="BotStop">Arrêter le bot</string>
+  <string name="BotRestart">Redémarrer le bot</string>
   <!--button titles-->
   <string name="Next">Suivant</string>
   <string name="Back">Précédent</string>
@@ -558,7 +566,7 @@
   <string name="Delete">Supprimer</string>
   <string name="Forward">Transférer</string>
   <string name="Retry">Réessayer</string>
-  <string name="FromCamera">Depuis l\'appareil photo</string>
+  <string name="FromCamera">Prendre une photo</string>
   <string name="FromGalley">Depuis la galerie</string>
   <string name="DeletePhoto">Supprimer la photo</string>
   <string name="Set">Définir</string>
@@ -588,7 +596,7 @@
   <string name="UnsuppotedMedia">Ce message n\'est pas supporté sur votre version de Telegram. Mettez à jour l\'application pour le voir: https://telegram.org/update</string>
   <string name="AttachPhoto">Photo</string>
   <string name="AttachVideo">Vidéo</string>
-  <string name="AttachLocation">Localisation</string>
+  <string name="AttachLocation">Position</string>
   <string name="AttachContact">Contact</string>
   <string name="AttachDocument">Fichier</string>
   <string name="AttachSticker">Sticker</string>
@@ -734,12 +742,12 @@
   <string name="Years_few">%1$d ans</string>
   <string name="Years_many">%1$d ans</string>
   <string name="Years_other">%1$d ans</string>
-  <string name="Users_zero">%1$d utilisateurs</string>
-  <string name="Users_one">%1$d utilisateur</string>
-  <string name="Users_two">%1$d utilisateurs</string>
-  <string name="Users_few">%1$d utilisateurs</string>
-  <string name="Users_many">%1$d utilisateurs</string>
-  <string name="Users_other">%1$d utilisateurs</string>
+  <string name="Users_zero">%1$d personnes</string>
+  <string name="Users_one">%1$d personne</string>
+  <string name="Users_two">%1$d personnes</string>
+  <string name="Users_few">%1$d personnes</string>
+  <string name="Users_many">%1$d personnes</string>
+  <string name="Users_other">%1$d personnes</string>
   <string name="Times_zero">%1$d fois</string>
   <string name="Times_one">%1$d fois</string>
   <string name="Times_two">%1$d fois</string>
@@ -795,12 +803,12 @@
   <string name="ForwardedAudio_few">%1$d audios transférés</string>
   <string name="ForwardedAudio_many">%1$d audios transférés</string>
   <string name="ForwardedAudio_other">%1$d audios transférés</string>
-  <string name="ForwardedLocation_zero">%1$d localisations transférées</string>
-  <string name="ForwardedLocation_one">Localisation transférée</string>
-  <string name="ForwardedLocation_two">%1$d localisations transférées</string>
-  <string name="ForwardedLocation_few">%1$d localisations transférées</string>
-  <string name="ForwardedLocation_many">%1$d localisations transférées</string>
-  <string name="ForwardedLocation_other">%1$d localisations transférées</string>
+  <string name="ForwardedLocation_zero">%1$d positions transférées</string>
+  <string name="ForwardedLocation_one">position transférée</string>
+  <string name="ForwardedLocation_two">%1$d position transférées</string>
+  <string name="ForwardedLocation_few">%1$d positions transférées</string>
+  <string name="ForwardedLocation_many">%1$d positions transférées</string>
+  <string name="ForwardedLocation_other">%1$d positions transférées</string>
   <string name="ForwardedContact_zero">%1$d contacts transférés</string>
   <string name="ForwardedContact_one">Contact transféré</string>
   <string name="ForwardedContact_two">%1$d contacts transférés</string>
@@ -830,9 +838,10 @@
   <string name="formatterDay24H">HH:mm</string>
   <string name="formatterDay12H">h:mm a</string>
   <string name="formatDateAtTime">%1$s à %2$s</string>
-  <!--update text--><!--
-  <string name="updateText">Plus Messenger pour Android vient d\'être mis à jour. Nouveautés de la version 2.9: \n\n- Installez et partagez des paquets de stickers personnalisés comme celui-ci: this one: https://play.google.com/store/apps/details?id=es.rafalense.themes\n- Si vous êtes un artiste, créez vos paquets de stickers, en utilisant notre robot @stickers. \n\n- Utilisez Telegram avec Android Auto.</string>-->
-  <string name="updateBuild">591</string>
+  <!--update text-->
+  <string name="updateText">Plus Messenger pour Android a été mis à jour. Nouveautés de la version 3.1.3:\n\n- Nouvelle section \"Liens partagés\" dans les informations de la conversation\n
+- Prévisualistaion In-app pour les liens des images</string>
+  <string name="updateBuild">594</string>
     <!--Telegram+-->
     <string name="TelegramForAndroid">Plus Messenger pour Android</string>
     <string name="Theming">Thème</string>

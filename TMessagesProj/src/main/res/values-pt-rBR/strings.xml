@@ -1,7 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
-
-<!--https://www.transifex.com/projects/p/telegram/language/pt_BR/members/-->
-
+<?xml version='1.0' encoding='UTF-8'?>
 <resources>
     <string name="AppName">Plus Messenger</string>
     <string name="LanguageName">Português (Brasil)</string>
@@ -46,8 +43,8 @@
     <string name="EncryptedChatStartedIncoming">Você entrou no chat secreto</string>
     <string name="ClearHistory">Limpar histórico</string>
     <string name="DeleteChat">Apagar e sair</string>
-    <string name="DeleteChatUser">Excluir conversa</string>
-    <string name="HiddenName">Excluir Conta</string>
+    <string name="DeleteChatUser">Apagar conversa</string>
+    <string name="HiddenName">Conta Excluída</string>
     <string name="SelectChat">Selecione um Chat</string>
     <string name="PhotoTip">Toque e segure para ver</string>
     <string name="CompatibilityChat">%1$s está usando uma versão mais antiga do Telegram, por isso fotos secretas serão mostradas em modo de compatibilidade.\n\nAssim que %2$s atualizar o Telegram, fotos com timers de 1 minuto ou menos passarão a funcionar no modo ‘Toque e segure para ver’, e você será notificado caso a outra pessoa salve a tela.</string>
@@ -137,6 +134,7 @@
     <string name="OpenInBrowser">Abrir no Navegador</string>
     <string name="CopyUrl">Copiar URL</string>
     <string name="SendItems">Enviar %1$s</string>
+    <string name="OpenUrlAlert">Abrir URL em %1$s?</string>
     <!--notification-->
     <string name="MessageLifetimeChanged">%1$s estabeleceu o tempo de autodestruição para %2$s </string>
     <string name="MessageLifetimeChangedOutgoing">Você estabeleceu o tempo de autodestruição para %1$s</string>
@@ -549,6 +547,9 @@
     <string name="BotStatusCantRead">não tem acesso as mensagens</string>
     <string name="BotInfoTitle">O que esse bot pode fazer?</string>
     <string name="BotStart">COMEÇAR</string>
+    <string name="BotUnblock">REINICIAR</string>
+    <string name="BotStop">Parar bot</string>
+    <string name="BotRestart">Reiniciar bot</string>
     <!--button titles-->
     <string name="Next">Próximo</string>
     <string name="Back">Voltar</string>
@@ -837,27 +838,27 @@
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s às %2$s</string>
     <!--update text-->
-    <string name="updateText">Plus Messenger para Android acaba de ser atualizado. Novo na versão 3.1.2\n\n- Resultados das buscas recentes\n- Pressione e mantenha em um sticker para pré-visualizar antes do envio</string>
-    <string name="updateBuild">591</string>
-    <!--Telegram+--><!--
+    <string name="updateText">Plus Messenger para Android foi atualizado. Novidade na versão 3.1.3\n\n- Nova sessão \"Links Compartilhados\" na informação do chat\n- Pré-visualizaçãp de fotos em links no aplicativo.</string>
+    <string name="updateBuild">594</string>
+    <!--Telegram+-->
   <string name="updatePlusText">
-\n\nNew in 3.1.1.9:\n\n- New MOD to center avatar, name and phone in navigation menu\n- New MOD to don\'t stop audio in chat (disables proximity sensor action)\n-New MOD to change icons color in profile screen\n- Bug fixes</string>-->
+\n\nNovo na versão 3.1.3.0:\n\n- Novo MOD para mudar a cor do ícone padrão da aba de emoji\n- Concertos de Bugs</string>
     <string name="TelegramForAndroid">Plus Messenger para Android</string>
     <string name="Theming">Personalização</string>
-    <string name="colorHexInvalid">Código de cor hexadecimal inválido!</string>
+  <string name="colorHexInvalid">Código de cor HEX inválido!</string>
     <string name="themeColor">Cor do Tema</string>
     <string name="ResetThemeSettings">Redefinir Tema</string>
     <string name="ResetThemeSettingsSum">Reverter todas as personalizações</string>
   <string name="ResetThemeToastText">Redefinir tema ao padrão!</string>
     <string name="General">Geral</string>
     <string name="Screens">Telas</string>
-    <string name="MainScreen">Tela Principal</string>
-  <string name="ChatScreen">Tela de Conversa</string>
-    <string name="ContactsScreen">Tela de Contatos</string>
+  <string name="MainScreen">Principal</string>
+  <string name="ChatScreen">Chat</string>
+  <string name="ContactsScreen">Contatos</string>
     <string name="Header">Cabeçalho</string>
     <string name="Rows">Linhas</string>
-    <string name="ChatList">Lista de Conversas</string>
-    <string name="ChatsList">Lista de Conversas</string>
+  <string name="ChatList">Lista de Chat</string>
+  <string name="ChatsList">Lista de Chats</string>
     <string name="ContactsList">Lista de Contatos</string>
     <string name="HeaderColor">Cor do Cabeçalho</string>
   <string name="NameColor">Cor do Nome</string>
@@ -876,7 +877,7 @@
     <string name="LBubbleColor">Cor da Bolha Esquerda</string>
     <string name="DateColor">Cor da Data</string>
     <string name="DateSize">Tamanho da Data</string>
-    <string name="DateBubbleColor">Cor da Bolha de Data</string>
+  <string name="DateBubbleColor">Cor da Bolha Data</string>
   <string name="RTextColor">Cor do texto direito</string>
     <string name="LTextColor">Cor do Texto Esquerdo</string>
     <string name="RTimeColor">Cor da Hora Direita</string>
@@ -885,8 +886,9 @@
     <string name="EditTextColor">Cor do Texto Digitado</string>
     <string name="EditTextSize">Tamanho do Texto Digitado</string>
   <string name="EditTextBGColor">Cor da Caixa de Texto</string>
-    <string name="EmojiViewBGColor">Cor do Fundo dos Emojis</string>
-    <string name="EmojiViewTabColor">Cor da Aba de Emojis</string>
+  <string name="EmojiViewBGColor">Cor do Fundo Emojis</string>
+  <string name="EmojiViewTabColor">Cor selecionada da aba de emoji</string>
+  <string name="EmojiViewTabIconColor">Cor do icone da aba de emoji</string>
     <string name="OnlineColor">Cor do Status Online</string>
     <string name="ChatMusic">Música</string>
     <string name="SaveTheme">Salvar Tema</string>
@@ -907,17 +909,17 @@
     <string name="SendLogs">Enviar Logs</string>
   <string name="SendLogsEmpty">Não existem logs ainda</string>
     <string name="SendIcon">Ícone de Enviar</string>
-  <string name="HideMobile">Ocultar número celular no menu</string>
+  <string name="HideMobile">Ocultar Número no Menu</string>
     <string name="FloatingPencilColor">Cor do Lápis Flutuante</string>
-    <string name="FloatingBGColor">Cor do Fundo do Botão Flutuante</string>
+  <string name="FloatingBGColor">Cor do Botão Flutuante</string>
     <string name="Community">Comunidade no G+</string>
   <string name="TypingColor">Cor do \"digitando\"</string>
-  <string name="EditTextIconsColor">Cor dos Ícones na Entrada de Texto</string>
-  <string name="NavigationDrawer">Menu Lateral</string>
+  <string name="EditTextIconsColor">Cor dos Ícones na Caixa de Texto</string>
+  <string name="NavigationDrawer">Menu de Navegação</string>
   <string name="OptionsList">Lista de Opções</string>
   <string name="ListColor">Cor da Lista</string>
   <string name="OwnNameSize">Tamanho do Nome</string>
-  <string name="PhoneColor">Cor do Telefone</string>
+  <string name="PhoneColor">Cor do Número</string>
   <string name="PhoneSize">Tamanho do Número</string>
   <string name="AvatarColor">Cor do Avatar</string>
   <string name="IconColor">Cor dos Ícones de Opções</string>
@@ -935,7 +937,7 @@
   <string name="ForwardNoQuote">Encaminhar sem mencionar</string>
   <string name="DisableMessageClick">Desativar Pop-up ao Clicar</string>
   <string name="ProfileScreen">Perfil de Contato/Grupo</string>
-  <string name="HideBackground">Ocultar Fundo Personalizado</string>
+  <string name="HideBackground">Ocultar Capa Personalizada</string>
   <string name="RLinkColor">Cor do Link Direito</string>
   <string name="LLinkColor">Cor do Link Esquerdo</string>
   <string name="ThemeApplied">Tema aplicado!</string>
@@ -943,24 +945,24 @@
   <string name="ShowAndroidEmoji">Usar Emojis Nativos</string>
   <string name="BubbleStyle">Estilo das Bolhas</string>
   <string name="KeepOriginalFilename">Manter Nome de Arquivo Original</string>
-  <string name="KeepOriginalFilenameHelp">Ao invés de apenas números, os arquivos serão salvos no formato nome_data</string>
+  <string name="KeepOriginalFilenameHelp">Arquivos serão salvos no formato nome_data</string>
   <string name="AvatarSize">Tamanho do Avatar</string>
-  <string name="AvatarAlignTop">Alinhar avatar do contato no topo</string>
+  <string name="AvatarAlignTop">Avatar do Contato no Topo</string>
   <string name="AvatarMarginLeft">Margem do Avatar</string>
   <string name="GroupNameColor">Cor do Nome do Grupo</string>
   <string name="GroupNameSize">Tamanho do Nome do Grupo</string>
   <string name="UnknownNameColor">Cor do Nome (Número Desconhecido)</string>
-  <string name="HideBackgroundShadow">Ocultar Sombra do Fundo Personalizado</string>
+  <string name="HideBackgroundShadow">Ocultar Sombra da Capa</string>
   <string name="SetSolidBGColor">Definir Cor de Fundo</string>
   <string name="SolidBGColor">Cor de Fundo</string>
-  <string name="EmojiPopupSize">Tamanho do Pop-up de Emoji</string>
+  <string name="EmojiPopupSize">Tamanho do Pop-Up Emoji</string>
   <string name="ForwardRightNameColor">Cor do Nome Direito ao Encaminhar</string>
   <string name="ForwardLeftNameColor">Cor do Nome Esquerdo ao Encaminhar</string>
   <string name="IconsColor">Cor dos Ícones</string>
-  <string name="SettingsScreen">Tela de Configurações/Personalizações</string>
+  <string name="SettingsScreen">Configurações/Personalização</string>
   <string name="BackgroundColor">Cor de Fundo</string>
   <string name="ShadowColor">Cor da Sombra</string>
-  <string name="SectionColor">Cor das Sessões</string>
+  <string name="SectionColor">Cor das Seções</string>
   <string name="TitleColor">Cor dos Títulos</string>
   <string name="SummaryColor">Cor dos Subtítulos/Descrições</string>
   <string name="MediaColor">Cor do Texto \'Foto/Adesivo\'</string>
@@ -968,16 +970,16 @@
   <string name="UseDeviceFont">Usar Fonte do Dispositivo</string>
   <string name="AppWillRestart">O Plus Messenger irá reiniciar</string>
   <string name="GroupIconColor">Cor do Ícone de Grupo</string>
-  <string name="SharedContactNameColor">Cor do Nome do Contato Compartilhado</string>
+  <string name="SharedContactNameColor">Cor do Nome Contato Compartilhado</string>
   <string name="AttachBGColor">Cor de Fundo do Anexar</string>
   <string name="AttachTextColor">Cor de Texto do Anexar</string>
   <string name="ShowContactAvatar">Mostrar Avatar do Contato</string>
   <string name="ShowOwnAvatar">Mostrar Próprio Avatar no Chat</string>
   <string name="ShowOwnAvatarGroup">Mostrar Próprio Avatar em Grupos</string>
-  <string name="OwnAvatarAlignTop">Alinhar Próprio Avatar no Topo</string>
+  <string name="OwnAvatarAlignTop">Avatar Próprio no Topo</string>
   <string name="DialogColor">Cor do Título/Botão de Diálogo</string>
-  <string name="ShowUsername">Exibir Nome de Usuário com Nome do Membro</string>
+  <string name="ShowUsername">Exibir Nome de Usuário</string>
   <string name="DisableAudioStop">Não Parar Áudio</string>
   <string name="ListDividerColor">Cor do Divisor de Lista</string>
-  <string name="CenterAvatar">Centralizar Avatar, Nome e Telefone</string>
+  <string name="CenterAvatar">Centralizar Avatar, Nome e Número</string>
 </resources>

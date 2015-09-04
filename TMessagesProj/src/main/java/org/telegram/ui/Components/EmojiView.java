@@ -12,10 +12,11 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.database.DataSetObserver;
+import android.graphics.PorterDuff;
+import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.support.v4.view.PagerAdapter;
 import android.support.v4.view.ViewPager;
-import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
@@ -499,7 +500,12 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
                 return true;
             }
         };
-        backspaceButton.setImageResource(R.drawable.ic_smiles_backspace);
+        //SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+        Drawable icon = getResources().getDrawable(R.drawable.ic_smiles_backspace);
+        int iconColor = themePrefs.getInt("chatEmojiViewTabIconColor", 0xffa8a8a8);
+        icon.setColorFilter(iconColor, PorterDuff.Mode.SRC_ATOP);
+        backspaceButton.setImageDrawable(icon);
+        //backspaceButton.setImageResource(R.drawable.ic_smiles_backspace);
         backspaceButton.setBackgroundResource(R.drawable.ic_emoji_backspace);
         backspaceButton.setScaleType(ImageView.ScaleType.CENTER);
         frameLayout.addView(backspaceButton, LayoutHelper.createFrame(52, 48));

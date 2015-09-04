@@ -58,7 +58,7 @@ public class PyroClient {
         this.key.attach(this);
 
         this.outbound = new ByteStream();
-        this.listeners = new CopyOnWriteArrayList<PyroClientListener>();
+        this.listeners = new CopyOnWriteArrayList<>();
         this.lastEventTime = System.currentTimeMillis();
     }
 

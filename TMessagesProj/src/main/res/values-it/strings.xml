@@ -1,7 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
-
-<!--https://www.transifex.com/projects/p/telegram/language/it/members/-->
-
+<?xml version='1.0' encoding='UTF-8'?>
 <resources>
     <string name="AppName">Plus Messenger</string>
     <string name="LanguageName">Italiano</string>
@@ -137,6 +134,7 @@
     <string name="OpenInBrowser">Apri nel Browser</string>
     <string name="CopyUrl">Copia URL</string>
     <string name="SendItems">Invia %1$s</string>
+    <string name="OpenUrlAlert">Aprire url %1$s?</string>
     <!--notification-->
     <string name="MessageLifetimeChanged">%1$s ha impostato il timer di autodistruzione a %2$s</string>
     <string name="MessageLifetimeChangedOutgoing">Hai impostato il timer di autodistruzione a %1$s</string>
@@ -549,6 +547,9 @@
     <string name="BotStatusCantRead">non ha accesso ai messaggi</string>
     <string name="BotInfoTitle">Cosa può fare questo bot?</string>
     <string name="BotStart">AVVIA</string>
+    <string name="BotUnblock">RIAVVIA</string>
+    <string name="BotStop">Arresta bot</string>
+    <string name="BotRestart">Riavvia bot</string>
     <!--button titles-->
     <string name="Next">Avanti</string>
     <string name="Back">Indietro</string>
@@ -837,11 +838,11 @@
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s alle %2$s</string>
     <!--update text-->
-    <string name="updateText">Plus Messenger per Android si è aggiornato. Nuovo nella versione 3.1.2:\n\n- Risultati recenti nella ricerca\n- Tieni premuto su uno sticker per visualizzare l\'anteprima prima di inviarlo</string>
-    <string name="updateBuild">591</string>
-    <!--Telegram+--><!--
+    <string name="updateText">Plus Messenger per Android si è aggiornato. Nuovo nella versione 3.1.3:\n\n- Nuova sezione \"Link condivisi\" nelle info della chat\n- Anteprima in-app delle foto dei link</string>
+    <string name="updateBuild">594</string>
+    <!--Telegram+-->
   <string name="updatePlusText">
-\n\nNew in 3.1.1.9:\n\n- Nuove bolle in stile iOS aggiunte (tgrazie a Edwin Macalopu)\n- Nuova MOD per mostrare l\'username assieme al nome del partecipante del gruppo\n- Mostra l\'amministratore del gruppo nella schermata del profilo del gruppo. L\'amministratore ha un\'icona particolare\n- Nuova MOD per centrare l\'avatar, il nome ed il telefono nel menu di navigazione\n- Nuova MOD per continuare a riprodurre gli audio nelle chat disabilitndo l\'azione del sensore di prossimità\n- Nuova MOD per cambiare il colore delle icone nella schermata profilo\n- Bug fixes\n\nEsplora e scarica temi per Plus Messenger: https://play.google.com/store/apps/details?id=es.rafalense.themes</string>-->
+\n\nNovità nella versione 3.1.3.0:\n\n- Nuova MOD per cambiare il colore predefinito della icona della linguetta degli emoji\n- Correzione di Bug</string>
     <string name="TelegramForAndroid">Plus Messenger per Android</string>
   <string name="Theming">Personalizzazione</string>
     <string name="colorHexInvalid">Codice del colore esadecimale non valido!</string>
@@ -886,7 +887,8 @@
     <string name="EditTextSize">Dimensione del testo immesso</string>
     <string name="EditTextBGColor">Colore di sfondo del campo di testo</string>
     <string name="EmojiViewBGColor">Colore di sfondo degli Emoji</string>
-    <string name="EmojiViewTabColor">Colore della linguetta degli Emoji</string>
+  <string name="EmojiViewTabColor">Colore della linguetta dell\'Emoji selezionato</string>
+  <string name="EmojiViewTabIconColor">Colore icona linguetta degli Emoji</string>
     <string name="OnlineColor">Colore dello stato Online</string>
     <string name="ChatMusic">Musica</string>
     <string name="SaveTheme">Salva il tema</string>

@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version='1.0' encoding='UTF-8'?>
 <resources>
     <string name="AppName">Plus Messenger</string>
     <string name="LanguageName">Hrvatski</string>
@@ -55,12 +55,17 @@
     <string name="UnmuteNotifications">Uključiti</string>
     <string name="WillUnmuteIn">Za %1$s</string>
     <string name="MuteDisable">Onemogućeno</string>
+  <string name="Hashtags">HASHTAGS</string>
     <!--broadcasts-->
     <string name="NewBroadcastList">Nova distribucijska lista</string>
     <string name="EnterListName">Upiši naziv liste</string>
     <string name="YouCreatedBroadcastList">Napravili ste distribucijsku listu</string>
     <string name="AddRecipient">Dodaj primatelja</string>
     <string name="KickFromBroadcast">Ukloni iz distribucijske liste</string>
+  <!--audio view-->
+  <string name="AttachMusic">Glazba</string>
+  <string name="AudioUnknownArtist">Nepoznat izvođač</string>
+  <string name="AudioUnknownTitle">Nepoznat naslov</string>
     <!--documents view-->
     <string name="SelectFile">Odaberite datoteku</string>
     <string name="FreeOfTotal">Slobodno %1$s od %2$s</string>
@@ -81,14 +86,23 @@
     <string name="Typing">piše...</string>
     <string name="IsTyping">piše...</string>
     <string name="AreTyping">pišu...</string>
+  <string name="IsRecordingAudio">%1$s snima zvučni zapis...</string>
+  <string name="IsSendingPhoto">%1$s šalje sliku...</string>
+  <string name="IsSendingVideo">%1$s šalje video zapis...</string>
+  <string name="IsSendingFile">%1$s šalje datoteku...</string>
+  <string name="RecordingAudio">snima zvučni zapis...</string>
+  <string name="SendingPhoto">šalje fotografiju...</string>
+  <string name="SendingVideoStatus">šalje video zapis...</string>
+  <string name="SendingFile">šalje datoteku...</string>
     <string name="GotAQuestion">Imaš pitanje o Telegramu?</string>
     <string name="ChatTakePhoto">Uslikaj</string>
     <string name="ChatGallery">Galerija</string>
     <string name="ChatLocation">Lokacija</string>
     <string name="ChatVideo">Video</string>
     <string name="ChatDocument">Datoteka</string>
+  <string name="ChatCamera">Kamera</string>
     <string name="NoMessages">Trenutno ovdje nema poruka...</string>
-    <string name="ForwardedMessage">Proslijeđene poruke</string>
+  <string name="ForwardedMessage">Proslijeđena poruka</string>
     <string name="From">Od</string>
     <string name="NoRecent">Nema nedavnih</string>
     <string name="Message">Poruka</string>
@@ -108,11 +122,16 @@
     <string name="DeleteThisChat">Izbriši ovo dopisivanje</string>
     <string name="SlideToCancel">POVUCITE ZA PREKID</string>
     <string name="SaveToDownloads">Spremi u preuzimanja</string>
+  <string name="SaveToMusic">Spremi u glazbu</string>
     <string name="ShareFile">Dijeli</string>
-    <string name="ApplyLocalizationFile">Koristiti prijevod</string>
+  <string name="ApplyLocalizationFile">Koristi prijevod</string>
     <string name="UnsupportedAttachment">Privitak nije podržan</string>
     <string name="SetTimer">Postavi samouništenje</string>
     <string name="ServiceNotifications">Usluga obavijesti</string>
+  <string name="OpenInBrowser">Otvori u pretraživaču</string>
+  <string name="CopyUrl">Kopiraj link</string>
+  <string name="SendItems">Pošalji %1$s</string>
+  <string name="OpenUrlAlert">Otvori URL %1$s?</string>
     <!--notification-->
     <string name="MessageLifetimeChanged">%1$s postavlja odbrojavanje samouništenja za %2$s</string>
     <string name="MessageLifetimeChangedOutgoing">Odbrojavanje za samouništenje je postavljeno na %1$s</string>
@@ -122,7 +141,7 @@
     <string name="NotificationMessageText">%1$s: %2$s</string>
     <string name="NotificationMessageNoText">%1$s vam šalje poruku</string>
     <string name="NotificationMessagePhoto">%1$s vam šalje sliku</string>
-    <string name="NotificationMessageVideo">%1$s vam šalje videozapis</string>
+  <string name="NotificationMessageVideo">%1$s vam šalje video zapis</string>
     <string name="NotificationMessageContact">%1$s dijeli kontakt s tobom</string>
     <string name="NotificationMessageMap">%1$s vam šalje lokaciju</string>
     <string name="NotificationMessageDocument">%1$s vam šalje datoteku</string>
@@ -131,7 +150,7 @@
     <string name="NotificationMessageGroupText">%1$s @ %2$s: %3$s</string>
     <string name="NotificationMessageGroupNoText">%1$s šalje poruku u grupi %2$s</string>
     <string name="NotificationMessageGroupPhoto">%1$s šalje sliku u grupi %2$s</string>
-    <string name="NotificationMessageGroupVideo">%1$s šalje videozapis u grupi %2$s</string>
+  <string name="NotificationMessageGroupVideo">%1$s šalje video zapis u grupi %2$s</string>
     <string name="NotificationMessageGroupContact">%1$s dijeli kontakt s grupom %2$s</string>
     <string name="NotificationMessageGroupMap">%1$s šalje lokaciju u grupi %2$s</string>
     <string name="NotificationMessageGroupDocument">%1$s šalje datoteku u grupi %2$s</string>
@@ -146,7 +165,7 @@
     <string name="NotificationGroupKickYou">%1$s te ukonio/la iz grupe %2$s</string>
     <string name="NotificationGroupLeftMember">%1$s napušta grupu %2$s</string>
     <string name="NotificationContactJoined">%1$s se pridružio/la Telegramu!</string>
-    <string name="NotificationUnrecognizedDevice">%1$s,\nOtkrili smo prijavu na vaš račun s novog uređaja - %2$s\n\nUređaj: %3$s\nLokacija: %4$s\n\nAko to niste vi, odabrate Postavke - Privatnost i sigurnost - Ugasi sve ostale sesije.\n\nHvala,\nTelegram tim</string>
+  <string name="NotificationUnrecognizedDevice">%1$s,\nOtkrili smo prijavu na vaš račun s novog uređaja - %2$s\n\nUređaj: %3$s\nLokacija: %4$s\n\nAko to niste vi, odabrate Postavke - Privatnost i sigurnost - Sesije i ugasite sve ostale sesije.\n\nAko mislite da se netko prijavio na vaš račun protiv vaše volje možete aktivirati potvrdu u dva koraka u postavkama Privatnost i sigurnost.\n\nHvala,\nTelegram tim</string>
     <string name="NotificationContactNewPhoto">%1$s je obnovio/la profilnu sliku</string>
     <string name="Reply">Odgovori</string>
     <string name="ReplyToGroup">Odgovoriti grupi %1$s</string>
@@ -173,6 +192,11 @@
     <string name="EnterGroupNamePlaceholder">Upišite naziv grupe</string>
     <string name="GroupName">Naziv grupe</string>
     <string name="MembersCount">%1$d/%2$d članova</string>
+  <string name="JoinToGroup">Da li se želite pridružiti grupi \'%1$s\'?</string>
+  <string name="JoinToGroupErrorFull">Žao nam je, ova grupa je već popunjena.</string>
+  <string name="JoinToGroupErrorNotExist">Žao nam je, ova grupa ne postoji.</string>
+  <string name="CopyLink">Kopiraj link</string>
+  <string name="ShareLink">Podijeli link</string>
     <!--group info view-->
     <string name="SharedMedia">Dijeljene datoteke</string>
     <string name="SETTINGS">Postavke</string>
@@ -209,11 +233,24 @@
     <string name="UsernameInvalidShort">Korisničko ime mora imati barem 5 znakova.</string>
     <string name="UsernameInvalidLong">Korisničko ime nesmije imati više od 32 znaka.</string>
     <string name="UsernameInvalidStartNumber">Žao nam je, korisničko ime ne smije započimati s brojem.</string>
-    <string name="UsernameHelp">Odaberite svoje korisničko ime na <![CDATA[<b>]]>Telegramu<![CDATA[</b>]]>. Ako to učinite drugi ljudi će imati mogućnost pronaći vas preko odabranog korisničkog imena i kontaktirati vas bez da znaju vaš telefonski broj.<![CDATA[<br><br>]]>U imenu možete koristiti <![CDATA[<b>]]>a–z<![CDATA[</b>]]>, <![CDATA[<b>]]>0–9<![CDATA[</b>]]> i podcrte. Minimalna duljina je <![CDATA[<b>]]>5<![CDATA[</b>]]> znakova.</string>
+  <string name="UsernameHelp">Odaberite svoje korisničko ime na <![CDATA[<b>]]>Telegramu<![CDATA[</b>]]>. Ako to učinite drugi ljudi će imati mogućnost pronaći vas preko odabranog korisničkog imena i kontaktirati vas bez da znaju vaš telefonski broj.<![CDATA[<br><br>]]>U imenu možete koristit <![CDATA[<b>]]>a–z<![CDATA[</b>]]>, <![CDATA[<b>]]>0–9<![CDATA[</b>]]> i podcrte. Minimalna duljina je <![CDATA[<b>]]>5<![CDATA[</b>]]> znakova.</string>
     <string name="UsernameChecking">Provjera korisničkog imena...</string>
     <string name="UsernameAvailable">%1$s je dostupno.</string>
     <string name="UsernameEmpty">Nije postavljeno</string>
     <string name="ErrorOccurred">Došlo je do greške.</string>
+  <!--stickers view-->
+  <string name="Stickers">Naljepnice</string>
+  <string name="AddStickers">Dodaj naljepnice</string>
+  <string name="AddToStickers">Dodaj u naljepnice</string>
+  <string name="AddStickersNotFound">Naljepnice nisu pronađene</string>
+  <string name="StickersRemoved">Naljepnice uklonjene</string>
+  <string name="AddStickersInstalled">Nove naljepnice su spremljene</string>
+  <string name="StickersHide">Sakrij</string>
+  <string name="StickersShow">Prikaži</string>
+  <string name="StickersShare">Podijeli</string>
+  <string name="StickersCopy">Kopiraj link</string>
+  <string name="StickersRemove">Ukloni</string>
+  <string name="NoStickers">Nemate naljepnice</string>
     <!--settings view-->
     <string name="ResetNotificationsText">Postavi sve postavke obavijesti na početne vrijednosti</string>
     <string name="TextSize">Veličina teksta poruke</string>
@@ -222,7 +259,7 @@
     <string name="Unblock">Odblokiraj</string>
     <string name="UnblockText">Za odblokiranje dodirni i zadrži prst na nazivu korisnika.</string>
     <string name="NoBlocked">Nema blokiranih korisnika</string>
-    <string name="MessageNotifications">Obavijesti poruka</string>
+  <string name="MessageNotifications">Obavijesti poruke</string>
     <string name="Alert">Obavijest</string>
     <string name="MessagePreview">Pregled poruke</string>
     <string name="GroupNotifications">Obavijesti grupe</string>
@@ -241,6 +278,7 @@
     <string name="NoSound">Bez zvuka</string>
     <string name="Default">Zadano</string>
     <string name="Support">Podrška</string>
+  <string name="OnlyIfSilent">Samo kad je stišano</string>
     <string name="ChatBackground">Pozadina dopisivanja</string>
     <string name="MessagesSettings">Poruke</string>
     <string name="SendByEnter">Enter šalje poruku</string>
@@ -249,7 +287,6 @@
     <string name="ContactJoined">Kontakt se pridružio Telegramu</string>
     <string name="Pebble">PEBBLE</string>
     <string name="Language">Jezik</string>
-    <string name="AskAQuestionInfo">Molimo da se obrati pozornost kako Telegram podršku daju dobrovoljci. Trudimo se odgovoriti što je brže moguće, ali ponekad može potrajati.<![CDATA[<br><br>]]>Pogledaj <![CDATA[<a href=\"http://telegram.org/faq#general\">često postavljana pitanja</a>]]>: tu su odgovori na većinu pitanja i važni savjeti za <![CDATA[<a href=\"http://telegram.org/faq#troubleshooting\">rješavanje problema</a>]]>.</string>
     <string name="AskButton">Pitaj dobrovoljca</string>
     <string name="TelegramFaq">Često postavljana pitanja</string>
     <string name="TelegramFaqUrl">https://telegram.org/faq</string>
@@ -297,26 +334,44 @@
     <string name="NotificationsOther">Ostalo</string>
     <string name="NotificationsDisabled">Onemogućeno</string>
     <string name="VibrationDisabled">Onemogućeno</string>
+  <string name="LedDisabled">Onemogućeno</string>
+  <string name="RepeatDisabled">Isključeno</string>
+  <string name="InChatSound">Zvukovi tijekom pokrenutog dopisivanja </string>
+  <string name="SoundDefault">Osnovno</string>
+  <string name="VibrationDefault">Zadano</string>
+  <string name="SmartNotifications">Pametne obavijesti</string>
+  <string name="SmartNotificationsDisabled">Onemogućeno</string>
+  <string name="SmartNotificationsMinutes">minuta</string>
+  <!--sessions view-->
+  <string name="SessionsTitle">Aktivne sesije</string>
+  <string name="CurrentSession">Trenutna sesija</string>
+  <string name="NoOtherSessions">Nema drugih aktivnih sesija</string>
+  <string name="NoOtherSessionsInfo">Na Telegram se možeš prijavit s drugog mobitela, tableta i računala koristeći isti telefonski broj. Svi tvoji podaci će se trenutno sinkronizirati.</string>
+  <string name="OtherSessions">Aktivne sesije</string>
+  <string name="SessionsInfo">Upravljaj svojim sesijama na drugim uređajima.</string>
+  <string name="TerminateSessionInfo">Pritisni i zadrži sesiju za gašenje.</string>
+  <string name="TerminateSessionQuestion">Ugasiti ovu sesiju?</string>
+  <string name="UnofficialApp">neslužbena aplikacija</string>
     <!--passcode view-->
-    <string name="Passcode">Šifra</string>
+  <string name="Passcode">Zaključavanje lozinkom</string>
     <string name="ChangePasscode">Promijeni šifru</string>
-    <string name="ChangePasscodeInfo">Kada podesite dodatnu šifru, ikona sa lokotom će se pojaviti na stranici sa dopisivanjima. Pritisnite je da bi otključali vašu Telegram aplikaciju.\n\nPodsjetnik: ako zaboravite šifru, morate obrisati i reinstalirati aplikaciju. Sva tajna dopisivanja biti će obrisana.</string>
+  <string name="ChangePasscodeInfo">Kada podesite dodatnu šifru, ikona sa lokotom će se pojaviti na stranici sa dopisivanjima. Pritisnite je da bi zaključali i otključali vašu Telegram aplikaciju.\n\nPodsjetnik: ako zaboravite šifru, morate obrisati aplikaciju i reinstalirati. Sva tajna dopisivanja biti će obrisana.</string>
     <string name="ChangePasscodeAlert">Ikona s lokotom će se pojaviti na stranci sa dopisivanjima. Pritisnite je da bi zaključali Telegram sa novom šifrom.</string>
     <string name="PasscodePIN">PIN</string>
     <string name="PasscodePassword">Lozinka</string>
     <string name="EnterCurrentPasscode">Unesite trenutnu šifru</string>
+  <string name="EnterNewFirstPasscode">Unesite lozinku</string>
     <string name="EnterNewPasscode">Unesite novu šifru</string>
     <string name="EnterYourPasscode">Unesite vašu šifru</string>
-    <string name="ReEnterYourPasscode">Ponovno unesite novu šifru</string>
+  <string name="ReEnterYourPasscode">Ponovno unesite vašu novu šifru</string>
     <string name="InvalidPasscode">Neispravna šifra</string>
     <string name="PasscodeDoNotMatch">Šifra se ne poklapaju</string>
     <string name="AutoLock">Automatsko zaključavanje</string>
-    <string name="AutoLockInfo">Zahtjevaj šifru ako sam odsutan.</string>
+  <string name="AutoLockInfo">Zahtijevaj šifru ako sam neaktivan.</string>
     <string name="AutoLockInTime">za %1$s</string>
     <string name="AutoLockDisabled">Onemogućeno</string>
     <!--media view-->
     <string name="NoMedia">Dijelite slike i video u ovom dopisivanju pa pristupite njima s bilo kojeg vašeg uređaja.</string>
-    <string name="DocumentsTitle">Datoteke</string>
     <string name="SharedMediaTitle">Multimedija</string>
     <string name="NoSharedFiles">Dijelite datoteke i dokumente u ovom dopisivanju pa pristupite njima s bilo kojeg vašeg uređaja.</string>
     <!--map view-->
@@ -325,14 +380,15 @@
     <string name="Hybrid">Hibridni prikaz</string>
     <string name="MetersAway">m udaljen</string>
     <string name="KMetersAway">km udaljen</string>
-    <string name="SendLocation">Pošalji lokaciju</string>
-    <string name="ShareLocation">Dijeli lokaciju</string>
+  <string name="SendSelectedLocation">Pošalji označenu lokaciju</string>
+  <string name="ShareLocation">Lokacija</string>
     <!--photo gallery view-->
     <string name="ShowAllMedia">Svi medijski zapisi</string>
     <string name="SaveToGallery">Spremi u galeriju</string>
     <string name="Of">%1$d od %2$d</string>
     <string name="Gallery">Galerija</string>
     <string name="AllPhotos">Sve slike</string>
+  <string name="AllVideo">Svi video zapisi</string>
     <string name="NoPhotos">Još nema slika</string>
     <string name="PleaseDownload">Molimo te prvo preuzmi medijsku datoteku</string>
     <string name="NoRecentPhotos">Nema nedavnih slika</string>
@@ -355,9 +411,39 @@
     <string name="Grain">Zrnato</string>
     <string name="Sharpen">Oštrina</string>
     <string name="Blur">Zamutiti</string>
-    <string name="AreYouSureDeletePhoto">Jeste li sigurni da želite obrisat ovu sliku?</string>
-    <string name="AreYouSureDeleteVideo">Jeste li sigurni da želite obrisat ovaj video?</string>
+  <string name="BlurOff">Isključeno</string>
+  <string name="BlurLinear">Linearano</string>
+  <string name="BlurRadial">Radijalano</string>
+  <string name="AreYouSureDeletePhoto">Jeste li sigurni da želite obrisati ovu sliku?</string>
+  <string name="AreYouSureDeleteVideo">Jeste li sigurni da želite obrisati ovaj video zapis?</string>
     <string name="DiscardChanges">Odbaciti izmjene?</string>
+  <string name="ClearSearch">Obrisati povijest pretraživanja?</string>
+  <string name="ClearButton">Očisti</string>
+  <string name="PickerPhotos">Fotografije</string>
+  <string name="PickerVideo">Video zapis</string>
+  <string name="AddCaption">Dodaj opis</string>
+  <!--password view-->
+  <string name="TwoStepVerification">Potvrda u dva koraka</string>
+  <string name="SetAdditionalPassword">Postavi dodatnu lozinku</string>
+  <string name="YourPassword">Vaša lozinka</string>
+  <string name="PleaseEnterFirstPassword">Unesite lozinku</string>
+  <string name="PleaseEnterPassword">Unesite vašu novu lozinku</string>
+  <string name="PleaseReEnterPassword">Ponovno unesite vašu novu lozinku</string>
+  <string name="YourEmail">Vaš e-mail</string>
+  <string name="YourEmailSkip">Preskoči</string>
+  <string name="YourEmailSkipWarning">Upozorenje</string>
+  <string name="ChangePassword">Promijeni lozinku</string>
+  <string name="PasswordHint">Podsjetnik za lozinku</string>
+  <string name="PasswordHintText">Kreirajte podsjetnik za vašu lozinku</string>
+  <string name="PasswordDoNotMatch">Lozinke se ne poklapaju</string>
+  <string name="PasswordAsHintError">Podsjetnik se mora razlikovati od vaše lozinke</string>
+  <string name="RestorePasswordNoEmailTitle">Žao nam je</string>
+  <string name="RestoreEmailTrouble">Imate problema sa pristupom vašem e-mailu %1$s?</string>
+  <string name="ResetMyAccountWarning">Upozorenje</string>
+  <string name="ResetMyAccountWarningReset">Ponovno postavi</string>
+  <string name="LoginPassword">Lozinka</string>
+  <string name="ForgotPassword">Zaboravljena lozinka?</string>
+  <string name="PasswordCode">Kôd</string>
     <!--privacy settings-->
     <string name="PrivacySettings">Privatnost i sigurnost</string>
     <string name="PrivacyTitle">Privatnost</string>
@@ -372,7 +458,7 @@
     <string name="LastSeenNobodyPlus">Nitko (+%1$d)</string>
     <string name="SecurityTitle">Sigurnost</string>
     <string name="DeleteAccountTitle">Samouništenje korisničkog računa</string>
-    <string name="DeleteAccountIfAwayFor">Ako sam odsutan</string>
+  <string name="DeleteAccountIfAwayFor">Ako sam neaktivan</string>
     <string name="DeleteAccountHelp">Ako se ne prijavite barem jednom u ovom periodu vaš korisniči račun će biti obrisan skupa sa svim grupama, porukama i kontaktima.</string>
     <string name="DeleteAccountNowConfirmation">Izbrisati korisnički račun?</string>
     <string name="LastSeenHelp">Promijenite tko može vidjeti vaše vrijeme zadnjeg posjeta.</string>
@@ -396,12 +482,20 @@
     <string name="EditedVideo">Uređeni video</string>
     <string name="SendingVideo">Šaljem video...</string>
     <string name="CompressVideo">Kompresiraj video</string>
+  <!--bot-->
+  <string name="BotShare">Podijeli</string>
+  <string name="BotInvite">Dodaj u grupu</string>
+  <string name="BotSettings">Postavke</string>
+  <string name="BotHelp">Pomoć</string>
+  <string name="BotStatusRead">ima pristup porukama</string>
+  <string name="BotStatusCantRead">nema pristup porukama</string>
     <!--button titles-->
     <string name="Next">Sljedeće</string>
     <string name="Back">Natrag</string>
     <string name="Done">Gotovo</string>
     <string name="Open">Otvori</string>
     <string name="Cancel">Odustani</string>
+  <string name="Close">Zatvori</string>
     <string name="Add">Dodaj</string>
     <string name="Edit">Uredi</string>
     <string name="Send">Šalji</string>
@@ -417,6 +511,7 @@
     <string name="OK">U redu</string>
     <string name="Crop">IZREŽI</string>
     <!--messages-->
+  <string name="ActionInviteYou">Pridružili ste se grupi u koju ste pozvani poveznicom</string>
     <string name="ActionKickUser">un1 je uklonio un2</string>
     <string name="ActionLeftUser">un1 je napustio grupu</string>
     <string name="ActionAddUser">un1 je dodao un2</string>
@@ -434,10 +529,9 @@
     <string name="ActionKickUserYou">un1 te uklonio</string>
     <string name="ActionAddUserYou">un1 te dodao</string>
     <string name="ActionAddUserSelf">un1 se vratio grupi</string>
-  <string name="UnsuppotedMedia">Tvoja verzija Telegrama ne podržava ovu poruku. Obnovi aplikaciju za nastavak:
-http://telegram.org/update</string>
+  <string name="ActionAddUserSelfYou">Vratili ste se u grupu</string>
     <string name="AttachPhoto">Slika</string>
-    <string name="AttachVideo">Videozapis</string>
+  <string name="AttachVideo">Video zapis</string>
     <string name="AttachLocation">Lokacija</string>
     <string name="AttachContact">Kontakt</string>
     <string name="AttachDocument">Datoteka</string>
@@ -450,16 +544,16 @@ http://telegram.org/update</string>
     <string name="InvalidPhoneNumber">Neispravni telefonski broj</string>
     <string name="CodeExpired">Kod je istekao, ponovo se ulogiraj</string>
     <string name="FloodWait">Previše pokušaja, probajte ponovo kasnije</string>
+  <string name="FloodWaitTime">Previše pokušaja, molimo pokušajte ponovo u %1$s</string>
     <string name="InvalidCode">Neispravan kod</string>
     <string name="InvalidFirstName">Neispravno ime</string>
     <string name="InvalidLastName">Neispravno prezime</string>
     <string name="Loading">Učitavanje...</string>
     <string name="NoPlayerInstalled">Nemaš video player, instaliraj neki za nastavak</string>
-    <string name="NoMailInstalled">Molimo Vas, pošaljite mail na sms@telegram.org i objasnite Vaš problem.</string>
+  <string name="NoMailInstalled">Molim Vas, pošaljite mail na sms@stel.com i objasnite Vaš problem.</string>
     <string name="NoHandleAppInstalled">Nemaš aplikaciju zaduženu za tip datoteke \'%1$s\', instaliraj neku za nastavak</string>
     <string name="InviteUser">Ovaj korisnik još nema Telegram, poslati pozivnicu?</string>
     <string name="AreYouSure">Sigurno?</string>
-    <string name="AddToTheGroup">Dodati %1$s u grupu?\n\nBroj poruka za proslijediti: </string>
     <string name="ForwardMessagesTo">Proslijediti kontaktu %1$s?</string>
     <string name="SendMessagesTo">Poslati poruke za %1$s?</string>
     <string name="AreYouSureLogout">Jeste li ste sigurni da se želite odjaviti?\n\nNapominjemo da Telegram možete koristiti neprimjetno na svim vašim uređajima odjednom.\n\nUpamtite, odjavljivanjem brišete sva vaša Tajna dopisivanja.</string>
@@ -492,7 +586,7 @@ http://telegram.org/update</string>
     <string name="Page5Message"><![CDATA[<b>Plus Messenger</b>]]> nema ograničenje za veličinu<![CDATA[<br/>]]>medijskih datoteka i dopisivanja.</string>
     <string name="Page6Message"><![CDATA[<b>Plus Messenger</b>]]> vam omogućuje pristup<![CDATA[<br/>]]>porukama s više uređaja.</string>
     <string name="Page7Message"><![CDATA[<b>Plus Messenger</b>]]> poruke su snažno enkriptirane<![CDATA[<br/>]]>i mogu se same uništiti.</string>
-    <string name="StartMessaging">Počni dopisivanje</string>
+  <string name="StartMessaging">Počni s dopisivanje</string>
     <!--plural-->
     <string name="Online_zero">%1$d osoba na mreži</string>
     <string name="Online_one">%1$d osoba na mreži</string>
@@ -584,6 +678,66 @@ http://telegram.org/update</string>
     <string name="Users_few">%1$d korisnika</string>
     <string name="Users_many">%1$d korisnika</string>
     <string name="Users_other">%1$d korisnika</string>
+  <string name="Stickers_one">%1$d naljepnica</string>
+  <string name="Stickers_two">%1$d naljepnice</string>
+  <string name="Stickers_few">%1$d naljepnice</string>
+  <string name="Stickers_many">%1$d naljepnice</string>
+  <string name="Stickers_other">%1$d naljepnice</string>
+  <!--forwarded messages-->
+  <string name="ForwardedMessage_zero">%1$d proslijeđenih poruka</string>
+  <string name="ForwardedMessage_one">Proslijeđena poruka</string>
+  <string name="ForwardedMessage_two">%1$d proslijeđene poruke</string>
+  <string name="ForwardedMessage_few">%1$d proslijeđene poruke</string>
+  <string name="ForwardedMessage_many">%1$d proslijeđenih poruka</string>
+  <string name="ForwardedMessage_other">%1$d proslijeđene poruke</string>
+  <string name="ForwardedFile_zero">%1$d proslijeđenih datoteka</string>
+  <string name="ForwardedFile_one">Proslijeđena datoteka</string>
+  <string name="ForwardedFile_two">%1$d proslijeđene datoteke</string>
+  <string name="ForwardedFile_few">%1$d proslijeđene datoteke</string>
+  <string name="ForwardedFile_many">%1$d proslijeđenih datoteka</string>
+  <string name="ForwardedFile_other">%1$d proslijeđene datoteke</string>
+  <string name="ForwardedPhoto_zero">%1$d proslijeđenih slika</string>
+  <string name="ForwardedPhoto_one">Proslijeđena slika</string>
+  <string name="ForwardedPhoto_two">%1$d proslijeđene slike</string>
+  <string name="ForwardedPhoto_few">%1$d proslijeđene slike</string>
+  <string name="ForwardedPhoto_many">%1$d proslijeđenih slika</string>
+  <string name="ForwardedPhoto_other">%1$d proslijeđene slike</string>
+  <string name="ForwardedVideo_zero">%1$d proslijeđenih videa</string>
+  <string name="ForwardedVideo_one">Proslijeđen video zapis</string>
+  <string name="ForwardedVideo_two">%1$d proslijeđena video zapisa</string>
+  <string name="ForwardedVideo_few">%1$d proslijeđena video zapisa</string>
+  <string name="ForwardedVideo_many">%1$d proslijeđenih video zapisa</string>
+  <string name="ForwardedVideo_other">%1$d proslijeđena video zapisa</string>
+  <string name="ForwardedAudio_zero">%1$d proslijeđenih zvučnih zapisa</string>
+  <string name="ForwardedAudio_one">Proslijeđen zvučni zapis</string>
+  <string name="ForwardedAudio_two">%1$d proslijeđena zvučna zapisa</string>
+  <string name="ForwardedAudio_few">%1$d proslijeđena zvučna zapisa</string>
+  <string name="ForwardedAudio_many">%1$d proslijeđenih zvučnih zapisa</string>
+  <string name="ForwardedAudio_other">%1$d proslijeđena zvučna zapisa</string>
+  <string name="ForwardedLocation_zero">%1$d proslijeđenih lokacija</string>
+  <string name="ForwardedLocation_one">Proslijeđena lokacija</string>
+  <string name="ForwardedLocation_two">%1$d proslijeđene lokacije</string>
+  <string name="ForwardedLocation_few">%1$d proslijeđene lokacije</string>
+  <string name="ForwardedLocation_many">%1$d proslijeđenih lokacija</string>
+  <string name="ForwardedLocation_other">%1$d proslijeđene lokacije</string>
+  <string name="ForwardedContact_zero">%1$d proslijeđenih kontakta</string>
+  <string name="ForwardedContact_one">Proslijeđen kontakt</string>
+  <string name="ForwardedContact_two">%1$d proslijeđena kontakta</string>
+  <string name="ForwardedContact_few">%1$d proslijeđena kontakta</string>
+  <string name="ForwardedContact_many">%1$d proslijeđenih kontakta</string>
+  <string name="ForwardedContact_other">%1$d proslijeđena kontakta</string>
+  <string name="ForwardedSticker_zero">%1$d proslijeđenih naljepnica</string>
+  <string name="ForwardedSticker_one">Proslijeđena naljepnica</string>
+  <string name="ForwardedSticker_two">%1$d proslijeđene naljepnice</string>
+  <string name="ForwardedSticker_few">%1$d proslijeđene naljepnice</string>
+  <string name="ForwardedSticker_many">%1$d proslijeđenih naljepnica</string>
+  <string name="ForwardedSticker_other">%1$d proslijeđene naljepnice</string>
+  <string name="AndOther_zero">i %1$d ostalih</string>
+  <string name="AndOther_one">i %1$d ostali</string>
+  <string name="AndOther_two">i %1$d ostala</string>
+  <string name="AndOther_few">i %1$d ostala</string>
+  <string name="AndOther_many">i %1$d ostalih</string>
+  <string name="AndOther_other">i %1$d ostala</string>
     <!--date formatters-->
     <string name="formatterMonthYear">MMM yyyy</string>
     <string name="formatterMonth">dd.MM.yyy</string>
@@ -595,6 +749,8 @@ http://telegram.org/update</string>
     <string name="formatterDay24H">HH:mm</string>
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s u %2$s</string>
+  <!--update text-->
+  <string name="updateBuild">594</string>
     <!--Telegram+-->
   <string name="TelegramForAndroid">Plus Messenger za Android</string>
   <string name="Theming">Izrada teme</string>

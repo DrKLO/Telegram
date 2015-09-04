@@ -270,13 +270,10 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         TLRPC.InputUser inputUser;
         if (user.id == UserConfig.getClientUserId()) {
             inputUser = new TLRPC.TL_inputUserSelf();
-        } else if (user.access_hash != 0) {
-            inputUser = new TLRPC.TL_inputUserForeign();
+        } else {
+            inputUser = new TLRPC.TL_inputUser();
             inputUser.user_id = user.id;
             inputUser.access_hash = user.access_hash;
-        } else {
-            inputUser = new TLRPC.TL_inputUserContact();
-            inputUser.user_id = user.id;
         }
         return inputUser;
     }
@@ -514,7 +511,9 @@ public class MessagesController implements NotificationCenter.NotificationCenter
             return;
         }
         boolean updateStatus = false;
-        for (TLRPC.User user : users) {
+        int count = users.size();
+        for (int a = 0; a < count; a++) {
+            TLRPC.User user = users.get(a);
             if (putUser(user, fromCache)) {
                 updateStatus = true;
             }
@@ -533,9 +532,13 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         if (chat == null) {
             return;
         }
-        if (fromCache) {
-            chats.putIfAbsent(chat.id, chat);
-        } else {
+        TLRPC.Chat oldChat = chats.get(chat.id);
+        if (!fromCache) {
+            if (oldChat != null && chat.version != oldChat.version) {
+                loadedFullChats.remove((Integer) chat.id);
+            }
+            chats.put(chat.id, chat);
+        } else if (oldChat == null) {
             chats.put(chat.id, chat);
         }
     }
@@ -544,7 +547,9 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         if (chats == null || chats.isEmpty()) {
             return;
         }
-        for (TLRPC.Chat chat : chats) {
+        int count = chats.size();
+        for (int a = 0; a < count; a++) {
+            TLRPC.Chat chat = chats.get(a);
             putChat(chat, fromCache);
         }
     }
@@ -564,7 +569,9 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         if (encryptedChats == null || encryptedChats.isEmpty()) {
             return;
         }
-        for (TLRPC.EncryptedChat encryptedChat : encryptedChats) {
+        int count = encryptedChats.size();
+        for (int a = 0; a < count; a++) {
+            TLRPC.EncryptedChat encryptedChat = encryptedChats.get(a);
             putEncryptedChat(encryptedChat, fromCache);
         }
     }
@@ -1145,12 +1152,8 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                 if (user == null) {
                     return;
                 }
-                if (user.access_hash != 0) {
-                    req.peer = new TLRPC.TL_inputPeerForeign();
-                    req.peer.access_hash = user.access_hash;
-                } else {
-                    req.peer = new TLRPC.TL_inputPeerContact();
-                }
+                req.peer = new TLRPC.TL_inputPeerUser();
+                req.peer.access_hash = user.access_hash;
                 req.peer.user_id = lower_part;
             }
             ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
@@ -1449,14 +1452,9 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                 if (user == null) {
                     return;
                 }
-                if (user.access_hash != 0) {
-                    req.peer = new TLRPC.TL_inputPeerForeign();
-                    req.peer.user_id = user.id;
-                    req.peer.access_hash = user.access_hash;
-                } else {
-                    req.peer = new TLRPC.TL_inputPeerContact();
-                    req.peer.user_id = user.id;
-                }
+                req.peer = new TLRPC.TL_inputPeerUser();
+                req.peer.user_id = user.id;
+                req.peer.access_hash = user.access_hash;
             }
             if (action == 0) {
             req.action = new TLRPC.TL_sendMessageTypingAction();
@@ -1536,14 +1534,9 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                 if (user == null) {
                     return;
                 }
-                if (user.access_hash != 0) {
-                    req.peer = new TLRPC.TL_inputPeerForeign();
-                    req.peer.user_id = user.id;
-                    req.peer.access_hash = user.access_hash;
-                } else {
-                    req.peer = new TLRPC.TL_inputPeerContact();
-                    req.peer.user_id = user.id;
-                }
+                req.peer = new TLRPC.TL_inputPeerUser();
+                req.peer.user_id = user.id;
+                req.peer.access_hash = user.access_hash;
             }
             if (load_type == 3) {
                 req.offset = -count / 2;
@@ -2018,14 +2011,9 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                 if (user == null) {
                     return;
                 }
-                if (user.access_hash != 0) {
-                    req.peer = new TLRPC.TL_inputPeerForeign();
-                    req.peer.user_id = user.id;
-                    req.peer.access_hash = user.access_hash;
-                } else {
-                    req.peer = new TLRPC.TL_inputPeerContact();
-                    req.peer.user_id = user.id;
-                }
+                req.peer = new TLRPC.TL_inputPeerUser();
+                req.peer.user_id = user.id;
+                req.peer.access_hash = user.access_hash;
             }
             req.max_id = max_positive_id;
             req.offset = offset;
@@ -3008,6 +2996,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                         message.to_id.chat_id = updates.chat_id;
                         message.dialog_id = -updates.chat_id;
                     }
+                    message.entities = updates.entities;
                     message.message = updates.message;
                     message.date = updates.date;
                     message.flags = updates.flags;

@@ -219,7 +219,7 @@ public class ThemingChatsActivity extends BaseFragment {
                             public void colorChanged(int color) {
                                 commitInt( key, color);
                             }
-                        },themePrefs.getInt( key, 0xffffffff), CENTER, 0, false);
+                        },themePrefs.getInt( key, 0xffffffff), CENTER, 0, true);
                         colorDialog.show();
                     } else if (i == headerIconsColorRow) {
                         if (getParentActivity() == null) {
@@ -260,7 +260,7 @@ public class ThemingChatsActivity extends BaseFragment {
                                 commitInt( key, color);
                             }
 
-                        },themePrefs.getInt( key, 0xffdcdcdc), CENTER, 0, false);
+                        },themePrefs.getInt( key, 0xffdcdcdc), CENTER, 0, true);
                         colorDialog.show();
                     } /*else if (i == usernameTitleRow) {
                         boolean b = themePrefs.getBoolean( key, true);
@@ -314,7 +314,7 @@ public class ThemingChatsActivity extends BaseFragment {
                                 commitInt( key, color);
                             }
 
-                        },themePrefs.getInt( key, 0xff212121), CENTER, 0, false);
+                        },themePrefs.getInt( key, 0xff212121), CENTER, 0, true);
 
                         colorDialog.show();
                     } else if (i == groupNameColorRow) {
@@ -329,7 +329,7 @@ public class ThemingChatsActivity extends BaseFragment {
                                 commitInt( key, color);
                             }
 
-                        },themePrefs.getInt( key, themePrefs.getInt("chatsNameColor", 0xff212121)), CENTER, 0, false);
+                        },themePrefs.getInt( key, themePrefs.getInt("chatsNameColor", 0xff212121)), CENTER, 0, true);
 
                         colorDialog.show();
                     } else if (i == unknownNameColorRow) {
@@ -344,7 +344,7 @@ public class ThemingChatsActivity extends BaseFragment {
                                 commitInt( key, color);
                             }
 
-                        },themePrefs.getInt( key, themePrefs.getInt("chatsNameColor", 0xff212121)), CENTER, 0, false);
+                        },themePrefs.getInt( key, themePrefs.getInt("chatsNameColor", 0xff212121)), CENTER, 0, true);
 
                         colorDialog.show();
                     } else if (i == groupIconColorRow) {
@@ -401,7 +401,7 @@ public class ThemingChatsActivity extends BaseFragment {
                                 commitInt( key, color);
                             }
 
-                        },themePrefs.getInt( key, 0xff8f8f8f), CENTER, 0, false);
+                        },themePrefs.getInt( key, 0xff8f8f8f), CENTER, 0, true);
 
                         colorDialog.show();
                     } else if (i == memberColorRow) {
@@ -416,7 +416,7 @@ public class ThemingChatsActivity extends BaseFragment {
                                 commitInt( key, color);
                             }
 
-                        },themePrefs.getInt( key, darkColor), CENTER, 0, false);
+                        },themePrefs.getInt( key, darkColor), CENTER, 0, true);
 
                         colorDialog.show();
                     } else if (i == mediaColorRow) {
@@ -431,7 +431,7 @@ public class ThemingChatsActivity extends BaseFragment {
                                 commitInt( "chatsMediaColor", color);
                             }
 
-                        },themePrefs.getInt( "chatsMediaColor", themePrefs.getInt("chatsMemberColor", darkColor)), CENTER, 0, false);
+                        },themePrefs.getInt( "chatsMediaColor", themePrefs.getInt("chatsMemberColor", darkColor)), CENTER, 0, true);
 
                         colorDialog.show();
                     } else if (i == typingColorRow) {
@@ -446,7 +446,7 @@ public class ThemingChatsActivity extends BaseFragment {
                                 commitInt( key, color);
                             }
 
-                        },themePrefs.getInt( key, defColor), CENTER, 0, false);
+                        },themePrefs.getInt( key, defColor), CENTER, 0, true);
 
                         colorDialog.show();
                     } else if (i == timeColorRow) {
@@ -461,7 +461,7 @@ public class ThemingChatsActivity extends BaseFragment {
                                 commitInt( key, color);
                             }
 
-                        },themePrefs.getInt( key, 0xff999999), CENTER, 0, false);
+                        },themePrefs.getInt( key, 0xff999999), CENTER, 0, true);
                         colorDialog.show();
                     } else if (i == countColorRow) {
                         if (getParentActivity() == null) {
@@ -475,7 +475,7 @@ public class ThemingChatsActivity extends BaseFragment {
                                 commitInt( key, color);
                             }
 
-                        },themePrefs.getInt( key, 0xffffffff), CENTER, 0, false);
+                        },themePrefs.getInt( key, 0xffffffff), CENTER, 0, true);
                         colorDialog.show();
                     } else if (i == countBGColorRow) {
                         if (getParentActivity() == null) {
