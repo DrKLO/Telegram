@@ -21,6 +21,7 @@ import android.graphics.Bitmap;
 import android.graphics.PorterDuff;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
+import android.graphics.drawable.GradientDrawable;
 import android.media.ExifInterface;
 import android.net.Uri;
 import android.os.Build;
@@ -3090,6 +3091,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         if (onlineTextView == null) {
             return;
         }
+        SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+        int lightColor = AndroidUtilities.getIntDarkerColor("themeColor", -0x40);
+        onlineTextView.setTextColor(themePrefs.getInt("chatStatusColor", lightColor));
         CharSequence printString = MessagesController.getInstance().printingStrings.get(dialog_id);
         if (printString != null) {
             printString = TextUtils.replace(printString, new String[]{"..."}, new String[]{""});
@@ -3128,6 +3132,10 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 if (lastStatus == null || lastPrintString != null || lastStatus != null && !lastStatus.equals(newStatus)) {
                     lastStatus = newStatus;
                     onlineTextView.setText(newStatus);
+                }
+
+                if(newStatus.equals(LocaleController.getString("Online", R.string.Online))){
+                    onlineTextView.setTextColor(themePrefs.getInt("chatOnlineColor", themePrefs.getInt("chatStatusColor", lightColor)));
                 }
             }
             lastPrintString = null;
@@ -4744,10 +4752,34 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         try{
             SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
             int def = themePrefs.getInt("themeColor", AndroidUtilities.defColor);
-            actionBar.setBackgroundColor(themePrefs.getInt("chatHeaderColor", def));
+
+            int hColor = themePrefs.getInt("chatHeaderColor", def);
+            actionBar.setBackgroundColor(hColor);
+            int val = themePrefs.getInt("chatHeaderGradient", 0);
+            if(val > 0) {
+                GradientDrawable.Orientation go;
+                switch(val) {
+                    case 2:
+                        go = GradientDrawable.Orientation.LEFT_RIGHT;
+                        break;
+                    case 3:
+                        go = GradientDrawable.Orientation.TL_BR;
+                        break;
+                    case 4:
+                        go = GradientDrawable.Orientation.BL_TR;
+                        break;
+                    default:
+                        go = GradientDrawable.Orientation.TOP_BOTTOM;
+                }
+                int gradColor = themePrefs.getInt("chatHeaderGradientColor", def);
+                int[] colors = new int[]{hColor, gradColor};
+                GradientDrawable gd = new GradientDrawable(go, colors);
+                actionBar.setBackgroundDrawable(gd);
+            }
+
             nameTextView.setTextColor(themePrefs.getInt("chatNameColor", 0xffffffff));
             nameTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, themePrefs.getInt("chatNameSize", 18));
-            onlineTextView.setTextColor(themePrefs.getInt("chatStatusColor", AndroidUtilities.getIntDarkerColor("themeColor", -0x40)));
+            //onlineTextView.setTextColor(themePrefs.getInt("chatStatusColor", AndroidUtilities.getIntDarkerColor("themeColor", -0x40)));
             onlineTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, themePrefs.getInt("chatStatusSize", 14));
             int iColor = themePrefs.getInt("chatHeaderIconsColor", 0xffffffff);
             Drawable mute = getParentActivity().getResources().getDrawable(R.drawable.mute_blue);

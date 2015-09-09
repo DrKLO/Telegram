@@ -15,6 +15,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.PorterDuff;
 import android.graphics.drawable.Drawable;
+import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -527,7 +528,31 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
     private void updateTheme(){
         SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
         int def = themePrefs.getInt("themeColor", AndroidUtilities.defColor);
-        actionBar.setBackgroundColor(themePrefs.getInt("contactsHeaderColor", def));
+
+        int hColor = themePrefs.getInt("contactsHeaderColor", def);
+        actionBar.setBackgroundColor(hColor);
+        int val = themePrefs.getInt("contactsHeaderGradient", 0);
+        if(val > 0) {
+            GradientDrawable.Orientation go;
+            switch(val) {
+                case 2:
+                    go = GradientDrawable.Orientation.LEFT_RIGHT;
+                    break;
+                case 3:
+                    go = GradientDrawable.Orientation.TL_BR;
+                    break;
+                case 4:
+                    go = GradientDrawable.Orientation.BL_TR;
+                    break;
+                default:
+                    go = GradientDrawable.Orientation.TOP_BOTTOM;
+            }
+            int gradColor = themePrefs.getInt("contactsHeaderGradientColor", def);
+            int[] colors = new int[]{hColor, gradColor};
+            GradientDrawable gd = new GradientDrawable(go, colors);
+            actionBar.setBackgroundDrawable(gd);
+        }
+
         actionBar.setTitleColor(themePrefs.getInt("contactsHeaderTitleColor", 0xffffffff));
 
         Drawable search = getParentActivity().getResources().getDrawable(R.drawable.ic_ab_search);

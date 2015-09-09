@@ -461,7 +461,7 @@
   <string name="formatterDay24H">HH:mm</string>
   <!--update text-->
   <string name="updateText">Plus Messenger için temalar indirin ve uygulayın. Hergün yeni temalar ekleniyor:\n https://play.google.com/store/apps/details?id=es.rafalense.themes</string>
-  <string name="updateBuild">594</string>
+  <string name="updateBuild">597</string>
   <!--Telegram+--><!--
   <string name="updatePlusText">
 \n\n3.1.1.9\'daki Yenilikler\n\n- Yeni iOS baloncuğu eklendi (Edwin Macalopu\'ya teşekkürler)\n- Gruplarda kullanıcı adı iler beraber üye ismini birlikte gösteren yeni MOD eklendi\n- Grup profilinde admin gösterilir. Admin kendi ikonuna sahiptir\n- Sol menüde avatar,isim ve telefonu ortalamayı sağlayan yeni MOD eklendi\n- Sohbete yakınlık sensörü eylemlerini kapatmayı ve çalan sesleri devam ettirmeyi sağlayan yeni MOD eklendi \n- Profil ekranına ikon renklerini değiştirmeyi sağlayan yeni MOD eklendi\n- Hata düzeltmeleri \n\n Plus Messenger için temalar: https://play.google.com/store/apps/details?id=es.rafalense.themes</string>-->
@@ -509,7 +509,8 @@
   <string name="EditTextSize">Yazı Giriş Boyutu</string>
   <string name="EditTextBGColor">Yazı Giriş Arkaplan Rengi</string>
   <string name="EmojiViewBGColor">Emoji Arkaplan Rengi</string>
-  <string name="EmojiViewTabColor">Emoji Sekme Rengi</string>
+  <string name="EmojiViewTabColor">seçilmiş surat sekme rengi</string>
+  <string name="EmojiViewTabIconColor">Surat simgesinin rengi</string>
   <string name="OnlineColor">Çevrimiçi Rengi</string>
   <string name="ChatMusic">Müzik</string>
   <string name="SaveTheme">Temayı Kaydet</string>
@@ -603,4 +604,12 @@
   <string name="DisableAudioStop">Sesi durdurma</string>
   <string name="ListDividerColor">Liste ayırıcı rengi</string>
   <string name="CenterAvatar">Avatarı, ismi ve telefonu ortala</string>
+  <string name="RowGradient">Gradyan</string>
+  <string name="RowGradientColor">Gradyan rengi</string>
+  <string name="RowGradientDisabled">Devre dışı</string>
+  <string name="RowGradientTopBottom">Üst Alt</string>
+  <string name="RowGradientLeftRight">Sol sağ</string>
+  <string name="RowGradientTLBR">Üst Sol Alt-Sağ</string>
+  <string name="RowGradientBLTR">Alt Sol Üst Sağ</string>
+  <string name="RowGradientList">Arkaplana gradyan uygula</string>
 </resources>

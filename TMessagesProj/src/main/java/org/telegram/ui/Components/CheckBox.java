@@ -9,6 +9,7 @@
 package org.telegram.ui.Components;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
@@ -19,6 +20,8 @@ import android.view.View;
 
 import org.telegram.android.AndroidUtilities;
 import org.telegram.android.AnimationCompat.ObjectAnimatorProxy;
+import org.telegram.messenger.ApplicationLoader;
+import org.telegram.messenger.R;
 
 public class CheckBox extends View {
 
@@ -65,6 +68,10 @@ public class CheckBox extends View {
             backgroundPaint.setColor(0xffffffff);
             backgroundPaint.setStyle(Paint.Style.STROKE);
             backgroundPaint.setStrokeWidth(AndroidUtilities.dp(2));
+            if(resId == R.drawable.checkbig){
+                SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+                backgroundPaint.setColor(themePrefs.getInt("chatAttachBGColor", 0xffffffff));
+            }
         }
 
         checkDrawable = context.getResources().getDrawable(resId);

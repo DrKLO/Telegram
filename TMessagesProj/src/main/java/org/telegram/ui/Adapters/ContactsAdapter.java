@@ -12,6 +12,7 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.PorterDuff;
 import android.graphics.drawable.Drawable;
+import android.graphics.drawable.GradientDrawable;
 import android.os.Build;
 import android.view.View;
 import android.view.ViewGroup;
@@ -199,6 +200,7 @@ public class ContactsAdapter extends BaseSectionsAdapter {
                 convertView.setPadding(AndroidUtilities.dp(LocaleController.isRTL ? 28 : 72), 0, AndroidUtilities.dp(LocaleController.isRTL ? 72 : 28), 0);
                 convertView.setTag("contactsRowColor"); //Plus
             }
+            updateViewColor(convertView);
         } else if (type == 3) {
             if (convertView == null) {
                 convertView = new GreySectionCell(mContext);
@@ -207,10 +209,12 @@ public class ContactsAdapter extends BaseSectionsAdapter {
                 ((GreySectionCell) convertView).setBackgroundColor(themePrefs.getInt("contactsRowColor", 0xffffffff));
                 ((GreySectionCell) convertView).setTextColor(cColorGrey);
             }
+            updateViewColor(convertView);
         } else if (type == 2) {
             if (convertView == null) {
                 convertView = new TextCell(mContext);
             }
+            updateViewColor(convertView);
             TextCell actionCell = (TextCell) convertView;
             actionCell.setTextColor(cColorBlack);
             if (needPhonebook) {
@@ -247,6 +251,7 @@ public class ContactsAdapter extends BaseSectionsAdapter {
                 ((TextCell) convertView).setTextColor(cColorBlack);
                 ((TextCell) convertView).setTextSize(themePrefs.getInt("contactsNameSize", 16));
             }
+            updateViewColor(convertView);
             ContactsController.Contact contact = ContactsController.getInstance().phoneBookContacts.get(position);
             if (contact.first_name != null && contact.last_name != null) {
                 ((TextCell) convertView).setText(contact.first_name + " " + contact.last_name);
@@ -260,7 +265,7 @@ public class ContactsAdapter extends BaseSectionsAdapter {
                 convertView = new UserCell(mContext, 58);
                 convertView.setTag("Contacts");
             }
-
+            updateViewColor(convertView);
             ArrayList<TLRPC.TL_contact> arr = ContactsController.getInstance().usersSectionsDict.get(ContactsController.getInstance().sortedUsersSectionsArray.get(section - (onlyUsers && !isAdmin ? 0 : 1)));
             TLRPC.User user = MessagesController.getInstance().getUser(arr.get(position).user_id);
             ((UserCell) convertView).setData(user, null, null, 0);
@@ -281,8 +286,70 @@ public class ContactsAdapter extends BaseSectionsAdapter {
             //((UserCell) convertView).setStatusSize(themePrefs.getInt("contactsStatusSize", 14));
             //((UserCell) convertView).setAvatarRadius(themePrefs.getInt("contactsAvatarRadius", 32));
         }
-        parent.setBackgroundColor(themePrefs.getInt("contactsRowColor", 0xffffffff)); //Plus
+        //parent.setBackgroundColor(themePrefs.getInt("contactsRowColor", 0xffffffff)); //Plus
+        updateListBG(parent);
         return convertView;
+    }
+
+    private void updateListBG(ViewGroup vg){
+        SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+        int mainColor = themePrefs.getInt("contactsRowColor", 0xffffffff);
+        int value = themePrefs.getInt("contactsRowGradient", 0);
+        boolean b = true;//themePrefs.getBoolean("contactsRowGradientListCheck", false);
+        if(value > 0 && b) {
+            GradientDrawable.Orientation go;
+            switch(value) {
+                case 2:
+                    go = GradientDrawable.Orientation.LEFT_RIGHT;
+                    break;
+                case 3:
+                    go = GradientDrawable.Orientation.TL_BR;
+                    break;
+                case 4:
+                    go = GradientDrawable.Orientation.BL_TR;
+                    break;
+                default:
+                    go = GradientDrawable.Orientation.TOP_BOTTOM;
+            }
+
+            int gradColor = themePrefs.getInt("contactsRowGradientColor", 0xffffffff);
+            int[] colors = new int[]{mainColor, gradColor};
+            GradientDrawable gd = new GradientDrawable(go, colors);
+            vg.setBackgroundDrawable(gd);
+        }else{
+            vg.setBackgroundColor(mainColor);
+        }
+    }
+
+    private void updateViewColor(View v){
+        SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+        int mainColor = themePrefs.getInt("contactsRowColor", 0xffffffff);
+        int value = themePrefs.getInt("contactsRowGradient", 0);
+        boolean b = true;//themePrefs.getBoolean("contactsRowGradientListCheck", false);
+        if(value > 0 && !b) {
+            GradientDrawable.Orientation go;
+            switch(value) {
+                case 2:
+                    go = GradientDrawable.Orientation.LEFT_RIGHT;
+                    break;
+                case 3:
+                    go = GradientDrawable.Orientation.TL_BR;
+                    break;
+                case 4:
+                    go = GradientDrawable.Orientation.BL_TR;
+                    break;
+                default:
+                    go = GradientDrawable.Orientation.TOP_BOTTOM;
+            }
+
+            int gradColor = themePrefs.getInt("contactsRowGradientColor", 0xffffffff);
+            int[] colors = new int[]{mainColor, gradColor};
+            GradientDrawable gd = new GradientDrawable(go, colors);
+            v.setBackgroundDrawable(gd);
+        } else if(b){
+            v.setBackgroundColor(0x00000000);
+        }
+        if(value > 0)v.setTag("Contacts00");
     }
 
     @Override

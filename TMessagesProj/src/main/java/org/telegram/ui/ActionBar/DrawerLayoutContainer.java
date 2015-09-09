@@ -10,9 +10,11 @@ package org.telegram.ui.ActionBar;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.drawable.Drawable;
+import android.graphics.drawable.GradientDrawable;
 import android.os.Build;
 import android.view.Gravity;
 import android.view.MotionEvent;
@@ -25,6 +27,7 @@ import android.widget.FrameLayout;
 import android.widget.ListView;
 
 import org.telegram.android.AndroidUtilities;
+import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
 import org.telegram.android.AnimationCompat.AnimatorListenerAdapterProxy;
@@ -451,7 +454,38 @@ public class DrawerLayoutContainer extends FrameLayout {
                 child.measure(drawerWidthSpec, drawerHeightSpec);
             }
         }
-        getDrawerLayout().setBackgroundColor(AndroidUtilities.getIntDef("drawerListColor",0xffffffff));  //Plus
+        //getDrawerLayout().setBackgroundColor(AndroidUtilities.getIntDef("drawerListColor",0xffffffff));  //Plus
+        updateListBG();
+    }
+
+    private void updateListBG(){
+        SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+        int mainColor = themePrefs.getInt("drawerListColor", 0xffffffff);
+        int value = themePrefs.getInt("drawerRowGradient", 0);
+        boolean b = true;//themePrefs.getBoolean("drawerRowGradientListCheck", false);
+        if(value > 0 && b) {
+            GradientDrawable.Orientation go;
+            switch(value) {
+                case 2:
+                    go = GradientDrawable.Orientation.LEFT_RIGHT;
+                    break;
+                case 3:
+                    go = GradientDrawable.Orientation.TL_BR;
+                    break;
+                case 4:
+                    go = GradientDrawable.Orientation.BL_TR;
+                    break;
+                default:
+                    go = GradientDrawable.Orientation.TOP_BOTTOM;
+            }
+
+            int gradColor = themePrefs.getInt("drawerRowGradientColor", 0xffffffff);
+            int[] colors = new int[]{mainColor, gradColor};
+            GradientDrawable gd = new GradientDrawable(go, colors);
+            getDrawerLayout().setBackgroundDrawable(gd);
+        }else{
+            getDrawerLayout().setBackgroundColor(mainColor);
+        }
     }
 
     @Override

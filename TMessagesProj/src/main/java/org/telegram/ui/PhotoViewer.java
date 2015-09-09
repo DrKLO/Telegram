@@ -25,6 +25,7 @@ import android.graphics.RectF;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
+import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -898,7 +899,31 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         actionBar.setBackgroundColor(0x7F000000);
         SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
         int def = themePrefs.getInt("themeColor", AndroidUtilities.defColor);
-        actionBar.setBackgroundColor(themePrefs.getInt("chatHeaderColor", def));
+
+        int hColor = themePrefs.getInt("chatHeaderColor", def);
+        actionBar.setBackgroundColor(hColor);
+        int val = themePrefs.getInt("chatHeaderGradient", 0);
+        if(val > 0) {
+            GradientDrawable.Orientation go;
+            switch(val) {
+                case 2:
+                    go = GradientDrawable.Orientation.LEFT_RIGHT;
+                    break;
+                case 3:
+                    go = GradientDrawable.Orientation.TL_BR;
+                    break;
+                case 4:
+                    go = GradientDrawable.Orientation.BL_TR;
+                    break;
+                default:
+                    go = GradientDrawable.Orientation.TOP_BOTTOM;
+            }
+            int gradColor = themePrefs.getInt("chatHeaderGradientColor", def);
+            int[] colors = new int[]{hColor, gradColor};
+            GradientDrawable gd = new GradientDrawable(go, colors);
+            actionBar.setBackgroundDrawable(gd);
+        }
+
         actionBar.setOccupyStatusBar(false);
         actionBar.setItemsBackground(R.drawable.bar_selector_white);
         //actionBar.setBackButtonImage(R.drawable.ic_ab_back);

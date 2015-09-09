@@ -37,10 +37,14 @@ import org.telegram.ui.Cells.HeaderCell;
 import org.telegram.ui.Cells.ShadowSectionCell;
 import org.telegram.ui.Cells.TextCheckCell;
 import org.telegram.ui.Cells.TextColorCell;
+import org.telegram.ui.Cells.TextDetailSettingsCell;
 import org.telegram.ui.Cells.TextSettingsCell;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.ColorSelectorDialog;
 import org.telegram.ui.Components.NumberPicker;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.telegram.ui.Components.ColorSelectorDialog.OnColorChangedListener;
 
@@ -71,6 +75,12 @@ public class ThemingDrawerActivity extends BaseFragment {
     private int listDividerColorRow;
     private int centerAvatarRow;
 
+    private int rowGradientRow;
+    private int rowGradientColorRow;
+    private int rowGradientListCheckRow;
+    private int headerGradientRow;
+    private int headerGradientColorRow;
+
     private int rowCount;
 
     public final static int CENTER = 0;
@@ -87,6 +97,8 @@ public class ThemingDrawerActivity extends BaseFragment {
         headerBackgroundCheckRow = rowCount++;
         hideBackgroundShadowRow = rowCount++;
         headerColorRow = rowCount++;
+        headerGradientRow = rowCount++;
+        headerGradientColorRow = rowCount++;
         avatarColorRow  = rowCount++;
         avatarRadiusRow  = rowCount++;
         avatarSizeRow = rowCount++;
@@ -99,6 +111,9 @@ public class ThemingDrawerActivity extends BaseFragment {
         rowsSectionRow = rowCount++;
         rowsSection2Row = rowCount++;
         listColorRow = rowCount++;
+        rowGradientRow = rowCount++;
+        rowGradientColorRow = rowCount++;
+        //rowGradientListCheckRow = rowCount++;
         listDividerColorRow = rowCount++;
         iconColorRow = rowCount++;
         optionColorRow = rowCount++;
@@ -167,6 +182,7 @@ public class ThemingDrawerActivity extends BaseFragment {
 
                     SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
                     final String key = view.getTag() != null ? view.getTag().toString() : "";
+                    int defColor = themePrefs.getInt("themeColor", AndroidUtilities.defColor);
 
                     if (i == headerColorRow) {
                         if (getParentActivity() == null) {
@@ -180,7 +196,43 @@ public class ThemingDrawerActivity extends BaseFragment {
                                 commitInt("drawerHeaderColor", color);
                             }
 
-                        },themePrefs.getInt("drawerHeaderColor", AndroidUtilities.getIntColor("themeColor")), CENTER, 0, false);
+                        },themePrefs.getInt("drawerHeaderColor", defColor), CENTER, 0, false);
+                        colorDialog.show();
+                    }  else if (i == headerGradientRow) {
+                        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                        builder.setTitle(LocaleController.getString("RowGradient", R.string.RowGradient));
+                        List<CharSequence> array = new ArrayList<>();
+                        array.add( LocaleController.getString("RowGradientDisabled", R.string.RowGradientDisabled));
+                        array.add(LocaleController.getString("RowGradientTopBottom", R.string.RowGradientTopBottom));
+                        array.add( LocaleController.getString("RowGradientLeftRight", R.string.RowGradientLeftRight));
+                        array.add( LocaleController.getString("RowGradientTLBR", R.string.RowGradientTLBR));
+                        array.add( LocaleController.getString("RowGradientBLTR", R.string.RowGradientBLTR));
+                        String[] simpleArray = new String[ array.size() ];
+                        array.toArray( new String[ array.size() ]);
+                        builder.setItems(array.toArray(simpleArray), new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+                                themePrefs.edit().putInt("drawerHeaderGradient", which).commit();
+                                if (listView != null) {
+                                    listView.invalidateViews();
+                                }
+                            }
+                        });
+                        builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+                        showDialog(builder.create());
+                    } else if (i == headerGradientColorRow) {
+                        if (getParentActivity() == null) {
+                            return;
+                        }
+                        LayoutInflater li = (LayoutInflater)getParentActivity().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+                        li.inflate(R.layout.colordialog, null, false);
+                        ColorSelectorDialog colorDialog = new ColorSelectorDialog(getParentActivity(), new OnColorChangedListener() {
+                            @Override
+                            public void colorChanged(int color) {
+                                commitInt("drawerHeaderGradientColor", color);
+                            }
+                        },themePrefs.getInt("drawerHeaderGradientColor", defColor), CENTER, 0, true);
                         colorDialog.show();
                     } else if (i == headerBackgroundCheckRow) {
                         boolean b = themePrefs.getBoolean( key, true);
@@ -230,6 +282,53 @@ public class ThemingDrawerActivity extends BaseFragment {
 
                         },themePrefs.getInt("drawerListColor", 0xffffffff), CENTER, 0, false);
                         colorDialog.show();
+                    } else if (i == rowGradientColorRow) {
+                        if (getParentActivity() == null) {
+                            return;
+                        }
+                        LayoutInflater li = (LayoutInflater)getParentActivity().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+                        li.inflate(R.layout.colordialog, null, false);
+                        ColorSelectorDialog colorDialog = new ColorSelectorDialog(getParentActivity(), new OnColorChangedListener() {
+                            @Override
+                            public void colorChanged(int color) {
+                                commitInt("drawerRowGradientColor", color);
+                            }
+                        },themePrefs.getInt( "drawerRowGradientColor", 0xffffffff), CENTER, 0, true);
+                        colorDialog.show();
+                    } else if (i == rowGradientListCheckRow) {
+                        boolean b = themePrefs.getBoolean( "drawerRowGradientListCheck", false);
+                        SharedPreferences.Editor editor = themePrefs.edit();
+                        editor.putBoolean("drawerRowGradientListCheck", !b);
+                        editor.commit();
+                        if (view instanceof TextCheckCell) {
+                            ((TextCheckCell) view).setChecked(!b);
+                        }
+                        if (listView != null) {
+                            listView.invalidateViews();
+                        }
+                    } else if (i == rowGradientRow) {
+                        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                        builder.setTitle(LocaleController.getString("RowGradient", R.string.RowGradient));
+                        List<CharSequence> array = new ArrayList<>();
+                        array.add( LocaleController.getString("RowGradientDisabled", R.string.RowGradientDisabled));
+                        array.add(LocaleController.getString("RowGradientTopBottom", R.string.RowGradientTopBottom));
+                        array.add( LocaleController.getString("RowGradientLeftRight", R.string.RowGradientLeftRight));
+                        array.add( LocaleController.getString("RowGradientTLBR", R.string.RowGradientTLBR));
+                        array.add( LocaleController.getString("RowGradientBLTR", R.string.RowGradientBLTR));
+                        String[] simpleArray = new String[ array.size() ];
+                        array.toArray( new String[ array.size() ]);
+                        builder.setItems(array.toArray(simpleArray), new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+                                themePrefs.edit().putInt("drawerRowGradient", which).commit();
+                                if (listView != null) {
+                                    listView.invalidateViews();
+                                }
+                            }
+                        });
+                        builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+                        showDialog(builder.create());
                     } else if (i == listDividerColorRow) {
                         if (getParentActivity() == null) {
                             return;
@@ -243,7 +342,7 @@ public class ThemingDrawerActivity extends BaseFragment {
                                 player = true;
                             }
 
-                        },themePrefs.getInt("drawerListDividerColor", 0xffd9d9d9), CENTER, 0, false);
+                        },themePrefs.getInt("drawerListDividerColor", 0xffd9d9d9), CENTER, 0, true);
                         colorDialog.show();
                     } else if (i == iconColorRow) {
                         if (getParentActivity() == null) {
@@ -288,7 +387,7 @@ public class ThemingDrawerActivity extends BaseFragment {
                                 commitInt("drawerVersionColor", color);
                             }
 
-                        },themePrefs.getInt("drawerVersionColor", 0xffa3a3a3), CENTER, 0, false);
+                        },themePrefs.getInt("drawerVersionColor", 0xffa3a3a3), CENTER, 0, true);
                         colorDialog.show();
                     } else if (i == avatarColorRow) {
                         if (getParentActivity() == null) {
@@ -472,8 +571,21 @@ public class ThemingDrawerActivity extends BaseFragment {
                     }
                     if (i == headerColorRow) {
                         resetInt("drawerHeaderColor");
+                    } else if (i == headerGradientRow) {
+                        resetInt("drawerHeaderGradient");
+                    } else if (i == headerGradientColorRow) {
+                        resetInt("drawerHeaderGradientColor");
                     } else if (i == listColorRow) {
                         resetInt("drawerListColor");
+                        player = true;
+                    } else if (i == rowGradientColorRow) {
+                        resetInt("drawerRowGradientColor");
+                        player = true;
+                    } else if (i == rowGradientRow) {
+                        resetInt("drawerRowGradient");
+                        player = true;
+                    } else if (i == rowGradientListCheckRow) {
+                        resetInt("drawerRowGradientListCheck");
                         player = true;
                     } else if (i == listDividerColorRow) {
                         resetInt("drawerListDividerColor");
@@ -616,7 +728,10 @@ public class ThemingDrawerActivity extends BaseFragment {
 
         @Override
         public boolean isEnabled(int i) {
-            return  i == headerColorRow || i == headerBackgroundCheckRow || i == hideBackgroundShadowRow || i == centerAvatarRow || i == listColorRow || i == listDividerColorRow || i == iconColorRow || i == optionColorRow || i == optionSizeRow || i == avatarColorRow || i == avatarRadiusRow || i == nameColorRow || i == avatarSizeRow || i == nameSizeRow || i == phoneColorRow || i == phoneSizeRow ||
+            int h = AndroidUtilities.getIntDef("drawerHeaderGradient", 0);
+            int g = AndroidUtilities.getIntDef("drawerRowGradient", 0);
+            return  i == headerColorRow || i == headerGradientRow || h > 0 && i == headerGradientColorRow || i == headerBackgroundCheckRow || i == hideBackgroundShadowRow || i == centerAvatarRow ||
+                    i == listColorRow || i == rowGradientRow || g != 0 &&  i == rowGradientColorRow || g != 0 && i == rowGradientListCheckRow || i == listDividerColorRow || i == iconColorRow || i == optionColorRow || i == optionSizeRow || i == avatarColorRow || i == avatarRadiusRow || i == nameColorRow || i == avatarSizeRow || i == nameSizeRow || i == phoneColorRow || i == phoneSizeRow ||
                     i == versionColorRow || i == versionSizeRow;
         }
 
@@ -644,6 +759,8 @@ public class ThemingDrawerActivity extends BaseFragment {
         public View getView(int i, View view, ViewGroup viewGroup) {
             int type = getItemViewType(i);
             SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+            int defColor = themePrefs.getInt("themeColor", AndroidUtilities.defColor);
+            int darkColor = AndroidUtilities.getIntDarkerColor("themeColor", 0x15);
             if (type == 0) {
                 if (view == null) {
                     view = new ShadowSectionCell(mContext);
@@ -694,9 +811,13 @@ public class ThemingDrawerActivity extends BaseFragment {
                 TextColorCell textCell = (TextColorCell) view;
 
                 if (i == headerColorRow) {
-                    textCell.setTextAndColor(LocaleController.getString("HeaderColor", R.string.HeaderColor), themePrefs.getInt("drawerHeaderColor", AndroidUtilities.getIntColor("themeColor")), true);
+                    textCell.setTextAndColor(LocaleController.getString("HeaderColor", R.string.HeaderColor), themePrefs.getInt("drawerHeaderColor", defColor), false);
+                } else if (i == headerGradientColorRow) {
+                    textCell.setTextAndColor(LocaleController.getString("RowGradientColor", R.string.RowGradientColor), themePrefs.getInt("drawerHeaderGradient", 0) == 0 ? 0x00000000 : themePrefs.getInt("drawerHeaderGradientColor", defColor), true);
                 } else if (i == listColorRow) {
-                    textCell.setTextAndColor(LocaleController.getString("ListColor", R.string.ListColor), themePrefs.getInt("drawerListColor", 0xffffffff), true);
+                    textCell.setTextAndColor(LocaleController.getString("ListColor", R.string.ListColor), themePrefs.getInt("drawerListColor", 0xffffffff), false);
+                } else if (i == rowGradientColorRow) {
+                    textCell.setTextAndColor(LocaleController.getString("RowGradientColor", R.string.RowGradientColor), themePrefs.getInt("drawerRowGradient", 0) == 0 ? 0x00000000 : themePrefs.getInt("drawerRowGradientColor", 0xffffffff), true);
                 } else if (i == listDividerColorRow) {
                     textCell.setTextAndColor(LocaleController.getString("ListDividerColor", R.string.ListDividerColor), themePrefs.getInt("drawerListDividerColor", 0xffd9d9d9), true);
                 } else if (i == iconColorRow) {
@@ -706,13 +827,13 @@ public class ThemingDrawerActivity extends BaseFragment {
                 } else if (i == versionColorRow) {
                     textCell.setTextAndColor(LocaleController.getString("VersionColor", R.string.VersionColor), themePrefs.getInt("drawerVersionColor", 0xffa3a3a3), true);
                 } else if (i == avatarColorRow) {
-                    textCell.setTextAndColor(LocaleController.getString("AvatarColor", R.string.AvatarColor), themePrefs.getInt("drawerAvatarColor", AndroidUtilities.getIntDarkerColor("themeColor", 0x15)), true);
+                    textCell.setTextAndColor(LocaleController.getString("AvatarColor", R.string.AvatarColor), themePrefs.getInt("drawerAvatarColor", darkColor), true);
                 } else if (i == nameColorRow) {
                     textCell.setTextAndColor(LocaleController.getString("NameColor", R.string.NameColor), themePrefs.getInt("drawerNameColor", 0xffffffff), true);
                 } else if (i == phoneColorRow) {
                     textCell.setTextAndColor(LocaleController.getString("PhoneColor", R.string.PhoneColor), themePrefs.getInt("drawerPhoneColor", AndroidUtilities.getIntDarkerColor("themeColor",-0x40)), true);
                 }
-            }  else if (type == 4) {
+            } else if (type == 4) {
                 if (view == null) {
                     view = new TextCheckCell(mContext);
                 }
@@ -726,6 +847,47 @@ public class ThemingDrawerActivity extends BaseFragment {
                 } else if (i == centerAvatarRow) {
                     textCell.setTag("drawerCenterAvatarCheck");
                     textCell.setTextAndCheck(LocaleController.getString("CenterAvatar", R.string.CenterAvatar), themePrefs.getBoolean("drawerCenterAvatarCheck", false), false);
+                } else if (i == rowGradientListCheckRow) {
+                    textCell.setTag("drawerRowGradientListCheck");
+                    int value = AndroidUtilities.getIntDef("drawerRowGradient", 0);
+                    textCell.setTextAndCheck(LocaleController.getString("RowGradientList", R.string.RowGradientList), value == 0 ? false : themePrefs.getBoolean("drawerRowGradientListCheck", false), true);
+                }
+            } else if (type == 5) {
+                if (view == null) {
+                    view = new TextDetailSettingsCell(mContext);
+                }
+                TextDetailSettingsCell textCell = (TextDetailSettingsCell) view;
+
+                if(i == headerGradientRow){
+                    textCell.setTag("drawerHeaderGradient");
+                    textCell.setMultilineDetail(false);
+                    int value = themePrefs.getInt("drawerHeaderGradient", 0);
+                    if (value == 0) {
+                        textCell.setTextAndValue(LocaleController.getString("RowGradient", R.string.RowGradient), LocaleController.getString("RowGradientDisabled", R.string.RowGradientDisabled), false);
+                    } else if (value == 1) {
+                        textCell.setTextAndValue(LocaleController.getString("RowGradient", R.string.RowGradient), LocaleController.getString("RowGradientTopBottom", R.string.RowGradientTopBottom), false);
+                    } else if (value == 2) {
+                        textCell.setTextAndValue(LocaleController.getString("RowGradient", R.string.RowGradient), LocaleController.getString("RowGradientLeftRight", R.string.RowGradientLeftRight), false);
+                    } else if (value == 3) {
+                        textCell.setTextAndValue(LocaleController.getString("RowGradient", R.string.RowGradient), LocaleController.getString("RowGradientTLBR", R.string.RowGradientTLBR), false);
+                    } else if (value == 4) {
+                        textCell.setTextAndValue(LocaleController.getString("RowGradient", R.string.RowGradient), LocaleController.getString("RowGradientBLTR", R.string.RowGradientBLTR), false);
+                    }
+                } else if(i == rowGradientRow){
+                    textCell.setTag("drawerRowGradient");
+                    textCell.setMultilineDetail(false);
+                    int value = themePrefs.getInt("drawerRowGradient", 0);
+                    if (value == 0) {
+                        textCell.setTextAndValue(LocaleController.getString("RowGradient", R.string.RowGradient), LocaleController.getString("RowGradientDisabled", R.string.RowGradientDisabled), false);
+                    } else if (value == 1) {
+                        textCell.setTextAndValue(LocaleController.getString("RowGradient", R.string.RowGradient), LocaleController.getString("RowGradientTopBottom", R.string.RowGradientTopBottom), false);
+                    } else if (value == 2) {
+                        textCell.setTextAndValue(LocaleController.getString("RowGradient", R.string.RowGradient), LocaleController.getString("RowGradientLeftRight", R.string.RowGradientLeftRight), false);
+                    } else if (value == 3) {
+                        textCell.setTextAndValue(LocaleController.getString("RowGradient", R.string.RowGradient), LocaleController.getString("RowGradientTLBR", R.string.RowGradientTLBR), false);
+                    } else if (value == 4) {
+                        textCell.setTextAndValue(LocaleController.getString("RowGradient", R.string.RowGradient), LocaleController.getString("RowGradientBLTR", R.string.RowGradientBLTR), false);
+                    }
                 }
             }
             return view;
@@ -742,11 +904,14 @@ public class ThemingDrawerActivity extends BaseFragment {
             else if ( i == avatarRadiusRow || i == avatarSizeRow || i == nameSizeRow ||  i == phoneSizeRow ||  i == optionSizeRow ||  i == versionSizeRow) {
                 return 2;
             }
-            else if ( i == headerColorRow || i == listColorRow || i == listDividerColorRow || i == iconColorRow || i == optionColorRow || i == versionColorRow  || i == avatarColorRow  || i == nameColorRow || i == phoneColorRow) {
+            else if ( i == headerColorRow || i == headerGradientColorRow || i == listColorRow ||  i == rowGradientColorRow || i == listDividerColorRow || i == iconColorRow || i == optionColorRow || i == versionColorRow  || i == avatarColorRow  || i == nameColorRow || i == phoneColorRow) {
                 return 3;
             }
-            else if (i == headerBackgroundCheckRow || i == hideBackgroundShadowRow || i == centerAvatarRow) {
+            else if (i == headerBackgroundCheckRow || i == hideBackgroundShadowRow || i == centerAvatarRow || i == rowGradientListCheckRow) {
                 return 4;
+            }
+            else if (i == headerGradientRow || i == rowGradientRow) {
+                return 5;
             }
             else {
                 return 2;
@@ -755,7 +920,7 @@ public class ThemingDrawerActivity extends BaseFragment {
 
         @Override
         public int getViewTypeCount() {
-            return 5;
+            return 6;
         }
 
         @Override

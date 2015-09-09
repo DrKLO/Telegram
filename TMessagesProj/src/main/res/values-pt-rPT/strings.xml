@@ -842,7 +842,7 @@
     <string name="formatDateAtTime">%1$s às %2$s</string>
     <!--update text-->
     <string name="updateText">Plus Messenger para Android foi atualizado. Novidade na versão 3.1.3\n\n- Nova sessão \"Links Compartilhados\" na informação do chat\n- Pré-visualizaçãp de fotos em links no aplicativo.</string>
-    <string name="updateBuild">594</string>
+    <string name="updateBuild">597</string>
     <!--Telegram+-->
   <string name="TelegramForAndroid">Plus Messenger para Android</string>
   <string name="Theming">Temas</string>

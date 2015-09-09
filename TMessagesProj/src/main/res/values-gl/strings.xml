@@ -840,7 +840,7 @@ e introduce o teu número.</string>
   <string name="formatDateAtTime">%1$s ás %2$s</string>
   <!--update text-->
   <string name="updateText">Telegram para Android foi actualizada. Novidades na versión 3.1.3:\n\n - Nova sección de \'Enlaces\' na información do chat\n - Vista previa na app para enlaces a fotos</string>
-  <string name="updateBuild">594</string>
+  <string name="updateBuild">597</string>
   <!--Telegram+--><!--
   <string name="updatePlusText">\nnNovidades en 3.1.1.9:\nn - Novo MOD para centrar foto, nome e número en menú de navegación - Novo MOD para non parar audio (desactiva actuación de sensor de proximidad) - Novo MOD para cambiar cor de iconas en pantalla perfil - Solución de erros</string>-->
     <string name="TelegramForAndroid">Plus Messenger para Android</string>

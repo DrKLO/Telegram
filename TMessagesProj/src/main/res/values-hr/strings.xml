@@ -750,7 +750,7 @@
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s u %2$s</string>
   <!--update text-->
-  <string name="updateBuild">594</string>
+  <string name="updateBuild">597</string>
     <!--Telegram+-->
   <string name="TelegramForAndroid">Plus Messenger za Android</string>
   <string name="Theming">Izrada teme</string>

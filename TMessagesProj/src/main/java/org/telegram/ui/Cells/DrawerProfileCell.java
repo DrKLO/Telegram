@@ -18,6 +18,7 @@ import android.graphics.Rect;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
+import android.graphics.drawable.GradientDrawable;
 import android.os.Build;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -270,8 +271,32 @@ public class DrawerProfileCell extends FrameLayout implements PhotoViewer.PhotoV
     private void updateTheme(){
         SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
         int tColor = themePrefs.getInt("themeColor", AndroidUtilities.defColor);
-        int dColor = AndroidUtilities.getIntDarkerColor("themeColor",-0x40);
-        setBackgroundColor(themePrefs.getInt("drawerHeaderColor", tColor));
+        int dColor = AndroidUtilities.getIntDarkerColor("themeColor", -0x40);
+
+        int hColor = themePrefs.getInt("drawerHeaderColor", tColor);
+        setBackgroundColor(hColor);
+        int value = themePrefs.getInt("drawerHeaderGradient", 0);
+        if(value > 0) {
+            GradientDrawable.Orientation go;
+            switch(value) {
+                case 2:
+                    go = GradientDrawable.Orientation.LEFT_RIGHT;
+                    break;
+                case 3:
+                    go = GradientDrawable.Orientation.TL_BR;
+                    break;
+                case 4:
+                    go = GradientDrawable.Orientation.BL_TR;
+                    break;
+                default:
+                    go = GradientDrawable.Orientation.TOP_BOTTOM;
+            }
+            int gradColor = themePrefs.getInt("drawerHeaderGradientColor", tColor);
+            int[] colors = new int[]{hColor, gradColor};
+            GradientDrawable gd = new GradientDrawable(go, colors);
+            setBackgroundDrawable(gd);
+        }
+
         nameTextView.setTextColor(themePrefs.getInt("drawerNameColor", 0xffffffff));
         nameTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, themePrefs.getInt("drawerNameSize", 15));
         phoneTextView.setTextColor(themePrefs.getInt("drawerPhoneColor", dColor));
@@ -294,6 +319,10 @@ public class DrawerProfileCell extends FrameLayout implements PhotoViewer.PhotoV
 
         avatarImageView.getImageReceiver().setRoundRadius(radius);
         avatarImageView.setImage(photo, "50_50", avatarDrawable);
+
+    }
+
+    private void updateHeaderBG(){
 
     }
 }

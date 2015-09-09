@@ -14,6 +14,7 @@ import android.content.SharedPreferences;
 import android.database.DataSetObserver;
 import android.graphics.PorterDuff;
 import android.graphics.drawable.Drawable;
+import android.graphics.drawable.GradientDrawable;
 import android.os.Build;
 import android.support.v4.view.PagerAdapter;
 import android.support.v4.view.ViewPager;
@@ -425,6 +426,27 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
 
         //setBackgroundColor(0xfff5f6f7);
         setBackgroundColor(bgColor);
+        int val = themePrefs.getInt("chatEmojiViewBGGradient", 0);
+        if(val > 0) {
+            GradientDrawable.Orientation go;
+            switch(val) {
+                case 2:
+                    go = GradientDrawable.Orientation.LEFT_RIGHT;
+                    break;
+                case 3:
+                    go = GradientDrawable.Orientation.TL_BR;
+                    break;
+                case 4:
+                    go = GradientDrawable.Orientation.BL_TR;
+                    break;
+                default:
+                    go = GradientDrawable.Orientation.TOP_BOTTOM;
+            }
+            int gradColor = themePrefs.getInt("chatEmojiViewBGGradientColor", 0xfff5f6f7);
+            int[] colors = new int[]{bgColor, gradColor};
+            GradientDrawable gd = new GradientDrawable(go, colors);
+            setBackgroundDrawable(gd);
+        }
 
         pager = new ViewPager(context) {
             @Override

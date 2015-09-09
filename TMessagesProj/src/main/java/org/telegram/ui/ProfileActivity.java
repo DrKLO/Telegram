@@ -22,6 +22,7 @@ import android.graphics.Canvas;
 import android.graphics.Outline;
 import android.graphics.PorterDuff;
 import android.graphics.drawable.Drawable;
+import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -1401,7 +1402,33 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
         int def = themePrefs.getInt("themeColor", AndroidUtilities.defColor);
         int dark = themePrefs.getInt("profileStatusColor", AndroidUtilities.getIntDarkerColor("themeColor", -0x40));
-        actionBar.setBackgroundColor(themePrefs.getInt("profileHeaderColor", def));
+
+        //actionBar.setBackgroundColor(themePrefs.getInt("profileHeaderColor", def));
+
+        int hColor = themePrefs.getInt("profileHeaderColor", def);
+        actionBar.setBackgroundColor(hColor);
+        int val = themePrefs.getInt("profileHeaderGradient", 0);
+        if(val > 0) {
+            GradientDrawable.Orientation go;
+            switch(val) {
+                case 2:
+                    go = GradientDrawable.Orientation.LEFT_RIGHT;
+                    break;
+                case 3:
+                    go = GradientDrawable.Orientation.TL_BR;
+                    break;
+                case 4:
+                    go = GradientDrawable.Orientation.BL_TR;
+                    break;
+                default:
+                    go = GradientDrawable.Orientation.TOP_BOTTOM;
+            }
+            int gradColor = themePrefs.getInt("profileHeaderGradientColor", def);
+            int[] colors = new int[]{hColor, gradColor};
+            GradientDrawable gd = new GradientDrawable(go, colors);
+            actionBar.setBackgroundDrawable(gd);
+        }
+
         nameTextView.setTextColor(themePrefs.getInt("profileNameColor", 0xffffffff));
         nameTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, themePrefs.getInt("profileNameSize", 18));
         onlineTextView.setTextColor(dark);
@@ -1547,6 +1574,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 if (view == null) {
                     view = new EmptyCell(mContext);
                 }
+
                 if (i == overscrollRow) {
                     ((EmptyCell) view).setHeight(AndroidUtilities.dp(88));
                 } else if (i == emptyRowChat || i == emptyRowChat2) {
@@ -1554,17 +1582,20 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 } else {
                     ((EmptyCell) view).setHeight(AndroidUtilities.dp(36));
                 }
+                updateViewColor(view);
             } else if (type == 1) {
                 if (view == null) {
                     view = new DividerCell(mContext);
                     view.setPadding(AndroidUtilities.dp(72), 0, 0, 0);
                     view.setTag("profileRowColor");
                 }
+                updateViewColor(view);
             } else if (type == 2) {
                 final TLRPC.User user = MessagesController.getInstance().getUser(user_id);
                 if (view == null) {
                     view = new TextDetailCell(mContext);
                 }
+                updateViewColor(view);
                 TextDetailCell textDetailCell = (TextDetailCell) view;
                 textDetailCell.setTextColor(tColor);
                 textDetailCell.setValueColor(themePrefs.getInt("profileSummaryColor", 0xff8a8a8a));
@@ -1592,6 +1623,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 if (view == null) {
                     view = new TextCell(mContext);
                 }
+                updateViewColor(view);
                 TextCell textCell = (TextCell) view;
                 //textCell.setTextColor(0xff212121);
                 textCell.setTextColor(tColor);
@@ -1644,7 +1676,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     view = new UserCell(mContext, 61);
                     view.setTag("Profile");
                 }
-
+                updateViewColor(view);
                 TLRPC.TL_chatParticipant part = info.participants.get(sortedUsers.get(i - emptyRowChat2 - 1));
                 //((UserCell)view).setData(MessagesController.getInstance().getUser(part.user_id), null, null, i == emptyRowChat2 + 1 ? R.drawable.menu_newgroup : 0);
                 int icon = 0;
@@ -1661,6 +1693,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     view = new ShadowSectionCell(mContext, false);
                 }
                 view.setBackgroundColor(themePrefs.getInt("profileRowColor", 0xffffffff));
+                updateViewColor(view);
             } else if (type == 6) {
                 if (view == null) {
                     view = new AddMemberCell(mContext);
@@ -1670,10 +1703,12 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         ((AddMemberCell) view).setText(LocaleController.getString("AddRecipient", R.string.AddRecipient));
                     }
                 }
+                updateViewColor(view);
                 ((AddMemberCell) view).setTextColor(tColor);
                 ((AddMemberCell) view).setDrawableColor(dColor);
             }
-            viewGroup.setBackgroundColor(themePrefs.getInt("profileRowColor", 0xffffffff));
+            //viewGroup.setBackgroundColor(themePrefs.getInt("profileRowColor", 0xffffffff));
+            updateListBG(viewGroup);
             return view;
         }
 
@@ -1706,5 +1741,66 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         public boolean isEmpty() {
             return false;
         }
+    }
+
+    private void updateListBG(ViewGroup vg){
+        SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+        int mainColor = themePrefs.getInt("profileRowColor", 0xffffffff);
+        int value = themePrefs.getInt("profileRowGradient", 0);
+        boolean b = true;//themePrefs.getBoolean("profileRowGradientListCheck", false);
+        if(value > 0  && b) {
+            GradientDrawable.Orientation go;
+            switch(value) {
+                case 2:
+                    go = GradientDrawable.Orientation.LEFT_RIGHT;
+                    break;
+                case 3:
+                    go = GradientDrawable.Orientation.TL_BR;
+                    break;
+                case 4:
+                    go = GradientDrawable.Orientation.BL_TR;
+                    break;
+                default:
+                    go = GradientDrawable.Orientation.TOP_BOTTOM;
+            }
+
+            int gradColor = themePrefs.getInt("profileRowGradientColor", 0xffffffff);
+            int[] colors = new int[]{mainColor, gradColor};
+            GradientDrawable gd = new GradientDrawable(go, colors);
+            vg.setBackgroundDrawable(gd);
+        }else{
+            vg.setBackgroundColor(mainColor);
+        }
+    }
+
+    private void updateViewColor(View v){
+        SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+        int mainColor = themePrefs.getInt("profileRowColor", 0xffffffff);
+        int value = themePrefs.getInt("profileRowGradient", 0);
+        boolean b = true;//themePrefs.getBoolean("profileRowGradientListCheck", false);
+        if(value > 0 && !b) {
+            GradientDrawable.Orientation go;
+            switch(value) {
+                case 2:
+                    go = GradientDrawable.Orientation.LEFT_RIGHT;
+                    break;
+                case 3:
+                    go = GradientDrawable.Orientation.TL_BR;
+                    break;
+                case 4:
+                    go = GradientDrawable.Orientation.BL_TR;
+                    break;
+                default:
+                    go = GradientDrawable.Orientation.TOP_BOTTOM;
+            }
+
+            int gradColor = themePrefs.getInt("profileRowGradientColor", 0xffffffff);
+            int[] colors = new int[]{mainColor, gradColor};
+            GradientDrawable gd = new GradientDrawable(go, colors);
+            v.setBackgroundDrawable(gd);
+        } else if(b){
+            v.setBackgroundColor(0x00000000);
+        }
+        if(value > 0)v.setTag("Profile00");
     }
 }

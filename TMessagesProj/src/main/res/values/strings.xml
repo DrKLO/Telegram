@@ -840,9 +840,9 @@
     <string name="formatDateAtTime">%1$s at %2$s</string>
     <!--update text-->
     <string name="updateText">Plus Messenger for Android has been updated. New in version 3.1.3:\n\n- New \'Shared Links\' section in chat info\n- In-app preview for links to photos</string>
-    <string name="updateBuild">594</string>
+    <string name="updateBuild">597</string>
     <!--Telegram+-->
-    <string name="updatePlusText">\n\nNew in version 3.1.3.0:\n\n- New MOD to change default emoji tab icon color\n- Bug fixes</string>
+    <string name="updatePlusText">\n\nNew in version 3.1.3.3:\n\n- Added gradient option to header and list color in chats, chat, contacts, menu and profile\n- Added gradient option to text entry box, emoji view and attach view\n- MOD to change \'online\' text color in profile and chat\n- MOD to change avatars radius in profile\n- Bug fixes</string>
     <string name="TelegramForAndroid">Plus Messenger for Android</string>
     <string name="Theming">Theming</string>
     <string name="colorHexInvalid">Invalid color hex code!</string>
@@ -982,4 +982,12 @@
     <string name="DisableAudioStop">Don\'t stop audio</string>
     <string name="ListDividerColor">List divider color</string>
     <string name="CenterAvatar">Center avatar, name and phone</string>
+    <string name="RowGradient">Gradient</string>
+    <string name="RowGradientColor">Gradient color</string>
+    <string name="RowGradientDisabled">Disabled</string>
+    <string name="RowGradientTopBottom">Top Bottom</string>
+    <string name="RowGradientLeftRight">Left Right</string>
+    <string name="RowGradientTLBR">Top-Left Bottom-Right</string>
+    <string name="RowGradientBLTR">Bottom-Left Top-Right</string>
+    <string name="RowGradientList">Apply gradient to list background</string>
 </resources>

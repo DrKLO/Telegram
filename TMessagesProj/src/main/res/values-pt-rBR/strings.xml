@@ -838,11 +838,11 @@
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s às %2$s</string>
     <!--update text-->
-    <string name="updateText">Plus Messenger para Android foi atualizado. Novidade na versão 3.1.3\n\n- Nova sessão \"Links Compartilhados\" na informação do chat\n- Pré-visualizaçãp de fotos em links no aplicativo.</string>
-    <string name="updateBuild">594</string>
+    <string name="updateText">Plus Messenger para Android foi atualizado. Novidade na versão 3.1.3\n\n- Nova seção \"Links Compartilhados\" na informação do chat\n- Pré-visualização de fotos em links no aplicativo.</string>
+    <string name="updateBuild">597</string>
     <!--Telegram+-->
   <string name="updatePlusText">
-\n\nNovo na versão 3.1.3.0:\n\n- Novo MOD para mudar a cor do ícone padrão da aba de emoji\n- Concertos de Bugs</string>
+\n\nNovo na versão 3.1.3.3:\n\n- Adicionado opção Degradê para Cabeçalho e Cor das Colunas na Lista de Chats, Chat, Contatos, Perfil e Menu de Navegação\n- Correções de erros</string>
     <string name="TelegramForAndroid">Plus Messenger para Android</string>
     <string name="Theming">Personalização</string>
   <string name="colorHexInvalid">Código de cor HEX inválido!</string>
@@ -886,9 +886,9 @@
     <string name="EditTextColor">Cor do Texto Digitado</string>
     <string name="EditTextSize">Tamanho do Texto Digitado</string>
   <string name="EditTextBGColor">Cor da Caixa de Texto</string>
-  <string name="EmojiViewBGColor">Cor do Fundo Emojis</string>
-  <string name="EmojiViewTabColor">Cor selecionada da aba de emoji</string>
-  <string name="EmojiViewTabIconColor">Cor do icone da aba de emoji</string>
+  <string name="EmojiViewBGColor">Cor do Fundo Emoji</string>
+  <string name="EmojiViewTabColor">Cor da Aba Emoji selecionada</string>
+  <string name="EmojiViewTabIconColor">Cor do Ícone da Aba Emoji</string>
     <string name="OnlineColor">Cor do Status Online</string>
     <string name="ChatMusic">Música</string>
     <string name="SaveTheme">Salvar Tema</string>
@@ -982,4 +982,12 @@
   <string name="DisableAudioStop">Não Parar Áudio</string>
   <string name="ListDividerColor">Cor do Divisor de Lista</string>
   <string name="CenterAvatar">Centralizar Avatar, Nome e Número</string>
+  <string name="RowGradient">Degradê</string>
+  <string name="RowGradientColor">Cor Degradê</string>
+  <string name="RowGradientDisabled">Desativado</string>
+  <string name="RowGradientTopBottom">Superior Inferior</string>
+  <string name="RowGradientLeftRight">Esquerda Direita</string>
+  <string name="RowGradientTLBR">Superior-Esquerda Inferior-Direita</string>
+  <string name="RowGradientBLTR">Inferior-Esquerda Superior-Direita</string>
+  <string name="RowGradientList">Aplicar degradê para a lista de fundo</string>
 </resources>

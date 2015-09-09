@@ -1089,6 +1089,7 @@ public class AndroidUtilities {
     }
 
     public static int setDarkColor(int color, int factor){
+        int alpha = Color.alpha(color);
         int red = Color.red(color) - factor;
         int green = Color.green(color) - factor;
         int blue = Color.blue(color) - factor;
@@ -1112,8 +1113,37 @@ public class AndroidUtilities {
                 blue = factor;
             }
         }
-        return Color.argb(0xff, red, green, blue);
+        //return Color.argb(0xff, red, green, blue);
+        return Color.argb(alpha, red, green, blue);
     }
+    //Same as setDarkColor but maintains alpha
+    /*public static int setDarkWithAlphaColor(int color, int factor){
+        int alpha = Color.alpha(color);
+        int red = Color.red(color) - factor;
+        int green = Color.green(color) - factor;
+        int blue = Color.blue(color) - factor;
+        if(factor < 0){
+            red = (red > 0xff) ? 0xff : red;
+            green = (green > 0xff) ? 0xff : green;
+            blue = (blue > 0xff) ? 0xff : blue;
+            if(red == 0xff && green == 0xff && blue == 0xff){
+                red = factor;
+                green = factor;
+                blue = factor;
+            }
+        }
+        if(factor > 0){
+            red = (red < 0) ? 0 : red;
+            green = (green < 0) ? 0 : green;
+            blue = (blue < 0) ? 0 : blue;
+            if(red == 0 && green == 0 && blue == 0){
+                red = factor;
+                green = factor;
+                blue = factor;
+            }
+        }
+        return Color.argb(alpha, red, green, blue);
+    }*/
 
     public static void setIntColor(String key, int value){
         SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(THEME_PREFS, THEME_PREFS_MODE);

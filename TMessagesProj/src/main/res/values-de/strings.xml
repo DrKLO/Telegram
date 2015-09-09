@@ -839,10 +839,10 @@
     <string name="formatDateAtTime">%1$s um %2$s</string>
     <!--update text-->
     <string name="updateText">Plus Messenger für Android wurde aktualisiert. Neu in Version 3.1.3:\n\n- Neuer \"Geteilte Links\" Bereich in der Chat Info\n- In-App Vorschau für Links von Bildern.</string>
-    <string name="updateBuild">594</string>
+    <string name="updateBuild">597</string>
     <!--Telegram+-->
   <string name="updatePlusText">
-\n\nNeu in Version 3.1.3.0:\n\n- Neuer MOD ändert Standard Emoji Tab Symbol Farbe\n- Fehlerbeseitigung</string>
+\n\nNeu in Version 3.1.3.3:\n\n- Option Farbverlauf in Kopf- und Listenzeile, in Chatübersicht, Chat, Kontakten, Profile und Hauptmenü\n- Hinzugefügt Option Farbverlauf in Texteingabefeld, Emoji Ansicht und einfügen Ansicht\n- MOD Wechsel \'online\' Textfarbe in Profile und Text\n- MOD Profilbildradius im Profil ändern\n- Fehlerbeseitigung</string>
     <string name="TelegramForAndroid">Plus Messenger für Android</string>
   <string name="Theming">Themen bearbeiten</string>
   <string name="colorHexInvalid">Ungültiger Hex-Code!</string>
@@ -982,4 +982,12 @@
   <string name="DisableAudioStop">Audio nicht stoppen</string>
   <string name="ListDividerColor">Optionliste Trennstrich</string>
   <string name="CenterAvatar">Profilbild, Name und Telefonnummer zentriert</string>
+  <string name="RowGradient">Verlauf</string>
+  <string name="RowGradientColor">Verlauf</string>
+  <string name="RowGradientDisabled">Deaktiviert</string>
+  <string name="RowGradientTopBottom">von Oben</string>
+  <string name="RowGradientLeftRight">Links nach Rechts</string>
+  <string name="RowGradientTLBR">von oben Links nach unten Rechts</string>
+  <string name="RowGradientBLTR">von unten Links nach oben Rechts</string>
+  <string name="RowGradientList">Hintergrund Farbverlauf Liste oder Seite</string>
 </resources>

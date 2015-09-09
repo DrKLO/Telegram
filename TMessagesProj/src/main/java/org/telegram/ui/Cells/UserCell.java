@@ -117,12 +117,13 @@ public class UserCell extends FrameLayout {
             setStatusSize(themePrefs.getInt("contactsStatusSize", 14));
             setAvatarRadius(themePrefs.getInt("contactsAvatarRadius", 32));
         }else if(tag.contains("Profile")){
-            setStatusColors(themePrefs.getInt("profileSummaryColor", 0xff8a8a8a), AndroidUtilities.getIntDarkerColor("themeColor", -0x40));
+            setStatusColors(themePrefs.getInt("profileSummaryColor", 0xff8a8a8a), themePrefs.getInt("profileOnlineColor", AndroidUtilities.getIntDarkerColor("themeColor", -0x40)));
             nameColor = themePrefs.getInt("profileTitleColor", 0xff212121);
             nameTextView.setTextColor(nameColor);
             nameTextView.setTextSize(17);
             setStatusSize(14);
-            setAvatarRadius(32);
+            //setAvatarRadius(32);
+            setAvatarRadius(themePrefs.getInt("profileRowAvatarRadius", 32));
             if(currentDrawable != 0) {
                 int dColor = themePrefs.getInt("profileIconsColor", 0xff737373);
                 Drawable d = getResources().getDrawable(currentDrawable);

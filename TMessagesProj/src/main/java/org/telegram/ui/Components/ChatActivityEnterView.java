@@ -13,6 +13,7 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.PorterDuff;
 import android.graphics.drawable.Drawable;
+import android.graphics.drawable.GradientDrawable;
 import android.media.AudioManager;
 import android.os.PowerManager;
 import android.text.Editable;
@@ -523,9 +524,33 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
         messageEditText.setTextColor(themePrefs.getInt("chatEditTextColor", 0xff000000));
         messageEditText.setHintTextColor(AndroidUtilities.getIntAlphaColor("chatEditTextColor", 0xff000000, 0.35f));
         messageEditText.setTextSize(themePrefs.getInt("chatEditTextSize", 18));
+
         int color = themePrefs.getInt("chatEditTextBGColor", 0xffffffff);
         setBackgroundColor(color);
         textFieldContainer.setBackgroundColor(color);
+        int val = themePrefs.getInt("chatEditTextBGGradient", 0);
+        if(val > 0) {
+            GradientDrawable.Orientation go;
+            switch(val) {
+                case 2:
+                    go = GradientDrawable.Orientation.LEFT_RIGHT;
+                    break;
+                case 3:
+                    go = GradientDrawable.Orientation.TL_BR;
+                    break;
+                case 4:
+                    go = GradientDrawable.Orientation.BL_TR;
+                    break;
+                default:
+                    go = GradientDrawable.Orientation.TOP_BOTTOM;
+            }
+            int gradColor = themePrefs.getInt("chatEditTextBGGradientColor", 0xffffffff);
+            int[] colors = new int[]{color, gradColor};
+            GradientDrawable gd = new GradientDrawable(go, colors);
+            setBackgroundDrawable(gd);
+            textFieldContainer.setBackgroundDrawable(gd);
+        }
+        
     }
 
 

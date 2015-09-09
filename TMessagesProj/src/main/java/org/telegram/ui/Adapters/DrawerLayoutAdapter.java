@@ -13,6 +13,7 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.graphics.PorterDuff;
 import android.graphics.drawable.Drawable;
+import android.graphics.drawable.GradientDrawable;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
@@ -94,15 +95,18 @@ public class DrawerLayoutAdapter extends BaseAdapter {
             if (view == null) {
                 view = new EmptyCell(mContext, AndroidUtilities.dp(8));
             }
+            updateViewColor(view);
         } else if (type == 2) {
             if (view == null) {
                 view = new DividerCell(mContext);
                 view.setTag("drawerListDividerColor");
             }
+            updateViewColor(view);
         } else if (type == 3) {
             if (view == null) {
                 view = new DrawerActionCell(mContext);
             }
+            updateViewColor(view);
             DrawerActionCell actionCell = (DrawerActionCell) view;
             //actionCell.setTextColor(themePrefs.getInt("drawerOptionColor", 0xff444444));
             //actionCell.setTextSize(themePrefs.getInt("drawerOptionSize", 15));
@@ -143,6 +147,7 @@ public class DrawerLayoutAdapter extends BaseAdapter {
             }*/
         }  else if (type == versionType) {
             view = new TextInfoCell(mContext);
+            updateViewColor(view);
             if (i == versionRow) {
                 try {
                     PackageInfo pInfo = ApplicationLoader.applicationContext.getPackageManager().getPackageInfo(ApplicationLoader.applicationContext.getPackageName(), 0);
@@ -155,6 +160,34 @@ public class DrawerLayoutAdapter extends BaseAdapter {
             }
         }
         return view;
+    }
+
+    private void updateViewColor(View v){
+        SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+        int mainColor = themePrefs.getInt("drawerListColor", 0xffffffff);
+        int value = themePrefs.getInt("drawerRowGradient", 0);
+        boolean b = true;//themePrefs.getBoolean("drawerRowGradientListCheck", false);
+        if(value > 0 && !b) {
+            GradientDrawable.Orientation go;
+            switch(value) {
+                case 2:
+                    go = GradientDrawable.Orientation.LEFT_RIGHT;
+                    break;
+                case 3:
+                    go = GradientDrawable.Orientation.TL_BR;
+                    break;
+                case 4:
+                    go = GradientDrawable.Orientation.BL_TR;
+                    break;
+                default:
+                    go = GradientDrawable.Orientation.TOP_BOTTOM;
+            }
+
+            int gradColor = themePrefs.getInt("drawerRowGradientColor", 0xffffffff);
+            int[] colors = new int[]{mainColor, gradColor};
+            GradientDrawable gd = new GradientDrawable(go, colors);
+            v.setBackgroundDrawable(gd);
+        }
     }
 
     @Override

@@ -839,7 +839,7 @@
   <string name="formatDateAtTime">%1$s a les %2$s</string>
   <!--update text-->
   <string name="updateText">S\'ha actualitzat el Telegram per a l\'Android. Novetats a la versió 3.1.3:\n\n- Nova secció \'Enllaços compartits\' a la informació del xat\n- Previsualització, dins de l\'aplicació, per a enllaços a fotos</string>
-  <string name="updateBuild">594</string>
+  <string name="updateBuild">597</string>
     <!--Telegram+--><!--
   <string name="updatePlusText">\n\nNovetats a la versió 3.1.1.6\n\n- Nou MOD per mostrar l\'avatar dels contactes als xats\n- Nou MOD per mostrar l\'avatar propi als xats i grups\n- Nou MOD per alinear l\'avatar propi a dalt\n- S\'han afegit les noves bombolles Ed i Edge (gràcies a Edwin Macalopu)\n- Nou MOD per canviar el color de fons i de text del menú d\'adjuntar als xats\n- Nou MOD per canviar el color del títol i botons dels diàlegs\n- Correcció d\'errors</string>-->
     <string name="TelegramForAndroid">Plus Messenger per Android</string>
@@ -886,7 +886,8 @@
   <string name="EditTextSize">Mida de l\'entrada de text</string>
   <string name="EditTextBGColor">Color de fons de l\'entrada de text</string>
   <string name="EmojiViewBGColor">Color de fons dels emoji</string>
-  <string name="EmojiViewTabColor">Color de la pestanya dels emoji</string>
+  <string name="EmojiViewTabColor">Color de la pestanya d\'emojis activa</string>
+  <string name="EmojiViewTabIconColor">Color de la icona de la pestanya d\'emojis</string>
   <string name="OnlineColor">Color de «en línia»</string>
     <string name="ChatMusic">Música</string>
   <string name="SaveTheme">Desa el tema</string>

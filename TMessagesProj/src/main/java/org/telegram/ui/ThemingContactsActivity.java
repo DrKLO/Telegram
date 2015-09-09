@@ -33,11 +33,16 @@ import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.Adapters.BaseFragmentAdapter;
 import org.telegram.ui.Cells.HeaderCell;
 import org.telegram.ui.Cells.ShadowSectionCell;
+import org.telegram.ui.Cells.TextCheckCell;
 import org.telegram.ui.Cells.TextColorCell;
+import org.telegram.ui.Cells.TextDetailSettingsCell;
 import org.telegram.ui.Cells.TextSettingsCell;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.ColorSelectorDialog;
 import org.telegram.ui.Components.NumberPicker;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.telegram.ui.Components.ColorSelectorDialog.OnColorChangedListener;
 
@@ -62,6 +67,13 @@ public class ThemingContactsActivity extends BaseFragment {
     private int onlineColorRow;
     private int iconsColorRow;
 
+    private int rowGradientRow;
+    private int rowGradientColorRow;
+    private int rowGradientListCheckRow;
+
+    private int headerGradientRow;
+    private int headerGradientColorRow;
+
     private int rowCount;
 
     public final static int CENTER = 0;
@@ -73,12 +85,17 @@ public class ThemingContactsActivity extends BaseFragment {
         rowCount = 0;
         headerSection2Row = rowCount++;
         headerColorRow = rowCount++;
+        headerGradientRow = rowCount++;
+        headerGradientColorRow = rowCount++;
         headerTitleColorRow = rowCount++;
         headerIconsColorRow = rowCount++;
 
         rowsSectionRow = rowCount++;
         rowsSection2Row = rowCount++;
         rowColorRow = rowCount++;
+        rowGradientRow = rowCount++;
+        rowGradientColorRow = rowCount++;
+        //rowGradientListCheckRow = rowCount++;
         avatarRadiusRow  = rowCount++;
         iconsColorRow = rowCount++;
         nameColorRow = rowCount++;
@@ -158,6 +175,20 @@ public class ThemingContactsActivity extends BaseFragment {
 
                         },themePrefs.getInt("contactsHeaderColor", AndroidUtilities.getIntColor("themeColor")), CENTER, 0, false);
                         colorDialog.show();
+                    } else if (i == headerGradientColorRow) {
+                        if (getParentActivity() == null) {
+                            return;
+                        }
+                        LayoutInflater li = (LayoutInflater)getParentActivity().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+                        li.inflate(R.layout.colordialog, null, false);
+                        ColorSelectorDialog colorDialog = new ColorSelectorDialog(getParentActivity(), new OnColorChangedListener() {
+                            @Override
+                            public void colorChanged(int color) {
+                                commitInt("contactsHeaderGradientColor", color);
+                            }
+
+                        },themePrefs.getInt("contactsHeaderGradientColor", AndroidUtilities.getIntColor("themeColor")), CENTER, 0, true);
+                        colorDialog.show();
                     } else if (i == headerTitleColorRow) {
                         if (getParentActivity() == null) {
                             return;
@@ -211,6 +242,76 @@ public class ThemingContactsActivity extends BaseFragment {
 
                         },themePrefs.getInt("contactsRowColor", 0xffffffff), CENTER, 0, false);
                         colorDialog.show();
+                    } else if (i == rowGradientColorRow) {
+                        if (getParentActivity() == null) {
+                            return;
+                        }
+                        LayoutInflater li = (LayoutInflater)getParentActivity().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+                        li.inflate(R.layout.colordialog, null, false);
+                        ColorSelectorDialog colorDialog = new ColorSelectorDialog(getParentActivity(), new OnColorChangedListener() {
+                            @Override
+                            public void colorChanged(int color) {
+                                commitInt("contactsRowGradientColor", color);
+                            }
+                        },themePrefs.getInt( "contactsRowGradientColor", 0xffffffff), CENTER, 0, true);
+                        colorDialog.show();
+                    } else if (i == rowGradientListCheckRow) {
+                        boolean b = themePrefs.getBoolean("contactsRowGradientListCheck", false);
+                        SharedPreferences.Editor editor = themePrefs.edit();
+                        editor.putBoolean("contactsRowGradientListCheck", !b);
+                        editor.commit();
+                        if (view instanceof TextCheckCell) {
+                            ((TextCheckCell) view).setChecked(!b);
+                        }
+                        if (listView != null) {
+                            listView.invalidateViews();
+                        }
+                    } else if (i == headerGradientRow) {
+                        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                        builder.setTitle(LocaleController.getString("RowGradient", R.string.RowGradient));
+                        List<CharSequence> array = new ArrayList<>();
+                        array.add( LocaleController.getString("RowGradientDisabled", R.string.RowGradientDisabled));
+                        array.add(LocaleController.getString("RowGradientTopBottom", R.string.RowGradientTopBottom));
+                        array.add( LocaleController.getString("RowGradientLeftRight", R.string.RowGradientLeftRight));
+                        array.add( LocaleController.getString("RowGradientTLBR", R.string.RowGradientTLBR));
+                        array.add( LocaleController.getString("RowGradientBLTR", R.string.RowGradientBLTR));
+                        String[] simpleArray = new String[ array.size() ];
+                        array.toArray( new String[ array.size() ]);
+                        builder.setItems(array.toArray(simpleArray), new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+                                themePrefs.edit().putInt("contactsHeaderGradient", which).commit();
+                                if (listView != null) {
+                                    listView.invalidateViews();
+                                }
+                            }
+                        });
+                        builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+                        showDialog(builder.create());
+                    } else if (i == rowGradientRow) {
+                        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                        builder.setTitle(LocaleController.getString("RowGradient", R.string.RowGradient));
+                        List<CharSequence> array = new ArrayList<>();
+                        array.add( LocaleController.getString("RowGradientDisabled", R.string.RowGradientDisabled));
+                        array.add(LocaleController.getString("RowGradientTopBottom", R.string.RowGradientTopBottom));
+                        array.add( LocaleController.getString("RowGradientLeftRight", R.string.RowGradientLeftRight));
+                        array.add( LocaleController.getString("RowGradientTLBR", R.string.RowGradientTLBR));
+                        array.add( LocaleController.getString("RowGradientBLTR", R.string.RowGradientBLTR));
+                        String[] simpleArray = new String[ array.size() ];
+                        array.toArray( new String[ array.size() ]);
+                        builder.setItems(array.toArray(simpleArray), new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+                                themePrefs.edit().putInt("contactsRowGradient", which).commit();
+                                if (listView != null) {
+                                    listView.invalidateViews();
+                                }
+                            }
+                        });
+                        builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+                        showDialog(builder.create());
                     } else if (i == nameColorRow) {
                         if (getParentActivity() == null) {
                             return;
@@ -239,7 +340,7 @@ public class ThemingContactsActivity extends BaseFragment {
 
                         },themePrefs.getInt("contactsStatusColor", 0xffa8a8a8), CENTER, 0, false);
                         colorDialog.show();
-                    }  else if (i == onlineColorRow) {
+                    } else if (i == onlineColorRow) {
                         if (getParentActivity() == null) {
                             return;
                         }
@@ -327,6 +428,8 @@ public class ThemingContactsActivity extends BaseFragment {
                     }
                     if (i == headerColorRow) {
                         resetInt("contactsHeaderColor");
+                    } else if (i == headerGradientColorRow) {
+                        resetInt("contactsHeaderGradientColor");
                     } else if (i == headerTitleColorRow) {
                         resetInt("contactsHeaderTitleColor");
                     } else if (i == headerIconsColorRow) {
@@ -335,6 +438,12 @@ public class ThemingContactsActivity extends BaseFragment {
                         resetInt("contactsIconsColor");
                     } else if (i == rowColorRow) {
                         resetInt("contactsRowColor");
+                    } else if (i == rowGradientColorRow) {
+                        resetInt("contactsRowGradientColor");
+                    } else if (i == headerGradientRow) {
+                        resetInt("contactsHeaderGradient");
+                    } else if (i == rowGradientRow) {
+                        resetInt("contactsRowGradient");
                     } else if (i == avatarRadiusRow) {
                         resetInt("contactsAvatarRadius");
                     } else if (i == nameColorRow) {
@@ -347,7 +456,10 @@ public class ThemingContactsActivity extends BaseFragment {
                         resetInt("contactsStatusSize");
                     } else if (i == onlineColorRow) {
                         resetInt("contactsOnlineColor");
+                    } else{
+                        if(view.getTag() != null)resetPref(view.getTag().toString());
                     }
+
                     return true;
                 }
             });
@@ -360,6 +472,16 @@ public class ThemingContactsActivity extends BaseFragment {
             }
         }
         return fragmentView;
+    }
+
+    private void resetPref(String key){
+        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+        SharedPreferences.Editor editor = preferences.edit();
+        if(key != null)editor.remove(key);
+        editor.commit();
+        if (listView != null) {
+            listView.invalidateViews();
+        }
     }
 
     private void resetInt(String key){
@@ -441,7 +563,8 @@ public class ThemingContactsActivity extends BaseFragment {
 
         @Override
         public boolean isEnabled(int i) {
-            return  i == headerColorRow || i == headerTitleColorRow || i == headerIconsColorRow || i == iconsColorRow || i == rowColorRow || i == avatarRadiusRow || i == nameColorRow || i == nameSizeRow || i == statusColorRow || i == statusSizeRow ||
+            int g = AndroidUtilities.getIntDef("contactsRowGradient", 0);
+            return  i == headerColorRow || i == headerGradientRow || AndroidUtilities.getIntDef("contactsHeaderGradient", 0) != 0 && i == headerGradientColorRow || i == headerTitleColorRow || i == headerIconsColorRow || i == iconsColorRow || i == rowColorRow || i == rowGradientRow || (g != 0 &&  i == rowGradientColorRow) || (g != 0 && i == rowGradientListCheckRow) || i == avatarRadiusRow || i == nameColorRow || i == nameSizeRow || i == statusColorRow || i == statusSizeRow ||
                     i == onlineColorRow ;
         }
 
@@ -510,7 +633,9 @@ public class ThemingContactsActivity extends BaseFragment {
                 TextColorCell textCell = (TextColorCell) view;
 
                 if (i == headerColorRow) {
-                    textCell.setTextAndColor(LocaleController.getString("HeaderColor", R.string.HeaderColor), themePrefs.getInt("contactsHeaderColor", AndroidUtilities.getIntColor("themeColor")), true);
+                    textCell.setTextAndColor(LocaleController.getString("HeaderColor", R.string.HeaderColor), themePrefs.getInt("contactsHeaderColor", AndroidUtilities.getIntColor("themeColor")), false);
+                } else if (i == headerGradientColorRow) {
+                    textCell.setTextAndColor(LocaleController.getString("HeaderColor", R.string.HeaderColor), themePrefs.getInt("contactsHeaderGradient", 0) == 0 ? 0x00000000 : themePrefs.getInt("contactsHeaderGradientColor", AndroidUtilities.getIntColor("themeColor")), true);
                 } else if (i == headerTitleColorRow) {
                     textCell.setTextAndColor(LocaleController.getString("HeaderTitleColor", R.string.HeaderTitleColor), themePrefs.getInt("contactsHeaderTitleColor", 0xffffffff), true);
                 } else if (i == headerIconsColorRow) {
@@ -518,13 +643,62 @@ public class ThemingContactsActivity extends BaseFragment {
                 } else if (i == iconsColorRow) {
                     textCell.setTextAndColor(LocaleController.getString("IconsColor", R.string.IconsColor), themePrefs.getInt("contactsIconsColor", 0xff737373), true);
                 } else if (i == rowColorRow) {
-                    textCell.setTextAndColor(LocaleController.getString("RowColor", R.string.RowColor), themePrefs.getInt("contactsRowColor", 0xffffffff), true);
+                    textCell.setTextAndColor(LocaleController.getString("RowColor", R.string.RowColor), themePrefs.getInt("contactsRowColor", 0xffffffff), false);
+                } else if (i == rowGradientColorRow) {
+                    textCell.setTextAndColor(LocaleController.getString("RowGradientColor", R.string.RowGradientColor), themePrefs.getInt("contactsRowGradient", 0) == 0 ? 0x00000000 : themePrefs.getInt("contactsRowGradientColor", 0xffffffff), true);
                 } else if (i == nameColorRow) {
                     textCell.setTextAndColor(LocaleController.getString("NameColor", R.string.NameColor), themePrefs.getInt("contactsNameColor", 0xff000000), true);
                 } else if (i == statusColorRow) {
                     textCell.setTextAndColor(LocaleController.getString("StatusColor", R.string.StatusColor), themePrefs.getInt("contactsStatusColor", 0xffa8a8a8), true);
                 } else if (i == onlineColorRow) {
                     textCell.setTextAndColor(LocaleController.getString("OnlineColor", R.string.OnlineColor), themePrefs.getInt("contactsOnlineColor", AndroidUtilities.getIntDarkerColor("themeColor",0x15)), false);
+                }
+            } else if (type == 4) {
+                if (view == null) {
+                    view = new TextCheckCell(mContext);
+                }
+                TextCheckCell textCell = (TextCheckCell) view;
+                if (i == rowGradientListCheckRow) {
+                    textCell.setTag("contactsRowGradientListCheck");
+                    int value = AndroidUtilities.getIntDef("contactsRowGradient", 0);
+                    textCell.setTextAndCheck(LocaleController.getString("RowGradientList", R.string.RowGradientList), value == 0 ? false : themePrefs.getBoolean("contactsRowGradientListCheck", false), true);
+                }
+            } else if (type == 5) {
+                if (view == null) {
+                    view = new TextDetailSettingsCell(mContext);
+                }
+
+                TextDetailSettingsCell textCell = (TextDetailSettingsCell) view;
+                if(i == headerGradientRow){
+                    textCell.setTag("contactsHeaderGradient");
+                    textCell.setMultilineDetail(false);
+                    int value = themePrefs.getInt("contactsHeaderGradient", 0);
+                    if (value == 0) {
+                        textCell.setTextAndValue(LocaleController.getString("RowGradient", R.string.RowGradient), LocaleController.getString("RowGradientDisabled", R.string.RowGradientDisabled), false);
+                    } else if (value == 1) {
+                        textCell.setTextAndValue(LocaleController.getString("RowGradient", R.string.RowGradient), LocaleController.getString("RowGradientTopBottom", R.string.RowGradientTopBottom), false);
+                    } else if (value == 2) {
+                        textCell.setTextAndValue(LocaleController.getString("RowGradient", R.string.RowGradient), LocaleController.getString("RowGradientLeftRight", R.string.RowGradientLeftRight), false);
+                    } else if (value == 3) {
+                        textCell.setTextAndValue(LocaleController.getString("RowGradient", R.string.RowGradient), LocaleController.getString("RowGradientTLBR", R.string.RowGradientTLBR), false);
+                    } else if (value == 4) {
+                        textCell.setTextAndValue(LocaleController.getString("RowGradient", R.string.RowGradient), LocaleController.getString("RowGradientBLTR", R.string.RowGradientBLTR), false);
+                    }
+                } else if(i == rowGradientRow){
+                    textCell.setTag("contactsRowGradient");
+                    textCell.setMultilineDetail(false);
+                    int value = themePrefs.getInt("contactsRowGradient", 0);
+                    if (value == 0) {
+                        textCell.setTextAndValue(LocaleController.getString("RowGradient", R.string.RowGradient), LocaleController.getString("RowGradientDisabled", R.string.RowGradientDisabled), false);
+                    } else if (value == 1) {
+                        textCell.setTextAndValue(LocaleController.getString("RowGradient", R.string.RowGradient), LocaleController.getString("RowGradientTopBottom", R.string.RowGradientTopBottom), false);
+                    } else if (value == 2) {
+                        textCell.setTextAndValue(LocaleController.getString("RowGradient", R.string.RowGradient), LocaleController.getString("RowGradientLeftRight", R.string.RowGradientLeftRight), false);
+                    } else if (value == 3) {
+                        textCell.setTextAndValue(LocaleController.getString("RowGradient", R.string.RowGradient), LocaleController.getString("RowGradientTLBR", R.string.RowGradientTLBR), false);
+                    } else if (value == 4) {
+                        textCell.setTextAndValue(LocaleController.getString("RowGradient", R.string.RowGradient), LocaleController.getString("RowGradientBLTR", R.string.RowGradientBLTR), false);
+                    }
                 }
             }
             return view;
@@ -541,9 +715,14 @@ public class ThemingContactsActivity extends BaseFragment {
             else if ( i == avatarRadiusRow || i == nameSizeRow ||  i == statusSizeRow ) {
                 return 2;
             }
-
-            else if ( i == headerColorRow || i == headerTitleColorRow || i == headerIconsColorRow || i == iconsColorRow || i == rowColorRow || i == nameColorRow || i == statusColorRow || i == onlineColorRow) {
+            else if ( i == headerColorRow || i == headerGradientColorRow || i == headerTitleColorRow || i == headerIconsColorRow || i == iconsColorRow || i == rowColorRow || i == rowGradientColorRow || i == nameColorRow || i == statusColorRow || i == onlineColorRow) {
                 return 3;
+            }
+            else if (i == rowGradientListCheckRow) {
+                return 4;
+            }
+            else if ( i == headerGradientRow || i == rowGradientRow) {
+                return 5;
             }
             else {
                 return 2;
@@ -552,7 +731,7 @@ public class ThemingContactsActivity extends BaseFragment {
 
         @Override
         public int getViewTypeCount() {
-            return 4;
+            return 6;
         }
 
         @Override

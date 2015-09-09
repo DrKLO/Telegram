@@ -839,9 +839,9 @@
     <string name="formatDateAtTime">%1$s a las %2$s</string>
     <!--update text-->
     <string name="updateText">Plus Messenger para Android ha sido actualizada. Novedades en la versión 3.1.3:\n\n- Nueva sección de \'Enlaces\' en la información del chat\n- Vista previa en la app para enlaces a fotos</string>
-    <string name="updateBuild">594</string>
+    <string name="updateBuild">597</string>
     <!--Telegram+-->
-    <string name="updatePlusText">\n\nNovedades en 3.1.3.0:\n\n- Nuevo MOD para ajustar color por defecto de icono de pestaña de emoticonos\n- Solución de errores</string>
+    <string name="updatePlusText">"\n\nNovedades en 3.1.3.3:\n\n- Añadida opción de gradiente al color de lista y cabecera de chats, chat, contactos, menu y perfil\n- Opción de gradiente en entrada de texto, vista de emoticonos y en vista adjuntar en chat\n- MOD para ajustar color de texto \'en línea\' en perfil y en chat\n- MOD para ajustar radio de avatares en perfil\n- Solución de errores"</string>
     <string name="TelegramForAndroid">Plus Messenger para Android</string>
     <string name="Theming">Tematización</string>
     <string name="colorHexInvalid">¡Color hexadecimal inválido!</string>
@@ -981,4 +981,12 @@
     <string name="DisableAudioStop">No parar audio</string>
     <string name="ListDividerColor">Color de divisor de lista</string>
     <string name="CenterAvatar">Centrar avatar, nombre y móvil</string>
+    <string name="RowGradient">Gradiente</string>
+    <string name="RowGradientColor">Color de gradiente</string>
+    <string name="RowGradientDisabled">Desactivado</string>
+    <string name="RowGradientTopBottom">Arriba Abajo</string>
+    <string name="RowGradientLeftRight">Izquierda Derecha</string>
+    <string name="RowGradientTLBR">Arriba-Izquierda Abajo-Derecha</string>
+    <string name="RowGradientBLTR">Abajo-Izquierda Arriba-Derecha</string>
+    <string name="RowGradientList">Aplicar gradiente a fondo de lista</string>
 </resources>

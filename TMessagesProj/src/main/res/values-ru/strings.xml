@@ -839,9 +839,9 @@
   <string name="formatDateAtTime">%1$s в %2$s</string>
   <!--update text-->
   <string name="updateText">Plus Messenger для Android обновлён. Новое в версии 3.1.3:\n\n- Новый раздел \'Общие ссылки\' в информации о части\n- Предварительный просмотр ссылок на фото в приложении</string>
-  <string name="updateBuild">594</string>
-    <!--Telegram+--><!--
-  <string name="updatePlusText">\n\nНовое в 3.1.1.9:\n\n- Добавлен новый пузырь сообщений iOS (спасибо Edwin Macalopu)\n- Новый мод, показывающий имя пользователя вместе с именем члена группы\n- Отображение администратора группы в её профиле. Администратор группы имеет отдельный значок\n- Новый мод, центрирующий аватар, имя и номер телефона в меню навигации\n- Новый мод, позволяющий проигрывать аудио в чате игнорируя сенсор приближения\n- Новый мод, позволяющий менять цвет иконок на экране профиля\n- Исправления ошибок\n\nСмотрите и используйте темы для Plus Messenger: https://play.google.com/store/apps/details?id=es.rafalense.themes</string>-->
+  <string name="updateBuild">597</string>
+    <!--Telegram+-->
+  <string name="updatePlusText">\n\nНовое в версии 3.1.3.3:\n\n- Добавлена опция градиента в настройки цвета заголовка и строк для списка чатов, экрана чата, контактов и меню\n- Добавлена опция градиента в настройки поля ввода текста, emoji и аттача\n- Мод для смены цвета текста \"в сети\" в профиле и чате\n- Мод для смены закругления аватара в профиле\n- Исправление ошибок</string>
   <string name="TelegramForAndroid">Plus Messenger для Android</string>
   <string name="Theming">Кастомизация</string>
   <string name="colorHexInvalid">Неверный hex-код цвета!</string>
@@ -886,7 +886,8 @@
   <string name="EditTextSize">Размер вводимого текста</string>
   <string name="EditTextBGColor">Цвет фона для ввода текста</string>
   <string name="EmojiViewBGColor">Цвет фона Emoji</string>
-  <string name="EmojiViewTabColor">Цвет вкладок Emoji</string>
+  <string name="EmojiViewTabColor">Цвет выбранной вкладки emoji </string>
+  <string name="EmojiViewTabIconColor">Цвет иконки на вклаке emoji</string>
   <string name="OnlineColor">Цвет статуса \"онлайн\"</string>
   <string name="ChatMusic">Музыка</string>
   <string name="SaveTheme">Сохранить тему</string>
@@ -980,4 +981,12 @@
   <string name="DisableAudioStop">Не останавливать аудио</string>
   <string name="ListDividerColor">Цвет разделителя списка</string>
   <string name="CenterAvatar">Центрировать аватар, имя и телефон</string>
+  <string name="RowGradient">Градиент</string>
+  <string name="RowGradientColor">Цвет градиента</string>
+  <string name="RowGradientDisabled">Отключено</string>
+  <string name="RowGradientTopBottom">Сверху вних</string>
+  <string name="RowGradientLeftRight">Слева направо</string>
+  <string name="RowGradientTLBR">Сверху налево, снизу направо</string>
+  <string name="RowGradientBLTR">Снизу налево, сверху направо</string>
+  <string name="RowGradientList">Применить градиент к фону списка</string>
 </resources>

@@ -34,6 +34,9 @@ public class DividerCell extends BaseCell {
         if(key != null){
             int color = AndroidUtilities.getIntDef(key, 0xffd9d9d9);
             paint.setColor(color);
+            if(key.contains("00")){
+                paint.setColor(0x00000000);
+            }
         }
     }
 

@@ -388,7 +388,7 @@ public class DialogCell extends BaseCell {
                         }
                         checkMessage = false;
                         SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
-                        int defColor = themePrefs.getInt("themeColor", AndroidUtilities.defColor);
+                        //int defColor = themePrefs.getInt("themeColor", AndroidUtilities.defColor);
                         //String hexColor = String.format("#%08X", (0xffffffff & defColor));
                         String hexMsgColor = String.format("#%08X", (0xffffffff & themePrefs.getInt("chatsMessageColor", 0xff808080)));
                         int darkColor = themePrefs.getInt("chatsMemberColor", AndroidUtilities.getIntDarkerColor("themeColor", 0x15));

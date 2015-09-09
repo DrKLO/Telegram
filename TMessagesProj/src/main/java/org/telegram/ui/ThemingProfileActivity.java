@@ -33,11 +33,16 @@ import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.Adapters.BaseFragmentAdapter;
 import org.telegram.ui.Cells.HeaderCell;
 import org.telegram.ui.Cells.ShadowSectionCell;
+import org.telegram.ui.Cells.TextCheckCell;
 import org.telegram.ui.Cells.TextColorCell;
+import org.telegram.ui.Cells.TextDetailSettingsCell;
 import org.telegram.ui.Cells.TextSettingsCell;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.ColorSelectorDialog;
 import org.telegram.ui.Components.NumberPicker;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.telegram.ui.Components.ColorSelectorDialog.OnColorChangedListener;
 
@@ -61,8 +66,16 @@ public class ThemingProfileActivity extends BaseFragment {
 
     private int titleColorRow;
     private int summaryColorRow;
-    private int avatarRadiusRow;
+    private int headerAvatarRadiusRow;
     private int iconsColorRow;
+    private int onlineColorRow;
+
+    private int rowGradientRow;
+    private int rowGradientColorRow;
+    private int rowGradientListCheckRow;
+    private int headerGradientRow;
+    private int headerGradientColorRow;
+    private int avatarRadiusRow;
 
     private int rowCount;
 
@@ -75,8 +88,10 @@ public class ThemingProfileActivity extends BaseFragment {
         rowCount = 0;
         headerSection2Row = rowCount++;
         headerColorRow = rowCount++;
+        headerGradientRow = rowCount++;
+        headerGradientColorRow = rowCount++;
         headerIconsColorRow = rowCount++;
-        avatarRadiusRow = rowCount++;
+        headerAvatarRadiusRow = rowCount++;
 
         nameSizeRow = rowCount++;
         nameColorRow = rowCount++;
@@ -86,9 +101,13 @@ public class ThemingProfileActivity extends BaseFragment {
         rowsSectionRow = rowCount++;
         rowsSection2Row = rowCount++;
         rowColorRow = rowCount++;
-
+        rowGradientRow = rowCount++;
+        rowGradientColorRow = rowCount++;
+        //rowGradientListCheckRow = rowCount++;
+        avatarRadiusRow = rowCount++;
         titleColorRow = rowCount++;
         summaryColorRow = rowCount++;
+        onlineColorRow = rowCount++;
         iconsColorRow = rowCount++;
 
         return true;
@@ -147,6 +166,7 @@ public class ThemingProfileActivity extends BaseFragment {
 
                     SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
                     final String key = view.getTag() != null ? view.getTag().toString() : "";
+                    int defColor = themePrefs.getInt("themeColor", AndroidUtilities.defColor);
 
                     if (i == headerColorRow) {
                         if (getParentActivity() == null) {
@@ -160,7 +180,79 @@ public class ThemingProfileActivity extends BaseFragment {
                                 commitInt(key, color);
                             }
 
-                        },themePrefs.getInt(key, AndroidUtilities.getIntColor("themeColor")), CENTER, 0, false);
+                        },themePrefs.getInt(key, defColor), CENTER, 0, false);
+
+                        colorDialog.show();
+                    }  else if (i == headerGradientRow) {
+                        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                        builder.setTitle(LocaleController.getString("RowGradient", R.string.RowGradient));
+                        List<CharSequence> array = new ArrayList<>();
+                        array.add( LocaleController.getString("RowGradientDisabled", R.string.RowGradientDisabled));
+                        array.add(LocaleController.getString("RowGradientTopBottom", R.string.RowGradientTopBottom));
+                        array.add( LocaleController.getString("RowGradientLeftRight", R.string.RowGradientLeftRight));
+                        array.add( LocaleController.getString("RowGradientTLBR", R.string.RowGradientTLBR));
+                        array.add( LocaleController.getString("RowGradientBLTR", R.string.RowGradientBLTR));
+                        String[] simpleArray = new String[ array.size() ];
+                        array.toArray( new String[ array.size() ]);
+                        builder.setItems(array.toArray(simpleArray), new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+                                themePrefs.edit().putInt("profileHeaderGradient", which).commit();
+                                if (listView != null) {
+                                    listView.invalidateViews();
+                                }
+                            }
+                        });
+                        builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+                        showDialog(builder.create());
+                    } else if (i == rowGradientRow) {
+                        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                        builder.setTitle(LocaleController.getString("RowGradient", R.string.RowGradient));
+                        List<CharSequence> array = new ArrayList<>();
+                        array.add( LocaleController.getString("RowGradientDisabled", R.string.RowGradientDisabled));
+                        array.add(LocaleController.getString("RowGradientTopBottom", R.string.RowGradientTopBottom));
+                        array.add( LocaleController.getString("RowGradientLeftRight", R.string.RowGradientLeftRight));
+                        array.add( LocaleController.getString("RowGradientTLBR", R.string.RowGradientTLBR));
+                        array.add( LocaleController.getString("RowGradientBLTR", R.string.RowGradientBLTR));
+                        String[] simpleArray = new String[ array.size() ];
+                        array.toArray( new String[ array.size() ]);
+                        builder.setItems(array.toArray(simpleArray), new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+                                themePrefs.edit().putInt("profileRowGradient", which).commit();
+                                if (listView != null) {
+                                    listView.invalidateViews();
+                                }
+                            }
+                        });
+                        builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+                        showDialog(builder.create());
+                    } else if (i == rowGradientListCheckRow) {
+                        boolean b = themePrefs.getBoolean( "profileRowGradientListCheck", false);
+                        SharedPreferences.Editor editor = themePrefs.edit();
+                        editor.putBoolean("profileRowGradientListCheck", !b);
+                        editor.commit();
+                        if (view instanceof TextCheckCell) {
+                            ((TextCheckCell) view).setChecked(!b);
+                        }
+                        if (listView != null) {
+                            listView.invalidateViews();
+                        }
+                    } else if (i == headerGradientColorRow) {
+                        if (getParentActivity() == null) {
+                            return;
+                        }
+                        LayoutInflater li = (LayoutInflater)getParentActivity().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+                        li.inflate(R.layout.colordialog, null, false);
+                        ColorSelectorDialog colorDialog = new ColorSelectorDialog(getParentActivity(), new OnColorChangedListener() {
+                            @Override
+                            public void colorChanged(int color) {
+                                commitInt(key, color);
+                            }
+
+                        },themePrefs.getInt(key, defColor), CENTER, 0, false);
 
                         colorDialog.show();
                     } else if (i == headerIconsColorRow) {
@@ -273,7 +365,21 @@ public class ThemingProfileActivity extends BaseFragment {
 
                         },themePrefs.getInt( key, 0xffffffff), CENTER, 0, false);
                         colorDialog.show();
-                    } else if (i == avatarRadiusRow) {
+                    } else if (i == rowGradientColorRow) {
+                        if (getParentActivity() == null) {
+                            return;
+                        }
+                        LayoutInflater li = (LayoutInflater)getParentActivity().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+                        li.inflate(R.layout.colordialog, null, false);
+                        ColorSelectorDialog colorDialog = new ColorSelectorDialog(getParentActivity(), new OnColorChangedListener() {
+                            @Override
+                            public void colorChanged(int color) {
+                                commitInt( key, color);
+                            }
+
+                        },themePrefs.getInt( key, 0xffffffff), CENTER, 0, false);
+                        colorDialog.show();
+                    } else if (i == headerAvatarRadiusRow) {
                         if (getParentActivity() == null) {
                             return;
                         }
@@ -290,6 +396,27 @@ public class ThemingProfileActivity extends BaseFragment {
                             public void onClick(DialogInterface dialog, int which) {
                                 if (numberPicker.getValue() != currentValue) {
                                     commitInt("profileAvatarRadius", numberPicker.getValue());
+                                }
+                            }
+                        });
+                        showDialog(builder.create());
+                    } else if (i == avatarRadiusRow) {
+                        if (getParentActivity() == null) {
+                            return;
+                        }
+                        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                        builder.setTitle(LocaleController.getString("AvatarRadius", R.string.AvatarRadius));
+                        final NumberPicker numberPicker = new NumberPicker(getParentActivity());
+                        final int currentValue = themePrefs.getInt( "profileRowAvatarRadius", 32);
+                        numberPicker.setMinValue(1);
+                        numberPicker.setMaxValue(32);
+                        numberPicker.setValue(currentValue);
+                        builder.setView(numberPicker);
+                        builder.setNegativeButton(LocaleController.getString("Done", R.string.Done), new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                if (numberPicker.getValue() != currentValue) {
+                                    commitInt("profileRowAvatarRadius", numberPicker.getValue());
                                 }
                             }
                         });
@@ -319,6 +446,19 @@ public class ThemingProfileActivity extends BaseFragment {
                                 commitInt(key, color);
                             }
                         },themePrefs.getInt(key, 0xff8a8a8a), CENTER, 0, false);
+                        colorDialog.show();
+                    } else if (i == onlineColorRow) {
+                        if (getParentActivity() == null) {
+                            return;
+                        }
+                        LayoutInflater li = (LayoutInflater)getParentActivity().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+                        li.inflate(R.layout.colordialog, null, false);
+                        ColorSelectorDialog colorDialog = new ColorSelectorDialog(getParentActivity(), new OnColorChangedListener() {
+                            @Override
+                            public void colorChanged(int color) {
+                                commitInt(key, color);
+                            }
+                        },themePrefs.getInt(key, AndroidUtilities.getIntDarkerColor("themeColor", -0x40)), CENTER, 0, false);
                         colorDialog.show();
                     }
                 }
@@ -426,8 +566,10 @@ public class ThemingProfileActivity extends BaseFragment {
 
         @Override
         public boolean isEnabled(int i) {
-            return  i == headerColorRow  || i == headerIconsColorRow || i == iconsColorRow || i == nameColorRow || i == nameSizeRow || i == statusColorRow || i == statusSizeRow ||
-                    i == rowColorRow || i == titleColorRow || i == summaryColorRow || i == avatarRadiusRow;
+            int h = AndroidUtilities.getIntDef("profileHeaderGradient", 0);
+            int g = AndroidUtilities.getIntDef("profileRowGradient", 0);
+            return  i == headerColorRow || i == headerGradientRow || h > 0 && i == headerGradientColorRow || i == headerIconsColorRow || i == iconsColorRow || i == nameColorRow || i == nameSizeRow || i == statusColorRow || i == statusSizeRow ||
+                    i == rowColorRow || i == rowGradientRow || g != 0 && i == rowGradientColorRow || g != 0 && i == rowGradientListCheckRow || i == titleColorRow || i == summaryColorRow || i == onlineColorRow || i == headerAvatarRadiusRow || i == avatarRadiusRow;
         }
 
         @Override
@@ -483,9 +625,13 @@ public class ThemingProfileActivity extends BaseFragment {
                     textCell.setTag("profileStatusSize");
                     int size = themePrefs.getInt("profileStatusSize", AndroidUtilities.isTablet() ? 16 : 14);
                     textCell.setTextAndValue(LocaleController.getString("StatusSize", R.string.StatusSize), String.format("%d", size), true);
-                } else if (i == avatarRadiusRow) {
+                } else if (i == headerAvatarRadiusRow) {
                     textCell.setTag("profileAvatarRadius");
                     int size = themePrefs.getInt("profileAvatarRadius", AndroidUtilities.isTablet() ? 35 : 32);
+                    textCell.setTextAndValue(LocaleController.getString("AvatarRadius", R.string.AvatarRadius), String.format("%d", size), true);
+                } else if (i == avatarRadiusRow) {
+                    textCell.setTag("profileRowAvatarRadius");
+                    int size = themePrefs.getInt("profileRowAvatarRadius", AndroidUtilities.isTablet() ? 35 : 32);
                     textCell.setTextAndValue(LocaleController.getString("AvatarRadius", R.string.AvatarRadius), String.format("%d", size), true);
                 }
             }
@@ -495,10 +641,14 @@ public class ThemingProfileActivity extends BaseFragment {
                 }
 
                 TextColorCell textCell = (TextColorCell) view;
+                int defColor = AndroidUtilities.getIntColor("themeColor");
 
                 if (i == headerColorRow) {
                     textCell.setTag("profileHeaderColor");
-                    textCell.setTextAndColor(LocaleController.getString("HeaderColor", R.string.HeaderColor), themePrefs.getInt(textCell.getTag().toString(), AndroidUtilities.getIntColor("themeColor")), true);
+                    textCell.setTextAndColor(LocaleController.getString("HeaderColor", R.string.HeaderColor), themePrefs.getInt("profileHeaderColor", defColor), false);
+                } else if (i == headerGradientColorRow) {
+                    textCell.setTag("profileHeaderGradientColor");
+                    textCell.setTextAndColor(LocaleController.getString("RowGradientColor", R.string.RowGradientColor), themePrefs.getInt("profileHeaderGradient", 0) == 0 ? 0x00000000 : themePrefs.getInt("profileHeaderGradientColor", defColor), true);
                 } else if (i == headerIconsColorRow) {
                     textCell.setTag("profileHeaderIconsColor");
                     textCell.setTextAndColor(LocaleController.getString("HeaderIconsColor", R.string.HeaderIconsColor), themePrefs.getInt(textCell.getTag().toString(), 0xffffffff), true);
@@ -513,13 +663,67 @@ public class ThemingProfileActivity extends BaseFragment {
                     textCell.setTextAndColor(LocaleController.getString("StatusColor", R.string.StatusColor), themePrefs.getInt(textCell.getTag().toString(), AndroidUtilities.getIntDarkerColor("themeColor",-0x40)), false);
                 } else if (i == rowColorRow) {
                     textCell.setTag("profileRowColor");
-                    textCell.setTextAndColor(LocaleController.getString("RowColor", R.string.RowColor), themePrefs.getInt(textCell.getTag().toString(), 0xffffffff), true);
+                    textCell.setTextAndColor(LocaleController.getString("RowColor", R.string.RowColor), themePrefs.getInt(textCell.getTag().toString(), 0xffffffff), false);
+                } else if (i == rowGradientColorRow) {
+                    textCell.setTag("profileRowGradientColor");
+                    textCell.setTextAndColor(LocaleController.getString("RowGradientColor", R.string.RowGradientColor), themePrefs.getInt("profileRowGradient", 0) == 0 ? 0x00000000 : themePrefs.getInt("profileRowGradientColor", 0xffffffff), true);
                 } else if (i == titleColorRow) {
                     textCell.setTag("profileTitleColor");
                     textCell.setTextAndColor(LocaleController.getString("NameColor", R.string.NameColor), themePrefs.getInt(textCell.getTag().toString(), 0xff000000), true);
                 } else if (i == summaryColorRow) {
                     textCell.setTag("profileSummaryColor");
                     textCell.setTextAndColor(LocaleController.getString("StatusColor", R.string.StatusColor), themePrefs.getInt(textCell.getTag().toString(), 0xff8a8a8a), true);
+                } else if (i == onlineColorRow) {
+                    textCell.setTag("profileOnlineColor");
+                    textCell.setTextAndColor(LocaleController.getString("OnlineColor", R.string.OnlineColor), themePrefs.getInt("profileOnlineColor", AndroidUtilities.getIntDarkerColor("themeColor", -0x40)), true);
+                }
+            } else if (type == 4) {
+                if (view == null) {
+                    view = new TextCheckCell(mContext);
+                }
+                TextCheckCell textCell = (TextCheckCell) view;
+
+                if (i == rowGradientListCheckRow) {
+                    textCell.setTag("profileRowGradientListCheck");
+                    int value = AndroidUtilities.getIntDef("profileRowGradient", 0);
+                    textCell.setTextAndCheck(LocaleController.getString("RowGradientList", R.string.RowGradientList), value == 0 ? false : themePrefs.getBoolean("profileRowGradientListCheck", false), true);
+                }
+            } else if (type == 5) {
+                if (view == null) {
+                    view = new TextDetailSettingsCell(mContext);
+                }
+                TextDetailSettingsCell textCell = (TextDetailSettingsCell) view;
+
+                if(i == headerGradientRow){
+                    textCell.setTag("profileHeaderGradient");
+                    textCell.setMultilineDetail(false);
+                    int value = themePrefs.getInt("profileHeaderGradient", 0);
+                    if (value == 0) {
+                        textCell.setTextAndValue(LocaleController.getString("RowGradient", R.string.RowGradient), LocaleController.getString("RowGradientDisabled", R.string.RowGradientDisabled), false);
+                    } else if (value == 1) {
+                        textCell.setTextAndValue(LocaleController.getString("RowGradient", R.string.RowGradient), LocaleController.getString("RowGradientTopBottom", R.string.RowGradientTopBottom), false);
+                    } else if (value == 2) {
+                        textCell.setTextAndValue(LocaleController.getString("RowGradient", R.string.RowGradient), LocaleController.getString("RowGradientLeftRight", R.string.RowGradientLeftRight), false);
+                    } else if (value == 3) {
+                        textCell.setTextAndValue(LocaleController.getString("RowGradient", R.string.RowGradient), LocaleController.getString("RowGradientTLBR", R.string.RowGradientTLBR), false);
+                    } else if (value == 4) {
+                        textCell.setTextAndValue(LocaleController.getString("RowGradient", R.string.RowGradient), LocaleController.getString("RowGradientBLTR", R.string.RowGradientBLTR), false);
+                    }
+                } else if(i == rowGradientRow){
+                    textCell.setTag("profileRowGradient");
+                    textCell.setMultilineDetail(false);
+                    int value = themePrefs.getInt("profileRowGradient", 0);
+                    if (value == 0) {
+                        textCell.setTextAndValue(LocaleController.getString("RowGradient", R.string.RowGradient), LocaleController.getString("RowGradientDisabled", R.string.RowGradientDisabled), false);
+                    } else if (value == 1) {
+                        textCell.setTextAndValue(LocaleController.getString("RowGradient", R.string.RowGradient), LocaleController.getString("RowGradientTopBottom", R.string.RowGradientTopBottom), false);
+                    } else if (value == 2) {
+                        textCell.setTextAndValue(LocaleController.getString("RowGradient", R.string.RowGradient), LocaleController.getString("RowGradientLeftRight", R.string.RowGradientLeftRight), false);
+                    } else if (value == 3) {
+                        textCell.setTextAndValue(LocaleController.getString("RowGradient", R.string.RowGradient), LocaleController.getString("RowGradientTLBR", R.string.RowGradientTLBR), false);
+                    } else if (value == 4) {
+                        textCell.setTextAndValue(LocaleController.getString("RowGradient", R.string.RowGradient), LocaleController.getString("RowGradientBLTR", R.string.RowGradientBLTR), false);
+                    }
                 }
             }
             return view;
@@ -533,13 +737,18 @@ public class ThemingProfileActivity extends BaseFragment {
             else if ( i == headerSection2Row || i == rowsSection2Row ) {
                 return 1;
             }
-            else if ( i == nameSizeRow ||  i == statusSizeRow || i == avatarRadiusRow ) {
+            else if ( i == nameSizeRow ||  i == statusSizeRow || i == headerAvatarRadiusRow || i == avatarRadiusRow) {
                 return 2;
             }
-
-            else if ( i == headerColorRow  || i == headerIconsColorRow || i == iconsColorRow || i == nameColorRow || i == statusColorRow ||
-                      i == rowColorRow || i == titleColorRow || i == summaryColorRow) {
+            else if ( i == headerColorRow || i == headerGradientColorRow || i == headerIconsColorRow || i == iconsColorRow || i == nameColorRow || i == statusColorRow ||
+                      i == rowColorRow ||  i == rowGradientColorRow || i == titleColorRow || i == summaryColorRow || i == onlineColorRow) {
                 return 3;
+            }
+            else if (i == rowGradientListCheckRow) {
+                return 4;
+            }
+            else if (i == headerGradientRow || i == rowGradientRow) {
+                return 5;
             }
             else {
                 return 2;
@@ -548,7 +757,7 @@ public class ThemingProfileActivity extends BaseFragment {
 
         @Override
         public int getViewTypeCount() {
-            return 4;
+            return 6;
         }
 
         @Override

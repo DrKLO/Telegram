@@ -841,7 +841,7 @@
   <!--update text-->
   <string name="updateText">Plus Messenger pour Android a été mis à jour. Nouveautés de la version 3.1.3:\n\n- Nouvelle section \"Liens partagés\" dans les informations de la conversation\n
 - Prévisualistaion In-app pour les liens des images</string>
-  <string name="updateBuild">594</string>
+  <string name="updateBuild">597</string>
     <!--Telegram+-->
     <string name="TelegramForAndroid">Plus Messenger pour Android</string>
     <string name="Theming">Thème</string>
