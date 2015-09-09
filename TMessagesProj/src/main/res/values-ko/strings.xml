@@ -137,6 +137,7 @@
     <string name="OpenInBrowser">브라우져에서 열기</string>
     <string name="CopyUrl">URL 복사</string>
     <string name="SendItems">%1$s 전송</string>
+    <string name="OpenUrlAlert">%1$s 링크를 여시겠습니까?</string>
     <!--notification-->
     <string name="MessageLifetimeChanged">%1$s님이 자동삭제를 %2$s 후로 설정했습니다</string>
     <string name="MessageLifetimeChangedOutgoing">자동삭제를 %1$s 후로 설정했습니다</string>
@@ -549,6 +550,9 @@
     <string name="BotStatusCantRead">메시지 접근 권한이 없습니다</string>
     <string name="BotInfoTitle">이 봇은 무엇을 할 수 있나요?</string>
     <string name="BotStart">시작</string>
+    <string name="BotUnblock">재시작</string>
+    <string name="BotStop">봇 정지</string>
+    <string name="BotRestart">봇 재시작</string>
     <!--button titles-->
     <string name="Next">다음</string>
     <string name="Back">뒤로</string>
@@ -837,6 +841,6 @@
     <string name="formatterDay12H">a h:mm</string>
     <string name="formatDateAtTime">%1$s %2$s</string>
     <!--update text-->
-    <string name="updateText">텔레그램 안드로이드 버전이 업데이트 되었습니다. 새로운 버전은 3.1.2 입니다:\n\n- 최신 검색 결과\n- 스티커를 꾹 누를 경우 미리보기 기능</string>
-    <string name="updateBuild">583</string>
+    <string name="updateText">텔레그램 안드로이드 버전이 업데이트 되었습니다. 새로운 버전은 3.1.3 입니다:\n\n- 채팅방 정보내 \'공유된 링크\' 추가 \n- 사진 링크 프리뷰  기능</string>
+    <string name="updateBuild">590</string>
 </resources>

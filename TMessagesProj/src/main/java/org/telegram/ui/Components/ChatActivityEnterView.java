@@ -213,29 +213,45 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
         messageEditText.setHintTextColor(0xffb2b2b2);
         frameLayout.addView(messageEditText, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM, 52, 0, isChat ? 50 : 2, 0));
         messageEditText.setOnKeyListener(new View.OnKeyListener() {
+
+            boolean ctrlPressed = false;
+
             @Override
             public boolean onKey(View view, int i, KeyEvent keyEvent) {
                 if (i == KeyEvent.KEYCODE_BACK && !keyboardVisible && isPopupShowing()) {
                     if (keyEvent.getAction() == 1) {
+                        if (currentPopupContentType == 1 && botButtonsMessageObject != null) {
+                            SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+                            preferences.edit().putInt("hidekeyboard_" + dialog_id, botButtonsMessageObject.getId()).commit();
+                        }
                         showPopup(0, 0);
                     }
                     return true;
-                } else if (i == KeyEvent.KEYCODE_ENTER && sendByEnter && keyEvent.getAction() == KeyEvent.ACTION_DOWN) {
+                } else if (i == KeyEvent.KEYCODE_ENTER && (ctrlPressed || sendByEnter) && keyEvent.getAction() == KeyEvent.ACTION_DOWN) {
                     sendMessage();
+                    return true;
+                } else if (i == KeyEvent.KEYCODE_CTRL_LEFT || i == KeyEvent.KEYCODE_CTRL_RIGHT) {
+                    ctrlPressed = keyEvent.getAction() == KeyEvent.ACTION_DOWN;
                     return true;
                 }
                 return false;
             }
         });
         messageEditText.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+
+            boolean ctrlPressed = false;
+
             @Override
             public boolean onEditorAction(TextView textView, int i, KeyEvent keyEvent) {
                 if (i == EditorInfo.IME_ACTION_SEND) {
                     sendMessage();
                     return true;
-                } else if (sendByEnter) {
-                    if (keyEvent != null && i == EditorInfo.IME_NULL && keyEvent.getAction() == KeyEvent.ACTION_DOWN) {
+                } else if (keyEvent != null && i == EditorInfo.IME_NULL) {
+                    if ((ctrlPressed || sendByEnter) && keyEvent.getAction() == KeyEvent.ACTION_DOWN) {
                         sendMessage();
+                        return true;
+                    } else if (i == KeyEvent.KEYCODE_CTRL_LEFT || i == KeyEvent.KEYCODE_CTRL_RIGHT) {
+                        ctrlPressed = keyEvent.getAction() == KeyEvent.ACTION_DOWN;
                         return true;
                     }
                 }
@@ -319,7 +335,13 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
                     if (botReplyMarkup != null) {
                         if (!isPopupShowing() || currentPopupContentType != 1) {
                             showPopup(1, 1);
+                            SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+                            preferences.edit().remove("hidekeyboard_" + dialog_id).commit();
                         } else {
+                            if (currentPopupContentType == 1 && botButtonsMessageObject != null) {
+                                SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+                                preferences.edit().putInt("hidekeyboard_" + dialog_id, botButtonsMessageObject.getId()).commit();
+                            }
                             openKeyboardInternal();
                         }
                     } else if (hasBotCommands) {
@@ -1184,13 +1206,14 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
         botKeyboardView.setPanelHeight(AndroidUtilities.displaySize.x > AndroidUtilities.displaySize.y ? keyboardHeightLand : keyboardHeight);
         botKeyboardView.setButtons(botReplyMarkup != null ? botReplyMarkup : null);
         if (botReplyMarkup != null) {
+            SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+            boolean keyboardHidden = preferences.getInt("hidekeyboard_" + dialog_id, 0) == messageObject.getId();
             if (botButtonsMessageObject != replyingMessageObject && (botReplyMarkup.flags & 2) != 0) {
-                SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
                 if (preferences.getInt("answered_" + dialog_id, 0) == messageObject.getId()) {
                     return;
                 }
             }
-            if (messageEditText.length() == 0 && !isPopupShowing()) {
+            if (!keyboardHidden && messageEditText.length() == 0 && !isPopupShowing()) {
                 showPopup(1, 1);
             }
         } else {
@@ -1321,8 +1344,12 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
         }
     }
 
-    public void hidePopup() {
+    public void hidePopup(boolean byBackButton) {
         if (isPopupShowing()) {
+            if (currentPopupContentType == 1 && byBackButton && botButtonsMessageObject != null) {
+                SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+                preferences.edit().putInt("hidekeyboard_" + dialog_id, botButtonsMessageObject.getId()).commit();
+            }
             showPopup(0, 0);
         }
     }

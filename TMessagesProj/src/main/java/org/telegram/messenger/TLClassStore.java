@@ -78,11 +78,13 @@ public class TLClassStore {
         classStore.put(TLRPC.TL_video_old2.constructor, TLRPC.TL_video_old2.class);
         classStore.put(TLRPC.TL_video_old.constructor, TLRPC.TL_video_old.class);
         classStore.put(TLRPC.TL_videoEncrypted.constructor, TLRPC.TL_videoEncrypted.class);
+        classStore.put(TLRPC.TL_video_old3.constructor, TLRPC.TL_video_old3.class);
 
         classStore.put(TLRPC.TL_audio.constructor, TLRPC.TL_audio.class);
         classStore.put(TLRPC.TL_audioEncrypted.constructor, TLRPC.TL_audioEncrypted.class);
         classStore.put(TLRPC.TL_audioEmpty.constructor, TLRPC.TL_audioEmpty.class);
         classStore.put(TLRPC.TL_audio_old.constructor, TLRPC.TL_audio_old.class);
+        classStore.put(TLRPC.TL_audio_old2.constructor, TLRPC.TL_audio_old2.class);
 
         classStore.put(TLRPC.TL_document.constructor, TLRPC.TL_document.class);
         classStore.put(TLRPC.TL_documentEmpty.constructor, TLRPC.TL_documentEmpty.class);
@@ -96,6 +98,7 @@ public class TLClassStore {
         classStore.put(TLRPC.TL_photoSizeEmpty.constructor, TLRPC.TL_photoSizeEmpty.class);
         classStore.put(TLRPC.TL_photoCachedSize.constructor, TLRPC.TL_photoCachedSize.class);
         classStore.put(TLRPC.TL_photo_old.constructor, TLRPC.TL_photo_old.class);
+        classStore.put(TLRPC.TL_photo_old2.constructor, TLRPC.TL_photo_old2.class);
     }
 
     static TLClassStore store = null;

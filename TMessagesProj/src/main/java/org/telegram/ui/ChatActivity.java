@@ -27,6 +27,7 @@ import android.os.Bundle;
 import android.provider.ContactsContract;
 import android.provider.MediaStore;
 import android.text.TextUtils;
+import android.text.style.ClickableSpan;
 import android.util.Base64;
 import android.util.SparseArray;
 import android.util.TypedValue;
@@ -114,6 +115,8 @@ import org.telegram.ui.Components.SendingFileExDrawable;
 import org.telegram.ui.Components.SizeNotifierFrameLayout;
 import org.telegram.ui.Components.TimerDrawable;
 import org.telegram.ui.Components.TypingDotsDrawable;
+import org.telegram.ui.Components.URLSpanNoUnderline;
+import org.telegram.ui.Components.URLSpanReplacement;
 import org.telegram.ui.Components.WebFrameLayout;
 
 import java.io.File;
@@ -1883,16 +1886,27 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 }
                 AlertDialog.Builder builder = null;
                 if (currentUser != null && userBlocked) {
-                    builder = new AlertDialog.Builder(getParentActivity());
-                    builder.setMessage(LocaleController.getString("AreYouSureUnblockContact", R.string.AreYouSureUnblockContact));
-                    builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialogInterface, int i) {
-                            MessagesController.getInstance().unblockUser(currentUser.id);
+                    if ((currentUser.flags & TLRPC.USER_FLAG_BOT) != 0) {
+                        String botUserLast = botUser;
+                        botUser = null;
+                        MessagesController.getInstance().unblockUser(currentUser.id);
+                        if (botUserLast != null && botUserLast.length() != 0) {
+                            MessagesController.getInstance().sendBotStart(currentUser, botUserLast);
+                        } else {
+                            SendMessagesHelper.getInstance().sendMessage("/start", dialog_id, null, null, false);
                         }
-                    });
+                    } else {
+                        builder = new AlertDialog.Builder(getParentActivity());
+                        builder.setMessage(LocaleController.getString("AreYouSureUnblockContact", R.string.AreYouSureUnblockContact));
+                        builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialogInterface, int i) {
+                                MessagesController.getInstance().unblockUser(currentUser.id);
+                            }
+                        });
+                    }
                 } else if (currentUser != null && botUser != null) {
-                    if (botUser.length() != 0) {
+                    if (botUser != null && botUser.length() != 0) {
                         MessagesController.getInstance().sendBotStart(currentUser, botUser);
                     } else {
                         SendMessagesHelper.getInstance().sendMessage("/start", dialog_id, null, null, false);
@@ -2601,7 +2615,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             bottomOverlay.setVisibility(View.INVISIBLE);
         }
         if (hideKeyboard) {
-            chatActivityEnterView.hidePopup();
+            chatActivityEnterView.hidePopup(false);
             if (getParentActivity() != null) {
                 AndroidUtilities.hideKeyboard(getParentActivity().getCurrentFocus());
             }
@@ -4363,10 +4377,14 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             bottomOverlayChatText.setText(LocaleController.getString("DeleteThisGroup", R.string.DeleteThisGroup));
         } else {
             if (userBlocked) {
-                bottomOverlayChatText.setText(LocaleController.getString("Unblock", R.string.Unblock));
+                if ((currentUser.flags & TLRPC.USER_FLAG_BOT) != 0) {
+                    bottomOverlayChatText.setText(LocaleController.getString("BotUnblock", R.string.BotUnblock));
+                } else {
+                    bottomOverlayChatText.setText(LocaleController.getString("Unblock", R.string.Unblock));
+                }
             } else if (botUser != null) {
                 bottomOverlayChatText.setText(LocaleController.getString("BotStart", R.string.BotStart));
-                chatActivityEnterView.hidePopup();
+                chatActivityEnterView.hidePopup(false);
                 if (getParentActivity() != null) {
                     AndroidUtilities.hideKeyboard(getParentActivity().getCurrentFocus());
                 }
@@ -5039,7 +5057,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             updateVisibleRows();
             return false;
         } else if (chatActivityEnterView.isPopupShowing()) {
-            chatActivityEnterView.hidePopup();
+            chatActivityEnterView.hidePopup(true);
             return false;
         }
         return true;
@@ -5345,15 +5363,36 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     }
 
                     @Override
-                    public void didPressUrl(MessageObject messageObject, String url) {
-                        if (url.startsWith("@")) {
-                            MessagesController.openByUserName(url.substring(1), ChatActivity.this, 0);
-                        } else if (url.startsWith("#")) {
-                            DialogsActivity fragment = new DialogsActivity(null);
-                            fragment.setSearchString(url);
-                            presentFragment(fragment);
-                        } else if (url.startsWith("/")) {
-                            chatActivityEnterView.setCommand(messageObject, url);
+                    public void didPressUrl(MessageObject messageObject, final ClickableSpan url) {
+                        if (url instanceof URLSpanNoUnderline) {
+                            String str = ((URLSpanNoUnderline) url).getURL();
+                            if (str.startsWith("@")) {
+                                MessagesController.openByUserName(str.substring(1), ChatActivity.this, 0);
+                            } else if (str.startsWith("#")) {
+                                DialogsActivity fragment = new DialogsActivity(null);
+                                fragment.setSearchString(str);
+                                presentFragment(fragment);
+                            } else if (str.startsWith("/")) {
+                                chatActivityEnterView.setCommand(messageObject, str);
+                            }
+                        } else if (url instanceof URLSpanReplacement) {
+                            AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                            builder.setMessage(LocaleController.formatString("OpenUrlAlert", R.string.OpenUrlAlert, ((URLSpanReplacement) url).getURL()));
+                            builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
+                            builder.setPositiveButton(LocaleController.getString("Open", R.string.Open), new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialogInterface, int i) {
+                                    try {
+                                        url.onClick(fragmentView);
+                                    } catch (Exception e) {
+                                        FileLog.e("tmessages", e);
+                                    }
+                                }
+                            });
+                            builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+                            showDialog(builder.create());
+                        } else {
+                            url.onClick(fragmentView);
                         }
                     }
 

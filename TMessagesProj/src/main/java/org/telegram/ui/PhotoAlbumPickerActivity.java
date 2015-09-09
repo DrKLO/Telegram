@@ -289,6 +289,14 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
     }
 
     @Override
+    public void onPause() {
+        super.onPause();
+        if (dropDownContainer != null) {
+            dropDownContainer.closeSubMenu();
+        }
+    }
+
+    @Override
     public void onResume() {
         super.onResume();
         if (listAdapter != null) {

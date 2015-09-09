@@ -1370,12 +1370,8 @@ public class NotificationsController {
             if (user == null) {
                 return;
             }
-            if (user.access_hash != 0) {
-                ((TLRPC.TL_inputNotifyPeer)req.peer).peer = new TLRPC.TL_inputPeerForeign();
-                ((TLRPC.TL_inputNotifyPeer)req.peer).peer.access_hash = user.access_hash;
-            } else {
-                ((TLRPC.TL_inputNotifyPeer)req.peer).peer = new TLRPC.TL_inputPeerContact();
-            }
+            ((TLRPC.TL_inputNotifyPeer)req.peer).peer = new TLRPC.TL_inputPeerUser();
+            ((TLRPC.TL_inputNotifyPeer)req.peer).peer.access_hash = user.access_hash;
             ((TLRPC.TL_inputNotifyPeer)req.peer).peer.user_id = (int)dialog_id;
         }
 

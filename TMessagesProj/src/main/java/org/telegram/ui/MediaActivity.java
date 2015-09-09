@@ -289,6 +289,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                             }
                             MessagesController.getInstance().deleteMessages(ids, random_ids, currentEncryptedChat);
                             actionBar.hideActionMode();
+                            actionBar.closeSearchField();
                             selectedFiles.clear();
                         }
                     });
@@ -399,9 +400,9 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
         dropDownContainer.setSubMenuOpenSide(1);
         dropDownContainer.addSubItem(shared_media_item, LocaleController.getString("SharedMediaTitle", R.string.SharedMediaTitle), 0);
         dropDownContainer.addSubItem(files_item, LocaleController.getString("DocumentsTitle", R.string.DocumentsTitle), 0);
-        //if ((int) dialog_id != 0) {
-        //    dropDownContainer.addSubItem(links_item, LocaleController.getString("LinksTitle", R.string.LinksTitle), 0);
-        //}
+        if ((int) dialog_id != 0) {
+            dropDownContainer.addSubItem(links_item, LocaleController.getString("LinksTitle", R.string.LinksTitle), 0);
+        }
         actionBar.addView(dropDownContainer, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT, AndroidUtilities.isTablet() ? 64 : 56, 0, 40, 0));
         dropDownContainer.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -509,6 +510,10 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                 if (selectedMode == 1 && view instanceof SharedDocumentCell) {
                     SharedDocumentCell cell = (SharedDocumentCell) view;
                     MessageObject message = cell.getDocument();
+                    return MediaActivity.this.onItemLongClick(message, view, 0);
+                } else if (selectedMode == 3 && view instanceof SharedLinkCell) {
+                    SharedLinkCell cell = (SharedLinkCell) view;
+                    MessageObject message = cell.getMessage();
                     return MediaActivity.this.onItemLongClick(message, view, 0);
                 }
                 return false;
@@ -674,6 +679,14 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
     }
 
     @Override
+    public void onPause() {
+        super.onPause();
+        if (dropDownContainer != null) {
+            dropDownContainer.closeSubMenu();
+        }
+    }
+
+    @Override
     public void onResume() {
         super.onResume();
         scrolling = true;
@@ -828,12 +841,12 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
             } else if (selectedMode == 3) {
                 listView.setAdapter(linksAdapter);
                 dropDown.setText(LocaleController.getString("LinksTitle", R.string.LinksTitle));
-                emptyImageView.setImageResource(R.drawable.tip2);
+                emptyImageView.setImageResource(R.drawable.tip3);
                 emptyTextView.setText(LocaleController.getString("NoSharedLinks", R.string.NoSharedLinks));
                 searchItem.setVisibility(!sharedMediaData[3].messages.isEmpty() ? View.VISIBLE : View.GONE);
                 if (!sharedMediaData[selectedMode].loading && !sharedMediaData[selectedMode].endReached && sharedMediaData[selectedMode].messages.isEmpty()) {
                     sharedMediaData[selectedMode].loading = true;
-                    SharedMediaQuery.loadMedia(dialog_id, 0, 50, 0, SharedMediaQuery.MEDIA_URL, false, classGuid);
+                    SharedMediaQuery.loadMedia(dialog_id, 0, 50, 0, SharedMediaQuery.MEDIA_URL, true, classGuid);
                 }
                 listView.setVisibility(View.VISIBLE);
                 if (sharedMediaData[selectedMode].loading && sharedMediaData[selectedMode].messages.isEmpty()) {
@@ -876,6 +889,8 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
             ((SharedDocumentCell) view).setChecked(true, true);
         } else if (view instanceof SharedPhotoVideoCell) {
             ((SharedPhotoVideoCell) view).setChecked(a, true, true);
+        } else if (view instanceof SharedLinkCell) {
+            ((SharedLinkCell) view).setChecked(true, true);
         }
         actionBar.showActionMode();
         return true;
@@ -901,6 +916,8 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                 ((SharedDocumentCell) view).setChecked(selectedFiles.containsKey(message.getId()), true);
             } else if (view instanceof SharedPhotoVideoCell) {
                 ((SharedPhotoVideoCell) view).setChecked(a, selectedFiles.containsKey(message.getId()), true);
+            } else if (view instanceof SharedLinkCell) {
+                ((SharedLinkCell) view).setChecked(selectedFiles.containsKey(message.getId()), true);
             }
         } else {
             if (selectedMode == 0) {
@@ -978,13 +995,20 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
             } else if (selectedMode == 3) {
                 try {
                     TLRPC.WebPage webPage = message.messageOwner.media.webpage;
-                    if (Build.VERSION.SDK_INT >= 16 && webPage.embed_url != null && webPage.embed_url.length() != 0) {
-                        BottomSheet.Builder builder = new BottomSheet.Builder(getParentActivity());
-                        builder.setCustomView(new WebFrameLayout(getParentActivity(), builder.create(), webPage.title, webPage.url, webPage.embed_url, webPage.embed_width, webPage.embed_height));
-                        builder.setUseFullWidth(true);
-                        showDialog(builder.create());
-                    } else {
-                        Uri uri = Uri.parse(webPage.url);
+                    String link = null;
+                    if (webPage != null && !(webPage instanceof TLRPC.TL_webPageEmpty)) {
+                        if (Build.VERSION.SDK_INT >= 16 && webPage.embed_url != null && webPage.embed_url.length() != 0) {
+                            openWebView(webPage);
+                            return;
+                        } else {
+                            link = webPage.url;
+                        }
+                    }
+                    if (link == null) {
+                        link = ((SharedLinkCell) view).getLink(0);
+                    }
+                    if (link != null) {
+                        Uri uri = Uri.parse(link);
                         Intent intent = new Intent(Intent.ACTION_VIEW, uri);
                         intent.putExtra(Browser.EXTRA_APPLICATION_ID, getParentActivity().getPackageName());
                         getParentActivity().startActivity(intent);
@@ -994,6 +1018,13 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                 }
             }
         }
+    }
+
+    private void openWebView(TLRPC.WebPage webPage) {
+        BottomSheet.Builder builder = new BottomSheet.Builder(getParentActivity());
+        builder.setCustomView(new WebFrameLayout(getParentActivity(), builder.create(), webPage.title, webPage.url, webPage.embed_url, webPage.embed_width, webPage.embed_height));
+        builder.setUseFullWidth(true);
+        showDialog(builder.create());
     }
 
     private void fixLayoutInternal() {
@@ -1090,15 +1121,26 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                 } else {
                     if (convertView == null) {
                         convertView = new SharedLinkCell(mContext);
+                        ((SharedLinkCell) convertView).setDelegate(new SharedLinkCell.SharedLinkCellDelegate() {
+                            @Override
+                            public void needOpenWebView(TLRPC.WebPage webPage) {
+                                MediaActivity.this.openWebView(webPage);
+                            }
+
+                            @Override
+                            public boolean canPerformActions() {
+                                return !actionBar.isActionModeShowed();
+                            }
+                        });
                     }
-                    SharedLinkCell sharedDocumentCell = (SharedLinkCell) convertView;
+                    SharedLinkCell sharedLinkCell = (SharedLinkCell) convertView;
                     MessageObject messageObject = messageObjects.get(position - 1);
-                    sharedDocumentCell.setLink(messageObject, position != messageObjects.size() || section == sharedMediaData[3].sections.size() - 1 && sharedMediaData[3].loading);
-                    /*if (actionBar.isActionModeShowed()) {
-                        sharedDocumentCell.setChecked(selectedFiles.containsKey(messageObject.getId()), !scrolling);
+                    sharedLinkCell.setLink(messageObject, position != messageObjects.size() || section == sharedMediaData[3].sections.size() - 1 && sharedMediaData[3].loading);
+                    if (actionBar.isActionModeShowed()) {
+                        sharedLinkCell.setChecked(selectedFiles.containsKey(messageObject.getId()), !scrolling);
                     } else {
-                        sharedDocumentCell.setChecked(false, !scrolling);
-                    }*/
+                        sharedLinkCell.setChecked(false, !scrolling);
+                    }
                 }
             } else {
                 if (convertView == null) {
@@ -1392,12 +1434,8 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                 if (user == null) {
                     return;
                 }
-                if (user.access_hash != 0) {
-                    req.peer = new TLRPC.TL_inputPeerForeign();
-                    req.peer.access_hash = user.access_hash;
-                } else {
-                    req.peer = new TLRPC.TL_inputPeerContact();
-                }
+                req.peer = new TLRPC.TL_inputPeerUser();
+                req.peer.access_hash = user.access_hash;
                 req.peer.user_id = uid;
             }
             final int currentReqId = ++lastReqId;
@@ -1528,7 +1566,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
 
         @Override
         public boolean isEnabled(int i) {
-            return i != searchResult.size();
+            return i != searchResult.size() + globalSearch.size();
         }
 
         @Override
@@ -1588,15 +1626,26 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
             } else if (currentType == 3) {
                 if (view == null) {
                     view = new SharedLinkCell(mContext);
+                    ((SharedLinkCell) view).setDelegate(new SharedLinkCell.SharedLinkCellDelegate() {
+                        @Override
+                        public void needOpenWebView(TLRPC.WebPage webPage) {
+                            MediaActivity.this.openWebView(webPage);
+                        }
+
+                        @Override
+                        public boolean canPerformActions() {
+                            return !actionBar.isActionModeShowed();
+                        }
+                    });
                 }
                 SharedLinkCell sharedLinkCell = (SharedLinkCell) view;
                 MessageObject messageObject = getItem(i);
                 sharedLinkCell.setLink(messageObject, i != getCount() - 1);
-                /*if (actionBar.isActionModeShowed()) {
-                    sharedDocumentCell.setChecked(selectedFiles.containsKey(messageObject.getId()), !scrolling);
+                if (actionBar.isActionModeShowed()) {
+                    sharedLinkCell.setChecked(selectedFiles.containsKey(messageObject.getId()), !scrolling);
                 } else {
-                    sharedDocumentCell.setChecked(false, !scrolling);
-                }*/
+                    sharedLinkCell.setChecked(false, !scrolling);
+                }
             }
             return view;
         }

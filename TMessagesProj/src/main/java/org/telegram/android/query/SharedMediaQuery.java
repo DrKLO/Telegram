@@ -61,12 +61,8 @@ public class SharedMediaQuery {
                 if (user == null) {
                     return;
                 }
-                if (user.access_hash != 0) {
-                    req.peer = new TLRPC.TL_inputPeerForeign();
-                    req.peer.access_hash = user.access_hash;
-                } else {
-                    req.peer = new TLRPC.TL_inputPeerContact();
-                }
+                req.peer = new TLRPC.TL_inputPeerUser();
+                req.peer.access_hash = user.access_hash;
                 req.peer.user_id = lower_part;
             }
             long reqId = ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
@@ -109,12 +105,8 @@ public class SharedMediaQuery {
                 if (user == null) {
                     return;
                 }
-                if (user.access_hash != 0) {
-                    req.peer = new TLRPC.TL_inputPeerForeign();
-                    req.peer.access_hash = user.access_hash;
-                } else {
-                    req.peer = new TLRPC.TL_inputPeerContact();
-                }
+                req.peer = new TLRPC.TL_inputPeerUser();
+                req.peer.access_hash = user.access_hash;
                 req.peer.user_id = lower_part;
             }
             long reqId = ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
@@ -158,8 +150,13 @@ public class SharedMediaQuery {
             }
         } else if (message.media instanceof TLRPC.TL_messageMediaAudio) {
             return MEDIA_AUDIO;
-        } else if (message.media instanceof TLRPC.TL_messageMediaWebPage) {
-            return MEDIA_URL;
+        } else if (!message.entities.isEmpty()) {
+            for (int a = 0; a < message.entities.size(); a++) {
+                TLRPC.MessageEntity entity = message.entities.get(a);
+                if (entity instanceof TLRPC.TL_messageEntityUrl || entity instanceof TLRPC.TL_messageEntityTextUrl || entity instanceof TLRPC.TL_messageEntityEmail) {
+                    return MEDIA_URL;
+                }
+            }
         }
         return -1;
     }
@@ -170,9 +167,15 @@ public class SharedMediaQuery {
         } else if (message.media instanceof TLRPC.TL_messageMediaPhoto ||
                 message.media instanceof TLRPC.TL_messageMediaVideo ||
                 message.media instanceof TLRPC.TL_messageMediaDocument ||
-                message.media instanceof TLRPC.TL_messageMediaAudio/* ||
-                message.media instanceof TLRPC.TL_messageMediaWebPage && !(message.media.webpage instanceof TLRPC.TL_webPageEmpty)*/) {
+                message.media instanceof TLRPC.TL_messageMediaAudio) {
             return true;
+        } else if (!message.entities.isEmpty()) {
+            for (int a = 0; a < message.entities.size(); a++) {
+                TLRPC.MessageEntity entity = message.entities.get(a);
+                if (entity instanceof TLRPC.TL_messageEntityUrl || entity instanceof TLRPC.TL_messageEntityTextUrl || entity instanceof TLRPC.TL_messageEntityEmail) {
+                    return true;
+                }
+            }
         }
         return false;
     }

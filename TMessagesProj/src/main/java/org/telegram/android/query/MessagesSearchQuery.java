@@ -83,12 +83,8 @@ public class MessagesSearchQuery {
             if (user == null) {
                 return;
             }
-            if (user.access_hash != 0) {
-                req.peer = new TLRPC.TL_inputPeerForeign();
-                req.peer.access_hash = user.access_hash;
-            } else {
-                req.peer = new TLRPC.TL_inputPeerContact();
-            }
+            req.peer = new TLRPC.TL_inputPeerUser();
+            req.peer.access_hash = user.access_hash;
             req.peer.user_id = lower_part;
         }
         req.q = query;
