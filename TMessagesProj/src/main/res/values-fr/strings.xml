@@ -15,17 +15,17 @@
     <!--code enter view-->
     <string name="YourCode">Votre code</string>
     <string name="SentSmsCode">Nous vous avons envoyé un SMS avec un code d\'activation</string>
-    <string name="CallText">Nous allons vous appelez dans %1$d:%2$02d</string>
+    <string name="CallText">Nous allons vous appeler dans %1$d:%2$02d</string>
     <string name="Calling">Nous vous appelons...</string>
     <string name="Code">Code</string>
     <string name="WrongNumber">Numéro incorrect ?</string>
     <string name="DidNotGetTheCode">Vous n\'avez pas reçu le code ?</string>
     <!--signup view-->
-    <string name="YourName">Votre noms</string>
+    <string name="YourName">Votre nom</string>
     <string name="RegisterText">Configurez vos nom et prénom</string>
     <!--<string name="RegisterText">Set up your name and picture</string>-->
     <string name="FirstName">Prénom (requis)</string>
-    <string name="LastName">Nom (optionel)</string>
+    <string name="LastName">Nom (facultatif)</string>
     <string name="CancelRegistration">Annuler l\'enregistrement</string>
     <!--chats view-->
     <string name="Settings">Paramètres</string>
@@ -35,12 +35,12 @@
     <string name="NoResult">Aucun résultat</string>
     <string name="NoChats">Aucune discussion...</string>
     <string name="NoChatsHelp">Commencez à échanger en touchant le\nbouton nouveau message en bas à droite\nor tap the menu button for more options.</string>
-    <string name="WaitingForNetwork">Attente du réseau...</string>
+    <string name="WaitingForNetwork">En attente du réseau...</string>
     <string name="Connecting">Connexion...</string>
     <string name="Updating">Mise à jour...</string>
     <string name="NewSecretChat">Nouvelle discussion privée</string>
-    <string name="AwaitingEncryption">Attend que %s soit en ligne...</string>
-    <string name="EncryptionRejected">Disccussion privée annulée</string>
+    <string name="AwaitingEncryption">En attente que %s soit en ligne...</string>
+    <string name="EncryptionRejected">Discussion privée annulée</string>
     <string name="EncryptionProcessing">Échange de clé de chiffrement...</string>
     <string name="EncryptedChatStartedOutgoing">%s a rejoint votre discussion privée.</string>
     <string name="EncryptedChatStartedIncoming">Vous avez rejoint la discussion privée.</string>
