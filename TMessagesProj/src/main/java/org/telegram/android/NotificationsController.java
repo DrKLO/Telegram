@@ -1102,7 +1102,7 @@ public class NotificationsController {
                     popupMessages.add(0, messageObject);
                 }
                 delayedPushMessages.add(messageObject);
-                pushMessages.add(0, messageObject);
+                pushMessages.add(messageObject);
                 pushMessagesDict.put(messageObject.getId(), messageObject);
                 if (original_dialog_id != dialog_id) {
                     pushDialogsOverrideMention.put(original_dialog_id, 1);
