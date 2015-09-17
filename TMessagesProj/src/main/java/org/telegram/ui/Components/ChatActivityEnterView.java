@@ -1367,6 +1367,10 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
         }
     }
 
+    public void openKeyboard() {
+        AndroidUtilities.showKeyboard(messageEditText);
+    }
+
     public void hideKeyboard() {
         AndroidUtilities.hideKeyboard(messageEditText);
     }
