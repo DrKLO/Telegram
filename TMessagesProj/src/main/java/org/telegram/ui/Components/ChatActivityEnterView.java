@@ -1371,8 +1371,16 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
         AndroidUtilities.showKeyboard(messageEditText);
     }
 
+    public void hideKeyboard() {
+        AndroidUtilities.hideKeyboard(messageEditText);
+    }
+
     public boolean isPopupShowing() {
         return emojiView != null && emojiView.getVisibility() == VISIBLE || botKeyboardView != null && botKeyboardView.getVisibility() == VISIBLE;
+    }
+
+    public boolean isKeyBoardShowing() {
+        return keyboardVisible;
     }
 
     @Override

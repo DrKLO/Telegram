@@ -4645,6 +4645,16 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     }
 
     public void createMenu(View v, boolean single) {
+        if (chatActivityEnterView.isPopupShowing()) {
+            chatActivityEnterView.hidePopup(true);
+            return;
+        }
+
+        if (chatActivityEnterView.isKeyBoardShowing()) {
+            chatActivityEnterView.hideKeyboard();
+            return;
+        }
+
         if (actionBar.isActionModeShowed()) {
             return;
         }
