@@ -21,10 +21,10 @@ import android.view.View;
 import android.view.WindowManager;
 import android.widget.FrameLayout;
 
-import org.telegram.android.AndroidUtilities;
-import org.telegram.android.ImageReceiver;
+import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.FileLog;
-import org.telegram.messenger.TLRPC;
+import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.Components.LayoutHelper;
 
 public class StickerPreviewViewer {

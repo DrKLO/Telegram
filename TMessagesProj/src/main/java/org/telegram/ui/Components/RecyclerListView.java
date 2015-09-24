@@ -17,8 +17,8 @@ import android.view.SoundEffectConstants;
 import android.view.View;
 import android.view.ViewConfiguration;
 
-import org.telegram.android.AndroidUtilities;
-import org.telegram.android.support.widget.RecyclerView;
+import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.support.widget.RecyclerView;
 import org.telegram.messenger.FileLog;
 
 import java.lang.reflect.Field;

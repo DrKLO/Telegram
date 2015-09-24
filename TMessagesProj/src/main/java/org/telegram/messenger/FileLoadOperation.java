@@ -8,6 +8,11 @@
 
 package org.telegram.messenger;
 
+import org.telegram.tgnet.ConnectionsManager;
+import org.telegram.tgnet.RequestDelegate;
+import org.telegram.tgnet.TLObject;
+import org.telegram.tgnet.TLRPC;
+
 import java.io.RandomAccessFile;
 import java.io.File;
 import java.nio.channels.FileChannel;
@@ -17,7 +22,7 @@ import java.util.Scanner;
 public class FileLoadOperation {
 
     private static class RequestInfo {
-        private long requestToken = 0;
+        private int requestToken = 0;
         private int offset = 0;
         private TLRPC.TL_upload_file response = null;
     }
@@ -29,7 +34,9 @@ public class FileLoadOperation {
 
     private final static int downloadChunkSize = 1024 * 32;
     private final static int downloadChunkSizeBig = 1024 * 128;
-    private final static int maxDownloadRequests = 3;
+    private final static int maxDownloadRequests = 4;
+    private final static int maxDownloadRequestsBig = 2;
+    private final static int bigFileSizeFrom = 1024 * 1024;
 
     private int datacenter_id;
     private TLRPC.InputFileLocation location;
@@ -40,10 +47,12 @@ public class FileLoadOperation {
     private byte[] key;
     private byte[] iv;
     private int currentDownloadChunkSize;
+    private int currentMaxDownloadRequests;
+    private int requestsCount;
 
     private int nextDownloadOffset = 0;
-    private ArrayList<RequestInfo> requestInfos = new ArrayList<>(maxDownloadRequests);
-    private ArrayList<RequestInfo> delayedRequestInfos = new ArrayList<>(maxDownloadRequests - 1);
+    private ArrayList<RequestInfo> requestInfos;
+    private ArrayList<RequestInfo> delayedRequestInfos;
 
     private File cacheFileTemp;
     private File cacheFileFinal;
@@ -167,7 +176,10 @@ public class FileLoadOperation {
         if (state != stateIdle) {
             return;
         }
-        currentDownloadChunkSize = totalBytesCount >= 1024 * 1024 * 30 ? downloadChunkSizeBig : downloadChunkSize;
+        currentDownloadChunkSize = totalBytesCount >= bigFileSizeFrom ? downloadChunkSizeBig : downloadChunkSize;
+        currentMaxDownloadRequests = totalBytesCount >= bigFileSizeFrom ? maxDownloadRequestsBig : maxDownloadRequests;
+        requestInfos = new ArrayList<>(currentMaxDownloadRequests);
+        delayedRequestInfos = new ArrayList<>(currentMaxDownloadRequests - 1);
         state = stateDownloading;
         if (location == null) {
             Utilities.stageQueue.postRunnable(new Runnable() {
@@ -296,13 +308,12 @@ public class FileLoadOperation {
                     return;
                 }
                 state = stateFailed;
-                if (BuildVars.DEBUG_VERSION) {
-                    FileLog.e("tmessages", "cancel downloading file to " + cacheFileFinal);
-                }
                 cleanup();
-                for (RequestInfo requestInfo : requestInfos) {
-                    if (requestInfo.requestToken != 0) {
-                        ConnectionsManager.getInstance().cancelRpc(requestInfo.requestToken, true, true);
+                if (requestInfos != null) {
+                    for (RequestInfo requestInfo : requestInfos) {
+                        if (requestInfo.requestToken != 0) {
+                            ConnectionsManager.getInstance().cancelRequest(requestInfo.requestToken, true);
+                        }
                     }
                 }
                 delegate.didFailedLoadingFile(FileLoadOperation.this, 1);
@@ -328,13 +339,15 @@ public class FileLoadOperation {
         } catch (Exception e) {
             FileLog.e("tmessages", e);
         }
-        for (RequestInfo requestInfo : delayedRequestInfos) {
-            if (requestInfo.response != null) {
-                requestInfo.response.disableFree = false;
-                requestInfo.response.freeResources();
+        if (delayedRequestInfos != null) {
+            for (RequestInfo requestInfo : delayedRequestInfos) {
+                if (requestInfo.response != null) {
+                    requestInfo.response.disableFree = false;
+                    requestInfo.response.freeResources();
+                }
             }
+            delayedRequestInfos.clear();
         }
-        delayedRequestInfos.clear();
     }
 
     private void onFinishLoadingFile() throws Exception {
@@ -464,12 +477,12 @@ public class FileLoadOperation {
     }
 
     private void startDownloadRequest() {
-        if (state != stateDownloading || totalBytesCount > 0 && nextDownloadOffset >= totalBytesCount || requestInfos.size() + delayedRequestInfos.size() >= maxDownloadRequests) {
+        if (state != stateDownloading || totalBytesCount > 0 && nextDownloadOffset >= totalBytesCount || requestInfos.size() + delayedRequestInfos.size() >= currentMaxDownloadRequests) {
             return;
         }
         int count = 1;
         if (totalBytesCount > 0) {
-            count = Math.max(0, maxDownloadRequests - requestInfos.size() - delayedRequestInfos.size());
+            count = Math.max(0, currentMaxDownloadRequests - requestInfos.size() - delayedRequestInfos.size());
         }
 
         for (int a = 0; a < count; a++) {
@@ -486,13 +499,14 @@ public class FileLoadOperation {
             final RequestInfo requestInfo = new RequestInfo();
             requestInfos.add(requestInfo);
             requestInfo.offset = req.offset;
-            requestInfo.requestToken = ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
+            requestInfo.requestToken = ConnectionsManager.getInstance().sendRequest(req, new RequestDelegate() {
                 @Override
                 public void run(TLObject response, TLRPC.TL_error error) {
                     requestInfo.response = (TLRPC.TL_upload_file) response;
                     processRequestResult(requestInfo, error);
                 }
-            }, null, true, RPCRequest.RPCRequestClassDownloadMedia | (isForceRequest ? RPCRequest.RPCRequestClassForceDownload : 0), datacenter_id, isLast);
+            }, null, (isForceRequest ? ConnectionsManager.RequestFlagForceDownload : 0) | ConnectionsManager.RequestFlagFailOnServerErrors, datacenter_id, requestsCount % 2 == 0 ? ConnectionsManager.ConnectionTypeDownload : ConnectionsManager.ConnectionTypeDownload2, isLast);
+            requestsCount++;
         }
     }
 

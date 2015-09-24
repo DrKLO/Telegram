@@ -16,10 +16,10 @@ import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
 
-import org.telegram.android.AndroidUtilities;
-import org.telegram.android.Emoji;
+import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.Emoji;
 import org.telegram.messenger.R;
-import org.telegram.messenger.TLRPC;
+import org.telegram.tgnet.TLRPC;
 
 import java.util.ArrayList;
 

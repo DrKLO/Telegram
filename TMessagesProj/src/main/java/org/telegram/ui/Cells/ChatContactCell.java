@@ -19,14 +19,14 @@ import android.view.MotionEvent;
 import android.view.SoundEffectConstants;
 
 import org.telegram.PhoneFormat.PhoneFormat;
-import org.telegram.android.AndroidUtilities;
-import org.telegram.android.ContactsController;
-import org.telegram.android.ImageReceiver;
-import org.telegram.android.LocaleController;
-import org.telegram.android.MessageObject;
-import org.telegram.android.MessagesController;
+import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ContactsController;
+import org.telegram.messenger.ImageReceiver;
+import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MessageObject;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
-import org.telegram.messenger.TLRPC;
+import org.telegram.tgnet.TLRPC;
 import org.telegram.messenger.UserConfig;
 import org.telegram.ui.Components.AvatarDrawable;
 
@@ -247,10 +247,10 @@ public class ChatContactCell extends ChatBaseCell {
 
         int x;
 
-        if (currentMessageObject.isOut()) {
+        if (currentMessageObject.isOutOwner()) {
             x = layoutWidth - backgroundWidth + AndroidUtilities.dp(8);
         } else {
-            if (isChat) {
+            if (isChat && currentMessageObject.messageOwner.from_id > 0) {
                 x = AndroidUtilities.dp(69);
             } else {
                 x = AndroidUtilities.dp(16);
@@ -285,7 +285,7 @@ public class ChatContactCell extends ChatBaseCell {
 
         if (drawAddButton) {
             Drawable addContactDrawable;
-            if (currentMessageObject.isOut()) {
+            if (currentMessageObject.isOutOwner()) {
                 addContactDrawable = addContactDrawableOut;
             } else {
                 addContactDrawable = addContactDrawableIn;

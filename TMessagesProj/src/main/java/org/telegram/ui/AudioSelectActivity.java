@@ -19,16 +19,16 @@ import android.widget.AdapterView;
 import android.widget.FrameLayout;
 import android.widget.ListView;
 
-import org.telegram.android.AndroidUtilities;
-import org.telegram.android.LocaleController;
-import org.telegram.android.MediaController;
-import org.telegram.android.MessageObject;
-import org.telegram.android.NotificationCenter;
+import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MediaController;
+import org.telegram.messenger.MessageObject;
+import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
-import org.telegram.messenger.TLRPC;
+import org.telegram.tgnet.TLRPC;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.ActionBar.ActionBar;
@@ -226,6 +226,7 @@ public class AudioSelectActivity extends BaseFragment implements NotificationCen
                         message.attachPath = audioEntry.path;
                         message.media = new TLRPC.TL_messageMediaDocument();
                         message.media.document = new TLRPC.TL_document();
+                        message.flags |= TLRPC.MESSAGE_FLAG_HAS_MEDIA | TLRPC.MESSAGE_FLAG_HAS_FROM_ID;
 
                         String ext = FileLoader.getFileExtension(file);
 

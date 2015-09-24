@@ -29,16 +29,16 @@ import android.view.View;
 import android.view.WindowManager;
 import android.widget.FrameLayout;
 
-import org.telegram.android.AndroidUtilities;
-import org.telegram.android.ImageLoader;
-import org.telegram.android.ImageReceiver;
-import org.telegram.android.MessageObject;
-import org.telegram.android.NotificationCenter;
-import org.telegram.messenger.ConnectionsManager;
+import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ImageLoader;
+import org.telegram.messenger.ImageReceiver;
+import org.telegram.messenger.MessageObject;
+import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
-import org.telegram.messenger.TLRPC;
+import org.telegram.tgnet.ConnectionsManager;
+import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.Components.LayoutHelper;
 
 import java.io.File;
@@ -162,6 +162,10 @@ public class SecretPhotoViewer implements NotificationCenter.NotificationCenterD
     public void didReceivedNotification(int id, Object... args) {
         if (id == NotificationCenter.messagesDeleted) {
             if (currentMessageObject == null) {
+                return;
+            }
+            int channelId = (Integer) args[1];
+            if (channelId != 0) {
                 return;
             }
             ArrayList<Integer> markAsDeletedMessages = (ArrayList<Integer>)args[0];

@@ -3,7 +3,7 @@
 <!--Translation by Khalid Alaraifi-->
 
 <resources>
-    <string name="AppName">Telegram</string>
+    <string name="AppName">تيليجرام</string>
     <string name="LanguageName">العربية</string>
     <string name="LanguageNameInEnglish">Arabic</string>
     <string name="LanguageCode">ar</string>
@@ -60,6 +60,101 @@
     <string name="MuteDisable">تعطيل</string>
     <string name="Hashtags">الأوسمة</string>
     <string name="Recent">حديث</string>
+    <!--channels-->
+    <string name="NewChannel">قناة جديدة</string>
+    <string name="EnterChannelName">اسم القناة</string>
+    <string name="Comments">التعليقات</string>
+    <string name="CommentsInfo">إذا قمت بتفعيل التعليقات، الأعضاء سيتمكنون من مناقشة ما تنشره في قناتك.</string>
+    <string name="AddMutual">إضافة جهات اتصال لقناتك</string>
+    <string name="ChannelUsernameHelp">يستطيع الناس مشاركة هذا الرابط مع غيرهم ويمكنهم إيجاد قناتك من خلال البحث في تيليجرام.</string>
+    <string name="ChannelUsernamePlaceholder">الرابط</string>
+    <string name="ChannelPrivateLinkHelp">يستطيع الناس الدخول إلى قناتك فقط من خلال الرابط أدناه. يمكنك تعطيل هذا الرابط في أي وقت.</string>
+    <string name="DescriptionPlaceholder">الوصف</string>
+    <string name="DescriptionInfo">يمكنك كتابة وصف اختياري لقناتك.</string>
+    <string name="ChannelPublic">قناة عامة</string>
+    <string name="ChannelPublicInfo">القنوات العامة يمكن إيجادها من الخلال البحث، أي شخص يستطيع الدخول إليها.</string>
+    <string name="ChannelPrivate">قناة خاصة</string>
+    <string name="ChannelPrivateInfo">القنوات الخاصة يمكن الدخول إليها فقط عن طريق رابط الدعوة.</string>
+    <string name="ChannelLinkTitle">الرابط</string>
+    <string name="ChannelInviteLinkTitle">رابط دعوة</string>
+    <string name="ChannelAddMembers">إضافة مشارك</string>
+    <string name="LeaveChannel">غادر القناة</string>
+    <string name="LeaveChannelMenu">غادر القناة</string>
+    <string name="ChannelSettings">الإعدادات</string>
+    <string name="ChannelJoin">دخول</string>
+    <string name="OpenChannelProfile">معلومات القناة</string>
+    <string name="ChannelBroadcast">رسالة جماعية</string>
+    <string name="ChannelComment">تعليق</string>
+    <string name="ShowDiscussion">إظهار التعليقات</string>
+    <string name="ChannelAlertTitle">ما هي القنوات؟</string>
+    <string name="ChannelAlertText">القنوات هي أداة جديدة للرسائل الجماعية لمجموعة كبيرة من المستقبلين.</string>
+    <string name="ChannelAlertCreate">أنشاء قناة</string>
+    <string name="LinkInUse">المعذرة، هذا الاسم تم اختياره مسبقًا.</string>
+    <string name="LinkInvalid">المعذرة، الاسم غير مقبول.</string>
+    <string name="LinkInvalidShort">اسم القناة يجب أن يتكوّن من ٥ حروف على الأقل.</string>
+    <string name="LinkInvalidLong">الاسم يجب ألا يتخطى ٣٢ حرف كحد أقصى.</string>
+    <string name="LinkInvalidStartNumber">أسماء القنوات لا يمكن أن تبدأ برقم.</string>
+    <string name="LinkChecking">جاري مراجعة الاسم...</string>
+    <string name="LinkAvailable">%1$s متاح.</string>
+    <string name="ChannelMembers">أعضاء</string>
+    <string name="ChannelBlockedUsers">جهات الاتصال المحظورة</string>
+    <string name="ChannelAdministrators">الإداريون</string>
+    <string name="ChannelDelete">حذف القناة</string>
+    <string name="ChannelDeleteMenu">حذف القناة</string>
+    <string name="ChannelDeleteAlert">لحظة! حذف هذه القناة سيزيل كافة الأعضاء والرسائل سيتم حذفها. هل أنت متأكد من رغبتك في حذف القناة؟</string>
+    <string name="ChannelLeaveAlert">هل أنت متأكد من رغبتك في مغادرة القناة؟</string>
+    <string name="ChannelDeleteInfo">ستخسر كافة الرسائل في هذه القناة.</string>
+    <string name="ChannelEdit">تعديل</string>
+    <string name="ChannelWasPrivateAlert">يرجى ملاحظة أنه في حال اخترت رابط عام لقناتك، سيستطيع أي شخص إيجادها من خلال البحث والدخول إليها.\n\nلا تقم بإنشاء هذا الرابط إذا رغبت في أن تستمر قناتك خاصة.</string>
+    <string name="ChannelPublicEmptyUsername">فضلًا اختر رابط لقناتك العامة ليتمكن الناس من إيجادها من خلال البحث ومشاركتها مع غيرهم.\n\nإلى لم ترغب بذلك، يفضّل إنشاء قناة خاصة بدلًا من العامة.</string>
+    <string name="ActionCreateChannel">تم إنشاء القناة</string>
+    <string name="ActionChannelChangedPhoto">تم تغيير صورة القناة</string>
+    <string name="ActionChannelRemovedPhoto">تم حذف صورة القناة</string>
+    <string name="ActionChannelChangedTitle">تم تغيير اسم القناة إلى un2</string>
+    <string name="ActionChannelInvite">un1 قام بإضافتك لقناة un2</string>
+    <string name="ChannelPublicLimitReached">المعذرة، قمت بإنشاء قنوات عامة كثيرة. يمكنك إنشاء قناة خاصة أو حذف أحد القنوات العامة أولًا.</string>
+    <string name="ChannelModerator">المراقب</string>
+    <string name="ChannelCreator">المنشئ</string>
+    <string name="ChannelEditor">إداري</string>
+    <string name="ChannelMute">الصامت</string>
+    <string name="ChannelUnmute">إلغاء الصامت</string>
+    <string name="ChannelAddAdmin">إضافة إداري</string>
+    <string name="ChannelInviteViaLink">استخدم رابط دعوة</string>
+    <string name="ChannelAddUserAdminAlert">هل أنت متأكد من رغبتك في تعيين %1$s كإداري؟</string>
+    <string name="ChannelRemoveUserAdmin">حذف</string>
+    <string name="ChannelMembersInfo">فقط الإداريّون يمكنهم مشاهدة هذه القائمة.</string>
+    <string name="ChannelAdminNotParticipant">هذا المستخدم لم يقم بالدخول إلى القناة بعد. فضلًا، هل ترغب في دعوتهم؟</string>
+    <string name="ChannelLinkInfo">أي شخص يمتلك تيليجرام على جهازه سيمكنه الدخول لقناتك باستخدام هذا الرابط.</string>
+    <string name="ChannelAdminsInfo">يمكنك إضافة إداريّون لمساعدتك في إدارة القناة. اضغط باستمرار لحذف الإداريين.</string>
+    <string name="ChannelJoinTo">هل ترغب في الدخول لقناة \'%1$s\'؟</string>
+    <string name="ChannelCantOpenPrivate">المعذرة، هذه القناة لم تعد متاحة.</string>
+    <string name="ChannelAddToTitle">هل ترغب بإضافة %1$s لقناة %2$s؟</string>
+    <string name="ChannelAddTo">هل ترغب بإضافة %1$s للقناة؟</string>
+    <string name="ChannelUserLeftError">المعذرة, هذا المستخدم قرر مغادرة المجموعة, لا يمكنك دعوته مرة أخرى للمجموعة.</string>
+    <string name="ChannelUserCantAdd">المعذرة، لا يمكنك إضافة هذا المستخدم للقنوات.</string>
+    <string name="ChannelUserAddLimit">المعذرة، يمكنك إضافة أول ٢٠٠ عضو للقناة فقط. يمكن لعدد غير محدود من الأعضاء الدخول للقناة عن طريق رابط القناة.</string>
+    <string name="ChannelAddedBy">un1 قام بإضافتك لهذه القناة</string>
+    <string name="ChannelJoined">لقد قمت بالدخول للقناة.</string>
+    <string name="ChannelRemoveUser">حذف من القناة</string>
+    <string name="ChannelCantSendMessage">المعذرة، لا يمكنك إرسال رسائل لهذه القناة.</string>
+    <string name="ChannelAddedByNotification">%1$s قام بإضافتك لقناة %2$s </string>
+    <string name="ChannelPhotoEditNotification">تم تحديث صورة القناة %1$s</string>
+    <string name="ChannelMessageGroupNoText">%1$s  قام بإرسال رسالة للقناة %2$s</string>
+    <string name="ChannelMessageGroupPhoto">%1$s  قام بإرسال صورة للقناة %2$s</string>
+    <string name="ChannelMessageGroupVideo">%1$s  قام بإرسال مقطع مرئي للقناة %2$s</string>
+    <string name="ChannelMessageGroupContact">%1$s قام بمشاركة جهة اتصال للقناة %2$s</string>
+    <string name="ChannelMessageGroupMap">%1$s  قام بإرسال مكان للقناة %2$s</string>
+    <string name="ChannelMessageGroupDocument">%1$s  قام بإرسال ملف للقناة %2$s</string>
+    <string name="ChannelMessageGroupAudio">%1$s  قام بإرسال مقطع صوتي للقناة %2$s</string>
+    <string name="ChannelMessageGroupSticker">%1$s  قام بإرسال ملصق للقناة %2$s</string>
+    <string name="ChannelMessageNoText">رسالة جديدة في القناة %1$s</string>
+    <string name="ChannelMessagePhoto">صورة جديدة في القناة %1$s</string>
+    <string name="ChannelMessageVideo">مقطع مرئي جديد في القناة %1$s</string>
+    <string name="ChannelMessageContact">تم مشاركة جهة اتصال في القناة %1$s</string>
+    <string name="ChannelMessageMap">تم مشاركة مكان في القناة %1$s</string>
+    <string name="ChannelMessageDocument">ملف جديد في القناة %1$s</string>
+    <string name="ChannelMessageAudio">ملاحظة صوتية جديدة في القناة %1$s</string>
+    <string name="ChannelMessageSticker">ملصق جديد في القناة %1$s</string>
     <!--broadcasts-->
     <string name="NewBroadcastList">رسالة جماعية جديدة</string>
     <string name="EnterListName">أدخل اسم القائمة</string>
@@ -138,6 +233,13 @@
     <string name="CopyUrl">انسخ الرابط</string>
     <string name="SendItems">أرسل %1$s</string>
     <string name="OpenUrlAlert">هل ترغب في فتح الرابط باستخدام %1$s ؟</string>
+    <string name="ReportSpam">الإبلاغ عن الرسائل الغير مرغوب فيها</string>
+    <string name="AddContactChat">إضافة جهة اتصال</string>
+    <string name="ReportSpamAlert">هل أنت متأكد من رغبتك في الإبلاغ عن هذا المستخدم كغير مرغوب به؟</string>
+    <string name="ReportSpamAlertGroup">هل أنت متأكد من رغبتك في الإبلاغ عن هذه المجموعة كغير مرغوب بها؟</string>
+    <string name="NobodyLikesSpam1">المعذرة، يمكنك فقط إرسال رسائل لمن يمتلك رقمك وتمتلك رقمه في الوقت الحالي.</string>
+    <string name="NobodyLikesSpam2">المعذرة، يمكنك فقط إضافة من يمتلك رقمك وتمتلك رقمه للمجموعة في الوقت الحالي.</string>
+    <string name="MoreInfo">ملعومات إضافية</string>
     <!--notification-->
     <string name="MessageLifetimeChanged">%1$s قام بتعيين عداد التدمير الذاتي إلى to %2$s</string>
     <string name="MessageLifetimeChangedOutgoing">لقد قمت بتعيين التدمير الذاتي إلى %1$s</string>
@@ -199,13 +301,13 @@
     <string name="EnterGroupNamePlaceholder">أدخل اسم للمجموعة</string>
     <string name="GroupName">اسم المجموعة</string>
     <string name="MembersCount">%1$d/%2$d عضو</string>
-    <string name="JoinToGroup">هل ترغب في الدخول للمجموعة \'%1$s\'؟</string>
+    <string name="JoinToGroup">هل ترغب في الدخول للمحادثة \'%1$s\'؟</string>
     <string name="JoinToGroupErrorFull">المعذرة، هذه المجموعة ممتلئة.</string>
-    <string name="JoinToGroupErrorNotExist">المعذرة، هذه المجموعة غير موجودة.</string>
+    <string name="JoinToGroupErrorNotExist">المعذرة، هذه المحادثة غير موجودة.</string>
     <string name="LinkCopied">تم نسخ الرابط إلى الحافظة</string>
     <string name="InviteToGroupByLink">قم بدعوة للمجموعة باستخدام رابط</string>
     <string name="InviteLink">رابط دعوة</string>
-    <string name="RevokeAlert">هل أنت متأكد من رغبتك في إلغاء رابط الدعوة؟ إذا قمت بذلك، لن يستطيع أحد من استخدامه للدخول للمجموعة.</string>
+    <string name="RevokeAlert">هل أنت متأكد من رغبتك في إلغاء الرابط؟ اذا قمت بذلك، لن يستطيع أحد الدخول باستخدامه.</string>
     <string name="RevokeAlertNewLink">رابط الدعوة السابق لا يعمل الآن. سيتم إنشاء رابط جديد.</string>
     <string name="RevokeButton">إلغاء الرابط</string>
     <string name="RevokeLink">إلغاء الرابط</string>
@@ -215,7 +317,7 @@
     <!--group info view-->
     <string name="SharedMedia">عدد الوسائط المشتركة</string>
     <string name="SETTINGS">الإعدادات</string>
-    <string name="AddMember">إضافة مشترك</string>
+    <string name="AddMember">إضافة مشارك</string>
     <string name="DeleteAndExit">مغادرة المجموعة وحذفها</string>
     <string name="Notifications">الإشعارات</string>
     <string name="KickFromGroup">إخراج من المجموعة</string>
@@ -541,7 +643,7 @@
     <string name="SendingVideo">جارٍ إرسال المقطع المرئي...</string>
     <string name="CompressVideo">اضغط المقطع المرئي</string>
     <!--bot-->
-    <string name="Bot">البوت</string>
+    <string name="Bot">بوت</string>
     <string name="BotShare">مشاركة</string>
     <string name="BotInvite">إضافة إلى المجموعة</string>
     <string name="BotSettings">الإعدادات</string>
@@ -666,7 +768,7 @@
     <string name="Online_few">%1$d متصل</string>
     <string name="Online_many">%1$d متصل</string>
     <string name="Online_other">%1$d متصل</string>
-    <string name="Members_zero">لا يوجد أعضاء</string>
+    <string name="Members_zero">%1$d أعضاء</string>
     <string name="Members_one">%1$d عضو</string>
     <string name="Members_two">%1$d عضوان</string>
     <string name="Members_few">%1$d أعضاء</string>
@@ -690,6 +792,12 @@
     <string name="messages_few">%1$d رسائل</string>
     <string name="messages_many">%1$d رسالة</string>
     <string name="messages_other">%1$d رسالة</string>
+    <string name="comments_zero">%1$d تعليقات</string>
+    <string name="comments_one">%1$d تعليق</string>
+    <string name="comments_two">%1$d تعليقان</string>
+    <string name="comments_few">%1$d تعليقات</string>
+    <string name="comments_many">%1$d تعليق</string>
+    <string name="comments_other">%1$d تعليق</string>
     <string name="items_zero">لا يوجد ملفات</string>
     <string name="items_one">%1$d ملف</string>
     <string name="items_two">%1$d ملف</string>
@@ -841,6 +949,6 @@
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s الساعة %2$s</string>
     <!--update text-->
-    <string name="updateText">تم تحديث تيليجرام نسخة الآندرويد. الجديد في نسخة 3.1.3:\n\n-  قسم جديد للروابط المشاركة في معلومات المحادثة \n- استعراض لروابط الصور داخل التطبيق.</string>
-    <string name="updateBuild">590</string>
+    <string name="updateText">تم تحديث تيليجرام نسخة الآندرويد. الجديد في نسخة 3.2.0:\n\n- إضافة خدمة القنوات - وسيلة جديدة رائعة لإرسال الرسائل الجماعية لعدد لا محدود من الجماهير (تستبدل الرسائل الجماعية القديمة). \n\n- اللاستزادة، اقرأ هنا: https://telegram.org/blog/channels</string>
+    <string name="updateBuild">614</string>
 </resources>

@@ -8,6 +8,8 @@
 
 package org.telegram.messenger;
 
+import org.telegram.tgnet.SerializedData;
+
 public class MessageKeyData {
 
     public byte[] aesKey;
@@ -24,42 +26,42 @@ public class MessageKeyData {
         int x = incoming ? 8 : 0;
 
         SerializedData data = new SerializedData();
-        data.writeRaw(messageKey);
-        data.writeRaw(authKey, x, 32);
+        data.writeBytes(messageKey);
+        data.writeBytes(authKey, x, 32);
         byte[] sha1_a = Utilities.computeSHA1(data.toByteArray());
         data.cleanup();
 
         data = new SerializedData();
-        data.writeRaw(authKey, 32 + x, 16);
-        data.writeRaw(messageKey);
-        data.writeRaw(authKey, 48 + x, 16);
+        data.writeBytes(authKey, 32 + x, 16);
+        data.writeBytes(messageKey);
+        data.writeBytes(authKey, 48 + x, 16);
         byte[] sha1_b = Utilities.computeSHA1(data.toByteArray());
         data.cleanup();
 
         data = new SerializedData();
-        data.writeRaw(authKey, 64 + x, 32);
-        data.writeRaw(messageKey);
+        data.writeBytes(authKey, 64 + x, 32);
+        data.writeBytes(messageKey);
         byte[] sha1_c = Utilities.computeSHA1(data.toByteArray());
         data.cleanup();
 
         data = new SerializedData();
-        data.writeRaw(messageKey);
-        data.writeRaw(authKey, 96 + x, 32);
+        data.writeBytes(messageKey);
+        data.writeBytes(authKey, 96 + x, 32);
         byte[] sha1_d = Utilities.computeSHA1(data.toByteArray());
         data.cleanup();
 
         data = new SerializedData();
-        data.writeRaw(sha1_a, 0, 8);
-        data.writeRaw(sha1_b, 8, 12);
-        data.writeRaw(sha1_c, 4, 12);
+        data.writeBytes(sha1_a, 0, 8);
+        data.writeBytes(sha1_b, 8, 12);
+        data.writeBytes(sha1_c, 4, 12);
         keyData.aesKey = data.toByteArray();
         data.cleanup();
 
         data = new SerializedData();
-        data.writeRaw(sha1_a, 8, 12);
-        data.writeRaw(sha1_b, 0, 8);
-        data.writeRaw(sha1_c, 16, 4);
-        data.writeRaw(sha1_d, 0, 8);
+        data.writeBytes(sha1_a, 8, 12);
+        data.writeBytes(sha1_b, 0, 8);
+        data.writeBytes(sha1_c, 16, 4);
+        data.writeBytes(sha1_d, 0, 8);
         keyData.aesIv = data.toByteArray();
         data.cleanup();
 

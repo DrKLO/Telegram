@@ -22,24 +22,23 @@ import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-import org.telegram.android.AndroidUtilities;
-import org.telegram.android.LocaleController;
-import org.telegram.android.MessagesController;
-import org.telegram.android.MessagesStorage;
-import org.telegram.android.NotificationCenter;
+import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.MessagesStorage;
+import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
-import org.telegram.messenger.RPCRequest;
-import org.telegram.messenger.TLObject;
-import org.telegram.messenger.TLRPC;
+import org.telegram.tgnet.ConnectionsManager;
+import org.telegram.tgnet.RequestDelegate;
+import org.telegram.tgnet.TLObject;
+import org.telegram.tgnet.TLRPC;
 import org.telegram.messenger.UserConfig;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
@@ -53,7 +52,7 @@ public class ChangeUsernameActivity extends BaseFragment {
     private EditText firstNameField;
     private View doneButton;
     private TextView checkTextView;
-    private long checkReqId = 0;
+    private int checkReqId = 0;
     private String lastCheckName = null;
     private Runnable checkRunnable = null;
     private boolean lastNameAvailable = false;
@@ -85,7 +84,6 @@ public class ChangeUsernameActivity extends BaseFragment {
         }
 
         fragmentView = new LinearLayout(context);
-        fragmentView.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
         ((LinearLayout) fragmentView).setOrientation(LinearLayout.VERTICAL);
         fragmentView.setOnTouchListener(new View.OnTouchListener() {
             @Override
@@ -118,14 +116,7 @@ public class ChangeUsernameActivity extends BaseFragment {
             }
         });
 
-        ((LinearLayout) fragmentView).addView(firstNameField);
-        LinearLayout.LayoutParams layoutParams = (LinearLayout.LayoutParams) firstNameField.getLayoutParams();
-        layoutParams.topMargin = AndroidUtilities.dp(24);
-        layoutParams.height = AndroidUtilities.dp(36);
-        layoutParams.leftMargin = AndroidUtilities.dp(24);
-        layoutParams.rightMargin = AndroidUtilities.dp(24);
-        layoutParams.width = LayoutHelper.MATCH_PARENT;
-        firstNameField.setLayoutParams(layoutParams);
+        ((LinearLayout) fragmentView).addView(firstNameField, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 36, 24, 24, 24, 0));
 
         if (user != null && user.username != null && user.username.length() > 0) {
             firstNameField.setText(user.username);
@@ -135,30 +126,14 @@ public class ChangeUsernameActivity extends BaseFragment {
         checkTextView = new TextView(context);
         checkTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
         checkTextView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
-        ((LinearLayout) fragmentView).addView(checkTextView);
-        layoutParams = (LinearLayout.LayoutParams) checkTextView.getLayoutParams();
-        layoutParams.topMargin = AndroidUtilities.dp(12);
-        layoutParams.width = LayoutHelper.WRAP_CONTENT;
-        layoutParams.height = LayoutHelper.WRAP_CONTENT;
-        layoutParams.gravity = LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT;
-        layoutParams.leftMargin = AndroidUtilities.dp(24);
-        layoutParams.rightMargin = AndroidUtilities.dp(24);
-        checkTextView.setLayoutParams(layoutParams);
+        ((LinearLayout) fragmentView).addView(checkTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT, 24, 12, 24, 0));
 
         TextView helpTextView = new TextView(context);
         helpTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
         helpTextView.setTextColor(0xff6d6d72);
         helpTextView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
         helpTextView.setText(AndroidUtilities.replaceTags(LocaleController.getString("UsernameHelp", R.string.UsernameHelp)));
-        ((LinearLayout) fragmentView).addView(helpTextView);
-        layoutParams = (LinearLayout.LayoutParams) helpTextView.getLayoutParams();
-        layoutParams.topMargin = AndroidUtilities.dp(10);
-        layoutParams.width = LayoutHelper.WRAP_CONTENT;
-        layoutParams.height = LayoutHelper.WRAP_CONTENT;
-        layoutParams.gravity = LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT;
-        layoutParams.leftMargin = AndroidUtilities.dp(24);
-        layoutParams.rightMargin = AndroidUtilities.dp(24);
-        helpTextView.setLayoutParams(layoutParams);
+        ((LinearLayout) fragmentView).addView(helpTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT, 24, 10, 24, 0));
 
         firstNameField.addTextChangedListener(new TextWatcher() {
             @Override
@@ -231,7 +206,7 @@ public class ChangeUsernameActivity extends BaseFragment {
             checkRunnable = null;
             lastCheckName = null;
             if (checkReqId != 0) {
-                ConnectionsManager.getInstance().cancelRpc(checkReqId, true);
+                ConnectionsManager.getInstance().cancelRequest(checkReqId, true);
             }
         }
         lastNameAvailable = false;
@@ -301,7 +276,7 @@ public class ChangeUsernameActivity extends BaseFragment {
                 public void run() {
                     TLRPC.TL_account_checkUsername req = new TLRPC.TL_account_checkUsername();
                     req.username = name;
-                    checkReqId = ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
+                    checkReqId = ConnectionsManager.getInstance().sendRequest(req, new RequestDelegate() {
                         @Override
                         public void run(final TLObject response, final TLRPC.TL_error error) {
                             AndroidUtilities.runOnUIThread(new Runnable() {
@@ -322,7 +297,7 @@ public class ChangeUsernameActivity extends BaseFragment {
                                 }
                             });
                         }
-                    }, true, RPCRequest.RPCRequestClassGeneric | RPCRequest.RPCRequestClassFailOnServerErrors);
+                    }, ConnectionsManager.RequestFlagFailOnServerErrors);
                 }
             };
             AndroidUtilities.runOnUIThread(checkRunnable, 300);
@@ -357,7 +332,7 @@ public class ChangeUsernameActivity extends BaseFragment {
         req.username = newName;
 
         NotificationCenter.getInstance().postNotificationName(NotificationCenter.updateInterfaces, MessagesController.UPDATE_MASK_NAME);
-        final long reqId = ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
+        final int reqId = ConnectionsManager.getInstance().sendRequest(req, new RequestDelegate() {
             @Override
             public void run(TLObject response, final TLRPC.TL_error error) {
                 if (error == null) {
@@ -392,13 +367,13 @@ public class ChangeUsernameActivity extends BaseFragment {
                     });
                 }
             }
-        }, true, RPCRequest.RPCRequestClassGeneric | RPCRequest.RPCRequestClassFailOnServerErrors);
+        }, ConnectionsManager.RequestFlagFailOnServerErrors);
         ConnectionsManager.getInstance().bindRequestToGuid(reqId, classGuid);
 
         progressDialog.setButton(DialogInterface.BUTTON_NEGATIVE, LocaleController.getString("Cancel", R.string.Cancel), new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
-                ConnectionsManager.getInstance().cancelRpc(reqId, true);
+                ConnectionsManager.getInstance().cancelRequest(reqId, true);
                 try {
                     dialog.dismiss();
                 } catch (Exception e) {

@@ -40,17 +40,17 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import org.telegram.android.AndroidUtilities;
-import org.telegram.android.LocaleController;
-import org.telegram.android.NotificationCenter;
+import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
-import org.telegram.android.AnimationCompat.AnimatorListenerAdapterProxy;
-import org.telegram.android.AnimationCompat.AnimatorSetProxy;
-import org.telegram.android.AnimationCompat.ObjectAnimatorProxy;
-import org.telegram.android.AnimationCompat.ViewProxy;
+import org.telegram.messenger.AnimationCompat.AnimatorListenerAdapterProxy;
+import org.telegram.messenger.AnimationCompat.AnimatorSetProxy;
+import org.telegram.messenger.AnimationCompat.ObjectAnimatorProxy;
+import org.telegram.messenger.AnimationCompat.ViewProxy;
 
 import java.util.ArrayList;
 import java.util.Locale;
@@ -631,7 +631,7 @@ public class PasscodeView extends FrameLayout {
                     textView.setText("MNO");
                     break;
                 case 7:
-                    textView.setText("PRQS");
+                    textView.setText("PQRS");
                     break;
                 case 8:
                     textView.setText("TUV");

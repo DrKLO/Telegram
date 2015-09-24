@@ -22,17 +22,18 @@ import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
-import org.telegram.android.AndroidUtilities;
-import org.telegram.android.LocaleController;
-import org.telegram.android.MessagesController;
-import org.telegram.android.NotificationCenter;
+import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ChatObject;
+import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
-import org.telegram.messenger.RPCRequest;
-import org.telegram.messenger.TLObject;
-import org.telegram.messenger.TLRPC;
+import org.telegram.tgnet.ConnectionsManager;
+import org.telegram.tgnet.RequestDelegate;
+import org.telegram.tgnet.TLObject;
+import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.Adapters.BaseFragmentAdapter;
@@ -177,12 +178,12 @@ public class GroupInviteActivity extends BaseFragment implements NotificationCen
     @Override
     public void didReceivedNotification(int id, Object... args) {
         if (id == NotificationCenter.chatInfoDidLoaded) {
-            if (args.length != 3) {
+            if (args.length != 2) {
                 return;
             }
-            int cid = (int) args[0];
-            int guid = (int) args[2];
-            if (cid == chat_id && guid == classGuid) {
+            TLRPC.ChatFull info = (TLRPC.ChatFull) args[0];
+            int guid = (int) args[1];
+            if (info.id == chat_id && guid == classGuid) {
                 invite = MessagesController.getInstance().getExportedInvite(chat_id);
                 if (!(invite instanceof TLRPC.TL_chatInviteExported)) {
                     generateLink(false);
@@ -204,11 +205,19 @@ public class GroupInviteActivity extends BaseFragment implements NotificationCen
         }
     }
 
-    private void generateLink(final boolean request) {
+    private void generateLink(final boolean newRequest) {
         loading = true;
-        TLRPC.TL_messages_exportChatInvite req = new TLRPC.TL_messages_exportChatInvite();
-        req.chat_id = chat_id;
-        final long reqId = ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
+        TLObject request;
+        if (ChatObject.isChannel(chat_id)) {
+            TLRPC.TL_channels_exportInvite req = new TLRPC.TL_channels_exportInvite();
+            req.channel = MessagesController.getInputChannel(chat_id);
+            request = req;
+        } else {
+            TLRPC.TL_messages_exportChatInvite req = new TLRPC.TL_messages_exportChatInvite();
+            req.chat_id = chat_id;
+            request = req;
+        }
+        final int reqId = ConnectionsManager.getInstance().sendRequest(request, new RequestDelegate() {
             @Override
             public void run(final TLObject response, final TLRPC.TL_error error) {
                 AndroidUtilities.runOnUIThread(new Runnable() {
@@ -216,7 +225,7 @@ public class GroupInviteActivity extends BaseFragment implements NotificationCen
                     public void run() {
                         if (error == null) {
                             invite = (TLRPC.ExportedChatInvite) response;
-                            if (request) {
+                            if (newRequest) {
                                 if (getParentActivity() == null) {
                                     return;
                                 }
@@ -300,7 +309,11 @@ public class GroupInviteActivity extends BaseFragment implements NotificationCen
                     ((TextInfoPrivacyCell) view).setText("");
                     view.setBackgroundResource(R.drawable.greydivider_bottom);
                 } else if (i == linkInfoRow) {
-                    ((TextInfoPrivacyCell) view).setText(LocaleController.getString("LinkInfo", R.string.LinkInfo));
+                    if (ChatObject.isChannel(chat_id)) {
+                        ((TextInfoPrivacyCell) view).setText(LocaleController.getString("ChannelLinkInfo", R.string.ChannelLinkInfo));
+                    } else {
+                        ((TextInfoPrivacyCell) view).setText(LocaleController.getString("LinkInfo", R.string.LinkInfo));
+                    }
                     view.setBackgroundResource(R.drawable.greydivider);
                 }
             } else if (type == 2) {

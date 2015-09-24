@@ -10,13 +10,13 @@ package org.telegram.ui.Adapters;
 
 import org.telegram.SQLite.SQLiteCursor;
 import org.telegram.SQLite.SQLitePreparedStatement;
-import org.telegram.android.AndroidUtilities;
-import org.telegram.android.MessagesStorage;
-import org.telegram.messenger.ConnectionsManager;
+import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.FileLog;
-import org.telegram.messenger.RPCRequest;
-import org.telegram.messenger.TLObject;
-import org.telegram.messenger.TLRPC;
+import org.telegram.tgnet.ConnectionsManager;
+import org.telegram.tgnet.RequestDelegate;
+import org.telegram.tgnet.TLObject;
+import org.telegram.tgnet.TLRPC;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -32,8 +32,8 @@ public class BaseSearchAdapter extends BaseFragmentAdapter {
         int date;
     }
 
-    protected ArrayList<TLRPC.User> globalSearch = new ArrayList<>();
-    private long reqId = 0;
+    protected ArrayList<TLObject> globalSearch = new ArrayList<>();
+    private int reqId = 0;
     private int lastReqId;
     protected String lastFoundUsername = null;
 
@@ -41,9 +41,9 @@ public class BaseSearchAdapter extends BaseFragmentAdapter {
     protected HashMap<String, HashtagObject> hashtagsByText;
     protected boolean hashtagsLoadedFromDb = false;
 
-    public void queryServerSearch(final String query) {
+    public void queryServerSearch(final String query, final boolean allowChats) {
         if (reqId != 0) {
-            ConnectionsManager.getInstance().cancelRpc(reqId, true);
+            ConnectionsManager.getInstance().cancelRequest(reqId, true);
             reqId = 0;
         }
         if (query == null || query.length() < 5) {
@@ -56,7 +56,7 @@ public class BaseSearchAdapter extends BaseFragmentAdapter {
         req.q = query;
         req.limit = 50;
         final int currentReqId = ++lastReqId;
-        reqId = ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
+        reqId = ConnectionsManager.getInstance().sendRequest(req, new RequestDelegate() {
             @Override
             public void run(final TLObject response, final TLRPC.TL_error error) {
                 AndroidUtilities.runOnUIThread(new Runnable() {
@@ -65,7 +65,15 @@ public class BaseSearchAdapter extends BaseFragmentAdapter {
                         if (currentReqId == lastReqId) {
                             if (error == null) {
                                 TLRPC.TL_contacts_found res = (TLRPC.TL_contacts_found) response;
-                                globalSearch = res.users;
+                                globalSearch.clear();
+                                if (allowChats) {
+                                    for (int a = 0; a < res.chats.size(); a++) {
+                                        globalSearch.add(res.chats.get(a));
+                                    }
+                                }
+                                for (int a = 0; a < res.users.size(); a++) {
+                                    globalSearch.add(res.users.get(a));
+                                }
                                 lastFoundUsername = query;
                                 notifyDataSetChanged();
                             }
@@ -74,7 +82,7 @@ public class BaseSearchAdapter extends BaseFragmentAdapter {
                     }
                 });
             }
-        }, true, RPCRequest.RPCRequestClassGeneric | RPCRequest.RPCRequestClassFailOnServerErrors);
+        }, ConnectionsManager.RequestFlagFailOnServerErrors);
     }
 
     public void loadRecentHashtags() {

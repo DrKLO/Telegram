@@ -25,7 +25,6 @@ import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.View;
-import android.view.WindowManager;
 import android.view.animation.AccelerateDecelerateInterpolator;
 import android.view.inputmethod.EditorInfo;
 import android.widget.AdapterView;
@@ -36,27 +35,27 @@ import android.widget.ScrollView;
 import android.widget.TextView;
 
 import org.telegram.PhoneFormat.PhoneFormat;
-import org.telegram.android.AndroidUtilities;
-import org.telegram.android.LocaleController;
-import org.telegram.android.MessagesController;
-import org.telegram.android.MessagesStorage;
-import org.telegram.android.NotificationCenter;
+import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.MessagesStorage;
+import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BuildVars;
-import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
-import org.telegram.messenger.RPCRequest;
-import org.telegram.messenger.TLObject;
-import org.telegram.messenger.TLRPC;
+import org.telegram.tgnet.ConnectionsManager;
+import org.telegram.tgnet.RequestDelegate;
+import org.telegram.tgnet.TLObject;
+import org.telegram.tgnet.TLRPC;
 import org.telegram.messenger.UserConfig;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.BaseFragment;
-import org.telegram.android.AnimationCompat.AnimatorListenerAdapterProxy;
-import org.telegram.android.AnimationCompat.AnimatorSetProxy;
-import org.telegram.android.AnimationCompat.ObjectAnimatorProxy;
-import org.telegram.android.AnimationCompat.ViewProxy;
+import org.telegram.messenger.AnimationCompat.AnimatorListenerAdapterProxy;
+import org.telegram.messenger.AnimationCompat.AnimatorSetProxy;
+import org.telegram.messenger.AnimationCompat.ObjectAnimatorProxy;
+import org.telegram.messenger.AnimationCompat.ViewProxy;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.SlideView;
 import org.telegram.ui.Components.TypefaceSpan;
@@ -95,9 +94,7 @@ public class ChangePhoneActivity extends BaseFragment {
             }
             progressDialog = null;
         }
-        if (!AndroidUtilities.isTablet() && getParentActivity() != null) {
-            getParentActivity().getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN);
-        }
+        AndroidUtilities.removeAdjustResize(getParentActivity(), classGuid);
     }
 
     @Override
@@ -159,9 +156,7 @@ public class ChangePhoneActivity extends BaseFragment {
     @Override
     public void onResume() {
         super.onResume();
-        if (!AndroidUtilities.isTablet()) {
-            getParentActivity().getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
-        }
+        AndroidUtilities.requestAdjustResize(getParentActivity(), classGuid);
     }
 
     @Override
@@ -650,7 +645,7 @@ public class ChangePhoneActivity extends BaseFragment {
             params.putString("phoneFormated", phone);
             nextPressed = true;
             needShowProgress();
-            ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
+            ConnectionsManager.getInstance().sendRequest(req, new RequestDelegate() {
                 @Override
                 public void run(final TLObject response, final TLRPC.TL_error error) {
                     AndroidUtilities.runOnUIThread(new Runnable() {
@@ -683,7 +678,7 @@ public class ChangePhoneActivity extends BaseFragment {
                         }
                     });
                 }
-            }, true, RPCRequest.RPCRequestClassGeneric | RPCRequest.RPCRequestClassFailOnServerErrors);
+            }, ConnectionsManager.RequestFlagFailOnServerErrors);
         }
 
         @Override
@@ -931,7 +926,7 @@ public class ChangePhoneActivity extends BaseFragment {
                                 TLRPC.TL_auth_sendCall req = new TLRPC.TL_auth_sendCall();
                                 req.phone_number = requestPhone;
                                 req.phone_code_hash = phoneHash;
-                                ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
+                                ConnectionsManager.getInstance().sendRequest(req, new RequestDelegate() {
                                     @Override
                                     public void run(TLObject response, final TLRPC.TL_error error) {
                                         if (error != null && error.text != null) {
@@ -943,7 +938,7 @@ public class ChangePhoneActivity extends BaseFragment {
                                             });
                                         }
                                     }
-                                }, true, RPCRequest.RPCRequestClassGeneric | RPCRequest.RPCRequestClassFailOnServerErrors | RPCRequest.RPCRequestClassWithoutLogin);
+                                }, ConnectionsManager.RequestFlagFailOnServerErrors);
                             }
                         }
                     });
@@ -979,7 +974,7 @@ public class ChangePhoneActivity extends BaseFragment {
             req.phone_code_hash = phoneHash;
             destroyTimer();
             needShowProgress();
-            ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
+            ConnectionsManager.getInstance().sendRequest(req, new RequestDelegate() {
                 @Override
                 public void run(final TLObject response, final TLRPC.TL_error error) {
                     AndroidUtilities.runOnUIThread(new Runnable() {
@@ -1016,7 +1011,7 @@ public class ChangePhoneActivity extends BaseFragment {
                         }
                     });
                 }
-            }, true, RPCRequest.RPCRequestClassGeneric | RPCRequest.RPCRequestClassFailOnServerErrors | RPCRequest.RPCRequestClassWithoutLogin);
+            }, ConnectionsManager.RequestFlagFailOnServerErrors);
         }
 
         @Override

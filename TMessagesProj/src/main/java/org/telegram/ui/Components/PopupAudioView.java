@@ -17,13 +17,13 @@ import android.text.TextPaint;
 import android.view.MotionEvent;
 import android.view.SoundEffectConstants;
 
-import org.telegram.android.AndroidUtilities;
-import org.telegram.android.ImageLoader;
-import org.telegram.android.MediaController;
-import org.telegram.android.MessagesController;
+import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ImageLoader;
+import org.telegram.messenger.MediaController;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.R;
-import org.telegram.android.MessageObject;
+import org.telegram.messenger.MessageObject;
 import org.telegram.ui.Cells.BaseCell;
 
 import java.io.File;
@@ -231,8 +231,10 @@ public class PopupAudioView extends BaseCell implements SeekBar.SeekBarDelegate,
         if (buttonState == 0) {
             boolean result = MediaController.getInstance().playAudio(currentMessageObject);
             if (!currentMessageObject.isOut() && currentMessageObject.isContentUnread()) {
-                MessagesController.getInstance().markMessageContentAsRead(currentMessageObject.getId());
-                currentMessageObject.setContentIsRead();
+                if (currentMessageObject.messageOwner.to_id.channel_id == 0) {
+                    MessagesController.getInstance().markMessageContentAsRead(currentMessageObject.messageOwner);
+                    currentMessageObject.setContentIsRead();
+                }
             }
             if (result) {
                 buttonState = 1;

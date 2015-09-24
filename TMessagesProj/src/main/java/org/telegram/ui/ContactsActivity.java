@@ -8,10 +8,12 @@
 
 package org.telegram.ui;
 
+import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -33,16 +35,17 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import org.telegram.android.AndroidUtilities;
-import org.telegram.android.LocaleController;
-import org.telegram.android.MessagesStorage;
-import org.telegram.android.SecretChatHelper;
-import org.telegram.android.UserObject;
-import org.telegram.messenger.TLRPC;
-import org.telegram.android.ContactsController;
+import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ApplicationLoader;
+import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MessagesStorage;
+import org.telegram.messenger.SecretChatHelper;
+import org.telegram.messenger.UserObject;
+import org.telegram.tgnet.TLRPC;
+import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.FileLog;
-import org.telegram.android.MessagesController;
-import org.telegram.android.NotificationCenter;
+import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.Adapters.BaseSectionsAdapter;
@@ -74,6 +77,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
     private boolean returnAsResult;
     private boolean createSecretChat;
     private boolean creatingChat = false;
+    private boolean needForwardCount = true;
     private int chat_id;
     private String selectAlertString = null;
     private HashMap<Integer, TLRPC.User> ignoreUsers;
@@ -103,6 +107,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
             createSecretChat = arguments.getBoolean("createSecretChat", false);
             selectAlertString = arguments.getString("selectAlertString");
             allowUsernameSearch = arguments.getBoolean("allowUsernameSearch", true);
+            needForwardCount = arguments.getBoolean("needForwardCount", true);
             chat_id = arguments.getInt("chat_id", 0);
         } else {
             needPhonebook = true;
@@ -202,8 +207,8 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
         });
         item.getSearchField().setHint(LocaleController.getString("Search", R.string.Search));
 
-        searchListViewAdapter = new SearchAdapter(context, ignoreUsers, allowUsernameSearch);
-        listViewAdapter = new ContactsAdapter(context, onlyUsers, needPhonebook, ignoreUsers, chat_id != 0);
+        searchListViewAdapter = new SearchAdapter(context, ignoreUsers, allowUsernameSearch, false, false);
+        listViewAdapter = new ContactsAdapter(context, onlyUsers ? 1 : 0, needPhonebook, ignoreUsers, chat_id != 0);
 
         fragmentView = new FrameLayout(context);
 
@@ -265,7 +270,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
                 if (searching && searchWas) {
-                    TLRPC.User user = searchListViewAdapter.getItem(i);
+                    TLRPC.User user = (TLRPC.User) searchListViewAdapter.getItem(i);
                     if (user == null) {
                         return;
                     }
@@ -328,9 +333,15 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                                 if (!MessagesController.isFeatureEnabled("broadcast_create", ContactsActivity.this)) {
                                     return;
                                 }
-                                Bundle args = new Bundle();
-                                args.putBoolean("broadcast", true);
-                                presentFragment(new GroupCreateActivity(args), false);
+                                SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+                                if (preferences.getBoolean("channel_intro", false)) {
+                                    Bundle args = new Bundle();
+                                    args.putInt("step", 0);
+                                    presentFragment(new ChannelCreateActivity(args));
+                                } else {
+                                    presentFragment(new ChannelIntroActivity());
+                                    preferences.edit().putBoolean("channel_intro", true).commit();
+                                }
                             }
                         }
                     } else {
@@ -422,7 +433,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
             builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
             String message = LocaleController.formatStringSimple(selectAlertString, UserObject.getUserName(user));
             EditText editText = null;
-            if ((user.flags & TLRPC.USER_FLAG_BOT) == 0) {
+            if ((user.flags & TLRPC.USER_FLAG_BOT) == 0 && needForwardCount) {
                 message = String.format("%s\n\n%s", message, LocaleController.getString("AddToTheGroupForwardCount", R.string.AddToTheGroupForwardCount));
                 editText = new EditText(getParentActivity());
                 if (android.os.Build.VERSION.SDK_INT < 11) {

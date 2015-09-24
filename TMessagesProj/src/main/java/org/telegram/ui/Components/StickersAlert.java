@@ -18,9 +18,9 @@ import android.widget.BaseAdapter;
 import android.widget.FrameLayout;
 import android.widget.GridView;
 
-import org.telegram.android.AndroidUtilities;
-import org.telegram.android.NotificationCenter;
-import org.telegram.messenger.TLRPC;
+import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.NotificationCenter;
+import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.Cells.StickerEmojiCell;
 
 import java.util.ArrayList;

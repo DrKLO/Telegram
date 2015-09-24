@@ -18,10 +18,10 @@ import android.text.Layout;
 import android.text.StaticLayout;
 import android.text.TextPaint;
 
-import org.telegram.android.AndroidUtilities;
+import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
-import org.telegram.messenger.TLRPC;
+import org.telegram.tgnet.TLRPC;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.ApplicationLoader;
 
