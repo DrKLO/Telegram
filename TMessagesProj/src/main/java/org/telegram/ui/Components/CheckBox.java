@@ -17,8 +17,8 @@ import android.graphics.PorterDuffXfermode;
 import android.graphics.drawable.Drawable;
 import android.view.View;
 
-import org.telegram.android.AndroidUtilities;
-import org.telegram.android.AnimationCompat.ObjectAnimatorProxy;
+import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.AnimationCompat.ObjectAnimatorProxy;
 
 public class CheckBox extends View {
 

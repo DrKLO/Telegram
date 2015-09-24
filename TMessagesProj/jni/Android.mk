@@ -2,7 +2,89 @@ LOCAL_PATH := $(call my-dir)
 
 include $(CLEAR_VARS)
 
-LOCAL_CFLAGS := -Wall -DANDROID -DHAVE_MALLOC_H -DHAVE_PTHREAD -DWEBP_USE_THREAD -finline-functions -ffast-math -ffunction-sections -fdata-sections -O2
+LOCAL_MODULE    := crypto 
+
+ifeq ($(TARGET_ARCH_ABI),armeabi-v7a)
+    LOCAL_SRC_FILES := ./boringssl/lib/libcrypto_armeabi-v7a.a
+else
+    ifeq ($(TARGET_ARCH_ABI),armeabi)
+	LOCAL_SRC_FILES := ./boringssl/lib/libcrypto_armeabi.a
+    else
+        ifeq ($(TARGET_ARCH_ABI),x86)
+	    LOCAL_SRC_FILES := ./boringssl/lib/libcrypto_x86.a
+        endif
+    endif
+endif
+
+include $(PREBUILT_STATIC_LIBRARY)
+
+include $(CLEAR_VARS)
+
+LOCAL_CPP_EXTENSION := .cc
+LOCAL_ARM_MODE := arm
+LOCAL_MODULE := breakpad
+LOCAL_CPPFLAGS := -Wall -std=c++11 -DANDROID -finline-functions -ffast-math -Os -fno-strict-aliasing
+
+LOCAL_C_INCLUDES := \
+./breakpad/common/android/include \
+./breakpad
+
+LOCAL_SRC_FILES := \
+./breakpad/client/linux/crash_generation/crash_generation_client.cc \
+./breakpad/client/linux/dump_writer_common/ucontext_reader.cc \
+./breakpad/client/linux/dump_writer_common/thread_info.cc \
+./breakpad/client/linux/handler/exception_handler.cc \
+./breakpad/client/linux/handler/minidump_descriptor.cc \
+./breakpad/client/linux/log/log.cc \
+./breakpad/client/linux/microdump_writer/microdump_writer.cc \
+./breakpad/client/linux/minidump_writer/linux_dumper.cc \
+./breakpad/client/linux/minidump_writer/linux_ptrace_dumper.cc \
+./breakpad/client/linux/minidump_writer/minidump_writer.cc \
+./breakpad/client/minidump_file_writer.cc \
+./breakpad/common/android/breakpad_getcontext.S \
+./breakpad/common/convert_UTF.c \
+./breakpad/common/md5.cc \
+./breakpad/common/string_conversion.cc \
+./breakpad/common/linux/elfutils.cc \
+./breakpad/common/linux/file_id.cc \
+./breakpad/common/linux/guid_creator.cc \
+./breakpad/common/linux/linux_libc_support.cc \
+./breakpad/common/linux/memory_mapped_file.cc \
+./breakpad/common/linux/safe_readlink.cc
+
+include $(BUILD_STATIC_LIBRARY)
+
+include $(CLEAR_VARS)
+
+LOCAL_CPPFLAGS := -Wall -std=c++11 -DANDROID -frtti -DHAVE_PTHREAD -finline-functions -ffast-math -Os
+LOCAL_C_INCLUDES += ./boringssl/include/
+LOCAL_ARM_MODE := arm
+LOCAL_MODULE := tgnet
+LOCAL_STATIC_LIBRARIES := crypto
+
+LOCAL_SRC_FILES := \
+./tgnet/BuffersStorage.cpp \
+./tgnet/ByteArray.cpp \
+./tgnet/ByteStream.cpp \
+./tgnet/Connection.cpp \
+./tgnet/ConnectionSession.cpp \
+./tgnet/ConnectionsManager.cpp \
+./tgnet/ConnectionSocket.cpp \
+./tgnet/Datacenter.cpp \
+./tgnet/EventObject.cpp \
+./tgnet/FileLog.cpp \
+./tgnet/MTProtoScheme.cpp \
+./tgnet/NativeByteBuffer.cpp \
+./tgnet/Request.cpp \
+./tgnet/Timer.cpp \
+./tgnet/TLObject.cpp \
+./tgnet/Config.cpp
+
+include $(BUILD_STATIC_LIBRARY)
+
+include $(CLEAR_VARS)
+
+LOCAL_CFLAGS := -Wall -DANDROID -DHAVE_MALLOC_H -DHAVE_PTHREAD -DWEBP_USE_THREAD -finline-functions -ffast-math -ffunction-sections -fdata-sections -Os
 LOCAL_C_INCLUDES += ./libwebp/src
 LOCAL_ARM_MODE := arm
 LOCAL_STATIC_LIBRARIES := cpufeatures
@@ -93,7 +175,7 @@ else
 	LOCAL_ARM_MODE  := arm
 endif
 LOCAL_MODULE := sqlite
-LOCAL_CFLAGS 	:= -w -std=gnu99 -O2 -DNULL=0 -DSOCKLEN_T=socklen_t -DLOCALE_NOT_USED -D_LARGEFILE_SOURCE=1 -D_FILE_OFFSET_BITS=64
+LOCAL_CFLAGS 	:= -w -std=c11 -Os -DNULL=0 -DSOCKLEN_T=socklen_t -DLOCALE_NOT_USED -D_LARGEFILE_SOURCE=1 -D_FILE_OFFSET_BITS=64
 LOCAL_CFLAGS 	+= -DANDROID_NDK -DDISABLE_IMPORTGL -fno-strict-aliasing -fprefetch-loop-arrays -DAVOID_TABLES -DANDROID_TILE_BASED_DECODE -DANDROID_ARMV6_IDCT -DHAVE_STRCHRNUL=0
 
 LOCAL_SRC_FILES     := \
@@ -103,13 +185,14 @@ include $(BUILD_STATIC_LIBRARY)
 
 include $(CLEAR_VARS)
 LOCAL_PRELINK_MODULE := false
-LOCAL_STATIC_LIBRARIES := webp sqlite
-LOCAL_MODULE 	:= tmessages.8
-LOCAL_CFLAGS 	:= -w -std=gnu99 -O2 -DNULL=0 -DSOCKLEN_T=socklen_t -DLOCALE_NOT_USED -D_LARGEFILE_SOURCE=1 -D_FILE_OFFSET_BITS=64
+LOCAL_STATIC_LIBRARIES := webp sqlite tgnet breakpad
+
+LOCAL_MODULE 	:= tmessages.12
+LOCAL_CFLAGS 	:= -w -std=c11 -Os -DNULL=0 -DSOCKLEN_T=socklen_t -DLOCALE_NOT_USED -D_LARGEFILE_SOURCE=1 -D_FILE_OFFSET_BITS=64
 LOCAL_CFLAGS 	+= -Drestrict='' -D__EMX__ -DOPUS_BUILD -DFIXED_POINT -DUSE_ALLOCA -DHAVE_LRINT -DHAVE_LRINTF -fno-math-errno
 LOCAL_CFLAGS 	+= -DANDROID_NDK -DDISABLE_IMPORTGL -fno-strict-aliasing -fprefetch-loop-arrays -DAVOID_TABLES -DANDROID_TILE_BASED_DECODE -DANDROID_ARMV6_IDCT -ffast-math
-LOCAL_CPPFLAGS 	:= -DBSD=1 -ffast-math -O2 -funroll-loops
-LOCAL_LDLIBS 	:= -ljnigraphics -llog
+LOCAL_CPPFLAGS 	:= -DBSD=1 -ffast-math -Os -funroll-loops -std=c++11
+LOCAL_LDLIBS 	:= -ljnigraphics -llog -lz
 ifeq ($(TARGET_ARCH_ABI),armeabi)
 	LOCAL_ARM_MODE  := thumb
 else
@@ -267,24 +350,6 @@ LOCAL_SRC_FILES     += \
 ./giflib/dgif_lib.c \
 ./giflib/gifalloc.c
 
-LOCAL_SRC_FILES     += \
-./aes/aes_ige.c \
-./aes/aes_misc.c
-
-ifeq ($(TARGET_ARCH_ABI),armeabi-v7a)
-    LOCAL_SRC_FILES += ./aes/aes_arm.S
-else
-    ifeq ($(TARGET_ARCH_ABI),armeabi)
-        LOCAL_SRC_FILES += ./aes/aes_arm.S
-    else
-        ifeq ($(TARGET_ARCH_ABI),x86)
-            LOCAL_SRC_FILES += ./aes/aes_core.c
-        else
-            LOCAL_SRC_FILES += ./aes/aes_core.c
-        endif
-    endif
-endif
-
 LOCAL_C_INCLUDES    := \
 ./opus/include \
 ./opus/silk \
@@ -292,7 +357,10 @@ LOCAL_C_INCLUDES    := \
 ./opus/celt \
 ./opus/ \
 ./opus/opusfile \
-./libyuv/include
+./libyuv/include \
+./boringssl/include \
+./breakpad/common/android/include \
+./breakpad
 
 LOCAL_SRC_FILES     += \
 ./libjpeg/jcapimin.c \
@@ -393,7 +461,9 @@ LOCAL_SRC_FILES     += \
 ./gif.c \
 ./utils.c \
 ./image.c \
-./video.c
+./video.c \
+./TgNetWrapper.cpp \
+./NativeLoader.cpp
 
 include $(BUILD_SHARED_LIBRARY)
 

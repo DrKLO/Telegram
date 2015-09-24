@@ -13,13 +13,13 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.util.TypedValue;
 import android.view.Gravity;
-import android.widget.FrameLayout;
 import android.widget.TextView;
 
-import org.telegram.android.LocaleController;
+import org.telegram.messenger.LocaleController;
+import org.telegram.ui.Components.FrameLayoutFixed;
 import org.telegram.ui.Components.LayoutHelper;
 
-public class TextBlockCell extends FrameLayout {
+public class TextBlockCell extends FrameLayoutFixed {
 
     private TextView textView;
     private static Paint paint;

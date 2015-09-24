@@ -9,19 +9,25 @@
 package org.telegram.ui.Components;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.SharedPreferences;
+import android.net.Uri;
+import android.provider.Browser;
 
-import org.telegram.android.LocaleController;
-import org.telegram.android.MessagesController;
-import org.telegram.android.MessagesStorage;
-import org.telegram.android.NotificationsController;
+import org.telegram.messenger.FileLog;
+import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.MessagesStorage;
+import org.telegram.messenger.NotificationsController;
 import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.R;
-import org.telegram.messenger.TLRPC;
+import org.telegram.tgnet.ConnectionsManager;
+import org.telegram.tgnet.TLRPC;
+import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
 
 public class AlertsCreator {
@@ -66,7 +72,7 @@ public class AlertsCreator {
                         }
                         MessagesStorage.getInstance().setDialogFlags(dialog_id, flags);
                         editor.commit();
-                        TLRPC.TL_dialog dialog = MessagesController.getInstance().dialogs_dict.get(dialog_id);
+                        TLRPC.Dialog dialog = MessagesController.getInstance().dialogs_dict.get(dialog_id);
                         if (dialog != null) {
                             dialog.notify_settings = new TLRPC.TL_peerNotifySettings();
                             dialog.notify_settings.mute_until = untilTime;
@@ -76,5 +82,42 @@ public class AlertsCreator {
                 }
         );
         return builder.create();
+    }
+
+    public static void showAddUserAlert(String error, final BaseFragment fragment) {
+        if (error == null || fragment == null || fragment.getParentActivity() == null) {
+            return;
+        }
+        AlertDialog.Builder builder = new AlertDialog.Builder(fragment.getParentActivity());
+        builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
+        switch (error) {
+            case "PEER_FLOOD":
+                builder.setMessage(LocaleController.getString("NobodyLikesSpam2", R.string.NobodyLikesSpam2));
+                builder.setNegativeButton(LocaleController.getString("MoreInfo", R.string.MoreInfo), new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        try {
+                            Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse("https://telegram.org/faq#can-39t-send-messages-to-non-contacts"));
+                            intent.putExtra(Browser.EXTRA_APPLICATION_ID, fragment.getParentActivity().getPackageName());
+                            fragment.getParentActivity().startActivity(intent);
+                        } catch (Exception e) {
+                            FileLog.e("tmessages", e);
+                        }
+                    }
+                });
+                break;
+            case "USER_BLOCKED":
+            case "USER_ID_INVALID":
+                builder.setMessage(LocaleController.getString("ChannelUserCantAdd", R.string.ChannelUserCantAdd));
+                break;
+            case "USERS_TOO_MUCH":
+                builder.setMessage(LocaleController.getString("ChannelUserAddLimit", R.string.ChannelUserAddLimit));
+                break;
+            case "USER_NOT_MUTUAL_CONTACT":
+                builder.setMessage(LocaleController.getString("ChannelUserLeftError", R.string.ChannelUserLeftError));
+                break;
+        }
+        builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), null);
+        fragment.showDialog(builder.create(), true);
     }
 }

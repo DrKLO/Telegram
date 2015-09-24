@@ -21,14 +21,14 @@ import android.text.style.URLSpan;
 import android.view.MotionEvent;
 import android.view.SoundEffectConstants;
 
-import org.telegram.android.AndroidUtilities;
-import org.telegram.android.ImageReceiver;
-import org.telegram.android.MessageObject;
-import org.telegram.android.MessagesController;
+import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ImageReceiver;
+import org.telegram.messenger.MessageObject;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
-import org.telegram.messenger.TLRPC;
+import org.telegram.tgnet.TLRPC;
 import org.telegram.messenger.UserConfig;
 import org.telegram.ui.Components.ResourceLoader;
 import org.telegram.ui.PhotoViewer;
@@ -89,6 +89,8 @@ public class ChatActionCell extends BaseCell {
             if (messageObject.messageOwner.to_id != null) {
                 if (messageObject.messageOwner.to_id.chat_id != 0) {
                     id = messageObject.messageOwner.to_id.chat_id;
+                } else if (messageObject.messageOwner.to_id.channel_id != 0) {
+                    id = messageObject.messageOwner.to_id.channel_id;
                 } else {
                     id = messageObject.messageOwner.to_id.user_id;
                     if (id == UserConfig.getClientUserId()) {

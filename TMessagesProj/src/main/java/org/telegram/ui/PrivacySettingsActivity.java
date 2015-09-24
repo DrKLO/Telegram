@@ -18,16 +18,16 @@ import android.widget.AdapterView;
 import android.widget.FrameLayout;
 import android.widget.ListView;
 
-import org.telegram.android.AndroidUtilities;
-import org.telegram.android.ContactsController;
-import org.telegram.android.LocaleController;
-import org.telegram.android.NotificationCenter;
-import org.telegram.messenger.ConnectionsManager;
+import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ContactsController;
+import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
-import org.telegram.messenger.RPCRequest;
-import org.telegram.messenger.TLObject;
-import org.telegram.messenger.TLRPC;
+import org.telegram.tgnet.ConnectionsManager;
+import org.telegram.tgnet.RequestDelegate;
+import org.telegram.tgnet.TLObject;
+import org.telegram.tgnet.TLRPC;
 import org.telegram.messenger.UserConfig;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.BaseFragment;
@@ -155,7 +155,7 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                             final TLRPC.TL_account_setAccountTTL req = new TLRPC.TL_account_setAccountTTL();
                             req.ttl = new TLRPC.TL_accountDaysTTL();
                             req.ttl.days = value;
-                            ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
+                            ConnectionsManager.getInstance().sendRequest(req, new RequestDelegate() {
                                 @Override
                                 public void run(final TLObject response, final TLRPC.TL_error error) {
                                     AndroidUtilities.runOnUIThread(new Runnable() {
@@ -239,11 +239,11 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                     return LocaleController.formatString("LastSeenContactsMinusPlus", R.string.LastSeenContactsMinusPlus, minus, plus);
                 } else if (minus != 0) {
                     return LocaleController.formatString("LastSeenContactsMinus", R.string.LastSeenContactsMinus, minus);
-                } else if (plus != 0) {
+                } else {
                     return LocaleController.formatString("LastSeenContactsPlus", R.string.LastSeenContactsPlus, plus);
                 }
             }
-        } else if (type == 1 || type == -1 && plus > 0) {
+        } else if (type == 1 || plus > 0) {
             if (plus == 0) {
                 return LocaleController.getString("LastSeenNobody", R.string.LastSeenNobody);
             } else {

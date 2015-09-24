@@ -11,7 +11,7 @@ package org.telegram.ui.Cells;
 import android.content.Context;
 import android.view.View;
 
-import org.telegram.android.AndroidUtilities;
+import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.R;
 
 public class ShadowBottomSectionCell extends View {

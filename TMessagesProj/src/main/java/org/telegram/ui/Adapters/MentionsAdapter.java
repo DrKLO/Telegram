@@ -12,10 +12,10 @@ import android.content.Context;
 import android.view.View;
 import android.view.ViewGroup;
 
-import org.telegram.android.MessageObject;
-import org.telegram.android.MessagesController;
-import org.telegram.android.UserObject;
-import org.telegram.messenger.TLRPC;
+import org.telegram.messenger.MessageObject;
+import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.UserObject;
+import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.Cells.MentionCell;
 
 import java.util.ArrayList;
@@ -30,7 +30,7 @@ public class MentionsAdapter extends BaseSearchAdapter {
     }
 
     private Context mContext;
-    private TLRPC.ChatParticipants info;
+    private TLRPC.ChatFull info;
     private ArrayList<TLRPC.User> searchResultUsernames;
     private ArrayList<String> searchResultHashtags;
     private ArrayList<String> searchResultCommands;
@@ -53,7 +53,7 @@ public class MentionsAdapter extends BaseSearchAdapter {
         this.isDarkTheme = isDarkTheme;
     }
 
-    public void setChatInfo(TLRPC.ChatParticipants chatParticipants) {
+    public void setChatInfo(TLRPC.ChatFull chatParticipants) {
         info = chatParticipants;
         if (lastText != null) {
             searchUsernameOrHashtag(lastText, lastPosition, messages);
@@ -166,13 +166,15 @@ public class MentionsAdapter extends BaseSearchAdapter {
             }
             String usernameString = result.toString().toLowerCase();
             ArrayList<TLRPC.User> newResult = new ArrayList<>();
-            for (TLRPC.TL_chatParticipant chatParticipant : info.participants) {
-                TLRPC.User user = MessagesController.getInstance().getUser(chatParticipant.user_id);
-                if (user == null || UserObject.isUserSelf(user)) {
-                    continue;
-                }
-                if (user.username != null && user.username.length() > 0 && (usernameString.length() > 0 && user.username.toLowerCase().startsWith(usernameString) || usernameString.length() == 0)) {
-                    newResult.add(user);
+            if (info instanceof TLRPC.TL_chatFull) {
+                for (TLRPC.TL_chatParticipant chatParticipant : info.participants.participants) {
+                    TLRPC.User user = MessagesController.getInstance().getUser(chatParticipant.user_id);
+                    if (user == null || UserObject.isUserSelf(user)) {
+                        continue;
+                    }
+                    if (user.username != null && user.username.length() > 0 && (usernameString.length() > 0 && user.username.toLowerCase().startsWith(usernameString) || usernameString.length() == 0)) {
+                        newResult.add(user);
+                    }
                 }
             }
             searchResultHashtags = null;

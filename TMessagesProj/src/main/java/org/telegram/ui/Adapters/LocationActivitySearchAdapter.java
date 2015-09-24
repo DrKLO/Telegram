@@ -12,7 +12,7 @@ import android.content.Context;
 import android.view.View;
 import android.view.ViewGroup;
 
-import org.telegram.messenger.TLRPC;
+import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.Cells.LocationCell;
 
 public class LocationActivitySearchAdapter extends BaseLocationAdapter {
