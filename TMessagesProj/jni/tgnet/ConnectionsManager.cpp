@@ -2400,6 +2400,12 @@ void ConnectionsManager::setNetworkAvailable(bool value) {
         networkAvailable = value;
         if (!networkAvailable) {
             connectionState = ConnectionStateWaitingForNetwork;
+        } else {
+            for (std::map<uint32_t, Datacenter *>::iterator iter = datacenters.begin(); iter != datacenters.end(); iter++) {
+                if (iter->second->isHandshaking()) {
+                    iter->second->createGenericConnection()->connect();
+                }
+            }
         }
         if (delegate != nullptr) {
             delegate->onConnectionStateChanged(connectionState);
