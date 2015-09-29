@@ -13,7 +13,6 @@
 #include <algorithm>
 #include <fcntl.h>
 #include <memory.h>
-#include <signal.h>
 #include <openssl/rand.h>
 #include <zlib.h>
 #include "ConnectionsManager.h"
@@ -38,12 +37,8 @@ jmethodID jclass_ByteBuffer_allocateDirect = 0;
 
 static bool done = false;
 
-void signal_handler(int param) {
-
-}
-
 ConnectionsManager::ConnectionsManager() {
-    if ((epolFd = epoll_create(64)) == -1) {
+    if ((epolFd = epoll_create(128)) == -1) {
         DEBUG_E("unable to create epoll instance");
         exit(1);
     }
@@ -57,15 +52,46 @@ ConnectionsManager::ConnectionsManager() {
         }
     }
 
-    if ((epollEvents = new epoll_event[64]) == nullptr) {
+    if ((epollEvents = new epoll_event[128]) == nullptr) {
         DEBUG_E("unable to allocate epoll events");
         exit(1);
     }
 
-    struct sigaction action;
-    memset(&action, 0, sizeof(action));
-    action.sa_handler = signal_handler;
-    sigaction(SIGRTMIN, &action, NULL);
+    pipeFd = new int[2];
+    if (pipe(pipeFd) != 0) {
+        DEBUG_E("unable to create pipe");
+        exit(1);
+    }
+
+    flags = fcntl(pipeFd[0], F_GETFL);
+    if (flags == -1) {
+        DEBUG_E("fcntl get pipefds[0] failed");
+        exit(1);
+    }
+    if (fcntl(pipeFd[0], F_SETFL, flags | O_NONBLOCK) == -1) {
+        DEBUG_E("fcntl set pipefds[0] failed");
+        exit(1);
+    }
+
+    flags = fcntl(pipeFd[1], F_GETFL);
+    if (flags == -1) {
+        DEBUG_E("fcntl get pipefds[1] failed");
+        exit(1);
+    }
+    if (fcntl(pipeFd[1], F_SETFL, flags | O_NONBLOCK) == -1) {
+        DEBUG_E("fcntl set pipefds[1] failed");
+        exit(1);
+    }
+
+    EventObject *eventObject = new EventObject(pipeFd, EventObjectPipe);
+
+    epoll_event eventMask = {};
+    eventMask.events = EPOLLIN;
+    eventMask.data.ptr = eventObject;
+    if (epoll_ctl(epolFd, EPOLL_CTL_ADD, pipeFd[0], &eventMask) != 0) {
+        DEBUG_E("can't add pipe to epoll");
+        exit(1);
+    }
 
     networkBuffer = new NativeByteBuffer((uint32_t) READ_BUFFER_SIZE);
     if (networkBuffer == nullptr) {
@@ -130,7 +156,7 @@ void ConnectionsManager::checkPendingTasks() {
 
 void ConnectionsManager::select() {
     checkPendingTasks();
-    int eventsCount = epoll_wait(epolFd, epollEvents, 64, callEvents(getCurrentTimeMillis()));
+    int eventsCount = epoll_wait(epolFd, epollEvents, 128, callEvents(getCurrentTimeMillis()));
     checkPendingTasks();
     int64_t now = getCurrentTimeMillis();
     callEvents(now);
@@ -249,9 +275,8 @@ void ConnectionsManager::removeEvent(EventObject *eventObject) {
 }
 
 void ConnectionsManager::wakeup() {
-    if (threadStarted) {
-        pthread_kill(networkThread, SIGRTMIN);
-    }
+    char ch = 'x';
+    write(pipeFd[1], &ch, 1);
 }
 
 void *ConnectionsManager::ThreadProc(void *data) {
@@ -267,7 +292,6 @@ void *ConnectionsManager::ThreadProc(void *data) {
             networkManager->sendPing(datacenter, true);
         }
     }
-    networkManager->threadStarted = true;
     do {
         networkManager->select();
     } while (!done);

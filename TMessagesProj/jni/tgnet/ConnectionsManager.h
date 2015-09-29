@@ -153,7 +153,7 @@ private:
     bool ipv6Enabled = false;
     std::vector<ConnectionSocket *> activeConnections;
     int epolFd;
-    volatile bool threadStarted = false;
+    int *pipeFd;
     NativeByteBuffer *networkBuffer;
 
     requestsList requestsQueue;

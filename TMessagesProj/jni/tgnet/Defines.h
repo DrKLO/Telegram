@@ -56,7 +56,8 @@ enum ConnectionState {
 
 enum EventObjectType {
     EventObjectTypeConnection,
-    EventObjectTypeTimer
+    EventObjectTypeTimer,
+    EventObjectPipe
 };
 
 typedef struct ConnectiosManagerDelegate {

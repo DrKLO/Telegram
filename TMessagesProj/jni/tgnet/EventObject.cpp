@@ -6,6 +6,7 @@
  * Copyright Nikolai Kudashov, 2015.
  */
 
+#include <unistd.h>
 #include "EventObject.h"
 #include "Connection.h"
 #include "Timer.h"
@@ -25,6 +26,15 @@ void EventObject::onEvent(uint32_t events) {
         case EventObjectTypeTimer: {
             Timer *timer = (Timer *) eventObject;
             timer->onEvent();
+            break;
+        }
+        case EventObjectPipe: {
+            int *pipe = (int *) eventObject;
+            char ch;
+            ssize_t size = 1;
+            while (size > 0) {
+                size = read(pipe[0], &ch, 1);
+            }
             break;
         }
         default:
