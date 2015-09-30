@@ -57,6 +57,7 @@
     <string name="MuteDisable">Wyłącz</string>
   <string name="Hashtags">Hashtagi</string>
   <string name="Recent">OSTATNIE</string>
+  <!--channels-->
     <!--broadcasts-->
     <string name="NewBroadcastList">Nowe ogłoszenie</string>
     <string name="EnterListName">Wprowadź nazwę listy</string>
@@ -134,6 +135,7 @@
   <string name="OpenInBrowser">Otwórz w przeglądarce</string>
   <string name="CopyUrl">Kopiuj link</string>
   <string name="SendItems">Wyślij %1$s</string>
+  <string name="OpenUrlAlert">Otworzyć łącze do %1$s?</string>
     <!--notification-->
     <string name="MessageLifetimeChanged">%1$s ustawił/a licznik autodestrukcji na %2$s</string>
     <string name="MessageLifetimeChangedOutgoing">Ustawiłeś licznik autodestrukcji na %1$s</string>
@@ -167,7 +169,16 @@
     <string name="NotificationGroupKickYou">%1$s usunął cię z grupy %2$s</string>
     <string name="NotificationGroupLeftMember">%1$s opuścił grupe %2$s</string>
     <string name="NotificationContactJoined">%1$s dołączył do Telegram-a!</string>
-    <string name="NotificationUnrecognizedDevice">%1$s,\nZarejestrowalismy logowanie do Twojego konta z nowego urządzenia%2$s\n\nUrządzenie: %3$s\nLokalizacja: %4$s\n\nJeżeli to nie ty, idź do Ustawienia - Prywatność i Bezpieczeństwo - Zakończ wszystkie inne sesje.\n\nPozdrawiamy,\nZespół Telegram</string>
+  <string name="NotificationUnrecognizedDevice">%1$s
+Wykryliśmy logowanie na Twoje konto z nowego urządzenia %2$s
+
+Urządzenie: %3$s
+Lokalizacja: %4$s
+
+Jeśli to nie byłeś Ty, możesz w Ustawieniach anulować inne sesje. Jeśli chcesz możesz włączyć dwuetapową weryfikację w ustawieniach prywatności i bezpieczeństwa.
+
+Dziękujemy
+Ekipa Telegram</string>
     <string name="NotificationContactNewPhoto">%1$s zaktualizował/a swoje zdjęcie profilowe</string>
   <string name="NotificationInvitedToGroupByLink">%1$s wrócił/a do grupy %2$s dzięki zaproszeniu</string>
     <string name="Reply">Odpowiedz</string>
@@ -547,6 +558,9 @@
   <string name="BotStatusCantRead">nie ma dostępu do wiadomości</string>
   <string name="BotInfoTitle">Co ten bot może robić?</string>
   <string name="BotStart">START</string>
+  <string name="BotUnblock">ZRESTARTUJ</string>
+  <string name="BotStop">Zatrzymaj bota</string>
+  <string name="BotRestart">Zrestartuj bota</string>
     <!--button titles-->
     <string name="Next">Następne</string>
     <string name="Back">Wróć</string>
@@ -660,7 +674,6 @@
     <string name="Online_few">%1$d Dostępny</string>
     <string name="Online_many">%1$d Dostępny</string>
     <string name="Online_other">%1$d Dostępny</string>
-    <string name="Members_zero">brak członków</string>
     <string name="Members_one">%1$d członek</string>
     <string name="Members_two">%1$d członków</string>
     <string name="Members_few">%1$d członków</string>

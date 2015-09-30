@@ -17,7 +17,7 @@ import android.view.Gravity;
 import android.view.MotionEvent;
 import android.widget.TextView;
 
-import org.telegram.android.AndroidUtilities;
+import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.R;
 
 public class HashtagSearchCell extends TextView {

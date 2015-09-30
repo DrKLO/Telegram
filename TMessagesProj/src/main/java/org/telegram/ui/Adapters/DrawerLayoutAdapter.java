@@ -18,17 +18,17 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 
-import org.telegram.android.AndroidUtilities;
-import org.telegram.android.LocaleController;
-import org.telegram.android.MessagesController;
+import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
-import org.telegram.ui.Cells.DividerCell;
 import org.telegram.ui.Cells.DrawerActionCell;
-import org.telegram.ui.Cells.DrawerProfileCell;
+import org.telegram.ui.Cells.DividerCell;
 import org.telegram.ui.Cells.EmptyCell;
+import org.telegram.ui.Cells.DrawerProfileCell;
 import org.telegram.ui.Cells.TextInfoCell;
 
 import java.util.Locale;
@@ -123,10 +123,10 @@ public class DrawerLayoutAdapter extends BaseAdapter {
                 secret.setColorFilter(color, PorterDuff.Mode.SRC_IN);
                 actionCell.setTextAndIcon(LocaleController.getString("NewSecretChat", R.string.NewSecretChat), secret);
             } else if (i == 4) {
-                //actionCell.setTextAndIcon(LocaleController.getString("NewBroadcastList", R.string.NewBroadcastList), R.drawable.menu_broadcast);
+                //actionCell.setTextAndIcon(LocaleController.getString("NewChannel", R.string.NewChannel), R.drawable.menu_broadcast);
                 Drawable broadcast = mContext.getResources().getDrawable(R.drawable.menu_broadcast);
                 broadcast.setColorFilter(color, PorterDuff.Mode.SRC_IN);
-                actionCell.setTextAndIcon(LocaleController.getString("NewBroadcastList", R.string.NewBroadcastList), broadcast);
+                actionCell.setTextAndIcon(LocaleController.getString("NewChannel", R.string.NewChannel), broadcast);
             } else if (i == contactsRow) {
                 //actionCell.setTextAndIcon(LocaleController.getString("Contacts", R.string.Contacts), R.drawable.menu_contacts);
                 Drawable contacts = mContext.getResources().getDrawable(R.drawable.menu_contacts);

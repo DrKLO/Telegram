@@ -22,7 +22,9 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Parcelable;
+import android.provider.Browser;
 import android.provider.ContactsContract;
+import android.support.annotation.NonNull;
 import android.view.ActionMode;
 import android.view.Gravity;
 import android.view.KeyEvent;
@@ -41,23 +43,25 @@ import android.widget.RelativeLayout;
 import android.widget.Toast;
 
 import org.telegram.PhoneFormat.PhoneFormat;
-import org.telegram.android.AndroidUtilities;
-import org.telegram.android.LocaleController;
-import org.telegram.android.MessagesController;
-import org.telegram.android.MessagesStorage;
-import org.telegram.android.NotificationCenter;
-import org.telegram.android.SendMessagesHelper;
-import org.telegram.android.UserObject;
-import org.telegram.android.query.StickersQuery;
+import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BuildConfig;
-import org.telegram.messenger.ConnectionsManager;
+import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.FileLog;
+import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.MessagesStorage;
+import org.telegram.messenger.NativeCrashManager;
+import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
-import org.telegram.messenger.RPCRequest;
-import org.telegram.messenger.TLObject;
-import org.telegram.messenger.TLRPC;
+import org.telegram.messenger.SendMessagesHelper;
 import org.telegram.messenger.UserConfig;
+import org.telegram.messenger.UserObject;
+import org.telegram.messenger.query.StickersQuery;
+import org.telegram.tgnet.ConnectionsManager;
+import org.telegram.tgnet.RequestDelegate;
+import org.telegram.tgnet.TLObject;
+import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBarLayout;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.DrawerLayoutContainer;
@@ -119,6 +123,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         ApplicationLoader.postInitApplication();
+        NativeCrashManager.handleDumpFiles(this);
 
         if (!UserConfig.isClientActivated()) {
             Intent intent = getIntent();
@@ -301,9 +306,15 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                     if (!MessagesController.isFeatureEnabled("broadcast_create", actionBarLayout.fragmentsStack.get(actionBarLayout.fragmentsStack.size() - 1))) {
                         return;
                     }
-                    Bundle args = new Bundle();
-                    args.putBoolean("broadcast", true);
-                    presentFragment(new GroupCreateActivity(args));
+                    SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+                    if (preferences.getBoolean("channel_intro", false)) {
+                        Bundle args = new Bundle();
+                        args.putInt("step", 0);
+                        presentFragment(new ChannelCreateActivity(args));
+                    } else {
+                        presentFragment(new ChannelIntroActivity());
+                        preferences.edit().putBoolean("channel_intro", true).commit();
+                    }
                     drawerLayoutContainer.closeDrawer(false);
                 } else if (position == contactsRow) {
                     presentFragment(new ContactsActivity(null));
@@ -394,6 +405,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
         NotificationCenter.getInstance().addObserver(this, NotificationCenter.mainUserInfoChanged);
         NotificationCenter.getInstance().addObserver(this, NotificationCenter.closeOtherAppActivities);
         NotificationCenter.getInstance().addObserver(this, NotificationCenter.didUpdatedConnectionState);
+        NotificationCenter.getInstance().addObserver(this, NotificationCenter.spamErrorReceived);
         if (Build.VERSION.SDK_INT < 14) {
             NotificationCenter.getInstance().addObserver(this, NotificationCenter.screenStateChanged);
         }
@@ -432,6 +444,22 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                                     GroupCreateFinalActivity group = new GroupCreateFinalActivity(args);
                                     if (actionBarLayout.addFragmentToStack(group)) {
                                         group.restoreSelfArgs(savedInstanceState);
+                                    }
+                                }
+                                break;
+                            case "channel":
+                                if (args != null) {
+                                    ChannelCreateActivity channel = new ChannelCreateActivity(args);
+                                    if (actionBarLayout.addFragmentToStack(channel)) {
+                                        channel.restoreSelfArgs(savedInstanceState);
+                                    }
+                                }
+                                break;
+                            case "edit":
+                                if (args != null) {
+                                    ChannelEditActivity channel = new ChannelEditActivity(args);
+                                    if (actionBarLayout.addFragmentToStack(channel)) {
+                                        channel.restoreSelfArgs(savedInstanceState);
                                     }
                                 }
                                 break;
@@ -748,7 +776,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                                 String host = data.getHost().toLowerCase();
                                 if (host.equals("telegram.me")) {
                                     String path = data.getPath();
-                                        if (path != null) {
+                                        if (path != null && path.length() > 1) {
                                             path = path.substring(1);
                                             if (path.startsWith("joinchat/")) {
                                                 group = path.replace("joinchat/", "");
@@ -972,12 +1000,12 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
         progressDialog.setMessage(LocaleController.getString("Loading", R.string.Loading));
         progressDialog.setCanceledOnTouchOutside(false);
         progressDialog.setCancelable(false);
-        long requestId = 0;
+        int requestId = 0;
 
         if (username != null) {
             TLRPC.TL_contacts_resolveUsername req = new TLRPC.TL_contacts_resolveUsername();
             req.username = username;
-            requestId = ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
+            requestId = ConnectionsManager.getInstance().sendRequest(req, new RequestDelegate() {
                 @Override
                 public void run(final TLObject response, final TLRPC.TL_error error) {
                     AndroidUtilities.runOnUIThread(new Runnable() {
@@ -990,13 +1018,14 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                                     FileLog.e("tmessages", e);
                                 }
                                 if (error == null && actionBarLayout != null) {
-                                    final TLRPC.User user = (TLRPC.User) response;
-                                    MessagesController.getInstance().putUser(user, false);
-                                    ArrayList<TLRPC.User> users = new ArrayList<>();
-                                    users.add(user);
-                                    MessagesStorage.getInstance().putUsersAndChats(users, null, false, true);
+                                    final TLRPC.TL_contacts_resolvedPeer res = (TLRPC.TL_contacts_resolvedPeer) response;
+                                    MessagesController.getInstance().putUsers(res.users, false);
+                                    MessagesController.getInstance().putChats(res.chats, false);
+                                    MessagesStorage.getInstance().putUsersAndChats(res.users, res.chats, false, true);
+
                                     if (botChat != null) {
-                                        if ((user.flags & TLRPC.USER_FLAG_BOT) != 0 && (user.flags & TLRPC.USER_FLAG_BOT_CANT_JOIN_GROUP) != 0) {
+                                        final TLRPC.User user = !res.users.isEmpty() ? res.users.get(0) : null;
+                                        if (user == null || (user.flags & TLRPC.USER_FLAG_BOT) != 0 && (user.flags & TLRPC.USER_FLAG_BOT_CANT_JOIN_GROUP) != 0) {
                                             try {
                                                 Toast.makeText(LaunchActivity.this, LocaleController.getString("BotCantJoinGroups", R.string.BotCantJoinGroups), Toast.LENGTH_SHORT).show();
                                             } catch (Exception e) {
@@ -1013,7 +1042,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                                             @Override
                                             public void didSelectDialog(DialogsActivity fragment, long did, boolean param) {
                                                 NotificationCenter.getInstance().postNotificationName(NotificationCenter.closeChats);
-                                                MessagesController.getInstance().addUserToChat(-(int) did, user, null, 0, botChat);
+                                                MessagesController.getInstance().addUserToChat(-(int) did, user, null, 0, botChat, null);
                                                 Bundle args = new Bundle();
                                                 args.putBoolean("scrollToTopOnResume", true);
                                                 args.putInt("chat_id", -(int) did);
@@ -1023,7 +1052,11 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                                         presentFragment(fragment);
                                     } else {
                                     Bundle args = new Bundle();
-                                    args.putInt("user_id", user.id);
+                                        if (!res.chats.isEmpty()) {
+                                            args.putInt("chat_id", res.chats.get(0).id);
+                                        } else {
+                                            args.putInt("user_id", res.users.get(0).id);
+                                        }
                                         if (botUser != null) {
                                             args.putString("botUser", botUser);
                                         }
@@ -1047,7 +1080,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
             if (state == 0) {
                 final TLRPC.TL_messages_checkChatInvite req = new TLRPC.TL_messages_checkChatInvite();
                 req.hash = group;
-                requestId = ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
+                requestId = ConnectionsManager.getInstance().sendRequest(req, new RequestDelegate() {
                     @Override
                     public void run(final TLObject response, final TLRPC.TL_error error) {
                         AndroidUtilities.runOnUIThread(new Runnable() {
@@ -1061,7 +1094,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                                     }
                                     if (error == null && actionBarLayout != null) {
                                         TLRPC.ChatInvite invite = (TLRPC.ChatInvite) response;
-                                        if (invite.chat != null && !invite.chat.left) {
+                                        if (invite.chat != null && !ChatObject.isLeftFromChat(invite.chat)) {
                                             MessagesController.getInstance().putChat(invite.chat, false);
                                             ArrayList<TLRPC.Chat> chats = new ArrayList<>();
                                             chats.add(invite.chat);
@@ -1074,7 +1107,11 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                                         } else {
                                             AlertDialog.Builder builder = new AlertDialog.Builder(LaunchActivity.this);
                                             builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
+                                            if ((invite.flags & 1) != 0 || ChatObject.isChannel(invite.chat)) {
+                                                builder.setMessage(LocaleController.formatString("ChannelJoinTo", R.string.ChannelJoinTo, invite.chat != null ? invite.chat.title : invite.title));
+                                            } else {
                                             builder.setMessage(LocaleController.formatString("JoinToGroup", R.string.JoinToGroup, invite.chat != null ? invite.chat.title : invite.title));
+                                            }
                                             builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), new DialogInterface.OnClickListener() {
                                                 @Override
                                                 public void onClick(DialogInterface dialogInterface, int i) {
@@ -1099,7 +1136,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
             } else if (state == 1) {
                 TLRPC.TL_messages_importChatInvite req = new TLRPC.TL_messages_importChatInvite();
                 req.hash = group;
-                ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
+                ConnectionsManager.getInstance().sendRequest(req, new RequestDelegate() {
                     @Override
                     public void run(final TLObject response, final TLRPC.TL_error error) {
                         if (error == null) {
@@ -1122,10 +1159,12 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                                                 MessagesController.getInstance().putUsers(updates.users, false);
                                                 MessagesController.getInstance().putChats(updates.chats, false);
                                                 Bundle args = new Bundle();
-                                                args.putInt("chat_id", updates.chats.get(0).id);
+                                                int chat_id = updates.chats.get(0).id;
+                                                args.putInt("chat_id", chat_id);
                                                 ChatActivity fragment = new ChatActivity(args);
                                                 NotificationCenter.getInstance().postNotificationName(NotificationCenter.closeChats);
                                                 actionBarLayout.presentFragment(fragment, false, true, true);
+                                                MessagesController.getInstance().generateJoinMessage(chat_id);
                                             }
                                         }
                                     } else {
@@ -1188,11 +1227,11 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
         }
 
         if (requestId != 0) {
-        final long reqId = requestId;
+            final int reqId = requestId;
         progressDialog.setButton(DialogInterface.BUTTON_NEGATIVE, LocaleController.getString("Cancel", R.string.Cancel), new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
-                ConnectionsManager.getInstance().cancelRpc(reqId, true);
+                    ConnectionsManager.getInstance().cancelRequest(reqId, true);
                 try {
                     dialog.dismiss();
                 } catch (Exception e) {
@@ -1278,25 +1317,25 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                     }
                 } else {
                     actionBarLayout.presentFragment(fragment, true);
-                    SendMessagesHelper.prepareSendingVideo(videoPath, 0, 0, 0, 0, null, dialog_id, null);
+                    SendMessagesHelper.prepareSendingVideo(videoPath, 0, 0, 0, 0, null, dialog_id, null, true);
                 }
             } else {
 
                 actionBarLayout.presentFragment(fragment, true);
 
                 if (sendingText != null) {
-                    SendMessagesHelper.prepareSendingText(sendingText, dialog_id);
+                    SendMessagesHelper.prepareSendingText(sendingText, dialog_id, true);
                 }
 
                 if (photoPathsArray != null) {
-                    SendMessagesHelper.prepareSendingPhotos(null, photoPathsArray, dialog_id, null, null);
+                    SendMessagesHelper.prepareSendingPhotos(null, photoPathsArray, dialog_id, null, null, true);
                 }
                 if (documentsPathsArray != null || documentsUrisArray != null) {
-                    SendMessagesHelper.prepareSendingDocuments(documentsPathsArray, documentsOriginalPathsArray, documentsUrisArray, documentsMimeType, dialog_id, null);
+                    SendMessagesHelper.prepareSendingDocuments(documentsPathsArray, documentsOriginalPathsArray, documentsUrisArray, documentsMimeType, dialog_id, null, true);
                 }
                 if (contactsToSend != null && !contactsToSend.isEmpty()) {
                     for (TLRPC.User user : contactsToSend) {
-                        SendMessagesHelper.getInstance().sendMessage(user, dialog_id, null);
+                        SendMessagesHelper.getInstance().sendMessage(user, dialog_id, null, true);
                     }
                 }
             }
@@ -1323,6 +1362,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.mainUserInfoChanged);
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.closeOtherAppActivities);
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.didUpdatedConnectionState);
+        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.spamErrorReceived);
         if (Build.VERSION.SDK_INT < 14) {
             NotificationCenter.getInstance().removeObserver(this, NotificationCenter.screenStateChanged);
         }
@@ -1543,9 +1583,9 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                 finish();
             }
         } else if (id == NotificationCenter.didUpdatedConnectionState) {
-            int state = (Integer)args[0];
+            int state = ConnectionsManager.getInstance().getConnectionState();
             if (currentConnectionState != state) {
-                FileLog.e("tmessages", "switch to state " + state);
+                FileLog.d("tmessages", "switch to state " + state);
                 currentConnectionState = state;
                 updateCurrentConnectionState();
             }
@@ -1558,6 +1598,31 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                 } else {
                     onPasscodeResume();
                 }
+            }
+        } else if (id == NotificationCenter.spamErrorReceived) {
+            final Integer reason = (Integer) args[0];
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
+            builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), null);
+            builder.setNegativeButton(LocaleController.getString("MoreInfo", R.string.MoreInfo), new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialogInterface, int i) {
+                    try {
+                        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse("https://telegram.org/faq#can-39t-send-messages-to-non-contacts"));
+                        intent.putExtra(Browser.EXTRA_APPLICATION_ID, getPackageName());
+                        startActivity(intent);
+                    } catch (Exception e) {
+                        FileLog.e("tmessages", e);
+                    }
+                }
+            });
+            if (reason == 0) {
+                builder.setMessage(LocaleController.getString("NobodyLikesSpam1", R.string.NobodyLikesSpam1));
+            } else if (reason == 1) {
+                builder.setMessage(LocaleController.getString("NobodyLikesSpam2", R.string.NobodyLikesSpam2));
+            }
+            if (!mainFragmentsStack.isEmpty()) {
+                mainFragmentsStack.get(mainFragmentsStack.size() - 1).showDialog(builder.create());
             }
         }
     }
@@ -1610,11 +1675,11 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
 
     private void updateCurrentConnectionState() {
         String text = null;
-        if (currentConnectionState == 1) {
+        if (currentConnectionState == ConnectionsManager.ConnectionStateWaitingForNetwork) {
             text = LocaleController.getString("WaitingForNetwork", R.string.WaitingForNetwork);
-        } else if (currentConnectionState == 2) {
+        } else if (currentConnectionState == ConnectionsManager.ConnectionStateConnecting) {
             text = LocaleController.getString("Connecting", R.string.Connecting);
-        } else if (currentConnectionState == 3) {
+        } else if (currentConnectionState == ConnectionsManager.ConnectionStateUpdating) {
             text = LocaleController.getString("Updating", R.string.Updating);
         }
         actionBarLayout.setTitleOverlayText(text);
@@ -1654,6 +1719,12 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                 } else if (lastFragment instanceof ProfileActivity && ((ProfileActivity) lastFragment).isChat() && args != null) {
                     outState.putBundle("args", args);
                     outState.putString("fragment", "chat_profile");
+                } else if (lastFragment instanceof ChannelCreateActivity && args != null && args.getInt("step") == 0) {
+                    outState.putBundle("args", args);
+                    outState.putString("fragment", "channel");
+                } else if (lastFragment instanceof ChannelEditActivity && args != null) {
+                    outState.putBundle("args", args);
+                    outState.putString("fragment", "edit");
                 }
                 lastFragment.saveSelfArgs(outState);
             }
@@ -1730,7 +1801,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
     }
 
     @Override
-    public boolean onKeyUp(int keyCode, KeyEvent event) {
+    public boolean onKeyUp(int keyCode, @NonNull KeyEvent event) {
         if (keyCode == KeyEvent.KEYCODE_MENU) {
             if (AndroidUtilities.isTablet()) {
                 if (layersActionBarLayout.getVisibility() == View.VISIBLE && !layersActionBarLayout.fragmentsStack.isEmpty()) {

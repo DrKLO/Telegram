@@ -14,7 +14,7 @@ import android.graphics.Paint;
 import android.view.MotionEvent;
 import android.view.View;
 
-import org.telegram.android.AndroidUtilities;
+import org.telegram.messenger.AndroidUtilities;
 
 public class PhotoEditorSeekBar extends View {
 

@@ -24,14 +24,14 @@ import android.widget.AdapterView;
 import android.widget.FrameLayout;
 import android.widget.ListView;
 
-import org.telegram.android.AndroidUtilities;
-import org.telegram.android.ContactsController;
-import org.telegram.android.LocaleController;
-import org.telegram.android.MessagesController;
-import org.telegram.android.NotificationCenter;
+import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ContactsController;
+import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.R;
-import org.telegram.messenger.TLRPC;
+import org.telegram.tgnet.TLRPC;
 import org.telegram.messenger.UserConfig;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.BaseFragment;
@@ -296,9 +296,7 @@ public class ThemingChatsActivity extends BaseFragment {
                         if (view instanceof TextCheckCell) {
                             ((TextCheckCell) view).setChecked(!b);
                         }
-                        if (listView != null) {
-                            listView.invalidateViews();
-                        }
+
                         NotificationCenter.getInstance().postNotificationName(NotificationCenter.dialogsNeedReload);
                     } else if (i == dividerColorRow) {
                         if (getParentActivity() == null) {

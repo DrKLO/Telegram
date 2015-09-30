@@ -19,15 +19,15 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import org.telegram.android.AndroidUtilities;
-import org.telegram.android.ImageLoader;
-import org.telegram.android.ImageReceiver;
-import org.telegram.android.LocaleController;
-import org.telegram.android.MediaController;
-import org.telegram.android.MessageObject;
+import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ImageLoader;
+import org.telegram.messenger.ImageReceiver;
+import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MediaController;
+import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.R;
-import org.telegram.messenger.TLRPC;
+import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.CheckBox;
 import org.telegram.ui.Components.LayoutHelper;
@@ -204,7 +204,8 @@ public class SharedDocumentCell extends FrameLayout implements MediaController.F
         loaded = false;
         loading = false;
 
-        if (document != null && document.messageOwner.media != null) {
+        //if (document != null && document.messageOwner.media != null) {
+        if (document != null && document.messageOwner.media != null && document.messageOwner.media.document != null) { //To try to fix NullPointerException: Attempt to read from field 'java.lang.String org.telegram.tgnet.TLRPC$Document.mime_type' on a null object reference
             int idx;
             String name = FileLoader.getDocumentFileName(document.messageOwner.media.document);
             placeholderImabeView.setVisibility(VISIBLE);

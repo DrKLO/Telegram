@@ -10,7 +10,7 @@ package org.telegram.messenger;
 
 import android.util.Log;
 
-import org.telegram.android.time.FastDateFormat;
+import org.telegram.messenger.time.FastDateFormat;
 
 import java.io.File;
 import java.io.FileOutputStream;

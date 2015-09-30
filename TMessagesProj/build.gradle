@@ -10,12 +10,18 @@ dependencies {
     //compile 'com.google.android.gms:play-services:7.5.0'
     compile 'net.hockeyapp.android:HockeySDK:3.5.+'
     compile 'com.googlecode.mp4parser:isoparser:1.0.+'
-    compile 'com.android.support:multidex:1.0.1'
+    compile 'org.apache.httpcomponents:httpmime:4.2.1'
+    //compile 'com.android.support:multidex:1.0.1'
 }
 
 android {
     compileSdkVersion 22
-    buildToolsVersion '23.0.0'
+    buildToolsVersion '23.0.1'
+
+    packagingOptions {
+        exclude 'META-INF/NOTICE.txt'
+        exclude 'META-INF/LICENSE.txt'
+    }
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_7
@@ -82,8 +88,8 @@ android {
         applicationId "org.telegram.plus"
         minSdkVersion 8
         targetSdkVersion 22
-        versionCode 597
-        versionName "3.1.3.3"
-        multiDexEnabled true
+        versionCode 630
+        versionName "3.2.2.1"
+        //multiDexEnabled true
     }
 }

@@ -36,7 +36,7 @@
         <activity android:name="net.hockeyapp.android.UpdateActivity" />
 
         <receiver
-            android:name="org.telegram.android.GcmBroadcastReceiver"
+            android:name="org.telegram.messenger.GcmBroadcastReceiver"
             android:permission="com.google.android.c2dm.permission.SEND" >
             <intent-filter>
                 <action android:name="com.google.android.c2dm.intent.RECEIVE" />
@@ -49,7 +49,7 @@
 
         <provider
             android:authorities="org.telegram.plus.beta.android.provider.content"
-            android:name="org.telegram.android.ModuleContentProvider"
+            android:name="org.telegram.messenger.ModuleContentProvider"
             android:label="Plus beta"
             android:exported="true"
             android:permission="org.telegram.plus.beta.android.provider.ACCESS" />

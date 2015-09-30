@@ -25,9 +25,9 @@ import android.widget.AdapterView;
 import android.widget.FrameLayout;
 import android.widget.ListView;
 
-import org.telegram.android.AndroidUtilities;
-import org.telegram.android.LocaleController;
-import org.telegram.android.MessagesController;
+import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.ActionBar;
@@ -399,9 +399,7 @@ public class ThemingChatActivity extends BaseFragment {
                         if (view instanceof TextCheckCell) {
                             ((TextCheckCell) view).setChecked(!b);
                         }
-                        if (listView != null) {
-                            listView.invalidateViews();
-                        }
+
                     } else if (i == memberColorCheckRow) {
                         boolean b = themePrefs.getBoolean( key, true);
                         SharedPreferences.Editor editor = themePrefs.edit();
@@ -410,9 +408,7 @@ public class ThemingChatActivity extends BaseFragment {
                         if (view instanceof TextCheckCell) {
                             ((TextCheckCell) view).setChecked(!b);
                         }
-                        if (listView != null) {
-                            listView.invalidateViews();
-                        }
+
                     } else if (i == showUsernameCheckRow) {
                         boolean b = themePrefs.getBoolean( key, true);
                         SharedPreferences.Editor editor = themePrefs.edit();
@@ -421,9 +417,7 @@ public class ThemingChatActivity extends BaseFragment {
                         if (view instanceof TextCheckCell) {
                             ((TextCheckCell) view).setChecked(!b);
                         }
-                        if (listView != null) {
-                            listView.invalidateViews();
-                        }
+
                     } else if (i == avatarAlignTopRow) {
                         boolean b = themePrefs.getBoolean( key, true);
                         SharedPreferences.Editor editor = themePrefs.edit();
@@ -432,9 +426,7 @@ public class ThemingChatActivity extends BaseFragment {
                         if (view instanceof TextCheckCell) {
                             ((TextCheckCell) view).setChecked(!b);
                         }
-                        if (listView != null) {
-                            listView.invalidateViews();
-                        }
+
                     } else if (i == ownAvatarAlignTopRow) {
                         boolean b = themePrefs.getBoolean( key, true);
                         SharedPreferences.Editor editor = themePrefs.edit();
@@ -443,9 +435,7 @@ public class ThemingChatActivity extends BaseFragment {
                         if (view instanceof TextCheckCell) {
                             ((TextCheckCell) view).setChecked(!b);
                         }
-                        if (listView != null) {
-                            listView.invalidateViews();
-                        }
+
                     } else if (i == showContactAvatar) {
                         boolean b = themePrefs.getBoolean( key, true);
                         SharedPreferences.Editor editor = themePrefs.edit();
@@ -454,9 +444,7 @@ public class ThemingChatActivity extends BaseFragment {
                         if (view instanceof TextCheckCell) {
                             ((TextCheckCell) view).setChecked(!b);
                         }
-                        if (listView != null) {
-                            listView.invalidateViews();
-                        }
+
                     } else if (i == showOwnAvatar) {
                         boolean b = themePrefs.getBoolean( key, true);
                         SharedPreferences.Editor editor = themePrefs.edit();
@@ -465,9 +453,7 @@ public class ThemingChatActivity extends BaseFragment {
                         if (view instanceof TextCheckCell) {
                             ((TextCheckCell) view).setChecked(!b);
                         }
-                        if (listView != null) {
-                            listView.invalidateViews();
-                        }
+
                     } else if (i == showOwnAvatarGroup) {
                         boolean b = themePrefs.getBoolean( key, true);
                         SharedPreferences.Editor editor = themePrefs.edit();
@@ -476,9 +462,7 @@ public class ThemingChatActivity extends BaseFragment {
                         if (view instanceof TextCheckCell) {
                             ((TextCheckCell) view).setChecked(!b);
                         }
-                        if (listView != null) {
-                            listView.invalidateViews();
-                        }
+
                     } else if (i == solidBGColorRow) {
                         if (getParentActivity() == null) {
                             return;

@@ -27,19 +27,19 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import org.telegram.PhoneFormat.PhoneFormat;
-import org.telegram.android.AndroidUtilities;
-import org.telegram.android.LocaleController;
-import org.telegram.android.MessagesController;
-import org.telegram.android.NotificationCenter;
+import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.LocaleController;
+import org.telegram.tgnet.TLRPC;
+import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.R;
-import org.telegram.messenger.TLRPC;
-import org.telegram.ui.ActionBar.ActionBar;
-import org.telegram.ui.ActionBar.ActionBarMenu;
-import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.Adapters.BaseFragmentAdapter;
 import org.telegram.ui.Cells.TextInfoCell;
 import org.telegram.ui.Cells.UserCell;
+import org.telegram.ui.ActionBar.ActionBar;
+import org.telegram.ui.ActionBar.ActionBarMenu;
+import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.Components.LayoutHelper;
 
 public class BlockedUsersActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate, ContactsActivity.ContactsActivityDelegate {
@@ -50,6 +50,7 @@ public class BlockedUsersActivity extends BaseFragment implements NotificationCe
     private TextView emptyTextView;
     private int selectedUserId;
 
+
     private final static int block_user = 1;
 
     @Override
@@ -57,6 +58,7 @@ public class BlockedUsersActivity extends BaseFragment implements NotificationCe
         super.onFragmentCreate();
         NotificationCenter.getInstance().addObserver(this, NotificationCenter.updateInterfaces);
         NotificationCenter.getInstance().addObserver(this, NotificationCenter.blockedUsersDidLoaded);
+        MessagesController.getInstance().getBlockedUsers(false);
         return true;
     }
 
@@ -65,7 +67,6 @@ public class BlockedUsersActivity extends BaseFragment implements NotificationCe
         super.onFragmentDestroy();
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.updateInterfaces);
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.blockedUsersDidLoaded);
-        MessagesController.getInstance().getBlockedUsers(false);
     }
 
     @Override

@@ -24,8 +24,8 @@ import android.widget.AdapterView;
 import android.widget.FrameLayout;
 import android.widget.ListView;
 
-import org.telegram.android.AndroidUtilities;
-import org.telegram.android.LocaleController;
+import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.ActionBar;
@@ -263,9 +263,7 @@ public class ThemingContactsActivity extends BaseFragment {
                         if (view instanceof TextCheckCell) {
                             ((TextCheckCell) view).setChecked(!b);
                         }
-                        if (listView != null) {
-                            listView.invalidateViews();
-                        }
+
                     } else if (i == headerGradientRow) {
                         AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                         builder.setTitle(LocaleController.getString("RowGradient", R.string.RowGradient));

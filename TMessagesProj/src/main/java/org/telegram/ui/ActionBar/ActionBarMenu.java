@@ -14,7 +14,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.LinearLayout;
 
-import org.telegram.android.AndroidUtilities;
+import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.Components.LayoutHelper;
 
 public class ActionBarMenu extends LinearLayout {
@@ -91,7 +91,7 @@ public class ActionBarMenu extends LinearLayout {
                         item.toggleSubMenu();
                     }
                 } else if (item.isSearchField()) {
-                    parentActionBar.onSearchFieldVisibilityChanged(item.toggleSearch());
+                    parentActionBar.onSearchFieldVisibilityChanged(item.toggleSearch(true));
                 } else {
                     onItemClick((Integer) view.getTag());
                 }
@@ -147,7 +147,7 @@ public class ActionBarMenu extends LinearLayout {
             if (view instanceof ActionBarMenuItem) {
                 ActionBarMenuItem item = (ActionBarMenuItem) view;
                 if (item.isSearchField()) {
-                    parentActionBar.onSearchFieldVisibilityChanged(item.toggleSearch());
+                    parentActionBar.onSearchFieldVisibilityChanged(item.toggleSearch(false));
                     break;
                 }
             }
@@ -161,7 +161,7 @@ public class ActionBarMenu extends LinearLayout {
                 ActionBarMenuItem item = (ActionBarMenuItem) view;
                 if (item.isSearchField()) {
                     if (toggle) {
-                        parentActionBar.onSearchFieldVisibilityChanged(item.toggleSearch());
+                        parentActionBar.onSearchFieldVisibilityChanged(item.toggleSearch(true));
                     }
                     item.getSearchField().setText(text);
                     item.getSearchField().setSelection(text.length());

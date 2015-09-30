@@ -31,11 +31,11 @@ import android.view.VelocityTracker;
 import android.view.ViewConfiguration;
 import android.widget.CompoundButton;
 
-import org.telegram.android.AndroidUtilities;
-import org.telegram.android.LocaleController;
+import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.R;
-import org.telegram.android.AnimationCompat.ObjectAnimatorProxy;
+import org.telegram.messenger.AnimationCompat.ObjectAnimatorProxy;
 
 public class Switch extends CompoundButton {
 

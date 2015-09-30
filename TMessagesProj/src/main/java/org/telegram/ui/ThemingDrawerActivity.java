@@ -24,10 +24,10 @@ import android.widget.AdapterView;
 import android.widget.FrameLayout;
 import android.widget.ListView;
 
-import org.telegram.android.AndroidUtilities;
-import org.telegram.android.LocaleController;
-import org.telegram.android.MediaController;
-import org.telegram.android.NotificationCenter;
+import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MediaController;
+import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.ActionBar;
@@ -242,9 +242,7 @@ public class ThemingDrawerActivity extends BaseFragment {
                         if (view instanceof TextCheckCell) {
                             ((TextCheckCell) view).setChecked(!b);
                         }
-                        if (listView != null) {
-                            listView.invalidateViews();
-                        }
+
                     } else if (i == hideBackgroundShadowRow) {
                         boolean b = themePrefs.getBoolean( key, true);
                         SharedPreferences.Editor editor = themePrefs.edit();
@@ -253,9 +251,7 @@ public class ThemingDrawerActivity extends BaseFragment {
                         if (view instanceof TextCheckCell) {
                             ((TextCheckCell) view).setChecked(!b);
                         }
-                        if (listView != null) {
-                            listView.invalidateViews();
-                        }
+
                     } else if (i == centerAvatarRow) {
                         boolean b = themePrefs.getBoolean( key, true);
                         SharedPreferences.Editor editor = themePrefs.edit();
@@ -264,9 +260,7 @@ public class ThemingDrawerActivity extends BaseFragment {
                         if (view instanceof TextCheckCell) {
                             ((TextCheckCell) view).setChecked(!b);
                         }
-                        if (listView != null) {
-                            listView.invalidateViews();
-                        }
+
                     } else if (i == listColorRow) {
                         if (getParentActivity() == null) {
                             return;
@@ -303,9 +297,7 @@ public class ThemingDrawerActivity extends BaseFragment {
                         if (view instanceof TextCheckCell) {
                             ((TextCheckCell) view).setChecked(!b);
                         }
-                        if (listView != null) {
-                            listView.invalidateViews();
-                        }
+
                     } else if (i == rowGradientRow) {
                         AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                         builder.setTitle(LocaleController.getString("RowGradient", R.string.RowGradient));

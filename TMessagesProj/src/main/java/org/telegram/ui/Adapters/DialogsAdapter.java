@@ -14,11 +14,11 @@ import android.graphics.drawable.GradientDrawable;
 import android.view.View;
 import android.view.ViewGroup;
 
-import org.telegram.android.AndroidUtilities;
-import org.telegram.android.MessagesController;
-import org.telegram.android.support.widget.RecyclerView;
+import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.TLRPC;
+import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.support.widget.RecyclerView;
+import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.Cells.DialogCell;
 import org.telegram.ui.Cells.LoadingCell;
 
@@ -52,7 +52,7 @@ public class DialogsAdapter extends RecyclerView.Adapter {
         return current != getItemCount();
     }
 
-    private ArrayList<TLRPC.TL_dialog> getDialogsArray() {
+    private ArrayList<TLRPC.Dialog> getDialogsArray() {
         if (dialogsType == 0) {
             return MessagesController.getInstance().dialogs;
         } else if (dialogsType == 1) {
@@ -76,8 +76,8 @@ public class DialogsAdapter extends RecyclerView.Adapter {
         return count;
     }
 
-    public TLRPC.TL_dialog getItem(int i) {
-        ArrayList<TLRPC.TL_dialog> arrayList = getDialogsArray();
+    public TLRPC.Dialog getItem(int i) {
+        ArrayList<TLRPC.Dialog> arrayList = getDialogsArray();
         if (i < 0 || i >= arrayList.size()) {
                 return null;
             }
@@ -134,7 +134,7 @@ public class DialogsAdapter extends RecyclerView.Adapter {
         if (viewHolder.getItemViewType() == 0) {
             DialogCell cell = (DialogCell) viewHolder.itemView;
             cell.useSeparator = (i != getItemCount() - 1);
-            TLRPC.TL_dialog dialog = getItem(i);
+            TLRPC.Dialog dialog = getItem(i);
             if (dialogsType == 0) {
                 if (AndroidUtilities.isTablet()) {
                     cell.setDialogSelected(dialog.id == openedDialogId);

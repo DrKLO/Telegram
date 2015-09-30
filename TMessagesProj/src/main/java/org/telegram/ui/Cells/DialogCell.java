@@ -22,19 +22,24 @@ import android.text.TextUtils;
 import android.view.MotionEvent;
 
 import org.telegram.PhoneFormat.PhoneFormat;
-import org.telegram.android.AndroidUtilities;
-import org.telegram.android.ContactsController;
-import org.telegram.android.Emoji;
-import org.telegram.android.ImageReceiver;
-import org.telegram.android.LocaleController;
-import org.telegram.android.MessageObject;
-import org.telegram.android.MessagesController;
-import org.telegram.android.UserObject;
+import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ContactsController;
+import org.telegram.messenger.Emoji;
+import org.telegram.messenger.ImageReceiver;
+import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MessageObject;
+import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.UserObject;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
-import org.telegram.messenger.TLRPC;
+import org.telegram.tgnet.TLRPC;
+import org.telegram.messenger.ContactsController;
+import org.telegram.messenger.Emoji;
+import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
+import org.telegram.messenger.ImageReceiver;
 import org.telegram.ui.Components.AvatarDrawable;
 
 import java.util.ArrayList;
@@ -205,7 +210,7 @@ public class DialogCell extends BaseCell {
         avatarDrawable = new AvatarDrawable();
     }
 
-    public void setDialog(TLRPC.TL_dialog dialog, int i, int type) {
+    public void setDialog(TLRPC.Dialog dialog, int i, int type) {
         currentDialogId = dialog.id;
         isDialogCell = true;
         index = i;
@@ -297,7 +302,7 @@ public class DialogCell extends BaseCell {
             }
         } else {
             if (chat != null) {
-                if (chat.id < 0) {
+                if (chat.id < 0 || chat instanceof TLRPC.TL_channel || chat instanceof TLRPC.TL_channelForbidden) {
                     drawNameBroadcast = true;
                     nameLockTop = AndroidUtilities.dp(16.5f);
                 } else {
@@ -362,7 +367,13 @@ public class DialogCell extends BaseCell {
             drawCount = false;
             drawError = false;
         } else {
-            TLRPC.User fromUser = MessagesController.getInstance().getUser(message.messageOwner.from_id);
+            TLRPC.User fromUser = null;
+            TLRPC.Chat fromChat = null;
+            if (message.messageOwner.from_id > 0) {
+                fromUser = MessagesController.getInstance().getUser(message.messageOwner.from_id);
+            } else if (message.messageOwner.from_id < 0) {
+                fromChat = MessagesController.getInstance().getChat(-message.messageOwner.from_id);
+            }
 
             if (lastMessageDate != 0) {
                 timeString = LocaleController.stringForMessageListDate(lastMessageDate);
@@ -381,10 +392,14 @@ public class DialogCell extends BaseCell {
                 } else {
                     if (chat != null && chat.id > 0) {
                         String name;
-                        if (message.isOut()) {
+                        if (message.isOutOwner()) {
                             name = LocaleController.getString("FromYou", R.string.FromYou);
-                        } else {
+                        } else if (fromUser != null) {
                             name = UserObject.getFirstName(fromUser);
+                        } else if (fromChat != null) {
+                            name = fromChat.title;
+                        } else {
+                            name = "DELETED";
                         }
                         checkMessage = false;
                         SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
@@ -682,7 +697,7 @@ public class DialogCell extends BaseCell {
         isSelected = value;
     }
 
-    private ArrayList<TLRPC.TL_dialog> getDialogsArray() {
+    private ArrayList<TLRPC.Dialog> getDialogsArray() {
         if (dialogsType == 0) {
             return MessagesController.getInstance().dialogs;
         } else if (dialogsType == 1) {
@@ -695,7 +710,7 @@ public class DialogCell extends BaseCell {
 
     public void checkCurrentDialogIndex() {
         if (index < getDialogsArray().size()) {
-            TLRPC.TL_dialog dialog = getDialogsArray().get(index);
+            TLRPC.Dialog dialog = getDialogsArray().get(index);
             if (currentDialogId != dialog.id || message != null && message.getId() != dialog.top_message || unreadCount != dialog.unread_count) {
             currentDialogId = dialog.id;
             update(0);
@@ -706,9 +721,9 @@ public class DialogCell extends BaseCell {
     public void update(int mask) {
         updateTheme();
         if (isDialogCell) {
-            TLRPC.TL_dialog dialog = MessagesController.getInstance().dialogs_dict.get(currentDialogId);
+            TLRPC.Dialog dialog = MessagesController.getInstance().dialogs_dict.get(currentDialogId);
             if (dialog != null && mask == 0) {
-                message = MessagesController.getInstance().dialogMessage.get(dialog.top_message);
+                message = MessagesController.getInstance().dialogMessage.get(dialog.id);
                 lastUnreadState = message != null && message.isUnread();
                 unreadCount = dialog.unread_count;
                 lastMessageDate = dialog.last_message_date;
@@ -753,7 +768,7 @@ public class DialogCell extends BaseCell {
                     lastUnreadState = message.isUnread();
                     continueUpdate = true;
                 } else if (isDialogCell) {
-                    TLRPC.TL_dialog dialog = MessagesController.getInstance().dialogs_dict.get(currentDialogId);
+                    TLRPC.Dialog dialog = MessagesController.getInstance().dialogs_dict.get(currentDialogId);
                     if (dialog != null && unreadCount != dialog.unread_count) {
                         unreadCount = dialog.unread_count;
                         continueUpdate = true;

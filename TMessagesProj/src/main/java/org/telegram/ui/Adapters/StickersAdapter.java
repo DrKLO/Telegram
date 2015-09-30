@@ -12,11 +12,11 @@ import android.content.Context;
 import android.view.View;
 import android.view.ViewGroup;
 
-import org.telegram.android.NotificationCenter;
-import org.telegram.android.query.StickersQuery;
-import org.telegram.android.support.widget.RecyclerView;
+import org.telegram.messenger.NotificationCenter;
+import org.telegram.messenger.query.StickersQuery;
+import org.telegram.messenger.support.widget.RecyclerView;
 import org.telegram.messenger.FileLoader;
-import org.telegram.messenger.TLRPC;
+import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.Cells.StickerCell;
 
 import java.io.File;
@@ -59,14 +59,14 @@ public class StickersAdapter extends RecyclerView.Adapter implements Notificatio
     @Override
     public void didReceivedNotification(int id, final Object... args) {
         if (id == NotificationCenter.FileDidLoaded || id == NotificationCenter.FileDidFailedLoad) {
-                    if (stickers != null && !stickers.isEmpty() && !stickersToLoad.isEmpty() && visible) {
-                        String fileName = (String) args[0];
-                        stickersToLoad.remove(fileName);
-                        if (stickersToLoad.isEmpty()) {
-                            delegate.needChangePanelVisibility(stickers != null && !stickers.isEmpty() && stickersToLoad.isEmpty());
-                        }
-                    }
+            if (stickers != null && !stickers.isEmpty() && !stickersToLoad.isEmpty() && visible) {
+                String fileName = (String) args[0];
+                stickersToLoad.remove(fileName);
+                if (stickersToLoad.isEmpty()) {
+                    delegate.needChangePanelVisibility(stickers != null && !stickers.isEmpty() && stickersToLoad.isEmpty());
                 }
+            }
+        }
     }
 
     private boolean checkStickerFilesExistAndDownload() {
@@ -100,13 +100,6 @@ public class StickersAdapter extends RecyclerView.Adapter implements Notificatio
                     }
                 } else {
                     stickers = newStickers;
-                    /*try {
-                        String firstEmo = new String(new byte[] {(byte) 0xF0, (byte) 0x9F, (byte) 0x98, (byte) 0x84}, "UTF-8");
-                        if(newStickers != null && lastSticker.equals(firstEmo))stickers = getAllStickers(newStickers);
-                        //if(newStickers != null)stickers = getAllStikers(newStickers);
-                    } catch (UnsupportedEncodingException e) {
-                        e.printStackTrace();
-                    }*/
                     checkStickerFilesExistAndDownload();
                     delegate.needChangePanelVisibility(stickers != null && !stickers.isEmpty() && stickersToLoad.isEmpty());
                     notifyDataSetChanged();

@@ -8,8 +8,8 @@
 
 package org.telegram.SQLite;
 
-import org.telegram.messenger.BuildConfig;
 import org.telegram.messenger.FileLog;
+import org.telegram.tgnet.NativeByteBuffer;
 
 import java.nio.ByteBuffer;
 import java.util.HashMap;
@@ -30,8 +30,7 @@ public class SQLitePreparedStatement {
 	public SQLitePreparedStatement(SQLiteDatabase db, String sql, boolean finalize) throws SQLiteException {
 		finalizeAfterQuery = finalize;
 		sqliteStatementHandle = prepare(db.getSQLiteHandle(), sql);
-        /*//if (BuildVars.DEBUG_VERSION) {
-        if (BuildConfig.DEBUG) {
+        /*if (BuildVars.DEBUG_VERSION) {
             if (hashMap == null) {
                 hashMap = new HashMap<>();
             }
@@ -102,8 +101,7 @@ public class SQLitePreparedStatement {
             return;
         }
 		try {
-            /*//if (BuildVars.DEBUG_VERSION) {
-            if (BuildConfig.DEBUG) {
+            /*if (BuildVars.DEBUG_VERSION) {
                 hashMap.remove(this);
             }*/
 			isFinalized = true;
@@ -123,6 +121,10 @@ public class SQLitePreparedStatement {
 
     public void bindByteBuffer(int index, ByteBuffer value) throws SQLiteException {
         bindByteBuffer(sqliteStatementHandle, index, value, value.limit());
+    }
+
+    public void bindByteBuffer(int index, NativeByteBuffer value) throws SQLiteException {
+        bindByteBuffer(sqliteStatementHandle, index, value.buffer, value.limit());
     }
 
     public void bindString(int index, String value) throws SQLiteException {

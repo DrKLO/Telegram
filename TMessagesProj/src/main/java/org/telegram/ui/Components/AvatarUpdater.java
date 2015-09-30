@@ -16,13 +16,13 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
 
-import org.telegram.android.AndroidUtilities;
-import org.telegram.android.ImageLoader;
-import org.telegram.android.MediaController;
-import org.telegram.messenger.TLRPC;
+import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ImageLoader;
+import org.telegram.messenger.MediaController;
+import org.telegram.tgnet.TLRPC;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
-import org.telegram.android.NotificationCenter;
+import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.UserConfig;
 import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.PhotoAlbumPickerActivity;

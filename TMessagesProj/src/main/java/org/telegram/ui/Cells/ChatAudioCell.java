@@ -18,14 +18,14 @@ import android.text.TextPaint;
 import android.view.MotionEvent;
 import android.view.SoundEffectConstants;
 
-import org.telegram.android.AndroidUtilities;
-import org.telegram.android.ImageLoader;
-import org.telegram.android.MessagesController;
-import org.telegram.android.SendMessagesHelper;
+import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ImageLoader;
+import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.SendMessagesHelper;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.FileLoader;
-import org.telegram.android.MediaController;
-import org.telegram.android.MessageObject;
+import org.telegram.messenger.MediaController;
+import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.FileLog;
 import org.telegram.ui.Components.RadialProgress;
 import org.telegram.ui.Components.ResourceLoader;
@@ -132,7 +132,9 @@ public class ChatAudioCell extends ChatBaseCell implements SeekBar.SeekBarDelega
         if (buttonState == 0) {
             boolean result = MediaController.getInstance().playAudio(currentMessageObject);
             if (!currentMessageObject.isOut() && currentMessageObject.isContentUnread()) {
-                MessagesController.getInstance().markMessageContentAsRead(currentMessageObject.getId());
+                if (currentMessageObject.messageOwner.to_id.channel_id == 0) {
+                    MessagesController.getInstance().markMessageContentAsRead(currentMessageObject.messageOwner);
+                }
             }
             if (result) {
                 buttonState = 1;
@@ -298,7 +300,7 @@ public class ChatAudioCell extends ChatBaseCell implements SeekBar.SeekBarDelega
     protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
         super.onLayout(changed, left, top, right, bottom);
 
-        if (currentMessageObject.isOut()) {
+        if (currentMessageObject.isOutOwner()) {
             //seekBarX = layoutWidth - backgroundWidth + AndroidUtilities.dp(55);
             //buttonX = layoutWidth - backgroundWidth + AndroidUtilities.dp(13);
             //timeX = layoutWidth - backgroundWidth + AndroidUtilities.dp(66);
@@ -306,7 +308,7 @@ public class ChatAudioCell extends ChatBaseCell implements SeekBar.SeekBarDelega
             buttonX = layoutWidth - backgroundWidth + AndroidUtilities.dp(13) - (((showMyAvatar && !isChat) || (showMyAvatarGroup && isChat)) ? AndroidUtilities.dp(leftBound) : 0);
             timeX = layoutWidth - backgroundWidth + AndroidUtilities.dp(66) - (((showMyAvatar && !isChat) || (showMyAvatarGroup && isChat)) ? AndroidUtilities.dp(leftBound) : 0);
         } else {
-            if (isChat || showAvatar) {
+            if ((isChat || showAvatar) && currentMessageObject.messageOwner.from_id > 0) {
                 //seekBarX = AndroidUtilities.dp(116);
                 //buttonX = AndroidUtilities.dp(74);
                 //timeX = AndroidUtilities.dp(127);
@@ -334,14 +336,14 @@ public class ChatAudioCell extends ChatBaseCell implements SeekBar.SeekBarDelega
         boolean dataChanged = currentMessageObject == messageObject && isUserDataChanged();
         if (currentMessageObject != messageObject || dataChanged) {
             if (AndroidUtilities.isTablet()) {
-                //backgroundWidth = Math.min(AndroidUtilities.getMinTabletSide() - AndroidUtilities.dp(isChat ? 102 : 50), AndroidUtilities.dp(300));
-                backgroundWidth = Math.min(AndroidUtilities.getMinTabletSide() - AndroidUtilities.dp((isChat || showAvatar) || (messageObject.isOut() && ((showMyAvatar && !isChat) || (showMyAvatarGroup && isChat))) ? leftBound + 50 : 50), AndroidUtilities.dp(300));
+                backgroundWidth = Math.min(AndroidUtilities.getMinTabletSide() - AndroidUtilities.dp(isChat && messageObject.messageOwner.from_id > 0 ? 102 : 50), AndroidUtilities.dp(300));
+                backgroundWidth = Math.min(AndroidUtilities.getMinTabletSide() - AndroidUtilities.dp( ((isChat || showAvatar) && messageObject.messageOwner.from_id > 0) || (messageObject.isOutOwner() && ((showMyAvatar && !isChat) || (showMyAvatarGroup && isChat))) ? leftBound + 50 : 50), AndroidUtilities.dp(300));
             } else {
-                //backgroundWidth = Math.min(AndroidUtilities.displaySize.x - AndroidUtilities.dp(isChat ? 102 : 50), AndroidUtilities.dp(300));
+                //backgroundWidth = Math.min(AndroidUtilities.displaySize.x - AndroidUtilities.dp(isChat && messageObject.messageOwner.from_id > 0 ? 102 : 50), AndroidUtilities.dp(300));
                 backgroundWidth = Math.min(AndroidUtilities.displaySize.x - AndroidUtilities.dp((isChat || showAvatar) || (messageObject.isOut() && ((showMyAvatar && !isChat) || (showMyAvatarGroup && isChat))) ? leftBound + 50 : 50), AndroidUtilities.dp(300));
             }
 
-            if (messageObject.isOut()) {
+            if (messageObject.isOutOwner()) {
                 seekBar.type = 0;
                 radialProgress.setProgressColor(0xff87bf78);
             } else {
@@ -355,24 +357,24 @@ public class ChatAudioCell extends ChatBaseCell implements SeekBar.SeekBarDelega
     }
 
     private Drawable getDrawableForCurrentState() {
-        return ResourceLoader.audioStatesDrawable[currentMessageObject.isOut() ? buttonState : buttonState + 5][0];
+        return ResourceLoader.audioStatesDrawable[currentMessageObject.isOutOwner() ? buttonState : buttonState + 5][0];
         //buttonPressed ? 1 :
     }
 
     @Override
     protected void onDraw(Canvas canvas) {
-        super.onDraw(canvas);
-
         if (currentMessageObject == null) {
             return;
         }
+
+        super.onDraw(canvas);
 
         canvas.save();
         canvas.translate(seekBarX, seekBarY);
         seekBar.draw(canvas);
         canvas.restore();
 
-        if (currentMessageObject.isOut()) {
+        if (currentMessageObject.isOutOwner()) {
             timePaint.setColor(0xff70b15c);
             circlePaint.setColor(0xff87bf78);
         } else {
@@ -386,7 +388,7 @@ public class ChatAudioCell extends ChatBaseCell implements SeekBar.SeekBarDelega
         timeLayout.draw(canvas);
         canvas.restore();
 
-        if (currentMessageObject.isContentUnread()) {
+        if (currentMessageObject.messageOwner.to_id.channel_id == 0 && currentMessageObject.isContentUnread()) {
             canvas.drawCircle(timeX + timeWidth + AndroidUtilities.dp(8), AndroidUtilities.dp(49.5f) + namesOffset, AndroidUtilities.dp(3), circlePaint);
         }
     }

@@ -9,6 +9,7 @@
 package org.telegram.SQLite;
 
 import org.telegram.messenger.FileLog;
+import org.telegram.tgnet.NativeByteBuffer;
 
 import java.nio.ByteBuffer;
 
@@ -66,6 +67,11 @@ public class SQLiteCursor {
         checkRow();
         return columnByteBufferValue(preparedStatement.getStatementHandle(), columnIndex, buffer);
     }
+
+	public int byteBufferValue(int columnIndex, NativeByteBuffer buffer) throws SQLiteException {
+		checkRow();
+		return columnByteBufferValue(preparedStatement.getStatementHandle(), columnIndex, buffer.buffer);
+	}
 
 	public int getTypeOf(int columnIndex) throws SQLiteException {
 		checkRow();

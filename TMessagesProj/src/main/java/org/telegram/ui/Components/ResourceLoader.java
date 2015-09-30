@@ -12,7 +12,7 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.drawable.Drawable;
 
-import org.telegram.android.AndroidUtilities;
+import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.R;
 import org.telegram.ui.ImageListActivity;
@@ -39,6 +39,11 @@ public class ResourceLoader {
     public static Drawable backgroundBlack;
     public static Drawable backgroundBlue;
     public static Drawable mediaBackgroundDrawable;
+    public static Drawable clockChannelDrawable;
+
+    public static Drawable viewsCountDrawable;
+    public static Drawable viewsOutCountDrawable;
+    public static Drawable viewsMediaCountDrawable;
 
     public static Drawable backgroundWhite;
 
@@ -72,6 +77,7 @@ public class ResourceLoader {
             checkMediaDrawable = context.getResources().getDrawable(R.drawable.msg_check_w);
             halfCheckMediaDrawable = context.getResources().getDrawable(R.drawable.msg_halfcheck_w);
             clockMediaDrawable = context.getResources().getDrawable(R.drawable.msg_clock_photo);
+            clockChannelDrawable = context.getResources().getDrawable(R.drawable.msg_clock2);
             errorDrawable = context.getResources().getDrawable(R.drawable.msg_warning);
             mediaBackgroundDrawable = context.getResources().getDrawable(R.drawable.phototime);
             broadcastDrawable = context.getResources().getDrawable(R.drawable.broadcast3);
@@ -80,6 +86,10 @@ public class ResourceLoader {
             backgroundBlue = context.getResources().getDrawable(R.drawable.system_blue);
 
             backgroundWhite = context.getResources().getDrawable(R.drawable.system_white);
+
+            viewsCountDrawable = context.getResources().getDrawable(R.drawable.post_views);
+            viewsOutCountDrawable = context.getResources().getDrawable(R.drawable.post_viewsg);
+            viewsMediaCountDrawable = context.getResources().getDrawable(R.drawable.post_views_w);
 
             audioStatesDrawable[0][0] = context.getResources().getDrawable(R.drawable.play_w2);
             audioStatesDrawable[0][1] = context.getResources().getDrawable(R.drawable.play_w2_pressed);

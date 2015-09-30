@@ -57,6 +57,74 @@
   <string name="MuteDisable">Inhabilita</string>
   <string name="Hashtags">ETIQUETES</string>
   <string name="Recent">RECENT</string>
+  <!--channels-->
+  <string name="NewChannel">Canal nou</string>
+  <string name="EnterChannelName">Nom del canal</string>
+  <string name="Comments">Comentaris</string>
+  <string name="CommentsInfo">Si habiliteu els comentaris, qualsevol membre podrà comentar el vostre missatge al canal.</string>
+  <string name="AddMutual">Afegeix contactes al canal</string>
+  <string name="ChannelUsernameHelp">La gent pot compartir aquest enllaç amb els altres i trobar el canal mitjançant el cercador.</string>
+  <string name="ChannelUsernamePlaceholder">enllaç</string>
+  <string name="ChannelPrivateLinkHelp">La gent pot unir-se al canal accedint a aquest enllaç. Podeu revocar l\'enllaç en qualsevol moment.</string>
+  <string name="DescriptionPlaceholder">Descripció</string>
+  <string name="DescriptionInfo">Podeu establir una descripció opcional per al vostre canal.</string>
+  <string name="ChannelPublic">Canal públic</string>
+  <string name="ChannelPublicInfo">Els canals públics es poden trobar a la cerca i tothom pot unir-s\'hi.</string>
+  <string name="ChannelPrivate">Canal privat</string>
+  <string name="ChannelPrivateInfo">Només es pot accedir als canals privats a través d\'un enllaç de convit.</string>
+  <string name="ChannelLinkTitle">Enllaç</string>
+  <string name="ChannelInviteLinkTitle">Enllaç de convit</string>
+  <string name="ChannelAddMembers">Afegeix membres</string>
+  <string name="LeaveChannel">Deixa el canal</string>
+  <string name="LeaveChannelMenu">Deixa el canal</string>
+  <string name="ChannelSettings">Configuració</string>
+  <string name="OpenChannelProfile">Informació del canal</string>
+  <string name="ChannelBroadcast">Difusió</string>
+  <string name="ChannelComment">Comentari</string>
+  <string name="ShowDiscussion">mostra els comentaris</string>
+  <string name="ChannelAlertTitle">Què és un canal?</string>
+  <string name="ChannelAlertText">Els canals són una nova eina per difondre els vostres missatges a grans audiències.</string>
+  <string name="ChannelAlertCreate">CREA UN CANAL</string>
+  <string name="LinkInUse">Aquest nom ja es troba en ús.</string>
+  <string name="LinkChecking">S\'està comprovant el nom...</string>
+  <string name="LinkAvailable">%1$s es troba disponible.</string>
+  <string name="ChannelMembers">Membres</string>
+  <string name="ChannelBlockedUsers">Usuaris bloquejats</string>
+  <string name="ChannelAdministrators">Administradors</string>
+  <string name="ChannelDelete">Elimina el canal</string>
+  <string name="ChannelDeleteMenu">Elimina el canal</string>
+  <string name="ChannelDeleteAlert">En eliminar el canal es suprimiran tots els membres i els missatges es perdran. Segur que voleu eliminar-lo?</string>
+  <string name="ChannelLeaveAlert">Segur que voleu deixar el canal?</string>
+  <string name="ChannelDeleteInfo">Hi perdreu tots els missatges.</string>
+  <string name="ChannelEdit">Edita</string>
+  <string name="ChannelWasPrivateAlert">Tingueu en compte que si trieu un enllaç públic per al vostre canal, tothom serà capaç de cercar-lo i unir-s\'hi.
+
+Si voleu que el vostre canal romangui privat, no creeu l\'enllaç.</string>
+  <string name="ChannelPublicEmptyUsername">Seleccioneu un enllaç per al vostre canal public perquè la gent el pugui trobar i compartir.
+
+Si no us interessa, us suggerim crear un canal privat.</string>
+  <string name="ActionCreateChannel">S\'ha creat el canal</string>
+  <string name="ActionChannelChangedPhoto">S\'ha canviat la foto del canal</string>
+  <string name="ActionChannelRemovedPhoto">S\'ha eliminat la foto del canal</string>
+  <string name="ActionChannelChangedTitle">S\'ha canviat el nom del canal a un2</string>
+  <string name="ActionChannelInvite">un1 us ha afegit al canal un2</string>
+  <string name="ChannelPublicLimitReached">Heu creat massa canals públics. Us suggerim crear un canal privat o bé eliminar, primerament, un dels vostres canals existents.</string>
+  <string name="ChannelModerator">Moderador</string>
+  <string name="ChannelCreator">Creador</string>
+  <string name="ChannelEditor">Administrador</string>
+  <string name="ChannelMute">SILENCIA</string>
+  <string name="ChannelUnmute">HABILITA EL SO</string>
+  <string name="ChannelAddAdmin">Afegeix administrador</string>
+  <string name="ChannelInviteViaLink">Convida amb un enllaç</string>
+  <string name="ChannelAddUserAdminAlert">Segur que voleu fer %1$s administrador?</string>
+  <string name="ChannelRemoveUserAdmin">Elimina</string>
+  <string name="ChannelMembersInfo">Només els administradors poden veure aquesta llista.</string>
+  <string name="ChannelAdminNotParticipant">Aquest usuari encara no s\'ha unit al canal. Voleu enviar-li una invitació?</string>
+  <string name="ChannelLinkInfo">Qualsevol que tingui el Telegram instal·lat podrà unir-se al canal tot seguint l\'enllaç.</string>
+  <string name="ChannelAdminsInfo">Podeu afegir administradors perquè us ajudin a gestionar el canal. Mantingueu premut per eliminar-los.</string>
+  <string name="ChannelJoinTo">Voleu unir-vos al canal «%1$s»?</string>
+  <string name="ChannelCantOpenPrivate">Aquest canal ja no és accessible.</string>
+  <string name="ChannelUserAddLimit">Només hi podeu afegir els primers 200 membres. Per a nombres majors, l\'adhesió s\'ha de fer a través dels enllaços del canal.</string>
   <!--broadcasts-->
   <string name="NewBroadcastList">Llista de difusió nova</string>
   <string name="EnterListName">Introduïu el nom de la llista</string>
@@ -196,13 +264,10 @@
   <string name="EnterGroupNamePlaceholder">Introduïu el nom del grup</string>
   <string name="GroupName">Nom del grup</string>
   <string name="MembersCount">%1$d/%2$d membres</string>
-  <string name="JoinToGroup">Voleu unir-vos al grup \'%1$s\'?</string>
   <string name="JoinToGroupErrorFull">El grup ja està ple.</string>
-  <string name="JoinToGroupErrorNotExist">Sembla que aquest grup no existeix.</string>
   <string name="LinkCopied">S\'ha copiat l\'enllaç al porta-retalls</string>
   <string name="InviteToGroupByLink">Convida al grup amb un enllaç</string>
   <string name="InviteLink">Enllaç d\'invitació</string>
-  <string name="RevokeAlert">Voleu revocar l\'enllaç? Un cop ho feu, ningú podrà unir-se al grup utilitzant-lo.</string>
   <string name="RevokeAlertNewLink">L\'enllaç d\'invitació anterior no està actiu. S\'ha generat un enllaç nou.</string>
   <string name="RevokeButton">Revoca</string>
   <string name="RevokeLink">Revoca l\'enllaç</string>
@@ -663,7 +728,6 @@
   <string name="Online_few">%1$d en línia</string>
   <string name="Online_many">%1$d en línia</string>
   <string name="Online_other">%1$d en línia</string>
-  <string name="Members_zero">No hi ha membres</string>
   <string name="Members_one">%1$d membre</string>
   <string name="Members_two">%1$d membres</string>
   <string name="Members_few">%1$d membres</string>
@@ -839,7 +903,7 @@
   <string name="formatDateAtTime">%1$s a les %2$s</string>
   <!--update text-->
   <string name="updateText">S\'ha actualitzat el Telegram per a l\'Android. Novetats a la versió 3.1.3:\n\n- Nova secció \'Enllaços compartits\' a la informació del xat\n- Previsualització, dins de l\'aplicació, per a enllaços a fotos</string>
-  <string name="updateBuild">597</string>
+  <string name="updateBuild">630</string>
     <!--Telegram+--><!--
   <string name="updatePlusText">\n\nNovetats a la versió 3.1.1.6\n\n- Nou MOD per mostrar l\'avatar dels contactes als xats\n- Nou MOD per mostrar l\'avatar propi als xats i grups\n- Nou MOD per alinear l\'avatar propi a dalt\n- S\'han afegit les noves bombolles Ed i Edge (gràcies a Edwin Macalopu)\n- Nou MOD per canviar el color de fons i de text del menú d\'adjuntar als xats\n- Nou MOD per canviar el color del títol i botons dels diàlegs\n- Correcció d\'errors</string>-->
     <string name="TelegramForAndroid">Plus Messenger per Android</string>
