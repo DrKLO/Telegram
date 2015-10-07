@@ -19,8 +19,8 @@ import android.widget.HorizontalScrollView;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 
-import org.telegram.android.AndroidUtilities;
-import org.telegram.messenger.TLRPC;
+import org.telegram.messenger.AndroidUtilities;
+import org.telegram.tgnet.TLRPC;
 
 public class ScrollSlidingTabStrip extends HorizontalScrollView {
 

@@ -25,7 +25,6 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewOutlineProvider;
-import android.view.WindowManager;
 import android.widget.AbsListView;
 import android.widget.AdapterView;
 import android.widget.EditText;
@@ -46,15 +45,15 @@ import com.google.android.gms.maps.model.CircleOptions;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 
-import org.telegram.android.AndroidUtilities;
-import org.telegram.android.UserObject;
+import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.UserObject;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLog;
-import org.telegram.android.LocaleController;
-import org.telegram.messenger.TLRPC;
-import org.telegram.android.MessageObject;
-import org.telegram.android.MessagesController;
-import org.telegram.android.NotificationCenter;
+import org.telegram.messenger.LocaleController;
+import org.telegram.tgnet.TLRPC;
+import org.telegram.messenger.MessageObject;
+import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
@@ -757,16 +756,37 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
         if (messageObject != null && avatarImageView != null) {
             int fromId = messageObject.messageOwner.from_id;
             if (messageObject.isForwarded()) {
-                fromId = messageObject.messageOwner.fwd_from_id;
-            }
-            TLRPC.User user = MessagesController.getInstance().getUser(fromId);
-            if (user != null) {
-                TLRPC.FileLocation photo = null;
-                if (user.photo != null) {
-                    photo = user.photo.photo_small;
+                if (messageObject.messageOwner.fwd_from_id.user_id != 0) {
+                    fromId = messageObject.messageOwner.fwd_from_id.user_id;
+                } else {
+                    fromId = -messageObject.messageOwner.fwd_from_id.channel_id;
                 }
-                avatarImageView.setImage(photo, null, new AvatarDrawable(user));
-                nameTextView.setText(UserObject.getUserName(user));
+            }
+            String name = "";
+            TLRPC.FileLocation photo = null;
+            AvatarDrawable avatarDrawable = null;
+            if (fromId > 0) {
+                TLRPC.User user = MessagesController.getInstance().getUser(fromId);
+                if (user != null) {
+                    if (user.photo != null) {
+                        photo = user.photo.photo_small;
+                    }
+                    avatarDrawable = new AvatarDrawable(user);
+                    name = UserObject.getUserName(user);
+                }
+            } else {
+                TLRPC.Chat chat = MessagesController.getInstance().getChat(-fromId);
+                if (chat != null) {
+                    if (chat.photo != null) {
+                        photo = chat.photo.photo_small;
+                    }
+                    avatarDrawable = new AvatarDrawable(chat);
+                    name = chat.title;
+                }
+            }
+            if (avatarDrawable != null) {
+                avatarImageView.setImage(photo, null, avatarDrawable);
+                nameTextView.setText(name);
             } else {
                 avatarImageView.setImageDrawable(null);
             }
@@ -838,9 +858,7 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
     @Override
     public void onResume() {
         super.onResume();
-        if (!AndroidUtilities.isTablet()) {
-            getParentActivity().getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN);
-        }
+        AndroidUtilities.removeAdjustResize(getParentActivity(), classGuid);
         if (mapView != null) {
             mapView.onResume();
         }

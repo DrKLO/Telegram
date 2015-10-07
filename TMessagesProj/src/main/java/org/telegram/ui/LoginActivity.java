@@ -35,7 +35,6 @@ import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.View;
-import android.view.WindowManager;
 import android.view.animation.AccelerateDecelerateInterpolator;
 import android.view.inputmethod.EditorInfo;
 import android.widget.AdapterView;
@@ -46,20 +45,20 @@ import android.widget.ScrollView;
 import android.widget.TextView;
 
 import org.telegram.PhoneFormat.PhoneFormat;
-import org.telegram.android.AndroidUtilities;
-import org.telegram.android.ContactsController;
-import org.telegram.android.MessagesController;
-import org.telegram.android.MessagesStorage;
-import org.telegram.android.NotificationCenter;
+import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ContactsController;
+import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.MessagesStorage;
+import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BuildVars;
-import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLog;
-import org.telegram.android.LocaleController;
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
-import org.telegram.messenger.RPCRequest;
-import org.telegram.messenger.TLObject;
-import org.telegram.messenger.TLRPC;
+import org.telegram.tgnet.ConnectionsManager;
+import org.telegram.tgnet.RequestDelegate;
+import org.telegram.tgnet.TLObject;
+import org.telegram.tgnet.TLRPC;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.ActionBar.ActionBar;
@@ -180,17 +179,13 @@ public class LoginActivity extends BaseFragment {
     @Override
     public void onPause() {
         super.onPause();
-        if (!AndroidUtilities.isTablet()) {
-            getParentActivity().getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN);
-        }
+        AndroidUtilities.removeAdjustResize(getParentActivity(), classGuid);
     }
 
     @Override
     public void onResume() {
         super.onResume();
-        if (!AndroidUtilities.isTablet()) {
-            getParentActivity().getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
-        }
+        AndroidUtilities.requestAdjustResize(getParentActivity(), classGuid);
     }
 
     private Bundle loadCurrentState() {
@@ -779,7 +774,7 @@ public class LoginActivity extends BaseFragment {
             req.sms_type = 0;
             req.phone_number = phone;
             req.lang_code = LocaleController.getLocaleString(LocaleController.getInstance().getSystemDefaultLocale());
-            if (req.lang_code == null || req.lang_code.length() == 0) {
+            if (req.lang_code.length() == 0) {
                 req.lang_code = "en";
             }
 
@@ -794,7 +789,7 @@ public class LoginActivity extends BaseFragment {
             params.putString("phoneFormated", phone);
             nextPressed = true;
             needShowProgress();
-            ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
+            ConnectionsManager.getInstance().sendRequest(req, new RequestDelegate() {
                 @Override
                 public void run(final TLObject response, final TLRPC.TL_error error) {
                     AndroidUtilities.runOnUIThread(new Runnable() {
@@ -825,7 +820,7 @@ public class LoginActivity extends BaseFragment {
                         }
                     });
                 }
-            }, true, RPCRequest.RPCRequestClassGeneric | RPCRequest.RPCRequestClassFailOnServerErrors | RPCRequest.RPCRequestClassWithoutLogin | RPCRequest.RPCRequestClassTryDifferentDc | RPCRequest.RPCRequestClassEnableUnauthorized);
+            }, ConnectionsManager.RequestFlagFailOnServerErrors | ConnectionsManager.RequestFlagWithoutLogin | ConnectionsManager.RequestFlagTryDifferentDc | ConnectionsManager.RequestFlagEnableUnauthorized);
         }
 
         @Override
@@ -845,11 +840,11 @@ public class LoginActivity extends BaseFragment {
         @Override
         public void saveStateParams(Bundle bundle) {
             String code = codeField.getText().toString();
-            if (code != null && code.length() != 0) {
+            if (code.length() != 0) {
                 bundle.putString("phoneview_code", code);
             }
             String phone = phoneField.getText().toString();
-            if (phone != null && phone.length() != 0) {
+            if (phone.length() != 0) {
                 bundle.putString("phoneview_phone", phone);
             }
         }
@@ -1129,7 +1124,7 @@ public class LoginActivity extends BaseFragment {
                                 TLRPC.TL_auth_sendCall req = new TLRPC.TL_auth_sendCall();
                                 req.phone_number = requestPhone;
                                 req.phone_code_hash = phoneHash;
-                                ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
+                                ConnectionsManager.getInstance().sendRequest(req, new RequestDelegate() {
                                     @Override
                                     public void run(TLObject response, final TLRPC.TL_error error) {
                                         if (error != null && error.text != null) {
@@ -1141,7 +1136,7 @@ public class LoginActivity extends BaseFragment {
                                             });
                                         }
                                     }
-                                }, true, RPCRequest.RPCRequestClassGeneric | RPCRequest.RPCRequestClassFailOnServerErrors | RPCRequest.RPCRequestClassWithoutLogin);
+                                }, ConnectionsManager.RequestFlagFailOnServerErrors | ConnectionsManager.RequestFlagWithoutLogin);
                             }
                         }
                     });
@@ -1177,7 +1172,7 @@ public class LoginActivity extends BaseFragment {
             req.phone_code_hash = phoneHash;
             destroyTimer();
             needShowProgress();
-            ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
+            ConnectionsManager.getInstance().sendRequest(req, new RequestDelegate() {
                 @Override
                 public void run(final TLObject response, final TLRPC.TL_error error) {
                     AndroidUtilities.runOnUIThread(new Runnable() {
@@ -1187,6 +1182,7 @@ public class LoginActivity extends BaseFragment {
                             if (error == null) {
                                 needHideProgress();
                                 TLRPC.TL_auth_authorization res = (TLRPC.TL_auth_authorization) response;
+                                ConnectionsManager.getInstance().setUserId(res.user.id);
                                 destroyTimer();
                                 destroyCodeTimer();
                                 UserConfig.clearConfig();
@@ -1201,13 +1197,6 @@ public class LoginActivity extends BaseFragment {
                                 ContactsController.getInstance().checkAppAccount();
                                 MessagesController.getInstance().getBlockedUsers(true);
                                 needFinishActivity();
-                                ConnectionsManager.getInstance().initPushConnection();
-                                Utilities.stageQueue.postRunnable(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        ConnectionsManager.getInstance().updateDcSettings(0);
-                                    }
-                                });
                             } else {
                                 lastError = error.text;
 
@@ -1222,7 +1211,7 @@ public class LoginActivity extends BaseFragment {
                                     destroyCodeTimer();
                                 } else if (error.text.contains("SESSION_PASSWORD_NEEDED")) {
                                     TLRPC.TL_account_getPassword req2 = new TLRPC.TL_account_getPassword();
-                                    ConnectionsManager.getInstance().performRpc(req2, new RPCRequest.RPCRequestDelegate() {
+                                    ConnectionsManager.getInstance().sendRequest(req2, new RequestDelegate() {
                                         @Override
                                         public void run(final TLObject response, final TLRPC.TL_error error) {
                                             AndroidUtilities.runOnUIThread(new Runnable() {
@@ -1246,7 +1235,7 @@ public class LoginActivity extends BaseFragment {
                                                 }
                                             });
                                         }
-                                    }, true, RPCRequest.RPCRequestClassGeneric | RPCRequest.RPCRequestClassFailOnServerErrors | RPCRequest.RPCRequestClassWithoutLogin);
+                                    }, ConnectionsManager.RequestFlagFailOnServerErrors | ConnectionsManager.RequestFlagWithoutLogin);
                                     destroyTimer();
                                     destroyCodeTimer();
                                 } else {
@@ -1268,7 +1257,7 @@ public class LoginActivity extends BaseFragment {
                         }
                     });
                 }
-            }, true, RPCRequest.RPCRequestClassGeneric | RPCRequest.RPCRequestClassFailOnServerErrors | RPCRequest.RPCRequestClassWithoutLogin);
+            }, ConnectionsManager.RequestFlagFailOnServerErrors | ConnectionsManager.RequestFlagWithoutLogin);
         }
 
         @Override
@@ -1316,7 +1305,7 @@ public class LoginActivity extends BaseFragment {
         @Override
         public void saveStateParams(Bundle bundle) {
             String code = codeField.getText().toString();
-            if (code != null && code.length() != 0) {
+            if (code.length() != 0) {
                 bundle.putString("smsview_code", code);
             }
             if (currentParams != null) {
@@ -1429,7 +1418,7 @@ public class LoginActivity extends BaseFragment {
                     if (has_recovery) {
                         needShowProgress();
                         TLRPC.TL_auth_requestPasswordRecovery req = new TLRPC.TL_auth_requestPasswordRecovery();
-                        ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
+                        ConnectionsManager.getInstance().sendRequest(req, new RequestDelegate() {
                             @Override
                             public void run(final TLObject response, final TLRPC.TL_error error) {
                                 AndroidUtilities.runOnUIThread(new Runnable() {
@@ -1471,7 +1460,7 @@ public class LoginActivity extends BaseFragment {
                                     }
                                 });
                             }
-                        }, true, RPCRequest.RPCRequestClassGeneric | RPCRequest.RPCRequestClassFailOnServerErrors | RPCRequest.RPCRequestClassWithoutLogin);
+                        }, ConnectionsManager.RequestFlagFailOnServerErrors | ConnectionsManager.RequestFlagWithoutLogin);
                     } else {
                         resetAccountText.setVisibility(VISIBLE);
                         resetAccountButton.setVisibility(VISIBLE);
@@ -1509,7 +1498,7 @@ public class LoginActivity extends BaseFragment {
                             needShowProgress();
                             TLRPC.TL_account_deleteAccount req = new TLRPC.TL_account_deleteAccount();
                             req.reason = "Forgot password";
-                            ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
+                            ConnectionsManager.getInstance().sendRequest(req, new RequestDelegate() {
                                 @Override
                                 public void run(TLObject response, final TLRPC.TL_error error) {
                                     AndroidUtilities.runOnUIThread(new Runnable() {
@@ -1528,7 +1517,7 @@ public class LoginActivity extends BaseFragment {
                                         }
                                     });
                                 }
-                            }, true, RPCRequest.RPCRequestClassGeneric | RPCRequest.RPCRequestClassWithoutLogin | RPCRequest.RPCRequestClassFailOnServerErrors);
+                            }, ConnectionsManager.RequestFlagWithoutLogin | ConnectionsManager.RequestFlagFailOnServerErrors);
                         }
                     });
                     builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
@@ -1603,7 +1592,7 @@ public class LoginActivity extends BaseFragment {
             if (clear) {
                 codeField.setText("");
             }
-            AndroidUtilities.shakeTextView(confirmTextView, 2, 0);
+            AndroidUtilities.shakeView(confirmTextView, 2, 0);
         }
 
         @Override
@@ -1633,7 +1622,7 @@ public class LoginActivity extends BaseFragment {
 
             final TLRPC.TL_auth_checkPassword req = new TLRPC.TL_auth_checkPassword();
             req.password_hash = Utilities.computeSHA256(hash, 0, hash.length);
-            ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
+            ConnectionsManager.getInstance().sendRequest(req, new RequestDelegate() {
                 @Override
                 public void run(final TLObject response, final TLRPC.TL_error error) {
                     AndroidUtilities.runOnUIThread(new Runnable() {
@@ -1643,6 +1632,7 @@ public class LoginActivity extends BaseFragment {
                             nextPressed = false;
                             if (error == null) {
                                 TLRPC.TL_auth_authorization res = (TLRPC.TL_auth_authorization) response;
+                                ConnectionsManager.getInstance().setUserId(res.user.id);
                                 UserConfig.clearConfig();
                                 MessagesController.getInstance().cleanUp();
                                 UserConfig.setCurrentUser(res.user);
@@ -1655,13 +1645,6 @@ public class LoginActivity extends BaseFragment {
                                 ContactsController.getInstance().checkAppAccount();
                                 MessagesController.getInstance().getBlockedUsers(true);
                                 needFinishActivity();
-                                ConnectionsManager.getInstance().initPushConnection();
-                                Utilities.stageQueue.postRunnable(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        ConnectionsManager.getInstance().updateDcSettings(0);
-                                    }
-                                });
                             } else {
                                 if (error.text.equals("PASSWORD_HASH_INVALID")) {
                                     onPasscodeError(true);
@@ -1681,7 +1664,7 @@ public class LoginActivity extends BaseFragment {
                         }
                     });
                 }
-            }, true, RPCRequest.RPCRequestClassGeneric | RPCRequest.RPCRequestClassFailOnServerErrors | RPCRequest.RPCRequestClassWithoutLogin);
+            }, ConnectionsManager.RequestFlagFailOnServerErrors | ConnectionsManager.RequestFlagWithoutLogin);
         }
 
         @Override
@@ -1706,7 +1689,7 @@ public class LoginActivity extends BaseFragment {
         @Override
         public void saveStateParams(Bundle bundle) {
             String code = codeField.getText().toString();
-            if (code != null && code.length() != 0) {
+            if (code.length() != 0) {
                 bundle.putString("passview_code", code);
             }
             if (currentParams != null) {
@@ -1855,7 +1838,7 @@ public class LoginActivity extends BaseFragment {
             if (clear) {
                 codeField.setText("");
             }
-            AndroidUtilities.shakeTextView(confirmTextView, 2, 0);
+            AndroidUtilities.shakeView(confirmTextView, 2, 0);
         }
 
         @Override
@@ -1879,7 +1862,7 @@ public class LoginActivity extends BaseFragment {
             needShowProgress();
             TLRPC.TL_auth_recoverPassword req = new TLRPC.TL_auth_recoverPassword();
             req.code = code;
-            ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
+            ConnectionsManager.getInstance().sendRequest(req, new RequestDelegate() {
                 @Override
                 public void run(final TLObject response, final TLRPC.TL_error error) {
                     AndroidUtilities.runOnUIThread(new Runnable() {
@@ -1889,6 +1872,7 @@ public class LoginActivity extends BaseFragment {
                             nextPressed = false;
                             if (error == null) {
                                 TLRPC.TL_auth_authorization res = (TLRPC.TL_auth_authorization) response;
+                                ConnectionsManager.getInstance().setUserId(res.user.id);
                                 UserConfig.clearConfig();
                                 MessagesController.getInstance().cleanUp();
                                 UserConfig.setCurrentUser(res.user);
@@ -1901,13 +1885,6 @@ public class LoginActivity extends BaseFragment {
                                 ContactsController.getInstance().checkAppAccount();
                                 MessagesController.getInstance().getBlockedUsers(true);
                                 needFinishActivity();
-                                ConnectionsManager.getInstance().initPushConnection();
-                                Utilities.stageQueue.postRunnable(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        ConnectionsManager.getInstance().updateDcSettings(0);
-                                    }
-                                });
                             } else {
                                 if (error.text.startsWith("CODE_INVALID")) {
                                     onPasscodeError(true);
@@ -1927,7 +1904,7 @@ public class LoginActivity extends BaseFragment {
                         }
                     });
                 }
-            }, true, RPCRequest.RPCRequestClassGeneric | RPCRequest.RPCRequestClassFailOnServerErrors | RPCRequest.RPCRequestClassWithoutLogin);
+            }, ConnectionsManager.RequestFlagFailOnServerErrors | ConnectionsManager.RequestFlagWithoutLogin);
         }
 
         @Override
@@ -2124,7 +2101,7 @@ public class LoginActivity extends BaseFragment {
             req.first_name = firstNameField.getText().toString();
             req.last_name = lastNameField.getText().toString();
             needShowProgress();
-            ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
+            ConnectionsManager.getInstance().sendRequest(req, new RequestDelegate() {
                 @Override
                 public void run(final TLObject response, final TLRPC.TL_error error) {
                     AndroidUtilities.runOnUIThread(new Runnable() {
@@ -2134,6 +2111,7 @@ public class LoginActivity extends BaseFragment {
                             needHideProgress();
                             if (error == null) {
                                 final TLRPC.TL_auth_authorization res = (TLRPC.TL_auth_authorization) response;
+                                ConnectionsManager.getInstance().setUserId(res.user.id);
                                 UserConfig.clearConfig();
                                 MessagesController.getInstance().cleanUp();
                                 UserConfig.setCurrentUser(res.user);
@@ -2147,13 +2125,6 @@ public class LoginActivity extends BaseFragment {
                                 ContactsController.getInstance().checkAppAccount();
                                 MessagesController.getInstance().getBlockedUsers(true);
                                 needFinishActivity();
-                                ConnectionsManager.getInstance().initPushConnection();
-                                Utilities.stageQueue.postRunnable(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        ConnectionsManager.getInstance().updateDcSettings(0);
-                                    }
-                                });
                             } else {
                                 if (error.text.contains("PHONE_NUMBER_INVALID")) {
                                     needShowAlert(LocaleController.getString("AppName", R.string.AppName), LocaleController.getString("InvalidPhoneNumber", R.string.InvalidPhoneNumber));
@@ -2172,17 +2143,17 @@ public class LoginActivity extends BaseFragment {
                         }
                     });
                 }
-            }, true, RPCRequest.RPCRequestClassGeneric | RPCRequest.RPCRequestClassWithoutLogin | RPCRequest.RPCRequestClassFailOnServerErrors);
+            }, ConnectionsManager.RequestFlagWithoutLogin | ConnectionsManager.RequestFlagFailOnServerErrors);
         }
 
         @Override
         public void saveStateParams(Bundle bundle) {
             String first = firstNameField.getText().toString();
-            if (first != null && first.length() != 0) {
+            if (first.length() != 0) {
                 bundle.putString("registerview_first", first);
             }
             String last = lastNameField.getText().toString();
-            if (last != null && last.length() != 0) {
+            if (last.length() != 0) {
                 bundle.putString("registerview_last", last);
             }
             if (currentParams != null) {

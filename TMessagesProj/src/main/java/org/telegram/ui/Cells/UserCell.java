@@ -13,13 +13,14 @@ import android.view.Gravity;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 
-import org.telegram.android.AndroidUtilities;
-import org.telegram.android.LocaleController;
-import org.telegram.android.MessagesController;
-import org.telegram.android.UserObject;
-import org.telegram.messenger.ConnectionsManager;
+import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.UserObject;
 import org.telegram.messenger.R;
-import org.telegram.messenger.TLRPC;
+import org.telegram.tgnet.ConnectionsManager;
+import org.telegram.tgnet.TLObject;
+import org.telegram.tgnet.TLRPC;
 import org.telegram.messenger.UserConfig;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
@@ -36,7 +37,7 @@ public class UserCell extends FrameLayout {
     private CheckBox checkBox;
 
     private AvatarDrawable avatarDrawable;
-    private TLRPC.User currentUser = null;
+    private TLObject currentObject = null;
 
     private CharSequence currentName;
     private CharSequence currrntStatus;
@@ -79,11 +80,11 @@ public class UserCell extends FrameLayout {
         addView(checkBox, LayoutHelper.createFrame(22, 22, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 0 : 37 + padding, 38, LocaleController.isRTL ? 37 + padding : 0, 0));
     }
 
-    public void setData(TLRPC.User user, CharSequence name, CharSequence status, int resId) {
+    public void setData(TLObject user, CharSequence name, CharSequence status, int resId) {
         if (user == null) {
             currrntStatus = null;
             currentName = null;
-            currentUser = null;
+            currentObject = null;
             nameTextView.setText("");
             statusTextView.setText("");
             avatarImageView.setImageDrawable(null);
@@ -91,7 +92,7 @@ public class UserCell extends FrameLayout {
         }
         currrntStatus = status;
         currentName = name;
-        currentUser = user;
+        currentObject = user;
         currentDrawable = resId;
         update(0);
     }
@@ -114,13 +115,23 @@ public class UserCell extends FrameLayout {
     }
 
     public void update(int mask) {
-        if (currentUser == null) {
+        if (currentObject == null) {
             return;
         }
         TLRPC.FileLocation photo = null;
         String newName = null;
-        if (currentUser.photo != null) {
-            photo = currentUser.photo.photo_small;
+        TLRPC.User currentUser = null;
+        TLRPC.Chat currentChat = null;
+        if (currentObject instanceof TLRPC.User) {
+            currentUser = (TLRPC.User) currentObject;
+            if (currentUser.photo != null) {
+                photo = currentUser.photo.photo_small;
+            }
+        } else {
+            currentChat = (TLRPC.Chat) currentObject;
+            if (currentChat.photo != null) {
+                photo = currentChat.photo.photo_small;
+            }
         }
 
         if (mask != 0) {
@@ -130,7 +141,7 @@ public class UserCell extends FrameLayout {
                     continueUpdate = true;
                 }
             }
-            if (!continueUpdate && (mask & MessagesController.UPDATE_MASK_STATUS) != 0) {
+            if (currentUser != null && !continueUpdate && (mask & MessagesController.UPDATE_MASK_STATUS) != 0) {
                 int newStatus = 0;
                 if (currentUser.status != null) {
                     newStatus = currentUser.status.expires;
@@ -140,7 +151,11 @@ public class UserCell extends FrameLayout {
                 }
             }
             if (!continueUpdate && currentName == null && lastName != null && (mask & MessagesController.UPDATE_MASK_NAME) != 0) {
-                newName = UserObject.getUserName(currentUser);
+                if (currentUser != null) {
+                    newName = UserObject.getUserName(currentUser);
+                } else {
+                    newName = currentChat.title;
+                }
                 if (!newName.equals(lastName)) {
                     continueUpdate = true;
                 }
@@ -150,24 +165,32 @@ public class UserCell extends FrameLayout {
             }
         }
 
-        avatarDrawable.setInfo(currentUser);
-        if (currentUser.status != null) {
-            lastStatus = currentUser.status.expires;
+        if (currentUser != null) {
+            avatarDrawable.setInfo(currentUser);
+            if (currentUser.status != null) {
+                lastStatus = currentUser.status.expires;
+            } else {
+                lastStatus = 0;
+            }
         } else {
-            lastStatus = 0;
+            avatarDrawable.setInfo(currentChat);
         }
 
         if (currentName != null) {
             lastName = null;
             nameTextView.setText(currentName);
         } else {
-            lastName = newName == null ? UserObject.getUserName(currentUser) : newName;
+            if (currentUser != null) {
+                lastName = newName == null ? UserObject.getUserName(currentUser) : newName;
+            } else {
+                lastName = newName == null ? currentChat.title : newName;
+            }
             nameTextView.setText(lastName);
         }
         if (currrntStatus != null) {
             statusTextView.setTextColor(statusColor);
             statusTextView.setText(currrntStatus);
-        } else {
+        } else if (currentUser != null) {
             if ((currentUser.flags & TLRPC.USER_FLAG_BOT) != 0) {
                 statusTextView.setTextColor(statusColor);
                 if ((currentUser.flags & TLRPC.USER_FLAG_BOT_READING_HISTORY) != 0) {

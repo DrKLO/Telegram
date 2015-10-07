@@ -28,16 +28,16 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import org.telegram.android.AndroidUtilities;
-import org.telegram.android.LocaleController;
-import org.telegram.android.MessagesController;
-import org.telegram.android.NotificationCenter;
-import org.telegram.messenger.ConnectionsManager;
+import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
-import org.telegram.messenger.RPCRequest;
-import org.telegram.messenger.TLObject;
-import org.telegram.messenger.TLRPC;
+import org.telegram.tgnet.ConnectionsManager;
+import org.telegram.tgnet.RequestDelegate;
+import org.telegram.tgnet.TLObject;
+import org.telegram.tgnet.TLRPC;
 import org.telegram.messenger.UserConfig;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.BaseFragment;
@@ -194,7 +194,7 @@ public class SessionsActivity extends BaseFragment implements NotificationCenter
                         @Override
                         public void onClick(DialogInterface dialogInterface, int i) {
                             TLRPC.TL_auth_resetAuthorizations req = new TLRPC.TL_auth_resetAuthorizations();
-                            ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
+                            ConnectionsManager.getInstance().sendRequest(req, new RequestDelegate() {
                                 @Override
                                 public void run(final TLObject response, final TLRPC.TL_error error) {
                                     AndroidUtilities.runOnUIThread(new Runnable() {
@@ -214,10 +214,9 @@ public class SessionsActivity extends BaseFragment implements NotificationCenter
                                         }
                                     });
                                     UserConfig.registeredForPush = false;
-                                    UserConfig.registeredForInternalPush = false;
                                     UserConfig.saveConfig(false);
                                     MessagesController.getInstance().registerForPush(UserConfig.pushString);
-                                    ConnectionsManager.getInstance().initPushConnection();
+                                    ConnectionsManager.getInstance().setUserId(UserConfig.getClientUserId());
                                 }
                             });
                         }
@@ -240,7 +239,7 @@ public class SessionsActivity extends BaseFragment implements NotificationCenter
                             final TLRPC.TL_authorization authorization = sessions.get(i - otherSessionsStartRow);
                             TLRPC.TL_account_resetAuthorization req = new TLRPC.TL_account_resetAuthorization();
                             req.hash = authorization.hash;
-                            ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
+                            ConnectionsManager.getInstance().sendRequest(req, new RequestDelegate() {
                                 @Override
                                 public void run(final TLObject response, final TLRPC.TL_error error) {
                                     AndroidUtilities.runOnUIThread(new Runnable() {
@@ -296,7 +295,7 @@ public class SessionsActivity extends BaseFragment implements NotificationCenter
             loading = true;
         }
         TLRPC.TL_account_getAuthorizations req = new TLRPC.TL_account_getAuthorizations();
-        long reqId = ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
+        int reqId = ConnectionsManager.getInstance().sendRequest(req, new RequestDelegate() {
             @Override
             public void run(final TLObject response, final TLRPC.TL_error error) {
                 AndroidUtilities.runOnUIThread(new Runnable() {

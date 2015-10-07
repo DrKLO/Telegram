@@ -40,9 +40,9 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import org.telegram.android.AndroidUtilities;
-import org.telegram.android.LocaleController;
-import org.telegram.android.NotificationCenter;
+import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
@@ -70,6 +70,7 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
 
     private int type;
     private int currentPasswordType = 0;
+    private int passcodeSetStep = 0;
     private String firstPassword;
 
     private int passcodeRow;
@@ -118,9 +119,9 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
                 if (id == -1) {
                     finishFragment();
                 } else if (id == done_button) {
-                    if (passwordEditText.getImeOptions() == EditorInfo.IME_ACTION_NEXT) {
+                    if (passcodeSetStep == 0) {
                         processNext();
-                    } else if (passwordEditText.getImeOptions() == EditorInfo.IME_ACTION_DONE) {
+                    } else if (passcodeSetStep == 1) {
                         processDone();
                     }
                 } else if (id == pin_item) {
@@ -169,8 +170,10 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
             passwordEditText.setGravity(Gravity.CENTER_HORIZONTAL);
             passwordEditText.setSingleLine(true);
             if (type == 1) {
+                passcodeSetStep = 0;
                 passwordEditText.setImeOptions(EditorInfo.IME_ACTION_NEXT);
             } else {
+                passcodeSetStep = 1;
                 passwordEditText.setImeOptions(EditorInfo.IME_ACTION_DONE);
             }
             passwordEditText.setTransformationMethod(PasswordTransformationMethod.getInstance());
@@ -188,10 +191,10 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
             passwordEditText.setOnEditorActionListener(new TextView.OnEditorActionListener() {
                 @Override
                 public boolean onEditorAction(TextView textView, int i, KeyEvent keyEvent) {
-                    if (i == EditorInfo.IME_ACTION_NEXT) {
+                    if (passcodeSetStep == 0) {
                         processNext();
                         return true;
-                    } else if (i == EditorInfo.IME_ACTION_DONE) {
+                    } else if (passcodeSetStep == 1) {
                         processDone();
                         return true;
                     }
@@ -215,9 +218,9 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
                         if (type == 2 && UserConfig.passcodeType == 0) {
                             processDone();
                         } else if (type == 1 && currentPasswordType == 0) {
-                            if (passwordEditText.getImeOptions() == EditorInfo.IME_ACTION_NEXT) {
+                            if (passcodeSetStep == 0) {
                                 processNext();
-                            } else if (passwordEditText.getImeOptions() == EditorInfo.IME_ACTION_DONE) {
+                            } else if (passcodeSetStep == 1) {
                                 processDone();
                             }
                         }
@@ -505,7 +508,7 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
         titleTextView.setText(LocaleController.getString("ReEnterYourPasscode", R.string.ReEnterYourPasscode));
         firstPassword = passwordEditText.getText().toString();
         passwordEditText.setText("");
-        passwordEditText.setImeOptions(EditorInfo.IME_ACTION_DONE);
+        passcodeSetStep = 1;
     }
 
     private void processDone() {
@@ -520,7 +523,7 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
                 } catch (Exception e) {
                     FileLog.e("tmessages", e);
                 }
-                AndroidUtilities.shakeTextView(titleTextView, 2, 0);
+                AndroidUtilities.shakeView(titleTextView, 2, 0);
                 passwordEditText.setText("");
                 return;
             }
@@ -564,7 +567,7 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
         if (v != null) {
             v.vibrate(200);
         }
-        AndroidUtilities.shakeTextView(titleTextView, 2, 0);
+        AndroidUtilities.shakeView(titleTextView, 2, 0);
     }
 
     private void fixLayoutInternal() {

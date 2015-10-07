@@ -12,7 +12,7 @@ import android.content.Context;
 import android.view.Gravity;
 import android.widget.FrameLayout;
 
-import org.telegram.android.AndroidUtilities;
+import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.R;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.CheckBox;

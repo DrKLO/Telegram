@@ -28,18 +28,18 @@ import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.Toast;
 
-import org.telegram.android.AndroidUtilities;
-import org.telegram.android.LocaleController;
-import org.telegram.android.NotificationsController;
-import org.telegram.android.NotificationCenter;
+import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.NotificationsController;
+import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.TLObject;
-import org.telegram.messenger.TLRPC;
-import org.telegram.messenger.ConnectionsManager;
+import org.telegram.tgnet.ConnectionsManager;
+import org.telegram.tgnet.RequestDelegate;
+import org.telegram.tgnet.TLObject;
+import org.telegram.tgnet.TLRPC;
 import org.telegram.messenger.FileLog;
-import org.telegram.android.MessagesController;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
-import org.telegram.messenger.RPCRequest;
 import org.telegram.ui.Adapters.BaseFragmentAdapter;
 import org.telegram.ui.Cells.HeaderCell;
 import org.telegram.ui.Cells.ShadowSectionCell;
@@ -257,7 +257,7 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
                     }
                     reseting = true;
                     TLRPC.TL_account_resetNotifySettings req = new TLRPC.TL_account_resetNotifySettings();
-                    ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
+                    ConnectionsManager.getInstance().sendRequest(req, new RequestDelegate() {
                         @Override
                         public void run(TLObject response, TLRPC.TL_error error) {
                             AndroidUtilities.runOnUIThread(new Runnable() {
@@ -557,7 +557,7 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
             req.settings.mute_until = preferences.getBoolean("EnableGroup", true) ? 0 : Integer.MAX_VALUE;
             req.settings.show_previews = preferences.getBoolean("EnablePreviewGroup", true);
         }
-        ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
+        ConnectionsManager.getInstance().sendRequest(req, new RPCRequest.RPCRequestDelegate() {
             @Override
             public void run(TLObject response, TLRPC.TL_error error) {
 

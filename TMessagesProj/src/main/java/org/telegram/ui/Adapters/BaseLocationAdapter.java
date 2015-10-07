@@ -12,17 +12,17 @@ import android.location.Location;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
-import org.telegram.android.AndroidUtilities;
-import org.telegram.android.volley.Request;
-import org.telegram.android.volley.RequestQueue;
-import org.telegram.android.volley.Response;
-import org.telegram.android.volley.VolleyError;
-import org.telegram.android.volley.toolbox.JsonObjectRequest;
-import org.telegram.android.volley.toolbox.Volley;
+import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.volley.Request;
+import org.telegram.messenger.volley.RequestQueue;
+import org.telegram.messenger.volley.Response;
+import org.telegram.messenger.volley.VolleyError;
+import org.telegram.messenger.volley.toolbox.JsonObjectRequest;
+import org.telegram.messenger.volley.toolbox.Volley;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.FileLog;
-import org.telegram.messenger.TLRPC;
+import org.telegram.tgnet.TLRPC;
 
 import java.net.URLEncoder;
 import java.util.ArrayList;

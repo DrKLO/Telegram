@@ -9,6 +9,7 @@
 package org.telegram.SQLite;
 
 import org.telegram.messenger.FileLog;
+import org.telegram.tgnet.NativeByteBuffer;
 
 import java.nio.ByteBuffer;
 import java.util.HashMap;
@@ -120,6 +121,10 @@ public class SQLitePreparedStatement {
 
     public void bindByteBuffer(int index, ByteBuffer value) throws SQLiteException {
         bindByteBuffer(sqliteStatementHandle, index, value, value.limit());
+    }
+
+    public void bindByteBuffer(int index, NativeByteBuffer value) throws SQLiteException {
+        bindByteBuffer(sqliteStatementHandle, index, value.buffer, value.limit());
     }
 
     public void bindString(int index, String value) throws SQLiteException {
