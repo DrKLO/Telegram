@@ -390,7 +390,8 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
                                 editor.putInt("GroupLed", colorPickerView.getColor());
                             }
                             editor.commit();
-                            listView.invalidateViews();
+                            listView.invalidateViews();  /* [BUG] after call this method, when MessagesLed and GroupLed row
+                                                            fit in a same screen both of them display in a same color */
                         }
                     });
                     builder.setNeutralButton(LocaleController.getString("LedDisabled", R.string.LedDisabled), new DialogInterface.OnClickListener() {
