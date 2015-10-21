@@ -947,10 +947,10 @@
   <string name="formatDateAtTime">%1$s в %2$s</string>
   <!--update text-->
   <string name="updateText">Telegram для Android обновлён. Новое в версии 3.2.0:\n\n- Представляем Каналы – новый отличный способ транслировать свои сообщения неограниченной аудитории (заменяют старые списки рассылок).\n\nЧитать больше: https://telegram.org/blog/channels</string>
-  <string name="updateBuild">630</string>
-    <!--Telegram+-->
+  <string name="updateBuild">632</string>
+    <!--Telegram+--><!--
   <string name="updatePlusText">
-\n\nНовое в версии 3.2.2.1:\n\n- Обои можно изменить не покидая экран чата\n- Улучшен способ использования обоев из тем\n- Имя пользователя копируется в буфер обмена при касании на экране профиля\n- Исправление ошибок</string>
+\n\nНовое в версии 3.2.2.2:\n\n- Обои можно изменить не покидая экран чата\n- Улучшен способ использования обоев из тем\n- Имя пользователя копируется в буфер обмена при касании на экране профиля\n- Исправление ошибок</string>-->
   <string name="TelegramForAndroid">Plus Messenger для Android</string>
   <string name="Theming">Кастомизация</string>
   <string name="colorHexInvalid">Неверный hex-код цвета!</string>
@@ -1099,4 +1099,6 @@
   <string name="RowGradientBLTR">Снизу налево, сверху направо</string>
   <string name="RowGradientList">Применить градиент к фону списка</string>
   <string name="Copied">%s скопировано в буфер обмена</string>
+  <string name="JoinChannel">
+\n\nПрисоединяйтесь к официальному каналу Plus Messenger: https://telegram.me/plusmsn</string>
 </resources>

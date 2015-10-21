@@ -947,7 +947,7 @@
   <string name="formatDateAtTime">於時間 %1$s  %2$s</string>
   <!--update text-->
   <string name="updateText">Android 版的 Telegram 已經更新。在版本 3.2.0 中的新功能：\n\n- 引進頻道 – 用來將您的訊息向無限觀眾廣播的新方式 (取代舊式的廣播)。\n\n了解更多：https://telegram.org/blog/channels</string>
-  <string name="updateBuild">630</string>
+  <string name="updateBuild">632</string>
   <!--Telegram+--><!--
   <string name="updatePlusText">
 \n\n在 3.1.1.9 版的新功能：\n\n- 新的模組在聊天畫面顯示擁有的大頭照\n- 加入新的泡泡邊緣 (感謝 Edwin Macalopu)\n- 錯誤修復</string>-->
@@ -1085,4 +1085,8 @@
   <string name="ShowOwnAvatarGroup">在群組畫面中顯示擁有的大頭照</string>
   <string name="OwnAvatarAlignTop">對齊擁有的大頭照到頂端</string>
   <string name="DialogColor">對話框標題/按鈕顏色</string>
+  <string name="ShowUsername">顯示用戶名稱及成員名稱</string>
+  <string name="DisableAudioStop">不要停止音訊</string>
+  <string name="ListDividerColor">選單分隔線顏色</string>
+  <string name="CenterAvatar">將個人照片、姓名和電話號碼置中</string>
 </resources>

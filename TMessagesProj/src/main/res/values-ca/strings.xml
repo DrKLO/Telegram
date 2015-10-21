@@ -903,7 +903,7 @@ Si no us interessa, us suggerim crear un canal privat.</string>
   <string name="formatDateAtTime">%1$s a les %2$s</string>
   <!--update text-->
   <string name="updateText">S\'ha actualitzat el Telegram per a l\'Android. Novetats a la versió 3.1.3:\n\n- Nova secció \'Enllaços compartits\' a la informació del xat\n- Previsualització, dins de l\'aplicació, per a enllaços a fotos</string>
-  <string name="updateBuild">630</string>
+  <string name="updateBuild">632</string>
     <!--Telegram+--><!--
   <string name="updatePlusText">\n\nNovetats a la versió 3.1.1.6\n\n- Nou MOD per mostrar l\'avatar dels contactes als xats\n- Nou MOD per mostrar l\'avatar propi als xats i grups\n- Nou MOD per alinear l\'avatar propi a dalt\n- S\'han afegit les noves bombolles Ed i Edge (gràcies a Edwin Macalopu)\n- Nou MOD per canviar el color de fons i de text del menú d\'adjuntar als xats\n- Nou MOD per canviar el color del títol i botons dels diàlegs\n- Correcció d\'errors</string>-->
     <string name="TelegramForAndroid">Plus Messenger per Android</string>
@@ -1045,4 +1045,16 @@ Si no us interessa, us suggerim crear un canal privat.</string>
   <string name="DisableAudioStop">No aturis els àudios</string>
   <string name="ListDividerColor">Color del divisor de llista</string>
   <string name="CenterAvatar">Centra l\'avatar, el nom i el número de telèfon</string>
+  <string name="RowGradient">Gradient</string>
+  <string name="RowGradientColor">Color de gradient</string>
+  <string name="RowGradientDisabled">Deshabilitat</string>
+  <string name="RowGradientTopBottom">De dalt a baix</string>
+  <string name="RowGradientLeftRight">D\'esquerra a dreta</string>
+  <string name="RowGradientTLBR">Dalt-Esquerra Baix-Dreta</string>
+  <string name="RowGradientBLTR">Baix-Esquerra Dalt-Dreta</string>
+  <string name="RowGradientList">Aplica el gradient al fons de la llista</string>
+  <string name="Copied">S\'ha copiat %s al porta-retalls</string>
+  <string name="JoinChannel">
+
+Afegiu-vos al canal oficial del Plus Messenger: https://telegram.me/plusmsnes</string>
 </resources>

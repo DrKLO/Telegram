@@ -21,6 +21,7 @@ import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.PorterDuff;
 import android.graphics.Rect;
+import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.media.ExifInterface;
@@ -332,6 +333,8 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
 
     private boolean refreshWallpaper;
 
+    private boolean quote;
+
     RecyclerListView.OnItemLongClickListener onItemLongClickListener = new RecyclerListView.OnItemLongClickListener() {
         @Override
         public void onItemClick(View view, int position) {
@@ -360,6 +363,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     public boolean onFragmentCreate() {
         final int chatId = arguments.getInt("chat_id", 0);
         chat_id = chatId; //Plus
+        quote = arguments.getBoolean("quote", false);
         final int userId = arguments.getInt("user_id", 0);
         final int encId = arguments.getInt("enc_id", 0);
         startLoadFromMessageId = arguments.getInt("message_id", 0);
@@ -754,6 +758,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                             QuoteForward = false;
                         }
                         Bundle args = new Bundle();
+                        //args.putBoolean("quote", QuoteForward);
                         args.putBoolean("onlySelect", true);
                     args.putInt("dialogsType", 1);
                     DialogsActivity fragment = new DialogsActivity(args);
@@ -1310,8 +1315,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         };
 
         SizeNotifierFrameLayout contentView = (SizeNotifierFrameLayout) fragmentView;
-        contentView.setBackgroundImage(ApplicationLoader.getCachedWallpaper());
-
+        //contentView.setBackgroundImage(ApplicationLoader.getCachedWallpaper());
+        updateBackground(contentView);
+        //.e("mainColor 0", "" + ApplicationLoader.getCachedWallpaper());
         emptyViewContainer = new FrameLayout(context);
             emptyViewContainer.setVisibility(View.INVISIBLE);
         contentView.addView(emptyViewContainer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
@@ -2175,6 +2181,38 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         return fragmentView;
     }
 
+    private void updateBackground(SizeNotifierFrameLayout contentView){
+        SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+        if(!themePrefs.getBoolean("chatSolidBGColorCheck", false)){
+            contentView.setBackgroundImage(ApplicationLoader.getCachedWallpaper());
+        }else{
+            int mainColor = themePrefs.getInt("chatSolidBGColor", 0xffffffff);
+            int orientation = themePrefs.getInt("chatGradientBG", 0);
+            if(orientation == 0) {
+                contentView.setBackgroundDrawable(new ColorDrawable(mainColor));
+            } else {
+                GradientDrawable.Orientation go;
+                switch(orientation) {
+                    case 2:
+                        go = GradientDrawable.Orientation.LEFT_RIGHT;
+                        break;
+                    case 3:
+                        go = GradientDrawable.Orientation.TL_BR;
+                        break;
+                    case 4:
+                        go = GradientDrawable.Orientation.BL_TR;
+                        break;
+                    default:
+                        go = GradientDrawable.Orientation.TOP_BOTTOM;
+                }
+
+                int gradColor = themePrefs.getInt("chatGradientBGColor", 0xffffffff);
+                int[] colors = new int[]{mainColor, gradColor};
+                contentView.setBackgroundDrawable(new GradientDrawable(go, colors));
+            }
+        }
+    }
+
     private void openAddMember() {
         Bundle args = new Bundle();
         args.putBoolean("onlyUsers", true);
@@ -2498,9 +2536,10 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         if (arrayList == null || arrayList.isEmpty()) {
             return;
         }
-            if (!fromMyName) {
-            SendMessagesHelper.getInstance().sendMessage(arrayList, dialog_id, chatActivityEnterView == null || chatActivityEnterView.asAdmin());
-            } else {
+        if(quote)fromMyName = false;
+        if (!fromMyName) {
+                SendMessagesHelper.getInstance().sendMessage(arrayList, dialog_id, chatActivityEnterView == null || chatActivityEnterView.asAdmin());
+        } else {
             for (MessageObject object : arrayList) {
                 SendMessagesHelper.getInstance().processForwardFromMyName(object, dialog_id, chatActivityEnterView == null || chatActivityEnterView.asAdmin());
             }
@@ -5303,11 +5342,13 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             reportSpamButton.setTextColor(nameColor);
             addToContactsButton.setTextColor(nameColor);
 
+
             if(refreshWallpaper) {
                 SizeNotifierFrameLayout contentView = (SizeNotifierFrameLayout) fragmentView;
                 contentView.setBackgroundImage(ApplicationLoader.getCachedWallpaper());
                 refreshWallpaper = false;
             }
+
         } catch (Exception e) {
             FileLog.e("tmessages", e);
         }
@@ -5617,8 +5658,12 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         items.add(LocaleController.getString("Forward", R.string.Forward));
                         options.add(22);
                         //items.add(LocaleController.getString("Forward", R.string.Forward));
-                        items.add(LocaleController.getString("ForwardNoQuote", R.string.ForwardNoQuote));
-                        options.add(2);
+                        if(selectedObject.messageOwner.media != null && selectedObject.messageOwner.media.caption != null && selectedObject.messageOwner.media.caption.length() > 0){
+                            //with caption quote doesn't appear
+                        }else {
+                            items.add(LocaleController.getString("ForwardNoQuote", R.string.ForwardNoQuote));
+                            options.add(2);
+                        }
                         if (message.canDeleteMessage(currentChat)) {
                             items.add(LocaleController.getString("Delete", R.string.Delete));
                             options.add(1);

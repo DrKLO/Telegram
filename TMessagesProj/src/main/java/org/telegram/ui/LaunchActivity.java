@@ -112,13 +112,15 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
 
     private Runnable lockRunnable;
 
-    private int versionRow = 11;
+
     private int contactsRow = 6;
-    private int settingsRow = 9;
-    private int themingRow = 8;
-    private int communityRow = 10;
-    private int faqRow = 12;
     private int themesRow = 7;
+    private int themingRow = 8;
+    private int settingsRow = 9;
+    private int channelRow = 10;
+    private int communityRow = 11;
+    private int versionRow = 12;
+    private int faqRow = 13;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -329,6 +331,18 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                     try {
                         Intent pickIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(LocaleController.getString("TelegramFaqUrl", R.string.TelegramFaqUrl)));
                         startActivityForResult(pickIntent, 500);
+                    } catch (Exception e) {
+                        FileLog.e("tmessages", e);
+                    }
+                    drawerLayoutContainer.closeDrawer(false);
+                } else if (position == channelRow) {
+                    try {
+                        String link = "https://telegram.me/plusmsn";//https://plus.google.com/101839105638971401281/posts"
+                        String lg = Locale.getDefault().getLanguage();
+                        if(lg.contains("es") || lg.contains("gl") || lg.contains("ca")){
+                            link = "https://telegram.me/plusmsnes";
+                        }
+                        startActivityForResult(new Intent(Intent.ACTION_VIEW, Uri.parse(link)), 504);
                     } catch (Exception e) {
                         FileLog.e("tmessages", e);
                     }

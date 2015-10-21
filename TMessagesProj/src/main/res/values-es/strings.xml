@@ -947,9 +947,9 @@
     <string name="formatDateAtTime">%1$s a las %2$s</string>
     <!--update text-->
     <string name="updateText">Plus Messenger para Android ha sido actualizada. Novedades en la versión 3.2.0\n\n- Presentamos los Canales - una nueva gran forma de difundir tus mensajes a audiencias ilimitadas (reemplaza a las antiguas difusiones).\n\n Conoce más: https://telegram.org/blog/channels</string>
-    <string name="updateBuild">630</string>
+    <string name="updateBuild">632</string>
     <!--Telegram+-->
-    <string name="updatePlusText">\n\nNovedades en 3.2.2.1:\n\n- Ahora puedes cambiar el fondo directamente desde la pantalla de chat\n- Método mejorado para aplicar fondos de tema\n- El alias se copia al portapapeles si le haces click en la pantalla de perfil\n- Corrección de errores</string>
+    <string name="updatePlusText">\n\nNovedades en 3.2.2.2:\n\n- Opción en ajustes para abrir perfil/fotos de perfil de usuario/grupo al hacer click en foto en pantalla principal\n- Opción de gradiente en fondo de chat\n- Añadida opción de reenviar link sin citar\n- Añadido enlace a canal oficial en menú\n- Corrección de errores</string>
     <string name="TelegramForAndroid">Plus Messenger para Android</string>
     <string name="Theming">Tematización</string>
     <string name="colorHexInvalid">¡Color hexadecimal inválido!</string>
@@ -1099,4 +1099,11 @@
     <string name="RowGradientList">Aplicar gradiente a fondo de lista</string>
     <string name="Copied">%s copiado al portapapeles</string>
     <string name="JoinChannel">\n\nÚnete al canal oficial de Plus Messenger en español: https://telegram.me/plusmsnes</string>
+    <string name="DownloadThemes">Descargar temas</string>
+    <string name="OfficialChannel">Canal oficial</string>
+    <string name="DialogsSettings">Chats</string>
+    <string name="ClickOnContactPic">Click en foto de contacto</string>
+    <string name="ClickOnGroupPic">Click en foto de grupo</string>
+    <string name="ShowProfile">Perfil</string>
+    <string name="ShowPics">Fotos de perfil</string>
 </resources>

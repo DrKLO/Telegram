@@ -947,10 +947,10 @@
     <string name="formatDateAtTime">%1$s alle %2$s</string>
     <!--update text-->
     <string name="updateText">Plus Messenger per Android si è aggiornato. Nuovo nella versione 3.2.0:\n\n- Nuovi Canali - una nuova modalità per diffondere i tuoi messaggi ad un pubblico infinito (rimpiazzano le vecchie liste broadcast).\n\nPiù info: https://telegram.org/blog/channels</string>
-    <string name="updateBuild">630</string>
+    <string name="updateBuild">632</string>
     <!--Telegram+-->
   <string name="updatePlusText">
-\n\Novità nella versione 3.2.2.1:\n\n- Adesso lo sfondo può essere cambiato direttamente dalla schermata della chat\n- Migliorato il metodo di applicazione degli sfondi dei temi\n- Nome utente copiato negli appunti se premuto nella schermata  del profilo\n- Correzioni bug</string>
+\n\nNovità nella versione 3.2.2.2:\n\n- Nuova opzione nelle impostazioni per aprire il profilo/le immagini del profilo quando si preme l\'utente o l\'immagine del gruppo nella schermata principale\n- Aggiunta opzione per il colore gradiente di sfondo\n- Aggiunta opzione per inoltrare i link senza quotare\n- Aggiunto link al canale ufficiale nel menu\n- Correzioni bug</string>
     <string name="TelegramForAndroid">Plus Messenger per Android</string>
   <string name="Theming">Personalizzazione</string>
     <string name="colorHexInvalid">Codice del colore esadecimale non valido!</string>
@@ -1099,5 +1099,13 @@
   <string name="RowGradientBLTR">Fondo-sinistra Intestazione-destra</string>
   <string name="RowGradientList">Applica il gradiente allo sfondo della lista</string>
   <string name="Copied">%s copiato negli appunti</string>
-  <string name="JoinChannel">\n\nEntra nel canale ufficiale di Plus Messenger: https://telegram.me/plusmsn</string>
+  <string name="JoinChannel">
+\n\nEntra nel canale ufficiale di Plus Messenger: https://telegram.me/plusmsn</string>
+  <string name="DownloadThemes">Scarica temi</string>
+  <string name="OfficialChannel">Canale ufficiale</string>
+  <string name="DialogsSettings">Avvisi</string>
+  <string name="ClickOnContactPic">Click sull\'immagine del contatto</string>
+  <string name="ClickOnGroupPic">Click sull\'immagine del gruppo</string>
+  <string name="ShowProfile">Profilo</string>
+  <string name="ShowPics">Immagini del profilo</string>
 </resources>

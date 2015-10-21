@@ -230,21 +230,8 @@ public class ChatBaseCell extends BaseCell implements MediaController.FileDownlo
                 linkColor = themePrefs.getInt("chatRLinkColor", defColor);
             }
             replyTextPaint.linkColor = linkColor;
-            //ResourceLoader.loadRecources(getContext());
-            /*if(ResourceLoader.mediaBackgroundDrawable == null){
-                ResourceLoader.mediaBackgroundDrawable = getResources().getDrawable(R.drawable.phototime);
-                ResourceLoader.checkDrawable = getResources().getDrawable(R.drawable.msg_check);
-                ResourceLoader.halfCheckDrawable = getResources().getDrawable(R.drawable.msg_halfcheck);
-                ResourceLoader.clockDrawable = getResources().getDrawable(R.drawable.msg_clock);
-                ResourceLoader.checkMediaDrawable = getResources().getDrawable(R.drawable.msg_check_w);
-                ResourceLoader.halfCheckMediaDrawable = getResources().getDrawable(R.drawable.msg_halfcheck_w);
-                ResourceLoader.clockMediaDrawable = getResources().getDrawable(R.drawable.msg_clock_photo);
-                //ResourceLoader.videoIconDrawable = getResources().getDrawable(R.drawable.ic_video);
-                ResourceLoader.docMenuInDrawable = getResources().getDrawable(R.drawable.doc_actions_b);
-                ResourceLoader.docMenuOutDrawable = getResources().getDrawable(R.drawable.doc_actions_g);
-            }*/
 
-            ResourceLoader.mediaBackgroundDrawable.setColorFilter(bColor, PorterDuff.Mode.SRC_IN);
+            if(ResourceLoader.mediaBackgroundDrawable != null)ResourceLoader.mediaBackgroundDrawable.setColorFilter(bColor, PorterDuff.Mode.SRC_IN);
 
             ResourceLoader.backgroundDrawableOut.setColorFilter(rBubbleColor, PorterDuff.Mode.SRC_IN);
             ResourceLoader.backgroundMediaDrawableOut.setColorFilter(rBubbleColor, PorterDuff.Mode.SRC_IN);
@@ -889,6 +876,8 @@ public class ChatBaseCell extends BaseCell implements MediaController.FileDownlo
 
         onAfterBackgroundDraw(canvas);
         SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+        boolean mCheck = AndroidUtilities.getBoolPref("chatMemberColorCheck");
+        int mColor = themePrefs.getInt("chatMemberColor", AndroidUtilities.getIntDarkerColor("themeColor", 0x15));
         if (drawName && nameLayout != null) {
             canvas.save();
             if (media) {
@@ -897,15 +886,23 @@ public class ChatBaseCell extends BaseCell implements MediaController.FileDownlo
                 canvas.translate(currentBackgroundDrawable.getBounds().left + AndroidUtilities.dp(19) - nameOffsetX, AndroidUtilities.dp(10));
             }
             if (currentUser != null) {
-                if(AndroidUtilities.getBoolPref("chatMemberColorCheck")){
-                    namePaint.setColor(themePrefs.getInt("chatMemberColor", AndroidUtilities.getIntDarkerColor("themeColor", 0x15)));
+                if(mCheck){
+                    namePaint.setColor(mColor);
                 }else {
                     namePaint.setColor(AvatarDrawable.getNameColorForId(currentUser.id));
                 }
             } else if (currentChat != null) {
-                namePaint.setColor(AvatarDrawable.getNameColorForId(currentChat.id));
+                if(mCheck){
+                    namePaint.setColor(mColor);
+                }else {
+                    namePaint.setColor(AvatarDrawable.getNameColorForId(currentChat.id));
+                }
             } else {
-                namePaint.setColor(AvatarDrawable.getNameColorForId(0));
+                if(mCheck){
+                    namePaint.setColor(mColor);
+                }else {
+                    namePaint.setColor(AvatarDrawable.getNameColorForId(0));
+                }
             }
             nameLayout.draw(canvas);
             canvas.restore();

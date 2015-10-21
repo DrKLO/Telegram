@@ -153,6 +153,10 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
     private int keepOriginalFilenameDetailRow;
     private int emojiPopupSize;
     private int disableAudioStopRow;
+    private int dialogsSectionRow;
+    private int dialogsSectionRow2;
+    private int dialogsPicClickRow;
+    private int dialogsGroupPicClickRow;
 
     private final static int edit_name = 1;
     private final static int logout = 2;
@@ -266,6 +270,11 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         sendByEnterRow = rowCount++;
         disableAudioStopRow = rowCount++;
         disableMessageClickRow = rowCount++;
+
+        dialogsSectionRow = rowCount++;
+        dialogsSectionRow2 = rowCount++;
+        dialogsPicClickRow = rowCount++;
+        dialogsGroupPicClickRow = rowCount++;
 
         supportSectionRow = rowCount++;
         supportSectionRow2 = rowCount++;
@@ -724,6 +733,54 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                         if (view instanceof TextCheckCell) {
                             ((TextCheckCell) view).setChecked(!keep);
                         }
+                    } else if (i == dialogsPicClickRow) {
+                        if (getParentActivity() == null) {
+                            return;
+                        }
+                        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                        builder.setTitle(LocaleController.getString("ClickOnContactPic", R.string.ClickOnContactPic));
+                        builder.setItems(new CharSequence[]{
+                                LocaleController.getString("RowGradientDisabled", R.string.RowGradientDisabled),
+                                LocaleController.getString("ShowPics", R.string.ShowPics),
+                                LocaleController.getString("ShowProfile", R.string.ShowProfile)
+                        }, new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+                                SharedPreferences.Editor editor = preferences.edit();
+                                editor.putInt("dialogsClickOnPic", which);
+                                editor.commit();
+                                if (listView != null) {
+                                    listView.invalidateViews();
+                                }
+                            }
+                        });
+                        builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+                        showDialog(builder.create());
+                    } else if (i == dialogsGroupPicClickRow) {
+                        if (getParentActivity() == null) {
+                            return;
+                        }
+                        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                        builder.setTitle(LocaleController.getString("ClickOnGroupPic", R.string.ClickOnGroupPic));
+                        builder.setItems(new CharSequence[]{
+                                LocaleController.getString("RowGradientDisabled", R.string.RowGradientDisabled),
+                                LocaleController.getString("ShowPics", R.string.ShowPics),
+                                LocaleController.getString("ShowProfile", R.string.ShowProfile)
+                        }, new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+                                SharedPreferences.Editor editor = preferences.edit();
+                                editor.putInt("dialogsClickOnGroupPic", which);
+                                editor.commit();
+                                if (listView != null) {
+                                    listView.invalidateViews();
+                                }
+                            }
+                        });
+                        builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+                        showDialog(builder.create());
                     }
                 }
             });
@@ -1241,7 +1298,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                     i == askQuestionRow || i == sendLogsRow || i == sendByEnterRow || i == privacyRow || i == wifiDownloadRow || i == disableAudioStopRow || i == disableMessageClickRow ||
                     i == mobileDownloadRow || i == clearLogsRow || i == roamingDownloadRow || i == languageRow || i == usernameRow ||
                     i == switchBackendButtonRow || i == telegramFaqRow || i == contactsSortRow || i == contactsReimportRow || i == saveToGalleryRow || i == keepOriginalFilenameRow ||
-                    i == stickersRow;
+                    i == stickersRow || i == dialogsPicClickRow || i == dialogsGroupPicClickRow;
         }
 
         @Override
@@ -1329,6 +1386,30 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                     textCell.setText(LocaleController.getString("ImportContacts", R.string.ImportContacts), true);
                 } else if (i == stickersRow) {
                     textCell.setText(LocaleController.getString("Stickers", R.string.Stickers), true);
+                } else if (i == dialogsPicClickRow) {
+                    String value;
+                    SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+                    int sort = preferences.getInt("dialogsClickOnPic", 0);
+                    if (sort == 0) {
+                        value = LocaleController.getString("RowGradientDisabled", R.string.RowGradientDisabled);
+                    } else if (sort == 1) {
+                        value = LocaleController.getString("ShowPics", R.string.ShowPics);
+                    } else {
+                        value = LocaleController.getString("ShowProfile", R.string.ShowProfile);
+                    }
+                    textCell.setTextAndValue(LocaleController.getString("ClickOnContactPic", R.string.ClickOnContactPic), value, false);
+                } else if (i == dialogsGroupPicClickRow) {
+                    String value;
+                    SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+                    int sort = preferences.getInt("dialogsClickOnGroupPic", 0);
+                    if (sort == 0) {
+                        value = LocaleController.getString("RowGradientDisabled", R.string.RowGradientDisabled);
+                    } else if (sort == 1) {
+                        value = LocaleController.getString("ShowPics", R.string.ShowPics);
+                    } else {
+                        value = LocaleController.getString("ShowProfile", R.string.ShowProfile);
+                    }
+                    textCell.setTextAndValue(LocaleController.getString("ClickOnGroupPic", R.string.ClickOnGroupPic), value, true);
                 }
             } else if (type == 3) {
                 if (view == null) {
@@ -1368,6 +1449,8 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                     ((HeaderCell) view).setText(LocaleController.getString("AutomaticMediaDownload", R.string.AutomaticMediaDownload));
                 } else if (i == numberSectionRow) {
                     ((HeaderCell) view).setText(LocaleController.getString("Info", R.string.Info));
+                }else if (i == dialogsSectionRow2) {
+                    ((HeaderCell) view).setText(LocaleController.getString("DialogsSettings", R.string.DialogsSettings));
                 }
             } else if (type == 5) {
                 if (view == null) {
@@ -1461,11 +1544,11 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             if (i == emptyRow || i == overscrollRow) {
                 return 0;
             } 
-            if (i == settingsSectionRow || i == supportSectionRow /*|| i == messagesSectionRow*/ || i == mediaDownloadSection || i == contactsSectionRow) {
+            if (i == settingsSectionRow || i == supportSectionRow /*|| i == messagesSectionRow*/ || i == mediaDownloadSection || i == contactsSectionRow || i == dialogsSectionRow) {
                 return 1;
             } else if (i == enableAnimationsRow || i == sendByEnterRow || i == saveToGalleryRow || i == disableAudioStopRow || i == disableMessageClickRow || i == showAndroidEmojiRow || i == useDeviceFontRow || i == keepOriginalFilenameRow ) {
                 return 3;
-            } else if (i == notificationRow || i == backgroundRow || i == askQuestionRow || i == sendLogsRow || i == privacyRow || i == clearLogsRow || i == switchBackendButtonRow || i == telegramFaqRow || i == contactsReimportRow || i == textSizeRow || i == emojiPopupSize || i == languageRow || i == contactsSortRow || i == stickersRow) {
+            } else if (i == notificationRow || i == backgroundRow || i == askQuestionRow || i == sendLogsRow || i == privacyRow || i == clearLogsRow || i == switchBackendButtonRow || i == telegramFaqRow || i == contactsReimportRow || i == textSizeRow || i == emojiPopupSize || i == languageRow || i == contactsSortRow || i == stickersRow || i == dialogsPicClickRow || i == dialogsGroupPicClickRow) {
                 return 2;
             } else if (i == versionRow) {
                 return 5;
@@ -1473,7 +1556,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 return 6;
             } else if (i == keepOriginalFilenameDetailRow) {
                 return 7;
-            } else if (i == settingsSectionRow2 || i == messagesSectionRow2 || i == supportSectionRow2 || i == numberSectionRow || i == mediaDownloadSection2) {
+            } else if (i == settingsSectionRow2 || i == messagesSectionRow2 || i == supportSectionRow2 || i == numberSectionRow || i == mediaDownloadSection2 || i == dialogsSectionRow2) {
                 return 4;
             } else {
                 return 2;

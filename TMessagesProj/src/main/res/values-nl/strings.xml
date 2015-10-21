@@ -947,7 +947,7 @@
     <string name="formatDateAtTime">%1$s om %2$s</string>
     <!--update text-->
     <string name="updateText">Plus Messenger voor Android is bijgewerkt. Nieuw in versie 3.2.0:\n\n- Nieuw, kanalen - een perfecte manier om berichten naar een ongelimiteerd publiek te versturen (vervangt de oude verzendlijsten).\n\nMeer over deze update: https://telegram.org/blog/channels</string>
-    <string name="updateBuild">630</string>
+    <string name="updateBuild">632</string>
     <!--Telegram+--><!--
   <string name="updatePlusText"></string>-->
     <string name="TelegramForAndroid">Plus Messenger voor Android</string>

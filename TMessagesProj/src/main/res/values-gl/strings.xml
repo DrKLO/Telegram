@@ -948,9 +948,9 @@ e introduce o teu número.</string>
   <string name="formatDateAtTime">%1$s ás %2$s</string>
   <!--update text-->
   <string name="updateText">Telegram para Android foi actualizada. Novidades na versión 3.2.0:\n\n- Presentamos as Canles – unha nova gran forma de difundir as túas mensaxes a audiencias ilimitadas (substitúe ás antigas difusións).\n\n Coñece máis: https://telegram.org/blog/channels</string>
-  <string name="updateBuild">630</string>
-  <!--Telegram+-->
-  <string name="updatePlusText">\n\nNovo na versión 3.2.2.1:\n\n- Agora podes cambiar o fondo directamente dende a pantalla da conversa\n- Método mellorado para a aplicación dos fondos do tema\n- O alias cópiase ao portapapeis se lle tocas na pantalla do perfil\n- Corrección de erros</string>
+  <string name="updateBuild">632</string>
+  <!--Telegram+--><!--
+  <string name="updatePlusText">\n\nNovo na versión 3.2.2.2:\n\n- Agora podes cambiar o fondo directamente dende a pantalla da conversa\n- Método mellorado para a aplicación dos fondos do tema\n- O alias cópiase ao portapapeis se lle tocas na pantalla do perfil\n- Corrección de erros</string>-->
     <string name="TelegramForAndroid">Plus Messenger para Android</string>
     <string name="Theming">Tematización</string>
     <string name="colorHexInvalid">Cor hexadecimal inválida!</string>
@@ -1099,4 +1099,5 @@ e introduce o teu número.</string>
   <string name="RowGradientBLTR">Abaixo-Esquerda Arriba-Dereita</string>
   <string name="RowGradientList">Aplicar gradiente ao fondo do listado</string>
   <string name="Copied">%s copiado ao portapapeis</string>
+  <string name="JoinChannel">\n\nÚnete á canle oficial de Plus Messenger: https://telegram.me/plusmsnes</string>
 </resources>

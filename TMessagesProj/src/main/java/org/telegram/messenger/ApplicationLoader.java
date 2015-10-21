@@ -21,7 +21,6 @@ import android.content.pm.PackageInfo;
 import android.content.res.Configuration;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
-import android.graphics.drawable.GradientDrawable;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Handler;
@@ -92,14 +91,6 @@ public class ApplicationLoader extends Application {
                         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
                         int selectedBackground = preferences.getInt("selectedBackground", 1000001);
                         selectedColor = preferences.getInt("selectedColor", 0);
-                        int cacheColorHint = 0;
-                        //
-                        SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
-                        if (themePrefs.getBoolean("chatSolidBGColorCheck", false)) {
-                            cachedWallpaper = null;
-                            selectedColor = themePrefs.getInt("chatSolidBGColor", 0xffffffff);
-                        }
-                        //
                         if (selectedColor == 0) {
                             if (selectedBackground == 1000001) {
                                 cachedWallpaper = applicationContext.getResources().getDrawable(R.drawable.background_hd);
@@ -123,30 +114,6 @@ public class ApplicationLoader extends Application {
                             selectedColor = -2693905;
                         }
                         cachedWallpaper = new ColorDrawable(selectedColor);
-
-                    }
-
-                    SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
-                    int orientation = themePrefs.getInt("chatGradientBG", 0);
-                    if(orientation > 0 && themePrefs.getBoolean("chatSolidBGColorCheck", false)) {
-                        GradientDrawable.Orientation go;
-                        switch(orientation) {
-                            case 2:
-                                go = GradientDrawable.Orientation.LEFT_RIGHT;
-                                break;
-                            case 3:
-                                go = GradientDrawable.Orientation.TL_BR;
-                                break;
-                            case 4:
-                                go = GradientDrawable.Orientation.BL_TR;
-                                break;
-                            default:
-                                go = GradientDrawable.Orientation.TOP_BOTTOM;
-                        }
-                        int mainColor = selectedColor = themePrefs.getInt("chatSolidBGColor", 0xffffffff);
-                        int gradColor = themePrefs.getInt("chatGradientBGColor", 0xffffffff);
-                        int[] colors = new int[]{mainColor, gradColor};
-                        cachedWallpaper = new GradientDrawable(go, colors);
                     }
                 }
             }

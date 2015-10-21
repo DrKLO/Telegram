@@ -191,6 +191,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
     private final static int shared_media_item = 1;
     private final static int files_item = 2;
     private final static int links_item = 5;
+    private final static int quoteforward = 33;
     private final static int forward = 3;
     private final static int delete = 4;
 
@@ -305,10 +306,11 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                     });
                     builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
                     showDialog(builder.create());
-                } else if (id == forward) {
+                } else if (id == forward || id == quoteforward) {
                     Bundle args = new Bundle();
                     args.putBoolean("onlySelect", true);
                     args.putInt("dialogsType", 1);
+                    final boolean quoteForward = id == forward ? false : true;
                     DialogsActivity fragment = new DialogsActivity(args);
                     fragment.setDelegate(new DialogsActivity.MessagesActivityDelegate() {
                         @Override
@@ -317,6 +319,9 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                             if (lower_part != 0) {
                                 Bundle args = new Bundle();
                                 args.putBoolean("scrollToTopOnResume", true);
+                                //Plus
+                                args.putBoolean("quote", quoteForward);
+                                //
                                 if (lower_part > 0) {
                                     args.putInt("user_id", lower_part);
                                 } else if (lower_part < 0) {
@@ -450,6 +455,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
         actionMode.addView(selectedMessagesCountTextView, LayoutHelper.createLinear(0, LayoutHelper.MATCH_PARENT, 1.0f));
 
         if ((int) dialog_id != 0) {
+            actionModeViews.add(actionMode.addItem(quoteforward, R.drawable.ic_ab_fwd_quoteforward, R.drawable.bar_selector_mode, null, AndroidUtilities.dp(54)));
             actionModeViews.add(actionMode.addItem(forward, R.drawable.ic_ab_fwd_forward, R.drawable.bar_selector_mode, null, AndroidUtilities.dp(54)));
         }
         actionModeViews.add(actionMode.addItem(delete, R.drawable.ic_ab_fwd_delete, R.drawable.bar_selector_mode, null, AndroidUtilities.dp(54)));

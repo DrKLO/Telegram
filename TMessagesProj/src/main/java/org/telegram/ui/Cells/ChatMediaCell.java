@@ -475,6 +475,31 @@ public class ChatMediaCell extends ChatBaseCell {
         return false;
     }
 
+    private String getCurrentNameString(MessageObject messageObject){
+        TLRPC.User currentUser = null;
+        TLRPC.Chat currentChat = null;
+        String s;
+        if (messageObject.messageOwner.from_id > 0) {
+            currentUser = MessagesController.getInstance().getUser(messageObject.messageOwner.from_id);
+        } else if (messageObject.messageOwner.from_id < 0) {
+            currentChat = MessagesController.getInstance().getChat(-messageObject.messageOwner.from_id);
+        }
+
+        if (currentUser != null) {
+            s = UserObject.getUserName(currentUser);
+            String currentUsernameString = currentUser.username;
+            /*if(currentUsernameString != null && AndroidUtilities.getBoolPref("chatShowUsernameCheck")){
+                currentNameString = currentNameString.replaceAll("\\p{C}", " ");
+                currentNameString = currentNameString.trim().replaceAll(" +", " ") + " [@"+currentUsernameString+"]";
+            }*/
+        } else if (currentChat != null) {
+            s = currentChat.title;
+        } else {
+            s = "DELETED";
+        }
+        return s;
+    }
+
     @Override
     public void setMessageObject(MessageObject messageObject) {
         boolean dataChanged = currentMessageObject == messageObject && (isUserDataChanged() || photoNotSet);
@@ -493,6 +518,7 @@ public class ChatMediaCell extends ChatBaseCell {
             drawBackground = true;
 
             photoImage.setForcePreview(messageObject.isSecretPhoto());
+
             if (messageObject.type == 9) {
                 String name = messageObject.getDocumentName();
                 if (name == null || name.length() == 0) {
@@ -537,20 +563,9 @@ public class ChatMediaCell extends ChatBaseCell {
                     infoLayout2 = null;
 
                     if(isChat){
-                        TLRPC.User fromUser = MessagesController.getInstance().getUser(messageObject.messageOwner.from_id);
 
-                        String senderName = UserObject.getUserName(fromUser);
-                        /*//String senderName = String.format("%s %s", fromUser.first_name, fromUser.last_name);
-                        String senderName = "";
-                        if (UserObject.isDeleted(fromUser)) {
-                            senderName = "Deleted";
-                        } else {
-                            if (fromUser.first_name != null && fromUser.first_name.length() > 0) {
-                                senderName = fromUser.first_name;
-                            } else {
-                                senderName = fromUser.last_name;
-                            }
-                        }*/
+                        String senderName = getCurrentNameString(messageObject);
+
                         infoWidth2 = Math.min(maxWidth, (int) Math.ceil(senderPaint.measureText(senderName)));
                         CharSequence str2 = TextUtils.ellipsize(senderName, senderPaint, infoWidth2, TextUtils.TruncateAt.END);
                         infoLayout2 = new StaticLayout(str2, senderPaint, infoWidth2, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
@@ -587,10 +602,8 @@ public class ChatMediaCell extends ChatBaseCell {
                     if(isChat){
                         infoOffset2 = ResourceLoader.videoIconDrawable.getIntrinsicWidth() + AndroidUtilities.dp(5);
                         infoOffset = 0;
-                        TLRPC.User fromUser = MessagesController.getInstance().getUser(messageObject.messageOwner.from_id);
-                        //String senderName = String.format("%s %s", fromUser.first_name, fromUser.last_name);
 
-                        String senderName = UserObject.getUserName(fromUser);
+                        String senderName = getCurrentNameString(messageObject);
 
                         infoWidth2 = (int) Math.ceil(infoPaint.measureText(currentInfoString));
                         //infoWidth = (int) Math.ceil(senderPaint.measureText(senderName));
@@ -605,27 +618,11 @@ public class ChatMediaCell extends ChatBaseCell {
                 currentNameString = null;
             }//Plus: member name in photos
             else if (messageObject.type == 1) {   //PHOTO
-                TLRPC.User fromUser = MessagesController.getInstance().getUser(messageObject.messageOwner.from_id);
 
-                String senderName = UserObject.getUserName(fromUser);
-                /*
-                String currentUsernameString = fromUser.username;
+                currentNameString = getCurrentNameString(messageObject);
 
-                if(currentUsernameString != null && AndroidUtilities.getBoolPref("chatShowUsernameCheck")){
-                    senderName = senderName.replaceAll("\\p{C}", " ");
-                    senderName = senderName.trim().replaceAll(" +", " ") + " [@"+currentUsernameString+"]";
-                }*/
-                /*
-                String senderName = String.format("%s %s", fromUser.first_name, fromUser.last_name);
-                if (UserObject.isDeleted(fromUser)) {
-                    senderName = "Deleted";
-                } else {
-                    if (fromUser.first_name != null && fromUser.first_name.length() > 0) {
-                        senderName = fromUser.first_name;
-                    } else if (fromUser.last_name != null && fromUser.last_name.length() > 0){
-                        senderName = fromUser.last_name;
-                    }
-                }*/
+                String senderName = currentNameString;
+
                 if (currentInfoString == null || !currentInfoString.equals(senderName)) {
                     currentInfoString = senderName;
                     infoOffset = 0;

@@ -35,13 +35,13 @@ import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.AnimationCompat.ViewProxy;
+import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.Emoji;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.NotificationCenter;
-import org.telegram.messenger.query.StickersQuery;
-import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
+import org.telegram.messenger.query.StickersQuery;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.Cells.EmptyCell;
 import org.telegram.ui.Cells.StickerEmojiCell;
@@ -426,27 +426,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
 
         //setBackgroundColor(0xfff5f6f7);
         setBackgroundColor(bgColor);
-        int val = themePrefs.getInt("chatEmojiViewBGGradient", 0);
-        if(val > 0) {
-            GradientDrawable.Orientation go;
-            switch(val) {
-                case 2:
-                    go = GradientDrawable.Orientation.LEFT_RIGHT;
-                    break;
-                case 3:
-                    go = GradientDrawable.Orientation.TL_BR;
-                    break;
-                case 4:
-                    go = GradientDrawable.Orientation.BL_TR;
-                    break;
-                default:
-                    go = GradientDrawable.Orientation.TOP_BOTTOM;
-            }
-            int gradColor = themePrefs.getInt("chatEmojiViewBGGradientColor", 0xfff5f6f7);
-            int[] colors = new int[]{bgColor, gradColor};
-            GradientDrawable gd = new GradientDrawable(go, colors);
-            setBackgroundDrawable(gd);
-        }
+
 
         pager = new ViewPager(context) {
             @Override
@@ -471,6 +451,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
         pagerSlidingTabStripContainer.setOrientation(LinearLayout.HORIZONTAL);
         //pagerSlidingTabStripContainer.setBackgroundColor(0xfff5f6f7);
         pagerSlidingTabStripContainer.setBackgroundColor(bgColor);
+
         addView(pagerSlidingTabStripContainer, LayoutHelper.createFrame(LayoutParams.MATCH_PARENT, 48));
 
         PagerSlidingTabStrip pagerSlidingTabStrip = new PagerSlidingTabStrip(context);
@@ -535,6 +516,31 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
         View view = new View(context);
         //view.setBackgroundColor(0xffe2e5e7);
         view.setBackgroundColor(lineColor);
+        int val = themePrefs.getInt("chatEmojiViewBGGradient", 0);
+        if(val > 0) {
+            GradientDrawable.Orientation go;
+            switch(val) {
+                case 2:
+                    go = GradientDrawable.Orientation.LEFT_RIGHT;
+                    break;
+                case 3:
+                    go = GradientDrawable.Orientation.TL_BR;
+                    break;
+                case 4:
+                    go = GradientDrawable.Orientation.BL_TR;
+                    break;
+                default:
+                    go = GradientDrawable.Orientation.TOP_BOTTOM;
+            }
+            int gradColor = themePrefs.getInt("chatEmojiViewBGGradientColor", 0xfff5f6f7);
+            int[] colors = new int[]{bgColor, gradColor};
+            GradientDrawable gd = new GradientDrawable(go, colors);
+            setBackgroundDrawable(gd);
+            pagerSlidingTabStripContainer.setBackgroundColor(0x00000000);
+            scrollSlidingTabStrip.setUnderlineColor(0x00000000);
+            pagerSlidingTabStrip.setUnderlineColor(0x00000000);
+            view.setBackgroundColor(0x00000000);
+        }
         frameLayout.addView(view, LayoutHelper.createFrame(52, 1, Gravity.LEFT | Gravity.BOTTOM));
 
         recentsWrap = new FrameLayout(context);

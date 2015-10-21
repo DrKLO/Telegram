@@ -950,7 +950,7 @@
     <string name="formatDateAtTime">%1$s às %2$s</string>
     <!--update text-->
     <string name="updateText">Plus Messenger para Android foi atualizado. Novidade na versão 3.2.0:\n\n- Introduzindo Canais – Uma grande nova maneira de transmitir suas mensagens, com audiência ilimitada (substitui as antigas Transmissões).\n\nMais sobre a atualização: https://telegram.org/blog/channels</string>
-    <string name="updateBuild">630</string>
+    <string name="updateBuild">632</string>
     <!--Telegram+-->
   <string name="TelegramForAndroid">Plus Messenger para Android</string>
   <string name="Theming">Temas</string>

@@ -950,7 +950,7 @@
     <string name="formatDateAtTime">%1$s الساعة %2$s</string>
     <!--update text-->
 <string name="updateText">تم تحديث تيليجرام نسخة الآندرويد. الجديد في نسخة 3.2.0:\n\n- إضافة خدمة القنوات - وسيلة جديدة رائعة لإرسال الرسائل الجماعية لعدد لا محدود من الجماهير (تستبدل الرسائل الجماعية القديمة). \n\n- اللاستزادة، اقرأ هنا: https://telegram.org/blog/channels</string>
-    <string name="updateBuild">630</string>
+    <string name="updateBuild">632</string>
     <!--Telegram+--><!--
   <string name="updatePlusText"></string>-->
   <string name="TelegramForAndroid">بلاس مسنجر للأندرويد</string>

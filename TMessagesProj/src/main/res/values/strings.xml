@@ -948,9 +948,9 @@
     <string name="formatDateAtTime">%1$s at %2$s</string>
     <!--update text-->
     <string name="updateText">Telegram for Android has been updated. New in version 3.2.0:\n\n- Introducing Channels – a great new way to broadcast your messages to unlimited audiences (replaces old Broadcasts).\n\nRead more: https://telegram.org/blog/channels</string>
-    <string name="updateBuild">630</string>
+    <string name="updateBuild">632</string>
     <!--Telegram+-->
-    <string name="updatePlusText">\n\nNew in version 3.2.2.1:\n\n- Now wallpaper can be changed directly from chat screen\n- Improved way of applying themes\' wallpapers\n- Username copied to clipboard if clicked in profile screen\n- Bug fixes</string>
+    <string name="updatePlusText">\n\nNew in version 3.2.2.2:\n\n- New option in settings to open profile/profile pics when clicking user/group pic in main screen\n- Added gradient option to chat background color\n- Added option to forward link without quoting\n- Added link to official channel in menu\n- Bug fixes</string>
     <string name="TelegramForAndroid">Plus Messenger for Android</string>
     <string name="Theming">Theming</string>
     <string name="colorHexInvalid">Invalid color hex code!</string>
@@ -1100,4 +1100,11 @@
     <string name="RowGradientList">Apply gradient to list background</string>
     <string name="Copied">%s copied to clipboard</string>
     <string name="JoinChannel">\n\nJoin Plus Messenger official channel: https://telegram.me/plusmsn</string>
+    <string name="DownloadThemes">Download themes</string>
+    <string name="OfficialChannel">Official channel</string>
+    <string name="DialogsSettings">Dialogs</string>
+    <string name="ClickOnContactPic">Click on contact pic</string>
+    <string name="ClickOnGroupPic">Click on group pic</string>
+    <string name="ShowProfile">Profile</string>
+    <string name="ShowPics">Profile pics</string>
 </resources>

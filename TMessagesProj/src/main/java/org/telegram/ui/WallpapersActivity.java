@@ -22,7 +22,6 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.MediaStore;
-import android.util.Log;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
@@ -244,7 +243,6 @@ public class WallpapersActivity extends BaseFragment implements NotificationCent
                     processSelectedBackground();
                 }
                 //Plus
-                Log.e("click", position+"");
                 AndroidUtilities.runOnUIThread(new Runnable() {
                     @Override
                     public void run() {

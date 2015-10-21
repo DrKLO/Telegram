@@ -37,12 +37,14 @@ public class DrawerLayoutAdapter extends BaseAdapter {
 
     private Context mContext;
     private int versionType = 4;
-    private int versionRow = 11;
     private int contactsRow = 6;
-    private int settingsRow = 9;
-    private int themingRow = 8;
-    private int communityRow = 10;
     private int themesRow = 7;
+    private int themingRow = 8;
+    private int settingsRow = 9;
+    private int channelRow = 10;
+    private int communityRow = 11;
+    private int versionRow = 12;
+
 
     //private int rowCount = 0;
 
@@ -63,7 +65,7 @@ public class DrawerLayoutAdapter extends BaseAdapter {
     @Override
     public int getCount() {
         //return UserConfig.isClientActivated() ? 10 : 0;
-        return UserConfig.isClientActivated() ? 12 : 0;
+        return UserConfig.isClientActivated() ? 13 : 0;
     }
 
     @Override
@@ -135,11 +137,13 @@ public class DrawerLayoutAdapter extends BaseAdapter {
             }/* else if (i == 7) {
                 actionCell.setTextAndIcon(LocaleController.getString("InviteFriends", R.string.InviteFriends), R.drawable.menu_invite);
             }*/ else if (i == themesRow) {
-                actionCell.setTextAndIcon(LocaleController.getString("Themes", R.string.Themes), R.drawable.menu_themes);
+                actionCell.setTextAndIcon(LocaleController.getString("DownloadThemes", R.string.DownloadThemes), R.drawable.menu_themes);
             } else if (i == themingRow) {
                 actionCell.setTextAndIcon(LocaleController.getString("Theming", R.string.Theming), R.drawable.menu_theming);
             } else if (i == settingsRow) {
                 actionCell.setTextAndIcon(LocaleController.getString("Settings", R.string.Settings), R.drawable.menu_settings);
+            } else if (i == channelRow) {
+                actionCell.setTextAndIcon(LocaleController.getString("OfficialChannel", R.string.OfficialChannel), R.drawable.menu_broadcast);
             } else if (i == communityRow) {
                 actionCell.setTextAndIcon(LocaleController.getString("Community", R.string.Community), R.drawable.menu_forum);
             } /*else if (i == 10) {

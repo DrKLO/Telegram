@@ -12,6 +12,7 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.graphics.PorterDuff;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.text.Layout;
@@ -22,17 +23,16 @@ import android.view.MotionEvent;
 
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.ContactsController;
+import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.UserObject;
-import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.R;
+import org.telegram.messenger.UserConfig;
+import org.telegram.messenger.UserObject;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
-import org.telegram.messenger.UserConfig;
 import org.telegram.ui.Components.AvatarDrawable;
 
 public class ProfileSearchCell extends BaseCell {
@@ -120,11 +120,23 @@ public class ProfileSearchCell extends BaseCell {
             lockDrawable = getResources().getDrawable(R.drawable.list_secret);
             groupDrawable = getResources().getDrawable(R.drawable.list_group);
             countDrawable = getResources().getDrawable(R.drawable.dialogs_badge);
+
+            updateTheme();
         }
 
         avatarImage = new ImageReceiver(this);
         avatarImage.setRoundRadius(AndroidUtilities.dp(26));
         avatarDrawable = new AvatarDrawable();
+    }
+
+    private void updateTheme(){
+        SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+        int tColor = themePrefs.getInt("themeColor", AndroidUtilities.defColor);
+
+        countPaint.setTextSize(AndroidUtilities.dp(themePrefs.getInt("chatsCountSize", 13)));
+        countPaint.setColor(themePrefs.getInt("chatsCountColor", 0xffffffff));
+        countDrawable.setColorFilter(themePrefs.getInt("chatsCountBGColor", tColor), PorterDuff.Mode.SRC_IN);
+
     }
 
     @Override

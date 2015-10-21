@@ -26,9 +26,9 @@ import android.widget.FrameLayout;
 import android.widget.ListView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.BaseFragment;
@@ -147,8 +147,8 @@ public class ThemingChatActivity extends BaseFragment {
         solidBGColorCheckRow = rowCount++;
         solidBGColorRow = rowCount++;
 
-        //gradientBGRow = rowCount++;
-        //gradientBGColorRow = rowCount++;
+        gradientBGRow = rowCount++;
+        gradientBGColorRow = rowCount++;
 
         showContactAvatar = rowCount++;
         avatarAlignTopRow = rowCount++;
@@ -399,6 +399,9 @@ public class ThemingChatActivity extends BaseFragment {
                         if (view instanceof TextCheckCell) {
                             ((TextCheckCell) view).setChecked(!b);
                         }
+                        if (listView != null) {
+                            listView.invalidateViews();
+                        }
 
                     } else if (i == memberColorCheckRow) {
                         boolean b = themePrefs.getBoolean( key, true);
@@ -474,6 +477,12 @@ public class ThemingChatActivity extends BaseFragment {
                             public void colorChanged(int color) {
                                 commitInt("chatSolidBGColor", color);
                                 ApplicationLoader.reloadWallpaper();
+                                /*AndroidUtilities.runOnUIThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        NotificationCenter.getInstance().postNotificationName(NotificationCenter.wallpaperChanged);
+                                    }
+                                });*/
                             }
 
                         },themePrefs.getInt("chatSolidBGColor", 0xffffffff), CENTER, 0, true);
@@ -488,7 +497,13 @@ public class ThemingChatActivity extends BaseFragment {
                             @Override
                             public void colorChanged(int color) {
                                 commitInt("chatGradientBGColor", color);
-                                ApplicationLoader.reloadWallpaper();
+                                /*ApplicationLoader.reloadWallpaper();
+                                AndroidUtilities.runOnUIThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        NotificationCenter.getInstance().postNotificationName(NotificationCenter.wallpaperChanged);
+                                    }
+                                });*/
                             }
                         },themePrefs.getInt( "chatGradientBGColor", 0xffffffff), CENTER, 0, false);
                         colorDialog.show();
@@ -508,7 +523,13 @@ public class ThemingChatActivity extends BaseFragment {
                             public void onClick(DialogInterface dialog, int which) {
                                 SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
                                 themePrefs.edit().putInt("chatGradientBG", which).commit();
-                                ApplicationLoader.reloadWallpaper();
+                                /*ApplicationLoader.reloadWallpaper();
+                                AndroidUtilities.runOnUIThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        NotificationCenter.getInstance().postNotificationName(NotificationCenter.wallpaperChanged);
+                                    }
+                                });*/
                                 if (listView != null) {
                                     listView.invalidateViews();
                                 }
@@ -1528,7 +1549,7 @@ public class ThemingChatActivity extends BaseFragment {
                     textCell.setTag("chatHeaderIconsColor");
                     textCell.setTextAndColor(LocaleController.getString("HeaderIconsColor", R.string.HeaderIconsColor), themePrefs.getInt(textCell.getTag().toString(), 0xffffffff), true);
                 } else if (i == solidBGColorRow) {
-                    textCell.setTextAndColor(LocaleController.getString("SolidBGColor", R.string.SolidBGColor), themePrefs.getBoolean("chatSolidBGColorCheck", false) ? themePrefs.getInt("chatSolidBGColor", 0xffffffff) : 0x00000000, true);
+                    textCell.setTextAndColor(LocaleController.getString("SolidBGColor", R.string.SolidBGColor), themePrefs.getBoolean("chatSolidBGColorCheck", false) ? themePrefs.getInt("chatSolidBGColor", 0xffffffff) : 0x00000000, false);
                 } else if (i == gradientBGColorRow) {
                     textCell.setTextAndColor(LocaleController.getString("RowGradientColor", R.string.RowGradientColor), themePrefs.getInt("chatGradientBG", 0) == 0 || !themePrefs.getBoolean("chatSolidBGColorCheck", false) ? 0x00000000 : themePrefs.getInt("chatGradientBGColor", 0xffffffff), true);
                 } else if (i == memberColorRow) {

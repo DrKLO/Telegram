@@ -633,7 +633,7 @@ public class ThemingContactsActivity extends BaseFragment {
                 if (i == headerColorRow) {
                     textCell.setTextAndColor(LocaleController.getString("HeaderColor", R.string.HeaderColor), themePrefs.getInt("contactsHeaderColor", AndroidUtilities.getIntColor("themeColor")), false);
                 } else if (i == headerGradientColorRow) {
-                    textCell.setTextAndColor(LocaleController.getString("HeaderColor", R.string.HeaderColor), themePrefs.getInt("contactsHeaderGradient", 0) == 0 ? 0x00000000 : themePrefs.getInt("contactsHeaderGradientColor", AndroidUtilities.getIntColor("themeColor")), true);
+                    textCell.setTextAndColor(LocaleController.getString("RowGradientColor", R.string.RowGradientColor), themePrefs.getInt("contactsHeaderGradient", 0) == 0 ? 0x00000000 : themePrefs.getInt("contactsHeaderGradientColor", AndroidUtilities.getIntColor("themeColor")), true);
                 } else if (i == headerTitleColorRow) {
                     textCell.setTextAndColor(LocaleController.getString("HeaderTitleColor", R.string.HeaderTitleColor), themePrefs.getInt("contactsHeaderTitleColor", 0xffffffff), true);
                 } else if (i == headerIconsColorRow) {

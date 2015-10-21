@@ -897,7 +897,7 @@
   <string name="formatDateAtTime">%1$s 的 %2$s</string>
   <!--update text--><!--
   <string name="updateText">Android 版的 Plus Messenger 已更新。最新版本 3.1 的新增功能有：\n\n- 在特定聊天中搜索消息内容。\n- 全新设计的附件选择菜单。从附件选择菜单中直接发送联系人资料或语音文件。\n- 改进的程序内媒体播放功能 （YouTube, Vimoe, Soundcloud 等）, 新播放器适用于大型语音文件。\n\n更多更新请查看：\nhttps://telegram.org/blog/search-and-media</string>-->
-  <string name="updateBuild">630</string>
+  <string name="updateBuild">632</string>
   <!--Telegram+--><!--
   <string name="updatePlusText">\n\n在 3.0.1.3 版的新功能：\n\n- 添加设置使用手机字体选项\n- 添加聊天/群组聊天内搜索聊天记录选项\n- 在设置/主题调整界面里添加标头颜色、标题颜色和标头图标颜色的设置\n- 添加主界面群组图标颜色的设置\n- 添加导航栏中头像大小的设置\n- 错误修复</string>-->
   <string name="TelegramForAndroid">Plus Messenger for Android</string>
@@ -944,7 +944,8 @@
   <string name="EditTextSize">输入栏字体大小</string>
   <string name="EditTextBGColor">输入栏背景颜色</string>
   <string name="EmojiViewBGColor">表情背景颜色</string>
-  <string name="EmojiViewTabColor">表情标签颜色</string>
+  <string name="EmojiViewTabColor">Emoji选择栏颜色</string>
+  <string name="EmojiViewTabIconColor">Emoji选择栏颜色</string>
   <string name="OnlineColor">在线中颜色</string>
   <string name="ChatMusic">音乐</string>
   <string name="SaveTheme">保存主题</string>
@@ -1004,7 +1005,7 @@
   <string name="KeepOriginalFilenameHelp">使用“名称_日期”格式保存文件，而不单只是数字序号</string>
   <string name="AvatarSize">头像大小</string>
   <string name="AvatarAlignTop">对齐头像到顶部</string>
-  <string name="AvatarMarginLeft">头像左边距</string>
+  <string name="AvatarMarginLeft">头像边距</string>
   <string name="GroupNameColor">群组名称颜色</string>
   <string name="GroupNameSize">群组名称大小</string>
   <string name="UnknownNameColor">姓名颜色（手机号码未知）</string>
@@ -1026,4 +1027,27 @@
   <string name="UseDeviceFont">使用设备自带字体</string>
   <string name="AppWillRestart">Plus Messenger 将重启</string>
   <string name="GroupIconColor">群组图标颜色</string>
+  <string name="SharedContactNameColor">已分享的联系人名称颜色</string>
+  <string name="AttachBGColor">附件背景颜色</string>
+  <string name="AttachTextColor">附件文字颜色</string>
+  <string name="ShowContactAvatar">在聊天界面显示联系人头像</string>
+  <string name="ShowOwnAvatar">在聊天界面显示自己的头像</string>
+  <string name="ShowOwnAvatarGroup">在群组界面显示自己的头像</string>
+  <string name="OwnAvatarAlignTop">对齐自己的头像到顶部</string>
+  <string name="DialogColor">对话框的标题/按钮颜色</string>
+  <string name="ShowUsername">同时显示用户名和昵称</string>
+  <string name="DisableAudioStop">不停止语音</string>
+  <string name="ListDividerColor">列表分隔线颜色</string>
+  <string name="CenterAvatar">居中头像、名称和电话号码</string>
+  <string name="RowGradient">渐变</string>
+  <string name="RowGradientColor">渐变颜色</string>
+  <string name="RowGradientDisabled">禁用</string>
+  <string name="RowGradientTopBottom">上下</string>
+  <string name="RowGradientLeftRight">左右</string>
+  <string name="RowGradientTLBR">左上右下</string>
+  <string name="RowGradientBLTR">左下右上</string>
+  <string name="RowGradientList">应用渐变色到列表背景</string>
+  <string name="Copied">%s 已复制到剪贴板</string>
+  <string name="JoinChannel">
+\n\n加入 Plus Messenger 官方频道： https://telegram.me/plusmsn</string>
 </resources>
