@@ -30,17 +30,17 @@ import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
 
-import org.telegram.android.AndroidUtilities;
-import org.telegram.android.MessagesController;
-import org.telegram.android.MessagesStorage;
-import org.telegram.android.NotificationsController;
+import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.MessagesStorage;
+import org.telegram.messenger.NotificationsController;
 import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLog;
-import org.telegram.android.LocaleController;
-import org.telegram.android.NotificationCenter;
+import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
-import org.telegram.messenger.TLRPC;
+import org.telegram.tgnet.ConnectionsManager;
+import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.Adapters.BaseFragmentAdapter;
 import org.telegram.ui.Cells.TextColorCell;
 import org.telegram.ui.Cells.TextDetailSettingsCell;
@@ -178,7 +178,7 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
                             editor.putInt("notify2_" + dialog_id, which);
                             MessagesStorage.getInstance().setDialogFlags(dialog_id, which == 2 ? 1 : 0);
                             editor.commit();
-                            TLRPC.TL_dialog dialog = MessagesController.getInstance().dialogs_dict.get(dialog_id);
+                            TLRPC.Dialog dialog = MessagesController.getInstance().dialogs_dict.get(dialog_id);
                             if (dialog != null) {
                                 dialog.notify_settings = new TLRPC.TL_peerNotifySettings();
                                 if (which == 2) {
@@ -448,7 +448,7 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
             SharedPreferences.Editor editor = preferences.edit();
 
             if (requestCode == 12) {
-                if (name != null && ringtone != null) {
+                if (name != null) {
                     editor.putString("sound_" + dialog_id, name);
                     editor.putString("sound_path_" + dialog_id, ringtone.toString());
                 } else {

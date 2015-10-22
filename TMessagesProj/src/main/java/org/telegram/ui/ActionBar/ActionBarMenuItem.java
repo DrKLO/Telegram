@@ -30,10 +30,10 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-import org.telegram.android.AndroidUtilities;
-import org.telegram.android.LocaleController;
+import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
-import org.telegram.android.AnimationCompat.ViewProxy;
+import org.telegram.messenger.AnimationCompat.ViewProxy;
 import org.telegram.ui.Components.FrameLayoutFixed;
 import org.telegram.ui.Components.LayoutHelper;
 
@@ -321,14 +321,14 @@ public class ActionBarMenuItem extends FrameLayoutFixed {
         popupWindow.startAnimation();
     }
 
-    public void openSearch() {
+    public void openSearch(boolean openKeyboard) {
         if (searchContainer == null || searchContainer.getVisibility() == VISIBLE || parentMenu == null) {
             return;
         }
-        parentMenu.parentActionBar.onSearchFieldVisibilityChanged(toggleSearch());
+        parentMenu.parentActionBar.onSearchFieldVisibilityChanged(toggleSearch(openKeyboard));
     }
 
-    public boolean toggleSearch() {
+    public boolean toggleSearch(boolean openKeyboard) {
         if (searchContainer == null) {
             return false;
         }
@@ -347,7 +347,9 @@ public class ActionBarMenuItem extends FrameLayoutFixed {
             setVisibility(GONE);
             searchField.setText("");
             searchField.requestFocus();
-            AndroidUtilities.showKeyboard(searchField);
+            if (openKeyboard) {
+                AndroidUtilities.showKeyboard(searchField);
+            }
             if (listener != null) {
                 listener.onSearchExpand();
             }

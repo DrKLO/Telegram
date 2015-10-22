@@ -13,13 +13,13 @@ import android.os.Build;
 import android.view.View;
 import android.view.ViewGroup;
 
-import org.telegram.android.AndroidUtilities;
-import org.telegram.android.LocaleController;
-import org.telegram.messenger.TLRPC;
-import org.telegram.android.ContactsController;
-import org.telegram.android.MessagesController;
+import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.LocaleController;
+import org.telegram.tgnet.TLRPC;
+import org.telegram.messenger.ContactsController;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
-import org.telegram.android.AnimationCompat.ViewProxy;
+import org.telegram.messenger.AnimationCompat.ViewProxy;
 import org.telegram.ui.Cells.DividerCell;
 import org.telegram.ui.Cells.GreySectionCell;
 import org.telegram.ui.Cells.LetterSectionCell;
@@ -32,16 +32,16 @@ import java.util.HashMap;
 public class ContactsAdapter extends BaseSectionsAdapter {
 
     private Context mContext;
-    private boolean onlyUsers;
+    private int onlyUsers;
     private boolean needPhonebook;
     private HashMap<Integer, TLRPC.User> ignoreUsers;
     private HashMap<Integer, ?> checkedMap;
     private boolean scrolling;
     private boolean isAdmin;
 
-    public ContactsAdapter(Context context, boolean arg1, boolean arg2, HashMap<Integer, TLRPC.User> arg3, boolean arg4) {
+    public ContactsAdapter(Context context, int onlyUsersType, boolean arg2, HashMap<Integer, TLRPC.User> arg3, boolean arg4) {
         mContext = context;
-        onlyUsers = arg1;
+        onlyUsers = onlyUsersType;
         needPhonebook = arg2;
         ignoreUsers = arg3;
         isAdmin = arg4;
@@ -57,9 +57,12 @@ public class ContactsAdapter extends BaseSectionsAdapter {
 
     @Override
     public Object getItem(int section, int position) {
-        if (onlyUsers && !isAdmin) {
-            if (section < ContactsController.getInstance().sortedUsersSectionsArray.size()) {
-                ArrayList<TLRPC.TL_contact> arr = ContactsController.getInstance().usersSectionsDict.get(ContactsController.getInstance().sortedUsersSectionsArray.get(section));
+        HashMap<String, ArrayList<TLRPC.TL_contact>> usersSectionsDict = onlyUsers == 2 ? ContactsController.getInstance().usersMutualSectionsDict : ContactsController.getInstance().usersSectionsDict;
+        ArrayList<String> sortedUsersSectionsArray = onlyUsers == 2 ? ContactsController.getInstance().sortedUsersMutualSectionsArray : ContactsController.getInstance().sortedUsersSectionsArray;
+
+        if (onlyUsers != 0 && !isAdmin) {
+            if (section < sortedUsersSectionsArray.size()) {
+                ArrayList<TLRPC.TL_contact> arr = usersSectionsDict.get(sortedUsersSectionsArray.get(section));
                 if (position < arr.size()) {
                     return MessagesController.getInstance().getUser(arr.get(position).user_id);
                 }
@@ -69,8 +72,8 @@ public class ContactsAdapter extends BaseSectionsAdapter {
             if (section == 0) {
                 return null;
             } else {
-                if (section - 1 < ContactsController.getInstance().sortedUsersSectionsArray.size()) {
-                    ArrayList<TLRPC.TL_contact> arr = ContactsController.getInstance().usersSectionsDict.get(ContactsController.getInstance().sortedUsersSectionsArray.get(section - 1));
+                if (section - 1 < sortedUsersSectionsArray.size()) {
+                    ArrayList<TLRPC.TL_contact> arr = usersSectionsDict.get(sortedUsersSectionsArray.get(section - 1));
                     if (position < arr.size()) {
                         return MessagesController.getInstance().getUser(arr.get(position).user_id);
                     }
@@ -86,8 +89,11 @@ public class ContactsAdapter extends BaseSectionsAdapter {
 
     @Override
     public boolean isRowEnabled(int section, int row) {
-        if (onlyUsers && !isAdmin) {
-            ArrayList<TLRPC.TL_contact> arr = ContactsController.getInstance().usersSectionsDict.get(ContactsController.getInstance().sortedUsersSectionsArray.get(section));
+        HashMap<String, ArrayList<TLRPC.TL_contact>> usersSectionsDict = onlyUsers == 2 ? ContactsController.getInstance().usersMutualSectionsDict : ContactsController.getInstance().usersSectionsDict;
+        ArrayList<String> sortedUsersSectionsArray = onlyUsers == 2 ? ContactsController.getInstance().sortedUsersMutualSectionsArray : ContactsController.getInstance().sortedUsersSectionsArray;
+
+        if (onlyUsers != 0 && !isAdmin) {
+            ArrayList<TLRPC.TL_contact> arr = usersSectionsDict.get(sortedUsersSectionsArray.get(section));
             return row < arr.size();
         } else {
             if (section == 0) {
@@ -101,8 +107,8 @@ public class ContactsAdapter extends BaseSectionsAdapter {
                     }
                 }
                 return true;
-            } else if (section - 1 < ContactsController.getInstance().sortedUsersSectionsArray.size()) {
-                ArrayList<TLRPC.TL_contact> arr = ContactsController.getInstance().usersSectionsDict.get(ContactsController.getInstance().sortedUsersSectionsArray.get(section - 1));
+            } else if (section - 1 < sortedUsersSectionsArray.size()) {
+                ArrayList<TLRPC.TL_contact> arr = usersSectionsDict.get(sortedUsersSectionsArray.get(section - 1));
                 return row < arr.size();
             }
         }
@@ -111,8 +117,9 @@ public class ContactsAdapter extends BaseSectionsAdapter {
 
     @Override
     public int getSectionCount() {
-        int count = ContactsController.getInstance().sortedUsersSectionsArray.size();
-        if (!onlyUsers) {
+        ArrayList<String> sortedUsersSectionsArray = onlyUsers == 2 ? ContactsController.getInstance().sortedUsersMutualSectionsArray : ContactsController.getInstance().sortedUsersSectionsArray;
+        int count = sortedUsersSectionsArray.size();
+        if (onlyUsers == 0) {
             count++;
         }
         if (isAdmin) {
@@ -126,11 +133,14 @@ public class ContactsAdapter extends BaseSectionsAdapter {
 
     @Override
     public int getCountForSection(int section) {
-        if (onlyUsers && !isAdmin) {
-            if (section < ContactsController.getInstance().sortedUsersSectionsArray.size()) {
-                ArrayList<TLRPC.TL_contact> arr = ContactsController.getInstance().usersSectionsDict.get(ContactsController.getInstance().sortedUsersSectionsArray.get(section));
+        HashMap<String, ArrayList<TLRPC.TL_contact>> usersSectionsDict = onlyUsers == 2 ? ContactsController.getInstance().usersMutualSectionsDict : ContactsController.getInstance().usersSectionsDict;
+        ArrayList<String> sortedUsersSectionsArray = onlyUsers == 2 ? ContactsController.getInstance().sortedUsersMutualSectionsArray : ContactsController.getInstance().sortedUsersSectionsArray;
+
+        if (onlyUsers != 0 && !isAdmin) {
+            if (section < sortedUsersSectionsArray.size()) {
+                ArrayList<TLRPC.TL_contact> arr = usersSectionsDict.get(sortedUsersSectionsArray.get(section));
                 int count = arr.size();
-                if (section != (ContactsController.getInstance().sortedUsersSectionsArray.size() - 1) || needPhonebook) {
+                if (section != (sortedUsersSectionsArray.size() - 1) || needPhonebook) {
                     count++;
                 }
                 return count;
@@ -142,10 +152,10 @@ public class ContactsAdapter extends BaseSectionsAdapter {
                 } else {
                     return 4;
                 }
-            } else if (section - 1 < ContactsController.getInstance().sortedUsersSectionsArray.size()) {
-                ArrayList<TLRPC.TL_contact> arr = ContactsController.getInstance().usersSectionsDict.get(ContactsController.getInstance().sortedUsersSectionsArray.get(section - 1));
+            } else if (section - 1 < sortedUsersSectionsArray.size()) {
+                ArrayList<TLRPC.TL_contact> arr = usersSectionsDict.get(sortedUsersSectionsArray.get(section - 1));
                 int count = arr.size();
-                if (section - 1 != (ContactsController.getInstance().sortedUsersSectionsArray.size() - 1) || needPhonebook) {
+                if (section - 1 != (sortedUsersSectionsArray.size() - 1) || needPhonebook) {
                     count++;
                 }
                 return count;
@@ -159,20 +169,23 @@ public class ContactsAdapter extends BaseSectionsAdapter {
 
     @Override
     public View getSectionHeaderView(int section, View convertView, ViewGroup parent) {
+        HashMap<String, ArrayList<TLRPC.TL_contact>> usersSectionsDict = onlyUsers == 2 ? ContactsController.getInstance().usersMutualSectionsDict : ContactsController.getInstance().usersSectionsDict;
+        ArrayList<String> sortedUsersSectionsArray = onlyUsers == 2 ? ContactsController.getInstance().sortedUsersMutualSectionsArray : ContactsController.getInstance().sortedUsersSectionsArray;
+
         if (convertView == null) {
             convertView = new LetterSectionCell(mContext);
         }
-        if (onlyUsers && !isAdmin) {
-            if (section < ContactsController.getInstance().sortedUsersSectionsArray.size()) {
-                ((LetterSectionCell) convertView).setLetter(ContactsController.getInstance().sortedUsersSectionsArray.get(section));
+        if (onlyUsers != 0 && !isAdmin) {
+            if (section < sortedUsersSectionsArray.size()) {
+                ((LetterSectionCell) convertView).setLetter(sortedUsersSectionsArray.get(section));
             } else {
                 ((LetterSectionCell) convertView).setLetter("");
             }
         } else {
             if (section == 0) {
                 ((LetterSectionCell) convertView).setLetter("");
-            } else if (section - 1 < ContactsController.getInstance().sortedUsersSectionsArray.size()) {
-                ((LetterSectionCell) convertView).setLetter(ContactsController.getInstance().sortedUsersSectionsArray.get(section - 1));
+            } else if (section - 1 < sortedUsersSectionsArray.size()) {
+                ((LetterSectionCell) convertView).setLetter(sortedUsersSectionsArray.get(section - 1));
             } else {
                 ((LetterSectionCell) convertView).setLetter("");
             }
@@ -208,7 +221,7 @@ public class ContactsAdapter extends BaseSectionsAdapter {
                 } else if (position == 1) {
                     actionCell.setTextAndIcon(LocaleController.getString("NewSecretChat", R.string.NewSecretChat), R.drawable.menu_secret);
                 } else if (position == 2) {
-                    actionCell.setTextAndIcon(LocaleController.getString("NewBroadcastList", R.string.NewBroadcastList), R.drawable.menu_broadcast);
+                    actionCell.setTextAndIcon(LocaleController.getString("NewChannel", R.string.NewChannel), R.drawable.menu_broadcast);
                 }
             }
         } else if (type == 1) {
@@ -229,11 +242,14 @@ public class ContactsAdapter extends BaseSectionsAdapter {
                 ((UserCell) convertView).setStatusColors(0xffa8a8a8, 0xff3b84c0);
             }
 
-            ArrayList<TLRPC.TL_contact> arr = ContactsController.getInstance().usersSectionsDict.get(ContactsController.getInstance().sortedUsersSectionsArray.get(section - (onlyUsers && !isAdmin ? 0 : 1)));
+            HashMap<String, ArrayList<TLRPC.TL_contact>> usersSectionsDict = onlyUsers == 2 ? ContactsController.getInstance().usersMutualSectionsDict : ContactsController.getInstance().usersSectionsDict;
+            ArrayList<String> sortedUsersSectionsArray = onlyUsers == 2 ? ContactsController.getInstance().sortedUsersMutualSectionsArray : ContactsController.getInstance().sortedUsersSectionsArray;
+
+            ArrayList<TLRPC.TL_contact> arr = usersSectionsDict.get(sortedUsersSectionsArray.get(section - (onlyUsers != 0 && !isAdmin ? 0 : 1)));
             TLRPC.User user = MessagesController.getInstance().getUser(arr.get(position).user_id);
-            ((UserCell)convertView).setData(user, null, null, 0);
+            ((UserCell) convertView).setData(user, null, null, 0);
             if (checkedMap != null) {
-                ((UserCell) convertView).setChecked(checkedMap.containsKey(user.id), !scrolling  && Build.VERSION.SDK_INT > 10);
+                ((UserCell) convertView).setChecked(checkedMap.containsKey(user.id), !scrolling && Build.VERSION.SDK_INT > 10);
             }
             if (ignoreUsers != null) {
                 if (ignoreUsers.containsKey(user.id)) {
@@ -248,8 +264,10 @@ public class ContactsAdapter extends BaseSectionsAdapter {
 
     @Override
     public int getItemViewType(int section, int position) {
-        if (onlyUsers && !isAdmin) {
-            ArrayList<TLRPC.TL_contact> arr = ContactsController.getInstance().usersSectionsDict.get(ContactsController.getInstance().sortedUsersSectionsArray.get(section));
+        HashMap<String, ArrayList<TLRPC.TL_contact>> usersSectionsDict = onlyUsers == 2 ? ContactsController.getInstance().usersMutualSectionsDict : ContactsController.getInstance().usersSectionsDict;
+        ArrayList<String> sortedUsersSectionsArray = onlyUsers == 2 ? ContactsController.getInstance().sortedUsersMutualSectionsArray : ContactsController.getInstance().sortedUsersSectionsArray;
+        if (onlyUsers != 0 && !isAdmin) {
+            ArrayList<TLRPC.TL_contact> arr = usersSectionsDict.get(sortedUsersSectionsArray.get(section));
             return position < arr.size() ? 0 : 4;
         } else {
             if (section == 0) {
@@ -263,8 +281,8 @@ public class ContactsAdapter extends BaseSectionsAdapter {
                     }
                 }
                 return 2;
-            } else if (section - 1 < ContactsController.getInstance().sortedUsersSectionsArray.size()) {
-                ArrayList<TLRPC.TL_contact> arr = ContactsController.getInstance().usersSectionsDict.get(ContactsController.getInstance().sortedUsersSectionsArray.get(section - 1));
+            } else if (section - 1 < sortedUsersSectionsArray.size()) {
+                ArrayList<TLRPC.TL_contact> arr = usersSectionsDict.get(sortedUsersSectionsArray.get(section - 1));
                 return position < arr.size() ? 0 : 4;
             }
         }

@@ -19,13 +19,13 @@ import android.text.TextUtils;
 import android.view.MotionEvent;
 import android.view.SoundEffectConstants;
 
-import org.telegram.android.AndroidUtilities;
-import org.telegram.android.ImageLoader;
-import org.telegram.android.MediaController;
-import org.telegram.android.MessageObject;
-import org.telegram.android.SendMessagesHelper;
+import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ImageLoader;
+import org.telegram.messenger.MediaController;
+import org.telegram.messenger.MessageObject;
+import org.telegram.messenger.SendMessagesHelper;
 import org.telegram.messenger.FileLoader;
-import org.telegram.messenger.TLRPC;
+import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.Components.RadialProgress;
 import org.telegram.ui.Components.ResourceLoader;
 import org.telegram.ui.Components.SeekBar;
@@ -315,12 +315,12 @@ public class ChatMusicCell extends ChatBaseCell implements SeekBar.SeekBarDelega
     protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
         super.onLayout(changed, left, top, right, bottom);
 
-        if (currentMessageObject.isOut()) {
+        if (currentMessageObject.isOutOwner()) {
             seekBarX = layoutWidth - backgroundWidth + AndroidUtilities.dp(52);
             buttonX = layoutWidth - backgroundWidth + AndroidUtilities.dp(13);
             timeX = layoutWidth - backgroundWidth + AndroidUtilities.dp(63);
         } else {
-            if (isChat) {
+            if (isChat && currentMessageObject.messageOwner.from_id > 0) {
                 seekBarX = AndroidUtilities.dp(113);
                 buttonX = AndroidUtilities.dp(74);
                 timeX = AndroidUtilities.dp(124);
@@ -345,12 +345,12 @@ public class ChatMusicCell extends ChatBaseCell implements SeekBar.SeekBarDelega
         boolean dataChanged = currentMessageObject == messageObject && isUserDataChanged();
         if (currentMessageObject != messageObject || dataChanged) {
             if (AndroidUtilities.isTablet()) {
-                backgroundWidth = Math.min(AndroidUtilities.getMinTabletSide() - AndroidUtilities.dp(isChat ? 102 : 50), AndroidUtilities.dp(300));
+                backgroundWidth = Math.min(AndroidUtilities.getMinTabletSide() - AndroidUtilities.dp(isChat && messageObject.messageOwner.from_id > 0 ? 102 : 50), AndroidUtilities.dp(300));
             } else {
-                backgroundWidth = Math.min(AndroidUtilities.displaySize.x - AndroidUtilities.dp(isChat ? 102 : 50), AndroidUtilities.dp(300));
+                backgroundWidth = Math.min(AndroidUtilities.displaySize.x - AndroidUtilities.dp(isChat && messageObject.messageOwner.from_id > 0 ? 102 : 50), AndroidUtilities.dp(300));
             }
 
-            if (messageObject.isOut()) {
+            if (messageObject.isOutOwner()) {
                 seekBar.type = 0;
                 radialProgress.setProgressColor(0xff87bf78);
             } else {
@@ -378,7 +378,7 @@ public class ChatMusicCell extends ChatBaseCell implements SeekBar.SeekBarDelega
     }
 
     private Drawable getDrawableForCurrentState() {
-        return ResourceLoader.audioStatesDrawable[currentMessageObject.isOut() ? buttonState : buttonState + 5][0];
+        return ResourceLoader.audioStatesDrawable[currentMessageObject.isOutOwner() ? buttonState : buttonState + 5][0];
         //buttonPressed ? 1 :
     }
 
@@ -390,7 +390,7 @@ public class ChatMusicCell extends ChatBaseCell implements SeekBar.SeekBarDelega
             return;
         }
 
-        if (currentMessageObject.isOut()) {
+        if (currentMessageObject.isOutOwner()) {
             timePaint.setColor(0xff70b15c);
         } else {
             timePaint.setColor(0xffa1aab3);

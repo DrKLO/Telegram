@@ -26,11 +26,11 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import org.telegram.android.AndroidUtilities;
-import org.telegram.android.LocaleController;
-import org.telegram.android.MediaController;
-import org.telegram.android.NotificationCenter;
-import org.telegram.android.support.widget.LinearLayoutManager;
+import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MediaController;
+import org.telegram.messenger.NotificationCenter;
+import org.telegram.messenger.support.widget.LinearLayoutManager;
 import org.telegram.messenger.R;
 import org.telegram.ui.Adapters.PhotoAttachAdapter;
 import org.telegram.ui.Cells.PhotoAttachPhotoCell;

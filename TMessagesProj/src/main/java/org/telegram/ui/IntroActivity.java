@@ -27,8 +27,8 @@ import android.view.animation.AnimationUtils;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import org.telegram.android.AndroidUtilities;
-import org.telegram.android.LocaleController;
+import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 
 public class IntroActivity extends Activity {
@@ -129,7 +129,7 @@ public class IntroActivity extends Activity {
         viewPager.setAdapter(new IntroAdapter());
         viewPager.setPageMargin(0);
         viewPager.setOffscreenPageLimit(1);
-        viewPager.setOnPageChangeListener(new ViewPager.OnPageChangeListener() {
+        viewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
             @Override
             public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
 
@@ -289,20 +289,12 @@ public class IntroActivity extends Activity {
         }
 
         @Override
-        public void finishUpdate(View arg0) {
-        }
-
-        @Override
         public void restoreState(Parcelable arg0, ClassLoader arg1) {
         }
 
         @Override
         public Parcelable saveState() {
             return null;
-        }
-
-        @Override
-        public void startUpdate(View arg0) {
         }
 
         @Override

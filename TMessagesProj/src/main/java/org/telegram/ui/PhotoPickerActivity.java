@@ -33,24 +33,24 @@ import android.widget.TextView;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
-import org.telegram.android.AndroidUtilities;
-import org.telegram.android.LocaleController;
-import org.telegram.android.MediaController;
-import org.telegram.android.MessagesStorage;
-import org.telegram.android.NotificationCenter;
-import org.telegram.android.volley.AuthFailureError;
-import org.telegram.android.volley.Request;
-import org.telegram.android.volley.RequestQueue;
-import org.telegram.android.volley.Response;
-import org.telegram.android.volley.VolleyError;
-import org.telegram.android.volley.toolbox.JsonObjectRequest;
-import org.telegram.android.volley.toolbox.Volley;
+import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MediaController;
+import org.telegram.messenger.MessagesStorage;
+import org.telegram.messenger.NotificationCenter;
+import org.telegram.messenger.volley.AuthFailureError;
+import org.telegram.messenger.volley.Request;
+import org.telegram.messenger.volley.RequestQueue;
+import org.telegram.messenger.volley.Response;
+import org.telegram.messenger.volley.VolleyError;
+import org.telegram.messenger.volley.toolbox.JsonObjectRequest;
+import org.telegram.messenger.volley.toolbox.Volley;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
-import org.telegram.messenger.TLRPC;
-import org.telegram.android.MessageObject;
+import org.telegram.tgnet.TLRPC;
+import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.ActionBar.ActionBarMenu;
@@ -432,7 +432,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
             listAdapter.notifyDataSetChanged();
         }
         if (searchItem != null) {
-            searchItem.openSearch();
+            searchItem.openSearch(true);
             getParentActivity().getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN);
         }
         fixLayout();
