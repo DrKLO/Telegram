@@ -17,9 +17,9 @@ import android.os.Bundle;
 import android.view.View;
 import android.view.ViewGroup;
 
-import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
+import org.telegram.tgnet.ConnectionsManager;
 
 public class BaseFragment {
 
@@ -138,7 +138,7 @@ public class BaseFragment {
     }
 
     public void onFragmentDestroy() {
-        ConnectionsManager.getInstance().cancelRpcsForClassGuid(classGuid);
+        ConnectionsManager.getInstance().cancelRequestsForGuid(classGuid);
         isFinished = true;
         if (actionBar != null) {
             actionBar.setEnabled(false);
@@ -243,7 +243,11 @@ public class BaseFragment {
     }
 
     public Dialog showDialog(Dialog dialog) {
-        if (dialog == null || parentLayout == null || parentLayout.animationInProgress || parentLayout.startedTracking || parentLayout.checkTransitionAnimation()) {
+        return showDialog(dialog, false);
+    }
+
+    public Dialog showDialog(Dialog dialog, boolean allowInTransition) {
+        if (dialog == null || parentLayout == null || parentLayout.animationInProgress || parentLayout.startedTracking || !allowInTransition && parentLayout.checkTransitionAnimation()) {
             return null;
         }
         try {
@@ -260,8 +264,8 @@ public class BaseFragment {
             visibleDialog.setOnDismissListener(new DialogInterface.OnDismissListener() {
                 @Override
                 public void onDismiss(DialogInterface dialog) {
+                    onDialogDismiss(visibleDialog);
                     visibleDialog = null;
-                    onDialogDismiss();
                 }
             });
             visibleDialog.show();
@@ -272,7 +276,7 @@ public class BaseFragment {
         return null;
     }
 
-    protected void onDialogDismiss() {
+    protected void onDialogDismiss(Dialog dialog) {
 
     }
 

@@ -15,6 +15,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
 import android.text.Editable;
+import android.text.InputFilter;
 import android.text.InputType;
 import android.text.TextWatcher;
 import android.util.TypedValue;
@@ -27,14 +28,15 @@ import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 
-import org.telegram.android.AndroidUtilities;
-import org.telegram.messenger.ConnectionsManager;
-import org.telegram.android.LocaleController;
-import org.telegram.android.MessagesStorage;
-import org.telegram.messenger.TLRPC;
+import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ChatObject;
+import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MessagesStorage;
+import org.telegram.tgnet.ConnectionsManager;
+import org.telegram.tgnet.TLRPC;
 import org.telegram.messenger.FileLog;
-import org.telegram.android.MessagesController;
-import org.telegram.android.NotificationCenter;
+import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.ui.Adapters.BaseFragmentAdapter;
 import org.telegram.ui.Cells.GreySectionCell;
@@ -66,13 +68,13 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
     private AvatarUpdater avatarUpdater = new AvatarUpdater();
     private ProgressDialog progressDialog = null;
     private String nameToSet = null;
-    private boolean isBroadcast = false;
+    private int chatType = ChatObject.CHAT_TYPE_CHAT;
 
     private final static int done_button = 1;
 
     public GroupCreateFinalActivity(Bundle args) {
         super(args);
-        isBroadcast = args.getBoolean("broadcast", false);
+        chatType = args.getInt("chatType", ChatObject.CHAT_TYPE_CHAT);
         avatarDrawable = new AvatarDrawable();
     }
 
@@ -141,7 +143,7 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
     public View createView(Context context) {
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBar.setAllowOverlayTitle(true);
-        if (isBroadcast) {
+        if (chatType == ChatObject.CHAT_TYPE_BROADCAST) {
             actionBar.setTitle(LocaleController.getString("NewBroadcastList", R.string.NewBroadcastList));
         } else {
             actionBar.setTitle(LocaleController.getString("NewGroup", R.string.NewGroup));
@@ -161,8 +163,8 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
                     }
                     donePressed = true;
 
-                    if (isBroadcast) {
-                        MessagesController.getInstance().createChat(nameTextView.getText().toString(), selectedContacts, isBroadcast);
+                    if (chatType == ChatObject.CHAT_TYPE_BROADCAST) {
+                        MessagesController.getInstance().createChat(nameTextView.getText().toString(), selectedContacts, null, chatType);
                     } else {
                         if (avatarUpdater.uploadingAvatar != null) {
                             createAfterUpload = true;
@@ -172,12 +174,12 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
                             progressDialog.setCanceledOnTouchOutside(false);
                             progressDialog.setCancelable(false);
 
-                            final long reqId = MessagesController.getInstance().createChat(nameTextView.getText().toString(), selectedContacts, isBroadcast);
+                            final int reqId = MessagesController.getInstance().createChat(nameTextView.getText().toString(), selectedContacts, null, chatType);
 
                             progressDialog.setButton(DialogInterface.BUTTON_NEGATIVE, LocaleController.getString("Cancel", R.string.Cancel), new DialogInterface.OnClickListener() {
                                 @Override
                                 public void onClick(DialogInterface dialog, int which) {
-                                    ConnectionsManager.getInstance().cancelRpc(reqId, true);
+                                    ConnectionsManager.getInstance().cancelRequest(reqId, true);
                                     donePressed = false;
                                     try {
                                         dialog.dismiss();
@@ -210,7 +212,7 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
 
         avatarImage = new BackupImageView(context);
         avatarImage.setRoundRadius(AndroidUtilities.dp(32));
-        avatarDrawable.setInfo(5, null, null, isBroadcast);
+        avatarDrawable.setInfo(5, null, null, chatType == ChatObject.CHAT_TYPE_BROADCAST);
         avatarImage.setImageDrawable(avatarDrawable);
         frameLayout.addView(avatarImage);
         FrameLayout.LayoutParams layoutParams1 = (FrameLayout.LayoutParams) avatarImage.getLayoutParams();
@@ -222,7 +224,7 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
         layoutParams1.rightMargin = LocaleController.isRTL ? AndroidUtilities.dp(16) : 0;
         layoutParams1.gravity = Gravity.TOP | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
         avatarImage.setLayoutParams(layoutParams1);
-        if (!isBroadcast) {
+        if (chatType != ChatObject.CHAT_TYPE_BROADCAST) {
             avatarDrawable.setDrawPhoto(true);
             avatarImage.setOnClickListener(new View.OnClickListener() {
                 @Override
@@ -260,7 +262,7 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
         }
 
         nameTextView = new EditText(context);
-        nameTextView.setHint(isBroadcast ? LocaleController.getString("EnterListName", R.string.EnterListName) : LocaleController.getString("EnterGroupNamePlaceholder", R.string.EnterGroupNamePlaceholder));
+        nameTextView.setHint(chatType == ChatObject.CHAT_TYPE_CHAT ? LocaleController.getString("EnterGroupNamePlaceholder", R.string.EnterGroupNamePlaceholder) : LocaleController.getString("EnterListName", R.string.EnterListName));
         if (nameToSet != null) {
             nameTextView.setText(nameToSet);
             nameToSet = null;
@@ -272,6 +274,9 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
         nameTextView.setImeOptions(EditorInfo.IME_FLAG_NO_EXTRACT_UI);
         nameTextView.setInputType(InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
         nameTextView.setPadding(0, 0, 0, AndroidUtilities.dp(8));
+        InputFilter[] inputFilters = new InputFilter[1];
+        inputFilters[0] = new InputFilter.LengthFilter(100);
+        nameTextView.setFilters(inputFilters);
         AndroidUtilities.clearCursorDrawable(nameTextView);
         nameTextView.setTextColor(0xff212121);
         frameLayout.addView(nameTextView);
@@ -282,7 +287,7 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
         layoutParams1.rightMargin = LocaleController.isRTL ? AndroidUtilities.dp(96) : AndroidUtilities.dp(16);
         layoutParams1.gravity = Gravity.CENTER_VERTICAL;
         nameTextView.setLayoutParams(layoutParams1);
-        if (!isBroadcast) {
+        if (chatType != ChatObject.CHAT_TYPE_BROADCAST) {
             nameTextView.addTextChangedListener(new TextWatcher() {
                 @Override
                 public void beforeTextChanged(CharSequence s, int start, int count, int after) {
@@ -296,7 +301,7 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
 
                 @Override
                 public void afterTextChanged(Editable s) {
-                    avatarDrawable.setInfo(5, nameTextView.length() > 0 ? nameTextView.getText().toString() : null, null, isBroadcast);
+                    avatarDrawable.setInfo(5, nameTextView.length() > 0 ? nameTextView.getText().toString() : null, null, false);
                     avatarImage.invalidate();
                 }
             });
@@ -330,7 +335,7 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
                 avatarImage.setImage(avatar, "50_50", avatarDrawable);
                 if (createAfterUpload) {
                     FileLog.e("tmessages", "avatar did uploaded");
-                    MessagesController.getInstance().createChat(nameTextView.getText().toString(), selectedContacts, false);
+                    MessagesController.getInstance().createChat(nameTextView.getText().toString(), selectedContacts, null, chatType);
                 }
             }
         });

@@ -13,6 +13,7 @@ import android.animation.StateListAnimator;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.Dialog;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -26,6 +27,7 @@ import android.graphics.Outline;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.text.Html;
 import android.text.Spannable;
 import android.text.TextUtils;
@@ -47,31 +49,31 @@ import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 
-import org.telegram.android.AndroidUtilities;
-import org.telegram.android.AnimationCompat.AnimatorListenerAdapterProxy;
-import org.telegram.android.AnimationCompat.AnimatorSetProxy;
-import org.telegram.android.AnimationCompat.ObjectAnimatorProxy;
+import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.AnimationCompat.AnimatorListenerAdapterProxy;
+import org.telegram.messenger.AnimationCompat.AnimatorSetProxy;
+import org.telegram.messenger.AnimationCompat.ObjectAnimatorProxy;
 import org.telegram.PhoneFormat.PhoneFormat;
-import org.telegram.android.MediaController;
-import org.telegram.android.UserObject;
+import org.telegram.messenger.MediaController;
+import org.telegram.messenger.UserObject;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BuildVars;
-import org.telegram.android.LocaleController;
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.FileLoader;
-import org.telegram.messenger.SerializedData;
-import org.telegram.messenger.TLObject;
-import org.telegram.messenger.TLRPC;
-import org.telegram.messenger.ConnectionsManager;
+import org.telegram.tgnet.ConnectionsManager;
+import org.telegram.tgnet.RequestDelegate;
+import org.telegram.tgnet.SerializedData;
+import org.telegram.tgnet.TLObject;
+import org.telegram.tgnet.TLRPC;
 import org.telegram.messenger.FileLog;
-import org.telegram.android.MessagesController;
-import org.telegram.android.MessagesStorage;
-import org.telegram.android.NotificationCenter;
+import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.MessagesStorage;
+import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
-import org.telegram.messenger.RPCRequest;
 import org.telegram.messenger.UserConfig;
-import org.telegram.android.MessageObject;
+import org.telegram.messenger.MessageObject;
 import org.telegram.ui.Adapters.BaseFragmentAdapter;
-import org.telegram.android.AnimationCompat.ViewProxy;
+import org.telegram.messenger.AnimationCompat.ViewProxy;
 import org.telegram.ui.Cells.TextInfoCell;
 import org.telegram.ui.Cells.EmptyCell;
 import org.telegram.ui.Cells.HeaderCell;
@@ -145,7 +147,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
 
     private static class LinkMovementMethodMy extends LinkMovementMethod {
         @Override
-        public boolean onTouchEvent(TextView widget, Spannable buffer, MotionEvent event) {
+        public boolean onTouchEvent(@NonNull TextView widget, @NonNull Spannable buffer, @NonNull MotionEvent event) {
             try {
                 return super.onTouchEvent(widget, buffer, event);
             } catch (Exception e) {
@@ -167,7 +169,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 req.crop = new TLRPC.TL_inputPhotoCropAuto();
                 req.file = file;
                 req.geo_point = new TLRPC.TL_inputGeoPointEmpty();
-                ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
+                ConnectionsManager.getInstance().sendRequest(req, new RequestDelegate() {
                     @Override
                     public void run(TLObject response, TLRPC.TL_error error) {
                         if (error == null) {
@@ -180,9 +182,6 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                                 MessagesController.getInstance().putUser(user, false);
                             } else {
                                 UserConfig.setCurrentUser(user);
-                            }
-                            if (user == null) {
-                                return;
                             }
                             TLRPC.TL_photos_photo photo = (TLRPC.TL_photos_photo) response;
                             ArrayList<TLRPC.PhotoSize> sizes = photo.photo.sizes;
@@ -319,7 +318,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
 
         fragmentView = new FrameLayout(context) {
             @Override
-            protected boolean drawChild(Canvas canvas, View child, long drawingTime) {
+            protected boolean drawChild(@NonNull Canvas canvas, @NonNull View child, long drawingTime) {
                 if (child == listView) {
                     boolean result = super.drawChild(canvas, child, drawingTime);
                     if (parentLayout != null) {
@@ -495,7 +494,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                         FileLog.e("tmessages", e);
                     }
                 } else if (i == contactsReimportRow) {
-
+                    //not implemented
                 } else if (i == contactsSortRow) {
                     if (getParentActivity() == null) {
                         return;
@@ -690,7 +689,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
     }
 
     @Override
-    protected void onDialogDismiss() {
+    protected void onDialogDismiss(Dialog dialog) {
         MediaController.getInstance().checkAutodownloadSettings();
     }
 
@@ -794,7 +793,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             progressDialog.setCancelable(false);
             progressDialog.show();
             TLRPC.TL_help_getSupport req = new TLRPC.TL_help_getSupport();
-            ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
+            ConnectionsManager.getInstance().sendRequest(req, new RequestDelegate() {
                 @Override
                 public void run(TLObject response, TLRPC.TL_error error) {
                     if (error == null) {

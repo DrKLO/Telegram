@@ -12,8 +12,8 @@ import android.content.Context;
 import android.view.View;
 import android.view.ViewGroup;
 
-import org.telegram.android.MediaController;
-import org.telegram.android.support.widget.RecyclerView;
+import org.telegram.messenger.MediaController;
+import org.telegram.messenger.support.widget.RecyclerView;
 import org.telegram.ui.Cells.PhotoAttachPhotoCell;
 
 import java.util.HashMap;

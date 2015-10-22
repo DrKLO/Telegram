@@ -46,35 +46,35 @@ import android.widget.ListView;
 import android.widget.Scroller;
 import android.widget.TextView;
 
-import org.telegram.android.AndroidUtilities;
-import org.telegram.android.ImageLoader;
-import org.telegram.android.MessagesStorage;
-import org.telegram.android.UserObject;
-import org.telegram.android.query.SharedMediaQuery;
+import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ImageLoader;
+import org.telegram.messenger.MessagesStorage;
+import org.telegram.messenger.UserObject;
+import org.telegram.messenger.query.SharedMediaQuery;
 import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
-import org.telegram.android.LocaleController;
-import org.telegram.android.MediaController;
-import org.telegram.android.MessagesController;
-import org.telegram.android.NotificationCenter;
+import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MediaController;
+import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
-import org.telegram.messenger.TLRPC;
+import org.telegram.tgnet.ConnectionsManager;
+import org.telegram.tgnet.TLRPC;
 import org.telegram.messenger.UserConfig;
-import org.telegram.android.MessageObject;
+import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.Adapters.MentionsAdapter;
-import org.telegram.android.AnimationCompat.AnimatorListenerAdapterProxy;
-import org.telegram.android.AnimationCompat.AnimatorSetProxy;
-import org.telegram.android.AnimationCompat.ObjectAnimatorProxy;
-import org.telegram.android.AnimationCompat.ViewProxy;
+import org.telegram.messenger.AnimationCompat.AnimatorListenerAdapterProxy;
+import org.telegram.messenger.AnimationCompat.AnimatorSetProxy;
+import org.telegram.messenger.AnimationCompat.ObjectAnimatorProxy;
+import org.telegram.messenger.AnimationCompat.ViewProxy;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.Components.CheckBox;
 import org.telegram.ui.Components.ClippingImageView;
-import org.telegram.android.ImageReceiver;
+import org.telegram.messenger.ImageReceiver;
 import org.telegram.ui.Components.GifDrawable;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.PhotoCropView;
@@ -171,7 +171,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
     private boolean isFirstLoading;
     private boolean needSearchImageInArr;
     private boolean loadingMoreImages;
-    private boolean cacheEndReached;
+    private boolean endReached;
     private boolean opennedFromMedia;
 
     private boolean draggingDown = false;
@@ -744,12 +744,11 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             }
         } else if (id == NotificationCenter.mediaDidLoaded) {
             long uid = (Long) args[0];
-            int guid = (Integer) args[4];
+            int guid = (Integer) args[3];
             if (uid == currentDialogId && guid == classGuid) {
                 loadingMoreImages = false;
                 ArrayList<MessageObject> arr = (ArrayList<MessageObject>) args[2];
-                boolean fromCache = (Boolean) args[3];
-                cacheEndReached = !fromCache;
+                endReached = (Boolean) args[5];
                 if (needSearchImageInArr) {
                     if (arr.isEmpty()) {
                         needSearchImageInArr = false;
@@ -796,7 +795,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                         }
                         setImageIndex(foundIndex, true);
                     } else {
-                        if (!cacheEndReached || !arr.isEmpty() && added != 0) {
+                        if (!endReached || !arr.isEmpty() && added != 0) {
                             loadingMoreImages = true;
                             if (opennedFromMedia) {
                                 SharedMediaQuery.loadMedia(currentDialogId, 0, 100, imagesArrTemp.get(imagesArrTemp.size() - 1).getId(), SharedMediaQuery.MEDIA_PHOTOVIDEO, true, classGuid);
@@ -817,9 +816,6 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                             }
                             imagesByIds.put(message.getId(), message);
                         }
-                    }
-                    if (arr.isEmpty() && !fromCache) {
-                        totalImagesCount = arr.size();
                     }
                     if (opennedFromMedia) {
                         if (added == 0) {
@@ -1004,7 +1000,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                                         encryptedChat = MessagesController.getInstance().getEncryptedChat((int) (obj.getDialogId() >> 32));
                                     }
 
-                                    MessagesController.getInstance().deleteMessages(arr, random_ids, encryptedChat);
+                                    MessagesController.getInstance().deleteMessages(arr, random_ids, encryptedChat, obj.messageOwner.to_id.channel_id);
                                     closePhoto(false, false);
                                 }
                             } else if (!avatarsArr.isEmpty()) {
@@ -2189,7 +2185,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         isFirstLoading = true;
         needSearchImageInArr = false;
         loadingMoreImages = false;
-        cacheEndReached = false;
+        endReached = false;
         opennedFromMedia = false;
         needCaptionLayout = false;
         canShowBottom = true;
@@ -2248,19 +2244,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             if (!(messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaWebPage) && (messageObject.messageOwner.action == null || messageObject.messageOwner.action instanceof TLRPC.TL_messageActionEmpty)) {
                 needSearchImageInArr = true;
                 imagesByIds.put(messageObject.getId(), messageObject);
-                if (messageObject.messageOwner.dialog_id != 0) {
-                    currentDialogId = messageObject.messageOwner.dialog_id;
-                } else {
-                    if (messageObject.messageOwner.to_id.chat_id != 0) {
-                        currentDialogId = -messageObject.messageOwner.to_id.chat_id;
-                    } else {
-                        if (messageObject.messageOwner.to_id.user_id == UserConfig.getClientUserId()) {
-                            currentDialogId = messageObject.messageOwner.from_id;
-                        } else {
-                            currentDialogId = messageObject.messageOwner.to_id.user_id;
-                        }
-                    }
-                }
+                currentDialogId = messageObject.getDialogId();
                 menuItem.showSubItem(gallery_menu_showall);
             } else {
                 menuItem.hideSubItem(gallery_menu_showall);
@@ -2295,15 +2279,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                     closePhoto(false, false);
                     return;
                 }
-                if (messageObject.messageOwner.to_id.chat_id != 0) {
-                    currentDialogId = -messageObject.messageOwner.to_id.chat_id;
-                } else {
-                    if (messageObject.messageOwner.to_id.user_id == UserConfig.getClientUserId()) {
-                        currentDialogId = messageObject.messageOwner.from_id;
-                    } else {
-                        currentDialogId = messageObject.messageOwner.to_id.user_id;
-                    }
-                }
+                currentDialogId = messageObject.getDialogId();
             }
             setImageIndex(index, true);
         } else if (photos != null) {
@@ -2367,17 +2343,30 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         boolean sameImage = false;
 
         if (!imagesArr.isEmpty()) {
-            menuItem.showSubItem(gallery_menu_delete);
             if (currentIndex < 0 || currentIndex >= imagesArr.size()) {
                 closePhoto(false, false);
                 return;
             }
             currentMessageObject = imagesArr.get(currentIndex);
-            TLRPC.User user = MessagesController.getInstance().getUser(currentMessageObject.messageOwner.from_id);
-            if (user != null) {
-                nameTextView.setText(UserObject.getUserName(user));
+            if (currentMessageObject.canDeleteMessage(null)) {
+                menuItem.showSubItem(gallery_menu_delete);
             } else {
-                nameTextView.setText("");
+                menuItem.hideSubItem(gallery_menu_delete);
+            }
+            if (currentMessageObject.messageOwner.from_id > 0) {
+                TLRPC.User user = MessagesController.getInstance().getUser(currentMessageObject.messageOwner.from_id);
+                if (user != null) {
+                    nameTextView.setText(UserObject.getUserName(user));
+                } else {
+                    nameTextView.setText("");
+                }
+            } else {
+                TLRPC.Chat chat = MessagesController.getInstance().getChat(-currentMessageObject.messageOwner.from_id);
+                if (chat != null) {
+                    nameTextView.setText(chat.title);
+                } else {
+                    nameTextView.setText("");
+                }
             }
             long date = (long) currentMessageObject.messageOwner.date * 1000;
             String dateString = LocaleController.formatString("formatDateAtTime", R.string.formatDateAtTime, LocaleController.formatterYear.format(new Date(date)), LocaleController.formatterDay.format(new Date(date)));
@@ -2393,14 +2382,14 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 if (opennedFromMedia) {
                     if (imagesArr.size() < totalImagesCount && !loadingMoreImages && currentIndex > imagesArr.size() - 5) {
                         MessageObject lastMessage = imagesArr.get(imagesArr.size() - 1);
-                        SharedMediaQuery.loadMedia(currentDialogId, 0, 100, lastMessage.getId(), SharedMediaQuery.MEDIA_PHOTOVIDEO, !cacheEndReached, classGuid);
+                        SharedMediaQuery.loadMedia(currentDialogId, 0, 100, lastMessage.getId(), SharedMediaQuery.MEDIA_PHOTOVIDEO, true, classGuid);
                         loadingMoreImages = true;
                     }
                     actionBar.setTitle(LocaleController.formatString("Of", R.string.Of, currentIndex + 1, totalImagesCount));
                 } else {
                     if (imagesArr.size() < totalImagesCount && !loadingMoreImages && currentIndex < 5) {
                         MessageObject lastMessage = imagesArr.get(0);
-                        SharedMediaQuery.loadMedia(currentDialogId, 0, 100, lastMessage.getId(), SharedMediaQuery.MEDIA_PHOTOVIDEO, !cacheEndReached, classGuid);
+                        SharedMediaQuery.loadMedia(currentDialogId, 0, 100, lastMessage.getId(), SharedMediaQuery.MEDIA_PHOTOVIDEO, true, classGuid);
                         loadingMoreImages = true;
                     }
                     actionBar.setTitle(LocaleController.formatString("Of", R.string.Of, (totalImagesCount - imagesArr.size()) + currentIndex + 1, totalImagesCount));
@@ -3042,7 +3031,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.mediaDidLoaded);
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.userPhotosLoaded);
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.emojiDidLoaded);
-        ConnectionsManager.getInstance().cancelRpcsForClassGuid(classGuid);
+        ConnectionsManager.getInstance().cancelRequestsForGuid(classGuid);
 
         isActionBarVisible = false;
 
@@ -3050,7 +3039,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             velocityTracker.recycle();
             velocityTracker = null;
         }
-        ConnectionsManager.getInstance().cancelRpcsForClassGuid(classGuid);
+        ConnectionsManager.getInstance().cancelRequestsForGuid(classGuid);
 
         final PlaceProviderObject object = placeProvider.getPlaceForPhoto(currentMessageObject, currentFileLocation, currentIndex);
 

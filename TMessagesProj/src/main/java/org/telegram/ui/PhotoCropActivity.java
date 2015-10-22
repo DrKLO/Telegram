@@ -20,10 +20,10 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.widget.FrameLayout;
 
-import org.telegram.android.AndroidUtilities;
-import org.telegram.android.ImageLoader;
+import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ImageLoader;
 import org.telegram.messenger.FileLog;
-import org.telegram.android.LocaleController;
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;

@@ -8,7 +8,8 @@
 
 package org.telegram.messenger;
 
-import org.telegram.android.AndroidUtilities;
+import org.telegram.tgnet.TLObject;
+import org.telegram.tgnet.TLRPC;
 
 import java.io.File;
 import java.util.ArrayList;

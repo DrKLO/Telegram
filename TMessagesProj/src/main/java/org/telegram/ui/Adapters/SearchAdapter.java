@@ -12,13 +12,14 @@ import android.content.Context;
 import android.view.View;
 import android.view.ViewGroup;
 
-import org.telegram.android.AndroidUtilities;
-import org.telegram.android.LocaleController;
+import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
-import org.telegram.messenger.TLRPC;
-import org.telegram.android.ContactsController;
+import org.telegram.tgnet.TLObject;
+import org.telegram.tgnet.TLRPC;
+import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.FileLog;
-import org.telegram.android.MessagesController;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.Cells.GreySectionCell;
@@ -31,6 +32,7 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 public class SearchAdapter extends BaseSearchAdapter {
+
     private Context mContext;
     private HashMap<Integer, TLRPC.User> ignoreUsers;
     private ArrayList<TLRPC.User> searchResult = new ArrayList<>();
@@ -39,11 +41,15 @@ public class SearchAdapter extends BaseSearchAdapter {
     private Timer searchTimer;
     private boolean allowUsernameSearch;
     private boolean useUserCell;
+    private boolean onlyMutual;
+    private boolean allowChats;
 
-    public SearchAdapter(Context context, HashMap<Integer, TLRPC.User> arg1, boolean usernameSearch) {
+    public SearchAdapter(Context context, HashMap<Integer, TLRPC.User> arg1, boolean usernameSearch, boolean mutual, boolean chats) {
         mContext = context;
         ignoreUsers = arg1;
+        onlyMutual = mutual;
         allowUsernameSearch = usernameSearch;
+        allowChats = chats;
     }
 
     public void setCheckedMap(HashMap<Integer, ?> map) {
@@ -66,7 +72,7 @@ public class SearchAdapter extends BaseSearchAdapter {
             searchResult.clear();
             searchResultNames.clear();
             if (allowUsernameSearch) {
-                queryServerSearch(null);
+                queryServerSearch(null, allowChats);
             }
             notifyDataSetChanged();
         } else {
@@ -91,7 +97,7 @@ public class SearchAdapter extends BaseSearchAdapter {
             @Override
             public void run() {
                 if (allowUsernameSearch) {
-                    queryServerSearch(query);
+                    queryServerSearch(query, allowChats);
                 }
                 final ArrayList<TLRPC.TL_contact> contactsCopy = new ArrayList<>();
                 contactsCopy.addAll(ContactsController.getInstance().contacts);
@@ -118,7 +124,7 @@ public class SearchAdapter extends BaseSearchAdapter {
 
                         for (TLRPC.TL_contact contact : contactsCopy) {
                             TLRPC.User user = MessagesController.getInstance().getUser(contact.user_id);
-                            if (user.id == UserConfig.getClientUserId()) {
+                            if (user.id == UserConfig.getClientUserId() || onlyMutual && (user.flags & TLRPC.USER_FLAG_MUTUAL_CONTACT) == 0) {
                                 continue;
                             }
 
@@ -198,7 +204,7 @@ public class SearchAdapter extends BaseSearchAdapter {
     }
 
     @Override
-    public TLRPC.User getItem(int i) {
+    public TLObject getItem(int i) {
         int localCount = searchResult.size();
         int globalCount = globalSearch.size();
         if (i >= 0 && i < localCount) {
@@ -238,41 +244,51 @@ public class SearchAdapter extends BaseSearchAdapter {
                 }
             }
 
-            TLRPC.User user = getItem(i);
-            if (user != null) {
+            TLObject object = getItem(i);
+            if (object != null) {
+                int id = 0;
+                String un = null;
+                if (object instanceof TLRPC.User) {
+                    un = ((TLRPC.User) object).username;
+                    id = ((TLRPC.User) object).id;
+                } else if (object instanceof TLRPC.Chat) {
+                    un = ((TLRPC.Chat) object).username;
+                    id = ((TLRPC.Chat) object).id;
+                }
+
                 CharSequence username = null;
                 CharSequence name = null;
                 if (i < searchResult.size()) {
                     name = searchResultNames.get(i);
-                    if (name != null && user != null && user.username != null && user.username.length() > 0) {
-                        if (name.toString().startsWith("@" + user.username)) {
+                    if (name != null && un != null && un.length() > 0) {
+                        if (name.toString().startsWith("@" + un)) {
                             username = name;
                             name = null;
                         }
                     }
-                } else if (i > searchResult.size() && user.username != null) {
+                } else if (i > searchResult.size() && un != null) {
                     String foundUserName = lastFoundUsername;
                     if (foundUserName.startsWith("@")) {
                         foundUserName = foundUserName.substring(1);
                     }
                     try {
-                        username = AndroidUtilities.replaceTags(String.format("<c#ff4d83b3>@%s</c>%s", user.username.substring(0, foundUserName.length()), user.username.substring(foundUserName.length())));
+                        username = AndroidUtilities.replaceTags(String.format("<c#ff4d83b3>@%s</c>%s", un.substring(0, foundUserName.length()), un.substring(foundUserName.length())));
                     } catch (Exception e) {
-                        username = user.username;
+                        username = un;
                         FileLog.e("tmessages", e);
                     }
                 }
 
                 if (useUserCell) {
-                    ((UserCell) view).setData(user, name, username, 0);
+                    ((UserCell) view).setData(object, name, username, 0);
                     if (checkedMap != null) {
-                        ((UserCell) view).setChecked(checkedMap.containsKey(user.id), false);
+                        ((UserCell) view).setChecked(checkedMap.containsKey(id), false);
                     }
                 } else {
-                    ((ProfileSearchCell) view).setData(user, null, null, name, username, false);
+                    ((ProfileSearchCell) view).setData(object, null, name, username, false);
                     ((ProfileSearchCell) view).useSeparator = (i != getCount() - 1 && i != searchResult.size() - 1);
                     if (ignoreUsers != null) {
-                        if (ignoreUsers.containsKey(user.id)) {
+                        if (ignoreUsers.containsKey(id)) {
                             ((ProfileSearchCell) view).drawAlpha = 0.5f;
                         } else {
                             ((ProfileSearchCell) view).drawAlpha = 1.0f;

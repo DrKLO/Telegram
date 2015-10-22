@@ -38,20 +38,21 @@ import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
-import org.telegram.android.AndroidUtilities;
-import org.telegram.android.LocaleController;
-import org.telegram.android.MediaController;
-import org.telegram.android.MessagesController;
-import org.telegram.android.query.SharedMediaQuery;
+import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ChatObject;
+import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MediaController;
+import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.query.SharedMediaQuery;
 import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
-import org.telegram.messenger.RPCRequest;
-import org.telegram.messenger.TLObject;
-import org.telegram.messenger.TLRPC;
-import org.telegram.android.MessageObject;
-import org.telegram.android.NotificationCenter;
+import org.telegram.tgnet.ConnectionsManager;
+import org.telegram.tgnet.RequestDelegate;
+import org.telegram.tgnet.TLObject;
+import org.telegram.tgnet.TLRPC;
+import org.telegram.messenger.MessageObject;
+import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.ActionBar.ActionBarMenu;
@@ -61,8 +62,8 @@ import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.Adapters.BaseFragmentAdapter;
 import org.telegram.ui.Adapters.BaseSectionsAdapter;
-import org.telegram.android.AnimationCompat.AnimatorSetProxy;
-import org.telegram.android.AnimationCompat.ObjectAnimatorProxy;
+import org.telegram.messenger.AnimationCompat.AnimatorSetProxy;
+import org.telegram.messenger.AnimationCompat.ObjectAnimatorProxy;
 import org.telegram.ui.Cells.GreySectionCell;
 import org.telegram.ui.Cells.LoadingCell;
 import org.telegram.ui.Cells.SharedDocumentCell;
@@ -105,6 +106,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
     private boolean searching;
 
     private HashMap<Integer, MessageObject> selectedFiles = new HashMap<>();
+    private int cantDeleteMessagesCount;
     private ArrayList<View> actionModeViews = new ArrayList<>();
     private boolean scrolling;
 
@@ -120,7 +122,6 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
         private int totalCount;
         private boolean loading;
         private boolean endReached;
-        private boolean cacheEndReached;
         private int max_id;
 
         public boolean addMessage(MessageObject messageObject, boolean isNew, boolean enc) {
@@ -242,6 +243,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                     finishFragment();
                 } else if (id == -2) {
                     selectedFiles.clear();
+                    cantDeleteMessagesCount = 0;
                     actionBar.hideActionMode();
                     listView.invalidateViews();
                 } else if (id == shared_media_item) {
@@ -275,6 +277,13 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                             ArrayList<Integer> ids = new ArrayList<>(selectedFiles.keySet());
                             ArrayList<Long> random_ids = null;
                             TLRPC.EncryptedChat currentEncryptedChat = null;
+                            int channelId = 0;
+                            if (!ids.isEmpty()) {
+                                MessageObject msg = selectedFiles.get(ids.get(0));
+                                if (channelId == 0 && msg.messageOwner.to_id.channel_id != 0) {
+                                    channelId = msg.messageOwner.to_id.channel_id;
+                                }
+                            }
                             if ((int) dialog_id == 0) {
                                 currentEncryptedChat = MessagesController.getInstance().getEncryptedChat((int) (dialog_id >> 32));
                             }
@@ -287,10 +296,11 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                                     }
                                 }
                             }
-                            MessagesController.getInstance().deleteMessages(ids, random_ids, currentEncryptedChat);
+                            MessagesController.getInstance().deleteMessages(ids, random_ids, currentEncryptedChat, channelId);
                             actionBar.hideActionMode();
                             actionBar.closeSearchField();
                             selectedFiles.clear();
+                            cantDeleteMessagesCount = 0;
                         }
                     });
                     builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
@@ -322,6 +332,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                                     }
                                 }
                                 selectedFiles.clear();
+                                cantDeleteMessagesCount = 0;
                                 actionBar.hideActionMode();
 
                                 NotificationCenter.getInstance().postNotificationName(NotificationCenter.closeChats);
@@ -331,13 +342,6 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
 
                                 if (!AndroidUtilities.isTablet()) {
                                     removeSelfFromStack();
-                                    Activity parentActivity = getParentActivity();
-                                    if (parentActivity == null) {
-                                        parentActivity = chatActivity.getParentActivity();
-                                    }
-                                    if (parentActivity != null) {
-                                        parentActivity.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
-                                    }
                                 }
                             } else {
                                 fragment.finishFragment();
@@ -350,6 +354,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
         });
 
         selectedFiles.clear();
+        cantDeleteMessagesCount = 0;
         actionModeViews.clear();
 
         final ActionBarMenu menu = actionBar.createMenu();
@@ -500,7 +505,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                     } else {
                         type = SharedMediaQuery.MEDIA_URL;
                     }
-                    SharedMediaQuery.loadMedia(dialog_id, 0, 50, sharedMediaData[selectedMode].max_id, type, !sharedMediaData[selectedMode].cacheEndReached, classGuid);
+                    SharedMediaQuery.loadMedia(dialog_id, 0, 50, sharedMediaData[selectedMode].max_id, type, true, classGuid);
                 }
             }
         });
@@ -567,23 +572,17 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
     public void didReceivedNotification(int id, Object... args) {
         if (id == NotificationCenter.mediaDidLoaded) {
             long uid = (Long) args[0];
-            int guid = (Integer) args[4];
-            int type = (Integer) args[5];
+            int guid = (Integer) args[3];
             if (uid == dialog_id && guid == classGuid) {
+                int type = (Integer) args[4];
                 sharedMediaData[type].loading = false;
                 sharedMediaData[type].totalCount = (Integer) args[1];
                 ArrayList<MessageObject> arr = (ArrayList<MessageObject>) args[2];
-                boolean added = false;
                 boolean enc = ((int) dialog_id) == 0;
                 for (MessageObject message : arr) {
-                    if (sharedMediaData[type].addMessage(message, false, enc)) {
-                        added = true;
-                    }
+                    sharedMediaData[type].addMessage(message, false, enc);
                 }
-                if (!added) {
-                    sharedMediaData[type].endReached = true;
-                }
-                sharedMediaData[type].cacheEndReached = !(Boolean) args[3];
+                sharedMediaData[type].endReached = (Boolean) args[5];
                 if (progressView != null) {
                     progressView.setVisibility(View.GONE);
                 }
@@ -611,6 +610,18 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                 }
             }
         } else if (id == NotificationCenter.messagesDeleted) {
+            TLRPC.Chat currentChat = null;
+            if ((int) dialog_id < 0) {
+                currentChat = MessagesController.getInstance().getChat(-(int) dialog_id);
+            }
+            int channelId = (Integer) args[1];
+            if (ChatObject.isChannel(currentChat)) {
+                if (channelId == 0 || channelId != currentChat.id) {
+                    return;
+                }
+            } else if (channelId != 0) {
+                return;
+            }
             ArrayList<Integer> markAsDeletedMessages = (ArrayList<Integer>) args[0];
             boolean updated = false;
             for (Integer ids : markAsDeletedMessages) {
@@ -867,6 +878,10 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
             return false;
         }
         selectedFiles.put(item.getId(), item);
+        if (!item.canDeleteMessage(null)) {
+            cantDeleteMessagesCount++;
+        }
+        actionBar.createActionMode().getItem(delete).setVisibility(cantDeleteMessagesCount == 0 ? View.VISIBLE : View.GONE);
         selectedMessagesCountTextView.setText(String.format("%d", selectedFiles.size()));
         if (Build.VERSION.SDK_INT >= 11) {
             AnimatorSetProxy animatorSet = new AnimatorSetProxy();
@@ -903,14 +918,21 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
         if (actionBar.isActionModeShowed()) {
             if (selectedFiles.containsKey(message.getId())) {
                 selectedFiles.remove(message.getId());
+                if (!message.canDeleteMessage(null)) {
+                    cantDeleteMessagesCount--;
+                }
             } else {
                 selectedFiles.put(message.getId(), message);
+                if (!message.canDeleteMessage(null)) {
+                    cantDeleteMessagesCount++;
+                }
             }
             if (selectedFiles.isEmpty()) {
                 actionBar.hideActionMode();
             } else {
                 selectedMessagesCountTextView.setText(String.format("%d", selectedFiles.size()));
             }
+            actionBar.createActionMode().getItem(delete).setVisibility(cantDeleteMessagesCount == 0 ? View.VISIBLE : View.GONE);
             scrolling = false;
             if (view instanceof SharedDocumentCell) {
                 ((SharedDocumentCell) view).setChecked(selectedFiles.containsKey(message.getId()), true);
@@ -1392,7 +1414,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
         private ArrayList<MessageObject> searchResult = new ArrayList<>();
         private Timer searchTimer;
         protected ArrayList<MessageObject> globalSearch = new ArrayList<>();
-        private long reqId = 0;
+        private int reqId = 0;
         private int lastReqId;
         private int currentType;
 
@@ -1407,7 +1429,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                 return;
             }
             if (reqId != 0) {
-                ConnectionsManager.getInstance().cancelRpc(reqId, true);
+                ConnectionsManager.getInstance().cancelRequest(reqId, true);
                 reqId = 0;
             }
             if (query == null || query.length() == 0) {
@@ -1426,20 +1448,12 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                 req.filter = new TLRPC.TL_inputMessagesFilterUrl();
             }
             req.q = query;
-            if (uid < 0) {
-                req.peer = new TLRPC.TL_inputPeerChat();
-                req.peer.chat_id = -uid;
-            } else {
-                TLRPC.User user = MessagesController.getInstance().getUser(uid);
-                if (user == null) {
-                    return;
-                }
-                req.peer = new TLRPC.TL_inputPeerUser();
-                req.peer.access_hash = user.access_hash;
-                req.peer.user_id = uid;
+            req.peer = MessagesController.getInputPeer(uid);
+            if (req.peer == null) {
+                return;
             }
             final int currentReqId = ++lastReqId;
-            reqId = ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
+            reqId = ConnectionsManager.getInstance().sendRequest(req, new RequestDelegate() {
                 @Override
                 public void run(TLObject response, TLRPC.TL_error error) {
                     final ArrayList<MessageObject> messageObjects = new ArrayList<>();
@@ -1460,7 +1474,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                         }
                     });
                 }
-            }, true, RPCRequest.RPCRequestClassGeneric | RPCRequest.RPCRequestClassFailOnServerErrors);
+            }, ConnectionsManager.RequestFlagFailOnServerErrors);
             ConnectionsManager.getInstance().bindRequestToGuid(reqId, classGuid);
         }
 

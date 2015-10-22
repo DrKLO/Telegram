@@ -13,7 +13,7 @@ import android.graphics.Rect;
 import android.view.View;
 import android.widget.FrameLayout;
 
-import org.telegram.android.AndroidUtilities;
+import org.telegram.messenger.AndroidUtilities;
 
 public class SizeNotifierFrameLayoutPhoto extends FrameLayout {
 

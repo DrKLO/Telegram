@@ -20,7 +20,7 @@ import android.text.TextUtils;
 import android.view.Gravity;
 import android.view.View;
 
-import org.telegram.android.AndroidUtilities;
+import org.telegram.messenger.AndroidUtilities;
 
 public class SimpleTextView extends View {
 
