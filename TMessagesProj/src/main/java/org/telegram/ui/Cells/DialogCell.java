@@ -19,6 +19,9 @@ import android.text.TextPaint;
 import android.text.TextUtils;
 import android.view.MotionEvent;
 
+import com.finger2view.messenger.support.util.BiometryController;
+
+import org.apache.commons.lang.RandomStringUtils;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.LocaleController;
@@ -531,6 +534,11 @@ public class DialogCell extends BaseCell {
         }
 
         nameWidth = Math.max(AndroidUtilities.dp(12), nameWidth);
+
+        if(!BiometryController.getInstance().isUnlocked()){
+            nameString = RandomStringUtils.randomAlphabetic(nameString.length());
+        }
+
         CharSequence nameStringFinal = TextUtils.ellipsize(nameString.replace("\n", " "), currentNamePaint, nameWidth - AndroidUtilities.dp(12), TextUtils.TruncateAt.END);
         try {
             nameLayout = new StaticLayout(nameStringFinal, currentNamePaint, nameWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
@@ -585,6 +593,12 @@ public class DialogCell extends BaseCell {
             messageString = Emoji.replaceEmoji(mess, messagePaint.getFontMetricsInt(), AndroidUtilities.dp(17), false);
         }
         messageWidth = Math.max(AndroidUtilities.dp(12), messageWidth);
+
+
+        if(!BiometryController.getInstance().isUnlocked()){
+            messageString = RandomStringUtils.randomAlphabetic(messageString.length());
+        }
+
         CharSequence messageStringFinal = TextUtils.ellipsize(messageString, currentMessagePaint, messageWidth - AndroidUtilities.dp(12), TextUtils.TruncateAt.END);
         try {
             messageLayout = new StaticLayout(messageStringFinal, currentMessagePaint, messageWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);

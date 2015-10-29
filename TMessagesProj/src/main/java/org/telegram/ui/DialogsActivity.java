@@ -33,6 +33,8 @@ import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
+import com.finger2view.messenger.support.util.BiometryController;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.LocaleController;
@@ -80,6 +82,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     private LinearLayout emptyView;
     private ActionBarMenuItem passcodeItem;
     private ImageView floatingButton;
+    private ImageView unlockButton;
 
     private int prevPosition;
     private int prevTop;
@@ -595,6 +598,36 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 Bundle args = new Bundle();
                 args.putBoolean("destroyAfterSelect", true);
                 presentFragment(new ContactsActivity(args));
+            }
+        });
+
+
+        //Temp button
+
+        unlockButton = new ImageView(context);
+        unlockButton.setVisibility(onlySelect ? View.GONE : View.VISIBLE);
+        unlockButton.setScaleType(ImageView.ScaleType.CENTER);
+        unlockButton.setBackgroundResource(R.drawable.floating_states);
+        unlockButton.setImageResource(R.drawable.floating_locker);
+        if (Build.VERSION.SDK_INT >= 21) {
+            StateListAnimator animator = new StateListAnimator();
+            animator.addState(new int[]{android.R.attr.state_pressed}, ObjectAnimator.ofFloat(unlockButton, "translationZ", AndroidUtilities.dp(2), AndroidUtilities.dp(4)).setDuration(200));
+            animator.addState(new int[]{}, ObjectAnimator.ofFloat(unlockButton, "translationZ", AndroidUtilities.dp(4), AndroidUtilities.dp(2)).setDuration(200));
+            unlockButton.setStateListAnimator(animator);
+            unlockButton.setOutlineProvider(new ViewOutlineProvider() {
+                @SuppressLint("NewApi")
+                @Override
+                public void getOutline(View view, Outline outline) {
+                    outline.setOval(0, 0, AndroidUtilities.dp(56), AndroidUtilities.dp(56));
+                }
+            });
+        }
+        frameLayout.addView(unlockButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.BOTTOM, LocaleController.isRTL ? 14 : 0, 0, LocaleController.isRTL ? 0 : 14, 14));
+        unlockButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                BiometryController.getInstance().setUnlocked(!BiometryController.getInstance().isUnlocked());
+                listView.getAdapter().notifyDataSetChanged();
             }
         });
 

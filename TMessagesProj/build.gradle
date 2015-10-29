@@ -10,6 +10,7 @@ dependencies {
     compile 'net.hockeyapp.android:HockeySDK:3.5.+'
     compile 'com.googlecode.mp4parser:isoparser:1.0.+'
     compile 'org.apache.httpcomponents:httpmime:4.2.1'
+    compile 'commons-lang:commons-lang:2.6'
 }
 
 android {

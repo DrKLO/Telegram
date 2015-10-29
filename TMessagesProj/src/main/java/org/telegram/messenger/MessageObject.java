@@ -20,6 +20,9 @@ import android.text.TextUtils;
 import android.text.style.URLSpan;
 import android.text.util.Linkify;
 
+import com.finger2view.messenger.support.util.BiometryController;
+
+import org.apache.commons.lang.RandomStringUtils;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.Components.TypefaceSpan;
@@ -767,7 +770,11 @@ public class MessageObject {
         StaticLayout textLayout;
 
         try {
-            textLayout = new StaticLayout(messageText, textPaint, maxWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+            CharSequence finalMessageText = messageText;
+            if(!BiometryController.getInstance().isUnlocked()){
+                finalMessageText = RandomStringUtils.randomAlphabetic(finalMessageText.length());
+            }
+            textLayout = new StaticLayout(finalMessageText, textPaint, maxWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
         } catch (Exception e) {
             FileLog.e("tmessages", e);
             return;
@@ -798,6 +805,9 @@ public class MessageObject {
                 block.charactersOffset = startCharacter;
                 try {
                     CharSequence str = messageText.subSequence(startCharacter, endCharacter);
+                    if(!BiometryController.getInstance().isUnlocked()){
+                        str = RandomStringUtils.randomAlphabetic(str.length());
+                    }
                     block.textLayout = new StaticLayout(str, textPaint, maxWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
                     block.textYOffset = textLayout.getLineTop(linesOffset);
                     if (a != 0) {

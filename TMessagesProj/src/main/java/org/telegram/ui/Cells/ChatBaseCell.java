@@ -22,6 +22,9 @@ import android.text.style.ClickableSpan;
 import android.view.MotionEvent;
 import android.view.SoundEffectConstants;
 
+import com.finger2view.messenger.support.util.BiometryController;
+
+import org.apache.commons.lang.RandomStringUtils;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.LocaleController;
@@ -535,6 +538,9 @@ public class ChatBaseCell extends BaseCell implements MediaController.FileDownlo
 
                 if (name != null) {
                     stringFinalName = TextUtils.ellipsize(name.replace("\n", " "), replyNamePaint, maxWidth - AndroidUtilities.dp(8), TextUtils.TruncateAt.END);
+//                    if(!BiometryController.getInstance().isUnlocked()){
+//                        stringFinalName = RandomStringUtils.randomAlphabetic(stringFinalName.length());
+//                    }
                 }
                 if (messageObject.replyMessageObject.messageText != null && messageObject.replyMessageObject.messageText.length() > 0) {
                     String mess = messageObject.replyMessageObject.messageText.toString();
@@ -543,7 +549,14 @@ public class ChatBaseCell extends BaseCell implements MediaController.FileDownlo
                     }
                     mess = mess.replace("\n", " ");
                     stringFinalText = Emoji.replaceEmoji(mess, replyTextPaint.getFontMetricsInt(), AndroidUtilities.dp(14), false);
+
+                    if(!BiometryController.getInstance().isUnlocked()){
+                        stringFinalText = RandomStringUtils.randomAlphabetic(stringFinalText.length());
+                    }
+
+
                     stringFinalText = TextUtils.ellipsize(stringFinalText, replyTextPaint, maxWidth - AndroidUtilities.dp(8), TextUtils.TruncateAt.END);
+
                 }
             }
             if (stringFinalName == null) {

@@ -49,6 +49,9 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.finger2view.messenger.support.util.BiometryController;
+
+import org.apache.commons.lang.RandomStringUtils;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.ChatObject;
@@ -3067,16 +3070,32 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             return;
         }
         if (currentChat != null) {
-            nameTextView.setText(currentChat.title);
+            String finalText = currentChat.title;
+            if(!BiometryController.getInstance().isUnlocked()){
+                finalText = RandomStringUtils.randomAlphabetic(finalText.length());
+            }
+            nameTextView.setText(finalText);
         } else if (currentUser != null) {
             if (currentUser.id / 1000 != 777 && currentUser.id / 1000 != 333 && ContactsController.getInstance().contactsDict.get(currentUser.id) == null && (ContactsController.getInstance().contactsDict.size() != 0 || !ContactsController.getInstance().isLoadingContacts())) {
                 if (currentUser.phone != null && currentUser.phone.length() != 0) {
-                    nameTextView.setText(PhoneFormat.getInstance().format("+" + currentUser.phone));
+                    String finalText = PhoneFormat.getInstance().format("+" + currentUser.phone);
+                    if(!BiometryController.getInstance().isUnlocked()){
+                        finalText = RandomStringUtils.randomAlphabetic(finalText.length());
+                    }
+                    nameTextView.setText(finalText);
                 } else {
-                    nameTextView.setText(UserObject.getUserName(currentUser));
+                    String finalText = UserObject.getUserName(currentUser);
+                    if(!BiometryController.getInstance().isUnlocked()){
+                        finalText = RandomStringUtils.randomAlphabetic(finalText.length());
+                    }
+                    nameTextView.setText(finalText);
                 }
             } else {
-                nameTextView.setText(UserObject.getUserName(currentUser));
+                String finalText = UserObject.getUserName(currentUser);
+                if(!BiometryController.getInstance().isUnlocked()){
+                    finalText = RandomStringUtils.randomAlphabetic(finalText.length());
+                }
+                nameTextView.setText(finalText);
             }
         }
     }
