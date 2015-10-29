@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 1.7.x.
+ * This is the source code of Telegram for Android v. 3.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2014.
+ * Copyright Nikolai Kudashov, 2013-2015.
  */
 
 package org.telegram.ui.Cells;
@@ -21,6 +21,7 @@ import android.view.MotionEvent;
 
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
@@ -43,6 +44,7 @@ public class ProfileSearchCell extends BaseCell {
     private static Drawable broadcastDrawable;
     private static Drawable groupDrawable;
     private static Drawable countDrawable;
+    private static Drawable checkDrawable;
     private static Paint linePaint;
 
     private CharSequence currentName;
@@ -77,6 +79,8 @@ public class ProfileSearchCell extends BaseCell {
     private int countLeft;
     private int countWidth;
     private StaticLayout countLayout;
+
+    private boolean drawCheck;
 
     private int onlineLeft;
     private StaticLayout onlineLayout;
@@ -115,6 +119,7 @@ public class ProfileSearchCell extends BaseCell {
             lockDrawable = getResources().getDrawable(R.drawable.list_secret);
             groupDrawable = getResources().getDrawable(R.drawable.list_group);
             countDrawable = getResources().getDrawable(R.drawable.dialogs_badge);
+            checkDrawable = getResources().getDrawable(R.drawable.check_list);
         }
 
         avatarImage = new ImageReceiver(this);
@@ -182,6 +187,7 @@ public class ProfileSearchCell extends BaseCell {
         drawNameBroadcast = false;
         drawNameLock = false;
         drawNameGroup = false;
+        drawCheck = false;
 
         if (encryptedChat != null) {
             drawNameLock = true;
@@ -202,9 +208,15 @@ public class ProfileSearchCell extends BaseCell {
                     nameLockTop = AndroidUtilities.dp(28.5f);
                 } else {
                     dialog_id = -chat.id;
-                    drawNameGroup = true;
-                    nameLockTop = AndroidUtilities.dp(30);
+                    if (ChatObject.isChannel(chat)) {
+                        drawNameBroadcast = true;
+                        nameLockTop = AndroidUtilities.dp(28.5f);
+                    } else {
+                        drawNameGroup = true;
+                        nameLockTop = AndroidUtilities.dp(30);
+                    }
                 }
+                drawCheck = (chat.flags & TLRPC.CHAT_FLAG_IS_VERIFIED) != 0;
                 if (!LocaleController.isRTL) {
                     nameLockLeft = AndroidUtilities.dp(AndroidUtilities.leftBaseline);
                     nameLeft = AndroidUtilities.dp(AndroidUtilities.leftBaseline + 4) + (drawNameGroup ? groupDrawable.getIntrinsicWidth() : broadcastDrawable.getIntrinsicWidth());
@@ -487,6 +499,14 @@ public class ProfileSearchCell extends BaseCell {
             canvas.translate(nameLeft, nameTop);
             nameLayout.draw(canvas);
             canvas.restore();
+            if (drawCheck) {
+                if (LocaleController.isRTL) {
+                    setDrawableBounds(checkDrawable, nameLeft - AndroidUtilities.dp(4) - checkDrawable.getIntrinsicWidth(), nameLockTop);
+                } else {
+                    setDrawableBounds(checkDrawable, nameLeft + (int) nameLayout.getLineWidth(0) + AndroidUtilities.dp(4), nameLockTop);
+                }
+                checkDrawable.draw(canvas);
+            }
         }
 
         if (onlineLayout != null) {

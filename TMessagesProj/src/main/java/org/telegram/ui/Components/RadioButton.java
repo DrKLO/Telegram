@@ -1,5 +1,5 @@
 /*
- * This is the source code of Telegram for Android v. 2.x.x.
+ * This is the source code of Telegram for Android v. 3.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
@@ -9,8 +9,12 @@
 package org.telegram.ui.Components;
 
 import android.content.Context;
+import android.graphics.Bitmap;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffXfermode;
 import android.view.View;
 
 import org.telegram.messenger.AndroidUtilities;
@@ -18,7 +22,10 @@ import org.telegram.messenger.AnimationCompat.ObjectAnimatorProxy;
 
 public class RadioButton extends View {
 
+    private Bitmap bitmap;
+    private Canvas bitmapCanvas;
     private static Paint paint;
+    private static Paint eraser;
     private static Paint checkedPaint;
 
     private int checkedColor = 0xffd7e8f7;
@@ -26,13 +33,10 @@ public class RadioButton extends View {
 
     private float progress;
     private ObjectAnimatorProxy checkAnimator;
-    private boolean isCheckAnimation = true;
 
     private boolean attachedToWindow;
     private boolean isChecked;
     private int size = AndroidUtilities.dp(16);
-
-    private final static float progressBounceDiff = 0.2f;
 
     public RadioButton(Context context) {
         super(context);
@@ -41,7 +45,13 @@ public class RadioButton extends View {
             paint.setStrokeWidth(AndroidUtilities.dp(2));
             paint.setStyle(Paint.Style.STROKE);
             checkedPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+            eraser = new Paint(Paint.ANTI_ALIAS_FLAG);
+            eraser.setColor(0);
+            eraser.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.CLEAR));
         }
+
+        bitmap = Bitmap.createBitmap(AndroidUtilities.dp(size), AndroidUtilities.dp(size), Bitmap.Config.ARGB_4444);
+        bitmapCanvas = new Canvas(bitmap);
     }
 
     public void setProgress(float value) {
@@ -57,6 +67,9 @@ public class RadioButton extends View {
     }
 
     public void setSize(int value) {
+        if (size == value) {
+            return;
+        }
         size = value;
     }
 
@@ -72,7 +85,6 @@ public class RadioButton extends View {
     }
 
     private void animateToCheckedState(boolean newCheckedState) {
-        isCheckAnimation = newCheckedState;
         checkAnimator = ObjectAnimatorProxy.ofFloatProxy(this, "progress", newCheckedState ? 1 : 0);
         checkAnimator.setDuration(300);
         checkAnimator.start();
@@ -110,14 +122,41 @@ public class RadioButton extends View {
 
     @Override
     protected void onDraw(Canvas canvas) {
-        if (getVisibility() != VISIBLE) {
-            return;
+        if (bitmap == null || bitmap.getWidth() != getMeasuredWidth()) {
+            if (bitmap != null) {
+                bitmap.recycle();
+            }
+            bitmap = Bitmap.createBitmap(getMeasuredWidth(), getMeasuredHeight(), Bitmap.Config.ARGB_8888);
+            bitmapCanvas = new Canvas(bitmap);
         }
-        paint.setColor(isChecked ? checkedColor : color);
-        checkedPaint.setColor(checkedColor);
-        canvas.drawCircle(getMeasuredWidth() / 2, getMeasuredHeight() / 2, size / 2 - AndroidUtilities.dp(1), paint);
-        if (isChecked) {
-            canvas.drawCircle(getMeasuredWidth() / 2, getMeasuredHeight() / 2, size / 4, checkedPaint);
+        float circleProgress;
+        float innerRad;
+        if (progress <= 0.5f) {
+            paint.setColor(color);
+            checkedPaint.setColor(color);
+            circleProgress = progress / 0.5f;
+        } else {
+            circleProgress = 2.0f - progress / 0.5f;
+            int r1 = Color.red(color);
+            int rD = (int) ((Color.red(checkedColor) - r1) * (1.0f - circleProgress));
+            int g1 = Color.green(color);
+            int gD = (int) ((Color.green(checkedColor) - g1) * (1.0f - circleProgress));
+            int b1 = Color.blue(color);
+            int bD = (int) ((Color.blue(checkedColor) - b1) * (1.0f - circleProgress));
+            int c = Color.rgb(r1 + rD, g1 + gD, b1 + bD);
+            paint.setColor(c);
+            checkedPaint.setColor(c);
         }
+        bitmap.eraseColor(0);
+        float rad = size / 2 - (1 + circleProgress) * AndroidUtilities.density;
+        bitmapCanvas.drawCircle(getMeasuredWidth() / 2, getMeasuredHeight() / 2, rad, paint);
+        if (progress <= 0.5f) {
+            bitmapCanvas.drawCircle(getMeasuredWidth() / 2, getMeasuredHeight() / 2, (rad - AndroidUtilities.dp(1)), checkedPaint);
+            bitmapCanvas.drawCircle(getMeasuredWidth() / 2, getMeasuredHeight() / 2, (rad - AndroidUtilities.dp(1)) * (1.0f - circleProgress), eraser);
+        } else {
+            bitmapCanvas.drawCircle(getMeasuredWidth() / 2, getMeasuredHeight() / 2, size / 4 + (rad - AndroidUtilities.dp(1) - size / 4) * circleProgress, checkedPaint);
+        }
+
+        canvas.drawBitmap(bitmap, 0, 0, null);
     }
 }

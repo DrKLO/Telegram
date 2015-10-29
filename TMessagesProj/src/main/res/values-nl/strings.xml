@@ -101,9 +101,9 @@
     <string name="ChannelAdministrators">Beheerders</string>
     <string name="ChannelDelete">Kanaal verwijderen</string>
     <string name="ChannelDeleteMenu">Kanaal verwijderen</string>
-    <string name="ChannelDeleteAlert">Kanaal echt verwijderen? Berichten worden gewist en alle deelnemers worden verwijderd.</string>
+    <string name="ChannelDeleteAlert">Kanaal echt verwijderen? Berichten worden gewist en alle deelnemers verwijderd.</string>
     <string name="ChannelLeaveAlert">Kanaal echt verlaten?</string>
-    <string name="ChannelDeleteInfo">Je raakt alle berichten in de kanaal kwijt.</string>
+    <string name="ChannelDeleteInfo">Je raakt alle berichten in dit kanaal kwijt.</string>
     <string name="ChannelEdit">Wijzig</string>
     <string name="ChannelWasPrivateAlert">Als je een publieke link voor je kanaal instelt kan iedereen deze vinden en deelnemen via de zoekfunctie.\n\nStel geen link in als je je kanaal privé wilt houden.</string>
     <string name="ChannelPublicEmptyUsername">Stel een link in voor je publieke kanaal, om deze vindbaar te maken via de zoekfunctie en te delen met anderen.\n\nWil je dit niet dan kun je een privé-kanaal aanmaken.</string>
@@ -111,7 +111,7 @@
     <string name="ActionChannelChangedPhoto">Kanaalfoto bijgewerkt</string>
     <string name="ActionChannelRemovedPhoto">Kanaalfoto verwijderd</string>
     <string name="ActionChannelChangedTitle">Kanaalnaam gewijzigd naar un2</string>
-    <string name="ActionChannelInvite">un1 heeft je toegevoegd aan kanaal un2</string>
+    <string name="ActionChannelInvite">un1 heeft je toegevoegd aan het kanaal un2</string>
     <string name="ChannelPublicLimitReached">Het maximale aantal publieke kanalen is bereikt. Je kunt een privé-kanaal maken of een kanaal verwijderen om een nieuwe te maken.</string>
     <string name="ChannelModerator">Moderator</string>
     <string name="ChannelCreator">Maker</string>
@@ -132,12 +132,13 @@
     <string name="ChannelAddTo">%1$s toevoegen aan het kanaal?</string>
     <string name="ChannelUserLeftError">Deze gebruiker heeft de groep verlaten. Je kunt hem/haar niet meer uitnodigen.</string>
     <string name="ChannelUserCantAdd">Je kunt deze gebruiker niet toevoegen aan kanalen.</string>
+    <string name="ChannelUserCantAdmin">Maximaal aantal administrators bereikt.</string>
     <string name="ChannelUserAddLimit">Je kunt  200 deelnemers handmatig toevoegen aan een kanaal. Een ongelimiteerd aantal mensen kan deelnemen via de link van het kanaal.</string>
     <string name="ChannelAddedBy">un1 heeft je toegevoegd aan dit kanaal</string>
     <string name="ChannelJoined">Je neemt deel aan het kanaal</string>
     <string name="ChannelRemoveUser">Verwijderen uit kanaal</string>
     <string name="ChannelCantSendMessage">Je hebt alleen leesrechten in dit kanaal.</string>
-    <string name="ChannelAddedByNotification">%1$s heeft je toegevoegd aan kanaal %2$s</string>
+    <string name="ChannelAddedByNotification">%1$s heeft je toegevoegd aan het kanaal %2$s</string>
     <string name="ChannelPhotoEditNotification">Kanaalfoto van %1$s bijgewerkt</string>
     <string name="ChannelMessageGroupNoText">%1$s heeft een bericht gestuurd naar het kanaal %2$s</string>
     <string name="ChannelMessageGroupPhoto">%1$s heeft een foto gestuurd naar het kanaal %2$s</string>
@@ -147,14 +148,14 @@
     <string name="ChannelMessageGroupDocument">%1$s heeft een bestand gestuurd naar het kanaal %2$s</string>
     <string name="ChannelMessageGroupAudio">%1$s heeft een geluidsbestand gestuurd naar het kanaal %2$s</string>
     <string name="ChannelMessageGroupSticker">%1$s heeft een sticker gestuurd naar het kanaal %2$s</string>
-    <string name="ChannelMessageNoText">Nieuw bericht in het kanaal %1$s</string>
-    <string name="ChannelMessagePhoto">Nieuwe foto in het kanaal %1$s</string>
-    <string name="ChannelMessageVideo">Nieuwe video in het kanaal %1$s</string>
-    <string name="ChannelMessageContact">Contact gedeeld in het kanaal %1$s</string>
-    <string name="ChannelMessageMap">Nieuwe locatie gedeeld in het kanaal %1$s</string>
-    <string name="ChannelMessageDocument">Nieuw bestand gedeeld in het kanaal %1$s</string>
-    <string name="ChannelMessageAudio">Nieuw geluidsbestand gedeeld in het kanaal %1$s</string>
-    <string name="ChannelMessageSticker">Nieuwe sticker gedeeld in het kanaal %1$s</string>
+    <string name="ChannelMessageNoText">%1$s plaatste een bericht</string>
+    <string name="ChannelMessagePhoto">%1$s plaatste een foto</string>
+    <string name="ChannelMessageVideo">%1$s plaatste een video</string>
+    <string name="ChannelMessageContact">%1$s plaatste een contact</string>
+    <string name="ChannelMessageMap">%1$s plaatste een locatie</string>
+    <string name="ChannelMessageDocument">%1$s plaatste een bestand</string>
+    <string name="ChannelMessageAudio">%1$s plaatste een spraakbericht</string>
+    <string name="ChannelMessageSticker">%1$s plaatste een sticker</string>
     <!--broadcasts-->
     <string name="NewBroadcastList">Nieuwe verzendlijst</string>
     <string name="EnterListName">Naam van lijst</string>
@@ -239,6 +240,7 @@
     <string name="ReportSpamAlertGroup">Spam van deze groep echt melden? </string>
     <string name="NobodyLikesSpam1">Je kunt momenteel alleen berichten sturen aan onderlingen contacten.</string>
     <string name="NobodyLikesSpam2">Je kunt momenteel alleen onderlinge contacten aan groepen toevoegen</string>
+    <string name="NobodyLikesSpamUrl">https://telegram.org/faq#can-39t-send-messages-to-non-contacts</string>
     <string name="MoreInfo">Meer informatie</string>
     <!--notification-->
     <string name="MessageLifetimeChanged">%1$s heeft de zelfvernietigingstimer ingesteld op %2$s</string>
@@ -289,6 +291,7 @@
     <string name="Online">online</string>
     <string name="LastSeen">gezien</string>
     <string name="LastSeenDate">gezien</string>
+    <string name="LastSeenNow">laatst gezien zojuist</string>
     <string name="InviteFriends">Vrienden uitnodigen</string>
     <string name="GlobalSearch">WERELDWIJD ZOEKEN</string>
     <string name="Lately">recent gezien</string>
@@ -405,7 +408,7 @@
     <string name="ContactJoined">Contact lid van Telegram</string>
     <string name="Pebble">PEBBLE</string>
     <string name="Language">Taal</string>
-    <string name="AskAQuestionInfo">De ondersteuning van Telegram wordt gedaan door vrijwilligers. We doen ons best om zo snel mogelijk te antwoorden.<![CDATA[<br><br>]]>Bekijk ook de <![CDATA[<a href=\"https://telegram.org/faq#general\">veelgestelde vragen</a>]]>: Hierhier staan de antwoorden op de meeste vragen en belangrijke tips voor <![CDATA[<a href=\"https://telegram.org/faq#troubleshooting\">het oplossen van problemen</a>]]>.</string>
+    <string name="AskAQuestionInfo">De ondersteuning van Telegram wordt gedaan door vrijwilligers. We doen ons best om zo snel mogelijk te antwoorden.<![CDATA[<br><br>]]>Bekijk ook de <![CDATA[<a href=\"https://telegram.org/faq#general\">veelgestelde vragen</a>]]>: Hier staan de antwoorden op de meeste vragen en belangrijke tips voor <![CDATA[<a href=\"https://telegram.org/faq#troubleshooting\">het oplossen van problemen</a>]]>.</string>
     <string name="AskButton">Vraag een vrijwilliger</string>
     <string name="TelegramFaq">Veelgestelde vragen</string>
     <string name="TelegramFaqUrl">https://telegram.org/faq</string>
@@ -493,11 +496,17 @@
     <string name="AutoLockInfo">Vraag om toegangscode indien afwezig</string>
     <string name="AutoLockInTime">over %1$s</string>
     <string name="AutoLockDisabled">Uitgeschakeld</string>
+    <string name="UnlockFingerprint">Ontgrendel met vingerafdruk</string>
+    <string name="FingerprintInfo">Vingerafdruk bevestigen</string>
+    <string name="FingerprintHelp">Vingerafdruksensor</string>
+    <string name="FingerprintNotRecognized">Vingerafdruk niet herkend,  probeer opnieuw</string>
     <!--media view-->
     <string name="NoMedia">Deel foto\'s en video\'s in deze chat om ze op al je apparaten te kunnen benaderen.</string>
     <string name="DocumentsTitle">Gedeelde bestanden</string>
     <string name="SharedMediaTitle">Gedeelde media</string>
     <string name="LinksTitle">Gedeelde links</string>
+    <string name="AudioTitle">Gedeelde muziek</string>
+    <string name="NoSharedAudio">Deel muziek in deze chat om ze op al je apparaten te kunnen benaderen.</string>
     <string name="NoSharedFiles">Deel bestanden en documenten in deze chat om ze op al je apparaten te kunnen benaderen.</string>
     <string name="NoSharedLinks">Deel links in deze chat om ze op al je apparaten te kunnen benaderen.</string>
     <!--map view-->
@@ -745,6 +754,12 @@
     <string name="FeatureUnavailable">Sorry, deze functie is momenteel niet beschikbaar in jouw land.</string>
     <string name="NoUsernameFound">Er is geen Telegram-account met deze gebruikersnaam.</string>
     <string name="BotCantJoinGroups">Deze bot kan geen groepslid worden.</string>
+    <!--permissions-->
+    <string name="PermissionContacts">Telegram heeft toegang tot je contacten nodig zodat je kan chatten met je vrienden vanaf al je apparaten.</string>
+    <string name="PermissionStorage">Telegram heeft toegang tot je opslaggeheugen nodig zodat je foto\'s, video\'s, muziek en andere media kunt opslaan en versturen.</string>
+    <string name="PermissionNoAudio">Telegram heeft toegang tot je microfoon nodig om spraakberichten te kunnen verzenden.</string>
+    <string name="PermissionNoLocation">Telegram heeft toegang tot je locatie nodig om deze te kunnen delen met je vrienden.</string>
+    <string name="PermissionOpenSettings">INSTELLINGEN</string>
     <!--Intro view-->
     <string name="Page1Title">Telegram</string>
     <string name="Page2Title">Snel</string>
@@ -793,7 +808,7 @@
     <string name="messages_many">%1$d berichten</string>
     <string name="messages_other">%1$d berichten</string>
     <string name="comments_zero">%1$d reacties</string>
-    <string name="comments_one">%1$d reacties</string>
+    <string name="comments_one">%1$d reactie</string>
     <string name="comments_two">%1$d reacties</string>
     <string name="comments_few">%1$d reacties</string>
     <string name="comments_many">%1$d reacties</string>
@@ -882,6 +897,18 @@
     <string name="Photos_few">%1$d foto\'s</string>
     <string name="Photos_many">%1$d foto\'s</string>
     <string name="Photos_other">%1$d foto\'s</string>
+    <string name="LastSeenMinutes_zero">laatst gezien %1$d minuten geleden</string>
+    <string name="LastSeenMinutes_one">laatst gezien %1$d minuut geleden</string>
+    <string name="LastSeenMinutes_two">laatst gezien %1$d minuten geleden</string>
+    <string name="LastSeenMinutes_few">laatst gezien %1$d minuten geleden</string>
+    <string name="LastSeenMinutes_many">laatst gezien %1$d minuten geleden</string>
+    <string name="LastSeenMinutes_other">laatst gezien %1$d minuten geleden</string>
+    <string name="LastSeenHours_zero">laatst gezien %1$d uur geleden</string>
+    <string name="LastSeenHours_one">laatst gezien %1$d uur geleden</string>
+    <string name="LastSeenHours_two">laatst gezien %1$d uur geleden</string>
+    <string name="LastSeenHours_few">laatst gezien %1$d uur geleden</string>
+    <string name="LastSeenHours_many">laatst gezien %1$d uur geleden</string>
+    <string name="LastSeenHours_other">laatst gezien %1$d uur geleden</string>
     <!--forwarded messages-->
     <string name="ForwardedMessage_zero">Bijlage: %1$d berichten</string>
     <string name="ForwardedMessage_one">Bijlage: 1 bericht</string>
@@ -949,6 +976,6 @@
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s om %2$s</string>
     <!--update text-->
-    <string name="updateText">Telegram voor Android is bijgewerkt. Nieuw in versie 3.2.0:\n\n- Nieuw, kanalen - een perfecte manier om berichten naar een ongelimiteerd publiek te versturen (vervangt de oude verzendlijsten).\n\nMeer over deze update: https://telegram.org/blog/channels</string>
-    <string name="updateBuild">614</string>
+    <string name="updateText">Telegram voor Android is bijgewerkt. Nieuw in versie 3.2.5:\n\n- Nieuwe animaties en andere visuele verbeteringen\n- Ondersteuning voor nieuwe Emoji\n-Tijdsaanduiding voor laatst gezien gelijk aan iOS\n-Probleemoplossing en andere verbeteringen</string>
+    <string name="updateBuild">647</string>
 </resources>

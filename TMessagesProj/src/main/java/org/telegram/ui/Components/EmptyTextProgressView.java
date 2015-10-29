@@ -1,5 +1,5 @@
 /*
- * This is the source code of Telegram for Android v. 2.x.x.
+ * This is the source code of Telegram for Android v. 3.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
@@ -64,6 +64,10 @@ public class EmptyTextProgressView extends FrameLayout {
 
     public void setText(String text) {
         textView.setText(text);
+    }
+
+    public void setTextSize(int size) {
+        textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, size);
     }
 
     public void setShowAtCenter(boolean value) {

@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2014.
+ * Copyright Nikolai Kudashov, 2013-2015.
  */
 
 package org.telegram.messenger.query;
@@ -37,7 +37,8 @@ public class SharedMediaQuery {
     public final static int MEDIA_FILE = 1;
     public final static int MEDIA_AUDIO = 2;
     public final static int MEDIA_URL = 3;
-    public final static int MEDIA_TYPES_COUNT = 4;
+    public final static int MEDIA_MUSIC = 4;
+    public final static int MEDIA_TYPES_COUNT = 5;
 
     public static void loadMedia(final long uid, final int offset, final int count, final int max_id, final int type, final boolean fromCache, final int classGuid) {
         final boolean isChannel = (int) uid < 0 && ChatObject.isChannel(-(int) uid);
@@ -58,6 +59,8 @@ public class SharedMediaQuery {
                 req.filter = new TLRPC.TL_inputMessagesFilterAudio();
             } else if (type == MEDIA_URL) {
                 req.filter = new TLRPC.TL_inputMessagesFilterUrl();
+            } else if (type == MEDIA_MUSIC) {
+                req.filter = new TLRPC.TL_inputMessagesFilterAudioDocuments();
             }
             req.q = "";
             req.peer = MessagesController.getInputPeer(lower_part);
@@ -101,6 +104,8 @@ public class SharedMediaQuery {
                 req.filter = new TLRPC.TL_inputMessagesFilterAudio();
             } else if (type == MEDIA_URL) {
                 req.filter = new TLRPC.TL_inputMessagesFilterUrl();
+            } else if (type == MEDIA_MUSIC) {
+                req.filter = new TLRPC.TL_inputMessagesFilterAudioDocuments();
             }
             req.q = "";
             req.peer = MessagesController.getInputPeer(lower_part);
@@ -144,6 +149,8 @@ public class SharedMediaQuery {
         } else if (message.media instanceof TLRPC.TL_messageMediaDocument) {
             if (MessageObject.isStickerMessage(message)) {
                 return -1;
+            } else if (MessageObject.isMusicMessage(message)) {
+                return MEDIA_MUSIC;
             } else {
                 return MEDIA_FILE;
             }
@@ -367,9 +374,9 @@ public class SharedMediaQuery {
                             }
                             cursor.dispose();
                             if (holeMessageId > 1) {
-                                cursor = database.queryFinalized(String.format(Locale.US, "SELECT data, mid FROM media_v2 WHERE uid = %d AND mid < %d AND mid >= %d AND type = %d ORDER BY date DESC, mid DESC LIMIT %d", uid, messageMaxId, holeMessageId, type, countToLoad));
+                                cursor = database.queryFinalized(String.format(Locale.US, "SELECT data, mid FROM media_v2 WHERE uid = %d AND mid > 0 AND mid < %d AND mid >= %d AND type = %d ORDER BY date DESC, mid DESC LIMIT %d", uid, messageMaxId, holeMessageId, type, countToLoad));
                             } else {
-                                cursor = database.queryFinalized(String.format(Locale.US, "SELECT data, mid FROM media_v2 WHERE uid = %d AND mid < %d AND type = %d ORDER BY date DESC, mid DESC LIMIT %d", uid, messageMaxId, type, countToLoad));
+                                cursor = database.queryFinalized(String.format(Locale.US, "SELECT data, mid FROM media_v2 WHERE uid = %d AND mid > 0 AND mid < %d AND type = %d ORDER BY date DESC, mid DESC LIMIT %d", uid, messageMaxId, type, countToLoad));
                             }
                         } else {
                             long holeMessageId = 0;
@@ -382,9 +389,9 @@ public class SharedMediaQuery {
                             }
                             cursor.dispose();
                             if (holeMessageId > 1) {
-                                cursor = database.queryFinalized(String.format(Locale.US, "SELECT data, mid FROM media_v2 WHERE uid = %d AND type = %d AND mid >= %d ORDER BY date DESC, mid DESC LIMIT %d,%d", uid, type, holeMessageId, offset, countToLoad));
+                                cursor = database.queryFinalized(String.format(Locale.US, "SELECT data, mid FROM media_v2 WHERE uid = %d AND mid >= %d AND type = %d ORDER BY date DESC, mid DESC LIMIT %d,%d", uid, holeMessageId, type, offset, countToLoad));
                             } else {
-                                cursor = database.queryFinalized(String.format(Locale.US, "SELECT data, mid FROM media_v2 WHERE uid = %d AND type = %d ORDER BY date DESC, mid DESC LIMIT %d,%d", uid, type, offset, countToLoad));
+                                cursor = database.queryFinalized(String.format(Locale.US, "SELECT data, mid FROM media_v2 WHERE uid = %d AND mid > 0 AND type = %d ORDER BY date DESC, mid DESC LIMIT %d,%d", uid, type, offset, countToLoad));
                             }
                         }
                     } else {
@@ -500,7 +507,7 @@ public class SharedMediaQuery {
             public void run() {
                 final ArrayList<MessageObject> arrayList = new ArrayList<>();
                 try {
-                    SQLiteCursor cursor = MessagesStorage.getInstance().getDatabase().queryFinalized(String.format(Locale.US, "SELECT data, mid FROM media_v2 WHERE uid = %d AND mid < %d AND type = %d ORDER BY date DESC, mid DESC LIMIT 1000", uid, max_id, MEDIA_FILE));
+                    SQLiteCursor cursor = MessagesStorage.getInstance().getDatabase().queryFinalized(String.format(Locale.US, "SELECT data, mid FROM media_v2 WHERE uid = %d AND mid < %d AND type = %d ORDER BY date DESC, mid DESC LIMIT 1000", uid, max_id, MEDIA_MUSIC));
 
                     while (cursor.next()) {
                         NativeByteBuffer data = new NativeByteBuffer(cursor.byteArrayLength(0));

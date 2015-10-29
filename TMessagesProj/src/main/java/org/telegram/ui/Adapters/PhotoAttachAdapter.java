@@ -1,5 +1,5 @@
 /*
- * This is the source code of Telegram for Android v. 2.x.x.
+ * This is the source code of Telegram for Android v. 3.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
@@ -41,6 +41,12 @@ public class PhotoAttachAdapter extends RecyclerView.Adapter {
 
     public void clearSelectedPhotos() {
         if (!selectedPhotos.isEmpty()) {
+            for (HashMap.Entry<Integer, MediaController.PhotoEntry> entry : selectedPhotos.entrySet()) {
+                MediaController.PhotoEntry photoEntry = entry.getValue();
+                photoEntry.imagePath = null;
+                photoEntry.thumbPath = null;
+                photoEntry.caption = null;
+            }
             selectedPhotos.clear();
             delegate.selectedPhotosChanged();
             notifyDataSetChanged();
@@ -57,54 +63,45 @@ public class PhotoAttachAdapter extends RecyclerView.Adapter {
 
     @Override
     public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
-        //if (position != 0) {
-            PhotoAttachPhotoCell cell = (PhotoAttachPhotoCell) holder.itemView;
-            MediaController.PhotoEntry photoEntry = MediaController.allPhotosAlbumEntry.photos.get(position/* - 1*/);
-            cell.setPhotoEntry(photoEntry, position == MediaController.allPhotosAlbumEntry.photos.size());
-            cell.setChecked(selectedPhotos.containsKey(photoEntry.imageId), false);
-        //}
+        PhotoAttachPhotoCell cell = (PhotoAttachPhotoCell) holder.itemView;
+        MediaController.PhotoEntry photoEntry = MediaController.allPhotosAlbumEntry.photos.get(position);
+        cell.setPhotoEntry(photoEntry, position == MediaController.allPhotosAlbumEntry.photos.size() - 1);
+        cell.setChecked(selectedPhotos.containsKey(photoEntry.imageId), false);
+        cell.getImageView().setTag(position);
+        cell.setTag(position);
     }
 
     @Override
     public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-        View view;
-        /*if (viewType == 0) {
-            view = new PhotoAttachCameraCell(mContext);
-        } else {*/
-            PhotoAttachPhotoCell cell = new PhotoAttachPhotoCell(mContext);
-            /*cell.setOnCheckClickLisnener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    onItemClick((PhotoAttachPhotoCell) v.getParent());
+        PhotoAttachPhotoCell cell = new PhotoAttachPhotoCell(mContext);
+        cell.setOnCheckClickLisnener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                PhotoAttachPhotoCell cell = (PhotoAttachPhotoCell) v.getParent();
+                MediaController.PhotoEntry photoEntry = cell.getPhotoEntry();
+                if (selectedPhotos.containsKey(photoEntry.imageId)) {
+                    selectedPhotos.remove(photoEntry.imageId);
+                    cell.setChecked(false, true);
+                    photoEntry.imagePath = null;
+                    photoEntry.thumbPath = null;
+                    cell.setPhotoEntry(photoEntry, cell.getTag() == MediaController.allPhotosAlbumEntry.photos.size() - 1);
+                } else {
+                    selectedPhotos.put(photoEntry.imageId, photoEntry);
+                    cell.setChecked(true, true);
                 }
-            });
-            view = cell;*/
-        //}
+                delegate.selectedPhotosChanged();
+            }
+        });
         return new Holder(cell);
-    }
-
-    public void onItemClick(PhotoAttachPhotoCell cell) {
-        MediaController.PhotoEntry photoEntry = cell.getPhotoEntry();
-        if (selectedPhotos.containsKey(photoEntry.imageId)) {
-            selectedPhotos.remove(photoEntry.imageId);
-            cell.setChecked(false, true);
-        } else {
-            selectedPhotos.put(photoEntry.imageId, photoEntry);
-            cell.setChecked(true, true);
-        }
-        delegate.selectedPhotosChanged();
     }
 
     @Override
     public int getItemCount() {
-        return /*1 + */(MediaController.allPhotosAlbumEntry != null ? MediaController.allPhotosAlbumEntry.photos.size() : 0);
+        return (MediaController.allPhotosAlbumEntry != null ? MediaController.allPhotosAlbumEntry.photos.size() : 0);
     }
 
     @Override
     public int getItemViewType(int position) {
-        //if (position == 0) {
-            return 0;
-        //}
-        //return 1;
+        return 0;
     }
 }

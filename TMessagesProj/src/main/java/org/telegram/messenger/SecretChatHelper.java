@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2014.
+ * Copyright Nikolai Kudashov, 2013-2015.
  */
 
 package org.telegram.messenger;
@@ -969,6 +969,9 @@ public class SecretChatHelper {
                     newMessage.media.document.size = file.size;
                     newMessage.media.document.key = decryptedMessage.media.key;
                     newMessage.media.document.iv = decryptedMessage.media.iv;
+                    if (newMessage.media.document.mime_type == null) {
+                        newMessage.media.document.mime_type = "";
+                    }
                     byte[] thumb = ((TLRPC.TL_decryptedMessageMediaDocument) decryptedMessage.media).thumb;
                     if (thumb != null && thumb.length != 0 && thumb.length <= 6000 && decryptedMessage.media.thumb_w <= 100 && decryptedMessage.media.thumb_h <= 100) {
                         newMessage.media.document.thumb = new TLRPC.TL_photoCachedSize();
@@ -993,6 +996,9 @@ public class SecretChatHelper {
                     newMessage.media.document.dc_id = decryptedMessage.media.dc_id;
                     newMessage.media.document.size = decryptedMessage.media.size;
                     newMessage.media.document.thumb = ((TLRPC.TL_decryptedMessageMediaExternalDocument) decryptedMessage.media).thumb;
+                    if (newMessage.media.document.mime_type == null) {
+                        newMessage.media.document.mime_type = "";
+                    }
                 } else if (decryptedMessage.media instanceof TLRPC.TL_decryptedMessageMediaAudio) {
                     if (decryptedMessage.media.key == null || decryptedMessage.media.key.length != 32 || decryptedMessage.media.iv == null || decryptedMessage.media.iv.length != 32) {
                         return null;
@@ -1233,7 +1239,24 @@ public class SecretChatHelper {
                 } else if (serviceMessage.action instanceof TLRPC.TL_decryptedMessageActionNoop) {
                     //do nothing
                 } else if (serviceMessage.action instanceof TLRPC.TL_decryptedMessageActionResend) {
-
+                    final TLRPC.TL_encryptedChatDiscarded newChat = new TLRPC.TL_encryptedChatDiscarded();
+                    newChat.id = chat.id;
+                    newChat.user_id = chat.user_id;
+                    newChat.auth_key = chat.auth_key;
+                    newChat.key_create_date = chat.key_create_date;
+                    newChat.key_use_count_in = chat.key_use_count_in;
+                    newChat.key_use_count_out = chat.key_use_count_out;
+                    newChat.seq_in = chat.seq_in;
+                    newChat.seq_out = chat.seq_out;
+                    MessagesStorage.getInstance().updateEncryptedChat(newChat);
+                    AndroidUtilities.runOnUIThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            MessagesController.getInstance().putEncryptedChat(newChat, false);
+                            NotificationCenter.getInstance().postNotificationName(NotificationCenter.encryptedChatUpdated, newChat);
+                        }
+                    });
+                    declineSecretChat(chat.id);
                 } else {
                     return null;
                 }
@@ -1337,6 +1360,10 @@ public class SecretChatHelper {
                         chat.seq_in = 1;
                     }
                 }
+                if (layer.random_bytes.length < 15) {
+                    FileLog.e("tmessages", "got random bytes less than needed");
+                    return null;
+                }
                 FileLog.e("tmessages", "current chat in_seq = " + chat.seq_in + " out_seq = " + chat.seq_out);
                 FileLog.e("tmessages", "got message with in_seq = " + layer.in_seq_no + " out_seq = " + layer.out_seq_no);
                 if (layer.out_seq_no < chat.seq_in) {
@@ -1349,7 +1376,7 @@ public class SecretChatHelper {
                         arr = new ArrayList<>();
                         secretHolesQueue.put(chat.id, arr);
                     }
-                    if (arr.size() >= 10) {
+                    if (arr.size() >= 4) {
                         secretHolesQueue.remove(chat.id);
                         final TLRPC.TL_encryptedChatDiscarded newChat = new TLRPC.TL_encryptedChatDiscarded();
                         newChat.id = chat.id;

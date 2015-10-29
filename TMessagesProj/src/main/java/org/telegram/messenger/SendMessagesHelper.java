@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 1.7.x.
+ * This is the source code of Telegram for Android v. 3.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2014.
+ * Copyright Nikolai Kudashov, 2013-2015.
  */
 
 package org.telegram.messenger;
@@ -143,6 +143,10 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                         arr.remove(a);
                         a--;
                     } else if (encryptedFile != null && message.sendEncryptedRequest != null) {
+                        if (message.sendEncryptedRequest.media instanceof TLRPC.TL_decryptedMessageMediaVideo) {
+                            long size = (Long) args[5];
+                            message.sendEncryptedRequest.media.size = (int) size;
+                        }
                         message.sendEncryptedRequest.media.key = (byte[]) args[3];
                         message.sendEncryptedRequest.media.iv = (byte[]) args[4];
                         SecretChatHelper.getInstance().performSendEncryptedRequest(message.sendEncryptedRequest, message.obj.messageOwner, message.encryptedChat, encryptedFile, message.originalPath);
@@ -289,6 +293,7 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                                         Bitmap bitmap = ImageLoader.loadBitmap(cacheFile.getAbsolutePath(), null, 90, 90, true);
                                         if (bitmap != null) {
                                             message.documentLocation.thumb = ImageLoader.scaleAndSaveImage(bitmap, 90, 90, 55, message.sendEncryptedRequest != null);
+                                            bitmap.recycle();
                                         }
                                     } catch (Exception e) {
                                         message.documentLocation.thumb = null;
@@ -497,6 +502,9 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                     newDocument.size = document.size;
                     newDocument.dc_id = document.dc_id;
                     newDocument.attributes = document.attributes;
+                    if (newDocument.mime_type == null) {
+                        newDocument.mime_type = "";
+                    }
                     document = newDocument;
                 } catch (Exception e) {
                     FileLog.e("tmessages", e);
@@ -764,6 +772,7 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
         }
 
         TLRPC.Message newMsg = null;
+        MessageObject newMsgObj = null;
         int type = -1;
         int lower_id = (int) peer;
         int high_id = (int) (peer >> 32);
@@ -783,257 +792,257 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
             }
         }
 
-        if (retry) {
-            newMsg = msgObj.messageOwner;
+        try {
+            if (retry) {
+                newMsg = msgObj.messageOwner;
 
-            if (msgObj.type == 0) {
-                if (msgObj.isForwarded()) {
-                    type = 4;
-                } else {
-                    message = newMsg.message;
-                    type = 0;
-                }
-            } else if (msgObj.type == 4) {
-                location = newMsg.media;
-                type = 1;
-            } else if (msgObj.type == 1) {
-                if (msgObj.isForwarded()) {
-                    type = 4;
-                } else {
-                    photo = (TLRPC.TL_photo) newMsg.media.photo;
-                    type = 2;
-                }
-            } else if (msgObj.type == 3) {
-                if (msgObj.isForwarded()) {
-                    type = 4;
-                } else {
-                    type = 3;
-                    video = (TLRPC.TL_video) newMsg.media.video;
-                }
-            } else if (msgObj.type == 12) {
-                user = new TLRPC.TL_userRequest_old2();
-                user.phone = newMsg.media.phone_number;
-                user.first_name = newMsg.media.first_name;
-                user.last_name = newMsg.media.last_name;
-                user.id = newMsg.media.user_id;
-                type = 6;
-            } else if (msgObj.type == 8 || msgObj.type == 9 || msgObj.type == 13) {
-                document = (TLRPC.TL_document) newMsg.media.document;
-                type = 7;
-            } else if (msgObj.type == 2) {
-                audio = (TLRPC.TL_audio) newMsg.media.audio;
-                type = 8;
-            }
-        } else {
-            if (message != null) {
-                if (encryptedChat != null && AndroidUtilities.getPeerLayerVersion(encryptedChat.layer) >= 17) {
-                    newMsg = new TLRPC.TL_message_secret();
-                } else {
-                    newMsg = new TLRPC.TL_message();
-                }
-                if (encryptedChat != null || webPage == null) {
-                    newMsg.media = new TLRPC.TL_messageMediaEmpty();
-                } else {
-                    newMsg.media = new TLRPC.TL_messageMediaWebPage();
-                    newMsg.media.webpage = webPage;
-                }
-                type = 0;
-                newMsg.message = message;
-            } else if (location != null) {
-                if (encryptedChat != null && AndroidUtilities.getPeerLayerVersion(encryptedChat.layer) >= 17) {
-                    newMsg = new TLRPC.TL_message_secret();
-                } else {
-                    newMsg = new TLRPC.TL_message();
-                }
-                newMsg.media = location;
-                newMsg.message = "";
-                type = 1;
-            } else if (photo != null) {
-                if (encryptedChat != null && AndroidUtilities.getPeerLayerVersion(encryptedChat.layer) >= 17) {
-                    newMsg = new TLRPC.TL_message_secret();
-                } else {
-                    newMsg = new TLRPC.TL_message();
-                }
-                newMsg.media = new TLRPC.TL_messageMediaPhoto();
-                newMsg.media.caption = photo.caption != null ? photo.caption : "";
-                newMsg.media.photo = photo;
-                type = 2;
-                newMsg.message = "-1";
-                if (path != null && path.length() > 0 && path.startsWith("http")) {
-                    newMsg.attachPath = path;
-                } else {
-                    TLRPC.FileLocation location1 = photo.sizes.get(photo.sizes.size() - 1).location;
-                    newMsg.attachPath = FileLoader.getPathToAttach(location1, true).toString();
-                }
-            } else if (video != null) {
-                if (encryptedChat != null && AndroidUtilities.getPeerLayerVersion(encryptedChat.layer) >= 17) {
-                    newMsg = new TLRPC.TL_message_secret();
-                } else {
-                    newMsg = new TLRPC.TL_message();
-                }
-                newMsg.media = new TLRPC.TL_messageMediaVideo();
-                newMsg.media.caption = video.caption != null ? video.caption : "";
-                newMsg.media.video = video;
-                type = 3;
-                if (videoEditedInfo == null) {
-                    newMsg.message = "-1";
-                } else {
-                    newMsg.message = videoEditedInfo.getString();
-                }
-                newMsg.attachPath = path;
-            } else if (msgObj != null) {
-                newMsg = new TLRPC.TL_message();
-                newMsg.flags |= TLRPC.MESSAGE_FLAG_FWD;
-                if (msgObj.isForwarded()) {
-                    newMsg.fwd_from_id = msgObj.messageOwner.fwd_from_id;
-                    newMsg.fwd_date = msgObj.messageOwner.fwd_date;
-                } else {
-                    newMsg.fwd_from_id = new TLRPC.TL_peerUser();
-                    newMsg.fwd_from_id.user_id = msgObj.messageOwner.from_id;
-                    newMsg.fwd_date = msgObj.messageOwner.date;
-                }
-                newMsg.media = msgObj.messageOwner.media;
-                newMsg.message = msgObj.messageOwner.message;
-                newMsg.fwd_msg_id = msgObj.getId();
-                newMsg.attachPath = msgObj.messageOwner.attachPath;
-                type = 4;
-            } else if (user != null) {
-                if (encryptedChat != null && AndroidUtilities.getPeerLayerVersion(encryptedChat.layer) >= 17) {
-                    newMsg = new TLRPC.TL_message_secret();
-                } else {
-                    newMsg = new TLRPC.TL_message();
-                }
-                newMsg.media = new TLRPC.TL_messageMediaContact();
-                newMsg.media.phone_number = user.phone;
-                newMsg.media.first_name = user.first_name;
-                newMsg.media.last_name = user.last_name;
-                newMsg.media.user_id = user.id;
-                if (newMsg.media.first_name == null) {
-                    user.first_name = newMsg.media.first_name = "";
-                }
-                if (newMsg.media.last_name == null) {
-                    user.last_name = newMsg.media.last_name = "";
-                }
-                newMsg.message = "";
-                type = 6;
-            } else if (document != null) {
-                if (encryptedChat != null && AndroidUtilities.getPeerLayerVersion(encryptedChat.layer) >= 17) {
-                    newMsg = new TLRPC.TL_message_secret();
-                } else {
-                    newMsg = new TLRPC.TL_message();
-                }
-                newMsg.media = new TLRPC.TL_messageMediaDocument();
-                newMsg.media.document = document;
-                type = 7;
-                newMsg.message = "-1";
-                newMsg.attachPath = path;
-            } else if (audio != null) {
-                if (encryptedChat != null && AndroidUtilities.getPeerLayerVersion(encryptedChat.layer) >= 17) {
-                    newMsg = new TLRPC.TL_message_secret();
-                } else {
-                    newMsg = new TLRPC.TL_message();
-                }
-                newMsg.media = new TLRPC.TL_messageMediaAudio();
-                newMsg.media.audio = audio;
-                type = 8;
-                newMsg.message = "-1";
-                newMsg.attachPath = path;
-            }
-            if (newMsg.attachPath == null) {
-                newMsg.attachPath = "";
-            }
-            newMsg.local_id = newMsg.id = UserConfig.getNewMessageId();
-            newMsg.flags |= TLRPC.MESSAGE_FLAG_OUT;
-            if (asAdmin && sendToPeer != null && sendToPeer.channel_id != 0) {
-                newMsg.from_id = -sendToPeer.channel_id;
-            } else {
-                newMsg.from_id = UserConfig.getClientUserId();
-                newMsg.flags |= TLRPC.MESSAGE_FLAG_HAS_FROM_ID;
-            }
-            UserConfig.saveConfig(false);
-        }
-        if (newMsg.random_id == 0) {
-            newMsg.random_id = getNextRandomId();
-        }
-        newMsg.date = ConnectionsManager.getInstance().getCurrentTime();
-        newMsg.flags |= TLRPC.MESSAGE_FLAG_HAS_MEDIA;
-        if (encryptedChat == null && high_id != 1 && newMsg.media instanceof TLRPC.TL_messageMediaAudio) {
-            newMsg.flags |= TLRPC.MESSAGE_FLAG_CONTENT_UNREAD;
-        }
-        if (sendToPeer instanceof TLRPC.TL_inputPeerChannel) {
-            if (asAdmin) {
-                newMsg.views = 1;
-                newMsg.flags |= TLRPC.MESSAGE_FLAG_HAS_VIEWS;
-            }
-        } else {
-            newMsg.flags |= TLRPC.MESSAGE_FLAG_UNREAD;
-        }
-        newMsg.dialog_id = peer;
-        if (reply_to_msg != null) {
-            newMsg.flags |= TLRPC.MESSAGE_FLAG_REPLY;
-            newMsg.reply_to_msg_id = reply_to_msg.getId();
-        }
-        if (lower_id != 0) {
-            if (high_id == 1) {
-                if (currentChatInfo == null) {
-                    MessagesStorage.getInstance().markMessageAsSendError(newMsg);
-                    NotificationCenter.getInstance().postNotificationName(NotificationCenter.messageSendError, newMsg.id);
-                    processSentMessage(newMsg.id);
-                    return;
-                }
-                sendToPeers = new ArrayList<>();
-                for (TLRPC.TL_chatParticipant participant : currentChatInfo.participants.participants) {
-                    TLRPC.User sendToUser = MessagesController.getInstance().getUser(participant.user_id);
-                    TLRPC.InputUser peerUser = MessagesController.getInputUser(sendToUser);
-                    if (peerUser != null) {
-                        sendToPeers.add(peerUser);
+                if (msgObj.type == 0) {
+                    if (msgObj.isForwarded()) {
+                        type = 4;
+                    } else {
+                        message = newMsg.message;
+                        type = 0;
                     }
+                } else if (msgObj.type == 4) {
+                    location = newMsg.media;
+                    type = 1;
+                } else if (msgObj.type == 1) {
+                    if (msgObj.isForwarded()) {
+                        type = 4;
+                    } else {
+                        photo = (TLRPC.TL_photo) newMsg.media.photo;
+                        type = 2;
+                    }
+                } else if (msgObj.type == 3) {
+                    if (msgObj.isForwarded()) {
+                        type = 4;
+                    } else {
+                        type = 3;
+                        video = (TLRPC.TL_video) newMsg.media.video;
+                    }
+                } else if (msgObj.type == 12) {
+                    user = new TLRPC.TL_userRequest_old2();
+                    user.phone = newMsg.media.phone_number;
+                    user.first_name = newMsg.media.first_name;
+                    user.last_name = newMsg.media.last_name;
+                    user.id = newMsg.media.user_id;
+                    type = 6;
+                } else if (msgObj.type == 8 || msgObj.type == 9 || msgObj.type == 13) {
+                    document = (TLRPC.TL_document) newMsg.media.document;
+                    type = 7;
+                } else if (msgObj.type == 2) {
+                    audio = (TLRPC.TL_audio) newMsg.media.audio;
+                    type = 8;
                 }
-                newMsg.to_id = new TLRPC.TL_peerChat();
-                newMsg.to_id.chat_id = lower_id;
             } else {
-                newMsg.to_id = MessagesController.getPeer(lower_id);
-                if (lower_id > 0) {
-                    TLRPC.User sendToUser = MessagesController.getInstance().getUser(lower_id);
-                    if (sendToUser == null) {
+                if (message != null) {
+                    if (encryptedChat != null && AndroidUtilities.getPeerLayerVersion(encryptedChat.layer) >= 17) {
+                        newMsg = new TLRPC.TL_message_secret();
+                    } else {
+                        newMsg = new TLRPC.TL_message();
+                    }
+                    if (encryptedChat != null || webPage == null) {
+                        newMsg.media = new TLRPC.TL_messageMediaEmpty();
+                    } else {
+                        newMsg.media = new TLRPC.TL_messageMediaWebPage();
+                        newMsg.media.webpage = webPage;
+                    }
+                    type = 0;
+                    newMsg.message = message;
+                } else if (location != null) {
+                    if (encryptedChat != null && AndroidUtilities.getPeerLayerVersion(encryptedChat.layer) >= 17) {
+                        newMsg = new TLRPC.TL_message_secret();
+                    } else {
+                        newMsg = new TLRPC.TL_message();
+                    }
+                    newMsg.media = location;
+                    newMsg.message = "";
+                    type = 1;
+                } else if (photo != null) {
+                    if (encryptedChat != null && AndroidUtilities.getPeerLayerVersion(encryptedChat.layer) >= 17) {
+                        newMsg = new TLRPC.TL_message_secret();
+                    } else {
+                        newMsg = new TLRPC.TL_message();
+                    }
+                    newMsg.media = new TLRPC.TL_messageMediaPhoto();
+                    newMsg.media.caption = photo.caption != null ? photo.caption : "";
+                    newMsg.media.photo = photo;
+                    type = 2;
+                    newMsg.message = "-1";
+                    if (path != null && path.length() > 0 && path.startsWith("http")) {
+                        newMsg.attachPath = path;
+                    } else {
+                        TLRPC.FileLocation location1 = photo.sizes.get(photo.sizes.size() - 1).location;
+                        newMsg.attachPath = FileLoader.getPathToAttach(location1, true).toString();
+                    }
+                } else if (video != null) {
+                    if (encryptedChat != null && AndroidUtilities.getPeerLayerVersion(encryptedChat.layer) >= 17) {
+                        newMsg = new TLRPC.TL_message_secret();
+                    } else {
+                        newMsg = new TLRPC.TL_message();
+                    }
+                    newMsg.media = new TLRPC.TL_messageMediaVideo();
+                    newMsg.media.caption = video.caption != null ? video.caption : "";
+                    newMsg.media.video = video;
+                    type = 3;
+                    if (videoEditedInfo == null) {
+                        newMsg.message = "-1";
+                    } else {
+                        newMsg.message = videoEditedInfo.getString();
+                    }
+                    newMsg.attachPath = path;
+                } else if (msgObj != null) {
+                    newMsg = new TLRPC.TL_message();
+                    newMsg.flags |= TLRPC.MESSAGE_FLAG_FWD;
+                    if (msgObj.isForwarded()) {
+                        newMsg.fwd_from_id = msgObj.messageOwner.fwd_from_id;
+                        newMsg.fwd_date = msgObj.messageOwner.fwd_date;
+                    } else {
+                        newMsg.fwd_from_id = new TLRPC.TL_peerUser();
+                        newMsg.fwd_from_id.user_id = msgObj.messageOwner.from_id;
+                        newMsg.fwd_date = msgObj.messageOwner.date;
+                    }
+                    newMsg.media = msgObj.messageOwner.media;
+                    newMsg.message = msgObj.messageOwner.message;
+                    newMsg.fwd_msg_id = msgObj.getId();
+                    newMsg.attachPath = msgObj.messageOwner.attachPath;
+                    type = 4;
+                } else if (user != null) {
+                    if (encryptedChat != null && AndroidUtilities.getPeerLayerVersion(encryptedChat.layer) >= 17) {
+                        newMsg = new TLRPC.TL_message_secret();
+                    } else {
+                        newMsg = new TLRPC.TL_message();
+                    }
+                    newMsg.media = new TLRPC.TL_messageMediaContact();
+                    newMsg.media.phone_number = user.phone;
+                    newMsg.media.first_name = user.first_name;
+                    newMsg.media.last_name = user.last_name;
+                    newMsg.media.user_id = user.id;
+                    if (newMsg.media.first_name == null) {
+                        user.first_name = newMsg.media.first_name = "";
+                    }
+                    if (newMsg.media.last_name == null) {
+                        user.last_name = newMsg.media.last_name = "";
+                    }
+                    newMsg.message = "";
+                    type = 6;
+                } else if (document != null) {
+                    if (encryptedChat != null && AndroidUtilities.getPeerLayerVersion(encryptedChat.layer) >= 17) {
+                        newMsg = new TLRPC.TL_message_secret();
+                    } else {
+                        newMsg = new TLRPC.TL_message();
+                    }
+                    newMsg.media = new TLRPC.TL_messageMediaDocument();
+                    newMsg.media.document = document;
+                    type = 7;
+                    newMsg.message = "-1";
+                    newMsg.attachPath = path;
+                } else if (audio != null) {
+                    if (encryptedChat != null && AndroidUtilities.getPeerLayerVersion(encryptedChat.layer) >= 17) {
+                        newMsg = new TLRPC.TL_message_secret();
+                    } else {
+                        newMsg = new TLRPC.TL_message();
+                    }
+                    newMsg.media = new TLRPC.TL_messageMediaAudio();
+                    newMsg.media.audio = audio;
+                    type = 8;
+                    newMsg.message = "-1";
+                    newMsg.attachPath = path;
+                }
+                if (newMsg.attachPath == null) {
+                    newMsg.attachPath = "";
+                }
+                newMsg.local_id = newMsg.id = UserConfig.getNewMessageId();
+                newMsg.flags |= TLRPC.MESSAGE_FLAG_OUT;
+                if (asAdmin && sendToPeer != null && sendToPeer.channel_id != 0) {
+                    newMsg.from_id = -sendToPeer.channel_id;
+                } else {
+                    newMsg.from_id = UserConfig.getClientUserId();
+                    newMsg.flags |= TLRPC.MESSAGE_FLAG_HAS_FROM_ID;
+                }
+                UserConfig.saveConfig(false);
+            }
+            if (newMsg.random_id == 0) {
+                newMsg.random_id = getNextRandomId();
+            }
+            newMsg.date = ConnectionsManager.getInstance().getCurrentTime();
+            newMsg.flags |= TLRPC.MESSAGE_FLAG_HAS_MEDIA;
+            if (encryptedChat == null && high_id != 1 && newMsg.media instanceof TLRPC.TL_messageMediaAudio) {
+                newMsg.flags |= TLRPC.MESSAGE_FLAG_CONTENT_UNREAD;
+            }
+            if (sendToPeer instanceof TLRPC.TL_inputPeerChannel) {
+                if (asAdmin) {
+                    newMsg.views = 1;
+                    newMsg.flags |= TLRPC.MESSAGE_FLAG_HAS_VIEWS;
+                }
+            } else {
+                newMsg.flags |= TLRPC.MESSAGE_FLAG_UNREAD;
+            }
+            newMsg.dialog_id = peer;
+            if (reply_to_msg != null) {
+                newMsg.flags |= TLRPC.MESSAGE_FLAG_REPLY;
+                newMsg.reply_to_msg_id = reply_to_msg.getId();
+            }
+            if (lower_id != 0) {
+                if (high_id == 1) {
+                    if (currentChatInfo == null) {
+                        MessagesStorage.getInstance().markMessageAsSendError(newMsg);
+                        NotificationCenter.getInstance().postNotificationName(NotificationCenter.messageSendError, newMsg.id);
                         processSentMessage(newMsg.id);
                         return;
                     }
-                    if ((sendToUser.flags & TLRPC.USER_FLAG_BOT) != 0) {
-                        newMsg.flags &= ~TLRPC.MESSAGE_FLAG_UNREAD;
+                    sendToPeers = new ArrayList<>();
+                    for (TLRPC.TL_chatParticipant participant : currentChatInfo.participants.participants) {
+                        TLRPC.User sendToUser = MessagesController.getInstance().getUser(participant.user_id);
+                        TLRPC.InputUser peerUser = MessagesController.getInputUser(sendToUser);
+                        if (peerUser != null) {
+                            sendToPeers.add(peerUser);
+                        }
+                    }
+                    newMsg.to_id = new TLRPC.TL_peerChat();
+                    newMsg.to_id.chat_id = lower_id;
+                } else {
+                    newMsg.to_id = MessagesController.getPeer(lower_id);
+                    if (lower_id > 0) {
+                        TLRPC.User sendToUser = MessagesController.getInstance().getUser(lower_id);
+                        if (sendToUser == null) {
+                            processSentMessage(newMsg.id);
+                            return;
+                        }
+                        if ((sendToUser.flags & TLRPC.USER_FLAG_BOT) != 0) {
+                            newMsg.flags &= ~TLRPC.MESSAGE_FLAG_UNREAD;
+                        }
+                    }
+                }
+            } else {
+                newMsg.to_id = new TLRPC.TL_peerUser();
+                if (encryptedChat.participant_id == UserConfig.getClientUserId()) {
+                    newMsg.to_id.user_id = encryptedChat.admin_id;
+                } else {
+                    newMsg.to_id.user_id = encryptedChat.participant_id;
+                }
+                newMsg.ttl = encryptedChat.ttl;
+                if (newMsg.ttl != 0) {
+                    if (newMsg.media instanceof TLRPC.TL_messageMediaAudio) {
+                        newMsg.ttl = Math.max(encryptedChat.ttl, newMsg.media.audio.duration + 1);
+                    } else if (newMsg.media instanceof TLRPC.TL_messageMediaVideo) {
+                        newMsg.ttl = Math.max(encryptedChat.ttl, newMsg.media.video.duration + 1);
                     }
                 }
             }
-        } else {
-            newMsg.to_id = new TLRPC.TL_peerUser();
-            if (encryptedChat.participant_id == UserConfig.getClientUserId()) {
-                newMsg.to_id.user_id = encryptedChat.admin_id;
-            } else {
-                newMsg.to_id.user_id = encryptedChat.participant_id;
-            }
-            newMsg.ttl = encryptedChat.ttl;
-            if (newMsg.ttl != 0) {
-                if (newMsg.media instanceof TLRPC.TL_messageMediaAudio) {
-                    newMsg.ttl = Math.max(encryptedChat.ttl, newMsg.media.audio.duration + 1);
-                } else if (newMsg.media instanceof TLRPC.TL_messageMediaVideo) {
-                    newMsg.ttl = Math.max(encryptedChat.ttl, newMsg.media.video.duration + 1);
-                }
-            }
-        }
 
-        MessageObject newMsgObj = new MessageObject(newMsg, null, true);
-        newMsgObj.replyMessageObject = reply_to_msg;
-        newMsgObj.messageOwner.send_state = MessageObject.MESSAGE_SEND_STATE_SENDING;
+            newMsgObj = new MessageObject(newMsg, null, true);
+            newMsgObj.replyMessageObject = reply_to_msg;
+            newMsgObj.messageOwner.send_state = MessageObject.MESSAGE_SEND_STATE_SENDING;
 
-        ArrayList<MessageObject> objArr = new ArrayList<>();
-        objArr.add(newMsgObj);
-        ArrayList<TLRPC.Message> arr = new ArrayList<>();
-        arr.add(newMsg);
-        MessagesStorage.getInstance().putMessages(arr, false, true, false, 0);
-        MessagesController.getInstance().updateInterfaceWithMessages(peer, objArr);
-        NotificationCenter.getInstance().postNotificationName(NotificationCenter.dialogsNeedReload);
+            ArrayList<MessageObject> objArr = new ArrayList<>();
+            objArr.add(newMsgObj);
+            ArrayList<TLRPC.Message> arr = new ArrayList<>();
+            arr.add(newMsg);
+            MessagesStorage.getInstance().putMessages(arr, false, true, false, 0);
+            MessagesController.getInstance().updateInterfaceWithMessages(peer, objArr);
+            NotificationCenter.getInstance().postNotificationName(NotificationCenter.dialogsNeedReload);
 
-        try {
             if (type == 0) {
                 if (encryptedChat == null) {
                     if (sendToPeers != null) {
@@ -1447,10 +1456,12 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
             }
         } catch (Exception e) {
             FileLog.e("tmessages", e);
-            MessagesStorage.getInstance().markMessageAsSendError(newMsgObj.messageOwner);
-            newMsgObj.messageOwner.send_state = MessageObject.MESSAGE_SEND_STATE_SEND_ERROR;
-            NotificationCenter.getInstance().postNotificationName(NotificationCenter.messageSendError, newMsgObj.getId());
-            processSentMessage(newMsgObj.getId());
+            MessagesStorage.getInstance().markMessageAsSendError(newMsg);
+            if (newMsgObj != null) {
+                newMsgObj.messageOwner.send_state = MessageObject.MESSAGE_SEND_STATE_SEND_ERROR;
+            }
+            NotificationCenter.getInstance().postNotificationName(NotificationCenter.messageSendError, newMsg.id);
+            processSentMessage(newMsg.id);
         }
     }
 
@@ -1718,7 +1729,7 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
             MessagesStorage.getInstance().putSentFile(originalPath, sentMessage.media.photo, 0);
 
             for (TLRPC.PhotoSize size : sentMessage.media.photo.sizes) {
-                if (size == null || size instanceof TLRPC.TL_photoSizeEmpty || size.type == null) {
+                if (size == null || size.location == null || size instanceof TLRPC.TL_photoSizeEmpty || size.type == null) {
                     continue;
                 }
                 for (TLRPC.PhotoSize size2 : newMsg.media.photo.sizes) {
@@ -1754,7 +1765,7 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
 
             TLRPC.PhotoSize size2 = newMsg.media.video.thumb;
             TLRPC.PhotoSize size = sentMessage.media.video.thumb;
-            if (size2.location != null && size2.location.volume_id == Integer.MIN_VALUE && size.location != null && !(size instanceof TLRPC.TL_photoSizeEmpty) && !(size2 instanceof TLRPC.TL_photoSizeEmpty)) {
+            if (size2 != null && size2.location != null && size2.location.volume_id == Integer.MIN_VALUE && size != null && size.location != null && !(size instanceof TLRPC.TL_photoSizeEmpty) && !(size2 instanceof TLRPC.TL_photoSizeEmpty)) {
                 String fileName = size2.location.volume_id + "_" + size2.location.local_id;
                 String fileName2 = size.location.volume_id + "_" + size.location.local_id;
                 if (!fileName.equals(fileName2)) {
@@ -2007,6 +2018,7 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                     if (bitmap != null) {
                         fileName.file_name = "animation.gif";
                         document.thumb = ImageLoader.scaleAndSaveImage(bitmap, 90, 90, 55, isEncrypted);
+                        bitmap.recycle();
                     }
                 } catch (Exception e) {
                     FileLog.e("tmessages", e);
@@ -2018,7 +2030,7 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                     bmOptions.inJustDecodeBounds = true;
                     RandomAccessFile file = new RandomAccessFile(path, "r");
                     ByteBuffer buffer = file.getChannel().map(FileChannel.MapMode.READ_ONLY, 0, path.length());
-                    Utilities.loadWebpImage(buffer, buffer.limit(), bmOptions);
+                    Utilities.loadWebpImage(null, buffer, buffer.limit(), bmOptions, true);
                     file.close();
                 } catch (Exception e) {
                     FileLog.e("tmessages", e);
@@ -2223,6 +2235,7 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                                     Bitmap bitmap = ImageLoader.loadBitmap(thumbFile.getAbsolutePath(), null, 90, 90, true);
                                     if (bitmap != null) {
                                         document.thumb = ImageLoader.scaleAndSaveImage(bitmap, 90, 90, 55, isEncrypted);
+                                        bitmap.recycle();
                                     }
                                 } catch (Exception e) {
                                     FileLog.e("tmessages", e);

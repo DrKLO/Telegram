@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013.
+ * Copyright Nikolai Kudashov, 2013-2015.
  */
 
 package org.telegram.ui.Cells;
@@ -25,6 +25,7 @@ import android.text.TextUtils;
 import android.text.style.ClickableSpan;
 import android.view.MotionEvent;
 import android.view.SoundEffectConstants;
+import android.view.ViewStructure;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ImageLoader;
@@ -38,6 +39,8 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.Components.RadialProgress;
 import org.telegram.ui.Components.ResourceLoader;
 import org.telegram.ui.Components.StaticLayoutEx;
+import org.telegram.ui.Components.URLSpanBotCommand;
+import org.telegram.ui.Components.URLSpanNoUnderline;
 
 import java.io.File;
 import java.util.Locale;
@@ -114,7 +117,11 @@ public class ChatMessageCell extends ChatBaseCell {
                             if (left <= x && left + block.textLayout.getLineWidth(line) >= x) {
                                 Spannable buffer = (Spannable) currentMessageObject.messageText;
                                 ClickableSpan[] link = buffer.getSpans(off, off, ClickableSpan.class);
-                                if (link.length != 0) {
+                                boolean ignore = false;
+                                if (link.length == 0 || link.length != 0 && link[0] instanceof URLSpanBotCommand && !URLSpanBotCommand.enabled) {
+                                    ignore = true;
+                                }
+                                if (!ignore) {
                                     if (event.getAction() == MotionEvent.ACTION_DOWN) {
                                         resetPressedLink();
                                         pressedLink = link[0];
@@ -130,7 +137,7 @@ public class ChatMessageCell extends ChatBaseCell {
                                     } else {
                                         if (link[0] == pressedLink) {
                                             try {
-                                                delegate.didPressUrl(currentMessageObject, pressedLink);
+                                                delegate.didPressUrl(currentMessageObject, pressedLink, false);
                                             } catch (Exception e) {
                                                 FileLog.e("tmessages", e);
                                             }
@@ -174,7 +181,11 @@ public class ChatMessageCell extends ChatBaseCell {
                                     if (left <= x && left + descriptionLayout.getLineWidth(line) >= x) {
                                         Spannable buffer = (Spannable) currentMessageObject.linkDescription;
                                         ClickableSpan[] link = buffer.getSpans(off, off, ClickableSpan.class);
-                                        if (link.length != 0) {
+                                        boolean ignore = false;
+                                        if (link.length == 0 || link.length != 0 && link[0] instanceof URLSpanBotCommand && !URLSpanBotCommand.enabled) {
+                                            ignore = true;
+                                        }
+                                        if (!ignore) {
                                             resetPressedLink();
                                             pressedLink = link[0];
                                             linkPreviewPressed = true;
@@ -351,6 +362,18 @@ public class ChatMessageCell extends ChatBaseCell {
     }
 
     @Override
+    protected void onLongPress() {
+        if (pressedLink instanceof URLSpanNoUnderline) {
+            URLSpanNoUnderline url = (URLSpanNoUnderline) pressedLink;
+            if (url.getURL().startsWith("/")) {
+                delegate.didPressUrl(currentMessageObject, pressedLink, true);
+                return;
+            }
+        }
+        super.onLongPress();
+    }
+
+    @Override
     public void setMessageObject(MessageObject messageObject) {
         boolean dataChanged = currentMessageObject == messageObject && (isUserDataChanged() || photoNotSet);
         if (currentMessageObject != messageObject || dataChanged) {
@@ -381,7 +404,7 @@ public class ChatMessageCell extends ChatBaseCell {
                     maxWidth = AndroidUtilities.getMinTabletSide() - AndroidUtilities.dp(122);
                     drawName = true;
                 } else {
-                    drawName = messageObject.messageOwner.to_id.channel_id != 0;
+                    drawName = messageObject.messageOwner.to_id.channel_id != 0 && !messageObject.isOutOwner();
                     maxWidth = AndroidUtilities.getMinTabletSide() - AndroidUtilities.dp(80);
                 }
             } else {
@@ -390,7 +413,7 @@ public class ChatMessageCell extends ChatBaseCell {
                     drawName = true;
                 } else {
                     maxWidth = Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y) - AndroidUtilities.dp(80);
-                    drawName = messageObject.messageOwner.to_id.channel_id != 0;
+                    drawName = messageObject.messageOwner.to_id.channel_id != 0 && !messageObject.isOutOwner();
                 }
             }
 
@@ -554,7 +577,7 @@ public class ChatMessageCell extends ChatBaseCell {
                         totalHeight += height;
                         for (int a = 0; a < descriptionLayout.getLineCount(); a++) {
                             int lineLeft = (int) Math.ceil(descriptionLayout.getLineLeft(a));
-                            if (descriptionX == 0) {
+                            if (a == 0 && descriptionX == 0) {
                                 descriptionX = -lineLeft;
                             } else {
                                 descriptionX = Math.max(descriptionX, -lineLeft);
@@ -958,6 +981,14 @@ public class ChatMessageCell extends ChatBaseCell {
         radialProgress.setProgress(progress, true);
         if (buttonState != 1) {
             updateButtonState(false);
+        }
+    }
+
+    @Override
+    public void onProvideStructure(ViewStructure structure) {
+        super.onProvideStructure(structure);
+        if (allowAssistant && Build.VERSION.SDK_INT >= 23) {
+            structure.setText(currentMessageObject.messageText);
         }
     }
 }

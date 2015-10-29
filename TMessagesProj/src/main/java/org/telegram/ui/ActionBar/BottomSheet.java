@@ -1,5 +1,5 @@
 /*
- * This is the source code of Telegram for Android v. 2.x.x.
+ * This is the source code of Telegram for Android v. 3.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
@@ -296,6 +296,10 @@ public class BottomSheet extends Dialog {
             }
         });
         container.setBackgroundDrawable(backgroundDrawable);
+        if (Build.VERSION.SDK_INT >= 21) {
+            container.setFitsSystemWindows(true);
+            container.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
+        }
     }
 
     @Override
@@ -418,15 +422,13 @@ public class BottomSheet extends Dialog {
         }
 
         WindowManager.LayoutParams params = getWindow().getAttributes();
-        params.height = ViewGroup.LayoutParams.MATCH_PARENT;
         params.width = ViewGroup.LayoutParams.MATCH_PARENT;
         params.gravity = Gravity.TOP | Gravity.LEFT;
         params.flags |= WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM;
         params.dimAmount = 0;
         params.flags &= ~WindowManager.LayoutParams.FLAG_DIM_BEHIND;
-        if (Build.VERSION.SDK_INT >= 21) {
-            params.flags |= WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS;
-            params.type = WindowManager.LayoutParams.TYPE_SYSTEM_ERROR;
+        if (Build.VERSION.SDK_INT < 21) {
+            params.height = ViewGroup.LayoutParams.MATCH_PARENT;
         }
         getWindow().setAttributes(params);
     }

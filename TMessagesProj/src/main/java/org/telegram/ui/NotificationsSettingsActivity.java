@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 1.3.2.
+ * This is the source code of Telegram for Android v. 3.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013.
+ * Copyright Nikolai Kudashov, 2013-2015.
  */
 
 package org.telegram.ui;
@@ -52,6 +52,7 @@ import org.telegram.ui.Components.ColorPickerView;
 import org.telegram.ui.Components.LayoutHelper;
 
 public class NotificationsSettingsActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
+
     private ListView listView;
     private boolean reseting = false;
 
@@ -186,7 +187,7 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
         listView.setAdapter(new ListAdapter(context));
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
-            public void onItemClick(AdapterView<?> adapterView, View view, final int i, long l) {
+            public void onItemClick(AdapterView<?> adapterView, final View view, final int i, long l) {
                 boolean enabled = false;
                 if (i == messageAlertRow || i == groupAlertRow) {
                     SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
@@ -356,7 +357,12 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
                                 listView.invalidateViews();
                             }
                         });
-                        builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+                        builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                ((TextCheckCell) view).setChecked(true);
+                            }
+                        });
                         showDialog(builder.create());
                     }
                 } else if (i == messageLedRow || i == groupLedRow) {
@@ -384,13 +390,15 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
                         public void onClick(DialogInterface dialogInterface, int which) {
                             final SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
                             SharedPreferences.Editor editor = preferences.edit();
+                            TextColorCell textCell = (TextColorCell) view;
                             if (i == messageLedRow) {
                                 editor.putInt("MessagesLed", colorPickerView.getColor());
+                                textCell.setTextAndColor(LocaleController.getString("LedColor", R.string.LedColor), colorPickerView.getColor(), true);
                             } else if (i == groupLedRow) {
                                 editor.putInt("GroupLed", colorPickerView.getColor());
+                                textCell.setTextAndColor(LocaleController.getString("LedColor", R.string.LedColor), colorPickerView.getColor(), true);
                             }
                             editor.commit();
-                            listView.invalidateViews();
                         }
                     });
                     builder.setNeutralButton(LocaleController.getString("LedDisabled", R.string.LedDisabled), new DialogInterface.OnClickListener() {
@@ -398,10 +406,13 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
                         public void onClick(DialogInterface dialog, int which) {
                             final SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
                             SharedPreferences.Editor editor = preferences.edit();
+                            TextColorCell textCell = (TextColorCell) view;
                             if (i == messageLedRow) {
                                 editor.putInt("MessagesLed", 0);
+                                textCell.setTextAndColor(LocaleController.getString("LedColor", R.string.LedColor), 0, true);
                             } else if (i == groupLedRow) {
                                 editor.putInt("GroupLed", 0);
+                                textCell.setTextAndColor(LocaleController.getString("LedColor", R.string.LedColor), 0, true);
                             }
                             editor.commit();
                             listView.invalidateViews();

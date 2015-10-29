@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2014.
+ * Copyright Nikolai Kudashov, 2013-2015.
  */
 
 package org.telegram.ui.Cells;
@@ -19,6 +19,10 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.AnimationCompat.AnimatorListenerAdapterProxy;
+import org.telegram.messenger.AnimationCompat.AnimatorSetProxy;
+import org.telegram.messenger.AnimationCompat.ObjectAnimatorProxy;
+import org.telegram.messenger.AnimationCompat.ViewProxy;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLoader;
@@ -51,21 +55,26 @@ public class SharedPhotoVideoCell extends FrameLayoutFixed {
         private LinearLayout videoInfoContainer;
         private View selector;
         private CheckBox checkBox;
+        private FrameLayoutFixed container;
+        private AnimatorSetProxy animator;
 
         public PhotoVideoView(Context context) {
             super(context);
 
+            container = new FrameLayoutFixed(context);
+            addView(container, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+
             imageView = new BackupImageView(context);
             imageView.getImageReceiver().setNeedsQualityThumb(true);
             imageView.getImageReceiver().setShouldGenerateQualityThumb(true);
-            addView(imageView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+            container.addView(imageView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
             videoInfoContainer = new LinearLayout(context);
             videoInfoContainer.setOrientation(LinearLayout.HORIZONTAL);
             videoInfoContainer.setBackgroundResource(R.drawable.phototime);
             videoInfoContainer.setPadding(AndroidUtilities.dp(3), 0, AndroidUtilities.dp(3), 0);
             videoInfoContainer.setGravity(Gravity.CENTER_VERTICAL);
-            addView(videoInfoContainer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 16, Gravity.BOTTOM | Gravity.LEFT));
+            container.addView(videoInfoContainer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 16, Gravity.BOTTOM | Gravity.LEFT));
 
             ImageView imageView1 = new ImageView(context);
             imageView1.setImageResource(R.drawable.ic_video);
@@ -83,7 +92,7 @@ public class SharedPhotoVideoCell extends FrameLayoutFixed {
 
             checkBox = new CheckBox(context, R.drawable.round_check2);
             checkBox.setVisibility(INVISIBLE);
-            addView(checkBox, LayoutHelper.createFrame(22, 22, Gravity.RIGHT | Gravity.TOP, 0, 6, 6, 0));
+            addView(checkBox, LayoutHelper.createFrame(22, 22, Gravity.RIGHT | Gravity.TOP, 0, 2, 2, 0));
         }
 
         @Override
@@ -92,6 +101,51 @@ public class SharedPhotoVideoCell extends FrameLayoutFixed {
                 selector.drawableHotspotChanged(event.getX(), event.getY());
             }
             return super.onTouchEvent(event);
+        }
+
+        public void setChecked(final boolean checked, boolean animated) {
+            if (checkBox.getVisibility() != VISIBLE) {
+                checkBox.setVisibility(VISIBLE);
+            }
+            checkBox.setChecked(checked, animated);
+            if (animator != null) {
+                animator.cancel();
+                animator = null;
+            }
+            if (animated) {
+                if (checked) {
+                    setBackgroundColor(0xfff5f5f5);
+                }
+                animator = new AnimatorSetProxy();
+                animator.playTogether(ObjectAnimatorProxy.ofFloat(container, "scaleX", checked ? 0.85f : 1.0f),
+                        ObjectAnimatorProxy.ofFloat(container, "scaleY", checked ? 0.85f : 1.0f));
+                animator.setDuration(200);
+                animator.addListener(new AnimatorListenerAdapterProxy() {
+                    @Override
+                    public void onAnimationEnd(Object animation) {
+                        if (animator.equals(animation)) {
+                            animator = null;
+                            if (!checked) {
+                                setBackgroundColor(0);
+                            }
+                        }
+                    }
+                });
+                animator.start();
+            } else {
+                setBackgroundColor(checked ? 0xfff5f5f5 : 0);
+                ViewProxy.setScaleX(container, checked ? 0.85f : 1.0f);
+                ViewProxy.setScaleY(container, checked ? 0.85f : 1.0f);
+            }
+        }
+
+        @Override
+        public void clearAnimation() {
+            super.clearAnimation();
+            if (animator != null) {
+                animator.cancel();
+                animator = null;
+            }
         }
     }
 
@@ -134,6 +188,7 @@ public class SharedPhotoVideoCell extends FrameLayoutFixed {
 
     public void setItemsCount(int count) {
         for (int a = 0; a < photoVideoViews.length; a++) {
+            photoVideoViews[a].clearAnimation();
             photoVideoViews[a].setVisibility(a < count ? VISIBLE : INVISIBLE);
         }
         itemsCount = count;
@@ -158,10 +213,7 @@ public class SharedPhotoVideoCell extends FrameLayoutFixed {
     }
 
     public void setChecked(int a, boolean checked, boolean animated) {
-        if (photoVideoViews[a].checkBox.getVisibility() != VISIBLE) {
-            photoVideoViews[a].checkBox.setVisibility(VISIBLE);
-        }
-        photoVideoViews[a].checkBox.setChecked(checked, animated);
+        photoVideoViews[a].setChecked(checked, animated);
     }
 
     public void setItem(int a, int index, MessageObject messageObject) {
@@ -195,6 +247,7 @@ public class SharedPhotoVideoCell extends FrameLayoutFixed {
                 photoVideoView.imageView.setImageResource(R.drawable.photo_placeholder_in);
             }
         } else {
+            photoVideoViews[a].clearAnimation();
             photoVideoViews[a].setVisibility(INVISIBLE);
             messageObjects[a] = null;
         }

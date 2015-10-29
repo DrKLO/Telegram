@@ -5,7 +5,7 @@ repositories {
 }
 
 dependencies {
-    compile 'com.android.support:support-v4:23.0.+'
+    compile 'com.android.support:support-v4:23.1.+'
     compile 'com.google.android.gms:play-services:3.2.+'
     compile 'net.hockeyapp.android:HockeySDK:3.5.+'
     compile 'com.googlecode.mp4parser:isoparser:1.0.+'
@@ -13,8 +13,10 @@ dependencies {
 }
 
 android {
-    compileSdkVersion 22
+    compileSdkVersion 23
     buildToolsVersion '23.0.1'
+
+    useLibrary 'org.apache.http.legacy'
 
     packagingOptions {
         exclude 'META-INF/NOTICE.txt'
@@ -78,8 +80,8 @@ android {
 
     defaultConfig {
         minSdkVersion 8
-        targetSdkVersion 22
-        versionCode 627
-        versionName "3.2.2"
+        targetSdkVersion 23
+        versionCode 654
+        versionName "3.2.6"
     }
 }

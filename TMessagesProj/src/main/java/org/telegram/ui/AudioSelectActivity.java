@@ -1,5 +1,5 @@
 /*
- * This is the source code of Telegram for Android v. 2.x.x.
+ * This is the source code of Telegram for Android v. 3.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
@@ -77,7 +77,7 @@ public class AudioSelectActivity extends BaseFragment implements NotificationCen
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.closeChats);
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.audioDidReset);
         if (playingAudio != null && MediaController.getInstance().isPlayingAudio(playingAudio)) {
-            MediaController.getInstance().clenupPlayer(true, true);
+            MediaController.getInstance().cleanupPlayer(true, true);
         }
     }
 

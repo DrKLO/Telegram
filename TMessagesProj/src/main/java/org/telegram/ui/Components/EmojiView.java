@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 1.3.2.
+ * This is the source code of Telegram for Android v. 3.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013.
+ * Copyright Nikolai Kudashov, 2013-2015.
  */
 
 package org.telegram.ui.Components;
@@ -12,15 +12,22 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.database.DataSetObserver;
+import android.graphics.Canvas;
+import android.graphics.Paint;
+import android.graphics.RectF;
+import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.support.v4.view.PagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
+import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewTreeObserver;
+import android.view.WindowManager;
 import android.widget.AbsListView;
 import android.widget.AdapterView;
 import android.widget.BaseAdapter;
@@ -28,11 +35,13 @@ import android.widget.FrameLayout;
 import android.widget.GridView;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.PopupWindow;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.AnimationCompat.ViewProxy;
 import org.telegram.messenger.Emoji;
+import org.telegram.messenger.EmojiData;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.query.StickersQuery;
@@ -43,6 +52,7 @@ import org.telegram.ui.Cells.EmptyCell;
 import org.telegram.ui.Cells.StickerEmojiCell;
 import org.telegram.ui.StickerPreviewViewer;
 
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -56,9 +66,415 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
         void onStickerSelected(TLRPC.Document sticker);
     }
 
+    private static final Field superListenerField;
+    static {
+        Field f = null;
+        try {
+            f = PopupWindow.class.getDeclaredField("mOnScrollChangedListener");
+            f.setAccessible(true);
+        } catch (NoSuchFieldException e) {
+            /* ignored */
+        }
+        superListenerField = f;
+    }
+    private static final ViewTreeObserver.OnScrollChangedListener NOP = new ViewTreeObserver.OnScrollChangedListener() {
+        @Override
+        public void onScrollChanged() {
+            /* do nothing */
+        }
+    };
+
+    private class ImageViewEmoji extends ImageView {
+
+        private boolean touched;
+        private float lastX;
+        private float lastY;
+        private float touchedX;
+        private float touchedY;
+
+        public ImageViewEmoji(Context context) {
+            super(context);
+
+            setOnClickListener(new View.OnClickListener() {
+                public void onClick(View view) {
+                    sendEmoji(null);
+                }
+            });
+            setOnLongClickListener(new OnLongClickListener() {
+                @Override
+                public boolean onLongClick(View view) {
+                    String code = (String) view.getTag();
+                    if (EmojiData.emojiColoredMap.containsKey(code)) {
+                        touched = true;
+                        touchedX = lastX;
+                        touchedY = lastY;
+
+                        String color = emojiColor.get(code);
+                        if (color != null) {
+                            switch (color) {
+                                case "\uD83C\uDFFB":
+                                    pickerView.setSelection(1);
+                                    break;
+                                case "\uD83C\uDFFC":
+                                    pickerView.setSelection(2);
+                                    break;
+                                case "\uD83C\uDFFD":
+                                    pickerView.setSelection(3);
+                                    break;
+                                case "\uD83C\uDFFE":
+                                    pickerView.setSelection(4);
+                                    break;
+                                case "\uD83C\uDFFF":
+                                    pickerView.setSelection(5);
+                                    break;
+                            }
+                        } else {
+                            pickerView.setSelection(0);
+                        }
+                        view.getLocationOnScreen(location);
+                        int x = emojiSize * pickerView.getSelection() + AndroidUtilities.dp(4 * pickerView.getSelection() - (AndroidUtilities.isTablet() ? 5 : 1));
+                        if (location[0] - x < AndroidUtilities.dp(5)) {
+                            x += (location[0] - x) - AndroidUtilities.dp(5);
+                        } else if (location[0] - x + popupWidth > AndroidUtilities.displaySize.x - AndroidUtilities.dp(5)) {
+                            x += (location[0] - x + popupWidth) - (AndroidUtilities.displaySize.x - AndroidUtilities.dp(5));
+                        }
+                        int xOffset = -x;
+                        int yOffset = view.getTop() < 0 ? view.getTop() : 0;
+
+                        pickerView.setEmoji(code, AndroidUtilities.dp(AndroidUtilities.isTablet() ? 30 : 22) - xOffset + (int) AndroidUtilities.dpf2(0.5f));
+
+                        pickerViewPopup.setFocusable(true);
+                        pickerViewPopup.showAsDropDown(view, xOffset, -view.getMeasuredHeight() - popupHeight + (view.getMeasuredHeight() - emojiSize) / 2 - yOffset);
+                        view.getParent().requestDisallowInterceptTouchEvent(true);
+                        return true;
+                    }
+                    return false;
+                }
+            });
+            setBackgroundResource(R.drawable.list_selector);
+            setScaleType(ImageView.ScaleType.CENTER);
+        }
+
+        private void sendEmoji(String override) {
+            String code = override != null ? override : (String) getTag();
+            if (override == null) {
+                if (pager.getCurrentItem() != 0) {
+                    String color = emojiColor.get(code);
+                    if (color != null) {
+                        code += color;
+                    }
+                }
+                Integer count = emojiUseHistory.get(code);
+                if (count == null) {
+                    count = 0;
+                }
+                if (count == 0 && emojiUseHistory.size() > 50) {
+                    for (int a = recentEmoji.size() - 1; a >= 0; a--) {
+                        String emoji = recentEmoji.get(a);
+                        emojiUseHistory.remove(emoji);
+                        recentEmoji.remove(a);
+                        if (emojiUseHistory.size() <= 50) {
+                            break;
+                        }
+                    }
+                }
+                emojiUseHistory.put(code, ++count);
+                if (pager.getCurrentItem() != 0) {
+                    sortEmoji();
+                }
+                saveRecentEmoji();
+                adapters.get(0).notifyDataSetChanged();
+                if (listener != null) {
+                    listener.onEmojiSelected(Emoji.fixEmoji(code));
+                }
+            } else {
+                if (listener != null) {
+                    listener.onEmojiSelected(Emoji.fixEmoji(override));
+                }
+            }
+
+        }
+
+        @Override
+        public void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+            setMeasuredDimension(View.MeasureSpec.getSize(widthMeasureSpec), View.MeasureSpec.getSize(widthMeasureSpec));
+        }
+
+        @Override
+        public boolean onTouchEvent(MotionEvent event) {
+            if (touched) {
+                if (event.getAction() == MotionEvent.ACTION_UP || event.getAction() == MotionEvent.ACTION_CANCEL) {
+                    if (pickerViewPopup != null && pickerViewPopup.isShowing()) {
+                        pickerViewPopup.dismiss();
+
+                        String color = null;
+                        switch (pickerView.getSelection()) {
+                            case 1:
+                                color = "\uD83C\uDFFB";
+                                break;
+                            case 2:
+                                color = "\uD83C\uDFFC";
+                                break;
+                            case 3:
+                                color = "\uD83C\uDFFD";
+                                break;
+                            case 4:
+                                color = "\uD83C\uDFFE";
+                                break;
+                            case 5:
+                                color = "\uD83C\uDFFF";
+                                break;
+                        }
+                        String code = (String) getTag();
+                        if (pager.getCurrentItem() != 0) {
+                            if (color != null) {
+                                emojiColor.put(code, color);
+                                code += color;
+                            } else {
+                                emojiColor.remove(code);
+                            }
+                            setImageDrawable(Emoji.getEmojiBigDrawable(code));
+                            sendEmoji(null);
+                            saveEmojiColors();
+                        } else {
+                            sendEmoji(code + (color != null ? color : ""));
+                        }
+                    }
+                    touched = false;
+                    touchedX = -10000;
+                    touchedY = -10000;
+                } else if (event.getAction() == MotionEvent.ACTION_MOVE) {
+                    boolean ignore = false;
+                    if (touchedX != -10000) {
+                        if (Math.abs(touchedX - event.getX()) > AndroidUtilities.getPixelsInCM(0.2f, true) || Math.abs(touchedY - event.getY()) > AndroidUtilities.getPixelsInCM(0.2f, false)) {
+                            touchedX = -10000;
+                            touchedY = -10000;
+                        } else {
+                            ignore = true;
+                        }
+                    }
+                    if (!ignore) {
+                        getLocationOnScreen(location);
+                        float x = location[0] + event.getX();
+                        pickerView.getLocationOnScreen(location);
+                        x -= location[0] + AndroidUtilities.dp(3);
+                        int position = (int) (x / (emojiSize + AndroidUtilities.dp(4)));
+                        if (position < 0) {
+                            position = 0;
+                        } else if (position > 5) {
+                            position = 5;
+                        }
+                        pickerView.setSelection(position);
+                    }
+                }
+            }
+            lastX = event.getX();
+            lastY = event.getY();
+            return super.onTouchEvent(event);
+        }
+    }
+
+    private class EmojiPopupWindow extends PopupWindow {
+
+        private ViewTreeObserver.OnScrollChangedListener mSuperScrollListener;
+        private ViewTreeObserver mViewTreeObserver;
+
+        public EmojiPopupWindow() {
+            super();
+            init();
+        }
+
+        public EmojiPopupWindow(Context context) {
+            super(context);
+            init();
+        }
+
+        public EmojiPopupWindow(int width, int height) {
+            super(width, height);
+            init();
+        }
+
+        public EmojiPopupWindow(View contentView) {
+            super(contentView);
+            init();
+        }
+
+        public EmojiPopupWindow(View contentView, int width, int height, boolean focusable) {
+            super(contentView, width, height, focusable);
+            init();
+        }
+
+        public EmojiPopupWindow(View contentView, int width, int height) {
+            super(contentView, width, height);
+            init();
+        }
+
+        private void init() {
+            if (superListenerField != null) {
+                try {
+                    mSuperScrollListener = (ViewTreeObserver.OnScrollChangedListener) superListenerField.get(this);
+                    superListenerField.set(this, NOP);
+                } catch (Exception e) {
+                    mSuperScrollListener = null;
+                }
+            }
+        }
+
+        private void unregisterListener() {
+            if (mSuperScrollListener != null && mViewTreeObserver != null) {
+                if (mViewTreeObserver.isAlive()) {
+                    mViewTreeObserver.removeOnScrollChangedListener(mSuperScrollListener);
+                }
+                mViewTreeObserver = null;
+            }
+        }
+
+        private void registerListener(View anchor) {
+            if (mSuperScrollListener != null) {
+                ViewTreeObserver vto = (anchor.getWindowToken() != null) ? anchor.getViewTreeObserver() : null;
+                if (vto != mViewTreeObserver) {
+                    if (mViewTreeObserver != null && mViewTreeObserver.isAlive()) {
+                        mViewTreeObserver.removeOnScrollChangedListener(mSuperScrollListener);
+                    }
+                    if ((mViewTreeObserver = vto) != null) {
+                        vto.addOnScrollChangedListener(mSuperScrollListener);
+                    }
+                }
+            }
+        }
+
+        @Override
+        public void showAsDropDown(View anchor, int xoff, int yoff) {
+            try {
+                super.showAsDropDown(anchor, xoff, yoff);
+                registerListener(anchor);
+            } catch (Exception e) {
+                FileLog.e("tmessages", e);
+            }
+        }
+
+        @Override
+        public void update(View anchor, int xoff, int yoff, int width, int height) {
+            super.update(anchor, xoff, yoff, width, height);
+            registerListener(anchor);
+        }
+
+        @Override
+        public void update(View anchor, int width, int height) {
+            super.update(anchor, width, height);
+            registerListener(anchor);
+        }
+
+        @Override
+        public void showAtLocation(View parent, int gravity, int x, int y) {
+            super.showAtLocation(parent, gravity, x, y);
+            unregisterListener();
+        }
+
+        @Override
+        public void dismiss() {
+            setFocusable(false);
+            try {
+                super.dismiss();
+            } catch (Exception e) {
+                //don't promt
+            }
+            unregisterListener();
+        }
+    }
+
+    private class EmojiColorPickerView extends View {
+
+        private Drawable backgroundDrawable;
+        private Drawable arrowDrawable;
+        private String currentEmoji;
+        private int arrowX;
+        private int selection;
+        private Paint rectPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private RectF rect = new RectF();
+
+        public void setEmoji(String emoji, int arrowPosition) {
+            currentEmoji = emoji;
+            arrowX = arrowPosition;
+            rectPaint.setColor(0x2f000000);
+            invalidate();
+        }
+
+        public String getEmoji() {
+            return currentEmoji;
+        }
+
+        public void setSelection(int position) {
+            if (selection == position) {
+                return;
+            }
+            selection = position;
+            invalidate();
+        }
+
+        public int getSelection() {
+            return selection;
+        }
+
+        public EmojiColorPickerView(Context context) {
+            super(context);
+
+            backgroundDrawable = getResources().getDrawable(R.drawable.stickers_back_all);
+            arrowDrawable = getResources().getDrawable(R.drawable.stickers_back_arrow);
+        }
+
+        @Override
+        protected void onDraw(Canvas canvas) {
+            backgroundDrawable.setBounds(0, 0, getMeasuredWidth(), AndroidUtilities.dp(AndroidUtilities.isTablet() ? 60 : 52));
+            backgroundDrawable.draw(canvas);
+
+            arrowDrawable.setBounds(arrowX - AndroidUtilities.dp(9), AndroidUtilities.dp(AndroidUtilities.isTablet() ? 55.5f : 47.5f), arrowX + AndroidUtilities.dp(9), AndroidUtilities.dp((AndroidUtilities.isTablet() ? 55.5f : 47.5f) + 8));
+            arrowDrawable.draw(canvas);
+
+            if (currentEmoji != null) {
+                String code;
+                for (int a = 0; a < 6; a++) {
+                    int x = emojiSize * a + AndroidUtilities.dp(5 + 4 * a);
+                    int y = AndroidUtilities.dp(9);
+                    if (selection == a) {
+                        rect.set(x, y - (int) AndroidUtilities.dpf2(3.5f), x + emojiSize, y + emojiSize + AndroidUtilities.dp(3));
+                        canvas.drawRoundRect(rect, AndroidUtilities.dp(4), AndroidUtilities.dp(4), rectPaint);
+                    }
+                    code = currentEmoji;
+                    if (a != 0) {
+                        code += "\uD83C";
+                        switch (a) {
+                            case 1:
+                                code += "\uDFFB";
+                                break;
+                            case 2:
+                                code += "\uDFFC";
+                                break;
+                            case 3:
+                                code += "\uDFFD";
+                                break;
+                            case 4:
+                                code += "\uDFFE";
+                                break;
+                            case 5:
+                                code += "\uDFFF";
+                                break;
+                        }
+                    }
+                    Drawable drawable = Emoji.getEmojiBigDrawable(code);
+                    if (drawable != null) {
+                        drawable.setBounds(x, y, x + emojiSize, y + emojiSize);
+                        drawable.draw(canvas);
+                    }
+                }
+            }
+        }
+    }
+
     private ArrayList<EmojiGridAdapter> adapters = new ArrayList<>();
-    private HashMap<Long, Integer> emojiUseHistory = new HashMap<>();
-    private ArrayList<Long> recentEmoji = new ArrayList<>();
+    private HashMap<String, Integer> emojiUseHistory = new HashMap<>();
+    private static HashMap<String, String> emojiColor = new HashMap<>();
+    private ArrayList<String> recentEmoji = new ArrayList<>();
     private HashMap<Long, Integer> stickersUseHistory = new HashMap<>();
     private ArrayList<TLRPC.Document> recentStickers = new ArrayList<>();
     private HashMap<Long, Integer> stickerSetsUseCount = new HashMap<>();
@@ -86,6 +502,12 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
     private AdapterView.OnItemClickListener stickersOnItemClickListener;
     private Runnable openStickerPreviewRunnable;
     private StickerEmojiCell currentStickerPreviewCell;
+    private EmojiColorPickerView pickerView;
+    private EmojiPopupWindow pickerViewPopup;
+    private int popupWidth;
+    private int popupHeight;
+    private int emojiSize;
+    private int location[] = new int[2];
 
     private int startX;
     private int startY;
@@ -102,7 +524,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
 
         showStickers = needStickers;
 
-        for (int i = 0; i < Emoji.data.length + 1; i++) {
+        for (int i = 0; i < EmojiData.dataColored.length + 1; i++) {
             GridView gridView = new GridView(context);
             if (AndroidUtilities.isTablet()) {
                 gridView.setColumnWidth(AndroidUtilities.dp(60));
@@ -508,11 +930,26 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
 
         addView(pager, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.TOP, 0, 48, 0, 0));
 
-        loadRecents();
+        emojiSize = AndroidUtilities.dp(AndroidUtilities.isTablet() ? 40 : 32);
+        pickerView = new EmojiColorPickerView(context);
+        pickerViewPopup = new EmojiPopupWindow(pickerView, popupWidth = AndroidUtilities.dp((AndroidUtilities.isTablet() ? 40 : 32) * 6 + 10 + 4 * 5), popupHeight = AndroidUtilities.dp(AndroidUtilities.isTablet() ? 64 : 56));
+        pickerViewPopup.setOutsideTouchable(true);
+        pickerViewPopup.setClippingEnabled(true);
+        pickerViewPopup.setInputMethodMode(EmojiPopupWindow.INPUT_METHOD_NOT_NEEDED);
+        pickerViewPopup.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_UNSPECIFIED);
+        pickerViewPopup.getContentView().setFocusableInTouchMode(true);
+        pickerViewPopup.getContentView().setOnKeyListener(new OnKeyListener() {
+            @Override
+            public boolean onKey(View v, int keyCode, KeyEvent event) {
+                if (keyCode == KeyEvent.KEYCODE_MENU && event.getRepeatCount() == 0 && event.getAction() == KeyEvent.ACTION_UP && pickerViewPopup != null && pickerViewPopup.isShowing()) {
+                    pickerViewPopup.dismiss();
+                    return true;
+                }
+                return false;
+            }
+        });
 
-        if (Emoji.data[0] == null || Emoji.data[0].length == 0) {
-            pager.setCurrentItem(1);
-        }
+        loadRecents();
     }
 
     private void onPageScrolled(int position, int width, int positionOffsetPixels) {
@@ -581,7 +1018,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
     private void saveRecentEmoji() {
         SharedPreferences preferences = getContext().getSharedPreferences("emoji", Activity.MODE_PRIVATE);
         StringBuilder stringBuilder = new StringBuilder();
-        for (HashMap.Entry<Long, Integer> entry : emojiUseHistory.entrySet()) {
+        for (HashMap.Entry<String, Integer> entry : emojiUseHistory.entrySet()) {
             if (stringBuilder.length() != 0) {
                 stringBuilder.append(",");
             }
@@ -589,7 +1026,21 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
             stringBuilder.append("=");
             stringBuilder.append(entry.getValue());
         }
-        preferences.edit().putString("emojis", stringBuilder.toString()).commit();
+        preferences.edit().putString("emojis2", stringBuilder.toString()).commit();
+    }
+
+    private void saveEmojiColors() {
+        SharedPreferences preferences = getContext().getSharedPreferences("emoji", Activity.MODE_PRIVATE);
+        StringBuilder stringBuilder = new StringBuilder();
+        for (HashMap.Entry<String, String> entry : emojiColor.entrySet()) {
+            if (stringBuilder.length() != 0) {
+                stringBuilder.append(",");
+            }
+            stringBuilder.append(entry.getKey());
+            stringBuilder.append("=");
+            stringBuilder.append(entry.getValue());
+        }
+        preferences.edit().putString("color", stringBuilder.toString()).commit();
     }
 
     private void saveRecentStickers() {
@@ -636,12 +1087,12 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
 
     private void sortEmoji() {
         recentEmoji.clear();
-        for (HashMap.Entry<Long, Integer> entry : emojiUseHistory.entrySet()) {
+        for (HashMap.Entry<String, Integer> entry : emojiUseHistory.entrySet()) {
             recentEmoji.add(entry.getKey());
         }
-        Collections.sort(recentEmoji, new Comparator<Long>() {
+        Collections.sort(recentEmoji, new Comparator<String>() {
             @Override
-            public int compare(Long lhs, Long rhs) {
+            public int compare(String lhs, String rhs) {
                 Integer count1 = emojiUseHistory.get(lhs);
                 Integer count2 = emojiUseHistory.get(rhs);
                 if (count1 == null) {
@@ -749,50 +1200,71 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
         String str;
         SharedPreferences preferences = getContext().getSharedPreferences("emoji", Activity.MODE_PRIVATE);
 
-        if (preferences.contains("recents")) {
-            try {
-                str = preferences.getString("recents", "");
-                if (str != null && str.length() > 0) {
-                    String[] args = str.split(",");
-                    for (int i = 0; i < args.length; i++) {
-                        emojiUseHistory.put(Long.parseLong(args[i]), args.length - i);
-                    }
-                }
-            } catch (Exception e) {
-                FileLog.e("tmessages", e);
-            }
-            sortEmoji();
-            preferences.edit().remove("recents").commit();
-            saveRecentEmoji();
-            adapters.get(0).notifyDataSetChanged();
-        } else {
-            try {
-                emojiUseHistory.clear();
+        try {
+            emojiUseHistory.clear();
+            if (preferences.contains("emojis")) {
                 str = preferences.getString("emojis", "");
                 if (str != null && str.length() > 0) {
                     String[] args = str.split(",");
                     for (String arg : args) {
                         String[] args2 = arg.split("=");
-                        emojiUseHistory.put(Long.parseLong(args2[0]), Integer.parseInt(args2[1]));
+                        long value = Long.parseLong(args2[0]);
+                        String string = "";
+                        for (int a = 0; a < 4; a++) {
+                            char ch = (char) value;
+                            string = String.valueOf(ch) + string;
+                            value >>= 16;
+                            if (value == 0) {
+                                break;
+                            }
+                        }
+                        if (string.length() > 0) {
+                            emojiUseHistory.put(string, Integer.parseInt(args2[1]));
+                        }
                     }
                 }
-                if (emojiUseHistory.isEmpty()) {
-                    long[] newRecent = new long[]{0x00000000D83DDE02L, 0x00000000D83DDE18L, 0x0000000000002764L, 0x00000000D83DDE0DL, 0x00000000D83DDE0AL, 0x00000000D83DDE01L,
-                            0x00000000D83DDC4DL, 0x000000000000263AL, 0x00000000D83DDE14L, 0x00000000D83DDE04L, 0x00000000D83DDE2DL, 0x00000000D83DDC8BL,
-                            0x00000000D83DDE12L, 0x00000000D83DDE33L, 0x00000000D83DDE1CL, 0x00000000D83DDE48L, 0x00000000D83DDE09L, 0x00000000D83DDE03L,
-                            0x00000000D83DDE22L, 0x00000000D83DDE1DL, 0x00000000D83DDE31L, 0x00000000D83DDE21L, 0x00000000D83DDE0FL, 0x00000000D83DDE1EL,
-                            0x00000000D83DDE05L, 0x00000000D83DDE1AL, 0x00000000D83DDE4AL, 0x00000000D83DDE0CL, 0x00000000D83DDE00L, 0x00000000D83DDE0BL,
-                            0x00000000D83DDE06L, 0x00000000D83DDC4CL, 0x00000000D83DDE10L, 0x00000000D83DDE15L};
-                    for (int i = 0; i < newRecent.length; i++) {
-                        emojiUseHistory.put(newRecent[i], newRecent.length - i);
+                preferences.edit().remove("emojis").commit();
+                saveRecentEmoji();
+            } else {
+                str = preferences.getString("emojis2", "");
+                if (str != null && str.length() > 0) {
+                    String[] args = str.split(",");
+                    for (String arg : args) {
+                        String[] args2 = arg.split("=");
+                        emojiUseHistory.put(args2[0], Integer.parseInt(args2[1]));
                     }
-                    saveRecentEmoji();
                 }
-                sortEmoji();
-                adapters.get(0).notifyDataSetChanged();
-            } catch (Exception e) {
-                FileLog.e("tmessages", e);
             }
+            if (emojiUseHistory.isEmpty()) {
+                String[] newRecent = new String[]{
+                        "\uD83D\uDE02", "\uD83D\uDE18", "\u2764", "\uD83D\uDE0D", "\uD83D\uDE0A", "\uD83D\uDE01",
+                        "\uD83D\uDC4D", "\u263A", "\uD83D\uDE14", "\uD83D\uDE04", "\uD83D\uDE2D", "\uD83D\uDC8B",
+                        "\uD83D\uDE12", "\uD83D\uDE33", "\uD83D\uDE1C", "\uD83D\uDE48", "\uD83D\uDE09", "\uD83D\uDE03",
+                        "\uD83D\uDE22", "\uD83D\uDE1D", "\uD83D\uDE31", "\uD83D\uDE21", "\uD83D\uDE0F", "\uD83D\uDE1E",
+                        "\uD83D\uDE05", "\uD83D\uDE1A", "\uD83D\uDE4A", "\uD83D\uDE0C", "\uD83D\uDE00", "\uD83D\uDE0B",
+                        "\uD83D\uDE06", "\uD83D\uDC4C", "\uD83D\uDE10", "\uD83D\uDE15"};
+                for (int i = 0; i < newRecent.length; i++) {
+                    emojiUseHistory.put(newRecent[i], newRecent.length - i);
+                }
+                saveRecentEmoji();
+            }
+            sortEmoji();
+            adapters.get(0).notifyDataSetChanged();
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
+
+        try {
+            str = preferences.getString("color", "");
+            if (str != null && str.length() > 0) {
+                String[] args = str.split(",");
+                for (String arg : args) {
+                    String[] args2 = arg.split("=");
+                    emojiColor.put(args2[0], args2[1]);
+                }
+            }
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
         }
 
         if (showStickers) {
@@ -912,6 +1384,9 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
         super.onDetachedFromWindow();
         if (stickersGridAdapter != null) {
             NotificationCenter.getInstance().removeObserver(this, NotificationCenter.stickersDidLoaded);
+        }
+        if (pickerViewPopup != null && pickerViewPopup.isShowing()) {
+            pickerViewPopup.dismiss();
         }
     }
 
@@ -1080,7 +1555,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
             if (emojiPage == -1) {
                 return recentEmoji.size();
             }
-            return Emoji.data[emojiPage].length;
+            return EmojiData.dataColored[emojiPage].length;
         }
 
         public Object getItem(int i) {
@@ -1093,51 +1568,22 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
         }
 
         public View getView(int i, View view, ViewGroup paramViewGroup) {
-            ImageView imageView = (ImageView)view;
+            ImageViewEmoji imageView = (ImageViewEmoji) view;
             if (imageView == null) {
-                imageView = new ImageView(getContext()) {
-                    public void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-                        setMeasuredDimension(View.MeasureSpec.getSize(widthMeasureSpec), View.MeasureSpec.getSize(widthMeasureSpec));
-                    }
-                };
-                imageView.setOnClickListener(new View.OnClickListener() {
-                    public void onClick(View view) {
-                        Long code = (Long) view.getTag();
-                        Integer count = emojiUseHistory.get(code);
-                        if (count == null) {
-                            count = 0;
-                        }
-                        if (count == 0 && emojiUseHistory.size() > 50) {
-                            for (int a = recentEmoji.size() - 1; a >= 0; a--) {
-                                Long emoji = recentEmoji.get(a);
-                                emojiUseHistory.remove(emoji);
-                                recentEmoji.remove(a);
-                                if (emojiUseHistory.size() <= 50) {
-                                    break;
-                                }
-                            }
-                        }
-                        emojiUseHistory.put(code, ++count);
-                        if (pager.getCurrentItem() != 0) {
-                            sortEmoji();
-                        }
-                        saveRecentEmoji();
-                        adapters.get(0).notifyDataSetChanged();
-                        if (listener != null) {
-                            listener.onEmojiSelected(convert((Long)view.getTag()));
-                        }
-                    }
-                });
-                imageView.setBackgroundResource(R.drawable.list_selector);
-                imageView.setScaleType(ImageView.ScaleType.CENTER);
+                imageView = new ImageViewEmoji(getContext());
             }
-            long code;
+            String code;
+            String coloredCode;
             if (emojiPage == -1) {
-                code = recentEmoji.get(i);
+                coloredCode = code = recentEmoji.get(i);
             } else {
-                code = Emoji.data[emojiPage][i];
+                coloredCode = code = EmojiData.dataColored[emojiPage][i];
+                String color = emojiColor.get(code);
+                if (color != null) {
+                    coloredCode += color;
+                }
             }
-            imageView.setImageDrawable(Emoji.getEmojiBigDrawable(code));
+            imageView.setImageDrawable(Emoji.getEmojiBigDrawable(coloredCode));
             imageView.setTag(code);
             return imageView;
         }

@@ -12,6 +12,7 @@ bool callback(const google_breakpad::MinidumpDescriptor &descriptor, void *conte
 
 extern "C" {
     void Java_org_telegram_messenger_NativeLoader_init(JNIEnv* env, jobject obj, jstring filepath, bool enable) {
+        return;
         if (enable) {
             const char *path = env->GetStringUTFChars(filepath, 0);
             google_breakpad::MinidumpDescriptor descriptor(path);

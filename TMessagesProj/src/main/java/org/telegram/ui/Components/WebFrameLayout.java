@@ -1,5 +1,5 @@
 /*
- * This is the source code of Telegram for Android v. 2.x.x.
+ * This is the source code of Telegram for Android v. 3.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
@@ -137,6 +137,7 @@ public class WebFrameLayout extends FrameLayout {
         webView = new WebView(context);
         webView.getSettings().setJavaScriptEnabled(true);
         webView.getSettings().setDomStorageEnabled(true);
+
         String userAgent = webView.getSettings().getUserAgentString();
         if (userAgent != null) {
             userAgent = userAgent.replace("Android", "");
@@ -232,9 +233,14 @@ public class WebFrameLayout extends FrameLayout {
     @Override
     protected void onDetachedFromWindow() {
         super.onDetachedFromWindow();
-        webView.stopLoading();
-        webView.loadUrl("about:blank");
-        webView.destroy();
+        try {
+            removeView(webView);
+            webView.stopLoading();
+            webView.loadUrl("about:blank");
+            webView.destroy();
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
     }
 
     @Override

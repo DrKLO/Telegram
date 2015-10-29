@@ -1,5 +1,5 @@
 /*
- * This is the source code of Telegram for Android v. 2.x.x.
+ * This is the source code of Telegram for Android v. 3.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
@@ -10,6 +10,7 @@ package org.telegram.ui.Cells;
 
 import android.content.Context;
 import android.view.Gravity;
+import android.view.MotionEvent;
 import android.view.View;
 import android.widget.FrameLayout;
 
@@ -35,10 +36,14 @@ public class PhotoAttachPhotoCell extends FrameLayout {
 
         imageView = new BackupImageView(context);
         addView(imageView, LayoutHelper.createFrame(80, 80));
-
-        checkFrame = new FrameLayout(context);
-        //addView(checkFrame, LayoutHelper.createFrame(42, 42, Gravity.LEFT | Gravity.TOP, 38, 0, 0, 0));
-        addView(checkFrame, LayoutHelper.createFrame(80, 80, Gravity.LEFT | Gravity.TOP, 0, 0, 0, 0));
+        checkFrame = new FrameLayout(context) {
+            @Override
+            public boolean onInterceptTouchEvent(MotionEvent ev) {
+                getParent().requestDisallowInterceptTouchEvent(true);
+                return super.onInterceptTouchEvent(ev);
+            }
+        };
+        addView(checkFrame, LayoutHelper.createFrame(42, 42, Gravity.LEFT | Gravity.TOP, 38, 0, 0, 0));
 
         checkBox = new CheckBox(context, R.drawable.checkbig);
         checkBox.setSize(30);
@@ -56,6 +61,14 @@ public class PhotoAttachPhotoCell extends FrameLayout {
 
     public MediaController.PhotoEntry getPhotoEntry() {
         return photoEntry;
+    }
+
+    public BackupImageView getImageView() {
+        return imageView;
+    }
+
+    public CheckBox getCheckBox() {
+        return checkBox;
     }
 
     public void setPhotoEntry(MediaController.PhotoEntry entry, boolean last) {
@@ -81,6 +94,5 @@ public class PhotoAttachPhotoCell extends FrameLayout {
 
     public void setOnCheckClickLisnener(OnClickListener onCheckClickLisnener) {
         checkFrame.setOnClickListener(onCheckClickLisnener);
-        imageView.setOnClickListener(onCheckClickLisnener);
     }
 }

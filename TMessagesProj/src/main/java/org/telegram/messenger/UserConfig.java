@@ -1,5 +1,5 @@
 /*
- * This is the source code of Telegram for Android v. 2.x.x.
+ * This is the source code of Telegram for Android v. 3.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
@@ -38,6 +38,7 @@ public class UserConfig {
     public static int autoLockIn = 60 * 60;
     public static int lastPauseTime = 0;
     public static boolean isWaitingForPasscodeEnter = false;
+    public static boolean useFingerprint = true;
     public static int lastUpdateVersion;
     public static int lastContactsSyncTime;
     public static boolean channelsLoaded = false;
@@ -79,6 +80,7 @@ public class UserConfig {
                 editor.putInt("lastUpdateVersion", lastUpdateVersion);
                 editor.putInt("lastContactsSyncTime", lastContactsSyncTime);
                 editor.putBoolean("channelsLoaded", channelsLoaded);
+                editor.putBoolean("useFingerprint", useFingerprint);
 
                 if (currentUser != null) {
                     if (withFile) {
@@ -128,7 +130,7 @@ public class UserConfig {
 
     public static void loadConfig() {
         synchronized (sync) {
-            final File configFile = new File(ApplicationLoader.applicationContext.getFilesDir(), "user.dat");
+            final File configFile = new File(ApplicationLoader.getFilesDirFixed(), "user.dat");
             if (configFile.exists()) {
                 try {
                     SerializedData data = new SerializedData(configFile);
@@ -207,6 +209,7 @@ public class UserConfig {
                 passcodeType = preferences.getInt("passcodeType", 0);
                 autoLockIn = preferences.getInt("autoLockIn", 60 * 60);
                 lastPauseTime = preferences.getInt("lastPauseTime", 0);
+                useFingerprint = preferences.getBoolean("useFingerprint", true);
                 lastUpdateVersion = preferences.getInt("lastUpdateVersion", 511);
                 lastContactsSyncTime = preferences.getInt("lastContactsSyncTime", (int) (System.currentTimeMillis() / 1000) - 23 * 60 * 60);
                 channelsLoaded = preferences.getBoolean("channelsLoaded", false);
@@ -281,6 +284,7 @@ public class UserConfig {
         passcodeSalt = new byte[0];
         autoLockIn = 60 * 60;
         lastPauseTime = 0;
+        useFingerprint = true;
         isWaitingForPasscodeEnter = false;
         lastUpdateVersion = BuildVars.BUILD_VERSION;
         lastContactsSyncTime = (int) (System.currentTimeMillis() / 1000) - 23 * 60 * 60;

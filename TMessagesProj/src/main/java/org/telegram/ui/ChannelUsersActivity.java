@@ -1,5 +1,5 @@
 /*
- * This is the source code of Telegram for Android v. 2.x.x.
+ * This is the source code of Telegram for Android v. 3.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
@@ -139,7 +139,6 @@ public class ChannelUsersActivity extends BaseFragment implements NotificationCe
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
-
                 if (type == 2) {
                     if (isAdmin) {
                         if (i == 0) {
@@ -171,7 +170,7 @@ public class ChannelUsersActivity extends BaseFragment implements NotificationCe
                             args.putBoolean("destroyAfterSelect", true);
                             args.putBoolean("returnAsResult", true);
                             args.putBoolean("needForwardCount", false);
-                            args.putBoolean("allowUsernameSearch", false);
+                            args.putBoolean("allowUsernameSearch", true);
                             args.putString("selectAlertString", LocaleController.getString("ChannelAddUserAdminAlert", R.string.ChannelAddUserAdminAlert));
                             ContactsActivity fragment = new ContactsActivity(args);
                             fragment.setDelegate(new ContactsActivity.ContactsActivityDelegate() {

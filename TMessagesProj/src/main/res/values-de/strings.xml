@@ -132,6 +132,7 @@
     <string name="ChannelAddTo">%1$s zum Kanal hinzufügen?</string>
     <string name="ChannelUserLeftError">Dieser Nutzer hat sich entschieden die Gruppe zu verlassen, deshalb kannst du ihn nicht wieder einladen.</string>
     <string name="ChannelUserCantAdd">Du kannst diesen Nutzer nicht einladen.</string>
+    <string name="ChannelUserCantAdmin">Es gibt bereits zu viele Administratoren in diesem Kanal.</string>
     <string name="ChannelUserAddLimit">Du kannst nur die ersten 200 Leute einladen, aber unbegrenzt viele können dem Kanal über den Einladungslink beitreten. </string>
     <string name="ChannelAddedBy">un1 hat dich hinzugefügt</string>
     <string name="ChannelJoined">Du bist dem Kanal beigetreten</string>
@@ -147,14 +148,14 @@
     <string name="ChannelMessageGroupDocument">%1$s hat eine Datei an den Kanal %2$s gesendet</string>
     <string name="ChannelMessageGroupAudio">%1$s hat eine Sprachnachricht an den Kanal %2$s gesendet</string>
     <string name="ChannelMessageGroupSticker">%1$s hat einen Sticker an den Kanal %2$s gesendet</string>
-    <string name="ChannelMessageNoText">Neue Nachricht im Kanal %1$s</string>
-    <string name="ChannelMessagePhoto">Neues Bild im Kanal %1$s</string>
-    <string name="ChannelMessageVideo">Neues Video im Kanal %1$s</string>
-    <string name="ChannelMessageContact">Kontakt im Kanal %1$s geteilt</string>
-    <string name="ChannelMessageMap">Neuer Standort im Kanal %1$s</string>
-    <string name="ChannelMessageDocument">Neue Datei im Kanal %1$s</string>
-    <string name="ChannelMessageAudio">Neue Sprachnachricht im Kanal %1$s</string>
-    <string name="ChannelMessageSticker">Neuer Sticker im Kanal %1$s</string>
+    <string name="ChannelMessageNoText">%1$s hat eine Nachricht gesendet</string>
+    <string name="ChannelMessagePhoto">%1$s hat ein Bild gesendet</string>
+    <string name="ChannelMessageVideo">%1$s hat ein Video gesendet</string>
+    <string name="ChannelMessageContact">%1$s hat einen Kontakt gesendet</string>
+    <string name="ChannelMessageMap">%1$s hat einen Standort gesendet</string>
+    <string name="ChannelMessageDocument">%1$s hat eine Datei gesendet</string>
+    <string name="ChannelMessageAudio">%1$s hat eine Sprachnachricht gesendet</string>
+    <string name="ChannelMessageSticker">%1$s hat einen Sticker gesendet</string>
     <!--broadcasts-->
     <string name="NewBroadcastList">Neue Broadcast Liste</string>
     <string name="EnterListName">Listenname</string>
@@ -239,6 +240,7 @@
     <string name="ReportSpamAlertGroup">Sicher, dass du Spam von dieser Gruppe melden willst?</string>
     <string name="NobodyLikesSpam1">Derzeit kannst du nur Kontakten schreiben, die auch deine Nummer haben.</string>
     <string name="NobodyLikesSpam2">Derzeit kannst du nur Kontakte hinzufügen, die auch deine Nummer haben.</string>
+    <string name="NobodyLikesSpamUrl">https://telegram.org/faq/de#kann-keine-nachrichten-an-nicht-kontakte-senden</string>
     <string name="MoreInfo">Mehr Infos</string>
     <!--notification-->
     <string name="MessageLifetimeChanged">%1$s hat den Selbstzerstörungs-Timer auf %2$s gesetzt</string>
@@ -289,6 +291,7 @@
     <string name="Online">online</string>
     <string name="LastSeen">zul. online</string>
     <string name="LastSeenDate">zul. online</string>
+    <string name="LastSeenNow">zul. online gerade eben</string>
     <string name="InviteFriends">Freunde einladen</string>
     <string name="GlobalSearch">GLOBALE SUCHE</string>
     <string name="Lately">zuletzt kürzlich gesehen</string>
@@ -493,11 +496,17 @@
     <string name="AutoLockInfo">Sperrt App bei Inaktivität automatisch.</string>
     <string name="AutoLockInTime">in %1$s</string>
     <string name="AutoLockDisabled">Deaktiviert</string>
+    <string name="UnlockFingerprint">Per Fingerabdruck entsperren</string>
+    <string name="FingerprintInfo">Fingerabdruck bestätigen </string>
+    <string name="FingerprintHelp">Berührungssensor</string>
+    <string name="FingerprintNotRecognized">Abdruck nicht erkannt; erneut versuchen </string>
     <!--media view-->
     <string name="NoMedia">Die hier geteilten Bilder und Videos kannst du von jedem deiner Geräte aufrufen.</string>
     <string name="DocumentsTitle">Geteilte Dateien</string>
     <string name="SharedMediaTitle">Geteilte Medien</string>
     <string name="LinksTitle">Geteilte Links</string>
+    <string name="AudioTitle">Geteilte Musik</string>
+    <string name="NoSharedAudio">Die hier geteilten Lieder kannst du von jedem deiner Geräte aufrufen.</string>
     <string name="NoSharedFiles">Die hier geteilten Dateien kannst du von jedem deiner Geräte aufrufen.</string>
     <string name="NoSharedLinks">Die hier geteilten Links kannst du von jedem deiner Geräte aufrufen.</string>
     <!--map view-->
@@ -730,7 +739,7 @@
     <string name="SendMessagesTo">Nachricht an %1$s senden?</string>
     <string name="AreYouSureLogout">Wirklich abmelden?\n\nDu kannst Telegram von all deinen Geräten gleichzeitig nutzen.\n\nWichtig: Abmelden löscht deine Geheimen Chats.</string>
     <string name="AreYouSureSessions">Sicher, dass du alle anderen Geräte abmelden möchtest?</string>
-    <string name="AreYouSureDeleteAndExit">Diese Gruppe wirklich löschen und verlassen?</string>
+    <string name="AreYouSureDeleteAndExit">Gruppe löschen und verlassen?</string>
     <string name="AreYouSureDeleteThisChat">Möchtest du wirklich diesen Chat löschen?</string>
     <string name="AreYouSureShareMyContactInfo">Wirklich die eigenen Kontaktinformationen teilen?</string>
     <string name="AreYouSureBlockContact">Diesen Kontakt wirklich blockieren?</string>
@@ -745,6 +754,12 @@
     <string name="FeatureUnavailable">Verzeihung, diese Funktion ist derzeit in deinem Land nicht verfügbar.</string>
     <string name="NoUsernameFound">Kein Konto mit diesem Benutzernamen</string>
     <string name="BotCantJoinGroups">Keine Gruppen mit diesem Bot möglich</string>
+    <!--permissions-->
+    <string name="PermissionContacts">Telegram benötigt Zugriff auf deine Kontakte um dich auf all denen Geräten mit deinen Freunden zu verbinden. </string>
+    <string name="PermissionStorage">Telegram benötigt Zugriff auf deinen Speicher, damit du Bilder, Videos und Musik senden und speichern kannst.</string>
+    <string name="PermissionNoAudio">Telegram benötigt Zugriff auf dein Mikrofon, damit du Sprachnachrichten senden kannst. </string>
+    <string name="PermissionNoLocation">Telegram benötigt Zugriff auf deinen Standort, damit du ihn mit Freunden teilen kannst. </string>
+    <string name="PermissionOpenSettings">EINSTELLUNGEN</string>
     <!--Intro view-->
     <string name="Page1Title">Telegram</string>
     <string name="Page2Title">Schnell</string>
@@ -882,6 +897,18 @@
     <string name="Photos_few">%1$d Bilder</string>
     <string name="Photos_many">%1$d Bilder</string>
     <string name="Photos_other">%1$d Bilder</string>
+    <string name="LastSeenMinutes_zero">zul. online vor %1$d Minuten</string>
+    <string name="LastSeenMinutes_one">zul. online vor %1$d Minute</string>
+    <string name="LastSeenMinutes_two">zul. online vor %1$d Minuten</string>
+    <string name="LastSeenMinutes_few">zul. online vor %1$d Minuten</string>
+    <string name="LastSeenMinutes_many">zul. online vor %1$d Minuten</string>
+    <string name="LastSeenMinutes_other">zul. online vor %1$d Minuten</string>
+    <string name="LastSeenHours_zero">zul. online vor %1$d Stunden</string>
+    <string name="LastSeenHours_one">zul. online vor %1$d Stunde</string>
+    <string name="LastSeenHours_two">zul. online vor %1$d Stunden</string>
+    <string name="LastSeenHours_few">zul. online vor %1$d Stunden</string>
+    <string name="LastSeenHours_many">zul. online vor %1$d Stunden</string>
+    <string name="LastSeenHours_other">zul. online vor %1$d Stunden</string>
     <!--forwarded messages-->
     <string name="ForwardedMessage_zero">%1$d angehängten Nachrichten</string>
     <string name="ForwardedMessage_one">Angehängte Nachricht</string>
@@ -949,6 +976,6 @@
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s um %2$s</string>
     <!--update text-->
-    <string name="updateText">Telegram für Android wurde aktualisiert. Neu in Version 3.2.0:\n\n- Kanäle: Du kannst nun Nachrichten an eine unbegrenzte Anzahl von Leuten schicken (ersetzen die Verteilerlisten).\n\n Mehr Infos über dieses Update: https://telegram.org/blog/channels</string>
-    <string name="updateBuild">614</string>
+    <string name="updateText">Telegram für Android wurde aktualisiert. Neu in Version 3.2.5:\n\n- Neue Animationen und optische Verbesserungen\n- Neue Emoji\n-  Sonstige Verbesserungen und Fehlerbehebungen</string>
+    <string name="updateBuild">647</string>
 </resources>

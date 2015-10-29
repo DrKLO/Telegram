@@ -1,5 +1,5 @@
 /*
- * This is the source code of Telegram for Android v. 2.x
+ * This is the source code of Telegram for Android v. 3.x.x
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
@@ -125,6 +125,15 @@ public class ResourceLoader {
 
             geoInDrawable = context.getResources().getDrawable(R.drawable.location_b);
             geoOutDrawable = context.getResources().getDrawable(R.drawable.location_g);
+
+            context.getResources().getDrawable(R.drawable.attach_camera_states);
+            context.getResources().getDrawable(R.drawable.attach_gallery_states);
+            context.getResources().getDrawable(R.drawable.attach_video_states);
+            context.getResources().getDrawable(R.drawable.attach_audio_states);
+            context.getResources().getDrawable(R.drawable.attach_file_states);
+            context.getResources().getDrawable(R.drawable.attach_contact_states);
+            context.getResources().getDrawable(R.drawable.attach_location_states);
+            context.getResources().getDrawable(R.drawable.attach_hide_states);
         }
     }
 }

@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 1.3.2.
+ * This is the source code of Telegram for Android v. 3.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013.
+ * Copyright Nikolai Kudashov, 2013-2015.
  */
 
 package org.telegram.ui;
@@ -14,17 +14,16 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.res.Configuration;
 import android.os.Build;
 import android.os.Environment;
 import android.os.StatFs;
-import android.text.TextUtils;
-import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewTreeObserver;
 import android.widget.AbsListView;
 import android.widget.AdapterView;
-import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
 
@@ -33,6 +32,7 @@ import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
+import org.telegram.ui.ActionBar.BackDrawable;
 import org.telegram.ui.Adapters.BaseFragmentAdapter;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
@@ -41,6 +41,7 @@ import org.telegram.messenger.AnimationCompat.ObjectAnimatorProxy;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.Cells.SharedDocumentCell;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.NumberTextView;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -61,7 +62,7 @@ public class DocumentSelectActivity extends BaseFragment {
 
     private ListView listView;
     private ListAdapter listAdapter;
-    private TextView selectedMessagesCountTextView;
+    private NumberTextView selectedMessagesCountTextView;
     private TextView emptyView;
 
     private File currentDir;
@@ -145,18 +146,20 @@ public class DocumentSelectActivity extends BaseFragment {
             ApplicationLoader.applicationContext.registerReceiver(receiver, filter);
         }
 
-        actionBar.setBackButtonImage(R.drawable.ic_ab_back);
+        actionBar.setBackButtonDrawable(new BackDrawable(false));
         actionBar.setAllowOverlayTitle(true);
         actionBar.setTitle(LocaleController.getString("SelectFile", R.string.SelectFile));
         actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
             public void onItemClick(int id) {
                 if (id == -1) {
-                    finishFragment();
-                } else if (id == -2) {
-                    selectedFiles.clear();
-                    actionBar.hideActionMode();
-                    listView.invalidateViews();
+                    if (actionBar.isActionModeShowed()) {
+                        selectedFiles.clear();
+                        actionBar.hideActionMode();
+                        listView.invalidateViews();
+                    } else {
+                        finishFragment();
+                    }
                 } else if (id == done) {
                     if (delegate != null) {
                         ArrayList<String> files = new ArrayList<>();
@@ -170,29 +173,18 @@ public class DocumentSelectActivity extends BaseFragment {
         actionModeViews.clear();
 
         final ActionBarMenu actionMode = actionBar.createActionMode();
-        actionModeViews.add(actionMode.addItem(-2, R.drawable.ic_ab_back_grey, R.drawable.bar_selector_mode, null, AndroidUtilities.dp(54)));
 
-        selectedMessagesCountTextView = new TextView(actionMode.getContext());
+        selectedMessagesCountTextView = new NumberTextView(actionMode.getContext());
         selectedMessagesCountTextView.setTextSize(18);
         selectedMessagesCountTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         selectedMessagesCountTextView.setTextColor(0xff737373);
-        selectedMessagesCountTextView.setSingleLine(true);
-        selectedMessagesCountTextView.setLines(1);
-        selectedMessagesCountTextView.setEllipsize(TextUtils.TruncateAt.END);
-        selectedMessagesCountTextView.setPadding(AndroidUtilities.dp(11), 0, 0, AndroidUtilities.dp(2));
-        selectedMessagesCountTextView.setGravity(Gravity.CENTER_VERTICAL);
         selectedMessagesCountTextView.setOnTouchListener(new View.OnTouchListener() {
             @Override
             public boolean onTouch(View v, MotionEvent event) {
                 return true;
             }
         });
-        actionMode.addView(selectedMessagesCountTextView);
-        LinearLayout.LayoutParams layoutParams = (LinearLayout.LayoutParams) selectedMessagesCountTextView.getLayoutParams();
-        layoutParams.weight = 1;
-        layoutParams.width = 0;
-        layoutParams.height = LayoutHelper.MATCH_PARENT;
-        selectedMessagesCountTextView.setLayoutParams(layoutParams);
+        actionMode.addView(selectedMessagesCountTextView, LayoutHelper.createLinear(0, LayoutHelper.MATCH_PARENT, 1.0f, 65, 0, 0, 0));
 
         actionModeViews.add(actionMode.addItem(done, R.drawable.ic_ab_done_gray, R.drawable.bar_selector_mode, null, AndroidUtilities.dp(54)));
 
@@ -244,18 +236,14 @@ public class DocumentSelectActivity extends BaseFragment {
                         return false;
                     }
                     selectedFiles.put(file.toString(), item);
-                    selectedMessagesCountTextView.setText(String.format("%d", selectedFiles.size()));
+                    selectedMessagesCountTextView.setNumber(1, false);
                     if (Build.VERSION.SDK_INT >= 11) {
                         AnimatorSetProxy animatorSet = new AnimatorSetProxy();
                         ArrayList<Object> animators = new ArrayList<>();
                         for (int a = 0; a < actionModeViews.size(); a++) {
                             View view2 = actionModeViews.get(a);
                             AndroidUtilities.clearDrawableAnimation(view2);
-                            if (a < 1) {
-                                animators.add(ObjectAnimatorProxy.ofFloat(view2, "translationX", -AndroidUtilities.dp(56), 0));
-                            } else {
-                                animators.add(ObjectAnimatorProxy.ofFloat(view2, "scaleY", 0.1f, 1.0f));
-                            }
+                            animators.add(ObjectAnimatorProxy.ofFloat(view2, "scaleY", 0.1f, 1.0f));
                         }
                         animatorSet.playTogether(animators);
                         animatorSet.setDuration(250);
@@ -331,7 +319,7 @@ public class DocumentSelectActivity extends BaseFragment {
                         if (selectedFiles.isEmpty()) {
                             actionBar.hideActionMode();
                         } else {
-                            selectedMessagesCountTextView.setText(String.format("%d", selectedFiles.size()));
+                            selectedMessagesCountTextView.setNumber(selectedFiles.size(), true);
                         }
                         scrolling = false;
                         if (view instanceof SharedDocumentCell) {
@@ -358,6 +346,34 @@ public class DocumentSelectActivity extends BaseFragment {
         super.onResume();
         if (listAdapter != null) {
             listAdapter.notifyDataSetChanged();
+        }
+        fixLayoutInternal();
+    }
+
+    @Override
+    public void onConfigurationChanged(android.content.res.Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        if (listView != null) {
+            ViewTreeObserver obs = listView.getViewTreeObserver();
+            obs.addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
+                @Override
+                public boolean onPreDraw() {
+                    listView.getViewTreeObserver().removeOnPreDrawListener(this);
+                    fixLayoutInternal();
+                    return true;
+                }
+            });
+        }
+    }
+
+    private void fixLayoutInternal() {
+        if (selectedMessagesCountTextView == null) {
+            return;
+        }
+        if (!AndroidUtilities.isTablet() && ApplicationLoader.applicationContext.getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
+            selectedMessagesCountTextView.setTextSize(18);
+        } else {
+            selectedMessagesCountTextView.setTextSize(20);
         }
     }
 

@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 1.3.2.
+ * This is the source code of Telegram for Android v. 3.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013.
+ * Copyright Nikolai Kudashov, 2013-2015.
  */
 
 package org.telegram.messenger;
@@ -23,6 +23,7 @@ import android.text.util.Linkify;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.Components.TypefaceSpan;
+import org.telegram.ui.Components.URLSpanBotCommand;
 import org.telegram.ui.Components.URLSpanNoUnderline;
 import org.telegram.ui.Components.URLSpanNoUnderlineBold;
 import org.telegram.ui.Components.URLSpanReplacement;
@@ -420,7 +421,7 @@ public class MessageObject {
         int dateYear = rightNow.get(Calendar.YEAR);
         int dateMonth = rightNow.get(Calendar.MONTH);
         dateKey = String.format("%d_%02d_%02d", dateYear, dateMonth, dateDay);
-        if (contentType == 1 || contentType == 2 || contentType == 0) {
+        if (contentType == 1 || contentType == 2 || contentType == 0 || contentType == 8) {
             monthKey = String.format("%d_%02d", dateYear, dateMonth);
         }
 
@@ -524,6 +525,23 @@ public class MessageObject {
         return source;
     }
 
+    public String getExtension() {
+        String fileName = getFileName();
+        int idx = fileName.lastIndexOf(".");
+        String ext = null;
+        if (idx != -1) {
+            ext = fileName.substring(idx + 1);
+        }
+        if (ext == null || ext.length() == 0) {
+            ext = messageOwner.media.document.mime_type;
+        }
+        if (ext == null) {
+            ext = "";
+        }
+        ext = ext.toUpperCase();
+        return ext;
+    }
+
     public String getFileName() {
         if (messageOwner.media instanceof TLRPC.TL_messageMediaVideo) {
             return FileLoader.getAttachFileName(messageOwner.media.video);
@@ -623,7 +641,11 @@ public class MessageObject {
         if (messageOwner.media instanceof TLRPC.TL_messageMediaWebPage && messageOwner.media.webpage instanceof TLRPC.TL_webPage && messageOwner.media.webpage.description != null) {
             linkDescription = Spannable.Factory.getInstance().newSpannable(messageOwner.media.webpage.description);
             if (containsUrls(linkDescription)) {
-                Linkify.addLinks((Spannable) linkDescription, Linkify.WEB_URLS);
+                try {
+                    Linkify.addLinks((Spannable) linkDescription, Linkify.WEB_URLS);
+                } catch (Exception e) {
+                    FileLog.e("tmessages", e);
+                }
             }
         }
     }
@@ -657,7 +679,12 @@ public class MessageObject {
                 if (charSequence.charAt(start) != '@' && charSequence.charAt(start) != '#' && charSequence.charAt(start) != '/') {
                     start++;
                 }
-                URLSpanNoUnderline url = new URLSpanNoUnderline(charSequence.subSequence(start, end).toString());
+                URLSpanNoUnderline url;
+                if (charSequence.charAt(start) == '/') {
+                    url = new URLSpanBotCommand(charSequence.subSequence(start, end).toString());
+                } else {
+                    url = new URLSpanNoUnderline(charSequence.subSequence(start, end).toString());
+                }
                 ((Spannable) charSequence).setSpan(url, start, end, 0);
             }
         } catch (Exception e) {
@@ -732,7 +759,9 @@ public class MessageObject {
                     spannable.setSpan(new TypefaceSpan(Typeface.MONOSPACE), entity.offset, entity.offset + entity.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                 } else if (!useManualParse) {
                     String url = messageOwner.message.substring(entity.offset, entity.offset + entity.length);
-                    if (entity instanceof TLRPC.TL_messageEntityBotCommand || entity instanceof TLRPC.TL_messageEntityHashtag || entity instanceof TLRPC.TL_messageEntityMention) {
+                    if (entity instanceof TLRPC.TL_messageEntityBotCommand) {
+                        spannable.setSpan(new URLSpanBotCommand(url), entity.offset, entity.offset + entity.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                    } else if (entity instanceof TLRPC.TL_messageEntityHashtag || entity instanceof TLRPC.TL_messageEntityMention) {
                         spannable.setSpan(new URLSpanNoUnderline(url), entity.offset, entity.offset + entity.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                     } else if (entity instanceof TLRPC.TL_messageEntityEmail) {
                         spannable.setSpan(new URLSpanReplacement("mailto:" + url), entity.offset, entity.offset + entity.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
@@ -815,6 +844,14 @@ public class MessageObject {
                     FileLog.e("tmessages", e);
                     continue;
                 }
+                if (a == blocksCount - 1) {
+                    currentBlockLinesCount = Math.max(currentBlockLinesCount, block.textLayout.getLineCount());
+                    try {
+                        textHeight = Math.max(textHeight, (int) (block.textYOffset + block.textLayout.getHeight()));
+                    } catch (Exception e) {
+                        FileLog.e("tmessages", e);
+                    }
+                }
             }
 
             textLayoutBlocks.add(block);
@@ -849,7 +886,7 @@ public class MessageObject {
 
             if (currentBlockLinesCount > 1) {
                 float textRealMaxWidth = 0, textRealMaxWidthWithLeft = 0, lineWidth, lineLeft;
-                for (int n = 0; n < currentBlockLinesCount; ++n) {
+                for (int n = 0; n < currentBlockLinesCount; n++) {
                     try {
                         lineWidth = block.textLayout.getLineWidth(n);
                     } catch (Exception e) {

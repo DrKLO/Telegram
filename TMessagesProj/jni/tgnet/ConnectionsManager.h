@@ -59,7 +59,7 @@ public:
     void pauseNetwork();
     void setNetworkAvailable(bool value);
     void setUseIpv6(bool value);
-    void init(uint32_t version, int32_t layer, int32_t apiId, std::string deviceModel, std::string systemVersion, std::string appVersion, std::string langCode, std::string configPath, int32_t userId, bool isPaused);
+    void init(uint32_t version, int32_t layer, int32_t apiId, std::string deviceModel, std::string systemVersion, std::string appVersion, std::string langCode, std::string configPath, std::string logPath, int32_t userId, bool isPaused);
     void updateDcSettings(uint32_t datacenterId);
 
 #ifdef ANDROID
@@ -169,6 +169,7 @@ private:
     std::string currentAppVersion;
     std::string currentLangCode;
     std::string currentConfigPath;
+    std::string currentLogPath;
     int32_t currentUserId = 0;
     bool registeredForInternalPush = false;
 

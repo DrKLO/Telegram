@@ -1,13 +1,14 @@
 /*
- * This is the source code of Telegram for Android v. 1.7.x.
+ * This is the source code of Telegram for Android v. 3.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2014.
+ * Copyright Nikolai Kudashov, 2013-2015.
  */
 
 package org.telegram.ui.ActionBar;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
 import android.graphics.Canvas;
@@ -69,12 +70,14 @@ public class DrawerLayoutContainer extends FrameLayout {
 
         if (Build.VERSION.SDK_INT >= 21) {
             setFitsSystemWindows(true);
-            configureApplyInsets(this);
+            setOnApplyWindowInsetsListener(new InsetsListener());
+            setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
         }
 
         shadowLeft = getResources().getDrawable(R.drawable.menu_shadow);
     }
 
+    @SuppressLint("NewApi")
     private class InsetsListener implements View.OnApplyWindowInsetsListener {
         @Override
         public WindowInsets onApplyWindowInsets(View v, WindowInsets insets) {
@@ -84,13 +87,7 @@ public class DrawerLayoutContainer extends FrameLayout {
         }
     }
 
-    private void configureApplyInsets(View drawerLayout) {
-        if (Build.VERSION.SDK_INT >= 21) {
-            drawerLayout.setOnApplyWindowInsetsListener(new InsetsListener());
-            drawerLayout.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
-        }
-    }
-
+    @SuppressLint("NewApi")
     private void dispatchChildInsets(View child, Object insets, int drawerGravity) {
         WindowInsets wi = (WindowInsets) insets;
         if (drawerGravity == Gravity.LEFT) {
@@ -101,6 +98,7 @@ public class DrawerLayoutContainer extends FrameLayout {
         child.dispatchApplyWindowInsets(wi);
     }
 
+    @SuppressLint("NewApi")
     private void applyMarginInsets(MarginLayoutParams lp, Object insets, int drawerGravity, boolean topOnly) {
         WindowInsets wi = (WindowInsets) insets;
         if (drawerGravity == Gravity.LEFT) {
@@ -413,6 +411,7 @@ public class DrawerLayoutContainer extends FrameLayout {
         }
     }
 
+    @SuppressLint("NewApi")
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         int widthSize = MeasureSpec.getSize(widthMeasureSpec);
@@ -435,7 +434,7 @@ public class DrawerLayoutContainer extends FrameLayout {
             if (applyInsets) {
                 if (child.getFitsSystemWindows()) {
                     dispatchChildInsets(child, lastInsets, lp.gravity);
-                } else {
+                } else if (child.getTag() == null) {
                     applyMarginInsets(lp, lastInsets, lp.gravity, Build.VERSION.SDK_INT >= 21);
                 }
             }
@@ -460,6 +459,7 @@ public class DrawerLayoutContainer extends FrameLayout {
         }
         final int height = getHeight();
         final boolean drawingContent = child != drawerLayout;
+        int lastVisibleChild = 0;
         int clipLeft = 0, clipRight = getWidth();
 
         final int restoreCount = canvas.save();
@@ -467,6 +467,9 @@ public class DrawerLayoutContainer extends FrameLayout {
             final int childCount = getChildCount();
             for (int i = 0; i < childCount; i++) {
                 final View v = getChildAt(i);
+                if (v.getVisibility() == VISIBLE && v != drawerLayout) {
+                    lastVisibleChild = i;
+                }
                 if (v == child || v.getVisibility() != VISIBLE || v != drawerLayout || v.getHeight() < height) {
                     continue;
                 }
@@ -476,14 +479,18 @@ public class DrawerLayoutContainer extends FrameLayout {
                     clipLeft = vright;
                 }
             }
-            canvas.clipRect(clipLeft, 0, clipRight, getHeight());
+            if (clipLeft != 0) {
+                canvas.clipRect(clipLeft, 0, clipRight, getHeight());
+            }
         }
         final boolean result = super.drawChild(canvas, child, drawingTime);
         canvas.restoreToCount(restoreCount);
 
         if (scrimOpacity > 0 && drawingContent) {
-            scrimPaint.setColor((int) (((0x99000000 & 0xff000000) >>> 24) * scrimOpacity) << 24);
-            canvas.drawRect(clipLeft, 0, clipRight, getHeight(), scrimPaint);
+            if (indexOfChild(child) == lastVisibleChild) {
+                scrimPaint.setColor((int) (((0x99000000 & 0xff000000) >>> 24) * scrimOpacity) << 24);
+                canvas.drawRect(clipLeft, 0, clipRight, getHeight(), scrimPaint);
+            }
         } else if (shadowLeft != null) {
             final float alpha = Math.max(0, Math.min(drawerPosition / AndroidUtilities.dp(20), 1.0f));
             if (alpha != 0) {
@@ -493,5 +500,10 @@ public class DrawerLayoutContainer extends FrameLayout {
             }
         }
         return result;
+    }
+
+    @Override
+    public boolean hasOverlappingRendering() {
+        return false;
     }
 }

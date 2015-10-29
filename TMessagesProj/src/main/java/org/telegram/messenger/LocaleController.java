@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2014.
+ * Copyright Nikolai Kudashov, 2013-2015.
  */
 
 package org.telegram.messenger;
@@ -354,7 +354,7 @@ public class LocaleController {
                     return false;
                 }
 
-                File finalFile = new File(ApplicationLoader.applicationContext.getFilesDir(), languageCode + ".xml");
+                File finalFile = new File(ApplicationLoader.getFilesDirFixed(), languageCode + ".xml");
                 if (!AndroidUtilities.copyFile(file, finalFile)) {
                     return false;
                 }
@@ -711,6 +711,14 @@ public class LocaleController {
 
             if (dateDay == day && year == dateYear) {
                 return String.format("%s %s %s", LocaleController.getString("LastSeen", R.string.LastSeen), LocaleController.getString("TodayAt", R.string.TodayAt), formatterDay.format(new Date(date * 1000)));
+                /*int diff = (int) (ConnectionsManager.getInstance().getCurrentTime() - date) / 60;
+                if (diff < 1) {
+                    return LocaleController.getString("LastSeenNow", R.string.LastSeenNow);
+                } else if (diff < 60) {
+                    return LocaleController.formatPluralString("LastSeenMinutes", diff);
+                } else {
+                    return LocaleController.formatPluralString("LastSeenHours", (int) Math.ceil(diff / 60.0f));
+                }*/
             } else if (dateDay + 1 == day && year == dateYear) {
                 return String.format("%s %s %s", LocaleController.getString("LastSeen", R.string.LastSeen), LocaleController.getString("YesterdayAt", R.string.YesterdayAt), formatterDay.format(new Date(date * 1000)));
             } else if (year == dateYear) {

@@ -1,5 +1,5 @@
 /*
- * This is the source code of Telegram for Android v. 2.x.x.
+ * This is the source code of Telegram for Android v. 3.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
@@ -97,7 +97,7 @@ public class AlertsCreator {
                     @Override
                     public void onClick(DialogInterface dialogInterface, int i) {
                         try {
-                            Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse("https://telegram.org/faq#can-39t-send-messages-to-non-contacts"));
+                            Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(LocaleController.getString("NobodyLikesSpamUrl", R.string.NobodyLikesSpamUrl)));
                             intent.putExtra(Browser.EXTRA_APPLICATION_ID, fragment.getParentActivity().getPackageName());
                             fragment.getParentActivity().startActivity(intent);
                         } catch (Exception e) {
@@ -107,6 +107,7 @@ public class AlertsCreator {
                 });
                 break;
             case "USER_BLOCKED":
+            case "USER_BOT":
             case "USER_ID_INVALID":
                 builder.setMessage(LocaleController.getString("ChannelUserCantAdd", R.string.ChannelUserCantAdd));
                 break;
@@ -115,6 +116,9 @@ public class AlertsCreator {
                 break;
             case "USER_NOT_MUTUAL_CONTACT":
                 builder.setMessage(LocaleController.getString("ChannelUserLeftError", R.string.ChannelUserLeftError));
+                break;
+            case "ADMINS_TOO_MUCH":
+                builder.setMessage(LocaleController.getString("ChannelUserCantAdmin", R.string.ChannelUserCantAdmin));
                 break;
         }
         builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), null);

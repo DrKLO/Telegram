@@ -1,5 +1,5 @@
 /*
- * This is the source code of Telegram for Android v. 2.x.x.
+ * This is the source code of Telegram for Android v. 3.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
@@ -50,8 +50,8 @@ public class ChatObject {
     public static TLRPC.Chat getChatByDialog(long did) {
         int lower_id = (int) did;
         int high_id = (int) (did >> 32);
-        if (high_id == 0 && lower_id < 0) {
-            MessagesController.getInstance().getChat(-lower_id);
+        if (lower_id < 0) {
+            return MessagesController.getInstance().getChat(-lower_id);
         }
         return null;
     }

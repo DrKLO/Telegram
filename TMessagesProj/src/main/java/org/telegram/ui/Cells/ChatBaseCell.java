@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2014.
+ * Copyright Nikolai Kudashov, 2013-2015.
  */
 
 package org.telegram.ui.Cells;
@@ -48,7 +48,7 @@ public class ChatBaseCell extends BaseCell implements MediaController.FileDownlo
         void didPressedCancelSendButton(ChatBaseCell cell);
         void didLongPressed(ChatBaseCell cell);
         void didPressReplyMessage(ChatBaseCell cell, int id);
-        void didPressUrl(MessageObject messageObject, ClickableSpan url);
+        void didPressUrl(MessageObject messageObject, ClickableSpan url, boolean longPress);
         void needOpenWebView(String url, String title, String originalUrl, int w, int h);
         void didClickedImage(ChatBaseCell cell);
         boolean canPerformActions();
@@ -69,6 +69,7 @@ public class ChatBaseCell extends BaseCell implements MediaController.FileDownlo
     private boolean wasLayout = false;
     protected boolean isAvatarVisible = false;
     protected boolean drawBackground = true;
+    protected boolean allowAssistant = false;
     protected MessageObject currentMessageObject;
 
     private static TextPaint timePaintIn;
@@ -117,10 +118,15 @@ public class ChatBaseCell extends BaseCell implements MediaController.FileDownlo
 
     private StaticLayout timeLayout;
     protected int timeWidth;
+    private int timeTextWidth;
     private int timeX;
     private TextPaint currentTimePaint;
     private String currentTimeString;
     protected boolean drawTime = true;
+
+    private StaticLayout viewsLayout;
+    private int viewsTextWidth;
+    private String currentViewsString;
 
     private TLRPC.User currentUser;
     private TLRPC.Chat currentChat;
@@ -226,6 +232,10 @@ public class ChatBaseCell extends BaseCell implements MediaController.FileDownlo
         invalidate();
     }
 
+    public void setAllowAssistant(boolean value) {
+        allowAssistant = value;
+    }
+
     protected boolean isUserDataChanged() {
         if (currentMessageObject == null || currentUser == null && currentChat == null) {
             return false;
@@ -296,27 +306,11 @@ public class ChatBaseCell extends BaseCell implements MediaController.FileDownlo
     }
 
     protected void measureTime(MessageObject messageObject) {
-        if (!media) {
-            if (messageObject.isOutOwner()) {
-                currentTimePaint = timePaintOut;
-            } else {
-                currentTimePaint = timePaintIn;
-            }
-        } else {
-            currentTimePaint = timeMediaPaint;
-        }
-        String timeString = LocaleController.formatterDay.format((long) (messageObject.messageOwner.date) * 1000);
+        currentTimeString = LocaleController.formatterDay.format((long) (messageObject.messageOwner.date) * 1000);
+        timeTextWidth = timeWidth = (int) Math.ceil(timeMediaPaint.measureText(currentTimeString));
         if ((messageObject.messageOwner.flags & TLRPC.MESSAGE_FLAG_HAS_VIEWS) != 0) {
-            currentTimeString = String.format("%s   ", LocaleController.formatShortNumber(messageObject.messageOwner.views, null)) + timeString;
-        } else {
-            currentTimeString = timeString;
-        }
-        timeWidth = (int) Math.ceil(currentTimePaint.measureText(currentTimeString));
-        if ((messageObject.messageOwner.flags & TLRPC.MESSAGE_FLAG_HAS_VIEWS) != 0) {
-            timeWidth += ResourceLoader.viewsCountDrawable.getIntrinsicWidth() + AndroidUtilities.dp(4);
-        }
-        if ((messageObject.messageOwner.flags & TLRPC.MESSAGE_FLAG_HAS_VIEWS) != 0 && (messageObject.isSending() || messageObject.isSendError())) {
-            currentTimeString = timeString;
+            currentViewsString = String.format("%s", LocaleController.formatShortNumber(Math.max(1, messageObject.messageOwner.views), null));
+            timeWidth += (int) Math.ceil(timeMediaPaint.measureText(currentViewsString)) + ResourceLoader.viewsCountDrawable.getIntrinsicWidth() + AndroidUtilities.dp(10);
         }
     }
 
@@ -385,18 +379,12 @@ public class ChatBaseCell extends BaseCell implements MediaController.FileDownlo
             currentTimePaint = timeMediaPaint;
         }
 
-        String timeString = LocaleController.formatterDay.format((long) (currentMessageObject.messageOwner.date) * 1000);
-        if ((currentMessageObject.messageOwner.flags & TLRPC.MESSAGE_FLAG_HAS_VIEWS) != 0) {
-            currentTimeString = String.format("%s   ", LocaleController.formatShortNumber(currentMessageObject.messageOwner.views, null)) + timeString;
-        } else {
-            currentTimeString = timeString;
-        }
-        timeWidth = (int)Math.ceil(currentTimePaint.measureText(currentTimeString));
-        if ((currentMessageObject.messageOwner.flags & TLRPC.MESSAGE_FLAG_HAS_VIEWS) != 0) {
-            timeWidth += ResourceLoader.viewsCountDrawable.getIntrinsicWidth() + AndroidUtilities.dp(4);
-        }
-        if ((currentMessageObject.messageOwner.flags & TLRPC.MESSAGE_FLAG_HAS_VIEWS) != 0 && (currentMessageObject.isSending() || currentMessageObject.isSendError())) {
-            currentTimeString = timeString;
+        currentTimeString = LocaleController.formatterDay.format((long) (messageObject.messageOwner.date) * 1000);
+        timeTextWidth = timeWidth = (int)Math.ceil(currentTimePaint.measureText(currentTimeString));
+        if ((messageObject.messageOwner.flags & TLRPC.MESSAGE_FLAG_HAS_VIEWS) != 0) {
+            currentViewsString = String.format("%s", LocaleController.formatShortNumber(Math.max(1, messageObject.messageOwner.views), null));
+            viewsTextWidth = (int) Math.ceil(currentTimePaint.measureText(currentViewsString));
+            timeWidth += viewsTextWidth + ResourceLoader.viewsCountDrawable.getIntrinsicWidth() + AndroidUtilities.dp(10);
         }
 
         namesOffset = 0;
@@ -678,7 +666,7 @@ public class ChatBaseCell extends BaseCell implements MediaController.FileDownlo
             layoutWidth = getMeasuredWidth();
             layoutHeight = getMeasuredHeight();
 
-            timeLayout = new StaticLayout(currentTimeString, currentTimePaint, timeWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+            timeLayout = new StaticLayout(currentTimeString, currentTimePaint, timeTextWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
             if (!media) {
                 if (!currentMessageObject.isOutOwner()) {
                     timeX = backgroundWidth - AndroidUtilities.dp(9) - timeWidth + (isChat && currentMessageObject.messageOwner.from_id > 0 ? AndroidUtilities.dp(52) : 0);
@@ -691,6 +679,12 @@ public class ChatBaseCell extends BaseCell implements MediaController.FileDownlo
                 } else {
                     timeX = layoutWidth - timeWidth - AndroidUtilities.dp(42.0f);
                 }
+            }
+
+            if ((currentMessageObject.messageOwner.flags & TLRPC.MESSAGE_FLAG_HAS_VIEWS) != 0) {
+                viewsLayout = new StaticLayout(currentViewsString, currentTimePaint, viewsTextWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+            } else {
+                viewsLayout = null;
             }
 
             if (isAvatarVisible) {
@@ -899,6 +893,13 @@ public class ChatBaseCell extends BaseCell implements MediaController.FileDownlo
                     } else {
                         setDrawableBounds(ResourceLoader.viewsMediaCountDrawable, timeX, layoutHeight - AndroidUtilities.dp(10) - timeLayout.getHeight());
                         ResourceLoader.viewsMediaCountDrawable.draw(canvas);
+
+                        if (viewsLayout != null) {
+                            canvas.save();
+                            canvas.translate(timeX + ResourceLoader.viewsMediaCountDrawable.getIntrinsicWidth() + AndroidUtilities.dp(3), layoutHeight - AndroidUtilities.dp(12.0f) - timeLayout.getHeight());
+                            viewsLayout.draw(canvas);
+                            canvas.restore();
+                        }
                     }
                 }
 
@@ -928,6 +929,13 @@ public class ChatBaseCell extends BaseCell implements MediaController.FileDownlo
                         } else {
                             setDrawableBounds(ResourceLoader.viewsOutCountDrawable, timeX, layoutHeight - AndroidUtilities.dp(4.5f) - timeLayout.getHeight());
                             ResourceLoader.viewsOutCountDrawable.draw(canvas);
+                        }
+
+                        if (viewsLayout != null) {
+                            canvas.save();
+                            canvas.translate(timeX + ResourceLoader.viewsOutCountDrawable.getIntrinsicWidth() + AndroidUtilities.dp(3), layoutHeight - AndroidUtilities.dp(6.5f) - timeLayout.getHeight());
+                            viewsLayout.draw(canvas);
+                            canvas.restore();
                         }
                     }
                 }

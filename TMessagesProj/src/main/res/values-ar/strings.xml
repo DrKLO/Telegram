@@ -81,7 +81,7 @@
     <string name="LeaveChannel">غادر القناة</string>
     <string name="LeaveChannelMenu">غادر القناة</string>
     <string name="ChannelSettings">الإعدادات</string>
-    <string name="ChannelJoin">دخول</string>
+    <string name="ChannelJoin">اشترك</string>
     <string name="OpenChannelProfile">معلومات القناة</string>
     <string name="ChannelBroadcast">رسالة جماعية</string>
     <string name="ChannelComment">تعليق</string>
@@ -132,6 +132,7 @@
     <string name="ChannelAddTo">هل ترغب بإضافة %1$s للقناة؟</string>
     <string name="ChannelUserLeftError">المعذرة, هذا المستخدم قرر مغادرة المجموعة, لا يمكنك دعوته مرة أخرى للمجموعة.</string>
     <string name="ChannelUserCantAdd">المعذرة، لا يمكنك إضافة هذا المستخدم للقنوات.</string>
+    <string name="ChannelUserCantAdmin">المعذرة، يوجد الكثير من الإداريين في هذه القناة.</string>
     <string name="ChannelUserAddLimit">المعذرة، يمكنك إضافة أول ٢٠٠ عضو للقناة فقط. يمكن لعدد غير محدود من الأعضاء الدخول للقناة عن طريق رابط القناة.</string>
     <string name="ChannelAddedBy">un1 قام بإضافتك لهذه القناة</string>
     <string name="ChannelJoined">لقد قمت بالدخول للقناة.</string>
@@ -147,14 +148,14 @@
     <string name="ChannelMessageGroupDocument">%1$s  قام بإرسال ملف للقناة %2$s</string>
     <string name="ChannelMessageGroupAudio">%1$s  قام بإرسال مقطع صوتي للقناة %2$s</string>
     <string name="ChannelMessageGroupSticker">%1$s  قام بإرسال ملصق للقناة %2$s</string>
-    <string name="ChannelMessageNoText">رسالة جديدة في القناة %1$s</string>
-    <string name="ChannelMessagePhoto">صورة جديدة في القناة %1$s</string>
-    <string name="ChannelMessageVideo">مقطع مرئي جديد في القناة %1$s</string>
-    <string name="ChannelMessageContact">تم مشاركة جهة اتصال في القناة %1$s</string>
-    <string name="ChannelMessageMap">تم مشاركة مكان في القناة %1$s</string>
-    <string name="ChannelMessageDocument">ملف جديد في القناة %1$s</string>
-    <string name="ChannelMessageAudio">ملاحظة صوتية جديدة في القناة %1$s</string>
-    <string name="ChannelMessageSticker">ملصق جديد في القناة %1$s</string>
+    <string name="ChannelMessageNoText">%1$s أرسل رسالة</string>
+    <string name="ChannelMessagePhoto">%1$s أرسل صورة</string>
+    <string name="ChannelMessageVideo">%1$s أرسل مقطع مرئي</string>
+    <string name="ChannelMessageContact">%1$s أرسل جهة اتصال</string>
+    <string name="ChannelMessageMap">%1$s قام بإرسال موقع</string>
+    <string name="ChannelMessageDocument">%1$s أرسل ملف</string>
+    <string name="ChannelMessageAudio">%1$s أرسل رسالة صوتية</string>
+    <string name="ChannelMessageSticker">%1$s أرسل ملصق</string>
     <!--broadcasts-->
     <string name="NewBroadcastList">رسالة جماعية جديدة</string>
     <string name="EnterListName">أدخل اسم القائمة</string>
@@ -239,6 +240,7 @@
     <string name="ReportSpamAlertGroup">هل أنت متأكد من رغبتك في الإبلاغ عن هذه المجموعة كغير مرغوب بها؟</string>
     <string name="NobodyLikesSpam1">المعذرة، يمكنك فقط إرسال رسائل لمن يمتلك رقمك وتمتلك رقمه في الوقت الحالي.</string>
     <string name="NobodyLikesSpam2">المعذرة، يمكنك فقط إضافة من يمتلك رقمك وتمتلك رقمه للمجموعة في الوقت الحالي.</string>
+    <string name="NobodyLikesSpamUrl">https://telegram.org/faq/can-39t-send-messages-to-non-contacts</string>
     <string name="MoreInfo">ملعومات إضافية</string>
     <!--notification-->
     <string name="MessageLifetimeChanged">%1$s قام بتعيين عداد التدمير الذاتي إلى to %2$s</string>
@@ -289,6 +291,7 @@
     <string name="Online">متصل</string>
     <string name="LastSeen">آخر ظهور</string>
     <string name="LastSeenDate">آخر ظهور</string>
+    <string name="LastSeenNow">آخر ظهور قبل قليل</string>
     <string name="InviteFriends">قم بدعوة صديق</string>
     <string name="GlobalSearch">بحث شامل</string>
     <string name="Lately">آخر ظهور كان قريب</string>
@@ -493,11 +496,17 @@
     <string name="AutoLockInfo">اطلب رمز المرور إذا غبت فترة محددة من الزمن.</string>
     <string name="AutoLockInTime">خلال %1$s</string>
     <string name="AutoLockDisabled">معطّل</string>
+    <string name="UnlockFingerprint">قم بالفتح بالبصمة</string>
+    <string name="FingerprintInfo">قم بتأكيد البصمة للإستمرار</string>
+    <string name="FingerprintHelp">حساس اللمس</string>
+    <string name="FingerprintNotRecognized">لم يتم التعرف على البصمة. حاول مرة أخرى</string>
     <!--media view-->
     <string name="NoMedia">شارك المقاطع المرئية والصور في هذه المحادثة لتستطيع الوصول إليها من أية جهاز من أجهزتك</string>
     <string name="DocumentsTitle">الملفات المشاركة</string>
     <string name="SharedMediaTitle">الوسائط المشتركة</string>
     <string name="LinksTitle">الروابط المشاركة</string>
+    <string name="AudioTitle">الموسيقى المشتركة</string>
+    <string name="NoSharedAudio">قم بإرسال مقاطع موسيقية لهذه المحادثة ليمكنك الوصول إليها من أجهزتك الأخرى.</string>
     <string name="NoSharedFiles">شارك الملفات والمستندات في هذه المحادثة لتستطيع الوصول إليها من أية جهاز من أجهزتك</string>
     <string name="NoSharedLinks">شارك الروابط في هذه المحادثة لتستطيع الوصول إليها من أية جهاز من أجهزتك</string>
     <!--map view-->
@@ -745,6 +754,12 @@
     <string name="FeatureUnavailable">.Sorry, this feature is currently not available in your country</string>
     <string name="NoUsernameFound">لا يوجد حساب تيليجرام بهذا الاسم.</string>
     <string name="BotCantJoinGroups">هذا البوت لا يستطيع الدخول للمجموعات.</string>
+    <!--permissions-->
+    <string name="PermissionContacts">تيليجرام يحتاج للسماح له بالوصول لجهات الاتصال الخاصة بك لتتمكن من محادثة أصدقائك من كافة أجهزتك.</string>
+    <string name="PermissionStorage">تيليجرام يحتاج للسماح له بالوصول للذاكرة الخاصة بك لتتمكن من إرسال وحفظ الصور، المقاطع المرئية، الموسيقى وغيرها من الوسائط.</string>
+    <string name="PermissionNoAudio">تيليجرام يحتاج للسماح له بالوصول للمايكروفون الخاص بك لتتمكن من إرسال رسائل صوتية.</string>
+    <string name="PermissionNoLocation">تيليجرام يحتاج للسماح له بالوصول لمكانك لتتمكن من مشاركته مع أصدقائك من خلاله.</string>
+    <string name="PermissionOpenSettings">الإعدادات</string>
     <!--Intro view-->
     <string name="Page1Title">تيليجرام</string>
     <string name="Page2Title">سريع</string>
@@ -882,6 +897,18 @@
     <string name="Photos_few">%1$d صور</string>
     <string name="Photos_many">%1$d صور</string>
     <string name="Photos_other">%1$d صور</string>
+    <string name="LastSeenMinutes_zero">آخر ظهور قبل %1$d دقيقة</string>
+    <string name="LastSeenMinutes_one">آخر ظهور قبل %1$d دقيقة</string>
+    <string name="LastSeenMinutes_two">آخر ظهور قبل %1$d دقيقة</string>
+    <string name="LastSeenMinutes_few">آخر ظهور قبل %1$d دقيقة</string>
+    <string name="LastSeenMinutes_many">آخر ظهور قبل %1$d دقيقة</string>
+    <string name="LastSeenMinutes_other">آخر ظهور قبل %1$d دقيقة</string>
+    <string name="LastSeenHours_zero">آخر ظهور قبل %1$d ساعة</string>
+    <string name="LastSeenHours_one">آخر ظهور قبل %1$d ساعة</string>
+    <string name="LastSeenHours_two">آخر ظهور قبل %1$d ساعة</string>
+    <string name="LastSeenHours_few">آخر ظهور قبل %1$d ساعة</string>
+    <string name="LastSeenHours_many">آخر ظهور قبل %1$d ساعة</string>
+    <string name="LastSeenHours_other">آخر ظهور قبل %1$d ساعة</string>
     <!--forwarded messages-->
     <string name="ForwardedMessage_zero">%1$d رسالة معاد توجيهها</string>
     <string name="ForwardedMessage_one">الرسالة المعاد توجيهها</string>
@@ -949,6 +976,6 @@
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s الساعة %2$s</string>
     <!--update text-->
-    <string name="updateText">تم تحديث تيليجرام نسخة الآندرويد. الجديد في نسخة 3.2.0:\n\n- إضافة خدمة القنوات - وسيلة جديدة رائعة لإرسال الرسائل الجماعية لعدد لا محدود من الجماهير (تستبدل الرسائل الجماعية القديمة). \n\n- اللاستزادة، اقرأ هنا: https://telegram.org/blog/channels</string>
-    <string name="updateBuild">614</string>
+    <string name="updateText">تم تحديث تيليجرام على الأندرويد. الجديد في النسخة رقم 3.2.5:\n\n- تحسين للواجهة البصرية للتطبيق\n- دعم للإيموجي الجديدة\n- تحسينات أخرى وإصلاح للثغرات</string>
+    <string name="updateBuild">647</string>
 </resources>

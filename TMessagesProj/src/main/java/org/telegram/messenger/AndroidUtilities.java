@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 1.4.x.
+ * This is the source code of Telegram for Android v. 3.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2014.
+ * Copyright Nikolai Kudashov, 2013-2015.
  */
 
 package org.telegram.messenger;
@@ -16,6 +16,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
+import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.database.Cursor;
 import android.graphics.Color;
@@ -265,7 +266,7 @@ public class AndroidUtilities {
         if (value == 0) {
             return 0;
         }
-        return (int)Math.ceil(density * value);
+        return (int) Math.ceil(density * value);
     }
 
     public static int compare(int lhs, int rhs) {
@@ -304,38 +305,6 @@ public class AndroidUtilities {
         } catch (Exception e) {
             FileLog.e("tmessages", e);
         }
-
-        /*
-        keyboardHidden
-        public static final int KEYBOARDHIDDEN_NO = 1
-        Constant for keyboardHidden, value corresponding to the keysexposed resource qualifier.
-
-        public static final int KEYBOARDHIDDEN_UNDEFINED = 0
-        Constant for keyboardHidden: a value indicating that no value has been set.
-
-        public static final int KEYBOARDHIDDEN_YES = 2
-        Constant for keyboardHidden, value corresponding to the keyshidden resource qualifier.
-
-        hardKeyboardHidden
-        public static final int HARDKEYBOARDHIDDEN_NO = 1
-        Constant for hardKeyboardHidden, value corresponding to the physical keyboard being exposed.
-
-        public static final int HARDKEYBOARDHIDDEN_UNDEFINED = 0
-        Constant for hardKeyboardHidden: a value indicating that no value has been set.
-
-        public static final int HARDKEYBOARDHIDDEN_YES = 2
-        Constant for hardKeyboardHidden, value corresponding to the physical keyboard being hidden.
-
-        keyboard
-        public static final int KEYBOARD_12KEY = 3
-        Constant for keyboard, value corresponding to the 12key resource qualifier.
-
-        public static final int KEYBOARD_NOKEYS = 1
-        Constant for keyboard, value corresponding to the nokeys resource qualifier.
-
-        public static final int KEYBOARD_QWERTY = 2
-        Constant for keyboard, value corresponding to the qwerty resource qualifier.
-         */
     }
 
     public static float getPixelsInCM(float cm, boolean isX) {
@@ -799,12 +768,19 @@ public class AndroidUtilities {
         if (uri == null) {
             return;
         }
-        Intent mediaScanIntent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
-        mediaScanIntent.setData(uri);
-        ApplicationLoader.applicationContext.sendBroadcast(mediaScanIntent);
+        try {
+            Intent mediaScanIntent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
+            mediaScanIntent.setData(uri);
+            ApplicationLoader.applicationContext.sendBroadcast(mediaScanIntent);
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
     }
 
     private static File getAlbumDir() {
+        if (Build.VERSION.SDK_INT >= 23 && ApplicationLoader.applicationContext.checkSelfPermission(android.Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+            return FileLoader.getInstance().getDirectory(FileLoader.MEDIA_DIR_CACHE);
+        }
         File storageDir = null;
         if (Environment.MEDIA_MOUNTED.equals(Environment.getExternalStorageState())) {
             storageDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "Telegram");

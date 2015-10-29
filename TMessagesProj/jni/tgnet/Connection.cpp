@@ -266,7 +266,11 @@ void Connection::connect() {
         if (isTryingNextPort) {
             setTimeout(8);
         } else {
-            setTimeout(15);
+            if (connectionType == ConnectionTypeUpload) {
+                setTimeout(25);
+            } else {
+                setTimeout(15);
+            }
         }
     }
 }

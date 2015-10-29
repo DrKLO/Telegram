@@ -1,5 +1,5 @@
 /*
- * This is the source code of Telegram for Android v. 2.x.x.
+ * This is the source code of Telegram for Android v. 3.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
@@ -17,6 +17,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageInfo;
 import android.content.res.Configuration;
 import android.graphics.drawable.ColorDrawable;
@@ -92,7 +93,7 @@ public class ApplicationLoader extends Application {
                                 cachedWallpaper = applicationContext.getResources().getDrawable(R.drawable.background_hd);
                                 isCustomTheme = false;
                             } else {
-                                File toFile = new File(ApplicationLoader.applicationContext.getFilesDir(), "wallpaper.jpg");
+                                File toFile = new File(getFilesDirFixed(), "wallpaper.jpg");
                                 if (toFile.exists()) {
                                     cachedWallpaper = Drawable.createFromPath(toFile.getAbsolutePath());
                                     isCustomTheme = true;
@@ -151,7 +152,7 @@ public class ApplicationLoader extends Application {
             }
 
             try {
-                File file = new File(ApplicationLoader.applicationContext.getFilesDir(), "tgnet.dat");
+                File file = new File(getFilesDirFixed(), "tgnet.dat");
                 RandomAccessFile fileOutputStream = new RandomAccessFile(file, "rws");
                 byte[] bytes = buffer.toByteArray();
                 fileOutputStream.writeInt(Integer.reverseBytes(bytes.length));
@@ -163,6 +164,24 @@ public class ApplicationLoader extends Application {
             buffer.cleanup();
             preferences.edit().clear().commit();
         }
+    }
+
+    public static File getFilesDirFixed() {
+        for (int a = 0; a < 10; a++) {
+            File path = ApplicationLoader.applicationContext.getFilesDir();
+            if (path != null) {
+                return path;
+            }
+        }
+        try {
+            ApplicationInfo info = applicationContext.getApplicationInfo();
+            File path = new File(info.dataDir, "files");
+            path.mkdirs();
+            return path;
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
+        return new File("/data/data/org.telegram.messenger/files");
     }
 
     public static void postInitApplication() {
@@ -201,7 +220,7 @@ public class ApplicationLoader extends Application {
         String langCode;
         String appVersion;
         String systemVersion;
-        String configPath = ApplicationLoader.applicationContext.getFilesDir().toString();
+        String configPath = getFilesDirFixed().toString();
 
         try {
             langCode = LocaleController.getLocaleString(LocaleController.getInstance().getSystemDefaultLocale());
@@ -229,7 +248,7 @@ public class ApplicationLoader extends Application {
         }
 
         MessagesController.getInstance();
-        ConnectionsManager.getInstance().init(BuildVars.BUILD_VERSION, TLRPC.LAYER, BuildVars.APP_ID, deviceModel, systemVersion, appVersion, langCode, configPath, UserConfig.getClientUserId());
+        ConnectionsManager.getInstance().init(BuildVars.BUILD_VERSION, TLRPC.LAYER, BuildVars.APP_ID, deviceModel, systemVersion, appVersion, langCode, configPath, FileLog.getNetworkLogPath(), UserConfig.getClientUserId());
         if (UserConfig.getCurrentUser() != null) {
             MessagesController.getInstance().putUser(UserConfig.getCurrentUser(), true);
             ConnectionsManager.getInstance().applyCountryPortNumber(UserConfig.getCurrentUser().phone);

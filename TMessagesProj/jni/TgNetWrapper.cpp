@@ -194,17 +194,15 @@ class Delegate : public ConnectiosManagerDelegate {
     }
 };
 
-void init(JNIEnv *env, jclass c, jint version, jint layer, jint apiId, jstring deviceModel, jstring systemVersion, jstring appVersion, jstring langCode, jstring configPath, jint userId) {
-
-
-    
+void init(JNIEnv *env, jclass c, jint version, jint layer, jint apiId, jstring deviceModel, jstring systemVersion, jstring appVersion, jstring langCode, jstring configPath, jstring logPath, jint userId) {
     const char *deviceModelStr = env->GetStringUTFChars(deviceModel, 0);
     const char *systemVersionStr = env->GetStringUTFChars(systemVersion, 0);
     const char *appVersionStr = env->GetStringUTFChars(appVersion, 0);
     const char *langCodeStr = env->GetStringUTFChars(langCode, 0);
     const char *configPathStr = env->GetStringUTFChars(configPath, 0);
+    const char *logPathStr = env->GetStringUTFChars(logPath, 0);
 
-    ConnectionsManager::getInstance().init(version, layer, apiId, std::string(deviceModelStr), std::string(systemVersionStr), std::string(appVersionStr), std::string(langCodeStr), std::string(configPathStr), userId, true);
+    ConnectionsManager::getInstance().init(version, layer, apiId, std::string(deviceModelStr), std::string(systemVersionStr), std::string(appVersionStr), std::string(langCodeStr), std::string(configPathStr), std::string(logPathStr), userId, true);
 
     if (deviceModelStr != 0) {
         env->ReleaseStringUTFChars(deviceModel, deviceModelStr);
@@ -220,6 +218,9 @@ void init(JNIEnv *env, jclass c, jint version, jint layer, jint apiId, jstring d
     }
     if (configPathStr != 0) {
         env->ReleaseStringUTFChars(configPath, configPathStr);
+    }
+    if (logPathStr != 0) {
+        env->ReleaseStringUTFChars(logPath, logPathStr);
     }
 }
 
@@ -241,7 +242,7 @@ static JNINativeMethod ConnectionsManagerMethods[] = {
         {"native_applyDatacenterAddress", "(ILjava/lang/String;I)V", (void *) applyDatacenterAddress},
         {"native_getConnectionState", "()I", (void *) getConnectionState},
         {"native_setUserId", "(I)V", (void *) setUserId},
-        {"native_init", "(IIILjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;I)V", (void *) init},
+        {"native_init", "(IIILjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;I)V", (void *) init},
         {"native_switchBackend", "()V", (void *) switchBackend},
         {"native_pauseNetwork", "()V", (void *) pauseNetwork},
         {"native_resumeNetwork", "(Z)V", (void *) resumeNetwork},

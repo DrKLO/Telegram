@@ -132,6 +132,7 @@
     <string name="ChannelAddTo">%1$s 님을 이 채널에 추가할까요</string>
     <string name="ChannelUserLeftError">해당 유저가 스스로 채널에서 퇴장을 하여 다시 초대할 수 없습니다.</string>
     <string name="ChannelUserCantAdd">죄송합니다, 이 유저를 채널에 추가 할 수 없습니다.</string>
+    <string name="ChannelUserCantAdmin">죄송합니다, 채널에 너무 많은 관리자가 있습니다.</string>
     <string name="ChannelUserAddLimit">죄송합니다, 채널에는 첫 200명까지만 초대가 가능합니다. 채널 링크를 통하여 무제한 입장이 가능합니다.</string>
     <string name="ChannelAddedBy">이 채널에 un1님이 초대하였습니다.</string>
     <string name="ChannelJoined">채널에 참여하였습니다.</string>
@@ -147,14 +148,14 @@
     <string name="ChannelMessageGroupDocument">%1$s님이 %2$s 채널에 파일을 보냈습니다</string>
     <string name="ChannelMessageGroupAudio">%1$s님이 %2$s 채널에 오디오를 보냈습니다</string>
     <string name="ChannelMessageGroupSticker">%1$s님이 %2$s 채널에 스티커를 보냈습니다</string>
-    <string name="ChannelMessageNoText">%1$s채널에 새 메시지가 있습니다.</string>
-    <string name="ChannelMessagePhoto">%1$s채널에 새 사진이 있습니다.</string>
-    <string name="ChannelMessageVideo">%1$s채널에 새 비디오가 있습니다.</string>
-    <string name="ChannelMessageContact">%1$s채널에 새 연락처가 있습니다.</string>
-    <string name="ChannelMessageMap">%1$s채널에 새 위치가 있습니다.</string>
-    <string name="ChannelMessageDocument">%1$s채널에 새 파일이 있습니다.</string>
-    <string name="ChannelMessageAudio">%1$s채널에 새 음성 메시지가 있습니다.</string>
-    <string name="ChannelMessageSticker">%1$s채널에 새 스티커가 있습니다.</string>
+    <string name="ChannelMessageNoText">%1$s 님이 메시지를 보냈습니다</string>
+    <string name="ChannelMessagePhoto">%1$s 님이 사진을 보냈습니다</string>
+    <string name="ChannelMessageVideo">%1$s 님이 동영상을 보냈습니다</string>
+    <string name="ChannelMessageContact">%1$s님이 연락처를 공유했습니다</string>
+    <string name="ChannelMessageMap">%1$s님이 위치를 보냈습니다</string>
+    <string name="ChannelMessageDocument">%1$s 님이 파일을 보냈습니다</string>
+    <string name="ChannelMessageAudio">%1$s님이 음성메시지를 보냈습니다</string>
+    <string name="ChannelMessageSticker">%1$s님이 스티커를 보냈습니다</string>
     <!--broadcasts-->
     <string name="NewBroadcastList">새 단체 메시지 리스트</string>
     <string name="EnterListName">리스트 이름을 입력하세요</string>
@@ -239,6 +240,7 @@
     <string name="ReportSpamAlertGroup">이 그룹 메시지를 스팸신고 하시겠습니까?</string>
     <string name="NobodyLikesSpam1">죄송합니다, 서로 연락처가 추가된 경우에만 메시지 전송이 가능합니다.</string>
     <string name="NobodyLikesSpam2">죄송합니다, 서로 연락처가 추가된 경우에만 그룹에 구성원을 추가 할 수 있습니다.</string>
+    <string name="NobodyLikesSpamUrl">https://telegram.org/faq#can-39t-send-messages-to-non-contacts</string>
     <string name="MoreInfo">더 보기</string>
     <!--notification-->
     <string name="MessageLifetimeChanged">%1$s님이 자동삭제를 %2$s 후로 설정했습니다</string>
@@ -289,6 +291,7 @@
     <string name="Online">온라인</string>
     <string name="LastSeen">마지막 접속: </string>
     <string name="LastSeenDate">마지막 접속: </string>
+    <string name="LastSeenNow">방금 전에 확인</string>
     <string name="InviteFriends">친구 초대</string>
     <string name="GlobalSearch">전체 검색</string>
     <string name="Lately">최근에 접속</string>
@@ -493,11 +496,17 @@
     <string name="AutoLockInfo">일정 시간 후에 잠금코드 활성화</string>
     <string name="AutoLockInTime">%1$s 후에</string>
     <string name="AutoLockDisabled">비활성화됨</string>
+    <string name="UnlockFingerprint">지문으로 언락하기</string>
+    <string name="FingerprintInfo">지문인식 후 진행해주세요</string>
+    <string name="FingerprintHelp">터치 센서</string>
+    <string name="FingerprintNotRecognized">지문인식이 실패하였습니다. 다시 시도해주세요.</string>
     <!--media view-->
     <string name="NoMedia">이 채팅방에서 사진이나 동영상을 공유하면 다른 기기에서도 보실 수 있습니다.</string>
     <string name="DocumentsTitle">공유한 파일</string>
     <string name="SharedMediaTitle">공유된 미디어</string>
     <string name="LinksTitle">공유한 링크</string>
+    <string name="AudioTitle">공유된 음악</string>
+    <string name="NoSharedAudio">이 채팅방에서 음악을 공유하면 다른 기기에서도 보실 수 있습니다.</string>
     <string name="NoSharedFiles">이 채팅방에서 파일이나 문서를 공유하면 다른 기기에서도 보실 수 있습니다.</string>
     <string name="NoSharedLinks">이 채팅방에서 파일이나 문서를 공유하면 다른 기기에서도 보실 수 있습니다.</string>
     <!--map view-->
@@ -745,6 +754,12 @@
     <string name="FeatureUnavailable">이 기능은 회원님의 국가에서는 사용할 수 없습니다.</string>
     <string name="NoUsernameFound">입력된 아이디와 일치하는 텔레그램 계정이 없습니다.</string>
     <string name="BotCantJoinGroups">이 봇은 그룹에 참여 할 수 없습니다.</string>
+    <!--permissions-->
+    <string name="PermissionContacts">Telegram은 여러 기기에서 친구와 메시지를 주고받을 수 있도록 회원님의 연락처 접근이 필요합니다.</string>
+    <string name="PermissionStorage">Telegram은 사진, 비디오, 음악 및 다양한 미디어를 공유 및 저장하기 위하여 스토리지 접근이 필요합니다.</string>
+    <string name="PermissionNoAudio">Telegram이 음성 메시지를 보내기 위하여 마이크에 대한 접근이 필요합니다.</string>
+    <string name="PermissionNoLocation">Telegram이 위치를 친구분들과 공유하기 위해 위치에 대한 접근 권한을 필요로 합니다.</string>
+    <string name="PermissionOpenSettings">설정</string>
     <!--Intro view-->
     <string name="Page1Title">텔레그램</string>
     <string name="Page2Title">눈부신 속도</string>
@@ -882,6 +897,18 @@
     <string name="Photos_few">%1$d 개의 사진</string>
     <string name="Photos_many">%1$d 개의 사진</string>
     <string name="Photos_other">%1$d 개의 사진</string>
+    <string name="LastSeenMinutes_zero">%1$d 분 전에 확인</string>
+    <string name="LastSeenMinutes_one">%1$d 분 전에 확인</string>
+    <string name="LastSeenMinutes_two">%1$d 분 전에 확인</string>
+    <string name="LastSeenMinutes_few">%1$d 분 전에 확인</string>
+    <string name="LastSeenMinutes_many">%1$d 분 전에 확인</string>
+    <string name="LastSeenMinutes_other">%1$d 분 전에 확인</string>
+    <string name="LastSeenHours_zero">%1$d 시간 전에 확인</string>
+    <string name="LastSeenHours_one">%1$d 시간 전에 확인</string>
+    <string name="LastSeenHours_two">%1$d 시간 전에 확인</string>
+    <string name="LastSeenHours_few">%1$d 시간 전에 확인</string>
+    <string name="LastSeenHours_many">%1$d 시간 전에 확인</string>
+    <string name="LastSeenHours_other">%1$d 시간 전에 확인</string>
     <!--forwarded messages-->
     <string name="ForwardedMessage_zero">%1$d 개의 전달된 메시지</string>
     <string name="ForwardedMessage_one">전달된 메시지</string>
@@ -949,6 +976,6 @@
     <string name="formatterDay12H">a h:mm</string>
     <string name="formatDateAtTime">%1$s %2$s</string>
     <!--update text-->
-    <string name="updateText">텔레그램 안드로이드 버전이 업데이트 되었습니다. 새로운 버전은 3.2.0 입니다:\n\n-- 채널을 소개합니다. - 인원제한 없이 단체 메시지를 보낼 수 있는 새롭고 멋진 기능입니다. (기존 단체 메시지 대체)\n\nhttps://telegram.org/blog/channels에서 자세한 사항을 알아보세요.</string>
-    <string name="updateBuild">614</string>
+    <string name="updateText">텔레그램 안드로이드 버전이 업데이트 되었습니다. 새로운 버전은 3.2.5 입니다:\n\n- 새로운 애니메이션 및 다양한 비쥬얼 향상\n- 신규 이모티콘 지원\n- 기타 기능 향상 및 버그 수정</string>
+    <string name="updateBuild">647</string>
 </resources>

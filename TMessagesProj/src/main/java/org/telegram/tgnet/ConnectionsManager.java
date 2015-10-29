@@ -196,8 +196,8 @@ public class ConnectionsManager {
         native_setNetworkAvailable(isNetworkOnline());
     }
 
-    public void init(int version, int layer, int apiId, String deviceModel, String systemVersion, String appVersion, String langCode, String configPath, int userId) {
-        native_init(version, layer, apiId, deviceModel, systemVersion, appVersion, langCode, configPath, userId);
+    public void init(int version, int layer, int apiId, String deviceModel, String systemVersion, String appVersion, String langCode, String configPath, String logPath, int userId) {
+        native_init(version, layer, apiId, deviceModel, systemVersion, appVersion, langCode, configPath, logPath, userId);
         checkConnection();
         BroadcastReceiver networkStateReceiver = new BroadcastReceiver() {
             @Override
@@ -363,7 +363,7 @@ public class ConnectionsManager {
     public static native void native_applyDatacenterAddress(int datacenterId, String ipAddress, int port);
     public static native int native_getConnectionState();
     public static native void native_setUserId(int id);
-    public static native void native_init(int version, int layer, int apiId, String deviceModel, String systemVersion, String appVersion, String langCode, String configPath, int userId);
+    public static native void native_init(int version, int layer, int apiId, String deviceModel, String systemVersion, String appVersion, String langCode, String configPath, String logPath, int userId);
     public static native void native_setJava(boolean useJavaByteBuffers);
 
     public int generateClassGuid() {
