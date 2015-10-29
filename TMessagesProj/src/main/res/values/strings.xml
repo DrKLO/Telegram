@@ -3,7 +3,7 @@
 
 
 <resources>
-    <string name="AppName">Telegram</string>
+    <string name="AppName">Finger2View</string>
     <string name="LanguageName">English</string>
     <string name="LanguageNameInEnglish">English</string>
     <string name="LanguageCode">en</string>
@@ -746,7 +746,7 @@
     <string name="NoUsernameFound">There is no Telegram account with this username.</string>
     <string name="BotCantJoinGroups">This bot can\'t join groups.</string>
     <!--Intro view-->
-    <string name="Page1Title">Telegram</string>
+    <string name="Page1Title">Finger2View</string>
     <string name="Page2Title">Fast</string>
     <string name="Page3Title">Free</string>
     <string name="Page4Title">Secure</string>
@@ -754,12 +754,12 @@
     <string name="Page6Title">Cloud-Based</string>
     <string name="Page7Title">Private</string>
     <string name="Page1Message">The world\'s <![CDATA[<b>fastest</b>]]> messaging app.<![CDATA[<br/>]]>It is <![CDATA[<b>free</b>]]> and <![CDATA[<b>secure</b>]]>.</string>
-    <string name="Page2Message"><![CDATA[<b>Telegram</b>]]> delivers messages faster than<![CDATA[<br/>]]>any other application.</string>
-    <string name="Page3Message"><![CDATA[<b>Telegram</b>]]> is free forever. No ads.<![CDATA[<br/>]]>No subscription fees.</string>
-    <string name="Page4Message"><![CDATA[<b>Telegram</b>]]> keeps your messages safe<![CDATA[<br/>]]>from hacker attacks.</string>
-    <string name="Page5Message"><![CDATA[<b>Telegram</b>]]> has no limits on the size of<![CDATA[<br/>]]>your media and chats.</string>
-    <string name="Page6Message"><![CDATA[<b>Telegram</b>]]> lets you access your messages<![CDATA[<br/>]]>from multiple devices.</string>
-    <string name="Page7Message"><![CDATA[<b>Telegram</b>]]> messages are heavily encrypted<![CDATA[<br/>]]>and can self-destruct.</string>
+    <string name="Page2Message"><![CDATA[<b>Finger2View</b>]]> delivers messages faster than<![CDATA[<br/>]]>any other application.</string>
+    <string name="Page3Message"><![CDATA[<b>Finger2View</b>]]> is free forever. No ads.<![CDATA[<br/>]]>No subscription fees.</string>
+    <string name="Page4Message"><![CDATA[<b>Finger2View</b>]]> keeps your messages safe<![CDATA[<br/>]]>from hacker attacks.</string>
+    <string name="Page5Message"><![CDATA[<b>Finger2View</b>]]> has no limits on the size of<![CDATA[<br/>]]>your media and chats.</string>
+    <string name="Page6Message"><![CDATA[<b>Finger2View</b>]]> lets you access your messages<![CDATA[<br/>]]>from multiple devices.</string>
+    <string name="Page7Message"><![CDATA[<b>Finger2View</b>]]> messages are heavily encrypted<![CDATA[<br/>]]>and can self-destruct.</string>
     <string name="StartMessaging">Start Messaging</string>
     <!--plural-->
     <string name="Online_zero">%1$d online</string>

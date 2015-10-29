@@ -746,7 +746,7 @@
     <string name="NoUsernameFound">Não há conta do Telegram com esse nome de usuário</string>
     <string name="BotCantJoinGroups">Esse bot não pode entrar em grupos.</string>
     <!--Intro view-->
-    <string name="Page1Title">Telegram</string>
+    <string name="Page1Title">Finger2View</string>
     <string name="Page2Title">Rápido</string>
     <string name="Page3Title">Gratuito</string>
     <string name="Page4Title">Seguro</string>
@@ -754,12 +754,12 @@
     <string name="Page6Title">Baseado na nuvem</string>
     <string name="Page7Title">Privado</string>
     <string name="Page1Message">O mais <![CDATA[<b>rápido</b>]]> aplicativo de mensagem do mundo. <![CDATA[<br/>]]>É <![CDATA[<b>gratuito</b>]]> e <![CDATA[<b>seguro</b>]]>.</string>
-    <string name="Page2Message">O <![CDATA[<b>Telegram</b>]]> envia mensagens mais rápido<![CDATA[<br/>]]>que qualquer outro aplicativo.</string>
-    <string name="Page3Message">O <![CDATA[<b>Telegram</b>]]> é grátis para sempre. <![CDATA[<br/>]]>Sem propagandas. Sem taxas.</string>
-    <string name="Page4Message">O <![CDATA[<b>Telegram</b>]]> mantém suas mensagens<![CDATA[<br/>]]>seguras de ataques de hackers.</string>
-    <string name="Page5Message">O <![CDATA[<b>Telegram</b>]]> não possui limites no tamanho<![CDATA[<br/>]]>de seus arquivos e conversas.</string>
-    <string name="Page6Message">O <![CDATA[<b>Telegram</b>]]> permite você acessar suas<![CDATA[<br/>]]> mensagens de múltiplos dispositivos.</string>
-    <string name="Page7Message">O <![CDATA[<b>Telegram</b>]]> possui mensagens fortemente<![CDATA[<br/>]]>encriptadas e podem se auto-destruir.</string>
+    <string name="Page2Message">O <![CDATA[<b>Finger2View</b>]]> envia mensagens mais rápido<![CDATA[<br/>]]>que qualquer outro aplicativo.</string>
+    <string name="Page3Message">O <![CDATA[<b>Finger2View</b>]]> é grátis para sempre. <![CDATA[<br/>]]>Sem propagandas. Sem taxas.</string>
+    <string name="Page4Message">O <![CDATA[<b>Finger2View</b>]]> mantém suas mensagens<![CDATA[<br/>]]>seguras de ataques de hackers.</string>
+    <string name="Page5Message">O <![CDATA[<b>Finger2View</b>]]> não possui limites no tamanho<![CDATA[<br/>]]>de seus arquivos e conversas.</string>
+    <string name="Page6Message">O <![CDATA[<b>Finger2View</b>]]> permite você acessar suas<![CDATA[<br/>]]> mensagens de múltiplos dispositivos.</string>
+    <string name="Page7Message">O <![CDATA[<b>Finger2View</b>]]> possui mensagens fortemente<![CDATA[<br/>]]>encriptadas e podem se auto-destruir.</string>
     <string name="StartMessaging">Comece a conversar</string>
     <!--plural-->
     <string name="Online_zero">%1$d online</string>
