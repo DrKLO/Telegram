@@ -830,7 +830,7 @@
   <string name="formatDateAtTime">%1$s %2$s</string>
   <!--update text--><!--
   <string name="updateText">Plus Messenger için temalar indirin ve uygulayın. Hergün yeni temalar ekleniyor:\n https://play.google.com/store/apps/details?id=es.rafalense.themes</string>-->
-  <string name="updateBuild">632</string>
+  <string name="updateBuild">655</string>
   <!--Telegram+--><!--
   <string name="updatePlusText">
 \n\n3.2.2.1\'deki Yenilikler:\n\n- Artık duvarkağıdı direkt olarak sohbet ekranından değişebiliyor\n- Tema duvarkağıtlarının uygulama yönteminde geliştirmeler yapıldı\n- Eğer profil ekranında işaretlenmişse kullanıcı adı kopyalanabilir\n- Hata düzeltmeleri</string>-->

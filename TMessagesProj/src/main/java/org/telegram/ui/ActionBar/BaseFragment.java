@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 1.3.2.
+ * This is the source code of Telegram for Android v. 3.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013.
+ * Copyright Nikolai Kudashov, 2013-2015.
  */
 
 package org.telegram.ui.ActionBar;
@@ -21,6 +21,7 @@ import android.widget.Button;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.AnimationCompat.AnimatorSetProxy;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
@@ -47,6 +48,14 @@ public class BaseFragment {
     public BaseFragment(Bundle args) {
         arguments = args;
         classGuid = ConnectionsManager.getInstance().generateClassGuid();
+    }
+
+    public ActionBar getActionBar() {
+        return actionBar;
+    }
+
+    public View getFragmentView() {
+        return fragmentView;
     }
 
     public View createView(Context context) {
@@ -164,7 +173,7 @@ public class BaseFragment {
             actionBar.onPause();
         }
         try {
-            if (visibleDialog != null && visibleDialog.isShowing()) {
+            if (visibleDialog != null && visibleDialog.isShowing() && dismissDialogOnPause(visibleDialog)) {
                 visibleDialog.dismiss();
                 visibleDialog = null;
             }
@@ -182,6 +191,10 @@ public class BaseFragment {
     }
 
     public void onActivityResultFragment(int requestCode, int resultCode, Intent data) {
+
+    }
+
+    public void onRequestPermissionsResultFragment(int requestCode, String[] permissions, int[] grantResults) {
 
     }
 
@@ -218,6 +231,10 @@ public class BaseFragment {
         }
     }
 
+    public boolean dismissDialogOnPause(Dialog dialog) {
+        return true;
+    }
+
     public void onBeginSlide() {
         try {
             if (visibleDialog != null && visibleDialog.isShowing()) {
@@ -232,11 +249,11 @@ public class BaseFragment {
         }
     }
 
-    protected void onOpenAnimationEnd() {
+    protected void onTransitionAnimationStart(boolean isOpen, boolean backward) {
 
     }
 
-    protected void onOpenAnimationStart() {
+    protected void onTransitionAnimationEnd(boolean isOpen, boolean backward) {
 
     }
 
@@ -244,12 +261,12 @@ public class BaseFragment {
 
     }
 
-    public void onLowMemory() {
-
+    protected AnimatorSetProxy onCustomTransitionAnimation(boolean isOpen, final Runnable callback) {
+        return null;
     }
 
-    public boolean needAddActionBar() {
-        return true;
+    public void onLowMemory() {
+
     }
 
     public Dialog showDialog(Dialog dialog) {

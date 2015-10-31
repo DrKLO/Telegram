@@ -129,6 +129,7 @@
   <string name="ChannelAddTo">Добавить пользователя %1$s на канал?</string>
   <string name="ChannelUserLeftError">Извините, этот пользователь решил покинуть данную группу, поэтому вы не можете пригласить его обратно.</string>
   <string name="ChannelUserCantAdd">Извините, вы не можете добавить этого пользователя на каналы.</string>
+  <string name="ChannelUserCantAdmin">Извините, у этого канала слишком много администраторов.</string>
   <string name="ChannelUserAddLimit">Извините, вы можете добавлять только первых 200 участников на канал. Заметьте, что неограниченное количество людей может присоединиться по ссылке канала.</string>
   <string name="ChannelAddedBy">un1 добавил(а) вас на этот канал</string>
   <string name="ChannelJoined">Вы присоединились к этому каналу</string>
@@ -144,14 +145,14 @@
   <string name="ChannelMessageGroupDocument">%1$s опубликовал(а) файл на канале %2$s</string>
   <string name="ChannelMessageGroupAudio">%1$s опубликовал(а) аудио на канале %2$s</string>
   <string name="ChannelMessageGroupSticker">%1$s опубликовал(а) стикер на канале %2$s</string>
-  <string name="ChannelMessageNoText">Новое сообщение на канале %1$s</string>
-  <string name="ChannelMessagePhoto">Новое фото на канале %1$s</string>
-  <string name="ChannelMessageVideo">Новое видео на канале %1$s</string>
-  <string name="ChannelMessageContact">На канале %1$s поделились контактом</string>
-  <string name="ChannelMessageMap">На канале %1$s поделились новым расположением</string>
-  <string name="ChannelMessageDocument">На канале %1$s поделились новым файлом</string>
-  <string name="ChannelMessageAudio">На канале %1$s поделились новым голосовым сообщением</string>
-  <string name="ChannelMessageSticker">На канале %1$s поделились новым стикером</string>
+  <string name="ChannelMessageNoText">%1$s опубликовал сообщение</string>
+  <string name="ChannelMessagePhoto">%1$s опубликовал фото</string>
+  <string name="ChannelMessageVideo">%1$s опубликовал видео</string>
+  <string name="ChannelMessageContact">%1$s опубликовал контакт</string>
+  <string name="ChannelMessageMap">%1$s опубликовал расположение</string>
+  <string name="ChannelMessageDocument">%1$s опубликовал файл</string>
+  <string name="ChannelMessageAudio">%1$s опубликовал голосовое сообщение</string>
+  <string name="ChannelMessageSticker">%1$s опубликовал стикер</string>
   <!--broadcasts-->
   <string name="NewBroadcastList">Новый список рассылки</string>
   <string name="EnterListName">Введите имя списка</string>
@@ -236,6 +237,7 @@
   <string name="ReportSpamAlertGroup">Уверены, что хотите сообщить о спаме от этой группы?</string>
   <string name="NobodyLikesSpam1">Извините, в данный момент вы можете отправлять сообщения только взаимным контактам.</string>
   <string name="NobodyLikesSpam2">Извините, в данный момент вы можете добавлять в группы только взаимные контакты.</string>
+  <string name="NobodyLikesSpamUrl">https://telegram.org/faq#can-39t-send-messages-to-non-contacts</string>
   <string name="MoreInfo">Больше информации</string>
   <!--notification-->
   <string name="MessageLifetimeChanged">%1$s поставил(а) таймер самоуничтожения на %2$s</string>
@@ -286,6 +288,7 @@
   <string name="Online">в сети</string>
   <string name="LastSeen">заходил(а)</string>
   <string name="LastSeenDate">заходил(а)</string>
+  <string name="LastSeenNow">заходил(а) только что</string>
   <string name="InviteFriends">Пригласить друзей</string>
   <string name="GlobalSearch">ГЛОБАЛЬНЫЙ ПОИСК</string>
   <string name="Lately">заходил(а) недавно</string>
@@ -490,13 +493,19 @@
   <string name="AutoLockInfo">Запрашивать код доступа при отсутствии в течение определённого времени.</string>
   <string name="AutoLockInTime">через %1$s</string>
   <string name="AutoLockDisabled">Отключена</string>
+  <string name="UnlockFingerprint">Разблокируйте отпечатком пальца</string>
+  <string name="FingerprintInfo">Подтвердите отпечаток пальца для продолжения</string>
+  <string name="FingerprintHelp">Сканер отпечатков пальцев</string>
+  <string name="FingerprintNotRecognized">Отпечаток пальца не распознан. Попробуйте снова</string>
   <!--media view-->
   <string name="NoMedia">Поделитесь фото и видео в этом чате и получите доступ к ним на любом из ваших устройств.</string>
   <string name="DocumentsTitle">Общие файлы</string>
   <string name="SharedMediaTitle">Общие медиа</string>
   <string name="LinksTitle">Общие ссылки</string>
-  <string name="NoSharedFiles">Поделитесь файлами и документами в этом чате и получите доступ к ним на любом из ваших устройств.</string>
-  <string name="NoSharedLinks">Делитесь ссылками в этом чате и получайте к ним доступ с любого из ваших устройств.</string>
+  <string name="AudioTitle">Общая музыка</string>
+  <string name="NoSharedAudio">Делитесь музыкой в этом чате и получайте доступ к ней с любого из ваших устройств.</string>
+  <string name="NoSharedFiles">Делитесь файлами и документами в этом чате и получайте доступ к ним с любого из ваших устройств.</string>
+  <string name="NoSharedLinks">Делитесь ссылками в этом чате и получайте доступ к ним с любого из ваших устройств.</string>
   <!--map view-->
   <string name="Map">Карта</string>
   <string name="Satellite">Спутник</string>
@@ -742,6 +751,12 @@
   <string name="FeatureUnavailable">Извините, эта возможность пока не доступна в вашей стране.</string>
   <string name="NoUsernameFound">Нет аккаунта Telegram с таким именем.</string>
   <string name="BotCantJoinGroups">Этот бот не может вступать в группы.</string>
+  <!--permissions-->
+  <string name="PermissionContacts">Telegram необходим доступ к вашим контактам, чтобы вы могли оставаться на связи с вашими друзьями с любого устройства.</string>
+  <string name="PermissionStorage">Telegram необходим доступ к вашему хранилищу файлов, чтобы вы могли отправлять и сохранять фото, видео, музыку и прочее медиа.</string>
+  <string name="PermissionNoAudio">Telegram необходим доступ к вашему микрофону, чтобы вы могли отправлять голосовые сообщения</string>
+  <string name="PermissionNoLocation">Telegram необходим доступ к вашему расположению, чтобы вы могли делиться им со своими друзьями.</string>
+  <string name="PermissionOpenSettings">НАСТРОЙКИ</string>
   <!--Intro view-->
   <string name="Page1Title">Plus Messenger</string>
   <string name="Page2Title">Быстрый</string>
@@ -879,6 +894,18 @@
   <string name="Photos_few">%1$d фото</string>
   <string name="Photos_many">%1$d фото</string>
   <string name="Photos_other">%1$d фото</string>
+  <string name="LastSeenMinutes_zero">заходил(а) %1$d минут назад</string>
+  <string name="LastSeenMinutes_one">заходил(а) %1$d минуту назад</string>
+  <string name="LastSeenMinutes_two">заходил(а) %1$d минуты назад</string>
+  <string name="LastSeenMinutes_few">заходил(а) %1$d минуты назад</string>
+  <string name="LastSeenMinutes_many">заходил(а) %1$d минут назад</string>
+  <string name="LastSeenMinutes_other">заходил(а) %1$d минут назад</string>
+  <string name="LastSeenHours_zero">заходил(а) %1$d часов назад</string>
+  <string name="LastSeenHours_one">заходил(а) %1$d час назад</string>
+  <string name="LastSeenHours_two">заходил(а) %1$d часа назад</string>
+  <string name="LastSeenHours_few">заходил(а) %1$d часа назад</string>
+  <string name="LastSeenHours_many">заходил(а) %1$d часов назад</string>
+  <string name="LastSeenHours_other">заходил(а) %1$d часов назад</string>
   <!--forwarded messages-->
   <string name="ForwardedMessage_zero">%1$d пересланных сообщений</string>
   <string name="ForwardedMessage_one">Пересланное сообщение</string>
@@ -946,11 +973,11 @@
   <string name="formatterDay12H">h:mm a</string>
   <string name="formatDateAtTime">%1$s в %2$s</string>
   <!--update text-->
-  <string name="updateText">Telegram для Android обновлён. Новое в версии 3.2.0:\n\n- Представляем Каналы – новый отличный способ транслировать свои сообщения неограниченной аудитории (заменяют старые списки рассылок).\n\nЧитать больше: https://telegram.org/blog/channels</string>
-  <string name="updateBuild">632</string>
-    <!--Telegram+--><!--
+  <string name="updateText">Telegram для Android обновлён. Новое в версии 3.2.5:\n\n- Новые анимации и множество визуальных усовершенствований\n- Поддержка новых эмодзи\n- Прочие улучшения и исправления ошибок</string>
+  <string name="updateBuild">655</string>
+    <!--Telegram+-->
   <string name="updatePlusText">
-\n\nНовое в версии 3.2.2.2:\n\n- Обои можно изменить не покидая экран чата\n- Улучшен способ использования обоев из тем\n- Имя пользователя копируется в буфер обмена при касании на экране профиля\n- Исправление ошибок</string>-->
+\n\nНовое в версииn 3.2.6.0:\n\n- Исправление ошибок</string>
   <string name="TelegramForAndroid">Plus Messenger для Android</string>
   <string name="Theming">Кастомизация</string>
   <string name="colorHexInvalid">Неверный hex-код цвета!</string>
@@ -1101,4 +1128,11 @@
   <string name="Copied">%s скопировано в буфер обмена</string>
   <string name="JoinChannel">
 \n\nПрисоединяйтесь к официальному каналу Plus Messenger: https://telegram.me/plusmsn</string>
+  <string name="DownloadThemes">Загрузить темы</string>
+  <string name="OfficialChannel">Официальный канал</string>
+  <string name="DialogsSettings">Диалоги</string>
+  <string name="ClickOnContactPic">Касание аватарки контакта</string>
+  <string name="ClickOnGroupPic">Касание аватарки группы</string>
+  <string name="ShowProfile">Профиль</string>
+  <string name="ShowPics">Аватарки</string>
 </resources>

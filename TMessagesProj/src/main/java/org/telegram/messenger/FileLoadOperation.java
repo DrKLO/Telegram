@@ -1,5 +1,5 @@
 /*
- * This is the source code of Telegram for Android v. 2.x.x.
+ * This is the source code of Telegram for Android v. 3.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
@@ -256,7 +256,8 @@ public class FileLoadOperation {
                 nextDownloadOffset = downloadedBytes = downloadedBytes / currentDownloadChunkSize * currentDownloadChunkSize;
             }
 
-            if (BuildVars.DEBUG_VERSION) {
+            //if (BuildVars.DEBUG_VERSION) {
+            if (BuildConfig.DEBUG) {
                 FileLog.d("tmessages", "start loading file to temp = " + cacheFileTemp + " final = " + cacheFileFinal);
             }
 
@@ -377,13 +378,15 @@ public class FileLoadOperation {
         }
         if (cacheFileTemp != null) {
             if (!cacheFileTemp.renameTo(cacheFileFinal)) {
-                if (BuildVars.DEBUG_VERSION) {
+                //if (BuildVars.DEBUG_VERSION) {
+                if (BuildConfig.DEBUG) {
                     FileLog.e("tmessages", "unable to rename temp = " + cacheFileTemp + " to final = " + cacheFileFinal);
                 }
                 cacheFileFinal = cacheFileTemp;
             }
         }
-        if (BuildVars.DEBUG_VERSION) {
+        //if (BuildVars.DEBUG_VERSION) {
+        if (BuildConfig.DEBUG) {
             FileLog.e("tmessages", "finished downloading file to " + cacheFileFinal);
         }
         delegate.didFinishLoadingFile(FileLoadOperation.this, cacheFileFinal);

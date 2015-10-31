@@ -1,20 +1,25 @@
 /*
- * This is the source code of Telegram for Android v. 1.4.x.
+ * This is the source code of Telegram for Android v. 3.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2014.
+ * Copyright Nikolai Kudashov, 2013-2015.
  */
 
 package org.telegram.ui.Components;
 
+import android.Manifest;
 import android.app.Activity;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
+import android.graphics.Canvas;
+import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.media.AudioManager;
+import android.os.Build;
 import android.os.PowerManager;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -25,7 +30,8 @@ import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.animation.AccelerateDecelerateInterpolator;
+import android.view.animation.AccelerateInterpolator;
+import android.view.animation.DecelerateInterpolator;
 import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
 import android.widget.FrameLayout;
@@ -35,26 +41,26 @@ import android.widget.PopupWindow;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ChatObject;
+import org.telegram.messenger.Emoji;
+import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MediaController;
+import org.telegram.messenger.MessageObject;
+import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.SendMessagesHelper;
+import org.telegram.messenger.FileLog;
+import org.telegram.messenger.NotificationCenter;
+import org.telegram.messenger.R;
+import org.telegram.tgnet.ConnectionsManager;
+import org.telegram.tgnet.TLRPC;
+import org.telegram.messenger.UserConfig;
+import org.telegram.ui.ActionBar.ActionBar;
+import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.messenger.AnimationCompat.AnimatorListenerAdapterProxy;
 import org.telegram.messenger.AnimationCompat.AnimatorSetProxy;
 import org.telegram.messenger.AnimationCompat.ObjectAnimatorProxy;
 import org.telegram.messenger.AnimationCompat.ViewProxy;
 import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.ChatObject;
-import org.telegram.messenger.Emoji;
-import org.telegram.messenger.FileLog;
-import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.MediaController;
-import org.telegram.messenger.MessageObject;
-import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.NotificationCenter;
-import org.telegram.messenger.R;
-import org.telegram.messenger.SendMessagesHelper;
-import org.telegram.messenger.UserConfig;
-import org.telegram.tgnet.ConnectionsManager;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.ui.ActionBar.ActionBar;
-import org.telegram.ui.ActionBar.BaseFragment;
 
 import java.util.Locale;
 
@@ -77,6 +83,7 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
     private ImageView audioSendButton;
     private FrameLayout recordPanel;
     private LinearLayout slideText;
+    private RecordDot recordDot;
     private SizeNotifierFrameLayout sizeNotifierLayout;
     private LinearLayout attachButton;
     private ImageView botButton;
@@ -85,6 +92,7 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
     private PopupWindow botKeyboardPopup;
     private BotKeyboardView botKeyboardView;
     private ImageView asAdminButton;
+    private RecordCircle recordCircle;
 
     private int currentPopupContentType = -1;
 
@@ -102,7 +110,7 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
     private PowerManager.WakeLock mWakeLock;
     private AnimatorSetProxy runningAnimation;
     private AnimatorSetProxy runningAnimation2;
-    private ObjectAnimatorProxy runningAnimationAudio;
+    private AnimatorSetProxy runningAnimationAudio;
     private int runningAnimationType;
     private int audioInterfaceState;
 
@@ -151,6 +159,124 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
             }
         }
     };
+
+    private class RecordDot extends View {
+
+        private Drawable dotDrawable;
+        private float alpha;
+        private long lastUpdateTime;
+        private boolean isIncr;
+
+        public RecordDot(Context context) {
+            super(context);
+
+            dotDrawable = getResources().getDrawable(R.drawable.rec);
+        }
+
+        public void resetAlpha() {
+            alpha = 1.0f;
+            lastUpdateTime = System.currentTimeMillis();
+            isIncr = false;
+            invalidate();
+        }
+
+        @Override
+        protected void onDraw(Canvas canvas) {
+            dotDrawable.setBounds(0, 0, AndroidUtilities.dp(11), AndroidUtilities.dp(11));
+            dotDrawable.setAlpha(185 + (int) (70 * alpha));
+            long dt = (System.currentTimeMillis() - lastUpdateTime);
+            if (!isIncr) {
+                alpha -= dt / 200.0f;
+                if (alpha <= 0) {
+                    alpha = 0;
+                    isIncr = true;
+                }
+            } else {
+                alpha += dt / 200.0f;
+                if (alpha >= 1) {
+                    alpha = 1;
+                    isIncr = false;
+                }
+            }
+            lastUpdateTime = System.currentTimeMillis();
+            dotDrawable.draw(canvas);
+            invalidate();
+        }
+    }
+
+    private class RecordCircle extends View {
+
+        private Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private Paint paintRecord = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private Drawable micDrawable;
+        private float scale;
+        private float amplitude;
+        private float animateToAmplitude;
+        private float animateAmplitudeDiff;
+        private long lastUpdateTime;
+
+        public RecordCircle(Context context) {
+            super(context);
+            paint.setColor(0xff5795cc);
+            paintRecord.setColor(0x0d000000);
+            micDrawable = getResources().getDrawable(R.drawable.mic_pressed);
+        }
+
+        public void setAmplitude(double value) {
+            animateToAmplitude = (float) Math.min(100, value) / 100.0f;
+            animateAmplitudeDiff = (animateToAmplitude - amplitude) / 150.0f;
+            lastUpdateTime = System.currentTimeMillis();
+            invalidate();
+        }
+
+        public float getScale() {
+            return scale;
+        }
+
+        public void setScale(float value) {
+            scale = value;
+            invalidate();
+        }
+
+        @Override
+        protected void onDraw(Canvas canvas) {
+            int cx = getMeasuredWidth() / 2;
+            int cy = getMeasuredHeight() / 2;
+            float sc;
+            float alpha;
+            if (scale <= 0.5f) {
+                alpha = sc = scale / 0.5f;
+            } else if (scale <= 0.75f) {
+                sc = 1.0f - (scale - 0.5f) / 0.25f * 0.1f;
+                alpha = 1;
+            } else {
+                sc = 0.9f + (scale - 0.75f) / 0.25f * 0.1f;
+                alpha = 1;
+            }
+            long dt = System.currentTimeMillis() - lastUpdateTime;
+            if (animateToAmplitude != amplitude) {
+                amplitude += animateAmplitudeDiff * dt;
+                if (animateAmplitudeDiff > 0) {
+                    if (amplitude > animateToAmplitude) {
+                        amplitude = animateToAmplitude;
+                    }
+                } else {
+                    if (amplitude < animateToAmplitude) {
+                        amplitude = animateToAmplitude;
+                    }
+                }
+                invalidate();
+            }
+            lastUpdateTime = System.currentTimeMillis();
+            if (amplitude != 0) {
+                canvas.drawCircle(getMeasuredWidth() / 2.0f, getMeasuredHeight() / 2.0f, (AndroidUtilities.dp(42) + AndroidUtilities.dp(20) * amplitude) * scale, paintRecord);
+            }
+            canvas.drawCircle(getMeasuredWidth() / 2.0f, getMeasuredHeight() / 2.0f, AndroidUtilities.dp(42) * sc, paint);
+            micDrawable.setBounds(cx - micDrawable.getIntrinsicWidth() / 2, cy - micDrawable.getIntrinsicHeight() / 2, cx + micDrawable.getIntrinsicWidth() / 2, cy + micDrawable.getIntrinsicHeight() / 2);
+            micDrawable.setAlpha((int) (255 * alpha));
+            micDrawable.draw(canvas);
+        }
+    }
 
     public ChatActivityEnterView(Activity context, SizeNotifierFrameLayout parent, BaseFragment fragment, boolean isChat) {
         super(context);
@@ -406,9 +532,8 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
         linearLayout.setBackgroundColor(0xffffffff);
         recordPanel.addView(linearLayout, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL));
 
-        imageView = new ImageView(context);
-        imageView.setImageResource(R.drawable.rec);
-        linearLayout.addView(imageView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL, 0, 1, 0, 0));
+        recordDot = new RecordDot(context);
+        linearLayout.addView(recordDot, LayoutHelper.createLinear(11, 11, Gravity.CENTER_VERTICAL, 0, 1, 0, 0));
 
         recordTimeText = new TextView(context);
         recordTimeText.setText("00:00");
@@ -421,7 +546,7 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
 
         audioSendButton = new ImageView(context);
         audioSendButton.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
-        //audioSendButton.setImageResource(R.drawable.mic_button_states);
+        //audioSendButton.setImageResource(R.drawable.mic);
         //audioSendButton.setBackgroundColor(0xffffffff);
         audioSendButton.setSoundEffectsEnabled(false);
         Drawable mic = getResources().getDrawable(R.drawable.mic);
@@ -438,6 +563,13 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
                     mic.setColorFilter(0xffda564d, PorterDuff.Mode.SRC_IN);
                     audioSendButton.setImageDrawable(mic);
                     if (parentFragment != null) {
+                        if (Build.VERSION.SDK_INT >= 23) {
+                            if (parentActivity.checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+                                parentActivity.requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO}, 3);
+                                return false;
+                            }
+                        }
+
                         String action;
                         TLRPC.Chat currentChat;
                         if ((int) dialog_id < 0) {
@@ -477,6 +609,7 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
                     FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) slideText.getLayoutParams();
                     if (startedDraggingX != -1) {
                         float dist = (x - startedDraggingX);
+                        ViewProxy.setTranslationX(recordCircle, dist);
                         params.leftMargin = AndroidUtilities.dp(30) + (int) dist;
                         slideText.setLayoutParams(params);
                         float alpha = 1.0f + dist / distCanMove;
@@ -500,6 +633,7 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
                     }
                     if (params.leftMargin > AndroidUtilities.dp(30)) {
                         params.leftMargin = AndroidUtilities.dp(30);
+                        ViewProxy.setTranslationX(recordCircle, 0);
                         slideText.setLayoutParams(params);
                         ViewProxy.setAlpha(slideText, 1);
                         startedDraggingX = -1;
@@ -509,6 +643,10 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
                 return true;
             }
         });
+
+        recordCircle = new RecordCircle(context);
+        recordCircle.setVisibility(GONE);
+        sizeNotifierLayout.addView(recordCircle, LayoutHelper.createFrame(124, 124, Gravity.BOTTOM | Gravity.RIGHT, 0, 0, -36, -38));
 
         sendButton = new ImageView(context);
         sendButton.setVisibility(View.INVISIBLE);
@@ -630,7 +768,7 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
                     currentTopViewAnimation.addListener(new AnimatorListenerAdapterProxy() {
                     @Override
                     public void onAnimationEnd(Object animation) {
-                            if (animation == currentTopViewAnimation) {
+                            if (currentTopViewAnimation != null && currentTopViewAnimation.equals(animation)) {
                                 setTopViewAnimation(1.0f);
                         if (!forceShowSendButton) {
                             openKeyboard();
@@ -675,7 +813,7 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
                 currentTopViewAnimation.addListener(new AnimatorListenerAdapterProxy() {
                     @Override
                     public void onAnimationEnd(Object animation) {
-                        if (animation == currentTopViewAnimation) {
+                        if (currentTopViewAnimation != null && currentTopViewAnimation.equals(animation)) {
                             topView.setVisibility(GONE);
                             setTopViewAnimation(0.0f);
                             currentTopViewAnimation = null;
@@ -935,7 +1073,7 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
                     runningAnimation.addListener(new AnimatorListenerAdapterProxy() {
                         @Override
                         public void onAnimationEnd(Object animation) {
-                            if (runningAnimation.equals(animation)) {
+                            if (runningAnimation != null && runningAnimation.equals(animation)) {
                                 sendButton.setVisibility(View.VISIBLE);
                                 audioSendButton.setVisibility(View.GONE);
                                 audioSendButton.clearAnimation();
@@ -1010,7 +1148,7 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
                 runningAnimation.addListener(new AnimatorListenerAdapterProxy() {
                     @Override
                     public void onAnimationEnd(Object animation) {
-                        if (runningAnimation.equals(animation)) {
+                        if (runningAnimation != null && runningAnimation.equals(animation)) {
                             sendButton.setVisibility(View.GONE);
                             sendButton.clearAnimation();
                             audioSendButton.setVisibility(View.VISIBLE);
@@ -1081,8 +1219,11 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
             }
             AndroidUtilities.lockOrientation(parentActivity);
 
-            recordPanel.setVisibility(View.VISIBLE);
+            recordPanel.setVisibility(VISIBLE);
+            recordCircle.setVisibility(VISIBLE);
+            recordCircle.setAmplitude(0);
             recordTimeText.setText("00:00");
+            recordDot.resetAlpha();
             lastTimeString = null;
 
             FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) slideText.getLayoutParams();
@@ -1090,19 +1231,25 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
             slideText.setLayoutParams(params);
             ViewProxy.setAlpha(slideText, 1);
             ViewProxy.setX(recordPanel, AndroidUtilities.displaySize.x);
+            ViewProxy.setTranslationX(recordCircle, 0);
             if (runningAnimationAudio != null) {
                 runningAnimationAudio.cancel();
             }
-            runningAnimationAudio = ObjectAnimatorProxy.ofFloatProxy(recordPanel, "translationX", 0).setDuration(300);
+            runningAnimationAudio = new AnimatorSetProxy();
+            runningAnimationAudio.playTogether(ObjectAnimatorProxy.ofFloat(recordPanel, "translationX", 0),
+                    ObjectAnimatorProxy.ofFloat(recordCircle, "scale", 1),
+                    ObjectAnimatorProxy.ofFloat(audioSendButton, "alpha", 0));
+            runningAnimationAudio.setDuration(300);
             runningAnimationAudio.addListener(new AnimatorListenerAdapterProxy() {
                 @Override
                 public void onAnimationEnd(Object animator) {
                     if (runningAnimationAudio != null && runningAnimationAudio.equals(animator)) {
                         ViewProxy.setX(recordPanel, 0);
-                    }
+                        runningAnimationAudio = null;
+                }
                 }
             });
-            runningAnimationAudio.setInterpolator(new AccelerateDecelerateInterpolator());
+            runningAnimationAudio.setInterpolator(new DecelerateInterpolator());
             runningAnimationAudio.start();
         } else {
             if (mWakeLock != null) {
@@ -1122,7 +1269,11 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
             if (runningAnimationAudio != null) {
                 runningAnimationAudio.cancel();
             }
-            runningAnimationAudio = ObjectAnimatorProxy.ofFloatProxy(recordPanel, "translationX", AndroidUtilities.displaySize.x).setDuration(300);
+            runningAnimationAudio = new AnimatorSetProxy();
+            runningAnimationAudio.playTogether(ObjectAnimatorProxy.ofFloat(recordPanel, "translationX", AndroidUtilities.displaySize.x),
+                    ObjectAnimatorProxy.ofFloat(recordCircle, "scale", 0.0f),
+                    ObjectAnimatorProxy.ofFloat(audioSendButton, "alpha", 1.0f));
+            runningAnimationAudio.setDuration(300);
             runningAnimationAudio.addListener(new AnimatorListenerAdapterProxy() {
                 @Override
                 public void onAnimationEnd(Object animator) {
@@ -1132,10 +1283,12 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
                         slideText.setLayoutParams(params);
                         ViewProxy.setAlpha(slideText, 1);
                         recordPanel.setVisibility(View.GONE);
+                        recordCircle.setVisibility(View.GONE);
+                        runningAnimationAudio = null;
                     }
                 }
             });
-            runningAnimationAudio.setInterpolator(new AccelerateDecelerateInterpolator());
+            runningAnimationAudio.setInterpolator(new AccelerateInterpolator());
             runningAnimationAudio.start();
         }
     }
@@ -1144,22 +1297,28 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
         this.delegate = delegate;
     }
 
-    public void setCommand(MessageObject messageObject, String command) {
+    public void setCommand(MessageObject messageObject, String command, boolean longPress) {
         if (command == null || getVisibility() != VISIBLE) {
             return;
         }
-        TLRPC.User user = messageObject != null && (int) dialog_id < 0 ? MessagesController.getInstance().getUser(messageObject.messageOwner.from_id) : null;
-        if (botCount != 1 && user != null && (user.flags & TLRPC.USER_FLAG_BOT) != 0 && !command.contains("@")) {
-            SendMessagesHelper.getInstance().sendMessage(String.format(Locale.US, "%s@%s", command, user.username), dialog_id, null, null, false, asAdmin());
-        } else {
-            SendMessagesHelper.getInstance().sendMessage(command, dialog_id, null, null, false, asAdmin());
-        }
-        /*String text = messageEditText.getText().toString();
+        if (longPress) {
+            String text = messageEditText.getText().toString();
         text = command + " " + text.replaceFirst("^/[a-zA-Z@\\d_]{1,255}(\\s|$)", "");
         ignoreTextChange = true;
         messageEditText.setText(text);
         messageEditText.setSelection(messageEditText.getText().length());
-        ignoreTextChange = false;*/
+        ignoreTextChange = false;
+            if (!keyboardVisible && currentPopupContentType == -1) {
+                openKeyboard();
+            }
+        } else {
+            TLRPC.User user = messageObject != null && (int) dialog_id < 0 ? MessagesController.getInstance().getUser(messageObject.messageOwner.from_id) : null;
+            if (botCount != 1 && user != null && (user.flags & TLRPC.USER_FLAG_BOT) != 0 && !command.contains("@")) {
+                SendMessagesHelper.getInstance().sendMessage(String.format(Locale.US, "%s@%s", command, user.username), dialog_id, null, null, false, asAdmin());
+            } else {
+                SendMessagesHelper.getInstance().sendMessage(command, dialog_id, null, null, false, asAdmin());
+            }
+        }
     }
 
     public void setFieldText(String text) {
@@ -1173,6 +1332,13 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
         if (delegate != null) {
             delegate.onTextChanged(messageEditText.getText(), true);
         }
+    }
+
+    public void setSelection(int start) {
+        if (messageEditText == null) {
+            return;
+        }
+        messageEditText.setSelection(start, messageEditText.length());
     }
 
     public int getCursorPosition() {
@@ -1353,6 +1519,10 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
         return view == botKeyboardView || view == emojiView;
     }
 
+    public boolean isRecordCircle(View view) {
+        return view == recordCircle;
+    }
+
     private void showPopup(int show, int contentType) {
         SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
         int color = themePrefs.getInt("chatEditTextIconsColor", 0xffadadad);
@@ -1379,7 +1549,7 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
                         }
                         try {
                             innerTextChange = 2;
-                            CharSequence localCharSequence = Emoji.replaceEmoji(symbol/* + "\uFE0F"*/, messageEditText.getPaint().getFontMetricsInt(), AndroidUtilities.dp(20), false);
+                            CharSequence localCharSequence = Emoji.replaceEmoji(symbol, messageEditText.getPaint().getFontMetricsInt(), AndroidUtilities.dp(20), false);
                             messageEditText.setText(messageEditText.getText().insert(i, localCharSequence));
                             int j = i + localCharSequence.length();
                             messageEditText.setSelection(j, j);
@@ -1463,6 +1633,7 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
                 emojiButton.setImageDrawable(d);
                 //emojiButton.setImageResource(R.drawable.ic_msg_panel_smiles);
             }
+            currentPopupContentType = -1;
             if (emojiView != null) {
                 emojiView.setVisibility(GONE);
             }
@@ -1611,6 +1782,9 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
                 if (recordTimeText != null) {
                     recordTimeText.setText(str);
                 }
+            }
+            if (recordCircle != null) {
+                recordCircle.setAmplitude((Double) args[1]);
             }
         } else if (id == NotificationCenter.closeChats) {
             if (messageEditText != null && messageEditText.isFocused()) {

@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 1.7.x.
+ * This is the source code of Telegram for Android v. 3.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2014.
+ * Copyright Nikolai Kudashov, 2013-2015.
  */
 
 package org.telegram.ui.Adapters;
@@ -180,7 +180,7 @@ public class DialogsSearchAdapter extends BaseSearchAdapterRecycler {
     }
 
     public boolean isRecentSearchDisplayed() {
-        return (lastSearchText == null || lastSearchText.length() == 0) && !recentSearchObjects.isEmpty();
+        return needMessagesSearch != 2 && (lastSearchText == null || lastSearchText.length() == 0) && !recentSearchObjects.isEmpty();
     }
 
     public void loadRecentSearch() {
@@ -778,7 +778,7 @@ public class DialogsSearchAdapter extends BaseSearchAdapterRecycler {
 
     @Override
     public int getItemCount() {
-        if ((lastSearchText == null || lastSearchText.length() == 0) && !recentSearchObjects.isEmpty()) {
+        if (needMessagesSearch != 2 && (lastSearchText == null || lastSearchText.length() == 0) && !recentSearchObjects.isEmpty()) {
             return recentSearchObjects.size() + 1;
         }
         if (!searchResultHashtags.isEmpty()) {
@@ -797,7 +797,7 @@ public class DialogsSearchAdapter extends BaseSearchAdapterRecycler {
     }
 
     public Object getItem(int i) {
-        if ((lastSearchText == null || lastSearchText.length() == 0) && !recentSearchObjects.isEmpty()) {
+        if (needMessagesSearch != 2 && (lastSearchText == null || lastSearchText.length() == 0) && !recentSearchObjects.isEmpty()) {
             if (i > 0 && i - 1 < recentSearchObjects.size()) {
                 return recentSearchObjects.get(i - 1).object;
             } else {
@@ -868,7 +868,6 @@ public class DialogsSearchAdapter extends BaseSearchAdapterRecycler {
                 boolean isRecent = false;
                 String un = null;
                 String hexDarkColor = String.format("#%08X", (0xFFFFFFFF & AndroidUtilities.getIntDarkerColor("themeColor", 0x15)));
-            
                 Object obj = getItem(position);
 
                 if (obj instanceof TLRPC.User) {
@@ -885,7 +884,7 @@ public class DialogsSearchAdapter extends BaseSearchAdapterRecycler {
                     user = MessagesController.getInstance().getUser(encryptedChat.user_id);
                 }
 
-                if ((lastSearchText == null || lastSearchText.length() == 0) && !recentSearchObjects.isEmpty()) {
+                if (needMessagesSearch != 2 && (lastSearchText == null || lastSearchText.length() == 0) && !recentSearchObjects.isEmpty()) {
                     isRecent = true;
                     cell.useSeparator = position != getItemCount() - 1;
                 } else {
@@ -922,7 +921,7 @@ public class DialogsSearchAdapter extends BaseSearchAdapterRecycler {
                 GreySectionCell cell = (GreySectionCell) holder.itemView;
                 cell.setBackgroundColor(themePrefs.getInt("chatsRowColor", 0xfff2f2f2));
                 cell.setTextColor(themePrefs.getInt("chatsNameColor", 0xff8a8a8a));
-                if ((lastSearchText == null || lastSearchText.length() == 0) && !recentSearchObjects.isEmpty()) {
+                if (needMessagesSearch != 2 && (lastSearchText == null || lastSearchText.length() == 0) && !recentSearchObjects.isEmpty()) {
                     cell.setText(LocaleController.getString("Recent", R.string.Recent).toUpperCase());
                 } else if (!searchResultHashtags.isEmpty()) {
                     cell.setText(LocaleController.getString("Hashtags", R.string.Hashtags).toUpperCase());
@@ -957,7 +956,7 @@ public class DialogsSearchAdapter extends BaseSearchAdapterRecycler {
 
     @Override
     public int getItemViewType(int i) {
-        if ((lastSearchText == null || lastSearchText.length() == 0) && !recentSearchObjects.isEmpty()) {
+        if (needMessagesSearch != 2 && (lastSearchText == null || lastSearchText.length() == 0) && !recentSearchObjects.isEmpty()) {
             return i == 0 ? 1 : 0;
         }
         if (!searchResultHashtags.isEmpty()) {

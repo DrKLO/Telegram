@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 1.7.x.
+ * This is the source code of Telegram for Android v. 3.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2014.
+ * Copyright Nikolai Kudashov, 2013-2015.
  */
 
 package org.telegram.ui.Cells;
@@ -146,7 +146,7 @@ public class UserCell extends FrameLayout {
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(64), MeasureSpec.EXACTLY));
+        super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(64), MeasureSpec.EXACTLY));
     }
 
     public void setStatusColors(int color, int onlineColor) {
@@ -226,8 +226,6 @@ public class UserCell extends FrameLayout {
                 lastName = newName == null ? currentChat.title : newName;
             }
             nameTextView.setText(lastName);
-            ////nameTextView.setTextColor(nameColor);
-            ////nameTextView.setTextSize(themePrefs.getInt("contactsNameSize", 17));
         }
         if (currrntStatus != null) {
             statusTextView.setTextColor(statusColor);
@@ -267,6 +265,11 @@ public class UserCell extends FrameLayout {
         avatarDrawable.setRadius(AndroidUtilities.dp(radius));
         //
         avatarImageView.setImage(photo, "50_50", avatarDrawable);
+    }
+
+    @Override
+    public boolean hasOverlappingRendering() {
+        return false;
     }
 
     public void setNameColor(int color) {

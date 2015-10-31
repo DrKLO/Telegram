@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 1.7.x.
+ * This is the source code of Telegram for Android v. 3.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2014.
+ * Copyright Nikolai Kudashov, 2013-2015.
  */
 
 package org.telegram.ui.Cells;
@@ -33,7 +33,7 @@ public class TextColorCell extends FrameLayout {
     private boolean needDivider;
     private int currentColor;
 
-    private Drawable colorDrawable; //no static
+    private Drawable colorDrawable;
     private static Paint paint;
 
     public TextColorCell(Context context) {
@@ -43,9 +43,9 @@ public class TextColorCell extends FrameLayout {
             paint = new Paint();
             paint.setColor(0xffd9d9d9);
             paint.setStrokeWidth(1);
-
-            //colorDrawable = getResources().getDrawable(R.drawable.switch_to_on2);
         }
+
+        colorDrawable = getResources().getDrawable(R.drawable.switch_to_on2);
 
         textView = new TextView(context);
         textView.setTextColor(0xff212121);
@@ -57,7 +57,6 @@ public class TextColorCell extends FrameLayout {
         textView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL);
         addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, 17, 0, 45, 0));
 
-        colorDrawable = getResources().getDrawable(R.drawable.switch_to_on2);
     }
 
     @Override
@@ -72,6 +71,7 @@ public class TextColorCell extends FrameLayout {
         currentColor = color;
         colorDrawable.setColorFilter(new PorterDuffColorFilter(color, PorterDuff.Mode.MULTIPLY));
         setWillNotDraw(!needDivider && currentColor == 0);
+        invalidate();
     }
 
     @Override

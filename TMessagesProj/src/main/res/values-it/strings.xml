@@ -109,7 +109,7 @@
     <string name="ActionChannelRemovedPhoto">Foto del canale rimossa</string>
     <string name="ActionChannelChangedTitle">Nome del canale cambiato in un2</string>
     <string name="ActionChannelInvite">un1 ti ha aggiunto al canale un2</string>
-    <string name="ChannelPublicLimitReached">Spiacenti, hai creato troppi canali pubblici. Puoi o creare un canale privato o eliminare uno dei tuoi precedenti canali per poi crearne un altro.</string>
+    <string name="ChannelPublicLimitReached">Spiacenti, hai creato troppi canali pubblici. Puoi creare un canale privato o eliminare un tuo canale pubblico.</string>
     <string name="ChannelModerator">Moderatore</string>
     <string name="ChannelCreator">Creatore</string>
     <string name="ChannelEditor">Amministratore</string>
@@ -129,6 +129,7 @@
     <string name="ChannelAddTo">Aggiungere %1$s al canale?</string>
     <string name="ChannelUserLeftError">Spiacenti, questo utente ha deciso di lasciare il gruppo, quindi non puoi reinvitarlo.</string>
     <string name="ChannelUserCantAdd">Spiacenti, non puoi aggiungere questo utente ai canali.</string>
+    <string name="ChannelUserCantAdmin">Spiacenti, troppi amministratori in questo canale.</string>
     <string name="ChannelUserAddLimit">Spiacenti, puoi aggiungere solo i primi 200 membri a un canale. Ricorda che un numero illimitato di persone potrebbe unirsi tramite il link del canale.</string>
     <string name="ChannelAddedBy">un1 ti ha aggiunto a questo canale</string>
     <string name="ChannelJoined">Ti sei unito al canale</string>
@@ -144,14 +145,14 @@
     <string name="ChannelMessageGroupDocument">%1$s ha inviato un file al canale %2$s</string>
     <string name="ChannelMessageGroupAudio">%1$s ha inviato un audio al canale %2$s</string>
     <string name="ChannelMessageGroupSticker">%1$s ha inviato uno sticker al canale %2$s</string>
-    <string name="ChannelMessageNoText">Nuovo messaggio nel canale %1$s</string>
-    <string name="ChannelMessagePhoto">Nuova foto nel canale %1$s</string>
-    <string name="ChannelMessageVideo">Nuovo video nel canale %1$s</string>
-    <string name="ChannelMessageContact">Contatto condiviso nel canale %1$s</string>
-    <string name="ChannelMessageMap">Nuova posizione condivisa nel canale %1$s</string>
-    <string name="ChannelMessageDocument">Nuovo file condiviso nel canale %1$s</string>
-    <string name="ChannelMessageAudio">Nuova nota vocale condivisa nel canale %1$s</string>
-    <string name="ChannelMessageSticker">Nuovo sticker condiviso nel canale %1$s</string>
+    <string name="ChannelMessageNoText">%1$s ha pubblicato un messaggio</string>
+    <string name="ChannelMessagePhoto">%1$s ha pubblicato una foto</string>
+    <string name="ChannelMessageVideo">%1$s ha pubblicato un video</string>
+    <string name="ChannelMessageContact">%1$s ha pubblicato un contatto</string>
+    <string name="ChannelMessageMap">%1$s ha pubblicato una posizione</string>
+    <string name="ChannelMessageDocument">%1$s ha pubblicato un file</string>
+    <string name="ChannelMessageAudio">%1$s ha pubblicato un messaggio vocale</string>
+    <string name="ChannelMessageSticker">%1$s ha pubblicato uno sticker</string>
     <!--broadcasts-->
     <string name="NewBroadcastList">Nuova lista broadcast</string>
     <string name="EnterListName">Inserisci il nome della lista</string>
@@ -236,6 +237,7 @@
     <string name="ReportSpamAlertGroup">Sei sicuro di voler segnalare dello spam in questo gruppo?</string>
     <string name="NobodyLikesSpam1">Spiacenti, ma al momento puoi scrivere solo a contatti in comune.</string>
     <string name="NobodyLikesSpam2">Spiacenti, ma al momento puoi aggiungere ai gruppi solo a contatti in comune.</string>
+    <string name="NobodyLikesSpamUrl">https://telegram.org/faq/it#non-posso-inviare-messaggi-a-chi-non-far-parte-dei-miei-contatti</string>
     <string name="MoreInfo">Più info</string>
     <!--notification-->
     <string name="MessageLifetimeChanged">%1$s ha impostato il timer di autodistruzione a %2$s</string>
@@ -286,6 +288,7 @@
     <string name="Online">in linea</string>
     <string name="LastSeen">ultimo accesso</string>
     <string name="LastSeenDate">ultimo accesso</string>
+    <string name="LastSeenNow">ultimo accesso adesso</string>
     <string name="InviteFriends">Invita amici</string>
     <string name="GlobalSearch">RICERCA GLOBALE</string>
     <string name="Lately">ultimo accesso di recente</string>
@@ -490,11 +493,17 @@
     <string name="AutoLockInfo">Richiede il codice se lontano per del tempo.</string>
     <string name="AutoLockInTime">tra %1$s</string>
     <string name="AutoLockDisabled">Disabilitato</string>
+    <string name="UnlockFingerprint">Sblocca con impronta digitale</string>
+    <string name="FingerprintInfo">Conferma impronta digitale per continuare</string>
+    <string name="FingerprintHelp">Sensore touch</string>
+    <string name="FingerprintNotRecognized">Impronta digitale non riconosciuta. Riprova</string>
     <!--media view-->
     <string name="NoMedia">Condividi foto e video in questa chat e accedi ad essi da ogni tuo dispositivo.</string>
     <string name="DocumentsTitle">File condivisi</string>
     <string name="SharedMediaTitle">Media condivisi</string>
     <string name="LinksTitle">Link condivisi</string>
+    <string name="AudioTitle">Musica condivisa</string>
+    <string name="NoSharedAudio">Condividi musica in questa chat e accedi ad essa da ogni tuo dispositivo.</string>
     <string name="NoSharedFiles">Condividi file e documenti in questa chat e accedi ad essi da ogni tuo dispositivo.</string>
     <string name="NoSharedLinks">Condividi link in questa chat ed accedi ad essi da ogni tuo dispositivo.</string>
     <!--map view-->
@@ -742,6 +751,12 @@
     <string name="FeatureUnavailable">Spiacenti, questa funzione non è disponibile nel tuo paese.</string>
     <string name="NoUsernameFound">Non esiste alcun account Telegram con questo username.</string>
     <string name="BotCantJoinGroups">Questo bot non può unirsi ai gruppi.</string>
+    <!--permissions-->
+    <string name="PermissionContacts">Telegram deve accedere ai tuoi contatti per poterti connettere con i tuoi amici su tutti i tuoi dispositivi.</string>
+    <string name="PermissionStorage">Telegram deve accedere alla tua memoria per poter inviare e salvare foto,video, musica e altri media.</string>
+    <string name="PermissionNoAudio">Telegram deve accedere al microfono per poter inviare messaggi vocali.</string>
+    <string name="PermissionNoLocation">Telegram deve accedere alla tua posizione per poterla condividere con i tuoi amici.</string>
+    <string name="PermissionOpenSettings">IMPOSTAZIONI</string>
     <!--Intro view-->
     <string name="Page1Title">Plus Messenger</string>
     <string name="Page2Title">Veloce</string>
@@ -755,7 +770,7 @@
     <string name="Page3Message"><![CDATA[<b>Plus Messenger</b>]]> sarà sempre gratuito.<![CDATA[<br/>]]>Nessuna pubblicità. Nessun abbonamento.</string>
     <string name="Page4Message"><![CDATA[<b>Plus Messenger</b>]]> protegge i tuoi messaggi<![CDATA[<br/>]]>dagli attacchi degli hacker.</string>
     <string name="Page5Message"><![CDATA[<b>Plus Messenger</b>]]> non ha limiti di dimensione<![CDATA[<br/>]]>per le tue chat e i file multimediali.</string>
-    <string name="Page6Message"><![CDATA[<b>Plus Messenger</b>]]> ti consente di accedere<![CDATA[<br/>]]>ai messaggi da più dispositivi.</string>
+    <string name="Page6Message"><![CDATA[<b>Plus Messenger</b>]]> ti consente di accedere<![CDATA[<br/>]]>ai tuoi messaggi da più dispositivi.</string>
     <string name="Page7Message">I messaggi di<![CDATA[<b>Plus Messenger</b>]]> sono fortemente<![CDATA[<br/>]]>criptati e possono autodistruggersi.</string>
     <string name="StartMessaging">Inizia a inviare messaggi</string>
     <!--plural-->
@@ -879,6 +894,18 @@
     <string name="Photos_few">%1$d foto</string>
     <string name="Photos_many">%1$d foto</string>
     <string name="Photos_other">%1$d foto</string>
+    <string name="LastSeenMinutes_zero">ultimo accesso %1$d minuti fa</string>
+    <string name="LastSeenMinutes_one">ultimo accesso %1$d minuto fa</string>
+    <string name="LastSeenMinutes_two">ultimo accesso %1$d minuti fa</string>
+    <string name="LastSeenMinutes_few">ultimo accesso %1$d minuti fa</string>
+    <string name="LastSeenMinutes_many">ultimo accesso %1$d minuti fa</string>
+    <string name="LastSeenMinutes_other">ultimo accesso %1$d minuti fa</string>
+    <string name="LastSeenHours_zero">ultimo accesso %1$d ore fa</string>
+    <string name="LastSeenHours_one">ultimo accesso %1$d ora fa</string>
+    <string name="LastSeenHours_two">ultimo accesso %1$d ore fa</string>
+    <string name="LastSeenHours_few">ultimo accesso %1$d ore fa</string>
+    <string name="LastSeenHours_many">ultimo accesso %1$d ore fa</string>
+    <string name="LastSeenHours_other">ultimo accesso %1$d ore fa</string>
     <!--forwarded messages-->
     <string name="ForwardedMessage_zero">%1$d messaggi inoltrati</string>
     <string name="ForwardedMessage_one">Messaggio inoltrato</string>
@@ -946,11 +973,10 @@
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s alle %2$s</string>
     <!--update text-->
-    <string name="updateText">Plus Messenger per Android si è aggiornato. Nuovo nella versione 3.2.0:\n\n- Nuovi Canali - una nuova modalità per diffondere i tuoi messaggi ad un pubblico infinito (rimpiazzano le vecchie liste broadcast).\n\nPiù info: https://telegram.org/blog/channels</string>
-    <string name="updateBuild">632</string>
+    <string name="updateText">Plus Messenger per Android si è aggiornato. Nuovo nella versione 3.2.6:\n\n- Nuove animazioni e miglioramenti di interfaccia\n- Supporto per le nuove emoji\n- Altri miglioramenti e risoluzione di problemi</string>
+    <string name="updateBuild">655</string>
     <!--Telegram+-->
-  <string name="updatePlusText">
-\n\nNovità nella versione 3.2.2.2:\n\n- Nuova opzione nelle impostazioni per aprire il profilo/le immagini del profilo quando si preme l\'utente o l\'immagine del gruppo nella schermata principale\n- Aggiunta opzione per il colore gradiente di sfondo\n- Aggiunta opzione per inoltrare i link senza quotare\n- Aggiunto link al canale ufficiale nel menu\n- Correzioni bug</string>
+  <string name="updatePlusText">\n\nNovità nella versione 3.2.6.0:\n\n- Correzioni bug</string>
     <string name="TelegramForAndroid">Plus Messenger per Android</string>
   <string name="Theming">Personalizzazione</string>
     <string name="colorHexInvalid">Codice del colore esadecimale non valido!</string>

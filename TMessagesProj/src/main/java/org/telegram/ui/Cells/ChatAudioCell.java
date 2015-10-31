@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2014.
+ * Copyright Nikolai Kudashov, 2013-2015.
  */
 
 package org.telegram.ui.Cells;
@@ -19,14 +19,14 @@ import android.view.MotionEvent;
 import android.view.SoundEffectConstants;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.ImageLoader;
-import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.SendMessagesHelper;
-import org.telegram.messenger.BuildVars;
+import org.telegram.messenger.BuildConfig;
 import org.telegram.messenger.FileLoader;
+import org.telegram.messenger.FileLog;
+import org.telegram.messenger.ImageLoader;
 import org.telegram.messenger.MediaController;
 import org.telegram.messenger.MessageObject;
-import org.telegram.messenger.FileLog;
+import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.SendMessagesHelper;
 import org.telegram.ui.Components.RadialProgress;
 import org.telegram.ui.Components.ResourceLoader;
 import org.telegram.ui.Components.SeekBar;
@@ -149,6 +149,7 @@ public class ChatAudioCell extends ChatBaseCell implements SeekBar.SeekBarDelega
                 invalidate();
             }
         } else if (buttonState == 2) {
+            radialProgress.setProgress(0, false);
             FileLoader.getInstance().loadFile(currentMessageObject.messageOwner.media.audio, true);
             buttonState = 3;
             radialProgress.setBackground(getDrawableForCurrentState(), true, false);
@@ -223,7 +224,8 @@ public class ChatAudioCell extends ChatBaseCell implements SeekBar.SeekBarDelega
             if (cacheFile == null) {
                 cacheFile = FileLoader.getPathToMessage(currentMessageObject.messageOwner);
             }
-            if (BuildVars.DEBUG_VERSION) {
+            //if (BuildVars.DEBUG_VERSION) {
+            if (BuildConfig.DEBUG) {
                 FileLog.d("tmessages", "looking for audio in " + cacheFile);
             }
             if (cacheFile.exists()) {
@@ -308,6 +310,7 @@ public class ChatAudioCell extends ChatBaseCell implements SeekBar.SeekBarDelega
             buttonX = layoutWidth - backgroundWidth + AndroidUtilities.dp(13) - (((showMyAvatar && !isChat) || (showMyAvatarGroup && isChat)) ? AndroidUtilities.dp(leftBound) : 0);
             timeX = layoutWidth - backgroundWidth + AndroidUtilities.dp(66) - (((showMyAvatar && !isChat) || (showMyAvatarGroup && isChat)) ? AndroidUtilities.dp(leftBound) : 0);
         } else {
+            //if (isChat && currentMessageObject.messageOwner.from_id > 0) {
             if ((isChat || showAvatar) && currentMessageObject.messageOwner.from_id > 0) {
                 //seekBarX = AndroidUtilities.dp(116);
                 //buttonX = AndroidUtilities.dp(74);
@@ -336,7 +339,7 @@ public class ChatAudioCell extends ChatBaseCell implements SeekBar.SeekBarDelega
         boolean dataChanged = currentMessageObject == messageObject && isUserDataChanged();
         if (currentMessageObject != messageObject || dataChanged) {
             if (AndroidUtilities.isTablet()) {
-                backgroundWidth = Math.min(AndroidUtilities.getMinTabletSide() - AndroidUtilities.dp(isChat && messageObject.messageOwner.from_id > 0 ? 102 : 50), AndroidUtilities.dp(300));
+                //backgroundWidth = Math.min(AndroidUtilities.getMinTabletSide() - AndroidUtilities.dp(isChat && messageObject.messageOwner.from_id > 0 ? 102 : 50), AndroidUtilities.dp(300));
                 backgroundWidth = Math.min(AndroidUtilities.getMinTabletSide() - AndroidUtilities.dp( ((isChat || showAvatar) && messageObject.messageOwner.from_id > 0) || (messageObject.isOutOwner() && ((showMyAvatar && !isChat) || (showMyAvatarGroup && isChat))) ? leftBound + 50 : 50), AndroidUtilities.dp(300));
             } else {
                 //backgroundWidth = Math.min(AndroidUtilities.displaySize.x - AndroidUtilities.dp(isChat && messageObject.messageOwner.from_id > 0 ? 102 : 50), AndroidUtilities.dp(300));

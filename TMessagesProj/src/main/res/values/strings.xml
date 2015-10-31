@@ -1,4 +1,7 @@
-<?xml version='1.0' encoding='UTF-8'?>
+<?xml version="1.0" encoding="utf-8"?>
+
+
+
 <resources>
     <string name="AppName">Plus Messenger</string>
     <string name="ShortAppName">Plus</string>
@@ -130,6 +133,7 @@
     <string name="ChannelAddTo">Add %1$s to the channel?</string>
     <string name="ChannelUserLeftError">Sorry, this user decided to leave this group, so you cannot invite them back here.</string>
     <string name="ChannelUserCantAdd">Sorry, you can\'t add this user to channels.</string>
+    <string name="ChannelUserCantAdmin">Sorry, too many admins in this channel.</string>
     <string name="ChannelUserAddLimit">Sorry, you can only add the first 200 members to a channel. Note that an unlimited number of people may join via the channel\'s link.</string>
     <string name="ChannelAddedBy">un1 added you to this channel</string>
     <string name="ChannelJoined">You joined the channel</string>
@@ -145,14 +149,14 @@
     <string name="ChannelMessageGroupDocument">%1$s sent a file to the channel %2$s</string>
     <string name="ChannelMessageGroupAudio">%1$s sent an audio to the channel %2$s</string>
     <string name="ChannelMessageGroupSticker">%1$s sent a sticker to the channel %2$s</string>
-    <string name="ChannelMessageNoText">New message in the channel %1$s</string>
-    <string name="ChannelMessagePhoto">New photo in the channel %1$s</string>
-    <string name="ChannelMessageVideo">New video in the channel %1$s</string>
-    <string name="ChannelMessageContact">Contact shared in the channel %1$s</string>
-    <string name="ChannelMessageMap">New location shared in the channel %1$s</string>
-    <string name="ChannelMessageDocument">New file shared in the channel %1$s</string>
-    <string name="ChannelMessageAudio">New voice note shared in the channel %1$s</string>
-    <string name="ChannelMessageSticker">New sticker shared in the channel %1$s</string>
+    <string name="ChannelMessageNoText">%1$s posted a message</string>
+    <string name="ChannelMessagePhoto">%1$s posted a photo</string>
+    <string name="ChannelMessageVideo">%1$s posted a video</string>
+    <string name="ChannelMessageContact">%1$s posted a contact</string>
+    <string name="ChannelMessageMap">%1$s posted a location</string>
+    <string name="ChannelMessageDocument">%1$s posted a file</string>
+    <string name="ChannelMessageAudio">%1$s posted a voice message</string>
+    <string name="ChannelMessageSticker">%1$s posted a sticker</string>
     <!--broadcasts-->
     <string name="NewBroadcastList">New Broadcast List</string>
     <string name="EnterListName">Enter list name</string>
@@ -237,6 +241,7 @@
     <string name="ReportSpamAlertGroup">Are you sure you want to report spam from this group?</string>
     <string name="NobodyLikesSpam1">Sorry, you can only send messages to mutual contacts at the moment.</string>
     <string name="NobodyLikesSpam2">Sorry, you can only add mutual contacts to groups at the moment.</string>
+    <string name="NobodyLikesSpamUrl">https://telegram.org/faq#can-39t-send-messages-to-non-contacts</string>
     <string name="MoreInfo">More info</string>
     <!--notification-->
     <string name="MessageLifetimeChanged">%1$s set the self-destruct timer to %2$s</string>
@@ -287,6 +292,7 @@
     <string name="Online">online</string>
     <string name="LastSeen">last seen</string>
     <string name="LastSeenDate">last seen</string>
+    <string name="LastSeenNow">last seen just now</string>
     <string name="InviteFriends">Invite Friends</string>
     <string name="GlobalSearch">GLOBAL SEARCH</string>
     <string name="Lately">last seen recently</string>
@@ -491,11 +497,17 @@
     <string name="AutoLockInfo">Require passcode if away for a time.</string>
     <string name="AutoLockInTime">in %1$s</string>
     <string name="AutoLockDisabled">Disabled</string>
+    <string name="UnlockFingerprint">Unlock with Fingerprint</string>
+    <string name="FingerprintInfo">Confirm fingerprint to continue</string>
+    <string name="FingerprintHelp">Touch sensor</string>
+    <string name="FingerprintNotRecognized">Fingerprint not recognized. Try again</string>
     <!--media view-->
     <string name="NoMedia">Share photos and videos in this chat and access them on any of your devices.</string>
     <string name="DocumentsTitle">Shared Files</string>
     <string name="SharedMediaTitle">Shared Media</string>
     <string name="LinksTitle">Shared Links</string>
+    <string name="AudioTitle">Shared Music</string>
+    <string name="NoSharedAudio">Share music in this chat and access them on any of your devices.</string>
     <string name="NoSharedFiles">Share files and documents in this chat and access them on any of your devices.</string>
     <string name="NoSharedLinks">Share links in this chat and access them on any of your devices.</string>
     <!--map view-->
@@ -743,6 +755,12 @@
     <string name="FeatureUnavailable">Sorry, this feature is currently not available in your country.</string>
     <string name="NoUsernameFound">There is no Telegram account with this username.</string>
     <string name="BotCantJoinGroups">This bot can\'t join groups.</string>
+    <!--permissions-->
+    <string name="PermissionContacts">Telegram needs access to your contacts so that you can connect with your friends across all your devices.</string>
+    <string name="PermissionStorage">Telegram needs access to your storage so that you can send and save photos, videos, music and other media.</string>
+    <string name="PermissionNoAudio">Telegram needs access to your microphone so that you can send voice messages.</string>
+    <string name="PermissionNoLocation">Telegram needs access to your location so that you can share it with your friends.</string>
+    <string name="PermissionOpenSettings">SETTINGS</string>
     <!--Intro view-->
     <string name="Page1Title">Plus Messenger</string>
     <string name="Page2Title">Fast</string>
@@ -880,6 +898,18 @@
     <string name="Photos_few">%1$d photos</string>
     <string name="Photos_many">%1$d photos</string>
     <string name="Photos_other">%1$d photos</string>
+    <string name="LastSeenMinutes_zero">last seen %1$d minutes ago</string>
+    <string name="LastSeenMinutes_one">last seen %1$d minute ago</string>
+    <string name="LastSeenMinutes_two">last seen %1$d minutes ago</string>
+    <string name="LastSeenMinutes_few">last seen %1$d minutes ago</string>
+    <string name="LastSeenMinutes_many">last seen %1$d minutes ago</string>
+    <string name="LastSeenMinutes_other">last seen %1$d minutes ago</string>
+    <string name="LastSeenHours_zero">last seen %1$d hours ago</string>
+    <string name="LastSeenHours_one">last seen %1$d hour ago</string>
+    <string name="LastSeenHours_two">last seen %1$d hours ago</string>
+    <string name="LastSeenHours_few">last seen %1$d hours ago</string>
+    <string name="LastSeenHours_many">last seen %1$d hours ago</string>
+    <string name="LastSeenHours_other">last seen %1$d hours ago</string>
     <!--forwarded messages-->
     <string name="ForwardedMessage_zero">%1$d forwarded messages</string>
     <string name="ForwardedMessage_one">Forwarded message</string>
@@ -947,10 +977,10 @@
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s at %2$s</string>
     <!--update text-->
-    <string name="updateText">Telegram for Android has been updated. New in version 3.2.0:\n\n- Introducing Channels – a great new way to broadcast your messages to unlimited audiences (replaces old Broadcasts).\n\nRead more: https://telegram.org/blog/channels</string>
-    <string name="updateBuild">632</string>
+    <string name="updateText">Plus Messenger for Android has been updated. New in version 3.2.6:\n\n- New animations and many visual improvements\n- Support for new emoji\n- Android 6.0 support (Now on Tap - Direct Share - Fingerprint support for Passcodes)\n- Other improvements and bug fixes</string>
+    <string name="updateBuild">655</string>
     <!--Telegram+-->
-    <string name="updatePlusText">\n\nNew in version 3.2.2.2:\n\n- New option in settings to open profile/profile pics when clicking user/group pic in main screen\n- Added gradient option to chat background color\n- Added option to forward link without quoting\n- Added link to official channel in menu\n- Bug fixes</string>
+    <string name="updatePlusText">\n\nNew in version 3.2.6.0:\n\n- Bug fixes</string>
     <string name="TelegramForAndroid">Plus Messenger for Android</string>
     <string name="Theming">Theming</string>
     <string name="colorHexInvalid">Invalid color hex code!</string>

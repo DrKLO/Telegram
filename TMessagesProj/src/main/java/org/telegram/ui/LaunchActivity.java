@@ -1,13 +1,14 @@
 /*
- * This is the source code of Telegram for Android v. 1.3.2.
+ * This is the source code of Telegram for Android v. 3.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013.
+ * Copyright Nikolai Kudashov, 2013-2015.
  */
 
 package org.telegram.ui;
 
+import android.annotation.TargetApi;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
@@ -15,6 +16,7 @@ import android.content.ContentResolver;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.database.Cursor;
 import android.graphics.Point;
@@ -26,7 +28,6 @@ import android.provider.Browser;
 import android.provider.ContactsContract;
 import android.support.annotation.NonNull;
 import android.view.ActionMode;
-import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
@@ -47,7 +48,9 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BuildConfig;
 import org.telegram.messenger.ChatObject;
+import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.FileLog;
+import org.telegram.messenger.ImageLoader;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.MessagesStorage;
@@ -66,7 +69,6 @@ import org.telegram.ui.ActionBar.ActionBarLayout;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.DrawerLayoutContainer;
 import org.telegram.ui.Adapters.DrawerLayoutAdapter;
-import org.telegram.ui.Components.DrawerPlayerView;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.PasscodeView;
 
@@ -271,22 +273,24 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
             drawerLayoutContainer.addView(actionBarLayout, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
         }
 
-        FrameLayout listViewContainer = new FrameLayout(this);
-        listViewContainer.setBackgroundColor(0xffffffff);
-        drawerLayoutContainer.setDrawerLayout(listViewContainer);
-        FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) listViewContainer.getLayoutParams();
-        Point screenSize = AndroidUtilities.getRealScreenSize();
-        layoutParams.width = AndroidUtilities.isTablet() ? AndroidUtilities.dp(320) : Math.min(screenSize.x, screenSize.y) - AndroidUtilities.dp(56);
-        layoutParams.height = LayoutHelper.MATCH_PARENT;
-        listViewContainer.setLayoutParams(layoutParams);
-
-        ListView listView = new ListView(this);
+        ListView listView = new ListView(this) {
+            @Override
+            public boolean hasOverlappingRendering() {
+                return false;
+            }
+        };
+        listView.setBackgroundColor(0xffffffff);
         listView.setAdapter(drawerLayoutAdapter = new DrawerLayoutAdapter(this));
         listView.setChoiceMode(AbsListView.CHOICE_MODE_SINGLE);
         listView.setDivider(null);
         listView.setDividerHeight(0);
         listView.setVerticalScrollBarEnabled(false);
-        listViewContainer.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+        drawerLayoutContainer.setDrawerLayout(listView);
+        FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) listView.getLayoutParams();
+        Point screenSize = AndroidUtilities.getRealScreenSize();
+        layoutParams.width = AndroidUtilities.isTablet() ? AndroidUtilities.dp(320) : Math.min(screenSize.x, screenSize.y) - AndroidUtilities.dp(56);
+        layoutParams.height = LayoutHelper.MATCH_PARENT;
+        listView.setLayoutParams(layoutParams);
 
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
@@ -385,16 +389,6 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                     }
                     drawerLayoutContainer.closeDrawer(false);
                 }
-            }
-        });
-
-        DrawerPlayerView drawerPlayerView = new DrawerPlayerView(this, listView);
-        listViewContainer.addView(drawerPlayerView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 51, Gravity.LEFT | Gravity.BOTTOM));
-        drawerPlayerView.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                actionBarLayout.presentFragment(new AudioPlayerActivity());
-                drawerLayoutContainer.closeDrawer(false);
             }
         });
 
@@ -511,10 +505,6 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
             drawerLayoutContainer.setAllowOpenDrawer(allowOpen, false);
         }
 
-        /*if (BuildVars.DEBUG_VERSION) {
-            ViewServer.get(this).addWindow(this);
-        }*/
-
         handleIntent(getIntent(), false, savedInstanceState != null, false);
         needLayout();
     }
@@ -563,6 +553,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
         Integer push_chat_id = 0;
         Integer push_enc_id = 0;
         Integer open_settings = 0;
+            long dialogId = intent != null && intent.getExtras() != null ? intent.getExtras().getLong("dialogId", 0) : 0;
         boolean showDialogsList = false;
             boolean showPlayer = false;
 
@@ -784,6 +775,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                             String botUser = null;
                             String botChat = null;
                             String message = null;
+                            boolean hasUrl = false;
                         String scheme = data.getScheme();
                         if (scheme != null) {
                             if ((scheme.equals("http") || scheme.equals("https"))) {
@@ -797,8 +789,17 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                                             } else if (path.startsWith("addstickers/")) {
                                                 sticker = path.replace("addstickers/", "");
                                             } else if (path.startsWith("msg/")) {
-                                                message = data.getQueryParameter("text");
-                                                message += " " + data.getQueryParameter("url");
+                                                message = data.getQueryParameter("url");
+                                                if (message == null) {
+                                                    message = "";
+                                                }
+                                                if (data.getQueryParameter("text") != null) {
+                                                    if (message.length() > 0) {
+                                                        hasUrl = true;
+                                                        message += "\n";
+                                                    }
+                                                    message += data.getQueryParameter("text");
+                                                }
                                             } else if (path.length() >= 5) {
                                                 username = data.getLastPathSegment();
                                                 botUser = data.getQueryParameter("start");
@@ -825,13 +826,22 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                                     } else if (url.startsWith("tg:msg") || url.startsWith("tg://msg")) {
                                         url = url.replace("tg:msg", "tg://telegram.org").replace("tg://msg", "tg://telegram.org");
                                         data = Uri.parse(url);
-                                        message = data.getQueryParameter("text");
-                                        message += " " + data.getQueryParameter("url");
+                                        message = data.getQueryParameter("url");
+                                        if (message == null) {
+                                            message = "";
+                                        }
+                                        if (data.getQueryParameter("text") != null) {
+                                            if (message.length() > 0) {
+                                                hasUrl = true;
+                                                message += "\n";
+                                            }
+                                            message += data.getQueryParameter("text");
+                                        }
                                     }
                                 }
                             }
                             if (username != null || group != null || sticker != null || message != null) {
-                                runLinkRequest(username, group, sticker, botUser, botChat, message, 0);
+                                runLinkRequest(username, group, sticker, botUser, botChat, message, hasUrl, 0);
                         } else {
                             try {
                                 Cursor cursor = getContentResolver().query(intent.getData(), null, null, null, null);
@@ -935,6 +945,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
             if (!AndroidUtilities.isTablet()) {
                 NotificationCenter.getInstance().postNotificationName(NotificationCenter.closeChats);
             }
+                if (dialogId == 0) {
             Bundle args = new Bundle();
             args.putBoolean("onlySelect", true);
             args.putString("selectAlertString", LocaleController.getString("SendMessagesTo", R.string.SendMessagesTo));
@@ -959,6 +970,9 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                     rightActionBarLayout.showLastFragment();
                 } else {
                     drawerLayoutContainer.setAllowOpenDrawer(true, false);
+                }
+                } else {
+                    didSelectDialog(null, dialogId, false);
                 }
         } else if (open_settings != 0) {
             actionBarLayout.presentFragment(new SettingsActivity(), false, true, true);
@@ -1009,7 +1023,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
         return false;
     }
 
-    private void runLinkRequest(final String username, final String group, final String sticker, final String botUser, final String botChat, final String message, final int state) {
+    private void runLinkRequest(final String username, final String group, final String sticker, final String botUser, final String botChat, final String message, final boolean hasUrl, final int state) {
         final ProgressDialog progressDialog = new ProgressDialog(this);
         progressDialog.setMessage(LocaleController.getString("Loading", R.string.Loading));
         progressDialog.setCanceledOnTouchOutside(false);
@@ -1129,7 +1143,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                                             builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), new DialogInterface.OnClickListener() {
                                                 @Override
                                                 public void onClick(DialogInterface dialogInterface, int i) {
-                                                    runLinkRequest(username, group, sticker, botUser, botChat, message, 1);
+                                                    runLinkRequest(username, group, sticker, botUser, botChat, message, hasUrl, 1);
                                                 }
                                             });
                                             builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
@@ -1219,6 +1233,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                     editor.commit();
                     Bundle args = new Bundle();
                     args.putBoolean("scrollToTopOnResume", true);
+                    args.putBoolean("hasUrl", hasUrl);
                     int lower_part = (int) did;
                     int high_id = (int) (did >> 32);
                     if (lower_part != 0) {
@@ -1237,7 +1252,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                     actionBarLayout.presentFragment(new ChatActivity(args), true, false, true);
                 }
             });
-            presentFragment(fragment);
+            presentFragment(fragment, false, true);
         }
 
         if (requestId != 0) {
@@ -1289,7 +1304,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
     }
 
     @Override
-    public void didSelectDialog(DialogsActivity messageFragment, long dialog_id, boolean param) {
+    public void didSelectDialog(DialogsActivity dialogsFragment, long dialog_id, boolean param) {
         if (dialog_id != 0) {
             int lower_part = (int)dialog_id;
             int high_id = (int)(dialog_id >> 32);
@@ -1318,24 +1333,21 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                 if(android.os.Build.VERSION.SDK_INT >= 16) {
                     if (AndroidUtilities.isTablet()) {
                         actionBarLayout.presentFragment(fragment, false, true, true);
-                    }
-
-                    if (!AndroidUtilities.isTablet()) {
+                    } else {
                         actionBarLayout.addFragmentToStack(fragment, actionBarLayout.fragmentsStack.size() - 1);
                     }
 
-                    if (!fragment.openVideoEditor(videoPath, true, false)) {
+                    if (!fragment.openVideoEditor(videoPath, dialogsFragment != null, false) && dialogsFragment != null) {
                         if (!AndroidUtilities.isTablet()) {
-                            messageFragment.finishFragment(true);
+                            dialogsFragment.finishFragment(true);
                         }
                     }
                 } else {
-                    actionBarLayout.presentFragment(fragment, true);
+                    actionBarLayout.presentFragment(fragment, dialogsFragment != null, dialogsFragment == null, true);
                     SendMessagesHelper.prepareSendingVideo(videoPath, 0, 0, 0, 0, null, dialog_id, null, true);
                 }
             } else {
-
-                actionBarLayout.presentFragment(fragment, true);
+                actionBarLayout.presentFragment(fragment, dialogsFragment != null, dialogsFragment == null, true);
 
                 if (sendingText != null) {
                     SendMessagesHelper.prepareSendingText(sendingText, dialog_id, true);
@@ -1392,12 +1404,12 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
 
     public void needLayout() {
         if (AndroidUtilities.isTablet()) {
-
             RelativeLayout.LayoutParams relativeLayoutParams = (RelativeLayout.LayoutParams)layersActionBarLayout.getLayoutParams();
             relativeLayoutParams.leftMargin = (AndroidUtilities.displaySize.x - relativeLayoutParams.width) / 2;
             int y = (Build.VERSION.SDK_INT >= 21 ? AndroidUtilities.statusBarHeight : 0);
             relativeLayoutParams.topMargin = y + (AndroidUtilities.displaySize.y - relativeLayoutParams.height - y) / 2;
             layersActionBarLayout.setLayoutParams(relativeLayoutParams);
+
 
             if (!AndroidUtilities.isSmallTablet() || getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
                 tabletFullSize = false;
@@ -1451,7 +1463,8 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                     BaseFragment chatFragment = rightActionBarLayout.fragmentsStack.get(0);
                     chatFragment.onPause();
                     rightActionBarLayout.fragmentsStack.remove(0);
-                    actionBarLayout.addFragmentToStack(chatFragment);
+                    actionBarLayout.fragmentsStack.add(chatFragment);
+                    //actionBarLayout.addFragmentToStack(chatFragment);
                     if (passcodeView.getVisibility() != View.VISIBLE) {
                         actionBarLayout.showLastFragment();
                     }
@@ -1461,7 +1474,9 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
     }
 
     public void fixLayout() {
-        if (AndroidUtilities.isTablet()) {
+        if (!AndroidUtilities.isTablet()) {
+            return;
+        }
             if (actionBarLayout == null) {
                 return;
             }
@@ -1479,7 +1494,6 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                 }
             });
         }
-    }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -1505,15 +1519,72 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
     }
 
     @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == 3 || requestCode == 4 || requestCode == 5) {
+            if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                if (requestCode == 4) {
+                    ImageLoader.getInstance().createMediaPaths();
+                } else if (requestCode == 5) {
+                    ContactsController.getInstance().readContacts();
+                }
+                return;
+            }
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
+            if (requestCode == 3) {
+                builder.setMessage(LocaleController.getString("PermissionNoAudio", R.string.PermissionNoAudio));
+            } else if (requestCode == 4) {
+                builder.setMessage(LocaleController.getString("PermissionStorage", R.string.PermissionStorage));
+            } else if (requestCode == 5) {
+                builder.setMessage(LocaleController.getString("PermissionContacts", R.string.PermissionContacts));
+            }
+            builder.setNegativeButton(LocaleController.getString("PermissionOpenSettings", R.string.PermissionOpenSettings), new DialogInterface.OnClickListener() {
+                @TargetApi(Build.VERSION_CODES.GINGERBREAD)
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    try {
+                        Intent intent = new Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+                        intent.setData(Uri.parse("package:" + ApplicationLoader.applicationContext.getPackageName()));
+                        startActivity(intent);
+                    } catch (Exception e) {
+                        FileLog.e("tmessages", e);
+                    }
+                }
+            });
+            builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), null);
+            builder.show();
+            return;
+        }
+        if (actionBarLayout.fragmentsStack.size() != 0) {
+            BaseFragment fragment = actionBarLayout.fragmentsStack.get(actionBarLayout.fragmentsStack.size() - 1);
+            fragment.onRequestPermissionsResultFragment(requestCode, permissions, grantResults);
+        }
+        if (AndroidUtilities.isTablet()) {
+            if (rightActionBarLayout.fragmentsStack.size() != 0) {
+                BaseFragment fragment = rightActionBarLayout.fragmentsStack.get(rightActionBarLayout.fragmentsStack.size() - 1);
+                fragment.onRequestPermissionsResultFragment(requestCode, permissions, grantResults);
+            }
+            if (layersActionBarLayout.fragmentsStack.size() != 0) {
+                BaseFragment fragment = layersActionBarLayout.fragmentsStack.get(layersActionBarLayout.fragmentsStack.size() - 1);
+                fragment.onRequestPermissionsResultFragment(requestCode, permissions, grantResults);
+            }
+        }
+    }
+
+    @Override
     protected void onPause() {
         super.onPause();
+        ApplicationLoader.mainInterfacePaused = true;
         onPasscodePause();
         actionBarLayout.onPause();
         if (AndroidUtilities.isTablet()) {
             rightActionBarLayout.onPause();
             layersActionBarLayout.onPause();
         }
-        ApplicationLoader.mainInterfacePaused = true;
+        if (passcodeView != null) {
+            passcodeView.onPause();
+        }
         ConnectionsManager.getInstance().setAppPaused(true, false);
         AndroidUtilities.unregisterUpdates();
     }
@@ -1538,6 +1609,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
     @Override
     protected void onResume() {
         super.onResume();
+        ApplicationLoader.mainInterfacePaused = false;
         onPasscodeResume();
         if (passcodeView.getVisibility() != View.VISIBLE) {
         actionBarLayout.onResume();
@@ -1551,7 +1623,6 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
         AndroidUtilities.checkForCrashes(this);
         AndroidUtilities.checkForUpdates(this);
         AndroidUtilities.checkForThemes(this);
-        ApplicationLoader.mainInterfacePaused = false;
         ConnectionsManager.getInstance().setAppPaused(false, false);
         updateCurrentConnectionState();
         if (PhotoViewer.getInstance().isVisible()) {
@@ -1622,7 +1693,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                 @Override
                 public void onClick(DialogInterface dialogInterface, int i) {
                     try {
-                        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse("https://telegram.org/faq#can-39t-send-messages-to-non-contacts"));
+                        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(LocaleController.getString("NobodyLikesSpamUrl", R.string.NobodyLikesSpamUrl)));
                         intent.putExtra(Browser.EXTRA_APPLICATION_ID, getPackageName());
                         startActivity(intent);
                     } catch (Exception e) {
@@ -1788,6 +1859,9 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
     @Override
     public void onActionModeStarted(ActionMode mode) {
         super.onActionModeStarted(mode);
+        if (Build.VERSION.SDK_INT >= 23 && mode.getType() == ActionMode.TYPE_FLOATING) {
+            return;
+        }
         actionBarLayout.onActionModeStarted(mode);
         if (AndroidUtilities.isTablet()) {
             rightActionBarLayout.onActionModeStarted(mode);
@@ -1798,6 +1872,9 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
     @Override
     public void onActionModeFinished(ActionMode mode) {
         super.onActionModeFinished(mode);
+        if (Build.VERSION.SDK_INT >= 23 && mode.getType() == ActionMode.TYPE_FLOATING) {
+            return;
+        }
         actionBarLayout.onActionModeFinished(mode);
         if (AndroidUtilities.isTablet()) {
             rightActionBarLayout.onActionModeFinished(mode);

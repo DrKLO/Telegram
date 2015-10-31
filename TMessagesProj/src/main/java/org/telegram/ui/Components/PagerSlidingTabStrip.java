@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 1.3.2.
+ * This is the source code of Telegram for Android v. 3.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013.
+ * Copyright Nikolai Kudashov, 2013-2015.
  */
 
 package org.telegram.ui.Components;
@@ -323,7 +323,6 @@ public class PagerSlidingTabStrip extends HorizontalScrollView {
         @Override
         public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
             currentPosition = position;
-
             currentPositionOffset = positionOffset;
             scrollToChild(position, (int) (positionOffset * tabsContainer.getChildAt(position).getWidth()));
             invalidate();
@@ -347,9 +346,6 @@ public class PagerSlidingTabStrip extends HorizontalScrollView {
             if (delegatePageListener != null) {
                 delegatePageListener.onPageSelected(position);
             }
-            //plus
-            //if(position == currentPosition)paintTabIcons(position);
-            //
             for (int a = 0; a < tabsContainer.getChildCount(); a++) {
                 tabsContainer.getChildAt(a).setSelected(a == position);
             }

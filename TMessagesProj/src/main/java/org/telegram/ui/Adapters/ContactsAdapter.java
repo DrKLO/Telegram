@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2014.
+ * Copyright Nikolai Kudashov, 2013-2015.
  */
 
 package org.telegram.ui.Adapters;
@@ -18,15 +18,13 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.AnimationCompat.ViewProxy;
-
 import org.telegram.messenger.LocaleController;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.R;
-
+import org.telegram.messenger.AnimationCompat.ViewProxy;
 import org.telegram.ui.Cells.DividerCell;
 import org.telegram.ui.Cells.GreySectionCell;
 import org.telegram.ui.Cells.LetterSectionCell;
@@ -298,12 +296,6 @@ public class ContactsAdapter extends BaseSectionsAdapter {
                     ViewProxy.setAlpha(convertView, 1.0f);
                 }
             }
-            //((UserCell) convertView).setStatusColors(0xffa8a8a8, 0xff3b84c0);
-            //((UserCell) convertView).setStatusColors(themePrefs.getInt("contactsStatusColor", 0xffa8a8a8), themePrefs.getInt("contactsOnlineColor", AndroidUtilities.getIntDarkerColor("themeColor", 0x15)));
-            //((UserCell) convertView).setNameColor(cColorBlack);
-            //((UserCell) convertView).setNameSize(themePrefs.getInt("contactsNameSize", 17));
-            //((UserCell) convertView).setStatusSize(themePrefs.getInt("contactsStatusSize", 14));
-            //((UserCell) convertView).setAvatarRadius(themePrefs.getInt("contactsAvatarRadius", 32));
         }
         //parent.setBackgroundColor(themePrefs.getInt("contactsRowColor", 0xffffffff)); //Plus
         updateListBG(parent);

@@ -130,6 +130,7 @@ e introduce o teu número.</string>
   <string name="ChannelAddTo">Engadir a %1$s á canle?</string>
   <string name="ChannelUserLeftError">Sentímolo, este usuario decidiu deixar o grupo, así que non podes volver a invitalo.</string>
   <string name="ChannelUserCantAdd">Sentímolo, non podes engadir este usuario a canles.</string>
+  <string name="ChannelUserCantAdmin">Sentímolo, demasiados administradores na canle.</string>
   <string name="ChannelUserAddLimit">Sentímolo, tan só podes engadir aos primeiros 200 membros a unha canle. Sen embargo, unha cantidade ilimitada de persoas poden unirse coa ligazón da canle.</string>
   <string name="ChannelAddedBy">un1 engadiute a esta canle</string>
   <string name="ChannelJoined">Unícheste á canle</string>
@@ -145,14 +146,14 @@ e introduce o teu número.</string>
   <string name="ChannelMessageGroupDocument">%1$s enviou un ficheiro á canle %2$s</string>
   <string name="ChannelMessageGroupAudio">%1$s enviou un son á canle %2$s</string>
   <string name="ChannelMessageGroupSticker">%1$s enviou un sticker á canle %2$s</string>
-  <string name="ChannelMessageNoText">Nova mensaxe na canle %1$s</string>
-  <string name="ChannelMessagePhoto">Nova foto na canle %1$s</string>
-  <string name="ChannelMessageVideo">Novo vídeo na canle %1$s</string>
-  <string name="ChannelMessageContact">Contacto compartido na canle %1$s</string>
-  <string name="ChannelMessageMap">Nova localización compartida na canle %1$s</string>
-  <string name="ChannelMessageDocument">Novo ficheiro compartido na canle %1$s</string>
-  <string name="ChannelMessageAudio">Nova nota de voz compartida na canle %1$s</string>
-  <string name="ChannelMessageSticker">Novo sticker compartido na canle %1$s</string>
+  <string name="ChannelMessageNoText">%1$s publicou unha mensaxe</string>
+  <string name="ChannelMessagePhoto">%1$s publicou unha foto</string>
+  <string name="ChannelMessageVideo">%1$s publicou un vídeo</string>
+  <string name="ChannelMessageContact">%1$s publicou un contacto</string>
+  <string name="ChannelMessageMap">%1$s publicou unha localización</string>
+  <string name="ChannelMessageDocument">%1$s publicou un ficheiro</string>
+  <string name="ChannelMessageAudio">%1$s publicou unha mensaxe de voz</string>
+  <string name="ChannelMessageSticker">%1$s publicou un sticker</string>
   <!--broadcasts-->
   <string name="NewBroadcastList">Nova difusión</string>
   <string name="EnterListName">Introduce o nome do listado</string>
@@ -237,6 +238,7 @@ e introduce o teu número.</string>
   <string name="ReportSpamAlertGroup">Queres reportar este grupo como spam?</string>
   <string name="NobodyLikesSpam1">Sentímolo, polo momento só podes enviar mensaxes a contactos mutuos.</string>
   <string name="NobodyLikesSpam2">Sentímolo, polo momento só podes engadir a contactos mutuos a grupos.</string>
+  <string name="NobodyLikesSpamUrl">https://telegram.org/faq/es#no-puedo-enviar-mensajes-a-quienes-no-son-mis-contactos</string>
   <string name="MoreInfo">Máis información</string>
   <!--notification-->
   <string name="MessageLifetimeChanged">%1$s puxo o temporizador para a autodestrución en %2$s</string>
@@ -287,6 +289,7 @@ e introduce o teu número.</string>
   <string name="Online">en liña</string>
   <string name="LastSeen">últ. vez</string>
   <string name="LastSeenDate">últ. vez</string>
+  <string name="LastSeenNow">últ. vez hai un intre</string>
   <string name="InviteFriends">Invitar amigos</string>
   <string name="GlobalSearch">BUSCA GLOBAL</string>
   <string name="Lately">últ. vez recentemente</string>
@@ -334,8 +337,8 @@ e introduce o teu número.</string>
   <string name="StartEncryptedChat">Comezar un chat secreto</string>
   <string name="CreateEncryptedChatError">Produciuse un erro.</string>
   <string name="EncryptionKey">Clave de cifrado</string>
-  <string name="MessageLifetime">Temporizador da autodestrución</string>
-  <string name="ShortMessageLifetimeForever">Desactivado</string>
+  <string name="MessageLifetime">Autodestrución</string>
+  <string name="ShortMessageLifetimeForever">Desactivada</string>
   <string name="EncryptionKeyDescription">Esta imaxe é unha visualización da clave de cifrado para a conversa secreta con <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>.<![CDATA[<br><br>]]>Se é a mesma que aparece no teléfono de <![CDATA[<b>]]>%2$s<![CDATA[</b>]]>, a vosa conversa é 200%% segura.<![CDATA[<br><br>]]>Máis información en telegram.org</string>
   <string name="NumberUnknown">Descoñecido</string>
   <string name="Info">Información</string>
@@ -410,7 +413,7 @@ e introduce o teu número.</string>
   <string name="DeleteLocalization">Queres eliminar a tradución?</string>
   <string name="IncorrectLocalization">Ficheiro de tradución incorrecto</string>
   <string name="Enabled">Activadas</string>
-  <string name="Disabled">Desactivado</string>
+  <string name="Disabled">Desactivadas</string>
   <string name="NotificationsService">Servizo de notificacións</string>
   <string name="NotificationsServiceDisableInfo">Se os servizos de notificacións de Google Play son suficientes para ti, podes desactivar o Servizo de notificacións. Con todo recomendámosche que o deixes activado para manter a aplicación executándose en segundo plano e recibir notificacións ao momento.</string>
   <string name="SortBy">Ordenar por</string>
@@ -457,7 +460,7 @@ e introduce o teu número.</string>
   <string name="SoundDefault">Predeterminado</string>
   <string name="VibrationDefault">Predeterminada</string>
   <string name="SmartNotifications">Notificacións intelixentes</string>
-  <string name="SmartNotificationsDisabled">Desactivado</string>
+  <string name="SmartNotificationsDisabled">Desactivadas</string>
   <string name="SmartNotificationsInfo">Soar como máximo %1$s en %2$s</string>
   <string name="SmartNotificationsSoundAtMost">Soar como máximo</string>
   <string name="SmartNotificationsTimes">veces</string>
@@ -491,11 +494,17 @@ e introduce o teu número.</string>
   <string name="AutoLockInfo">O bloqueo activarase transcorrido este tempo.</string>
   <string name="AutoLockInTime">en %1$s</string>
   <string name="AutoLockDisabled">Desactivado</string>
+  <string name="UnlockFingerprint">Desbloquear coa pegada dactilar</string>
+  <string name="FingerprintInfo">Confirma a pegada para continuar</string>
+  <string name="FingerprintHelp">Sensor táctil</string>
+  <string name="FingerprintNotRecognized">Pegada non recoñecida. Téntao de novo.</string>
   <!--media view-->
   <string name="NoMedia">Comparte fotos e vídeos nesta conversa e accede a eles dende calquera dos teus dispositivos.</string>
   <string name="DocumentsTitle">Ficheiros compartidos</string>
   <string name="SharedMediaTitle">Multimedia</string>
   <string name="LinksTitle">Ligazóns compartidas</string>
+  <string name="AudioTitle">Música</string>
+  <string name="NoSharedAudio">Comparte música nesta conversa e accede a ela dende calquera dispositivo.</string>
   <string name="NoSharedFiles">Comparte ficheiros e documentos nesta conversa e accede a eles dende calquera dos teus dispositivos.</string>
   <string name="NoSharedLinks">Comparte ligazóns nesta conversa e accede a elas dende calquera dos teus dispositivos.</string>
   <!--map view-->
@@ -743,6 +752,12 @@ e introduce o teu número.</string>
   <string name="FeatureUnavailable">Sentímolo, esta funcionalidade non está dispoñíbel no teu país.</string>
   <string name="NoUsernameFound">Non hai unha conta en Telegram con este alias.</string>
   <string name="BotCantJoinGroups">Este bot non pode unirse a grupos.</string>
+  <!--permissions-->
+  <string name="PermissionContacts">Telegram necesita acceso aos teus contactos para que poidas conectar con eles en tódolos teus dispositivos.</string>
+  <string name="PermissionStorage">Telegram necesita acceso ao teu almacenamento para que poidas enviar e gardar fotos, vídeos, música e demais.</string>
+  <string name="PermissionNoAudio">Telegram necesita acceso ao teu micrófono para que poidas enviar mensaxes de voz.</string>
+  <string name="PermissionNoLocation">Telegram necesita acceso á túa localización para que a poidas compartir cos teus amigos.</string>
+  <string name="PermissionOpenSettings">AXUSTES</string>
   <!--Intro view-->
   <string name="Page1Title">Plus Messenger</string>
   <string name="Page2Title">Rápido</string>
@@ -880,6 +895,18 @@ e introduce o teu número.</string>
   <string name="Photos_few">%1$d fotos</string>
   <string name="Photos_many">%1$d fotos</string>
   <string name="Photos_other">%1$d fotos</string>
+  <string name="LastSeenMinutes_zero">últ. vez hai %1$d minutos</string>
+  <string name="LastSeenMinutes_one">últ. vez hai %1$d minuto</string>
+  <string name="LastSeenMinutes_two">últ. vez hai %1$d minutos</string>
+  <string name="LastSeenMinutes_few">últ. vez hai %1$d minutos</string>
+  <string name="LastSeenMinutes_many">últ. vez hai %1$d minutos</string>
+  <string name="LastSeenMinutes_other">últ. vez hai %1$d minutos</string>
+  <string name="LastSeenHours_zero">últ. vez hai %1$d horas</string>
+  <string name="LastSeenHours_one">últ. vez hai %1$d hora</string>
+  <string name="LastSeenHours_two">últ. vez hai %1$d horas</string>
+  <string name="LastSeenHours_few">últ. vez hai %1$d horas</string>
+  <string name="LastSeenHours_many">últ. vez hai %1$d horas</string>
+  <string name="LastSeenHours_other">últ. vez hai %1$d horas</string>
   <!--forwarded messages-->
   <string name="ForwardedMessage_zero">%1$d mensaxes reenviadas</string>
   <string name="ForwardedMessage_one">Mensaxe adxunta</string>
@@ -947,10 +974,10 @@ e introduce o teu número.</string>
   <string name="formatterDay12H">h:mm a</string>
   <string name="formatDateAtTime">%1$s ás %2$s</string>
   <!--update text-->
-  <string name="updateText">Telegram para Android foi actualizada. Novidades na versión 3.2.0:\n\n- Presentamos as Canles – unha nova gran forma de difundir as túas mensaxes a audiencias ilimitadas (substitúe ás antigas difusións).\n\n Coñece máis: https://telegram.org/blog/channels</string>
-  <string name="updateBuild">632</string>
-  <!--Telegram+--><!--
-  <string name="updatePlusText">\n\nNovo na versión 3.2.2.2:\n\n- Agora podes cambiar o fondo directamente dende a pantalla da conversa\n- Método mellorado para a aplicación dos fondos do tema\n- O alias cópiase ao portapapeis se lle tocas na pantalla do perfil\n- Corrección de erros</string>-->
+  <string name="updateText">Telegram para Android foi actualizada. Novidades na versión 3.2.6:\n\n- Novas animacións e moitas melloras visuais\n- Soporte para os novos emoji\n- Outras melloras e correccións de erros</string>
+  <string name="updateBuild">655</string>
+  <!--Telegram+-->
+  <string name="updatePlusText">\n\nNovidades na versión 3.2.6.0:\n\n- Corrección de erros</string>
     <string name="TelegramForAndroid">Plus Messenger para Android</string>
     <string name="Theming">Tematización</string>
     <string name="colorHexInvalid">Cor hexadecimal inválida!</string>
@@ -961,8 +988,8 @@ e introduce o teu número.</string>
     <string name="General">Xeral</string>
     <string name="Screens">Pantallas</string>
     <string name="MainScreen">Pantalla principal</string>
-  <string name="ChatScreen">Pantalla de conversas</string>
-    <string name="ContactsScreen">Pantalla de contactos</string>
+  <string name="ChatScreen">Pantalla das conversas</string>
+  <string name="ContactsScreen">Pantalla dos contactos</string>
     <string name="Header">Cabeceira</string>
   <string name="Rows">Listado</string>
   <string name="ChatList">Listado de conversa</string>
@@ -1003,7 +1030,7 @@ e introduce o teu número.</string>
   <string name="SaveThemeSum">Gardar o tema na carpeta Telegram/Themes</string>
   <string name="SaveThemeToastText">Tema gardado!</string>
     <string name="SavedTo">%1$s gardado en %2$s</string>
-  <string name="SaveErrorMsg0">Tema aínda sen crear. Aplica primeiro algún MOD, por favor</string>
+  <string name="SaveErrorMsg0">Tema aínda sen crear. Aplica primeiro algún MOD, por favor.</string>
     <string name="restoreOkMsg">Tema cargado dende a SD</string>
   <string name="restoreErrorMsg">Non se atopou ningún ficheiro de preferencias en %s</string>
   <string name="NoMediaMessage">Non se atopou tarxeta SD</string>
@@ -1046,8 +1073,8 @@ e introduce o teu número.</string>
   <string name="DisableMessageClick">Desactivar pop-up ao tocar</string>
   <string name="ProfileScreen">Perfil do grupo/contacto</string>
   <string name="HideBackground">Ocultar fondo personalizado</string>
-  <string name="RLinkColor">Cor do enlace dereito</string>
-  <string name="LLinkColor">Cor do enlace esquerdo</string>
+  <string name="RLinkColor">Cor da ligazón dereita</string>
+  <string name="LLinkColor">Cor da ligazón esquerda</string>
   <string name="ThemeApplied">Tema aplicado!</string>
   <string name="ClickOkToRestart">Preme OK para reiniciar a app</string>
   <string name="ShowAndroidEmoji">Mostrar emoticonas do sistema</string>
@@ -1062,24 +1089,24 @@ e introduce o teu número.</string>
   <string name="UnknownNameColor">Cor do nome (número descoñecido)</string>
   <string name="HideBackgroundShadow">Ocultar sombra de fondo personalizada</string>
   <string name="SetSolidBGColor">Poñer cor de fondo</string>
-  <string name="SolidBGColor">Cor de fondo</string>
-  <string name="EmojiPopupSize">Tamaño do popup das emoticonas</string>
+  <string name="SolidBGColor">Cor do fondo</string>
+  <string name="EmojiPopupSize">Tamaño do pop-up das emoticonas</string>
   <string name="ForwardRightNameColor">Cor do nome da burbulla de reenvío der.</string>
   <string name="ForwardLeftNameColor">Cor do nome da burbulla de reenvío esq.</string>
   <string name="IconsColor">Cor das iconas</string>
   <string name="SettingsScreen">Pantalla de Axustes/Tematización</string>
-  <string name="BackgroundColor">Cor de fondo</string>
+  <string name="BackgroundColor">Cor do fondo</string>
   <string name="ShadowColor">Cor da sombra</string>
   <string name="SectionColor">Cor da sección</string>
   <string name="TitleColor">Cor do título</string>
   <string name="SummaryColor">Cor do resumo/subtítulo</string>
   <string name="MediaColor">Cor do texto \'Foto/Sticker\'</string>
   <string name="ThemesAppMsg">Gustaríache ver algún dos temas creados por outros usuarios de Plus Messenger?</string>
-  <string name="UseDeviceFont">Empregar fonte do dispositivo</string>
+  <string name="UseDeviceFont">Empregar a fonte do dispositivo</string>
   <string name="AppWillRestart">Plus Messenger reiniciarase</string>
   <string name="GroupIconColor">Cor do icono do grupo</string>
   <string name="SharedContactNameColor">Cor do nome do contacto compartido</string>
-  <string name="AttachBGColor">Cor de fondo de adxuntar</string>
+  <string name="AttachBGColor">Cor do fondo de adxuntar</string>
   <string name="AttachTextColor">Cor do texto de adxuntar</string>
   <string name="ShowContactAvatar">Mostrar foto de contacto na conversa</string>
   <string name="ShowOwnAvatar">Mostrar a miña foto na conversa</string>
@@ -1100,4 +1127,11 @@ e introduce o teu número.</string>
   <string name="RowGradientList">Aplicar gradiente ao fondo do listado</string>
   <string name="Copied">%s copiado ao portapapeis</string>
   <string name="JoinChannel">\n\nÚnete á canle oficial de Plus Messenger: https://telegram.me/plusmsnes</string>
+  <string name="DownloadThemes">Descargar temas</string>
+  <string name="OfficialChannel">Canle oficial</string>
+  <string name="DialogsSettings">Conversas</string>
+  <string name="ClickOnContactPic">Clic na foto do contacto</string>
+  <string name="ClickOnGroupPic">Clic na foto do grupo</string>
+  <string name="ShowProfile">Perfil</string>
+  <string name="ShowPics">Fotos do perfil</string>
 </resources>

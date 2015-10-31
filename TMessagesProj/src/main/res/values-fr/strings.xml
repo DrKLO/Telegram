@@ -129,6 +129,7 @@
   <string name="ChannelAddTo">Ajouter %1$s à la chaîne ?</string>
   <string name="ChannelUserLeftError">Désolé, %@ a décidé de quitter ce groupe, vous ne pouvez donc plus l\'inviter ici.</string>
   <string name="ChannelUserCantAdd">Désolé, vous ne pouvez pas ajouter cet utilisateur dans des groupes.</string>
+  <string name="ChannelUserCantAdmin">Désolé, il y a trop d\'admins pour cette chaîne.</string>
   <string name="ChannelUserAddLimit">Désolé, Vous pouvez seulement ajouter les 200 premiers membres à la chaîne. Notez qu\'un nombre illimité de personnes peuvent rejoindre la chaîne via le liens d\'invitation.</string>
   <string name="ChannelAddedBy">un1 vous a ajouté à la chaîne</string>
   <string name="ChannelJoined">Vous avez rejoint la chaîne</string>
@@ -144,14 +145,14 @@
   <string name="ChannelMessageGroupDocument">%1$s a envoyé un fichier à la chaine %2$s</string>
   <string name="ChannelMessageGroupAudio">%1$s a envoyé une note vocal à la chaine %2$s</string>
   <string name="ChannelMessageGroupSticker">%1$s a envoyé un autocolant à la chaine %2$s</string>
-  <string name="ChannelMessageNoText">Nouveau message dans la chaîne %1$s</string>
-  <string name="ChannelMessagePhoto">Nouvelle photo dans la chaîne %1$s</string>
-  <string name="ChannelMessageVideo">Nouvelle vidéo dans la chaîne %1$s</string>
-  <string name="ChannelMessageContact">Contact partagé dans la chaîne %1$s</string>
-  <string name="ChannelMessageMap">Nouvelle localisation partagée dans la chaîne %1$s</string>
-  <string name="ChannelMessageDocument">Nouveau fichier partagé dans la chaîne %1$s</string>
-  <string name="ChannelMessageAudio">Nouvelle note vocale partagée dans la chaîne %1$s</string>
-  <string name="ChannelMessageSticker">Nouveau autocollant partagé dans la chaîne %1$s</string>
+  <string name="ChannelMessageNoText">%1$s a envoyé un message</string>
+  <string name="ChannelMessagePhoto">%1$s a envoyé une photo</string>
+  <string name="ChannelMessageVideo">%1$s a envoyé une vidéo</string>
+  <string name="ChannelMessageContact">%1$s a envoyé un contact</string>
+  <string name="ChannelMessageMap">%1$s a envoyé une position</string>
+  <string name="ChannelMessageDocument">%1$s a envoyé un fichier</string>
+  <string name="ChannelMessageAudio">%1$s a envoyé un message vocal</string>
+  <string name="ChannelMessageSticker">%1$s a envoyé une vignette</string>
   <!--broadcasts-->
   <string name="NewBroadcastList">Nv. liste de diffusion</string>
   <string name="EnterListName">Saisissez le nom de la liste</string>
@@ -287,6 +288,7 @@
   <string name="Online">en ligne</string>
   <string name="LastSeen">vu</string>
   <string name="LastSeenDate">vu</string>
+  <string name="LastSeenNow">vu juste maintenant</string>
   <string name="InviteFriends">Inviter des amis</string>
   <string name="GlobalSearch">RECHERCHE GÉNÉRALE</string>
   <string name="Lately">vu récemment</string>
@@ -491,11 +493,17 @@
   <string name="AutoLockInfo">Code d\'accès requis en cas d\'absence</string>
   <string name="AutoLockInTime">après %1$s</string>
   <string name="AutoLockDisabled">Désactivé</string>
+  <string name="UnlockFingerprint">Débloquer avec l\'empreinte digitale</string>
+  <string name="FingerprintInfo">Confirmer l\'empreinte digitale pour continuer</string>
+  <string name="FingerprintHelp">Capteur de toucher</string>
+  <string name="FingerprintNotRecognized">Empreinte digitale non reconnue. Essayez à nouveau</string>
   <!--media view-->
   <string name="NoMedia">Partager des photos et des vidéos dans cette conversation et y accéder sur chacun de vos appareils. </string>
   <string name="DocumentsTitle">Fichiers partagés</string>
   <string name="SharedMediaTitle">Médias partagés</string>
   <string name="LinksTitle">Liens Partagés</string>
+  <string name="AudioTitle">Musique partagée</string>
+  <string name="NoSharedAudio">Partager de la musique dans cette conversation et accédez-y sur tous vos appareils.</string>
   <string name="NoSharedFiles">Partager des fichiers et des documents dans cette conversation et y accéder sur chacun de vos appareils. </string>
   <string name="NoSharedLinks">Partager des liens dans cette discussion et y accéder sur n\'importe lequel de vos appareils .</string>
   <!--map view-->
@@ -743,6 +751,12 @@
   <string name="FeatureUnavailable">Désolé, cette option n\'est actuellement pas disponible dans votre pays.</string>
   <string name="NoUsernameFound">Il n\'y a pas de compte Telegram associé à cet utilisateur.</string>
   <string name="BotCantJoinGroups">Ce bot ne peut pas rejoindre des groupes.</string>
+  <!--permissions-->
+  <string name="PermissionContacts">Telegram a besoin d\'accéder à vos contacts pour que vous puissiez être en lien avec vos amis à travers tous vos périphériques.</string>
+  <string name="PermissionStorage">Telegram a besoin d\'accéder à votre espace de stockage pour que vous puissiez envoyer et sauvegarder des photos, vidéos, musiques et autres médias.</string>
+  <string name="PermissionNoAudio">Telegram a besoin d\'accéder à votre microphone pour que vous puissiez envoyer des messages vocaux.</string>
+  <string name="PermissionNoLocation">Telegram a besoin d\'accéder à votre position pour que vous puissiez la partager avec vos amis.</string>
+  <string name="PermissionOpenSettings">PARAMÈTRES</string>
   <!--Intro view-->
   <string name="Page1Title">Plus Messenger</string>
   <string name="Page2Title">Rapide</string>
@@ -880,6 +894,18 @@
   <string name="Photos_few">%1$d photos</string>
   <string name="Photos_many">%1$d photos</string>
   <string name="Photos_other">%1$d photos</string>
+  <string name="LastSeenMinutes_zero">vu il y a %1$d minutes</string>
+  <string name="LastSeenMinutes_one">vu il y a %1$d minute</string>
+  <string name="LastSeenMinutes_two">vu il y a %1$d minutes</string>
+  <string name="LastSeenMinutes_few">vu il y a %1$d minutes</string>
+  <string name="LastSeenMinutes_many">vu il y a %1$d minutes</string>
+  <string name="LastSeenMinutes_other">vu il y a %1$d minutes</string>
+  <string name="LastSeenHours_zero">vu il y a %1$d heures</string>
+  <string name="LastSeenHours_one">vu il y a %1$d heure</string>
+  <string name="LastSeenHours_two">vu il y a %1$d heures</string>
+  <string name="LastSeenHours_few">vu il y a %1$d heures</string>
+  <string name="LastSeenHours_many">vu il y a %1$d heures</string>
+  <string name="LastSeenHours_other">vu il y a %1$d heures</string>
   <!--forwarded messages-->
   <string name="ForwardedMessage_zero">%1$d messages transférés</string>
   <string name="ForwardedMessage_one">Message transféré</string>
@@ -947,9 +973,8 @@
   <string name="formatterDay12H">h:mm a</string>
   <string name="formatDateAtTime">%1$s à %2$s</string>
   <!--update text-->
-  <string name="updateText">Plus Messenger pour Android a été mis à jour. Nouveautés de la version 3.1.3:\n\n- Nouvelle section \"Liens partagés\" dans les informations de la conversation\n
-- Prévisualistaion In-app pour les liens des images</string>
-  <string name="updateBuild">632</string>
+  <string name="updateText">Telegram pour Android a été mis à jour. Nouveau dans la version 3.2.6:\n\n- De nouvelles animations et de nombreuses améliorations visuelles.\n- Support pour de nouveaux emoji\n- Autres améliorations et corrections de bogues.</string>
+  <string name="updateBuild">655</string>
     <!--Telegram+-->
     <string name="TelegramForAndroid">Plus Messenger pour Android</string>
     <string name="Theming">Thème</string>

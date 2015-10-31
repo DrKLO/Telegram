@@ -16,11 +16,6 @@ jfieldID jclass_Options_inJustDecodeBounds;
 jfieldID jclass_Options_outHeight;
 jfieldID jclass_Options_outWidth;
 
-jclass jclass_Bitmap;
-jmethodID jclass_Bitmap_createBitmap;
-jclass jclass_Config;
-jfieldID jclass_Config_ARGB_8888;
-
 const uint32_t PGPhotoEnhanceHistogramBins = 256;
 const uint32_t PGPhotoEnhanceSegments = 4;
 
@@ -55,24 +50,6 @@ jint imageOnJNILoad(JavaVM *vm, void *reserved, JNIEnv *env) {
     }
     jclass_Options_outWidth = (*env)->GetFieldID(env, jclass_Options, "outWidth", "I");
     if (jclass_Options_outWidth == 0) {
-        return -1;
-    }
-    
-    jclass_Bitmap = createGlobarRef(env, (*env)->FindClass(env, "android/graphics/Bitmap"));
-    if (jclass_Bitmap == 0) {
-        return -1;
-    }
-    jclass_Bitmap_createBitmap = (*env)->GetStaticMethodID(env, jclass_Bitmap, "createBitmap", "(IILandroid/graphics/Bitmap$Config;)Landroid/graphics/Bitmap;");
-    if (jclass_Bitmap_createBitmap == 0) {
-        return -1;
-    }
-    
-    jclass_Config = createGlobarRef(env, (*env)->FindClass(env, "android/graphics/Bitmap$Config"));
-    if (jclass_Config == 0) {
-        return -1;
-    }
-    jclass_Config_ARGB_8888 = (*env)->GetStaticFieldID(env, jclass_Config, "ARGB_8888", "Landroid/graphics/Bitmap$Config;");
-    if (jclass_Config_ARGB_8888 == 0) {
         return -1;
     }
     
@@ -511,7 +488,7 @@ JNIEXPORT void Java_org_telegram_messenger_Utilities_loadBitmap(JNIEnv *env, jcl
     }
 }
 
-JNIEXPORT jobject Java_org_telegram_messenger_Utilities_loadWebpImage(JNIEnv *env, jclass class, jobject buffer, int len, jobject options) {
+JNIEXPORT jboolean Java_org_telegram_messenger_Utilities_loadWebpImage(JNIEnv *env, jclass class, jobject outputBitmap, jobject buffer, jint len, jobject options, jboolean unpin) {
     if (!buffer) {
         (*env)->ThrowNew(env, jclass_NullPointerException, "Input buffer can not be null");
         return 0;
@@ -529,43 +506,36 @@ JNIEXPORT jobject Java_org_telegram_messenger_Utilities_loadWebpImage(JNIEnv *en
     if (options && (*env)->GetBooleanField(env, options, jclass_Options_inJustDecodeBounds) == JNI_TRUE) {
         (*env)->SetIntField(env, options, jclass_Options_outWidth, bitmapWidth);
         (*env)->SetIntField(env, options, jclass_Options_outHeight, bitmapHeight);
-        return 0;
+        return 1;
     }
-
-    jobject value__ARGB_8888 = (*env)->GetStaticObjectField(env, jclass_Config, jclass_Config_ARGB_8888);
-    jobject outputBitmap = (*env)->CallStaticObjectMethod(env, jclass_Bitmap, jclass_Bitmap_createBitmap, (jint)bitmapWidth, (jint)bitmapHeight, value__ARGB_8888);
+    
     if (!outputBitmap) {
-        (*env)->ThrowNew(env, jclass_RuntimeException, "Failed to allocate Bitmap");
+        (*env)->ThrowNew(env, jclass_NullPointerException, "output bitmap can not be null");
         return 0;
     }
-    outputBitmap = (*env)->NewLocalRef(env, outputBitmap);
     
     AndroidBitmapInfo bitmapInfo;
     if (AndroidBitmap_getInfo(env, outputBitmap, &bitmapInfo) != ANDROID_BITMAP_RESUT_SUCCESS) {
-        (*env)->DeleteLocalRef(env, outputBitmap);
         (*env)->ThrowNew(env, jclass_RuntimeException, "Failed to get Bitmap information");
         return 0;
     }
     
     void *bitmapPixels = 0;
     if (AndroidBitmap_lockPixels(env, outputBitmap, &bitmapPixels) != ANDROID_BITMAP_RESUT_SUCCESS) {
-        (*env)->DeleteLocalRef(env, outputBitmap);
         (*env)->ThrowNew(env, jclass_RuntimeException, "Failed to lock Bitmap pixels");
         return 0;
     }
     
     if (!WebPDecodeRGBAInto((uint8_t*)inputBuffer, len, (uint8_t*)bitmapPixels, bitmapInfo.height * bitmapInfo.stride, bitmapInfo.stride)) {
         AndroidBitmap_unlockPixels(env, outputBitmap);
-        (*env)->DeleteLocalRef(env, outputBitmap);
         (*env)->ThrowNew(env, jclass_RuntimeException, "Failed to decode webp image");
         return 0;
     }
     
-    if (AndroidBitmap_unlockPixels(env, outputBitmap) != ANDROID_BITMAP_RESUT_SUCCESS) {
-        (*env)->DeleteLocalRef(env, outputBitmap);
+    if (unpin && AndroidBitmap_unlockPixels(env, outputBitmap) != ANDROID_BITMAP_RESUT_SUCCESS) {
         (*env)->ThrowNew(env, jclass_RuntimeException, "Failed to unlock Bitmap pixels");
         return 0;
     }
     
-    return outputBitmap;
+    return 1;
 }

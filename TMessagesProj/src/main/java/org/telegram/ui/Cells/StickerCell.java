@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2014.
+ * Copyright Nikolai Kudashov, 2013-2015.
  */
 
 package org.telegram.ui.Cells;
@@ -45,7 +45,7 @@ public class StickerCell extends FrameLayoutFixed {
     }
 
     public void setSticker(TLRPC.Document document, int side) {
-        if (document != null) {
+        if (document != null && document.thumb != null) {
             imageView.setImage(document.thumb.location, null, "webp", null);
         }
         if (side == -1) {
