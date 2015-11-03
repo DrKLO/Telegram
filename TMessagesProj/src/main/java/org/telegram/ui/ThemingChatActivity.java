@@ -119,6 +119,9 @@ public class ThemingChatActivity extends BaseFragment {
     private int emojiViewBGGradientRow;
     private int emojiViewBGGradientColorRow;
 
+    private int commandColorRow;
+    private int commandColorCheckRow;
+
     private int rowCount;
 
     public final static int CENTER = 0;
@@ -165,6 +168,9 @@ public class ThemingChatActivity extends BaseFragment {
         rLinkColorRow = rowCount++;
         lTextColorRow = rowCount++;
         lLinkColorRow = rowCount++;
+
+        commandColorCheckRow = rowCount++;
+        commandColorRow = rowCount++;
 
         timeSizeRow = rowCount++;
         rTimeColorRow = rowCount++;
@@ -390,6 +396,18 @@ public class ThemingChatActivity extends BaseFragment {
                         });
                         builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
                         showDialog(builder.create());
+                    } else if (i == commandColorCheckRow) {
+                        boolean b = themePrefs.getBoolean( key, true);
+                        SharedPreferences.Editor editor = themePrefs.edit();
+                        editor.putBoolean(key, !b);
+                        editor.commit();
+                        if (view instanceof TextCheckCell) {
+                            ((TextCheckCell) view).setChecked(!b);
+                        }
+                        if (listView != null) {
+                            listView.invalidateViews();
+                        }
+
                     } else if (i == solidBGColorCheckRow) {
                         boolean b = themePrefs.getBoolean( key, true);
                         SharedPreferences.Editor editor = themePrefs.edit();
@@ -989,6 +1007,20 @@ public class ThemingChatActivity extends BaseFragment {
                             }
                         },themePrefs.getInt("chatOnlineColor", themePrefs.getInt("chatStatusColor", lightColor)), CENTER, 0, false);
                         colorDialog.show();
+                    } else if (i == commandColorRow) {
+                        if (getParentActivity() == null) {
+                            return;
+                        }
+                        LayoutInflater li = (LayoutInflater)getParentActivity().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+                        li.inflate(R.layout.colordialog, null, false);
+                        ColorSelectorDialog colorDialog = new ColorSelectorDialog(getParentActivity(), new OnColorChangedListener() {
+                            @Override
+                            public void colorChanged(int color) {
+                                commitInt("chatCommandColor", color);
+                            }
+
+                        },themePrefs.getInt("chatCommandColor", defColor), CENTER, 0, false);
+                        colorDialog.show();
                     } else if (i == dateColorRow) {
                         if (getParentActivity() == null) {
                             return;
@@ -1260,6 +1292,8 @@ public class ThemingChatActivity extends BaseFragment {
                         resetPref("chatRTimeColor");
                     } else if (i == lTimeColorRow) {
                         resetPref("chatLTimeColor");
+                    } else if (i == commandColorRow) {
+                        resetPref("chatCommandColor");
                     } else if (i == dateColorRow) {
                         resetPref("chatDateColor");
                     } else if (i == checksColorRow) {
@@ -1415,7 +1449,7 @@ public class ThemingChatActivity extends BaseFragment {
             int g = AndroidUtilities.getIntDef("chatGradientBG", 0);
             return  i == headerColorRow || i == headerGradientRow || AndroidUtilities.getIntDef("chatHeaderGradient", 0) != 0 && i == headerGradientColorRow || i == muteColorRow || i == headerIconsColorRow || i == rBubbleColorRow || i == lBubbleColorRow ||  i == bubblesRow ||
                     i == solidBGColorCheckRow || b && i == solidBGColorRow || b && i == gradientBGRow || (g != 0 &&  i == gradientBGColorRow) || i == avatarRadiusRow || i == avatarSizeRow || i == avatarMarginLeftRow || i == avatarAlignTopRow || i == ownAvatarAlignTopRow || i == showContactAvatar || i == showOwnAvatar || i == showOwnAvatarGroup || i == nameColorRow || i == nameSizeRow || i == statusColorRow || i == onlineColorRow || i == statusSizeRow ||
-                    i == textSizeRow || i == timeSizeRow || i == dateColorRow || i == dateSizeRow || i == dateBubbleColorRow || i == rTextColorRow || i == rLinkColorRow || i == lTextColorRow || i == lLinkColorRow ||
+                    i == textSizeRow || i == timeSizeRow || AndroidUtilities.getBoolPref("chatCommandColorCheck") && i == commandColorRow || i == commandColorCheckRow || i == dateColorRow || i == dateSizeRow || i == dateBubbleColorRow || i == rTextColorRow || i == rLinkColorRow || i == lTextColorRow || i == lLinkColorRow ||
                     i == rTimeColorRow|| i == lTimeColorRow || i == checksColorRow || i == memberColorCheckRow || AndroidUtilities.getBoolPref("chatMemberColorCheck") && i == memberColorRow || i == contactNameColorRow || i == forwardRightNameColorRow || i == forwardLeftNameColorRow || i == showUsernameCheckRow ||
                     i == editTextSizeRow || i == editTextColorRow || i == editTextIconsColorRow || i == sendColorRow || i == editTextBGColorRow || i == editTextBGGradientRow || AndroidUtilities.getIntDef("chatEditTextBGGradient", 0) != 0 && i == editTextBGGradientColorRow || i == attachBGColorRow || i == attachBGGradientRow || AndroidUtilities.getIntDef("chatAttachBGGradient", 0) != 0 && i == attachBGGradientColorRow || i == attachTextColorRow ||
                     i == emojiViewBGColorRow || i == emojiViewBGGradientRow || AndroidUtilities.getIntDef("chatEmojiViewBGGradient", 0) != 0 && i == emojiViewBGGradientColorRow || i == emojiViewTabIconColorRow || i == emojiViewTabColorRow;
@@ -1508,6 +1542,9 @@ public class ThemingChatActivity extends BaseFragment {
                 if (i == solidBGColorCheckRow) {
                     textCell.setTag("chatSolidBGColorCheck");
                     textCell.setTextAndCheck(LocaleController.getString("SetSolidBGColor", R.string.SetSolidBGColor), themePrefs.getBoolean("chatSolidBGColorCheck", false), false);
+                } else if (i == commandColorCheckRow) {
+                    textCell.setTag("chatCommandColorCheck");
+                    textCell.setTextAndCheck(LocaleController.getString("CommandColorCheck", R.string.CommandColorCheck), themePrefs.getBoolean("chatCommandColorCheck", false), false);
                 } else if (i == memberColorCheckRow) {
                     textCell.setTag("chatMemberColorCheck");
                     textCell.setTextAndCheck(LocaleController.getString("SetMemberColor", R.string.SetMemberColor), themePrefs.getBoolean("chatMemberColorCheck", false), false);
@@ -1593,6 +1630,8 @@ public class ThemingChatActivity extends BaseFragment {
                     textCell.setTextAndColor(LocaleController.getString("LTimeColor", R.string.LTimeColor), themePrefs.getInt("chatLTimeColor", 0xffa1aab3), true);
                 } else if (i == checksColorRow) {
                     textCell.setTextAndColor(LocaleController.getString("ChecksColor", R.string.ChecksColor), themePrefs.getInt("chatChecksColor", defColor), true);
+                } else if (i == commandColorRow) {
+                    textCell.setTextAndColor(LocaleController.getString("CommandColor", R.string.CommandColor), themePrefs.getBoolean("chatCommandColorCheck", false) ? themePrefs.getInt("chatCommandColor", defColor) : 0x00000000, true);
                 } else if (i == dateColorRow) {
                     textCell.setTextAndColor(LocaleController.getString("DateColor", R.string.DateColor), themePrefs.getInt("chatDateColor", 0xffffffff), true);
                 } else if (i == dateBubbleColorRow) {
@@ -1717,12 +1756,12 @@ public class ThemingChatActivity extends BaseFragment {
             }
 
             else if ( i == headerColorRow || i == headerGradientColorRow || i == muteColorRow || i == headerIconsColorRow ||
-                    i == solidBGColorRow || i == gradientBGColorRow || i == rBubbleColorRow || i == lBubbleColorRow || i == nameColorRow || i == statusColorRow || i == onlineColorRow || i == dateColorRow || i == dateBubbleColorRow ||
+                    i == solidBGColorRow || i == gradientBGColorRow || i == rBubbleColorRow || i == lBubbleColorRow || i == nameColorRow || i == statusColorRow || i == onlineColorRow || i == commandColorRow || i == dateColorRow || i == dateBubbleColorRow ||
                     i == rTextColorRow || i == rLinkColorRow || i == lTextColorRow || i == lLinkColorRow || i == rLinkColorRow || i == rTimeColorRow || i == lTimeColorRow || i == checksColorRow || i == memberColorRow || i == contactNameColorRow || i == forwardRightNameColorRow || i == forwardLeftNameColorRow ||
                     i == sendColorRow || i == editTextColorRow || i == editTextBGColorRow || i == editTextBGGradientColorRow || i == editTextIconsColorRow ||  i == attachBGColorRow ||  i == attachBGGradientColorRow || i == attachTextColorRow ||
                     i == emojiViewBGColorRow || i == emojiViewBGGradientColorRow || i == emojiViewTabIconColorRow || i == emojiViewTabColorRow) {
                 return 3;
-            } else if (i == solidBGColorCheckRow || i == memberColorCheckRow || i == showUsernameCheckRow || i == avatarAlignTopRow || i == ownAvatarAlignTopRow || i == showContactAvatar || i == showOwnAvatar || i == showOwnAvatarGroup) {
+            } else if (i == solidBGColorCheckRow || i == commandColorCheckRow || i == memberColorCheckRow || i == showUsernameCheckRow || i == avatarAlignTopRow || i == ownAvatarAlignTopRow || i == showContactAvatar || i == showOwnAvatar || i == showOwnAvatarGroup) {
                 return 4;
             } else if (i == headerGradientRow || i == gradientBGRow || i == editTextBGGradientRow || i == attachBGGradientRow || i == emojiViewBGGradientRow) {
                 return 5;

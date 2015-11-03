@@ -975,9 +975,9 @@ e introduce o teu número.</string>
   <string name="formatDateAtTime">%1$s ás %2$s</string>
   <!--update text-->
   <string name="updateText">Telegram para Android foi actualizada. Novidades na versión 3.2.6:\n\n- Novas animacións e moitas melloras visuais\n- Soporte para os novos emoji\n- Outras melloras e correccións de erros</string>
-  <string name="updateBuild">655</string>
+  <string name="updateBuild">657</string>
   <!--Telegram+-->
-  <string name="updatePlusText">\n\nNovidades na versión 3.2.6.0:\n\n- Corrección de erros</string>
+  <string name="updatePlusText">\n\nNovidades na versión 3.2.6.1:\n\n- Corrección de erros</string>
     <string name="TelegramForAndroid">Plus Messenger para Android</string>
     <string name="Theming">Tematización</string>
     <string name="colorHexInvalid">Cor hexadecimal inválida!</string>
@@ -1126,7 +1126,7 @@ e introduce o teu número.</string>
   <string name="RowGradientBLTR">Abaixo-Esquerda Arriba-Dereita</string>
   <string name="RowGradientList">Aplicar gradiente ao fondo do listado</string>
   <string name="Copied">%s copiado ao portapapeis</string>
-  <string name="JoinChannel">\n\nÚnete á canle oficial de Plus Messenger: https://telegram.me/plusmsnes</string>
+  <string name="JoinChannel">\n\nÚnete á canle oficial de Plus Messenger: https://telegram.me/plusmsgres</string>
   <string name="DownloadThemes">Descargar temas</string>
   <string name="OfficialChannel">Canle oficial</string>
   <string name="DialogsSettings">Conversas</string>

@@ -978,9 +978,9 @@
     <string name="formatDateAtTime">%1$s at %2$s</string>
     <!--update text-->
     <string name="updateText">Plus Messenger for Android has been updated. New in version 3.2.6:\n\n- New animations and many visual improvements\n- Support for new emoji\n- Android 6.0 support (Now on Tap - Direct Share - Fingerprint support for Passcodes)\n- Other improvements and bug fixes</string>
-    <string name="updateBuild">655</string>
+    <string name="updateBuild">657</string>
     <!--Telegram+-->
-    <string name="updatePlusText">\n\nNew in version 3.2.6.0:\n\n- Bug fixes</string>
+    <string name="updatePlusText">\n\nNew in version 3.2.6.1:\n\n- Added mod for command color in chat screen\n- Added mod for counter color background for muted chat/group/channel in main screen\n- Added highlight search color mod in main screen\n- Bug fixes</string>
     <string name="TelegramForAndroid">Plus Messenger for Android</string>
     <string name="Theming">Theming</string>
     <string name="colorHexInvalid">Invalid color hex code!</string>
@@ -1129,7 +1129,7 @@
     <string name="RowGradientBLTR">Bottom-Left Top-Right</string>
     <string name="RowGradientList">Apply gradient to list background</string>
     <string name="Copied">%s copied to clipboard</string>
-    <string name="JoinChannel">\n\nJoin Plus Messenger official channel: https://telegram.me/plusmsn</string>
+    <string name="JoinChannel">\n\nJoin Plus Messenger official channel: https://telegram.me/plusmsgr</string>
     <string name="DownloadThemes">Download themes</string>
     <string name="OfficialChannel">Official channel</string>
     <string name="DialogsSettings">Dialogs</string>
@@ -1137,4 +1137,8 @@
     <string name="ClickOnGroupPic">Click on group pic</string>
     <string name="ShowProfile">Profile</string>
     <string name="ShowPics">Profile pics</string>
+    <string name="CountSilentBGColor">Count silent background color</string>
+    <string name="CommandColorCheck">Bot command color check</string>
+    <string name="CommandColor">Bot command color</string>
+    <string name="HighlightSearchColor">Highlight search color</string>
 </resources>

@@ -341,10 +341,10 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                     drawerLayoutContainer.closeDrawer(false);
                 } else if (position == channelRow) {
                     try {
-                        String link = "https://telegram.me/plusmsn";//https://plus.google.com/101839105638971401281/posts"
+                        String link = "https://telegram.me/plusmsgr";//https://plus.google.com/101839105638971401281/posts"
                         String lg = Locale.getDefault().getLanguage();
                         if(lg.contains("es") || lg.contains("gl") || lg.contains("ca")){
-                            link = "https://telegram.me/plusmsnes";
+                            link = "https://telegram.me/plusmsgres";
                         }
                         startActivityForResult(new Intent(Intent.ACTION_VIEW, Uri.parse(link)), 504);
                     } catch (Exception e) {

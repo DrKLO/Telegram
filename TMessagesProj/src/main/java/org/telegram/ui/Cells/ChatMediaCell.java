@@ -1192,7 +1192,9 @@ public class ChatMediaCell extends ChatBaseCell {
             if(themePrefs.getBoolean("chatMemberColorCheck", false)){
                 senderPaint.setColor(themePrefs.getInt("chatMemberColor", AndroidUtilities.getIntDarkerColor("themeColor", 0x15)));
             }else{
-                senderPaint.setColor(AvatarDrawable.getNameColorForId(MessagesController.getInstance().getUser(currentMessageObject.messageOwner.from_id).id));
+                if (currentMessageObject != null && currentMessageObject.messageOwner.from_id > 0) {
+                    senderPaint.setColor(AvatarDrawable.getNameColorForId(MessagesController.getInstance().getUser(currentMessageObject.messageOwner.from_id).id));
+                }
             }
         } catch (Exception e) {
             FileLog.e("tmessages", e);

@@ -132,7 +132,6 @@ import org.telegram.ui.Components.URLSpanReplacement;
 import org.telegram.ui.Components.WebFrameLayout;
 
 import java.io.File;
-import java.io.IOException;
 import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -680,8 +679,11 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
 
             ResourceLoader.loadRecources(context);
 
-            actionBar.setBackButtonDrawable(new BackDrawable(false));
+            //actionBar.setBackButtonDrawable(new BackDrawable(false));
             SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+            Drawable d = new BackDrawable(false);
+            ((BackDrawable) d).setColor(themePrefs.getInt("chatHeaderIconsColor", 0xffffffff));
+            actionBar.setBackButtonDrawable(d);
             actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
                 @Override
             public void onItemClick(final int id) {
@@ -2572,7 +2574,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             int textColor = themePrefs.getInt("chatEditTextColor", 0xff999999);
             replyObjectTextView.setTextColor(textColor);
             //int rColor = themePrefs.getInt("chatForwardRColor", defColor);
-            Drawable delete = ApplicationLoader.applicationContext.getResources().getDrawable(R.drawable.delete_reply);
+            Drawable delete = getParentActivity().getResources().getDrawable(R.drawable.delete_reply);
             delete.setColorFilter(iColor, PorterDuff.Mode.SRC_IN);
             deleteIconImageView.setImageDrawable(delete);
             if (messageObject != null) {
@@ -2598,7 +2600,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     return;
                 }
                 //replyIconImageView.setImageResource(R.drawable.reply);
-                Drawable reply = ApplicationLoader.applicationContext.getResources().getDrawable(R.drawable.reply);
+                Drawable reply = getParentActivity().getResources().getDrawable(R.drawable.reply);
                 reply.setColorFilter(iColor, PorterDuff.Mode.SRC_IN);
                 replyIconImageView.setImageDrawable(reply);
 
@@ -2628,7 +2630,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 chatActivityEnterView.setForceShowSendButton(true, animated);
                 ArrayList<Integer> uids = new ArrayList<>();
                 //replyIconImageView.setImageResource(R.drawable.forward_blue);
-                Drawable forward = ApplicationLoader.applicationContext.getResources().getDrawable(R.drawable.forward_blue);
+                Drawable forward = getParentActivity().getResources().getDrawable(R.drawable.forward_blue);
                 forward.setColorFilter(iColor, PorterDuff.Mode.SRC_IN);
                 replyIconImageView.setImageDrawable(forward);
                 deleteIconImageView.setVisibility(View.VISIBLE);
@@ -2730,7 +2732,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 }
             } else {
                 //replyIconImageView.setImageResource(R.drawable.link);
-                Drawable link = ApplicationLoader.applicationContext.getResources().getDrawable(R.drawable.link);
+                Drawable link = getParentActivity().getResources().getDrawable(R.drawable.link);
                 link.setColorFilter(iColor, PorterDuff.Mode.SRC_IN);
                 replyIconImageView.setImageDrawable(link);
                 replyNameTextView.setTextColor(iColor);//
@@ -5397,17 +5399,19 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             //onlineTextView.setTextColor(themePrefs.getInt("chatStatusColor", AndroidUtilities.getIntDarkerColor("themeColor", -0x40)));
             onlineTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, themePrefs.getInt("chatStatusSize", 14));
             int iColor = themePrefs.getInt("chatHeaderIconsColor", 0xffffffff);
-            Drawable mute = getParentActivity().getResources().getDrawable(R.drawable.mute_blue);
-            mute.setColorFilter(iColor, PorterDuff.Mode.SRC_IN);
-            Drawable dots = getParentActivity().getResources().getDrawable(R.drawable.ic_ab_other);
-            dots.setColorFilter(iColor, PorterDuff.Mode.MULTIPLY);
-            Drawable back = getParentActivity().getResources().getDrawable(R.drawable.ic_ab_back);
-            back.setColorFilter(iColor, PorterDuff.Mode.MULTIPLY);
+            if(getParentActivity() != null) {
+                Drawable mute = getParentActivity().getResources().getDrawable(R.drawable.mute_blue);
+                mute.setColorFilter(iColor, PorterDuff.Mode.SRC_IN);
+                Drawable dots = getParentActivity().getResources().getDrawable(R.drawable.ic_ab_other);
+                dots.setColorFilter(iColor, PorterDuff.Mode.MULTIPLY);
+                Drawable back = getParentActivity().getResources().getDrawable(R.drawable.ic_ab_back);
+                back.setColorFilter(iColor, PorterDuff.Mode.MULTIPLY);
 
-            Drawable searchD = getParentActivity().getResources().getDrawable(R.drawable.search_down);
-            searchD.setColorFilter(iColor, PorterDuff.Mode.SRC_IN);
-            Drawable searchU = getParentActivity().getResources().getDrawable(R.drawable.search_up);
-            searchU.setColorFilter(iColor, PorterDuff.Mode.SRC_IN);
+                Drawable searchD = getParentActivity().getResources().getDrawable(R.drawable.search_down);
+                searchD.setColorFilter(iColor, PorterDuff.Mode.SRC_IN);
+                Drawable searchU = getParentActivity().getResources().getDrawable(R.drawable.search_up);
+                searchU.setColorFilter(iColor, PorterDuff.Mode.SRC_IN);
+            }
             if(searchItem != null)searchItem.getSearchField().setTextColor(iColor);
             //Channel
             bottomOverlayChat.setBackgroundColor(hColor);
@@ -5519,21 +5523,21 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
                         int color = themePrefs.getInt("chatHeaderIconsColor", 0xffffffff);
                         if (AndroidUtilities.isSmallTablet() && ApplicationLoader.applicationContext.getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT) {
-                            actionBar.setBackButtonDrawable(new BackDrawable(false));
+                            //actionBar.setBackButtonDrawable(new BackDrawable(false));
 
-                            /*Drawable back = context.getResources().getDrawable(R.drawable.ic_ab_back);
-                            back.setColorFilter(color, PorterDuff.Mode.MULTIPLY);
-                            actionBar.setBackButtonDrawable(back);*/
+                            Drawable back = new BackDrawable(false);
+                            ((BackDrawable) back).setColor(color);
+                            actionBar.setBackButtonDrawable(back);
 
                             if (playerView != null && playerView.getParent() == null) {
                                 ((ViewGroup) fragmentView).addView(playerView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 39, Gravity.TOP | Gravity.LEFT, 0, -36, 0, 0));
                             }
                         } else {
-                            actionBar.setBackButtonDrawable(new BackDrawable(true));
+                            //actionBar.setBackButtonDrawable(new BackDrawable(true));
 
-                            /*Drawable close = context.getResources().getDrawable(R.drawable.ic_ab_back);
-                            close.setColorFilter(color, PorterDuff.Mode.MULTIPLY);
-                            actionBar.setBackButtonDrawable(close);*/
+                            Drawable back = new BackDrawable(false);
+                            ((BackDrawable) back).setColor(color);
+                            actionBar.setBackButtonDrawable(back);
 
                             if (playerView != null && playerView.getParent() != null) {
                                 fragmentView.setPadding(0, 0, 0, 0);
@@ -5980,7 +5984,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     MediaController.saveFile(path, getParentActivity(), 0, null);
                 }
             }
-        } else if (option == 60) {
+        /*} else if (option == 60) {
             if (selectedObject != null) {
 
                 String ObjectPath = "";
@@ -6018,7 +6022,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 shareIntent.setType(MimeType);
                 getParentActivity().startActivity(Intent.createChooser(shareIntent, LocaleController.getString("ShareFile", R.string.ShareFile)));
                 selectedObject = null;
-            }
+            }*/
         } else if (option == 8) {
             showReplyPanel(true, selectedObject, null, null, false, true);
         } else if (option == 9) {

@@ -974,10 +974,10 @@
     <string name="formatDateAtTime">%1$s às %2$s</string>
     <!--update text-->
     <string name="updateText">Plus Messenger para Android foi atualizado. Novidades na versão 3.2.6:\n\n- Novas animações e melhorias no visual\n- Suporte para novos emojis\n- Outras melhorias e resoluções de bugs</string>
-    <string name="updateBuild">655</string>
+    <string name="updateBuild">657</string>
     <!--Telegram+-->
   <string name="updatePlusText">
-\n\nNovidades na versão 3.2.6.0:\n\n- Correções de erros</string>
+\n\nNovidades na versão 3.2.6.1:\n\n- Adicionada mod para cor de comando na tela de chat\n- Adicionada mod para cor de fundo do contador para chat/grupo/canal silenciado na tela principal\n- Correções de erros</string>
     <string name="TelegramForAndroid">Plus Messenger para Android</string>
     <string name="Theming">Personalização</string>
   <string name="colorHexInvalid">Código de cor HEX inválido!</string>
@@ -1094,7 +1094,7 @@
   <string name="ForwardRightNameColor">Cor do Nome Direito ao Encaminhar</string>
   <string name="ForwardLeftNameColor">Cor do Nome Esquerdo ao Encaminhar</string>
   <string name="IconsColor">Cor dos Ícones</string>
-  <string name="SettingsScreen">Configurações/Personalização</string>
+  <string name="SettingsScreen">Configurações</string>
   <string name="BackgroundColor">Cor de Fundo</string>
   <string name="ShadowColor">Cor da Sombra</string>
   <string name="SectionColor">Cor das Seções</string>
@@ -1125,9 +1125,9 @@
   <string name="RowGradientTLBR">Superior-Esquerda Inferior-Direita</string>
   <string name="RowGradientBLTR">Inferior-Esquerda Superior-Direita</string>
   <string name="RowGradientList">Aplicar degradê para a lista de fundo</string>
-  <string name="Copied">%s copiado para o clipboard</string>
+  <string name="Copied">%s copiado para a área de transferência</string>
   <string name="JoinChannel">
-\n\nJunte-se ao canal oficial do Plus Messenger: https://telegram.me/plusmsn</string>
+\n\nJunte-se ao canal oficial do Plus Messenger: https://telegram.me/plusmsgr</string>
   <string name="DownloadThemes">Baixar Temas</string>
   <string name="OfficialChannel">Canal Oficial</string>
   <string name="DialogsSettings">Diálogos</string>
@@ -1135,4 +1135,7 @@
   <string name="ClickOnGroupPic">Clique na foto do grupo</string>
   <string name="ShowProfile">Perfil</string>
   <string name="ShowPics">Fotos de Perfil</string>
+  <string name="CountSilentBGColor">Fundo do Contador Silenciado</string>
+  <string name="CommandColorCheck">Definir Cor de Comando Bot</string>
+  <string name="CommandColor">Cor de Comando Bot</string>
 </resources>

@@ -167,7 +167,7 @@
             </intent-filter>
         </service>
 
-        <service android:name=".NotificationsService" android:enabled="true"/>
+        <service android:name="org.telegram.messenger.NotificationsService" android:enabled="true"/>
         <service android:name=".NotificationRepeat" android:exported="false"/>
         <service android:name=".VideoEncodingService" android:enabled="true"/>
         <service android:name=".MusicPlayerService" android:exported="true" android:enabled="true"/>
@@ -184,9 +184,9 @@
             </intent-filter>
         </receiver>
 
-        <receiver android:name=".AppStartReceiver" android:enabled="true">
+        <receiver android:name="org.telegram.messenger.AppStartReceiver" android:enabled="true">
             <intent-filter>
-                <action android:name="org.telegram.start" />
+                <action android:name="org.telegram.plus.start" />
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
             </intent-filter>
         </receiver>

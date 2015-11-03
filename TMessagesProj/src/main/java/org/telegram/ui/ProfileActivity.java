@@ -72,6 +72,7 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
+import org.telegram.ui.ActionBar.BackDrawable;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.Cells.AddMemberCell;
 import org.telegram.ui.Cells.DividerCell;
@@ -281,10 +282,13 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
         actionBar.setBackgroundColor(AvatarDrawable.getProfileBackColorForId(user_id != 0 || ChatObject.isChannel(chat_id) ? 5 : chat_id));
         actionBar.setItemsBackground(AvatarDrawable.getButtonColorForId(user_id != 0 || ChatObject.isChannel(chat_id) ? 5 : chat_id));
-        Drawable back = context.getResources().getDrawable(R.drawable.ic_ab_back);
-        back.setColorFilter(themePrefs.getInt("profileHeaderIconsColor", 0xffffffff), PorterDuff.Mode.MULTIPLY);
-        actionBar.setBackButtonDrawable(back);
+        //Drawable back = context.getResources().getDrawable(R.drawable.ic_ab_back);
+        //back.setColorFilter(themePrefs.getInt("profileHeaderIconsColor", 0xffffffff), PorterDuff.Mode.MULTIPLY);
+        //actionBar.setBackButtonDrawable(back);
         //actionBar.setBackButtonDrawable(new BackDrawable(false));
+        Drawable back = new BackDrawable(false);
+        ((BackDrawable) back).setColor(themePrefs.getInt("profileHeaderIconsColor", 0xffffffff));
+        actionBar.setBackButtonDrawable(back);
         actionBar.setCastShadows(false);
         actionBar.setAddToContainer(false);
         hasOwnBackground = true;
@@ -1050,13 +1054,20 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 ViewProxy.setTranslationX(avatarImage, -AndroidUtilities.dp(47) * diff);
                 ViewProxy.setTranslationY(avatarImage, (float) Math.ceil(avatarY));
             }
+            SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+            int y = themePrefs.getInt("profileNameSize", 18) - 18;
+
             ViewProxy.setTranslationX(nameTextView, -21 * AndroidUtilities.density * diff);
             ViewProxy.setTranslationY(nameTextView, (float) Math.floor(avatarY) - (float) Math.ceil(AndroidUtilities.density) + (float) Math.floor(7 * AndroidUtilities.density * diff));
-            ViewProxy.setTranslationX(onlineTextView, -21 * AndroidUtilities.density * diff);
-            ViewProxy.setTranslationY(onlineTextView, (float) Math.floor(avatarY) + AndroidUtilities.dp(22) + (float )Math.floor(11 * AndroidUtilities.density) * diff);
 
+            ViewProxy.setTranslationX(onlineTextView, -21 * AndroidUtilities.density * diff);
+            //ViewProxy.setTranslationY(onlineTextView, (float) Math.floor(avatarY) + AndroidUtilities.dp(22) + (float) Math.floor(11 * AndroidUtilities.density) * diff);
+            ViewProxy.setTranslationY(onlineTextView, (float) Math.floor(avatarY) + AndroidUtilities.dp(22 + y) + (float) Math.floor(11 * AndroidUtilities.density) * diff);
+
+            int y2 = themePrefs.getInt("profileStatusSize", 14) - 14 + y;
             ViewProxy.setTranslationX(adminTextView, -21 * AndroidUtilities.density * diff);
-            ViewProxy.setTranslationY(adminTextView, (float) Math.floor(avatarY) + AndroidUtilities.dp(32) + (float )Math.floor(22 * AndroidUtilities.density) * diff);
+            //ViewProxy.setTranslationY(adminTextView, (float) Math.floor(avatarY) + AndroidUtilities.dp(32) + (float) Math.floor(22 * AndroidUtilities.density) * diff);
+            ViewProxy.setTranslationY(adminTextView, (float) Math.floor(avatarY) + AndroidUtilities.dp(32 + y2) + (float )Math.floor(22 * AndroidUtilities.density) * diff);
 
             ViewProxy.setScaleX(nameTextView, 1.0f + 0.12f * diff);
             ViewProxy.setScaleY(nameTextView, 1.0f + 0.12f * diff);
@@ -1738,10 +1749,10 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         try {
                             if (Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.HONEYCOMB) {
                                 android.text.ClipboardManager clipboard = (android.text.ClipboardManager) ApplicationLoader.applicationContext.getSystemService(Context.CLIPBOARD_SERVICE);
-                                clipboard.setText(""+fId);
+                                clipboard.setText("" + fId);
                             } else {
                                 android.content.ClipboardManager clipboard = (android.content.ClipboardManager) ApplicationLoader.applicationContext.getSystemService(Context.CLIPBOARD_SERVICE);
-                                android.content.ClipData clip = android.content.ClipData.newPlainText("label", ""+fId);
+                                android.content.ClipData clip = android.content.ClipData.newPlainText("label", "" + fId);
                                 clipboard.setPrimaryClip(clip);
                             }
                             Toast.makeText(getParentActivity(), LocaleController.formatString("Copied", R.string.Copied, fId), Toast.LENGTH_SHORT).show();
@@ -1796,18 +1807,19 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         }else{
             listView.setBackgroundColor(mainColor);
         }
-        listView.setGlowColor(mainColor);
+        //listView.setGlowColor(mainColor);
     }
 
     private void updateActionBarBG(){
         SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
         int def = themePrefs.getInt("themeColor", AndroidUtilities.defColor);
-
         int hColor = themePrefs.getInt("profileHeaderColor", def);
         actionBar.setBackgroundColor(hColor);
+        listView.setGlowColor(hColor);
         extraHeightView.setBackgroundColor(hColor);
         int val = themePrefs.getInt("profileHeaderGradient", 0);
         if (val > 0) {
+            int gradColor = themePrefs.getInt("profileHeaderGradientColor", def);
             GradientDrawable.Orientation go;
             switch (val) {
                 case 2:
@@ -1821,45 +1833,22 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     break;
                 default:
                     go = GradientDrawable.Orientation.TOP_BOTTOM;
+                    extraHeightView.setBackgroundColor(gradColor);
             }
-            int gradColor = themePrefs.getInt("profileHeaderGradientColor", def);
+
             int[] colors = new int[]{hColor, gradColor};
             GradientDrawable gd = new GradientDrawable(go, colors);
             actionBar.setBackgroundDrawable(gd);
-            extraHeightView.setBackgroundDrawable(gd);
+            if(val > 1)extraHeightView.setBackgroundDrawable(gd);
         }
     }
-
+    /*
     private void updateViewColor(View v){
         SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
-        int mainColor = themePrefs.getInt("profileRowColor", 0xffffffff);
         int value = themePrefs.getInt("profileRowGradient", 0);
-        boolean b = true;//themePrefs.getBoolean("profileRowGradientListCheck", false);
-        if(value > 0 && !b) {
-            GradientDrawable.Orientation go;
-            switch(value) {
-                case 2:
-                    go = GradientDrawable.Orientation.LEFT_RIGHT;
-                    break;
-                case 3:
-                    go = GradientDrawable.Orientation.TL_BR;
-                    break;
-                case 4:
-                    go = GradientDrawable.Orientation.BL_TR;
-                    break;
-                default:
-                    go = GradientDrawable.Orientation.TOP_BOTTOM;
-            }
-
-            int gradColor = themePrefs.getInt("profileRowGradientColor", 0xffffffff);
-            int[] colors = new int[]{mainColor, gradColor};
-            GradientDrawable gd = new GradientDrawable(go, colors);
-            v.setBackgroundDrawable(gd);
-        } else if(b){
-            v.setBackgroundColor(0x00000000);
-        }
-        if(value > 0)v.setTag("Profile00");
-    }
+        v.setBackgroundColor(0x00000000);
+        if(value > 0)v.setTag("Profile00");//if gradient make dividercell transparent
+    }*/
 
     private void createActionBarMenu() {
         ActionBarMenu menu = actionBar.createMenu();
@@ -1972,13 +1961,23 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         @Override
         public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
             View view = null;
+            SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+            int rColor = themePrefs.getInt("profileRowColor", 0xffffffff);
+            int value = themePrefs.getInt("profileRowGradient", 0);
+            int tColor = themePrefs.getInt("profileTitleColor", 0xff212121);
+            int dColor = themePrefs.getInt("profileIconsColor", 0xff737373);
             switch (viewType) {
                 case 0:
                     view = new EmptyCell(mContext);
+                    //updateViewColor(view);
+                    view.setBackgroundColor(0x00000000);
                     break;
                 case 1:
                     view = new DividerCell(mContext);
                     view.setPadding(AndroidUtilities.dp(72), 0, 0, 0);
+                    view.setTag("profileRowColor");
+                    view.setBackgroundColor(0x00000000);
+                    if(value > 0)view.setTag("Profile00");
                     break;
                 case 2:
                     view = new TextDetailCell(mContext) {
@@ -1992,8 +1991,12 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                             return super.onTouchEvent(event);
                         }
                     };
+                    ((TextDetailCell) view).setTextColor(tColor);
+                    ((TextDetailCell) view).setValueColor(themePrefs.getInt("profileSummaryColor", 0xff8a8a8a));
+                    //updateViewColor(view);
+                    view.setBackgroundColor(0x00000000);
                     break;
-case 3:
+                case 3:
                     view = new TextCell(mContext) {
                         @Override
                         public boolean onTouchEvent(MotionEvent event) {
@@ -2005,6 +2008,9 @@ case 3:
                             return super.onTouchEvent(event);
                         }
                     };
+                    //updateViewColor(view);
+                    view.setBackgroundColor(0x00000000);
+                    ((TextCell) view).setTextColor(tColor);
                     break;
                 case 4:
                     view = new UserCell(mContext, 61) {
@@ -2018,17 +2024,26 @@ case 3:
                             return super.onTouchEvent(event);
                         }
                     };
+                    //updateViewColor(view);
+                    view.setBackgroundColor(0x00000000);
+                    view.setTag("Profile");
                     break;
                 case 5:
-                    view = new ShadowSectionCell(mContext);
+                    //view = new ShadowSectionCell(mContext);
+                    view = new ShadowSectionCell(mContext, false);
+                    if(rColor != 0xffffffff || value > 0)view.setBackgroundColor(0x00000000);
                     break;
                 case 6:
                     view = new AddMemberCell(mContext);
+                    //updateViewColor(view);
+                    view.setBackgroundColor(0x00000000);
                     if (chat_id > 0) {
                         ((AddMemberCell) view).setText(LocaleController.getString("AddMember", R.string.AddMember));
                     } else {
                         ((AddMemberCell) view).setText(LocaleController.getString("AddRecipient", R.string.AddRecipient));
                     }
+                    ((AddMemberCell) view).setTextColor(tColor);
+                    ((AddMemberCell) view).setDrawableColor(dColor);
                     break;
             }
             return new Holder(view);
@@ -2050,10 +2065,8 @@ case 3:
                     } else {
                         ((EmptyCell) holder.itemView).setHeight(AndroidUtilities.dp(36));
                     }
-                    updateViewColor(holder.itemView);
                     break;
                 case 2:
-                    updateViewColor(holder.itemView);
                     TextDetailCell textDetailCell = (TextDetailCell) holder.itemView;
                     textDetailCell.setTextColor(tColor);
                     textDetailCell.setValueColor(themePrefs.getInt("profileSummaryColor", 0xff8a8a8a));
@@ -2089,7 +2102,6 @@ case 3:
                     }
                     break;
                 case 3:
-                    updateViewColor(holder.itemView);
                     TextCell textCell = (TextCell) holder.itemView;
                     //textCell.setTextColor(0xff212121);
                     textCell.setTextColor(tColor);
@@ -2172,9 +2184,8 @@ case 3:
                     }
                     break;
                 case 4:
-                    updateViewColor(holder.itemView);
                     TLRPC.TL_chatParticipant part = info.participants.participants.get(sortedUsers.get(i - emptyRowChat2 - 1));
-                    //((UserCell) holder.itemView).setData(MessagesController.getInstance().getUser(part.user_id), null, null, i == emptyRowChat2 + 1 ? R.drawable.menu_newgroup : 0);
+                    //((TitleColor) holder.itemView).setData(MessagesController.getInstance().getUser(part.user_id), null, null, i == emptyRowChat2 + 1 ? R.drawable.menu_newgroup : 0);
                     int icon = 0;
                     if (info.participants.admin_id == part.user_id) {
                         icon = R.drawable.menu_admin;
@@ -2182,6 +2193,7 @@ case 3:
                         icon = R.drawable.menu_newgroup;
                     }
                     ((UserCell) holder.itemView).setData(MessagesController.getInstance().getUser(part.user_id), null, null, icon);
+                    //holder.itemView.setTag("Profile");
                     break;
                 default:
                     checkBackground = false;

@@ -974,9 +974,9 @@
     <string name="formatDateAtTime">%1$s um %2$s</string>
     <!--update text-->
 <string name="updateText">Plus Messenger für Android wurde aktualisiert. Neu in Version 3.2.6:\n\n- Neue Animationen und optische Verbesserungen\n- Neue Emoji\n-  Sonstige Verbesserungen und Fehlerbehebungen</string>
-    <string name="updateBuild">655</string>
+    <string name="updateBuild">657</string>
     <!--Telegram+-->
-  <string name="updatePlusText">\n\nNeues in Version 3.2.6.0:\n\n- Fehlerbeseitigung</string>
+  <string name="updatePlusText">\n\nNeues in Version 3.2.6.1:\n\n- Fehlerbeseitigung</string>
     <string name="TelegramForAndroid">Plus Messenger für Android</string>
   <string name="Theming">Themen bearbeiten</string>
   <string name="colorHexInvalid">Ungültiger Hex-Code!</string>
@@ -1126,7 +1126,7 @@
   <string name="RowGradientList">Hintergrund Farbverlauf Liste oder Seite</string>
   <string name="Copied">%s in die Zwischenablage kopiert</string>
   <string name="JoinChannel">
-\n\nPlus Messenger Mitglied werden im offiziellen Kanal: https://telegram.me/plusmsn</string>
+\n\nPlus Messenger Mitglied werden im offiziellen Kanal: https://telegram.me/plusmsgr</string>
   <string name="DownloadThemes">Themen herunterladen</string>
   <string name="OfficialChannel">Offizieller Kanal</string>
   <string name="DialogsSettings">Dialoge</string>

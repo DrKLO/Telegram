@@ -404,8 +404,7 @@ public class DialogCell extends BaseCell {
                         }
                         checkMessage = false;
                         SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
-                        //int defColor = themePrefs.getInt("themeColor", AndroidUtilities.defColor);
-                        //String hexColor = String.format("#%08X", (0xffffffff & defColor));
+
                         String hexMsgColor = String.format("#%08X", (0xffffffff & themePrefs.getInt("chatsMessageColor", 0xff808080)));
                         int darkColor = themePrefs.getInt("chatsMemberColor", AndroidUtilities.getIntDarkerColor("themeColor", 0x15));
                         String hexDarkColor = String.format("#%08X", (0xffffffff & darkColor));
@@ -886,7 +885,7 @@ public class DialogCell extends BaseCell {
         clockDrawable.setColorFilter(themePrefs.getInt("chatsChecksColor", tColor), PorterDuff.Mode.SRC_IN);
 
         countDrawable.setColorFilter(themePrefs.getInt("chatsCountBGColor", tColor), PorterDuff.Mode.SRC_IN);
-        countDrawableGrey.setColorFilter(themePrefs.getInt("chatsCountBGColor", tColor), PorterDuff.Mode.SRC_IN);
+        countDrawableGrey.setColorFilter(themePrefs.getInt("chatsCountSilentBGColor", themePrefs.getInt("chatsCountBGColor", 0xffb9b9b9)), PorterDuff.Mode.SRC_IN);
 
         nColor = themePrefs.getInt("chatsGroupIconColor", themePrefs.getInt("chatsGroupNameColor", 0xff000000));
         groupDrawable.setColorFilter(nColor, PorterDuff.Mode.SRC_IN);

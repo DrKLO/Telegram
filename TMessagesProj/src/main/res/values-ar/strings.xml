@@ -977,7 +977,7 @@
     <string name="formatDateAtTime">%1$s الساعة %2$s</string>
     <!--update text-->
     <string name="updateText">تم تحديث تيليجرام على الأندرويد. الجديد في النسخة رقم 3.2.6:\n\n- تحسين للواجهة البصرية للتطبيق\n- دعم للإيموجي الجديدة\n- تحسينات أخرى وإصلاح للثغرات</string>
-    <string name="updateBuild">655</string>
+    <string name="updateBuild">657</string>
     <!--Telegram+--><!--
   <string name="updatePlusText"></string>-->
   <string name="TelegramForAndroid">بلاس مسنجر للأندرويد</string>

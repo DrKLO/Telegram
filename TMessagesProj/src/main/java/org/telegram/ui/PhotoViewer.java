@@ -897,7 +897,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         windowLayoutParams.flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
 
         actionBar = new ActionBar(activity);
-        actionBar.setBackgroundColor(0x7F000000);
+        //actionBar.setBackgroundColor(0x7F000000);
         SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
         int def = themePrefs.getInt("themeColor", AndroidUtilities.defColor);
 

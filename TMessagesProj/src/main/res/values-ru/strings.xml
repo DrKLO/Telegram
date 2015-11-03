@@ -974,10 +974,10 @@
   <string name="formatDateAtTime">%1$s в %2$s</string>
   <!--update text-->
   <string name="updateText">Telegram для Android обновлён. Новое в версии 3.2.5:\n\n- Новые анимации и множество визуальных усовершенствований\n- Поддержка новых эмодзи\n- Прочие улучшения и исправления ошибок</string>
-  <string name="updateBuild">655</string>
+  <string name="updateBuild">657</string>
     <!--Telegram+-->
   <string name="updatePlusText">
-\n\nНовое в версииn 3.2.6.0:\n\n- Исправление ошибок</string>
+\n\nНовое в версииn 3.2.6.1:\n\n- Исправление ошибок</string>
   <string name="TelegramForAndroid">Plus Messenger для Android</string>
   <string name="Theming">Кастомизация</string>
   <string name="colorHexInvalid">Неверный hex-код цвета!</string>
@@ -1127,7 +1127,7 @@
   <string name="RowGradientList">Применить градиент к фону списка</string>
   <string name="Copied">%s скопировано в буфер обмена</string>
   <string name="JoinChannel">
-\n\nПрисоединяйтесь к официальному каналу Plus Messenger: https://telegram.me/plusmsn</string>
+\n\nПрисоединяйтесь к официальному каналу Plus Messenger: https://telegram.me/plusmsgr</string>
   <string name="DownloadThemes">Загрузить темы</string>
   <string name="OfficialChannel">Официальный канал</string>
   <string name="DialogsSettings">Диалоги</string>

@@ -982,11 +982,11 @@ Si no us interessa, us suggerim crear un canal privat.</string>
 - Animacions noves i moltes millores visuals
 - Compatibilitat amb els emojis nous
 - Altres millores i correcció d\'errors</string>
-<string name="updateBuild">655</string>
+<string name="updateBuild">657</string>
     <!--Telegram+-->
   <string name="updatePlusText">
 
-Novetats a la versió 3.2.6.0:
+Novetats a la versió 3.2.6.1:
 
 - Correcció d\'errors</string>
     <string name="TelegramForAndroid">Plus Messenger per Android</string>
@@ -1139,7 +1139,7 @@ Novetats a la versió 3.2.6.0:
   <string name="Copied">S\'ha copiat %s al porta-retalls</string>
   <string name="JoinChannel">
 
-Afegiu-vos al canal oficial del Plus Messenger: https://telegram.me/plusmsnes</string>
+Afegiu-vos al canal oficial del Plus Messenger: https://telegram.me/plusmsgres</string>
   <string name="DownloadThemes">Baixa nous temes</string>
   <string name="OfficialChannel">Canal oficial</string>
   <string name="DialogsSettings">Diàlegs</string>

@@ -867,7 +867,9 @@ public class DialogsSearchAdapter extends BaseSearchAdapterRecycler {
                 CharSequence name = null;
                 boolean isRecent = false;
                 String un = null;
-                String hexDarkColor = String.format("#%08X", (0xFFFFFFFF & AndroidUtilities.getIntDarkerColor("themeColor", 0x15)));
+                int darkColor = AndroidUtilities.getIntDarkerColor("themeColor", -0x40);
+                int hColor = themePrefs.getInt("chatsHighlightSearchColor", darkColor);
+                String hexDarkColor = String.format("#%08X", (0xFFFFFFFF & hColor));
                 Object obj = getItem(position);
 
                 if (obj instanceof TLRPC.User) {
