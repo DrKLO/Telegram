@@ -46,6 +46,7 @@ android {
             debuggable true
             jniDebuggable true
             signingConfig signingConfigs.debug
+            applicationIdSuffix ".debug"
         }
 
         release {
@@ -58,6 +59,7 @@ android {
             debuggable false
             jniDebuggable false
             signingConfig signingConfigs.release
+            applicationIdSuffix ".foss"
         }
     }
 
