@@ -337,7 +337,7 @@ public class Emoji {
         //s.setSpansCount(emojiCount);
 
         try {
-            for (int i = 0; i < length; i++) {
+            for (int i = 0; i < length && emojiCount < 200; i++) {//654 new
                 c = cs.charAt(i);
                 if (c >= 0xD83C && c <= 0xD83E || (buf != 0 && (buf & 0xFFFFFFFF00000000L) == 0 && (buf & 0xFFFF) == 0xD83C && (c >= 0xDDE6 && c <= 0xDDFF))) {
                     if (startIndex == -1) {
@@ -413,9 +413,6 @@ public class Emoji {
                     startIndex = -1;
                     emojiCode.setLength(0);
                     doneEmoji = false;
-                }
-                if (emojiCount >= 50) { //654 new
-                    break;
                 }
             }
         } catch (Exception e) {
