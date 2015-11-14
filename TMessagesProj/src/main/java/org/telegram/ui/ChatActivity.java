@@ -909,23 +909,25 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         avatarContainer.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (radioButton == null || radioButton.getVisibility() != View.VISIBLE) {
-                    if (currentUser != null) {
-                        Bundle args = new Bundle();
-                        args.putInt("user_id", currentUser.id);
-                        if (currentEncryptedChat != null) {
-                            args.putLong("dialog_id", dialog_id);
+                if(BiometryController.getInstance().isUnlocked()){
+                    if (radioButton == null || radioButton.getVisibility() != View.VISIBLE) {
+                        if (currentUser != null) {
+                            Bundle args = new Bundle();
+                            args.putInt("user_id", currentUser.id);
+                            if (currentEncryptedChat != null) {
+                                args.putLong("dialog_id", dialog_id);
+                            }
+                            presentFragment(new ProfileActivity(args));
+                        } else if (currentChat != null) {
+                            Bundle args = new Bundle();
+                            args.putInt("chat_id", currentChat.id);
+                            ProfileActivity fragment = new ProfileActivity(args);
+                            fragment.setChatInfo(info);
+                            presentFragment(fragment);
                         }
-                        presentFragment(new ProfileActivity(args));
-                    } else if (currentChat != null) {
-                        Bundle args = new Bundle();
-                        args.putInt("chat_id", currentChat.id);
-                        ProfileActivity fragment = new ProfileActivity(args);
-                        fragment.setChatInfo(info);
-                        presentFragment(fragment);
+                    } else {
+                        switchImportantMode(null);
                     }
-                } else {
-                    switchImportantMode(null);
                 }
             }
         });
@@ -3303,8 +3305,10 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 return;
             }
             currentUser = user;
-            if (currentUser.photo != null) {
-                newPhoto = currentUser.photo.photo_small;
+            if(BiometryController.getInstance().isUnlocked()){
+                if (currentUser.photo != null) {
+                    newPhoto = currentUser.photo.photo_small;
+                }
             }
             avatarDrawable = new AvatarDrawable(currentUser);
         } else if (currentChat != null) {
@@ -3313,8 +3317,10 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 return;
             }
             currentChat = chat;
-            if (currentChat.photo != null) {
-                newPhoto = currentChat.photo.photo_small;
+            if(BiometryController.getInstance().isUnlocked()){
+                if (currentChat.photo != null) {
+                    newPhoto = currentChat.photo.photo_small;
+                }
             }
             avatarDrawable = new AvatarDrawable(currentChat);
         }
