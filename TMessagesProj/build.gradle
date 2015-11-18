@@ -15,22 +15,18 @@ dependencies {
 android {
     compileSdkVersion 23
     buildToolsVersion '23.0.1'
-
     useLibrary 'org.apache.http.legacy'
-
     packagingOptions {
         exclude 'META-INF/NOTICE.txt'
         exclude 'META-INF/LICENSE.txt'
     }
-
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_7
         targetCompatibility JavaVersion.VERSION_1_7
     }
-
     signingConfigs {
         debug {
-            storeFile file("config/debug.keystore")
+            // storeFile file("config/debug.keystore")
         }
 
         release {
@@ -40,7 +36,6 @@ android {
             keyPassword RELEASE_KEY_PASSWORD
         }
     }
-
     buildTypes {
         debug {
             debuggable true
@@ -60,28 +55,32 @@ android {
             signingConfig signingConfigs.release
         }
     }
-
     sourceSets.main {
         jniLibs.srcDir 'libs'
         jni.srcDirs = [] //disable automatic ndk-build call
     }
-
     sourceSets.debug {
         manifest.srcFile 'config/debug/AndroidManifest.xml'
     }
-
     sourceSets.release {
         manifest.srcFile 'config/release/AndroidManifest.xml'
     }
-
     sourceSets.foss {
         manifest.srcFile 'config/foss/AndroidManifest.xml'
     }
-
     defaultConfig {
         minSdkVersion 8
         targetSdkVersion 23
         versionCode 654
         versionName "3.2.6"
+    }
+    productFlavors {
+        chatearn {
+            minSdkVersion 8
+            applicationId 'me.emado.chatearn'
+            targetSdkVersion 23
+            versionCode 1
+            versionName '1.0'
+        }
     }
 }
