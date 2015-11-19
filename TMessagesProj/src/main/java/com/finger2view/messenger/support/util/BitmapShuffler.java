@@ -15,13 +15,16 @@ public class BitmapShuffler {
     }
 
     public Bitmap shuffle() {
-        Bitmap mutableBitmap = bitmap.copy(bitmap.getConfig(), true);
+        if(!bitmap.isRecycled()){
+            Bitmap mutableBitmap = bitmap.copy(bitmap.getConfig(), true);
 
-        int[] pixels = new int[mutableBitmap.getWidth() * mutableBitmap.getHeight()];
-        mutableBitmap.getPixels(pixels, 0, mutableBitmap.getWidth(), 0, 0, mutableBitmap.getWidth(), mutableBitmap.getHeight());
-        shuffleArray(pixels);
-        mutableBitmap.setPixels(pixels, 0, mutableBitmap.getWidth(), 0, 0, mutableBitmap.getWidth(), mutableBitmap.getHeight());
-        return mutableBitmap;
+            int[] pixels = new int[mutableBitmap.getWidth() * mutableBitmap.getHeight()];
+            mutableBitmap.getPixels(pixels, 0, mutableBitmap.getWidth(), 0, 0, mutableBitmap.getWidth(), mutableBitmap.getHeight());
+            shuffleArray(pixels);
+            mutableBitmap.setPixels(pixels, 0, mutableBitmap.getWidth(), 0, 0, mutableBitmap.getWidth(), mutableBitmap.getHeight());
+            return mutableBitmap;
+        }
+        return bitmap;
     }
 
     private void shuffleArray(int[] ar) {
