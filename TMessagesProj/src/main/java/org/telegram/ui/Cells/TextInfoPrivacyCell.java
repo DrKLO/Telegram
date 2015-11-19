@@ -55,13 +55,19 @@ public class TextInfoPrivacyCell extends FrameLayout {
 
     private void setTheme(){
         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
-        int shadowColor = preferences.getInt("prefShadowColor", 0xfff0f0f0);
-        if(shadowColor != 0xfff0f0f0) {
-            setBackgroundColor(shadowColor);
-        } else {
-            setBackgroundResource(R.drawable.greydivider);
-        }
+
         int summaryColor = preferences.getInt("prefSummaryColor", 0xff808080);
+        int shadowColor = preferences.getInt("prefShadowColor", 0xfff0f0f0);
+        String tag = getTag() != null ? getTag().toString() : "";
+        if(tag.contains("Profile")){
+            summaryColor = preferences.getInt("profileSummaryColor", 0xff808080);
+        }else{
+            if(shadowColor != 0xfff0f0f0) {
+                setBackgroundColor(shadowColor);
+            } else {
+                setBackgroundResource(R.drawable.greydivider);
+            }
+        }
         textView.setTextColor(summaryColor);
     }
 }

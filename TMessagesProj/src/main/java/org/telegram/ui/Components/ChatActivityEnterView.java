@@ -1503,7 +1503,7 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
                 }
             }
             if (!keyboardHidden && messageEditText.length() == 0 && !isPopupShowing()) {
-                showPopup(1, 1);
+                //showPopup(1, 1); //hide botbuttons by default
             }
         } else {
             if (isPopupShowing() && currentPopupContentType == 1) {

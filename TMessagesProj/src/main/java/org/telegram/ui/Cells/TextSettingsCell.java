@@ -153,14 +153,26 @@ public class TextSettingsCell extends FrameLayout {
 
     private void setTheme(){
         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
-        int bgColor = preferences.getInt("prefBGColor", 0xffffffff);
-        setBackgroundColor(bgColor);
         int defColor = preferences.getInt("themeColor", AndroidUtilities.defColor);
+
+        int bgColor = preferences.getInt("prefBGColor", 0xffffffff);
         int divColor = preferences.getInt("prefDividerColor", 0xffd9d9d9);
         int titleColor = preferences.getInt("prefTitleColor", 0xff212121);
         int sColor = preferences.getInt("prefSectionColor", defColor);
-        textView.setTextColor(titleColor);
-        paint.setColor(divColor);
-        valueTextView.setTextColor(sColor);
+        String tag = getTag() != null ? getTag().toString() : "";
+        if(tag.contains("Profile")){
+            bgColor = preferences.getInt("profileRowColor", 0xffffffff);
+            setBackgroundColor(bgColor);
+            if(bgColor != 0xffffffff)paint.setColor(bgColor);
+            titleColor = preferences.getInt("profileTitleColor", 0xff212121);
+            textView.setTextColor(titleColor);
+            if(bgColor != 0xffffffff)valueTextView.setTextColor(0x00000000);
+        }else{
+            setBackgroundColor(bgColor);
+            textView.setTextColor(titleColor);
+            paint.setColor(divColor);
+            valueTextView.setTextColor(sColor);
+        }
+
     }
 }

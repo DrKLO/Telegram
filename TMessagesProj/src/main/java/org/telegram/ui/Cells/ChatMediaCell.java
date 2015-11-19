@@ -538,6 +538,7 @@ public class ChatMediaCell extends ChatBaseCell {
                 }
                 if (currentNameString == null || !currentNameString.equals(name)) {
                     currentNameString = name;
+                    maxWidth = maxWidth + AndroidUtilities.dp(1); //to fix 2 lines bug
                     nameLayout = StaticLayoutEx.createStaticLayout(currentNameString, namePaint, maxWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false, TextUtils.TruncateAt.END, maxWidth, 1);
                     if (nameLayout.getLineCount() > 0) {
                         nameWidth = Math.min(maxWidth, (int) Math.ceil(nameLayout.getLineWidth(0)));
@@ -545,26 +546,16 @@ public class ChatMediaCell extends ChatBaseCell {
                     } else {
                         nameWidth = maxWidth;
                     }
-                    nameWidth = Math.min(maxWidth, (int) Math.ceil(namePaint.measureText(currentNameString)));
-                    CharSequence str = TextUtils.ellipsize(currentNameString, namePaint, nameWidth, TextUtils.TruncateAt.END);
-                    nameLayout = new StaticLayout(str, namePaint, nameWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+                    //nameWidth = Math.min(maxWidth, (int) Math.ceil(namePaint.measureText(currentNameString)));
+                    //CharSequence str = TextUtils.ellipsize(currentNameString, namePaint, nameWidth, TextUtils.TruncateAt.END);
+                    //nameLayout = new StaticLayout(str, namePaint, nameWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
                 }
-
-                String fileName = messageObject.getFileName();
-                int idx = fileName.lastIndexOf(".");
-                String ext = null;
-                if (idx != -1) {
-                    ext = fileName.substring(idx + 1);
-                }
-                if (ext == null || ext.length() == 0) {
-                    ext = messageObject.messageOwner.media.document.mime_type;
-                }
-                ext = ext.toUpperCase();
 
                 String str = AndroidUtilities.formatFileSize(messageObject.messageOwner.media.document.size) + " " + messageObject.getExtension();
 
                 if (currentInfoString == null || !currentInfoString.equals(str)) {
                     currentInfoString = str;
+
                     infoOffset = 0;
                     infoWidth = Math.min(maxWidth, (int) Math.ceil(infoPaint.measureText(currentInfoString)));
                     infoLayout2 = null;
@@ -635,8 +626,9 @@ public class ChatMediaCell extends ChatBaseCell {
                     infoOffset = 0;
                     infoLayout = null;
                     if(isChat){
-                        infoWidth = (int) Math.ceil(senderPaint.measureText(currentInfoString));
-                        infoLayout = new StaticLayout(currentInfoString, senderPaint, infoWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+                        infoWidth = (int) Math.min(Math.ceil(namePaint.measureText(currentNameString)), Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y) * 0.5f);
+                        CharSequence str = TextUtils.ellipsize(currentNameString, senderPaint, infoWidth, TextUtils.TruncateAt.END);
+                        infoLayout = new StaticLayout(str, senderPaint, infoWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
                     }
                 }
                 nameLayout = null;

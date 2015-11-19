@@ -213,6 +213,7 @@ public class ChatBaseCell extends BaseCell implements MediaController.FileDownlo
         leftBound = aSize + AndroidUtilities.dp(3);
         //Log.e("ChatBaseCell", "leftBound " + leftBound);
     }
+
     private void updateTheme(){
         SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
         int defColor = themePrefs.getInt("themeColor", AndroidUtilities.defColor);

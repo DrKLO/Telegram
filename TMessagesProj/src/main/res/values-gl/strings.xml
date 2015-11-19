@@ -975,9 +975,9 @@ e introduce o teu número.</string>
   <string name="formatDateAtTime">%1$s ás %2$s</string>
   <!--update text-->
   <string name="updateText">Telegram para Android foi actualizada. Novidades na versión 3.2.6:\n\n- Novas animacións e moitas melloras visuais\n- Soporte para os novos emoji\n- Outras melloras e correccións de erros</string>
-  <string name="updateBuild">657</string>
-  <!--Telegram+-->
-  <string name="updatePlusText">\n\nNovidades na versión 3.2.6.1:\n\n- Corrección de erros</string>
+  <string name="updateBuild">660</string>
+  <!--Telegram+--><!--
+  <string name="updatePlusText">\n\nNovidades en 3.2.6.2:\n\n- Engadido mod para a cor do comando na pantalla de conversa\n- Engadido mod para o fondo do contador para conversas/grupos/canles silenciadas na pantalla principal\n- Engadido mod para a cor do resaltado da busca na pantalla principal\n- Corrección de erros</string>-->
     <string name="TelegramForAndroid">Plus Messenger para Android</string>
     <string name="Theming">Tematización</string>
     <string name="colorHexInvalid">Cor hexadecimal inválida!</string>
@@ -1126,7 +1126,7 @@ e introduce o teu número.</string>
   <string name="RowGradientBLTR">Abaixo-Esquerda Arriba-Dereita</string>
   <string name="RowGradientList">Aplicar gradiente ao fondo do listado</string>
   <string name="Copied">%s copiado ao portapapeis</string>
-  <string name="JoinChannel">\n\nÚnete á canle oficial de Plus Messenger: https://telegram.me/plusmsgres</string>
+  <string name="JoinChannel">\n\nÚnete á canle oficial de Plus Messenger en español: https://telegram.me/plusmsgres</string>
   <string name="DownloadThemes">Descargar temas</string>
   <string name="OfficialChannel">Canle oficial</string>
   <string name="DialogsSettings">Conversas</string>
@@ -1134,4 +1134,8 @@ e introduce o teu número.</string>
   <string name="ClickOnGroupPic">Clic na foto do grupo</string>
   <string name="ShowProfile">Perfil</string>
   <string name="ShowPics">Fotos do perfil</string>
+  <string name="CountSilentBGColor">Cor do fondo do contador en silencio</string>
+  <string name="CommandColorCheck">Activar cor do comando</string>
+  <string name="CommandColor">Cor do comando</string>
+  <string name="HighlightSearchColor">Cor do resaltado da busca</string>
 </resources>

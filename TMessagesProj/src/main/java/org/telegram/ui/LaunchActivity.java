@@ -152,7 +152,18 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         setTheme(R.style.Theme_TMessages);
         getWindow().setBackgroundDrawableResource(R.drawable.transparent);
+        //plus
+        /*if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+            int def = themePrefs.getInt("themeColor", AndroidUtilities.defColor);
+            int hColor = themePrefs.getInt("chatsHeaderColor", def);
 
+            Bitmap bm = BitmapFactory.decodeResource(getResources(), R.drawable.ic_launcher);
+            ActivityManager.TaskDescription td = new ActivityManager.TaskDescription(null, bm, hColor);
+
+            setTaskDescription(td);
+            bm.recycle();
+        }*/
 
         super.onCreate(savedInstanceState);
 

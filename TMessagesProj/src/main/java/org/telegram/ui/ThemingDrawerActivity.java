@@ -235,7 +235,7 @@ public class ThemingDrawerActivity extends BaseFragment {
                         },themePrefs.getInt("drawerHeaderGradientColor", defColor), CENTER, 0, true);
                         colorDialog.show();
                     } else if (i == headerBackgroundCheckRow) {
-                        boolean b = themePrefs.getBoolean( key, true);
+                        boolean b = themePrefs.getBoolean( key, false);
                         SharedPreferences.Editor editor = themePrefs.edit();
                         editor.putBoolean(key, !b);
                         editor.commit();
@@ -244,7 +244,7 @@ public class ThemingDrawerActivity extends BaseFragment {
                         }
 
                     } else if (i == hideBackgroundShadowRow) {
-                        boolean b = themePrefs.getBoolean( key, true);
+                        boolean b = themePrefs.getBoolean( key, false);
                         SharedPreferences.Editor editor = themePrefs.edit();
                         editor.putBoolean(key, !b);
                         editor.commit();
@@ -253,7 +253,7 @@ public class ThemingDrawerActivity extends BaseFragment {
                         }
 
                     } else if (i == centerAvatarRow) {
-                        boolean b = themePrefs.getBoolean( key, true);
+                        boolean b = themePrefs.getBoolean( key, false);
                         SharedPreferences.Editor editor = themePrefs.edit();
                         editor.putBoolean(key, !b);
                         editor.commit();

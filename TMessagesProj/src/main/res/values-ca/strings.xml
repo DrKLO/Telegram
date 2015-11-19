@@ -982,13 +982,16 @@ Si no us interessa, us suggerim crear un canal privat.</string>
 - Animacions noves i moltes millores visuals
 - Compatibilitat amb els emojis nous
 - Altres millores i correcció d\'errors</string>
-<string name="updateBuild">657</string>
-    <!--Telegram+-->
+<string name="updateBuild">660</string>
+    <!--Telegram+--><!--
   <string name="updatePlusText">
 
-Novetats a la versió 3.2.6.1:
+Novetats a la versió 3.2.6.2:
 
-- Correcció d\'errors</string>
+- S\'ha afegit una modificació per al color de les ordres a la pantalla de xats
+- S\'ha afegit una modificació per al color de fons del comptador de missatges als xats/grups/canals silenciats.
+- S\'ha afegit una modificació per al color de ressaltat a les cerques en la pantalla principal
+- Correcció d\'errors </string>-->
     <string name="TelegramForAndroid">Plus Messenger per Android</string>
   <string name="Theming">Aparença</string>
   <string name="colorHexInvalid">Codi de color hexadecimal no vàlid.</string>
@@ -1034,7 +1037,7 @@ Novetats a la versió 3.2.6.1:
   <string name="EditTextBGColor">Color de fons de l\'entrada de text</string>
   <string name="EmojiViewBGColor">Color de fons dels emoji</string>
   <string name="EmojiViewTabColor">Color de la pestanya d\'emojis activa</string>
-  <string name="EmojiViewTabIconColor">Color de la icona de la pestanya d\'emojis</string>
+  <string name="EmojiViewTabIconColor">Color de la icona a la pestanya d\'emojis</string>
   <string name="OnlineColor">Color de «en línia»</string>
     <string name="ChatMusic">Música</string>
   <string name="SaveTheme">Desa el tema</string>
@@ -1127,24 +1130,26 @@ Novetats a la versió 3.2.6.1:
   <string name="ShowUsername">Mostra el nom d\'usuari als missatges</string>
   <string name="DisableAudioStop">No aturis els àudios</string>
   <string name="ListDividerColor">Color del divisor de llista</string>
-  <string name="CenterAvatar">Centra l\'avatar, el nom i el número de telèfon</string>
+  <string name="CenterAvatar">Centra l\'avatar, el nom i el telèfon</string>
   <string name="RowGradient">Gradient</string>
-  <string name="RowGradientColor">Color de gradient</string>
-  <string name="RowGradientDisabled">Deshabilitat</string>
+  <string name="RowGradientColor">Color del gradient</string>
+  <string name="RowGradientDisabled">Inhabilitat</string>
   <string name="RowGradientTopBottom">De dalt a baix</string>
   <string name="RowGradientLeftRight">D\'esquerra a dreta</string>
-  <string name="RowGradientTLBR">Dalt-Esquerra Baix-Dreta</string>
-  <string name="RowGradientBLTR">Baix-Esquerra Dalt-Dreta</string>
+  <string name="RowGradientTLBR">Dalt-Esquerra, Baix-Dreta</string>
+  <string name="RowGradientBLTR">Baix-Esquerra, Dalt-Dreta</string>
   <string name="RowGradientList">Aplica el gradient al fons de la llista</string>
   <string name="Copied">S\'ha copiat %s al porta-retalls</string>
-  <string name="JoinChannel">
-
-Afegiu-vos al canal oficial del Plus Messenger: https://telegram.me/plusmsgres</string>
-  <string name="DownloadThemes">Baixa nous temes</string>
+  <string name="JoinChannel">\n\nAfegiu-vos al canal oficial del Plus Messenger (en castellà): https://telegram.me/plusmsgres</string>
+  <string name="DownloadThemes">Baixa temes nous</string>
   <string name="OfficialChannel">Canal oficial</string>
-  <string name="DialogsSettings">Diàlegs</string>
-  <string name="ClickOnContactPic">En tocar la imatge d\'un contacte</string>
-  <string name="ClickOnGroupPic">En tocar la imatge d\'un grup</string>
+  <string name="DialogsSettings">En tocar...</string>
+  <string name="ClickOnContactPic">Imatge d\'un contacte</string>
+  <string name="ClickOnGroupPic">Imatge d\'un grup</string>
   <string name="ShowProfile">Perfil</string>
   <string name="ShowPics">Fotos de perfil</string>
+  <string name="CountSilentBGColor">Color de fons dels comptadors silenciats</string>
+  <string name="CommandColorCheck">Color a les ordres del bots</string>
+  <string name="CommandColor">Color de les ordres dels bots</string>
+  <string name="HighlightSearchColor">Color de cerca ressaltada</string>
 </resources>

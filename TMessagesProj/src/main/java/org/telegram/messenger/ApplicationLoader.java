@@ -301,8 +301,7 @@ public class ApplicationLoader extends Application {
 
         if (preferences.getBoolean("pushService", true)) {
             applicationContext.startService(new Intent(applicationContext, NotificationsService.class));
-
-            if (android.os.Build.VERSION.SDK_INT >= 19) {
+            //if (android.os.Build.VERSION.SDK_INT >= 19) {
                 FileLog.e("ApplicationLoader", "startPushService");
                 Calendar cal = Calendar.getInstance();
                 PendingIntent pintent = PendingIntent.getService(applicationContext, 0, new Intent(applicationContext, NotificationsService.class), 0);
@@ -312,7 +311,7 @@ public class ApplicationLoader extends Application {
                 //PendingIntent pintent = PendingIntent.getService(applicationContext, 0, new Intent(applicationContext, NotificationsService.class), 0);
                 //AlarmManager alarm = (AlarmManager)applicationContext.getSystemService(Context.ALARM_SERVICE);
                 //alarm.cancel(pintent);
-            }
+            //}
         } else {
             stopPushService();
         }

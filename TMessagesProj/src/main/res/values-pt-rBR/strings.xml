@@ -974,10 +974,10 @@
     <string name="formatDateAtTime">%1$s às %2$s</string>
     <!--update text-->
     <string name="updateText">Plus Messenger para Android foi atualizado. Novidades na versão 3.2.6:\n\n- Novas animações e melhorias no visual\n- Suporte para novos emojis\n- Outras melhorias e resoluções de bugs</string>
-    <string name="updateBuild">657</string>
-    <!--Telegram+-->
+    <string name="updateBuild">660</string>
+    <!--Telegram+--><!--
   <string name="updatePlusText">
-\n\nNovidades na versão 3.2.6.1:\n\n- Adicionada mod para cor de comando na tela de chat\n- Adicionada mod para cor de fundo do contador para chat/grupo/canal silenciado na tela principal\n- Correções de erros</string>
+\n\nNovidades na versão 3.2.6.2:\n\n- Adicionada mod para cor de comando na tela de chat\n- Adicionada mod para cor de fundo do contador para chat/grupo/canal silenciado na tela principal\n- Adicionada mod para cor destaque de busca na tela principal\n- Correções de erros</string>-->
     <string name="TelegramForAndroid">Plus Messenger para Android</string>
     <string name="Theming">Personalização</string>
   <string name="colorHexInvalid">Código de cor HEX inválido!</string>
@@ -1071,7 +1071,7 @@
   <string name="HeaderTitle">Título do Cabeçalho</string>
   <string name="ForwardNoQuote">Encaminhar sem mencionar</string>
   <string name="DisableMessageClick">Desativar Pop-up ao Clicar</string>
-  <string name="ProfileScreen">Perfil de Contato/Grupo</string>
+  <string name="ProfileScreen">Perfil</string>
   <string name="HideBackground">Ocultar Capa Personalizada</string>
   <string name="RLinkColor">Cor do Link Direito</string>
   <string name="LLinkColor">Cor do Link Esquerdo</string>
@@ -1138,4 +1138,5 @@
   <string name="CountSilentBGColor">Fundo do Contador Silenciado</string>
   <string name="CommandColorCheck">Definir Cor de Comando Bot</string>
   <string name="CommandColor">Cor de Comando Bot</string>
+  <string name="HighlightSearchColor">Cor Destaque de Busca</string>
 </resources>

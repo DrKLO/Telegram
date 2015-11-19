@@ -1722,13 +1722,13 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 if (Build.VERSION.SDK_INT > 8) {
                     mentionListView.setOverScrollMode(ListView.OVER_SCROLL_NEVER);
                 }
-            contentView.addView(mentionListView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 110, Gravity.LEFT | Gravity.BOTTOM));
+            contentView.addView(mentionListView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 210, Gravity.LEFT | Gravity.BOTTOM));
 
             mentionListView.setAdapter(mentionsAdapter = new MentionsAdapter(context, false, new MentionsAdapter.MentionsAdapterDelegate() {
                     @Override
                     public void needChangePanelVisibility(boolean show) {
                         if (show) {
-                        FrameLayout.LayoutParams layoutParams3 = (FrameLayout.LayoutParams) mentionListView.getLayoutParams();
+                            FrameLayout.LayoutParams layoutParams3 = (FrameLayout.LayoutParams) mentionListView.getLayoutParams();
                             int height = 36 * Math.min(3, mentionsAdapter.getCount()) + (mentionsAdapter.getCount() > 3 ? 18 : 0);
                             layoutParams3.height = AndroidUtilities.dp(2 + height);
                             layoutParams3.topMargin = -AndroidUtilities.dp(height);
@@ -1945,7 +1945,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
 
                 @Override
                 public void onWindowSizeChanged(int size) {
-                if (size < AndroidUtilities.dp(72) + ActionBar.getCurrentActionBarHeight()) {
+                    if (size < AndroidUtilities.dp(72) + ActionBar.getCurrentActionBarHeight()) {
                         allowStickersPanel = false;
                         if (stickersPanel.getVisibility() == View.VISIBLE) {
                             stickersPanel.clearAnimation();
@@ -1964,6 +1964,16 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         if (mentionListView != null && mentionListView.getVisibility() == View.INVISIBLE) {
                             mentionListView.clearAnimation();
                             mentionListView.setVisibility(View.VISIBLE);
+                        }
+                        //plus
+                        if (mentionListView != null) {
+                            int height = AndroidUtilities.dp(37 * Math.min(10/(AndroidUtilities.displaySize.y / size), mentionsAdapter.getCount()));
+                            FrameLayout.LayoutParams layoutParams3 = (FrameLayout.LayoutParams) mentionListView.getLayoutParams();
+                            if(height != layoutParams3.height) {
+                                layoutParams3.height = height;
+                                layoutParams3.topMargin = -height;
+                                mentionListView.setLayoutParams(layoutParams3);
+                            }
                         }
                     }
                 updateMessagesVisisblePart();
@@ -2574,9 +2584,12 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             int textColor = themePrefs.getInt("chatEditTextColor", 0xff999999);
             replyObjectTextView.setTextColor(textColor);
             //int rColor = themePrefs.getInt("chatForwardRColor", defColor);
-            Drawable delete = getParentActivity().getResources().getDrawable(R.drawable.delete_reply);
-            delete.setColorFilter(iColor, PorterDuff.Mode.SRC_IN);
-            deleteIconImageView.setImageDrawable(delete);
+            if(getParentActivity() != null) {
+                Drawable delete = getParentActivity().getResources().getDrawable(R.drawable.delete_reply);
+                delete.setColorFilter(iColor, PorterDuff.Mode.SRC_IN);
+                deleteIconImageView.setImageDrawable(delete);
+            }
+
             if (messageObject != null) {
                 String name;
                 if (messageObject.messageOwner.from_id > 0) {
@@ -3387,15 +3400,18 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         //int leftIcon = currentEncryptedChat != null ? R.drawable.ic_lock_header : 0;
         int rightIcon = MessagesController.getInstance().isDialogMuted(dialog_id) ? R.drawable.mute_fixed : 0;
         //nameTextView.setCompoundDrawablesWithIntrinsicBounds(leftIcon, 0, rightIcon, 0);
-        Drawable lock = getParentActivity().getResources().getDrawable(R.drawable.ic_lock_header);
-        SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
-        int color = themePrefs.getInt("chatHeaderIconsColor", 0xffffffff);
-        lock.setColorFilter(color, PorterDuff.Mode.MULTIPLY);
-        lock = currentEncryptedChat != null ? lock : null;
-        Drawable mute = getParentActivity().getResources().getDrawable(R.drawable.mute_blue);
-        mute.setColorFilter(color, PorterDuff.Mode.SRC_IN);
-        mute = MessagesController.getInstance().isDialogMuted(dialog_id) ? mute : null;
-        nameTextView.setCompoundDrawablesWithIntrinsicBounds(lock, null, mute, null);
+        if(getParentActivity() != null) {
+            Drawable lock = getParentActivity().getResources().getDrawable(R.drawable.ic_lock_header);
+            SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+            int color = themePrefs.getInt("chatHeaderIconsColor", 0xffffffff);
+            lock.setColorFilter(color, PorterDuff.Mode.MULTIPLY);
+
+            lock = currentEncryptedChat != null ? lock : null;
+            Drawable mute = getParentActivity().getResources().getDrawable(R.drawable.mute_blue);
+            mute.setColorFilter(color, PorterDuff.Mode.SRC_IN);
+            mute = MessagesController.getInstance().isDialogMuted(dialog_id) ? mute : null;
+            nameTextView.setCompoundDrawablesWithIntrinsicBounds(lock, null, mute, null);
+        }
         if (rightIcon != 0) {
             muteItem.setText(LocaleController.getString("UnmuteNotifications", R.string.UnmuteNotifications));
         } else {
@@ -3476,6 +3492,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     lastStatus = newStatus;
                     onlineTextView.setText(newStatus);
                 }
+                //plus
                 if(newStatus.equals(LocaleController.getString("Online", R.string.Online))){
                     onlineTextView.setTextColor(themePrefs.getInt("chatOnlineColor", themePrefs.getInt("chatStatusColor", lightColor)));
                 }
@@ -3485,6 +3502,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             lastPrintString = printString;
             onlineTextView.setText(printString);
             setTypingAnimation(true);
+            //plus
+            onlineTextView.setTextColor(themePrefs.getInt("chatTypingColor", themePrefs.getInt("chatStatusColor", lightColor)));
+
         }
     }
 
@@ -3579,7 +3599,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             avatarDrawable = new AvatarDrawable(currentChat);
         }
         //Chat header photo
-        int radius = AndroidUtilities.dp(AndroidUtilities.getIntDef("chatAvatarRadius", 32));
+        int radius = AndroidUtilities.dp(AndroidUtilities.getIntDef("chatHeaderAvatarRadius", 32));
         if(avatarImageView != null)avatarImageView.setRoundRadius(radius);
         if(avatarDrawable != null)avatarDrawable.setRadius(radius);
         //

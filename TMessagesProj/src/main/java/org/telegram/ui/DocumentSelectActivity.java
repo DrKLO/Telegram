@@ -14,7 +14,9 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.content.res.Configuration;
+import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Environment;
 import android.os.StatFs;
@@ -149,7 +151,11 @@ public class DocumentSelectActivity extends BaseFragment {
             ApplicationLoader.applicationContext.registerReceiver(receiver, filter);
         }
 
-        actionBar.setBackButtonDrawable(new BackDrawable(false));
+        //actionBar.setBackButtonDrawable(new BackDrawable(false));
+        SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+        Drawable d = new BackDrawable(false);
+        ((BackDrawable) d).setColor(themePrefs.getInt("chatHeaderIconsColor", 0xffffffff));
+        actionBar.setBackButtonDrawable(d);
             actionBar.setAllowOverlayTitle(true);
             actionBar.setTitle(LocaleController.getString("SelectFile", R.string.SelectFile));
             actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {

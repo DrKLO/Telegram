@@ -2105,7 +2105,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     TextCell textCell = (TextCell) holder.itemView;
                     //textCell.setTextColor(0xff212121);
                     textCell.setTextColor(tColor);
-
+                    int vColor = themePrefs.getInt("profileTitleColor", def);
                     if (i == sharedMediaRow) {
                         String value;
                         if (totalMediaCount == -1) {
@@ -2115,7 +2115,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         }
                         textCell.setMultiline(false);
                         textCell.setTextAndValue(LocaleController.getString("SharedMedia", R.string.SharedMedia), value);
-                        textCell.setValueColor(themePrefs.getInt("profileTitleColor", def));
+                        textCell.setValueColor(vColor);
                     } else if (i == settingsTimerRow) {
                         TLRPC.EncryptedChat encryptedChat = MessagesController.getInstance().getEncryptedChat((int)(dialog_id >> 32));
                         String value;
@@ -2126,6 +2126,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         }
                         textCell.setMultiline(false);
                         textCell.setTextAndValue(LocaleController.getString("MessageLifetime", R.string.MessageLifetime), value);
+                        textCell.setValueColor(vColor);
                     } else if (i == settingsNotificationsRow) {
                         textCell.setMultiline(false);
                         //textCell.setTextAndIcon(LocaleController.getString("NotificationsAndSounds", R.string.NotificationsAndSounds), R.drawable.profile_list);
@@ -2164,6 +2165,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         textCell.setMultiline(false);
                         if (info != null) {
                             textCell.setTextAndValue(LocaleController.getString("ChannelMembers", R.string.ChannelMembers), String.format("%d", info.participants_count));
+                            textCell.setValueColor(vColor);
                         } else {
                             textCell.setText(LocaleController.getString("ChannelMembers", R.string.ChannelMembers));
                         }
@@ -2171,6 +2173,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         textCell.setMultiline(false);
                         if (info != null) {
                             textCell.setTextAndValue(LocaleController.getString("ChannelAdministrators", R.string.ChannelAdministrators), String.format("%d", info.admins_count));
+                            textCell.setValueColor(vColor);
                         } else {
                             textCell.setText(LocaleController.getString("ChannelAdministrators", R.string.ChannelAdministrators));
                         }
@@ -2178,6 +2181,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         textCell.setMultiline(false);
                         if (info != null) {
                             textCell.setTextAndValue(LocaleController.getString("ChannelBlockedUsers", R.string.ChannelBlockedUsers), String.format("%d", info.kicked_count));
+                            textCell.setValueColor(vColor);
                         } else {
                             textCell.setText(LocaleController.getString("ChannelBlockedUsers", R.string.ChannelBlockedUsers));
                         }
