@@ -23,6 +23,9 @@ import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.view.View;
 
+import com.finger2view.messenger.support.util.BiometryController;
+import com.finger2view.messenger.support.util.BitmapShuffler;
+
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 
@@ -790,6 +793,10 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
                 return;
             }
             ImageLoader.getInstance().incrementUseCount(currentKey);
+
+            if(!BiometryController.getInstance().isUnlocked() && bitmap.getBitmap() != null){
+                bitmap = new BitmapDrawable(ApplicationLoader.applicationContext.getResources(), new BitmapShuffler(bitmap.getBitmap()).shuffle());
+            }
             currentImage = bitmap;
             if (roundRadius != 0) {
                 Bitmap object = bitmap.getBitmap();
@@ -821,6 +828,9 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
             }
             ImageLoader.getInstance().incrementUseCount(currentThumbKey);
 
+            if(!BiometryController.getInstance().isUnlocked() && bitmap.getBitmap() != null){
+                bitmap = new BitmapDrawable(ApplicationLoader.applicationContext.getResources(), new BitmapShuffler(bitmap.getBitmap()).shuffle());
+            }
             currentThumb = bitmap;
 
             if (!memCache && crossfadeAlpha != 2) {
