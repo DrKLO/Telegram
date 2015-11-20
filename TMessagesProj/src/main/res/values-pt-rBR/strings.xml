@@ -974,10 +974,9 @@
     <string name="formatDateAtTime">%1$s às %2$s</string>
     <!--update text-->
     <string name="updateText">Plus Messenger para Android foi atualizado. Novidades na versão 3.2.6:\n\n- Novas animações e melhorias no visual\n- Suporte para novos emojis\n- Outras melhorias e resoluções de bugs</string>
-    <string name="updateBuild">660</string>
-    <!--Telegram+--><!--
-  <string name="updatePlusText">
-\n\nNovidades na versão 3.2.6.2:\n\n- Adicionada mod para cor de comando na tela de chat\n- Adicionada mod para cor de fundo do contador para chat/grupo/canal silenciado na tela principal\n- Adicionada mod para cor destaque de busca na tela principal\n- Correções de erros</string>-->
+    <string name="updateBuild">661</string>
+    <!--Telegram+-->
+  <string name="updatePlusText">\n\nNovidades na versão 3.2.6.2:\n\n- Agora o cabeçalho adquire cor do tema na lista de Apps Recentes do Android\n- Tamanho da Lista de Menção aumentado na tela de chat\n- Agora canais também podem ser silenciados diretamente pela tela principal\n- Adicionada mod para definir raio do avatar no cabeçalho da tela de chat\n- Adicionada mod mod para definir cor do texto de digitação no cabeçalho da tela de chat\n- Correções de erros</string>
     <string name="TelegramForAndroid">Plus Messenger para Android</string>
     <string name="Theming">Personalização</string>
   <string name="colorHexInvalid">Código de cor HEX inválido!</string>
@@ -1048,7 +1047,7 @@
     <string name="FloatingPencilColor">Cor do Lápis Flutuante</string>
   <string name="FloatingBGColor">Cor do Botão Flutuante</string>
     <string name="Community">Comunidade no G+</string>
-  <string name="TypingColor">Cor do \"digitando\"</string>
+  <string name="TypingColor">Cor do Texto \"Escrevendo\"</string>
   <string name="EditTextIconsColor">Cor dos Ícones na Caixa de Texto</string>
   <string name="NavigationDrawer">Menu de Navegação</string>
   <string name="OptionsList">Lista de Opções</string>
@@ -1065,7 +1064,7 @@
   <string name="HeaderTitleColor">Cor do Título do Cabeçalho</string>
   <string name="HeaderIconsColor">Cor dos Ícones do Cabeçalho</string>
   <string name="DividerColor">Cor das Linhas Divisórias</string>
-  <string name="AvatarRadius">Arredondamento do Avatar</string>
+  <string name="AvatarRadius">Raio do Avatar</string>
   <string name="SetMemberColor">Definir Cor do Membro</string>
   <string name="ForwardNameColor">Cor do Nome ao Encaminhar</string>
   <string name="HeaderTitle">Título do Cabeçalho</string>
@@ -1114,7 +1113,7 @@
   <string name="OwnAvatarAlignTop">Alinhar Avatar Próprio no Topo</string>
   <string name="DialogColor">Cor do Título/Botão de Diálogo</string>
   <string name="ShowUsername">Exibir Nome de Usuário</string>
-  <string name="DisableAudioStop">Não Parar Áudio</string>
+  <string name="DisableAudioStop">Desativar Sensor de Proximidade</string>
   <string name="ListDividerColor">Cor do Divisor de Lista</string>
   <string name="CenterAvatar">Centralizar Avatar, Nome e Número</string>
   <string name="RowGradient">Degradê</string>

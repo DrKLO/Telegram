@@ -977,7 +977,7 @@
     <string name="formatDateAtTime">%1$s às %2$s</string>
     <!--update text-->
     <string name="updateText">Plus Messenger para Android foi atualizado. Novidades na versão 3.2.6:\n\n- Novas animações e melhorias no visual\n- Suporte para novos emojis\n- Outras melhorias e resoluções de bugs</string>
-    <string name="updateBuild">660</string>
+    <string name="updateBuild">661</string>
     <!--Telegram+-->
   <string name="TelegramForAndroid">Plus Messenger para Android</string>
   <string name="Theming">Temas</string>

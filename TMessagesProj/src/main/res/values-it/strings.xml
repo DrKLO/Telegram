@@ -974,7 +974,7 @@
     <string name="formatDateAtTime">%1$s alle %2$s</string>
     <!--update text-->
     <string name="updateText">Plus Messenger per Android si è aggiornato. Nuovo nella versione 3.2.6:\n\n- Nuove animazioni e miglioramenti di interfaccia\n- Supporto per le nuove emoji\n- Altri miglioramenti e risoluzione di problemi</string>
-    <string name="updateBuild">660</string>
+    <string name="updateBuild">661</string>
     <!--Telegram+--><!--
   <string name="updatePlusText">
 \n\nNovità nella versione 3.2.6.2:\n\n- Aggiunta mod per il colore del comando nella schermata della chat\n- Aggiunta mod per il colore dello sfondo del contatore di chat/gruppi/canali mutati nella schermata principale\n- Aggiunta mod per il colore dell\'evidenziazione della ricerca nella schermata principale\n- Correzioni bug</string>-->

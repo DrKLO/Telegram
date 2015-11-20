@@ -974,7 +974,7 @@
     <string name="formatDateAtTime">%1$s a las %2$s</string>
     <!--update text-->
     <string name="updateText">Plus Messenger para Android ha sido actualizada. Novedades en la versión 3.2.6:\n\n- Nuevas animaciones y muchas mejoras visuales\n- Soporte para los nuevos emojis\n- Soporte para Android 6.0 (Now on Tap - Direct Share - Soporte para huella digital en el código de acceso)\n- Otras mejoras y correcciones de errores</string>
-    <string name="updateBuild">660</string>
+    <string name="updateBuild">661</string>
     <!--Telegram+-->
     <string name="updatePlusText">\n\nNovedades en 3.2.6.2:\n\n- Cabecera en lista de apps recientes ya toma color de cabecera principal (a partir de lollipop)\n- Tamaño de lista de menciones en pantalla chat aumentado\n- Ahora los canales también se pueden silenciar desde la pantalla principal\n- Añadido mod para ajustar radio de avatar de cabecera en pantalla chat\n- Añadido mod para cambiar color de texto \'escribiendo\' en pantalla chat\n- Corrección de errores</string>
     <string name="TelegramForAndroid">Plus Messenger para Android</string>

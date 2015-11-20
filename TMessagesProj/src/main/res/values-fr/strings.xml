@@ -974,7 +974,7 @@
   <string name="formatDateAtTime">%1$s à %2$s</string>
   <!--update text-->
   <string name="updateText">Telegram pour Android a été mis à jour. Nouveau dans la version 3.2.6:\n\n- De nouvelles animations et de nombreuses améliorations visuelles.\n- Support pour de nouveaux emoji\n- Autres améliorations et corrections de bogues.</string>
-  <string name="updateBuild">660</string>
+  <string name="updateBuild">661</string>
     <!--Telegram+-->
     <string name="TelegramForAndroid">Plus Messenger pour Android</string>
     <string name="Theming">Thème</string>

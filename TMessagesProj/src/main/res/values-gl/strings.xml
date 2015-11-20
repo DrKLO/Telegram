@@ -975,7 +975,7 @@ e introduce o teu número.</string>
   <string name="formatDateAtTime">%1$s ás %2$s</string>
   <!--update text-->
   <string name="updateText">Telegram para Android foi actualizada. Novidades na versión 3.2.6:\n\n- Novas animacións e moitas melloras visuais\n- Soporte para os novos emoji\n- Outras melloras e correccións de erros</string>
-  <string name="updateBuild">660</string>
+  <string name="updateBuild">661</string>
   <!--Telegram+--><!--
   <string name="updatePlusText">\n\nNovidades en 3.2.6.2:\n\n- Engadido mod para a cor do comando na pantalla de conversa\n- Engadido mod para o fondo do contador para conversas/grupos/canles silenciadas na pantalla principal\n- Engadido mod para a cor do resaltado da busca na pantalla principal\n- Corrección de erros</string>-->
     <string name="TelegramForAndroid">Plus Messenger para Android</string>

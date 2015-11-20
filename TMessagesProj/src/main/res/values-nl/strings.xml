@@ -974,7 +974,7 @@
     <string name="formatDateAtTime">%1$s om %2$s</string>
     <!--update text-->
     <string name="updateText">Plus Messenger voor Android is bijgewerkt. Nieuw in versie 3.2.6:\n\n- Nieuwe animaties en andere visuele verbeteringen\n- Ondersteuning voor nieuwe Emoji\n-Tijdsaanduiding voor laatst gezien gelijk aan iOS\n-Probleemoplossing en andere verbeteringen</string>
-    <string name="updateBuild">660</string>
+    <string name="updateBuild">661</string>
     <!--Telegram+--><!--
   <string name="updatePlusText"></string>-->
     <string name="TelegramForAndroid">Plus Messenger voor Android</string>

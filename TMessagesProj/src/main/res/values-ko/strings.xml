@@ -977,5 +977,5 @@
     <string name="formatDateAtTime">%1$s %2$s</string>
     <!--update text-->
     <string name="updateText">텔레그램 안드로이드 버전이 업데이트 되었습니다. 새로운 버전은 3.2.6 입니다:\n\n- 새로운 애니메이션 및 다양한 비쥬얼 향상\n- 신규 이모티콘 지원\n- 기타 기능 향상 및 버그 수정</string>
-    <string name="updateBuild">660</string>
+    <string name="updateBuild">661</string>
 </resources>

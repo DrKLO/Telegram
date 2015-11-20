@@ -974,7 +974,7 @@
     <string name="formatDateAtTime">%1$s um %2$s</string>
     <!--update text-->
 <string name="updateText">Plus Messenger für Android wurde aktualisiert. Neu in Version 3.2.6:\n\n- Neue Animationen und optische Verbesserungen\n- Neue Emoji\n-  Sonstige Verbesserungen und Fehlerbehebungen</string>
-    <string name="updateBuild">660</string>
+    <string name="updateBuild">661</string>
     <!--Telegram+--><!--
   <string name="updatePlusText">\n\nNeu in Version 3.2.6.2:\n\n- Now header gets color in android recent apps list\n- Mention list size increased in chat screen\n- Now also channels can be muted from main screen\n- Added mod to set header avatar radius in chat screen\n- Added mod to set typing text color in chat header\n- Fehlerbeseitigungen</string>-->
     <string name="TelegramForAndroid">Plus Messenger für Android</string>

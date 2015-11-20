@@ -1966,8 +1966,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                             mentionListView.setVisibility(View.VISIBLE);
                         }
                         //plus
-                        if (mentionListView != null) {
-                            int height = AndroidUtilities.dp(37 * Math.min(10/(AndroidUtilities.displaySize.y / size), mentionsAdapter.getCount()));
+                        if (mentionListView != null && size > 0) {
+                            int y = AndroidUtilities.displaySize.y / size;
+                            int height = AndroidUtilities.dp(37 * Math.min(10/y, mentionsAdapter.getCount()));//puede haber java.lang.ArithmeticException: divide by zero
                             FrameLayout.LayoutParams layoutParams3 = (FrameLayout.LayoutParams) mentionListView.getLayoutParams();
                             if(height != layoutParams3.height) {
                                 layoutParams3.height = height;
@@ -2744,10 +2745,12 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     }
                 }
             } else {
-                //replyIconImageView.setImageResource(R.drawable.link);
-                Drawable link = getParentActivity().getResources().getDrawable(R.drawable.link);
-                link.setColorFilter(iColor, PorterDuff.Mode.SRC_IN);
-                replyIconImageView.setImageDrawable(link);
+                replyIconImageView.setImageResource(R.drawable.link);
+                if(getParentActivity() != null ) {
+                    Drawable link = getParentActivity().getResources().getDrawable(R.drawable.link);
+                    link.setColorFilter(iColor, PorterDuff.Mode.SRC_IN);
+                    replyIconImageView.setImageDrawable(link);
+                }
                 replyNameTextView.setTextColor(iColor);//
                 if (webPage instanceof TLRPC.TL_webPagePending) {
                     replyNameTextView.setText(LocaleController.getString("GettingLinkInfo", R.string.GettingLinkInfo));

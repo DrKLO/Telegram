@@ -715,7 +715,10 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         frameLayout.addView(shadowView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 3));
 
         avatarImage = new BackupImageView(context);
-        avatarImage.setRoundRadius(AndroidUtilities.dp(21));
+        //avatarImage.setRoundRadius(AndroidUtilities.dp(21));
+        //Plus: user profile avatar
+        int radius = AndroidUtilities.dp(themePrefs.getInt("profileAvatarRadius", 32));
+        avatarImage.setRoundRadius(radius);
         ViewProxy.setPivotX(avatarImage, 0);
         ViewProxy.setPivotY(avatarImage, 0);
         frameLayout.addView(avatarImage, LayoutHelper.createFrame(42, 42, Gravity.TOP | Gravity.LEFT, 64, 0, 0, 0));
