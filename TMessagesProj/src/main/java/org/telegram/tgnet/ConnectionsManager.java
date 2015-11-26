@@ -27,6 +27,7 @@ import java.net.InterfaceAddress;
 import java.net.NetworkInterface;
 import java.util.Enumeration;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class ConnectionsManager {
 
@@ -57,7 +58,7 @@ public class ConnectionsManager {
     private int lastClassGuid = 1;
     private boolean isUpdating = false;
     private int connectionState = native_getConnectionState();
-    private volatile int lastRequestToken = 1;
+    private AtomicInteger lastRequestToken = new AtomicInteger(1);
     private PowerManager.WakeLock wakeLock = null;
 
     private static volatile ConnectionsManager Instance = null;
@@ -114,11 +115,11 @@ public class ConnectionsManager {
     }
 
     public int sendRequest(final TLObject object, final RequestDelegate onComplete, final QuickAckDelegate onQuickAck, final int flags, final int datacenterId, final int connetionType, final boolean immediate) {
-        final int requestToken = lastRequestToken++;
+        final int requestToken = lastRequestToken.getAndIncrement();
         Utilities.stageQueue.postRunnable(new Runnable() {
             @Override
             public void run() {
-                FileLog.d("tmessages", "send request " + object);
+                FileLog.d("tmessages", "send request " + object + " with token = " + requestToken);
                 NativeByteBuffer buffer = new NativeByteBuffer(object.getObjectSize());
                 object.serializeToStream(buffer);
                 object.freeResources();

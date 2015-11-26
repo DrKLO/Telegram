@@ -150,7 +150,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
 
         if (!dialogsLoaded) {
-            MessagesController.getInstance().loadDialogs(0, 0, 0, 100, true);
+            MessagesController.getInstance().loadDialogs(0, 100, true);
             ContactsController.getInstance().checkInviteText();
             dialogsLoaded = true;
         }
@@ -190,7 +190,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             passcodeItem = menu.addItem(1, R.drawable.lock_close);
             updatePasscodeButton();
         }
-        ActionBarMenuItem item = menu.addItem(0, R.drawable.ic_ab_search).setIsSearchField(true).setActionBarMenuItemSearchListener(new ActionBarMenuItem.ActionBarMenuItemSearchListener() {
+        final ActionBarMenuItem item = menu.addItem(0, R.drawable.ic_ab_search).setIsSearchField(true).setActionBarMenuItemSearchListener(new ActionBarMenuItem.ActionBarMenuItemSearchListener() {
             @Override
             public void onSearchExpand() {
                 searching = true;
@@ -251,7 +251,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 String text = editText.getText().toString();
                 if (text.length() != 0 || dialogsSearchAdapter != null && dialogsSearchAdapter.hasRecentRearch()) {
                     searchWas = true;
-                    if (dialogsSearchAdapter != null) {
+                    if (dialogsSearchAdapter != null && listView.getAdapter() != dialogsSearchAdapter) {
                         listView.setAdapter(dialogsSearchAdapter);
                         dialogsSearchAdapter.notifyDataSetChanged();
                     }
@@ -388,6 +388,13 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                             if (lower_part > 0) {
                                 args.putInt("user_id", lower_part);
                             } else if (lower_part < 0) {
+                                if (message_id != 0) {
+                                    TLRPC.Chat chat = MessagesController.getInstance().getChat(-lower_part);
+                                    if (chat != null && chat.migrated_to != null) {
+                                        args.putInt("migrated_to", lower_part);
+                                        lower_part = -chat.migrated_to.channel_id;
+                                    }
+                                }
                                 args.putInt("chat_id", -lower_part);
                             }
                         }
@@ -463,15 +470,29 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
                 if (dialog instanceof TLRPC.TL_dialogChannel) {
                     final TLRPC.Chat chat = MessagesController.getInstance().getChat(-lower_id);
-                    builder.setItems(new CharSequence[]{chat == null || (chat.flags & TLRPC.CHAT_FLAG_ADMIN) == 0 ? LocaleController.getString("LeaveChannelMenu", R.string.LeaveChannelMenu) : LocaleController.getString("ChannelDeleteMenu", R.string.ChannelDeleteMenu)}, new DialogInterface.OnClickListener() {
+                    CharSequence items[];
+                    if (chat != null && chat.megagroup) {
+                        items = new CharSequence[]{chat == null || !chat.creator ? LocaleController.getString("LeaveMegaMenu", R.string.LeaveMegaMenu) : LocaleController.getString("DeleteMegaMenu", R.string.DeleteMegaMenu)};
+                    } else {
+                        items = new CharSequence[]{chat == null || !chat.creator ? LocaleController.getString("LeaveChannelMenu", R.string.LeaveChannelMenu) : LocaleController.getString("ChannelDeleteMenu", R.string.ChannelDeleteMenu)};
+                    }
+                    builder.setItems(items, new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialog, final int which) {
                             AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                             builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
-                            if (chat == null || (chat.flags & TLRPC.CHAT_FLAG_ADMIN) == 0) {
-                                builder.setMessage(LocaleController.getString("ChannelLeaveAlert", R.string.ChannelLeaveAlert));
+                            if (chat != null && chat.megagroup) {
+                                if (!chat.creator) {
+                                    builder.setMessage(LocaleController.getString("MegaLeaveAlert", R.string.MegaLeaveAlert));
+                                } else {
+                                    builder.setMessage(LocaleController.getString("MegaDeleteAlert", R.string.MegaDeleteAlert));
+                                }
                             } else {
-                                builder.setMessage(LocaleController.getString("ChannelDeleteAlert", R.string.ChannelDeleteAlert));
+                                if (chat == null || !chat.creator) {
+                                    builder.setMessage(LocaleController.getString("ChannelLeaveAlert", R.string.ChannelLeaveAlert));
+                                } else {
+                                    builder.setMessage(LocaleController.getString("ChannelDeleteAlert", R.string.ChannelDeleteAlert));
+                                }
                             }
                             builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), new DialogInterface.OnClickListener() {
                                 @Override
@@ -489,7 +510,14 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     showDialog(builder.create());
                 } else {
                     final boolean isChat = lower_id < 0 && high_id != 1;
-                    builder.setItems(new CharSequence[]{LocaleController.getString("ClearHistory", R.string.ClearHistory), isChat ? LocaleController.getString("DeleteChat", R.string.DeleteChat) : LocaleController.getString("Delete", R.string.Delete)}, new DialogInterface.OnClickListener() {
+                    TLRPC.User user = null;
+                    if (!isChat && lower_id > 0 && high_id != 1) {
+                        user = MessagesController.getInstance().getUser(lower_id);
+                    }
+                    final boolean isBot = user != null && user.bot;
+                    builder.setItems(new CharSequence[]{LocaleController.getString("ClearHistory", R.string.ClearHistory),
+                            isChat ? LocaleController.getString("DeleteChat", R.string.DeleteChat) :
+                                    isBot ? LocaleController.getString("DeleteAndStop", R.string.DeleteAndStop) : LocaleController.getString("Delete", R.string.Delete)}, new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialog, final int which) {
                             AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
@@ -510,18 +538,21 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                                         if (isChat) {
                                             TLRPC.Chat currentChat = MessagesController.getInstance().getChat((int) -selectedDialog);
                                             if (currentChat != null && ChatObject.isNotInChat(currentChat)) {
-                                                MessagesController.getInstance().deleteDialog(selectedDialog, 0, false);
+                                                MessagesController.getInstance().deleteDialog(selectedDialog, false);
                                             } else {
                                                 MessagesController.getInstance().deleteUserFromChat((int) -selectedDialog, MessagesController.getInstance().getUser(UserConfig.getClientUserId()), null);
                                             }
                                         } else {
-                                            MessagesController.getInstance().deleteDialog(selectedDialog, 0, false);
+                                            MessagesController.getInstance().deleteDialog(selectedDialog, false);
+                                        }
+                                        if (isBot) {
+                                            MessagesController.getInstance().blockUser((int) selectedDialog);
                                         }
                                         if (AndroidUtilities.isTablet()) {
                                             NotificationCenter.getInstance().postNotificationName(NotificationCenter.closeChats, selectedDialog);
                                         }
                                     } else {
-                                        MessagesController.getInstance().deleteDialog(selectedDialog, 0, true);
+                                        MessagesController.getInstance().deleteDialog(selectedDialog, true);
                                     }
                                 }
                             });
@@ -626,8 +657,8 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     return;
                 }
                 if (visibleItemCount > 0) {
-                    if (layoutManager.findLastVisibleItemPosition() == getDialogsArray().size()) {
-                        MessagesController.getInstance().loadDialogs(MessagesController.getInstance().dialogs.size(), MessagesController.getInstance().currentDialogsCount, -1, 100, true);
+                    if (layoutManager.findLastVisibleItemPosition() >= getDialogsArray().size() - 10) {
+                        MessagesController.getInstance().loadDialogs(-1, 100, !MessagesController.getInstance().dialogsEndReached);
                     }
                 }
 

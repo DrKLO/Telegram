@@ -14,6 +14,7 @@
 #include <functional>
 #include <sys/epoll.h>
 #include <map>
+#include <atomic>
 #include <bits/unique_ptr.h>
 #include "Defines.h"
 
@@ -63,7 +64,6 @@ public:
     void updateDcSettings(uint32_t datacenterId);
 
 #ifdef ANDROID
-    int32_t sendRequest(TLObject *object, onCompleteFunc onComplete, onQuickAckFunc onQuickAck, uint32_t flags, uint32_t datacenterId, ConnectionType connetionType, bool immediate, jobject ptr1, jobject ptr2);
     void sendRequest(TLObject *object, onCompleteFunc onComplete, onQuickAckFunc onQuickAck, uint32_t flags, uint32_t datacenterId, ConnectionType connetionType, bool immediate, int32_t requestToken, jobject ptr1, jobject ptr2);
     static void useJavaVM(JavaVM *vm, bool useJavaByteBuffers);
 #endif
@@ -120,7 +120,7 @@ private:
     std::map<int32_t, std::vector<std::int32_t>> quickAckIdToRequestIds;
     int32_t pingTime;
     bool testBackend = false;
-    volatile uint32_t lastRequestToken = 1;
+    std::atomic<uint32_t> lastRequestToken{1};
     uint32_t currentDatacenterId = 0;
     uint32_t movingToDatacenterId = DEFAULT_DATACENTER_ID;
     int64_t pushSessionId = 0;

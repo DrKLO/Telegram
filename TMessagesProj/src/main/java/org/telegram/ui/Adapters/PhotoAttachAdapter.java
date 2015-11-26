@@ -74,20 +74,19 @@ public class PhotoAttachAdapter extends RecyclerView.Adapter {
     @Override
     public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
         PhotoAttachPhotoCell cell = new PhotoAttachPhotoCell(mContext);
-        cell.setOnCheckClickLisnener(new View.OnClickListener() {
+        cell.setDelegate(new PhotoAttachPhotoCell.PhotoAttachPhotoCellDelegate() {
             @Override
-            public void onClick(View v) {
-                PhotoAttachPhotoCell cell = (PhotoAttachPhotoCell) v.getParent();
-                MediaController.PhotoEntry photoEntry = cell.getPhotoEntry();
+            public void onCheckClick(PhotoAttachPhotoCell v) {
+                MediaController.PhotoEntry photoEntry = v.getPhotoEntry();
                 if (selectedPhotos.containsKey(photoEntry.imageId)) {
                     selectedPhotos.remove(photoEntry.imageId);
-                    cell.setChecked(false, true);
+                    v.setChecked(false, true);
                     photoEntry.imagePath = null;
                     photoEntry.thumbPath = null;
-                    cell.setPhotoEntry(photoEntry, cell.getTag() == MediaController.allPhotosAlbumEntry.photos.size() - 1);
+                    v.setPhotoEntry(photoEntry, v.getTag() == MediaController.allPhotosAlbumEntry.photos.size() - 1);
                 } else {
                     selectedPhotos.put(photoEntry.imageId, photoEntry);
-                    cell.setChecked(true, true);
+                    v.setChecked(true, true);
                 }
                 delegate.selectedPhotosChanged();
             }

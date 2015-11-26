@@ -118,7 +118,7 @@ public class ChannelEditActivity extends BaseFragment implements AvatarUpdater.A
                 return false;
             }
             if (info == null) {
-                MessagesStorage.getInstance().loadChatInfo(chatId, semaphore, false);
+                MessagesStorage.getInstance().loadChatInfo(chatId, semaphore, false, false);
                 try {
                     semaphore.acquire();
                 } catch (Exception e) {
@@ -132,7 +132,7 @@ public class ChannelEditActivity extends BaseFragment implements AvatarUpdater.A
         wasPrivate = currentChat.username == null || currentChat.username.length() == 0;
         avatarUpdater.parentFragment = this;
         avatarUpdater.delegate = this;
-        allowComments = (currentChat.flags & TLRPC.CHAT_FLAG_IS_BROADCAST) == 0;
+        allowComments = !currentChat.broadcast;
         return super.onFragmentCreate();
     }
 
@@ -178,14 +178,16 @@ public class ChannelEditActivity extends BaseFragment implements AvatarUpdater.A
                         AndroidUtilities.shakeView(nameTextView, 2, 0);
                         return;
                     }
-                    if ((currentChat.username == null && userNameTextView.length() != 0) || (currentChat.username != null && !currentChat.username.equalsIgnoreCase(userNameTextView.getText().toString()))) {
-                        if (userNameTextView.length() != 0 && !lastNameAvailable) {
-                            Vibrator v = (Vibrator) getParentActivity().getSystemService(Context.VIBRATOR_SERVICE);
-                            if (v != null) {
-                                v.vibrate(200);
+                    if (userNameTextView != null) {
+                        if ((currentChat.username == null && userNameTextView.length() != 0) || (currentChat.username != null && !currentChat.username.equalsIgnoreCase(userNameTextView.getText().toString()))) {
+                            if (userNameTextView.length() != 0 && !lastNameAvailable) {
+                                Vibrator v = (Vibrator) getParentActivity().getSystemService(Context.VIBRATOR_SERVICE);
+                                if (v != null) {
+                                    v.vibrate(200);
+                                }
+                                AndroidUtilities.shakeView(checkTextView, 2, 0);
+                                return;
                             }
-                            AndroidUtilities.shakeView(checkTextView, 2, 0);
-                            return;
                         }
                     }
 
@@ -211,7 +213,7 @@ public class ChannelEditActivity extends BaseFragment implements AvatarUpdater.A
                         progressDialog.show();
                         return;
                     }
-                    boolean currentAllowComments = (currentChat.flags & TLRPC.CHAT_FLAG_IS_BROADCAST) == 0;
+                    boolean currentAllowComments = !currentChat.broadcast;
                     if (allowComments != currentAllowComments) {
                         MessagesController.getInstance().toogleChannelComments(chatId, allowComments);
                     }
@@ -221,9 +223,11 @@ public class ChannelEditActivity extends BaseFragment implements AvatarUpdater.A
                     if (info != null && !info.about.equals(descriptionTextView.getText().toString())) {
                         MessagesController.getInstance().updateChannelAbout(chatId, descriptionTextView.getText().toString(), info);
                     }
-                    String oldUserName = currentChat.username != null ? currentChat.username : "";
-                    if (!oldUserName.equals(userNameTextView.getText().toString())) {
-                        MessagesController.getInstance().updateChannelUserName(chatId, userNameTextView.getText().toString());
+                    if (userNameTextView != null) {
+                        String oldUserName = currentChat.username != null ? currentChat.username : "";
+                        if (!oldUserName.equals(userNameTextView.getText().toString())) {
+                            MessagesController.getInstance().updateChannelUserName(chatId, userNameTextView.getText().toString());
+                        }
                     }
                     if (uploadedAvatar != null) {
                         MessagesController.getInstance().changeChatAvatar(chatId, uploadedAvatar);
@@ -299,7 +303,11 @@ public class ChannelEditActivity extends BaseFragment implements AvatarUpdater.A
         });
 
         nameTextView = new EditText(context);
-        nameTextView.setHint(LocaleController.getString("EnterChannelName", R.string.EnterChannelName));
+        if (currentChat.megagroup) {
+            nameTextView.setHint(LocaleController.getString("GroupName", R.string.GroupName));
+        } else {
+            nameTextView.setHint(LocaleController.getString("EnterChannelName", R.string.EnterChannelName));
+        }
         nameTextView.setMaxLines(4);
         nameTextView.setGravity(Gravity.CENTER_VERTICAL | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT));
         nameTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
@@ -382,90 +390,95 @@ public class ChannelEditActivity extends BaseFragment implements AvatarUpdater.A
         });
 
         TextInfoPrivacyCell infoCell = new TextInfoPrivacyCell(context);
-        infoCell.setText(LocaleController.getString("DescriptionInfo", R.string.DescriptionInfo));
+        if (currentChat.megagroup) {
+            infoCell.setText(LocaleController.getString("DescriptionInfoMega", R.string.DescriptionInfoMega));
+        } else {
+            infoCell.setText(LocaleController.getString("DescriptionInfo", R.string.DescriptionInfo));
+        }
         infoCell.setBackgroundResource(R.drawable.greydivider);
         linearLayout.addView(infoCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
+        if (!currentChat.megagroup) {
+            linearLayout2 = new LinearLayout(context);
+            linearLayout2.setOrientation(LinearLayout.VERTICAL);
+            linearLayout2.setBackgroundColor(0xffffffff);
+            linearLayout2.setPadding(0, 0, 0, AndroidUtilities.dp(7));
+            linearLayout.addView(linearLayout2, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
-        linearLayout2 = new LinearLayout(context);
-        linearLayout2.setOrientation(LinearLayout.VERTICAL);
-        linearLayout2.setBackgroundColor(0xffffffff);
-        linearLayout2.setPadding(0, 0, 0, AndroidUtilities.dp(7));
-        linearLayout.addView(linearLayout2, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+            LinearLayout publicContainer = new LinearLayout(context);
+            publicContainer.setOrientation(LinearLayout.HORIZONTAL);
+            linearLayout2.addView(publicContainer, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 36, 17, 7, 17, 0));
 
-        LinearLayout publicContainer = new LinearLayout(context);
-        publicContainer.setOrientation(LinearLayout.HORIZONTAL);
-        linearLayout2.addView(publicContainer, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 36, 17, 7, 17, 0));
+            EditText editText = new EditText(context);
+            editText.setText("telegram.me/");
+            editText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
+            editText.setHintTextColor(0xff979797);
+            editText.setTextColor(0xff212121);
+            editText.setMaxLines(1);
+            editText.setLines(1);
+            editText.setEnabled(false);
+            editText.setBackgroundDrawable(null);
+            editText.setPadding(0, 0, 0, 0);
+            editText.setSingleLine(true);
+            editText.setInputType(InputType.TYPE_TEXT_FLAG_MULTI_LINE | InputType.TYPE_TEXT_FLAG_AUTO_CORRECT);
+            editText.setImeOptions(EditorInfo.IME_ACTION_DONE);
+            publicContainer.addView(editText, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, 36));
 
-        EditText editText = new EditText(context);
-        editText.setText("telegram.me/");
-        editText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
-        editText.setHintTextColor(0xff979797);
-        editText.setTextColor(0xff212121);
-        editText.setMaxLines(1);
-        editText.setLines(1);
-        editText.setEnabled(false);
-        editText.setBackgroundDrawable(null);
-        editText.setPadding(0, 0, 0, 0);
-        editText.setSingleLine(true);
-        editText.setInputType(InputType.TYPE_TEXT_FLAG_MULTI_LINE | InputType.TYPE_TEXT_FLAG_AUTO_CORRECT);
-        editText.setImeOptions(EditorInfo.IME_ACTION_DONE);
-        publicContainer.addView(editText, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, 36));
-
-        userNameTextView = new EditText(context);
-        userNameTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
-        userNameTextView.setHintTextColor(0xff979797);
-        userNameTextView.setTextColor(0xff212121);
-        userNameTextView.setMaxLines(1);
-        userNameTextView.setLines(1);
-        userNameTextView.setBackgroundDrawable(null);
-        userNameTextView.setPadding(0, 0, 0, 0);
-        userNameTextView.setSingleLine(true);
-        userNameTextView.setText(currentChat.username);
-        userNameTextView.setInputType(InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS | InputType.TYPE_TEXT_FLAG_MULTI_LINE | InputType.TYPE_TEXT_FLAG_AUTO_CORRECT);
-        userNameTextView.setImeOptions(EditorInfo.IME_ACTION_DONE);
-        userNameTextView.setHint(LocaleController.getString("ChannelUsernamePlaceholder", R.string.ChannelUsernamePlaceholder));
-        userNameTextView.setOnFocusChangeListener(new View.OnFocusChangeListener() {
-            @Override
-            public void onFocusChange(View v, boolean hasFocus) {
-                if (wasPrivate && hasFocus && !privateAlertShown) {
-                    AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-                    builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
-                    builder.setMessage(LocaleController.getString("ChannelWasPrivateAlert", R.string.ChannelWasPrivateAlert));
-                    builder.setPositiveButton(LocaleController.getString("Close", R.string.Close), null);
-                    showDialog(builder.create());
+            userNameTextView = new EditText(context);
+            userNameTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
+            userNameTextView.setHintTextColor(0xff979797);
+            userNameTextView.setTextColor(0xff212121);
+            userNameTextView.setMaxLines(1);
+            userNameTextView.setLines(1);
+            userNameTextView.setBackgroundDrawable(null);
+            userNameTextView.setPadding(0, 0, 0, 0);
+            userNameTextView.setSingleLine(true);
+            userNameTextView.setText(currentChat.username);
+            userNameTextView.setInputType(InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS | InputType.TYPE_TEXT_FLAG_MULTI_LINE | InputType.TYPE_TEXT_FLAG_AUTO_CORRECT);
+            userNameTextView.setImeOptions(EditorInfo.IME_ACTION_DONE);
+            userNameTextView.setHint(LocaleController.getString("ChannelUsernamePlaceholder", R.string.ChannelUsernamePlaceholder));
+            userNameTextView.setOnFocusChangeListener(new View.OnFocusChangeListener() {
+                @Override
+                public void onFocusChange(View v, boolean hasFocus) {
+                    if (wasPrivate && hasFocus && !privateAlertShown) {
+                        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                        builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
+                        builder.setMessage(LocaleController.getString("ChannelWasPrivateAlert", R.string.ChannelWasPrivateAlert));
+                        builder.setPositiveButton(LocaleController.getString("Close", R.string.Close), null);
+                        showDialog(builder.create());
+                    }
                 }
-            }
-        });
-        AndroidUtilities.clearCursorDrawable(userNameTextView);
-        publicContainer.addView(userNameTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 36));
-        userNameTextView.addTextChangedListener(new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence charSequence, int i, int i2, int i3) {
+            });
+            AndroidUtilities.clearCursorDrawable(userNameTextView);
+            publicContainer.addView(userNameTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 36));
+            userNameTextView.addTextChangedListener(new TextWatcher() {
+                @Override
+                public void beforeTextChanged(CharSequence charSequence, int i, int i2, int i3) {
 
-            }
+                }
 
-            @Override
-            public void onTextChanged(CharSequence charSequence, int i, int i2, int i3) {
-                checkUserName(userNameTextView.getText().toString(), false);
-            }
+                @Override
+                public void onTextChanged(CharSequence charSequence, int i, int i2, int i3) {
+                    checkUserName(userNameTextView.getText().toString(), false);
+                }
 
-            @Override
-            public void afterTextChanged(Editable editable) {
+                @Override
+                public void afterTextChanged(Editable editable) {
 
-            }
-        });
+                }
+            });
 
-        checkTextView = new TextView(context);
-        checkTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
-        checkTextView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
-        checkTextView.setVisibility(View.GONE);
-        linearLayout2.addView(checkTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT, 17, 3, 17, 7));
+            checkTextView = new TextView(context);
+            checkTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
+            checkTextView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
+            checkTextView.setVisibility(View.GONE);
+            linearLayout2.addView(checkTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT, 17, 3, 17, 7));
 
-        infoCell = new TextInfoPrivacyCell(context);
-        infoCell.setBackgroundResource(R.drawable.greydivider);
-        infoCell.setText(LocaleController.getString("ChannelUsernameHelp", R.string.ChannelUsernameHelp));
-        linearLayout.addView(infoCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+            infoCell = new TextInfoPrivacyCell(context);
+            infoCell.setBackgroundResource(R.drawable.greydivider);
+            infoCell.setText(LocaleController.getString("ChannelUsernameHelp", R.string.ChannelUsernameHelp));
+            linearLayout.addView(infoCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+        }
 
 
         /*frameLayout = new FrameLayoutFixed(context);
@@ -496,13 +509,21 @@ public class ChannelEditActivity extends BaseFragment implements AvatarUpdater.A
         TextSettingsCell textCell = new TextSettingsCell(context);
         textCell.setTextColor(0xffed3d39);
         textCell.setBackgroundResource(R.drawable.list_selector);
-        textCell.setText(LocaleController.getString("ChannelDelete", R.string.ChannelDelete), false);
+        if (currentChat.megagroup) {
+            textCell.setText(LocaleController.getString("DeleteMega", R.string.DeleteMega), false);
+        } else {
+            textCell.setText(LocaleController.getString("ChannelDelete", R.string.ChannelDelete), false);
+        }
         frameLayout.addView(textCell, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
         textCell.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-                builder.setMessage(LocaleController.getString("ChannelDeleteAlert", R.string.ChannelDeleteAlert));
+                if (currentChat.megagroup) {
+                    builder.setMessage(LocaleController.getString("MegaDeleteAlert", R.string.MegaDeleteAlert));
+                } else {
+                    builder.setMessage(LocaleController.getString("ChannelDeleteAlert", R.string.ChannelDeleteAlert));
+                }
                 builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
                 builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), new DialogInterface.OnClickListener() {
                     @Override
@@ -524,7 +545,11 @@ public class ChannelEditActivity extends BaseFragment implements AvatarUpdater.A
 
         infoCell = new TextInfoPrivacyCell(context);
         infoCell.setBackgroundResource(R.drawable.greydivider_bottom);
-        infoCell.setText(LocaleController.getString("ChannelDeleteInfo", R.string.ChannelDeleteInfo));
+        if (currentChat.megagroup) {
+            infoCell.setText(LocaleController.getString("MegaDeleteInfo", R.string.MegaDeleteInfo));
+        } else {
+            infoCell.setText(LocaleController.getString("ChannelDeleteInfo", R.string.ChannelDeleteInfo));
+        }
         linearLayout.addView(infoCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
         nameTextView.setText(currentChat.title);

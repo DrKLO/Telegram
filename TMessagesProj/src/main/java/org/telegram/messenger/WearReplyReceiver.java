@@ -32,6 +32,6 @@ public class WearReplyReceiver extends BroadcastReceiver {
             return;
         }
         SendMessagesHelper.getInstance().sendMessage(text.toString(), dialog_id, null, null, true, false);
-        MessagesController.getInstance().markDialogAsRead(dialog_id, max_id, max_id, 0, 0, true, false);
+        MessagesController.getInstance().markDialogAsRead(dialog_id, max_id, max_id, 0, true, false);
     }
 }

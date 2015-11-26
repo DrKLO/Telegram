@@ -307,7 +307,7 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
                                 result.add(user);
                             }
                         }
-                        MessagesController.getInstance().addUsersToChannel(chatId, result);
+                        MessagesController.getInstance().addUsersToChannel(chatId, result, null);
                         NotificationCenter.getInstance().postNotificationName(NotificationCenter.closeChats);
                         Bundle args2 = new Bundle();
                         args2.putInt("chat_id", chatId);
@@ -655,7 +655,7 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
             actionBar.setTitle(LocaleController.getString("ChannelAddMembers", R.string.ChannelAddMembers));
             actionBar.setSubtitle(LocaleController.formatPluralString("Members", selectedContacts.size()));
 
-            searchListViewAdapter = new SearchAdapter(context, null, false, false, false);
+            searchListViewAdapter = new SearchAdapter(context, null, false, false, false, false);
             searchListViewAdapter.setCheckedMap(selectedContacts);
             searchListViewAdapter.setUseUserCell(true);
             listViewAdapter = new ContactsAdapter(context, 1, false, null, false);

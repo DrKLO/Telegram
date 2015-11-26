@@ -88,7 +88,7 @@ public class BotKeyboardView extends LinearLayout {
         buttonViews.clear();
 
         if (buttons != null && botButtons.rows.size() != 0) {
-            isFullSize = (buttons.flags & 1) == 0;
+            isFullSize = !buttons.resize;
             buttonHeight = !isFullSize ? 42 : (int) Math.max(42, (panelHeight - AndroidUtilities.dp(30) - (botButtons.rows.size() - 1) * AndroidUtilities.dp(10)) / botButtons.rows.size() / AndroidUtilities.density);
             for (int a = 0; a < buttons.rows.size(); a++) {
                 TLRPC.TL_keyboardButtonRow row = buttons.rows.get(a);

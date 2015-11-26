@@ -43,7 +43,6 @@
         android:allowBackup="false"
         android:hardwareAccelerated="@bool/useHardwareAcceleration"
         android:icon="@drawable/ic_launcher"
-        android:label="@string/AppName"
         android:largeHeap="true"
         android:theme="@style/Theme.TMessages.Start">
 
@@ -159,7 +158,7 @@
         </service>
 
         <service
-            android:name=".TgChooserTargetService"
+            android:name="org.telegram.messenger.TgChooserTargetService"
             android:label="@string/AppName"
             android:permission="android.permission.BIND_CHOOSER_TARGET_SERVICE">
             <intent-filter>

@@ -178,9 +178,6 @@ public class GroupInviteActivity extends BaseFragment implements NotificationCen
     @Override
     public void didReceivedNotification(int id, Object... args) {
         if (id == NotificationCenter.chatInfoDidLoaded) {
-            if (args.length != 2) {
-                return;
-            }
             TLRPC.ChatFull info = (TLRPC.ChatFull) args[0];
             int guid = (int) args[1];
             if (info.id == chat_id && guid == classGuid) {
@@ -309,7 +306,8 @@ public class GroupInviteActivity extends BaseFragment implements NotificationCen
                     ((TextInfoPrivacyCell) view).setText("");
                     view.setBackgroundResource(R.drawable.greydivider_bottom);
                 } else if (i == linkInfoRow) {
-                    if (ChatObject.isChannel(chat_id)) {
+                    TLRPC.Chat chat = MessagesController.getInstance().getChat(chat_id);
+                    if (ChatObject.isChannel(chat) && !chat.megagroup) {
                         ((TextInfoPrivacyCell) view).setText(LocaleController.getString("ChannelLinkInfo", R.string.ChannelLinkInfo));
                     } else {
                         ((TextInfoPrivacyCell) view).setText(LocaleController.getString("LinkInfo", R.string.LinkInfo));

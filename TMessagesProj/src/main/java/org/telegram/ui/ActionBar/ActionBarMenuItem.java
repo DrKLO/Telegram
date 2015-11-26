@@ -288,7 +288,6 @@ public class ActionBarMenuItem extends FrameLayoutFixed {
         }
         if (popupWindow == null) {
             popupWindow = new ActionBarPopupWindow(popupLayout, LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT);
-            //popupWindow.setBackgroundDrawable(new BitmapDrawable());
             if (Build.VERSION.SDK_INT >= 19) {
                 popupWindow.setAnimationStyle(0);
             } else {

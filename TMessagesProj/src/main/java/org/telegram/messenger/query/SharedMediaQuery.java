@@ -197,13 +197,15 @@ public class SharedMediaQuery {
                 putMediaDatabase(uid, type, res.messages, max_id, topReached);
             }
 
-            final HashMap<Integer, TLRPC.User> usersLocal = new HashMap<>();
-            for (TLRPC.User u : res.users) {
-                usersLocal.put(u.id, u);
+            final HashMap<Integer, TLRPC.User> usersDict = new HashMap<>();
+            for (int a = 0; a < res.users.size(); a++) {
+                TLRPC.User u = res.users.get(a);
+                usersDict.put(u.id, u);
             }
             final ArrayList<MessageObject> objects = new ArrayList<>();
-            for (TLRPC.Message message : res.messages) {
-                objects.add(new MessageObject(message, usersLocal, true));
+            for (int a = 0; a < res.messages.size(); a++) {
+                TLRPC.Message message = res.messages.get(a);
+                objects.add(new MessageObject(message, usersDict, true));
             }
 
             AndroidUtilities.runOnUIThread(new Runnable() {
@@ -272,37 +274,6 @@ public class SharedMediaQuery {
                             count = cursor.intValue(0);
                         }
                         cursor.dispose();
-
-                        /*cursor = MessagesStorage.getInstance().getDatabase().queryFinalized(String.format(Locale.US, "SELECT data, send_state, date FROM messages WHERE uid = %d ORDER BY mid ASC LIMIT %d", uid, 1000));
-                        ArrayList<TLRPC.Message> photos = new ArrayList<>();
-                        ArrayList<TLRPC.Message> docs = new ArrayList<>();
-                        while (cursor.next()) {
-                            NativeByteBuffer data = new NativeByteBuffer(cursor.byteArrayLength(1));
-                            if (data != null && cursor.byteBufferValue(1, data) != 0) {
-                                TLRPC.Message message = (TLRPC.Message) TLClassStore.Instance().TLdeserialize(data, data.readInt32());
-                                MessageObject.setIsUnread(message, cursor.intValue(0) != 1);
-                                message.date = cursor.intValue(2);
-                                message.send_state = cursor.intValue(1);
-                                message.dialog_id = uid;
-                                if (message.ttl > 60 && message.media instanceof TLRPC.TL_messageMediaPhoto || message.media instanceof TLRPC.TL_messageMediaVideo) {
-                                    photos.add(message);
-                                } else if (message.media instanceof TLRPC.TL_messageMediaDocument) {
-                                    docs.add(message);
-                                }
-                            }
-                            data.reuse();
-                        }
-                        cursor.dispose();
-                        if (!photos.isEmpty() || !docs.isEmpty()) {
-                            MessagesStorage.getInstance().getDatabase().beginTransaction();
-                            if (!photos.isEmpty()) {
-                                putMediaDatabaseInternal(uid, MEDIA_PHOTOVIDEO, photos);
-                            }
-                            if (docs.isEmpty()) {
-                                putMediaDatabaseInternal(uid, MEDIA_FILE, docs);
-                            }
-                            MessagesStorage.getInstance().getDatabase().commitTransaction();
-                        }*/
 
                         if (count != -1) {
                             putMediaCountDatabase(uid, type, count);

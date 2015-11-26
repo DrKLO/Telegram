@@ -74,7 +74,7 @@ public class StickersQuery {
         if (document != null) {
             long setId = getStickerSetId(document);
             TLRPC.TL_messages_stickerSet stickerSet = stickerSetsById.get(setId);
-            if (stickerSet != null && (stickerSet.set.flags & 2) != 0) {
+            if (stickerSet != null && stickerSet.set.disabled) {
                 return null;
             }
         }
@@ -156,7 +156,9 @@ public class StickersQuery {
 
                                     TLRPC.TL_messages_stickerSet oldSet = stickerSetsById.get(stickerSet.id);
                                     if (oldSet != null && oldSet.set.hash == stickerSet.hash) {
-                                        oldSet.set.flags = stickerSet.flags;
+                                        oldSet.set.disabled = stickerSet.disabled;
+                                        oldSet.set.installed = stickerSet.installed;
+                                        oldSet.set.official = stickerSet.official;
                                         newStickerSets.put(oldSet.set.id, oldSet);
                                         newStickerArray.add(oldSet);
 
@@ -206,24 +208,32 @@ public class StickersQuery {
             @Override
             public void run() {
                 try {
-                    SQLitePreparedStatement state = MessagesStorage.getInstance().getDatabase().executeFast("REPLACE INTO stickers_v2 VALUES(?, ?, ?, ?)");
-                    state.requery();
-                    int size = 4;
-                    for (int a = 0; a < stickers.size(); a++) {
-                        size += stickers.get(a).getObjectSize();
+                    if (stickers != null) {
+                        SQLitePreparedStatement state = MessagesStorage.getInstance().getDatabase().executeFast("REPLACE INTO stickers_v2 VALUES(?, ?, ?, ?)");
+                        state.requery();
+                        int size = 4;
+                        for (int a = 0; a < stickers.size(); a++) {
+                            size += stickers.get(a).getObjectSize();
+                        }
+                        NativeByteBuffer data = new NativeByteBuffer(size);
+                        data.writeInt32(stickers.size());
+                        for (int a = 0; a < stickers.size(); a++) {
+                            stickers.get(a).serializeToStream(data);
+                        }
+                        state.bindInteger(1, 1);
+                        state.bindByteBuffer(2, data);
+                        state.bindInteger(3, date);
+                        state.bindString(4, hash);
+                        state.step();
+                        data.reuse();
+                        state.dispose();
+                    } else {
+                        SQLitePreparedStatement state = MessagesStorage.getInstance().getDatabase().executeFast("UPDATE stickers_v2 SET date = ?");
+                        state.requery();
+                        state.bindInteger(1, date);
+                        state.step();
+                        state.dispose();
                     }
-                    NativeByteBuffer data = new NativeByteBuffer(size);
-                    data.writeInt32(stickers.size());
-                    for (int a = 0; a < stickers.size(); a++) {
-                        stickers.get(a).serializeToStream(data);
-                    }
-                    state.bindInteger(1, 1);
-                    state.bindByteBuffer(2, data);
-                    state.bindInteger(3, date);
-                    state.bindString(4, hash);
-                    state.step();
-                    data.reuse();
-                    state.dispose();
                 } catch (Exception e) {
                     FileLog.e("tmessages", e);
                 }
@@ -291,7 +301,7 @@ public class StickersQuery {
                                 }
                                 stickersByIdNew.put(document.id, document);
                             }
-                            if ((stickerSet.set.flags & 2) == 0) {
+                            if (!stickerSet.set.disabled) {
                                 for (int b = 0; b < stickerSet.packs.size(); b++) {
                                     TLRPC.TL_stickerPack stickerPack = stickerSet.packs.get(b);
                                     if (stickerPack == null || stickerPack.emoticon == null) {
@@ -333,6 +343,14 @@ public class StickersQuery {
                     } catch (Throwable e) {
                         FileLog.e("tmessages", e);
                     }
+                } else if (!cache) {
+                    AndroidUtilities.runOnUIThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            loadDate = date;
+                        }
+                    });
+                    putStickersToCache(null, date, null);
                 }
             }
         });
@@ -433,11 +451,7 @@ public class StickersQuery {
         stickerSetID.access_hash = stickerSet.access_hash;
         stickerSetID.id = stickerSet.id;
         if (hide != 0) {
-            if (hide == 1) {
-                stickerSet.flags |= 2;
-            } else {
-                stickerSet.flags &= ~2;
-            }
+            stickerSet.disabled = hide == 1;
             NotificationCenter.getInstance().postNotificationName(NotificationCenter.stickersDidLoaded);
             TLRPC.TL_messages_installStickerSet req = new TLRPC.TL_messages_installStickerSet();
             req.stickerset = stickerSetID;

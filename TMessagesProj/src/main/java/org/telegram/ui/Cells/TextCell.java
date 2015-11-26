@@ -28,8 +28,6 @@ public class TextCell extends FrameLayout {
     private ImageView imageView;
     private ImageView valueImageView;
 
-    private boolean multiline;
-
     public TextCell(Context context) {
         super(context);
 
@@ -63,7 +61,7 @@ public class TextCell extends FrameLayout {
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), multiline ?  MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED) : MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(48), MeasureSpec.EXACTLY));
+        super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(48), MeasureSpec.EXACTLY));
     }
 
     public void setTextColor(int color) {
@@ -83,27 +81,7 @@ public class TextCell extends FrameLayout {
         imageView.setVisibility(VISIBLE);
         valueTextView.setVisibility(INVISIBLE);
         valueImageView.setVisibility(INVISIBLE);
-        if (multiline) {
-            imageView.setPadding(0, 0, 0, 0);
-        } else {
-            imageView.setPadding(0, AndroidUtilities.dp(7), 0, 0);
-        }
-    }
-
-    public void setMultiline(boolean value) {
-        if (multiline == value) {
-            return;
-        }
-        multiline = value;
-        if (value) {
-            textView.setSingleLine(false);
-            textView.setPadding(0, AndroidUtilities.dp(6), 0, AndroidUtilities.dp(6));
-        } else {
-            textView.setLines(1);
-            textView.setMaxLines(1);
-            textView.setSingleLine(true);
-        }
-        requestLayout();
+        imageView.setPadding(0, AndroidUtilities.dp(7), 0, 0);
     }
 
     public void setTextAndValue(String text, String value) {
@@ -120,10 +98,6 @@ public class TextCell extends FrameLayout {
         valueImageView.setImageDrawable(drawable);
         valueTextView.setVisibility(INVISIBLE);
         imageView.setVisibility(INVISIBLE);
-        if (multiline) {
-            imageView.setPadding(0, 0, 0, 0);
-        } else {
-            imageView.setPadding(0, AndroidUtilities.dp(7), 0, 0);
-        }
+        imageView.setPadding(0, AndroidUtilities.dp(7), 0, 0);
     }
 }

@@ -46,7 +46,7 @@ public class DialogsAdapter extends RecyclerView.Adapter {
 
     public boolean isDataSetChanged() {
         int current = currentCount;
-        return current != getItemCount();
+        return current != getItemCount() || current == 1;
     }
 
     private ArrayList<TLRPC.Dialog> getDialogsArray() {

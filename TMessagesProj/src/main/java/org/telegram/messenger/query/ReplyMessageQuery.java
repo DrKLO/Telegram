@@ -82,39 +82,7 @@ public class ReplyMessageQuery {
                             message.id = cursor.intValue(1);
                             message.date = cursor.intValue(2);
                             message.dialog_id = dialog_id;
-                            if (message.from_id > 0) {
-                                if (!usersToLoad.contains(message.from_id)) {
-                                    usersToLoad.add(message.from_id);
-                                }
-                            } else {
-                                if (!chatsToLoad.contains(-message.from_id)) {
-                                    chatsToLoad.add(-message.from_id);
-                                }
-                            }
-                            if (message.action != null && message.action.user_id != 0) {
-                                if (!usersToLoad.contains(message.action.user_id)) {
-                                    usersToLoad.add(message.action.user_id);
-                                }
-                            }
-                            if (message.media != null && message.media.user_id != 0) {
-                                if (!usersToLoad.contains(message.media.user_id)) {
-                                    usersToLoad.add(message.media.user_id);
-                                }
-                            }
-                            if (message.media != null && message.media.audio != null && message.media.audio.user_id != 0) {
-                                if (!usersToLoad.contains(message.media.audio.user_id)) {
-                                    usersToLoad.add(message.media.audio.user_id);
-                                }
-                            }
-                            if (message.fwd_from_id instanceof TLRPC.TL_peerUser) {
-                                if (!usersToLoad.contains(message.fwd_from_id.user_id)) {
-                                    usersToLoad.add(message.fwd_from_id.user_id);
-                                }
-                            } else if (message.fwd_from_id instanceof TLRPC.TL_peerChannel) {
-                                if (!chatsToLoad.contains(message.fwd_from_id.channel_id)) {
-                                    chatsToLoad.add(message.fwd_from_id.channel_id);
-                                }
-                            }
+                            MessagesStorage.addUsersAndChatsFromMessage(message, usersToLoad, chatsToLoad);
                             result.add(message);
                             replyMessages.remove((Integer) message.id);
                         }
@@ -206,9 +174,15 @@ public class ReplyMessageQuery {
     }
 
     private static void broadcastReplyMessages(final ArrayList<TLRPC.Message> result, final HashMap<Integer, ArrayList<MessageObject>> replyMessageOwners, final ArrayList<TLRPC.User> users, final ArrayList<TLRPC.Chat> chats, final long dialog_id, final boolean isCache) {
-        final HashMap<Integer, TLRPC.User> usersHashMap = new HashMap<>();
-        for (TLRPC.User user : users) {
-            usersHashMap.put(user.id, user);
+        final HashMap<Integer, TLRPC.User> usersDict = new HashMap<>();
+        for (int a = 0; a < users.size(); a++) {
+            TLRPC.User user = users.get(a);
+            usersDict.put(user.id, user);
+        }
+        final HashMap<Integer, TLRPC.Chat> chatsDict = new HashMap<>();
+        for (int a = 0; a < chats.size(); a++) {
+            TLRPC.Chat chat = chats.get(a);
+            chatsDict.put(chat.id, chat);
         }
         AndroidUtilities.runOnUIThread(new Runnable() {
             @Override
@@ -216,11 +190,13 @@ public class ReplyMessageQuery {
                 MessagesController.getInstance().putUsers(users, isCache);
                 MessagesController.getInstance().putChats(chats, isCache);
                 boolean changed = false;
-                for (TLRPC.Message message : result) {
+                for (int a = 0; a < result.size(); a++) {
+                    TLRPC.Message message = result.get(a);
                     ArrayList<MessageObject> arrayList = replyMessageOwners.get(message.id);
                     if (arrayList != null) {
-                        MessageObject messageObject = new MessageObject(message, usersHashMap, false);
-                        for (MessageObject m : arrayList) {
+                        MessageObject messageObject = new MessageObject(message, usersDict, chatsDict, false);
+                        for (int b = 0; b < arrayList.size(); b++) {
+                            MessageObject m = arrayList.get(b);
                             m.replyMessageObject = messageObject;
                         }
                         changed = true;

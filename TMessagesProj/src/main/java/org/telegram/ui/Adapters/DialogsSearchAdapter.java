@@ -16,6 +16,7 @@ import android.view.ViewGroup;
 import org.telegram.SQLite.SQLiteCursor;
 import org.telegram.SQLite.SQLitePreparedStatement;
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
@@ -128,15 +129,29 @@ public class DialogsSearchAdapter extends BaseSearchAdapterRecycler {
             }
             return;
         }
-        final TLRPC.TL_messages_search req = new TLRPC.TL_messages_search();
+
+        final TLRPC.TL_messages_searchGlobal req = new TLRPC.TL_messages_searchGlobal();
         req.limit = 20;
-        req.peer = new TLRPC.TL_inputPeerEmpty();
         req.q = query;
         if (lastMessagesSearchString != null && query.equals(lastMessagesSearchString) && !searchResultMessages.isEmpty()) {
-            req.max_id = searchResultMessages.get(searchResultMessages.size() - 1).getId();
+            MessageObject lastMessage = searchResultMessages.get(searchResultMessages.size() - 1);
+            req.offset_id = lastMessage.getId();
+            req.offset_date = lastMessage.messageOwner.date;
+            int id;
+            if (lastMessage.messageOwner.to_id.channel_id != 0) {
+                id = -lastMessage.messageOwner.to_id.channel_id;
+            } else if (lastMessage.messageOwner.to_id.chat_id != 0) {
+                id = -lastMessage.messageOwner.to_id.chat_id;
+            } else {
+                id = lastMessage.messageOwner.to_id.user_id;
+            }
+            req.offset_peer = MessagesController.getInputPeer(id);
+        } else {
+            req.offset_date = 0;
+            req.offset_id = 0;
+            req.offset_peer = new TLRPC.TL_inputPeerEmpty();
         }
         lastMessagesSearchString = query;
-        req.filter = new TLRPC.TL_inputMessagesFilterEmpty();
         final int currentReqId = ++lastReqId;
         if (delegate != null) {
             delegate.searchStateChanged(true);
@@ -153,7 +168,7 @@ public class DialogsSearchAdapter extends BaseSearchAdapterRecycler {
                                 MessagesStorage.getInstance().putUsersAndChats(res.users, res.chats, true, true);
                                 MessagesController.getInstance().putUsers(res.users, false);
                                 MessagesController.getInstance().putChats(res.chats, false);
-                                if (req.max_id == 0) {
+                                if (req.offset_id == 0) {
                                     searchResultMessages.clear();
                                 }
                                 for (TLRPC.Message message : res.messages) {
@@ -258,7 +273,14 @@ public class DialogsSearchAdapter extends BaseSearchAdapterRecycler {
                             } else {
                                 did = AndroidUtilities.makeBroadcastId(chat.id);
                             }
-                            hashMap.get(did).object = chat;
+                            if (chat.migrated_to != null) {
+                                RecentSearchObject recentSearchObject = hashMap.remove(did);
+                                if (recentSearchObject != null) {
+                                    arrayList.remove(recentSearchObject);
+                                }
+                            } else {
+                                hashMap.get(did).object = chat;
+                            }
                         }
                     }
 
@@ -391,7 +413,7 @@ public class DialogsSearchAdapter extends BaseSearchAdapterRecycler {
                     int resultCount = 0;
 
                     HashMap<Long, DialogSearchResult> dialogsResult = new HashMap<>();
-                    SQLiteCursor cursor = MessagesStorage.getInstance().getDatabase().queryFinalized("SELECT did, date FROM dialogs ORDER BY date DESC LIMIT 200");
+                    SQLiteCursor cursor = MessagesStorage.getInstance().getDatabase().queryFinalized("SELECT did, date FROM dialogs ORDER BY date DESC LIMIT 400");
                     while (cursor.next()) {
                         long id = cursor.longValue(0);
                         DialogSearchResult dialogSearchResult = new DialogSearchResult();
@@ -481,16 +503,18 @@ public class DialogsSearchAdapter extends BaseSearchAdapterRecycler {
                                     NativeByteBuffer data = new NativeByteBuffer(cursor.byteArrayLength(0));
                                     if (data != null && cursor.byteBufferValue(0, data) != 0) {
                                         TLRPC.Chat chat = TLRPC.Chat.TLdeserialize(data, data.readInt32(false), false);
-                                        long dialog_id;
-                                        if (chat.id > 0) {
-                                            dialog_id = -chat.id;
-                                        } else {
-                                            dialog_id = AndroidUtilities.makeBroadcastId(chat.id);
+                                        if (!(chat == null || chat.deactivated || ChatObject.isChannel(chat) && ChatObject.isNotInChat(chat))) {
+                                            long dialog_id;
+                                            if (chat.id > 0) {
+                                                dialog_id = -chat.id;
+                                            } else {
+                                                dialog_id = AndroidUtilities.makeBroadcastId(chat.id);
+                                            }
+                                            DialogSearchResult dialogSearchResult = dialogsResult.get(dialog_id);
+                                            dialogSearchResult.name = AndroidUtilities.generateSearchName(chat.title, null, q);
+                                            dialogSearchResult.object = chat;
+                                            resultCount++;
                                         }
-                                        DialogSearchResult dialogSearchResult = dialogsResult.get(dialog_id);
-                                        dialogSearchResult.name = AndroidUtilities.generateSearchName(chat.title, null, q);
-                                        dialogSearchResult.object = chat;
-                                        resultCount++;
                                     }
                                     data.reuse();
                                     break;
@@ -589,7 +613,8 @@ public class DialogsSearchAdapter extends BaseSearchAdapterRecycler {
                     ArrayList<TLObject> resultArray = new ArrayList<>();
                     ArrayList<CharSequence> resultArrayNames = new ArrayList<>();
 
-                    for (DialogSearchResult dialogSearchResult : searchResults) {
+                    for (int a = 0; a < searchResults.size(); a++) {
+                        DialogSearchResult dialogSearchResult = searchResults.get(a);
                         resultArray.add(dialogSearchResult.object);
                         resultArrayNames.add(dialogSearchResult.name);
                     }
@@ -797,7 +822,19 @@ public class DialogsSearchAdapter extends BaseSearchAdapterRecycler {
     public Object getItem(int i) {
         if (needMessagesSearch != 2 && (lastSearchText == null || lastSearchText.length() == 0) && !recentSearchObjects.isEmpty()) {
             if (i > 0 && i - 1 < recentSearchObjects.size()) {
-                return recentSearchObjects.get(i - 1).object;
+                TLObject object = recentSearchObjects.get(i - 1).object;
+                if (object instanceof TLRPC.User) {
+                    TLRPC.User user = MessagesController.getInstance().getUser(((TLRPC.User) object).id);
+                    if (user != null) {
+                        object = user;
+                    }
+                } else if (object instanceof TLRPC.Chat) {
+                    TLRPC.Chat chat = MessagesController.getInstance().getChat(((TLRPC.Chat) object).id);
+                    if (chat != null) {
+                        object = chat;
+                    }
+                }
+                return object;
             } else {
                 return null;
             }

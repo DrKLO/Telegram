@@ -532,17 +532,18 @@ public class ChatMessageCell extends ChatBaseCell {
                     }
                 }
 
+                boolean authorIsRTL = false;
                 if (webPage.author != null) {
                     try {
                         if (linkPreviewHeight != 0) {
                             linkPreviewHeight += AndroidUtilities.dp(2);
                             totalHeight += AndroidUtilities.dp(2);
                         }
-                        int width = Math.min((int) Math.ceil(replyNamePaint.measureText(webPage.author)), linkPreviewMaxWidth);
+                        //int width = Math.min((int) Math.ceil(replyNamePaint.measureText(webPage.author)), linkPreviewMaxWidth);
                         if (restLinesCount == 3 && (!isSmallImage || webPage.description == null)) {
-                            authorLayout = new StaticLayout(webPage.author, replyNamePaint, width, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+                            authorLayout = new StaticLayout(webPage.author, replyNamePaint, linkPreviewMaxWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
                         } else {
-                            authorLayout = generateStaticLayout(webPage.author, replyNamePaint, width, linkPreviewMaxWidth - AndroidUtilities.dp(48 + 2), restLinesCount, 1);
+                            authorLayout = generateStaticLayout(webPage.author, replyNamePaint, linkPreviewMaxWidth, linkPreviewMaxWidth - AndroidUtilities.dp(48 + 2), restLinesCount, 1);
                             restLinesCount -= authorLayout.getLineCount();
                         }
                         int height = authorLayout.getLineBottom(authorLayout.getLineCount() - 1);
@@ -550,6 +551,13 @@ public class ChatMessageCell extends ChatBaseCell {
                         totalHeight += height;
                         int lineLeft = (int) authorLayout.getLineLeft(0);
                         authorX = -lineLeft;
+                        int width;
+                        if (lineLeft != 0) {
+                            width = authorLayout.getWidth() - lineLeft;
+                            authorIsRTL = true;
+                        } else {
+                            width = (int) Math.ceil(authorLayout.getLineWidth(0));
+                        }
                         maxChildWidth = Math.max(maxChildWidth, width + additinalWidth);
                         maxWebWidth = Math.max(maxWebWidth, width + additinalWidth);
                     } catch (Exception e) {
@@ -575,19 +583,31 @@ public class ChatMessageCell extends ChatBaseCell {
                         int height = descriptionLayout.getLineBottom(descriptionLayout.getLineCount() - 1);
                         linkPreviewHeight += height;
                         totalHeight += height;
+
+                        boolean hasRTL = false;
                         for (int a = 0; a < descriptionLayout.getLineCount(); a++) {
                             int lineLeft = (int) Math.ceil(descriptionLayout.getLineLeft(a));
-                            if (a == 0 && descriptionX == 0) {
-                                descriptionX = -lineLeft;
-                            } else {
-                                descriptionX = Math.max(descriptionX, -lineLeft);
+                            if (lineLeft != 0) {
+                                hasRTL = true;
+                                if (descriptionX == 0) {
+                                    descriptionX = -lineLeft;
+                                } else {
+                                    descriptionX = Math.max(descriptionX, -lineLeft);
+                                }
+                            }
+                        }
+
+                        for (int a = 0; a < descriptionLayout.getLineCount(); a++) {
+                            int lineLeft = (int) Math.ceil(descriptionLayout.getLineLeft(a));
+                            if (lineLeft == 0 && descriptionX != 0) {
+                                descriptionX = 0;
                             }
 
                             int width;
                             if (lineLeft != 0) {
                                 width = descriptionLayout.getWidth() - lineLeft;
                             } else {
-                                width = (int) Math.ceil(descriptionLayout.getLineWidth(a));
+                                width = hasRTL ? descriptionLayout.getWidth() : (int) Math.ceil(descriptionLayout.getLineWidth(a));
                             }
                             if (a < restLines || lineLeft != 0 && isSmallImage) {
                                 width += AndroidUtilities.dp(48 + 2);
@@ -595,6 +615,9 @@ public class ChatMessageCell extends ChatBaseCell {
                             if (maxWebWidth < width + additinalWidth) {
                                 if (titleIsRTL) {
                                     titleX += (width + additinalWidth - maxWebWidth);
+                                }
+                                if (authorIsRTL) {
+                                    authorX += (width + additinalWidth - maxWebWidth);
                                 }
                                 maxWebWidth = width + additinalWidth;
                             }

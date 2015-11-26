@@ -931,7 +931,7 @@ void TL_config::readParams(NativeByteBuffer *stream, bool &error) {
         dc_options.push_back(std::unique_ptr<TL_dcOption>(object));
     }
     chat_size_max = stream->readInt32(&error);
-    broadcast_size_max = stream->readInt32(&error);
+    megagroup_size_max = stream->readInt32(&error);
     forwarded_count_max = stream->readInt32(&error);
     online_update_period_ms = stream->readInt32(&error);
     offline_blur_timeout_ms = stream->readInt32(&error);
@@ -971,7 +971,7 @@ void TL_config::serializeToStream(NativeByteBuffer *stream) {
         dc_options[a]->serializeToStream(stream);
     }
     stream->writeInt32(chat_size_max);
-    stream->writeInt32(broadcast_size_max);
+    stream->writeInt32(megagroup_size_max);
     stream->writeInt32(forwarded_count_max);
     stream->writeInt32(online_update_period_ms);
     stream->writeInt32(offline_blur_timeout_ms);

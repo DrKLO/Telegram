@@ -41,9 +41,11 @@ public class ProfileSearchCell extends BaseCell {
     private static TextPaint offlinePaint;
     private static TextPaint countPaint;
     private static Drawable lockDrawable;
+    private static Drawable botDrawable;
     private static Drawable broadcastDrawable;
     private static Drawable groupDrawable;
     private static Drawable countDrawable;
+    private static Drawable countDrawableGrey;
     private static Drawable checkDrawable;
     private static Paint linePaint;
 
@@ -55,7 +57,7 @@ public class ProfileSearchCell extends BaseCell {
     private TLRPC.User user = null;
     private TLRPC.Chat chat = null;
     private TLRPC.EncryptedChat encryptedChat = null;
-    long dialog_id;
+    private long dialog_id;
 
     private String lastName = null;
     private int lastStatus = 0;
@@ -70,6 +72,7 @@ public class ProfileSearchCell extends BaseCell {
     private boolean drawNameLock;
     private boolean drawNameBroadcast;
     private boolean drawNameGroup;
+    private boolean drawNameBot;
     private int nameLockLeft;
     private int nameLockTop;
 
@@ -119,7 +122,9 @@ public class ProfileSearchCell extends BaseCell {
             lockDrawable = getResources().getDrawable(R.drawable.list_secret);
             groupDrawable = getResources().getDrawable(R.drawable.list_group);
             countDrawable = getResources().getDrawable(R.drawable.dialogs_badge);
+            countDrawableGrey = getResources().getDrawable(R.drawable.dialogs_badge2);
             checkDrawable = getResources().getDrawable(R.drawable.check_list);
+            botDrawable = getResources().getDrawable(R.drawable.bot_list);
         }
 
         avatarImage = new ImageReceiver(this);
@@ -188,6 +193,7 @@ public class ProfileSearchCell extends BaseCell {
         drawNameLock = false;
         drawNameGroup = false;
         drawCheck = false;
+        drawNameBot = false;
 
         if (encryptedChat != null) {
             drawNameLock = true;
@@ -208,7 +214,7 @@ public class ProfileSearchCell extends BaseCell {
                     nameLockTop = AndroidUtilities.dp(28.5f);
                 } else {
                     dialog_id = -chat.id;
-                    if (ChatObject.isChannel(chat)) {
+                    if (ChatObject.isChannel(chat) && !chat.megagroup) {
                         drawNameBroadcast = true;
                         nameLockTop = AndroidUtilities.dp(28.5f);
                     } else {
@@ -216,7 +222,7 @@ public class ProfileSearchCell extends BaseCell {
                         nameLockTop = AndroidUtilities.dp(30);
                     }
                 }
-                drawCheck = (chat.flags & TLRPC.CHAT_FLAG_IS_VERIFIED) != 0;
+                drawCheck = chat.verified;
                 if (!LocaleController.isRTL) {
                     nameLockLeft = AndroidUtilities.dp(AndroidUtilities.leftBaseline);
                     nameLeft = AndroidUtilities.dp(AndroidUtilities.leftBaseline + 4) + (drawNameGroup ? groupDrawable.getIntrinsicWidth() : broadcastDrawable.getIntrinsicWidth());
@@ -231,6 +237,20 @@ public class ProfileSearchCell extends BaseCell {
                 } else {
                     nameLeft = AndroidUtilities.dp(11);
                 }
+                if (user.bot) {
+                    drawNameBot = true;
+                    if (!LocaleController.isRTL) {
+                        nameLockLeft = AndroidUtilities.dp(AndroidUtilities.leftBaseline);
+                        nameLeft = AndroidUtilities.dp(AndroidUtilities.leftBaseline + 4) + botDrawable.getIntrinsicWidth();
+                    } else {
+                        nameLockLeft = getMeasuredWidth() - AndroidUtilities.dp(AndroidUtilities.leftBaseline + 2) - botDrawable.getIntrinsicWidth();
+                        nameLeft = AndroidUtilities.dp(11);
+                    }
+                    nameLockTop = AndroidUtilities.dp(16.5f);
+                } else {
+                    nameLockTop = AndroidUtilities.dp(17);
+                }
+                drawCheck = user.verified;
             }
         }
 
@@ -271,6 +291,8 @@ public class ProfileSearchCell extends BaseCell {
             nameWidth -= AndroidUtilities.dp(6) + broadcastDrawable.getIntrinsicWidth();
         } else if (drawNameGroup) {
             nameWidth -= AndroidUtilities.dp(6) + groupDrawable.getIntrinsicWidth();
+        } else if (drawNameBot) {
+            nameWidth -= AndroidUtilities.dp(6) + botDrawable.getIntrinsicWidth();
         }
 
         if (drawCount) {
@@ -313,7 +335,7 @@ public class ProfileSearchCell extends BaseCell {
             if (subLabel != null) {
                 onlineString = subLabel;
             } else if (user != null) {
-                if ((user.flags & TLRPC.USER_FLAG_BOT) != 0) {
+                if (user.bot) {
                     onlineString = LocaleController.getString("Bot", R.string.Bot);
                 } else {
                     onlineString = LocaleController.formatUserStatus(user);
@@ -327,7 +349,7 @@ public class ProfileSearchCell extends BaseCell {
             CharSequence onlineStringFinal = TextUtils.ellipsize(onlineString, currentOnlinePaint, onlineWidth - AndroidUtilities.dp(12), TextUtils.TruncateAt.END);
             onlineLayout = new StaticLayout(onlineStringFinal, currentOnlinePaint, onlineWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
             nameTop = AndroidUtilities.dp(13);
-            if (subLabel != null) {
+            if (subLabel != null && !drawNameBot) {
                 nameLockTop -= AndroidUtilities.dp(12);
             }
         } else {
@@ -492,6 +514,9 @@ public class ProfileSearchCell extends BaseCell {
         } else if (drawNameBroadcast) {
             setDrawableBounds(broadcastDrawable, nameLockLeft, nameLockTop);
             broadcastDrawable.draw(canvas);
+        } else if (drawNameBot) {
+            setDrawableBounds(botDrawable, nameLockLeft, nameLockTop);
+            botDrawable.draw(canvas);
         }
 
         if (nameLayout != null) {
@@ -517,8 +542,13 @@ public class ProfileSearchCell extends BaseCell {
         }
 
         if (countLayout != null) {
-            setDrawableBounds(countDrawable, countLeft - AndroidUtilities.dp(5.5f), countTop, countWidth + AndroidUtilities.dp(11), countDrawable.getIntrinsicHeight());
-            countDrawable.draw(canvas);
+            if (MessagesController.getInstance().isDialogMuted(dialog_id)) {
+                setDrawableBounds(countDrawableGrey, countLeft - AndroidUtilities.dp(5.5f), countTop, countWidth + AndroidUtilities.dp(11), countDrawableGrey.getIntrinsicHeight());
+                countDrawableGrey.draw(canvas);
+            } else {
+                setDrawableBounds(countDrawable, countLeft - AndroidUtilities.dp(5.5f), countTop, countWidth + AndroidUtilities.dp(11), countDrawable.getIntrinsicHeight());
+                countDrawable.draw(canvas);
+            }
             canvas.save();
             canvas.translate(countLeft, countTop + AndroidUtilities.dp(4));
             countLayout.draw(canvas);

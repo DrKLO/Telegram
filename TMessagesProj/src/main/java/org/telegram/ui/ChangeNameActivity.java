@@ -187,8 +187,15 @@ public class ChangeNameActivity extends BaseFragment {
     @Override
     public void onTransitionAnimationEnd(boolean isOpen, boolean backward) {
         if (isOpen) {
-            firstNameField.requestFocus();
-            AndroidUtilities.showKeyboard(firstNameField);
+            AndroidUtilities.runOnUIThread(new Runnable() {
+                @Override
+                public void run() {
+                    if (firstNameField != null) {
+                        firstNameField.requestFocus();
+                        AndroidUtilities.showKeyboard(firstNameField);
+                    }
+                }
+            }, 100);
         }
     }
 }

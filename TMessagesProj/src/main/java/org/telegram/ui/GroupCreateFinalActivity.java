@@ -450,7 +450,7 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
         @Override
         public View getView(int i, View view, ViewGroup viewGroup) {
             if (view == null) {
-                view = new UserCell(mContext, 1);
+                view = new UserCell(mContext, 1, 0);
             }
 
             TLRPC.User user = MessagesController.getInstance().getUser(selectedContacts.get(i));

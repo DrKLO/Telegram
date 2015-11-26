@@ -90,13 +90,22 @@ public class ActionBarPopupWindow extends PopupWindow {
             setPadding(AndroidUtilities.dp(8), AndroidUtilities.dp(8), AndroidUtilities.dp(8), AndroidUtilities.dp(8));
             setWillNotDraw(false);
 
-            scrollView = new ScrollView(context);
-            scrollView.setVerticalScrollBarEnabled(false);
-            addView(scrollView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
+            try {
+                scrollView = new ScrollView(context);
+                scrollView.setVerticalScrollBarEnabled(false);
+                addView(scrollView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
+            } catch (Throwable e) {
+                FileLog.e("tmessages", e);
+            }
+
 
             linearLayout = new LinearLayout(context);
             linearLayout.setOrientation(LinearLayout.VERTICAL);
-            scrollView.addView(linearLayout, new ScrollView.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+            if (scrollView != null) {
+                scrollView.addView(linearLayout, new ScrollView.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+            } else {
+                addView(linearLayout, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
+            }
         }
 
         public void setShowedFromBotton(boolean value) {
@@ -215,7 +224,9 @@ public class ActionBarPopupWindow extends PopupWindow {
         }
 
         public void scrollToTop() {
-            scrollView.scrollTo(0, 0);
+            if (scrollView != null) {
+                scrollView.scrollTo(0, 0);
+            }
         }
     }
 
@@ -374,6 +385,7 @@ public class ActionBarPopupWindow extends PopupWindow {
     }
 
     public void dismiss(boolean animated) {
+        setFocusable(false);
         if (animationEnabled && animated) {
             if (windowAnimatorSet != null) {
                 windowAnimatorSet.cancel();
@@ -414,7 +426,6 @@ public class ActionBarPopupWindow extends PopupWindow {
             });
             windowAnimatorSet.start();
         } else {
-            setFocusable(false);
             try {
                 super.dismiss();
             } catch (Exception e) {

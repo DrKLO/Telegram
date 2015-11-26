@@ -198,10 +198,10 @@ public class CountrySelectActivity extends BaseFragment {
                 if (i < 0) {
                     return;
                 }
+                finishFragment();
                 if (country != null && delegate != null) {
                     delegate.didSelectCountry(country.name);
                 }
-                finishFragment();
             }
         });
 

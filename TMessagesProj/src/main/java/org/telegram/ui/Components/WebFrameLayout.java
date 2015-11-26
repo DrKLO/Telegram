@@ -67,6 +67,9 @@ public class WebFrameLayout extends FrameLayout {
 
         fullscreenVideoContainer = new FrameLayout(context);
         fullscreenVideoContainer.setBackgroundColor(0xff000000);
+        if (Build.VERSION.SDK_INT >= 21) {
+            fullscreenVideoContainer.setFitsSystemWindows(true);
+        }
         dialog.getContainer().addView(fullscreenVideoContainer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
         fullscreenVideoContainer.setVisibility(INVISIBLE);
 
@@ -131,12 +134,15 @@ public class WebFrameLayout extends FrameLayout {
         });
 
         View lineView = new View(context);
-        lineView.setBackgroundColor(0xffcdcdcd);
-        addView(lineView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 1, Gravity.TOP | Gravity.LEFT, 0, 40, 0, 0));
+        lineView.setBackgroundResource(R.drawable.header_shadow);
+        addView(lineView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 3, Gravity.TOP | Gravity.LEFT, 0, 40, 0, 0));
 
         webView = new WebView(context);
         webView.getSettings().setJavaScriptEnabled(true);
         webView.getSettings().setDomStorageEnabled(true);
+        if (Build.VERSION.SDK_INT >= 17) {
+            webView.getSettings().setMediaPlaybackRequiresUserGesture(false);
+        }
 
         String userAgent = webView.getSettings().getUserAgentString();
         if (userAgent != null) {

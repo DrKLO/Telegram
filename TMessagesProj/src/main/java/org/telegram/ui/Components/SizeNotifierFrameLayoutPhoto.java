@@ -11,6 +11,7 @@ package org.telegram.ui.Components;
 import android.content.Context;
 import android.graphics.Rect;
 import android.view.View;
+import android.view.WindowManager;
 import android.widget.FrameLayout;
 
 import org.telegram.messenger.AndroidUtilities;
@@ -20,6 +21,7 @@ public class SizeNotifierFrameLayoutPhoto extends FrameLayout {
     private Rect rect = new Rect();
     private int keyboardHeight;
     private SizeNotifierFrameLayoutPhotoDelegate delegate;
+    private WindowManager windowManager;
 
     public interface SizeNotifierFrameLayoutPhotoDelegate {
         void onSizeChanged(int keyboardHeight, boolean isWidthGreater);
@@ -43,7 +45,14 @@ public class SizeNotifierFrameLayoutPhoto extends FrameLayout {
         View rootView = getRootView();
         int usableViewHeight = rootView.getHeight() - AndroidUtilities.getViewInset(rootView);
         getWindowVisibleDisplayFrame(rect);
-        return (rect.bottom - rect.top) - usableViewHeight;
+        int top = rect.top;
+        int size = (rect.bottom - rect.top);
+
+        size = AndroidUtilities.displaySize.y - top - usableViewHeight;
+        if (size <= AndroidUtilities.dp(10)) {
+            size = 0;
+        }
+        return size;
     }
 
     public void notifyHeightChanged() {

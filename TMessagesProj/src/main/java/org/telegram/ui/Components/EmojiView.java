@@ -1166,7 +1166,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
         ArrayList<TLRPC.TL_messages_stickerSet> packs = StickersQuery.getStickerSets();
         for (int a = 0; a < packs.size(); a++) {
             TLRPC.TL_messages_stickerSet pack = packs.get(a);
-            if ((pack.set.flags & 2) != 0 || pack.documents == null || pack.documents.isEmpty()) {
+            if (pack.set.disabled || pack.documents == null || pack.documents.isEmpty()) {
                 continue;
             }
             stickerSets.add(pack);

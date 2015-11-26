@@ -273,7 +273,7 @@ public class LastSeenUsersActivity extends BaseFragment implements NotificationC
             int type = getItemViewType(i);
             if (type == 0) {
                 if (view == null) {
-                    view = new UserCell(mContext, 1);
+                    view = new UserCell(mContext, 1, 0);
                 }
                 TLRPC.User user = MessagesController.getInstance().getUser(uidArray.get(i));
                 ((UserCell)view).setData(user, null, user.phone != null && user.phone.length() != 0 ? PhoneFormat.getInstance().format("+" + user.phone) : LocaleController.getString("NumberUnknown", R.string.NumberUnknown), 0);

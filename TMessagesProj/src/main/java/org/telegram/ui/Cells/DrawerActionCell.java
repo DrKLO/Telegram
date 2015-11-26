@@ -15,6 +15,7 @@ import android.widget.FrameLayout;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.FileLog;
 import org.telegram.ui.Components.LayoutHelper;
 
 public class DrawerActionCell extends FrameLayout {
@@ -42,7 +43,11 @@ public class DrawerActionCell extends FrameLayout {
     }
 
     public void setTextAndIcon(String text, int resId) {
-        textView.setText(text);
-        textView.setCompoundDrawablesWithIntrinsicBounds(resId, 0, 0, 0);
+        try {
+            textView.setText(text);
+            textView.setCompoundDrawablesWithIntrinsicBounds(resId, 0, 0, 0);
+        } catch (Throwable e) {
+            FileLog.e("tmessages", e);
+        }
     }
 }

@@ -16,17 +16,18 @@ public class ChatObject {
     public static final int CHAT_TYPE_BROADCAST = 1;
     public static final int CHAT_TYPE_CHANNEL = 2;
     public static final int CHAT_TYPE_USER = 3;
+    public static final int CHAT_TYPE_MEGAGROUP = 4;
 
     public static boolean isLeftFromChat(TLRPC.Chat chat) {
-        return chat == null || chat instanceof TLRPC.TL_chatForbidden || chat instanceof TLRPC.TL_channelForbidden || (chat.flags & TLRPC.CHAT_FLAG_USER_LEFT) != 0;
+        return chat == null || chat instanceof TLRPC.TL_chatEmpty || chat instanceof TLRPC.TL_chatForbidden || chat instanceof TLRPC.TL_channelForbidden || chat.left || chat.deactivated;
     }
 
     public static boolean isKickedFromChat(TLRPC.Chat chat) {
-        return chat == null || chat instanceof TLRPC.TL_chatForbidden || chat instanceof TLRPC.TL_channelForbidden || (chat.flags & TLRPC.CHAT_FLAG_USER_KICKED) != 0;
+        return chat == null || chat instanceof TLRPC.TL_chatEmpty || chat instanceof TLRPC.TL_chatForbidden || chat instanceof TLRPC.TL_channelForbidden || chat.kicked || chat.deactivated;
     }
 
     public static boolean isNotInChat(TLRPC.Chat chat) {
-        return chat == null || chat instanceof TLRPC.TL_chatForbidden || chat instanceof TLRPC.TL_channelForbidden || (chat.flags & TLRPC.CHAT_FLAG_USER_LEFT) != 0 || (chat.flags & TLRPC.CHAT_FLAG_USER_KICKED) != 0;
+        return chat == null || chat instanceof TLRPC.TL_chatEmpty || chat instanceof TLRPC.TL_chatForbidden || chat instanceof TLRPC.TL_channelForbidden || chat.left || chat.kicked || chat.deactivated;
     }
 
     public static boolean isChannel(TLRPC.Chat chat) {
@@ -40,11 +41,11 @@ public class ChatObject {
 
     public static boolean isCanWriteToChannel(int chatId) {
         TLRPC.Chat chat = MessagesController.getInstance().getChat(chatId);
-        return chat != null && ((chat.flags & TLRPC.CHAT_FLAG_ADMIN) != 0 || (chat.flags & TLRPC.CHAT_FLAG_USER_IS_EDITOR) != 0);
+        return chat != null && (chat.creator || chat.editor || chat.megagroup);
     }
 
     public static boolean canWriteToChat(TLRPC.Chat chat) {
-        return !isChannel(chat) || (chat.flags & TLRPC.CHAT_FLAG_ADMIN) != 0 || (chat.flags & TLRPC.CHAT_FLAG_USER_IS_EDITOR) != 0 || (chat.flags & TLRPC.CHAT_FLAG_IS_BROADCAST) == 0;
+        return !isChannel(chat) || chat.creator || chat.editor || !chat.broadcast;
     }
 
     public static TLRPC.Chat getChatByDialog(long did) {

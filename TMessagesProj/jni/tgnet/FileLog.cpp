@@ -18,7 +18,9 @@
 FILE *logFile = nullptr;
 
 void FileLog::init(std::string path) {
-    logFile = fopen(path.c_str(), "w");
+    if (path.size() > 0) {
+        logFile = fopen(path.c_str(), "w");
+    }
 }
 
 void FileLog::e(const char *message, ...) {

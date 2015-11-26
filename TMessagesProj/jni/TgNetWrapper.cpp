@@ -96,7 +96,7 @@ void sendRequest(JNIEnv *env, jclass c, jint object, jobject onComplete, jobject
         if (onQuickAck != nullptr) {
             jniEnv->CallVoidMethod(onQuickAck, jclass_QuickAckDelegate_run);
         }
-    }), flags, datacenterId, (ConnectionType) connetionType, immediate, onComplete, onQuickAck);
+    }), flags, datacenterId, (ConnectionType) connetionType, immediate, token, onComplete, onQuickAck);
 }
 
 void cancelRequest(JNIEnv *env, jclass c, jint token, jboolean notifyServer) {

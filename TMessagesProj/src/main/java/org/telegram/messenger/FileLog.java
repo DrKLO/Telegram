@@ -67,6 +67,9 @@ public class FileLog {
     }
 
     public static String getNetworkLogPath() {
+        if (!BuildVars.DEBUG_VERSION) {
+            return "";
+        }
         try {
             File sdCard = ApplicationLoader.applicationContext.getExternalFilesDir(null);
             if (sdCard == null) {

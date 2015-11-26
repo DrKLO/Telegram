@@ -75,7 +75,7 @@ public class ImageLoader {
     private HashMap<String, Runnable> retryHttpsTasks = new HashMap<>();
     private int currentHttpFileLoadTasksCount = 0;
 
-    protected VMRuntimeHack runtimeHack = null;
+    public VMRuntimeHack runtimeHack = null;
     private String ignoreRemoval = null;
 
     private volatile long lastCacheOutTime = 0;
@@ -1162,7 +1162,18 @@ public class ImageLoader {
                 FileLog.e("tmessages", "file system changed");
                 Runnable r = new Runnable() {
                     public void run() {
-                        FileLoader.getInstance().setMediaDirs(createMediaPaths());
+                        cacheOutQueue.postRunnable(new Runnable() {
+                            @Override
+                            public void run() {
+                                final HashMap<Integer, File> paths = createMediaPaths();
+                                AndroidUtilities.runOnUIThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        FileLoader.getInstance().setMediaDirs(paths);
+                                    }
+                                });
+                            }
+                        });
                     }
                 };
                 if (Intent.ACTION_MEDIA_UNMOUNTED.equals(intent.getAction())) {
@@ -1186,7 +1197,35 @@ public class ImageLoader {
         filter.addDataScheme("file");
         ApplicationLoader.applicationContext.registerReceiver(receiver, filter);
 
-        FileLoader.getInstance().setMediaDirs(createMediaPaths());
+        HashMap<Integer, File> mediaDirs = new HashMap<>();
+        File cachePath = AndroidUtilities.getCacheDir();
+        if (!cachePath.isDirectory()) {
+            try {
+                cachePath.mkdirs();
+            } catch (Exception e) {
+                FileLog.e("tmessages", e);
+            }
+        }
+        try {
+            new File(cachePath, ".nomedia").createNewFile();
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
+        mediaDirs.put(FileLoader.MEDIA_DIR_CACHE, cachePath);
+        FileLoader.getInstance().setMediaDirs(mediaDirs);
+
+        cacheOutQueue.postRunnable(new Runnable() {
+            @Override
+            public void run() {
+                final HashMap<Integer, File> paths = createMediaPaths();
+                AndroidUtilities.runOnUIThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        FileLoader.getInstance().setMediaDirs(paths);
+                    }
+                });
+            }
+        });
     }
 
     public HashMap<Integer, File> createMediaPaths() {

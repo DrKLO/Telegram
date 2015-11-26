@@ -57,8 +57,10 @@ public class ChannelUsersActivity extends BaseFragment implements NotificationCe
     private int chatId;
     private int type;
     private boolean loadingUsers;
+    private boolean firstLoaded;
     private boolean isAdmin;
     private boolean isPublic;
+    private boolean isMegagroup;
     private int participantsStartRow;
 
     public ChannelUsersActivity(Bundle args) {
@@ -66,9 +68,12 @@ public class ChannelUsersActivity extends BaseFragment implements NotificationCe
         chatId = arguments.getInt("chat_id");
         type = arguments.getInt("type");
         TLRPC.Chat chat = MessagesController.getInstance().getChat(chatId);
-        if (chat != null && (chat.flags & TLRPC.CHAT_FLAG_ADMIN) != 0) {
-            isAdmin = true;
-            isPublic = (chat.flags & TLRPC.CHAT_FLAG_IS_PUBLIC) != 0;
+        if (chat != null) {
+            if (chat.creator) {
+                isAdmin = true;
+                isPublic = (chat.flags & TLRPC.CHAT_FLAG_IS_PUBLIC) != 0;
+            }
+            isMegagroup = chat.megagroup;
         }
         if (type == 0) {
             participantsStartRow = 0;
@@ -121,7 +126,11 @@ public class ChannelUsersActivity extends BaseFragment implements NotificationCe
 
         emptyView = new EmptyTextProgressView(context);
         if (type == 0) {
-            emptyView.setText(LocaleController.getString("NoBlocked", R.string.NoBlocked));
+            if (isMegagroup) {
+                emptyView.setText(LocaleController.getString("NoBlockedGroup", R.string.NoBlockedGroup));
+            } else {
+                emptyView.setText(LocaleController.getString("NoBlocked", R.string.NoBlocked));
+            }
         }
         frameLayout.addView(emptyView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
@@ -171,6 +180,9 @@ public class ChannelUsersActivity extends BaseFragment implements NotificationCe
                             args.putBoolean("returnAsResult", true);
                             args.putBoolean("needForwardCount", false);
                             args.putBoolean("allowUsernameSearch", true);
+                            if (isMegagroup) {
+                                args.putBoolean("allowBots", false);
+                            }
                             args.putString("selectAlertString", LocaleController.getString("ChannelAddUserAdminAlert", R.string.ChannelAddUserAdminAlert));
                             ContactsActivity fragment = new ContactsActivity(args);
                             fragment.setDelegate(new ContactsActivity.ContactsActivityDelegate() {
@@ -195,7 +207,7 @@ public class ChannelUsersActivity extends BaseFragment implements NotificationCe
             }
         });
 
-        if (isAdmin) {
+        if (isAdmin || isMegagroup && type == 0) {
             listView.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
                 @Override
                 public boolean onItemLongClick(AdapterView<?> adapterView, View view, int i, long l) {
@@ -280,18 +292,19 @@ public class ChannelUsersActivity extends BaseFragment implements NotificationCe
         ConnectionsManager.getInstance().sendRequest(req, new RequestDelegate() {
             @Override
             public void run(TLObject response, final TLRPC.TL_error error) {
-                if (response instanceof TLRPC.TL_boolTrue) {
+                if (error == null) {
+                    MessagesController.getInstance().processUpdates((TLRPC.Updates) response, false);
                     AndroidUtilities.runOnUIThread(new Runnable() {
                         @Override
                         public void run() {
                             MessagesController.getInstance().loadFullChat(chatId, 0, true);
                         }
                     }, 1000);
-                } else if (error != null) {
+                } else {
                     AndroidUtilities.runOnUIThread(new Runnable() {
                         @Override
                         public void run() {
-                            AlertsCreator.showAddUserAlert(error.text, ChannelUsersActivity.this);
+                            AlertsCreator.showAddUserAlert(error.text, ChannelUsersActivity.this, !isMegagroup);
                         }
                     });
                 }
@@ -329,7 +342,7 @@ public class ChannelUsersActivity extends BaseFragment implements NotificationCe
             return;
         }
         loadingUsers = true;
-        if (emptyView != null) {
+        if (emptyView != null && !firstLoaded) {
             emptyView.showProgress();
         }
         if (listViewAdapter != null) {
@@ -421,6 +434,7 @@ public class ChannelUsersActivity extends BaseFragment implements NotificationCe
                             }
                         }
                         loadingUsers = false;
+                        firstLoaded = true;
                         if (emptyView != null) {
                             emptyView.showTextView();
                         }
@@ -486,7 +500,7 @@ public class ChannelUsersActivity extends BaseFragment implements NotificationCe
 
         @Override
         public int getCount() {
-            if (participants.isEmpty() && type == 0 || loadingUsers) {
+            if (participants.isEmpty() && type == 0 || loadingUsers && !firstLoaded) {
                 return 0;
             }
             return participants.size() + participantsStartRow + 1;
@@ -512,7 +526,7 @@ public class ChannelUsersActivity extends BaseFragment implements NotificationCe
             int viewType = getItemViewType(i);
             if (viewType == 0) {
                 if (view == null) {
-                    view = new UserCell(mContext, 1);
+                    view = new UserCell(mContext, 1, 0);
                     view.setBackgroundColor(0xffffffff);
                 }
                 UserCell userCell = (UserCell) view;
@@ -540,19 +554,27 @@ public class ChannelUsersActivity extends BaseFragment implements NotificationCe
                     view = new TextInfoPrivacyCell(mContext);
                 }
                 if (type == 0) {
-                    ((TextInfoPrivacyCell) view).setText(LocaleController.getString("UnblockText", R.string.UnblockText));
+                    ((TextInfoPrivacyCell) view).setText(String.format("%1$s\n\n%2$s", LocaleController.getString("NoBlockedGroup", R.string.NoBlockedGroup), LocaleController.getString("UnblockText", R.string.UnblockText)));
                     view.setBackgroundResource(R.drawable.greydivider_bottom);
                 } else if (type == 1) {
                     if (i == 1 && isAdmin) {
-                        ((TextInfoPrivacyCell) view).setText(LocaleController.getString("ChannelAdminsInfo", R.string.ChannelAdminsInfo));
+                        if (isMegagroup) {
+                            ((TextInfoPrivacyCell) view).setText(LocaleController.getString("MegaAdminsInfo", R.string.MegaAdminsInfo));
+                        } else {
+                            ((TextInfoPrivacyCell) view).setText(LocaleController.getString("ChannelAdminsInfo", R.string.ChannelAdminsInfo));
+                        }
                         view.setBackgroundResource(R.drawable.greydivider);
                     } else {
                         ((TextInfoPrivacyCell) view).setText("");
                         view.setBackgroundResource(R.drawable.greydivider_bottom);
                     }
                 } else if (type == 2) {
-                    if ((!isPublic && i == 2 || i == 1) &&isAdmin) {
-                        ((TextInfoPrivacyCell) view).setText(LocaleController.getString("ChannelMembersInfo", R.string.ChannelMembersInfo));
+                    if ((!isPublic && i == 2 || i == 1) && isAdmin) {
+                        if (isMegagroup) {
+                            ((TextInfoPrivacyCell) view).setText("");
+                        } else {
+                            ((TextInfoPrivacyCell) view).setText(LocaleController.getString("ChannelMembersInfo", R.string.ChannelMembersInfo));
+                        }
                         view.setBackgroundResource(R.drawable.greydivider);
                     } else {
                         ((TextInfoPrivacyCell) view).setText("");

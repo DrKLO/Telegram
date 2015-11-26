@@ -70,6 +70,7 @@ public class AlertsCreator {
                             editor.putInt("notifyuntil_" + dialog_id, untilTime);
                             flags = ((long) untilTime << 32) | 1;
                         }
+                        NotificationsController.getInstance().removeNotificationsForDialog(dialog_id);
                         MessagesStorage.getInstance().setDialogFlags(dialog_id, flags);
                         editor.commit();
                         TLRPC.Dialog dialog = MessagesController.getInstance().dialogs_dict.get(dialog_id);
@@ -84,7 +85,7 @@ public class AlertsCreator {
         return builder.create();
     }
 
-    public static void showAddUserAlert(String error, final BaseFragment fragment) {
+    public static void showAddUserAlert(String error, final BaseFragment fragment, boolean isChannel) {
         if (error == null || fragment == null || fragment.getParentActivity() == null) {
             return;
         }
@@ -109,16 +110,39 @@ public class AlertsCreator {
             case "USER_BLOCKED":
             case "USER_BOT":
             case "USER_ID_INVALID":
-                builder.setMessage(LocaleController.getString("ChannelUserCantAdd", R.string.ChannelUserCantAdd));
+                if (isChannel) {
+                    builder.setMessage(LocaleController.getString("ChannelUserCantAdd", R.string.ChannelUserCantAdd));
+                } else {
+                    builder.setMessage(LocaleController.getString("GroupUserCantAdd", R.string.GroupUserCantAdd));
+                }
                 break;
             case "USERS_TOO_MUCH":
-                builder.setMessage(LocaleController.getString("ChannelUserAddLimit", R.string.ChannelUserAddLimit));
+                if (isChannel) {
+                    builder.setMessage(LocaleController.getString("ChannelUserAddLimit", R.string.ChannelUserAddLimit));
+                } else {
+                    builder.setMessage(LocaleController.getString("GroupUserAddLimit", R.string.GroupUserAddLimit));
+                }
                 break;
             case "USER_NOT_MUTUAL_CONTACT":
-                builder.setMessage(LocaleController.getString("ChannelUserLeftError", R.string.ChannelUserLeftError));
+                if (isChannel) {
+                    builder.setMessage(LocaleController.getString("ChannelUserLeftError", R.string.ChannelUserLeftError));
+                } else {
+                    builder.setMessage(LocaleController.getString("GroupUserLeftError", R.string.GroupUserLeftError));
+                }
                 break;
             case "ADMINS_TOO_MUCH":
-                builder.setMessage(LocaleController.getString("ChannelUserCantAdmin", R.string.ChannelUserCantAdmin));
+                if (isChannel) {
+                    builder.setMessage(LocaleController.getString("ChannelUserCantAdmin", R.string.ChannelUserCantAdmin));
+                } else {
+                    builder.setMessage(LocaleController.getString("GroupUserCantAdmin", R.string.GroupUserCantAdmin));
+                }
+                break;
+            case "BOTS_TOO_MUCH":
+                if (isChannel) {
+                    builder.setMessage(LocaleController.getString("ChannelUserCantBot", R.string.ChannelUserCantBot));
+                } else {
+                    builder.setMessage(LocaleController.getString("GroupUserCantBot", R.string.GroupUserCantBot));
+                }
                 break;
         }
         builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), null);

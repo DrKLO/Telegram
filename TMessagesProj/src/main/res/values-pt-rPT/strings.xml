@@ -4,6 +4,7 @@
 
 <resources>
     <string name="AppName">Telegram</string>
+    <string name="AppNameBeta">Telegram Beta</string>
     <string name="LanguageName">Português (Brasil)</string>
     <string name="LanguageNameInEnglish">Português (Brasil)</string>
     <string name="LanguageCode">pt_BR</string>
@@ -60,12 +61,33 @@
     <string name="MuteDisable">Desativar</string>
     <string name="Hashtags">HASHTAGS</string>
     <string name="Recent">RECENTE</string>
+    <string name="LinkPreview">Prévia do link</string>
     <!--channels-->
+    <string name="SetAsAdmin">Promover a administrador</string>
+    <string name="DescriptionInfoMega">Você pode fornecer uma descrição opcional para seu grupo.</string>
+    <string name="LeaveMega">Sair do Grupo</string>
+    <string name="DeleteMega">Apagar Grupo</string>
+    <string name="LeaveMegaMenu">Sair do Grupo</string>
+    <string name="DeleteMegaMenu">Apagar Grupo</string>
+    <string name="MegaDeleteInfo">Você perderá todas as mensagens neste grupo.</string>
+    <string name="MegaAdminsInfo">Você pode adicionar administradores para ajudar você a gerenciar seu grupo. Toque e segure para removê-los.</string>
+    <string name="MegaDeleteAlert">Espere! Apagar este grupo removerá todos os membros e todas as mensagens serão perdidas. Apagar o grupo mesmo assim?</string>
+    <string name="ActionCreateMega">Grupo criado</string>
+    <string name="MegaAddedBy">un1 adicionou você ao grupo</string>
+    <string name="MegaLeaveAlert">Você tem certeza que deseja sair do grupo?</string>
+    <string name="GroupUserCantAdd">Desculpe, você não pode adicionar este usuário a grupos.</string>
+    <string name="GroupUserAddLimit">Desculpe, este grupo está cheio.</string>
+    <string name="GroupUserLeftError">Desculpe, este usuário decidiu sair deste grupo, de maneira que você não pode convidá-lo de volta.</string>
+    <string name="GroupUserCantAdmin">Desculpe, há administradores demais neste grupo.</string>
+    <string name="GroupUserCantBot">Desculpe, há bots demais neste grupo.</string>
+    <string name="ActionMigrateFromGroup">Este grupo foi atualizado para um supergrupo</string>
+    <string name="ActionMigrateFromGroupNotify">%1$s foi atualizado para um supergrupo</string>
+    <string name="NoBlockedGroup">Usuários bloqueados são removidos do grupo e só podem voltar se convidados por um administrador. Convites por link não funcionam para eles.</string>
     <string name="NewChannel">Novo Canal</string>
     <string name="EnterChannelName">Nome do canal</string>
     <string name="Comments">Comentários</string>
     <string name="CommentsInfo">Se você habilitar comentários, pessoas poderão discutir seu post no canal.</string>
-    <string name="AddMutual">Adicionar contatos para o seu canal</string>
+    <string name="AddMutual">Adicionar contatos no canal</string>
     <string name="ChannelUsernameHelp">Pessoas podem compartilhar esse link com outros e encontrar seu canal usando a busca do Telegram.</string>
     <string name="ChannelUsernamePlaceholder">link</string>
     <string name="ChannelPrivateLinkHelp">Pessoas podem entrar em seu canal com este link. Você pode desativar o link quando quiser.</string>
@@ -83,7 +105,7 @@
     <string name="ChannelSettings">Configurações</string>
     <string name="ChannelJoin">ENTRAR</string>
     <string name="OpenChannelProfile">Info do Canal</string>
-    <string name="ChannelBroadcast">Tramissão</string>
+    <string name="ChannelBroadcast">Transmissão</string>
     <string name="ChannelComment">Comentário</string>
     <string name="ShowDiscussion">mostrar comentários</string>
     <string name="ChannelAlertTitle">O que é um Canal?</string>
@@ -97,7 +119,7 @@
     <string name="LinkChecking">Verificando nome...</string>
     <string name="LinkAvailable">%1$s está disponível.</string>
     <string name="ChannelMembers">Membros</string>
-    <string name="ChannelBlockedUsers">Usuários Bloqueados</string>
+    <string name="ChannelBlockedUsers">Usuários bloqueados</string>
     <string name="ChannelAdministrators">Administradores</string>
     <string name="ChannelDelete">Apagar Canal</string>
     <string name="ChannelDeleteMenu">Apagar Canal</string>
@@ -111,7 +133,6 @@
     <string name="ActionChannelChangedPhoto">Foto do canal alterada</string>
     <string name="ActionChannelRemovedPhoto">Foto do canal removida</string>
     <string name="ActionChannelChangedTitle">Nome do canal alterado para un2</string>
-    <string name="ActionChannelInvite">un1 adicionado ao canal un2</string>
     <string name="ChannelPublicLimitReached">Desculpe, você criou muitos canais públicos. Você pode criar um canal privado ou apagar um de seus canais existentes primeiro.</string>
     <string name="ChannelModerator">Moderador</string>
     <string name="ChannelCreator">Criador</string>
@@ -127,12 +148,12 @@
     <string name="ChannelLinkInfo">Qualquer um com Telegram instalado poderá entrar no seu canal abrindo este link.</string>
     <string name="ChannelAdminsInfo">Você pode adicionar administradores para ajudar você a gerenciar seu canal. Aperte e segure para removê-los.</string>
     <string name="ChannelJoinTo">Você deseja entrar no canal \'%1$s\'?</string>
-    <string name="ChannelCantOpenPrivate">Desculpe, esse canal não é acessível.</string>
-    <string name="ChannelAddToTitle">Adicionar %1$s ao grupo %2$s?</string>
+    <string name="ChannelCantOpenPrivate">Desculpe, esta conversa não pode mais ser acessada.</string>
     <string name="ChannelAddTo">Adicionar %1$s ao canal?</string>
-    <string name="ChannelUserLeftError">Desculpe, esse usuário decidiu sair do grupo, você não pode adicioná-lo novamente.</string>
+    <string name="ChannelUserLeftError">Desculpe, este usuário decidiu sair deste canal, então você não pode convidá-lo de volta.</string>
     <string name="ChannelUserCantAdd">Desculpe, você não pode adicionar esse usuário em canais.</string>
     <string name="ChannelUserCantAdmin">Desculpe, muitos administradores nesse canal.</string>
+    <string name="ChannelUserCantBot">Desculpe, há bots demais neste canal.</string>
     <string name="ChannelUserAddLimit">Desculpe, você só pode adicionar os primeiros 200 membros ao canal. Note que um número ilimitado de pessoas podem entrar via link do canal.</string>
     <string name="ChannelAddedBy">un1 adicionou você ao canal</string>
     <string name="ChannelJoined">Você entrou no canal</string>
@@ -242,6 +263,7 @@
     <string name="NobodyLikesSpam2">Desculpe, você só pode adicionar contatos mútuos à grupos no momento.</string>
     <string name="NobodyLikesSpamUrl">https://telegram.org/faq/br#no-consigo-enviar-mensagens-para-no-contatos</string>
     <string name="MoreInfo">Mais informações</string>
+    <string name="ShareSendTo">Enviar para...</string>
     <!--notification-->
     <string name="MessageLifetimeChanged">%1$s estabeleceu o tempo de autodestruição para %2$s </string>
     <string name="MessageLifetimeChangedOutgoing">Você estabeleceu o tempo de autodestruição para %1$s</string>
@@ -275,7 +297,7 @@
     <string name="NotificationGroupKickYou">%1$s removeu você do grupo %2$s</string>
     <string name="NotificationGroupLeftMember">%1$s saiu do grupo %2$s</string>
     <string name="NotificationContactJoined">%1$s entrou para o Telegram!</string>
-    <string name="NotificationUnrecognizedDevice">%1$s,\nNós detectamos que alguém acessou a sua conta a partir de um novo aparelho em %2$s\n\nAparelho: %3$s\nLocalização: %4$s\n\nSe não foi você, você pode ir em Configurações - Provacidade e Segurança - Sessões, e terminar aquela sessão.\n\nSe você acha que alguém acessou a sua conta contra a sua vontade, você pode habilitar a verificação em duas etapas nas configurações de Privacidade e Segurança.\n\nAtenciosamente,\nEquipe Telegram</string>
+    <string name="NotificationUnrecognizedDevice">%1$s,\nNós detectamos que alguém acessou a sua conta a partir de um novo aparelho em %2$s\n\nAparelho: %3$s\nLocalização: %4$s\n\nSe não foi você, você pode ir em Configurações - Privacidade e Segurança - Sessões, e terminar aquela sessão.\n\nSe você acha que alguém acessou a sua conta contra a sua vontade, você pode habilitar a verificação em duas etapas nas configurações de Privacidade e Segurança.\n\nAtenciosamente,\nEquipe Telegram</string>
     <string name="NotificationContactNewPhoto">%1$s atualizou a foto do perfil</string>
     <string name="NotificationInvitedToGroupByLink">%1$s entrou para o grupo %2$s via link de convite</string>
     <string name="Reply">Responder</string>
@@ -317,13 +339,22 @@
     <string name="CopyLink">Copiar Link</string>
     <string name="ShareLink">Compartilhar Link</string>
     <string name="LinkInfo">Qualquer um com Telegram instalado poderá entrar no seu grupo abrindo este link.</string>
+    <!--set admins view-->
+    <string name="SetAdminsTitle">Administradores de Conversas</string>
+    <string name="SetAdminsAll">Todos os membros são Administradores</string>
+    <string name="SetAdminsAllInfo">Todos os membros podem adicionar novos membros, editar o nome e a foto do grupo.</string>
+    <string name="SetAdminsNotAllInfo">Somente administradores podem adicionar e remover membros, editar nome foto do grupo.</string>
     <!--group info view-->
     <string name="SharedMedia">Mídia Compartilhada</string>
     <string name="SETTINGS">Configurações</string>
     <string name="AddMember">Adicionar membro</string>
+    <string name="SetAdmins">Definir administradores</string>
     <string name="DeleteAndExit">Apagar e sair do grupo</string>
     <string name="Notifications">Notificações</string>
     <string name="KickFromGroup">Remover do grupo</string>
+    <string name="ConvertGroup">Atualizar para Supergrupo</string>
+    <string name="ConvertGroupAlert">Por favor note que os membros do grupo precisarão atualizar o aplicativo do Telegram até a última versão para verem seu supergrupo. Você tem certeza que deseja atualizar este grupo?</string>
+    <string name="ConvertGroupInfo"><![CDATA[<b>]]>Limite de membros atingido.<![CDATA[</b>]]>\n\nPara ir além do limite e ter funções adcionais, atualize para um supergrupo:\n\n• Supergrupos podem ter até %1$s\n• Novos membros veêm todo o histórico de conversas\n• Administradores deletam mensagens para todos\n• Notificações são silenciadas por padrão</string>
     <!--contact info view-->
     <string name="ShareContact">Compartilhar</string>
     <string name="AddContact">Adicionar</string>
@@ -657,8 +688,8 @@
     <string name="BotInvite">Adicionar Ao Grupo</string>
     <string name="BotSettings">Configurações</string>
     <string name="BotHelp">Ajuda</string>
-    <string name="BotStatusRead">tem acesso as mensagens</string>
-    <string name="BotStatusCantRead">não tem acesso as mensagens</string>
+    <string name="BotStatusRead">tem acesso às mensagens</string>
+    <string name="BotStatusCantRead">não tem acesso às mensagens</string>
     <string name="BotInfoTitle">O que esse bot pode fazer?</string>
     <string name="BotStart">COMEÇAR</string>
     <string name="BotUnblock">REINICIAR</string>
@@ -677,6 +708,7 @@
     <string name="Call">Ligar</string>
     <string name="Copy">Copiar</string>
     <string name="Delete">Apagar</string>
+    <string name="DeleteAndStop">Apagar e parar</string>
     <string name="Forward">Encaminhar</string>
     <string name="Retry">Tentar novamente</string>
     <string name="FromCamera">Câmera</string>
@@ -731,12 +763,13 @@
     <string name="NoHandleAppInstalled">Você não possui um aplicativo que suporte o tipo de arquivo \'%1$s\', por favor instale um para continuar</string>
     <string name="InviteUser">Este usuário ainda não possui Telegram, deseja enviar um convite?</string>
     <string name="AreYouSure">Você tem certeza?</string>
-    <string name="AddToTheGroupTitle">Adicionar %1$s ao grupo %2$s?</string>
+    <string name="AddToTheGroupTitle">Adcione %1$s ao chat %2$s?</string>
     <string name="AddToTheGroupForwardCount">Número de mensagens antigas para encaminhar:</string>
     <string name="AddToTheGroup">Adicionar %1$s no grupo?</string>
     <string name="UserAlreadyInGroup">Este usuário já está neste grupo</string>
     <string name="ForwardMessagesTo">Encaminhar mensagem para %1$s?</string>
     <string name="SendMessagesTo">Enviar mensagens para %1$s?</string>
+    <string name="SendContactTo">Enviar contato para %1$s?</string>
     <string name="AreYouSureLogout">Você tem certeza que desejar sair?\n\nSaiba que você pode usar o Telegram em vários dispositivos de uma vez.\n\nLembre-se, sair apaga todos os seus Chats Secretos.</string>
     <string name="AreYouSureSessions">Você tem certeza que deseja terminar todas as outras sessões?</string>
     <string name="AreYouSureDeleteAndExit">Você tem certeza que apagar e sair do grupo?</string>
@@ -750,6 +783,7 @@
     <string name="AreYouSureClearHistory">Você tem certeza que deseja limpar o histórico?</string>
     <string name="AreYouSureDeleteMessages">Você tem certeza que deseja apagar %1$s?</string>
     <string name="SendMessagesToGroup">Enviar mensagens para %1$s?</string>
+    <string name="SendContactToGroup">Enviar contato para %1$s?</string>
     <string name="ForwardMessagesToGroup">Encaminhar mensagem para %1$s?</string>
     <string name="FeatureUnavailable">Desculpe, esta funcionalidade não está disponível para seu país.</string>
     <string name="NoUsernameFound">Não há conta do Telegram com esse nome de usuário</string>
@@ -976,6 +1010,6 @@
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s às %2$s</string>
     <!--update text-->
-    <string name="updateText">Telegram para Android foi atualizado. Novidades na versão 3.2.5:\n\n- Novas animações e melhorias no visual\n- Suporte para novos emojis\n- Outras melhorias e resoluções de bugs</string>
-    <string name="updateBuild">647</string>
+    <string name="updateText">Telegram para Android foi atualizado. Novidades na versão 3.3.0:\n\n- Os grupos agora podem ter múltiplos administradores com permissão para editar o nome e a imagem do grupo, adicionar e remover membros.\n- Os grupos que alcançarem 200 usuários podem ser transformados em supergrupos, que permitem até 1000 membros.\n- Os canais contam com um botão de compartilhamento rápido ao lado das mensagens.\n\nVocê pode ver mais sobre os supergrupos e sobre os demais assuntos no nosso blog:\nhttps://telegram.org/blog/supergroups</string>
+    <string name="updateBuild">677</string>
 </resources>

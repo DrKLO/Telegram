@@ -56,6 +56,7 @@ import org.telegram.messenger.AnimationCompat.AnimatorListenerAdapterProxy;
 import org.telegram.messenger.AnimationCompat.AnimatorSetProxy;
 import org.telegram.messenger.AnimationCompat.ObjectAnimatorProxy;
 import org.telegram.messenger.AnimationCompat.ViewProxy;
+import org.telegram.ui.Components.HintEditText;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.SlideView;
 import org.telegram.ui.Components.TypefaceSpan;
@@ -259,7 +260,7 @@ public class ChangePhoneActivity extends BaseFragment {
     public class PhoneView extends SlideView implements AdapterView.OnItemSelectedListener {
 
         private EditText codeField;
-        private EditText phoneField;
+        private HintEditText phoneField;
         private TextView countryButton;
 
         private int countryState = 0;
@@ -267,6 +268,7 @@ public class ChangePhoneActivity extends BaseFragment {
         private ArrayList<String> countriesArray = new ArrayList<>();
         private HashMap<String, String> countriesMap = new HashMap<>();
         private HashMap<String, String> codesMap = new HashMap<>();
+        private HashMap<String, String> phoneFormatMap = new HashMap<>();
 
         private boolean ignoreSelection = false;
         private boolean ignoreOnTextChange = false;
@@ -287,14 +289,7 @@ public class ChangePhoneActivity extends BaseFragment {
             countryButton.setEllipsize(TextUtils.TruncateAt.END);
             countryButton.setGravity(Gravity.LEFT | Gravity.CENTER_HORIZONTAL);
             countryButton.setBackgroundResource(R.drawable.spinner_states);
-            addView(countryButton);
-            LayoutParams layoutParams = (LayoutParams) countryButton.getLayoutParams();
-            layoutParams.width = LayoutHelper.MATCH_PARENT;
-            layoutParams.height = AndroidUtilities.dp(36);
-            layoutParams.leftMargin = AndroidUtilities.dp(20);
-            layoutParams.rightMargin = AndroidUtilities.dp(20);
-            layoutParams.bottomMargin = AndroidUtilities.dp(14);
-            countryButton.setLayoutParams(layoutParams);
+            addView(countryButton, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 36, 20, 0, 20, 14));
             countryButton.setOnClickListener(new OnClickListener() {
                 @Override
                 public void onClick(View view) {
@@ -303,7 +298,14 @@ public class ChangePhoneActivity extends BaseFragment {
                         @Override
                         public void didSelectCountry(String name) {
                             selectCountry(name);
+                            AndroidUtilities.runOnUIThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    AndroidUtilities.showKeyboard(phoneField);
+                                }
+                            }, 300);
                             phoneField.requestFocus();
+                            phoneField.setSelection(phoneField.length());
                         }
                     });
                     presentFragment(fragment);
@@ -313,34 +315,17 @@ public class ChangePhoneActivity extends BaseFragment {
             View view = new View(context);
             view.setPadding(AndroidUtilities.dp(12), 0, AndroidUtilities.dp(12), 0);
             view.setBackgroundColor(0xffdbdbdb);
-            addView(view);
-            layoutParams = (LayoutParams) view.getLayoutParams();
-            layoutParams.width = LayoutHelper.MATCH_PARENT;
-            layoutParams.height = 1;
-            layoutParams.leftMargin = AndroidUtilities.dp(24);
-            layoutParams.rightMargin = AndroidUtilities.dp(24);
-            layoutParams.topMargin = AndroidUtilities.dp(-17.5f);
-            view.setLayoutParams(layoutParams);
+            addView(view, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 1, 24, -17.5f, 24, 0));
 
             LinearLayout linearLayout = new LinearLayout(context);
             linearLayout.setOrientation(HORIZONTAL);
-            addView(linearLayout);
-            layoutParams = (LayoutParams) linearLayout.getLayoutParams();
-            layoutParams.width = LayoutHelper.MATCH_PARENT;
-            layoutParams.height = LayoutHelper.WRAP_CONTENT;
-            layoutParams.topMargin = AndroidUtilities.dp(20);
-            linearLayout.setLayoutParams(layoutParams);
+            addView(linearLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 20, 0, 0));
 
             TextView textView = new TextView(context);
             textView.setText("+");
             textView.setTextColor(0xff212121);
             textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
-            linearLayout.addView(textView);
-            layoutParams = (LayoutParams) textView.getLayoutParams();
-            layoutParams.width = LayoutHelper.WRAP_CONTENT;
-            layoutParams.height = LayoutHelper.WRAP_CONTENT;
-            layoutParams.leftMargin = AndroidUtilities.dp(24);
-            textView.setLayoutParams(layoutParams);
+            linearLayout.addView(textView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 24, 0, 0, 0));
 
             codeField = new EditText(context);
             codeField.setInputType(InputType.TYPE_CLASS_PHONE);
@@ -352,15 +337,9 @@ public class ChangePhoneActivity extends BaseFragment {
             codeField.setGravity(Gravity.LEFT | Gravity.CENTER_VERTICAL);
             codeField.setImeOptions(EditorInfo.IME_ACTION_NEXT | EditorInfo.IME_FLAG_NO_EXTRACT_UI);
             InputFilter[] inputFilters = new InputFilter[1];
-            inputFilters[0] = new InputFilter.LengthFilter(4);
+            inputFilters[0] = new InputFilter.LengthFilter(5);
             codeField.setFilters(inputFilters);
-            linearLayout.addView(codeField);
-            layoutParams = (LayoutParams) codeField.getLayoutParams();
-            layoutParams.width = AndroidUtilities.dp(55);
-            layoutParams.height = AndroidUtilities.dp(36);
-            layoutParams.rightMargin = AndroidUtilities.dp(16);
-            layoutParams.leftMargin = AndroidUtilities.dp(-9);
-            codeField.setLayoutParams(layoutParams);
+            linearLayout.addView(codeField, LayoutHelper.createLinear(55, 36, -9, 0, 16, 0));
             codeField.addTextChangedListener(new TextWatcher() {
                 @Override
                 public void beforeTextChanged(CharSequence charSequence, int i, int i2, int i3) {
@@ -383,26 +362,57 @@ public class ChangePhoneActivity extends BaseFragment {
                     codeField.setText(text);
                     if (text.length() == 0) {
                         countryButton.setText(LocaleController.getString("ChooseCountry", R.string.ChooseCountry));
+                        phoneField.setHintText(null);
                         countryState = 1;
                     } else {
-                        String country = codesMap.get(text);
+                        String country;
+                        boolean ok = false;
+                        String textToSet = null;
+                        if (text.length() > 4) {
+                            ignoreOnTextChange = true;
+                            for (int a = 4; a >= 1; a--) {
+                                String sub = text.substring(0, a);
+                                country = codesMap.get(sub);
+                                if (country != null) {
+                                    ok = true;
+                                    textToSet = text.substring(a, text.length()) + phoneField.getText().toString();
+                                    codeField.setText(text = sub);
+                                    break;
+                                }
+                            }
+                            if (!ok) {
+                                ignoreOnTextChange = true;
+                                textToSet = text.substring(1, text.length()) + phoneField.getText().toString();
+                                codeField.setText(text = text.substring(0, 1));
+                            }
+                        }
+                        country = codesMap.get(text);
                         if (country != null) {
                             int index = countriesArray.indexOf(country);
                             if (index != -1) {
                                 ignoreSelection = true;
                                 countryButton.setText(countriesArray.get(index));
-
-                                updatePhoneField();
+                                String hint = phoneFormatMap.get(text);
+                                phoneField.setHintText(hint != null ? hint.replace('X', '–') : null);
                                 countryState = 0;
                             } else {
                                 countryButton.setText(LocaleController.getString("WrongCountry", R.string.WrongCountry));
+                                phoneField.setHintText(null);
                                 countryState = 2;
                             }
                         } else {
                             countryButton.setText(LocaleController.getString("WrongCountry", R.string.WrongCountry));
+                            phoneField.setHintText(null);
                             countryState = 2;
                         }
-                        codeField.setSelection(codeField.getText().length());
+                        if (!ok) {
+                            codeField.setSelection(codeField.getText().length());
+                        }
+                        if (textToSet != null) {
+                            phoneField.requestFocus();
+                            phoneField.setText(textToSet);
+                            phoneField.setSelection(phoneField.length());
+                        }
                     }
                 }
             });
@@ -411,13 +421,14 @@ public class ChangePhoneActivity extends BaseFragment {
                 public boolean onEditorAction(TextView textView, int i, KeyEvent keyEvent) {
                     if (i == EditorInfo.IME_ACTION_NEXT) {
                         phoneField.requestFocus();
+                        phoneField.setSelection(phoneField.length());
                         return true;
                     }
                     return false;
                 }
             });
 
-            phoneField = new EditText(context);
+            phoneField = new HintEditText(context);
             phoneField.setInputType(InputType.TYPE_CLASS_PHONE);
             phoneField.setTextColor(0xff212121);
             phoneField.setHintTextColor(0xff979797);
@@ -427,43 +438,25 @@ public class ChangePhoneActivity extends BaseFragment {
             phoneField.setMaxLines(1);
             phoneField.setGravity(Gravity.LEFT | Gravity.CENTER_VERTICAL);
             phoneField.setImeOptions(EditorInfo.IME_ACTION_NEXT | EditorInfo.IME_FLAG_NO_EXTRACT_UI);
-            linearLayout.addView(phoneField);
-            layoutParams = (LayoutParams) phoneField.getLayoutParams();
-            layoutParams.width = LayoutHelper.MATCH_PARENT;
-            layoutParams.height = AndroidUtilities.dp(36);
-            layoutParams.rightMargin = AndroidUtilities.dp(24);
-            phoneField.setLayoutParams(layoutParams);
+            linearLayout.addView(phoneField, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 36, 0, 0, 24, 0));
             phoneField.addTextChangedListener(new TextWatcher() {
+
+                private int characterAction = -1;
+                private int actionPosition;
+
                 @Override
                 public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-                    if (ignoreOnPhoneChange) {
-                        return;
-                    }
-                    if (count == 1 && after == 0 && s.length() > 1) {
-                        String phoneChars = "0123456789";
-                        String str = s.toString();
-                        String substr = str.substring(start, start + 1);
-                        if (!phoneChars.contains(substr)) {
-                            ignoreOnPhoneChange = true;
-                            StringBuilder builder = new StringBuilder(str);
-                            int toDelete = 0;
-                            for (int a = start; a >= 0; a--) {
-                                substr = str.substring(a, a + 1);
-                                if(phoneChars.contains(substr)) {
-                                    break;
-                                }
-                                toDelete++;
-                            }
-                            builder.delete(Math.max(0, start - toDelete), start + 1);
-                            str = builder.toString();
-                            if (PhoneFormat.strip(str).length() == 0) {
-                                phoneField.setText("");
-                            } else {
-                                phoneField.setText(str);
-                                updatePhoneField();
-                            }
-                            ignoreOnPhoneChange = false;
+                    if (count == 0 && after == 1) {
+                        characterAction = 1;
+                    } else if (count == 1 && after == 0) {
+                        if (s.charAt(start) == ' ' && start > 0) {
+                            characterAction = 3;
+                            actionPosition = start - 1;
+                        } else {
+                            characterAction = 2;
                         }
+                    } else {
+                        characterAction = -1;
                     }
                 }
 
@@ -477,7 +470,47 @@ public class ChangePhoneActivity extends BaseFragment {
                     if (ignoreOnPhoneChange) {
                         return;
                     }
-                    updatePhoneField();
+                    int start = phoneField.getSelectionStart();
+                    String phoneChars = "0123456789";
+                    String str = phoneField.getText().toString();
+                    if (characterAction == 3) {
+                        str = str.substring(0, actionPosition) + str.substring(actionPosition + 1, str.length());
+                        start--;
+                    }
+                    StringBuilder builder = new StringBuilder(str.length());
+                    for (int a = 0; a < str.length(); a++) {
+                        String ch = str.substring(a, a + 1);
+                        if (phoneChars.contains(ch)) {
+                            builder.append(ch);
+                        }
+                    }
+                    ignoreOnPhoneChange = true;
+                    String hint = phoneField.getHintText();
+                    if (hint != null) {
+                        for (int a = 0; a < builder.length(); a++) {
+                            if (a < hint.length()) {
+                                if (hint.charAt(a) == ' ') {
+                                    builder.insert(a, ' ');
+                                    a++;
+                                    if (start == a && characterAction != 2 && characterAction != 3) {
+                                        start++;
+                                    }
+                                }
+                            } else {
+                                builder.insert(a, ' ');
+                                if (start == a + 1 && characterAction != 2 && characterAction != 3) {
+                                    start++;
+                                }
+                                break;
+                            }
+                        }
+                    }
+                    phoneField.setText(builder);
+                    if (start >= 0) {
+                        phoneField.setSelection(start <= phoneField.length() ? start : phoneField.length());
+                    }
+                    phoneField.onTextChange();
+                    ignoreOnPhoneChange = false;
                 }
             });
             phoneField.setOnEditorActionListener(new TextView.OnEditorActionListener() {
@@ -497,16 +530,7 @@ public class ChangePhoneActivity extends BaseFragment {
             textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             textView.setGravity(Gravity.LEFT);
             textView.setLineSpacing(AndroidUtilities.dp(2), 1.0f);
-            addView(textView);
-            layoutParams = (LayoutParams) textView.getLayoutParams();
-            layoutParams.width = LayoutHelper.WRAP_CONTENT;
-            layoutParams.height = LayoutHelper.WRAP_CONTENT;
-            layoutParams.leftMargin = AndroidUtilities.dp(24);
-            layoutParams.rightMargin = AndroidUtilities.dp(24);
-            layoutParams.topMargin = AndroidUtilities.dp(28);
-            layoutParams.bottomMargin = AndroidUtilities.dp(10);
-            layoutParams.gravity = Gravity.LEFT;
-            textView.setLayoutParams(layoutParams);
+            addView(textView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT, 24, 28, 24, 10));
 
             HashMap<String, String> languageMap = new HashMap<>();
             try {
@@ -517,6 +541,9 @@ public class ChangePhoneActivity extends BaseFragment {
                     countriesArray.add(0, args[2]);
                     countriesMap.put(args[2], args[0]);
                     codesMap.put(args[0], args[2]);
+                    if (args.length > 3) {
+                        phoneFormatMap.put(args[0], args[3]);
+                    }
                     languageMap.put(args[1], args[2]);
                 }
                 reader.close();
@@ -554,12 +581,14 @@ public class ChangePhoneActivity extends BaseFragment {
             }
             if (codeField.length() == 0) {
                 countryButton.setText(LocaleController.getString("ChooseCountry", R.string.ChooseCountry));
+                phoneField.setHintText(null);
                 countryState = 1;
             }
 
             if (codeField.length() != 0) {
                 AndroidUtilities.showKeyboard(phoneField);
                 phoneField.requestFocus();
+                phoneField.setSelection(phoneField.length());
             } else {
                 AndroidUtilities.showKeyboard(codeField);
                 codeField.requestFocus();
@@ -570,37 +599,13 @@ public class ChangePhoneActivity extends BaseFragment {
             int index = countriesArray.indexOf(name);
             if (index != -1) {
                 ignoreOnTextChange = true;
-                codeField.setText(countriesMap.get(name));
+                String code = countriesMap.get(name);
+                codeField.setText(code);
                 countryButton.setText(name);
+                String hint = phoneFormatMap.get(code);
+                phoneField.setHintText(hint != null ? hint.replace('X', '–') : null);
                 countryState = 0;
             }
-        }
-
-        private void updatePhoneField() {
-            ignoreOnPhoneChange = true;
-            try {
-                String codeText = codeField.getText().toString();
-                String phone = PhoneFormat.getInstance().format("+" + codeText + phoneField.getText().toString());
-                int idx = phone.indexOf(" ");
-                if (idx != -1) {
-                    String resultCode = PhoneFormat.stripExceptNumbers(phone.substring(0, idx));
-                    if (!codeText.equals(resultCode)) {
-                        phone = PhoneFormat.getInstance().format(phoneField.getText().toString()).trim();
-                        phoneField.setText(phone);
-                        int len = phoneField.length();
-                        phoneField.setSelection(phoneField.length());
-                    } else {
-                        phoneField.setText(phone.substring(idx).trim());
-                        int len = phoneField.length();
-                        phoneField.setSelection(phoneField.length());
-                    }
-                } else {
-                    phoneField.setSelection(phoneField.length());
-                }
-            } catch (Exception e) {
-                FileLog.e("tmessages", e);
-            }
-            ignoreOnPhoneChange = false;
         }
 
         @Override
@@ -612,7 +617,6 @@ public class ChangePhoneActivity extends BaseFragment {
             ignoreOnTextChange = true;
             String str = countriesArray.get(i);
             codeField.setText(countriesMap.get(str));
-            updatePhoneField();
         }
 
         @Override
@@ -686,8 +690,14 @@ public class ChangePhoneActivity extends BaseFragment {
         public void onShow() {
             super.onShow();
             if (phoneField != null) {
-                AndroidUtilities.showKeyboard(phoneField);
-                phoneField.setSelection(phoneField.length());
+                if (codeField.length() != 0) {
+                    AndroidUtilities.showKeyboard(phoneField);
+                    phoneField.requestFocus();
+                    phoneField.setSelection(phoneField.length());
+                } else {
+                    AndroidUtilities.showKeyboard(codeField);
+                    codeField.requestFocus();
+                }
             }
         }
 
@@ -713,6 +723,7 @@ public class ChangePhoneActivity extends BaseFragment {
         private volatile int codeTime = 15000;
         private double lastCurrentTime;
         private double lastCodeTime;
+        private boolean ignoreOnTextChange;
         private boolean waitingForSms = false;
         private boolean nextPressed = false;
         private String lastError = "";
@@ -755,6 +766,27 @@ public class ChangePhoneActivity extends BaseFragment {
             layoutParams.leftMargin = AndroidUtilities.dp(24);
             layoutParams.rightMargin = AndroidUtilities.dp(24);
             codeField.setLayoutParams(layoutParams);
+            codeField.addTextChangedListener(new TextWatcher() {
+                @Override
+                public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+
+                }
+
+                @Override
+                public void onTextChanged(CharSequence s, int start, int before, int count) {
+
+                }
+
+                @Override
+                public void afterTextChanged(Editable s) {
+                    if (ignoreOnTextChange) {
+                        return;
+                    }
+                    if (codeField.length() == 5) {
+                        onNextPressed();
+                    }
+                }
+            });
             codeField.setOnEditorActionListener(new TextView.OnEditorActionListener() {
                 @Override
                 public boolean onEditorAction(TextView textView, int i, KeyEvent keyEvent) {
@@ -1051,6 +1083,7 @@ public class ChangePhoneActivity extends BaseFragment {
                     return;
                 }
                 if (codeField != null) {
+                    ignoreOnTextChange = true;
                     codeField.setText("" + args[0]);
                     onNextPressed();
                 }

@@ -896,7 +896,7 @@ public class ActionBarLayout extends FrameLayout {
                 onCloseAnimationEndRunnable = new Runnable() {
                     @Override
                     public void run() {
-                        removeFragmentFromStack(currentFragment);
+                        removeFragmentFromStackInternal(currentFragment);
                         setVisibility(GONE);
                         if (backgroundView != null) {
                             backgroundView.setVisibility(GONE);
@@ -935,7 +935,7 @@ public class ActionBarLayout extends FrameLayout {
                 });
                 currentAnimation.start();
             } else {
-                removeFragmentFromStack(currentFragment);
+                removeFragmentFromStackInternal(currentFragment);
                 setVisibility(GONE);
                 if (backgroundView != null) {
                     backgroundView.setVisibility(GONE);
@@ -998,16 +998,24 @@ public class ActionBarLayout extends FrameLayout {
         }
     }
 
-    public void removeFragmentFromStack(BaseFragment fragment) {
+    private void removeFragmentFromStackInternal(BaseFragment fragment) {
         fragment.onPause();
         fragment.onFragmentDestroy();
         fragment.setParentLayout(null);
         fragmentsStack.remove(fragment);
     }
 
+    public void removeFragmentFromStack(BaseFragment fragment) {
+        if (useAlphaAnimations && fragmentsStack.size() == 1 && AndroidUtilities.isTablet()) {
+            closeLastFragment(true);
+        } else {
+            removeFragmentFromStackInternal(fragment);
+        }
+    }
+
     public void removeAllFragments() {
         for (int a = 0; a < fragmentsStack.size(); a++) {
-            removeFragmentFromStack(fragmentsStack.get(a));
+            removeFragmentFromStackInternal(fragmentsStack.get(a));
             a--;
         }
     }

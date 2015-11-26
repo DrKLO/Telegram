@@ -46,14 +46,14 @@ public class LocaleController {
     public static boolean isRTL = false;
     public static int nameDisplayOrder = 1;
     private static boolean is24HourFormat = false;
-    public static FastDateFormat formatterDay;
-    public static FastDateFormat formatterWeek;
-    public static FastDateFormat formatterMonth;
-    public static FastDateFormat formatterYear;
-    public static FastDateFormat formatterMonthYear;
-    public static FastDateFormat formatterYearMax;
-    public static FastDateFormat chatDate;
-    public static FastDateFormat chatFullDate;
+    public FastDateFormat formatterDay;
+    public FastDateFormat formatterWeek;
+    public FastDateFormat formatterMonth;
+    public FastDateFormat formatterYear;
+    public FastDateFormat formatterMonthYear;
+    public FastDateFormat formatterYearMax;
+    public FastDateFormat chatDate;
+    public FastDateFormat chatFullDate;
 
     private HashMap<String, PluralRules> allRules = new HashMap<>();
 
@@ -671,9 +671,9 @@ public class LocaleController {
         int dateYear = rightNow.get(Calendar.YEAR);
 
         if (year == dateYear) {
-            return chatDate.format(date * 1000);
+            return getInstance().chatDate.format(date * 1000);
         }
-        return chatFullDate.format(date * 1000);
+        return getInstance().chatFullDate.format(date * 1000);
     }
 
     public static String formatDate(long date) {
@@ -686,13 +686,13 @@ public class LocaleController {
             int dateYear = rightNow.get(Calendar.YEAR);
 
             if (dateDay == day && year == dateYear) {
-                return formatterDay.format(new Date(date * 1000));
+                return getInstance().formatterDay.format(new Date(date * 1000));
             } else if (dateDay + 1 == day && year == dateYear) {
                 return getString("Yesterday", R.string.Yesterday);
             } else if (year == dateYear) {
-                return formatterMonth.format(new Date(date * 1000));
+                return getInstance().formatterMonth.format(new Date(date * 1000));
             } else {
-                return formatterYear.format(new Date(date * 1000));
+                return getInstance().formatterYear.format(new Date(date * 1000));
             }
         } catch (Exception e) {
             FileLog.e("tmessages", e);
@@ -710,7 +710,7 @@ public class LocaleController {
             int dateYear = rightNow.get(Calendar.YEAR);
 
             if (dateDay == day && year == dateYear) {
-                return String.format("%s %s %s", LocaleController.getString("LastSeen", R.string.LastSeen), LocaleController.getString("TodayAt", R.string.TodayAt), formatterDay.format(new Date(date * 1000)));
+                return String.format("%s %s %s", LocaleController.getString("LastSeen", R.string.LastSeen), LocaleController.getString("TodayAt", R.string.TodayAt), getInstance().formatterDay.format(new Date(date * 1000)));
                 /*int diff = (int) (ConnectionsManager.getInstance().getCurrentTime() - date) / 60;
                 if (diff < 1) {
                     return LocaleController.getString("LastSeenNow", R.string.LastSeenNow);
@@ -720,12 +720,12 @@ public class LocaleController {
                     return LocaleController.formatPluralString("LastSeenHours", (int) Math.ceil(diff / 60.0f));
                 }*/
             } else if (dateDay + 1 == day && year == dateYear) {
-                return String.format("%s %s %s", LocaleController.getString("LastSeen", R.string.LastSeen), LocaleController.getString("YesterdayAt", R.string.YesterdayAt), formatterDay.format(new Date(date * 1000)));
+                return String.format("%s %s %s", LocaleController.getString("LastSeen", R.string.LastSeen), LocaleController.getString("YesterdayAt", R.string.YesterdayAt), getInstance().formatterDay.format(new Date(date * 1000)));
             } else if (year == dateYear) {
-                String format = LocaleController.formatString("formatDateAtTime", R.string.formatDateAtTime, formatterMonth.format(new Date(date * 1000)), formatterDay.format(new Date(date * 1000)));
+                String format = LocaleController.formatString("formatDateAtTime", R.string.formatDateAtTime, getInstance().formatterMonth.format(new Date(date * 1000)), getInstance().formatterDay.format(new Date(date * 1000)));
                 return String.format("%s %s", LocaleController.getString("LastSeenDate", R.string.LastSeenDate), format);
             } else {
-                String format = LocaleController.formatString("formatDateAtTime", R.string.formatDateAtTime, formatterYear.format(new Date(date * 1000)), formatterDay.format(new Date(date * 1000)));
+                String format = LocaleController.formatString("formatDateAtTime", R.string.formatDateAtTime, getInstance().formatterYear.format(new Date(date * 1000)), getInstance().formatterDay.format(new Date(date * 1000)));
                 return String.format("%s %s", LocaleController.getString("LastSeenDate", R.string.LastSeenDate), format);
             }
         } catch (Exception e) {
@@ -780,15 +780,15 @@ public class LocaleController {
             int dateYear = rightNow.get(Calendar.YEAR);
 
             if (year != dateYear) {
-                return formatterYear.format(new Date(date * 1000));
+                return getInstance().formatterYear.format(new Date(date * 1000));
             } else {
                 int dayDiff = dateDay - day;
                 if(dayDiff == 0 || dayDiff == -1 && (int)(System.currentTimeMillis() / 1000) - date < 60 * 60 * 8) {
-                    return formatterDay.format(new Date(date * 1000));
+                    return getInstance().formatterDay.format(new Date(date * 1000));
                 } else if(dayDiff > -7 && dayDiff <= -1) {
-                    return formatterWeek.format(new Date(date * 1000));
+                    return getInstance().formatterWeek.format(new Date(date * 1000));
                 } else {
-                    return formatterMonth.format(new Date(date * 1000));
+                    return getInstance().formatterMonth.format(new Date(date * 1000));
                 }
             }
         } catch (Exception e) {

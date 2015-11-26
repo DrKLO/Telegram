@@ -51,6 +51,7 @@ public class ChatBaseCell extends BaseCell implements MediaController.FileDownlo
         void didPressUrl(MessageObject messageObject, ClickableSpan url, boolean longPress);
         void needOpenWebView(String url, String title, String originalUrl, int w, int h);
         void didClickedImage(ChatBaseCell cell);
+        void didPressShare(ChatBaseCell cell);
         boolean canPerformActions();
     }
 
@@ -103,6 +104,11 @@ public class ChatBaseCell extends BaseCell implements MediaController.FileDownlo
     private boolean needReplyImage = false;
     private boolean replyPressed = false;
     private TLRPC.FileLocation currentReplyPhoto;
+
+    private boolean drawShareButton;
+    private boolean sharePressed;
+    private int shareStartX;
+    private int shareStartY;
 
     private StaticLayout nameLayout;
     protected int nameWidth;
@@ -306,7 +312,7 @@ public class ChatBaseCell extends BaseCell implements MediaController.FileDownlo
     }
 
     protected void measureTime(MessageObject messageObject) {
-        currentTimeString = LocaleController.formatterDay.format((long) (messageObject.messageOwner.date) * 1000);
+        currentTimeString = LocaleController.getInstance().formatterDay.format((long) (messageObject.messageOwner.date) * 1000);
         timeTextWidth = timeWidth = (int) Math.ceil(timeMediaPaint.measureText(currentTimeString));
         if ((messageObject.messageOwner.flags & TLRPC.MESSAGE_FLAG_HAS_VIEWS) != 0) {
             currentViewsString = String.format("%s", LocaleController.formatShortNumber(Math.max(1, messageObject.messageOwner.views), null));
@@ -323,6 +329,7 @@ public class ChatBaseCell extends BaseCell implements MediaController.FileDownlo
         isCheckPressed = true;
         isAvatarVisible = false;
         wasLayout = false;
+        drawShareButton = false;
         replyNameLayout = null;
         replyTextLayout = null;
         replyNameWidth = 0;
@@ -345,6 +352,9 @@ public class ChatBaseCell extends BaseCell implements MediaController.FileDownlo
             currentUser = MessagesController.getInstance().getUser(messageObject.messageOwner.from_id);
         } else if (messageObject.messageOwner.from_id < 0) {
             currentChat = MessagesController.getInstance().getChat(-messageObject.messageOwner.from_id);
+            if (messageObject.messageOwner.to_id.channel_id != 0 && (messageObject.messageOwner.reply_to_msg_id == 0 || messageObject.type != 13)) {
+                drawShareButton = true;
+            }
         }
         if (isChat && !messageObject.isOutOwner() && messageObject.messageOwner.from_id > 0) {
             isAvatarVisible = true;
@@ -379,7 +389,7 @@ public class ChatBaseCell extends BaseCell implements MediaController.FileDownlo
             currentTimePaint = timeMediaPaint;
         }
 
-        currentTimeString = LocaleController.formatterDay.format((long) (messageObject.messageOwner.date) * 1000);
+        currentTimeString = LocaleController.getInstance().formatterDay.format((long) (messageObject.messageOwner.date) * 1000);
         timeTextWidth = timeWidth = (int)Math.ceil(currentTimePaint.measureText(currentTimeString));
         if ((messageObject.messageOwner.flags & TLRPC.MESSAGE_FLAG_HAS_VIEWS) != 0) {
             currentViewsString = String.format("%s", LocaleController.formatShortNumber(Math.max(1, messageObject.messageOwner.views), null));
@@ -398,15 +408,22 @@ public class ChatBaseCell extends BaseCell implements MediaController.FileDownlo
                 currentNameString = "DELETED";
             }
             nameWidth = getMaxNameWidth();
+            if (nameWidth < 0) {
+                nameWidth = AndroidUtilities.dp(100);
+            }
 
             CharSequence nameStringFinal = TextUtils.ellipsize(currentNameString.replace("\n", " "), namePaint, nameWidth - AndroidUtilities.dp(12), TextUtils.TruncateAt.END);
-            nameLayout = new StaticLayout(nameStringFinal, namePaint, nameWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
-            if (nameLayout.getLineCount() > 0) {
-                nameWidth = (int)Math.ceil(nameLayout.getLineWidth(0));
-                namesOffset += AndroidUtilities.dp(19);
-                nameOffsetX = nameLayout.getLineLeft(0);
-            } else {
-                nameWidth = 0;
+            try {
+                nameLayout = new StaticLayout(nameStringFinal, namePaint, nameWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+                if (nameLayout != null && nameLayout.getLineCount() > 0) {
+                    nameWidth = (int)Math.ceil(nameLayout.getLineWidth(0));
+                    namesOffset += AndroidUtilities.dp(19);
+                    nameOffsetX = nameLayout.getLineLeft(0);
+                } else {
+                    nameWidth = 0;
+                }
+            } catch (Exception e) {
+                FileLog.e("tmessages", e);
             }
         } else {
             currentNameString = null;
@@ -580,16 +597,16 @@ public class ChatBaseCell extends BaseCell implements MediaController.FileDownlo
                 if (isAvatarVisible && avatarImage.isInsideImage(x, y)) {
                     avatarPressed = true;
                     result = true;
-                } else if (drawForwardedName && forwardedNameLayout != null) {
-                    if (x >= forwardNameX && x <= forwardNameX + forwardedNameWidth && y >= forwardNameY && y <= forwardNameY + AndroidUtilities.dp(32)) {
-                        forwardNamePressed = true;
-                        result = true;
-                    }
-                } else if (currentMessageObject.isReply()) {
-                    if (x >= replyStartX && x <= replyStartX + Math.max(replyNameWidth, replyTextWidth) && y >= replyStartY && y <= replyStartY + AndroidUtilities.dp(35)) {
-                        replyPressed = true;
-                        result = true;
-                    }
+                } else if (drawForwardedName && forwardedNameLayout != null && x >= forwardNameX && x <= forwardNameX + forwardedNameWidth && y >= forwardNameY && y <= forwardNameY + AndroidUtilities.dp(32)) {
+                    forwardNamePressed = true;
+                    result = true;
+                } else if (currentMessageObject.isReply() && x >= replyStartX && x <= replyStartX + Math.max(replyNameWidth, replyTextWidth) && y >= replyStartY && y <= replyStartY + AndroidUtilities.dp(35)) {
+                    replyPressed = true;
+                    result = true;
+                } else if (drawShareButton && x >= shareStartX && x <= shareStartX + AndroidUtilities.dp(40) && y >= shareStartY && y <= shareStartY + AndroidUtilities.dp(32)) {
+                    sharePressed = true;
+                    result = true;
+                    invalidate();
                 }
                 if (result) {
                     startCheckLongPress();
@@ -649,6 +666,21 @@ public class ChatBaseCell extends BaseCell implements MediaController.FileDownlo
                         replyPressed = false;
                     }
                 }
+            } else if (sharePressed) {
+                if (event.getAction() == MotionEvent.ACTION_UP) {
+                    sharePressed = false;
+                    playSoundEffect(SoundEffectConstants.CLICK);
+                    if (delegate != null) {
+                        delegate.didPressShare(this);
+                    }
+                } else if (event.getAction() == MotionEvent.ACTION_CANCEL) {
+                    sharePressed = false;
+                } else if (event.getAction() == MotionEvent.ACTION_MOVE) {
+                    if (!(x >= shareStartX && x <= shareStartX + AndroidUtilities.dp(40) && y >= shareStartY && y <= shareStartY + AndroidUtilities.dp(32))) {
+                        sharePressed = false;
+                    }
+                }
+                invalidate();
             }
         }
         return result;
@@ -766,6 +798,11 @@ public class ChatBaseCell extends BaseCell implements MediaController.FileDownlo
         }
 
         onAfterBackgroundDraw(canvas);
+
+        if (drawShareButton) {
+            ResourceLoader.shareDrawable[ApplicationLoader.isCustomTheme() ? 1 : 0][sharePressed ? 1 : 0].setBounds(shareStartX = currentBackgroundDrawable.getBounds().right + AndroidUtilities.dp(8), shareStartY = layoutHeight - AndroidUtilities.dp(41), currentBackgroundDrawable.getBounds().right + AndroidUtilities.dp(40), layoutHeight - AndroidUtilities.dp(9));
+            ResourceLoader.shareDrawable[ApplicationLoader.isCustomTheme() ? 1 : 0][sharePressed ? 1 : 0].draw(canvas);
+        }
 
         if (drawName && nameLayout != null) {
             canvas.save();

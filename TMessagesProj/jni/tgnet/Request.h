@@ -34,7 +34,7 @@ public:
     int32_t requestToken;
     uint32_t retryCount = 0;
     bool failedBySalt = false;
-    bool failedByFloodWait = false;
+    int32_t failedByFloodWait = 0;
     ConnectionType connectionType;
     uint32_t requestFlags;
     bool completed = false;

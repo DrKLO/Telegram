@@ -323,7 +323,7 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                         value = formatRulesString();
                     }
                     textCell.setTextAndValue(LocaleController.getString("PrivacyLastSeen", R.string.PrivacyLastSeen), value, false);
-                }  else if (i == deleteAccountRow) {
+                } else if (i == deleteAccountRow) {
                     String value;
                     if (ContactsController.getInstance().getLoadingDeleteInfo()) {
                         value = LocaleController.getString("Loading", R.string.Loading);

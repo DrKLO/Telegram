@@ -220,7 +220,7 @@ void ConnectionsManager::select() {
             return;
         } else {
             lastPauseTime = now;
-            DEBUG_D("don't sleep 10 seconds because of salt, upload or download request");
+            DEBUG_D("don't sleep 30 seconds because of salt, upload or download request");
         }
     }
     if (networkPaused) {
@@ -595,7 +595,7 @@ void ConnectionsManager::onConnectionConnected(Connection *connection) {
         } else {
             if (networkPaused && lastPauseTime != 0) {
                 lastPauseTime = getCurrentTimeMillis();
-                nextSleepTimeout = 10000;
+                nextSleepTimeout = 30000;
             }
             processRequestQueue(connection->getConnectionType(), datacenter->getDatacenterId());
         }
@@ -821,6 +821,7 @@ void ConnectionsManager::processServerResponse(TLObject *message, int64_t messag
                 Request *request = iter->get();
                 Datacenter *requestDatacenter = getDatacenterWithId(request->datacenterId);
                 if (request->messageId < response->first_msg_id && request->connectionType & connection->getConnectionType() && requestDatacenter != nullptr && requestDatacenter->getDatacenterId() == datacenter->getDatacenterId()) {
+                    DEBUG_D("clear request %p - %s", request->rawRequest, typeid(*request->rawRequest).name());
                     request->clear(true);
                 }
             }
@@ -943,6 +944,7 @@ void ConnectionsManager::processServerResponse(TLObject *message, int64_t messag
             for (requestsIter iter = runningRequests.begin(); iter != runningRequests.end(); iter++) {
                 Request *request = iter->get();
                 if (request->respondsToMessageId(resultMid)) {
+                    DEBUG_D("got response for request %p - %s", request->rawRequest, typeid(*request->rawRequest).name());
                     bool discardResponse = false;
                     bool isError = false;
                     bool allowInitConnection = true;
@@ -984,8 +986,16 @@ void ConnectionsManager::processServerResponse(TLObject *message, int64_t messag
                                     }
 
                                     discardResponse = true;
-                                    request->failedByFloodWait = true;
+                                    request->failedByFloodWait = waitTime;
+                                    request->startTime = 0;
                                     request->minStartTime = (int32_t) (getCurrentTimeMillis() / 1000 + waitTime);
+                                } else if (error->error_code == 400) {
+                                    static std::string waitFailed = "MSG_WAIT_FAILED";
+                                    if (error->error_message.find(waitFailed) != std::string::npos) {
+                                        discardResponse = true;
+                                        request->minStartTime = (int32_t) (getCurrentTimeMillis() / 1000 + 1);
+                                        request->startTime = 0;
+                                    }
                                 }
                             }
                             if (!discardResponse) {
@@ -1124,10 +1134,10 @@ void ConnectionsManager::processServerResponse(TLObject *message, int64_t messag
                 if ((request->connectionType & ConnectionTypeDownload) == 0) {
                     continue;
                 }
-                if (request->respondsToMessageId(resultMid)) {
+                Datacenter *requestDatacenter = getDatacenterWithId(request->datacenterId);
+                if (requestDatacenter != nullptr && requestDatacenter->getDatacenterId() == datacenter->getDatacenterId()) {
                     request->retryCount = 0;
                     request->failedBySalt = true;
-                    break;
                 }
             }
         }
@@ -1208,7 +1218,7 @@ void ConnectionsManager::processServerResponse(TLObject *message, int64_t messag
     } else if (connection->connectionType == ConnectionTypePush && typeInfo == typeid(TL_updatesTooLong)) {
         if (networkPaused) {
             lastPauseTime = getCurrentTimeMillis();
-            nextSleepTimeout = 10000;
+            nextSleepTimeout = 30000;
             DEBUG_D("received internal push: wakeup network in background");
         } else if (lastPauseTime != 0) {
             lastPauseTime = getCurrentTimeMillis();
@@ -1364,12 +1374,6 @@ void ConnectionsManager::sendRequest(TLObject *object, onCompleteFunc onComplete
 }
 
 #ifdef ANDROID
-int32_t ConnectionsManager::sendRequest(TLObject *object, onCompleteFunc onComplete, onQuickAckFunc onQuickAck, uint32_t flags, uint32_t datacenterId, ConnectionType connetionType, bool immediate, jobject ptr1, jobject ptr2) {
-    int32_t requestToken = lastRequestToken++;
-    sendRequest(object, onComplete, onQuickAck, flags, datacenterId, connetionType, immediate, requestToken, ptr1, ptr2);
-    return requestToken;
-}
-
 void ConnectionsManager::sendRequest(TLObject *object, onCompleteFunc onComplete, onQuickAckFunc onQuickAck, uint32_t flags, uint32_t datacenterId, ConnectionType connetionType, bool immediate, int32_t requestToken, jobject ptr1, jobject ptr2) {
     if (!currentUserId && !(flags & RequestFlagWithoutLogin)) {
         DEBUG_D("can't do request without login %s", typeid(*object).name());
@@ -1489,7 +1493,7 @@ void ConnectionsManager::cancelRequestInternal(int32_t token, bool notifyServer,
         Request *request = iter->get();
         if (request->requestToken == token) {
             request->cancelled = true;
-            DEBUG_D("cancelled queued rpc request %s", typeid(*request->rawRequest).name());
+            DEBUG_D("cancelled queued rpc request %p - %s", request->rawRequest, typeid(*request->rawRequest).name());
             requestsQueue.erase(iter);
             if (removeFromClass) {
                 removeRequestFromGuid(token);
@@ -1507,7 +1511,7 @@ void ConnectionsManager::cancelRequestInternal(int32_t token, bool notifyServer,
                 sendRequest(dropAnswer, nullptr, nullptr, RequestFlagEnableUnauthorized | RequestFlagWithoutLogin | RequestFlagFailOnServerErrors, request->datacenterId, request->connectionType, true);
             }
             request->cancelled = true;
-            DEBUG_D("cancelled running rpc request %s", typeid(*request->rawRequest).name());
+            DEBUG_D("cancelled running rpc request %p - %s", request->rawRequest, typeid(*request->rawRequest).name());
             runningRequests.erase(iter);
             if (removeFromClass) {
                 removeRequestFromGuid(token);
@@ -1795,7 +1799,12 @@ void ConnectionsManager::processRequestQueue(uint32_t connectionTypes, uint32_t 
             forceThisRequest = false;
         }
 
-        if (forceThisRequest || (abs(currentTime - request->startTime) > maxTimeout && (currentTime > request->minStartTime || abs(currentTime - request->minStartTime) > 60))) {
+        if (forceThisRequest || (abs(currentTime - request->startTime) > maxTimeout &&
+                                 (currentTime >= request->minStartTime ||
+                                  (request->failedByFloodWait != 0 && (request->minStartTime - currentTime) > request->failedByFloodWait) ||
+                                  (request->failedByFloodWait == 0 && abs(currentTime - request->minStartTime) >= 60))
+                                 )
+            ) {
             if (!forceThisRequest && request->connectionToken > 0) {
                 if (request->connectionType & ConnectionTypeGeneric && request->connectionToken == connection->getConnectionToken()) {
                     DEBUG_D("request token is valid, not retrying %s", typeInfo.name());
@@ -1816,25 +1825,29 @@ void ConnectionsManager::processRequestQueue(uint32_t connectionTypes, uint32_t 
 
             request->retryCount++;
 
-            if (!request->failedBySalt && request->connectionType & ConnectionTypeDownload) {
-                uint32_t retryMax = 10;
-                if (!(request->requestFlags & RequestFlagForceDownload)) {
-                    if (request->failedByFloodWait) {
-                        retryMax = 1;
-                    } else {
-                        retryMax = 6;
+            if (!request->failedBySalt) {
+                if (request->connectionType & ConnectionTypeDownload) {
+                    uint32_t retryMax = 10;
+                    if (!(request->requestFlags & RequestFlagForceDownload)) {
+                        if (request->failedByFloodWait) {
+                            retryMax = 1;
+                        } else {
+                            retryMax = 6;
+                        }
+                    }
+                    if (request->retryCount >= retryMax) {
+                        DEBUG_E("timed out %s", typeInfo.name());
+                        TL_error *error = new TL_error();
+                        error->code = -123;
+                        error->text = "RETRY_LIMIT";
+                        request->onComplete(nullptr, error);
+                        delete error;
+                        iter = runningRequests.erase(iter);
+                        continue;
                     }
                 }
-                if (request->retryCount >= retryMax) {
-                    DEBUG_E("timed out %s", typeInfo.name());
-                    TL_error *error = new TL_error();
-                    error->code = -123;
-                    error->text = "RETRY_LIMIT";
-                    request->onComplete(nullptr, error);
-                    delete error;
-                    iter = runningRequests.erase(iter);
-                    continue;
-                }
+            } else {
+                request->failedBySalt = false;
             }
 
             if (request->messageSeqNo == 0) {
@@ -2103,9 +2116,11 @@ void ConnectionsManager::processRequestQueue(uint32_t connectionTypes, uint32_t 
                         TL_invokeAfterMsg *request = new TL_invokeAfterMsg();
                         request->msg_id = lastSentMessageRpcId;
                         if (message->outgoingBody != nullptr) {
+                            DEBUG_D("wrap outgoingBody(%p, %s) to TL_invokeAfterMsg", message->outgoingBody, typeid(*message->outgoingBody).name());
                             request->outgoingQuery = message->outgoingBody;
                             message->outgoingBody = nullptr;
                         } else {
+                            DEBUG_D("wrap body(%p, %s) to TL_invokeAfterMsg", message->body.get(), typeid(*message->body.get()).name());
                             request->query = std::move(message->body);
                         }
                         message->body = std::unique_ptr<TLObject>(request);
@@ -2407,7 +2422,7 @@ void ConnectionsManager::resumeNetwork(bool partial) {
         if (partial) {
             if (networkPaused) {
                 lastPauseTime = getCurrentTimeMillis();
-                nextSleepTimeout = 10000;
+                nextSleepTimeout = 30000;
                 networkPaused = false;
                 DEBUG_D("wakeup network in background");
             } else if (lastPauseTime != 0) {

@@ -266,10 +266,7 @@ public class Emoji {
             }
 
             if (!canvas.quickReject(b.left, b.top, b.right, b.bottom, Canvas.EdgeType.AA)) {
-                canvas.save();
-                canvas.clipRect(b);
-                canvas.drawBitmap(emojiBmp[info.page][info.page2], info.rect, b, fullSize ? null : paint);
-                canvas.restore();
+                canvas.drawBitmap(emojiBmp[info.page][info.page2], info.rect, b, paint);
             }
         }
 

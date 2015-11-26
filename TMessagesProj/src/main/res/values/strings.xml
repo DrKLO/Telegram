@@ -4,6 +4,7 @@
 
 <resources>
     <string name="AppName">Telegram</string>
+    <string name="AppNameBeta">Telegram Beta</string>
     <string name="LanguageName">English</string>
     <string name="LanguageNameInEnglish">English</string>
     <string name="LanguageCode">en</string>
@@ -60,7 +61,28 @@
     <string name="MuteDisable">Disable</string>
     <string name="Hashtags">HASHTAGS</string>
     <string name="Recent">RECENT</string>
+    <string name="LinkPreview">Link preview</string>
     <!--channels-->
+    <string name="SetAsAdmin">Promote to admin</string>
+    <string name="DescriptionInfoMega">You can provide an optional description for your group.</string>
+    <string name="LeaveMega">Leave Group</string>
+    <string name="DeleteMega">Delete Group</string>
+    <string name="LeaveMegaMenu">Leave group</string>
+    <string name="DeleteMegaMenu">Delete group</string>
+    <string name="MegaDeleteInfo">You will lose all messages in this group.</string>
+    <string name="MegaAdminsInfo">You can add administrators to help you manage your group. Tap and hold to remove them.</string>
+    <string name="MegaDeleteAlert">Wait! Deleting this group will remove all members and all messages will be lost. Delete the group anyway?</string>
+    <string name="ActionCreateMega">Group created</string>
+    <string name="MegaAddedBy">un1 added you to this group</string>
+    <string name="MegaLeaveAlert">Are you sure you want to leave the group?</string>
+    <string name="GroupUserCantAdd">Sorry, you can\'t add this user to groups.</string>
+    <string name="GroupUserAddLimit">Sorry, this group is full.</string>
+    <string name="GroupUserLeftError">Sorry, this user decided to leave this group, so you cannot invite them back here.</string>
+    <string name="GroupUserCantAdmin">Sorry, too many adminstrators in this group.</string>
+    <string name="GroupUserCantBot">Sorry, too many bots in this group.</string>
+    <string name="ActionMigrateFromGroup">This group was upgraded to a supergroup</string>
+    <string name="ActionMigrateFromGroupNotify">%1$s was upgraded to a supergroup</string>
+    <string name="NoBlockedGroup">Blocked users are removed from the group and can only come back if invited by an admin. Invite links don\'t work for them.</string>
     <string name="NewChannel">New Channel</string>
     <string name="EnterChannelName">Channel name</string>
     <string name="Comments">Comments</string>
@@ -97,7 +119,7 @@
     <string name="LinkChecking">Checking name…</string>
     <string name="LinkAvailable">%1$s is available.</string>
     <string name="ChannelMembers">Members</string>
-    <string name="ChannelBlockedUsers">Blocked Users</string>
+    <string name="ChannelBlockedUsers">Blocked users</string>
     <string name="ChannelAdministrators">Administrators</string>
     <string name="ChannelDelete">Delete Channel</string>
     <string name="ChannelDeleteMenu">Delete channel</string>
@@ -111,7 +133,6 @@
     <string name="ActionChannelChangedPhoto">Channel photo changed</string>
     <string name="ActionChannelRemovedPhoto">Channel photo removed</string>
     <string name="ActionChannelChangedTitle">Channel name changed to un2</string>
-    <string name="ActionChannelInvite">un1 added you to the channel un2</string>
     <string name="ChannelPublicLimitReached">Sorry, you have created too many public channels. You can either create a private channel or delete one of your existing channels first.</string>
     <string name="ChannelModerator">Moderator</string>
     <string name="ChannelCreator">Creator</string>
@@ -127,12 +148,12 @@
     <string name="ChannelLinkInfo">Anyone who has Telegram installed will be able to join your channel by following this link.</string>
     <string name="ChannelAdminsInfo">You can add administrators to help you manage your channel. Tap and hold to remove admins.</string>
     <string name="ChannelJoinTo">Do you want to join the channel \'%1$s\'?</string>
-    <string name="ChannelCantOpenPrivate">Sorry, this channel is no longer accessible.</string>
-    <string name="ChannelAddToTitle">Add %1$s to the channel %2$s?</string>
+    <string name="ChannelCantOpenPrivate">Sorry, this chat is no longer accessible.</string>
     <string name="ChannelAddTo">Add %1$s to the channel?</string>
-    <string name="ChannelUserLeftError">Sorry, this user decided to leave this group, so you cannot invite them back here.</string>
+    <string name="ChannelUserLeftError">Sorry, this user decided to leave this channel, so you cannot invite them back here.</string>
     <string name="ChannelUserCantAdd">Sorry, you can\'t add this user to channels.</string>
     <string name="ChannelUserCantAdmin">Sorry, too many admins in this channel.</string>
+    <string name="ChannelUserCantBot">Sorry, too many bots in this channel.</string>
     <string name="ChannelUserAddLimit">Sorry, you can only add the first 200 members to a channel. Note that an unlimited number of people may join via the channel\'s link.</string>
     <string name="ChannelAddedBy">un1 added you to this channel</string>
     <string name="ChannelJoined">You joined the channel</string>
@@ -242,6 +263,7 @@
     <string name="NobodyLikesSpam2">Sorry, you can only add mutual contacts to groups at the moment.</string>
     <string name="NobodyLikesSpamUrl">https://telegram.org/faq#can-39t-send-messages-to-non-contacts</string>
     <string name="MoreInfo">More info</string>
+    <string name="ShareSendTo">Send to...</string>
     <!--notification-->
     <string name="MessageLifetimeChanged">%1$s set the self-destruct timer to %2$s</string>
     <string name="MessageLifetimeChangedOutgoing">You set the self-destruct timer to %1$s</string>
@@ -317,13 +339,22 @@
     <string name="CopyLink">Copy Link</string>
     <string name="ShareLink">Share Link</string>
     <string name="LinkInfo">Anyone who has Telegram installed will be able to join your group by following this link.</string>
+    <!--set admins view-->
+    <string name="SetAdminsTitle">Chat Admins</string>
+    <string name="SetAdminsAll">All Members are Admins</string>
+    <string name="SetAdminsAllInfo">All members can add new members, edit name and photo of the group.</string>
+    <string name="SetAdminsNotAllInfo">Only admins can add and remove members, edit name and photo of the group.</string>
     <!--group info view-->
     <string name="SharedMedia">Shared Media</string>
     <string name="SETTINGS">Settings</string>
     <string name="AddMember">Add member</string>
+    <string name="SetAdmins">Set admins</string>
     <string name="DeleteAndExit">Delete and leave group</string>
     <string name="Notifications">Notifications</string>
     <string name="KickFromGroup">Remove from group</string>
+    <string name="ConvertGroup">Upgrade to Supergroup</string>
+    <string name="ConvertGroupAlert">Please note that group members will need to update their Telegram apps to the latest version to see your supergroup. Are you sure you want to upgrade this group?</string>
+    <string name="ConvertGroupInfo"><![CDATA[<b>]]>Members limit reached.<![CDATA[</b>]]>\n\nTo go over the limit and get additional features, upgrade to a supergroup:\n\n• Supergroups can get up to %1$s\n• New members see the entire chat history\n• Admins delete messages for everyone\n• Notifications are muted by default</string>
     <!--contact info view-->
     <string name="ShareContact">Share</string>
     <string name="AddContact">Add</string>
@@ -677,6 +708,7 @@
     <string name="Call">Call</string>
     <string name="Copy">Copy</string>
     <string name="Delete">Delete</string>
+    <string name="DeleteAndStop">Delete and stop</string>
     <string name="Forward">Forward</string>
     <string name="Retry">Retry</string>
     <string name="FromCamera">From camera</string>
@@ -731,12 +763,13 @@
     <string name="NoHandleAppInstalled">You don\'t have applications that can handle the file type \'%1$s\', please install one to continue</string>
     <string name="InviteUser">This user does not have Telegram yet, send an invitation?</string>
     <string name="AreYouSure">Are you sure?</string>
-    <string name="AddToTheGroupTitle">Add %1$s to the group %2$s?</string>
+    <string name="AddToTheGroupTitle">Add %1$s to the chat %2$s?</string>
     <string name="AddToTheGroupForwardCount">Number of last messages to forward:</string>
     <string name="AddToTheGroup">Add %1$s to the group?</string>
     <string name="UserAlreadyInGroup">This user is already in this group</string>
     <string name="ForwardMessagesTo">Forward messages to %1$s?</string>
     <string name="SendMessagesTo">Send messages to %1$s?</string>
+    <string name="SendContactTo">Send contact to %1$s?</string>
     <string name="AreYouSureLogout">Are you sure you want to log out?\n\nNote that you can seamlessly use Telegram on all your devices at once.\n\nRemember, logging out kills all your Secret Chats.</string>
     <string name="AreYouSureSessions">Are you sure you want to terminate all other sessions?</string>
     <string name="AreYouSureDeleteAndExit">Are you sure you want to delete and leave the group?</string>
@@ -750,6 +783,7 @@
     <string name="AreYouSureClearHistory">Are you sure you want to clear history?</string>
     <string name="AreYouSureDeleteMessages">Are you sure you want to delete %1$s?</string>
     <string name="SendMessagesToGroup">Send messages to %1$s?</string>
+    <string name="SendContactToGroup">Send contact to %1$s?</string>
     <string name="ForwardMessagesToGroup">Forward messages to %1$s?</string>
     <string name="FeatureUnavailable">Sorry, this feature is currently not available in your country.</string>
     <string name="NoUsernameFound">There is no Telegram account with this username.</string>
@@ -976,6 +1010,6 @@
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s at %2$s</string>
     <!--update text-->
-    <string name="updateText">Telegram for Android has been updated. New in version 3.2.5:\n\n- New animations and many visual improvements\n- Support for new emoji\n- Other improvements and bug fixes</string>
-    <string name="updateBuild">647</string>
+    <string name="updateText">Telegram for Android has been updated. New in version 3.3.0:\n\n- Groups can now have multiple administrators with the ability to edit the name and logo, and add and remove members.\n- Groups that have reached their capacity of 200 users can be upgraded to supergroups of up to 1,000 members.\n- Channels got a new Quick Share button right next to messages.\n\nMore about this update:\nhttps://telegram.org/blog/supergroups</string>
+    <string name="updateBuild">677</string>
 </resources>

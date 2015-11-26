@@ -327,18 +327,23 @@ public class ApplicationLoader extends Application {
     }
 
     private void initPlayServices() {
-        if (checkPlayServices()) {
-            gcm = GoogleCloudMessaging.getInstance(this);
-            regid = getRegistrationId();
+        AndroidUtilities.runOnUIThread(new Runnable() {
+            @Override
+            public void run() {
+                if (checkPlayServices()) {
+                    gcm = GoogleCloudMessaging.getInstance(ApplicationLoader.this);
+                    regid = getRegistrationId();
 
-            if (regid.length() == 0) {
-                registerInBackground();
-            } else {
-                sendRegistrationIdToBackend(false);
+                    if (regid.length() == 0) {
+                        registerInBackground();
+                    } else {
+                        sendRegistrationIdToBackend(false);
+                    }
+                } else {
+                    FileLog.d("tmessages", "No valid Google Play Services APK found.");
+                }
             }
-        } else {
-            FileLog.d("tmessages", "No valid Google Play Services APK found.");
-        }
+        }, 1000);
     }
 
     private boolean checkPlayServices() {

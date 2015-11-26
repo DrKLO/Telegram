@@ -43,13 +43,15 @@ public class SearchAdapter extends BaseSearchAdapter {
     private boolean useUserCell;
     private boolean onlyMutual;
     private boolean allowChats;
+    private boolean allowBots;
 
-    public SearchAdapter(Context context, HashMap<Integer, TLRPC.User> arg1, boolean usernameSearch, boolean mutual, boolean chats) {
+    public SearchAdapter(Context context, HashMap<Integer, TLRPC.User> arg1, boolean usernameSearch, boolean mutual, boolean chats, boolean bots) {
         mContext = context;
         ignoreUsers = arg1;
         onlyMutual = mutual;
         allowUsernameSearch = usernameSearch;
         allowChats = chats;
+        allowBots = bots;
     }
 
     public void setCheckedMap(HashMap<Integer, ?> map) {
@@ -72,7 +74,7 @@ public class SearchAdapter extends BaseSearchAdapter {
             searchResult.clear();
             searchResultNames.clear();
             if (allowUsernameSearch) {
-                queryServerSearch(null, allowChats);
+                queryServerSearch(null, allowChats, allowBots);
             }
             notifyDataSetChanged();
         } else {
@@ -97,7 +99,7 @@ public class SearchAdapter extends BaseSearchAdapter {
             @Override
             public void run() {
                 if (allowUsernameSearch) {
-                    queryServerSearch(query, allowChats);
+                    queryServerSearch(query, allowChats, allowBots);
                 }
                 final ArrayList<TLRPC.TL_contact> contactsCopy = new ArrayList<>();
                 contactsCopy.addAll(ContactsController.getInstance().contacts);
@@ -122,9 +124,10 @@ public class SearchAdapter extends BaseSearchAdapter {
                         ArrayList<TLRPC.User> resultArray = new ArrayList<>();
                         ArrayList<CharSequence> resultArrayNames = new ArrayList<>();
 
-                        for (TLRPC.TL_contact contact : contactsCopy) {
+                        for (int a = 0; a < contactsCopy.size(); a++) {
+                            TLRPC.TL_contact contact = contactsCopy.get(a);
                             TLRPC.User user = MessagesController.getInstance().getUser(contact.user_id);
-                            if (user.id == UserConfig.getClientUserId() || onlyMutual && (user.flags & TLRPC.USER_FLAG_MUTUAL_CONTACT) == 0) {
+                            if (user.id == UserConfig.getClientUserId() || onlyMutual && !user.mutual_contact) {
                                 continue;
                             }
 
@@ -235,7 +238,7 @@ public class SearchAdapter extends BaseSearchAdapter {
         } else {
             if (view == null) {
                 if (useUserCell) {
-                    view = new UserCell(mContext, 1);
+                    view = new UserCell(mContext, 1, 1);
                     if (checkedMap != null) {
                         ((UserCell) view).setChecked(false, false);
                     }

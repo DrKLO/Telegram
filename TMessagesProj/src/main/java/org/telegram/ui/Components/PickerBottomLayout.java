@@ -47,23 +47,13 @@ public class PickerBottomLayout extends FrameLayout {
         cancelButton.setPadding(AndroidUtilities.dp(29), 0, AndroidUtilities.dp(29), 0);
         cancelButton.setText(LocaleController.getString("Cancel", R.string.Cancel).toUpperCase());
         cancelButton.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
-        addView(cancelButton);
-        LayoutParams layoutParams = (LayoutParams) cancelButton.getLayoutParams();
-        layoutParams.width = LayoutHelper.WRAP_CONTENT;
-        layoutParams.height = LayoutHelper.MATCH_PARENT;
-        layoutParams.gravity = Gravity.TOP | Gravity.LEFT;
-        cancelButton.setLayoutParams(layoutParams);
+        addView(cancelButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT));
 
         doneButton = new LinearLayout(context);
         doneButton.setOrientation(LinearLayout.HORIZONTAL);
         doneButton.setBackgroundResource(isDarkTheme ? R.drawable.bar_selector_picker : R.drawable.bar_selector_audio);
         doneButton.setPadding(AndroidUtilities.dp(29), 0, AndroidUtilities.dp(29), 0);
-        addView(doneButton);
-        layoutParams = (LayoutParams) doneButton.getLayoutParams();
-        layoutParams.width = LayoutHelper.WRAP_CONTENT;
-        layoutParams.height = LayoutHelper.MATCH_PARENT;
-        layoutParams.gravity = Gravity.TOP | Gravity.RIGHT;
-        doneButton.setLayoutParams(layoutParams);
+        addView(doneButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.RIGHT));
 
         doneButtonBadgeTextView = new TextView(context);
         doneButtonBadgeTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
@@ -73,13 +63,7 @@ public class PickerBottomLayout extends FrameLayout {
         doneButtonBadgeTextView.setBackgroundResource(isDarkTheme ? R.drawable.photobadge : R.drawable.bluecounter);
         doneButtonBadgeTextView.setMinWidth(AndroidUtilities.dp(23));
         doneButtonBadgeTextView.setPadding(AndroidUtilities.dp(8), 0, AndroidUtilities.dp(8), AndroidUtilities.dp(1));
-        doneButton.addView(doneButtonBadgeTextView);
-        LinearLayout.LayoutParams layoutParams1 = (LinearLayout.LayoutParams) doneButtonBadgeTextView.getLayoutParams();
-        layoutParams1.width = LayoutHelper.WRAP_CONTENT;
-        layoutParams1.height = AndroidUtilities.dp(23);
-        layoutParams1.rightMargin = AndroidUtilities.dp(10);
-        layoutParams1.gravity = Gravity.CENTER_VERTICAL;
-        doneButtonBadgeTextView.setLayoutParams(layoutParams1);
+        doneButton.addView(doneButtonBadgeTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, 23, Gravity.CENTER_VERTICAL, 0, 0, 10, 0));
 
         doneButtonTextView = new TextView(context);
         doneButtonTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
@@ -88,12 +72,7 @@ public class PickerBottomLayout extends FrameLayout {
         doneButtonTextView.setCompoundDrawablePadding(AndroidUtilities.dp(8));
         doneButtonTextView.setText(LocaleController.getString("Send", R.string.Send).toUpperCase());
         doneButtonTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
-        doneButton.addView(doneButtonTextView);
-        layoutParams1 = (LinearLayout.LayoutParams) doneButtonTextView.getLayoutParams();
-        layoutParams1.width = LayoutHelper.WRAP_CONTENT;
-        layoutParams1.gravity = Gravity.CENTER_VERTICAL;
-        layoutParams1.height = LayoutHelper.WRAP_CONTENT;
-        doneButtonTextView.setLayoutParams(layoutParams1);
+        doneButton.addView(doneButtonTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL));
     }
 
     public void updateSelectedCount(int count, boolean disable) {

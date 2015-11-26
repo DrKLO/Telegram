@@ -80,7 +80,9 @@ public class SecretChatHelper {
         newMsg.action.encryptedAction = decryptedMessage;
         newMsg.local_id = newMsg.id = UserConfig.getNewMessageId();
         newMsg.from_id = UserConfig.getClientUserId();
-        newMsg.flags = TLRPC.MESSAGE_FLAG_UNREAD | TLRPC.MESSAGE_FLAG_OUT | TLRPC.MESSAGE_FLAG_HAS_FROM_ID;
+        newMsg.unread = true;
+        newMsg.out = true;
+        newMsg.flags = TLRPC.MESSAGE_FLAG_HAS_FROM_ID;
         newMsg.dialog_id = ((long) encryptedChat.id) << 32;
         newMsg.to_id = new TLRPC.TL_peerUser();
         newMsg.send_state = MessageObject.MESSAGE_SEND_STATE_SENDING;
@@ -869,7 +871,8 @@ public class SecretChatHelper {
                 newMessage.to_id = new TLRPC.TL_peerUser();
                 newMessage.random_id = random_id;
                 newMessage.to_id.user_id = UserConfig.getClientUserId();
-                newMessage.flags = TLRPC.MESSAGE_FLAG_UNREAD | TLRPC.MESSAGE_FLAG_HAS_MEDIA | TLRPC.MESSAGE_FLAG_HAS_FROM_ID;
+                newMessage.unread = true;
+                newMessage.flags = TLRPC.MESSAGE_FLAG_HAS_MEDIA | TLRPC.MESSAGE_FLAG_HAS_FROM_ID;
                 newMessage.dialog_id = ((long) chat.id) << 32;
                 if (decryptedMessage.media instanceof TLRPC.TL_decryptedMessageMediaEmpty) {
                     newMessage.media = new TLRPC.TL_messageMediaEmpty();
@@ -1043,7 +1046,8 @@ public class SecretChatHelper {
                     }
                     newMessage.local_id = newMessage.id = UserConfig.getNewMessageId();
                     UserConfig.saveConfig(false);
-                    newMessage.flags = TLRPC.MESSAGE_FLAG_UNREAD | TLRPC.MESSAGE_FLAG_HAS_FROM_ID;
+                    newMessage.unread = true;
+                    newMessage.flags = TLRPC.MESSAGE_FLAG_HAS_FROM_ID;
                     newMessage.date = date;
                     newMessage.from_id = from_id;
                     newMessage.to_id = new TLRPC.TL_peerUser();

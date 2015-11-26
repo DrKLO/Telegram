@@ -37,6 +37,8 @@ public class ResourceLoader {
     public static Drawable mediaBackgroundDrawable;
     public static Drawable clockChannelDrawable;
 
+    public static Drawable[][] shareDrawable = new Drawable[2][2];
+
     public static Drawable viewsCountDrawable;
     public static Drawable viewsOutCountDrawable;
     public static Drawable viewsMediaCountDrawable;
@@ -122,6 +124,11 @@ public class ResourceLoader {
             videoIconDrawable = context.getResources().getDrawable(R.drawable.ic_video);
             docMenuInDrawable = context.getResources().getDrawable(R.drawable.doc_actions_b);
             docMenuOutDrawable = context.getResources().getDrawable(R.drawable.doc_actions_g);
+
+            shareDrawable[0][0] = context.getResources().getDrawable(R.drawable.shareblue);
+            shareDrawable[0][1] = context.getResources().getDrawable(R.drawable.shareblue_pressed);
+            shareDrawable[1][0] = context.getResources().getDrawable(R.drawable.shareblack);
+            shareDrawable[1][1] = context.getResources().getDrawable(R.drawable.shareblack_pressed);
 
             geoInDrawable = context.getResources().getDrawable(R.drawable.location_b);
             geoOutDrawable = context.getResources().getDrawable(R.drawable.location_g);
