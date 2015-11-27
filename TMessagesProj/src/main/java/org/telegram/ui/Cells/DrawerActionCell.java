@@ -1,5 +1,5 @@
 /*
- * This is the source code of Telegram for Android v. 3.x.x
+ * This is the source code of Telegram for Android v. 3.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
@@ -46,15 +46,14 @@ public class DrawerActionCell extends FrameLayout {
     }
 
     public void setTextAndIcon(String text, int resId) {
-        textView.setText(text);
-        //textView.setCompoundDrawablesWithIntrinsicBounds(resId, 0, 0, 0);
-        int color = AndroidUtilities.getIntDef("drawerIconColor", 0xff737373);
-        try{
+        try {
+            textView.setText(text);
+            //textView.setCompoundDrawablesWithIntrinsicBounds(resId, 0, 0, 0);
+            int color = AndroidUtilities.getIntDef("drawerIconColor", 0xff737373);
             Drawable d = getResources().getDrawable(resId);
             d.setColorFilter(color, PorterDuff.Mode.SRC_IN);
             textView.setCompoundDrawablesWithIntrinsicBounds(d, null, null, null);
-        } catch (Exception e) {
-            textView.setCompoundDrawablesWithIntrinsicBounds(resId, 0, 0, 0);
+        } catch (Throwable e) {
             FileLog.e("tmessages", e);
         }
     }

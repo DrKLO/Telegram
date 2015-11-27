@@ -24,6 +24,7 @@ import android.view.MotionEvent;
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
+import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.FileLog;
@@ -62,6 +63,7 @@ public class DialogCell extends BaseCell {
     private static Drawable countDrawableGrey;
     private static Drawable groupDrawable;
     private static Drawable broadcastDrawable;
+    private static Drawable botDrawable;
     private static Drawable muteDrawable;
     private static Drawable verifiedDrawable;
 
@@ -94,6 +96,7 @@ public class DialogCell extends BaseCell {
     private boolean drawNameLock;
     private boolean drawNameGroup;
     private boolean drawNameBroadcast;
+    private boolean drawNameBot;
     private int nameMuteLeft;
     private int nameLockLeft;
     private int nameLockTop;
@@ -200,6 +203,7 @@ public class DialogCell extends BaseCell {
             broadcastDrawable = getResources().getDrawable(R.drawable.list_broadcast);
             muteDrawable = getResources().getDrawable(R.drawable.mute_grey);
             verifiedDrawable = getResources().getDrawable(R.drawable.check_list);
+            botDrawable = getResources().getDrawable(R.drawable.bot_list);
         }
         
        setBackgroundResource(R.drawable.list_selector);
@@ -288,6 +292,7 @@ public class DialogCell extends BaseCell {
         drawNameGroup = false;
         drawNameBroadcast = false;
         drawNameLock = false;
+        drawNameBot = false;
         drawVerified = false;
 
         if (encryptedChat != null) {
@@ -302,14 +307,14 @@ public class DialogCell extends BaseCell {
             }
         } else {
             if (chat != null) {
-                if (chat.id < 0 || chat instanceof TLRPC.TL_channel || chat instanceof TLRPC.TL_channelForbidden) {
+                if (chat.id < 0 || ChatObject.isChannel(chat) && !chat.megagroup) {
                     drawNameBroadcast = true;
                     nameLockTop = AndroidUtilities.dp(16.5f);
                 } else {
                     drawNameGroup = true;
                     nameLockTop = AndroidUtilities.dp(17.5f);
                 }
-                drawVerified = (chat.flags & TLRPC.CHAT_FLAG_IS_VERIFIED) != 0;
+                drawVerified = chat.verified;
 
                 if (!LocaleController.isRTL) {
                     nameLockLeft = AndroidUtilities.dp(AndroidUtilities.leftBaseline);
@@ -323,6 +328,20 @@ public class DialogCell extends BaseCell {
                     nameLeft = AndroidUtilities.dp(AndroidUtilities.leftBaseline);
                 } else {
                     nameLeft = AndroidUtilities.dp(14);
+                }
+                if (user != null) {
+                    if (user.bot) {
+                        drawNameBot = true;
+                        nameLockTop = AndroidUtilities.dp(16.5f);
+                        if (!LocaleController.isRTL) {
+                            nameLockLeft = AndroidUtilities.dp(AndroidUtilities.leftBaseline);
+                            nameLeft = AndroidUtilities.dp(AndroidUtilities.leftBaseline + 4) + botDrawable.getIntrinsicWidth();
+                        } else {
+                            nameLockLeft = getMeasuredWidth() - AndroidUtilities.dp(AndroidUtilities.leftBaseline) - botDrawable.getIntrinsicWidth();
+                            nameLeft = AndroidUtilities.dp(14);
+                        }
+                    }
+                    drawVerified = user.verified;
                 }
             }
         }
@@ -534,6 +553,8 @@ public class DialogCell extends BaseCell {
             nameWidth -= AndroidUtilities.dp(4) + groupDrawable.getIntrinsicWidth();
         } else if (drawNameBroadcast) {
             nameWidth -= AndroidUtilities.dp(4) + broadcastDrawable.getIntrinsicWidth();
+        } else if (drawNameBot) {
+            nameWidth -= AndroidUtilities.dp(4) + botDrawable.getIntrinsicWidth();
         }
         if (drawClock) {
             int w = clockDrawable.getIntrinsicWidth() + AndroidUtilities.dp(5);
@@ -719,7 +740,7 @@ public class DialogCell extends BaseCell {
     public void checkCurrentDialogIndex() {
         if (index < getDialogsArray().size()) {
             TLRPC.Dialog dialog = getDialogsArray().get(index);
-            if (currentDialogId != dialog.id || message != null && message.getId() != dialog.top_message || unreadCount != dialog.unread_count) {
+            if (currentDialogId != dialog.id || message != null && message.getId() != dialog.top_message || unreadCount != dialog.unread_count || message == null && MessagesController.getInstance().dialogMessage.get(dialog.id) != null) {
             currentDialogId = dialog.id;
             update(0);
         }
@@ -808,6 +829,12 @@ public class DialogCell extends BaseCell {
             } else {
                 if (lower_id < 0) {
                     chat = MessagesController.getInstance().getChat(-lower_id);
+                    if (!isDialogCell && chat != null && chat.migrated_to != null) {
+                        TLRPC.Chat chat2 = MessagesController.getInstance().getChat(chat.migrated_to.channel_id);
+                        if (chat2 != null) {
+                            chat = chat2;
+                        }
+                    }
                 } else {
                     user = MessagesController.getInstance().getUser(lower_id);
                 }
@@ -890,6 +917,7 @@ public class DialogCell extends BaseCell {
         nColor = themePrefs.getInt("chatsGroupIconColor", themePrefs.getInt("chatsGroupNameColor", 0xff000000));
         groupDrawable.setColorFilter(nColor, PorterDuff.Mode.SRC_IN);
         broadcastDrawable.setColorFilter(nColor, PorterDuff.Mode.SRC_IN);
+        botDrawable.setColorFilter(nColor, PorterDuff.Mode.SRC_IN);
 
         int mColor = themePrefs.getInt("chatsMuteColor", 0xffa8a8a8);
         //muteWhiteDrawable.setColorFilter(mColor, PorterDuff.Mode.MULTIPLY);
@@ -924,6 +952,9 @@ public class DialogCell extends BaseCell {
         } else if (drawNameBroadcast) {
             setDrawableBounds(broadcastDrawable, nameLockLeft, nameLockTop);
             broadcastDrawable.draw(canvas);
+        } else if (drawNameBot) {
+            setDrawableBounds(botDrawable, nameLockLeft, nameLockTop);
+            botDrawable.draw(canvas);
         }
 
         if (nameLayout != null) {

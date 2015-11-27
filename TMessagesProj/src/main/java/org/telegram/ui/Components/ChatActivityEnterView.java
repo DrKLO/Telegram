@@ -749,7 +749,7 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
         return isAsAdmin;
     }
 
-    public void showTopView(boolean animated) {
+    public void showTopView(boolean animated, final boolean openKeyboard) {
         if (topView == null || topViewShowed || getVisibility() != VISIBLE) {
             return;
         }
@@ -772,7 +772,7 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
                     public void onAnimationEnd(Object animation) {
                             if (currentTopViewAnimation != null && currentTopViewAnimation.equals(animation)) {
                                 setTopViewAnimation(1.0f);
-                        if (!forceShowSendButton) {
+                                if (!forceShowSendButton || openKeyboard) {
                             openKeyboard();
                         }
                                 currentTopViewAnimation = null;
@@ -783,7 +783,7 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
                     currentTopViewAnimation.start();
                 } else {
                     setTopViewAnimation(1.0f);
-                    if (!forceShowSendButton) {
+                    if (!forceShowSendButton || openKeyboard) {
                         openKeyboard();
                     }
                 }
@@ -888,6 +888,7 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
 
     public void onPause() {
         isPaused = true;
+        closeKeyboard();
     }
 
     public void onResume() {
@@ -908,8 +909,8 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
         dialog_id = id;
         if ((int) dialog_id < 0) {
             TLRPC.Chat currentChat = MessagesController.getInstance().getChat(-(int) dialog_id);
-            isAsAdmin = ChatObject.isChannel(currentChat) && ((currentChat.flags & TLRPC.CHAT_FLAG_ADMIN) != 0 || (currentChat.flags & TLRPC.CHAT_FLAG_USER_IS_EDITOR) != 0);
-            adminModeAvailable = isAsAdmin && (currentChat.flags & TLRPC.CHAT_FLAG_IS_BROADCAST) == 0;
+            isAsAdmin = ChatObject.isChannel(currentChat) && (currentChat.creator || currentChat.editor) && !currentChat.megagroup;
+            adminModeAvailable = isAsAdmin && !currentChat.broadcast;
             if (adminModeAvailable) {
                 SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
                 isAsAdmin = preferences.getBoolean("asadmin_" + dialog_id, true);
@@ -924,8 +925,9 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
 
     private void updateFieldHint() {
         boolean isChannel = false;
-        if ((int) dialog_id < 0 && ChatObject.isChannel(MessagesController.getInstance().getChat(-(int) dialog_id))) {
-            isChannel = true;
+        if ((int) dialog_id < 0) {
+            TLRPC.Chat chat = MessagesController.getInstance().getChat(-(int) dialog_id);
+            isChannel = ChatObject.isChannel(chat) && !chat.megagroup;
         }
         if (isChannel) {
             messageEditText.setHint(isAsAdmin ? LocaleController.getString("ChannelBroadcast", R.string.ChannelBroadcast) : LocaleController.getString("ChannelComment", R.string.ChannelComment));
@@ -1005,9 +1007,9 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
     }
 
     private String getTrimmedString(String src) {
-        String result = src.trim();
-        if (result.length() == 0) {
-            return result;
+        src = src.trim();
+        if (src.length() == 0) {
+            return src;
         }
         while (src.startsWith("\n")) {
             src = src.substring(1);
@@ -1299,13 +1301,18 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
         this.delegate = delegate;
     }
 
-    public void setCommand(MessageObject messageObject, String command, boolean longPress) {
+    public void setCommand(MessageObject messageObject, String command, boolean longPress, boolean username) {
         if (command == null || getVisibility() != VISIBLE) {
             return;
         }
         if (longPress) {
             String text = messageEditText.getText().toString();
+            TLRPC.User user = messageObject != null && (int) dialog_id < 0 ? MessagesController.getInstance().getUser(messageObject.messageOwner.from_id) : null;
+            if ((botCount != 1 || username) && user != null && user.bot && !command.contains("@")) {
+                text = String.format(Locale.US, "%s@%s", command, user.username) + " " + text.replaceFirst("^/[a-zA-Z@\\d_]{1,255}(\\s|$)", "");
+            } else {
         text = command + " " + text.replaceFirst("^/[a-zA-Z@\\d_]{1,255}(\\s|$)", "");
+            }
         ignoreTextChange = true;
         messageEditText.setText(text);
         messageEditText.setSelection(messageEditText.getText().length());
@@ -1315,7 +1322,7 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
             }
         } else {
             TLRPC.User user = messageObject != null && (int) dialog_id < 0 ? MessagesController.getInstance().getUser(messageObject.messageOwner.from_id) : null;
-            if (botCount != 1 && user != null && (user.flags & TLRPC.USER_FLAG_BOT) != 0 && !command.contains("@")) {
+            if ((botCount != 1 || username) && user != null && user.bot && !command.contains("@")) {
                 SendMessagesHelper.getInstance().sendMessage(String.format(Locale.US, "%s@%s", command, user.username), dialog_id, null, null, false, asAdmin());
             } else {
                 SendMessagesHelper.getInstance().sendMessage(command, dialog_id, null, null, false, asAdmin());
@@ -1477,7 +1484,7 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
                     if (replyingMessageObject != null) {
                         openKeyboardInternal();
                         setButtons(botMessageObject, false);
-                    } else if ((botButtonsMessageObject.messageOwner.reply_markup.flags & 2) != 0) {
+                    } else if (botButtonsMessageObject.messageOwner.reply_markup.single_use) {
                         openKeyboardInternal();
                         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
                         preferences.edit().putInt("answered_" + dialog_id, botButtonsMessageObject.getId()).commit();
@@ -1497,7 +1504,7 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
         if (botReplyMarkup != null) {
             SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
             boolean keyboardHidden = preferences.getInt("hidekeyboard_" + dialog_id, 0) == messageObject.getId();
-            if (botButtonsMessageObject != replyingMessageObject && (botReplyMarkup.flags & 2) != 0) {
+            if (botButtonsMessageObject != replyingMessageObject && botReplyMarkup.single_use) {
                 if (preferences.getInt("answered_" + dialog_id, 0) == messageObject.getId()) {
                     return;
                 }
@@ -1678,6 +1685,10 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
 
     public void openKeyboard() {
         AndroidUtilities.showKeyboard(messageEditText);
+    }
+
+    public void closeKeyboard() {
+        AndroidUtilities.hideKeyboard(messageEditText);
     }
 
     public boolean isPopupShowing() {

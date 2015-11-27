@@ -337,8 +337,11 @@ public class ApplicationLoader extends Application {
     }
 
     private void initPlayServices() {
+        AndroidUtilities.runOnUIThread(new Runnable() {
+            @Override
+            public void run() {
         if (checkPlayServices()) {
-            gcm = GoogleCloudMessaging.getInstance(this);
+                    gcm = GoogleCloudMessaging.getInstance(ApplicationLoader.this);
             regid = getRegistrationId();
 
             if (regid.length() == 0) {
@@ -349,6 +352,8 @@ public class ApplicationLoader extends Application {
         } else {
             FileLog.d("tmessages", "No valid Google Play Services APK found.");
         }
+    }
+        }, 1000);
     }
 
     private boolean checkPlayServices() {

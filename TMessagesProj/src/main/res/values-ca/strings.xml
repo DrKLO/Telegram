@@ -112,7 +112,6 @@ Si no us interessa, us suggerim crear un canal privat.</string>
   <string name="ActionChannelChangedPhoto">S\'ha canviat la foto del canal</string>
   <string name="ActionChannelRemovedPhoto">S\'ha eliminat la foto del canal</string>
   <string name="ActionChannelChangedTitle">S\'ha canviat el nom del canal a un2</string>
-  <string name="ActionChannelInvite">un1 us ha afegit al canal un2</string>
   <string name="ChannelPublicLimitReached">Heu assolit el nombre màxim de canals públics. Suprimiu els existents o creeu-ne un privat.</string>
   <string name="ChannelModerator">Moderador</string>
   <string name="ChannelCreator">Creador</string>
@@ -129,7 +128,6 @@ Si no us interessa, us suggerim crear un canal privat.</string>
   <string name="ChannelAdminsInfo">Podeu afegir administradors perquè us ajudin a gestionar el canal. Mantingueu premut per eliminar-los.</string>
   <string name="ChannelJoinTo">Voleu afegir-vos al canal «%1$s»?</string>
   <string name="ChannelCantOpenPrivate">Aquest canal ja no és accessible.</string>
-  <string name="ChannelAddToTitle">Voleu afegir %1$s al canal %2$s?</string>
   <string name="ChannelAddTo">Voleu afegir %1$s al canal?</string>
   <string name="ChannelUserLeftError">L\'usuari ha decidit abandonar aquest grup, no podeu tornar a convidar-lo.</string>
   <string name="ChannelUserCantAdd">No podeu afegir aquest usuari als canals.</string>
@@ -976,22 +974,15 @@ Si no us interessa, us suggerim crear un canal privat.</string>
   <string name="formatterDay24H">HH:mm</string>
   <string name="formatterDay12H">h:mm a</string>
   <string name="formatDateAtTime">%1$s a les %2$s</string>
-  <!--update text-->
+  <!--update text--><!--
   <string name="updateText">El Telegram per a Android s\'ha actualitzat. Novetats a la versió 3.2.6:
 
 - Animacions noves i moltes millores visuals
 - Compatibilitat amb els emojis nous
 - Altres millores i correcció d\'errors</string>
-<string name="updateBuild">661</string>
+<string name="updateBuild">686</string>-->
     <!--Telegram+--><!--
-  <string name="updatePlusText">
-
-Novetats a la versió 3.2.6.2:
-
-- S\'ha afegit una modificació per al color de les ordres a la pantalla de xats
-- S\'ha afegit una modificació per al color de fons del comptador de missatges als xats/grups/canals silenciats.
-- S\'ha afegit una modificació per al color de ressaltat a les cerques en la pantalla principal
-- Correcció d\'errors </string>-->
+  <string name="updatePlusText">\n\nNovetats a la versió 3.3.1.0:\n\n- Correcció d\'errors</string>-->
     <string name="TelegramForAndroid">Plus Messenger per Android</string>
   <string name="Theming">Aparença</string>
   <string name="colorHexInvalid">Codi de color hexadecimal no vàlid.</string>

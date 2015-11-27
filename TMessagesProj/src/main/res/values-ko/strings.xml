@@ -4,6 +4,7 @@
 
 <resources>
     <string name="AppName">Plus Messenger</string>
+    <string name="AppNameBeta">텔레그램 베타</string>
     <string name="LanguageName">한국어</string>
     <string name="LanguageNameInEnglish">Korean</string>
     <string name="LanguageCode">ko</string>
@@ -60,7 +61,28 @@
     <string name="MuteDisable">비활성화</string>
     <string name="Hashtags">해시태그</string>
     <string name="Recent">최신</string>
+    <string name="LinkPreview">링크 미리복</string>
     <!--channels-->
+    <string name="SetAsAdmin">관리자로 지명</string>
+    <string name="DescriptionInfoMega">그룹에 추가 설명을 제공 할 수 있습니다.</string>
+    <string name="LeaveMega">그룹 나가기</string>
+    <string name="DeleteMega">그룹 삭제</string>
+    <string name="LeaveMegaMenu">그룹 나각</string>
+    <string name="DeleteMegaMenu">그룹 삭제</string>
+    <string name="MegaDeleteInfo">그룹에 있는 모든 메시지가 삭제됩니다.</string>
+    <string name="MegaAdminsInfo">그룹방 관리를 도울 수 있는 관리자를 추가 할 수 있습니다. 길게 탭을하면 관리자 삭제가 가능합니다.</string>
+    <string name="MegaDeleteAlert">이 그룹방을 삭제하실 경우 모든 구성원과 메시지를 삭제를 하게되며 복구가 안됩니다. 그래도 그룹방을 삭제하시겠습니까?</string>
+    <string name="ActionCreateMega">그룹 생성됨</string>
+    <string name="MegaAddedBy">이 그룹방에 un1님이 초대하였습니다.</string>
+    <string name="MegaLeaveAlert">정말 그룹방에서 나가겠습니까?</string>
+    <string name="GroupUserCantAdd">죄송합니다, 이 유저를 그룹에 초대할 수 없습니다.</string>
+    <string name="GroupUserAddLimit">죄송합니다, 그룹방의 인원이 최대치입니다.</string>
+    <string name="GroupUserLeftError">해당 유저가 스스로 그룹방에서 퇴장을 하여 다시 초대할 수 없습니다.</string>
+    <string name="GroupUserCantAdmin">죄송합니다, 그룹방에 너무 많은 관리자가 있습니다.</string>
+    <string name="GroupUserCantBot">죄송합니다, 그룹방에 너무 많은 봇이 있습니다.</string>
+    <string name="ActionMigrateFromGroup">이 그룹방은 슈퍼그룹방으로 업그레이드 되었습니다.</string>
+    <string name="ActionMigrateFromGroupNotify">%1$s 그룹방은 슈퍼그룹방으로 업그레이드 되었습니다.</string>
+    <string name="NoBlockedGroup">그룹방에서 차단되어 퇴장당한 사용자는 관리자가 초대해야지만 그룹방에 입장이 가능합니다.\n초대링크로는 초대가 되지 않습니다.</string>
     <string name="NewChannel">새 채널</string>
     <string name="EnterChannelName">채널명</string>
     <string name="Comments">코멘트들</string>
@@ -111,7 +133,6 @@
     <string name="ActionChannelChangedPhoto">채널 사진 업데이트됨</string>
     <string name="ActionChannelRemovedPhoto">채널 사진 삭제됨</string>
     <string name="ActionChannelChangedTitle">채널명이 un2로 변경됨</string>
-    <string name="ActionChannelInvite">un2채널에 un1님이 초대하였습니다.</string>
     <string name="ChannelPublicLimitReached">죄송하지만, 너무 많은 공개 채널을 생성하였습니다. 기존 공개 채널을 삭제하시거나 비공개 채널을 생성할 수 있습니다.</string>
     <string name="ChannelModerator">관리자</string>
     <string name="ChannelCreator">생성자</string>
@@ -127,12 +148,12 @@
     <string name="ChannelLinkInfo">텔레그램이 설치된 분들은 링크를 타고 채널에 참여가 가능합니다.</string>
     <string name="ChannelAdminsInfo">채널 관리를 도울 수 있는 관리자를 추가 할 수 있습니다. 길게 탭을하면 관리자 삭제가 가능합니다.</string>
     <string name="ChannelJoinTo">\'%1$s\'채널에 참여하시겠습니까?</string>
-    <string name="ChannelCantOpenPrivate">죄송합니다, 이 채널은 더 이상 접근이 불가능 합니다.</string>
-    <string name="ChannelAddToTitle">%2$s 채널에 %1$s님을 추가할까요?</string>
+    <string name="ChannelCantOpenPrivate">죄송합니다, 이 채팅방에 더 이상 접근이 불가능 합니다.</string>
     <string name="ChannelAddTo">%1$s 님을 이 채널에 추가할까요</string>
-    <string name="ChannelUserLeftError">해당 유저가 스스로 채널에서 퇴장을 하여 다시 초대할 수 없습니다.</string>
+    <string name="ChannelUserLeftError">해당 사용자가 스스로 채널에서 퇴장을 하여 다시 초대할 수 없습니다.</string>
     <string name="ChannelUserCantAdd">죄송합니다, 이 유저를 채널에 추가 할 수 없습니다.</string>
     <string name="ChannelUserCantAdmin">죄송합니다, 채널에 너무 많은 관리자가 있습니다.</string>
+    <string name="ChannelUserCantBot">죄송합니다, 채널에 너무 많은 봇이 있습니다.</string>
     <string name="ChannelUserAddLimit">죄송합니다, 채널에는 첫 200명까지만 초대가 가능합니다. 채널 링크를 통하여 무제한 입장이 가능합니다.</string>
     <string name="ChannelAddedBy">이 채널에 un1님이 초대하였습니다.</string>
     <string name="ChannelJoined">채널에 참여하였습니다.</string>
@@ -217,7 +238,7 @@
     <string name="EncryptedDescription2">서버에 어떤 흔적도 남기지 않습니다</string>
     <string name="EncryptedDescription3">일정 시간 후에 자동삭제가 가능합니다</string>
     <string name="EncryptedDescription4">전달 기능이 허용되지 않습니다</string>
-    <string name="YouWereKicked">그룹에서 추방되었습니다</string>
+    <string name="YouWereKicked">그룹에서 퇴장당했습니다.</string>
     <string name="YouLeft">그룹을 떠났습니다</string>
     <string name="DeleteThisGroup">이 그룹 삭제</string>
     <string name="DeleteThisChat">이 채팅방 삭제</string>
@@ -242,6 +263,7 @@
     <string name="NobodyLikesSpam2">죄송합니다, 서로 연락처가 추가된 경우에만 그룹에 구성원을 추가 할 수 있습니다.</string>
     <string name="NobodyLikesSpamUrl">https://telegram.org/faq#can-39t-send-messages-to-non-contacts</string>
     <string name="MoreInfo">더 보기</string>
+    <string name="ShareSendTo">다음에게 보내기..</string>
     <!--notification-->
     <string name="MessageLifetimeChanged">%1$s님이 자동삭제를 %2$s 후로 설정했습니다</string>
     <string name="MessageLifetimeChangedOutgoing">자동삭제를 %1$s 후로 설정했습니다</string>
@@ -271,8 +293,8 @@
     <string name="NotificationEditedGroupPhoto">%1$s님이 %2$s 그룹 사진을 변경했습니다</string>
     <string name="NotificationGroupAddMember">%1$s님이 %3$s님을 %2$s 그룹에 초대했습니다</string>
     <string name="NotificationGroupAddSelf">%1$s 님이 %2$s 그룹으로 되돌아왔습니다</string>
-    <string name="NotificationGroupKickMember">%1$s님이 %3$s님을 %2$s 그룹에서 추방했습니다</string>
-    <string name="NotificationGroupKickYou">%1$s님이 %2$s 그룹에서 추방했습니다</string>
+    <string name="NotificationGroupKickMember">%1$s님이 %3$s님을 %2$s 그룹에서 퇴장당했습니다.</string>
+    <string name="NotificationGroupKickYou">%1$s님이 %2$s 그룹에서 퇴장당했습니다.</string>
     <string name="NotificationGroupLeftMember">%1$s님이 %2$s 그룹을 떠났습니다</string>
     <string name="NotificationContactJoined">%1$s님이 텔레그램에 가입했습니다!</string>
     <string name="NotificationUnrecognizedDevice">%1$s님,\n%2$s에 새 기기에서 회원님의 계정 로그인이 감지되었습니다. \n\n기기: %3$s\n위치: %4$s\n\n본인의 접속이 아니라면  \'설정\' 창에서 \'모든 세션 종료\' 기능을 실행하세요.\n\n만약 강제접속 의심이 되신다면 2단계 인증을 설정 - 개인정보 및 보안에서 설정할 수 있습니다.\n\n감사합니다.\n텔레그램 팀</string>
@@ -317,13 +339,22 @@
     <string name="CopyLink">링크 복사</string>
     <string name="ShareLink">링크 공유</string>
     <string name="LinkInfo">텔레그램이 설치된 분들은 링크를 타고 그룹방에 참여가 가능합니다.</string>
+    <!--set admins view-->
+    <string name="SetAdminsTitle">관리자 대화</string>
+    <string name="SetAdminsAll">모든 구성원이 관리자입니다.</string>
+    <string name="SetAdminsAllInfo">그룹에 있는 모든 구성원은 상대 초대, 이름 및 사진을 수정할 수 있습니다.</string>
+    <string name="SetAdminsNotAllInfo">그룹방에 있는 관리자만 구성원을 초대, 퇴장, 이름 편집 및 사진 수정할 수 있습니다.</string>
     <!--group info view-->
     <string name="SharedMedia">공유한 미디어</string>
     <string name="SETTINGS">설정</string>
     <string name="AddMember">대화상대 추가</string>
+    <string name="SetAdmins">관리자 설정</string>
     <string name="DeleteAndExit">그룹에서 나가기</string>
     <string name="Notifications">알림</string>
     <string name="KickFromGroup">그룹에서 내보내기</string>
+    <string name="ConvertGroup">슈퍼그룹방으로 업그레이드하기</string>
+    <string name="ConvertGroupAlert">슈퍼그룹방을 보려면 구성원들이 최신 텔레그램 버전으로 업데이트 해야합니다. 저암ㄹ로 그룹방을 업그레이드 하시겠습니까?</string>
+    <string name="ConvertGroupInfo"><![CDATA[<b>]]>구성원이 최대치입니다.<![CDATA[</b>]]>\n\n추가 기능 및 더 많은 구성원을 추가하려면 슈퍼그룹방으로 업그레이드하세요:\n\n• 슈퍼그룹방은 %1$s명까지 초대가능합니다.\n• 새로운 구성원은 모든 대화내역을 볼 수 있습니다.\n• 관리자는 모두에게 메시지 삭제를 할 수 있습니다.\n• 기본값으로 알림이 음소거 됩니다.</string>
     <!--contact info view-->
     <string name="ShareContact">공유</string>
     <string name="AddContact">추가</string>
@@ -677,6 +708,7 @@
     <string name="Call">전화 걸기</string>
     <string name="Copy">복사</string>
     <string name="Delete">삭제</string>
+    <string name="DeleteAndStop">삭제 및 정지</string>
     <string name="Forward">전달</string>
     <string name="Retry">재전송</string>
     <string name="FromCamera">사진 촬영</string>
@@ -688,21 +720,21 @@
     <!--messages-->
     <string name="ActionInviteYou">초대링크를 타고 그룹에 참여하였습니다.</string>
     <string name="ActionInviteUser">초대링크를 타고 그룹에 un1님이 참여하였습니다.</string>
-    <string name="ActionKickUser">un1님이 un2님을 추방했습니다</string>
+    <string name="ActionKickUser">un1님이 un2님을 퇴장시켰습니다.</string>
     <string name="ActionLeftUser">un1님이 퇴장했습니다</string>
     <string name="ActionAddUser">un1님이 un2님을 초대했습니다</string>
     <string name="ActionRemovedPhoto">un1님이 그룹 사진을 삭제했습니다</string>
     <string name="ActionChangedPhoto">un1님이 그룹 사진을 변경했습니다</string>
     <string name="ActionChangedTitle">un1님이 그룹 이름을 un2 그룹으로 변경했습니다</string>
     <string name="ActionCreateGroup">un1님이 그룹을 만들었습니다</string>
-    <string name="ActionYouKickUser">un2님을 추방했습니다</string>
+    <string name="ActionYouKickUser">un2님을 퇴장시켰습니다.</string>
     <string name="ActionYouLeftUser">그룹을 떠났습니다</string>
     <string name="ActionYouAddUser">un2님을 초대했습니다</string>
     <string name="ActionYouRemovedPhoto">그룹 사진을 삭제했습니다</string>
     <string name="ActionYouChangedPhoto">그룹 사진을 변경했습니다</string>
     <string name="ActionYouChangedTitle">그룹 이름을 un2 그룹으로 변경했습니다</string>
     <string name="ActionYouCreateGroup">그룹을 만들었습니다</string>
-    <string name="ActionKickUserYou">un1님이 추방했습니다</string>
+    <string name="ActionKickUserYou">un1님이 퇴장당했습니다.</string>
     <string name="ActionAddUserYou">un1님이 그룹에 초대했습니다</string>
     <string name="ActionAddUserSelf">un1 님께서 그룹에 돌아오셨습니다</string>
     <string name="ActionAddUserSelfYou">그룹에 돌아오셨습니다.</string>
@@ -731,12 +763,13 @@
     <string name="NoHandleAppInstalled">\'%1$s\' 파일 형식을 처리할 앱이 없습니다. 계속하려면 앱을 설치해 주세요.</string>
     <string name="InviteUser">친구가 아직 텔레그램을 사용하지 않네요. 초대해 보세요!</string>
     <string name="AreYouSure">확실합니까?</string>
-    <string name="AddToTheGroupTitle">%2$s 그룹에 %1$s님을 추가할까요?</string>
+    <string name="AddToTheGroupTitle">%2$s 채팅방에 %1$s님을 추가할까요?</string>
     <string name="AddToTheGroupForwardCount">전달할 마지막 대화내용 개수:</string>
     <string name="AddToTheGroup">%1$s 님을 그룹에 추가할까요?</string>
     <string name="UserAlreadyInGroup">이 사용자는 이미 그룹에 추가되었습니다.</string>
     <string name="ForwardMessagesTo">%1$s님에게 메시지를 전달할까요?</string>
     <string name="SendMessagesTo">%1$s님에게 메시지를 보낼까요?</string>
+    <string name="SendContactTo">%1$s에게 연락처를 보내시겠습니까?</string>
     <string name="AreYouSureLogout">정말로 로그아웃하시겠습니까?\n\n텔레그램은 여러 기기에서 동시에 사용이 가능합니다.\n\n로그아웃하시면 비밀대화가 삭제되는 점 유의해주세요.</string>
     <string name="AreYouSureSessions">현재 기기를 제외하고 다른 기기에 로그인된 세션을 모두 종료시킬까요?</string>
     <string name="AreYouSureDeleteAndExit">그룹에서 나갈까요?</string>
@@ -750,6 +783,7 @@
     <string name="AreYouSureClearHistory">정말로 대화내용을 지우시겠습니까?</string>
     <string name="AreYouSureDeleteMessages">%1$s: 정말로 삭제하시겠습니까?</string>
     <string name="SendMessagesToGroup">%1$s 그룹에 메시지를 보낼까요?</string>
+    <string name="SendContactToGroup">%1$s에게 연락처를 보내시겠습니까?</string>
     <string name="ForwardMessagesToGroup">%1$s 그룹에 메시지를 전달할까요?</string>
     <string name="FeatureUnavailable">이 기능은 회원님의 국가에서는 사용할 수 없습니다.</string>
     <string name="NoUsernameFound">입력된 아이디와 일치하는 텔레그램 계정이 없습니다.</string>
@@ -976,6 +1010,6 @@
     <string name="formatterDay12H">a h:mm</string>
     <string name="formatDateAtTime">%1$s %2$s</string>
     <!--update text-->
-    <string name="updateText">텔레그램 안드로이드 버전이 업데이트 되었습니다. 새로운 버전은 3.2.6 입니다:\n\n- 새로운 애니메이션 및 다양한 비쥬얼 향상\n- 신규 이모티콘 지원\n- 기타 기능 향상 및 버그 수정</string>
-    <string name="updateBuild">661</string>
+    <string name="updateText">텔레그램 안드로이드 버전이 업데이트 되었습니다. 새로운 버전은 3.3.1 입니다:\n\n- 그룹방제목, 그룹방사진, 구성원 추가 및 삭제등을 할 수 있는 복수의 그룹 관리자 설정 가능\n- 200명 제한이 걸린 그룹은 1,000명까지 활용가능한 슈퍼그룹으로 업그레이드 가능\n\n슈퍼그룹 및 업데이트 관련 내용 :\nhttps://telegram.org/blog/supergroups</string>
+    <string name="updateBuild">686</string>
 </resources>

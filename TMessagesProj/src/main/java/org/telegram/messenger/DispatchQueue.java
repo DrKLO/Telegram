@@ -12,9 +12,12 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
 
+import java.util.concurrent.CountDownLatch;
+
 public class DispatchQueue extends Thread {
-    public volatile Handler handler = null;
-    private final Object handlerSyncObject = new Object();
+
+    private volatile Handler handler = null;
+    private CountDownLatch syncLatch = new CountDownLatch(1);
 
     public DispatchQueue(final String threadName) {
         setName(threadName);
@@ -22,40 +25,24 @@ public class DispatchQueue extends Thread {
     }
 
     private void sendMessage(Message msg, int delay) {
-        if (handler == null) {
-            try {
-                synchronized (handlerSyncObject) {
-                    handlerSyncObject.wait();
-                }
-            } catch (Throwable t) {
-                t.printStackTrace();
-            }
-        }
-
-        if (handler != null) {
+        try {
+            syncLatch.await();
             if (delay <= 0) {
                 handler.sendMessage(msg);
             } else {
                 handler.sendMessageDelayed(msg, delay);
             }
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
         }
     }
 
     public void cancelRunnable(Runnable runnable) {
-        if (handler == null) {
-            synchronized (handlerSyncObject) {
-                if (handler == null) {
-                    try {
-                        handlerSyncObject.wait();
-                    } catch (Throwable t) {
-                        t.printStackTrace();
-                    }
-                }
-            }
-        }
-
-        if (handler != null) {
+        try {
+            syncLatch.await();
             handler.removeCallbacks(runnable);
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
         }
     }
 
@@ -64,39 +51,32 @@ public class DispatchQueue extends Thread {
     }
 
     public void postRunnable(Runnable runnable, long delay) {
-        if (handler == null) {
-            synchronized (handlerSyncObject) {
-                if (handler == null) {
-                    try {
-                        handlerSyncObject.wait();
-                    } catch (Throwable t) {
-                        t.printStackTrace();
-                    }
-                }
-            }
-        }
-
-        if (handler != null) {
+        try {
+            syncLatch.await();
             if (delay <= 0) {
                 handler.post(runnable);
             } else {
                 handler.postDelayed(runnable, delay);
             }
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
         }
     }
 
     public void cleanupQueue() {
-        if (handler != null) {
+        try {
+            syncLatch.await();
             handler.removeCallbacksAndMessages(null);
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
         }
     }
 
+    @Override
     public void run() {
         Looper.prepare();
-        synchronized (handlerSyncObject) {
-            handler = new Handler();
-            handlerSyncObject.notify();
-        }
+        handler = new Handler();
+        syncLatch.countDown();
         Looper.loop();
     }
 }

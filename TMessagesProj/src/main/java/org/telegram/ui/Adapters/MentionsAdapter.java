@@ -166,8 +166,9 @@ public class MentionsAdapter extends BaseSearchAdapter {
             }
             String usernameString = result.toString().toLowerCase();
             ArrayList<TLRPC.User> newResult = new ArrayList<>();
-            if (info instanceof TLRPC.TL_chatFull) {
-                for (TLRPC.TL_chatParticipant chatParticipant : info.participants.participants) {
+            if (info.participants != null) {
+                for (int a = 0; a < info.participants.participants.size(); a++) {
+                    TLRPC.ChatParticipant chatParticipant = info.participants.participants.get(a);
                     TLRPC.User user = MessagesController.getInstance().getUser(chatParticipant.user_id);
                     if (user == null || UserObject.isUserSelf(user)) {
                         continue;
@@ -220,11 +221,13 @@ public class MentionsAdapter extends BaseSearchAdapter {
             ArrayList<TLRPC.User> newResultUsers = new ArrayList<>();
             String command = result.toString().toLowerCase();
             for (HashMap.Entry<Integer, TLRPC.BotInfo> entry : botInfo.entrySet()) {
-                for (TLRPC.TL_botCommand botCommand : entry.getValue().commands) {
+                TLRPC.BotInfo botInfo = entry.getValue();
+                for (int a = 0; a < botInfo.commands.size(); a++) {
+                    TLRPC.TL_botCommand botCommand = botInfo.commands.get(a);
                     if (botCommand != null && botCommand.command != null && botCommand.command.startsWith(command)) {
                         newResult.add("/" + botCommand.command);
                         newResultHelp.add(botCommand.description);
-                        newResultUsers.add(MessagesController.getInstance().getUser(entry.getValue().user_id));
+                        newResultUsers.add(MessagesController.getInstance().getUser(botInfo.user_id));
                     }
                 }
             }
@@ -311,8 +314,12 @@ public class MentionsAdapter extends BaseSearchAdapter {
             if (i < 0 || i >= searchResultCommands.size()) {
                 return null;
             }
-            if (searchResultCommandsUsers != null && botsCount != 1) {
-                return String.format("%s@%s", searchResultCommands.get(i), searchResultCommandsUsers.get(i).username);
+            if (searchResultCommandsUsers != null && (botsCount != 1 || info instanceof TLRPC.TL_channelFull)) {
+                if (searchResultCommandsUsers.get(i) != null) {
+                    return String.format("%s@%s", searchResultCommands.get(i), searchResultCommandsUsers.get(i) != null ? searchResultCommandsUsers.get(i).username : "");
+                } else {
+                    return String.format("%s", searchResultCommands.get(i));
+                }
             }
             return searchResultCommands.get(i);
         }
@@ -338,7 +345,7 @@ public class MentionsAdapter extends BaseSearchAdapter {
         } else if (searchResultHashtags != null) {
             ((MentionCell) view).setText(searchResultHashtags.get(i));
         }  else if (searchResultCommands != null) {
-            ((MentionCell) view).setBotCommand(searchResultCommands.get(i), searchResultCommandsHelp.get(i), searchResultCommandsUsers.get(i));
+            ((MentionCell) view).setBotCommand(searchResultCommands.get(i), searchResultCommandsHelp.get(i), searchResultCommandsUsers != null ? searchResultCommandsUsers.get(i) : null);
         }
         return view;
     }

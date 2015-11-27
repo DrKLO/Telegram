@@ -30,6 +30,7 @@ import org.telegram.messenger.ApplicationLoader;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
+import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.RequestDelegate;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;

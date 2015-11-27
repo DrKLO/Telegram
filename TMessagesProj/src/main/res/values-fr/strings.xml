@@ -108,7 +108,6 @@
   <string name="ActionChannelChangedPhoto">Photo de la chaîne modifiée</string>
   <string name="ActionChannelRemovedPhoto">Photo de la chaîne retirée</string>
   <string name="ActionChannelChangedTitle">Nom de la chaîne renommée en un2</string>
-  <string name="ActionChannelInvite">un1 vous a ajouté à la chaine un2</string>
   <string name="ChannelPublicLimitReached">Désolé, vous avez crée trop de chaînes publiques. Vous pouvez soit créer une chaîne privée ou supprimer avant une de vos chaînes publiques.</string>
   <string name="ChannelModerator">Modérateur</string>
   <string name="ChannelCreator">Créateur</string>
@@ -125,7 +124,6 @@
   <string name="ChannelAdminsInfo">Vous pouvez ajouter des administrateurs pour vous aider à gérer votre chaîne. Touchez et maintenez pour retirer des administrateurs.</string>
   <string name="ChannelJoinTo">Voulez-vous rejoindre la chaîne \'%1$s\'?</string>
   <string name="ChannelCantOpenPrivate">Désolé, ce groupe n\'est plus accessible.</string>
-  <string name="ChannelAddToTitle">Ajouter %1$s à la chaîne %2$s?</string>
   <string name="ChannelAddTo">Ajouter %1$s à la chaîne ?</string>
   <string name="ChannelUserLeftError">Désolé, %@ a décidé de quitter ce groupe, vous ne pouvez donc plus l\'inviter ici.</string>
   <string name="ChannelUserCantAdd">Désolé, vous ne pouvez pas ajouter cet utilisateur dans des groupes.</string>
@@ -972,9 +970,9 @@
   <string name="formatterDay24H">HH:mm</string>
   <string name="formatterDay12H">h:mm a</string>
   <string name="formatDateAtTime">%1$s à %2$s</string>
-  <!--update text-->
-  <string name="updateText">Telegram pour Android a été mis à jour. Nouveau dans la version 3.2.6:\n\n- De nouvelles animations et de nombreuses améliorations visuelles.\n- Support pour de nouveaux emoji\n- Autres améliorations et corrections de bogues.</string>
-  <string name="updateBuild">661</string>
+  <!--update text--><!--
+  <string name="updateText">Telegram pour Android a été mis à jour. Nouveau dans la version 3.2.6:\n\n- De nouvelles animations et de nombreuses améliorations visuelles.\n- Support pour de nouveaux emoji\n- Autres améliorations et corrections de bogues.</string>-->
+  <string name="updateBuild">686</string>
     <!--Telegram+-->
     <string name="TelegramForAndroid">Plus Messenger pour Android</string>
     <string name="Theming">Thème</string>

@@ -88,6 +88,7 @@ import java.util.HashMap;
 import java.util.Timer;
 import java.util.TimerTask;
 
+@SuppressWarnings("unchecked")
 public class MediaActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate, PhotoViewer.PhotoViewerProvider {
 
     private SharedPhotoVideoAdapter photoVideoAdapter;
@@ -112,10 +113,12 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
     private boolean searchWas;
     private boolean searching;
 
-    private HashMap<Integer, MessageObject> selectedFiles = new HashMap<>();
+    private HashMap<Integer, MessageObject>[] selectedFiles = new HashMap[] {new HashMap<>(), new HashMap<>()};
     private int cantDeleteMessagesCount;
     private ArrayList<View> actionModeViews = new ArrayList<>();
     private boolean scrolling;
+    private long mergeDialogId;
+    protected TLRPC.ChatFull info = null;
 
     private long dialog_id;
     private int selectedMode;
@@ -123,16 +126,17 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
 
     private class SharedMediaData {
         private ArrayList<MessageObject> messages = new ArrayList<>();
-        private HashMap<Integer, MessageObject> messagesDict = new HashMap<>();
+        private HashMap<Integer, MessageObject>[] messagesDict = new HashMap[] {new HashMap<>(), new HashMap<>()};
         private ArrayList<String> sections = new ArrayList<>();
         private HashMap<String, ArrayList<MessageObject>> sectionArrays = new HashMap<>();
         private int totalCount;
         private boolean loading;
-        private boolean endReached;
-        private int max_id;
+        private boolean endReached[] = new boolean[] {false, true};
+        private int max_id[] = new int[] {0, 0};
 
         public boolean addMessage(MessageObject messageObject, boolean isNew, boolean enc) {
-            if (messagesDict.containsKey(messageObject.getId())) {
+            int loadIndex = messageObject.getDialogId() == dialog_id ? 0 : 1;
+            if (messagesDict[loadIndex].containsKey(messageObject.getId())) {
                 return false;
             }
             ArrayList<MessageObject> messageObjects = sectionArrays.get(messageObject.monthKey);
@@ -152,19 +156,19 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                 messageObjects.add(messageObject);
                 messages.add(messageObject);
             }
-            messagesDict.put(messageObject.getId(), messageObject);
+            messagesDict[loadIndex].put(messageObject.getId(), messageObject);
             if (!enc) {
                 if (messageObject.getId() > 0) {
-                    max_id = Math.min(messageObject.getId(), max_id);
+                    max_id[loadIndex] = Math.min(messageObject.getId(), max_id[loadIndex]);
                 }
             } else {
-                max_id = Math.max(messageObject.getId(), max_id);
+                max_id[loadIndex] = Math.max(messageObject.getId(), max_id[loadIndex]);
             }
             return true;
         }
 
-        public boolean deleteMessage(int mid) {
-            MessageObject messageObject = messagesDict.get(mid);
+        public boolean deleteMessage(int mid, int loadIndex) {
+            MessageObject messageObject = messagesDict[loadIndex].get(mid);
             if (messageObject == null) {
                 return false;
             }
@@ -174,7 +178,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
             }
             messageObjects.remove(messageObject);
             messages.remove(messageObject);
-            messagesDict.remove(messageObject.getId());
+            messagesDict[loadIndex].remove(messageObject.getId());
             if (messageObjects.isEmpty()) {
                 sectionArrays.remove(messageObject.monthKey);
                 sections.remove(messageObject.monthKey);
@@ -184,10 +188,10 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
         }
 
         public void replaceMid(int oldMid, int newMid) {
-            MessageObject obj = messagesDict.get(oldMid);
+            MessageObject obj = messagesDict[0].get(oldMid);
             if (obj != null) {
-                messagesDict.remove(oldMid);
-                messagesDict.put(newMid, obj);
+                messagesDict[0].remove(oldMid);
+                messagesDict[0].put(newMid, obj);
                 obj.messageOwner.id = newMid;
             }
         }
@@ -218,7 +222,11 @@ private final static int quoteforward = 33;
         dialog_id = getArguments().getLong("dialog_id", 0);
         for (int a = 0; a < sharedMediaData.length; a++) {
             sharedMediaData[a] = new SharedMediaData();
-            sharedMediaData[a].max_id = ((int)dialog_id) == 0 ? Integer.MIN_VALUE : Integer.MAX_VALUE;
+            sharedMediaData[a].max_id[0] = ((int)dialog_id) == 0 ? Integer.MIN_VALUE : Integer.MAX_VALUE;
+            if (mergeDialogId != 0 && info != null) {
+                sharedMediaData[a].max_id[1] = info.migrated_from_max_id;
+                sharedMediaData[a].endReached[1] = false;
+            }
         }
         sharedMediaData[0].loading = true;
         SharedMediaQuery.loadMedia(dialog_id, 0, 50, 0, SharedMediaQuery.MEDIA_PHOTOVIDEO, true, classGuid);
@@ -248,7 +256,9 @@ private final static int quoteforward = 33;
             public void onItemClick(int id) {
                 if (id == -1) {
                     if (actionBar.isActionModeShowed()) {
-                        selectedFiles.clear();
+                        for (int a = 1; a >= 0; a--) {
+                            selectedFiles[a].clear();
+                        }
                         cantDeleteMessagesCount = 0;
                         actionBar.hideActionMode();
                         listView.invalidateViews();
@@ -292,17 +302,18 @@ private final static int quoteforward = 33;
                         return;
                     }
                     AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-                    builder.setMessage(LocaleController.formatString("AreYouSureDeleteMessages", R.string.AreYouSureDeleteMessages, LocaleController.formatPluralString("items", selectedFiles.size())));
+                    builder.setMessage(LocaleController.formatString("AreYouSureDeleteMessages", R.string.AreYouSureDeleteMessages, LocaleController.formatPluralString("items", selectedFiles[0].size() + selectedFiles[1].size())));
                     builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
                     builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialogInterface, int i) {
-                            ArrayList<Integer> ids = new ArrayList<>(selectedFiles.keySet());
+                            for (int a = 1; a >= 0; a--) {
+                                ArrayList<Integer> ids = new ArrayList<>(selectedFiles[a].keySet());
                             ArrayList<Long> random_ids = null;
                             TLRPC.EncryptedChat currentEncryptedChat = null;
                             int channelId = 0;
                             if (!ids.isEmpty()) {
-                                MessageObject msg = selectedFiles.get(ids.get(0));
+                                    MessageObject msg = selectedFiles[a].get(ids.get(0));
                                 if (channelId == 0 && msg.messageOwner.to_id.channel_id != 0) {
                                     channelId = msg.messageOwner.to_id.channel_id;
                                 }
@@ -312,7 +323,7 @@ private final static int quoteforward = 33;
                             }
                             if (currentEncryptedChat != null) {
                                 random_ids = new ArrayList<>();
-                                for (HashMap.Entry<Integer, MessageObject> entry : selectedFiles.entrySet()) {
+                                    for (HashMap.Entry<Integer, MessageObject> entry : selectedFiles[a].entrySet()) {
                                     MessageObject msg = entry.getValue();
                                     if (msg.messageOwner.random_id != 0 && msg.type != 10) {
                                         random_ids.add(msg.messageOwner.random_id);
@@ -320,9 +331,10 @@ private final static int quoteforward = 33;
                                 }
                             }
                             MessagesController.getInstance().deleteMessages(ids, random_ids, currentEncryptedChat, channelId);
+                                selectedFiles[a].clear();
+                            }
                             actionBar.hideActionMode();
                             actionBar.closeSearchField();
-                            selectedFiles.clear();
                             cantDeleteMessagesCount = 0;
                         }
                     });
@@ -351,14 +363,16 @@ private final static int quoteforward = 33;
                                 }
 
                                 ArrayList<MessageObject> fmessages = new ArrayList<>();
-                                ArrayList<Integer> ids = new ArrayList<>(selectedFiles.keySet());
+                                for (int a = 1; a >= 0; a--) {
+                                    ArrayList<Integer> ids = new ArrayList<>(selectedFiles[a].keySet());
                                 Collections.sort(ids);
                                 for (Integer id : ids) {
                                     if (id > 0) {
-                                        fmessages.add(selectedFiles.get(id));
+                                            fmessages.add(selectedFiles[a].get(id));
                                     }
                                 }
-                                selectedFiles.clear();
+                                    selectedFiles[a].clear();
+                                }
                                 cantDeleteMessagesCount = 0;
                                 actionBar.hideActionMode();
 
@@ -380,7 +394,9 @@ private final static int quoteforward = 33;
             }
         });
 
-        selectedFiles.clear();
+        for (int a = 1; a >= 0; a--) {
+            selectedFiles[a].clear();
+        }
         cantDeleteMessagesCount = 0;
         actionModeViews.clear();
 
@@ -465,7 +481,6 @@ private final static int quoteforward = 33;
         dropDownContainer.addView(dropDown, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL, 16, 0, 0, 0));
 
         final ActionBarMenu actionMode = actionBar.createActionMode();
-        //actionModeViews.add(actionMode.addItem(-2, R.drawable.ic_ab_back_grey, R.drawable.bar_selector_mode, null, AndroidUtilities.dp(54)));
 
         selectedMessagesCountTextView = new NumberTextView(actionMode.getContext());
         selectedMessagesCountTextView.setTextSize(18);
@@ -526,8 +541,7 @@ private final static int quoteforward = 33;
                 if (searching && searchWas) {
                     return;
                 }
-                if (visibleItemCount != 0 && firstVisibleItem + visibleItemCount > totalItemCount - 2 && !sharedMediaData[selectedMode].loading && !sharedMediaData[selectedMode].endReached) {
-                    sharedMediaData[selectedMode].loading = true;
+                if (visibleItemCount != 0 && firstVisibleItem + visibleItemCount > totalItemCount - 2 && !sharedMediaData[selectedMode].loading) {
                     int type;
                     if (selectedMode == 0) {
                         type = SharedMediaQuery.MEDIA_PHOTOVIDEO;
@@ -540,7 +554,13 @@ private final static int quoteforward = 33;
                     } else {
                         type = SharedMediaQuery.MEDIA_URL;
                     }
-                    SharedMediaQuery.loadMedia(dialog_id, 0, 50, sharedMediaData[selectedMode].max_id, type, true, classGuid);
+                    if (!sharedMediaData[selectedMode].endReached[0]) {
+                        sharedMediaData[selectedMode].loading = true;
+                        SharedMediaQuery.loadMedia(dialog_id, 0, 50, sharedMediaData[selectedMode].max_id[0], type, true, classGuid);
+                    } else if (mergeDialogId != 0 && !sharedMediaData[selectedMode].endReached[1]) {
+                        sharedMediaData[selectedMode].loading = true;
+                        SharedMediaQuery.loadMedia(mergeDialogId, 0, 50, sharedMediaData[selectedMode].max_id[1], type, true, classGuid);
+                    }
                 }
             }
         });
@@ -606,22 +626,28 @@ private final static int quoteforward = 33;
         return fragmentView;
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     public void didReceivedNotification(int id, Object... args) {
         if (id == NotificationCenter.mediaDidLoaded) {
             long uid = (Long) args[0];
             int guid = (Integer) args[3];
-            if (uid == dialog_id && guid == classGuid) {
+            if (guid == classGuid) {
                 int type = (Integer) args[4];
                 sharedMediaData[type].loading = false;
                 sharedMediaData[type].totalCount = (Integer) args[1];
                 ArrayList<MessageObject> arr = (ArrayList<MessageObject>) args[2];
                 boolean enc = ((int) dialog_id) == 0;
-                for (MessageObject message : arr) {
+                int loadIndex = uid == dialog_id ? 0 : 1;
+                for (int a = 0; a < arr.size(); a++) {
+                    MessageObject message = arr.get(a);
                     sharedMediaData[type].addMessage(message, false, enc);
                 }
-                sharedMediaData[type].endReached = (Boolean) args[5];
+                sharedMediaData[type].endReached[loadIndex] = (Boolean) args[5];
+                if (loadIndex == 0 && sharedMediaData[selectedMode].messages.isEmpty() && mergeDialogId != 0) {
+                    sharedMediaData[selectedMode].loading = true;
+                    SharedMediaQuery.loadMedia(mergeDialogId, 0, 50, sharedMediaData[selectedMode].max_id[1], type, true, classGuid);
+                }
+                if (!sharedMediaData[selectedMode].loading) {
                 if (progressView != null) {
                     progressView.setVisibility(View.GONE);
                 }
@@ -629,6 +655,7 @@ private final static int quoteforward = 33;
                     if (listView.getEmptyView() == null) {
                         listView.setEmptyView(emptyView);
                     }
+                }
                 }
                 scrolling = true;
                 if (selectedMode == 0 && type == 0) {
@@ -658,8 +685,13 @@ private final static int quoteforward = 33;
                 currentChat = MessagesController.getInstance().getChat(-(int) dialog_id);
             }
             int channelId = (Integer) args[1];
+            int loadIndex = 0;
             if (ChatObject.isChannel(currentChat)) {
-                if (channelId == 0 || channelId != currentChat.id) {
+                if (channelId == 0 && mergeDialogId != 0) {
+                    loadIndex = 1;
+                } else if (channelId == currentChat.id) {
+                    loadIndex = 0;
+                } else {
                     return;
                 }
             } else if (channelId != 0) {
@@ -669,7 +701,7 @@ private final static int quoteforward = 33;
             boolean updated = false;
             for (Integer ids : markAsDeletedMessages) {
                 for (SharedMediaData data : sharedMediaData) {
-                    if (data.deleteMessage(ids)) {
+                    if (data.deleteMessage(ids, loadIndex)) {
                         updated = true;
                     }
                 }
@@ -809,6 +841,8 @@ private final static int quoteforward = 33;
                         object.parentView = listView;
                         object.imageReceiver = imageView.getImageReceiver();
                         object.thumb = object.imageReceiver.getBitmap();
+                        object.parentView.getLocationInWindow(coords);
+                        object.clipTopAddition = AndroidUtilities.dp(40);
                         return object;
                     }
                 }
@@ -842,6 +876,13 @@ private final static int quoteforward = 33;
 
     @Override
     public int getSelectedCount() { return 0; }
+
+    public void setChatInfo(TLRPC.ChatFull chatInfo) {
+        info = chatInfo;
+        if (info != null && info.migrated_from_chat_id != 0) {
+            mergeDialogId = -info.migrated_from_chat_id;
+        }
+    }
 
     private void switchToCurrentSelectedMode() {
         if (searching && searchWas) {
@@ -894,7 +935,7 @@ private final static int quoteforward = 33;
                     emptyTextView.setText(LocaleController.getString("NoSharedAudio", R.string.NoSharedAudio));
                 }
                 searchItem.setVisibility(!sharedMediaData[selectedMode].messages.isEmpty() ? View.VISIBLE : View.GONE);
-                if (!sharedMediaData[selectedMode].loading && !sharedMediaData[selectedMode].endReached && sharedMediaData[selectedMode].messages.isEmpty()) {
+                if (!sharedMediaData[selectedMode].loading && !sharedMediaData[selectedMode].endReached[0] && sharedMediaData[selectedMode].messages.isEmpty()) {
                     sharedMediaData[selectedMode].loading = true;
                     SharedMediaQuery.loadMedia(dialog_id, 0, 50, 0, selectedMode == 1 ? SharedMediaQuery.MEDIA_FILE : SharedMediaQuery.MEDIA_MUSIC, true, classGuid);
                 }
@@ -914,7 +955,7 @@ private final static int quoteforward = 33;
                 emptyImageView.setImageResource(R.drawable.tip3);
                 emptyTextView.setText(LocaleController.getString("NoSharedLinks", R.string.NoSharedLinks));
                 searchItem.setVisibility(!sharedMediaData[3].messages.isEmpty() ? View.VISIBLE : View.GONE);
-                if (!sharedMediaData[selectedMode].loading && !sharedMediaData[selectedMode].endReached && sharedMediaData[selectedMode].messages.isEmpty()) {
+                if (!sharedMediaData[selectedMode].loading && !sharedMediaData[selectedMode].endReached[0] && sharedMediaData[selectedMode].messages.isEmpty()) {
                     sharedMediaData[selectedMode].loading = true;
                     SharedMediaQuery.loadMedia(dialog_id, 0, 50, 0, SharedMediaQuery.MEDIA_URL, true, classGuid);
                 }
@@ -936,7 +977,8 @@ private final static int quoteforward = 33;
         if (actionBar.isActionModeShowed()) {
             return false;
         }
-        selectedFiles.put(item.getId(), item);
+        AndroidUtilities.hideKeyboard(getParentActivity().getCurrentFocus());
+        selectedFiles[item.getDialogId() == dialog_id ? 0 : 1].put(item.getId(), item);
         if (!item.canDeleteMessage(null)) {
             cantDeleteMessagesCount++;
         }
@@ -971,35 +1013,36 @@ private final static int quoteforward = 33;
             return;
         }
         if (actionBar.isActionModeShowed()) {
-            if (selectedFiles.containsKey(message.getId())) {
-                selectedFiles.remove(message.getId());
+            int loadIndex = message.getDialogId() == dialog_id ? 0 : 1;
+            if (selectedFiles[loadIndex].containsKey(message.getId())) {
+                selectedFiles[loadIndex].remove(message.getId());
                 if (!message.canDeleteMessage(null)) {
                     cantDeleteMessagesCount--;
                 }
             } else {
-                selectedFiles.put(message.getId(), message);
+                selectedFiles[loadIndex].put(message.getId(), message);
                 if (!message.canDeleteMessage(null)) {
                     cantDeleteMessagesCount++;
                 }
             }
-            if (selectedFiles.isEmpty()) {
+            if (selectedFiles[0].isEmpty() && selectedFiles[1].isEmpty()) {
                 actionBar.hideActionMode();
             } else {
-                selectedMessagesCountTextView.setNumber(selectedFiles.size(), true);
+                selectedMessagesCountTextView.setNumber(selectedFiles[0].size() + selectedFiles[1].size(), true);
             }
             actionBar.createActionMode().getItem(delete).setVisibility(cantDeleteMessagesCount == 0 ? View.VISIBLE : View.GONE);
             scrolling = false;
             if (view instanceof SharedDocumentCell) {
-                ((SharedDocumentCell) view).setChecked(selectedFiles.containsKey(message.getId()), true);
+                ((SharedDocumentCell) view).setChecked(selectedFiles[loadIndex].containsKey(message.getId()), true);
             } else if (view instanceof SharedPhotoVideoCell) {
-                ((SharedPhotoVideoCell) view).setChecked(a, selectedFiles.containsKey(message.getId()), true);
+                ((SharedPhotoVideoCell) view).setChecked(a, selectedFiles[loadIndex].containsKey(message.getId()), true);
             } else if (view instanceof SharedLinkCell) {
-                ((SharedLinkCell) view).setChecked(selectedFiles.containsKey(message.getId()), true);
+                ((SharedLinkCell) view).setChecked(selectedFiles[loadIndex].containsKey(message.getId()), true);
             }
         } else {
             if (selectedMode == 0) {
                 PhotoViewer.getInstance().setParentActivity(getParentActivity());
-                PhotoViewer.getInstance().openPhoto(sharedMediaData[selectedMode].messages, index, this);
+                PhotoViewer.getInstance().openPhoto(sharedMediaData[selectedMode].messages, index, dialog_id, mergeDialogId, this);
             } else if (selectedMode == 1 || selectedMode == 4) {
                 if (view instanceof SharedDocumentCell) {
                     SharedDocumentCell cell = (SharedDocumentCell) view;
@@ -1165,7 +1208,7 @@ private final static int quoteforward = 33;
 
         @Override
         public int getSectionCount() {
-            return sharedMediaData[3].sections.size() + (sharedMediaData[3].sections.isEmpty() || sharedMediaData[3].endReached ? 0 : 1);
+            return sharedMediaData[3].sections.size() + (sharedMediaData[3].sections.isEmpty() || sharedMediaData[3].endReached[0] && sharedMediaData[3].endReached[1] ? 0 : 1);
         }
 
         @Override
@@ -1185,7 +1228,7 @@ private final static int quoteforward = 33;
                 String name = sharedMediaData[3].sections.get(section);
                 ArrayList<MessageObject> messageObjects = sharedMediaData[3].sectionArrays.get(name);
                 MessageObject messageObject = messageObjects.get(0);
-                ((GreySectionCell) convertView).setText(LocaleController.formatterMonthYear.format((long) messageObject.messageOwner.date * 1000).toUpperCase());
+                ((GreySectionCell) convertView).setText(LocaleController.getInstance().formatterMonthYear.format((long) messageObject.messageOwner.date * 1000).toUpperCase());
             }
             return convertView;
         }
@@ -1200,7 +1243,7 @@ private final static int quoteforward = 33;
                         convertView = new GreySectionCell(mContext);
                     }
                     MessageObject messageObject = messageObjects.get(0);
-                    ((GreySectionCell) convertView).setText(LocaleController.formatterMonthYear.format((long) messageObject.messageOwner.date * 1000).toUpperCase());
+                    ((GreySectionCell) convertView).setText(LocaleController.getInstance().formatterMonthYear.format((long) messageObject.messageOwner.date * 1000).toUpperCase());
                 } else {
                     if (convertView == null) {
                         convertView = new SharedLinkCell(mContext);
@@ -1220,7 +1263,7 @@ private final static int quoteforward = 33;
                     MessageObject messageObject = messageObjects.get(position - 1);
                     sharedLinkCell.setLink(messageObject, position != messageObjects.size() || section == sharedMediaData[3].sections.size() - 1 && sharedMediaData[3].loading);
                     if (actionBar.isActionModeShowed()) {
-                        sharedLinkCell.setChecked(selectedFiles.containsKey(messageObject.getId()), !scrolling);
+                        sharedLinkCell.setChecked(selectedFiles[messageObject.getDialogId() == dialog_id ? 0 : 1].containsKey(messageObject.getId()), !scrolling);
                     } else {
                         sharedLinkCell.setChecked(false, !scrolling);
                     }
@@ -1273,7 +1316,7 @@ private final static int quoteforward = 33;
 
         @Override
         public int getSectionCount() {
-            return sharedMediaData[currentType].sections.size() + (sharedMediaData[currentType].sections.isEmpty() || sharedMediaData[currentType].endReached ? 0 : 1);
+            return sharedMediaData[currentType].sections.size() + (sharedMediaData[currentType].sections.isEmpty() || sharedMediaData[currentType].endReached[0] && sharedMediaData[currentType].endReached[1] ? 0 : 1);
         }
 
         @Override
@@ -1293,7 +1336,7 @@ private final static int quoteforward = 33;
                 String name = sharedMediaData[currentType].sections.get(section);
                 ArrayList<MessageObject> messageObjects = sharedMediaData[currentType].sectionArrays.get(name);
                 MessageObject messageObject = messageObjects.get(0);
-                ((GreySectionCell) convertView).setText(LocaleController.formatterMonthYear.format((long) messageObject.messageOwner.date * 1000).toUpperCase());
+                ((GreySectionCell) convertView).setText(LocaleController.getInstance().formatterMonthYear.format((long) messageObject.messageOwner.date * 1000).toUpperCase());
             }
             return convertView;
         }
@@ -1308,7 +1351,7 @@ private final static int quoteforward = 33;
                         convertView = new GreySectionCell(mContext);
                     }
                     MessageObject messageObject = messageObjects.get(0);
-                    ((GreySectionCell) convertView).setText(LocaleController.formatterMonthYear.format((long) messageObject.messageOwner.date * 1000).toUpperCase());
+                    ((GreySectionCell) convertView).setText(LocaleController.getInstance().formatterMonthYear.format((long) messageObject.messageOwner.date * 1000).toUpperCase());
                 } else {
                     if (convertView == null) {
                         convertView = new SharedDocumentCell(mContext);
@@ -1317,7 +1360,7 @@ private final static int quoteforward = 33;
                     MessageObject messageObject = messageObjects.get(position - 1);
                     sharedDocumentCell.setDocument(messageObject, position != messageObjects.size() || section == sharedMediaData[currentType].sections.size() - 1 && sharedMediaData[currentType].loading);
                     if (actionBar.isActionModeShowed()) {
-                        sharedDocumentCell.setChecked(selectedFiles.containsKey(messageObject.getId()), !scrolling);
+                        sharedDocumentCell.setChecked(selectedFiles[messageObject.getDialogId() == dialog_id ? 0 : 1].containsKey(messageObject.getId()), !scrolling);
                     } else {
                         sharedDocumentCell.setChecked(false, !scrolling);
                     }
@@ -1367,7 +1410,7 @@ private final static int quoteforward = 33;
 
         @Override
         public int getSectionCount() {
-            return sharedMediaData[0].sections.size() + (sharedMediaData[0].sections.isEmpty() || sharedMediaData[0].endReached ? 0 : 1);
+            return sharedMediaData[0].sections.size() + (sharedMediaData[0].sections.isEmpty() || sharedMediaData[0].endReached[0] && sharedMediaData[0].endReached[1] ? 0 : 1);
         }
 
         @Override
@@ -1388,7 +1431,7 @@ private final static int quoteforward = 33;
                 String name = sharedMediaData[0].sections.get(section);
                 ArrayList<MessageObject> messageObjects = sharedMediaData[0].sectionArrays.get(name);
                 MessageObject messageObject = messageObjects.get(0);
-                ((SharedMediaSectionCell) convertView).setText(LocaleController.formatterMonthYear.format((long) messageObject.messageOwner.date * 1000).toUpperCase());
+                ((SharedMediaSectionCell) convertView).setText(LocaleController.getInstance().formatterMonthYear.format((long) messageObject.messageOwner.date * 1000).toUpperCase());
             }
             return convertView;
         }
@@ -1403,7 +1446,7 @@ private final static int quoteforward = 33;
                         convertView = new SharedMediaSectionCell(mContext);
                     }
                     MessageObject messageObject = messageObjects.get(0);
-                    ((SharedMediaSectionCell) convertView).setText(LocaleController.formatterMonthYear.format((long) messageObject.messageOwner.date * 1000).toUpperCase());
+                    ((SharedMediaSectionCell) convertView).setText(LocaleController.getInstance().formatterMonthYear.format((long) messageObject.messageOwner.date * 1000).toUpperCase());
                 } else {
                     SharedPhotoVideoCell cell;
                     if (convertView == null) {
@@ -1437,7 +1480,7 @@ private final static int quoteforward = 33;
                             cell.setItem(a, sharedMediaData[0].messages.indexOf(messageObject), messageObject);
 
                             if (actionBar.isActionModeShowed()) {
-                                cell.setChecked(a, selectedFiles.containsKey(messageObject.getId()), !scrolling);
+                                cell.setChecked(a, selectedFiles[messageObject.getDialogId() == dialog_id ? 0 : 1].containsKey(messageObject.getId()), !scrolling);
                             } else {
                                 cell.setChecked(a, false, !scrolling);
                             }
@@ -1487,8 +1530,8 @@ private final static int quoteforward = 33;
             currentType = type;
         }
 
-        public void queryServerSearch(final String query, final int max_id) {
-            int uid = (int) dialog_id;
+        public void queryServerSearch(final String query, final int max_id, long did) {
+            int uid = (int) did;
             if (uid == 0) {
                 return;
             }
@@ -1525,7 +1568,11 @@ private final static int quoteforward = 33;
                     final ArrayList<MessageObject> messageObjects = new ArrayList<>();
                     if (error == null) {
                         TLRPC.messages_Messages res = (TLRPC.messages_Messages) response;
-                        for (TLRPC.Message message : res.messages) {
+                        for (int a = 0; a < res.messages.size(); a++) {
+                            TLRPC.Message message = res.messages.get(a);
+                            if (message.id > max_id) {
+                                continue;
+                            }
                             messageObjects.add(new MessageObject(message, null, false));
                         }
                     }
@@ -1577,14 +1624,14 @@ private final static int quoteforward = 33;
                 @Override
                 public void run() {
                     if (!sharedMediaData[currentType].messages.isEmpty()) {
-                        if (currentType == 1 || currentType == 4) {
+                        if (currentType == 1) {
                             MessageObject messageObject = sharedMediaData[currentType].messages.get(sharedMediaData[currentType].messages.size() - 1);
-                            queryServerSearch(query, messageObject.getId());
-                        } else if (currentType == 3) {
-                            queryServerSearch(query, 0);
+                            queryServerSearch(query, messageObject.getId(), messageObject.getDialogId());
+                        } else if (currentType == 3 || currentType == 4) {
+                            queryServerSearch(query, 0, dialog_id);
                         }
                     }
-                    if (currentType == 1 || currentType == 4) {
+                    if (currentType == 1) {
                         final ArrayList<MessageObject> copy = new ArrayList<>();
                         copy.addAll(sharedMediaData[currentType].messages);
                         Utilities.searchQueue.postRunnable(new Runnable() {
@@ -1607,7 +1654,8 @@ private final static int quoteforward = 33;
 
                                 ArrayList<MessageObject> resultArray = new ArrayList<>();
 
-                                for (MessageObject messageObject : copy) {
+                                for (int a = 0; a < copy.size(); a++) {
+                                    MessageObject messageObject = copy.get(a);
                                     for (String q : search) {
                                         String name = messageObject.getDocumentName();
                                         if (name == null || name.length() == 0) {
@@ -1699,7 +1747,7 @@ private final static int quoteforward = 33;
                 MessageObject messageObject = getItem(i);
                 sharedDocumentCell.setDocument(messageObject, i != getCount() - 1);
                 if (actionBar.isActionModeShowed()) {
-                    sharedDocumentCell.setChecked(selectedFiles.containsKey(messageObject.getId()), !scrolling);
+                    sharedDocumentCell.setChecked(selectedFiles[messageObject.getDialogId() == dialog_id ? 0 : 1].containsKey(messageObject.getId()), !scrolling);
                 } else {
                     sharedDocumentCell.setChecked(false, !scrolling);
                 }
@@ -1722,7 +1770,7 @@ private final static int quoteforward = 33;
                 MessageObject messageObject = getItem(i);
                 sharedLinkCell.setLink(messageObject, i != getCount() - 1);
                 if (actionBar.isActionModeShowed()) {
-                    sharedLinkCell.setChecked(selectedFiles.containsKey(messageObject.getId()), !scrolling);
+                    sharedLinkCell.setChecked(selectedFiles[messageObject.getDialogId() == dialog_id ? 0 : 1].containsKey(messageObject.getId()), !scrolling);
                 } else {
                     sharedLinkCell.setChecked(false, !scrolling);
                 }

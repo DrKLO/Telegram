@@ -108,7 +108,6 @@
   <string name="ActionChannelChangedPhoto">Фото канала изменено</string>
   <string name="ActionChannelRemovedPhoto">Фото канала удалено</string>
   <string name="ActionChannelChangedTitle">Имя канала изменено на un2</string>
-  <string name="ActionChannelInvite">un1 добавил(а) вас на канал un2</string>
   <string name="ChannelPublicLimitReached">Извините, вы создали слишком много публичных каналов. Вы можете либо удалить один из существующих, либо создать частный канал.</string>
   <string name="ChannelModerator">Модератор</string>
   <string name="ChannelCreator">Создатель</string>
@@ -125,7 +124,6 @@
   <string name="ChannelAdminsInfo">Вы можете добавлять администраторов для помощи в управлении каналом. Нажмите и удерживайте чтобы удалить администраторов.</string>
   <string name="ChannelJoinTo">Хотите присоединиться к каналу \'%1$s\'?</string>
   <string name="ChannelCantOpenPrivate">Извините, этот канал больше недоступен.</string>
-  <string name="ChannelAddToTitle">Добавить пользователя %1$s на канал %2$s?</string>
   <string name="ChannelAddTo">Добавить пользователя %1$s на канал?</string>
   <string name="ChannelUserLeftError">Извините, этот пользователь решил покинуть данную группу, поэтому вы не можете пригласить его обратно.</string>
   <string name="ChannelUserCantAdd">Извините, вы не можете добавить этого пользователя на каналы.</string>
@@ -972,11 +970,11 @@
   <string name="formatterDay24H">HH:mm</string>
   <string name="formatterDay12H">h:mm a</string>
   <string name="formatDateAtTime">%1$s в %2$s</string>
-  <!--update text-->
-  <string name="updateText">Telegram для Android обновлён. Новое в версии 3.2.6:\n\n- Новые анимации и множество визуальных усовершенствований\n- Поддержка новых эмодзи\n- Прочие улучшения и исправления ошибок</string>
-  <string name="updateBuild">661</string>
-    <!--Telegram+-->
-  <string name="updatePlusText">\n\nНовое в версии 3.2.6.2:\n\n- Теперь заголовок берёт цвет в списке недавних приложений  Andriod\n- Увеличен размер списка упоминаний на экране чата\n- Теперь каналы можно перевести в беззвучный режим из основного экранаn\n- Добавлена настройка закругления аватара в заголовке экрана чата\n- Добавлена настройка цвета для уведомления печати в заголовке чата\n- Исправление ошибок</string>
+  <!--update text--><!--
+  <string name="updateText">Telegram для Android обновлён. Новое в версии 3.2.6:\n\n- Новые анимации и множество визуальных усовершенствований\n- Поддержка новых эмодзи\n- Прочие улучшения и исправления ошибок</string>-->
+  <string name="updateBuild">686</string>
+    <!--Telegram+--><!--
+  <string name="updatePlusText">\n\nНовое в версии 3.3.1.0:\n\n- Исправление ошибок</string>-->
   <string name="TelegramForAndroid">Plus Messenger для Android</string>
   <string name="Theming">Кастомизация</string>
   <string name="colorHexInvalid">Неверный hex-код цвета!</string>

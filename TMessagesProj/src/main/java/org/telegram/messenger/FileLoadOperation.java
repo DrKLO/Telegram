@@ -487,7 +487,7 @@ public class FileLoadOperation {
                 delegate.didFailedLoadingFile(FileLoadOperation.this, 2);
             } else {
                 if (location != null) {
-                    FileLog.e("tmessages", "" + location + " id = " + location.id + " access_hash = " + location.access_hash + " volume_id = " + location.local_id + " secret = " + location.secret);
+                    FileLog.e("tmessages", "" + location + " id = " + location.id + " local_id = " + location.local_id + " access_hash = " + location.access_hash + " volume_id = " + location.volume_id + " secret = " + location.secret);
                 }
                 cleanup();
                 delegate.didFailedLoadingFile(FileLoadOperation.this, 0);

@@ -48,7 +48,6 @@ import android.widget.TextView;
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.BuildConfig;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.FileLog;
@@ -66,6 +65,7 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.ui.Components.HintEditText;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.SlideView;
 import org.telegram.ui.Components.TypefaceSpan;
@@ -131,12 +131,7 @@ public class LoginActivity extends BaseFragment {
             scrollView.setFillViewport(true);
 
         FrameLayout frameLayout = new FrameLayout(context);
-            scrollView.addView(frameLayout);
-            ScrollView.LayoutParams layoutParams = (ScrollView.LayoutParams) frameLayout.getLayoutParams();
-            layoutParams.width = ScrollView.LayoutParams.MATCH_PARENT;
-            layoutParams.height = ScrollView.LayoutParams.WRAP_CONTENT;
-            layoutParams.gravity = Gravity.TOP | Gravity.LEFT;
-            frameLayout.setLayoutParams(layoutParams);
+        scrollView.addView(frameLayout, LayoutHelper.createScroll(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.LEFT));
 
         views[0] = new PhoneView(context);
         views[1] = new LoginActivitySmsView(context);
@@ -146,15 +141,7 @@ public class LoginActivity extends BaseFragment {
 
         for (int a = 0; a < 5; a++) {
             views[a].setVisibility(a == 0 ? View.VISIBLE : View.GONE);
-            frameLayout.addView(views[a]);
-            FrameLayout.LayoutParams layoutParams1 = (FrameLayout.LayoutParams) views[a].getLayoutParams();
-            layoutParams1.width = LayoutHelper.MATCH_PARENT;
-            layoutParams1.height = a == 0 ? LayoutHelper.WRAP_CONTENT : LayoutHelper.MATCH_PARENT;
-            layoutParams1.leftMargin = AndroidUtilities.dp(AndroidUtilities.isTablet() ? 26 : 18);
-            layoutParams1.rightMargin = AndroidUtilities.dp(AndroidUtilities.isTablet() ? 26 : 18);
-            layoutParams1.topMargin = AndroidUtilities.dp(30);
-            layoutParams1.gravity = Gravity.TOP | Gravity.LEFT;
-            views[a].setLayoutParams(layoutParams1);
+            frameLayout.addView(views[a], LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, a == 0 ? LayoutHelper.WRAP_CONTENT : LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT, AndroidUtilities.isTablet() ? 26 : 18, 30, AndroidUtilities.isTablet() ? 26 : 18, 0));
         }
 
         Bundle savedInstanceState = loadCurrentState();
@@ -398,7 +385,7 @@ public class LoginActivity extends BaseFragment {
     public class PhoneView extends SlideView implements AdapterView.OnItemSelectedListener {
 
         private EditText codeField;
-        private EditText phoneField;
+        private HintEditText phoneField;
         private TextView countryButton;
 
         private int countryState = 0;
@@ -406,13 +393,14 @@ public class LoginActivity extends BaseFragment {
         private ArrayList<String> countriesArray = new ArrayList<>();
         private HashMap<String, String> countriesMap = new HashMap<>();
         private HashMap<String, String> codesMap = new HashMap<>();
+        private HashMap<String, String> phoneFormatMap = new HashMap<>();
 
         private boolean ignoreSelection = false;
         private boolean ignoreOnTextChange = false;
         private boolean ignoreOnPhoneChange = false;
         private boolean nextPressed = false;
 
-        public PhoneView(Context context) {
+        public PhoneView(final Context context) {
             super(context);
 
             setOrientation(VERTICAL);
@@ -426,12 +414,7 @@ public class LoginActivity extends BaseFragment {
             countryButton.setEllipsize(TextUtils.TruncateAt.END);
             countryButton.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_HORIZONTAL);
             countryButton.setBackgroundResource(R.drawable.spinner_states);
-            addView(countryButton);
-            LayoutParams layoutParams = (LayoutParams) countryButton.getLayoutParams();
-            layoutParams.width = LayoutHelper.MATCH_PARENT;
-            layoutParams.height = AndroidUtilities.dp(36);
-            layoutParams.bottomMargin = AndroidUtilities.dp(14);
-            countryButton.setLayoutParams(layoutParams);
+            addView(countryButton, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 36, 0, 0, 0, 14));
             countryButton.setOnClickListener(new OnClickListener() {
                 @Override
                 public void onClick(View view) {
@@ -440,7 +423,14 @@ public class LoginActivity extends BaseFragment {
                         @Override
                         public void didSelectCountry(String name) {
                             selectCountry(name);
+                            AndroidUtilities.runOnUIThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    AndroidUtilities.showKeyboard(phoneField);
+                                }
+                            }, 300);
                             phoneField.requestFocus();
+                            phoneField.setSelection(phoneField.length());
                         }
                     });
                     presentFragment(fragment);
@@ -450,33 +440,17 @@ public class LoginActivity extends BaseFragment {
             View view = new View(context);
             view.setPadding(AndroidUtilities.dp(12), 0, AndroidUtilities.dp(12), 0);
             view.setBackgroundColor(0xffdbdbdb);
-            addView(view);
-            layoutParams = (LayoutParams) view.getLayoutParams();
-            layoutParams.width = LayoutHelper.MATCH_PARENT;
-            layoutParams.height = 1;
-            layoutParams.topMargin = AndroidUtilities.dp(-17.5f);
-            layoutParams.leftMargin = AndroidUtilities.dp(4);
-            layoutParams.rightMargin = AndroidUtilities.dp(4);
-            view.setLayoutParams(layoutParams);
+            addView(view, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 1, 4, -17.5f, 4, 0));
 
             LinearLayout linearLayout = new LinearLayout(context);
             linearLayout.setOrientation(HORIZONTAL);
-            addView(linearLayout);
-            layoutParams = (LayoutParams) linearLayout.getLayoutParams();
-            layoutParams.width = LayoutHelper.MATCH_PARENT;
-            layoutParams.height = LayoutHelper.WRAP_CONTENT;
-            layoutParams.topMargin = AndroidUtilities.dp(20);
-            linearLayout.setLayoutParams(layoutParams);
+            addView(linearLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 20, 0, 0));
 
             TextView textView = new TextView(context);
             textView.setText("+");
             textView.setTextColor(0xff212121);
             textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
-            linearLayout.addView(textView);
-            layoutParams = (LayoutParams) textView.getLayoutParams();
-            layoutParams.width = LayoutHelper.WRAP_CONTENT;
-            layoutParams.height = LayoutHelper.WRAP_CONTENT;
-            textView.setLayoutParams(layoutParams);
+            linearLayout.addView(textView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
 
             codeField = new EditText(context);
             codeField.setInputType(InputType.TYPE_CLASS_PHONE);
@@ -488,15 +462,9 @@ public class LoginActivity extends BaseFragment {
             codeField.setGravity(Gravity.LEFT | Gravity.CENTER_VERTICAL);
             codeField.setImeOptions(EditorInfo.IME_ACTION_NEXT | EditorInfo.IME_FLAG_NO_EXTRACT_UI);
             InputFilter[] inputFilters = new InputFilter[1];
-            inputFilters[0] = new InputFilter.LengthFilter(4);
+            inputFilters[0] = new InputFilter.LengthFilter(5);
             codeField.setFilters(inputFilters);
-            linearLayout.addView(codeField);
-            layoutParams = (LayoutParams) codeField.getLayoutParams();
-            layoutParams.width = AndroidUtilities.dp(55);
-            layoutParams.height = AndroidUtilities.dp(36);
-            layoutParams.rightMargin = AndroidUtilities.dp(16);
-            layoutParams.leftMargin = AndroidUtilities.dp(-9);
-            codeField.setLayoutParams(layoutParams);
+            linearLayout.addView(codeField, LayoutHelper.createLinear(55, 36, -9, 0, 16, 0));
             codeField.addTextChangedListener(new TextWatcher() {
                 @Override
                 public void beforeTextChanged(CharSequence charSequence, int i, int i2, int i3) {
@@ -519,26 +487,57 @@ public class LoginActivity extends BaseFragment {
                     codeField.setText(text);
                     if (text.length() == 0) {
                         countryButton.setText(LocaleController.getString("ChooseCountry", R.string.ChooseCountry));
+                        phoneField.setHintText(null);
                         countryState = 1;
                     } else {
-                        String country = codesMap.get(text);
+                        String country;
+                        boolean ok = false;
+                        String textToSet = null;
+                        if (text.length() > 4) {
+                            ignoreOnTextChange = true;
+                            for (int a = 4; a >= 1; a--) {
+                                String sub = text.substring(0, a);
+                                country = codesMap.get(sub);
+                                if (country != null) {
+                                    ok = true;
+                                    textToSet = text.substring(a, text.length()) + phoneField.getText().toString();
+                                    codeField.setText(text = sub);
+                                    break;
+                                }
+                            }
+                            if (!ok) {
+                                ignoreOnTextChange = true;
+                                textToSet = text.substring(1, text.length()) + phoneField.getText().toString();
+                                codeField.setText(text = text.substring(0, 1));
+                            }
+                        }
+                        country = codesMap.get(text);
                         if (country != null) {
                             int index = countriesArray.indexOf(country);
                             if (index != -1) {
                                 ignoreSelection = true;
                                 countryButton.setText(countriesArray.get(index));
-
-                                updatePhoneField();
+                                String hint = phoneFormatMap.get(text);
+                                phoneField.setHintText(hint != null ? hint.replace('X', '�') : null);
                                 countryState = 0;
                             } else {
                                 countryButton.setText(LocaleController.getString("WrongCountry", R.string.WrongCountry));
+                                phoneField.setHintText(null);
                                 countryState = 2;
                             }
                         } else {
                             countryButton.setText(LocaleController.getString("WrongCountry", R.string.WrongCountry));
+                            phoneField.setHintText(null);
                             countryState = 2;
                         }
+                        if (!ok) {
                         codeField.setSelection(codeField.getText().length());
+                    }
+                        if (textToSet != null) {
+                            phoneField.requestFocus();
+                            phoneField.setText(textToSet);
+                            phoneField.setSelection(phoneField.length());
+                        }
                     }
                 }
             });
@@ -547,13 +546,14 @@ public class LoginActivity extends BaseFragment {
                 public boolean onEditorAction(TextView textView, int i, KeyEvent keyEvent) {
                     if (i == EditorInfo.IME_ACTION_NEXT) {
                         phoneField.requestFocus();
+                        phoneField.setSelection(phoneField.length());
                         return true;
                     }
                     return false;
                 }
             });
 
-            phoneField = new EditText(context);
+            phoneField = new HintEditText(context);
             phoneField.setInputType(InputType.TYPE_CLASS_PHONE);
             phoneField.setTextColor(0xff212121);
             phoneField.setHintTextColor(0xff979797);
@@ -564,42 +564,25 @@ public class LoginActivity extends BaseFragment {
             phoneField.setMaxLines(1);
             phoneField.setGravity(Gravity.LEFT | Gravity.CENTER_VERTICAL);
             phoneField.setImeOptions(EditorInfo.IME_ACTION_NEXT | EditorInfo.IME_FLAG_NO_EXTRACT_UI);
-            linearLayout.addView(phoneField);
-            layoutParams = (LayoutParams) phoneField.getLayoutParams();
-            layoutParams.width = LayoutHelper.MATCH_PARENT;
-            layoutParams.height = AndroidUtilities.dp(36);
-            phoneField.setLayoutParams(layoutParams);
+            linearLayout.addView(phoneField, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 36));
             phoneField.addTextChangedListener(new TextWatcher() {
+
+                private int characterAction = -1;
+                private int actionPosition;
+
                 @Override
                 public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-                    if (ignoreOnPhoneChange) {
-                        return;
-                    }
-                    if (count == 1 && after == 0 && s.length() > 1) {
-                        String phoneChars = "0123456789";
-                        String str = s.toString();
-                        String substr = str.substring(start, start + 1);
-                        if (!phoneChars.contains(substr)) {
-                            ignoreOnPhoneChange = true;
-                            StringBuilder builder = new StringBuilder(str);
-                            int toDelete = 0;
-                            for (int a = start; a >= 0; a--) {
-                                substr = str.substring(a, a + 1);
-                                if (phoneChars.contains(substr)) {
-                                    break;
-                                }
-                                toDelete++;
-                            }
-                            builder.delete(Math.max(0, start - toDelete), start + 1);
-                            str = builder.toString();
-                            if (PhoneFormat.strip(str).length() == 0) {
-                                phoneField.setText("");
-                            } else {
-                                phoneField.setText(str);
-                                updatePhoneField();
-                            }
-                            ignoreOnPhoneChange = false;
+                    if (count == 0 && after == 1) {
+                        characterAction = 1;
+                    } else if (count == 1 && after == 0) {
+                        if (s.charAt(start) == ' ' && start > 0) {
+                            characterAction = 3;
+                            actionPosition = start - 1;
+                        } else {
+                            characterAction = 2;
                         }
+                    } else {
+                        characterAction = -1;
                     }
                 }
 
@@ -613,8 +596,48 @@ public class LoginActivity extends BaseFragment {
                     if (ignoreOnPhoneChange) {
                         return;
                     }
-                    updatePhoneField();
-                }
+                    int start = phoneField.getSelectionStart();
+                        String phoneChars = "0123456789";
+                    String str = phoneField.getText().toString();
+                    if (characterAction == 3) {
+                        str = str.substring(0, actionPosition) + str.substring(actionPosition + 1, str.length());
+                        start--;
+                    }
+                    StringBuilder builder = new StringBuilder(str.length());
+                    for (int a = 0; a < str.length(); a++) {
+                        String ch = str.substring(a, a + 1);
+                        if (phoneChars.contains(ch)) {
+                            builder.append(ch);
+                        }
+                    }
+                            ignoreOnPhoneChange = true;
+                    String hint = phoneField.getHintText();
+                    if (hint != null) {
+                        for (int a = 0; a < builder.length(); a++) {
+                            if (a < hint.length()) {
+                                if (hint.charAt(a) == ' ') {
+                                    builder.insert(a, ' ');
+                                    a++;
+                                    if (start == a && characterAction != 2 && characterAction != 3) {
+                                        start++;
+                                    }
+                                }
+                            } else {
+                                builder.insert(a, ' ');
+                                if (start == a + 1 && characterAction != 2 && characterAction != 3) {
+                                    start++;
+                                }
+                                    break;
+                                }
+                        }
+                            }
+                    phoneField.setText(builder);
+                    if (start >= 0) {
+                        phoneField.setSelection(start <= phoneField.length() ? start : phoneField.length());
+                    }
+                    phoneField.onTextChange();
+                            ignoreOnPhoneChange = false;
+                        }
             });
             phoneField.setOnEditorActionListener(new TextView.OnEditorActionListener() {
                 @Override
@@ -633,14 +656,7 @@ public class LoginActivity extends BaseFragment {
             textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             textView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
             textView.setLineSpacing(AndroidUtilities.dp(2), 1.0f);
-            addView(textView);
-            layoutParams = (LayoutParams) textView.getLayoutParams();
-            layoutParams.width = LayoutHelper.WRAP_CONTENT;
-            layoutParams.height = LayoutHelper.WRAP_CONTENT;
-            layoutParams.topMargin = AndroidUtilities.dp(28);
-            layoutParams.bottomMargin = AndroidUtilities.dp(10);
-            layoutParams.gravity = LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT;
-            textView.setLayoutParams(layoutParams);
+            addView(textView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT, 0, 28, 0, 10));
 
             HashMap<String, String> languageMap = new HashMap<>();
             try {
@@ -651,6 +667,9 @@ public class LoginActivity extends BaseFragment {
                     countriesArray.add(0, args[2]);
                     countriesMap.put(args[2], args[0]);
                     codesMap.put(args[0], args[2]);
+                    if (args.length > 3) {
+                        phoneFormatMap.put(args[0], args[3]);
+                    }
                     languageMap.put(args[1], args[2]);
                 }
                 reader.close();
@@ -688,12 +707,14 @@ public class LoginActivity extends BaseFragment {
             }
             if (codeField.length() == 0) {
                 countryButton.setText(LocaleController.getString("ChooseCountry", R.string.ChooseCountry));
+                phoneField.setHintText(null);
                 countryState = 1;
             }
 
             if (codeField.length() != 0) {
                 AndroidUtilities.showKeyboard(phoneField);
                 phoneField.requestFocus();
+                phoneField.setSelection(phoneField.length());
             } else {
                 AndroidUtilities.showKeyboard(codeField);
                 codeField.requestFocus();
@@ -704,35 +725,13 @@ public class LoginActivity extends BaseFragment {
             int index = countriesArray.indexOf(name);
             if (index != -1) {
                 ignoreOnTextChange = true;
-                codeField.setText(countriesMap.get(name));
+                String code = countriesMap.get(name);
+                codeField.setText(code);
                 countryButton.setText(name);
+                String hint = phoneFormatMap.get(code);
+                phoneField.setHintText(hint != null ? hint.replace('X', '�') : null);
                 countryState = 0;
             }
-        }
-
-        private void updatePhoneField() {
-            ignoreOnPhoneChange = true;
-            try {
-                String codeText = codeField.getText().toString();
-                String phone = PhoneFormat.getInstance().format("+" + codeText + phoneField.getText().toString());
-                int idx = phone.indexOf(" ");
-                if (idx != -1) {
-                    String resultCode = PhoneFormat.stripExceptNumbers(phone.substring(0, idx));
-                    if (!codeText.equals(resultCode)) {
-                        phone = PhoneFormat.getInstance().format(phoneField.getText().toString()).trim();
-                        phoneField.setText(phone);
-                        phoneField.setSelection(phoneField.length());
-                    } else {
-                        phoneField.setText(phone.substring(idx).trim());
-                        phoneField.setSelection(phoneField.length());
-                    }
-                } else {
-                    phoneField.setSelection(phoneField.length());
-                }
-            } catch (Exception e) {
-                FileLog.e("tmessages", e);
-            }
-            ignoreOnPhoneChange = false;
         }
 
         @Override
@@ -744,7 +743,6 @@ public class LoginActivity extends BaseFragment {
             ignoreOnTextChange = true;
             String str = countriesArray.get(i);
             codeField.setText(countriesMap.get(str));
-            updatePhoneField();
         }
 
         @Override
@@ -760,7 +758,7 @@ public class LoginActivity extends BaseFragment {
             if (countryState == 1) {
                 needShowAlert(LocaleController.getString("AppName", R.string.AppName), LocaleController.getString("ChooseCountry", R.string.ChooseCountry));
                 return;
-            } else if (countryState == 2 && !BuildConfig.DEBUG){//!BuildVars.DEBUG_VERSION) {
+            } else if (countryState == 2 && !BuildVars.DEBUG_VERSION) {
                 needShowAlert(LocaleController.getString("AppName", R.string.AppName), LocaleController.getString("WrongCountry", R.string.WrongCountry));
                 return;
             }
@@ -831,8 +829,14 @@ public class LoginActivity extends BaseFragment {
         public void onShow() {
             super.onShow();
             if (phoneField != null) {
-                phoneField.requestFocus();
-                phoneField.setSelection(phoneField.length());
+                if (codeField.length() != 0) {
+                    AndroidUtilities.showKeyboard(phoneField);
+                    phoneField.requestFocus();
+                    phoneField.setSelection(phoneField.length());
+                } else {
+                    AndroidUtilities.showKeyboard(codeField);
+                    codeField.requestFocus();
+                }
             }
         }
 
@@ -884,6 +888,7 @@ public class LoginActivity extends BaseFragment {
         private volatile int codeTime = 15000;
         private double lastCurrentTime;
         private double lastCodeTime;
+        private boolean ignoreOnTextChange = false;
         private boolean waitingForSms = false;
         private boolean nextPressed = false;
         private String lastError = "";
@@ -898,12 +903,7 @@ public class LoginActivity extends BaseFragment {
             confirmTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             confirmTextView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
             confirmTextView.setLineSpacing(AndroidUtilities.dp(2), 1.0f);
-            addView(confirmTextView);
-            LayoutParams layoutParams = (LayoutParams) confirmTextView.getLayoutParams();
-            layoutParams.width = LayoutHelper.WRAP_CONTENT;
-            layoutParams.height = LayoutHelper.WRAP_CONTENT;
-            layoutParams.gravity = LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT;
-            confirmTextView.setLayoutParams(layoutParams);
+            addView(confirmTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT));
 
             codeField = new EditText(context);
             codeField.setTextColor(0xff212121);
@@ -918,13 +918,28 @@ public class LoginActivity extends BaseFragment {
             codeField.setInputType(InputType.TYPE_CLASS_PHONE);
             codeField.setMaxLines(1);
             codeField.setPadding(0, 0, 0, 0);
-            addView(codeField);
-            layoutParams = (LayoutParams) codeField.getLayoutParams();
-            layoutParams.width = LayoutHelper.MATCH_PARENT;
-            layoutParams.height = AndroidUtilities.dp(36);
-            layoutParams.gravity = Gravity.CENTER_HORIZONTAL;
-            layoutParams.topMargin = AndroidUtilities.dp(20);
-            codeField.setLayoutParams(layoutParams);
+            addView(codeField, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 36, Gravity.CENTER_HORIZONTAL, 0, 20, 0, 0));
+            codeField.addTextChangedListener(new TextWatcher() {
+                @Override
+                public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+
+                }
+
+                @Override
+                public void onTextChanged(CharSequence s, int start, int before, int count) {
+
+                }
+
+                @Override
+                public void afterTextChanged(Editable s) {
+                    if (ignoreOnTextChange) {
+                        return;
+                    }
+                    if (codeField.length() == 5) {
+                        onNextPressed();
+                    }
+                }
+            });
             codeField.setOnEditorActionListener(new TextView.OnEditorActionListener() {
                 @Override
                 public boolean onEditorAction(TextView textView, int i, KeyEvent keyEvent) {
@@ -941,13 +956,7 @@ public class LoginActivity extends BaseFragment {
             timeText.setTextColor(0xff757575);
             timeText.setLineSpacing(AndroidUtilities.dp(2), 1.0f);
             timeText.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
-            addView(timeText);
-            layoutParams = (LayoutParams) timeText.getLayoutParams();
-            layoutParams.width = LayoutHelper.WRAP_CONTENT;
-            layoutParams.height = LayoutHelper.WRAP_CONTENT;
-            layoutParams.gravity = LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT;
-            layoutParams.topMargin = AndroidUtilities.dp(30);
-            timeText.setLayoutParams(layoutParams);
+            addView(timeText, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT, 0, 30, 0, 0));
 
             problemText = new TextView(context);
             problemText.setText(LocaleController.getString("DidNotGetTheCode", R.string.DidNotGetTheCode));
@@ -958,13 +967,7 @@ public class LoginActivity extends BaseFragment {
             problemText.setTextColor(defColor);
             problemText.setLineSpacing(AndroidUtilities.dp(2), 1.0f);
             problemText.setPadding(0, AndroidUtilities.dp(2), 0, AndroidUtilities.dp(12));
-            addView(problemText);
-            layoutParams = (LayoutParams) problemText.getLayoutParams();
-            layoutParams.width = LayoutHelper.WRAP_CONTENT;
-            layoutParams.height = LayoutHelper.WRAP_CONTENT;
-            layoutParams.gravity = LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT;
-            layoutParams.topMargin = AndroidUtilities.dp(20);
-            problemText.setLayoutParams(layoutParams);
+            addView(problemText, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT, 0, 20, 0, 0));
             problemText.setOnClickListener(new OnClickListener() {
                 @Override
                 public void onClick(View v) {
@@ -986,12 +989,7 @@ public class LoginActivity extends BaseFragment {
 
             LinearLayout linearLayout = new LinearLayout(context);
             linearLayout.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL);
-            addView(linearLayout);
-            layoutParams = (LayoutParams) linearLayout.getLayoutParams();
-            layoutParams.width = LayoutHelper.MATCH_PARENT;
-            layoutParams.height = LayoutHelper.MATCH_PARENT;
-            layoutParams.gravity = (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
-            linearLayout.setLayoutParams(layoutParams);
+            addView(linearLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT));
 
             TextView wrongNumber = new TextView(context);
             wrongNumber.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_HORIZONTAL);
@@ -1000,13 +998,7 @@ public class LoginActivity extends BaseFragment {
             wrongNumber.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             wrongNumber.setLineSpacing(AndroidUtilities.dp(2), 1.0f);
             wrongNumber.setPadding(0, AndroidUtilities.dp(24), 0, 0);
-            linearLayout.addView(wrongNumber);
-            layoutParams = (LayoutParams) wrongNumber.getLayoutParams();
-            layoutParams.width = LayoutHelper.WRAP_CONTENT;
-            layoutParams.height = LayoutHelper.WRAP_CONTENT;
-            layoutParams.gravity = Gravity.BOTTOM | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
-            layoutParams.bottomMargin = AndroidUtilities.dp(10);
-            wrongNumber.setLayoutParams(layoutParams);
+            linearLayout.addView(wrongNumber, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT), 0, 0, 0, 10));
             wrongNumber.setText(LocaleController.getString("WrongNumber", R.string.WrongNumber));
             wrongNumber.setOnClickListener(new OnClickListener() {
                 @Override
@@ -1305,6 +1297,7 @@ public class LoginActivity extends BaseFragment {
                             return;
                         }
                         if (codeField != null) {
+                    ignoreOnTextChange = true;
                             codeField.setText("" + args[0]);
                             onNextPressed();
                         }
@@ -1370,12 +1363,7 @@ public class LoginActivity extends BaseFragment {
             confirmTextView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
             confirmTextView.setLineSpacing(AndroidUtilities.dp(2), 1.0f);
             confirmTextView.setText(LocaleController.getString("LoginPasswordText", R.string.LoginPasswordText));
-            addView(confirmTextView);
-            LayoutParams layoutParams = (LayoutParams) confirmTextView.getLayoutParams();
-            layoutParams.width = LayoutHelper.WRAP_CONTENT;
-            layoutParams.height = LayoutHelper.WRAP_CONTENT;
-            layoutParams.gravity = LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT;
-            confirmTextView.setLayoutParams(layoutParams);
+            addView(confirmTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT));
 
             codeField = new EditText(context);
             codeField.setTextColor(0xff212121);
@@ -1390,13 +1378,7 @@ public class LoginActivity extends BaseFragment {
             codeField.setTransformationMethod(PasswordTransformationMethod.getInstance());
             codeField.setTypeface(Typeface.DEFAULT);
             codeField.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
-            addView(codeField);
-            layoutParams = (LayoutParams) codeField.getLayoutParams();
-            layoutParams.width = LayoutHelper.MATCH_PARENT;
-            layoutParams.height = AndroidUtilities.dp(36);
-            layoutParams.gravity = Gravity.CENTER_HORIZONTAL;
-            layoutParams.topMargin = AndroidUtilities.dp(20);
-            codeField.setLayoutParams(layoutParams);
+            addView(codeField, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 36, Gravity.CENTER_HORIZONTAL, 0, 20, 0, 0));
             codeField.setOnEditorActionListener(new TextView.OnEditorActionListener() {
                 @Override
                 public boolean onEditorAction(TextView textView, int i, KeyEvent keyEvent) {
@@ -1415,12 +1397,7 @@ public class LoginActivity extends BaseFragment {
             cancelButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             cancelButton.setLineSpacing(AndroidUtilities.dp(2), 1.0f);
             cancelButton.setPadding(0, AndroidUtilities.dp(14), 0, 0);
-            addView(cancelButton);
-            layoutParams = (LayoutParams) cancelButton.getLayoutParams();
-            layoutParams.width = LayoutHelper.WRAP_CONTENT;
-            layoutParams.height = LayoutHelper.WRAP_CONTENT;
-            layoutParams.gravity = Gravity.TOP | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
-            cancelButton.setLayoutParams(layoutParams);
+            addView(cancelButton, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT)));
             cancelButton.setOnClickListener(new OnClickListener() {
                 @Override
                 public void onClick(View view) {
@@ -1488,13 +1465,7 @@ public class LoginActivity extends BaseFragment {
             resetAccountButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             resetAccountButton.setLineSpacing(AndroidUtilities.dp(2), 1.0f);
             resetAccountButton.setPadding(0, AndroidUtilities.dp(14), 0, 0);
-            addView(resetAccountButton);
-            layoutParams = (LayoutParams) resetAccountButton.getLayoutParams();
-            layoutParams.width = LayoutHelper.WRAP_CONTENT;
-            layoutParams.height = LayoutHelper.WRAP_CONTENT;
-            layoutParams.gravity = Gravity.TOP | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
-            layoutParams.topMargin = AndroidUtilities.dp(34);
-            resetAccountButton.setLayoutParams(layoutParams);
+            addView(resetAccountButton, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT), 0, 34, 0, 0));
             resetAccountButton.setOnClickListener(new OnClickListener() {
                 @Override
                 public void onClick(View view) {
@@ -1541,14 +1512,7 @@ public class LoginActivity extends BaseFragment {
             resetAccountText.setText(LocaleController.getString("ResetMyAccountText", R.string.ResetMyAccountText));
             resetAccountText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             resetAccountText.setLineSpacing(AndroidUtilities.dp(2), 1.0f);
-            addView(resetAccountText);
-            layoutParams = (LayoutParams) resetAccountText.getLayoutParams();
-            layoutParams.width = LayoutHelper.WRAP_CONTENT;
-            layoutParams.height = LayoutHelper.WRAP_CONTENT;
-            layoutParams.gravity = Gravity.TOP | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
-            layoutParams.bottomMargin = AndroidUtilities.dp(14);
-            layoutParams.topMargin = AndroidUtilities.dp(7);
-            resetAccountText.setLayoutParams(layoutParams);
+            addView(resetAccountText, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT), 0, 7, 0, 14));
         }
 
         @Override
@@ -1740,12 +1704,7 @@ public class LoginActivity extends BaseFragment {
             confirmTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT));
             confirmTextView.setLineSpacing(AndroidUtilities.dp(2), 1.0f);
             confirmTextView.setText(LocaleController.getString("RestoreEmailSentInfo", R.string.RestoreEmailSentInfo));
-            addView(confirmTextView);
-            LayoutParams layoutParams = (LayoutParams) confirmTextView.getLayoutParams();
-            layoutParams.width = LayoutHelper.WRAP_CONTENT;
-            layoutParams.height = LayoutHelper.WRAP_CONTENT;
-            layoutParams.gravity = (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
-            confirmTextView.setLayoutParams(layoutParams);
+            addView(confirmTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT)));
 
             codeField = new EditText(context);
             codeField.setTextColor(0xff212121);
@@ -1760,13 +1719,7 @@ public class LoginActivity extends BaseFragment {
             codeField.setTransformationMethod(PasswordTransformationMethod.getInstance());
             codeField.setTypeface(Typeface.DEFAULT);
             codeField.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
-            addView(codeField);
-            layoutParams = (LayoutParams) codeField.getLayoutParams();
-            layoutParams.width = LayoutHelper.MATCH_PARENT;
-            layoutParams.height = AndroidUtilities.dp(36);
-            layoutParams.gravity = Gravity.CENTER_HORIZONTAL;
-            layoutParams.topMargin = AndroidUtilities.dp(20);
-            codeField.setLayoutParams(layoutParams);
+            addView(codeField, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 36, Gravity.CENTER_HORIZONTAL, 0, 20, 0, 0));
             codeField.setOnEditorActionListener(new TextView.OnEditorActionListener() {
                 @Override
                 public boolean onEditorAction(TextView textView, int i, KeyEvent keyEvent) {
@@ -1784,13 +1737,7 @@ public class LoginActivity extends BaseFragment {
             cancelButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             cancelButton.setLineSpacing(AndroidUtilities.dp(2), 1.0f);
             cancelButton.setPadding(0, AndroidUtilities.dp(14), 0, 0);
-            addView(cancelButton);
-            layoutParams = (LayoutParams) cancelButton.getLayoutParams();
-            layoutParams.width = LayoutHelper.WRAP_CONTENT;
-            layoutParams.height = LayoutHelper.WRAP_CONTENT;
-            layoutParams.gravity = Gravity.BOTTOM | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
-            layoutParams.bottomMargin = AndroidUtilities.dp(14);
-            cancelButton.setLayoutParams(layoutParams);
+            addView(cancelButton, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT), 0, 0, 0, 14));
             cancelButton.setOnClickListener(new OnClickListener() {
                 @Override
                 public void onClick(View view) {
@@ -1974,13 +1921,7 @@ public class LoginActivity extends BaseFragment {
             textView.setTextColor(0xff757575);
             textView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
             textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-            addView(textView);
-            LayoutParams layoutParams = (LayoutParams) textView.getLayoutParams();
-            layoutParams.width = LayoutHelper.WRAP_CONTENT;
-            layoutParams.height = LayoutHelper.WRAP_CONTENT;
-            layoutParams.topMargin = AndroidUtilities.dp(8);
-            layoutParams.gravity = LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT;
-            textView.setLayoutParams(layoutParams);
+            addView(textView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT, 0, 8, 0, 0));
 
             firstNameField = new EditText(context);
             firstNameField.setHintTextColor(0xff979797);
@@ -1991,12 +1932,7 @@ public class LoginActivity extends BaseFragment {
             firstNameField.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
             firstNameField.setMaxLines(1);
             firstNameField.setInputType(InputType.TYPE_TEXT_FLAG_CAP_WORDS);
-            addView(firstNameField);
-            layoutParams = (LayoutParams) firstNameField.getLayoutParams();
-            layoutParams.width = LayoutHelper.MATCH_PARENT;
-            layoutParams.height = AndroidUtilities.dp(36);
-            layoutParams.topMargin = AndroidUtilities.dp(26);
-            firstNameField.setLayoutParams(layoutParams);
+            addView(firstNameField, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 36, 0, 26, 0, 0));
             firstNameField.setOnEditorActionListener(new TextView.OnEditorActionListener() {
                 @Override
                 public boolean onEditorAction(TextView textView, int i, KeyEvent keyEvent) {
@@ -2017,20 +1953,11 @@ public class LoginActivity extends BaseFragment {
             lastNameField.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
             lastNameField.setMaxLines(1);
             lastNameField.setInputType(InputType.TYPE_TEXT_FLAG_CAP_WORDS);
-            addView(lastNameField);
-            layoutParams = (LayoutParams) lastNameField.getLayoutParams();
-            layoutParams.width = LayoutHelper.MATCH_PARENT;
-            layoutParams.height = AndroidUtilities.dp(36);
-            layoutParams.topMargin = AndroidUtilities.dp(10);
-            lastNameField.setLayoutParams(layoutParams);
+            addView(lastNameField, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 36, 0, 10, 0, 0));
 
             LinearLayout linearLayout = new LinearLayout(context);
             linearLayout.setGravity(Gravity.BOTTOM | Gravity.CENTER_VERTICAL);
-            addView(linearLayout);
-            layoutParams = (LayoutParams) linearLayout.getLayoutParams();
-            layoutParams.width = LayoutHelper.MATCH_PARENT;
-            layoutParams.height = LayoutHelper.MATCH_PARENT;
-            linearLayout.setLayoutParams(layoutParams);
+            addView(linearLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
             TextView wrongNumber = new TextView(context);
             wrongNumber.setText(LocaleController.getString("CancelRegistration", R.string.CancelRegistration));
@@ -2039,13 +1966,7 @@ public class LoginActivity extends BaseFragment {
             wrongNumber.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             wrongNumber.setLineSpacing(AndroidUtilities.dp(2), 1.0f);
             wrongNumber.setPadding(0, AndroidUtilities.dp(24), 0, 0);
-            linearLayout.addView(wrongNumber);
-            layoutParams = (LayoutParams) wrongNumber.getLayoutParams();
-            layoutParams.width = LayoutHelper.WRAP_CONTENT;
-            layoutParams.height = LayoutHelper.WRAP_CONTENT;
-            layoutParams.gravity = Gravity.BOTTOM | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
-            layoutParams.bottomMargin = AndroidUtilities.dp(10);
-            wrongNumber.setLayoutParams(layoutParams);
+            linearLayout.addView(wrongNumber, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT), 0, 0, 0, 10));
             wrongNumber.setOnClickListener(new OnClickListener() {
                 @Override
                 public void onClick(View view) {

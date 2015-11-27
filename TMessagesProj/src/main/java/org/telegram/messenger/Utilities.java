@@ -264,7 +264,7 @@ public class Utilities {
     }
 
 
-    //MIO
+    //plus
     public static void restartApp(){
         Intent mRestartApp = new Intent(ApplicationLoader.applicationContext, LaunchActivity.class);
         int mPendingIntentId = 123456;

@@ -41,7 +41,7 @@ public class BaseSearchAdapter extends BaseFragmentAdapter {
     protected HashMap<String, HashtagObject> hashtagsByText;
     protected boolean hashtagsLoadedFromDb = false;
 
-    public void queryServerSearch(final String query, final boolean allowChats) {
+    public void queryServerSearch(final String query, final boolean allowChats, final boolean allowBots) {
         if (reqId != 0) {
             ConnectionsManager.getInstance().cancelRequest(reqId, true);
             reqId = 0;
@@ -72,6 +72,9 @@ public class BaseSearchAdapter extends BaseFragmentAdapter {
                                     }
                                 }
                                 for (int a = 0; a < res.users.size(); a++) {
+                                    if (!allowBots && res.users.get(a).bot) {
+                                        continue;
+                                    }
                                     globalSearch.add(res.users.get(a));
                                 }
                                 lastFoundUsername = query;

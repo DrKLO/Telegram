@@ -178,6 +178,9 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
                             SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
                             SharedPreferences.Editor editor = preferences.edit();
                             editor.putInt("notify2_" + dialog_id, which);
+                            if (which == 2) {
+                                NotificationsController.getInstance().removeNotificationsForDialog(dialog_id);
+                            }
                             MessagesStorage.getInstance().setDialogFlags(dialog_id, which == 2 ? 1 : 0);
                             editor.commit();
                             TLRPC.Dialog dialog = MessagesController.getInstance().dialogs_dict.get(dialog_id);

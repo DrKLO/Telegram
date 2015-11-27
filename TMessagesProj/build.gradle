@@ -7,22 +7,15 @@ repositories {
 dependencies {
     compile 'com.android.support:support-v4:23.1.+'
     compile 'com.google.android.gms:play-services:3.2.+'
-    //compile 'com.google.android.gms:play-services:7.5.0'
-    compile 'net.hockeyapp.android:HockeySDK:3.5.+'
+    compile 'net.hockeyapp.android:HockeySDK:3.6.+'
     compile 'com.googlecode.mp4parser:isoparser:1.0.+'
-    compile 'org.apache.httpcomponents:httpmime:4.2.1'
 }
 
 android {
     compileSdkVersion 23
-    buildToolsVersion '23.0.1'
+    buildToolsVersion '23.0.2'
 
     useLibrary 'org.apache.http.legacy'
-
-    packagingOptions {
-        exclude 'META-INF/NOTICE.txt'
-        exclude 'META-INF/LICENSE.txt'
-    }
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_7
@@ -89,7 +82,7 @@ android {
         applicationId "org.telegram.plus"
         minSdkVersion 8
         targetSdkVersion 23
-        versionCode 661
-        versionName "3.2.6.2"
+        versionCode 686
+        versionName "3.3.1.0"
     }
 }

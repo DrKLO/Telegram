@@ -288,7 +288,7 @@ public class BlockedUsersActivity extends BaseFragment implements NotificationCe
             SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
             if (type == 0) {
                 if (view == null) {
-                    view = new UserCell(mContext, 1);
+                    view = new UserCell(mContext, 1, 0);
                     view.setTag("Pref");
                 }
                 ((UserCell) view).setNameColor(preferences.getInt("prefTitleColor", 0xff212121));

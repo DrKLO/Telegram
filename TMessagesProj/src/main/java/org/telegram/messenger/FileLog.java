@@ -9,6 +9,7 @@
 package org.telegram.messenger;
 
 import android.util.Log;
+import android.widget.Toast;
 
 import org.telegram.messenger.time.FastDateFormat;
 
@@ -68,6 +69,9 @@ public class FileLog {
     }
 
     public static String getNetworkLogPath() {
+        if (!BuildVars.DEBUG_VERSION) {
+            return "";
+        }
         try {
             File sdCard = ApplicationLoader.applicationContext.getExternalFilesDir(null);
             if (sdCard == null) {
@@ -208,5 +212,14 @@ public class FileLog {
             }
             file.delete();
         }
+        //plus
+        final int i = files.length - 1;
+        AndroidUtilities.runOnUIThread(new Runnable() {
+            @Override
+            public void run() {
+                    Toast toast = Toast.makeText(ApplicationLoader.applicationContext, i + " " + LocaleController.getString("ClearLogsMsg", R.string.ClearLogsMsg), Toast.LENGTH_SHORT);
+                    toast.show();
+            }
+        });
     }
 }

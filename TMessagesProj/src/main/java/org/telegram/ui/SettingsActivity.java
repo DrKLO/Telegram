@@ -1384,7 +1384,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 } else if (i == sendLogsRow) {
                     textCell.setText(LocaleController.getString("SendLogs", R.string.SendLogs), true);
                 } else if (i == clearLogsRow) {
-                    textCell.setText("Clear Logs", false);
+                    textCell.setText(LocaleController.getString("ClearLogs", R.string.ClearLogs), false);
                 } else if (i == askQuestionRow) {
                     textCell.setText(LocaleController.getString("AskAQuestion", R.string.AskAQuestion), true);
                 } else if (i == privacyRow) {

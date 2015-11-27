@@ -220,7 +220,7 @@ public class SharedDocumentCell extends FrameLayout implements MediaController.F
                 thumbImageView.setImage(document.messageOwner.media.document.thumb.location, "40_40", (Drawable) null);
             }
             long date = (long) document.messageOwner.date * 1000;
-            dateTextView.setText(String.format("%s, %s", AndroidUtilities.formatFileSize(document.messageOwner.media.document.size), LocaleController.formatString("formatDateAtTime", R.string.formatDateAtTime, LocaleController.formatterYear.format(new Date(date)), LocaleController.formatterDay.format(new Date(date)))));
+            dateTextView.setText(String.format("%s, %s", AndroidUtilities.formatFileSize(document.messageOwner.media.document.size), LocaleController.formatString("formatDateAtTime", R.string.formatDateAtTime, LocaleController.getInstance().formatterYear.format(new Date(date)), LocaleController.getInstance().formatterDay.format(new Date(date)))));
         } else {
             nameTextView.setText("");
             extTextView.setText("");

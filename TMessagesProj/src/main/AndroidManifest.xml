@@ -159,7 +159,7 @@
         </service>
 
         <service
-            android:name=".TgChooserTargetService"
+            android:name="org.telegram.messenger.TgChooserTargetService"
             android:label="@string/AppName"
             android:permission="android.permission.BIND_CHOOSER_TARGET_SERVICE">
             <intent-filter>

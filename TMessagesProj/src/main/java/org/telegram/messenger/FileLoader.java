@@ -817,7 +817,8 @@ public class FileLoader {
         fileLoaderQueue.postRunnable(new Runnable() {
             @Override
             public void run() {
-                for (File file : files) {
+                for (int a = 0; a < files.size(); a++) {
+                    File file = files.get(a);
                     if (file.exists()) {
                         try {
                             if (!file.delete()) {
@@ -826,6 +827,16 @@ public class FileLoader {
                         } catch (Exception e) {
                             FileLog.e("tmessages", e);
                         }
+                    }
+                    try {
+                        File qFile = new File(file.getPath(), "q_" + file.getName());
+                        if (qFile.exists()) {
+                            if (!file.delete()) {
+                                file.deleteOnExit();
+                            }
+                        }
+                    } catch (Exception e) {
+                        FileLog.e("tmessages", e);
                     }
                 }
             }

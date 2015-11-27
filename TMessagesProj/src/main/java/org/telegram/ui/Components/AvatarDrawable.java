@@ -120,6 +120,10 @@ public class AvatarDrawable extends Drawable {
         }
     }
 
+    public void setProfile(boolean value) {
+        isProfile = value;
+    }
+
     public void setSmallStyle(boolean value) {
         smallStyle = value;
     }
@@ -129,7 +133,7 @@ public class AvatarDrawable extends Drawable {
         if (id >= 0 && id < arrColors.length){//8) {
             return id;
         }
-        try {
+        /*try {
             String str;
             if (id >= 0) {
                 str = String.format(Locale.US, "%d%d", id, UserConfig.getClientUserId());
@@ -148,8 +152,8 @@ public class AvatarDrawable extends Drawable {
             return Math.abs(b) % arrColors.length;
         } catch (Exception e) {
             FileLog.e("tmessages", e);
-        }
-        return id % arrColors.length;
+        }*/
+        return Math.abs(id % arrColors.length);
     }
 
     public static int getColorNameIndex(int id) {

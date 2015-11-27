@@ -109,7 +109,6 @@ e introduce o teu número.</string>
   <string name="ActionChannelChangedPhoto">Foto da canle cambiada</string>
   <string name="ActionChannelRemovedPhoto">Foto da canle eliminada</string>
   <string name="ActionChannelChangedTitle">Nome da canle cambiado a un2</string>
-  <string name="ActionChannelInvite">un1 engadiute á canle un2</string>
   <string name="ChannelPublicLimitReached">Síntoo, creaches demasiadas canles públicas. Podes crear unha canle privada ou eliminar unha das túas canales existentes primeiro.</string>
   <string name="ChannelModerator">Moderador</string>
   <string name="ChannelCreator">Creador</string>
@@ -126,7 +125,6 @@ e introduce o teu número.</string>
   <string name="ChannelAdminsInfo">Podes engadir administradores para que che axuden coa canle. Mantén premido para eliminar un administrador.</string>
   <string name="ChannelJoinTo">Queres unirte á canle \'%1$s\'?</string>
   <string name="ChannelCantOpenPrivate">Sentímolo, esta canle xa non é accesible.</string>
-  <string name="ChannelAddToTitle">Engadir a %1$s á canle %2$s?</string>
   <string name="ChannelAddTo">Engadir a %1$s á canle?</string>
   <string name="ChannelUserLeftError">Sentímolo, este usuario decidiu deixar o grupo, así que non podes volver a invitalo.</string>
   <string name="ChannelUserCantAdd">Sentímolo, non podes engadir este usuario a canles.</string>
@@ -973,11 +971,11 @@ e introduce o teu número.</string>
   <string name="formatterDay24H">HH:mm</string>
   <string name="formatterDay12H">h:mm a</string>
   <string name="formatDateAtTime">%1$s ás %2$s</string>
-  <!--update text-->
-  <string name="updateText">Telegram para Android foi actualizada. Novidades na versión 3.2.6:\n\n- Novas animacións e moitas melloras visuais\n- Soporte para os novos emoji\n- Outras melloras e correccións de erros</string>
-  <string name="updateBuild">661</string>
+  <!--update text--><!--
+  <string name="updateText">Telegram para Android foi actualizada. Novidades na versión 3.2.6:\n\n- Novas animacións e moitas melloras visuais\n- Soporte para os novos emoji\n- Outras melloras e correccións de erros</string>-->
+  <string name="updateBuild">686</string>
   <!--Telegram+--><!--
-  <string name="updatePlusText">\n\nNovidades en 3.2.6.2:\n\n- Engadido mod para a cor do comando na pantalla de conversa\n- Engadido mod para o fondo do contador para conversas/grupos/canles silenciadas na pantalla principal\n- Engadido mod para a cor do resaltado da busca na pantalla principal\n- Corrección de erros</string>-->
+  <string name="updatePlusText">\n\nNovidades en 3.3.1.0:\n\n- Corrección de erros</string>-->
     <string name="TelegramForAndroid">Plus Messenger para Android</string>
     <string name="Theming">Tematización</string>
     <string name="colorHexInvalid">Cor hexadecimal inválida!</string>

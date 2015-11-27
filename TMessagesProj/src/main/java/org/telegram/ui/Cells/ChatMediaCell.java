@@ -1,5 +1,5 @@
 /*
- * This is the source code of Telegram for Android v. 3.x.x
+ * This is the source code of Telegram for Android v. 3.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
@@ -540,7 +540,7 @@ public class ChatMediaCell extends ChatBaseCell {
                     currentNameString = name;
                     maxWidth = maxWidth + AndroidUtilities.dp(1); //to fix 2 lines bug
                     nameLayout = StaticLayoutEx.createStaticLayout(currentNameString, namePaint, maxWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false, TextUtils.TruncateAt.END, maxWidth, 1);
-                    if (nameLayout.getLineCount() > 0) {
+                    if (nameLayout != null && nameLayout.getLineCount() > 0) {
                         nameWidth = Math.min(maxWidth, (int) Math.ceil(nameLayout.getLineWidth(0)));
                         nameOffsetX = (int) Math.ceil(-nameLayout.getLineLeft(0));
                     } else {
@@ -555,7 +555,6 @@ public class ChatMediaCell extends ChatBaseCell {
 
                 if (currentInfoString == null || !currentInfoString.equals(str)) {
                     currentInfoString = str;
-
                     infoOffset = 0;
                     infoWidth = Math.min(maxWidth, (int) Math.ceil(infoPaint.measureText(currentInfoString)));
                     infoLayout2 = null;
@@ -843,19 +842,23 @@ public class ChatMediaCell extends ChatBaseCell {
                     backgroundWidth += AndroidUtilities.dp(9);
                 }
                 if (messageObject.caption != null) {
+                    try {
                         if(messageObject.isOutOwner()){ //fix caption color bug
                             MessageObject.textPaint = MessageObject.textPaintRight;
                         }else{
                             MessageObject.textPaint = MessageObject.textPaintLeft;
                         }
-                    nameLayout = new StaticLayout(messageObject.caption, MessageObject.textPaint, photoWidth - AndroidUtilities.dp(10), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
-                    if (nameLayout.getLineCount() > 0) {
+                        nameLayout = new StaticLayout(messageObject.caption, MessageObject.textPaint, photoWidth - AndroidUtilities.dp(10), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+                        if (nameLayout != null && nameLayout.getLineCount() > 0) {
                         captionHeight = nameLayout.getHeight();
                         additionHeight += captionHeight + AndroidUtilities.dp(9);
                         float lastLineWidth = nameLayout.getLineWidth(nameLayout.getLineCount() - 1) + nameLayout.getLineLeft(nameLayout.getLineCount() - 1);
                         if (photoWidth - AndroidUtilities.dp(8) - lastLineWidth < timeWidthTotal) {
                             additionHeight += AndroidUtilities.dp(14);
                         }
+                    }
+                    } catch (Exception e) {
+                        FileLog.e("tmessages", e);
                     }
                 }
 

@@ -275,7 +275,7 @@ public class ContactsAdapter extends BaseSectionsAdapter {
             }
         } else if (type == 0) {
             if (convertView == null) {
-                convertView = new UserCell(mContext, 58);
+                convertView = new UserCell(mContext, 58, 1);
                 convertView.setTag("Contacts");
             }
             updateViewColor(convertView);

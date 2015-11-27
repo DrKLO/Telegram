@@ -29,6 +29,7 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.CheckBox;
+import org.telegram.ui.Components.CheckBoxSquare;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.SimpleTextView;
 
@@ -39,6 +40,7 @@ public class UserCell extends FrameLayout {
     private SimpleTextView statusTextView;
     private ImageView imageView;
     private CheckBox checkBox;
+    private CheckBoxSquare checkBoxBig;
 
     private AvatarDrawable avatarDrawable;
     private TLObject currentObject = null;
@@ -60,7 +62,7 @@ public class UserCell extends FrameLayout {
 
     private int radius = 32;
 
-    public UserCell(Context context, int padding) {
+    public UserCell(Context context, int padding, int checkbox) {
         super(context);
 
         avatarDrawable = new AvatarDrawable();
@@ -85,9 +87,14 @@ public class UserCell extends FrameLayout {
         imageView.setVisibility(GONE);
         addView(imageView, LayoutHelper.createFrame(LayoutParams.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL, LocaleController.isRTL ? 0 : 16, 0, LocaleController.isRTL ? 16 : 0, 0));
 
+        if (checkbox == 2) {
+            checkBoxBig = new CheckBoxSquare(context);
+            addView(checkBoxBig, LayoutHelper.createFrame(18, 18, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.CENTER_VERTICAL, LocaleController.isRTL ? 19 : 0, 0, LocaleController.isRTL ? 0 : 19, 0));
+        } else if (checkbox == 1) {
         checkBox = new CheckBox(context, R.drawable.round_check2);
         checkBox.setVisibility(INVISIBLE);
         addView(checkBox, LayoutHelper.createFrame(22, 22, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 0 : 37 + padding, 38, LocaleController.isRTL ? 37 + padding : 0, 0));
+    }
     }
 
     public void setData(TLObject user, CharSequence name, CharSequence status, int resId) {
@@ -138,10 +145,23 @@ public class UserCell extends FrameLayout {
     }
 
     public void setChecked(boolean checked, boolean animated) {
+        if (checkBox != null) {
         if (checkBox.getVisibility() != VISIBLE) {
             checkBox.setVisibility(VISIBLE);
         }
         checkBox.setChecked(checked, animated);
+        } else if (checkBoxBig != null) {
+            if (checkBoxBig.getVisibility() != VISIBLE) {
+                checkBoxBig.setVisibility(VISIBLE);
+            }
+            checkBoxBig.setChecked(checked, animated);
+        }
+    }
+
+    public void setCheckDisabled(boolean disabled) {
+        if (checkBoxBig != null) {
+            checkBoxBig.setDisabled(disabled);
+        }
     }
 
     @Override
@@ -231,9 +251,9 @@ public class UserCell extends FrameLayout {
             statusTextView.setTextColor(statusColor);
             statusTextView.setText(currrntStatus);
         } else if (currentUser != null) {
-            if ((currentUser.flags & TLRPC.USER_FLAG_BOT) != 0) {
+            if (currentUser.bot) {
                 statusTextView.setTextColor(statusColor);
-                if ((currentUser.flags & TLRPC.USER_FLAG_BOT_READING_HISTORY) != 0) {
+                if (currentUser.bot_chat_history) {
                     statusTextView.setText(LocaleController.getString("BotStatusRead", R.string.BotStatusRead));
                 } else {
                     statusTextView.setText(LocaleController.getString("BotStatusCantRead", R.string.BotStatusCantRead));

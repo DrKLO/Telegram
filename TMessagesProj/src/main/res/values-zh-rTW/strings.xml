@@ -108,7 +108,6 @@
   <string name="ActionChannelChangedPhoto">頻道照片已變更</string>
   <string name="ActionChannelRemovedPhoto">頻道照片已移除</string>
   <string name="ActionChannelChangedTitle">頻道名稱變更為 un2</string>
-  <string name="ActionChannelInvite">un1 將您加入到 un2 頻道</string>
   <string name="ChannelPublicLimitReached">很抱歉，您已經建立了太多公開的頻道。首先，您可以選擇建立私人的頻道或是刪除您存在的頻道。</string>
   <string name="ChannelModerator">仲裁者</string>
   <string name="ChannelCreator">建立者</string>
@@ -125,7 +124,6 @@
   <string name="ChannelAdminsInfo">您可以添加管理者以幫助您管理頻道。點擊不放可以移除管理者。</string>
   <string name="ChannelJoinTo">您想要加入「%1$s」頻道？</string>
   <string name="ChannelCantOpenPrivate">很抱歉，這個頻道無法再被存取。</string>
-  <string name="ChannelAddToTitle">將 %1$s 加入到 %2$s 頻道？</string>
   <string name="ChannelAddTo">將 %1$s 加入到頻道？</string>
   <string name="ChannelUserLeftError">很抱歉，該用戶決定離開群組，所以您無法再邀請此人回來這裡。</string>
   <string name="ChannelUserCantAdd">很抱歉，您無法將此用戶加入到頻道。</string>
@@ -946,11 +944,11 @@
     <string name="formatterDay12H">a h:mm</string>
   <string name="formatDateAtTime">於時間 %1$s  %2$s</string>
   <!--update text--><!--
-  <string name="updateText">Android 版的 Telegram 已經更新。在版本 3.2.0 中的新功能：\n\n- 引進頻道 – 用來將您的訊息向無限觀眾廣播的新方式 (取代舊式的廣播)。\n\n了解更多：https://telegram.org/blog/channels</string>
-  <string name="updateBuild">661</string>-->
+  <string name="updateText">Android 版的 Telegram 已經更新。在版本 3.2.0 中的新功能：\n\n- 引進頻道 – 用來將您的訊息向無限觀眾廣播的新方式 (取代舊式的廣播)。\n\n了解更多：https://telegram.org/blog/channels</string>-->
+  <string name="updateBuild">686</string>
   <!--Telegram+--><!--
   <string name="updatePlusText">
-\n\n在 3.2.6.2 版的新功能：\n\n- 新的模組在聊天畫面顯示擁有的大頭照\n- 加入新的泡泡邊緣 (感謝 Edwin Macalopu)\n- 錯誤修復</string>-->
+\n\n在 3.3.1.0 版的新功能：\n\n- 新的模組在聊天畫面顯示擁有的大頭照\n- 加入新的泡泡邊緣 (感謝 Edwin Macalopu)\n- 錯誤修復</string>-->
   <string name="TelegramForAndroid">適用於 Android 的 Plus Messenger</string>
   <string name="Theming">自製佈景主題</string>
   <string name="colorHexInvalid">無效的十六進位顏色代碼！</string>

@@ -4,6 +4,7 @@
 
 <resources>
     <string name="AppName">Plus Messenger</string>
+    <string name="AppNameBeta">نسخة تيليجرام التجريبية</string>
     <string name="LanguageName">العربية</string>
     <string name="LanguageNameInEnglish">Arabic</string>
     <string name="LanguageCode">ar</string>
@@ -60,7 +61,28 @@
     <string name="MuteDisable">تعطيل</string>
   <string name="Hashtags">الأوسمة</string>
     <string name="Recent">حديث</string>
+    <string name="LinkPreview">معاينة الرابط</string>
     <!--channels-->
+    <string name="SetAsAdmin">ترقية ليكون مشرف</string>
+    <string name="DescriptionInfoMega">يمكنك كتابة وصف اختياري لمجموعتك.</string>
+    <string name="LeaveMega">مغادرة المجموعة</string>
+    <string name="DeleteMega">حذف المجموعة</string>
+    <string name="LeaveMegaMenu">مغادرة المجموعة</string>
+    <string name="DeleteMegaMenu">حذف المجموعة</string>
+    <string name="MegaDeleteInfo">ستخسر كافة الرسائل في هذه المجموعة.</string>
+    <string name="MegaAdminsInfo">يمكنك إضافة إداريّين لمساعدتك في إدارة المجموعة. اضغط باستمرار لحذف الإداريين.</string>
+    <string name="MegaDeleteAlert">لحظة! حذف هذه المجموعة سيزيل كافة الأعضاء والرسائل سيتم حذفها. هل أنت متأكد من رغبتك في حذف المجموعة؟</string>
+    <string name="ActionCreateMega">تم إنشاء مجموعة</string>
+    <string name="MegaAddedBy">un1 قام بإضافتك لهذه المجموعة</string>
+    <string name="MegaLeaveAlert">هل أنت متأكد من أنك تريد الخروج من المجموعة؟</string>
+    <string name="GroupUserCantAdd">المعذرة، لا يمكنك إضافة هذا المستخدم للمجموعات.</string>
+    <string name="GroupUserAddLimit">المعذرة، المجموعة ممتلئة.</string>
+    <string name="GroupUserLeftError">المعذرة, هذا المستخدم قرر مغادرة المجموعة, لا يمكنك دعوته مرة أخرى للمجموعة.</string>
+    <string name="GroupUserCantAdmin">المعذرة، يوجد الكثير من المشرفين في هذه المجموعة.</string>
+    <string name="GroupUserCantBot">المعذرة، يوجد الكثير من حسابات البوت في هذه المجموعة.</string>
+    <string name="ActionMigrateFromGroup">تم ترقية هذه المجموعة لتصبح مجموعة خارقة</string>
+    <string name="ActionMigrateFromGroupNotify">تم ترقية المجموعة %1$s لتصبح مجموعة خارقة</string>
+    <string name="NoBlockedGroup">أعضاء القائمة السوداء هم أعضاء تم حذفهم من المجموعة ولا يمكنهم العودة لها إلى بدعوة من المشرف. روابط الدعوة لن تمكنهم من العودة للمجموعة.</string>
     <string name="NewChannel">قناة جديدة</string>
     <string name="EnterChannelName">اسم القناة</string>
     <string name="Comments">التعليقات</string>
@@ -111,7 +133,6 @@
     <string name="ActionChannelChangedPhoto">تم تغيير صورة القناة</string>
     <string name="ActionChannelRemovedPhoto">تم حذف صورة القناة</string>
     <string name="ActionChannelChangedTitle">تم تغيير اسم القناة إلى un2</string>
-    <string name="ActionChannelInvite">un1 قام بإضافتك لقناة un2</string>
     <string name="ChannelPublicLimitReached">المعذرة، قمت بإنشاء قنوات عامة كثيرة. يمكنك إنشاء قناة خاصة أو حذف أحد القنوات العامة أولًا.</string>
     <string name="ChannelModerator">المراقب</string>
     <string name="ChannelCreator">المنشئ</string>
@@ -127,12 +148,12 @@
     <string name="ChannelLinkInfo">أي شخص يمتلك تيليجرام على جهازه سيمكنه الدخول لقناتك باستخدام هذا الرابط.</string>
     <string name="ChannelAdminsInfo">يمكنك إضافة إداريّون لمساعدتك في إدارة القناة. اضغط باستمرار لحذف الإداريين.</string>
     <string name="ChannelJoinTo">هل ترغب في الدخول لقناة \'%1$s\'؟</string>
-    <string name="ChannelCantOpenPrivate">المعذرة، هذه القناة لم تعد متاحة.</string>
-    <string name="ChannelAddToTitle">هل ترغب بإضافة %1$s لقناة %2$s؟</string>
+    <string name="ChannelCantOpenPrivate">المعذرة، هذه المحادثة لم تعد متاحة.</string>
     <string name="ChannelAddTo">هل ترغب بإضافة %1$s للقناة؟</string>
-    <string name="ChannelUserLeftError">المعذرة, هذا المستخدم قرر مغادرة المجموعة, لا يمكنك دعوته مرة أخرى للمجموعة.</string>
+    <string name="ChannelUserLeftError">المعذرة، هذا المستخدم قرر مغادرة القناة, لا يمكنك دعوته مرة أخرى للقناة.</string>
     <string name="ChannelUserCantAdd">المعذرة، لا يمكنك إضافة هذا المستخدم للقنوات.</string>
     <string name="ChannelUserCantAdmin">المعذرة، يوجد الكثير من الإداريين في هذه القناة.</string>
+    <string name="ChannelUserCantBot">المعذرة، يوجد الكثير من حسابات البوت في هذه القناة.</string>
     <string name="ChannelUserAddLimit">المعذرة، يمكنك إضافة أول ٢٠٠ عضو للقناة فقط. يمكن لعدد غير محدود من الأعضاء الدخول للقناة عن طريق رابط القناة.</string>
     <string name="ChannelAddedBy">un1 قام بإضافتك لهذه القناة</string>
     <string name="ChannelJoined">لقد قمت بالدخول للقناة.</string>
@@ -242,6 +263,7 @@
     <string name="NobodyLikesSpam2">المعذرة، يمكنك فقط إضافة من يمتلك رقمك وتمتلك رقمه للمجموعة في الوقت الحالي.</string>
     <string name="NobodyLikesSpamUrl">https://telegram.org/faq/can-39t-send-messages-to-non-contacts</string>
     <string name="MoreInfo">ملعومات إضافية</string>
+    <string name="ShareSendTo">أرسل إلى...</string>
     <!--notification-->
     <string name="MessageLifetimeChanged">%1$s قام بتعيين عداد التدمير الذاتي إلى to %2$s</string>
     <string name="MessageLifetimeChangedOutgoing">لقد قمت بتعيين التدمير الذاتي إلى %1$s</string>
@@ -317,13 +339,22 @@
     <string name="CopyLink">نسخ الرابط</string>
     <string name="ShareLink">شارك الرابط</string>
     <string name="LinkInfo">أي شخص يمتلك تيليجرام على جهازه سيسطيع الدخول لمجموعتك باستخدام الرابط التالي.</string>
+    <!--set admins view-->
+    <string name="SetAdminsTitle">مشرفو المحادثة</string>
+    <string name="SetAdminsAll">جميع الأعضاء مشرفين</string>
+    <string name="SetAdminsAllInfo">جميع أعضاء القناة يستطيعون إضافة وحذف الأعضاء، والتعديل على اسم وصورة المجموعة.</string>
+    <string name="SetAdminsNotAllInfo">فقط مشرفو القناة يستطيعون حذف الأعضاء، والتعديل على اسم وصورة المجموعة.</string>
     <!--group info view-->
     <string name="SharedMedia">عدد الوسائط المشتركة</string>
     <string name="SETTINGS">الإعدادات</string>
     <string name="AddMember">إضافة مشارك</string>
+    <string name="SetAdmins">تعيين كمشرف</string>
     <string name="DeleteAndExit">مغادرة المجموعة وحذفها</string>
     <string name="Notifications">الإشعارات</string>
     <string name="KickFromGroup">إخراج من المجموعة</string>
+    <string name="ConvertGroup">قم بالتحديث لمجموعة خارقة</string>
+    <string name="ConvertGroupAlert">فضلًا تذكر أن أعضاء هذه المجموعة يلزمهم تحديث تطبيقات تيليجرام لأحدث النسخ ليتمكنوا من الإستفادة من المجموعات الخارقة. هل أنت متأكد من رغبتك في ترقية المجموعة؟</string>
+    <string name="ConvertGroupInfo"><![CDATA[<b>]]>تم الوصول للحد الأعلى للأعضاء<![CDATA[</b>]]>\n\nيمكنك ترقية مجموعتك لتصبح مجموعة خارقة لتتمكن من إضافة أعضاء أكثر من الحد الأعلى وخصائص مثل:\n\n• الحد الأعلى للأعضاء يصبح %1$s عضو\n• الأعضاء الجدد يرون تاريخ محادثات المجموعة بشكل كامل\n• المشرفون يمكنهم حذف رسائل كافة الأعضاء\n• الإشعارات على وضع الصامت بشكل تلقائي</string>
     <!--contact info view-->
     <string name="ShareContact">مشاركة</string>
     <string name="AddContact">إضافة</string>
@@ -677,6 +708,7 @@
     <string name="Call">اتصال</string>
     <string name="Copy">نسخ</string>
     <string name="Delete">حذف</string>
+    <string name="DeleteAndStop">حذف وإيقاف</string>
     <string name="Forward">إعادة توجيه</string>
     <string name="Retry">إعادة المحاولة</string>
     <string name="FromCamera">من الكاميرا</string>
@@ -731,12 +763,13 @@
     <string name="NoHandleAppInstalled">لا يوجد لديك تطبيق يمكنه فتح \'%1$s\'، يرجى تنزيل تطبيق مناسب للإستمرار</string>
     <string name="InviteUser">هذا المستخدم ليس لديه تيليجرام بعد ، هل ترغب في دعوته الآن؟</string>
     <string name="AreYouSure">هل أنت متأكد؟</string>
-    <string name="AddToTheGroupTitle">هل ترغب في إضافة %1$s للمجموعة %2$s؟</string>
+    <string name="AddToTheGroupTitle">هل ترغب بإضافة %1$s للمحادثة %2$s؟</string>
     <string name="AddToTheGroupForwardCount">عدد الرسائل الحديثة المراد إعادة تحويلها:</string>
     <string name="AddToTheGroup">إضافة %1$s للمجموعة؟</string>
     <string name="UserAlreadyInGroup">هذا المستخدم عضو مسبق في هذه المجموعة</string>
     <string name="ForwardMessagesTo">؟%1$s هل تريد إعادة توجيه الرسائل إلى</string>
     <string name="SendMessagesTo">هل ترغب في إرسال رسالة إلى %1$s؟</string>
+    <string name="SendContactTo">أرسل جهة الاتصال إلى %1$s؟</string>
     <string name="AreYouSureLogout">نرجو الأخذ بالعلم أنه يمكنك استخدام تيليجرام على أجهزتك المتعددة بسهولة تامة وفي وقت واحد.\n\nوتذكر، تسجيل الخروج يحذف كافة محادثاتك السرية.</string>
     <string name="AreYouSureSessions">هل أنت متأكد من تسجيل الخروج من جميع الأجهزة الأخرى باستثناء هذا الجهاز؟</string>
     <string name="AreYouSureDeleteAndExit">هل أنت متأكد من أنك تريد حذف المجموعة والخروج منها؟</string>
@@ -750,6 +783,7 @@
     <string name="AreYouSureClearHistory">هل أنت متأكد من رغبتك في حذف سجل المحادثات؟</string>
     <string name="AreYouSureDeleteMessages">هل أنت متأكد من رغبتك في حذف %1$s؟</string>
     <string name="SendMessagesToGroup">هل ترغب في إرسال رسالة إلى %1$s؟</string>
+    <string name="SendContactToGroup">أرسل جهة الاتصال إلى %1$s؟</string>
     <string name="ForwardMessagesToGroup">؟%1$s هل تريد إعادة توجيه الرسائل إلى</string>
     <string name="FeatureUnavailable">.Sorry, this feature is currently not available in your country</string>
     <string name="NoUsernameFound">لا يوجد حساب تيليجرام بهذا الاسم.</string>
@@ -976,8 +1010,8 @@
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s الساعة %2$s</string>
     <!--update text-->
-    <string name="updateText">تم تحديث تيليجرام على الأندرويد. الجديد في النسخة رقم 3.2.6:\n\n- تحسين للواجهة البصرية للتطبيق\n- دعم للإيموجي الجديدة\n- تحسينات أخرى وإصلاح للثغرات</string>
-    <string name="updateBuild">661</string>
+    <string name="updateText">تم تحديث تيليجرام على الأندرويد. الجديد في النسخة رقم 3.3.1:\n\n- المجموعات الآن يمكن أن يكون بها عدة مشرفين يمكنهم تغيير اسمها وشعارها وإضافة وإزالة الأعضاء.\n- المجموعات التي وصلت إلى ٢٠٠ عضو يمكن ترقيتها لتصبح مجموعة خارقة تصل إلى ١٠٠٠ عضو.\n- إضافة زر للمشاركة السريعة من خلال القنوات بجانب الرسائل.\n\nللإستزادة عن هذا التحديث من هنا:\nhttps://telegram.org/blog/supergroups</string>
+    <string name="updateBuild">686</string>
     <!--Telegram+--><!--
   <string name="updatePlusText"></string>-->
   <string name="TelegramForAndroid">بلاس مسنجر للأندرويد</string>
