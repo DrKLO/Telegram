@@ -7,6 +7,7 @@
  */
 
 #include <sys/stat.h>
+#include <unistd.h>
 #include "Config.h"
 #include "ConnectionsManager.h"
 #include "FileLog.h"
