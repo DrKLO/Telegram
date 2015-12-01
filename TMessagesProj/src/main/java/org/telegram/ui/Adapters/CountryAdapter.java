@@ -44,7 +44,7 @@ public class CountryAdapter extends BaseSectionsAdapter {
         mContext = context;
 
         try {
-            InputStream stream = ApplicationLoader.applicationContext.getResources().getAssets().open("countries.txt");
+            InputStream stream = ApplicationLoader.applicationContext.getResources().openRawResource(R.raw.countries);
             BufferedReader reader = new BufferedReader(new InputStreamReader(stream));
             String line;
             while ((line = reader.readLine()) != null) {
