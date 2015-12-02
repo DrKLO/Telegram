@@ -1011,9 +1011,9 @@
     <string name="formatDateAtTime">%1$s às %2$s</string>
     <!--update text-->
     <string name="updateText">Plus Messenger para Android foi atualizado. Novidades na versão 3.3.1:\n\n- Os grupos agora podem ter múltiplos administradores com permissão para editar o nome e a imagem do grupo, adicionar e remover membros.\n- Os grupos que alcançarem 200 usuários podem ser transformados em supergrupos, que permitem até 1000 membros.\n- Os canais contam com um botão de compartilhamento rápido ao lado das mensagens.\n\nVocê pode ver mais sobre os supergrupos e sobre os demais assuntos no nosso blog:\nhttps://telegram.org/blog/supergroups</string>
-    <string name="updateBuild">686</string>
-    <!--Telegram+--><!--
-  <string name="updatePlusText">\n\nNovidades na versão 3.3.1.0:\n\n- Correções de erros</string>-->
+    <string name="updateBuild">689</string>
+    <!--Telegram+-->
+  <string name="updatePlusText">\n\nNovidades na versão 3.3.1.1:\n\n- Adicionado indicador de status do usuário para tela principal e chat\n- Adicionada opção para ocultar indicadores de status\n- Correções de erros</string>
     <string name="TelegramForAndroid">Plus Messenger para Android</string>
     <string name="Theming">Personalização</string>
   <string name="colorHexInvalid">Código de cor HEX inválido!</string>
@@ -1077,8 +1077,10 @@
   <string name="MemberColor">Cor do membro</string>
   <string name="ChecksColor">Cor dos Checks</string>
     <string name="MuteColor">Cor do Ícone de Mudo</string>
-    <string name="SendLogs">Enviar Logs</string>
+  <string name="SendLogs">Enviar Registros</string>
   <string name="SendLogsEmpty">Não existem logs ainda</string>
+  <string name="ClearLogs">Apagar Registros</string>
+  <string name="ClearLogsMsg">Registros excluídos</string>
     <string name="SendIcon">Ícone de Enviar</string>
   <string name="HideMobile">Ocultar Número no Menu</string>
     <string name="FloatingPencilColor">Cor do Lápis Flutuante</string>
@@ -1175,4 +1177,6 @@
   <string name="CommandColorCheck">Definir Cor de Comando Bot</string>
   <string name="CommandColor">Cor de Comando Bot</string>
   <string name="HighlightSearchColor">Cor Destaque de Busca</string>
+  <string name="ThemeUpdated">%s foram atualizados</string>
+  <string name="HideStatusIndicator">Ocultar Indicador de Status</string>
 </resources>

@@ -1011,7 +1011,7 @@
     <string name="formatDateAtTime">%1$s om %2$s</string>
     <!--update text-->
     <string name="updateText">Plus Messenger voor Android is bijgewerkt. Nieuw in versie 3.3.1:\n\n- Meerdere beheerders in groepen, naast het wijzigen van de groepsnaam en afbeelding kunnen beheerders ook leden toevoegen en verwijderen.\n- Groepen die de limiet van 200 deelnemers hebben bereikt kunnen worden geüpgraded naar supergroepen met maximaal 1000 deelnemers.\n- Snel delen in kanalen via de knop rechts van de berichten.\n\nMeer informatie over deze update is hier te vinden:\nhttps://telegram.org/blog/supergroups</string>
-    <string name="updateBuild">686</string>
+    <string name="updateBuild">689</string>
     <!--Telegram+--><!--
   <string name="updatePlusText"></string>-->
     <string name="TelegramForAndroid">Plus Messenger voor Android</string>

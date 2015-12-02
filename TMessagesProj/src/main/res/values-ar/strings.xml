@@ -1011,7 +1011,7 @@
     <string name="formatDateAtTime">%1$s الساعة %2$s</string>
     <!--update text-->
     <string name="updateText">تم تحديث تيليجرام على الأندرويد. الجديد في النسخة رقم 3.3.1:\n\n- المجموعات الآن يمكن أن يكون بها عدة مشرفين يمكنهم تغيير اسمها وشعارها وإضافة وإزالة الأعضاء.\n- المجموعات التي وصلت إلى ٢٠٠ عضو يمكن ترقيتها لتصبح مجموعة خارقة تصل إلى ١٠٠٠ عضو.\n- إضافة زر للمشاركة السريعة من خلال القنوات بجانب الرسائل.\n\nللإستزادة عن هذا التحديث من هنا:\nhttps://telegram.org/blog/supergroups</string>
-    <string name="updateBuild">686</string>
+    <string name="updateBuild">689</string>
     <!--Telegram+--><!--
   <string name="updatePlusText"></string>-->
   <string name="TelegramForAndroid">بلاس مسنجر للأندرويد</string>

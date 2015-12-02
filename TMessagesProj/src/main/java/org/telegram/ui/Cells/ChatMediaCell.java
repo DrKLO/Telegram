@@ -624,10 +624,14 @@ public class ChatMediaCell extends ChatBaseCell {
                     currentInfoString = senderName;
                     infoOffset = 0;
                     infoLayout = null;
-                    if(isChat){
-                        infoWidth = (int) Math.min(Math.ceil(namePaint.measureText(currentNameString)), Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y) * 0.5f);
-                        CharSequence str = TextUtils.ellipsize(currentNameString, senderPaint, infoWidth, TextUtils.TruncateAt.END);
-                        infoLayout = new StaticLayout(str, senderPaint, infoWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+                    try{
+                        if(isChat){
+                            infoWidth = (int) Math.min(Math.ceil(namePaint.measureText(currentNameString)), Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y) * 0.5f);
+                            CharSequence str = TextUtils.ellipsize(currentNameString, senderPaint, infoWidth, TextUtils.TruncateAt.END);
+                            infoLayout = new StaticLayout(str, senderPaint, infoWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+                        }
+                    } catch (Exception e) {
+                        FileLog.e("tmessages", e);
                     }
                 }
                 nameLayout = null;

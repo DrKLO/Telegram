@@ -973,9 +973,9 @@ e introduce o teu número.</string>
   <string name="formatDateAtTime">%1$s ás %2$s</string>
   <!--update text--><!--
   <string name="updateText">Telegram para Android foi actualizada. Novidades na versión 3.2.6:\n\n- Novas animacións e moitas melloras visuais\n- Soporte para os novos emoji\n- Outras melloras e correccións de erros</string>-->
-  <string name="updateBuild">686</string>
-  <!--Telegram+--><!--
-  <string name="updatePlusText">\n\nNovidades en 3.3.1.0:\n\n- Corrección de erros</string>-->
+  <string name="updateBuild">689</string>
+  <!--Telegram+-->
+  <string name="updatePlusText">\n\nNovidades en 3.3.1.1:\n\n- Corrección de erros</string>
     <string name="TelegramForAndroid">Plus Messenger para Android</string>
     <string name="Theming">Tematización</string>
     <string name="colorHexInvalid">Cor hexadecimal inválida!</string>

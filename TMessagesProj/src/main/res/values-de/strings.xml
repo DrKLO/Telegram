@@ -1008,9 +1008,9 @@
     <string name="formatDateAtTime">%1$s um %2$s</string>
     <!--update text-->
 <string name="updateText">Plus Messenger für Android wurde aktualisiert. Neu in Version 3.3.1:\n\n- Gruppen erlauben ab sofort Administratoren: Diese können den Gruppennamen und das Bild ändern sowie Mitglieder hinzufügen und auch wieder entfernen.\n- Gruppen, die das Limit von 200 Mitgliedern erreicht haben, können in eine Supergruppe (1000 Mitglieder) geändert werden.\n- Kanäle unterstützen schnelles Teilen über den Knopf neben jeder Nachricht.\n\nAusführliche Informationen zu den neuen Funktionen in unserem Blog:\nhttps://telegram.org/blog/supergroups</string>
-    <string name="updateBuild">686</string>
-    <!--Telegram+--><!--
-  <string name="updatePlusText">\n\nNeu in Version 3.3.1.0:\n\n- Fehlerbeseitigungen</string>-->
+    <string name="updateBuild">689</string>
+    <!--Telegram+-->
+  <string name="updatePlusText">\n\nNeu in Version 3.3.1.1:\n\n- Fehlerbeseitigungen</string>
     <string name="TelegramForAndroid">Plus Messenger für Android</string>
   <string name="Theming">Themen bearbeiten</string>
   <string name="colorHexInvalid">Ungültiger Hex-Code!</string>
@@ -1076,6 +1076,8 @@
   <string name="MuteColor">Symbol Stumm</string>
     <string name="SendLogs">Sende Protokolle</string>
   <string name="SendLogsEmpty">Keine Protokolle gespeichert</string>
+  <string name="ClearLogs">Protokolle gelöscht </string>
+  <string name="ClearLogsMsg">Protokolle löschen </string>
   <string name="SendIcon">Symbol für Senden</string>
   <string name="HideMobile">Telefonnummer ausblenden</string>
   <string name="FloatingPencilColor">Schwebender Stift</string>
@@ -1171,4 +1173,6 @@
   <string name="CommandColorCheck">Bot Befehl Farbprüfung</string>
   <string name="CommandColor">Bot Befehl</string>
   <string name="HighlightSearchColor">Höhepunkt Suche</string>
+  <string name="ThemeUpdated">%s wurde aktualisiert </string>
+  <string name="HideStatusIndicator">Benutzer Status Anzeige ausblenden</string>
 </resources>

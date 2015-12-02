@@ -972,9 +972,9 @@
   <string name="formatDateAtTime">%1$s в %2$s</string>
   <!--update text--><!--
   <string name="updateText">Telegram для Android обновлён. Новое в версии 3.2.6:\n\n- Новые анимации и множество визуальных усовершенствований\n- Поддержка новых эмодзи\n- Прочие улучшения и исправления ошибок</string>-->
-  <string name="updateBuild">686</string>
-    <!--Telegram+--><!--
-  <string name="updatePlusText">\n\nНовое в версии 3.3.1.0:\n\n- Исправление ошибок</string>-->
+  <string name="updateBuild">689</string>
+    <!--Telegram+-->
+  <string name="updatePlusText">\n\nНовое в версии 3.3.1.1:\n\n- Исправление ошибок</string>
   <string name="TelegramForAndroid">Plus Messenger для Android</string>
   <string name="Theming">Кастомизация</string>
   <string name="colorHexInvalid">Неверный hex-код цвета!</string>

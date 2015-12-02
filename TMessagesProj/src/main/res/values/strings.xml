@@ -1012,10 +1012,9 @@
     <string name="formatDateAtTime">%1$s at %2$s</string>
     <!--update text-->
     <string name="updateText">Plus Messenger for Android has been updated. New in version 3.3.1:\n\n- Groups can now have multiple administrators with the ability to edit the name and logo, and add and remove members.\n- Groups that have reached their capacity of 200 users can be upgraded to supergroups of up to 1,000 members.\n- Channels got a new Quick Share button right next to messages.\n\nMore about this update:\nhttps://telegram.org/blog/supergroups</string>
-    <string name="updateBuild">686</string>
+    <string name="updateBuild">689</string>
     <!--Telegram+-->
-    <string name="updatePlusText"></string><!--
-    <string name="updatePlusText">\n\nNew in version 3.3.1.0:\n\n- Bug fixes</string>-->
+    <string name="updatePlusText">\n\nNew in version 3.3.1.1:\n\n- Added user status indicator to main and chat screen\n- Added option to hide status indicators\n- Bug fixes</string>
     <string name="TelegramForAndroid">Plus Messenger for Android</string>
     <string name="Theming">Theming</string>
     <string name="colorHexInvalid">Invalid color hex code!</string>
@@ -1179,4 +1178,5 @@
     <string name="CommandColor">Bot command color</string>
     <string name="HighlightSearchColor">Highlight search color</string>
     <string name="ThemeUpdated">%s has been updated</string>
+    <string name="HideStatusIndicator">Hide user status indicator</string>
 </resources>

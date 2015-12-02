@@ -515,7 +515,7 @@
   <string name="formatDateAtTime">%1$s पर %2$s</string>
   <!--update text--><!--
   <string name="updateText">Plus Messenger for Android has been updated. New in Version 3.0:\n\n\n\n- Dedicated tabs for each one of your custom sticker sets in the sticker panel. Add custom stickers like https://telegram.me/addstickers/Animals\n- New bot API, free for everyone. If you\'re an engineer, create your own bots for games, services or integrations. Learn more at https://telegram.org/blog/bot-revolution\n https://play.google.com/store/apps/details?id=es.rafalense.themes</string>-->
-  <string name="updateBuild">686</string>
+  <string name="updateBuild">689</string>
   <!--Telegram+--><!--
   <string name="updatePlusText"></string>-->
   <string name="TelegramForAndroid">Android  के लिए प्लस मैसेंजर</string>

@@ -11,9 +11,11 @@ package org.telegram.ui.Cells;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.drawable.Drawable;
+import android.graphics.drawable.GradientDrawable;
 import android.os.Build;
 import android.text.Layout;
 import android.text.StaticLayout;
@@ -35,6 +37,7 @@ import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
+import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.Components.AvatarDrawable;
 
@@ -136,6 +139,9 @@ public class DialogCell extends BaseCell {
 
     private int avatarLeftMargin;
 
+    private GradientDrawable statusBG;
+    private boolean drawStatus;
+
     public DialogCell(Context context) {
         super(context);
 
@@ -206,11 +212,16 @@ public class DialogCell extends BaseCell {
             botDrawable = getResources().getDrawable(R.drawable.bot_list);
         }
         
-       setBackgroundResource(R.drawable.list_selector);
+        setBackgroundResource(R.drawable.list_selector);
 
         avatarImage = new ImageReceiver(this);
         avatarImage.setRoundRadius(AndroidUtilities.dp(26));
         avatarDrawable = new AvatarDrawable();
+
+        statusBG = new GradientDrawable();
+        statusBG.setColor(Color.GRAY);
+        statusBG.setCornerRadius(AndroidUtilities.dp(16));
+        statusBG.setStroke(AndroidUtilities.dp(2), Color.WHITE);
     }
 
     public void setDialog(TLRPC.Dialog dialog, int i, int type) {
@@ -294,6 +305,8 @@ public class DialogCell extends BaseCell {
         drawNameLock = false;
         drawNameBot = false;
         drawVerified = false;
+
+        drawStatus = false;
 
         if (encryptedChat != null) {
             drawNameLock = true;
@@ -534,6 +547,7 @@ public class DialogCell extends BaseCell {
             if (encryptedChat != null) {
                 currentNamePaint = nameEncryptedPaint;
             }
+            if(!drawNameBot)drawStatus = true;
         }
         if (nameString.length() == 0) {
             nameString = LocaleController.getString("HiddenName", R.string.HiddenName);
@@ -852,6 +866,8 @@ public class DialogCell extends BaseCell {
                 photo = user.photo.photo_small;
             }
             avatarDrawable.setInfo(user);
+            //Plus
+            setStatusColor();
         } else if (chat != null) {
             if (chat.photo != null) {
                 photo = chat.photo.photo_small;
@@ -867,6 +883,23 @@ public class DialogCell extends BaseCell {
         }
 
         invalidate();
+    }
+
+    private void setStatusColor(){
+        String s = LocaleController.formatUserStatus(user);
+        if (s.equals(LocaleController.getString("ALongTimeAgo", R.string.ALongTimeAgo))){
+            statusBG.setColor(Color.BLACK);
+        } else if(s.equals(LocaleController.getString("Online", R.string.Online))){
+            statusBG.setColor(0xff00e676);
+        } else if(s.equals(LocaleController.getString("Lately", R.string.Lately))){
+            statusBG.setColor(Color.LTGRAY);
+        } else {
+            statusBG.setColor(Color.GRAY);
+        }
+        int l = user.status != null ? ConnectionsManager.getInstance().getCurrentTime() - user.status.expires : -2;
+        if(l > 0 && l < 86400){
+            statusBG.setColor(Color.LTGRAY);
+        }
     }
 
     private void updateTheme(){
@@ -931,6 +964,7 @@ public class DialogCell extends BaseCell {
         avatarSize = AndroidUtilities.dp(themePrefs.getInt("chatsAvatarSize", 52));
         avatarLeftMargin = AndroidUtilities.dp(themePrefs.getInt("chatsAvatarMarginLeft", AndroidUtilities.isTablet() ? 13 : 9));
 
+        statusBG.setStroke(AndroidUtilities.dp(2), themePrefs.getInt("chatsRowColor", 0xffffffff));
     }
 
     @Override
@@ -998,7 +1032,7 @@ public class DialogCell extends BaseCell {
             setDrawableBounds(verifiedDrawable, nameMuteLeft, AndroidUtilities.dp(16.5f));
             verifiedDrawable.draw(canvas);
         }
-
+        SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
         if (drawError) {
             setDrawableBounds(errorDrawable, errorLeft, errorTop);
             errorDrawable.draw(canvas);
@@ -1007,7 +1041,6 @@ public class DialogCell extends BaseCell {
                 setDrawableBounds(countDrawableGrey, countLeft - AndroidUtilities.dp(5.5f), countTop, countWidth + AndroidUtilities.dp(11), countDrawable.getIntrinsicHeight());
                 countDrawableGrey.draw(canvas);
             } else {
-                SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
                 int size = themePrefs.getInt("chatsCountSize", 13);
                 size = size > 13 ? (size - 13) / 2 : 0;
                 //setDrawableBounds(countDrawable, countLeft - AndroidUtilities.dp(5.5f), countTop, countWidth + AndroidUtilities.dp(11), countDrawable.getIntrinsicHeight());
@@ -1029,5 +1062,11 @@ public class DialogCell extends BaseCell {
         }
 
         avatarImage.draw(canvas);
+
+        if(drawStatus  && !themePrefs.getBoolean("chatsHideStatusIndicator", false)){
+            setDrawableBounds(statusBG, AndroidUtilities.dp(36) + avatarLeftMargin, AndroidUtilities.dp(46), AndroidUtilities.dp(16), AndroidUtilities.dp(16));
+            statusBG.draw(canvas);
+        }
+
     }
 }

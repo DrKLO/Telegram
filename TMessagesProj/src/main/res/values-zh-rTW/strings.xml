@@ -945,10 +945,10 @@
   <string name="formatDateAtTime">於時間 %1$s  %2$s</string>
   <!--update text--><!--
   <string name="updateText">Android 版的 Telegram 已經更新。在版本 3.2.0 中的新功能：\n\n- 引進頻道 – 用來將您的訊息向無限觀眾廣播的新方式 (取代舊式的廣播)。\n\n了解更多：https://telegram.org/blog/channels</string>-->
-  <string name="updateBuild">686</string>
+  <string name="updateBuild">689</string>
   <!--Telegram+--><!--
   <string name="updatePlusText">
-\n\n在 3.3.1.0 版的新功能：\n\n- 新的模組在聊天畫面顯示擁有的大頭照\n- 加入新的泡泡邊緣 (感謝 Edwin Macalopu)\n- 錯誤修復</string>-->
+\n\n在 3.3.1.1 版的新功能：\n\n- 新的模組在聊天畫面顯示擁有的大頭照\n- 加入新的泡泡邊緣 (感謝 Edwin Macalopu)\n- 錯誤修復</string>-->
   <string name="TelegramForAndroid">適用於 Android 的 Plus Messenger</string>
   <string name="Theming">自製佈景主題</string>
   <string name="colorHexInvalid">無效的十六進位顏色代碼！</string>

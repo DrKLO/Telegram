@@ -913,7 +913,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             writeButton = new ImageView(context);
             try {
             //writeButton.setBackgroundResource(R.drawable.floating_user_states);
-            Drawable profile = context.getResources().getDrawable(R.drawable.floating3_profile);
+            Drawable profile = context.getResources().getDrawable(R.drawable.floating_user_states);
             if(profile != null)profile.setColorFilter(themePrefs.getInt("profileRowColor", 0xffffffff), PorterDuff.Mode.SRC_IN);
             writeButton.setBackgroundDrawable(profile);
             } catch (Throwable e) {
@@ -2043,7 +2043,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         }
 
                         if (currentChat.creator && info.participants.participants.size() >= MessagesController.getInstance().minGroupConvertSize
-                                || currentChat.creator && BuildConfig.DEBUG) {
+                                || currentChat.creator && info.participants.participants.size() >= 4 && currentChat.creator && BuildConfig.DEBUG) {
                             convertRow = rowCount++;
                         }
                     }
@@ -2356,7 +2356,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 if (user == null) {
                     return;
                 }
-                ActionBarMenuItem item = menu.addItem(0, dots);
+                ActionBarMenuItem item = menu.addItem(10, dots);
                 if (user.bot) {
                     if (!user.bot_nochats) {
                         item.addSubItem(invite_to_group, LocaleController.getString("BotInvite", R.string.BotInvite), 0);

@@ -896,9 +896,9 @@
   <string name="formatDateAtTime">%1$s 的 %2$s</string>
   <!--update text--><!--
   <string name="updateText">Android 版的 Plus Messenger 已更新。最新版本 3.1 的新增功能有：\n\n- 在特定聊天中搜索消息内容。\n- 全新设计的附件选择菜单。从附件选择菜单中直接发送联系人资料或语音文件。\n- 改进的程序内媒体播放功能 （YouTube, Vimoe, Soundcloud 等）, 新播放器适用于大型语音文件。\n\n更多更新请查看：\nhttps://telegram.org/blog/search-and-media</string>-->
-  <string name="updateBuild">686</string>
-  <!--Telegram+--><!--
-  <string name="updatePlusText">\n\n在 3.3.1.0 版的新功能：\n\n- 错误修复</string>-->
+  <string name="updateBuild">689</string>
+  <!--Telegram+-->
+  <string name="updatePlusText">\n\n在 3.3.1.1 版的新功能：\n\n- 错误修复</string>
   <string name="TelegramForAndroid">Plus Messenger for Android</string>
   <string name="Theming">主题调整</string>
   <string name="colorHexInvalid">无效的颜色代码！</string>

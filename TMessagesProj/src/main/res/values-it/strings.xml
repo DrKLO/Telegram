@@ -1011,9 +1011,9 @@
     <string name="formatDateAtTime">%1$s alle %2$s</string>
     <!--update text-->
     <string name="updateText">Plus Messenger per Android si è aggiornato. Nuovo nella versione 3.3.1:\n\n- I gruppi ora possono avere più amministratori, con l\'abilità di modificare il nome e l\'immagine, e di aggiungere e rimuovere membri.\n- I gruppi che hanno raggiunto i 200 membri possono ora essere aggiornati a supergruppi e avere fino a 1000 membri.\n- I canali ora hanno un nuovo pulsante di Condivisione Veloce a destra dei messaggi.\n\nPiù info su questo aggiornamento:\nhttps://telegram.org/blog/supergroups</string>
-    <string name="updateBuild">686</string>
-    <!--Telegram+--><!--
-  <string name="updatePlusText">\n\nNovità nella versione 3.3.1.0:\n\n- Correzioni bug</string>-->
+    <string name="updateBuild">689</string>
+    <!--Telegram+-->
+  <string name="updatePlusText">\n\nNovità nella versione 3.3.1.1:\n\n- Aggiunto indicatore di stato dell\'utente alla schermata principale e della chat\n- Aggiunta opzione per nascondere gli indicatori di stato\n- Correzioni bug</string>
     <string name="TelegramForAndroid">Plus Messenger per Android</string>
   <string name="Theming">Personalizzazione</string>
     <string name="colorHexInvalid">Codice del colore esadecimale non valido!</string>
@@ -1079,6 +1079,8 @@
     <string name="MuteColor">Colore dell\'icona \"Muto\"</string>
     <string name="SendLogs">Invia log</string>
     <string name="SendLogsEmpty">Non ci sono log</string>
+  <string name="ClearLogs">Cancella i log</string>
+  <string name="ClearLogsMsg">log cancellati</string>
     <string name="SendIcon">Icona di invio</string>
   <string name="HideMobile">Nascondi numero di telefono dal menu</string>
   <string name="FloatingPencilColor">Colore della matita fluttuante</string>
@@ -1175,4 +1177,6 @@
   <string name="CommandColorCheck">Colore della spunta del comando del bot</string>
   <string name="CommandColor">Colore del comando del bot</string>
   <string name="HighlightSearchColor">Colore dell\'evidenziazione nella ricerca</string>
+  <string name="ThemeUpdated">%s è stato aggiornato</string>
+  <string name="HideStatusIndicator">Nascondi l\'indicatore di stato dell\'utente</string>
 </resources>

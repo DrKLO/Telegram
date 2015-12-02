@@ -1011,9 +1011,9 @@
     <string name="formatDateAtTime">%1$s a las %2$s</string>
     <!--update text-->
     <string name="updateText">Plus Messenger para Android ha sido actualizada. Novedades en la versión 3.3.1:\n\n- Ahora los grupos pueden tener múltiples administradores, con la habilidad de cambiar la foto de perfil y el nombre del grupo, además de añadir y expulsar miembros.\n- Los grupos que han alcanzado los 200 usuarios, podrán ser convertidos en supergrupos con una capacidad de 1000 miembros.\n- Los canales tienen un nuevo botón para compartir contenidos más rápido, justo al lado de los mensajes.\n\nMás sobre esta actualización:\nhttps://telegram.org/blog/supergroups</string>
-    <string name="updateBuild">686</string>
-    <!--Telegram+--><!--
-    <string name="updatePlusText">\n\nNovedades en 3.3.1.0:\n\n- Corrección de errores</string>-->
+    <string name="updateBuild">689</string>
+    <!--Telegram+-->
+    <string name="updatePlusText">\n\nNovedades en 3.3.1.1:\n\n- Añadido indicador de estado de usuario en pantalla principal y pantalla de chat\n- Opción para ocultar indicadores de conexión\n- Corrección de errores</string>
     <string name="TelegramForAndroid">Plus Messenger para Android</string>
     <string name="Theming">Tematización</string>
     <string name="colorHexInvalid">¡Color hexadecimal inválido!</string>
@@ -1177,4 +1177,5 @@
     <string name="CommandColor">Color de comando</string>
     <string name="HighlightSearchColor">Color de resaltado de búsqueda</string>
     <string name="ThemeUpdated">%s se ha actualizado</string>
+    <string name="HideStatusIndicator">Ocultar indicador de estado</string>
 </resources>

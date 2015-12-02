@@ -1011,7 +1011,7 @@
     <string name="formatDateAtTime">%1$s às %2$s</string>
     <!--update text-->
     <string name="updateText">Plus Messenger para Android foi atualizado. Novidades na versão 3.3.1:\n\n- Os grupos agora podem ter múltiplos administradores com permissão para editar o nome e a imagem do grupo, adicionar e remover membros.\n- Os grupos que alcançarem 200 usuários podem ser transformados em supergrupos, que permitem até 1000 membros.\n- Os canais contam com um botão de compartilhamento rápido ao lado das mensagens.\n\nVocê pode ver mais sobre os supergrupos e sobre os demais assuntos no nosso blog:\nhttps://telegram.org/blog/supergroups</string>
-    <string name="updateBuild">686</string>
+    <string name="updateBuild">689</string>
     <!--Telegram+-->
   <string name="TelegramForAndroid">Plus Messenger para Android</string>
   <string name="Theming">Temas</string>

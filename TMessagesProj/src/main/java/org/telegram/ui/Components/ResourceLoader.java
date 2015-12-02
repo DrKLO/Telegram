@@ -14,6 +14,7 @@ import android.graphics.drawable.Drawable;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
 import org.telegram.ui.ImageListActivity;
 
@@ -141,7 +142,7 @@ public class ResourceLoader {
 
             geoInDrawable = context.getResources().getDrawable(R.drawable.location_b);
             geoOutDrawable = context.getResources().getDrawable(R.drawable.location_g);
-            
+            try{
             context.getResources().getDrawable(R.drawable.attach_camera_states);
             context.getResources().getDrawable(R.drawable.attach_gallery_states);
             context.getResources().getDrawable(R.drawable.attach_video_states);
@@ -150,6 +151,9 @@ public class ResourceLoader {
             context.getResources().getDrawable(R.drawable.attach_contact_states);
             context.getResources().getDrawable(R.drawable.attach_location_states);
             context.getResources().getDrawable(R.drawable.attach_hide_states);
+            } catch (Exception e) {
+                FileLog.e("tmessages", e);
+            }
        // }
     }
 

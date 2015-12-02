@@ -91,10 +91,10 @@ public class UserCell extends FrameLayout {
             checkBoxBig = new CheckBoxSquare(context);
             addView(checkBoxBig, LayoutHelper.createFrame(18, 18, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.CENTER_VERTICAL, LocaleController.isRTL ? 19 : 0, 0, LocaleController.isRTL ? 0 : 19, 0));
         } else if (checkbox == 1) {
-        checkBox = new CheckBox(context, R.drawable.round_check2);
-        checkBox.setVisibility(INVISIBLE);
-        addView(checkBox, LayoutHelper.createFrame(22, 22, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 0 : 37 + padding, 38, LocaleController.isRTL ? 37 + padding : 0, 0));
-    }
+            checkBox = new CheckBox(context, R.drawable.round_check2);
+            checkBox.setVisibility(INVISIBLE);
+            addView(checkBox, LayoutHelper.createFrame(22, 22, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 0 : 37 + padding, 38, LocaleController.isRTL ? 37 + padding : 0, 0));
+        }
     }
 
     public void setData(TLObject user, CharSequence name, CharSequence status, int resId) {
@@ -212,7 +212,7 @@ public class UserCell extends FrameLayout {
             }
             if (!continueUpdate && currentName == null && lastName != null && (mask & MessagesController.UPDATE_MASK_NAME) != 0) {
                 if (currentUser != null) {
-                newName = UserObject.getUserName(currentUser);
+                    newName = UserObject.getUserName(currentUser);
                 } else {
                     newName = currentChat.title;
                 }
@@ -226,12 +226,12 @@ public class UserCell extends FrameLayout {
         }
 
         if (currentUser != null) {
-        avatarDrawable.setInfo(currentUser);
-        if (currentUser.status != null) {
-            lastStatus = currentUser.status.expires;
-        } else {
-            lastStatus = 0;
-        }
+            avatarDrawable.setInfo(currentUser);
+            if (currentUser.status != null) {
+                lastStatus = currentUser.status.expires;
+            } else {
+                lastStatus = 0;
+            }
         } else {
             avatarDrawable.setInfo(currentChat);
         }
@@ -241,7 +241,7 @@ public class UserCell extends FrameLayout {
             nameTextView.setText(currentName);
         } else {
             if (currentUser != null) {
-            lastName = newName == null ? UserObject.getUserName(currentUser) : newName;
+                lastName = newName == null ? UserObject.getUserName(currentUser) : newName;
             } else {
                 lastName = newName == null ? currentChat.title : newName;
             }
@@ -260,13 +260,13 @@ public class UserCell extends FrameLayout {
                 }
             } else {
                 if (currentUser.id == UserConfig.getClientUserId() || currentUser.status != null && currentUser.status.expires > ConnectionsManager.getInstance().getCurrentTime() || MessagesController.getInstance().onlinePrivacy.containsKey(currentUser.id)) {
-                statusTextView.setTextColor(statusOnlineColor);
-                statusTextView.setText(LocaleController.getString("Online", R.string.Online));
-            } else {
-                statusTextView.setTextColor(statusColor);
-                statusTextView.setText(LocaleController.formatUserStatus(currentUser));
+                    statusTextView.setTextColor(statusOnlineColor);
+                    statusTextView.setText(LocaleController.getString("Online", R.string.Online));
+                } else {
+                    statusTextView.setTextColor(statusColor);
+                    statusTextView.setText(LocaleController.formatUserStatus(currentUser));
+                }
             }
-        }
         }
 
         if (imageView.getVisibility() == VISIBLE && currentDrawable == 0 || imageView.getVisibility() == GONE && currentDrawable != 0) {
@@ -275,12 +275,7 @@ public class UserCell extends FrameLayout {
             if(currentDrawable != 0)imageView.setImageDrawable(getResources().getDrawable(currentDrawable));
         }
         //Plus
-        ////statusTextView.setTextSize(themePrefs.getInt("contactsStatusSize", 14));
-        //imageView.setVisibility(currentDrawable == 0 ? INVISIBLE : VISIBLE);
-        //imageView.setImageResource(currentDrawable);
         if(curDrawable != null)imageView.setImageDrawable(curDrawable);
-
-        //int radius = AndroidUtilities.dp(themePrefs.getInt("contactsAvatarRadius", 32));
         avatarImageView.getImageReceiver().setRoundRadius(AndroidUtilities.dp(radius));
         avatarDrawable.setRadius(AndroidUtilities.dp(radius));
         //

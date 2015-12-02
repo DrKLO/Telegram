@@ -98,6 +98,8 @@ public class ThemingChatsActivity extends BaseFragment {
     private int headerGradientColorRow;
     private int highlightSearchColorRow;
 
+    private int hideStatusIndicatorCheckRow;
+
     private int rowCount;
 
     public final static int CENTER = 0;
@@ -126,6 +128,8 @@ public class ThemingChatsActivity extends BaseFragment {
         avatarRadiusRow = rowCount++;
         avatarSizeRow = rowCount++;
         avatarMarginLeftRow = rowCount++;
+        hideStatusIndicatorCheckRow = rowCount++;
+
         nameColorRow = rowCount++;
         unknownNameColorRow = rowCount++;
         nameSizeRow = rowCount++;
@@ -846,6 +850,14 @@ public class ThemingChatsActivity extends BaseFragment {
 
                         },themePrefs.getInt( key, defColor), CENTER, 0, true);
                         colorDialog.show();
+                    } else if (i == hideStatusIndicatorCheckRow) {
+                        boolean b = themePrefs.getBoolean( key, false);
+                        SharedPreferences.Editor editor = themePrefs.edit();
+                        editor.putBoolean( key, !b);
+                        editor.commit();
+                        if (view instanceof TextCheckCell) {
+                            ((TextCheckCell) view).setChecked(!b);
+                        }
                     }
                 }
             });
@@ -952,7 +964,7 @@ public class ThemingChatsActivity extends BaseFragment {
         public boolean isEnabled(int i) {
             int g = AndroidUtilities.getIntDef("chatsRowGradient",0);
             return  i == headerColorRow || i == headerGradientRow || (AndroidUtilities.getIntDef("chatsHeaderGradient", 0) != 0 && i == headerGradientColorRow) || i == headerTitleColorRow || i == headerIconsColorRow || i == headerTitleRow ||
-                    i == rowColorRow || i == rowGradientRow || (g != 0 &&  i == rowGradientColorRow) || (g != 0 && i == rowGradientListCheckRow) || i == dividerColorRow || i == avatarRadiusRow ||  i == avatarSizeRow ||   i == avatarMarginLeftRow ||
+                    i == rowColorRow || i == rowGradientRow || (g != 0 &&  i == rowGradientColorRow) || (g != 0 && i == rowGradientListCheckRow) || i == dividerColorRow || i == avatarRadiusRow ||  i == avatarSizeRow ||   i == avatarMarginLeftRow || i == hideStatusIndicatorCheckRow ||
                     i == nameColorRow || i == groupNameColorRow || i == unknownNameColorRow || i == groupIconColorRow || i == muteColorRow || i == checksColorRow || i == nameSizeRow || i == groupNameSizeRow || i == messageColorRow || i == highlightSearchColorRow || i == memberColorRow || i == mediaColorRow || i == typingColorRow || i == messageSizeRow ||
                     i == timeColorRow || i == timeSizeRow || i == countColorRow || i == countSizeRow || i == countBGColorRow /*|| i == countSilentColorRow*/ || i == countSilentBGColorRow || i == floatingPencilColorRow || i == floatingBGColorRow;
         }
@@ -1128,6 +1140,9 @@ public class ThemingChatsActivity extends BaseFragment {
                     textCell.setTag("chatsRowGradientListCheck");
                     int value = AndroidUtilities.getIntDef("chatsRowGradient", 0);
                     textCell.setTextAndCheck(LocaleController.getString("RowGradientList", R.string.RowGradientList), value == 0 ? false : themePrefs.getBoolean("chatsRowGradientListCheck", false), true);
+                } else if (i == hideStatusIndicatorCheckRow) {
+                    textCell.setTag("chatsHideStatusIndicator");
+                    textCell.setTextAndCheck(LocaleController.getString("HideStatusIndicator", R.string.HideStatusIndicator), themePrefs.getBoolean("chatsHideStatusIndicator", false), true);
                 }
             } else if (type == 5) {
                 if (view == null) {
@@ -1205,7 +1220,7 @@ public class ThemingChatsActivity extends BaseFragment {
                         i == rowColorRow || i == rowGradientColorRow || i == dividerColorRow || i == nameColorRow || i == groupNameColorRow || i == unknownNameColorRow || i == groupIconColorRow || i == muteColorRow || i == checksColorRow || i == messageColorRow || i == highlightSearchColorRow || i == memberColorRow || i == mediaColorRow || i == typingColorRow || i == timeColorRow || i == countColorRow ||
                         i == countBGColorRow /*|| i == countSilentColorRow*/ || i == countSilentBGColorRow || i == floatingPencilColorRow || i == floatingBGColorRow) {
                 return 3;
-            } else if (i == rowGradientListCheckRow) {
+            } else if (i == rowGradientListCheckRow || i == hideStatusIndicatorCheckRow) {
                 return 4;
             } else if (i == headerTitleRow || i == headerGradientRow || i == rowGradientRow) {
                 return 5;

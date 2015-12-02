@@ -980,9 +980,9 @@ Si no us interessa, us suggerim crear un canal privat.</string>
 - Animacions noves i moltes millores visuals
 - Compatibilitat amb els emojis nous
 - Altres millores i correcció d\'errors</string>
-<string name="updateBuild">686</string>-->
-    <!--Telegram+--><!--
-  <string name="updatePlusText">\n\nNovetats a la versió 3.3.1.0:\n\n- Correcció d\'errors</string>-->
+<string name="updateBuild">689</string>-->
+    <!--Telegram+-->
+  <string name="updatePlusText">\n\nNovetats a la versió 3.3.1.1:\n\n- Correcció d\'errors</string>
     <string name="TelegramForAndroid">Plus Messenger per Android</string>
   <string name="Theming">Aparença</string>
   <string name="colorHexInvalid">Codi de color hexadecimal no vàlid.</string>

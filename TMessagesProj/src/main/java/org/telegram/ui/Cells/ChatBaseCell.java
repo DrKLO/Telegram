@@ -13,9 +13,11 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.drawable.Drawable;
+import android.graphics.drawable.GradientDrawable;
 import android.text.Layout;
 import android.text.StaticLayout;
 import android.text.TextPaint;
@@ -36,6 +38,7 @@ import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserObject;
+import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.LinkPath;
@@ -164,6 +167,9 @@ public class ChatBaseCell extends BaseCell implements MediaController.FileDownlo
     boolean showMyAvatarGroup = true;
     private int checkX = 0;
 
+    private GradientDrawable statusBG;
+    private boolean drawStatus;
+
     public ChatBaseCell(Context context) {
         super(context);
         if (timePaintIn == null) {
@@ -217,7 +223,28 @@ public class ChatBaseCell extends BaseCell implements MediaController.FileDownlo
         showMyAvatarGroup = themePrefs.getBoolean("chatShowOwnAvatarGroup", false);
         showAvatar = themePrefs.getBoolean("chatShowContactAvatar", false);
         leftBound = aSize + AndroidUtilities.dp(3);
-        //Log.e("ChatBaseCell", "leftBound " + leftBound);
+
+        statusBG = new GradientDrawable();
+        statusBG.setColor(Color.GRAY);
+        statusBG.setCornerRadius(AndroidUtilities.dp(13));
+        statusBG.setStroke(AndroidUtilities.dp(1), Color.WHITE);
+    }
+
+    private void setStatusColor(TLRPC.User user){
+        String s = user != null ? LocaleController.formatUserStatus(user): "";
+        if (s.equals(LocaleController.getString("ALongTimeAgo", R.string.ALongTimeAgo))){
+            statusBG.setColor(Color.BLACK);
+        } else if(s.equals(LocaleController.getString("Online", R.string.Online))){
+            statusBG.setColor(0xff00e676);
+        } else if(s.equals(LocaleController.getString("Lately", R.string.Lately))){
+            statusBG.setColor(Color.LTGRAY);
+        } else {
+            statusBG.setColor(Color.GRAY);
+        }
+        int l = user != null && user.status != null ? ConnectionsManager.getInstance().getCurrentTime() - user.status.expires : -2;
+        if(l > 0 && l < 86400){
+            statusBG.setColor(Color.LTGRAY);
+        }
     }
 
     private void updateTheme(){
@@ -340,7 +367,9 @@ public class ChatBaseCell extends BaseCell implements MediaController.FileDownlo
             newChat = MessagesController.getInstance().getChat(-currentMessageObject.messageOwner.from_id);
         }
         TLRPC.FileLocation newPhoto = null;
-
+        //plus
+        setStatusColor(newUser);
+        //
         if (isAvatarVisible) {
             if (newUser != null && newUser.photo != null){
                 newPhoto = newUser.photo.photo_small;
@@ -432,6 +461,7 @@ public class ChatBaseCell extends BaseCell implements MediaController.FileDownlo
                 drawShareButton = true;
             }
         }
+        setStatusColor(currentUser);
         //if (isChat && !messageObject.isOutOwner() && messageObject.messageOwner.from_id > 0) {
         if ( ((isChat || showAvatar) && !messageObject.isOutOwner() && messageObject.messageOwner.from_id > 0)
                 || ( (showMyAvatar && !isChat) || (showMyAvatarGroup && isChat) ) && messageObject.isOutOwner()) {
@@ -443,6 +473,8 @@ public class ChatBaseCell extends BaseCell implements MediaController.FileDownlo
                     currentPhoto = null;
                 }
                 avatarDrawable.setInfo(currentUser);
+                //Plus
+                if(!currentUser.bot)drawStatus = true;
             } else if (currentChat != null) {
                 if (currentChat.photo != null) {
                     currentPhoto = currentChat.photo.photo_small;
@@ -814,6 +846,7 @@ public class ChatBaseCell extends BaseCell implements MediaController.FileDownlo
                 //avatarImage.setImageCoords(AndroidUtilities.dp(6), layoutHeight - AndroidUtilities.dp(45), AndroidUtilities.dp(42), AndroidUtilities.dp(42));
                 if(((showMyAvatar && !isChat) || (showMyAvatarGroup && isChat)) && currentMessageObject.isOutOwner()){
                     avatarImage.setImageCoords(layoutWidth - avatarSize - avatarLeft, ownAvatarAlignTop ? AndroidUtilities.dp(3) : layoutHeight - AndroidUtilities.dp(3) - avatarSize, avatarSize, avatarSize);
+                    drawStatus = false;
                 }else{
                     avatarImage.setImageCoords(avatarLeft, avatarAlignTop ? AndroidUtilities.dp(3) : layoutHeight - AndroidUtilities.dp(3) - avatarSize, avatarSize, avatarSize);
                 }
@@ -848,9 +881,13 @@ public class ChatBaseCell extends BaseCell implements MediaController.FileDownlo
             requestLayout();
             return;
         }
-
+        SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
         if (isAvatarVisible) {
             avatarImage.draw(canvas);
+            if(drawStatus && !themePrefs.getBoolean("chatHideStatusIndicator", false)){
+                setDrawableBounds(statusBG, avatarSize + avatarLeft - AndroidUtilities.dp(14), avatarAlignTop ? avatarSize - AndroidUtilities.dp(8) : layoutHeight - AndroidUtilities.dp(15), AndroidUtilities.dp(13), AndroidUtilities.dp(13));
+                statusBG.draw(canvas);
+            }
         }
         updateTheme();
         Drawable currentBackgroundDrawable;
@@ -906,7 +943,7 @@ public class ChatBaseCell extends BaseCell implements MediaController.FileDownlo
             ResourceLoader.shareDrawable[ApplicationLoader.isCustomTheme() ? 1 : 0][sharePressed ? 1 : 0].draw(canvas);
         }
 
-        SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+
         boolean mCheck = AndroidUtilities.getBoolPref("chatMemberColorCheck");
         int mColor = themePrefs.getInt("chatMemberColor", AndroidUtilities.getIntDarkerColor("themeColor", 0x15));
         if (drawName && nameLayout != null) {
