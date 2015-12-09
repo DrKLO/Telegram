@@ -132,6 +132,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
     private int messagesSectionRow2;
     private int textSizeRow;
     private int stickersRow;
+    private int cacheRow;
     private int sendByEnterRow;
     private int supportSectionRow;
     private int supportSectionRow2;
@@ -243,6 +244,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         messagesSectionRow2 = rowCount++;
         textSizeRow = rowCount++;
         stickersRow = rowCount++;
+        cacheRow = rowCount++;
         sendByEnterRow = rowCount++;
         supportSectionRow = rowCount++;
         supportSectionRow2 = rowCount++;
@@ -559,6 +561,8 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                     presentFragment(new ChangePhoneHelpActivity());
                 } else if (i == stickersRow) {
                     presentFragment(new StickersActivity());
+                } else if (i == cacheRow) {
+                    presentFragment(new CacheControlActivity());
                 }
             }
         });
@@ -1069,7 +1073,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                     i == askQuestionRow || i == sendLogsRow || i == sendByEnterRow || i == privacyRow || i == wifiDownloadRow ||
                     i == mobileDownloadRow || i == clearLogsRow || i == roamingDownloadRow || i == languageRow || i == usernameRow ||
                     i == switchBackendButtonRow || i == telegramFaqRow || i == contactsSortRow || i == contactsReimportRow || i == saveToGalleryRow ||
-                    i == stickersRow;
+                    i == stickersRow || i == cacheRow;
         }
 
         @Override
@@ -1151,6 +1155,8 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                     textCell.setText(LocaleController.getString("ImportContacts", R.string.ImportContacts), true);
                 } else if (i == stickersRow) {
                     textCell.setText(LocaleController.getString("Stickers", R.string.Stickers), true);
+                } else if (i == cacheRow) {
+                    textCell.setText(LocaleController.getString("CacheSettings", R.string.CacheSettings), true);
                 }
             } else if (type == 3) {
                 if (view == null) {
@@ -1269,7 +1275,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 return 1;
             } else if (i == enableAnimationsRow || i == sendByEnterRow || i == saveToGalleryRow) {
                 return 3;
-            } else if (i == notificationRow || i == backgroundRow || i == askQuestionRow || i == sendLogsRow || i == privacyRow || i == clearLogsRow || i == switchBackendButtonRow || i == telegramFaqRow || i == contactsReimportRow || i == textSizeRow || i == languageRow || i == contactsSortRow || i == stickersRow) {
+            } else if (i == notificationRow || i == backgroundRow || i == askQuestionRow || i == sendLogsRow || i == privacyRow || i == clearLogsRow || i == switchBackendButtonRow || i == telegramFaqRow || i == contactsReimportRow || i == textSizeRow || i == languageRow || i == contactsSortRow || i == stickersRow || i == cacheRow) {
                 return 2;
             } else if (i == versionRow) {
                 return 5;

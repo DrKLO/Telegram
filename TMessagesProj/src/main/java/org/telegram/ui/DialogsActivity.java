@@ -344,7 +344,9 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                             MessagesController.getInstance().putUsers(users, false);
                             MessagesStorage.getInstance().putUsersAndChats(users, null, false, true);
                         }
-                        dialogsSearchAdapter.putRecentSearch(dialog_id, (TLRPC.User) obj);
+                        if (!onlySelect) {
+                            dialogsSearchAdapter.putRecentSearch(dialog_id, (TLRPC.User) obj);
+                        }
                     } else if (obj instanceof TLRPC.Chat) {
                         if (dialogsSearchAdapter.isGlobalSearch(position)) {
                             ArrayList<TLRPC.Chat> chats = new ArrayList<>();
@@ -357,10 +359,14 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                         } else {
                             dialog_id = AndroidUtilities.makeBroadcastId(((TLRPC.Chat) obj).id);
                         }
-                        dialogsSearchAdapter.putRecentSearch(dialog_id, (TLRPC.Chat) obj);
+                        if (!onlySelect) {
+                            dialogsSearchAdapter.putRecentSearch(dialog_id, (TLRPC.Chat) obj);
+                        }
                     } else if (obj instanceof TLRPC.EncryptedChat) {
                         dialog_id = ((long) ((TLRPC.EncryptedChat) obj).id) << 32;
-                        dialogsSearchAdapter.putRecentSearch(dialog_id, (TLRPC.EncryptedChat) obj);
+                        if (!onlySelect) {
+                            dialogsSearchAdapter.putRecentSearch(dialog_id, (TLRPC.EncryptedChat) obj);
+                        }
                     } else if (obj instanceof MessageObject) {
                         MessageObject messageObject = (MessageObject) obj;
                         dialog_id = messageObject.getDialogId();
@@ -472,37 +478,51 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     final TLRPC.Chat chat = MessagesController.getInstance().getChat(-lower_id);
                     CharSequence items[];
                     if (chat != null && chat.megagroup) {
-                        items = new CharSequence[]{chat == null || !chat.creator ? LocaleController.getString("LeaveMegaMenu", R.string.LeaveMegaMenu) : LocaleController.getString("DeleteMegaMenu", R.string.DeleteMegaMenu)};
+                        items = new CharSequence[]{LocaleController.getString("ClearHistoryCache", R.string.ClearHistoryCache), chat == null || !chat.creator ? LocaleController.getString("LeaveMegaMenu", R.string.LeaveMegaMenu) : LocaleController.getString("DeleteMegaMenu", R.string.DeleteMegaMenu)};
                     } else {
-                        items = new CharSequence[]{chat == null || !chat.creator ? LocaleController.getString("LeaveChannelMenu", R.string.LeaveChannelMenu) : LocaleController.getString("ChannelDeleteMenu", R.string.ChannelDeleteMenu)};
+                        items = new CharSequence[]{LocaleController.getString("ClearHistoryCache", R.string.ClearHistoryCache), chat == null || !chat.creator ? LocaleController.getString("LeaveChannelMenu", R.string.LeaveChannelMenu) : LocaleController.getString("ChannelDeleteMenu", R.string.ChannelDeleteMenu)};
                     }
                     builder.setItems(items, new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialog, final int which) {
                             AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                             builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
-                            if (chat != null && chat.megagroup) {
-                                if (!chat.creator) {
-                                    builder.setMessage(LocaleController.getString("MegaLeaveAlert", R.string.MegaLeaveAlert));
+                            if (which == 0) {
+                                if (chat != null && chat.megagroup) {
+                                    builder.setMessage(LocaleController.getString("AreYouSureClearHistorySuper", R.string.AreYouSureClearHistorySuper));
                                 } else {
-                                    builder.setMessage(LocaleController.getString("MegaDeleteAlert", R.string.MegaDeleteAlert));
+                                    builder.setMessage(LocaleController.getString("AreYouSureClearHistoryChannel", R.string.AreYouSureClearHistoryChannel));
                                 }
+                                builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), new DialogInterface.OnClickListener() {
+                                    @Override
+                                    public void onClick(DialogInterface dialogInterface, int i) {
+                                        MessagesController.getInstance().deleteDialog(selectedDialog, 2);
+                                    }
+                                });
                             } else {
-                                if (chat == null || !chat.creator) {
-                                    builder.setMessage(LocaleController.getString("ChannelLeaveAlert", R.string.ChannelLeaveAlert));
+                                if (chat != null && chat.megagroup) {
+                                    if (!chat.creator) {
+                                        builder.setMessage(LocaleController.getString("MegaLeaveAlert", R.string.MegaLeaveAlert));
+                                    } else {
+                                        builder.setMessage(LocaleController.getString("MegaDeleteAlert", R.string.MegaDeleteAlert));
+                                    }
                                 } else {
-                                    builder.setMessage(LocaleController.getString("ChannelDeleteAlert", R.string.ChannelDeleteAlert));
-                                }
-                            }
-                            builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), new DialogInterface.OnClickListener() {
-                                @Override
-                                public void onClick(DialogInterface dialogInterface, int i) {
-                                    MessagesController.getInstance().deleteUserFromChat((int) -selectedDialog, UserConfig.getCurrentUser(), null);
-                                    if (AndroidUtilities.isTablet()) {
-                                        NotificationCenter.getInstance().postNotificationName(NotificationCenter.closeChats, selectedDialog);
+                                    if (chat == null || !chat.creator) {
+                                        builder.setMessage(LocaleController.getString("ChannelLeaveAlert", R.string.ChannelLeaveAlert));
+                                    } else {
+                                        builder.setMessage(LocaleController.getString("ChannelDeleteAlert", R.string.ChannelDeleteAlert));
                                     }
                                 }
-                            });
+                                builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), new DialogInterface.OnClickListener() {
+                                    @Override
+                                    public void onClick(DialogInterface dialogInterface, int i) {
+                                        MessagesController.getInstance().deleteUserFromChat((int) -selectedDialog, UserConfig.getCurrentUser(), null);
+                                        if (AndroidUtilities.isTablet()) {
+                                            NotificationCenter.getInstance().postNotificationName(NotificationCenter.closeChats, selectedDialog);
+                                        }
+                                    }
+                                });
+                            }
                             builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
                             showDialog(builder.create());
                         }
@@ -538,12 +558,12 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                                         if (isChat) {
                                             TLRPC.Chat currentChat = MessagesController.getInstance().getChat((int) -selectedDialog);
                                             if (currentChat != null && ChatObject.isNotInChat(currentChat)) {
-                                                MessagesController.getInstance().deleteDialog(selectedDialog, false);
+                                                MessagesController.getInstance().deleteDialog(selectedDialog, 0);
                                             } else {
                                                 MessagesController.getInstance().deleteUserFromChat((int) -selectedDialog, MessagesController.getInstance().getUser(UserConfig.getClientUserId()), null);
                                             }
                                         } else {
-                                            MessagesController.getInstance().deleteDialog(selectedDialog, false);
+                                            MessagesController.getInstance().deleteDialog(selectedDialog, 0);
                                         }
                                         if (isBot) {
                                             MessagesController.getInstance().blockUser((int) selectedDialog);
@@ -552,7 +572,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                                             NotificationCenter.getInstance().postNotificationName(NotificationCenter.closeChats, selectedDialog);
                                         }
                                     } else {
-                                        MessagesController.getInstance().deleteDialog(selectedDialog, true);
+                                        MessagesController.getInstance().deleteDialog(selectedDialog, 1);
                                     }
                                 }
                             });

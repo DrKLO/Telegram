@@ -59,6 +59,7 @@ import org.telegram.messenger.AnimationCompat.AnimatorSetProxy;
 import org.telegram.messenger.AnimationCompat.ObjectAnimatorProxy;
 import org.telegram.messenger.AnimationCompat.ViewProxy;
 import org.telegram.messenger.ApplicationLoader;
+import org.telegram.ui.StickersActivity;
 
 import java.util.Locale;
 
@@ -1500,6 +1501,13 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
                         SendMessagesHelper.getInstance().sendSticker(sticker, dialog_id, replyingMessageObject, asAdmin());
                         if (delegate != null) {
                             delegate.onMessageSend(null);
+                        }
+                    }
+
+                    @Override
+                    public void onStickersSettingsClick() {
+                        if (parentFragment != null) {
+                            parentFragment.presentFragment(new StickersActivity());
                         }
                     }
                 });

@@ -46,6 +46,7 @@
     <string name="EncryptedChatStartedOutgoing">%s قام بالدخول للمحادثة السرية.</string>
     <string name="EncryptedChatStartedIncoming">لقد قمت بالدخول للمحادثة السرية.</string>
     <string name="ClearHistory">مسح سجل المحادثات</string>
+    <string name="ClearHistoryCache">حذف من الذاكرة المخبئية</string>
     <string name="DeleteChat">حذف وخروج</string>
     <string name="DeleteChatUser">حذف المحادثة</string>
     <string name="HiddenName">حساب محذوف</string>
@@ -437,7 +438,6 @@
     <string name="TerminateAllSessions">سجل الخروج من كافة الأجهزة الأخرى</string>
     <string name="Events">الأحداث</string>
     <string name="ContactJoined">اشترك صديق في تيليجرام</string>
-    <string name="Pebble">PEBBLE</string>
     <string name="Language">اللغة</string>
     <string name="AskAQuestionInfo">نرجو الأخذ بالعلم أن الدعم الفني في تيليجرام يقوم به مجموعة من المتطوعين. نحن نحاول الرد بسرعة قدر المستطاع، لكن ربما نستغرق القليل من الوقت.<![CDATA[<br><br>]]> <![CDATA[<a href=\"https://telegram.org/faq/ar\">صفحة الأسئلة الأكثر شيوعًا</a>]]>: يوجد بها حلول للمشاكل وإجابات لمعظم الأسئلة.</string>
     <string name="AskButton">اسأل أحد المتطوعين</string>
@@ -499,6 +499,24 @@
     <string name="SmartNotificationsTimes">الأوقات</string>
     <string name="SmartNotificationsWithin">خلال</string>
     <string name="SmartNotificationsMinutes">دقائق</string>
+    <!--cache view-->
+    <string name="CacheSettings">إعدادات الذاكرة المخبئية</string>
+    <string name="LocalDatabase">قاعدة البيانات على الجهاز</string>
+    <string name="LocalDatabaseClear">هل ترغب في مسح الرسائل المحفوظة في الذاكرة المخبئية؟</string>
+    <string name="LocalDatabaseInfo">مسح قاعدة البيانات على الجهاز سيحذف الرسائل التي تم تنزيلها على جهازك ويقوم بضغط قاعدة البيانات لتوفير مساحة على جهازك. تيليجرام يحتاج لبعض البيانات ليعمل، لذلك حجم قاعدة البيانات لن يصل إلى صفر.\n\nهذه العملية ربما تأخذ عدة دقائق لتتم.</string>
+    <string name="ClearMediaCache">مسح الذاكرة المخبئية</string>
+    <string name="CacheClear">مسح</string>
+    <string name="CalculatingSize">جاري الحساب...</string>
+    <string name="LocalDocumentCache">المستندات</string>
+    <string name="LocalPhotoCache">الصور</string>
+    <string name="LocalAudioCache">الرسائل الصوتية</string>
+    <string name="LocalVideoCache">المقاطع المرئية</string>
+    <string name="LocalMusicCache">الموسيقى</string>
+    <string name="LocalCache">الملفات الأخرى</string>
+    <string name="CacheEmpty">إفراغ</string>
+    <string name="KeepMedia">الإحتفاظ بالوسائط</string>
+    <string name="KeepMediaInfo">الصور، المقاطع المرئية، وجميع الملفات المحفوظة في خوادمنا التي لم <![CDATA[<b> تستخدمها </b>]]> خلال هذه المدة سيتم حذفها لتوفير المساحة. ملفات الوسائط ستبقى في خوادم تيليجرام ويمكنك إعادة تنزيلها متى ما احتجتها مرة أخرى.</string>
+    <string name="KeepMediaForever">إلى الأبد</string>
     <!--sessions view-->
     <string name="SessionsTitle">الأجهزة المسجّل دخول منها</string>
     <string name="CurrentSession">الجهاز الحالي</string>
@@ -781,6 +799,8 @@
     <string name="AreYouSureSecretChat">هل أنت متأكد من أنك تريد بدء محادثة سرية؟</string>
     <string name="AreYouSureRegistration">هل أنت متأكد من رغبتك في إلغاء التسجيل؟</string>
     <string name="AreYouSureClearHistory">هل أنت متأكد من رغبتك في حذف سجل المحادثات؟</string>
+    <string name="AreYouSureClearHistoryChannel">حذف كافة المحادثات والوسائط المتعلقة بهذه القناة من الذاكرة المخبئية؟</string>
+    <string name="AreYouSureClearHistorySuper">حذف كافة المحادثات والوسائط المتعلقة بهذه المجموعة الخارقة من الذاكرة المخبئية؟</string>
     <string name="AreYouSureDeleteMessages">هل أنت متأكد من رغبتك في حذف %1$s؟</string>
     <string name="SendMessagesToGroup">هل ترغب في إرسال رسالة إلى %1$s؟</string>
     <string name="SendContactToGroup">أرسل جهة الاتصال إلى %1$s؟</string>
@@ -1010,6 +1030,7 @@
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s الساعة %2$s</string>
     <!--update text-->
-    <string name="updateText">تم تحديث تيليجرام على الأندرويد. الجديد في النسخة رقم 3.3.0:\n\n- المجموعات الآن يمكن أن يكون بها عدة مشرفين يمكنهم تغيير اسمها وشعارها وإضافة وإزالة الأعضاء.\n- المجموعات التي وصلت إلى ٢٠٠ عضو يمكن ترقيتها لتصبح مجموعة خارقة تصل إلى ١٠٠٠ عضو.\n- إضافة زر للمشاركة السريعة من خلال القنوات بجانب الرسائل.\n\nللإستزادة عن هذا التحديث من هنا:\nhttps://telegram.org/blog/supergroups</string>
-    <string name="updateBuild">677</string>
+    <string name="updateText">تيليجرام نسخة الأندرويد تم تحديثه. الجديد في نسخة ٣.٢.٢:\n\n- إدارة للذاكرة المخبئية: إمكانية التحكم بالذاكرة المخبئية، حذف محتوى لمحادثة معينة.\n- حذف الذاكرة المخبئية من المجموعات الخارقة والقنوات: الضغط والتعليق عليها ثم تحذفها من الذاكرة.n\- إدارة الملصقات: إعادة ترتيب ملصقاتك بشكل يدوي. ويتزامن الترتيب مع باقي أجهزتك.n\n\للإستزادة عن هذا التحديث من هنا:n\
+        https://telegram.org/blog/cache-and-stickers</string>
+    <string name="updateBuild">693</string>
 </resources>

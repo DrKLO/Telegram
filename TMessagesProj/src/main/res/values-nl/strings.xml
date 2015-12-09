@@ -4,7 +4,7 @@
 
 <resources>
     <string name="AppName">Telegram</string>
-    <string name="AppNameBeta">Telegram Bèta</string>
+    <string name="AppNameBeta">Telegram-bèta</string>
     <string name="LanguageName">Nederlands</string>
     <string name="LanguageNameInEnglish">Dutch</string>
     <string name="LanguageCode">nl</string>
@@ -46,6 +46,7 @@
     <string name="EncryptedChatStartedOutgoing">%s neemt deel aan je geheime chat.</string>
     <string name="EncryptedChatStartedIncoming">Toegevoegd aan de geheime chat.</string>
     <string name="ClearHistory">Geschiedenis wissen</string>
+    <string name="ClearHistoryCache">Cache opschonen</string>
     <string name="DeleteChat">Verwijder en verlaat</string>
     <string name="DeleteChatUser">Chat verwijderen</string>
     <string name="HiddenName">Verwijderd account</string>
@@ -80,8 +81,8 @@
     <string name="GroupUserLeftError">Deze gebruiker heeft de groep verlaten. Je kunt hem/haar niet meer uitnodigen.</string>
     <string name="GroupUserCantAdmin">Maximaal aantal beheerders bereikt.</string>
     <string name="GroupUserCantBot">Maximaal aantal bots bereikt.</string>
-    <string name="ActionMigrateFromGroup">De groep is omgezet naar een supergroep</string>
-    <string name="ActionMigrateFromGroupNotify">%1$s is omgezet naar een supergroep</string>
+    <string name="ActionMigrateFromGroup">De groep is opgewaardeerd naar een supergroep</string>
+    <string name="ActionMigrateFromGroupNotify">%1$s is opgewaardeerd naar een supergroep</string>
     <string name="NoBlockedGroup">Geblokkeerde gebruikers kunnen alleen worden uitgenodigd door beheerders, uitnodigingslinks werken niet voor hen.</string>
     <string name="NewChannel">Nieuw kanaal</string>
     <string name="EnterChannelName">Kanaalnaam</string>
@@ -352,9 +353,9 @@
     <string name="DeleteAndExit">Groep verwijderen en verlaten</string>
     <string name="Notifications">Meldingen</string>
     <string name="KickFromGroup">Verwijderen uit groep</string>
-    <string name="ConvertGroup">Upgraden naar supergroep</string>
-    <string name="ConvertGroupAlert">Groepsdeelnemers moeten updaten naar de meest recente Telegram om je supergroep te kunnen zien. Groep echt upgraden?</string>
-    <string name="ConvertGroupInfo"><![CDATA[<b>]]>Deelnemerslimiet bereikt.<![CDATA[</b>]]>\n\nWil je extra functies en een hogere limiet? Upgrade naar een supergroep:\n\n• Supergroepen hebben tot %1$s\n• Nieuwe leden zien de hele geschiedenis\n• Beheerder wist berichten voor iedereen\n• Meldingen staan standaard uit</string>
+    <string name="ConvertGroup">Opwaarderen naar supergroep</string>
+    <string name="ConvertGroupAlert">Groepsdeelnemers moeten updaten naar de meest recente Telegram om je supergroep te kunnen zien. Groep echt opwaarderen?</string>
+    <string name="ConvertGroupInfo"><![CDATA[<b>]]>Deelnemerslimiet bereikt.<![CDATA[</b>]]>\n\nWil je extra functies en een hogere limiet? Waardeer op naar een supergroep:\n\n• Supergroepen hebben tot %1$s\n• Nieuwe leden zien de hele geschiedenis\n• Beheerder wist berichten voor iedereen\n• Meldingen staan standaard uit</string>
     <!--contact info view-->
     <string name="ShareContact">Delen</string>
     <string name="AddContact">Toevoegen</string>
@@ -437,7 +438,6 @@
     <string name="TerminateAllSessions">Beëindig alle andere sessies</string>
     <string name="Events">Gebeurtenissen</string>
     <string name="ContactJoined">Contact lid van Telegram</string>
-    <string name="Pebble">PEBBLE</string>
     <string name="Language">Taal</string>
     <string name="AskAQuestionInfo">De ondersteuning van Telegram wordt gedaan door vrijwilligers. We doen ons best om zo snel mogelijk te antwoorden.<![CDATA[<br><br>]]>Bekijk ook de <![CDATA[<a href=\"https://telegram.org/faq#general\">veelgestelde vragen</a>]]>: Hier staan de antwoorden op de meeste vragen en belangrijke tips voor <![CDATA[<a href=\"https://telegram.org/faq#troubleshooting\">het oplossen van problemen</a>]]>.</string>
     <string name="AskButton">Vraag een vrijwilliger</string>
@@ -462,7 +462,7 @@
     <string name="BadgeNumber">Badgenummer</string>
     <string name="Short">Kort</string>
     <string name="Long">Lang</string>
-    <string name="SystemDefault">Standaardinstelling</string>
+    <string name="SystemDefault">Systeeminstelling</string>
     <string name="SettingsDefault">Standaardinstelling</string>
     <string name="AutomaticMediaDownload">Automatisch media downloaden</string>
     <string name="WhenUsingMobileData">Bij mobiele verbinding</string>
@@ -499,6 +499,24 @@
     <string name="SmartNotificationsTimes">keer</string>
     <string name="SmartNotificationsWithin">binnen</string>
     <string name="SmartNotificationsMinutes">minuten</string>
+    <!--cache view-->
+    <string name="CacheSettings">Cache-instellingen</string>
+    <string name="LocalDatabase">Lokale database</string>
+    <string name="LocalDatabaseClear">Gecachet tekstberichten wissen?</string>
+    <string name="LocalDatabaseInfo">Het opschonen van de lokale database zal de tekst van gecachet berichten verwijderen en de database comprimeren om ruimte te besparen. Telegram heeft wat ruimte nodig om te kunnen functioneren, dus de databasegrootte zal nooit nul worden.\n\nDit kan enkele minuten duren.</string>
+    <string name="ClearMediaCache">Cache opschonen</string>
+    <string name="CacheClear">Opschonen</string>
+    <string name="CalculatingSize">Berekenen...</string>
+    <string name="LocalDocumentCache">Bestanden</string>
+    <string name="LocalPhotoCache">Foto\'s</string>
+    <string name="LocalAudioCache">Spraakberichten</string>
+    <string name="LocalVideoCache">Video\'s</string>
+    <string name="LocalMusicCache">Muziek</string>
+    <string name="LocalCache">Overige bestanden</string>
+    <string name="CacheEmpty">Leeg</string>
+    <string name="KeepMedia">Media bewaren</string>
+    <string name="KeepMediaInfo">Foto\'s, video\'s en andere bestanden uit cloudchats die je gedurende deze periode niet hebt  <![CDATA[<b>geopend</b>]]> zullen worden verwijderd van dit apparaat om ruimte te besparen.\n\nAlle media zal in de Telegram-cloud bewaard blijven en kan opnieuw worden gedownload als je het weer nodig hebt.</string>
+    <string name="KeepMediaForever">Voor altijd</string>
     <!--sessions view-->
     <string name="SessionsTitle">Actieve sessies</string>
     <string name="CurrentSession">Huidige sessie</string>
@@ -781,6 +799,8 @@
     <string name="AreYouSureSecretChat">Weet je zeker dat je een geheime chat wilt starten?</string>
     <string name="AreYouSureRegistration">Weet je zeker dat je de registratie wilt annuleren?</string>
     <string name="AreYouSureClearHistory">Geschiedenis echt wissen? </string>
+    <string name="AreYouSureClearHistoryChannel">Kanaalcache opschonen?</string>
+    <string name="AreYouSureClearHistorySuper">Supergroepcache echt opschonen?</string>
     <string name="AreYouSureDeleteMessages">%1$s echt verwijderen?</string>
     <string name="SendMessagesToGroup">Berichten naar %1$s versturen?</string>
     <string name="SendContactToGroup">Contact delen met %1$s?</string>
@@ -824,7 +844,7 @@
     <string name="Members_many">%1$d deelnemers</string>
     <string name="Members_other">%1$d deelnemers</string>
     <string name="AndMoreTyping_zero">en nog %1$d personen zijn aan het typen</string>
-    <string name="AndMoreTyping_one">en nog %1$d personen zijn aan het typen</string>
+    <string name="AndMoreTyping_one">en nog %1$d persoon is aan het typen</string>
     <string name="AndMoreTyping_two">en nog %1$d personen zijn aan het typen</string>
     <string name="AndMoreTyping_few">en nog %1$d personen zijn aan het typen</string>
     <string name="AndMoreTyping_many">en nog %1$d personen zijn aan het typen</string>
@@ -962,7 +982,7 @@
     <string name="ForwardedPhoto_few">Bijlage: %1$d foto\'s</string>
     <string name="ForwardedPhoto_many">Bijlage: %1$d foto\'s</string>
     <string name="ForwardedPhoto_other">Bijlage: %1$d foto\'s</string>
-    <string name="ForwardedVideo_zero">Bijlage: %1$d foto\'s</string>
+    <string name="ForwardedVideo_zero">Bijlage: %1$d video\'s</string>
     <string name="ForwardedVideo_one">Bijlage: 1 video</string>
     <string name="ForwardedVideo_two">Bijlage: %1$d video\'s</string>
     <string name="ForwardedVideo_few">Bijlage: %1$d video\'s</string>
@@ -1010,6 +1030,6 @@
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s om %2$s</string>
     <!--update text-->
-    <string name="updateText">Telegram voor Android is bijgewerkt. Nieuw in versie 3.3.0:\n\n- Meerdere beheerders in groepen, naast het wijzigen van de groepsnaam en afbeelding kunnen beheerders ook leden toevoegen en verwijderen.\n- Groepen die de limiet van 200 deelnemers hebben bereikt kunnen worden geüpgraded naar supergroepen met maximaal 1000 deelnemers.\n- Snel delen in kanalen via de knop rechts van de berichten.\n\nMeer informatie over deze update is hier te vinden:\nhttps://telegram.org/blog/supergroups</string>
-    <string name="updateBuild">677</string>
+    <string name="updateText">Telegram voor Android is bijgewerkt. Nieuw in versie 3.3.2:\n\n- Cache-beheer: Meer controle over het ruimtegebruik van Telegram op je apparaat, je kunt de cache nu ook per soort content opschonen.\n- Cache verwijderen van supergroepen en kanalen? Tik ze aan en hou ze vast in het chats-overzicht, daarna: \'Cache opschonen\'.\n- Stickerbeheer: je kunt nu handmatig je stickerbundels sorteren, de volgorde synchroniseren we voor je, over al je apparaten.\n\nMeer weten? Kijk op:\nhttps://telegram.org/blog/cache-and-stickers</string>
+    <string name="updateBuild">693</string>
 </resources>

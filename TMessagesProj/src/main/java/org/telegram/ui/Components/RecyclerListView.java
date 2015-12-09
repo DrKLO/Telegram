@@ -40,6 +40,7 @@ public class RecyclerListView extends RecyclerView {
     private boolean wasPressed;
     private boolean disallowInterceptTouchEvents;
     private boolean instantClick;
+    private Runnable clickRunnable;
 
     private static int[] attributes;
     private static boolean gotAttributes;
@@ -69,9 +70,12 @@ public class RecyclerListView extends RecyclerView {
                             view.playSoundEffect(SoundEffectConstants.CLICK);
                             onItemClickListener.onItemClick(view, currentChildPosition);
                         }
-                        AndroidUtilities.runOnUIThread(new Runnable() {
+                        AndroidUtilities.runOnUIThread(clickRunnable = new Runnable() {
                             @Override
                             public void run() {
+                                if (this == clickRunnable) {
+                                    clickRunnable = null;
+                                }
                                 if (view != null) {
                                     view.setPressed(false);
                                     if (!instantClick) {
@@ -95,10 +99,12 @@ public class RecyclerListView extends RecyclerView {
                 }
 
                 @Override
-                public void onLongPress(MotionEvent e) {
-                    if (currentChildView != null && onItemLongClickListener != null) {
-                        if (onItemLongClickListener.onItemClick(currentChildView, currentChildPosition)) {
-                            currentChildView.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
+                public void onLongPress(MotionEvent event) {
+                    if (currentChildView != null) {
+                        if (onItemLongClickListener != null) {
+                            if (onItemLongClickListener.onItemClick(currentChildView, currentChildPosition)) {
+                                currentChildView.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
+                            }
                         }
                     }
                 }
@@ -106,16 +112,16 @@ public class RecyclerListView extends RecyclerView {
         }
 
         @Override
-        public boolean onInterceptTouchEvent(RecyclerView view, MotionEvent e) {
-            int action = e.getActionMasked();
+        public boolean onInterceptTouchEvent(RecyclerView view, MotionEvent event) {
+            int action = event.getActionMasked();
             boolean isScrollIdle = RecyclerListView.this.getScrollState() == RecyclerListView.SCROLL_STATE_IDLE;
 
             if ((action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_POINTER_DOWN) && currentChildView == null && isScrollIdle) {
-                currentChildView = view.findChildViewUnder(e.getX(), e.getY());
+                currentChildView = view.findChildViewUnder(event.getX(), event.getY());
                 currentChildPosition = -1;
                 if (currentChildView != null) {
                     currentChildPosition = view.getChildPosition(currentChildView);
-                    MotionEvent childEvent = MotionEvent.obtain(0, 0, e.getActionMasked(), e.getX() - currentChildView.getLeft(), e.getY() - currentChildView.getTop(), 0);
+                    MotionEvent childEvent = MotionEvent.obtain(0, 0, event.getActionMasked(), event.getX() - currentChildView.getLeft(), event.getY() - currentChildView.getTop(), 0);
                     if (currentChildView.onTouchEvent(childEvent)) {
                         interceptedByChild = true;
                     }
@@ -125,11 +131,11 @@ public class RecyclerListView extends RecyclerView {
 
             if (currentChildView != null && !interceptedByChild) {
                 try {
-                    if (e != null) {
-                        mGestureDetector.onTouchEvent(e);
+                    if (event != null) {
+                        mGestureDetector.onTouchEvent(event);
                     }
-                } catch (Exception ev) {
-                    FileLog.e("tmessages", ev);
+                } catch (Exception e) {
+                    FileLog.e("tmessages", e);
                 }
             }
 
@@ -159,22 +165,32 @@ public class RecyclerListView extends RecyclerView {
         }
 
         @Override
-        public void onTouchEvent(RecyclerView view, MotionEvent e) {
+        public void onTouchEvent(RecyclerView view, MotionEvent event) {
 
         }
 
         @Override
         public void onRequestDisallowInterceptTouchEvent(boolean disallowIntercept) {
-            if (selectChildRunnable != null) {
-                AndroidUtilities.cancelRunOnUIThread(selectChildRunnable);
-                selectChildRunnable = null;
-            }
-            if (currentChildView != null) {
-                currentChildView.setPressed(false);
-                currentChildView = null;
-            }
-            interceptedByChild = false;
+            cancelClickRunnables(true);
         }
+    }
+
+    public void cancelClickRunnables(boolean uncheck) {
+        if (selectChildRunnable != null) {
+            AndroidUtilities.cancelRunOnUIThread(selectChildRunnable);
+            selectChildRunnable = null;
+        }
+        if (currentChildView != null) {
+            if (uncheck) {
+                currentChildView.setPressed(false);
+            }
+            currentChildView = null;
+        }
+        if (clickRunnable != null) {
+            AndroidUtilities.cancelRunOnUIThread(clickRunnable);
+            clickRunnable = null;
+        }
+        interceptedByChild = false;
     }
 
     private AdapterDataObserver observer = new AdapterDataObserver() {

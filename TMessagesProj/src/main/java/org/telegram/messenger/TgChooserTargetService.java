@@ -100,7 +100,6 @@ public class TgChooserTargetService extends ChooserTargetService {
                     FileLog.e("tmessages", e);
                 }
                 for (int a = 0; a < dialogs.size(); a++) {
-                    float score = (a + 1) / 20.0f;
                     Bundle extras = new Bundle();
                     Icon icon = null;
                     String name = null;
@@ -138,7 +137,7 @@ public class TgChooserTargetService extends ChooserTargetService {
                         if (icon == null) {
                             icon = Icon.createWithResource(ApplicationLoader.applicationContext, R.drawable.logo_avatar);
                         }
-                        targets.add(new ChooserTarget(name, icon, score, componentName, extras));
+                        targets.add(new ChooserTarget(name, icon, 1.0f, componentName, extras));
                     }
                 }
                 semaphore.release();

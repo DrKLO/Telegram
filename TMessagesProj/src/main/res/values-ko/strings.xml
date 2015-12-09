@@ -46,6 +46,7 @@
     <string name="EncryptedChatStartedOutgoing">%s님이 비밀대화에 참여했습니다.</string>
     <string name="EncryptedChatStartedIncoming">비밀대화에 참여했습니다.</string>
     <string name="ClearHistory">대화내용 지우기</string>
+    <string name="ClearHistoryCache">캐시에서 삭제</string>
     <string name="DeleteChat">채팅방 나가기</string>
     <string name="DeleteChatUser">이 대화 삭제</string>
     <string name="HiddenName">탈퇴한 계정</string>
@@ -82,7 +83,8 @@
     <string name="GroupUserCantBot">죄송합니다, 그룹방에 너무 많은 봇이 있습니다.</string>
     <string name="ActionMigrateFromGroup">이 그룹방은 슈퍼그룹방으로 업그레이드 되었습니다.</string>
     <string name="ActionMigrateFromGroupNotify">%1$s 그룹방은 슈퍼그룹방으로 업그레이드 되었습니다.</string>
-    <string name="NoBlockedGroup">그룹방에서 차단되어 퇴장당한 사용자는 관리자가 초대해야지만 그룹방에 입장이 가능합니다.\n초대링크로는 초대가 되지 않습니다.</string>
+  <string name="NoBlockedGroup">그룹방에서 차단되어 퇴장당한 사용자는 관리자가 초대해야지만 그룹방에 입장이 가능합니다.
+초대링크로는 초대가 되지 않습니다.</string>
     <string name="NewChannel">새 채널</string>
     <string name="EnterChannelName">채널명</string>
     <string name="Comments">코멘트들</string>
@@ -127,8 +129,10 @@
     <string name="ChannelLeaveAlert">채널에서 나가시겠습니까?</string>
     <string name="ChannelDeleteInfo">채널에 있는 모든 메시지가 삭제됩니다.</string>
     <string name="ChannelEdit">편집</string>
-    <string name="ChannelWasPrivateAlert">채널에 대한 공개링크를 선택하신 경우, 누구나 검색을 통하여 입장 가능합니다.\n\n비공개 채널로 유지를 하시고 싶으실 경우 링크 생성을 하지 말아주세요</string>
-    <string name="ChannelPublicEmptyUsername">유저들이 공개 채널에 대하여 검색 및 공유가 가능하도록 링크를 선택하여 주세요.\n\n채널을 공개하시지 싫으실 경우, 비공개 채널을 추천드립니다.</string>
+  <string name="ChannelWasPrivateAlert">채널에 대한 공개링크를 선택하신 경우, 누구나 검색을 통하여 입장 가능합니다.\n\n
+비공개 채널로 유지를 하시고 싶으실 경우 링크 생성을 하지 말아주세요</string>
+  <string name="ChannelPublicEmptyUsername">유저들이 공개 채널에 대하여 검색 및 공유가 가능하도록 링크를 선택하여 주세요.\n\n
+채널을 공개하시지 싫으실 경우, 비공개 채널을 추천드립니다.</string>
     <string name="ActionCreateChannel">채널 생성됨</string>
     <string name="ActionChannelChangedPhoto">채널 사진 업데이트됨</string>
     <string name="ActionChannelRemovedPhoto">채널 사진 삭제됨</string>
@@ -437,7 +441,6 @@
     <string name="TerminateAllSessions">다른 모든 세션 종료</string>
     <string name="Events">이벤트</string>
     <string name="ContactJoined">친구의 텔레그램 가입 알림</string>
-    <string name="Pebble">PEBBLE 스마트워치 지원</string>
     <string name="Language">언어</string>
     <string name="AskAQuestionInfo">텔레그램에 관한 질문은 자원봉사자들이 답변해 드립니다. 신속한 답변을 위해 노력하지만 답변이 다소 늦을 수 있습니다.<![CDATA[<br><br>]]>일반적인 문제와 <![CDATA[<a href=\"https://telegram.org/faq/ko#g\">해결방법</a>]]>에 대해서는 \'<![CDATA[<a href=\"https://telegram.org/faq/ko#a\">자주 묻는 질문</a>]]>\'을 확인해 보세요.</string>
     <string name="AskButton">질문하기</string>
@@ -499,6 +502,24 @@
     <string name="SmartNotificationsTimes">번</string>
     <string name="SmartNotificationsWithin">이내</string>
     <string name="SmartNotificationsMinutes">분</string>
+    <!--cache view-->
+    <string name="CacheSettings">캐시 설정</string>
+    <string name="LocalDatabase">로컬 데이터베이스</string>
+    <string name="LocalDatabaseClear">캐시된 텍스트 메시지를 삭제하시겠습니까?</string>
+    <string name="LocalDatabaseInfo">압축된 데이터베이스 및 캐시에 저장된 메시지를 로컬 데이터베이스에서 삭제하면 내부 저장공간이 증가합니다. 데이터베이스는 Telegram이 작동하는데 어느정도 필요함으로 완전히 삭제가 되지는 않습니다.\n\n이 작업은 완료되기까지 몇분정도 소요가 될 수 있습니다.</string>
+    <string name="ClearMediaCache">캐시 삭제</string>
+    <string name="CacheClear">삭제</string>
+    <string name="CalculatingSize">계산중...</string>
+    <string name="LocalDocumentCache">문서</string>
+    <string name="LocalPhotoCache">사진</string>
+    <string name="LocalAudioCache">음성 메시지</string>
+    <string name="LocalVideoCache">동영상</string>
+    <string name="LocalMusicCache">음악</string>
+    <string name="LocalCache">다른 파일</string>
+    <string name="CacheEmpty">없음</string>
+    <string name="KeepMedia">미디어 저장</string>
+    <string name="KeepMediaInfo">이 기간 동안 클라우드 채팅방에서  <![CDATA[<b>접근하지 않은</b>]]> 사진이나 동영상, 기타 파일 등은 공간 절약을 위해 이 기기에서 삭제됩니다.\n\n모든 파일은 Telegram 클라우드에 여전히 남으며 필요하시면 언제든 다시 다운로드하실 수 있습니다.</string>
+    <string name="KeepMediaForever">영원히</string>
     <!--sessions view-->
     <string name="SessionsTitle">활성화된 세션</string>
     <string name="CurrentSession">현재 세션</string>
@@ -781,6 +802,8 @@
     <string name="AreYouSureSecretChat">비밀대화를 시작할까요?</string>
     <string name="AreYouSureRegistration">정말로 가입을 취소하시겠습니까?</string>
     <string name="AreYouSureClearHistory">정말로 대화내용을 지우시겠습니까?</string>
+    <string name="AreYouSureClearHistoryChannel">채널에서 캐시된 모든 텍스트 및 미디어를 삭제하시겠습니까?</string>
+    <string name="AreYouSureClearHistorySuper">슈커그룹에서 캐시된 모든 텍스트 및 미디어를 삭제하시겠습니까?</string>
     <string name="AreYouSureDeleteMessages">%1$s: 정말로 삭제하시겠습니까?</string>
     <string name="SendMessagesToGroup">%1$s 그룹에 메시지를 보낼까요?</string>
     <string name="SendContactToGroup">%1$s에게 연락처를 보내시겠습니까?</string>
@@ -1010,6 +1033,6 @@
     <string name="formatterDay12H">a h:mm</string>
     <string name="formatDateAtTime">%1$s %2$s</string>
     <!--update text-->
-    <string name="updateText">텔레그램 안드로이드 버전이 업데이트 되었습니다. 새로운 버전은 3.3.0 입니다:\n\n- 그룹방제목, 그룹방사진, 구성원 추가 및 삭제등을 할 수 있는 복수의 그룹 관리자 설정 가능\n- 200명 제한이 걸린 그룹은 1,000명까지 활용가능한 슈퍼그룹으로 업그레이드 가능\n\n슈퍼그룹 및 업데이트 관련 내용 :\nhttps://telegram.org/blog/supergroups</string>
-    <string name="updateBuild">677</string>
+    <string name="updateText">텔레그램 안드로이드 버전이 업데이트 되었습니다. 새로운 버전은 3.3.2 입니다:\n\n- 캐시 관리: 저장소에서 텔레그램이 어느정도 사용하는지 관리가능, 각 기기에서 특정 컨텐츠 삭제 가능.\n- 슈퍼그룹 및 채널 캐시 삭제: 채팅목록에서 꾹 누르고 있으면 \'캐시에서 삭제\' 메뉴 선택 가능.\n- 스티커 관리: 수동으로 스티커팩 수정가능. 팩 순서는 모든 기기와 동기화 됩니다.\n\n자세한 업데이트는 https://telegram.org/blog/cache-and-stickers에서 확인하세요.</string>
+    <string name="updateBuild">693</string>
 </resources>

@@ -1318,14 +1318,19 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         }
     }
 
-    public void deleteDialog(final long did, final boolean onlyHistory) {
+    public void deleteDialog(final long did, final int onlyHistory) {
         deleteDialog(did, true, onlyHistory, 0);
     }
 
-    private void deleteDialog(final long did, final boolean first, final boolean onlyHistory, final int max_id) {
+    private void deleteDialog(final long did, final boolean first, final int onlyHistory, final int max_id) {
         int lower_part = (int) did;
         int high_id = (int) (did >> 32);
         int max_id_delete = max_id;
+
+        if (onlyHistory == 2) {
+            MessagesStorage.getInstance().deleteDialog(did, onlyHistory);
+            return;
+        }
 
         if (first) {
             TLRPC.Dialog dialog = dialogs_dict.get(did);
@@ -1333,7 +1338,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                 if (max_id_delete == 0) {
                     max_id_delete = Math.max(0, dialog.top_message);
                 }
-                if (!onlyHistory) {
+                if (onlyHistory == 0) {
                     dialogs.remove(dialog);
                     if (dialogsServerOnly.remove(dialog)) {
                         if (dialog instanceof TLRPC.TL_dialogChannel) {
@@ -1341,6 +1346,8 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                                 @Override
                                 public void run() {
                                     channelsPts.remove(-(int) did);
+                                    shortPollChannels.delete(-(int) did);
+                                    needShortPollChannels.delete(-(int) did);
                                 }
                             });
                         }
@@ -1399,7 +1406,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                 }
             }, ConnectionsManager.RequestFlagInvokeAfter);
         } else {
-            if (onlyHistory) {
+            if (onlyHistory == 1) {
                 SecretChatHelper.getInstance().sendClearHistoryMessage(getEncryptedChat(high_id), null);
             } else {
                 SecretChatHelper.getInstance().declineSecretChat(high_id);
@@ -1852,6 +1859,10 @@ public class MessagesController implements NotificationCenter.NotificationCenter
     }
 
     public void loadMessages(final long dialog_id, final int count, final int max_id, boolean fromCache, int midDate, final int classGuid, final int load_type, final int last_message_id, final int important, final int loadIndex) {
+        loadMessages(dialog_id, count, max_id, fromCache, midDate, classGuid, load_type, last_message_id, important, loadIndex, 0, 0, 0, false);
+    }
+
+    public void loadMessages(final long dialog_id, final int count, final int max_id, boolean fromCache, int midDate, final int classGuid, final int load_type, final int last_message_id, final int important, final int loadIndex, final int first_unread, final int unread_count, final int last_date, final boolean queryFromServer) {
         int lower_part = (int) dialog_id;
         if (fromCache || lower_part == 0) {
             MessagesStorage.getInstance().getMessages(dialog_id, count, max_id, midDate, classGuid, load_type, important, loadIndex);
@@ -1864,6 +1875,8 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     req.add_offset = -count / 2;
                 } else if (load_type == 1) {
                     req.add_offset = -count - 1;
+                } else if (load_type == 2 && max_id != 0) {
+                    req.add_offset = -count + 6;
                 } else {
                     if (max_id != 0) {
                         req.add_offset = -1;
@@ -1880,6 +1893,8 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     req.add_offset = -count / 2;
                 } else if (load_type == 1) {
                     req.add_offset = -count - 1;
+                } else if (load_type == 2 && max_id != 0) {
+                    req.add_offset = -count + 6;
                 } else {
                     req.add_offset = 0;
                 }
@@ -1895,7 +1910,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                         if (res.messages.size() > count) {
                             res.messages.remove(0);
                         }
-                        processLoadedMessages(res, dialog_id, count, max_id, false, classGuid, 0, last_message_id, 0, 0, load_type, important, false, loadIndex);
+                        processLoadedMessages(res, dialog_id, count, max_id, false, classGuid, first_unread, last_message_id, unread_count, last_date, load_type, important, false, loadIndex, queryFromServer);
                     }
                 }
             });
@@ -1904,7 +1919,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
     }
 
     public void processLoadedMessages(final TLRPC.messages_Messages messagesRes, final long dialog_id, final int count, final int max_id, final boolean isCache, final int classGuid,
-                                      final int first_unread, final int last_message_id, final int unread_count, final int last_date, final int load_type, final int important, final boolean isEnd, final int loadIndex) {
+                                      final int first_unread, final int last_message_id, final int unread_count, final int last_date, final int load_type, final int important, final boolean isEnd, final int loadIndex, final boolean queryFromServer) {
         Utilities.stageQueue.postRunnable(new Runnable() {
             @Override
             public void run() {
@@ -1938,7 +1953,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     AndroidUtilities.runOnUIThread(new Runnable() {
                         @Override
                         public void run() {
-                            loadMessages(dialog_id, count, max_id, false, 0, classGuid, load_type, last_message_id, important, loadIndex);
+                            loadMessages(dialog_id, count, load_type == 2 && queryFromServer ? first_unread : max_id, false, 0, classGuid, load_type, last_message_id, important, loadIndex, first_unread, unread_count, last_date, queryFromServer);
                         }
                     });
                     return;
@@ -1999,7 +2014,19 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     public void run() {
                         putUsers(messagesRes.users, isCache);
                         putChats(messagesRes.chats, isCache);
-                        NotificationCenter.getInstance().postNotificationName(NotificationCenter.messagesDidLoaded, dialog_id, count, objects, isCache, first_unread, last_message_id, unread_count, last_date, load_type, messagesRes.collapsed, isEnd, classGuid, loadIndex);
+                        int first_unread_final = Integer.MAX_VALUE;
+                        if (queryFromServer && load_type == 2) {
+                            for (int a = 0; a < messagesRes.messages.size(); a++) {
+                                TLRPC.Message message = messagesRes.messages.get(a);
+                                if (!message.out && message.id > first_unread && message.id < first_unread_final) {
+                                    first_unread_final = message.id;
+                                }
+                            }
+                        }
+                        if (first_unread_final == Integer.MAX_VALUE) {
+                            first_unread_final = first_unread;
+                        }
+                        NotificationCenter.getInstance().postNotificationName(NotificationCenter.messagesDidLoaded, dialog_id, count, objects, isCache, first_unread_final, last_message_id, unread_count, last_date, load_type, messagesRes.collapsed, isEnd, classGuid, loadIndex);
                         if (messagesToReload != null) {
                             reloadMessages(messagesToReload, dialog_id);
                         }
@@ -3153,7 +3180,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                             if (fragment != null) {
                                 AlertsCreator.showAddUserAlert(error.text, fragment, true);
                             } else if (error.text.equals("PEER_FLOOD")) {
-                                NotificationCenter.getInstance().postNotificationName(NotificationCenter.spamErrorReceived, 1);
+                                NotificationCenter.getInstance().postNotificationName(NotificationCenter.needShowAlert, 1);
                             }
                         }
                     });
@@ -3360,7 +3387,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                                     AlertsCreator.showAddUserAlert(error.text, fragment, isChannel && !isMegagroup);
                                 } else {
                                     if (error.text.equals("PEER_FLOOD")) {
-                                        NotificationCenter.getInstance().postNotificationName(NotificationCenter.spamErrorReceived, 1);
+                                        NotificationCenter.getInstance().postNotificationName(NotificationCenter.needShowAlert, 1);
                                     }
                                 }
                             }
@@ -3370,7 +3397,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     processUpdates((TLRPC.Updates) response, false);
                     if (isChannel) {
                         if (inputUser instanceof TLRPC.TL_inputUserSelf) {
-                            generateJoinMessage(chat_id);
+                            generateJoinMessage(chat_id, true);
                         }
                         AndroidUtilities.runOnUIThread(new Runnable() {
                             @Override
@@ -3450,7 +3477,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                         AndroidUtilities.runOnUIThread(new Runnable() {
                             @Override
                             public void run() {
-                                MessagesController.getInstance().deleteDialog(-chat_id, false);
+                                MessagesController.getInstance().deleteDialog(-chat_id, 0);
                             }
                         });
                     }
@@ -3663,16 +3690,16 @@ public class MessagesController implements NotificationCenter.NotificationCenter
             req.app_version = "App version unknown";
         }
 
-        if (req.lang_code == null || req.lang_code.length() == 0) {
+        if (req.lang_code == null || req.lang_code.trim().length() == 0) {
             req.lang_code = "en";
         }
-        if (req.device_model == null || req.device_model.length() == 0) {
+        if (req.device_model == null || req.device_model.trim().length() == 0) {
             req.device_model = "Android unknown";
         }
-        if (req.app_version == null || req.app_version.length() == 0) {
+        if (req.app_version == null || req.app_version.trim().length() == 0) {
             req.app_version = "App version unknown";
         }
-        if (req.system_version == null || req.system_version.length() == 0) {
+        if (req.system_version == null || req.system_version.trim().length() == 0) {
             req.system_version = "SDK Unknown";
         }
 
@@ -3926,7 +3953,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                 } else {
                     needShortPollChannels.put(channelId, 0);
                     if (shortPollChannels.indexOfKey(channelId) < 0) {
-                        getChannelDifference(channelId);
+                        getChannelDifference(channelId, 2);
                     }
                 }
             }
@@ -3934,17 +3961,26 @@ public class MessagesController implements NotificationCenter.NotificationCenter
     }
 
     public void getChannelDifference(final int channelId) {
-        getChannelDifference(channelId, false);
+        getChannelDifference(channelId, 0);
     }
 
-    public void getChannelDifference(final int channelId, final boolean newDialog) {
+    public void getChannelDifference(final int channelId, final int newDialogType) {
         Boolean gettingDifferenceChannel = gettingDifferenceChannels.get(channelId);
         if (gettingDifferenceChannel == null) {
             gettingDifferenceChannel = false;
         }
+        if (gettingDifferenceChannel) {
+            return;
+        }
+        int limit = 100;
         Integer channelPts;
-        if (newDialog) {
+        if (newDialogType == 1) {
+            channelPts = channelsPts.get(channelId);
+            if (channelPts != null) {
+                return;
+            }
             channelPts = 1;
+            limit = 1;
         } else {
             channelPts = channelsPts.get(channelId);
             if (channelPts == null) {
@@ -3952,8 +3988,12 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                 if (channelPts != 0) {
                     channelsPts.put(channelId, channelPts);
                 }
+                if (channelPts == 0 && newDialogType == 2) {
+                    channelPts = 1;
+                    limit = 1;
+                }
             }
-            if (channelPts == 0 || gettingDifferenceChannel) {
+            if (channelPts == 0) {
                 return;
             }
         }
@@ -3962,7 +4002,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         req.channel = getInputChannel(channelId);
         req.filter = new TLRPC.TL_channelMessagesFilterEmpty();
         req.pts = channelPts;
-        req.limit = newDialog ? 1 : 100;
+        req.limit = limit;
         FileLog.e("tmessages", "start getChannelDifference with pts = " + channelPts + " channelId = " + channelId);
         ConnectionsManager.getInstance().sendRequest(req, new RequestDelegate() {
             @Override
@@ -4142,7 +4182,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                                             res.unread_important_count = Math.max(res.unread_count, res.unread_important_count);
                                             res.top_important_message = Math.max(res.top_important_message, res.top_message);
                                         }
-                                        MessagesStorage.getInstance().overwriteChannel(channelId, (TLRPC.TL_updates_channelDifferenceTooLong) res, newDialog);
+                                        MessagesStorage.getInstance().overwriteChannel(channelId, (TLRPC.TL_updates_channelDifferenceTooLong) res, newDialogType);
                                     }
                                     gettingDifferenceChannels.remove(channelId);
                                     channelsPts.put(channelId, res.pts);
@@ -4401,9 +4441,9 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         });
     }
 
-    public void generateJoinMessage(final int chat_id) {
+    public void generateJoinMessage(final int chat_id, boolean ignoreLeft) {
         TLRPC.Chat chat = getChat(chat_id);
-        if (chat == null || !ChatObject.isChannel(chat_id) || chat.megagroup) {
+        if (chat == null || !ChatObject.isChannel(chat_id) || chat.megagroup || (chat.left || chat.kicked) && !ignoreLeft) {
             return;
         }
 
@@ -5368,6 +5408,10 @@ public class MessagesController implements NotificationCenter.NotificationCenter
             } else if (update instanceof TLRPC.TL_updateNotifySettings) {
                 updatesOnMainThread.add(update);
             } else if (update instanceof TLRPC.TL_updateServiceNotification) {
+                TLRPC.TL_updateServiceNotification notification = (TLRPC.TL_updateServiceNotification) update;
+                if (notification.popup && notification.message != null && notification.message.length() > 0) {
+                    NotificationCenter.getInstance().postNotificationName(NotificationCenter.needShowAlert, 2, notification.message);
+                }
                 TLRPC.TL_message newMessage = new TLRPC.TL_message();
                 newMessage.local_id = newMessage.id = UserConfig.getNewMessageId();
                 UserConfig.saveConfig(false);
@@ -5380,7 +5424,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                 newMessage.dialog_id = 777000;
                 newMessage.media = update.media;
                 newMessage.flags |= TLRPC.MESSAGE_FLAG_HAS_MEDIA;
-                newMessage.message = ((TLRPC.TL_updateServiceNotification) update).message;
+                newMessage.message = notification.message;
 
                 messagesArr.add(newMessage);
                 MessageObject obj = new MessageObject(newMessage, usersDict, chatsDict, true);
@@ -5434,6 +5478,12 @@ public class MessagesController implements NotificationCenter.NotificationCenter
             } else if (update instanceof TLRPC.TL_updateChatParticipantAdmin) {
                 MessagesStorage.getInstance().updateChatInfo(update.chat_id, update.user_id, 2, update.is_admin ? 1 : 0, update.version);
             } else if (update instanceof TLRPC.TL_updateChatAdmins) {
+                updatesOnMainThread.add(update);
+            } else if (update instanceof TLRPC.TL_updateStickerSets) {
+                updatesOnMainThread.add(update);
+            } else if (update instanceof TLRPC.TL_updateStickerSetsOrder) {
+                updatesOnMainThread.add(update);
+            } else if (update instanceof TLRPC.TL_updateNewStickerSet) {
                 updatesOnMainThread.add(update);
             }
         }
@@ -5492,7 +5542,8 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     ArrayList<TLRPC.User> dbUsers = new ArrayList<>();
                     ArrayList<TLRPC.User> dbUsersStatus = new ArrayList<>();
                     SharedPreferences.Editor editor = null;
-                    for (TLRPC.Update update : updatesOnMainThread) {
+                    for (int a = 0; a < updatesOnMainThread.size(); a++) {
+                        final TLRPC.Update update = updatesOnMainThread.get(a);
                         final TLRPC.User toDbUser = new TLRPC.User();
                         toDbUser.id = update.user_id;
                         final TLRPC.User currentUser = getUser(update.user_id);
@@ -5602,14 +5653,25 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                             TLRPC.Dialog dialog = dialogs_dict.get(-(long) update.channel_id);
                             TLRPC.Chat chat = getChat(update.channel_id);
                             if (dialog == null && chat instanceof TLRPC.TL_channel && !chat.left) {
-                                getChannelDifference(update.channel_id, true);
+                                Utilities.stageQueue.postRunnable(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        getChannelDifference(update.channel_id, 1);
+                                    }
+                                });
                             } else if (chat.left && dialog != null) {
-                                deleteDialog(dialog.id, false);
+                                deleteDialog(dialog.id, 0);
                             }
                             updateMask |= UPDATE_MASK_CHANNEL;
                             loadFullChat(update.channel_id, 0, true);
                         } else if (update instanceof TLRPC.TL_updateChatAdmins) {
                             updateMask |= UPDATE_MASK_CHAT_ADMINS;
+                        } else if (update instanceof TLRPC.TL_updateStickerSets) {
+                            StickersQuery.loadStickers(false, true);
+                        } else if (update instanceof TLRPC.TL_updateStickerSetsOrder) {
+                            StickersQuery.reorderStickers(update.order);
+                        } else if (update instanceof TLRPC.TL_updateNewStickerSet) {
+                            StickersQuery.addNewStickerSet(update.stickerset);
                         }
                     }
                     if (editor != null) {
@@ -5747,7 +5809,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
             MessagesStorage.getInstance().putWebPages(webPages);
         }
         if (markAsReadMessagesInbox.size() != 0 || markAsReadMessagesOutbox.size() != 0 || !markAsReadEncrypted.isEmpty()) {
-            if (markAsReadMessagesInbox.size() != 0 || markAsReadMessagesOutbox.size() != 0) {
+            if (markAsReadMessagesInbox.size() != 0) {
                 MessagesStorage.getInstance().updateDialogsWithReadMessages(markAsReadMessagesInbox, true);
             }
             MessagesStorage.getInstance().markMessagesAsRead(markAsReadMessagesInbox, markAsReadMessagesOutbox, markAsReadEncrypted, true);

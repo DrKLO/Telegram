@@ -64,6 +64,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
         boolean onBackspace();
         void onEmojiSelected(String emoji);
         void onStickerSelected(TLRPC.Document sticker);
+        void onStickersSettingsClick();
     }
 
     private static final Field superListenerField;
@@ -477,7 +478,6 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
     private ArrayList<String> recentEmoji = new ArrayList<>();
     private HashMap<Long, Integer> stickersUseHistory = new HashMap<>();
     private ArrayList<TLRPC.Document> recentStickers = new ArrayList<>();
-    private HashMap<Long, Integer> stickerSetsUseCount = new HashMap<>();
     private ArrayList<TLRPC.TL_messages_stickerSet> stickerSets = new ArrayList<>();
 
     private int[] icons = {
@@ -696,15 +696,6 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
                     }
                     stickersUseHistory.put(document.id, ++count);
 
-                    long id = StickersQuery.getStickerSetId(document);
-                    if (id != -1) {
-                        count = stickerSetsUseCount.get(id);
-                        if (count == null) {
-                            count = 0;
-                        }
-                        stickerSetsUseCount.put(id, ++count);
-                    }
-
                     saveRecentStickers();
                     if (listener != null) {
                         listener.onStickerSelected(document);
@@ -806,6 +797,12 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
                         return;
                     }
                     int index = page - (recentStickers.isEmpty() ? 1 : 2);
+                    if (index == stickerSets.size()) {
+                        if (listener != null) {
+                            listener.onStickersSettingsClick();
+                        }
+                        return;
+                    }
                     if (index >= stickerSets.size()) {
                         index = stickerSets.size() - 1;
                     }
@@ -1056,32 +1053,6 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
         }
         editor.putString("stickers", stringBuilder.toString());
 
-        ArrayList<Long> toRemove = null;
-        for (HashMap.Entry<Long, Integer> entry : stickerSetsUseCount.entrySet()) {
-            if (!StickersQuery.isStickerPackInstalled(entry.getKey())) {
-                if (toRemove == null) {
-                    toRemove = new ArrayList<>();
-                }
-                toRemove.add(entry.getKey());
-            }
-        }
-        if (toRemove != null) {
-            for (int a = 0; a < toRemove.size(); a++) {
-                stickerSetsUseCount.remove(toRemove.get(a));
-            }
-        }
-
-        stringBuilder.setLength(0);
-        for (HashMap.Entry<Long, Integer> entry : stickerSetsUseCount.entrySet()) {
-            if (stringBuilder.length() != 0) {
-                stringBuilder.append(",");
-            }
-            stringBuilder.append(entry.getKey());
-            stringBuilder.append("=");
-            stringBuilder.append(entry.getValue());
-        }
-        editor.putString("sets", stringBuilder.toString());
-
         editor.commit();
     }
 
@@ -1171,28 +1142,10 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
             }
             stickerSets.add(pack);
         }
-        Collections.sort(stickerSets, new Comparator<TLRPC.TL_messages_stickerSet>() {
-            @Override
-            public int compare(TLRPC.TL_messages_stickerSet lhs, TLRPC.TL_messages_stickerSet rhs) {
-                Integer count1 = stickerSetsUseCount.get(lhs.set.id);
-                Integer count2 = stickerSetsUseCount.get(rhs.set.id);
-                if (count1 == null) {
-                    count1 = 0;
-                }
-                if (count2 == null) {
-                    count2 = 0;
-                }
-                if (count1 > count2) {
-                    return -1;
-                } else if (count1 < count2) {
-                    return 1;
-                }
-                return 0;
-            }
-        });
         for (int a = 0; a < stickerSets.size(); a++) {
             scrollSlidingTabStrip.addStickerTab(stickerSets.get(a).documents.get(0));
         }
+        scrollSlidingTabStrip.addIconTab(R.drawable.ic_settings);
         scrollSlidingTabStrip.updateTabStyles();
     }
 
@@ -1276,16 +1229,6 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
                     for (String arg : args) {
                         String[] args2 = arg.split("=");
                         stickersUseHistory.put(Long.parseLong(args2[0]), Integer.parseInt(args2[1]));
-                    }
-                }
-
-                stickerSetsUseCount.clear();
-                str = preferences.getString("sets", "");
-                if (str != null && str.length() > 0) {
-                    String[] args = str.split(",");
-                    for (String arg : args) {
-                        String[] args2 = arg.split("=");
-                        stickerSetsUseCount.put(Long.parseLong(args2[0]), Integer.parseInt(args2[1]));
                     }
                 }
                 sortStickers();

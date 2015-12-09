@@ -46,6 +46,7 @@
     <string name="EncryptedChatStartedOutgoing">%s se unió a tu chat secreto.</string>
     <string name="EncryptedChatStartedIncoming">Te uniste al chat secreto.</string>
     <string name="ClearHistory">Borrar historial</string>
+    <string name="ClearHistoryCache">Eliminar de la caché</string>
     <string name="DeleteChat">Eliminar y salir</string>
     <string name="DeleteChatUser">Eliminar chat</string>
     <string name="HiddenName">Cuenta eliminada</string>
@@ -71,7 +72,7 @@
     <string name="DeleteMegaMenu">Eliminar grupo</string>
     <string name="MegaDeleteInfo">Perderás todos los mensajes en este grupo.</string>
     <string name="MegaAdminsInfo">Puedes añadir administradores para que te ayuden a dirigir el canal. Mantén pulsado para eliminarlos.</string>
-    <string name="MegaDeleteAlert">¡Espera! Al eliminar este grupo se quitarán todos los miembros y los mensajes se perderán. ¿Quieres eliminarlo?</string>
+    <string name="MegaDeleteAlert">¡Espera! Al eliminar este grupo, todos los miembros y los mensajes se perderán. ¿Quieres eliminarlo?</string>
     <string name="ActionCreateMega">Grupo creado</string>
     <string name="MegaAddedBy">un1 te añadió a este grupo</string>
     <string name="MegaLeaveAlert">¿Quieres dejar el grupo?</string>
@@ -82,7 +83,7 @@
     <string name="GroupUserCantBot">Lo sentimos, hay demasiados bots en el grupo.</string>
     <string name="ActionMigrateFromGroup">Este grupo fue convertido en un supergrupo</string>
     <string name="ActionMigrateFromGroupNotify">%1$s fue convertido en un supergrupo</string>
-    <string name="NoBlockedGroup">Los usuarios bloqueados son expulsados del grupo y sólo pueden volver si son invitados por un administrador. Los enlaces de invitación no funcionan para ellos.</string>
+    <string name="NoBlockedGroup">Los usuarios bloqueados son eliminados del grupo y sólo pueden volver si son invitados por un administrador. Los enlaces de invitación no funcionan para ellos.</string>
     <string name="NewChannel">Nuevo canal</string>
     <string name="EnterChannelName">Nombre del canal</string>
     <string name="Comments">Comentarios</string>
@@ -123,7 +124,7 @@
     <string name="ChannelAdministrators">Administradores</string>
     <string name="ChannelDelete">Eliminar canal</string>
     <string name="ChannelDeleteMenu">Eliminar canal</string>
-    <string name="ChannelDeleteAlert">¡Espera! Al eliminar este canal se quitarán todos los miembros y los mensajes se perderán. ¿Quieres eliminarlo?</string>
+    <string name="ChannelDeleteAlert">¡Espera! Al eliminar este canal, todos los miembros y los mensajes se perderán. ¿Quieres eliminarlo?</string>
     <string name="ChannelLeaveAlert">¿Quieres dejar este canal?</string>
     <string name="ChannelDeleteInfo">Perderás todos los mensajes en este canal.</string>
     <string name="ChannelEdit">Editar</string>
@@ -182,7 +183,7 @@
     <string name="EnterListName">Nombre de la lista</string>
     <string name="YouCreatedBroadcastList">Creaste una lista de difusión</string>
     <string name="AddRecipient">Añadir destinatario</string>
-    <string name="KickFromBroadcast">Quitar de la lista de difusión</string>
+    <string name="KickFromBroadcast">Eliminar de la lista de difusión</string>
     <!--audio view-->
     <string name="NoAudio">Por favor, añade archivos a la carpeta de música en tu dispositivo para verlos aquí.</string>
     <string name="AttachMusic">Música</string>
@@ -238,7 +239,7 @@
     <string name="EncryptedDescription2">No dejan rastro en el servidor</string>
     <string name="EncryptedDescription3">Tienen autodestrucción de mensajes</string>
     <string name="EncryptedDescription4">Impiden reenviar mensajes</string>
-    <string name="YouWereKicked">Te expulsaron de este grupo</string>
+    <string name="YouWereKicked">Te eliminaron de este grupo</string>
     <string name="YouLeft">Dejaste este grupo</string>
     <string name="DeleteThisGroup">Eliminar este grupo</string>
     <string name="DeleteThisChat">Eliminar este chat</string>
@@ -293,8 +294,8 @@
     <string name="NotificationEditedGroupPhoto">%1$s cambió la foto del grupo %2$s</string>
     <string name="NotificationGroupAddMember">%1$s invitó a %3$s al grupo %2$s</string>
     <string name="NotificationGroupAddSelf">%1$s volvió al grupo %2$s</string>
-    <string name="NotificationGroupKickMember">%1$s expulsó a %3$s del grupo %2$s</string>
-    <string name="NotificationGroupKickYou">%1$s te expulsó del grupo %2$s</string>
+    <string name="NotificationGroupKickMember">%1$s eliminó a %3$s del grupo %2$s</string>
+    <string name="NotificationGroupKickYou">%1$s te eliminó del grupo %2$s</string>
     <string name="NotificationGroupLeftMember">%1$s dejó el grupo %2$s</string>
     <string name="NotificationContactJoined">¡%1$s se unió a Telegram!</string>
     <string name="NotificationUnrecognizedDevice">%1$s,\nDetectamos un inicio de sesión en tu cuenta desde un nuevo dispositivo, el %2$s\n\nDispositivo: %3$s\nUbicación: %4$s\n\nSi no eras tú, puedes ir a Ajustes - Privacidad y seguridad - Sesiones activas y cerrar esa sesión.\n\nSi crees que alguien ha iniciado la sesión sin tu consentimiento, puedes activar la verificación en dos pasos, en los ajustes de privacidad y seguridad.\n\nAtentamente,\nEl equipo de Telegram</string>
@@ -322,7 +323,7 @@
     <string name="ALongTimeAgo">últ. vez hace mucho tiempo</string>
     <string name="NewMessageTitle">Nuevo mensaje</string>
     <!--group create view-->
-    <string name="SendMessageTo">Enviar mensaje a...</string>
+    <string name="SendMessageTo">Invitar a...</string>
     <string name="EnterGroupNamePlaceholder">Nombre del grupo</string>
     <string name="GroupName">Nombre del grupo</string>
     <string name="MembersCount">%1$d/%2$d miembros</string>
@@ -343,7 +344,7 @@
     <string name="SetAdminsTitle">Administradores</string>
     <string name="SetAdminsAll">Todos son administradores</string>
     <string name="SetAdminsAllInfo">Todos pueden añadir nuevos miembros, editar el nombre y la foto del grupo.</string>
-    <string name="SetAdminsNotAllInfo">Sólo los administradores pueden añadir y quitar miembros, editar el nombre y la foto del grupo.</string>
+    <string name="SetAdminsNotAllInfo">Sólo los administradores pueden añadir y eliminar miembros, editar el nombre y la foto del grupo.</string>
     <!--group info view-->
     <string name="SharedMedia">Multimedia</string>
     <string name="SETTINGS">Ajustes</string>
@@ -351,7 +352,7 @@
     <string name="SetAdmins">Nombrar administradores</string>
     <string name="DeleteAndExit">Eliminar y dejar el grupo</string>
     <string name="Notifications">Notificaciones</string>
-    <string name="KickFromGroup">Expulsar del grupo</string>
+    <string name="KickFromGroup">Eliminar del grupo</string>
     <string name="ConvertGroup">Convertir en supergrupo</string>
     <string name="ConvertGroupAlert">Por favor, ten en cuenta que los miembros del grupo tendrán que actualizar Telegram a la última versión para ver tu supergrupo. ¿Quieres convertir el grupo?</string>
     <string name="ConvertGroupInfo"><![CDATA[<b>]]>Límite de miembros alcanzado.<![CDATA[</b>]]>\n\nPara superar el límite y tener características adicionales, conviértelo en un supergrupo:\n\n• Permiten hasta %1$s\n• Nuevos miembros ven todo el historial\n• Un admin. borra mensajes para todos\n• Notificaciones silenciadas por defecto</string>
@@ -401,7 +402,7 @@
     <string name="StickersShow">Mostrar</string>
     <string name="StickersShare">Compartir</string>
     <string name="StickersCopy">Copiar enlace</string>
-    <string name="StickersRemove">Quitar</string>
+    <string name="StickersRemove">Eliminar</string>
     <string name="NoStickers">Sin stickers aún</string>
     <!--settings view-->
     <string name="ResetNotificationsText">Restablecer las notificaciones</string>
@@ -437,7 +438,6 @@
     <string name="TerminateAllSessions">Cerrar todas las otras sesiones</string>
     <string name="Events">Eventos</string>
     <string name="ContactJoined">Un contacto se unió a Telegram</string>
-    <string name="Pebble">PEBBLE</string>
     <string name="Language">Idioma</string>
     <string name="AskAQuestionInfo">Por favor, considera que el soporte de Telegram está hecho por voluntarios. Respondemos lo antes posible, pero puede tomar tiempo.<![CDATA[<br><br>]]>Por favor, mira las <![CDATA[<a href=\"https://telegram.org/faq/es\">preguntas frecuentes de Telegram</a>]]>: tienen respuestas para la mayoría de las preguntas y <![CDATA[<a href=\"https://telegram.org/faq/es#solucin-de-problemas\">soluciones a problemas</a>]]>.</string>
     <string name="AskButton">Preguntar</string>
@@ -499,6 +499,24 @@
     <string name="SmartNotificationsTimes">veces</string>
     <string name="SmartNotificationsWithin">en</string>
     <string name="SmartNotificationsMinutes">minutos</string>
+    <!--cache view-->
+    <string name="CacheSettings">Ajustes de caché</string>
+    <string name="LocalDatabase">Base de datos local</string>
+    <string name="LocalDatabaseClear">¿Borrar los mensajes en la caché?</string>
+    <string name="LocalDatabaseInfo">Al borrar la base de datos se eliminarán los mensajes en la caché y se comprimirá la base de datos para liberar espacio de almacenamiento. Telegram requiere algunos datos para funcionar, así que la base de datos nunca podrá llegar a cero.\n\nEsto puede tardar algunos minutos.</string>
+    <string name="ClearMediaCache">Borrar caché</string>
+    <string name="CacheClear">Borrar</string>
+    <string name="CalculatingSize">Calculando...</string>
+    <string name="LocalDocumentCache">Archivos</string>
+    <string name="LocalPhotoCache">Fotos</string>
+    <string name="LocalAudioCache">Mensajes de voz</string>
+    <string name="LocalVideoCache">Vídeos</string>
+    <string name="LocalMusicCache">Música</string>
+    <string name="LocalCache">Otros archivos</string>
+    <string name="CacheEmpty">Vacío</string>
+    <string name="KeepMedia">Conservar multimedia</string>
+    <string name="KeepMediaInfo">Las fotos, los vídeos y los archivos de los chats en la nube a los que <![CDATA[<b>no accedas</b>]]> durante ese periodo de tiempo se eliminarán del dispositivo para liberar espacio.\n\nToda la multimedia permanecerá en la nube de Telegram y podrás volver a descargarla si la necesitas.</string>
+    <string name="KeepMediaForever">Siempre</string>
     <!--sessions view-->
     <string name="SessionsTitle">Sesiones activas</string>
     <string name="CurrentSession">Sesión actual</string>
@@ -720,21 +738,21 @@
     <!--messages-->
     <string name="ActionInviteYou">Te uniste al grupo con un enlace de invitación</string>
     <string name="ActionInviteUser">un1 se unió al grupo con un enlace de invitación</string>
-    <string name="ActionKickUser">un1 expulsó a un2</string>
+    <string name="ActionKickUser">un1 eliminó a un2</string>
     <string name="ActionLeftUser">un1 dejó el grupo</string>
     <string name="ActionAddUser">un1 añadió a un2</string>
     <string name="ActionRemovedPhoto">un1 eliminó la foto del grupo</string>
     <string name="ActionChangedPhoto">un1 cambió la foto del grupo</string>
     <string name="ActionChangedTitle">un1 cambió el nombre del grupo a un2</string>
     <string name="ActionCreateGroup">un1 creó el grupo</string>
-    <string name="ActionYouKickUser">Expulsaste a un2</string>
+    <string name="ActionYouKickUser">Eliminaste a un2</string>
     <string name="ActionYouLeftUser">Dejaste el grupo</string>
     <string name="ActionYouAddUser">Añadiste a un2</string>
-    <string name="ActionYouRemovedPhoto">Quitaste la foto del grupo</string>
+    <string name="ActionYouRemovedPhoto">Eliminaste la foto del grupo</string>
     <string name="ActionYouChangedPhoto">Cambiaste la foto del grupo</string>
     <string name="ActionYouChangedTitle">Cambiaste el nombre del grupo a un2</string>
     <string name="ActionYouCreateGroup">Creaste el grupo</string>
-    <string name="ActionKickUserYou">un1 te expulsó</string>
+    <string name="ActionKickUserYou">un1 te eliminó</string>
     <string name="ActionAddUserYou">un1 te añadió</string>
     <string name="ActionAddUserSelf">un1 volvió al grupo</string>
     <string name="ActionAddUserSelfYou">Volviste al grupo</string>
@@ -781,6 +799,8 @@
     <string name="AreYouSureSecretChat">¿Quieres iniciar un chat secreto?</string>
     <string name="AreYouSureRegistration">¿Quieres cancelar el registro?</string>
     <string name="AreYouSureClearHistory">¿Quieres eliminar el historial?</string>
+    <string name="AreYouSureClearHistoryChannel">¿Eliminar de la caché los mensajes y multimedia de este canal?</string>
+    <string name="AreYouSureClearHistorySuper">¿Eliminar de la caché los mensajes y multimedia de este supergrupo?</string>
     <string name="AreYouSureDeleteMessages">¿Quieres eliminar %1$s?</string>
     <string name="SendMessagesToGroup">¿Enviar mensajes a %1$s?</string>
     <string name="SendContactToGroup">¿Enviar contacto a %1$s?</string>
@@ -1010,6 +1030,6 @@
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s a las %2$s</string>
     <!--update text-->
-    <string name="updateText">Telegram para Android ha sido actualizada. Novedades en la versión 3.3.0:\n\n- Ahora los grupos pueden tener múltiples administradores, con la habilidad de cambiar la foto de perfil y el nombre del grupo, además de añadir y expulsar miembros.\n- Los grupos que han alcanzado los 200 usuarios, podrán ser convertidos en supergrupos con una capacidad de 1000 miembros.\n- Los canales tienen un nuevo botón para compartir contenidos más rápido, justo al lado de los mensajes.\n\nMás sobre esta actualización:\nhttps://telegram.org/blog/supergroups</string>
-    <string name="updateBuild">677</string>
+    <string name="updateText">Telegram para Android ha sido actualizada. Novedades en la versión 3.3.2:\n\n- Gestión de caché: controla cuánto espacio usa Telegram en tu dispositivo y borra la caché para tipos específicos de contenido.\n- Elimina la caché de supergrupos y canales: mantén pulsado sobre ellos, en la lista de chats, y elige ‘Eliminar de la caché’.\n- Gestión de stickers: ordena manualmente tus packs de stickers. El orden de los packs ahora está sincronizado en todos tus dispositivos.\n\nMás sobre esta actualización aquí:\nhttps://telegram.org/blog/cache-and-stickers</string>
+    <string name="updateBuild">693</string>
 </resources>

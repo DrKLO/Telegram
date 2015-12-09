@@ -1078,7 +1078,7 @@ public class SecretChatHelper {
                                     });
                                 }
                             });
-                            MessagesStorage.getInstance().deleteDialog(did, true);
+                            MessagesStorage.getInstance().deleteDialog(did, 1);
                             NotificationCenter.getInstance().postNotificationName(NotificationCenter.dialogsNeedReload);
                             NotificationCenter.getInstance().postNotificationName(NotificationCenter.removeAllMessagesFromDialog, did, false);
                         }

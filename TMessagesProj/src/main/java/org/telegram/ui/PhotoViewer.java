@@ -739,14 +739,14 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             if (uid == currentDialogId || uid == mergeDialogId) {
                 if (uid == currentDialogId) {
                     totalImagesCount = (Integer) args[1];
-                    if ((Boolean) args[2]) {
+                    /*if ((Boolean) args[2]) {
                         SharedMediaQuery.getMediaCount(currentDialogId, SharedMediaQuery.MEDIA_PHOTOVIDEO, classGuid, false);
-                    }
+                    }*/
                 } else if (uid == mergeDialogId) {
                     totalImagesCountMerge = (Integer) args[1];
-                    if ((Boolean) args[2]) {
+                    /*if ((Boolean) args[2]) {
                         SharedMediaQuery.getMediaCount(mergeDialogId, SharedMediaQuery.MEDIA_PHOTOVIDEO, classGuid, false);
-                    }
+                    }*/
                 }
                 if (needSearchImageInArr && isFirstLoading) {
                     isFirstLoading = false;

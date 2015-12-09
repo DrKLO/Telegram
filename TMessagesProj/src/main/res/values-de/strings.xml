@@ -46,6 +46,7 @@
     <string name="EncryptedChatStartedOutgoing">%s ist deinem geheimen Chat beigetreten.</string>
     <string name="EncryptedChatStartedIncoming">Du bist dem geheimen Chat beigetreten.</string>
     <string name="ClearHistory">Verlauf löschen</string>
+    <string name="ClearHistoryCache">Cache leeren</string>
     <string name="DeleteChat">Löschen und beenden</string>
     <string name="DeleteChatUser">Chat löschen</string>
     <string name="HiddenName">Gelöschtes Konto</string>
@@ -437,7 +438,6 @@
     <string name="TerminateAllSessions">Alle anderen Geräte abmelden</string>
     <string name="Events">Ereignisse</string>
     <string name="ContactJoined">Kontakt ist Telegram beigetreten</string>
-    <string name="Pebble">PEBBLE</string>
     <string name="Language">Sprache</string>
     <string name="AskAQuestionInfo">Bedenke bitte, dass der Telegram Support von ehrenamtlichen Helfern betreut wird. Wir versuchen so schnell wie möglich zu antworten, dies kann jedoch manchmal ein bisschen dauern.<![CDATA[<br><br>]]>Bitte schau auch in den <![CDATA[<a href=\"https://telegram.org/faq/de\">Fragen und Antworten </a>]]> nach. Dort findest du Antworten auf die meisten Fragen und wichtige Tipps zur <![CDATA[<a href=\"https://telegram.org/faq/de#problembehandlung\">Problembehandlung</a>]]>.</string>
     <string name="AskButton">Eine Frage stellen</string>
@@ -499,6 +499,24 @@
     <string name="SmartNotificationsTimes">Mal</string>
     <string name="SmartNotificationsWithin">innerhalb von</string>
     <string name="SmartNotificationsMinutes">Minuten</string>
+    <!--cache view-->
+    <string name="CacheSettings">Cache-Einstellungen</string>
+    <string name="LocalDatabase">Lokale Datenbank</string>
+    <string name="LocalDatabaseClear">Textnachrichten-Cache leeren?</string>
+    <string name="LocalDatabaseInfo">Zwischengespeicherte Textnachrichten werden entfernt und die Datenbank optimiert um Speicherplatz zurückzuerhalten. Auf Null lässt sich die Größe jedoch nicht reduzieren, da die App einige Daten für den laufenden Betrieb benötigt.\n\nHinweis: Der Vorgang kann mehrere Minuten dauern.</string>
+    <string name="ClearMediaCache">Cache Leeren</string>
+    <string name="CacheClear">Leeren</string>
+    <string name="CalculatingSize">Berechne...</string>
+    <string name="LocalDocumentCache">Dateien</string>
+    <string name="LocalPhotoCache">Bilder</string>
+    <string name="LocalAudioCache">Sprachnachrichten</string>
+    <string name="LocalVideoCache">Videos</string>
+    <string name="LocalMusicCache">Musik</string>
+    <string name="LocalCache">Sonstige Dateien</string>
+    <string name="CacheEmpty">Leer</string>
+    <string name="KeepMedia">Medien behalten</string>
+    <string name="KeepMediaInfo">Bilder, Videos und andere Dateien, auf die du während dieser Zeit <![CDATA[<b>nicht zugegriffen</b>]]> hast, werden von diesem Gerät gelöscht, um Speicherplatz zu sparen.\n\nAlle Medien bleiben in der Telegram Cloud gespeichert und können jederzeit wieder heruntergeladen werden.</string>
+    <string name="KeepMediaForever">Dauerhaft</string>
     <!--sessions view-->
     <string name="SessionsTitle">Sitzungen</string>
     <string name="CurrentSession">Aktuelles Gerät</string>
@@ -781,6 +799,8 @@
     <string name="AreYouSureSecretChat">Geheimen Chat starten?</string>
     <string name="AreYouSureRegistration">Bist du dir sicher, dass du die Registrierung abbrechen willst?</string>
     <string name="AreYouSureClearHistory">Möchtest du wirklich den Verlauf löschen?</string>
+    <string name="AreYouSureClearHistoryChannel">Cache des Kanals wirklich löschen?</string>
+    <string name="AreYouSureClearHistorySuper">Cache der Supergruppe wirklich löschen?</string>
     <string name="AreYouSureDeleteMessages">Sicher, dass du %1$s löschen willst?</string>
     <string name="SendMessagesToGroup">Nachricht an %1$s senden?</string>
     <string name="SendContactToGroup">Kontakt senden an %1$s?</string>
@@ -1010,6 +1030,6 @@
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s um %2$s</string>
     <!--update text-->
-    <string name="updateText">Telegram für Android wurde aktualisiert. Neu in Version 3.3.0:\n\n- Gruppen erlauben ab sofort Administratoren: Diese können den Gruppennamen und das Bild ändern sowie Mitglieder hinzufügen und auch wieder entfernen.\n- Gruppen, die das Limit von 200 Mitgliedern erreicht haben, können in eine Supergruppe (1000 Mitglieder) geändert werden.\n- Kanäle unterstützen schnelles Teilen über den Knopf neben jeder Nachricht.\n\nAusführliche Informationen zu den neuen Funktionen in unserem Blog:\nhttps://telegram.org/blog/supergroups</string>
-    <string name="updateBuild">677</string>
+    <string name="updateText">Telegram für Android wurde aktualisiert. Neu in Version 3.3.2:\n\n- Cache-Verwaltung: Prüfe wieviel Speicherplatz Telegram auf deinem Gerät benutzt und lösche den gesamten Cache oder nur bestimmte Teile.\n- Lösche den Cache von Supergruppen und Kanälen (in der Chatliste Supergruppe oder Kanal gedrückt halten und "Cache löschen").\n- Sticker-Verwaltung: Ändere die Sortierung deiner Sticker-Pakete. Die Sortierung wird auf all deinen Geräten synchronisiert.\n\nAusführliche Informationen zur neuen Version findest du hier:\nhttps://telegram.org/blog/cache-and-stickers</string>
+    <string name="updateBuild">693</string>
 </resources>

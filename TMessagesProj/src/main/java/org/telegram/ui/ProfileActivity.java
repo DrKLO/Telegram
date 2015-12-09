@@ -2168,7 +2168,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     if (chat.creator && chat_id > 0) {
                         item.addSubItem(set_admins, LocaleController.getString("SetAdmins", R.string.SetAdmins), 0);
                     }
-                    if (chat.creator || chat.admin) {
+                    if (!chat.admins_enabled || chat.creator || chat.admin) {
                         item.addSubItem(edit_name, LocaleController.getString("EditName", R.string.EditName), 0);
                     }
                     item.addSubItem(leave_group, LocaleController.getString("DeleteAndExit", R.string.DeleteAndExit), 0);

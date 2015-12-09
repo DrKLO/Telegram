@@ -1750,6 +1750,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                 }
             } catch (Exception e) {
                 FileLog.e("tmessages", e);
+                NotificationCenter.getInstance().postNotificationName(NotificationCenter.audioPlayStateChanged, playingMessageObject != null ? playingMessageObject.getId() : 0);
                 if (audioPlayer != null) {
                     audioPlayer.release();
                     audioPlayer = null;

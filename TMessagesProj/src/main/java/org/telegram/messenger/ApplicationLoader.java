@@ -234,16 +234,16 @@ public class ApplicationLoader extends Application {
             appVersion = "App version unknown";
             systemVersion = "SDK " + Build.VERSION.SDK_INT;
         }
-        if (langCode.length() == 0) {
+        if (langCode.trim().length() == 0) {
             langCode = "en";
         }
-        if (deviceModel.length() == 0) {
+        if (deviceModel.trim().length() == 0) {
             deviceModel = "Android unknown";
         }
-        if (appVersion.length() == 0) {
+        if (appVersion.trim().length() == 0) {
             appVersion = "App version unknown";
         }
-        if (systemVersion.length() == 0) {
+        if (systemVersion.trim().length() == 0) {
             systemVersion = "SDK Unknown";
         }
 

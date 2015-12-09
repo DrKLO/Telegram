@@ -80,6 +80,10 @@ public class FileLoader {
         mediaDirs = dirs;
     }
 
+    public File checkDirectory(int type) {
+        return mediaDirs.get(type);
+    }
+
     public File getDirectory(int type) {
         File dir = mediaDirs.get(type);
         if (dir == null && type != MEDIA_DIR_CACHE) {
@@ -746,7 +750,7 @@ public class FileLoader {
         return "";
     }
 
-    public void deleteFiles(final ArrayList<File> files) {
+    public void deleteFiles(final ArrayList<File> files, final int type) {
         if (files == null || files.isEmpty()) {
             return;
         }
@@ -765,15 +769,18 @@ public class FileLoader {
                         }
                     }
                     try {
-                        File qFile = new File(file.getPath(), "q_" + file.getName());
+                        File qFile = new File(file.getParentFile(), "q_" + file.getName());
                         if (qFile.exists()) {
-                            if (!file.delete()) {
-                                file.deleteOnExit();
+                            if (!qFile.delete()) {
+                                qFile.deleteOnExit();
                             }
                         }
                     } catch (Exception e) {
                         FileLog.e("tmessages", e);
                     }
+                }
+                if (type == 2) {
+                    ImageLoader.getInstance().clearMemory();
                 }
             }
         });

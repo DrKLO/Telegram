@@ -49,6 +49,7 @@ public class FileLoadOperation {
     private int currentDownloadChunkSize;
     private int currentMaxDownloadRequests;
     private int requestsCount;
+    private int renameRetryCount;
 
     private int nextDownloadOffset = 0;
     private ArrayList<RequestInfo> requestInfos;
@@ -194,7 +195,7 @@ public class FileLoadOperation {
         String fileNameTemp;
         String fileNameIv = null;
         if (location.volume_id != 0 && location.local_id != 0) {
-            fileNameTemp = location.volume_id + "_" + location.local_id + "_temp." + ext;
+            fileNameTemp = location.volume_id + "_" + location.local_id + ".temp";
             fileNameFinal = location.volume_id + "_" + location.local_id + "." + ext;
             if (key != null) {
                 fileNameIv = location.volume_id + "_" + location.local_id + ".iv";
@@ -210,7 +211,7 @@ public class FileLoadOperation {
                 return;
             }
         } else {
-            fileNameTemp = datacenter_id + "_" + location.id + "_temp" + ext;
+            fileNameTemp = datacenter_id + "_" + location.id + ".temp";
             fileNameFinal = datacenter_id + "_" + location.id + ext;
             if (key != null) {
                 fileNameIv = datacenter_id + "_" + location.id + ".iv";
@@ -236,7 +237,7 @@ public class FileLoadOperation {
         if (!cacheFileFinal.exists()) {
             cacheFileTemp = new File(tempPath, fileNameTemp);
             if (cacheFileTemp.exists()) {
-                downloadedBytes = (int)cacheFileTemp.length();
+                downloadedBytes = (int) cacheFileTemp.length();
                 nextDownloadOffset = downloadedBytes = downloadedBytes / currentDownloadChunkSize * currentDownloadChunkSize;
             }
 
@@ -324,6 +325,11 @@ public class FileLoadOperation {
     private void cleanup() {
         try {
             if (fileOutputStream != null) {
+                try {
+                    fileOutputStream.getChannel().close();
+                } catch (Exception e) {
+                    FileLog.e("tmessages", e);
+                }
                 fileOutputStream.close();
                 fileOutputStream = null;
             }
@@ -340,7 +346,8 @@ public class FileLoadOperation {
             FileLog.e("tmessages", e);
         }
         if (delayedRequestInfos != null) {
-            for (RequestInfo requestInfo : delayedRequestInfos) {
+            for (int a = 0; a < delayedRequestInfos.size(); a++) {
+                RequestInfo requestInfo = delayedRequestInfos.get(a);
                 if (requestInfo.response != null) {
                     requestInfo.response.disableFree = false;
                     requestInfo.response.freeResources();
@@ -358,11 +365,28 @@ public class FileLoadOperation {
         cleanup();
         if (cacheIvTemp != null) {
             cacheIvTemp.delete();
+            cacheIvTemp = null;
         }
         if (cacheFileTemp != null) {
-            if (!cacheFileTemp.renameTo(cacheFileFinal)) {
+            boolean renameResult = cacheFileTemp.renameTo(cacheFileFinal);
+            if (!renameResult) {
                 if (BuildVars.DEBUG_VERSION) {
-                    FileLog.e("tmessages", "unable to rename temp = " + cacheFileTemp + " to final = " + cacheFileFinal);
+                    FileLog.e("tmessages", "unable to rename temp = " + cacheFileTemp + " to final = " + cacheFileFinal + " retry = " + renameRetryCount);
+                }
+                renameRetryCount++;
+                if (renameRetryCount < 3) {
+                    state = stateDownloading;
+                    Utilities.stageQueue.postRunnable(new Runnable() {
+                        @Override
+                        public void run() {
+                            try {
+                                onFinishLoadingFile();
+                            } catch (Exception e) {
+                                delegate.didFailedLoadingFile(FileLoadOperation.this, 0);
+                            }
+                        }
+                    }, 200);
+                    return;
                 }
                 cacheFileFinal = cacheFileTemp;
             }

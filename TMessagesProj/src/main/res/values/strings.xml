@@ -46,6 +46,7 @@
     <string name="EncryptedChatStartedOutgoing">%s joined your secret chat.</string>
     <string name="EncryptedChatStartedIncoming">You joined the secret chat.</string>
     <string name="ClearHistory">Clear history</string>
+    <string name="ClearHistoryCache">Delete from cache</string>
     <string name="DeleteChat">Delete and exit</string>
     <string name="DeleteChatUser">Delete chat</string>
     <string name="HiddenName">Deleted Account</string>
@@ -437,7 +438,6 @@
     <string name="TerminateAllSessions">Terminate All Other Sessions</string>
     <string name="Events">Events</string>
     <string name="ContactJoined">Contact joined Telegram</string>
-    <string name="Pebble">PEBBLE</string>
     <string name="Language">Language</string>
     <string name="AskAQuestionInfo">Please note that Telegram Support is done by volunteers. We try to respond as quickly as possible, but it may take a while.<![CDATA[<br><br>]]>Please take a look at the <![CDATA[<a href=\"https://telegram.org/faq#general\">Telegram FAQ</a>]]>: it has answers to most questions and important tips for <![CDATA[<a href=\"https://telegram.org/faq#troubleshooting\">troubleshooting</a>]]>.</string>
     <string name="AskButton">Ask a volunteer</string>
@@ -499,6 +499,24 @@
     <string name="SmartNotificationsTimes">times</string>
     <string name="SmartNotificationsWithin">within</string>
     <string name="SmartNotificationsMinutes">minutes</string>
+    <!--cache view-->
+    <string name="CacheSettings">Cache Settings</string>
+    <string name="LocalDatabase">Local Database</string>
+    <string name="LocalDatabaseClear">Clear cached text messages?</string>
+    <string name="LocalDatabaseInfo">Clearing the local database will delete the texts of cached messages and compress the database to save internal disk space. Telegram needs some data to work, so database size will not reach zero.\n\nThis operation can take a few minutes to complete.</string>
+    <string name="ClearMediaCache">Clear Cache</string>
+    <string name="CacheClear">Clear</string>
+    <string name="CalculatingSize">Calculating...</string>
+    <string name="LocalDocumentCache">Documents</string>
+    <string name="LocalPhotoCache">Photos</string>
+    <string name="LocalAudioCache">Voice messages</string>
+    <string name="LocalVideoCache">Videos</string>
+    <string name="LocalMusicCache">Music</string>
+    <string name="LocalCache">Other files</string>
+    <string name="CacheEmpty">Empty</string>
+    <string name="KeepMedia">Keep Media</string>
+    <string name="KeepMediaInfo">Photos, videos and other files from cloud chats that you have <![CDATA[<b>not accessed</b>]]> during this period will be removed from this device to save disk space.\n\nAll media will stay in the Telegram cloud and can be re-downloaded if you need it again.</string>
+    <string name="KeepMediaForever">Forever</string>
     <!--sessions view-->
     <string name="SessionsTitle">Active Sessions</string>
     <string name="CurrentSession">Current session</string>
@@ -781,6 +799,8 @@
     <string name="AreYouSureSecretChat">Are you sure you want to start a secret chat?</string>
     <string name="AreYouSureRegistration">Are you sure you want to cancel registration?</string>
     <string name="AreYouSureClearHistory">Are you sure you want to clear history?</string>
+    <string name="AreYouSureClearHistoryChannel">Delete all cached text and media from this channel?</string>
+    <string name="AreYouSureClearHistorySuper">Delete all cached text and media from this supergroup?</string>
     <string name="AreYouSureDeleteMessages">Are you sure you want to delete %1$s?</string>
     <string name="SendMessagesToGroup">Send messages to %1$s?</string>
     <string name="SendContactToGroup">Send contact to %1$s?</string>
@@ -1010,6 +1030,6 @@
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s at %2$s</string>
     <!--update text-->
-    <string name="updateText">Telegram for Android has been updated. New in version 3.3.0:\n\n- Groups can now have multiple administrators with the ability to edit the name and logo, and add and remove members.\n- Groups that have reached their capacity of 200 users can be upgraded to supergroups of up to 1,000 members.\n- Channels got a new Quick Share button right next to messages.\n\nMore about this update:\nhttps://telegram.org/blog/supergroups</string>
-    <string name="updateBuild">677</string>
+    <string name="updateText">Telegram for Android has been updated. New in version 3.3.2:\n\n- Cache management: Control how much disk space Telegram uses on your device, delete cache for specific types of content.\n- Delete cache from supergroups and channels: Tap and hold on them in the chats list and \'Delete from Cache\'.\n- Sticker management: Manually rearrange your sticker packs. Pack order is now synced across all your devices.\n\nMore about this update:\nhttps://telegram.org/blog/cache-and-stickers</string>
+    <string name="updateBuild">693</string>
 </resources>

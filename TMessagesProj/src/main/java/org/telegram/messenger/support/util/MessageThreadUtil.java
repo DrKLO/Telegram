@@ -20,9 +20,6 @@ import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
 
-import org.telegram.messenger.support.util.ThreadUtil;
-import org.telegram.messenger.support.util.TileList;
-
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 

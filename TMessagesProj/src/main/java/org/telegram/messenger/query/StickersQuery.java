@@ -33,11 +33,13 @@ import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.Components.StickersAlert;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 
 public class StickersQuery {
 
-    private static String loadHash;
+    private static int loadHash;
     private static int loadDate;
     private static ArrayList<TLRPC.TL_messages_stickerSet> stickerSets = new ArrayList<>();
     private static HashMap<Long, TLRPC.TL_messages_stickerSet> stickerSetsById = new HashMap<>();
@@ -49,7 +51,7 @@ public class StickersQuery {
     private static boolean stickersLoaded;
 
     public static void cleanup() {
-        loadHash = null;
+        loadHash = 0;
         loadDate = 0;
         allStickers.clear();
         stickerSets.clear();
@@ -98,6 +100,59 @@ public class StickersQuery {
         return value != null ? value : "";
     }
 
+    public static void reorderStickers(final ArrayList<Long> order) {
+        Collections.sort(stickerSets, new Comparator<TLRPC.TL_messages_stickerSet>() {
+            @Override
+            public int compare(TLRPC.TL_messages_stickerSet lhs, TLRPC.TL_messages_stickerSet rhs) {
+                int index1 = order.indexOf(lhs.set.id);
+                int index2 = order.indexOf(rhs.set.id);
+                if (index1 > index2) {
+                    return 1;
+                } else if (index1 < index2) {
+                    return -1;
+                }
+                return 0;
+            }
+        });
+        loadHash = calcStickersHash(stickerSets);
+        NotificationCenter.getInstance().postNotificationName(NotificationCenter.stickersDidLoaded);
+        StickersQuery.loadStickers(false, true);
+    }
+
+    public static void calcNewHash() {
+        loadHash = calcStickersHash(stickerSets);
+    }
+
+    public static void addNewStickerSet(final TLRPC.TL_messages_stickerSet set) {
+        if (!stickerSetsById.containsKey(set.set.id)) {
+            stickerSets.add(0, set);
+            stickerSetsById.put(set.set.id, set);
+            for (int a = 0; a < set.documents.size(); a++) {
+                TLRPC.Document document = set.documents.get(a);
+                stickersById.put(document.id, document);
+            }
+            for (int a = 0; a < set.packs.size(); a++) {
+                TLRPC.TL_stickerPack stickerPack = set.packs.get(a);
+                stickerPack.emoticon = stickerPack.emoticon.replace("\uFE0F", "");
+                ArrayList<TLRPC.Document> arrayList = allStickers.get(stickerPack.emoticon);
+                if (arrayList == null) {
+                    arrayList = new ArrayList<>();
+                    allStickers.put(stickerPack.emoticon, arrayList);
+                }
+                for (int c = 0; c < stickerPack.documents.size(); c++) {
+                    Long id = stickerPack.documents.get(c);
+                    if (!stickersByEmoji.containsKey(id)) {
+                        stickersByEmoji.put(id, stickerPack.emoticon);
+                    }
+                    arrayList.add(stickersById.get(id));
+                }
+            }
+            loadHash = calcStickersHash(stickerSets);
+            NotificationCenter.getInstance().postNotificationName(NotificationCenter.stickersDidLoaded);
+        }
+        StickersQuery.loadStickers(false, true);
+    }
+
     public static void loadStickers(boolean cache, boolean force) {
         if (loadingStickers) {
             return;
@@ -109,7 +164,7 @@ public class StickersQuery {
                 public void run() {
                     ArrayList<TLRPC.TL_messages_stickerSet> newStickerArray = null;
                     int date = 0;
-                    String hash = null;
+                    int hash = 0;
                     SQLiteCursor cursor = null;
                     try {
                         cursor = MessagesStorage.getInstance().getDatabase().queryFinalized("SELECT data, date, hash FROM stickers_v2 WHERE 1");
@@ -124,7 +179,7 @@ public class StickersQuery {
                                 }
                             }
                             date = cursor.intValue(1);
-                            hash = cursor.stringValue(2);
+                            hash = calcStickersHash(newStickerArray);
                             data.reuse();
                         }
                     } catch (Throwable e) {
@@ -138,8 +193,8 @@ public class StickersQuery {
                 }
             });
         } else {
-            TLRPC.TL_messages_getAllStickers req = new TLRPC.TL_messages_getAllStickers();
-            req.hash = loadHash == null || force ? "" : loadHash;
+            final TLRPC.TL_messages_getAllStickers req = new TLRPC.TL_messages_getAllStickers();
+            req.hash = force ? 0 : loadHash;
             ConnectionsManager.getInstance().sendRequest(req, new RequestDelegate() {
                 @Override
                 public void run(final TLObject response, final TLRPC.TL_error error) {
@@ -194,7 +249,7 @@ public class StickersQuery {
                                     });
                                 }
                             } else {
-                                processLoadedStickers(null, false, (int) (System.currentTimeMillis() / 1000), error == null ? "" : null);
+                                processLoadedStickers(null, false, (int) (System.currentTimeMillis() / 1000), req.hash);
                             }
                         }
                     });
@@ -203,7 +258,7 @@ public class StickersQuery {
         }
     }
 
-    private static void putStickersToCache(final ArrayList<TLRPC.TL_messages_stickerSet> stickers, final int date, final String hash) {
+    private static void putStickersToCache(final ArrayList<TLRPC.TL_messages_stickerSet> stickers, final int date, final int hash) {
         MessagesStorage.getInstance().getStorageQueue().postRunnable(new Runnable() {
             @Override
             public void run() {
@@ -223,7 +278,7 @@ public class StickersQuery {
                         state.bindInteger(1, 1);
                         state.bindByteBuffer(2, data);
                         state.bindInteger(3, date);
-                        state.bindString(4, hash);
+                        state.bindInteger(4, hash);
                         state.step();
                         data.reuse();
                         state.dispose();
@@ -242,7 +297,8 @@ public class StickersQuery {
     }
 
     public static long getStickerSetId(TLRPC.Document document) {
-        for (TLRPC.DocumentAttribute attribute : document.attributes) {
+        for (int a = 0; a < document.attributes.size(); a++) {
+            TLRPC.DocumentAttribute attribute = document.attributes.get(a);
             if (attribute instanceof TLRPC.TL_documentAttributeSticker) {
                 if (attribute.stickerset instanceof TLRPC.TL_inputStickerSetID) {
                     return attribute.stickerset.id;
@@ -253,7 +309,19 @@ public class StickersQuery {
         return -1;
     }
 
-    private static void processLoadedStickers(final ArrayList<TLRPC.TL_messages_stickerSet> res, final boolean cache, final int date, final String hash) {
+    private static int calcStickersHash(ArrayList<TLRPC.TL_messages_stickerSet> sets) {
+        long acc = 0;
+        for (int a = 0; a < sets.size(); a++) {
+            TLRPC.StickerSet set = sets.get(a).set;
+            if (set.disabled) {
+                continue;
+            }
+            acc = ((acc * 20261) + 0x80000000L + set.hash) % 0x80000000L;
+        }
+        return (int) acc;
+    }
+
+    private static void processLoadedStickers(final ArrayList<TLRPC.TL_messages_stickerSet> res, final boolean cache, final int date, final int hash) {
         AndroidUtilities.runOnUIThread(new Runnable() {
             @Override
             public void run() {
@@ -264,11 +332,11 @@ public class StickersQuery {
         Utilities.stageQueue.postRunnable(new Runnable() {
             @Override
             public void run() {
-                if (cache && (res == null || date < (int) (System.currentTimeMillis() / 1000 - 60 * 60)) || !cache && res == null && hash == null) {
+                if (cache && (res == null || date < (int) (System.currentTimeMillis() / 1000 - 60 * 60)) || !cache && res == null && hash == 0) {
                     AndroidUtilities.runOnUIThread(new Runnable() {
                         @Override
                         public void run() {
-                            if (res != null && hash != null) {
+                            if (res != null && hash != 0) {
                                 loadHash = hash;
                             }
                             loadStickers(false, false);
@@ -350,7 +418,7 @@ public class StickersQuery {
                             loadDate = date;
                         }
                     });
-                    putStickersToCache(null, date, null);
+                    putStickersToCache(null, date, 0);
                 }
             }
         });
@@ -452,6 +520,25 @@ public class StickersQuery {
         stickerSetID.id = stickerSet.id;
         if (hide != 0) {
             stickerSet.disabled = hide == 1;
+            for (int a = 0; a < stickerSets.size(); a++) {
+                TLRPC.TL_messages_stickerSet set = stickerSets.get(a);
+                if (set.set.id == stickerSet.id) {
+                    stickerSets.remove(a);
+                    if (hide == 2) {
+                        stickerSets.add(0, set);
+                    } else {
+                        for (int b = stickerSets.size() - 1; b >= 0; b--) {
+                            if (stickerSets.get(b).set.disabled) {
+                                continue;
+                            }
+                            stickerSets.add(b + 1, set);
+                            break;
+                        }
+                    }
+                    break;
+                }
+            }
+            loadHash = calcStickersHash(stickerSets);
             NotificationCenter.getInstance().postNotificationName(NotificationCenter.stickersDidLoaded);
             TLRPC.TL_messages_installStickerSet req = new TLRPC.TL_messages_installStickerSet();
             req.stickerset = stickerSetID;
@@ -462,7 +549,7 @@ public class StickersQuery {
                     AndroidUtilities.runOnUIThread(new Runnable() {
                         @Override
                         public void run() {
-                            loadStickers(false, true);
+                            loadStickers(false, false);
                         }
                     }, 1000);
                 }

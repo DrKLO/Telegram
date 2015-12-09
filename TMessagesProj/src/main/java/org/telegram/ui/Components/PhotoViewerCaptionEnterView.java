@@ -326,6 +326,11 @@ public class PhotoViewerCaptionEnterView extends FrameLayoutFixed implements Not
                     public void onStickerSelected(TLRPC.Document sticker) {
 
                     }
+
+                    @Override
+                    public void onStickersSettingsClick() {
+
+                    }
                 });
                 sizeNotifierLayout.addView(emojiView);
             }

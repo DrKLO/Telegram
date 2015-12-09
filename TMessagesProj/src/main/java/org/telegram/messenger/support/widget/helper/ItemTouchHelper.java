@@ -1357,7 +1357,7 @@ public class ItemTouchHelper extends RecyclerView.ItemDecoration
         /**
          * Drag scroll speed keeps accelerating until this many milliseconds before being capped.
          */
-        private static final long DRAG_SCROLL_ACCELERATION_LIMIT_TIME_MS = 2000;
+        private static final long DRAG_SCROLL_ACCELERATION_LIMIT_TIME_MS = 500;
 
         private int mCachedMaxScrollSpeed = -1;
 

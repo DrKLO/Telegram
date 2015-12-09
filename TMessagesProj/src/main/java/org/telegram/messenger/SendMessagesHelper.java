@@ -722,7 +722,7 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                                 @Override
                                 public void run() {
                                     if (error.text.equals("PEER_FLOOD")) {
-                                        NotificationCenter.getInstance().postNotificationName(NotificationCenter.spamErrorReceived, 0);
+                                        NotificationCenter.getInstance().postNotificationName(NotificationCenter.needShowAlert, 0);
                                     }
                                 }
                             });
@@ -1700,7 +1700,7 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                         @Override
                         public void run() {
                             if (error.text.equals("PEER_FLOOD")) {
-                                NotificationCenter.getInstance().postNotificationName(NotificationCenter.spamErrorReceived, 0);
+                                NotificationCenter.getInstance().postNotificationName(NotificationCenter.needShowAlert, 0);
                             }
                         }
                     });
@@ -1812,7 +1812,7 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
 
             TLRPC.PhotoSize size2 = newMsg.media.document.thumb;
             TLRPC.PhotoSize size = sentMessage.media.document.thumb;
-            if (size2.location != null && size2.location.volume_id == Integer.MIN_VALUE && size.location != null && !(size instanceof TLRPC.TL_photoSizeEmpty) && !(size2 instanceof TLRPC.TL_photoSizeEmpty)) {
+            if (size2 != null && size2.location != null && size2.location.volume_id == Integer.MIN_VALUE && size != null && size.location != null && !(size instanceof TLRPC.TL_photoSizeEmpty) && !(size2 instanceof TLRPC.TL_photoSizeEmpty)) {
                 String fileName = size2.location.volume_id + "_" + size2.location.local_id;
                 String fileName2 = size.location.volume_id + "_" + size.location.local_id;
                 if (!fileName.equals(fileName2)) {
@@ -1822,7 +1822,7 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                     ImageLoader.getInstance().replaceImageInCache(fileName, fileName2, size.location);
                     size2.location = size.location;
                 }
-            } else if (MessageObject.isStickerMessage(sentMessage) && size2.location != null) {
+            } else if (MessageObject.isStickerMessage(sentMessage) && size2 != null && size2.location != null) {
                 size.location = size2.location;
             }
 

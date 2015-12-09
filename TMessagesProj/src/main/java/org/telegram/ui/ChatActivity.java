@@ -721,13 +721,17 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         }
                     }
                     if (str.length() != 0) {
-                        if (Build.VERSION.SDK_INT < 11) {
-                            android.text.ClipboardManager clipboard = (android.text.ClipboardManager) ApplicationLoader.applicationContext.getSystemService(Context.CLIPBOARD_SERVICE);
-                            clipboard.setText(str);
-                        } else {
-                            android.content.ClipboardManager clipboard = (android.content.ClipboardManager) ApplicationLoader.applicationContext.getSystemService(Context.CLIPBOARD_SERVICE);
-                            android.content.ClipData clip = android.content.ClipData.newPlainText("label", str);
-                            clipboard.setPrimaryClip(clip);
+                        try {
+                            if (Build.VERSION.SDK_INT < 11) {
+                                android.text.ClipboardManager clipboard = (android.text.ClipboardManager) ApplicationLoader.applicationContext.getSystemService(Context.CLIPBOARD_SERVICE);
+                                clipboard.setText(str);
+                            } else {
+                                android.content.ClipboardManager clipboard = (android.content.ClipboardManager) ApplicationLoader.applicationContext.getSystemService(Context.CLIPBOARD_SERVICE);
+                                android.content.ClipData clip = android.content.ClipData.newPlainText("label", str);
+                                clipboard.setPrimaryClip(clip);
+                            }
+                        } catch (Exception e) {
+                            FileLog.e("tmessages", e);
                         }
                     }
                     for (int a = 1; a >= 0; a--) {
@@ -807,16 +811,16 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                             if (id != clear_history) {
                                 if (isChat) {
                                     if (ChatObject.isNotInChat(currentChat)) {
-                                        MessagesController.getInstance().deleteDialog(dialog_id, false);
+                                        MessagesController.getInstance().deleteDialog(dialog_id, 0);
                                     } else {
                                         MessagesController.getInstance().deleteUserFromChat((int) -dialog_id, MessagesController.getInstance().getUser(UserConfig.getClientUserId()), null);
                                     }
                                 } else {
-                                    MessagesController.getInstance().deleteDialog(dialog_id, false);
+                                    MessagesController.getInstance().deleteDialog(dialog_id, 0);
                                 }
                                 finishFragment();
                             } else {
-                                MessagesController.getInstance().deleteDialog(dialog_id, true);
+                                MessagesController.getInstance().deleteDialog(dialog_id, 1);
                             }
                         }
                     });
@@ -1611,10 +1615,10 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         addToContactsButton.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         addToContactsButton.setSingleLine(true);
         addToContactsButton.setMaxLines(1);
-        addToContactsButton.setPadding(AndroidUtilities.dp(50), 0, AndroidUtilities.dp(4), 0);
+        addToContactsButton.setPadding(AndroidUtilities.dp(4), 0, AndroidUtilities.dp(4), 0);
         addToContactsButton.setGravity(Gravity.CENTER);
         addToContactsButton.setText(LocaleController.getString("AddContactChat", R.string.AddContactChat));
-        reportSpamView.addView(addToContactsButton, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, 0.5f, Gravity.LEFT | Gravity.TOP));
+        reportSpamView.addView(addToContactsButton, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, 0.5f, Gravity.LEFT | Gravity.TOP, 0, 0, 0, AndroidUtilities.dp(1)));
         addToContactsButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -2144,7 +2148,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), new DialogInterface.OnClickListener() {
                             @Override
                             public void onClick(DialogInterface dialogInterface, int i) {
-                                MessagesController.getInstance().deleteDialog(dialog_id, false);
+                                MessagesController.getInstance().deleteDialog(dialog_id, 0);
                                 finishFragment();
                             }
                         });
@@ -2187,7 +2191,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     }
 
     private void checkScrollForLoad() {
-        if (chatLayoutManager == null) {
+        if (chatLayoutManager == null || paused) {
             return;
         }
         int firstVisibleItem = chatLayoutManager.findFirstVisibleItemPosition();
@@ -4153,7 +4157,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     if (chatListView != null) {
                         chatListView.setEmptyView(null);
                     }
-                    emptyViewContainer.setVisibility(View.INVISIBLE);
+                    if (emptyViewContainer != null) {
+                        emptyViewContainer.setVisibility(View.INVISIBLE);
+                    }
                 } else {
                     if (progressView != null) {
                         progressView.setVisibility(View.INVISIBLE);
@@ -4573,14 +4579,16 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         messages.remove(index);
                         messagesDict[loadIndex].remove(ids);
                         ArrayList<MessageObject> dayArr = messagesByDays.get(obj.dateKey);
-                        dayArr.remove(obj);
-                        if (dayArr.isEmpty()) {
-                            messagesByDays.remove(obj.dateKey);
-                            if (index >= 0 && index < messages.size()) {
-                                messages.remove(index);
+                        if (dayArr != null) {
+                            dayArr.remove(obj);
+                            if (dayArr.isEmpty()) {
+                                messagesByDays.remove(obj.dateKey);
+                                if (index >= 0 && index < messages.size()) {
+                                    messages.remove(index);
+                                }
                             }
+                            updated = true;
                         }
-                        updated = true;
                     }
                 }
             }
@@ -5194,7 +5202,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     @Override
     protected void onDialogDismiss(Dialog dialog) {
         if (closeChatDialog != null && dialog == closeChatDialog) {
-            MessagesController.getInstance().deleteDialog(dialog_id, false);
+            MessagesController.getInstance().deleteDialog(dialog_id, 0);
             finishFragment();
         }
     }
@@ -5422,6 +5430,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             readWhenResume = false;
             MessagesController.getInstance().markDialogAsRead(dialog_id, messages.get(0).getId(), readWithMid, readWithDate, true, false);
         }
+        checkScrollForLoad();
         if (wasPaused) {
             wasPaused = false;
             if (chatAdapter != null) {

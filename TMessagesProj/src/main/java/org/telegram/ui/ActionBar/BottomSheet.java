@@ -138,24 +138,24 @@ public class BottomSheet extends Dialog {
         }
     }
 
-    private static class BottomSheetCell extends FrameLayout {
+    public static class BottomSheetCell extends FrameLayout {
 
         private TextView textView;
         private ImageView imageView;
         private boolean isGrid;
 
-        public BottomSheetCell(Context context, boolean grid) {
+        public BottomSheetCell(Context context, int type) {
             super(context);
-            isGrid = grid;
+            isGrid = type == 1;
 
             setBackgroundResource(R.drawable.list_selector);
-            if (!grid) {
+            if (type != 1) {
                 setPadding(AndroidUtilities.dp(16), 0, AndroidUtilities.dp(16), 0);
             }
 
             imageView = new ImageView(context);
             imageView.setScaleType(ImageView.ScaleType.CENTER);
-            if (grid) {
+            if (type == 1) {
                 addView(imageView, LayoutHelper.createFrame(48, 48, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 0, 8, 0, 0));
             } else {
                 addView(imageView, LayoutHelper.createFrame(24, 24, Gravity.CENTER_VERTICAL | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT)));
@@ -166,20 +166,34 @@ public class BottomSheet extends Dialog {
             textView.setSingleLine(true);
             textView.setGravity(Gravity.CENTER_HORIZONTAL);
             textView.setEllipsize(TextUtils.TruncateAt.END);
-            if (grid) {
+            if (type == 1) {
                 textView.setTextColor(0xff757575);
                 textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
                 addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 0, 60, 0, 0));
-            } else {
+            } else if (type == 0) {
                 textView.setTextColor(0xff212121);
                 textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
                 addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL));
+            } else if (type == 2) {
+                textView.setGravity(Gravity.CENTER);
+                textView.setTextColor(0xff212121);
+                textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+                textView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+                addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
             }
         }
 
         @Override
         protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
             super.onMeasure(isGrid ? MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(96), MeasureSpec.EXACTLY) : widthMeasureSpec, MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(isGrid ? 80 : 48), MeasureSpec.EXACTLY));
+        }
+
+        public void setTextColor(int color) {
+            textView.setTextColor(color);
+        }
+
+        public void setGravity(int gravity) {
+            textView.setGravity(gravity);
         }
 
         public void setTextAndIcon(CharSequence text, int icon) {
@@ -253,7 +267,7 @@ public class BottomSheet extends Dialog {
                     if (child.getVisibility() == GONE || child == containerView) {
                         continue;
                     }
-                    final LayoutParams lp = (LayoutParams) child.getLayoutParams();
+                    final FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) child.getLayoutParams();
 
                     final int width = child.getMeasuredWidth();
                     final int height = child.getMeasuredHeight();
@@ -402,7 +416,7 @@ public class BottomSheet extends Dialog {
             FrameLayout rowLayout = null;
             int lastRowLayoutNum = 0;
             for (int a = 0; a < items.length; a++) {
-                BottomSheetCell cell = new BottomSheetCell(getContext(), isGrid);
+                BottomSheetCell cell = new BottomSheetCell(getContext(), isGrid ? 1 : 0);
                 cell.setTextAndIcon(items[a], itemIcons != null ? itemIcons[a] : 0);
                 if (isGrid) {
                     int row = a / 3;

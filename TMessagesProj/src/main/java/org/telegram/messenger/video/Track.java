@@ -109,8 +109,6 @@ public class Track {
                     avcConfigurationBox.setSequenceParameterSets(spsArray);
                     avcConfigurationBox.setPictureParameterSets(ppsArray);
                 }
-                //ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(spsBytes);
-                //SeqParameterSet seqParameterSet = SeqParameterSet.read(byteArrayInputStream);
 
                 avcConfigurationBox.setAvcLevelIndication(13);
                 avcConfigurationBox.setAvcProfileIndication(100);
