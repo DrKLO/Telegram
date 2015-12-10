@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 1.7.x.
+ * This is the source code of Telegram for Android v. 3.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2014.
+ * Copyright Nikolai Kudashov, 2013-2015.
  */
 
 package org.telegram.ui;
@@ -18,6 +18,7 @@ import android.graphics.PixelFormat;
 import android.graphics.RectF;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
+import android.os.Build;
 import android.text.Layout;
 import android.text.StaticLayout;
 import android.text.TextPaint;
@@ -257,12 +258,20 @@ public class SecretPhotoViewer implements NotificationCenter.NotificationCenterD
         BitmapDrawable drawable = ImageLoader.getInstance().getImageFromMemory(sizeFull.location, null, null);
         if (drawable == null) {
             File file = FileLoader.getPathToAttach(sizeFull);
-            Bitmap bitmap;
+            Bitmap bitmap = null;
+            BitmapFactory.Options options = null;
+            if (Build.VERSION.SDK_INT >= 14 && Build.VERSION.SDK_INT < 21) {
+                options = new BitmapFactory.Options();
+                options.inDither = true;
+                options.inPreferredConfig = Bitmap.Config.ARGB_8888;
+                options.inPurgeable = true;
+                options.inSampleSize = 1;
+                options.inMutable = true;
+            }
             try {
-                bitmap = BitmapFactory.decodeFile(file.getAbsolutePath());
+                bitmap = BitmapFactory.decodeFile(file.getAbsolutePath(), options);
             } catch (Throwable e) {
-                ImageLoader.getInstance().clearMemory();
-                bitmap = BitmapFactory.decodeFile(file.getAbsolutePath());
+                FileLog.e("tmessages", e);
             }
             if (bitmap != null) {
                 drawable = new BitmapDrawable(bitmap);

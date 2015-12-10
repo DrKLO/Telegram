@@ -13,6 +13,7 @@
 
 class FileLog {
 public:
+    static void init(std::string path);
     static void e(const char *message, ...) __attribute__((format (printf, 1, 2)));
     static void w(const char *message, ...) __attribute__((format (printf, 1, 2)));
     static void d(const char *message, ...) __attribute__((format (printf, 1, 2)));

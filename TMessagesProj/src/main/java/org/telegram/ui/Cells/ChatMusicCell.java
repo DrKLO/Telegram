@@ -1,5 +1,5 @@
 /*
- * This is the source code of Telegram for Android v. 2.x.x.
+ * This is the source code of Telegram for Android v. 3.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
@@ -158,6 +158,7 @@ public class ChatMusicCell extends ChatBaseCell implements SeekBar.SeekBarDelega
                 invalidate();
             }
         } else if (buttonState == 2) {
+            radialProgress.setProgress(0, false);
             FileLoader.getInstance().loadFile(currentMessageObject.messageOwner.media.document, true, false);
             buttonState = 3;
             radialProgress.setBackground(getDrawableForCurrentState(), true, false);
@@ -234,7 +235,7 @@ public class ChatMusicCell extends ChatBaseCell implements SeekBar.SeekBarDelega
             File cacheFile = null;
             if (currentMessageObject.messageOwner.attachPath != null && currentMessageObject.messageOwner.attachPath.length() > 0) {
                 cacheFile = new File(currentMessageObject.messageOwner.attachPath);
-                if(!cacheFile.exists()) {
+                if (!cacheFile.exists()) {
                     cacheFile = null;
                 }
             }

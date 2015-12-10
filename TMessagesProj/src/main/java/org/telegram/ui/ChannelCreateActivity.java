@@ -1,5 +1,5 @@
 /*
- * This is the source code of Telegram for Android v. 2.x.x.
+ * This is the source code of Telegram for Android v. 3.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
@@ -155,7 +155,6 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
                     });
                 }
             });
-
         } else {
             if (currentStep == 1) {
                 canCreatePublic = args.getBoolean("canCreatePublic", true);
@@ -308,7 +307,7 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
                                 result.add(user);
                             }
                         }
-                        MessagesController.getInstance().addUsersToChannel(chatId, result);
+                        MessagesController.getInstance().addUsersToChannel(chatId, result, null);
                         NotificationCenter.getInstance().postNotificationName(NotificationCenter.closeChats);
                         Bundle args2 = new Bundle();
                         args2.putInt("chat_id", chatId);
@@ -656,7 +655,7 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
             actionBar.setTitle(LocaleController.getString("ChannelAddMembers", R.string.ChannelAddMembers));
             actionBar.setSubtitle(LocaleController.formatPluralString("Members", selectedContacts.size()));
 
-            searchListViewAdapter = new SearchAdapter(context, null, false, false, false);
+            searchListViewAdapter = new SearchAdapter(context, null, false, false, false, false);
             searchListViewAdapter.setCheckedMap(selectedContacts);
             searchListViewAdapter.setUseUserCell(true);
             listViewAdapter = new ContactsAdapter(context, 1, false, null, false);
@@ -841,9 +840,11 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
                         ChipSpan span = createAndPutChipForUser(user);
                         if (span != null) {
                             span.uid = user.id;
-                            return;
                         }
                         ignoreChange = false;
+                        if (span == null) {
+                            return;
+                        }
                     }
                     actionBar.setSubtitle(LocaleController.formatPluralString("Members", selectedContacts.size()));
                     if (searching || searchWas) {
@@ -997,8 +998,8 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
     }
 
     @Override
-    public void onOpenAnimationEnd() {
-        if (currentStep != 1) {
+    public void onTransitionAnimationEnd(boolean isOpen, boolean backward) {
+        if (isOpen && currentStep != 1) {
             nameTextView.requestFocus();
             AndroidUtilities.showKeyboard(nameTextView);
         }

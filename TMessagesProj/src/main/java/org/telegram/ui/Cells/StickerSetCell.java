@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 2.x.x.
+ * This is the source code of Telegram for Android v. 3.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2014.
+ * Copyright Nikolai Kudashov, 2013-2015.
  */
 
 package org.telegram.ui.Cells;
@@ -11,9 +11,12 @@ package org.telegram.ui.Cells;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.graphics.Rect;
+import android.os.Build;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
+import android.view.MotionEvent;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -36,6 +39,7 @@ public class StickerSetCell extends FrameLayout {
     private boolean needDivider;
     private ImageView optionsButton;
     private TLRPC.TL_messages_stickerSet stickersSet;
+    private Rect rect = new Rect();
 
     private static Paint paint;
 
@@ -70,7 +74,15 @@ public class StickerSetCell extends FrameLayout {
         imageView.setAspectFit(true);
         addView(imageView, LayoutHelper.createFrame(48, 48, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 0 : 12, 8, LocaleController.isRTL ? 12 : 0, 0));
 
-        optionsButton = new ImageView(context);
+        optionsButton = new ImageView(context) {
+            @Override
+            public boolean onTouchEvent(MotionEvent event) {
+                if (event.getAction() == MotionEvent.ACTION_UP) {
+                    StickerSetCell.this.getParent().requestDisallowInterceptTouchEvent(true);
+                }
+                return super.onTouchEvent(event);
+            }
+        };
         optionsButton.setBackgroundResource(R.drawable.bar_selector_grey);
         optionsButton.setImageResource(R.drawable.doc_actions_b);
         optionsButton.setScaleType(ImageView.ScaleType.CENTER);
@@ -90,7 +102,7 @@ public class StickerSetCell extends FrameLayout {
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(64) + (needDivider ? 1 : 0), MeasureSpec.EXACTLY));
+        super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(64) + (needDivider ? 1 : 0), MeasureSpec.EXACTLY));
     }
 
     public void setStickersSet(TLRPC.TL_messages_stickerSet set, boolean divider) {
@@ -98,7 +110,7 @@ public class StickerSetCell extends FrameLayout {
         stickersSet = set;
 
         textView.setText(stickersSet.set.title);
-        if ((stickersSet.set.flags & 2) != 0) {
+        if (stickersSet.set.disabled) {
             ViewProxy.setAlpha(textView, 0.5f);
             ViewProxy.setAlpha(valueTextView, 0.5f);
             ViewProxy.setAlpha(imageView, 0.5f);
@@ -125,6 +137,20 @@ public class StickerSetCell extends FrameLayout {
 
     public TLRPC.TL_messages_stickerSet getStickersSet() {
         return stickersSet;
+    }
+
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+        if (Build.VERSION.SDK_INT >= 21 && getBackground() != null) {
+            optionsButton.getHitRect(rect);
+            if (rect.contains((int) event.getX(), (int) event.getY())) {
+                return true;
+            }
+            if (event.getAction() == MotionEvent.ACTION_DOWN || event.getAction() == MotionEvent.ACTION_MOVE) {
+                getBackground().setHotspot(event.getX(), event.getY());
+            }
+        }
+        return super.onTouchEvent(event);
     }
 
     @Override

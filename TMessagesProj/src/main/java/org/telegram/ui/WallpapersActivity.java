@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 1.3.2.
+ * This is the source code of Telegram for Android v. 3.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013.
+ * Copyright Nikolai Kudashov, 2013-2015.
  */
 
 package org.telegram.ui;
@@ -16,6 +16,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.Point;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -86,7 +87,7 @@ public class WallpapersActivity extends BaseFragment implements NotificationCent
         selectedBackground = preferences.getInt("selectedBackground", 1000001);
         selectedColor = preferences.getInt("selectedColor", 0);
         MessagesStorage.getInstance().getWallpapers();
-        File toFile = new File(ApplicationLoader.applicationContext.getFilesDir(), "wallpaper-temp.jpg");
+        File toFile = new File(ApplicationLoader.getFilesDirFixed(), "wallpaper-temp.jpg");
         toFile.delete();
         return true;
     }
@@ -124,7 +125,7 @@ public class WallpapersActivity extends BaseFragment implements NotificationCent
                         TLRPC.PhotoSize size = FileLoader.getClosestPhotoSizeWithSize(wallPaper.sizes, Math.min(width, height));
                         String fileName = size.location.volume_id + "_" + size.location.local_id + ".jpg";
                         File f = new File(FileLoader.getInstance().getDirectory(FileLoader.MEDIA_DIR_CACHE), fileName);
-                        File toFile = new File(ApplicationLoader.applicationContext.getFilesDir(), "wallpaper.jpg");
+                        File toFile = new File(ApplicationLoader.getFilesDirFixed(), "wallpaper.jpg");
                         try {
                             done = AndroidUtilities.copyFile(f, toFile);
                         } catch (Exception e) {
@@ -133,8 +134,8 @@ public class WallpapersActivity extends BaseFragment implements NotificationCent
                         }
                     } else {
                         if (selectedBackground == -1) {
-                            File fromFile = new File(ApplicationLoader.applicationContext.getFilesDir(), "wallpaper-temp.jpg");
-                            File toFile = new File(ApplicationLoader.applicationContext.getFilesDir(), "wallpaper.jpg");
+                            File fromFile = new File(ApplicationLoader.getFilesDirFixed(), "wallpaper-temp.jpg");
+                            File toFile = new File(ApplicationLoader.getFilesDirFixed(), "wallpaper.jpg");
                             done = fromFile.renameTo(toFile);
                         } else {
                             done = true;
@@ -247,11 +248,12 @@ public class WallpapersActivity extends BaseFragment implements NotificationCent
                 try {
                     Point screenSize = AndroidUtilities.getRealScreenSize();
                     Bitmap bitmap = ImageLoader.loadBitmap(currentPicturePath, null, screenSize.x, screenSize.y, true);
-                    File toFile = new File(ApplicationLoader.applicationContext.getFilesDir(), "wallpaper-temp.jpg");
+                    File toFile = new File(ApplicationLoader.getFilesDirFixed(), "wallpaper-temp.jpg");
                     stream = new FileOutputStream(toFile);
                     bitmap.compress(Bitmap.CompressFormat.JPEG, 87, stream);
                     selectedBackground = -1;
                     selectedColor = 0;
+                    Drawable drawable = backgroundImage.getDrawable();
                     backgroundImage.setImageBitmap(bitmap);
                 } catch (Exception e) {
                     FileLog.e("tmessages", e);
@@ -272,11 +274,12 @@ public class WallpapersActivity extends BaseFragment implements NotificationCent
                 try {
                     Point screenSize = AndroidUtilities.getRealScreenSize();
                     Bitmap bitmap = ImageLoader.loadBitmap(null, data.getData(), screenSize.x, screenSize.y, true);
-                    File toFile = new File(ApplicationLoader.applicationContext.getFilesDir(), "wallpaper-temp.jpg");
+                    File toFile = new File(ApplicationLoader.getFilesDirFixed(), "wallpaper-temp.jpg");
                     FileOutputStream stream = new FileOutputStream(toFile);
                     bitmap.compress(Bitmap.CompressFormat.JPEG, 87, stream);
                     selectedBackground = -1;
                     selectedColor = 0;
+                    Drawable drawable = backgroundImage.getDrawable();
                     backgroundImage.setImageBitmap(bitmap);
                 } catch (Exception e) {
                     FileLog.e("tmessages", e);
@@ -346,9 +349,9 @@ public class WallpapersActivity extends BaseFragment implements NotificationCent
                 backgroundImage.setBackgroundColor(0);
                 selectedColor = 0;
             } else if (selectedBackground == -1) {
-                File toFile = new File(ApplicationLoader.applicationContext.getFilesDir(), "wallpaper-temp.jpg");
+                File toFile = new File(ApplicationLoader.getFilesDirFixed(), "wallpaper-temp.jpg");
                 if (!toFile.exists()) {
-                    toFile = new File(ApplicationLoader.applicationContext.getFilesDir(), "wallpaper.jpg");
+                    toFile = new File(ApplicationLoader.getFilesDirFixed(), "wallpaper.jpg");
                 }
                 if (toFile.exists()) {
                     backgroundImage.setImageURI(Uri.fromFile(toFile));
@@ -361,6 +364,7 @@ public class WallpapersActivity extends BaseFragment implements NotificationCent
                     return;
                 }
                 if (wallPaper instanceof TLRPC.TL_wallPaperSolid) {
+                    Drawable drawable = backgroundImage.getDrawable();
                     backgroundImage.setImageBitmap(null);
                     selectedColor = 0xff000000 | wallPaper.bg_color;
                     backgroundImage.setBackgroundColor(selectedColor);

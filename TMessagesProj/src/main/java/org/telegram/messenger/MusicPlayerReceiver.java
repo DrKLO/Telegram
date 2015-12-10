@@ -1,5 +1,5 @@
 /*
- * This is the source code of Telegram for Android v. 2.x.x.
+ * This is the source code of Telegram for Android v. 3.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
@@ -60,7 +60,7 @@ public class MusicPlayerReceiver extends BroadcastReceiver {
             } else if (intent.getAction().equals(MusicPlayerService.NOTIFY_NEXT)) {
                 MediaController.getInstance().playNextMessage();
             } else if (intent.getAction().equals(MusicPlayerService.NOTIFY_CLOSE)) {
-                MediaController.getInstance().clenupPlayer(true, true);
+                MediaController.getInstance().cleanupPlayer(true, true);
             } else if (intent.getAction().equals(MusicPlayerService.NOTIFY_PREVIOUS)) {
                 MediaController.getInstance().playPreviousMessage();
             }

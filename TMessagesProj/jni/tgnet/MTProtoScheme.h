@@ -657,7 +657,7 @@ public:
 class TL_config : public TLObject {
 
 public:
-    static const uint32_t constructor = 0x4e32b894;
+    static const uint32_t constructor = 0x6cb6e65e;
 
     int32_t date;
     int32_t expires;
@@ -665,7 +665,7 @@ public:
     int32_t this_dc;
     std::vector<std::unique_ptr<TL_dcOption>> dc_options;
     int32_t chat_size_max;
-    int32_t broadcast_size_max;
+    int32_t megagroup_size_max;
     int32_t forwarded_count_max;
     int32_t online_update_period_ms;
     int32_t offline_blur_timeout_ms;

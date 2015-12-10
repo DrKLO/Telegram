@@ -1,5 +1,5 @@
 /*
- * This is the source code of Telegram for Android v. 2.x.x.
+ * This is the source code of Telegram for Android v. 3.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
@@ -9,7 +9,10 @@
 package org.telegram.ui.Cells;
 
 import android.content.Context;
+import android.graphics.Rect;
 import android.view.Gravity;
+import android.view.MotionEvent;
+import android.view.SoundEffectConstants;
 import android.view.View;
 import android.widget.FrameLayout;
 
@@ -27,6 +30,13 @@ public class PhotoAttachPhotoCell extends FrameLayout {
     private FrameLayout checkFrame;
     private CheckBox checkBox;
     private boolean isLast;
+    private boolean pressed;
+    private static Rect rect = new Rect();
+    private PhotoAttachPhotoCellDelegate delegate;
+
+    public interface PhotoAttachPhotoCellDelegate {
+        void onCheckClick(PhotoAttachPhotoCell v);
+    }
 
     private MediaController.PhotoEntry photoEntry;
 
@@ -35,10 +45,8 @@ public class PhotoAttachPhotoCell extends FrameLayout {
 
         imageView = new BackupImageView(context);
         addView(imageView, LayoutHelper.createFrame(80, 80));
-
         checkFrame = new FrameLayout(context);
-        //addView(checkFrame, LayoutHelper.createFrame(42, 42, Gravity.LEFT | Gravity.TOP, 38, 0, 0, 0));
-        addView(checkFrame, LayoutHelper.createFrame(80, 80, Gravity.LEFT | Gravity.TOP, 0, 0, 0, 0));
+        addView(checkFrame, LayoutHelper.createFrame(42, 42, Gravity.LEFT | Gravity.TOP, 38, 0, 0, 0));
 
         checkBox = new CheckBox(context, R.drawable.checkbig);
         checkBox.setSize(30);
@@ -58,7 +66,16 @@ public class PhotoAttachPhotoCell extends FrameLayout {
         return photoEntry;
     }
 
+    public BackupImageView getImageView() {
+        return imageView;
+    }
+
+    public CheckBox getCheckBox() {
+        return checkBox;
+    }
+
     public void setPhotoEntry(MediaController.PhotoEntry entry, boolean last) {
+        pressed = false;
         photoEntry = entry;
         isLast = last;
         if (photoEntry.thumbPath != null) {
@@ -81,6 +98,44 @@ public class PhotoAttachPhotoCell extends FrameLayout {
 
     public void setOnCheckClickLisnener(OnClickListener onCheckClickLisnener) {
         checkFrame.setOnClickListener(onCheckClickLisnener);
-        imageView.setOnClickListener(onCheckClickLisnener);
+    }
+
+    public void setDelegate(PhotoAttachPhotoCellDelegate delegate) {
+        this.delegate = delegate;
+    }
+
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+        boolean result = false;
+
+        checkFrame.getHitRect(rect);
+        if (event.getAction() == MotionEvent.ACTION_DOWN) {
+            if (rect.contains((int) event.getX(), (int) event.getY())) {
+                pressed = true;
+                invalidate();
+                result = true;
+            }
+        } else if (pressed) {
+            if (event.getAction() == MotionEvent.ACTION_UP) {
+                getParent().requestDisallowInterceptTouchEvent(true);
+                pressed = false;
+                playSoundEffect(SoundEffectConstants.CLICK);
+                delegate.onCheckClick(this);
+                invalidate();
+            } else if (event.getAction() == MotionEvent.ACTION_CANCEL) {
+                pressed = false;
+                invalidate();
+            } else if (event.getAction() == MotionEvent.ACTION_MOVE) {
+                if (!(rect.contains((int) event.getX(), (int) event.getY()))) {
+                    pressed = false;
+                    invalidate();
+                }
+            }
+        }
+        if (!result) {
+            result = super.onTouchEvent(event);
+        }
+
+        return result;
     }
 }

@@ -1,5 +1,5 @@
 /*
- * This is the source code of Telegram for Android v. 2.x
+ * This is the source code of Telegram for Android v. 3.x.x
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
@@ -324,6 +324,11 @@ public class PhotoViewerCaptionEnterView extends FrameLayoutFixed implements Not
                     }
 
                     public void onStickerSelected(TLRPC.Document sticker) {
+
+                    }
+
+                    @Override
+                    public void onStickersSettingsClick() {
 
                     }
                 });

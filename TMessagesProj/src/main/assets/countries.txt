@@ -1,53 +1,53 @@
-1876;JM;Jamaica
-1869;KN;Saint Kitts & Nevis
-1868;TT;Trinidad & Tobago
-1784;VC;Saint Vincent & the Grenadines
-1767;DM;Dominica
-1758;LC;Saint Lucia
-1721;SX;Sint Maarten
-1684;AS;American Samoa
-1671;GU;Guam
-1670;MP;Northern Mariana Islands
-1664;MS;Montserrat
-1649;TC;Turks & Caicos Islands
-1473;GD;Grenada
-1441;BM;Bermuda
-1345;KY;Cayman Islands
-1340;VI;US Virgin Islands
-1284;VG;British Virgin Islands
-1268;AG;Antigua & Barbuda
-1264;AI;Anguilla
-1246;BB;Barbados
-1242;BS;Bahamas
-998;UZ;Uzbekistan
-996;KG;Kyrgyzstan
-995;GE;Georgia
-994;AZ;Azerbaijan
-993;TM;Turkmenistan
-992;TJ;Tajikistan
-977;NP;Nepal
-976;MN;Mongolia
-975;BT;Bhutan
-974;QA;Qatar
-973;BH;Bahrain
-972;IL;Israel
-971;AE;United Arab Emirates
-970;PS;Palestine
-968;OM;Oman
-967;YE;Yemen
-966;SA;Saudi Arabia
-965;KW;Kuwait
-964;IQ;Iraq
-963;SY;Syrian Arab Republic
-962;JO;Jordan
+1876;JM;Jamaica;XXX XXXX
+1869;KN;Saint Kitts & Nevis;XXX XXXX
+1868;TT;Trinidad & Tobago;XXX XXXX
+1784;VC;Saint Vincent & the Grenadines;XXX XXXX
+1767;DM;Dominica;XXX XXXX
+1758;LC;Saint Lucia;XXX XXXX
+1721;SX;Sint Maarten;XXX XXXX
+1684;AS;American Samoa;XXX XXXX
+1671;GU;Guam;XXX XXXX
+1670;MP;Northern Mariana Islands;XXX XXXX
+1664;MS;Montserrat;XXX XXXX
+1649;TC;Turks & Caicos Islands;XXX XXXX
+1473;GD;Grenada;XXX XXXX
+1441;BM;Bermuda;XXX XXXX
+1345;KY;Cayman Islands;XXX XXXX
+1340;VI;US Virgin Islands;XXX XXXX
+1284;VG;British Virgin Islands;XXX XXXX
+1268;AG;Antigua & Barbuda;XXX XXXX
+1264;AI;Anguilla;XXX XXXX
+1246;BB;Barbados;XXX XXXX
+1242;BS;Bahamas;XXX XXXX
+998;UZ;Uzbekistan;XX XXXXXXX
+996;KG;Kyrgyzstan;XXX XXXXXX
+995;GE;Georgia;XXX XXX XXX
+994;AZ;Azerbaijan;XX XXX XXXX
+993;TM;Turkmenistan;XX XXXXXX
+992;TJ;Tajikistan;XX XXX XXXX
+977;NP;Nepal;XX XXXX XXXX
+976;MN;Mongolia;XX XX XXXX
+975;BT;Bhutan;XX XXX XXX
+974;QA;Qatar;XX XXX XXX
+973;BH;Bahrain;XXXX XXXX
+972;IL;Israel;XX XXX XXXX
+971;AE;United Arab Emirates;XX XXX XXXX
+970;PS;Palestine;XXX XX XXXX
+968;OM;Oman;XXXX XXXX
+967;YE;Yemen;XXX XXX XXX
+966;SA;Saudi Arabia;XX XXX XXXX
+965;KW;Kuwait;XXXX XXXX
+964;IQ;Iraq;XXX XXX XXXX
+963;SY;Syria;XXX XXX XXX
+962;JO;Jordan;X XXXX XXXX
 961;LB;Lebanon
-960;MV;Maldives
-886;TW;Taiwan
+960;MV;Maldives;XXX XXXX
+886;TW;Taiwan;XXX XXX XXX
 880;BD;Bangladesh
-856;LA;Laos
+856;LA;Laos;XX XX XXX XXX
 855;KH;Cambodia
-853;MO;Macau
-852;HK;Hong Kong
+853;MO;Macau;XXXX XXXX
+852;HK;Hong Kong;X XXX XXXX
 850;KP;North Korea
 692;MH;Marshall Islands
 691;FM;Micronesia
@@ -67,166 +67,166 @@
 676;TO;Tonga
 675;PG;Papua New Guinea
 674;NR;Nauru
-673;BN;Brunei Darussalam
+673;BN;Brunei Darussalam;XXX XXXX
 672;NF;Norfolk Island
 670;TL;Timor-Leste
 599;BQ;Bonaire, Sint Eustatius & Saba
 599;CW;Curaçao
-598;UY;Uruguay
-597;SR;Suriname
+598;UY;Uruguay;X XXX XXXX
+597;SR;Suriname;XXX XXXX
 596;MQ;Martinique
-595;PY;Paraguay
+595;PY;Paraguay;XXX XXX XXX
 594;GF;French Guiana
-593;EC;Ecuador
+593;EC;Ecuador;XX XXX XXXX
 592;GY;Guyana
-591;BO;Bolivia
-590;GP;Guadeloupe
+591;BO;Bolivia;X XXX XXXX
+590;GP;Guadeloupe;XXX XX XX XX
 509;HT;Haiti
 508;PM;Saint Pierre & Miquelon
-507;PA;Panama
-506;CR;Costa Rica
-505;NI;Nicaragua
-504;HN;Honduras
-503;SV;El Salvador
-502;GT;Guatemala
+507;PA;Panama;XXXX XXXX
+506;CR;Costa Rica;XXXX XXXX
+505;NI;Nicaragua;XXXX XXXX
+504;HN;Honduras;XXXX XXXX
+503;SV;El Salvador;XXXX XXXX
+502;GT;Guatemala;X XXX XXXX
 501;BZ;Belize
 500;FK;Falkland Islands
 423;LI;Liechtenstein
-421;SK;Slovakia
-420;CZ;Czech Republic
-389;MK;Macedonia
-387;BA;Bosnia & Herzegovina
-386;SI;Slovenia
+421;SK;Slovakia;XXX XXX XXX
+420;CZ;Czech Republic;XXX XXX XXX
+389;MK;Macedonia;XX XXX XXX
+387;BA;Bosnia & Herzegovina;XX XXX XXX
+386;SI;Slovenia;XX XXX XXX
 385;HR;Croatia
 382;ME;Montenegro
-381;RS;Serbia
-380;UA;Ukraine
-378;SM;San Marino
-377;MC;Monaco
-376;AD;Andorra
-375;BY;Belarus
-374;AM;Armenia
-373;MD;Moldova
+381;RS;Serbia;XX XXX XXXX
+380;UA;Ukraine;XX XXX XX XX
+378;SM;San Marino;XXX XXX XXXX
+377;MC;Monaco;XXXX XXXX
+376;AD;Andorra;XX XX XX
+375;BY;Belarus;XX XXX XXXX
+374;AM;Armenia;XX XXX XXX
+373;MD;Moldova;XX XXX XXX
 372;EE;Estonia
-371;LV;Latvia
-370;LT;Lithuania
+371;LV;Latvia;XXX XXXXX
+370;LT;Lithuania;XXX XXXXX
 359;BG;Bulgaria
 358;FI;Finland
-357;CY;Cyprus
-356;MT;Malta
-355;AL;Albania
-354;IS;Iceland
-353;IE;Ireland
+357;CY;Cyprus;XXXX XXXX
+356;MT;Malta;XX XX XX XX
+355;AL;Albania;XX XXX XXXX
+354;IS;Iceland;XXX XXXX
+353;IE;Ireland;XX XXX XXXX
 352;LU;Luxembourg
-351;PT;Portugal
-350;GI;Gibraltar
-299;GL;Greenland
-298;FO;Faroe Islands
-297;AW;Aruba
-291;ER;Eritrea
-290;SH;Saint Helena
-269;KM;Comoros
-268;SZ;Swaziland
-267;BW;Botswana
-266;LS;Lesotho
-265;MW;Malawi
-264;NA;Namibia
-263;ZW;Zimbabwe
-262;RE;Réunion
-261;MG;Madagascar
-260;ZM;Zambia
-258;MZ;Mozambique
-257;BI;Burundi
-256;UG;Uganda
-255;TZ;Tanzania
-254;KE;Kenya
-253;DJ;Djibouti
-252;SO;Somalia
-251;ET;Ethiopia
-250;RW;Rwanda
-249;SD;Sudan
-248;SC;Seychelles
-247;SH;Saint Helena
-246;IO;Diego Garcia
-245;GW;Guinea-Bissau
-244;AO;Angola
-243;CD;Congo (Dem. Rep.)
-242;CG;Congo (Rep.)
-241;GA;Gabon
-240;GQ;Equatorial Guinea
-239;ST;São Tomé & Príncipe
-238;CV;Cape Verde
-237;CM;Cameroon
-236;CF;Central African Rep.
-235;TD;Chad
+351;PT;Portugal;X XXXX XXXX
+350;GI;Gibraltar;XXXX XXXX
+299;GL;Greenland;XXX XXX
+298;FO;Faroe Islands;XXX XXX
+297;AW;Aruba;XXX XXXX
+291;ER;Eritrea;X XXX XXX
+290;SH;Saint Helena;XX XXX
+269;KM;Comoros;XXX XXXX
+268;SZ;Swaziland;XXXX XXXX
+267;BW;Botswana;XX XXX XXX
+266;LS;Lesotho;XX XXX XXX
+265;MW;Malawi;77 XXX XXXX
+264;NA;Namibia;XX XXX XXXX
+263;ZW;Zimbabwe;XX XXX XXXX
+262;RE;Réunion;XXX XXX XXX
+261;MG;Madagascar;XX XX XXX XX
+260;ZM;Zambia;XX XXX XXXX
+258;MZ;Mozambique;XX XXX XXXX
+257;BI;Burundi;XX XX XXXX
+256;UG;Uganda;XX XXX XXXX
+255;TZ;Tanzania;XX XXX XXXX
+254;KE;Kenya;XXX XXX XXX
+253;DJ;Djibouti;XX XX XX XX
+252;SO;Somalia;XX XXX XXX
+251;ET;Ethiopia;XX XXX XXXX
+250;RW;Rwanda;XXX XXX XXX
+249;SD;Sudan;XX XXX XXXX
+248;SC;Seychelles;X XX XX XX
+247;SH;Saint Helena;XXXX
+246;IO;Diego Garcia;XXX XXXX
+245;GW;Guinea-Bissau;XXX XXXX
+244;AO;Angola;XXX XXX XXX
+243;CD;Congo (Dem. Rep.);XX XXX XXXX
+242;CG;Congo (Rep.);XX XXX XXXX
+241;GA;Gabon;X XX XX XX
+240;GQ;Equatorial Guinea;XXX XXX XXX
+239;ST;São Tomé & Príncipe;XX XXXXX
+238;CV;Cape Verde;XXX XXXX
+237;CM;Cameroon;XXXX XXXX
+236;CF;Central African Rep.;XX XX XX XX
+235;TD;Chad;XX XX XX XX
 234;NG;Nigeria
 233;GH;Ghana
-232;SL;Sierra Leone
+232;SL;Sierra Leone;XX XXX XXX
 231;LR;Liberia
 230;MU;Mauritius
-229;BJ;Benin
-228;TG;Togo
-227;NE;Niger
-226;BF;Burkina Faso
-225;CI;Côte d`Ivoire
-224;GN;Guinea
-223;ML;Mali
-222;MR;Mauritania
-221;SN;Senegal
-220;GM;Gambia
-218;LY;Libya
-216;TN;Tunisia
-213;DZ;Algeria
-212;MA;Morocco
-211;SS;South Sudan
-98;IR;Iran
+229;BJ;Benin;XX XXX XXX
+228;TG;Togo;XX XXX XXX
+227;NE;Niger;XX XX XX XX
+226;BF;Burkina Faso;XX XX XX XX
+225;CI;Côte d`Ivoire;XX XXX XXX
+224;GN;Guinea;XXX XXX XXX
+223;ML;Mali;XXXX XXXX
+222;MR;Mauritania;XXXX XXXX
+221;SN;Senegal;XX XXX XXXX
+220;GM;Gambia;XXX XXXX
+218;LY;Libya;XX XXX XXXX
+216;TN;Tunisia;XX XXX XXX
+213;DZ;Algeria;XXX XX XX XX
+212;MA;Morocco;XX XXX XXXX
+211;SS;South Sudan;XX XXX XXXX
+98;IR;Iran;XXX XXX XXXX
 95;MM;Myanmar
-94;LK;Sri Lanka
-93;AF;Afghanistan
-92;PK;Pakistan
-91;IN;India
-90;TR;Turkey
-86;CN;China
+94;LK;Sri Lanka;XX XXX XXXX
+93;AF;Afghanistan;XXX XXX XXX
+92;PK;Pakistan;XXX XXX XXXX
+91;IN;India;XXXXX XXXXX
+90;TR;Turkey;XXX XXX XXXX
+86;CN;China;XXX XXXX XXXX
 84;VN;Vietnam
 82;KR;South Korea
-81;JP;Japan
-66;TH;Thailand
-65;SG;Singapore
+81;JP;Japan;XX XXXX XXXX
+66;TH;Thailand;X XXXX XXXX
+65;SG;Singapore;XXXX XXXX
 64;NZ;New Zealand
-63;PH;Philippines
+63;PH;Philippines;XXX XXX XXXX
 62;ID;Indonesia
-61;AU;Australia
+61;AU;Australia;XXX XXX XXX
 60;MY;Malaysia
-58;VE;Venezuela
-57;CO;Colombia
-56;CL;Chile
-55;BR;Brazil
+58;VE;Venezuela;XXX XXX XXXX
+57;CO;Colombia;XXX XXX XXXX
+56;CL;Chile;X XXXX XXXX
+55;BR;Brazil;XX XXXXX XXXX
 54;AR;Argentina
-53;CU;Cuba
+53;CU;Cuba;XXXX XXXX
 52;MX;Mexico
-51;PE;Peru
+51;PE;Peru;XXX XXX XXX
 49;DE;Germany
-48;PL;Poland
-47;NO;Norway
-46;SE;Sweden
-45;DK;Denmark
-44;GB;United Kingdom
+48;PL;Poland;XX XXX XXXX
+47;NO;Norway;XXXX XXXX
+46;SE;Sweden;XX XXX XXXX
+45;DK;Denmark;XXXX XXXX
+44;GB;United Kingdom;XXXX XXXXXX
 43;AT;Austria
 42;YL;Y-land
-41;CH;Switzerland
-40;RO;Romania
+41;CH;Switzerland;XX XXX XXXX
+40;RO;Romania;XXX XXX XXX
 39;IT;Italy
-36;HU;Hungary
-34;ES;Spain
-33;FR;France
-32;BE;Belgium
-31;NL;Netherlands
-30;GR;Greece
-27;ZA;South Africa
-20;EG;Egypt
-7;KZ;Kazakhstan
-7;RU;Russian Federation
-1;PR;Puerto Rico
-1;DO;Dominican Rep.
-1;CA;Canada
-1;US;USA
+36;HU;Hungary;XXX XXX XXX
+34;ES;Spain;XXX XXX XXX
+33;FR;France;X XX XX XX XX
+32;BE;Belgium;XXX XX XX XX
+31;NL;Netherlands;X XX XX XX XX
+30;GR;Greece;XXX XXX XXXX
+27;ZA;South Africa;XX XXX XXXX
+20;EG;Egypt;XX XXXX XXXX
+7;KZ;Kazakhstan;XXX XXX XX XX
+7;RU;Russian Federation;XXX XXX XXXX
+1;PR;Puerto Rico;XXX XXX XXXX
+1;DO;Dominican Rep.;XXX XXX XXXX
+1;CA;Canada;XXX XXX XXXX
+1;US;USA;XXX XXX XXXX

@@ -1,5 +1,5 @@
 /*
- * This is the source code of Telegram for Android v. 2.x
+ * This is the source code of Telegram for Android v. 3.x.x
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
@@ -36,6 +36,8 @@ public class ResourceLoader {
     public static Drawable backgroundBlue;
     public static Drawable mediaBackgroundDrawable;
     public static Drawable clockChannelDrawable;
+
+    public static Drawable[][] shareDrawable = new Drawable[2][2];
 
     public static Drawable viewsCountDrawable;
     public static Drawable viewsOutCountDrawable;
@@ -123,8 +125,22 @@ public class ResourceLoader {
             docMenuInDrawable = context.getResources().getDrawable(R.drawable.doc_actions_b);
             docMenuOutDrawable = context.getResources().getDrawable(R.drawable.doc_actions_g);
 
+            shareDrawable[0][0] = context.getResources().getDrawable(R.drawable.shareblue);
+            shareDrawable[0][1] = context.getResources().getDrawable(R.drawable.shareblue_pressed);
+            shareDrawable[1][0] = context.getResources().getDrawable(R.drawable.shareblack);
+            shareDrawable[1][1] = context.getResources().getDrawable(R.drawable.shareblack_pressed);
+
             geoInDrawable = context.getResources().getDrawable(R.drawable.location_b);
             geoOutDrawable = context.getResources().getDrawable(R.drawable.location_g);
+
+            context.getResources().getDrawable(R.drawable.attach_camera_states);
+            context.getResources().getDrawable(R.drawable.attach_gallery_states);
+            context.getResources().getDrawable(R.drawable.attach_video_states);
+            context.getResources().getDrawable(R.drawable.attach_audio_states);
+            context.getResources().getDrawable(R.drawable.attach_file_states);
+            context.getResources().getDrawable(R.drawable.attach_contact_states);
+            context.getResources().getDrawable(R.drawable.attach_location_states);
+            context.getResources().getDrawable(R.drawable.attach_hide_states);
         }
     }
 }

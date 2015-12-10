@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2014.
+ * Copyright Nikolai Kudashov, 2013-2015.
  */
 
 package org.telegram.ui.Cells;
@@ -204,7 +204,7 @@ public class SharedDocumentCell extends FrameLayout implements MediaController.F
         loaded = false;
         loading = false;
 
-        if (document != null && document.messageOwner.media != null) {
+        if (document != null && document.messageOwner.media != null && document.messageOwner.media.document != null) {
             int idx;
             String name = FileLoader.getDocumentFileName(document.messageOwner.media.document);
             placeholderImabeView.setVisibility(VISIBLE);
@@ -220,7 +220,7 @@ public class SharedDocumentCell extends FrameLayout implements MediaController.F
                 thumbImageView.setImage(document.messageOwner.media.document.thumb.location, "40_40", (Drawable) null);
             }
             long date = (long) document.messageOwner.date * 1000;
-            dateTextView.setText(String.format("%s, %s", AndroidUtilities.formatFileSize(document.messageOwner.media.document.size), LocaleController.formatString("formatDateAtTime", R.string.formatDateAtTime, LocaleController.formatterYear.format(new Date(date)), LocaleController.formatterDay.format(new Date(date)))));
+            dateTextView.setText(String.format("%s, %s", AndroidUtilities.formatFileSize(document.messageOwner.media.document.size), LocaleController.formatString("formatDateAtTime", R.string.formatDateAtTime, LocaleController.getInstance().formatterYear.format(new Date(date)), LocaleController.getInstance().formatterDay.format(new Date(date)))));
         } else {
             nameTextView.setText("");
             extTextView.setText("");

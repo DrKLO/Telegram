@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 1.7.x.
+ * This is the source code of Telegram for Android v. 3.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2014.
+ * Copyright Nikolai Kudashov, 2013-2015.
  */
 
 package org.telegram.ui;
@@ -323,7 +323,7 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                         value = formatRulesString();
                     }
                     textCell.setTextAndValue(LocaleController.getString("PrivacyLastSeen", R.string.PrivacyLastSeen), value, false);
-                }  else if (i == deleteAccountRow) {
+                } else if (i == deleteAccountRow) {
                     String value;
                     if (ContactsController.getInstance().getLoadingDeleteInfo()) {
                         value = LocaleController.getString("Loading", R.string.Loading);

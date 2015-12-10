@@ -1,5 +1,5 @@
 /*
- * This is the source code of Telegram for Android v. 2.x.x.
+ * This is the source code of Telegram for Android v. 3.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
@@ -38,9 +38,16 @@ public class UserConfig {
     public static int autoLockIn = 60 * 60;
     public static int lastPauseTime = 0;
     public static boolean isWaitingForPasscodeEnter = false;
+    public static boolean useFingerprint = true;
     public static int lastUpdateVersion;
     public static int lastContactsSyncTime;
-    public static boolean channelsLoaded = false;
+
+    public static int migrateOffsetId = -1;
+    public static int migrateOffsetDate = -1;
+    public static int migrateOffsetUserId = -1;
+    public static int migrateOffsetChatId = -1;
+    public static int migrateOffsetChannelId = -1;
+    public static long migrateOffsetAccess = -1;
 
     public static int getNewMessageId() {
         int id;
@@ -78,7 +85,16 @@ public class UserConfig {
                 editor.putInt("lastPauseTime", lastPauseTime);
                 editor.putInt("lastUpdateVersion", lastUpdateVersion);
                 editor.putInt("lastContactsSyncTime", lastContactsSyncTime);
-                editor.putBoolean("channelsLoaded", channelsLoaded);
+                editor.putBoolean("useFingerprint", useFingerprint);
+
+                editor.putInt("migrateOffsetId", migrateOffsetId);
+                if (migrateOffsetId != -1) {
+                    editor.putInt("migrateOffsetDate", migrateOffsetDate);
+                    editor.putInt("migrateOffsetUserId", migrateOffsetUserId);
+                    editor.putInt("migrateOffsetChatId", migrateOffsetChatId);
+                    editor.putInt("migrateOffsetChannelId", migrateOffsetChannelId);
+                    editor.putLong("migrateOffsetAccess", migrateOffsetAccess);
+                }
 
                 if (currentUser != null) {
                     if (withFile) {
@@ -128,7 +144,7 @@ public class UserConfig {
 
     public static void loadConfig() {
         synchronized (sync) {
-            final File configFile = new File(ApplicationLoader.applicationContext.getFilesDir(), "user.dat");
+            final File configFile = new File(ApplicationLoader.getFilesDirFixed(), "user.dat");
             if (configFile.exists()) {
                 try {
                     SerializedData data = new SerializedData(configFile);
@@ -207,9 +223,19 @@ public class UserConfig {
                 passcodeType = preferences.getInt("passcodeType", 0);
                 autoLockIn = preferences.getInt("autoLockIn", 60 * 60);
                 lastPauseTime = preferences.getInt("lastPauseTime", 0);
+                useFingerprint = preferences.getBoolean("useFingerprint", true);
                 lastUpdateVersion = preferences.getInt("lastUpdateVersion", 511);
                 lastContactsSyncTime = preferences.getInt("lastContactsSyncTime", (int) (System.currentTimeMillis() / 1000) - 23 * 60 * 60);
-                channelsLoaded = preferences.getBoolean("channelsLoaded", false);
+
+                migrateOffsetId = preferences.getInt("migrateOffsetId", 0);
+                if (migrateOffsetId != -1) {
+                    migrateOffsetDate = preferences.getInt("migrateOffsetDate", 0);
+                    migrateOffsetUserId = preferences.getInt("migrateOffsetUserId", 0);
+                    migrateOffsetChatId = preferences.getInt("migrateOffsetChatId", 0);
+                    migrateOffsetChannelId = preferences.getInt("migrateOffsetChannelId", 0);
+                    migrateOffsetAccess = preferences.getLong("migrateOffsetAccess", 0);
+                }
+
                 String user = preferences.getString("user", null);
                 if (user != null) {
                     byte[] userBytes = Base64.decode(user, Base64.DEFAULT);
@@ -274,13 +300,19 @@ public class UserConfig {
         lastBroadcastId = -1;
         saveIncomingPhotos = false;
         blockedUsersLoaded = false;
-        channelsLoaded = false;
+        migrateOffsetId = -1;
+        migrateOffsetDate = -1;
+        migrateOffsetUserId = -1;
+        migrateOffsetChatId = -1;
+        migrateOffsetChannelId = -1;
+        migrateOffsetAccess = -1;
         appLocked = false;
         passcodeType = 0;
         passcodeHash = "";
         passcodeSalt = new byte[0];
         autoLockIn = 60 * 60;
         lastPauseTime = 0;
+        useFingerprint = true;
         isWaitingForPasscodeEnter = false;
         lastUpdateVersion = BuildVars.BUILD_VERSION;
         lastContactsSyncTime = (int) (System.currentTimeMillis() / 1000) - 23 * 60 * 60;

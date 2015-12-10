@@ -12,8 +12,6 @@
 
     <uses-feature android:glEsVersion="0x00020000" android:required="false"/>
     <uses-feature android:name="android.hardware.telephony" android:required="false" />
-    <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
-    <uses-feature android:name="android.hardware.camera" android:required="false" />
     <uses-feature android:name="android.hardware.wifi" android:required="false" />
     <uses-feature android:name="android.hardware.screen.PORTRAIT" android:required="false" />
     <uses-feature android:name="android.hardware.microphone" android:required="false" />
@@ -26,7 +24,6 @@
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
-    <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.GET_ACCOUNTS" />
     <uses-permission android:name="android.permission.READ_CONTACTS" />
     <uses-permission android:name="android.permission.WRITE_CONTACTS" />
@@ -39,15 +36,16 @@
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.USE_FINGERPRINT" />
 
     <application
         android:name=".ApplicationLoader"
         android:allowBackup="false"
         android:hardwareAccelerated="@bool/useHardwareAcceleration"
         android:icon="@drawable/ic_launcher"
-        android:label="@string/AppName"
         android:largeHeap="true"
-        android:theme="@style/Theme.TMessages.Start">
+        android:theme="@style/Theme.TMessages.Start"
+        android:manageSpaceActivity="org.telegram.ui.ManageSpaceActivity">
 
         <activity
             android:name="org.telegram.ui.LaunchActivity"
@@ -108,6 +106,14 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <data android:scheme="tg" />
             </intent-filter>
+            <meta-data android:name="android.service.chooser.chooser_target_service" android:value=".TgChooserTargetService" />
+        </activity>
+        <activity
+            android:name="org.telegram.ui.ManageSpaceActivity"
+            android:configChanges="keyboard|keyboardHidden|orientation|screenSize"
+            android:hardwareAccelerated="@bool/useHardwareAcceleration"
+            android:launchMode="singleTask"
+            android:windowSoftInputMode="adjustPan">
         </activity>
         <activity
             android:name="org.telegram.ui.IntroActivity"
@@ -159,8 +165,18 @@
                 android:resource="@xml/contacts" />
         </service>
 
+        <service
+            android:name="org.telegram.messenger.TgChooserTargetService"
+            android:label="@string/AppName"
+            android:permission="android.permission.BIND_CHOOSER_TARGET_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.chooser.ChooserTargetService" />
+            </intent-filter>
+        </service>
+
         <service android:name=".NotificationsService" android:enabled="true"/>
         <service android:name=".NotificationRepeat" android:exported="false"/>
+        <service android:name=".ClearCacheService" android:exported="false"/>
         <service android:name=".VideoEncodingService" android:enabled="true"/>
         <service android:name=".MusicPlayerService" android:exported="true" android:enabled="true"/>
 

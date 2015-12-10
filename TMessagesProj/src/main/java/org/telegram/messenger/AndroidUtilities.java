@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 1.4.x.
+ * This is the source code of Telegram for Android v. 3.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2014.
+ * Copyright Nikolai Kudashov, 2013-2015.
  */
 
 package org.telegram.messenger;
@@ -16,6 +16,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
+import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.database.Cursor;
 import android.graphics.Color;
@@ -74,6 +75,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.Hashtable;
 import java.util.Locale;
+import java.util.regex.Pattern;
 
 public class AndroidUtilities {
 
@@ -91,6 +93,36 @@ public class AndroidUtilities {
     public static boolean usingHardwareInput;
     private static Boolean isTablet = null;
     private static int adjustOwnerClassGuid = 0;
+
+    public static Pattern WEB_URL = null;
+    static {
+        try {
+            final String GOOD_IRI_CHAR = "a-zA-Z0-9\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF";
+            final Pattern IP_ADDRESS = Pattern.compile(
+                    "((25[0-5]|2[0-4][0-9]|[0-1][0-9]{2}|[1-9][0-9]|[1-9])\\.(25[0-5]|2[0-4]"
+                            + "[0-9]|[0-1][0-9]{2}|[1-9][0-9]|[1-9]|0)\\.(25[0-5]|2[0-4][0-9]|[0-1]"
+                            + "[0-9]{2}|[1-9][0-9]|[1-9]|0)\\.(25[0-5]|2[0-4][0-9]|[0-1][0-9]{2}"
+                            + "|[1-9][0-9]|[0-9]))");
+            final String IRI = "[" + GOOD_IRI_CHAR + "]([" + GOOD_IRI_CHAR + "\\-]{0,61}[" + GOOD_IRI_CHAR + "]){0,1}";
+            final String GOOD_GTLD_CHAR = "a-zA-Z\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF";
+            final String GTLD = "[" + GOOD_GTLD_CHAR + "]{2,63}";
+            final String HOST_NAME = "(" + IRI + "\\.)+" + GTLD;
+            final Pattern DOMAIN_NAME = Pattern.compile("(" + HOST_NAME + "|" + IP_ADDRESS + ")");
+            WEB_URL = Pattern.compile(
+                    "((?:(http|https|Http|Https):\\/\\/(?:(?:[a-zA-Z0-9\\$\\-\\_\\.\\+\\!\\*\\'\\(\\)"
+                            + "\\,\\;\\?\\&\\=]|(?:\\%[a-fA-F0-9]{2})){1,64}(?:\\:(?:[a-zA-Z0-9\\$\\-\\_"
+                            + "\\.\\+\\!\\*\\'\\(\\)\\,\\;\\?\\&\\=]|(?:\\%[a-fA-F0-9]{2})){1,25})?\\@)?)?"
+                            + "(?:" + DOMAIN_NAME + ")"
+                            + "(?:\\:\\d{1,5})?)" // plus option port number
+                            + "(\\/(?:(?:[" + GOOD_IRI_CHAR + "\\;\\/\\?\\:\\@\\&\\=\\#\\~"  // plus option query params
+                            + "\\-\\.\\+\\!\\*\\'\\(\\)\\,\\_])|(?:\\%[a-fA-F0-9]{2}))*)?"
+                            + "(?:\\b|$)");
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
+    }
+
+
 
     static {
         density = ApplicationLoader.applicationContext.getResources().getDisplayMetrics().density;
@@ -265,7 +297,7 @@ public class AndroidUtilities {
         if (value == 0) {
             return 0;
         }
-        return (int)Math.ceil(density * value);
+        return (int) Math.ceil(density * value);
     }
 
     public static int compare(int lhs, int rhs) {
@@ -304,38 +336,6 @@ public class AndroidUtilities {
         } catch (Exception e) {
             FileLog.e("tmessages", e);
         }
-
-        /*
-        keyboardHidden
-        public static final int KEYBOARDHIDDEN_NO = 1
-        Constant for keyboardHidden, value corresponding to the keysexposed resource qualifier.
-
-        public static final int KEYBOARDHIDDEN_UNDEFINED = 0
-        Constant for keyboardHidden: a value indicating that no value has been set.
-
-        public static final int KEYBOARDHIDDEN_YES = 2
-        Constant for keyboardHidden, value corresponding to the keyshidden resource qualifier.
-
-        hardKeyboardHidden
-        public static final int HARDKEYBOARDHIDDEN_NO = 1
-        Constant for hardKeyboardHidden, value corresponding to the physical keyboard being exposed.
-
-        public static final int HARDKEYBOARDHIDDEN_UNDEFINED = 0
-        Constant for hardKeyboardHidden: a value indicating that no value has been set.
-
-        public static final int HARDKEYBOARDHIDDEN_YES = 2
-        Constant for hardKeyboardHidden, value corresponding to the physical keyboard being hidden.
-
-        keyboard
-        public static final int KEYBOARD_12KEY = 3
-        Constant for keyboard, value corresponding to the 12key resource qualifier.
-
-        public static final int KEYBOARD_NOKEYS = 1
-        Constant for keyboard, value corresponding to the nokeys resource qualifier.
-
-        public static final int KEYBOARD_QWERTY = 2
-        Constant for keyboard, value corresponding to the qwerty resource qualifier.
-         */
     }
 
     public static float getPixelsInCM(float cm, boolean isX) {
@@ -536,7 +536,7 @@ public class AndroidUtilities {
     }
 
     public static int getViewInset(View view) {
-        if (view == null || Build.VERSION.SDK_INT < 21) {
+        if (view == null || Build.VERSION.SDK_INT < 21 || view.getHeight() == AndroidUtilities.displaySize.y || view.getHeight() == AndroidUtilities.displaySize.y - statusBarHeight) {
             return 0;
         }
         try {
@@ -766,7 +766,7 @@ public class AndroidUtilities {
     }*/
 
     public static void checkForCrashes(Activity context) {
-        CrashManager.register(context, BuildVars.HOCKEY_APP_HASH, new CrashManagerListener() {
+        CrashManager.register(context, BuildVars.DEBUG_VERSION ? BuildVars.HOCKEY_APP_HASH_DEBUG : BuildVars.HOCKEY_APP_HASH, new CrashManagerListener() {
             @Override
             public boolean includeDeviceData() {
                 return true;
@@ -776,7 +776,7 @@ public class AndroidUtilities {
 
     public static void checkForUpdates(Activity context) {
         if (BuildVars.DEBUG_VERSION) {
-            UpdateManager.register(context, BuildVars.HOCKEY_APP_HASH);
+            UpdateManager.register(context, BuildVars.DEBUG_VERSION ? BuildVars.HOCKEY_APP_HASH_DEBUG : BuildVars.HOCKEY_APP_HASH);
         }
     }
 
@@ -799,12 +799,19 @@ public class AndroidUtilities {
         if (uri == null) {
             return;
         }
-        Intent mediaScanIntent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
-        mediaScanIntent.setData(uri);
-        ApplicationLoader.applicationContext.sendBroadcast(mediaScanIntent);
+        try {
+            Intent mediaScanIntent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
+            mediaScanIntent.setData(uri);
+            ApplicationLoader.applicationContext.sendBroadcast(mediaScanIntent);
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
     }
 
     private static File getAlbumDir() {
+        if (Build.VERSION.SDK_INT >= 23 && ApplicationLoader.applicationContext.checkSelfPermission(android.Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+            return FileLoader.getInstance().getDirectory(FileLoader.MEDIA_DIR_CACHE);
+        }
         File storageDir = null;
         if (Environment.MEDIA_MOUNTED.equals(Environment.getExternalStorageState())) {
             storageDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "Telegram");

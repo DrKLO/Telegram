@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 1.4.x.
+ * This is the source code of Telegram for Android v. 3.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2014.
+ * Copyright Nikolai Kudashov, 2013-2015.
  */
 
 package org.telegram.ui.ActionBar;
@@ -288,7 +288,6 @@ public class ActionBarMenuItem extends FrameLayoutFixed {
         }
         if (popupWindow == null) {
             popupWindow = new ActionBarPopupWindow(popupLayout, LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT);
-            //popupWindow.setBackgroundDrawable(new BitmapDrawable());
             if (Build.VERSION.SDK_INT >= 19) {
                 popupWindow.setAnimationStyle(0);
             } else {

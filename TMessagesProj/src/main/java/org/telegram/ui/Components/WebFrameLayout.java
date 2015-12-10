@@ -1,5 +1,5 @@
 /*
- * This is the source code of Telegram for Android v. 2.x.x.
+ * This is the source code of Telegram for Android v. 3.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
@@ -67,6 +67,9 @@ public class WebFrameLayout extends FrameLayout {
 
         fullscreenVideoContainer = new FrameLayout(context);
         fullscreenVideoContainer.setBackgroundColor(0xff000000);
+        if (Build.VERSION.SDK_INT >= 21) {
+            fullscreenVideoContainer.setFitsSystemWindows(true);
+        }
         dialog.getContainer().addView(fullscreenVideoContainer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
         fullscreenVideoContainer.setVisibility(INVISIBLE);
 
@@ -131,12 +134,16 @@ public class WebFrameLayout extends FrameLayout {
         });
 
         View lineView = new View(context);
-        lineView.setBackgroundColor(0xffcdcdcd);
-        addView(lineView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 1, Gravity.TOP | Gravity.LEFT, 0, 40, 0, 0));
+        lineView.setBackgroundResource(R.drawable.header_shadow);
+        addView(lineView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 3, Gravity.TOP | Gravity.LEFT, 0, 40, 0, 0));
 
         webView = new WebView(context);
         webView.getSettings().setJavaScriptEnabled(true);
         webView.getSettings().setDomStorageEnabled(true);
+        if (Build.VERSION.SDK_INT >= 17) {
+            webView.getSettings().setMediaPlaybackRequiresUserGesture(false);
+        }
+
         String userAgent = webView.getSettings().getUserAgentString();
         if (userAgent != null) {
             userAgent = userAgent.replace("Android", "");
@@ -232,9 +239,14 @@ public class WebFrameLayout extends FrameLayout {
     @Override
     protected void onDetachedFromWindow() {
         super.onDetachedFromWindow();
-        webView.stopLoading();
-        webView.loadUrl("about:blank");
-        webView.destroy();
+        try {
+            removeView(webView);
+            webView.stopLoading();
+            webView.loadUrl("about:blank");
+            webView.destroy();
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
     }
 
     @Override

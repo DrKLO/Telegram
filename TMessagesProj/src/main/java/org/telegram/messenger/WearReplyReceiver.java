@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 1.7.x.
+ * This is the source code of Telegram for Android v. 3.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2014.
+ * Copyright Nikolai Kudashov, 2013-2015.
  */
 
 package org.telegram.messenger;
@@ -32,6 +32,6 @@ public class WearReplyReceiver extends BroadcastReceiver {
             return;
         }
         SendMessagesHelper.getInstance().sendMessage(text.toString(), dialog_id, null, null, true, false);
-        MessagesController.getInstance().markDialogAsRead(dialog_id, max_id, max_id, 0, 0, true, false);
+        MessagesController.getInstance().markDialogAsRead(dialog_id, max_id, max_id, 0, true, false);
     }
 }

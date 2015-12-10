@@ -4,6 +4,7 @@
 
 <resources>
     <string name="AppName">Telegram</string>
+    <string name="AppNameBeta">Telegram-bèta</string>
     <string name="LanguageName">Nederlands</string>
     <string name="LanguageNameInEnglish">Dutch</string>
     <string name="LanguageCode">nl</string>
@@ -45,6 +46,7 @@
     <string name="EncryptedChatStartedOutgoing">%s neemt deel aan je geheime chat.</string>
     <string name="EncryptedChatStartedIncoming">Toegevoegd aan de geheime chat.</string>
     <string name="ClearHistory">Geschiedenis wissen</string>
+    <string name="ClearHistoryCache">Cache opschonen</string>
     <string name="DeleteChat">Verwijder en verlaat</string>
     <string name="DeleteChatUser">Chat verwijderen</string>
     <string name="HiddenName">Verwijderd account</string>
@@ -60,7 +62,28 @@
     <string name="MuteDisable">Uitschakelen</string>
     <string name="Hashtags">HASHTAGS</string>
     <string name="Recent">RECENT</string>
+    <string name="LinkPreview">Link-voorvertoning</string>
     <!--channels-->
+    <string name="SetAsAdmin">Promoveren tot beheerder</string>
+    <string name="DescriptionInfoMega">Optioneel kun je een groepsbeschrijving geven.</string>
+    <string name="LeaveMega">Groep verlaten</string>
+    <string name="DeleteMega">Groep verwijderen</string>
+    <string name="LeaveMegaMenu">Groep verlaten</string>
+    <string name="DeleteMegaMenu">Groep verwijderen</string>
+    <string name="MegaDeleteInfo">Je raakt alle berichten in deze groep kwijt.</string>
+    <string name="MegaAdminsInfo">Je kunt beheerders toevoegen om je te helpen je groep te beheren. Druk en houd ingedrukt om beheerders te verwijderen.</string>
+    <string name="MegaDeleteAlert">Groep echt verwijderen? Berichten worden gewist en alle deelnemers verwijderd.</string>
+    <string name="ActionCreateMega">Groep gemaakt</string>
+    <string name="MegaAddedBy">un1 heeft je toegevoegd aan deze groep</string>
+    <string name="MegaLeaveAlert">Groep echt verlaten?</string>
+    <string name="GroupUserCantAdd">Je kunt deze gebruiker niet toevoegen aan groepen.</string>
+    <string name="GroupUserAddLimit">Sorry, deze groep is vol.</string>
+    <string name="GroupUserLeftError">Deze gebruiker heeft de groep verlaten. Je kunt hem/haar niet meer uitnodigen.</string>
+    <string name="GroupUserCantAdmin">Maximaal aantal beheerders bereikt.</string>
+    <string name="GroupUserCantBot">Maximaal aantal bots bereikt.</string>
+    <string name="ActionMigrateFromGroup">De groep is opgewaardeerd naar een supergroep</string>
+    <string name="ActionMigrateFromGroupNotify">%1$s is opgewaardeerd naar een supergroep</string>
+    <string name="NoBlockedGroup">Geblokkeerde gebruikers kunnen alleen worden uitgenodigd door beheerders, uitnodigingslinks werken niet voor hen.</string>
     <string name="NewChannel">Nieuw kanaal</string>
     <string name="EnterChannelName">Kanaalnaam</string>
     <string name="Comments">Reacties</string>
@@ -101,9 +124,9 @@
     <string name="ChannelAdministrators">Beheerders</string>
     <string name="ChannelDelete">Kanaal verwijderen</string>
     <string name="ChannelDeleteMenu">Kanaal verwijderen</string>
-    <string name="ChannelDeleteAlert">Kanaal echt verwijderen? Berichten worden gewist en alle deelnemers worden verwijderd.</string>
+    <string name="ChannelDeleteAlert">Kanaal echt verwijderen? Berichten worden gewist en alle deelnemers verwijderd.</string>
     <string name="ChannelLeaveAlert">Kanaal echt verlaten?</string>
-    <string name="ChannelDeleteInfo">Je raakt alle berichten in de kanaal kwijt.</string>
+    <string name="ChannelDeleteInfo">Je raakt alle berichten in dit kanaal kwijt.</string>
     <string name="ChannelEdit">Wijzig</string>
     <string name="ChannelWasPrivateAlert">Als je een publieke link voor je kanaal instelt kan iedereen deze vinden en deelnemen via de zoekfunctie.\n\nStel geen link in als je je kanaal privé wilt houden.</string>
     <string name="ChannelPublicEmptyUsername">Stel een link in voor je publieke kanaal, om deze vindbaar te maken via de zoekfunctie en te delen met anderen.\n\nWil je dit niet dan kun je een privé-kanaal aanmaken.</string>
@@ -111,7 +134,6 @@
     <string name="ActionChannelChangedPhoto">Kanaalfoto bijgewerkt</string>
     <string name="ActionChannelRemovedPhoto">Kanaalfoto verwijderd</string>
     <string name="ActionChannelChangedTitle">Kanaalnaam gewijzigd naar un2</string>
-    <string name="ActionChannelInvite">un1 heeft je toegevoegd aan kanaal un2</string>
     <string name="ChannelPublicLimitReached">Het maximale aantal publieke kanalen is bereikt. Je kunt een privé-kanaal maken of een kanaal verwijderen om een nieuwe te maken.</string>
     <string name="ChannelModerator">Moderator</string>
     <string name="ChannelCreator">Maker</string>
@@ -127,17 +149,18 @@
     <string name="ChannelLinkInfo">Andere Telegram-gebruikers kunnen aan je groep deelnemen door deze link te openen.</string>
     <string name="ChannelAdminsInfo">Je kunt beheerders toevoegen om je te helpen je kanaal te beheren. Druk en houd ingedrukt om beheerders te verwijderen.</string>
     <string name="ChannelJoinTo">Deelnemen aan kanaal \'%1$s\'?</string>
-    <string name="ChannelCantOpenPrivate">Sorry, dit kanaal is niet beschikbaar.</string>
-    <string name="ChannelAddToTitle">%1$s toevoegen aan het kanaal %2$s?</string>
+    <string name="ChannelCantOpenPrivate">Sorry, deze chat is niet beschikbaar.</string>
     <string name="ChannelAddTo">%1$s toevoegen aan het kanaal?</string>
-    <string name="ChannelUserLeftError">Deze gebruiker heeft de groep verlaten. Je kunt hem/haar niet meer uitnodigen.</string>
+    <string name="ChannelUserLeftError">Deze gebruiker heeft het kanaal verlaten. Je kunt hem/haar niet meer uitnodigen.</string>
     <string name="ChannelUserCantAdd">Je kunt deze gebruiker niet toevoegen aan kanalen.</string>
+    <string name="ChannelUserCantAdmin">Maximaal aantal beheerders bereikt.</string>
+    <string name="ChannelUserCantBot">Maximaal aantal bots bereikt.</string>
     <string name="ChannelUserAddLimit">Je kunt  200 deelnemers handmatig toevoegen aan een kanaal. Een ongelimiteerd aantal mensen kan deelnemen via de link van het kanaal.</string>
     <string name="ChannelAddedBy">un1 heeft je toegevoegd aan dit kanaal</string>
     <string name="ChannelJoined">Je neemt deel aan het kanaal</string>
     <string name="ChannelRemoveUser">Verwijderen uit kanaal</string>
     <string name="ChannelCantSendMessage">Je hebt alleen leesrechten in dit kanaal.</string>
-    <string name="ChannelAddedByNotification">%1$s heeft je toegevoegd aan kanaal %2$s</string>
+    <string name="ChannelAddedByNotification">%1$s heeft je toegevoegd aan het kanaal %2$s</string>
     <string name="ChannelPhotoEditNotification">Kanaalfoto van %1$s bijgewerkt</string>
     <string name="ChannelMessageGroupNoText">%1$s heeft een bericht gestuurd naar het kanaal %2$s</string>
     <string name="ChannelMessageGroupPhoto">%1$s heeft een foto gestuurd naar het kanaal %2$s</string>
@@ -147,14 +170,14 @@
     <string name="ChannelMessageGroupDocument">%1$s heeft een bestand gestuurd naar het kanaal %2$s</string>
     <string name="ChannelMessageGroupAudio">%1$s heeft een geluidsbestand gestuurd naar het kanaal %2$s</string>
     <string name="ChannelMessageGroupSticker">%1$s heeft een sticker gestuurd naar het kanaal %2$s</string>
-    <string name="ChannelMessageNoText">Nieuw bericht in het kanaal %1$s</string>
-    <string name="ChannelMessagePhoto">Nieuwe foto in het kanaal %1$s</string>
-    <string name="ChannelMessageVideo">Nieuwe video in het kanaal %1$s</string>
-    <string name="ChannelMessageContact">Contact gedeeld in het kanaal %1$s</string>
-    <string name="ChannelMessageMap">Nieuwe locatie gedeeld in het kanaal %1$s</string>
-    <string name="ChannelMessageDocument">Nieuw bestand gedeeld in het kanaal %1$s</string>
-    <string name="ChannelMessageAudio">Nieuw geluidsbestand gedeeld in het kanaal %1$s</string>
-    <string name="ChannelMessageSticker">Nieuwe sticker gedeeld in het kanaal %1$s</string>
+    <string name="ChannelMessageNoText">%1$s plaatste een bericht</string>
+    <string name="ChannelMessagePhoto">%1$s plaatste een foto</string>
+    <string name="ChannelMessageVideo">%1$s plaatste een video</string>
+    <string name="ChannelMessageContact">%1$s plaatste een contact</string>
+    <string name="ChannelMessageMap">%1$s plaatste een locatie</string>
+    <string name="ChannelMessageDocument">%1$s plaatste een bestand</string>
+    <string name="ChannelMessageAudio">%1$s plaatste een spraakbericht</string>
+    <string name="ChannelMessageSticker">%1$s plaatste een sticker</string>
     <!--broadcasts-->
     <string name="NewBroadcastList">Nieuwe verzendlijst</string>
     <string name="EnterListName">Naam van lijst</string>
@@ -239,7 +262,9 @@
     <string name="ReportSpamAlertGroup">Spam van deze groep echt melden? </string>
     <string name="NobodyLikesSpam1">Je kunt momenteel alleen berichten sturen aan onderlingen contacten.</string>
     <string name="NobodyLikesSpam2">Je kunt momenteel alleen onderlinge contacten aan groepen toevoegen</string>
+    <string name="NobodyLikesSpamUrl">https://telegram.org/faq#can-39t-send-messages-to-non-contacts</string>
     <string name="MoreInfo">Meer informatie</string>
+    <string name="ShareSendTo">Versturen naar...</string>
     <!--notification-->
     <string name="MessageLifetimeChanged">%1$s heeft de zelfvernietigingstimer ingesteld op %2$s</string>
     <string name="MessageLifetimeChangedOutgoing">Je hebt de zelfvernietigingstimer ingesteld op %1$s</string>
@@ -289,6 +314,7 @@
     <string name="Online">online</string>
     <string name="LastSeen">gezien</string>
     <string name="LastSeenDate">gezien</string>
+    <string name="LastSeenNow">laatst gezien zojuist</string>
     <string name="InviteFriends">Vrienden uitnodigen</string>
     <string name="GlobalSearch">WERELDWIJD ZOEKEN</string>
     <string name="Lately">recent gezien</string>
@@ -314,13 +340,22 @@
     <string name="CopyLink">Link kopiëren</string>
     <string name="ShareLink">Link delen</string>
     <string name="LinkInfo">Andere Telegram-gebruikers kunnen aan je groep deelnemen door deze link te openen.</string>
+    <!--set admins view-->
+    <string name="SetAdminsTitle">Beheerders</string>
+    <string name="SetAdminsAll">Iedereen is beheerder</string>
+    <string name="SetAdminsAllInfo">Iedereen mag deelnemers toevoegen en de groepsfoto of naam wijzigen.</string>
+    <string name="SetAdminsNotAllInfo">Beheerders mogen deelnemers beheren en de groepsfoto of naam wijzigen.</string>
     <!--group info view-->
     <string name="SharedMedia">Gedeelde media</string>
     <string name="SETTINGS">Instellingen</string>
     <string name="AddMember">Deelnemer toevoegen</string>
+    <string name="SetAdmins">Beheerders instellen</string>
     <string name="DeleteAndExit">Groep verwijderen en verlaten</string>
     <string name="Notifications">Meldingen</string>
     <string name="KickFromGroup">Verwijderen uit groep</string>
+    <string name="ConvertGroup">Opwaarderen naar supergroep</string>
+    <string name="ConvertGroupAlert">Groepsdeelnemers moeten updaten naar de meest recente Telegram om je supergroep te kunnen zien. Groep echt opwaarderen?</string>
+    <string name="ConvertGroupInfo"><![CDATA[<b>]]>Deelnemerslimiet bereikt.<![CDATA[</b>]]>\n\nWil je extra functies en een hogere limiet? Waardeer op naar een supergroep:\n\n• Supergroepen hebben tot %1$s\n• Nieuwe leden zien de hele geschiedenis\n• Beheerder wist berichten voor iedereen\n• Meldingen staan standaard uit</string>
     <!--contact info view-->
     <string name="ShareContact">Delen</string>
     <string name="AddContact">Toevoegen</string>
@@ -403,9 +438,8 @@
     <string name="TerminateAllSessions">Beëindig alle andere sessies</string>
     <string name="Events">Gebeurtenissen</string>
     <string name="ContactJoined">Contact lid van Telegram</string>
-    <string name="Pebble">PEBBLE</string>
     <string name="Language">Taal</string>
-    <string name="AskAQuestionInfo">De ondersteuning van Telegram wordt gedaan door vrijwilligers. We doen ons best om zo snel mogelijk te antwoorden.<![CDATA[<br><br>]]>Bekijk ook de <![CDATA[<a href=\"https://telegram.org/faq#general\">veelgestelde vragen</a>]]>: Hierhier staan de antwoorden op de meeste vragen en belangrijke tips voor <![CDATA[<a href=\"https://telegram.org/faq#troubleshooting\">het oplossen van problemen</a>]]>.</string>
+    <string name="AskAQuestionInfo">De ondersteuning van Telegram wordt gedaan door vrijwilligers. We doen ons best om zo snel mogelijk te antwoorden.<![CDATA[<br><br>]]>Bekijk ook de <![CDATA[<a href=\"https://telegram.org/faq#general\">veelgestelde vragen</a>]]>: Hier staan de antwoorden op de meeste vragen en belangrijke tips voor <![CDATA[<a href=\"https://telegram.org/faq#troubleshooting\">het oplossen van problemen</a>]]>.</string>
     <string name="AskButton">Vraag een vrijwilliger</string>
     <string name="TelegramFaq">Veelgestelde vragen</string>
     <string name="TelegramFaqUrl">https://telegram.org/faq</string>
@@ -428,7 +462,7 @@
     <string name="BadgeNumber">Badgenummer</string>
     <string name="Short">Kort</string>
     <string name="Long">Lang</string>
-    <string name="SystemDefault">Standaardinstelling</string>
+    <string name="SystemDefault">Systeeminstelling</string>
     <string name="SettingsDefault">Standaardinstelling</string>
     <string name="AutomaticMediaDownload">Automatisch media downloaden</string>
     <string name="WhenUsingMobileData">Bij mobiele verbinding</string>
@@ -465,6 +499,24 @@
     <string name="SmartNotificationsTimes">keer</string>
     <string name="SmartNotificationsWithin">binnen</string>
     <string name="SmartNotificationsMinutes">minuten</string>
+    <!--cache view-->
+    <string name="CacheSettings">Cache-instellingen</string>
+    <string name="LocalDatabase">Lokale database</string>
+    <string name="LocalDatabaseClear">Gecachet tekstberichten wissen?</string>
+    <string name="LocalDatabaseInfo">Het opschonen van de lokale database zal de tekst van gecachet berichten verwijderen en de database comprimeren om ruimte te besparen. Telegram heeft wat ruimte nodig om te kunnen functioneren, dus de databasegrootte zal nooit nul worden.\n\nDit kan enkele minuten duren.</string>
+    <string name="ClearMediaCache">Cache opschonen</string>
+    <string name="CacheClear">Opschonen</string>
+    <string name="CalculatingSize">Berekenen...</string>
+    <string name="LocalDocumentCache">Bestanden</string>
+    <string name="LocalPhotoCache">Foto\'s</string>
+    <string name="LocalAudioCache">Spraakberichten</string>
+    <string name="LocalVideoCache">Video\'s</string>
+    <string name="LocalMusicCache">Muziek</string>
+    <string name="LocalCache">Overige bestanden</string>
+    <string name="CacheEmpty">Leeg</string>
+    <string name="KeepMedia">Media bewaren</string>
+    <string name="KeepMediaInfo">Foto\'s, video\'s en andere bestanden uit cloudchats die je gedurende deze periode niet hebt  <![CDATA[<b>geopend</b>]]> zullen worden verwijderd van dit apparaat om ruimte te besparen.\n\nAlle media zal in de Telegram-cloud bewaard blijven en kan opnieuw worden gedownload als je het weer nodig hebt.</string>
+    <string name="KeepMediaForever">Voor altijd</string>
     <!--sessions view-->
     <string name="SessionsTitle">Actieve sessies</string>
     <string name="CurrentSession">Huidige sessie</string>
@@ -493,11 +545,17 @@
     <string name="AutoLockInfo">Vraag om toegangscode indien afwezig</string>
     <string name="AutoLockInTime">over %1$s</string>
     <string name="AutoLockDisabled">Uitgeschakeld</string>
+    <string name="UnlockFingerprint">Ontgrendel met vingerafdruk</string>
+    <string name="FingerprintInfo">Vingerafdruk bevestigen</string>
+    <string name="FingerprintHelp">Vingerafdruksensor</string>
+    <string name="FingerprintNotRecognized">Vingerafdruk niet herkend,  probeer opnieuw</string>
     <!--media view-->
     <string name="NoMedia">Deel foto\'s en video\'s in deze chat om ze op al je apparaten te kunnen benaderen.</string>
     <string name="DocumentsTitle">Gedeelde bestanden</string>
     <string name="SharedMediaTitle">Gedeelde media</string>
     <string name="LinksTitle">Gedeelde links</string>
+    <string name="AudioTitle">Gedeelde muziek</string>
+    <string name="NoSharedAudio">Deel muziek in deze chat om ze op al je apparaten te kunnen benaderen.</string>
     <string name="NoSharedFiles">Deel bestanden en documenten in deze chat om ze op al je apparaten te kunnen benaderen.</string>
     <string name="NoSharedLinks">Deel links in deze chat om ze op al je apparaten te kunnen benaderen.</string>
     <!--map view-->
@@ -668,6 +726,7 @@
     <string name="Call">Bellen</string>
     <string name="Copy">Kopieer</string>
     <string name="Delete">Verwijder</string>
+    <string name="DeleteAndStop">Verwijderen en stoppen</string>
     <string name="Forward">Doorsturen</string>
     <string name="Retry">Opnieuw proberen</string>
     <string name="FromCamera">Van camera</string>
@@ -728,6 +787,7 @@
     <string name="UserAlreadyInGroup">Gebruiker neemt al deel aan de groep</string>
     <string name="ForwardMessagesTo">Berichten doorsturen naar %1$s?</string>
     <string name="SendMessagesTo">Berichten naar %1$s versturen?</string>
+    <string name="SendContactTo">Contact delen met %1$s?</string>
     <string name="AreYouSureLogout">Weet je zeker dat je wilt uitloggen?\n\nTelegram kun je naadloos op al je apparaten tegelijkertijd gebruiken.\n\nLet op! Als je uitlogt worden al je geheime chats verwijderd.</string>
     <string name="AreYouSureSessions">Alle apparaten behalve het huidige apparaat uitloggen?</string>
     <string name="AreYouSureDeleteAndExit">Verwijderen en de groep verlaten?</string>
@@ -739,12 +799,21 @@
     <string name="AreYouSureSecretChat">Weet je zeker dat je een geheime chat wilt starten?</string>
     <string name="AreYouSureRegistration">Weet je zeker dat je de registratie wilt annuleren?</string>
     <string name="AreYouSureClearHistory">Geschiedenis echt wissen? </string>
+    <string name="AreYouSureClearHistoryChannel">Kanaalcache opschonen?</string>
+    <string name="AreYouSureClearHistorySuper">Supergroepcache echt opschonen?</string>
     <string name="AreYouSureDeleteMessages">%1$s echt verwijderen?</string>
     <string name="SendMessagesToGroup">Berichten naar %1$s versturen?</string>
+    <string name="SendContactToGroup">Contact delen met %1$s?</string>
     <string name="ForwardMessagesToGroup">Berichten doorsturen naar %1$s?</string>
     <string name="FeatureUnavailable">Sorry, deze functie is momenteel niet beschikbaar in jouw land.</string>
     <string name="NoUsernameFound">Er is geen Telegram-account met deze gebruikersnaam.</string>
     <string name="BotCantJoinGroups">Deze bot kan geen groepslid worden.</string>
+    <!--permissions-->
+    <string name="PermissionContacts">Telegram heeft toegang tot je contacten nodig zodat je kan chatten met je vrienden vanaf al je apparaten.</string>
+    <string name="PermissionStorage">Telegram heeft toegang tot je opslaggeheugen nodig zodat je foto\'s, video\'s, muziek en andere media kunt opslaan en versturen.</string>
+    <string name="PermissionNoAudio">Telegram heeft toegang tot je microfoon nodig om spraakberichten te kunnen verzenden.</string>
+    <string name="PermissionNoLocation">Telegram heeft toegang tot je locatie nodig om deze te kunnen delen met je vrienden.</string>
+    <string name="PermissionOpenSettings">INSTELLINGEN</string>
     <!--Intro view-->
     <string name="Page1Title">Telegram</string>
     <string name="Page2Title">Snel</string>
@@ -775,7 +844,7 @@
     <string name="Members_many">%1$d deelnemers</string>
     <string name="Members_other">%1$d deelnemers</string>
     <string name="AndMoreTyping_zero">en nog %1$d personen zijn aan het typen</string>
-    <string name="AndMoreTyping_one">en nog %1$d personen zijn aan het typen</string>
+    <string name="AndMoreTyping_one">en nog %1$d persoon is aan het typen</string>
     <string name="AndMoreTyping_two">en nog %1$d personen zijn aan het typen</string>
     <string name="AndMoreTyping_few">en nog %1$d personen zijn aan het typen</string>
     <string name="AndMoreTyping_many">en nog %1$d personen zijn aan het typen</string>
@@ -793,7 +862,7 @@
     <string name="messages_many">%1$d berichten</string>
     <string name="messages_other">%1$d berichten</string>
     <string name="comments_zero">%1$d reacties</string>
-    <string name="comments_one">%1$d reacties</string>
+    <string name="comments_one">%1$d reactie</string>
     <string name="comments_two">%1$d reacties</string>
     <string name="comments_few">%1$d reacties</string>
     <string name="comments_many">%1$d reacties</string>
@@ -882,6 +951,18 @@
     <string name="Photos_few">%1$d foto\'s</string>
     <string name="Photos_many">%1$d foto\'s</string>
     <string name="Photos_other">%1$d foto\'s</string>
+    <string name="LastSeenMinutes_zero">laatst gezien %1$d min geleden</string>
+    <string name="LastSeenMinutes_one">laatst gezien %1$d minuut geleden</string>
+    <string name="LastSeenMinutes_two">laatst gezien %1$d min geleden</string>
+    <string name="LastSeenMinutes_few">laatst gezien %1$d min geleden</string>
+    <string name="LastSeenMinutes_many">laatst gezien %1$d min geleden</string>
+    <string name="LastSeenMinutes_other">laatst gezien %1$d min geleden</string>
+    <string name="LastSeenHours_zero">laatst gezien %1$d uur geleden</string>
+    <string name="LastSeenHours_one">laatst gezien %1$d uur geleden</string>
+    <string name="LastSeenHours_two">laatst gezien %1$d uur geleden</string>
+    <string name="LastSeenHours_few">laatst gezien %1$d uur geleden</string>
+    <string name="LastSeenHours_many">laatst gezien %1$d uur geleden</string>
+    <string name="LastSeenHours_other">laatst gezien %1$d uur geleden</string>
     <!--forwarded messages-->
     <string name="ForwardedMessage_zero">Bijlage: %1$d berichten</string>
     <string name="ForwardedMessage_one">Bijlage: 1 bericht</string>
@@ -901,7 +982,7 @@
     <string name="ForwardedPhoto_few">Bijlage: %1$d foto\'s</string>
     <string name="ForwardedPhoto_many">Bijlage: %1$d foto\'s</string>
     <string name="ForwardedPhoto_other">Bijlage: %1$d foto\'s</string>
-    <string name="ForwardedVideo_zero">Bijlage: %1$d foto\'s</string>
+    <string name="ForwardedVideo_zero">Bijlage: %1$d video\'s</string>
     <string name="ForwardedVideo_one">Bijlage: 1 video</string>
     <string name="ForwardedVideo_two">Bijlage: %1$d video\'s</string>
     <string name="ForwardedVideo_few">Bijlage: %1$d video\'s</string>
@@ -949,6 +1030,6 @@
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s om %2$s</string>
     <!--update text-->
-    <string name="updateText">Telegram voor Android is bijgewerkt. Nieuw in versie 3.2.0:\n\n- Nieuw, kanalen - een perfecte manier om berichten naar een ongelimiteerd publiek te versturen (vervangt de oude verzendlijsten).\n\nMeer over deze update: https://telegram.org/blog/channels</string>
-    <string name="updateBuild">614</string>
+    <string name="updateText">Telegram voor Android is bijgewerkt. Nieuw in versie 3.3.2:\n\n- Cache-beheer: Meer controle over het ruimtegebruik van Telegram op je apparaat, je kunt de cache nu ook per soort content opschonen.\n- Cache verwijderen van supergroepen en kanalen? Tik ze aan en hou ze vast in het chats-overzicht, daarna: \'Cache opschonen\'.\n- Stickerbeheer: je kunt nu handmatig je stickerbundels sorteren, de volgorde synchroniseren we voor je, over al je apparaten.\n\nMeer weten? Kijk op:\nhttps://telegram.org/blog/cache-and-stickers</string>
+    <string name="updateBuild">693</string>
 </resources>

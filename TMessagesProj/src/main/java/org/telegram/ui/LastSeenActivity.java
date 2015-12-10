@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 1.7.x.
+ * This is the source code of Telegram for Android v. 3.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2014.
+ * Copyright Nikolai Kudashov, 2013-2015.
  */
 
 package org.telegram.ui;
@@ -43,6 +43,7 @@ import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.Adapters.BaseFragmentAdapter;
 import org.telegram.ui.Cells.HeaderCell;
+import org.telegram.ui.Cells.LastSeenRadioCell;
 import org.telegram.ui.Cells.TextInfoPrivacyCell;
 import org.telegram.ui.Cells.TextSettingsCell;
 import org.telegram.ui.Components.LayoutHelper;
@@ -57,6 +58,7 @@ public class LastSeenActivity extends BaseFragment implements NotificationCenter
     private int currentType = 0;
     private ArrayList<Integer> currentPlus;
     private ArrayList<Integer> currentMinus;
+    private int lastCheckedType = -1;
 
     private int lastSeenSectionRow;
     private int everybodyRow;
@@ -175,6 +177,7 @@ public class LastSeenActivity extends BaseFragment implements NotificationCenter
                         return;
                     }
                     doneButton.setVisibility(View.VISIBLE);
+                    lastCheckedType = currentType;
                     currentType = newType;
                     updateRows();
                 } else if (i == neverShareRow || i == alwaysShareRow) {
@@ -203,6 +206,7 @@ public class LastSeenActivity extends BaseFragment implements NotificationCenter
                                     }
                                 }
                                 doneButton.setVisibility(View.VISIBLE);
+                                lastCheckedType = -1;
                                 listAdapter.notifyDataSetChanged();
                             }
                         });
@@ -387,6 +391,7 @@ public class LastSeenActivity extends BaseFragment implements NotificationCenter
     @Override
     public void onResume() {
         super.onResume();
+        lastCheckedType = -1;
         if (listAdapter != null) {
             listAdapter.notifyDataSetChanged();
         }
@@ -438,13 +443,7 @@ public class LastSeenActivity extends BaseFragment implements NotificationCenter
                     view.setBackgroundColor(0xffffffff);
                 }
                 TextSettingsCell textCell = (TextSettingsCell) view;
-                if (i == everybodyRow) {
-                    textCell.setTextAndIcon(LocaleController.getString("LastSeenEverybody", R.string.LastSeenEverybody), currentType == 0 ? R.drawable.check_blue : 0, true);
-                } else if (i == myContactsRow) {
-                    textCell.setTextAndIcon(LocaleController.getString("LastSeenContacts", R.string.LastSeenContacts), currentType == 2 ? R.drawable.check_blue : 0, true);
-                } else if (i == nobodyRow) {
-                    textCell.setTextAndIcon(LocaleController.getString("LastSeenNobody", R.string.LastSeenNobody), currentType == 1 ? R.drawable.check_blue : 0, false);
-                } else if (i == alwaysShareRow) {
+                if (i == alwaysShareRow) {
                     String value;
                     if (currentPlus.size() != 0) {
                         value = LocaleController.formatPluralString("Users", currentPlus.size());
@@ -483,25 +482,49 @@ public class LastSeenActivity extends BaseFragment implements NotificationCenter
                 } else if (i == shareSectionRow) {
                     ((HeaderCell) view).setText(LocaleController.getString("AddExceptions", R.string.AddExceptions));
                 }
+            } else if (type == 3) {
+                if (view == null) {
+                    view = new LastSeenRadioCell(mContext);
+                    view.setBackgroundColor(0xffffffff);
+                }
+                LastSeenRadioCell textCell = (LastSeenRadioCell) view;
+                int checkedType = 0;
+                if (i == everybodyRow) {
+                    textCell.setText(LocaleController.getString("LastSeenEverybody", R.string.LastSeenEverybody), lastCheckedType == 0, true);
+                    checkedType = 0;
+                } else if (i == myContactsRow) {
+                    textCell.setText(LocaleController.getString("LastSeenContacts", R.string.LastSeenContacts), lastCheckedType == 2, true);
+                    checkedType = 2;
+                } else if (i == nobodyRow) {
+                    textCell.setText(LocaleController.getString("LastSeenNobody", R.string.LastSeenNobody), lastCheckedType == 1, false);
+                    checkedType = 1;
+                }
+                if (lastCheckedType == checkedType) {
+                    textCell.setChecked(false, true);
+                } else if (currentType == checkedType) {
+                    textCell.setChecked(true, true);
+                }
             }
             return view;
         }
 
         @Override
         public int getItemViewType(int i) {
-            if (i == alwaysShareRow || i == neverShareRow || i == everybodyRow || i == myContactsRow || i == nobodyRow) {
+            if (i == alwaysShareRow || i == neverShareRow) {
                 return 0;
             } else if (i == shareDetailRow || i == lastSeenDetailRow) {
                 return 1;
             } else if (i == lastSeenSectionRow || i == shareSectionRow) {
                 return 2;
+            } else if (i == everybodyRow || i == myContactsRow || i == nobodyRow) {
+                return 3;
             }
             return 0;
         }
 
         @Override
         public int getViewTypeCount() {
-            return 3;
+            return 4;
         }
 
         @Override

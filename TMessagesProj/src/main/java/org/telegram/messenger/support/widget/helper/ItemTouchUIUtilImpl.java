@@ -26,18 +26,18 @@ import android.view.View;
  * public API, which is not desired in this case.
  */
 class ItemTouchUIUtilImpl {
-    final static int item_touch_helper_previous_elevation = 123;
+
     static class Lollipop extends Honeycomb {
         @Override
         public void onDraw(Canvas c, RecyclerView recyclerView, View view,
-                float dX, float dY, int actionState, boolean isCurrentlyActive) {
+                           float dX, float dY, int actionState, boolean isCurrentlyActive) {
             if (isCurrentlyActive) {
-                Object originalElevation = view.getTag(item_touch_helper_previous_elevation);
+                Object originalElevation = view.getTag();
                 if (originalElevation == null) {
                     originalElevation = ViewCompat.getElevation(view);
                     float newElevation = 1f + findMaxElevation(recyclerView, view);
                     ViewCompat.setElevation(view, newElevation);
-                    view.setTag(item_touch_helper_previous_elevation, originalElevation);
+                    view.setTag(originalElevation);
                 }
             }
             super.onDraw(c, recyclerView, view, dX, dY, actionState, isCurrentlyActive);
@@ -61,11 +61,11 @@ class ItemTouchUIUtilImpl {
 
         @Override
         public void clearView(View view) {
-            final Object tag = view.getTag(item_touch_helper_previous_elevation);
+            final Object tag = view.getTag();
             if (tag != null && tag instanceof Float) {
                 ViewCompat.setElevation(view, (Float) tag);
             }
-            view.setTag(item_touch_helper_previous_elevation, null);
+            view.setTag(null);
             super.clearView(view);
         }
     }
@@ -85,14 +85,14 @@ class ItemTouchUIUtilImpl {
 
         @Override
         public void onDraw(Canvas c, RecyclerView recyclerView, View view,
-                float dX, float dY, int actionState, boolean isCurrentlyActive) {
+                           float dX, float dY, int actionState, boolean isCurrentlyActive) {
             ViewCompat.setTranslationX(view, dX);
             ViewCompat.setTranslationY(view, dY);
         }
 
         @Override
         public void onDrawOver(Canvas c, RecyclerView recyclerView,
-                View view, float dX, float dY, int actionState, boolean isCurrentlyActive) {
+                               View view, float dX, float dY, int actionState, boolean isCurrentlyActive) {
 
         }
     }
@@ -100,7 +100,7 @@ class ItemTouchUIUtilImpl {
     static class Gingerbread implements ItemTouchUIUtil {
 
         private void draw(Canvas c, RecyclerView parent, View view,
-                float dX, float dY) {
+                          float dX, float dY) {
             c.save();
             c.translate(dX, dY);
             parent.drawChild(c, view, 0);
@@ -119,7 +119,7 @@ class ItemTouchUIUtilImpl {
 
         @Override
         public void onDraw(Canvas c, RecyclerView recyclerView, View view,
-                float dX, float dY, int actionState, boolean isCurrentlyActive) {
+                           float dX, float dY, int actionState, boolean isCurrentlyActive) {
             if (actionState != ItemTouchHelper.ACTION_STATE_DRAG) {
                 draw(c, recyclerView, view, dX, dY);
             }
@@ -127,8 +127,8 @@ class ItemTouchUIUtilImpl {
 
         @Override
         public void onDrawOver(Canvas c, RecyclerView recyclerView,
-                View view, float dX, float dY,
-                int actionState, boolean isCurrentlyActive) {
+                               View view, float dX, float dY,
+                               int actionState, boolean isCurrentlyActive) {
             if (actionState == ItemTouchHelper.ACTION_STATE_DRAG) {
                 draw(c, recyclerView, view, dX, dY);
             }

@@ -58,8 +58,13 @@ import android.view.ViewParent;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityManager;
 import android.view.animation.Interpolator;
+import android.widget.AbsListView;
+import android.widget.EdgeEffect;
+
+import org.telegram.messenger.FileLog;
 
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -312,6 +317,7 @@ public class RecyclerView extends ViewGroup implements ScrollingView, NestedScro
     private int mLayoutOrScrollCounter = 0;
 
     private int topGlowOffset = 0;
+    private int glowColor = 0;
     private EdgeEffectCompat mLeftGlow, mTopGlow, mRightGlow, mBottomGlow;
 
     ItemAnimator mItemAnimator = new DefaultItemAnimator();
@@ -1852,6 +1858,7 @@ public class RecyclerView extends ViewGroup implements ScrollingView, NestedScro
         } else {
             mLeftGlow.setSize(getMeasuredHeight(), getMeasuredWidth());
         }
+        applyEdgeEffectColor(mLeftGlow);
     }
 
     void ensureRightGlow() {
@@ -1865,6 +1872,7 @@ public class RecyclerView extends ViewGroup implements ScrollingView, NestedScro
         } else {
             mRightGlow.setSize(getMeasuredHeight(), getMeasuredWidth());
         }
+        applyEdgeEffectColor(mRightGlow);
     }
 
     void ensureTopGlow() {
@@ -1878,7 +1886,7 @@ public class RecyclerView extends ViewGroup implements ScrollingView, NestedScro
         } else {
             mTopGlow.setSize(getMeasuredWidth(), getMeasuredHeight());
         }
-
+        applyEdgeEffectColor(mTopGlow);
     }
 
     void ensureBottomGlow() {
@@ -1891,6 +1899,22 @@ public class RecyclerView extends ViewGroup implements ScrollingView, NestedScro
                     getMeasuredHeight() - getPaddingTop() - getPaddingBottom());
         } else {
             mBottomGlow.setSize(getMeasuredWidth(), getMeasuredHeight());
+        }
+        applyEdgeEffectColor(mBottomGlow);
+    }
+
+    void applyEdgeEffectColor(EdgeEffectCompat edgeEffectCompat) {
+        if (Build.VERSION.SDK_INT >= 21 && glowColor != 0) {
+            try {
+                Field field = EdgeEffectCompat.class.getDeclaredField("mEdgeEffect");
+                field.setAccessible(true);
+                EdgeEffect edgeEffect = (EdgeEffect) field.get(edgeEffectCompat);
+                if (edgeEffect != null) {
+                    edgeEffect.setColor(glowColor);
+                }
+            } catch (Exception e) {
+                FileLog.e("tmessages", e);
+            }
         }
     }
 
@@ -3139,6 +3163,10 @@ public class RecyclerView extends ViewGroup implements ScrollingView, NestedScro
 
     public void setTopGlowOffset(int offset) {
         topGlowOffset = offset;
+    }
+
+    public void setGlowColor(int color) {
+        glowColor = color;
     }
 
     void markItemDecorInsetsDirty() {

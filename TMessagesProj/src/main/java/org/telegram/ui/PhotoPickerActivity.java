@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 1.4.x.
+ * This is the source code of Telegram for Android v. 3.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2014.
+ * Copyright Nikolai Kudashov, 2013-2015.
  */
 
 package org.telegram.ui;
@@ -34,6 +34,7 @@ import android.widget.TextView;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.AnimationCompat.ViewProxy;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaController;
 import org.telegram.messenger.MessagesStorage;
@@ -294,6 +295,9 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
                     if (i < 0 || i >= arrayList.size()) {
                         return;
                     }
+                    if (searchItem != null) {
+                        AndroidUtilities.hideKeyboard(searchItem.getSearchField());
+                    }
                     PhotoViewer.getInstance().setParentActivity(getParentActivity());
                     PhotoViewer.getInstance().openPhotoForSelect(arrayList, i, singlePhoto ? 1 : 0, PhotoPickerActivity.this, chatActivity);
                 }
@@ -498,9 +502,18 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
             PhotoViewer.PlaceProviderObject object = new PhotoViewer.PlaceProviderObject();
             object.viewX = coords[0];
             object.viewY = coords[1] - AndroidUtilities.statusBarHeight;
+            if (Build.VERSION.SDK_INT < 11) {
+                float scale = ViewProxy.getScaleX(cell.photoImage);
+                if (scale != 1) {
+                    int width = cell.photoImage.getMeasuredWidth();
+                    object.viewX += (width - width * scale) / 2;
+                    object.viewY += (width - width * scale) / 2;
+                }
+            }
             object.parentView = listView;
             object.imageReceiver = cell.photoImage.getImageReceiver();
             object.thumb = object.imageReceiver.getBitmap();
+            object.scale = ViewProxy.getScaleX(cell.photoImage);
             cell.checkBox.setVisibility(View.GONE);
             return object;
         }
@@ -646,7 +659,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
             View view = listView.getChildAt(a);
             int num = (Integer) view.getTag();
             if (num == index) {
-                ((PhotoPickerPhotoCell) view).checkBox.setChecked(add, false);
+                ((PhotoPickerPhotoCell) view).setChecked(add, false);
                 break;
             }
         }
@@ -655,9 +668,10 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
     }
 
     @Override
-    public void cancelButtonPressed() {
+    public boolean cancelButtonPressed() {
         delegate.actionButtonPressed(true);
         finishFragment();
+        return true;
     }
 
     @Override
@@ -692,9 +706,8 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
     }
 
     @Override
-    public void onOpenAnimationEnd() {
-        super.onOpenAnimationEnd();
-        if (searchItem != null) {
+    public void onTransitionAnimationEnd(boolean isOpen, boolean backward) {
+        if (isOpen && searchItem != null) {
             AndroidUtilities.showKeyboard(searchItem.getSearchField());
         }
     }
@@ -1016,7 +1029,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
                                 } else {
                                     selectedPhotos.put(photoEntry.imageId, photoEntry);
                                 }
-                                ((PhotoPickerPhotoCell) v.getParent()).checkBox.setChecked(selectedPhotos.containsKey(photoEntry.imageId), true);
+                                ((PhotoPickerPhotoCell) v.getParent()).setChecked(selectedPhotos.containsKey(photoEntry.imageId), true);
                             } else {
                                 AndroidUtilities.hideKeyboard(getParentActivity().getCurrentFocus());
                                 MediaController.SearchImage photoEntry;
@@ -1033,7 +1046,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
                                 } else {
                                     selectedWebPhotos.put(photoEntry.id, photoEntry);
                                 }
-                                ((PhotoPickerPhotoCell) v.getParent()).checkBox.setChecked(selectedWebPhotos.containsKey(photoEntry.id), true);
+                                ((PhotoPickerPhotoCell) v.getParent()).setChecked(selectedWebPhotos.containsKey(photoEntry.id), true);
                             }
                             pickerBottomLayout.updateSelectedCount(selectedPhotos.size() + selectedWebPhotos.size(), true);
                             delegate.selectedPhotosChanged();
@@ -1062,7 +1075,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
                     } else {
                         imageView.setImageResource(R.drawable.nophotos);
                     }
-                    cell.checkBox.setChecked(selectedPhotos.containsKey(photoEntry.imageId), false);
+                    cell.setChecked(selectedPhotos.containsKey(photoEntry.imageId), false);
                     showing = PhotoViewer.getInstance().isShowingImage(photoEntry.path);
                 } else {
                     MediaController.SearchImage photoEntry;
@@ -1078,7 +1091,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
                     } else {
                         imageView.setImageResource(R.drawable.nophotos);
                     }
-                    cell.checkBox.setChecked(selectedWebPhotos.containsKey(photoEntry.id), false);
+                    cell.setChecked(selectedWebPhotos.containsKey(photoEntry.id), false);
                     showing = PhotoViewer.getInstance().isShowingImage(photoEntry.thumbUrl);
                 }
                 imageView.getImageReceiver().setVisible(!showing, true);

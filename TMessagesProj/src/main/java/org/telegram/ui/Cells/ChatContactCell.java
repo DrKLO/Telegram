@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 1.7.x.
+ * This is the source code of Telegram for Android v. 3.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2014.
+ * Copyright Nikolai Kudashov, 2013-2015.
  */
 
 package org.telegram.ui.Cells;
@@ -198,6 +198,9 @@ public class ChatContactCell extends ChatBaseCell {
 
             String currentNameString = ContactsController.formatName(messageObject.messageOwner.media.first_name, messageObject.messageOwner.media.last_name);
             int nameWidth = Math.min((int) Math.ceil(namePaint.measureText(currentNameString)), maxWidth);
+            if (maxWidth < 0) {
+                maxWidth = AndroidUtilities.dp(100);
+            }
 
             CharSequence stringFinal = TextUtils.ellipsize(currentNameString.replace("\n", " "), namePaint, nameWidth, TextUtils.TruncateAt.END);
             nameLayout = new StaticLayout(stringFinal, namePaint, nameWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
