@@ -167,6 +167,12 @@ public class AvatarDrawable extends Drawable {
         color = value;
     }
 
+    // http://stackoverflow.com/a/21398030/1414809
+    // substring useful for non-bmp character
+    static String substring(String str, int idx, int len) {
+        return str.substring(idx, str.offsetByCodePoints(idx, len));
+    }
+
     public void setInfo(int id, String firstName, String lastName, boolean isBroadcast) {
         if (isProfile) {
             color = arrColorsProfiles[getColorIndex(id)];
@@ -183,7 +189,7 @@ public class AvatarDrawable extends Drawable {
 
         stringBuilder.setLength(0);
         if (firstName != null && firstName.length() > 0) {
-            stringBuilder.append(firstName.substring(0, 1));
+            stringBuilder.append(substring(firstName, 0, 1));
         }
         if (lastName != null && lastName.length() > 0) {
             String lastch = null;
@@ -191,7 +197,7 @@ public class AvatarDrawable extends Drawable {
                 if (lastch != null && lastName.charAt(a) == ' ') {
                     break;
                 }
-                lastch = lastName.substring(a, a + 1);
+                lastch = substring(lastName, a, 1);
             }
             if (Build.VERSION.SDK_INT >= 16) {
                 stringBuilder.append("\u200C");
@@ -204,7 +210,7 @@ public class AvatarDrawable extends Drawable {
                         if (Build.VERSION.SDK_INT >= 16) {
                             stringBuilder.append("\u200C");
                         }
-                        stringBuilder.append(firstName.substring(a + 1, a + 2));
+                        stringBuilder.append(substring(firstName, a + 1, 1));
                         break;
                     }
                 }
