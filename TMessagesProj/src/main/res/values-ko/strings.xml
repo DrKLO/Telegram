@@ -15,7 +15,7 @@
     <string name="WrongCountry">올바른 국가번호를 입력하세요</string>
     <!--code enter view-->
     <string name="YourCode">인증코드 입력</string>
-    <string name="SentSmsCode">인증코드 메시지를 아래 번호로 전송했습니다<![CDATA[<br/>]]></string>
+    <string name="SentSmsCode">인증코드 메시지를 아래 번호로 전송했습니다</string>
     <string name="CallText">텔레그램이 %1$d:%2$02d 후에는 전화를 겁니다.</string>
     <string name="Calling">텔레그램이 전화 거는 중...</string>
     <string name="Code">코드</string>
