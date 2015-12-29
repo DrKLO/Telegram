@@ -1,5 +1,5 @@
 /*
- * This is the source code of Telegram for Android v. 2.x
+ * This is the source code of Telegram for Android v. 3.x.x
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
@@ -11,8 +11,9 @@ package org.telegram.ui.Components;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
+import android.widget.ScrollView;
 
-import org.telegram.android.AndroidUtilities;
+import org.telegram.messenger.AndroidUtilities;
 
 public class LayoutHelper {
 
@@ -21,6 +22,10 @@ public class LayoutHelper {
     
     private static int getSize(float size) {
         return (int) (size < 0 ? size : AndroidUtilities.dp(size));
+    }
+
+    public static FrameLayout.LayoutParams createScroll(int width, int height, int gravity) {
+        return new ScrollView.LayoutParams(getSize(width), getSize(height), gravity);
     }
 
     public static FrameLayout.LayoutParams createFrame(int width, float height, int gravity, float leftMargin, float topMargin, float rightMargin, float bottomMargin) {
@@ -100,7 +105,7 @@ public class LayoutHelper {
         return layoutParams;
     }
 
-    public static LinearLayout.LayoutParams createLinear(int width, int height, int leftMargin, int topMargin, int rightMargin, int bottomMargin) {
+    public static LinearLayout.LayoutParams createLinear(int width, int height, float leftMargin, float topMargin, float rightMargin, float bottomMargin) {
         LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(getSize(width), getSize(height));
         layoutParams.setMargins(AndroidUtilities.dp(leftMargin), AndroidUtilities.dp(topMargin), AndroidUtilities.dp(rightMargin), AndroidUtilities.dp(bottomMargin));
         return layoutParams;

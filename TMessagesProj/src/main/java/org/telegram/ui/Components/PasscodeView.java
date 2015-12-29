@@ -1,5 +1,5 @@
 /*
- * This is the source code of Telegram for Android v. 2.x
+ * This is the source code of Telegram for Android v. 3.x.x
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
@@ -9,7 +9,9 @@
 package org.telegram.ui.Components;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.graphics.Canvas;
@@ -19,6 +21,8 @@ import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Vibrator;
+import android.support.v4.hardware.fingerprint.FingerprintManagerCompat;
+import android.support.v4.os.CancellationSignal;
 import android.text.Editable;
 import android.text.InputFilter;
 import android.text.InputType;
@@ -38,19 +42,20 @@ import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 
-import org.telegram.android.AndroidUtilities;
-import org.telegram.android.LocaleController;
-import org.telegram.android.NotificationCenter;
+import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
-import org.telegram.android.AnimationCompat.AnimatorListenerAdapterProxy;
-import org.telegram.android.AnimationCompat.AnimatorSetProxy;
-import org.telegram.android.AnimationCompat.ObjectAnimatorProxy;
-import org.telegram.android.AnimationCompat.ViewProxy;
+import org.telegram.messenger.AnimationCompat.AnimatorListenerAdapterProxy;
+import org.telegram.messenger.AnimationCompat.AnimatorSetProxy;
+import org.telegram.messenger.AnimationCompat.ObjectAnimatorProxy;
+import org.telegram.messenger.AnimationCompat.ViewProxy;
 
 import java.util.ArrayList;
 import java.util.Locale;
@@ -185,7 +190,7 @@ public class PasscodeView extends FrameLayout {
                     currentAnimation.addListener(new AnimatorListenerAdapterProxy() {
                         @Override
                         public void onAnimationEnd(Object animation) {
-                            if (animation.equals(currentAnimation)) {
+                            if (currentAnimation != null && currentAnimation.equals(animation)) {
                                 currentAnimation = null;
                             }
                         }
@@ -219,7 +224,7 @@ public class PasscodeView extends FrameLayout {
             currentAnimation.addListener(new AnimatorListenerAdapterProxy() {
                 @Override
                 public void onAnimationEnd(Object animation) {
-                    if (animation.equals(currentAnimation)) {
+                    if (currentAnimation != null && currentAnimation.equals(animation)) {
                         currentAnimation = null;
                     }
                 }
@@ -296,7 +301,7 @@ public class PasscodeView extends FrameLayout {
             currentAnimation.addListener(new AnimatorListenerAdapterProxy() {
                 @Override
                 public void onAnimationEnd(Object animation) {
-                    if (animation.equals(currentAnimation)) {
+                    if (currentAnimation != null && currentAnimation.equals(animation)) {
                         currentAnimation = null;
                     }
                 }
@@ -304,7 +309,7 @@ public class PasscodeView extends FrameLayout {
             currentAnimation.start();
         }
 
-        private void eraseAllCharacters(boolean animated) {
+        private void eraseAllCharacters(final boolean animated) {
             if (stringBuilder.length() == 0) {
                 return;
             }
@@ -342,7 +347,7 @@ public class PasscodeView extends FrameLayout {
                 currentAnimation.addListener(new AnimatorListenerAdapterProxy() {
                     @Override
                     public void onAnimationEnd(Object animation) {
-                        if (animation.equals(currentAnimation)) {
+                        if (currentAnimation != null && currentAnimation.equals(animation)) {
                             currentAnimation = null;
                         }
                     }
@@ -409,9 +414,18 @@ public class PasscodeView extends FrameLayout {
     private ImageView checkImage;
     private int keyboardHeight = 0;
 
+    private CancellationSignal cancellationSignal;
+    private ImageView fingerprintImageView;
+    private TextView fingerprintStatusTextView;
+    private boolean selfCancelled;
+    private AlertDialog fingerprintDialog;
+
     private Rect rect = new Rect();
 
     private PasscodeViewDelegate delegate;
+
+    private final static int id_fingerprint_textview = 1000;
+    private final static int id_fingerprint_imageview = 1001;
 
     public PasscodeView(final Context context) {
         super(context);
@@ -497,7 +511,7 @@ public class PasscodeView extends FrameLayout {
             @Override
             public boolean onEditorAction(TextView textView, int i, KeyEvent keyEvent) {
                 if (i == EditorInfo.IME_ACTION_DONE) {
-                    processDone();
+                    processDone(false);
                     return true;
                 }
                 return false;
@@ -517,7 +531,7 @@ public class PasscodeView extends FrameLayout {
             @Override
             public void afterTextChanged(Editable s) {
                 if (passwordEditText.length() == 4 && UserConfig.passcodeType == 0) {
-                    processDone();
+                    processDone(false);
                 }
             }
         });
@@ -561,7 +575,7 @@ public class PasscodeView extends FrameLayout {
         checkImage.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
-                processDone();
+                processDone(false);
             }
         });
 
@@ -631,7 +645,7 @@ public class PasscodeView extends FrameLayout {
                     textView.setText("MNO");
                     break;
                 case 7:
-                    textView.setText("PRQS");
+                    textView.setText("PQRS");
                     break;
                 case 8:
                     textView.setText("TUV");
@@ -671,7 +685,6 @@ public class PasscodeView extends FrameLayout {
                 @Override
                 public void onClick(View v) {
                     int tag = (Integer) v.getTag();
-                    int key = KeyEvent.KEYCODE_DEL;
                     switch (tag) {
                         case 0:
                             passwordEditText2.appendCharacter("0");
@@ -708,7 +721,7 @@ public class PasscodeView extends FrameLayout {
                             break;
                     }
                     if (passwordEditText2.lenght() == 4) {
-                        processDone();
+                        processDone(false);
                     }
                 }
             });
@@ -729,22 +742,24 @@ public class PasscodeView extends FrameLayout {
         this.delegate = delegate;
     }
 
-    private void processDone() {
-        String password = "";
-        if (UserConfig.passcodeType == 0) {
-            password = passwordEditText2.getString();
-        } else if (UserConfig.passcodeType == 1) {
-            password = passwordEditText.getText().toString();
-        }
-        if (password.length() == 0) {
-            onPasscodeError();
-            return;
-        }
-        if (!UserConfig.checkPasscode(password)) {
-            passwordEditText.setText("");
-            passwordEditText2.eraseAllCharacters(true);
-            onPasscodeError();
-            return;
+    private void processDone(boolean fingerprint) {
+        if (!fingerprint) {
+            String password = "";
+            if (UserConfig.passcodeType == 0) {
+                password = passwordEditText2.getString();
+            } else if (UserConfig.passcodeType == 1) {
+                password = passwordEditText.getText().toString();
+            }
+            if (password.length() == 0) {
+                onPasscodeError();
+                return;
+            }
+            if (!UserConfig.checkPasscode(password)) {
+                passwordEditText.setText("");
+                passwordEditText2.eraseAllCharacters(true);
+                onPasscodeError();
+                return;
+            }
         }
         passwordEditText.clearFocus();
         AndroidUtilities.hideKeyboard(passwordEditText);
@@ -817,16 +832,148 @@ public class PasscodeView extends FrameLayout {
                 }
             }, 200);
         }
+        checkFingerprint();
+    }
+
+    public void onPause() {
+        if (fingerprintDialog != null) {
+            try {
+                if (fingerprintDialog.isShowing()) {
+                    fingerprintDialog.dismiss();
+                }
+                fingerprintDialog = null;
+            } catch (Exception e) {
+                FileLog.e("tmessages", e);
+            }
+        }
+        try {
+            if (Build.VERSION.SDK_INT >= 23 && cancellationSignal != null) {
+                cancellationSignal.cancel();
+                cancellationSignal = null;
+            }
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
+    }
+
+    private void checkFingerprint() {
+        Activity parentActivity = (Activity) getContext();
+        if (Build.VERSION.SDK_INT >= 23 && parentActivity != null && UserConfig.useFingerprint && !ApplicationLoader.mainInterfacePaused) {
+            try {
+                if (fingerprintDialog != null && fingerprintDialog.isShowing()) {
+                    return;
+                }
+            } catch (Exception e) {
+                FileLog.e("tmessages", e);
+            }
+            try {
+                FingerprintManagerCompat fingerprintManager = FingerprintManagerCompat.from(ApplicationLoader.applicationContext);
+                if (fingerprintManager.isHardwareDetected() && fingerprintManager.hasEnrolledFingerprints()) {
+                    RelativeLayout relativeLayout = new RelativeLayout(getContext());
+                    relativeLayout.setPadding(AndroidUtilities.dp(24), AndroidUtilities.dp(16), AndroidUtilities.dp(24), AndroidUtilities.dp(8));
+
+                    TextView fingerprintTextView = new TextView(getContext());
+                    fingerprintTextView.setTextColor(0xff939393);
+                    fingerprintTextView.setId(id_fingerprint_textview);
+                    fingerprintTextView.setTextAppearance(android.R.style.TextAppearance_Material_Subhead);
+                    fingerprintTextView.setText(LocaleController.getString("FingerprintInfo", R.string.FingerprintInfo));
+                    relativeLayout.addView(fingerprintTextView);
+                    RelativeLayout.LayoutParams layoutParams = LayoutHelper.createRelative(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT);
+                    layoutParams.addRule(RelativeLayout.ALIGN_PARENT_TOP);
+                    layoutParams.addRule(RelativeLayout.ALIGN_PARENT_START);
+                    fingerprintTextView.setLayoutParams(layoutParams);
+
+                    fingerprintImageView = new ImageView(getContext());
+                    fingerprintImageView.setImageResource(R.drawable.ic_fp_40px);
+                    fingerprintImageView.setId(id_fingerprint_imageview);
+                    relativeLayout.addView(fingerprintImageView, LayoutHelper.createRelative(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, 20, 0, 0, RelativeLayout.ALIGN_PARENT_START, RelativeLayout.BELOW, id_fingerprint_textview));
+
+                    fingerprintStatusTextView = new TextView(getContext());
+                    fingerprintStatusTextView.setGravity(Gravity.CENTER_VERTICAL);
+                    fingerprintStatusTextView.setText(LocaleController.getString("FingerprintHelp", R.string.FingerprintHelp));
+                    fingerprintStatusTextView.setTextAppearance(android.R.style.TextAppearance_Material_Body1);
+                    fingerprintStatusTextView.setTextColor(0x42000000);
+                    relativeLayout.addView(fingerprintStatusTextView);
+                    layoutParams = LayoutHelper.createRelative(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT);
+                    layoutParams.setMarginStart(AndroidUtilities.dp(16));
+                    layoutParams.addRule(RelativeLayout.ALIGN_BOTTOM, id_fingerprint_imageview);
+                    layoutParams.addRule(RelativeLayout.ALIGN_TOP, id_fingerprint_imageview);
+                    layoutParams.addRule(RelativeLayout.END_OF, id_fingerprint_imageview);
+                    fingerprintStatusTextView.setLayoutParams(layoutParams);
+
+                    AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
+                    builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
+                    builder.setView(relativeLayout);
+                    builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+                    builder.setOnDismissListener(new DialogInterface.OnDismissListener() {
+                        @Override
+                        public void onDismiss(DialogInterface dialog) {
+                            if (cancellationSignal != null) {
+                                selfCancelled = true;
+                                cancellationSignal.cancel();
+                                cancellationSignal = null;
+                            }
+                        }
+                    });
+                    if (fingerprintDialog != null) {
+                        try {
+                            if (fingerprintDialog.isShowing()) {
+                                fingerprintDialog.dismiss();
+                            }
+                        } catch (Exception e) {
+                            FileLog.e("tmessages", e);
+                        }
+                    }
+                    fingerprintDialog = builder.show();
+
+                    cancellationSignal = new CancellationSignal();
+                    selfCancelled = false;
+                    fingerprintManager.authenticate(null, 0, cancellationSignal, new FingerprintManagerCompat.AuthenticationCallback() {
+                        @Override
+                        public void onAuthenticationError(int errMsgId, CharSequence errString) {
+                            if (!selfCancelled) {
+                                showFingerprintError(errString);
+                            }
+                        }
+
+                        @Override
+                        public void onAuthenticationHelp(int helpMsgId, CharSequence helpString) {
+                            showFingerprintError(helpString);
+                        }
+
+                        @Override
+                        public void onAuthenticationFailed() {
+                            showFingerprintError(LocaleController.getString("FingerprintNotRecognized", R.string.FingerprintNotRecognized));
+                        }
+
+                        @Override
+                        public void onAuthenticationSucceeded(FingerprintManagerCompat.AuthenticationResult result) {
+                            try {
+                                if (fingerprintDialog.isShowing()) {
+                                    fingerprintDialog.dismiss();
+                                }
+                            } catch (Exception e) {
+                                FileLog.e("tmessages", e);
+                            }
+                            fingerprintDialog = null;
+                            processDone(true);
+                        }
+                    }, null);
+                }
+            } catch (Throwable e) {
+                //ignore
+            }
+        }
     }
 
     public void onShow() {
+        Activity parentActivity = (Activity) getContext();
         if (UserConfig.passcodeType == 1) {
             if (passwordEditText != null) {
                 passwordEditText.requestFocus();
                 AndroidUtilities.showKeyboard(passwordEditText);
             }
         } else {
-            Activity parentActivity = (Activity) getContext();
             if (parentActivity != null) {
                 View currentFocus = parentActivity.getCurrentFocus();
                 if (currentFocus != null) {
@@ -835,6 +982,7 @@ public class PasscodeView extends FrameLayout {
                 }
             }
         }
+        checkFingerprint();
         if (getVisibility() == View.VISIBLE) {
             return;
         }
@@ -845,7 +993,6 @@ public class PasscodeView extends FrameLayout {
         }
         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
         int selectedBackground = preferences.getInt("selectedBackground", 1000001);
-        boolean customTheme = false;
         if (selectedBackground == 1000001) {
             backgroundFrameLayout.setBackgroundColor(0xff517c9e);
         } else {
@@ -891,6 +1038,17 @@ public class PasscodeView extends FrameLayout {
                 return true;
             }
         });
+    }
+
+    private void showFingerprintError(CharSequence error) {
+        fingerprintImageView.setImageResource(R.drawable.ic_fingerprint_error);
+        fingerprintStatusTextView.setText(error);
+        fingerprintStatusTextView.setTextColor(0xfff4511e);
+        Vibrator v = (Vibrator) getContext().getSystemService(Context.VIBRATOR_SERVICE);
+        if (v != null) {
+            v.vibrate(200);
+        }
+        AndroidUtilities.shakeView(fingerprintStatusTextView, 2, 0);
     }
 
     @Override

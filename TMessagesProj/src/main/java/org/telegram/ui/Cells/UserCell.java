@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 1.7.x.
+ * This is the source code of Telegram for Android v. 3.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2014.
+ * Copyright Nikolai Kudashov, 2013-2015.
  */
 
 package org.telegram.ui.Cells;
@@ -13,17 +13,19 @@ import android.view.Gravity;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 
-import org.telegram.android.AndroidUtilities;
-import org.telegram.android.ContactsController;
-import org.telegram.android.LocaleController;
-import org.telegram.android.MessagesController;
-import org.telegram.messenger.ConnectionsManager;
+import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.UserObject;
 import org.telegram.messenger.R;
-import org.telegram.messenger.TLRPC;
+import org.telegram.tgnet.ConnectionsManager;
+import org.telegram.tgnet.TLObject;
+import org.telegram.tgnet.TLRPC;
 import org.telegram.messenger.UserConfig;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.CheckBox;
+import org.telegram.ui.Components.CheckBoxSquare;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.SimpleTextView;
 
@@ -34,9 +36,10 @@ public class UserCell extends FrameLayout {
     private SimpleTextView statusTextView;
     private ImageView imageView;
     private CheckBox checkBox;
+    private CheckBoxSquare checkBoxBig;
 
     private AvatarDrawable avatarDrawable;
-    private TLRPC.User currentUser = null;
+    private TLObject currentObject = null;
 
     private CharSequence currentName;
     private CharSequence currrntStatus;
@@ -49,7 +52,7 @@ public class UserCell extends FrameLayout {
     private int statusColor = 0xffa8a8a8;
     private int statusOnlineColor = 0xff3b84c0;
 
-    public UserCell(Context context, int padding) {
+    public UserCell(Context context, int padding, int checkbox) {
         super(context);
 
         avatarDrawable = new AvatarDrawable();
@@ -74,16 +77,21 @@ public class UserCell extends FrameLayout {
         imageView.setVisibility(GONE);
         addView(imageView, LayoutHelper.createFrame(LayoutParams.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL, LocaleController.isRTL ? 0 : 16, 0, LocaleController.isRTL ? 16 : 0, 0));
 
-        checkBox = new CheckBox(context, R.drawable.round_check2);
-        checkBox.setVisibility(INVISIBLE);
-        addView(checkBox, LayoutHelper.createFrame(22, 22, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 0 : 37 + padding, 38, LocaleController.isRTL ? 37 + padding : 0, 0));
+        if (checkbox == 2) {
+            checkBoxBig = new CheckBoxSquare(context);
+            addView(checkBoxBig, LayoutHelper.createFrame(18, 18, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.CENTER_VERTICAL, LocaleController.isRTL ? 19 : 0, 0, LocaleController.isRTL ? 0 : 19, 0));
+        } else if (checkbox == 1) {
+            checkBox = new CheckBox(context, R.drawable.round_check2);
+            checkBox.setVisibility(INVISIBLE);
+            addView(checkBox, LayoutHelper.createFrame(22, 22, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 0 : 37 + padding, 38, LocaleController.isRTL ? 37 + padding : 0, 0));
+        }
     }
 
-    public void setData(TLRPC.User user, CharSequence name, CharSequence status, int resId) {
+    public void setData(TLObject user, CharSequence name, CharSequence status, int resId) {
         if (user == null) {
             currrntStatus = null;
             currentName = null;
-            currentUser = null;
+            currentObject = null;
             nameTextView.setText("");
             statusTextView.setText("");
             avatarImageView.setImageDrawable(null);
@@ -91,21 +99,34 @@ public class UserCell extends FrameLayout {
         }
         currrntStatus = status;
         currentName = name;
-        currentUser = user;
+        currentObject = user;
         currentDrawable = resId;
         update(0);
     }
 
     public void setChecked(boolean checked, boolean animated) {
-        if (checkBox.getVisibility() != VISIBLE) {
-            checkBox.setVisibility(VISIBLE);
+        if (checkBox != null) {
+            if (checkBox.getVisibility() != VISIBLE) {
+                checkBox.setVisibility(VISIBLE);
+            }
+            checkBox.setChecked(checked, animated);
+        } else if (checkBoxBig != null) {
+            if (checkBoxBig.getVisibility() != VISIBLE) {
+                checkBoxBig.setVisibility(VISIBLE);
+            }
+            checkBoxBig.setChecked(checked, animated);
         }
-        checkBox.setChecked(checked, animated);
+    }
+
+    public void setCheckDisabled(boolean disabled) {
+        if (checkBoxBig != null) {
+            checkBoxBig.setDisabled(disabled);
+        }
     }
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(64), MeasureSpec.EXACTLY));
+        super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(64), MeasureSpec.EXACTLY));
     }
 
     public void setStatusColors(int color, int onlineColor) {
@@ -114,13 +135,23 @@ public class UserCell extends FrameLayout {
     }
 
     public void update(int mask) {
-        if (currentUser == null) {
+        if (currentObject == null) {
             return;
         }
         TLRPC.FileLocation photo = null;
         String newName = null;
-        if (currentUser.photo != null) {
-            photo = currentUser.photo.photo_small;
+        TLRPC.User currentUser = null;
+        TLRPC.Chat currentChat = null;
+        if (currentObject instanceof TLRPC.User) {
+            currentUser = (TLRPC.User) currentObject;
+            if (currentUser.photo != null) {
+                photo = currentUser.photo.photo_small;
+            }
+        } else {
+            currentChat = (TLRPC.Chat) currentObject;
+            if (currentChat.photo != null) {
+                photo = currentChat.photo.photo_small;
+            }
         }
 
         if (mask != 0) {
@@ -130,7 +161,7 @@ public class UserCell extends FrameLayout {
                     continueUpdate = true;
                 }
             }
-            if (!continueUpdate && (mask & MessagesController.UPDATE_MASK_STATUS) != 0) {
+            if (currentUser != null && !continueUpdate && (mask & MessagesController.UPDATE_MASK_STATUS) != 0) {
                 int newStatus = 0;
                 if (currentUser.status != null) {
                     newStatus = currentUser.status.expires;
@@ -140,7 +171,11 @@ public class UserCell extends FrameLayout {
                 }
             }
             if (!continueUpdate && currentName == null && lastName != null && (mask & MessagesController.UPDATE_MASK_NAME) != 0) {
-                newName = ContactsController.formatName(currentUser.first_name, currentUser.last_name);
+                if (currentUser != null) {
+                    newName = UserObject.getUserName(currentUser);
+                } else {
+                    newName = currentChat.title;
+                }
                 if (!newName.equals(lastName)) {
                     continueUpdate = true;
                 }
@@ -150,30 +185,47 @@ public class UserCell extends FrameLayout {
             }
         }
 
-        avatarDrawable.setInfo(currentUser);
-        if (currentUser.status != null) {
-            lastStatus = currentUser.status.expires;
+        if (currentUser != null) {
+            avatarDrawable.setInfo(currentUser);
+            if (currentUser.status != null) {
+                lastStatus = currentUser.status.expires;
+            } else {
+                lastStatus = 0;
+            }
         } else {
-            lastStatus = 0;
+            avatarDrawable.setInfo(currentChat);
         }
 
         if (currentName != null) {
             lastName = null;
             nameTextView.setText(currentName);
         } else {
-            lastName = newName == null ? ContactsController.formatName(currentUser.first_name, currentUser.last_name) : newName;
+            if (currentUser != null) {
+                lastName = newName == null ? UserObject.getUserName(currentUser) : newName;
+            } else {
+                lastName = newName == null ? currentChat.title : newName;
+            }
             nameTextView.setText(lastName);
         }
         if (currrntStatus != null) {
             statusTextView.setTextColor(statusColor);
             statusTextView.setText(currrntStatus);
-        } else {
-            if (currentUser.id == UserConfig.getClientUserId() || currentUser.status != null && currentUser.status.expires > ConnectionsManager.getInstance().getCurrentTime()) {
-                statusTextView.setTextColor(statusOnlineColor);
-                statusTextView.setText(LocaleController.getString("Online", R.string.Online));
-            } else {
+        } else if (currentUser != null) {
+            if (currentUser.bot) {
                 statusTextView.setTextColor(statusColor);
-                statusTextView.setText(LocaleController.formatUserStatus(currentUser));
+                if (currentUser.bot_chat_history) {
+                    statusTextView.setText(LocaleController.getString("BotStatusRead", R.string.BotStatusRead));
+                } else {
+                    statusTextView.setText(LocaleController.getString("BotStatusCantRead", R.string.BotStatusCantRead));
+                }
+            } else {
+                if (currentUser.id == UserConfig.getClientUserId() || currentUser.status != null && currentUser.status.expires > ConnectionsManager.getInstance().getCurrentTime() || MessagesController.getInstance().onlinePrivacy.containsKey(currentUser.id)) {
+                    statusTextView.setTextColor(statusOnlineColor);
+                    statusTextView.setText(LocaleController.getString("Online", R.string.Online));
+                } else {
+                    statusTextView.setTextColor(statusColor);
+                    statusTextView.setText(LocaleController.formatUserStatus(currentUser));
+                }
             }
         }
 
@@ -182,5 +234,10 @@ public class UserCell extends FrameLayout {
             imageView.setImageResource(currentDrawable);
         }
         avatarImageView.setImage(photo, "50_50", avatarDrawable);
+    }
+
+    @Override
+    public boolean hasOverlappingRendering() {
+        return false;
     }
 }

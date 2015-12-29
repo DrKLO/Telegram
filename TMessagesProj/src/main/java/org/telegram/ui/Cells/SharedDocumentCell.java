@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2014.
+ * Copyright Nikolai Kudashov, 2013-2015.
  */
 
 package org.telegram.ui.Cells;
@@ -19,15 +19,15 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import org.telegram.android.AndroidUtilities;
-import org.telegram.android.ImageLoader;
-import org.telegram.android.ImageReceiver;
-import org.telegram.android.LocaleController;
-import org.telegram.android.MediaController;
-import org.telegram.android.MessageObject;
+import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ImageLoader;
+import org.telegram.messenger.ImageReceiver;
+import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MediaController;
+import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.R;
-import org.telegram.messenger.TLRPC;
+import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.CheckBox;
 import org.telegram.ui.Components.LayoutHelper;
@@ -100,7 +100,7 @@ public class SharedDocumentCell extends FrameLayout implements MediaController.F
         });
 
         nameTextView = new TextView(context);
-        nameTextView.setTextColor(0xff222222);
+        nameTextView.setTextColor(0xff212121);
         nameTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         nameTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         nameTextView.setLines(1);
@@ -204,7 +204,7 @@ public class SharedDocumentCell extends FrameLayout implements MediaController.F
         loaded = false;
         loading = false;
 
-        if (document != null && document.messageOwner.media != null) {
+        if (document != null && document.messageOwner.media != null && document.messageOwner.media.document != null) {
             int idx;
             String name = FileLoader.getDocumentFileName(document.messageOwner.media.document);
             placeholderImabeView.setVisibility(VISIBLE);
@@ -212,7 +212,7 @@ public class SharedDocumentCell extends FrameLayout implements MediaController.F
             placeholderImabeView.setImageResource(getThumbForNameOrMime(name, document.messageOwner.media.document.mime_type));
             nameTextView.setText(name);
             extTextView.setText((idx = name.lastIndexOf(".")) == -1 ? "" : name.substring(idx + 1).toLowerCase());
-            if (document.messageOwner.media.document.thumb instanceof TLRPC.TL_photoSizeEmpty) {
+            if (document.messageOwner.media.document.thumb instanceof TLRPC.TL_photoSizeEmpty || document.messageOwner.media.document.thumb == null) {
                 thumbImageView.setVisibility(INVISIBLE);
                 thumbImageView.setImageBitmap(null);
             } else {
@@ -220,7 +220,7 @@ public class SharedDocumentCell extends FrameLayout implements MediaController.F
                 thumbImageView.setImage(document.messageOwner.media.document.thumb.location, "40_40", (Drawable) null);
             }
             long date = (long) document.messageOwner.date * 1000;
-            dateTextView.setText(String.format("%s, %s", AndroidUtilities.formatFileSize(document.messageOwner.media.document.size), LocaleController.formatString("formatDateAtTime", R.string.formatDateAtTime, LocaleController.formatterYear.format(new Date(date)), LocaleController.formatterDay.format(new Date(date)))));
+            dateTextView.setText(String.format("%s, %s", AndroidUtilities.formatFileSize(document.messageOwner.media.document.size), LocaleController.formatString("formatDateAtTime", R.string.formatDateAtTime, LocaleController.getInstance().formatterYear.format(new Date(date)), LocaleController.getInstance().formatterDay.format(new Date(date)))));
         } else {
             nameTextView.setText("");
             extTextView.setText("");
@@ -318,6 +318,9 @@ public class SharedDocumentCell extends FrameLayout implements MediaController.F
 
     @Override
     public void onProgressDownload(String fileName, float progress) {
+        if (progressView.getVisibility() != VISIBLE) {
+            updateFileExistIcon();
+        }
         progressView.setProgress(progress, true);
     }
 

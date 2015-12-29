@@ -1,5 +1,5 @@
 /*
- * This is the source code of Telegram for Android v. 2.x.x.
+ * This is the source code of Telegram for Android v. 3.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
@@ -8,7 +8,8 @@
 
 package org.telegram.messenger;
 
-import org.telegram.android.AndroidUtilities;
+import org.telegram.tgnet.TLObject;
+import org.telegram.tgnet.TLRPC;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -22,7 +23,7 @@ public class FileLoader {
     public interface FileLoaderDelegate {
         void fileUploadProgressChanged(String location, float progress, boolean isEncrypted);
 
-        void fileDidUploaded(String location, TLRPC.InputFile inputFile, TLRPC.InputEncryptedFile inputEncryptedFile, byte[] key, byte[] iv);
+        void fileDidUploaded(String location, TLRPC.InputFile inputFile, TLRPC.InputEncryptedFile inputEncryptedFile, byte[] key, byte[] iv, long totalFileSize);
 
         void fileDidFailedUpload(String location, boolean isEncrypted);
 
@@ -79,6 +80,10 @@ public class FileLoader {
         mediaDirs = dirs;
     }
 
+    public File checkDirectory(int type) {
+        return mediaDirs.get(type);
+    }
+
     public File getDirectory(int type) {
         File dir = mediaDirs.get(type);
         if (dir == null && type != MEDIA_DIR_CACHE) {
@@ -106,6 +111,7 @@ public class FileLoader {
                 }
                 uploadSizes.remove(location);
                 if (operation != null) {
+                    uploadOperationPathsEnc.remove(location);
                     uploadOperationQueue.remove(operation);
                     uploadSmallOperationQueue.remove(operation);
                     operation.cancel();
@@ -169,7 +175,7 @@ public class FileLoader {
                 }
                 operation.delegate = new FileUploadOperation.FileUploadOperationDelegate() {
                     @Override
-                    public void didFinishUploadingFile(FileUploadOperation operation, final TLRPC.InputFile inputFile, final TLRPC.InputEncryptedFile inputEncryptedFile, final byte[] key, final byte[] iv) {
+                    public void didFinishUploadingFile(final FileUploadOperation operation, final TLRPC.InputFile inputFile, final TLRPC.InputEncryptedFile inputEncryptedFile, final byte[] key, final byte[] iv) {
                         fileLoaderQueue.postRunnable(new Runnable() {
                             @Override
                             public void run() {
@@ -198,7 +204,7 @@ public class FileLoader {
                                     }
                                 }
                                 if (delegate != null) {
-                                    delegate.fileDidUploaded(location, inputFile, inputEncryptedFile, key, iv);
+                                    delegate.fileDidUploaded(location, inputFile, inputEncryptedFile, key, iv, operation.getTotalFileSize());
                                 }
                             }
                         });
@@ -573,6 +579,14 @@ public class FileLoader {
                         return getPathToAttach(sizeFull);
                     }
                 }
+            } else if (message.media instanceof TLRPC.TL_messageMediaWebPage && message.media.webpage.photo != null) {
+                ArrayList<TLRPC.PhotoSize> sizes = message.media.webpage.photo.sizes;
+                if (sizes.size() > 0) {
+                    TLRPC.PhotoSize sizeFull = getClosestPhotoSizeWithSize(sizes, AndroidUtilities.getPhotoSize());
+                    if (sizeFull != null) {
+                        return getPathToAttach(sizeFull);
+                    }
+                }
             }
         }
         return new File("");
@@ -617,7 +631,7 @@ public class FileLoader {
                 }
             } else if (attach instanceof TLRPC.PhotoSize) {
                 TLRPC.PhotoSize photoSize = (TLRPC.PhotoSize) attach;
-                if (photoSize.location == null || photoSize.location.key != null || photoSize.location.volume_id == Integer.MIN_VALUE && photoSize.location.local_id < 0) {
+                if (photoSize.location == null || photoSize.location.key != null || photoSize.location.volume_id == Integer.MIN_VALUE && photoSize.location.local_id < 0 || photoSize.size < 0) {
                     dir = getInstance().getDirectory(MEDIA_DIR_CACHE);
                 } else {
                     dir = getInstance().getDirectory(MEDIA_DIR_IMAGE);
@@ -675,6 +689,15 @@ public class FileLoader {
         return closestObject;
     }
 
+    public static String getFileExtension(File file) {
+        String name = file.getName();
+        try {
+            return name.substring(name.lastIndexOf(".") + 1);
+        } catch (Exception e) {
+            return "";
+        }
+    }
+
     public static String getDocumentFileName(TLRPC.Document document) {
         if (document != null) {
             if (document.file_name != null) {
@@ -727,14 +750,15 @@ public class FileLoader {
         return "";
     }
 
-    public void deleteFiles(final ArrayList<File> files) {
+    public void deleteFiles(final ArrayList<File> files, final int type) {
         if (files == null || files.isEmpty()) {
             return;
         }
         fileLoaderQueue.postRunnable(new Runnable() {
             @Override
             public void run() {
-                for (File file : files) {
+                for (int a = 0; a < files.size(); a++) {
+                    File file = files.get(a);
                     if (file.exists()) {
                         try {
                             if (!file.delete()) {
@@ -744,6 +768,19 @@ public class FileLoader {
                             FileLog.e("tmessages", e);
                         }
                     }
+                    try {
+                        File qFile = new File(file.getParentFile(), "q_" + file.getName());
+                        if (qFile.exists()) {
+                            if (!qFile.delete()) {
+                                qFile.deleteOnExit();
+                            }
+                        }
+                    } catch (Exception e) {
+                        FileLog.e("tmessages", e);
+                    }
+                }
+                if (type == 2) {
+                    ImageLoader.getInstance().clearMemory();
                 }
             }
         });

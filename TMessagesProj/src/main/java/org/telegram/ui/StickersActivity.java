@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 2.x.x.
+ * This is the source code of Telegram for Android v. 3.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2014.
+ * Copyright Nikolai Kudashov, 2013-2015.
  */
 
 package org.telegram.ui;
@@ -12,32 +12,36 @@ import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.graphics.Canvas;
 import android.os.Build;
 import android.os.Message;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
-import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.AdapterView;
 import android.widget.FrameLayout;
-import android.widget.ListView;
 import android.widget.Toast;
 
-import org.telegram.android.LocaleController;
-import org.telegram.android.MessagesController;
-import org.telegram.android.NotificationCenter;
-import org.telegram.android.query.StickersQuery;
+import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.NotificationCenter;
+import org.telegram.messenger.query.StickersQuery;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
-import org.telegram.messenger.TLRPC;
+import org.telegram.messenger.support.widget.LinearLayoutManager;
+import org.telegram.messenger.support.widget.RecyclerView;
+import org.telegram.messenger.support.widget.helper.ItemTouchHelper;
+import org.telegram.tgnet.ConnectionsManager;
+import org.telegram.tgnet.RequestDelegate;
+import org.telegram.tgnet.TLObject;
+import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.BaseFragment;
-import org.telegram.ui.Adapters.BaseFragmentAdapter;
 import org.telegram.ui.Cells.StickerSetCell;
 import org.telegram.ui.Cells.TextInfoPrivacyCell;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.StickersAlert;
 import org.telegram.ui.Components.URLSpanNoUnderline;
 
@@ -46,12 +50,67 @@ import java.util.Locale;
 
 public class StickersActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
 
+    private RecyclerListView listView;
     private ListAdapter listAdapter;
+
+    private boolean needReorder;
 
     private int stickersStartRow;
     private int stickersEndRow;
     private int stickersInfoRow;
     private int rowCount;
+
+    public class TouchHelperCallback extends ItemTouchHelper.Callback {
+
+        public static final float ALPHA_FULL = 1.0f;
+
+        @Override
+        public boolean isLongPressDragEnabled() {
+            return true;
+        }
+
+        @Override
+        public int getMovementFlags(RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder) {
+            if (viewHolder.getItemViewType() != 0) {
+                return makeMovementFlags(0, 0);
+            }
+            return makeMovementFlags(ItemTouchHelper.UP | ItemTouchHelper.DOWN, 0);
+        }
+
+        @Override
+        public boolean onMove(RecyclerView recyclerView, RecyclerView.ViewHolder source, RecyclerView.ViewHolder target) {
+            if (source.getItemViewType() != target.getItemViewType()) {
+                return false;
+            }
+            listAdapter.swapElements(source.getAdapterPosition(), target.getAdapterPosition());
+            return true;
+        }
+
+        @Override
+        public void onChildDraw(Canvas c, RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder, float dX, float dY, int actionState, boolean isCurrentlyActive) {
+            super.onChildDraw(c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive);
+        }
+
+        @Override
+        public void onSelectedChanged(RecyclerView.ViewHolder viewHolder, int actionState) {
+            if (actionState != ItemTouchHelper.ACTION_STATE_IDLE) {
+                listView.cancelClickRunnables(false);
+                viewHolder.itemView.setPressed(true);
+            }
+            super.onSelectedChanged(viewHolder, actionState);
+        }
+
+        @Override
+        public void onSwiped(RecyclerView.ViewHolder viewHolder, int direction) {
+
+        }
+
+        @Override
+        public void clearView(RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder) {
+            super.clearView(recyclerView, viewHolder);
+            viewHolder.itemView.setPressed(false);
+        }
+    }
 
     @Override
     public boolean onFragmentCreate() {
@@ -65,11 +124,11 @@ public class StickersActivity extends BaseFragment implements NotificationCenter
     @Override
     public void onFragmentDestroy() {
         super.onFragmentDestroy();
-        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.stickersDidLoaded);
+        sendReorder();
     }
 
     @Override
-    public View createView(Context context, LayoutInflater inflater) {
+    public View createView(Context context) {
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBar.setAllowOverlayTitle(true);
         actionBar.setTitle(LocaleController.getString("Stickers", R.string.Stickers));
@@ -88,29 +147,32 @@ public class StickersActivity extends BaseFragment implements NotificationCenter
         FrameLayout frameLayout = (FrameLayout) fragmentView;
         frameLayout.setBackgroundColor(0xfff0f0f0);
 
-        ListView listView = new ListView(context);
-        listView.setDivider(null);
-        listView.setDividerHeight(0);
-        listView.setVerticalScrollBarEnabled(false);
-        listView.setDrawSelectorOnTop(true);
+        listView = new RecyclerListView(context);
+        LinearLayoutManager layoutManager = new LinearLayoutManager(context);
+        layoutManager.setOrientation(LinearLayoutManager.VERTICAL);
+        listView.setLayoutManager(layoutManager);
+        ItemTouchHelper itemTouchHelper = new ItemTouchHelper(new TouchHelperCallback());
+        itemTouchHelper.attachToRecyclerView(listView);
+
         frameLayout.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
         listView.setAdapter(listAdapter);
-        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+        listView.setOnItemClickListener(new RecyclerListView.OnItemClickListener() {
             @Override
-            public void onItemClick(AdapterView<?> adapterView, View view, final int i, long l) {
-                if (i >= stickersStartRow && i < stickersEndRow && getParentActivity() != null) {
-                    final TLRPC.TL_stickerSet stickerSet = StickersQuery.getStickerSets().get(i);
-                    ArrayList<TLRPC.Document> stickers = StickersQuery.getStickersForSet(stickerSet.id);
-                    if (stickers == null) {
+            public void onItemClick(View view, int position) {
+                if (position >= stickersStartRow && position < stickersEndRow && getParentActivity() != null) {
+                    sendReorder();
+                    final TLRPC.TL_messages_stickerSet stickerSet = StickersQuery.getStickerSets().get(position);
+                    ArrayList<TLRPC.Document> stickers = stickerSet.documents;
+                    if (stickers == null || stickers.isEmpty()) {
                         return;
                     }
-                    StickersAlert alert = new StickersAlert(getParentActivity(), stickerSet, stickers);
+                    StickersAlert alert = new StickersAlert(getParentActivity(), stickerSet);
                     alert.setButton(AlertDialog.BUTTON_NEGATIVE, LocaleController.getString("Close", R.string.Close), (Message) null);
-                    if (stickerSet.id != -1) {
+                    if (!stickerSet.set.official) {
                         alert.setButton(AlertDialog.BUTTON_NEUTRAL, LocaleController.getString("StickersRemove", R.string.StickersRemove), new DialogInterface.OnClickListener() {
                             @Override
                             public void onClick(DialogInterface dialog, int which) {
-                                StickersQuery.removeStickersSet(getParentActivity(), stickerSet);
+                                StickersQuery.removeStickersSet(getParentActivity(), stickerSet.set, 0);
                             }
                         });
                     }
@@ -130,9 +192,29 @@ public class StickersActivity extends BaseFragment implements NotificationCenter
         }
     }
 
+    private void sendReorder() {
+        if (!needReorder) {
+            return;
+        }
+        StickersQuery.calcNewHash();
+        needReorder = false;
+        TLRPC.TL_messages_reorderStickerSets req = new TLRPC.TL_messages_reorderStickerSets();
+        ArrayList<TLRPC.TL_messages_stickerSet> arrayList = StickersQuery.getStickerSets();
+        for (int a = 0; a < arrayList.size(); a++) {
+            req.order.add(arrayList.get(a).set.id);
+        }
+        ConnectionsManager.getInstance().sendRequest(req, new RequestDelegate() {
+            @Override
+            public void run(TLObject response, TLRPC.TL_error error) {
+
+            }
+        });
+        NotificationCenter.getInstance().postNotificationName(NotificationCenter.stickersDidLoaded);
+    }
+
     private void updateRows() {
         rowCount = 0;
-        ArrayList<TLRPC.TL_stickerSet> stickerSets = StickersQuery.getStickerSets();
+        ArrayList<TLRPC.TL_messages_stickerSet> stickerSets = StickersQuery.getStickerSets();
         if (!stickerSets.isEmpty()) {
             stickersStartRow = 0;
             stickersEndRow = stickerSets.size();
@@ -155,65 +237,102 @@ public class StickersActivity extends BaseFragment implements NotificationCenter
         }
     }
 
-    private class ListAdapter extends BaseFragmentAdapter {
+    private class ListAdapter extends RecyclerListView.Adapter {
         private Context mContext;
+
+        private class Holder extends RecyclerView.ViewHolder {
+
+            public Holder(View itemView) {
+                super(itemView);
+            }
+        }
 
         public ListAdapter(Context context) {
             mContext = context;
         }
 
         @Override
-        public boolean areAllItemsEnabled() {
-            return false;
-        }
-
-        @Override
-        public boolean isEnabled(int i) {
-            return i >= stickersStartRow && i < stickersEndRow;
-        }
-
-        @Override
-        public int getCount() {
+        public int getItemCount() {
             return rowCount;
         }
 
         @Override
-        public Object getItem(int i) {
-            return null;
-        }
-
-        @Override
         public long getItemId(int i) {
+            if (i >= stickersStartRow && i < stickersEndRow) {
+                ArrayList<TLRPC.TL_messages_stickerSet> arrayList = StickersQuery.getStickerSets();
+                return arrayList.get(i).set.id;
+            } else if (i == stickersInfoRow) {
+                return Integer.MIN_VALUE;
+            }
             return i;
         }
 
-        @Override
-        public boolean hasStableIds() {
-            return false;
+        private void processSelectionOption(int which, TLRPC.TL_messages_stickerSet stickerSet) {
+            if (which == 0) {
+                StickersQuery.removeStickersSet(getParentActivity(), stickerSet.set, !stickerSet.set.disabled ? 1 : 2);
+            } else if (which == 1) {
+                StickersQuery.removeStickersSet(getParentActivity(), stickerSet.set, 0);
+            } else if (which == 2) {
+                try {
+                    Intent intent = new Intent(Intent.ACTION_SEND);
+                    intent.setType("text/plain");
+                    intent.putExtra(Intent.EXTRA_TEXT, String.format(Locale.US, "https://telegram.me/addstickers/%s", stickerSet.set.short_name));
+                    getParentActivity().startActivityForResult(Intent.createChooser(intent, LocaleController.getString("StickersShare", R.string.StickersShare)), 500);
+                } catch (Exception e) {
+                    FileLog.e("tmessages", e);
+                }
+            } else if (which == 3) {
+                try {
+                    if (Build.VERSION.SDK_INT < 11) {
+                        android.text.ClipboardManager clipboard = (android.text.ClipboardManager) ApplicationLoader.applicationContext.getSystemService(Context.CLIPBOARD_SERVICE);
+                        clipboard.setText(String.format(Locale.US, "https://telegram.me/addstickers/%s", stickerSet.set.short_name));
+                    } else {
+                        android.content.ClipboardManager clipboard = (android.content.ClipboardManager) ApplicationLoader.applicationContext.getSystemService(Context.CLIPBOARD_SERVICE);
+                        android.content.ClipData clip = android.content.ClipData.newPlainText("label", String.format(Locale.US, "https://telegram.me/addstickers/%s", stickerSet.set.short_name));
+                        clipboard.setPrimaryClip(clip);
+                    }
+                    Toast.makeText(getParentActivity(), LocaleController.getString("LinkCopied", R.string.LinkCopied), Toast.LENGTH_SHORT).show();
+                } catch (Exception e) {
+                    FileLog.e("tmessages", e);
+                }
+            }
         }
 
         @Override
-        public View getView(int i, View view, ViewGroup viewGroup) {
-            int type = getItemViewType(i);
-            if (type == 0) {
-                if (view == null) {
+        public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
+            if (holder.getItemViewType() == 0) {
+                ArrayList<TLRPC.TL_messages_stickerSet> arrayList = StickersQuery.getStickerSets();
+                ((StickerSetCell) holder.itemView).setStickersSet(arrayList.get(position), position != arrayList.size() - 1);
+            }
+        }
+
+        @Override
+        public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+            View view = null;
+            switch (viewType) {
+                case 0:
                     view = new StickerSetCell(mContext);
                     view.setBackgroundColor(0xffffffff);
+                    view.setBackgroundResource(R.drawable.list_selector_white);
                     ((StickerSetCell) view).setOnOptionsClick(new View.OnClickListener() {
                         @Override
                         public void onClick(View v) {
+                            sendReorder();
                             StickerSetCell cell = (StickerSetCell) v.getParent();
-                            final TLRPC.TL_stickerSet stickerSet = cell.getStickersSet();
+                            final TLRPC.TL_messages_stickerSet stickerSet = cell.getStickersSet();
                             AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                            builder.setTitle(stickerSet.set.title);
                             CharSequence[] items;
-                            if (stickerSet.id == -1) {
-                                builder.setTitle(LocaleController.getString("GeniusStickerPackName", R.string.GeniusStickerPackName));
+                            final int[] options;
+                            if (stickerSet.set.official) {
+                                options = new int[]{0};
                                 items = new CharSequence[]{
-                                        StickersQuery.getHideMainStickersPack() ? LocaleController.getString("StickersShow", R.string.StickersShow) : LocaleController.getString("StickersHide", R.string.StickersHide)
+                                        !stickerSet.set.disabled ? LocaleController.getString("StickersHide", R.string.StickersHide) : LocaleController.getString("StickersShow", R.string.StickersShow)
                                 };
                             } else {
-                                builder.setTitle(stickerSet.title);
+                                options = new int[]{0, 1, 2, 3};
                                 items = new CharSequence[]{
+                                        !stickerSet.set.disabled ? LocaleController.getString("StickersHide", R.string.StickersHide) : LocaleController.getString("StickersShow", R.string.StickersShow),
                                         LocaleController.getString("StickersRemove", R.string.StickersRemove),
                                         LocaleController.getString("StickersShare", R.string.StickersShare),
                                         LocaleController.getString("StickersCopy", R.string.StickersCopy),
@@ -222,49 +341,14 @@ public class StickersActivity extends BaseFragment implements NotificationCenter
                             builder.setItems(items, new DialogInterface.OnClickListener() {
                                 @Override
                                 public void onClick(DialogInterface dialog, int which) {
-                                    if (which == 0) {
-                                        if (stickerSet.id == -1) {
-                                            StickersQuery.setHideMainStickersPack(!StickersQuery.getHideMainStickersPack());
-                                            listAdapter.notifyDataSetChanged();
-                                            StickersQuery.loadStickers(true, false);
-                                        } else {
-                                            StickersQuery.removeStickersSet(getParentActivity(), stickerSet);
-                                        }
-                                    } else if (which == 1) {
-                                        try {
-                                            Intent intent = new Intent(Intent.ACTION_SEND);
-                                            intent.setType("text/plain");
-                                            intent.putExtra(Intent.EXTRA_TEXT, String.format(Locale.US, "https://telegram.me/addstickers/%s", stickerSet.short_name));
-                                            getParentActivity().startActivityForResult(Intent.createChooser(intent, LocaleController.getString("StickersShare", R.string.StickersShare)), 500);
-                                        } catch (Exception e) {
-                                            FileLog.e("tmessages", e);
-                                        }
-                                    } else if (which == 2) {
-                                        try {
-                                            if (Build.VERSION.SDK_INT < 11) {
-                                                android.text.ClipboardManager clipboard = (android.text.ClipboardManager) ApplicationLoader.applicationContext.getSystemService(Context.CLIPBOARD_SERVICE);
-                                                clipboard.setText(String.format(Locale.US, "https://telegram.me/addstickers/%s", stickerSet.short_name));
-                                            } else {
-                                                android.content.ClipboardManager clipboard = (android.content.ClipboardManager) ApplicationLoader.applicationContext.getSystemService(Context.CLIPBOARD_SERVICE);
-                                                android.content.ClipData clip = android.content.ClipData.newPlainText("label", String.format(Locale.US, "https://telegram.me/addstickers/%s", stickerSet.short_name));
-                                                clipboard.setPrimaryClip(clip);
-                                            }
-                                            Toast.makeText(getParentActivity(), LocaleController.getString("LinkCopied", R.string.LinkCopied), Toast.LENGTH_SHORT).show();
-                                        } catch (Exception e) {
-                                            FileLog.e("tmessages", e);
-                                        }
-                                    }
+                                    processSelectionOption(options[which], stickerSet);
                                 }
                             });
-                            //builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
                             showDialog(builder.create());
                         }
                     });
-                }
-                ArrayList<TLRPC.TL_stickerSet> arrayList = StickersQuery.getStickerSets();
-                ((StickerSetCell) view).setStickersSet(arrayList.get(i), i != arrayList.size() - 1);
-            } else if (type == 1) {
-                if (view == null) {
+                    break;
+                case 1:
                     view = new TextInfoPrivacyCell(mContext);
                     String text = LocaleController.getString("StickersInfo", R.string.StickersInfo);
                     String botName = "@stickers";
@@ -288,9 +372,9 @@ public class StickersActivity extends BaseFragment implements NotificationCenter
                         ((TextInfoPrivacyCell) view).setText(text);
                     }
                     view.setBackgroundResource(R.drawable.greydivider_bottom);
-                }
+                    break;
             }
-            return view;
+            return new Holder(view);
         }
 
         @Override
@@ -303,14 +387,15 @@ public class StickersActivity extends BaseFragment implements NotificationCenter
             return 0;
         }
 
-        @Override
-        public int getViewTypeCount() {
-            return 2;
-        }
-
-        @Override
-        public boolean isEmpty() {
-            return false;
+        public void swapElements(int fromIndex, int toIndex) {
+            if (fromIndex != toIndex) {
+                needReorder = true;
+            }
+            ArrayList<TLRPC.TL_messages_stickerSet> arrayList = StickersQuery.getStickerSets();
+            TLRPC.TL_messages_stickerSet from = arrayList.get(fromIndex);
+            arrayList.set(fromIndex, arrayList.get(toIndex));
+            arrayList.set(toIndex, from);
+            notifyItemMoved(fromIndex, toIndex);
         }
     }
 }

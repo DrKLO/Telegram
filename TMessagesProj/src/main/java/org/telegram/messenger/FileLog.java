@@ -1,5 +1,5 @@
 /*
- * This is the source code of Telegram for Android v. 2.x.x.
+ * This is the source code of Telegram for Android v. 3.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
@@ -10,7 +10,7 @@ package org.telegram.messenger;
 
 import android.util.Log;
 
-import org.telegram.android.time.FastDateFormat;
+import org.telegram.messenger.time.FastDateFormat;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -22,6 +22,7 @@ public class FileLog {
     private FastDateFormat dateFormat = null;
     private DispatchQueue logQueue = null;
     private File currentFile = null;
+    private File networkFile = null;
 
     private static volatile FileLog Instance = null;
     public static FileLog getInstance() {
@@ -63,6 +64,25 @@ public class FileLog {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    public static String getNetworkLogPath() {
+        if (!BuildVars.DEBUG_VERSION) {
+            return "";
+        }
+        try {
+            File sdCard = ApplicationLoader.applicationContext.getExternalFilesDir(null);
+            if (sdCard == null) {
+                return "";
+            }
+            File dir = new File(sdCard.getAbsolutePath() + "/logs");
+            dir.mkdirs();
+            getInstance().networkFile = new File(dir, getInstance().dateFormat.format(System.currentTimeMillis()) + "_net.txt");
+            return getInstance().networkFile.getAbsolutePath();
+        } catch (Throwable e) {
+            e.printStackTrace();
+        }
+        return "";
     }
 
     public static void e(final String tag, final String message, final Throwable exception) {
@@ -178,6 +198,9 @@ public class FileLog {
         File[] files = dir.listFiles();
         for (File file : files) {
             if (getInstance().currentFile != null && file.getAbsolutePath().equals(getInstance().currentFile.getAbsolutePath())) {
+                continue;
+            }
+            if (getInstance().networkFile != null && file.getAbsolutePath().equals(getInstance().networkFile.getAbsolutePath())) {
                 continue;
             }
             file.delete();

@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 1.3.2.
+ * This is the source code of Telegram for Android v. 3.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013.
+ * Copyright Nikolai Kudashov, 2013-2015.
  */
 
 package org.telegram.ui;
@@ -16,12 +16,12 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.Point;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.MediaStore;
 import android.view.Gravity;
-import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
@@ -29,21 +29,21 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 
-import org.telegram.android.AndroidUtilities;
-import org.telegram.android.ImageLoader;
-import org.telegram.android.LocaleController;
-import org.telegram.android.support.widget.LinearLayoutManager;
-import org.telegram.android.support.widget.RecyclerView;
+import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ImageLoader;
+import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.support.widget.LinearLayoutManager;
+import org.telegram.messenger.support.widget.RecyclerView;
 import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.TLObject;
-import org.telegram.messenger.TLRPC;
-import org.telegram.messenger.ConnectionsManager;
+import org.telegram.tgnet.ConnectionsManager;
+import org.telegram.tgnet.RequestDelegate;
+import org.telegram.tgnet.TLObject;
+import org.telegram.tgnet.TLRPC;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
-import org.telegram.android.MessagesStorage;
-import org.telegram.android.NotificationCenter;
+import org.telegram.messenger.MessagesStorage;
+import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
-import org.telegram.messenger.RPCRequest;
 
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
@@ -87,7 +87,7 @@ public class WallpapersActivity extends BaseFragment implements NotificationCent
         selectedBackground = preferences.getInt("selectedBackground", 1000001);
         selectedColor = preferences.getInt("selectedColor", 0);
         MessagesStorage.getInstance().getWallpapers();
-        File toFile = new File(ApplicationLoader.applicationContext.getFilesDir(), "wallpaper-temp.jpg");
+        File toFile = new File(ApplicationLoader.getFilesDirFixed(), "wallpaper-temp.jpg");
         toFile.delete();
         return true;
     }
@@ -102,7 +102,7 @@ public class WallpapersActivity extends BaseFragment implements NotificationCent
     }
 
     @Override
-    public View createView(Context context, LayoutInflater inflater) {
+    public View createView(Context context) {
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBar.setAllowOverlayTitle(true);
         actionBar.setTitle(LocaleController.getString("ChatBackground", R.string.ChatBackground));
@@ -125,7 +125,7 @@ public class WallpapersActivity extends BaseFragment implements NotificationCent
                         TLRPC.PhotoSize size = FileLoader.getClosestPhotoSizeWithSize(wallPaper.sizes, Math.min(width, height));
                         String fileName = size.location.volume_id + "_" + size.location.local_id + ".jpg";
                         File f = new File(FileLoader.getInstance().getDirectory(FileLoader.MEDIA_DIR_CACHE), fileName);
-                        File toFile = new File(ApplicationLoader.applicationContext.getFilesDir(), "wallpaper.jpg");
+                        File toFile = new File(ApplicationLoader.getFilesDirFixed(), "wallpaper.jpg");
                         try {
                             done = AndroidUtilities.copyFile(f, toFile);
                         } catch (Exception e) {
@@ -134,8 +134,8 @@ public class WallpapersActivity extends BaseFragment implements NotificationCent
                         }
                     } else {
                         if (selectedBackground == -1) {
-                            File fromFile = new File(ApplicationLoader.applicationContext.getFilesDir(), "wallpaper-temp.jpg");
-                            File toFile = new File(ApplicationLoader.applicationContext.getFilesDir(), "wallpaper.jpg");
+                            File fromFile = new File(ApplicationLoader.getFilesDirFixed(), "wallpaper-temp.jpg");
+                            File toFile = new File(ApplicationLoader.getFilesDirFixed(), "wallpaper.jpg");
                             done = fromFile.renameTo(toFile);
                         } else {
                             done = true;
@@ -248,11 +248,12 @@ public class WallpapersActivity extends BaseFragment implements NotificationCent
                 try {
                     Point screenSize = AndroidUtilities.getRealScreenSize();
                     Bitmap bitmap = ImageLoader.loadBitmap(currentPicturePath, null, screenSize.x, screenSize.y, true);
-                    File toFile = new File(ApplicationLoader.applicationContext.getFilesDir(), "wallpaper-temp.jpg");
+                    File toFile = new File(ApplicationLoader.getFilesDirFixed(), "wallpaper-temp.jpg");
                     stream = new FileOutputStream(toFile);
                     bitmap.compress(Bitmap.CompressFormat.JPEG, 87, stream);
                     selectedBackground = -1;
                     selectedColor = 0;
+                    Drawable drawable = backgroundImage.getDrawable();
                     backgroundImage.setImageBitmap(bitmap);
                 } catch (Exception e) {
                     FileLog.e("tmessages", e);
@@ -273,11 +274,12 @@ public class WallpapersActivity extends BaseFragment implements NotificationCent
                 try {
                     Point screenSize = AndroidUtilities.getRealScreenSize();
                     Bitmap bitmap = ImageLoader.loadBitmap(null, data.getData(), screenSize.x, screenSize.y, true);
-                    File toFile = new File(ApplicationLoader.applicationContext.getFilesDir(), "wallpaper-temp.jpg");
+                    File toFile = new File(ApplicationLoader.getFilesDirFixed(), "wallpaper-temp.jpg");
                     FileOutputStream stream = new FileOutputStream(toFile);
                     bitmap.compress(Bitmap.CompressFormat.JPEG, 87, stream);
                     selectedBackground = -1;
                     selectedColor = 0;
+                    Drawable drawable = backgroundImage.getDrawable();
                     backgroundImage.setImageBitmap(bitmap);
                 } catch (Exception e) {
                     FileLog.e("tmessages", e);
@@ -347,9 +349,9 @@ public class WallpapersActivity extends BaseFragment implements NotificationCent
                 backgroundImage.setBackgroundColor(0);
                 selectedColor = 0;
             } else if (selectedBackground == -1) {
-                File toFile = new File(ApplicationLoader.applicationContext.getFilesDir(), "wallpaper-temp.jpg");
+                File toFile = new File(ApplicationLoader.getFilesDirFixed(), "wallpaper-temp.jpg");
                 if (!toFile.exists()) {
-                    toFile = new File(ApplicationLoader.applicationContext.getFilesDir(), "wallpaper.jpg");
+                    toFile = new File(ApplicationLoader.getFilesDirFixed(), "wallpaper.jpg");
                 }
                 if (toFile.exists()) {
                     backgroundImage.setImageURI(Uri.fromFile(toFile));
@@ -362,6 +364,7 @@ public class WallpapersActivity extends BaseFragment implements NotificationCent
                     return;
                 }
                 if (wallPaper instanceof TLRPC.TL_wallPaperSolid) {
+                    Drawable drawable = backgroundImage.getDrawable();
                     backgroundImage.setImageBitmap(null);
                     selectedColor = 0xff000000 | wallPaper.bg_color;
                     backgroundImage.setBackgroundColor(selectedColor);
@@ -422,7 +425,7 @@ public class WallpapersActivity extends BaseFragment implements NotificationCent
 
     private void loadWallpapers() {
         TLRPC.TL_account_getWallPapers req = new TLRPC.TL_account_getWallPapers();
-        long reqId = ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
+        int reqId = ConnectionsManager.getInstance().sendRequest(req, new RequestDelegate() {
             @Override
             public void run(final TLObject response, TLRPC.TL_error error) {
                 if (error != null) {

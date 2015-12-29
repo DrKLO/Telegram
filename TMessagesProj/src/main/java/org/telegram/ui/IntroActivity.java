@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 1.3.2.
+ * This is the source code of Telegram for Android v. 3.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013.
+ * Copyright Nikolai Kudashov, 2013-2015.
  */
 
 package org.telegram.ui;
@@ -27,11 +27,14 @@ import android.view.animation.AnimationUtils;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import org.telegram.android.AndroidUtilities;
-import org.telegram.android.LocaleController;
+import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.BuildConfig;
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
+import org.telegram.tgnet.ConnectionsManager;
 
 public class IntroActivity extends Activity {
+
     private ViewPager viewPager;
     private ImageView topImage1;
     private ImageView topImage2;
@@ -57,7 +60,7 @@ public class IntroActivity extends Activity {
         }
 
         if (LocaleController.isRTL) {
-            icons = new int[] {
+            icons = new int[]{
                     R.drawable.intro7,
                     R.drawable.intro6,
                     R.drawable.intro5,
@@ -66,7 +69,7 @@ public class IntroActivity extends Activity {
                     R.drawable.intro2,
                     R.drawable.intro1
             };
-            titles = new int[] {
+            titles = new int[]{
                     R.string.Page7Title,
                     R.string.Page6Title,
                     R.string.Page5Title,
@@ -75,7 +78,7 @@ public class IntroActivity extends Activity {
                     R.string.Page2Title,
                     R.string.Page1Title
             };
-            messages = new int[] {
+            messages = new int[]{
                     R.string.Page7Message,
                     R.string.Page6Message,
                     R.string.Page5Message,
@@ -85,7 +88,7 @@ public class IntroActivity extends Activity {
                     R.string.Page1Message
             };
         } else {
-            icons = new int[] {
+            icons = new int[]{
                     R.drawable.intro1,
                     R.drawable.intro2,
                     R.drawable.intro3,
@@ -94,7 +97,7 @@ public class IntroActivity extends Activity {
                     R.drawable.intro6,
                     R.drawable.intro7
             };
-            titles = new int[] {
+            titles = new int[]{
                     R.string.Page1Title,
                     R.string.Page2Title,
                     R.string.Page3Title,
@@ -103,7 +106,7 @@ public class IntroActivity extends Activity {
                     R.string.Page6Title,
                     R.string.Page7Title
             };
-            messages = new int[] {
+            messages = new int[]{
                     R.string.Page1Message,
                     R.string.Page2Message,
                     R.string.Page3Message,
@@ -113,23 +116,23 @@ public class IntroActivity extends Activity {
                     R.string.Page7Message
             };
         }
-        viewPager = (ViewPager)findViewById(R.id.intro_view_pager);
+        viewPager = (ViewPager) findViewById(R.id.intro_view_pager);
         TextView startMessagingButton = (TextView) findViewById(R.id.start_messaging_button);
         startMessagingButton.setText(LocaleController.getString("StartMessaging", R.string.StartMessaging).toUpperCase());
         if (Build.VERSION.SDK_INT >= 21) {
             StateListAnimator animator = new StateListAnimator();
-            animator.addState(new int[] {android.R.attr.state_pressed}, ObjectAnimator.ofFloat(startMessagingButton, "translationZ", AndroidUtilities.dp(2), AndroidUtilities.dp(4)).setDuration(200));
-            animator.addState(new int[] {}, ObjectAnimator.ofFloat(startMessagingButton, "translationZ", AndroidUtilities.dp(4), AndroidUtilities.dp(2)).setDuration(200));
+            animator.addState(new int[]{android.R.attr.state_pressed}, ObjectAnimator.ofFloat(startMessagingButton, "translationZ", AndroidUtilities.dp(2), AndroidUtilities.dp(4)).setDuration(200));
+            animator.addState(new int[]{}, ObjectAnimator.ofFloat(startMessagingButton, "translationZ", AndroidUtilities.dp(4), AndroidUtilities.dp(2)).setDuration(200));
             startMessagingButton.setStateListAnimator(animator);
         }
-        topImage1 = (ImageView)findViewById(R.id.icon_image1);
-        topImage2 = (ImageView)findViewById(R.id.icon_image2);
-        bottomPages = (ViewGroup)findViewById(R.id.bottom_pages);
+        topImage1 = (ImageView) findViewById(R.id.icon_image1);
+        topImage2 = (ImageView) findViewById(R.id.icon_image2);
+        bottomPages = (ViewGroup) findViewById(R.id.bottom_pages);
         topImage2.setVisibility(View.GONE);
         viewPager.setAdapter(new IntroAdapter());
         viewPager.setPageMargin(0);
         viewPager.setOffscreenPageLimit(1);
-        viewPager.setOnPageChangeListener(new ViewPager.OnPageChangeListener() {
+        viewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
             @Override
             public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
 
@@ -218,6 +221,15 @@ public class IntroActivity extends Activity {
                 finish();
             }
         });
+        if (BuildConfig.DEBUG) {
+            startMessagingButton.setOnLongClickListener(new View.OnLongClickListener() {
+                @Override
+                public boolean onLongClick(View v) {
+                    ConnectionsManager.getInstance().switchBackend();
+                    return true;
+                }
+            });
+        }
 
         justCreated = true;
     }
@@ -254,8 +266,8 @@ public class IntroActivity extends Activity {
         @Override
         public Object instantiateItem(ViewGroup container, int position) {
             View view = View.inflate(container.getContext(), R.layout.intro_view_layout, null);
-            TextView headerTextView = (TextView)view.findViewById(R.id.header_text);
-            TextView messageTextView = (TextView)view.findViewById(R.id.message_text);
+            TextView headerTextView = (TextView) view.findViewById(R.id.header_text);
+            TextView messageTextView = (TextView) view.findViewById(R.id.message_text);
             container.addView(view, 0);
 
             headerTextView.setText(getString(titles[position]));
@@ -289,20 +301,12 @@ public class IntroActivity extends Activity {
         }
 
         @Override
-        public void finishUpdate(View arg0) {
-        }
-
-        @Override
         public void restoreState(Parcelable arg0, ClassLoader arg1) {
         }
 
         @Override
         public Parcelable saveState() {
             return null;
-        }
-
-        @Override
-        public void startUpdate(View arg0) {
         }
 
         @Override

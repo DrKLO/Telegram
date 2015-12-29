@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2014.
+ * Copyright Nikolai Kudashov, 2013-2015.
  */
 
 package org.telegram.ui.Components;
@@ -15,7 +15,7 @@ import android.graphics.drawable.Drawable;
 import android.view.View;
 import android.view.animation.DecelerateInterpolator;
 
-import org.telegram.android.AndroidUtilities;
+import org.telegram.messenger.AndroidUtilities;
 
 public class RadialProgress {
 
@@ -35,6 +35,7 @@ public class RadialProgress {
     private Drawable currentDrawable;
     private Drawable previousDrawable;
     private boolean hideCurrentDrawable;
+    private int progressColor = 0xffffffff;
 
     private static DecelerateInterpolator decelerateInterpolator = null;
     private static Paint progressPaint = null;
@@ -46,7 +47,6 @@ public class RadialProgress {
             progressPaint.setStyle(Paint.Style.STROKE);
             progressPaint.setStrokeCap(Paint.Cap.ROUND);
             progressPaint.setStrokeWidth(AndroidUtilities.dp(2));
-            progressPaint.setColor(0xffffffff);
         }
         parent = parentView;
     }
@@ -86,7 +86,7 @@ public class RadialProgress {
     }
 
     public void setProgressColor(int color) {
-        progressPaint.setColor(color);
+        progressColor = color;
     }
 
     public void setHideCurrentDrawable(boolean value) {
@@ -135,7 +135,7 @@ public class RadialProgress {
         return previousDrawable != null || currentDrawable != null ? animatedAlphaValue : 0.0f;
     }
 
-    public void onDraw(Canvas canvas) {
+    public void draw(Canvas canvas) {
         if (previousDrawable != null) {
             previousDrawable.setAlpha((int)(255 * animatedAlphaValue));
             previousDrawable.setBounds((int)progressRect.left, (int)progressRect.top, (int)progressRect.right, (int)progressRect.bottom);
@@ -154,6 +154,7 @@ public class RadialProgress {
 
         if (currentWithRound || previousWithRound) {
             int diff = AndroidUtilities.dp(1);
+            progressPaint.setColor(progressColor);
             if (previousWithRound) {
                 progressPaint.setAlpha((int)(255 * animatedAlphaValue));
             } else {

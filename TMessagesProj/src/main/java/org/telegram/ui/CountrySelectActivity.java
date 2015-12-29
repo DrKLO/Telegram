@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 1.3.2.
+ * This is the source code of Telegram for Android v. 3.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013.
+ * Copyright Nikolai Kudashov, 2013-2015.
  */
 
 package org.telegram.ui;
@@ -11,7 +11,6 @@ package org.telegram.ui;
 import android.content.Context;
 import android.os.Build;
 import android.view.Gravity;
-import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.AbsListView;
@@ -22,8 +21,8 @@ import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
 
-import org.telegram.android.AndroidUtilities;
-import org.telegram.android.LocaleController;
+import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.ui.Adapters.CountryAdapter;
 import org.telegram.ui.Adapters.CountryAdapter.Country;
@@ -62,7 +61,7 @@ public class CountrySelectActivity extends BaseFragment {
     }
 
     @Override
-    public View createView(Context context, LayoutInflater inflater) {
+    public View createView(Context context) {
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBar.setAllowOverlayTitle(true);
         actionBar.setTitle(LocaleController.getString("ChooseCountry", R.string.ChooseCountry));
@@ -84,7 +83,7 @@ public class CountrySelectActivity extends BaseFragment {
             }
 
             @Override
-            public boolean onSearchCollapse() {
+            public void onSearchCollapse() {
                 searchListViewAdapter.search(null);
                 searching = false;
                 searchWas = false;
@@ -96,8 +95,6 @@ public class CountrySelectActivity extends BaseFragment {
                 listView.setVerticalScrollBarEnabled(false);
 
                 emptyTextView.setText(LocaleController.getString("ChooseCountry", R.string.ChooseCountry));
-
-                return true;
             }
 
             @Override
@@ -187,7 +184,7 @@ public class CountrySelectActivity extends BaseFragment {
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
-                Country country = null;
+                Country country;
                 if (searching && searchWas) {
                     country = searchListViewAdapter.getItem(i);
                 } else {
@@ -201,10 +198,10 @@ public class CountrySelectActivity extends BaseFragment {
                 if (i < 0) {
                     return;
                 }
+                finishFragment();
                 if (country != null && delegate != null) {
                     delegate.didSelectCountry(country.name);
                 }
-                finishFragment();
             }
         });
 

@@ -1,5 +1,5 @@
 /*
- * This is the source code of Telegram for Android v. 2.x
+ * This is the source code of Telegram for Android v. 3.x.x
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
@@ -13,13 +13,13 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.util.TypedValue;
 import android.view.Gravity;
-import android.widget.FrameLayout;
 import android.widget.TextView;
 
-import org.telegram.android.LocaleController;
+import org.telegram.messenger.LocaleController;
+import org.telegram.ui.Components.FrameLayoutFixed;
 import org.telegram.ui.Components.LayoutHelper;
 
-public class TextBlockCell extends FrameLayout {
+public class TextBlockCell extends FrameLayoutFixed {
 
     private TextView textView;
     private static Paint paint;

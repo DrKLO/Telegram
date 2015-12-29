@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 2.x.x.
+ * This is the source code of Telegram for Android v. 3.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2014.
+ * Copyright Nikolai Kudashov, 2013-2015.
  */
 
 package org.telegram.ui.Cells;
@@ -11,19 +11,21 @@ package org.telegram.ui.Cells;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.graphics.Rect;
+import android.os.Build;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
+import android.view.MotionEvent;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import org.telegram.android.AndroidUtilities;
-import org.telegram.android.AnimationCompat.ViewProxy;
-import org.telegram.android.LocaleController;
-import org.telegram.android.query.StickersQuery;
+import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.AnimationCompat.ViewProxy;
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
-import org.telegram.messenger.TLRPC;
+import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.LayoutHelper;
 
@@ -36,7 +38,8 @@ public class StickerSetCell extends FrameLayout {
     private BackupImageView imageView;
     private boolean needDivider;
     private ImageView optionsButton;
-    private TLRPC.TL_stickerSet stickersSet;
+    private TLRPC.TL_messages_stickerSet stickersSet;
+    private Rect rect = new Rect();
 
     private static Paint paint;
 
@@ -56,7 +59,7 @@ public class StickerSetCell extends FrameLayout {
         textView.setSingleLine(true);
         textView.setEllipsize(TextUtils.TruncateAt.END);
         textView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
-        addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT, LocaleController.isRTL ? 40 : 71, 10, LocaleController.isRTL ? 40 : 71, 0));
+        addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT, LocaleController.isRTL ? 40 : 71, 10, LocaleController.isRTL ? 71 : 40, 0));
 
         valueTextView = new TextView(context);
         valueTextView.setTextColor(0xff8a8a8a);
@@ -65,13 +68,21 @@ public class StickerSetCell extends FrameLayout {
         valueTextView.setMaxLines(1);
         valueTextView.setSingleLine(true);
         valueTextView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
-        addView(valueTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT, LocaleController.isRTL ? 40 : 71, 35, LocaleController.isRTL ? 40 : 71, 0));
+        addView(valueTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT, LocaleController.isRTL ? 40 : 71, 35, LocaleController.isRTL ? 71 : 40, 0));
 
         imageView = new BackupImageView(context);
         imageView.setAspectFit(true);
         addView(imageView, LayoutHelper.createFrame(48, 48, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 0 : 12, 8, LocaleController.isRTL ? 12 : 0, 0));
 
-        optionsButton = new ImageView(context);
+        optionsButton = new ImageView(context) {
+            @Override
+            public boolean onTouchEvent(MotionEvent event) {
+                if (event.getAction() == MotionEvent.ACTION_UP) {
+                    StickerSetCell.this.getParent().requestDisallowInterceptTouchEvent(true);
+                }
+                return super.onTouchEvent(event);
+            }
+        };
         optionsButton.setBackgroundResource(R.drawable.bar_selector_grey);
         optionsButton.setImageResource(R.drawable.doc_actions_b);
         optionsButton.setScaleType(ImageView.ScaleType.CENTER);
@@ -91,32 +102,25 @@ public class StickerSetCell extends FrameLayout {
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(64) + (needDivider ? 1 : 0), MeasureSpec.EXACTLY));
+        super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(64) + (needDivider ? 1 : 0), MeasureSpec.EXACTLY));
     }
 
-    public void setStickersSet(TLRPC.TL_stickerSet set, boolean divider) {
+    public void setStickersSet(TLRPC.TL_messages_stickerSet set, boolean divider) {
         needDivider = divider;
         stickersSet = set;
 
-        if (stickersSet.id == -1) {
-            textView.setText(LocaleController.getString("GeniusStickerPackName", R.string.GeniusStickerPackName));
-            if (StickersQuery.getHideMainStickersPack()) {
-                ViewProxy.setAlpha(textView, 0.5f);
-                ViewProxy.setAlpha(valueTextView, 0.5f);
-                ViewProxy.setAlpha(imageView, 0.5f);
-            } else {
-                ViewProxy.setAlpha(textView, 1.0f);
-                ViewProxy.setAlpha(valueTextView, 1.0f);
-                ViewProxy.setAlpha(imageView, 1.0f);
-            }
+        textView.setText(stickersSet.set.title);
+        if (stickersSet.set.disabled) {
+            ViewProxy.setAlpha(textView, 0.5f);
+            ViewProxy.setAlpha(valueTextView, 0.5f);
+            ViewProxy.setAlpha(imageView, 0.5f);
         } else {
-            textView.setText(stickersSet.title);
             ViewProxy.setAlpha(textView, 1.0f);
             ViewProxy.setAlpha(valueTextView, 1.0f);
             ViewProxy.setAlpha(imageView, 1.0f);
         }
-        ArrayList<TLRPC.Document> documents = StickersQuery.getStickersForSet(stickersSet.id);
-        if (documents != null) {
+        ArrayList<TLRPC.Document> documents = set.documents;
+        if (documents != null && !documents.isEmpty()) {
             valueTextView.setText(LocaleController.formatPluralString("Stickers", documents.size()));
             TLRPC.Document document = documents.get(0);
             if (document.thumb != null && document.thumb.location != null) {
@@ -131,8 +135,22 @@ public class StickerSetCell extends FrameLayout {
         optionsButton.setOnClickListener(listener);
     }
 
-    public TLRPC.TL_stickerSet getStickersSet() {
+    public TLRPC.TL_messages_stickerSet getStickersSet() {
         return stickersSet;
+    }
+
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+        if (Build.VERSION.SDK_INT >= 21 && getBackground() != null) {
+            optionsButton.getHitRect(rect);
+            if (rect.contains((int) event.getX(), (int) event.getY())) {
+                return true;
+            }
+            if (event.getAction() == MotionEvent.ACTION_DOWN || event.getAction() == MotionEvent.ACTION_MOVE) {
+                getBackground().setHotspot(event.getX(), event.getY());
+            }
+        }
+        return super.onTouchEvent(event);
     }
 
     @Override

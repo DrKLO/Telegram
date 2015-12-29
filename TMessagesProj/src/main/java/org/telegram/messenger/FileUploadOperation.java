@@ -1,5 +1,5 @@
 /*
- * This is the source code of Telegram for Android v. 2.x.x.
+ * This is the source code of Telegram for Android v. 3.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
@@ -10,6 +10,12 @@ package org.telegram.messenger;
 
 import android.app.Activity;
 import android.content.SharedPreferences;
+
+import org.telegram.tgnet.ConnectionsManager;
+import org.telegram.tgnet.NativeByteBuffer;
+import org.telegram.tgnet.RequestDelegate;
+import org.telegram.tgnet.TLObject;
+import org.telegram.tgnet.TLRPC;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -24,7 +30,7 @@ public class FileUploadOperation {
     public int state = 0;
     private byte[] readBuffer;
     public FileUploadOperationDelegate delegate;
-    private long requestToken = 0;
+    private int requestToken = 0;
     private int currentPartNum = 0;
     private long currentFileId;
     private boolean isLastPart = false;
@@ -57,6 +63,10 @@ public class FileUploadOperation {
         estimatedSize = estimated;
     }
 
+    public long getTotalFileSize() {
+        return totalFileSize;
+    }
+
     public void start() {
         if (state != 0) {
             return;
@@ -71,12 +81,12 @@ public class FileUploadOperation {
     }
 
     public void cancel() {
-        if (state != 1) {
+        if (state == 3) {
             return;
         }
         state = 2;
         if (requestToken != 0) {
-            ConnectionsManager.getInstance().cancelRpc(requestToken, true);
+            ConnectionsManager.getInstance().cancelRequest(requestToken, true);
         }
         delegate.didFailedUploadingFile(this);
         cleanup();
@@ -217,11 +227,11 @@ public class FileUploadOperation {
                                         if (isEncrypted && read % 16 != 0) {
                                             toAdd += 16 - read % 16;
                                         }
-                                        ByteBufferDesc sendBuffer = BuffersStorage.getInstance().getFreeBuffer(read + toAdd);
+                                        NativeByteBuffer sendBuffer = new NativeByteBuffer(read + toAdd);
                                         if (read != uploadChunkSize || totalPartsCount == currentPartNum + 1) {
                                             isLastPart = true;
                                         }
-                                        sendBuffer.writeRaw(readBuffer, 0, read);
+                                        sendBuffer.writeBytes(readBuffer, 0, read);
                                         if (isEncrypted) {
                                             for (int a = 0; a < toAdd; a++) {
                                                 sendBuffer.writeByte(0);
@@ -230,7 +240,7 @@ public class FileUploadOperation {
                                         }
                                         sendBuffer.rewind();
                                         mdEnc.update(sendBuffer.buffer);
-                                        BuffersStorage.getInstance().reuseFreeBuffer(sendBuffer);
+                                        sendBuffer.reuse();
                                     }
                                 } else {
                                     stream.skip(uploadedSize);
@@ -317,11 +327,11 @@ public class FileUploadOperation {
             if (isEncrypted && read % 16 != 0) {
                 toAdd += 16 - read % 16;
             }
-            ByteBufferDesc sendBuffer = BuffersStorage.getInstance().getFreeBuffer(read + toAdd);
+            NativeByteBuffer sendBuffer = new NativeByteBuffer(read + toAdd);
             if (read != uploadChunkSize || estimatedSize == 0 && totalPartsCount == currentPartNum + 1) {
                 isLastPart = true;
             }
-            sendBuffer.writeRaw(readBuffer, 0, read);
+            sendBuffer.writeBytes(readBuffer, 0, read);
             if (isEncrypted) {
                 for (int a = 0; a < toAdd; a++) {
                     sendBuffer.writeByte(0);
@@ -357,7 +367,7 @@ public class FileUploadOperation {
             cleanup();
             return;
         }
-        requestToken = ConnectionsManager.getInstance().performRpc(finalRequest, new RPCRequest.RPCRequestDelegate() {
+        requestToken = ConnectionsManager.getInstance().sendRequest(finalRequest, new RequestDelegate() {
             @Override
             public void run(TLObject response, TLRPC.TL_error error) {
                 requestToken = 0;
@@ -406,6 +416,6 @@ public class FileUploadOperation {
                     cleanup();
                 }
             }
-        }, null, true, RPCRequest.RPCRequestClassUploadMedia, ConnectionsManager.DEFAULT_DATACENTER_ID);
+        }, 0, ConnectionsManager.ConnectionTypeUpload);
     }
 }

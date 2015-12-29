@@ -1,5 +1,5 @@
 /*
- * This is the source code of Telegram for Android v. 2.x
+ * This is the source code of Telegram for Android v. 3.x.x
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
@@ -11,9 +11,7 @@ package org.telegram.ui.Components;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Bitmap;
-import android.graphics.Canvas;
 import android.graphics.Matrix;
-import android.graphics.Paint;
 import android.graphics.SurfaceTexture;
 import android.opengl.GLES20;
 import android.opengl.GLUtils;
@@ -29,18 +27,18 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import org.telegram.android.AndroidUtilities;
-import org.telegram.android.LocaleController;
-import org.telegram.android.support.widget.LinearLayoutManager;
-import org.telegram.android.support.widget.RecyclerView;
+import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.support.widget.LinearLayoutManager;
+import org.telegram.messenger.support.widget.RecyclerView;
 import org.telegram.messenger.DispatchQueue;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
-import org.telegram.android.AnimationCompat.AnimatorListenerAdapterProxy;
-import org.telegram.android.AnimationCompat.AnimatorSetProxy;
-import org.telegram.android.AnimationCompat.ObjectAnimatorProxy;
-import org.telegram.android.AnimationCompat.ViewProxy;
+import org.telegram.messenger.AnimationCompat.AnimatorListenerAdapterProxy;
+import org.telegram.messenger.AnimationCompat.AnimatorSetProxy;
+import org.telegram.messenger.AnimationCompat.ObjectAnimatorProxy;
+import org.telegram.messenger.AnimationCompat.ViewProxy;
 import org.telegram.ui.Cells.PhotoEditToolCell;
 
 import java.nio.ByteBuffer;
@@ -1205,28 +1203,29 @@ public class PhotoFilterView extends FrameLayout {
         }
 
         private Bitmap createBitmap(Bitmap bitmap, int w, int h, float scale) {
-            Bitmap result = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
-            Canvas canvas = new Canvas(result);
-            Paint paint = new Paint();
-            paint.setFilterBitmap(true);
+            //Bitmap result = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
+            //Canvas canvas = new Canvas(result);
+            //Paint paint = new Paint();
+            //paint.setFilterBitmap(true);
 
             Matrix matrix = new Matrix();
             matrix.setScale(scale, scale);
-            matrix.postTranslate(-bitmap.getWidth() / 2, -bitmap.getHeight() / 2);
+            //matrix.postTranslate(-bitmap.getWidth() / 2, -bitmap.getHeight() / 2);
             matrix.postRotate(orientation);
-            if (orientation == 90 || orientation == 270) {
+            /*if (orientation == 90 || orientation == 270) {
                 matrix.postTranslate(bitmap.getHeight() / 2, bitmap.getWidth() / 2);
             } else {
                 matrix.postTranslate(bitmap.getWidth() / 2, bitmap.getHeight() / 2);
-            }
-            canvas.drawBitmap(bitmap, matrix, paint);
-            try {
-                canvas.setBitmap(null);
-            } catch (Exception e) {
+            }*/
+            //canvas.drawBitmap(bitmap, matrix, paint);
+            //try {
+            //    canvas.setBitmap(null);
+            //} catch (Exception e) {
                 //don't promt, this will crash on 2.x
-            }
+            //}
+            return Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, true);
 
-            return result;
+            //return result;
         }
 
         private void loadTexture(Bitmap bitmap) {

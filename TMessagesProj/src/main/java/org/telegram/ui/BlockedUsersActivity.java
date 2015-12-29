@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 1.3.2.
+ * This is the source code of Telegram for Android v. 3.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013.
+ * Copyright Nikolai Kudashov, 2013-2015.
  */
 
 package org.telegram.ui;
@@ -14,7 +14,6 @@ import android.content.DialogInterface;
 import android.os.Build;
 import android.os.Bundle;
 import android.view.Gravity;
-import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
@@ -25,10 +24,10 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import org.telegram.PhoneFormat.PhoneFormat;
-import org.telegram.android.LocaleController;
-import org.telegram.messenger.TLRPC;
-import org.telegram.android.MessagesController;
-import org.telegram.android.NotificationCenter;
+import org.telegram.messenger.LocaleController;
+import org.telegram.tgnet.TLRPC;
+import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.ui.Adapters.BaseFragmentAdapter;
 import org.telegram.ui.Cells.TextInfoCell;
@@ -46,6 +45,7 @@ public class BlockedUsersActivity extends BaseFragment implements NotificationCe
     private TextView emptyTextView;
     private int selectedUserId;
 
+
     private final static int block_user = 1;
 
     @Override
@@ -53,6 +53,7 @@ public class BlockedUsersActivity extends BaseFragment implements NotificationCe
         super.onFragmentCreate();
         NotificationCenter.getInstance().addObserver(this, NotificationCenter.updateInterfaces);
         NotificationCenter.getInstance().addObserver(this, NotificationCenter.blockedUsersDidLoaded);
+        MessagesController.getInstance().getBlockedUsers(false);
         return true;
     }
 
@@ -61,11 +62,10 @@ public class BlockedUsersActivity extends BaseFragment implements NotificationCe
         super.onFragmentDestroy();
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.updateInterfaces);
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.blockedUsersDidLoaded);
-        MessagesController.getInstance().getBlockedUsers(false);
     }
 
     @Override
-    public View createView(Context context, LayoutInflater inflater) {
+    public View createView(Context context) {
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBar.setAllowOverlayTitle(true);
         actionBar.setTitle(LocaleController.getString("BlockedUsers", R.string.BlockedUsers));
@@ -263,7 +263,7 @@ public class BlockedUsersActivity extends BaseFragment implements NotificationCe
             int type = getItemViewType(i);
             if (type == 0) {
                 if (view == null) {
-                    view = new UserCell(mContext, 1);
+                    view = new UserCell(mContext, 1, 0);
                 }
                 TLRPC.User user = MessagesController.getInstance().getUser(MessagesController.getInstance().blockedUsers.get(i));
                 if (user != null) {

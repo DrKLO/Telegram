@@ -3,20 +3,21 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2014.
+ * Copyright Nikolai Kudashov, 2013-2015.
  */
 
 package org.telegram.ui.Adapters;
 
 import android.content.Context;
+import android.text.TextUtils;
 import android.view.View;
 import android.view.ViewGroup;
 
-import org.telegram.android.NotificationCenter;
-import org.telegram.android.query.StickersQuery;
-import org.telegram.android.support.widget.RecyclerView;
+import org.telegram.messenger.NotificationCenter;
+import org.telegram.messenger.query.StickersQuery;
+import org.telegram.messenger.support.widget.RecyclerView;
 import org.telegram.messenger.FileLoader;
-import org.telegram.messenger.TLRPC;
+import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.Cells.StickerCell;
 
 import java.io.File;
@@ -51,7 +52,7 @@ public class StickersAdapter extends RecyclerView.Adapter implements Notificatio
         NotificationCenter.getInstance().addObserver(this, NotificationCenter.FileDidFailedLoad);
     }
 
-    public void destroy() {
+    public void onDestroy() {
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.FileDidLoaded);
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.FileDidFailedLoad);
     }
@@ -87,8 +88,18 @@ public class StickersAdapter extends RecyclerView.Adapter implements Notificatio
     }
 
     public void loadStikersForEmoji(CharSequence emoji) {
-        boolean search = emoji != null && emoji.length() != 0 && emoji.length() <= 2;
+        boolean search = emoji != null && emoji.length() > 0 && emoji.length() <= 14;
         if (search) {
+            int length = emoji.length();
+            for (int a = 0; a < length; a++) {
+                if (a < length - 1 && emoji.charAt(a) == 0xD83C && emoji.charAt(a + 1) >= 0xDFFB && emoji.charAt(a + 1) <= 0xDFFF) {
+                    emoji = TextUtils.concat(emoji.subSequence(0, a), emoji.subSequence(a + 2, emoji.length()));
+                    break;
+                } else if (emoji.charAt(a) == 0xfe0f) {
+                    emoji = TextUtils.concat(emoji.subSequence(0, a), emoji.subSequence(a + 1, emoji.length()));
+                    length--;
+                }
+            }
             lastSticker = emoji.toString();
             HashMap<String, ArrayList<TLRPC.Document>> allStickers = StickersQuery.getAllStickers();
             if (allStickers != null) {

@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 1.7.x.
+ * This is the source code of Telegram for Android v. 3.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2014.
+ * Copyright Nikolai Kudashov, 2013-2015.
  */
 
 package org.telegram.ui.Components;
@@ -21,7 +21,7 @@ import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
 
-import org.telegram.android.AndroidUtilities;
+import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
 
@@ -202,7 +202,6 @@ public class VideoTimelineView extends View {
                         int h = (int) (bitmap.getHeight() * scale);
                         Rect srcRect = new Rect(0, 0, bitmap.getWidth(), bitmap.getHeight());
                         Rect destRect = new Rect((frameWidth - w) / 2, (frameHeight - h) / 2, w, h);
-                        Paint paint = new Paint();
                         canvas.drawBitmap(bitmap, srcRect, destRect, null);
                         bitmap.recycle();
                         bitmap = result;

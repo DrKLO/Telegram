@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 1.7.x.
+ * This is the source code of Telegram for Android v. 3.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2014.
+ * Copyright Nikolai Kudashov, 2013-2015.
  */
 
 package org.telegram.ui.ActionBar;
@@ -11,10 +11,11 @@ package org.telegram.ui.ActionBar;
 import android.graphics.Canvas;
 import android.graphics.ColorFilter;
 import android.graphics.Paint;
+import android.graphics.PixelFormat;
 import android.graphics.drawable.Drawable;
 import android.view.animation.DecelerateInterpolator;
 
-import org.telegram.android.AndroidUtilities;
+import org.telegram.messenger.AndroidUtilities;
 
 public class MenuDrawable extends Drawable {
 
@@ -79,11 +80,11 @@ public class MenuDrawable extends Drawable {
         canvas.save();
         canvas.translate(getIntrinsicWidth() / 2, getIntrinsicHeight() / 2);
         canvas.rotate(currentRotation * (reverseAngle ? -180 : 180));
-        canvas.drawLine(-AndroidUtilities.dp(9), 0, AndroidUtilities.dp(9) - AndroidUtilities.dp(1) * currentRotation, 0, paint);
+        canvas.drawLine(-AndroidUtilities.dp(9), 0, AndroidUtilities.dp(9) - AndroidUtilities.dp(3.0f) * currentRotation, 0, paint);
         float endYDiff = AndroidUtilities.dp(5) * (1 - Math.abs(currentRotation)) - AndroidUtilities.dp(0.5f) * Math.abs(currentRotation);
-        float endXDiff = AndroidUtilities.dp(9) - AndroidUtilities.dp(0.5f) *  Math.abs(currentRotation);
-        float startYDiff = AndroidUtilities.dp(5) + AndroidUtilities.dp(3.5f) * Math.abs(currentRotation);
-        float startXDiff = -AndroidUtilities.dp(9) + AndroidUtilities.dp(8.5f) * Math.abs(currentRotation);
+        float endXDiff = AndroidUtilities.dp(9) - AndroidUtilities.dp(2.5f) * Math.abs(currentRotation);
+        float startYDiff = AndroidUtilities.dp(5) + AndroidUtilities.dp(2.0f) * Math.abs(currentRotation);
+        float startXDiff = -AndroidUtilities.dp(9) + AndroidUtilities.dp(7.5f) * Math.abs(currentRotation);
         canvas.drawLine(startXDiff, -startYDiff, endXDiff, -endYDiff, paint);
         canvas.drawLine(startXDiff, startYDiff, endXDiff, endYDiff, paint);
         canvas.restore();
@@ -101,7 +102,7 @@ public class MenuDrawable extends Drawable {
 
     @Override
     public int getOpacity() {
-        return 0;
+        return PixelFormat.TRANSPARENT;
     }
 
     @Override

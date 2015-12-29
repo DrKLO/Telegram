@@ -1,5 +1,5 @@
 /*
- * This is the source code of Telegram for Android v. 2.x
+ * This is the source code of Telegram for Android v. 3.x.x
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
@@ -15,7 +15,6 @@ import android.content.DialogInterface;
 import android.os.Build;
 import android.util.TypedValue;
 import android.view.Gravity;
-import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
@@ -29,16 +28,16 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import org.telegram.android.AndroidUtilities;
-import org.telegram.android.LocaleController;
-import org.telegram.android.MessagesController;
-import org.telegram.android.NotificationCenter;
-import org.telegram.messenger.ConnectionsManager;
+import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
-import org.telegram.messenger.RPCRequest;
-import org.telegram.messenger.TLObject;
-import org.telegram.messenger.TLRPC;
+import org.telegram.tgnet.ConnectionsManager;
+import org.telegram.tgnet.RequestDelegate;
+import org.telegram.tgnet.TLObject;
+import org.telegram.tgnet.TLRPC;
 import org.telegram.messenger.UserConfig;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.BaseFragment;
@@ -86,7 +85,7 @@ public class SessionsActivity extends BaseFragment implements NotificationCenter
     }
 
     @Override
-    public View createView(Context context, LayoutInflater inflater) {
+    public View createView(Context context) {
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBar.setAllowOverlayTitle(true);
         actionBar.setTitle(LocaleController.getString("SessionsTitle", R.string.SessionsTitle));
@@ -109,7 +108,7 @@ public class SessionsActivity extends BaseFragment implements NotificationCenter
         emptyLayout.setOrientation(LinearLayout.VERTICAL);
         emptyLayout.setGravity(Gravity.CENTER);
         emptyLayout.setBackgroundResource(R.drawable.greydivider_bottom);
-        emptyLayout.setLayoutParams(new AbsListView.LayoutParams(AbsListView.LayoutParams.MATCH_PARENT, AndroidUtilities.displaySize.y - AndroidUtilities.getCurrentActionBarHeight()));
+        emptyLayout.setLayoutParams(new AbsListView.LayoutParams(AbsListView.LayoutParams.MATCH_PARENT, AndroidUtilities.displaySize.y - ActionBar.getCurrentActionBarHeight()));
 
         ImageView imageView = new ImageView(context);
         imageView.setImageResource(R.drawable.devices);
@@ -195,7 +194,7 @@ public class SessionsActivity extends BaseFragment implements NotificationCenter
                         @Override
                         public void onClick(DialogInterface dialogInterface, int i) {
                             TLRPC.TL_auth_resetAuthorizations req = new TLRPC.TL_auth_resetAuthorizations();
-                            ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
+                            ConnectionsManager.getInstance().sendRequest(req, new RequestDelegate() {
                                 @Override
                                 public void run(final TLObject response, final TLRPC.TL_error error) {
                                     AndroidUtilities.runOnUIThread(new Runnable() {
@@ -215,10 +214,9 @@ public class SessionsActivity extends BaseFragment implements NotificationCenter
                                         }
                                     });
                                     UserConfig.registeredForPush = false;
-                                    UserConfig.registeredForInternalPush = false;
                                     UserConfig.saveConfig(false);
                                     MessagesController.getInstance().registerForPush(UserConfig.pushString);
-                                    ConnectionsManager.getInstance().initPushConnection();
+                                    ConnectionsManager.getInstance().setUserId(UserConfig.getClientUserId());
                                 }
                             });
                         }
@@ -241,7 +239,7 @@ public class SessionsActivity extends BaseFragment implements NotificationCenter
                             final TLRPC.TL_authorization authorization = sessions.get(i - otherSessionsStartRow);
                             TLRPC.TL_account_resetAuthorization req = new TLRPC.TL_account_resetAuthorization();
                             req.hash = authorization.hash;
-                            ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
+                            ConnectionsManager.getInstance().sendRequest(req, new RequestDelegate() {
                                 @Override
                                 public void run(final TLObject response, final TLRPC.TL_error error) {
                                     AndroidUtilities.runOnUIThread(new Runnable() {
@@ -297,7 +295,7 @@ public class SessionsActivity extends BaseFragment implements NotificationCenter
             loading = true;
         }
         TLRPC.TL_account_getAuthorizations req = new TLRPC.TL_account_getAuthorizations();
-        long reqId = ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
+        int reqId = ConnectionsManager.getInstance().sendRequest(req, new RequestDelegate() {
             @Override
             public void run(final TLObject response, final TLRPC.TL_error error) {
                 AndroidUtilities.runOnUIThread(new Runnable() {
@@ -433,7 +431,7 @@ public class SessionsActivity extends BaseFragment implements NotificationCenter
             } else if (type == 3) {
                 ViewGroup.LayoutParams layoutParams = emptyLayout.getLayoutParams();
                 if (layoutParams != null) {
-                    layoutParams.height = Math.max(AndroidUtilities.dp(220), AndroidUtilities.displaySize.y - AndroidUtilities.getCurrentActionBarHeight() - AndroidUtilities.dp(128) - (Build.VERSION.SDK_INT >= 21 ? AndroidUtilities.statusBarHeight : 0));
+                    layoutParams.height = Math.max(AndroidUtilities.dp(220), AndroidUtilities.displaySize.y - ActionBar.getCurrentActionBarHeight() - AndroidUtilities.dp(128) - (Build.VERSION.SDK_INT >= 21 ? AndroidUtilities.statusBarHeight : 0));
                     emptyLayout.setLayoutParams(layoutParams);
                 }
                 return emptyLayout;
