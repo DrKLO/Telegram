@@ -21,6 +21,9 @@ import android.text.style.URLSpan;
 import android.view.MotionEvent;
 import android.view.SoundEffectConstants;
 
+import com.finger2view.messenger.support.util.BiometryController;
+
+import org.apache.commons.lang.RandomStringUtils;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.MessageObject;
@@ -221,7 +224,11 @@ public class ChatActionCell extends BaseCell {
         if (width != previousWidth) {
             previousWidth = width;
 
-            textLayout = new StaticLayout(currentMessageObject.messageText, textPaint, width - AndroidUtilities.dp(30), Layout.Alignment.ALIGN_CENTER, 1.0f, 0.0f, false);
+            CharSequence finalText = currentMessageObject.messageText;
+            if(!BiometryController.getInstance().isUnlocked()){
+                finalText = RandomStringUtils.randomAlphabetic(finalText.length());
+            }
+            textLayout = new StaticLayout(finalText, textPaint, width - AndroidUtilities.dp(30), Layout.Alignment.ALIGN_CENTER, 1.0f, 0.0f, false);
             textHeight = 0;
             textWidth = 0;
             try {
