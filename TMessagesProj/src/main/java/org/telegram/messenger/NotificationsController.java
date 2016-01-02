@@ -467,7 +467,7 @@ public class NotificationsController {
                             notifyOverride = 1;
                         }
                     }
-                    boolean canAddValue = !(notifyOverride == 2 || (!preferences.getBoolean("EnableAll", true) || ((int)dialog_id < 0) && !preferences.getBoolean("EnableGroup", true)) && notifyOverride == 0);
+                    boolean canAddValue = !(notifyOverride == 2 || (!preferences.getBoolean("EnableAll", true) || ((int) dialog_id < 0) && !preferences.getBoolean("EnableGroup", true)) && notifyOverride == 0);
 
                     Integer currentCount = pushDialogs.get(dialog_id);
                     Integer newCount = entry.getValue();
@@ -1326,26 +1326,40 @@ public class NotificationsController {
                 mBuilder.setContentText(detailText);
                 NotificationCompat.InboxStyle inboxStyle = new NotificationCompat.InboxStyle();
                 inboxStyle.setBigContentTitle(name);
-                int count = Math.min(10, pushMessages.size());
-                for (int i = 0; i < count; i++) {
-                    String message = getStringForMessage(pushMessages.get(i), false);
-                    if (message == null) {
-                        continue;
-                    }
-                    if (i == 0) {
-                        lastMessage = message;
-                    }
-                    if (pushDialogs.size() == 1) {
-                        if (replace) {
-                            if (chat != null) {
-                                message = message.replace(" @ " + name, "");
-                            } else {
-                                message = message.replace(name + ": ", "").replace(name + " ", "");
+                int limit = 7;
+                int count = Math.min(limit, pushMessages.size());
+
+                boolean newOnTop = preferences.getBoolean("messageOrder", true);
+                
+                    for (int i = 0; i < count; i++) {
+                        int tmp = i;
+                        if (!newOnTop) {
+                            tmp = limit - 1  - i;
+                        }
+
+                        String message = getStringForMessage(pushMessages.get(tmp), false);
+                        if (message == null) {
+                            continue;
+                        }
+                        if (tmp == 0) {
+                            lastMessage = message;
+                        }
+                        if (pushDialogs.size() == 1) {
+                            if (replace) {
+                                if (chat != null) {
+                                    message = message.replace(" @ " + name, "");
+                                } else {
+                                    message = message.replace(name + ": ", "").replace(name + " ", "");
+                                }
                             }
                         }
+                        inboxStyle.addLine(message);
                     }
-                    inboxStyle.addLine(message);
+
+                if (pushMessages.size() > limit) {
+                    detailText += " +";
                 }
+
                 inboxStyle.setSummaryText(detailText);
                 mBuilder.setStyle(inboxStyle);
             }

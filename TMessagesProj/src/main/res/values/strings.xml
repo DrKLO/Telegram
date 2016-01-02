@@ -460,6 +460,7 @@
     <string name="OnlyWhenScreenOff">Only when screen \"off\"</string>
     <string name="AlwaysShowPopup">Always show popup</string>
     <string name="BadgeNumber">Badge Counter</string>
+    <string name="MessageOrder">New notifications on top</string>
     <string name="Short">Short</string>
     <string name="Long">Long</string>
     <string name="SystemDefault">System default</string>
