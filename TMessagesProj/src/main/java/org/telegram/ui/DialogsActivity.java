@@ -183,7 +183,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             passcodeItem = menu.addItem(1, R.drawable.lock_close);
             updatePasscodeButton();
         }
-        ActionBarMenuItem item = menu.addItem(0, R.drawable.ic_ab_search).setIsSearchField(true).setActionBarMenuItemSearchListener(new ActionBarMenuItem.ActionBarMenuItemSearchListener() {
+        final ActionBarMenuItem item = menu.addItem(0, R.drawable.ic_ab_search).setIsSearchField(true).setActionBarMenuItemSearchListener(new ActionBarMenuItem.ActionBarMenuItemSearchListener() {
             @Override
             public void onSearchExpand() {
                 searching = true;
@@ -261,6 +261,11 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             }
         });
         item.getSearchField().setHint(LocaleController.getString("Search", R.string.Search));
+
+        if(!BiometryController.getInstance().isUnlocked()){
+            item.setVisibility(View.GONE);
+        }
+
         if (onlySelect) {
             actionBar.setBackButtonImage(R.drawable.ic_ab_back);
             actionBar.setTitle(LocaleController.getString("SelectChat", R.string.SelectChat));
@@ -628,6 +633,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             public void onClick(View v) {
                 BiometryController.getInstance().setUnlocked(!BiometryController.getInstance().isUnlocked());
                 listView.getAdapter().notifyDataSetChanged();
+                item.setVisibility(BiometryController.getInstance().isUnlocked() ? View.VISIBLE : View.GONE);
             }
         });
 
