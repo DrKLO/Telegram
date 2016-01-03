@@ -42,6 +42,8 @@ import android.widget.ListView;
 import android.widget.RelativeLayout;
 import android.widget.Toast;
 
+import com.finger2view.messenger.support.util.BiometryController;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.ChatObject;
@@ -284,8 +286,16 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                     if (!MessagesController.isFeatureEnabled("chat_create", actionBarLayout.fragmentsStack.get(actionBarLayout.fragmentsStack.size() - 1))) {
                         return;
                     }
-                    presentFragment(new GroupCreateActivity());
-                    drawerLayoutContainer.closeDrawer(false);
+                    if(!BiometryController.getInstance().isUnlocked()){
+                        AlertDialog.Builder builder = new AlertDialog.Builder(LaunchActivity.this);
+                        builder.setTitle("Oops!");
+                        builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), null);
+                        builder.setMessage(LocaleController.getString("GroupCreateBlockedFunctionality", R.string.GroupCreateBlockedFunctionality));
+                        LaunchActivity.this.showAlertDialog(builder);
+                    }else{
+                        presentFragment(new GroupCreateActivity());
+                        drawerLayoutContainer.closeDrawer(false);
+                    }
                 } else if (position == 3) {
                     Bundle args = new Bundle();
                     args.putBoolean("onlyUsers", true);
