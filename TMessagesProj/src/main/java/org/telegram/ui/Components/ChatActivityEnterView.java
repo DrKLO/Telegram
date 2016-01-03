@@ -334,7 +334,7 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
         };
         updateFieldHint();
         messageEditText.setImeOptions(EditorInfo.IME_FLAG_NO_EXTRACT_UI);
-        messageEditText.setInputType(messageEditText.getInputType() | EditorInfo.TYPE_TEXT_FLAG_CAP_SENTENCES | EditorInfo.TYPE_TEXT_FLAG_MULTI_LINE);
+        messageEditText.setInputType(messageEditText.getInputType() | EditorInfo.TYPE_TEXT_FLAG_CAP_SENTENCES | EditorInfo.TYPE_TEXT_VARIATION_SHORT_MESSAGE);
         messageEditText.setSingleLine(false);
         messageEditText.setMaxLines(4);
         messageEditText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
