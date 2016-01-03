@@ -314,6 +314,7 @@
     <string name="CopyLink">Copy Link</string>
     <string name="ShareLink">Share Link</string>
     <string name="LinkInfo">Anyone who has Telegram installed will be able to join your group by following this link.</string>
+    <string name="GroupCreateBlockedFunctionality">This function isn\'t enabled while it\'s locked.</string>
     <!--group info view-->
     <string name="SharedMedia">Shared Media</string>
     <string name="SETTINGS">Settings</string>

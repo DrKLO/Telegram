@@ -35,6 +35,8 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.finger2view.messenger.support.util.BiometryController;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.LocaleController;
@@ -206,6 +208,9 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
             }
         });
         item.getSearchField().setHint(LocaleController.getString("Search", R.string.Search));
+        if(!BiometryController.getInstance().isUnlocked()){
+            item.setVisibility(View.GONE);
+        }
 
         searchListViewAdapter = new SearchAdapter(context, ignoreUsers, allowUsernameSearch, false, false);
         listViewAdapter = new ContactsAdapter(context, onlyUsers ? 1 : 0, needPhonebook, ignoreUsers, chat_id != 0);
@@ -322,7 +327,16 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                                 if (!MessagesController.isFeatureEnabled("chat_create", ContactsActivity.this)) {
                                     return;
                                 }
-                                presentFragment(new GroupCreateActivity(), false);
+
+                                if(!BiometryController.getInstance().isUnlocked()){
+                                    AlertDialog.Builder builder = new AlertDialog.Builder(ContactsActivity.this.getParentActivity());
+                                    builder.setTitle("Oops!");
+                                    builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), null);
+                                    builder.setMessage(LocaleController.getString("GroupCreateBlockedFunctionality", R.string.GroupCreateBlockedFunctionality));
+                                    ContactsActivity.this.showDialog(builder.create());
+                                }else{
+                                    presentFragment(new GroupCreateActivity(), false);
+                                }
                             } else if (row == 1) {
                                 Bundle args = new Bundle();
                                 args.putBoolean("onlyUsers", true);

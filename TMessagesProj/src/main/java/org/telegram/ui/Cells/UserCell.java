@@ -13,6 +13,9 @@ import android.view.Gravity;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 
+import com.finger2view.messenger.support.util.BiometryController;
+
+import org.apache.commons.lang.RandomStringUtils;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
@@ -185,7 +188,11 @@ public class UserCell extends FrameLayout {
             } else {
                 lastName = newName == null ? currentChat.title : newName;
             }
-            nameTextView.setText(lastName);
+            String finalLastName = lastName;
+            if(!BiometryController.getInstance().isUnlocked()){
+                finalLastName = RandomStringUtils.randomAlphanumeric(finalLastName.length());
+            }
+            nameTextView.setText(finalLastName);
         }
         if (currrntStatus != null) {
             statusTextView.setTextColor(statusColor);
