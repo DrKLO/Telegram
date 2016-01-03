@@ -1063,7 +1063,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         if (channelMessagesImportant != 0) {
             headerItem.addSubItem(open_channel_profile, LocaleController.getString("OpenChannelProfile", R.string.OpenChannelProfile), 0);
         }
-        if (searchItem != null) {
+        if (searchItem != null && BiometryController.getInstance().isUnlocked()) {
             headerItem.addSubItem(search, LocaleController.getString("Search", R.string.Search), 0);
         }
         if (currentUser != null) {
