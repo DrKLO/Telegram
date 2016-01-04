@@ -782,7 +782,7 @@ public class MessageObject {
 
     public static void addLinks(CharSequence messageText, boolean botCommands) {
         if (messageText instanceof Spannable && containsUrls(messageText)) {
-            if (messageText.length() < 100) {
+            if (messageText.length() < 200) {
                 try {
                     Linkify.addLinks((Spannable) messageText, Linkify.WEB_URLS | Linkify.PHONE_NUMBERS);
                 } catch (Exception e) {
