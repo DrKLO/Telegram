@@ -737,7 +737,7 @@ public class MessageObject {
             caption = Emoji.replaceEmoji(messageOwner.media.caption, textPaint.getFontMetricsInt(), AndroidUtilities.dp(20), false);
             if (containsUrls(caption)) {
                 try {
-                    Linkify.addLinks((Spannable) caption, Linkify.WEB_URLS);
+                    Linkify.addLinks((Spannable) caption, Linkify.WEB_URLS | Linkify.PHONE_NUMBERS);
                 } catch (Exception e) {
                     FileLog.e("tmessages", e);
                 }
