@@ -756,7 +756,7 @@
     <string name="ActionAddUserYou">un1 ti ha aggiunto</string>
     <string name="ActionAddUserSelf">un1 è tornato nel gruppo</string>
     <string name="ActionAddUserSelfYou">Sei tornato nel gruppo</string>
-    <string name="UnsuppotedMedia">Questo messaggio non è supportato sulla tua versione di Telegram. Aggiorna l\'applicazione per visualizzarlo: https://telegram.org/update</string>
+    <string name="UnsupportedMedia">Questo messaggio non è supportato sulla tua versione di Telegram. Aggiorna l\'applicazione per visualizzarlo: https://telegram.org/update</string>
     <string name="AttachPhoto">Foto</string>
     <string name="AttachVideo">Video</string>
     <string name="AttachLocation">Posizione</string>

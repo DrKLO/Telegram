@@ -759,7 +759,7 @@
     <string name="ActionAddUserYou">un1님이 그룹에 초대했습니다</string>
     <string name="ActionAddUserSelf">un1 님께서 그룹에 돌아오셨습니다</string>
     <string name="ActionAddUserSelfYou">그룹에 돌아오셨습니다.</string>
-    <string name="UnsuppotedMedia">이 메시지는 현재 사용 중인 버전의 Telegram에서 지원되지 않습니다. 메시지를 보려면 https://telegram.org/update 에서 앱을 업데이트하세요.</string>
+    <string name="UnsupportedMedia">이 메시지는 현재 사용 중인 버전의 Telegram에서 지원되지 않습니다. 메시지를 보려면 https://telegram.org/update 에서 앱을 업데이트하세요.</string>
     <string name="AttachPhoto">사진</string>
     <string name="AttachVideo">동영상</string>
     <string name="AttachLocation">위치</string>
