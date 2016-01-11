@@ -21,6 +21,9 @@ import android.content.res.Configuration;
 import android.database.Cursor;
 import android.graphics.Point;
 import android.net.Uri;
+import android.nfc.NfcAdapter;
+import android.nfc.NdefMessage;
+import android.nfc.NdefRecord;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Parcelable;
@@ -498,6 +501,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
 
     private boolean handleIntent(Intent intent, boolean isNew, boolean restore, boolean fromPassword) {
         int flags = intent.getFlags();
+        NdefMessage nfcmsgs[];
         if (!fromPassword && (AndroidUtilities.needShowPasscode(true) || UserConfig.isWaitingForPasscodeEnter)) {
             showPasscodeActivity();
             passcodeSaveIntent = intent;
@@ -725,95 +729,22 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                             Toast.makeText(this, "Unsupported content", Toast.LENGTH_SHORT).show();
                         }
                     } else if (Intent.ACTION_VIEW.equals(intent.getAction())) {
-                        Uri data = intent.getData();
-                        if (data != null) {
-                            String username = null;
-                            String group = null;
-                            String sticker = null;
-                            String botUser = null;
-                            String botChat = null;
-                            String message = null;
-                            boolean hasUrl = false;
-                            String scheme = data.getScheme();
-                            if (scheme != null) {
-                                if ((scheme.equals("http") || scheme.equals("https"))) {
-                                    String host = data.getHost().toLowerCase();
-                                    if (host.equals("telegram.me")) {
-                                        String path = data.getPath();
-                                        if (path != null && path.length() > 1) {
-                                            path = path.substring(1);
-                                            if (path.startsWith("joinchat/")) {
-                                                group = path.replace("joinchat/", "");
-                                            } else if (path.startsWith("addstickers/")) {
-                                                sticker = path.replace("addstickers/", "");
-                                            } else if (path.startsWith("msg/")) {
-                                                message = data.getQueryParameter("url");
-                                                if (message == null) {
-                                                    message = "";
-                                                }
-                                                if (data.getQueryParameter("text") != null) {
-                                                    if (message.length() > 0) {
-                                                        hasUrl = true;
-                                                        message += "\n";
-                                                    }
-                                                    message += data.getQueryParameter("text");
-                                                }
-                                            } else if (path.length() >= 5) {
-                                                username = data.getLastPathSegment();
-                                                botUser = data.getQueryParameter("start");
-                                                botChat = data.getQueryParameter("startgroup");
-                                            }
-                                        }
+                        UriAction tguri = new UriAction(intent);
+                        if (tguri.actionType != null) {
+                            runLinkRequest(tguri, 0);
+                        } else {
+                            try {
+                                Cursor cursor = getContentResolver().query(intent.getData(), null, null, null, null);
+                                if (cursor != null) {
+                                    if (cursor.moveToFirst()) {
+                                        int userId = cursor.getInt(cursor.getColumnIndex("DATA4"));
+                                        NotificationCenter.getInstance().postNotificationName(NotificationCenter.closeChats);
+                                        push_user_id = userId;
                                     }
-                                } else if (scheme.equals("tg")) {
-                                    String url = data.toString();
-                                    if (url.startsWith("tg:resolve") || url.startsWith("tg://resolve")) {
-                                        url = url.replace("tg:resolve", "tg://telegram.org").replace("tg://resolve", "tg://telegram.org");
-                                        data = Uri.parse(url);
-                                        username = data.getQueryParameter("domain");
-                                        botUser = data.getQueryParameter("start");
-                                        botChat = data.getQueryParameter("startgroup");
-                                    } else if (url.startsWith("tg:join") || url.startsWith("tg://join")) {
-                                        url = url.replace("tg:join", "tg://telegram.org").replace("tg://join", "tg://telegram.org");
-                                        data = Uri.parse(url);
-                                        group = data.getQueryParameter("invite");
-                                    } else if (url.startsWith("tg:addstickers") || url.startsWith("tg://addstickers")) {
-                                        url = url.replace("tg:addstickers", "tg://telegram.org").replace("tg://addstickers", "tg://telegram.org");
-                                        data = Uri.parse(url);
-                                        sticker = data.getQueryParameter("set");
-                                    } else if (url.startsWith("tg:msg") || url.startsWith("tg://msg")) {
-                                        url = url.replace("tg:msg", "tg://telegram.org").replace("tg://msg", "tg://telegram.org");
-                                        data = Uri.parse(url);
-                                        message = data.getQueryParameter("url");
-                                        if (message == null) {
-                                            message = "";
-                                        }
-                                        if (data.getQueryParameter("text") != null) {
-                                            if (message.length() > 0) {
-                                                hasUrl = true;
-                                                message += "\n";
-                                            }
-                                            message += data.getQueryParameter("text");
-                                        }
-                                    }
+                                    cursor.close();
                                 }
-                            }
-                            if (username != null || group != null || sticker != null || message != null) {
-                                runLinkRequest(username, group, sticker, botUser, botChat, message, hasUrl, 0);
-                            } else {
-                                try {
-                                    Cursor cursor = getContentResolver().query(intent.getData(), null, null, null, null);
-                                    if (cursor != null) {
-                                        if (cursor.moveToFirst()) {
-                                            int userId = cursor.getInt(cursor.getColumnIndex("DATA4"));
-                                            NotificationCenter.getInstance().postNotificationName(NotificationCenter.closeChats);
-                                            push_user_id = userId;
-                                        }
-                                        cursor.close();
-                                    }
-                                } catch (Exception e) {
-                                    FileLog.e("tmessages", e);
-                                }
+                            } catch (Exception e) {
+                                FileLog.e("tmessages", e);
                             }
                         }
                     } else if (intent.getAction().equals("org.telegram.messenger.OPEN_ACCOUNT")) {
@@ -836,6 +767,23 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                         }
                     } else if (intent.getAction().equals("com.tmessages.openplayer")) {
                         showPlayer = true;
+                    } else if (intent.getAction().equals("android.nfc.action.NDEF_DISCOVERED") && Build.VERSION.SDK_INT > 16) {
+                        Parcelable[] rawMsgs = intent.getParcelableArrayExtra(NfcAdapter.EXTRA_NDEF_MESSAGES);
+                        if (rawMsgs != null) {
+                            nfcmsgs = new NdefMessage[rawMsgs.length];
+                            for (int i = 0; i < rawMsgs.length; i++) {
+                                nfcmsgs[i] = (NdefMessage) rawMsgs[i];
+                            }
+                            for (int i = 0; i < nfcmsgs.length; i++) {
+                                NdefRecord ndefrecords[] = nfcmsgs[i].getRecords();
+                                for (int j = 0; j < ndefrecords.length; j++) {
+                                    UriAction tguri = new UriAction(ndefrecords[j]);
+                                    if (tguri.actionType != null) {
+                                        runLinkRequest(tguri, 0);
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -986,16 +934,16 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
         return false;
     }
 
-    private void runLinkRequest(final String username, final String group, final String sticker, final String botUser, final String botChat, final String message, final boolean hasUrl, final int state) {
+    private void runLinkRequest(final UriAction uriAction, final int state) {
         final ProgressDialog progressDialog = new ProgressDialog(this);
         progressDialog.setMessage(LocaleController.getString("Loading", R.string.Loading));
         progressDialog.setCanceledOnTouchOutside(false);
         progressDialog.setCancelable(false);
         int requestId = 0;
 
-        if (username != null) {
+        if (uriAction.actionType == UriAction.UriActionType.RESOLVE) {
             TLRPC.TL_contacts_resolveUsername req = new TLRPC.TL_contacts_resolveUsername();
-            req.username = username;
+            req.username = uriAction.username;
             requestId = ConnectionsManager.getInstance().sendRequest(req, new RequestDelegate() {
                 @Override
                 public void run(final TLObject response, final TLRPC.TL_error error) {
@@ -1014,7 +962,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                                     MessagesController.getInstance().putChats(res.chats, false);
                                     MessagesStorage.getInstance().putUsersAndChats(res.users, res.chats, false, true);
 
-                                    if (botChat != null) {
+                                    if (uriAction.botChat != null) {
                                         final TLRPC.User user = !res.users.isEmpty() ? res.users.get(0) : null;
                                         if (user == null || user.bot && user.bot_nochats) {
                                             try {
@@ -1033,7 +981,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                                             @Override
                                             public void didSelectDialog(DialogsActivity fragment, long did, boolean param) {
                                                 NotificationCenter.getInstance().postNotificationName(NotificationCenter.closeChats);
-                                                MessagesController.getInstance().addUserToChat(-(int) did, user, null, 0, botChat, null);
+                                                MessagesController.getInstance().addUserToChat(-(int) did, user, null, 0, uriAction.botChat, null);
                                                 Bundle args = new Bundle();
                                                 args.putBoolean("scrollToTopOnResume", true);
                                                 args.putInt("chat_id", -(int) did);
@@ -1048,8 +996,8 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                                         } else {
                                             args.putInt("user_id", res.users.get(0).id);
                                         }
-                                        if (botUser != null && res.users.size() > 0 && res.users.get(0).bot) {
-                                            args.putString("botUser", botUser);
+                                        if (uriAction.botUser != null && res.users.size() > 0 && res.users.get(0).bot) {
+                                            args.putString("botUser", uriAction.botUser);
                                         }
                                         ChatActivity fragment = new ChatActivity(args);
                                         NotificationCenter.getInstance().postNotificationName(NotificationCenter.closeChats);
@@ -1067,10 +1015,10 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                     });
                 }
             });
-        } else if (group != null) {
+        } else if (uriAction.actionType == UriAction.UriActionType.JOINCHAT) {
             if (state == 0) {
                 final TLRPC.TL_messages_checkChatInvite req = new TLRPC.TL_messages_checkChatInvite();
-                req.hash = group;
+                req.hash = uriAction.group;
                 requestId = ConnectionsManager.getInstance().sendRequest(req, new RequestDelegate() {
                     @Override
                     public void run(final TLObject response, final TLRPC.TL_error error) {
@@ -1106,7 +1054,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                                             builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), new DialogInterface.OnClickListener() {
                                                 @Override
                                                 public void onClick(DialogInterface dialogInterface, int i) {
-                                                    runLinkRequest(username, group, sticker, botUser, botChat, message, hasUrl, 1);
+                                                    runLinkRequest(uriAction, 1);
                                                 }
                                             });
                                             builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
@@ -1130,7 +1078,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                 }, ConnectionsManager.RequestFlagFailOnServerErrors);
             } else if (state == 1) {
                 TLRPC.TL_messages_importChatInvite req = new TLRPC.TL_messages_importChatInvite();
-                req.hash = group;
+                req.hash = uriAction.group;
                 ConnectionsManager.getInstance().sendRequest(req, new RequestDelegate() {
                     @Override
                     public void run(final TLObject response, final TLRPC.TL_error error) {
@@ -1182,14 +1130,14 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                     }
                 }, ConnectionsManager.RequestFlagFailOnServerErrors);
             }
-        } else if (sticker != null) {
+        } else if (uriAction.actionType == UriAction.UriActionType.ADDSTICKERS) {
             if (!mainFragmentsStack.isEmpty()) {
                 TLRPC.TL_inputStickerSetShortName stickerset = new TLRPC.TL_inputStickerSetShortName();
-                stickerset.short_name = sticker;
+                stickerset.short_name = uriAction.sticker;
                 StickersQuery.loadStickers(mainFragmentsStack.get(0), stickerset);
             }
             return;
-        } else if (message != null) {
+        } else if (uriAction.actionType == UriAction.UriActionType.MSG) {
             Bundle args = new Bundle();
             args.putBoolean("onlySelect", true);
             DialogsActivity fragment = new DialogsActivity(args);
@@ -1199,11 +1147,11 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                     NotificationCenter.getInstance().postNotificationName(NotificationCenter.closeChats);
                     SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
                     SharedPreferences.Editor editor = preferences.edit();
-                    editor.putString("dialog_" + did, message);
+                    editor.putString("dialog_" + did, uriAction.message);
                     editor.commit();
                     Bundle args = new Bundle();
                     args.putBoolean("scrollToTopOnResume", true);
-                    args.putBoolean("hasUrl", hasUrl);
+                    args.putBoolean("hasUrl", uriAction.hasUrl);
                     int lower_part = (int) did;
                     int high_id = (int) (did >> 32);
                     if (lower_part != 0) {
