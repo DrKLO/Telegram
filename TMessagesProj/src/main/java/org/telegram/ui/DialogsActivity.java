@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2015.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.ui;
@@ -841,7 +841,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     public void onRequestPermissionsResultFragment(int requestCode, String[] permissions, int[] grantResults) {
         if (requestCode == 1) {
             for (int a = 0; a < permissions.length; a++) {
-                if (grantResults[a] != PackageManager.PERMISSION_GRANTED) {
+                if (grantResults.length <= a || grantResults[a] != PackageManager.PERMISSION_GRANTED) {
                     continue;
                 }
                 switch (permissions[a]) {

@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2015.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.messenger.video;
@@ -20,7 +20,7 @@ import java.util.ArrayList;
 @TargetApi(16)
 public class Mp4Movie {
     private Matrix matrix = Matrix.ROTATE_0;
-    private ArrayList<Track> tracks = new ArrayList<Track>();
+    private ArrayList<Track> tracks = new ArrayList<>();
     private File cacheFile;
     private int width;
     private int height;

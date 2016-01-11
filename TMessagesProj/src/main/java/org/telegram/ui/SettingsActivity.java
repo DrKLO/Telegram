@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2015.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.ui;
@@ -46,6 +46,7 @@ import android.widget.AbsListView;
 import android.widget.AdapterView;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
 
@@ -72,8 +73,10 @@ import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.MessageObject;
+import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.Adapters.BaseFragmentAdapter;
 import org.telegram.messenger.AnimationCompat.ViewProxy;
+import org.telegram.ui.Cells.CheckBoxCell;
 import org.telegram.ui.Cells.TextInfoCell;
 import org.telegram.ui.Cells.EmptyCell;
 import org.telegram.ui.Cells.HeaderCell;
@@ -145,6 +148,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
     private int contactsSectionRow;
     private int contactsReimportRow;
     private int contactsSortRow;
+    private int autoplayGifsRow;
     private int rowCount;
 
     private final static int edit_name = 1;
@@ -239,6 +243,9 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         mobileDownloadRow = rowCount++;
         wifiDownloadRow = rowCount++;
         roamingDownloadRow = rowCount++;
+        if (Build.VERSION.SDK_INT >= 11) {
+            autoplayGifsRow = rowCount++;
+        }
         saveToGalleryRow = rowCount++;
         messagesSectionRow = rowCount++;
         messagesSectionRow2 = rowCount++;
@@ -429,6 +436,11 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                     if (view instanceof TextCheckCell) {
                         ((TextCheckCell) view).setChecked(!send);
                     }
+                } else if (i == autoplayGifsRow) {
+                    MediaController.getInstance().toggleAutoplayGifs();
+                    if (view instanceof TextCheckCell) {
+                        ((TextCheckCell) view).setChecked(MediaController.getInstance().canAutoplayGifs());
+                    }
                 } else if (i == saveToGalleryRow) {
                     MediaController.getInstance().toggleSaveToGallery();
                     if (view instanceof TextCheckCell) {
@@ -490,70 +502,112 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                     if (getParentActivity() == null) {
                         return;
                     }
-                    AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                    final boolean maskValues[] = new boolean[6];
+                    BottomSheet.Builder builder = new BottomSheet.Builder(getParentActivity());
 
                     int mask = 0;
                     if (i == mobileDownloadRow) {
-                        builder.setTitle(LocaleController.getString("WhenUsingMobileData", R.string.WhenUsingMobileData));
                         mask = MediaController.getInstance().mobileDataDownloadMask;
                     } else if (i == wifiDownloadRow) {
-                        builder.setTitle(LocaleController.getString("WhenConnectedOnWiFi", R.string.WhenConnectedOnWiFi));
                         mask = MediaController.getInstance().wifiDownloadMask;
                     } else if (i == roamingDownloadRow) {
-                        builder.setTitle(LocaleController.getString("WhenRoaming", R.string.WhenRoaming));
                         mask = MediaController.getInstance().roamingDownloadMask;
                     }
-                    builder.setMultiChoiceItems(
-                            new CharSequence[]{LocaleController.getString("AttachPhoto", R.string.AttachPhoto), LocaleController.getString("AttachAudio", R.string.AttachAudio), LocaleController.getString("AttachVideo", R.string.AttachVideo), LocaleController.getString("AttachDocument", R.string.AttachDocument)},
-                            new boolean[]{(mask & MediaController.AUTODOWNLOAD_MASK_PHOTO) != 0, (mask & MediaController.AUTODOWNLOAD_MASK_AUDIO) != 0, (mask & MediaController.AUTODOWNLOAD_MASK_VIDEO) != 0, (mask & MediaController.AUTODOWNLOAD_MASK_DOCUMENT) != 0},
-                            new DialogInterface.OnMultiChoiceClickListener() {
-                                @Override
-                                public void onClick(DialogInterface dialog, int which, boolean isChecked) {
-                                    int mask = 0;
-                                    SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
-                                    SharedPreferences.Editor editor = preferences.edit();
-                                    if (i == mobileDownloadRow) {
-                                        mask = MediaController.getInstance().mobileDataDownloadMask;
-                                    } else if (i == wifiDownloadRow) {
-                                        mask = MediaController.getInstance().wifiDownloadMask;
-                                    } else if (i == roamingDownloadRow) {
-                                        mask = MediaController.getInstance().roamingDownloadMask;
-                                    }
 
-                                    int maskDiff = 0;
-                                    if (which == 0) {
-                                        maskDiff = MediaController.AUTODOWNLOAD_MASK_PHOTO;
-                                    } else if (which == 1) {
-                                        maskDiff = MediaController.AUTODOWNLOAD_MASK_AUDIO;
-                                    } else if (which == 2) {
-                                        maskDiff = MediaController.AUTODOWNLOAD_MASK_VIDEO;
-                                    } else if (which == 3) {
-                                        maskDiff = MediaController.AUTODOWNLOAD_MASK_DOCUMENT;
-                                    }
-
-                                    if (isChecked) {
-                                        mask |= maskDiff;
-                                    } else {
-                                        mask &= ~maskDiff;
-                                    }
-
-                                    if (i == mobileDownloadRow) {
-                                        editor.putInt("mobileDataDownloadMask", mask);
-                                        MediaController.getInstance().mobileDataDownloadMask = mask;
-                                    } else if (i == wifiDownloadRow) {
-                                        editor.putInt("wifiDownloadMask", mask);
-                                        MediaController.getInstance().wifiDownloadMask = mask;
-                                    } else if (i == roamingDownloadRow) {
-                                        editor.putInt("roamingDownloadMask", mask);
-                                        MediaController.getInstance().roamingDownloadMask = mask;
-                                    }
-                                    editor.commit();
-                                    if (listView != null) {
-                                        listView.invalidateViews();
+                    builder.setApplyTopPaddings(false);
+                    LinearLayout linearLayout = new LinearLayout(getParentActivity());
+                    linearLayout.setOrientation(LinearLayout.VERTICAL);
+                    for (int a = 0; a < 6; a++) {
+                        String name = null;
+                        if (a == 0) {
+                            maskValues[a] = (mask & MediaController.AUTODOWNLOAD_MASK_PHOTO) != 0;
+                            name = LocaleController.getString("AttachPhoto", R.string.AttachPhoto);
+                        } else if (a == 1) {
+                            maskValues[a] = (mask & MediaController.AUTODOWNLOAD_MASK_AUDIO) != 0;
+                            name = LocaleController.getString("AttachAudio", R.string.AttachAudio);
+                        } else if (a == 2) {
+                            maskValues[a] = (mask & MediaController.AUTODOWNLOAD_MASK_VIDEO) != 0;
+                            name = LocaleController.getString("AttachVideo", R.string.AttachVideo);
+                        } else if (a == 3) {
+                            maskValues[a] = (mask & MediaController.AUTODOWNLOAD_MASK_DOCUMENT) != 0;
+                            name = LocaleController.getString("AttachDocument", R.string.AttachDocument);
+                        } else if (a == 4) {
+                            maskValues[a] = (mask & MediaController.AUTODOWNLOAD_MASK_MUSIC) != 0;
+                            name = LocaleController.getString("AttachMusic", R.string.AttachMusic);
+                        } else if (a == 5) {
+                            if (Build.VERSION.SDK_INT >= 11) {
+                                maskValues[a] = (mask & MediaController.AUTODOWNLOAD_MASK_GIF) != 0;
+                                name = LocaleController.getString("AttachGif", R.string.AttachGif);
+                            } else {
+                                continue;
+                            }
+                        }
+                        CheckBoxCell checkBoxCell = new CheckBoxCell(getParentActivity());
+                        checkBoxCell.setTag(a);
+                        checkBoxCell.setBackgroundResource(R.drawable.list_selector);
+                        linearLayout.addView(checkBoxCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48));
+                        checkBoxCell.setText(name, "", maskValues[a], true);
+                        checkBoxCell.setOnClickListener(new View.OnClickListener() {
+                            @Override
+                            public void onClick(View v) {
+                                CheckBoxCell cell = (CheckBoxCell) v;
+                                int num = (Integer) cell.getTag();
+                                maskValues[num] = !maskValues[num];
+                                cell.setChecked(maskValues[num], true);
+                            }
+                        });
+                    }
+                    BottomSheet.BottomSheetCell cell = new BottomSheet.BottomSheetCell(getParentActivity(), 2);
+                    cell.setBackgroundResource(R.drawable.list_selector);
+                    cell.setTextAndIcon(LocaleController.getString("Save", R.string.Save).toUpperCase(), 0);
+                    cell.setTextColor(0xffcd5a5a);
+                    cell.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            try {
+                                if (visibleDialog != null) {
+                                    visibleDialog.dismiss();
+                                }
+                            } catch (Exception e) {
+                                FileLog.e("tmessages", e);
+                            }
+                            int newMask = 0;
+                            for (int a = 0; a < 6; a++) {
+                                if (maskValues[a]) {
+                                    if (a == 0) {
+                                        newMask |= MediaController.AUTODOWNLOAD_MASK_PHOTO;
+                                    } else if (a == 1) {
+                                        newMask |= MediaController.AUTODOWNLOAD_MASK_AUDIO;
+                                    } else if (a == 2) {
+                                        newMask |= MediaController.AUTODOWNLOAD_MASK_VIDEO;
+                                    } else if (a == 3) {
+                                        newMask |= MediaController.AUTODOWNLOAD_MASK_DOCUMENT;
+                                    } else if (a == 4) {
+                                        newMask |= MediaController.AUTODOWNLOAD_MASK_MUSIC;
+                                    } else if (a == 5) {
+                                        newMask |= MediaController.AUTODOWNLOAD_MASK_GIF;
                                     }
                                 }
-                            });
-                    builder.setNegativeButton(LocaleController.getString("OK", R.string.OK), null);
+                            }
+                            SharedPreferences.Editor editor = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE).edit();
+                            if (i == mobileDownloadRow) {
+                                editor.putInt("mobileDataDownloadMask", newMask);
+                                MediaController.getInstance().mobileDataDownloadMask = newMask;
+                            } else if (i == wifiDownloadRow) {
+                                editor.putInt("wifiDownloadMask", newMask);
+                                MediaController.getInstance().wifiDownloadMask = newMask;
+                            } else if (i == roamingDownloadRow) {
+                                editor.putInt("roamingDownloadMask", newMask);
+                                MediaController.getInstance().roamingDownloadMask = newMask;
+                            }
+                            editor.commit();
+                            if (listView != null) {
+                                listView.invalidateViews();
+                            }
+                        }
+                    });
+                    linearLayout.addView(cell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48));
+                    builder.setCustomView(linearLayout);
                     showDialog(builder.create());
                 } else if (i == usernameRow) {
                     presentFragment(new ChangeUsernameActivity());
@@ -1070,7 +1124,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         @Override
         public boolean isEnabled(int i) {
             return i == textSizeRow || i == enableAnimationsRow || i == notificationRow || i == backgroundRow || i == numberRow ||
-                    i == askQuestionRow || i == sendLogsRow || i == sendByEnterRow || i == privacyRow || i == wifiDownloadRow ||
+                    i == askQuestionRow || i == sendLogsRow || i == sendByEnterRow || i == autoplayGifsRow || i == privacyRow || i == wifiDownloadRow ||
                     i == mobileDownloadRow || i == clearLogsRow || i == roamingDownloadRow || i == languageRow || i == usernameRow ||
                     i == switchBackendButtonRow || i == telegramFaqRow || i == contactsSortRow || i == contactsReimportRow || i == saveToGalleryRow ||
                     i == stickersRow || i == cacheRow;
@@ -1171,6 +1225,8 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                     textCell.setTextAndCheck(LocaleController.getString("SendByEnter", R.string.SendByEnter), preferences.getBoolean("send_by_enter", false), false);
                 } else if (i == saveToGalleryRow) {
                     textCell.setTextAndCheck(LocaleController.getString("SaveToGallerySettings", R.string.SaveToGallerySettings), MediaController.getInstance().canSaveToGallery(), false);
+                } else if (i == autoplayGifsRow) {
+                    textCell.setTextAndCheck(LocaleController.getString("AutoplayGifs", R.string.AutoplayGifs), MediaController.getInstance().canAutoplayGifs(), true);
                 }
             } else if (type == 4) {
                 if (view == null) {
@@ -1239,6 +1295,20 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                         }
                         text += LocaleController.getString("AttachDocument", R.string.AttachDocument);
                     }
+                    if ((mask & MediaController.AUTODOWNLOAD_MASK_MUSIC) != 0) {
+                        if (text.length() != 0) {
+                            text += ", ";
+                        }
+                        text += LocaleController.getString("AttachMusic", R.string.AttachMusic);
+                    }
+                    if (Build.VERSION.SDK_INT >= 11) {
+                        if ((mask & MediaController.AUTODOWNLOAD_MASK_GIF) != 0) {
+                            if (text.length() != 0) {
+                                text += ", ";
+                            }
+                            text += LocaleController.getString("AttachGif", R.string.AttachGif);
+                        }
+                    }
                     if (text.length() == 0) {
                         text = LocaleController.getString("NoMediaAutoDownload", R.string.NoMediaAutoDownload);
                     }
@@ -1273,7 +1343,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             }
             if (i == settingsSectionRow || i == supportSectionRow || i == messagesSectionRow || i == mediaDownloadSection || i == contactsSectionRow) {
                 return 1;
-            } else if (i == enableAnimationsRow || i == sendByEnterRow || i == saveToGalleryRow) {
+            } else if (i == enableAnimationsRow || i == sendByEnterRow || i == saveToGalleryRow || i == autoplayGifsRow) {
                 return 3;
             } else if (i == notificationRow || i == backgroundRow || i == askQuestionRow || i == sendLogsRow || i == privacyRow || i == clearLogsRow || i == switchBackendButtonRow || i == telegramFaqRow || i == contactsReimportRow || i == textSizeRow || i == languageRow || i == contactsSortRow || i == stickersRow || i == cacheRow) {
                 return 2;

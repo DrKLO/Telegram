@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2015.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.ui;
@@ -72,8 +72,9 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
     private TextView dropDown;
     private ActionBarMenuItem dropDownContainer;
     private PickerBottomLayout pickerBottomLayout;
-    private boolean sendPressed = false;
-    private boolean singlePhoto = false;
+    private boolean sendPressed;
+    private boolean singlePhoto;
+    private boolean allowGifs;
     private int selectedMode;
     private ChatActivity chatActivity;
 
@@ -82,10 +83,11 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
     private final static int item_photos = 2;
     private final static int item_video = 3;
 
-    public PhotoAlbumPickerActivity(boolean singlePhoto, ChatActivity chatActivity) {
+    public PhotoAlbumPickerActivity(boolean singlePhoto, boolean allowGifs, ChatActivity chatActivity) {
         super();
         this.chatActivity = chatActivity;
         this.singlePhoto = singlePhoto;
+        this.allowGifs = allowGifs;
     }
 
     @Override
@@ -581,7 +583,7 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
                 photoPickerAlbumsCell.requestLayout();
             } else if (type == 1) {
                 if (view == null) {
-                    view = new PhotoPickerSearchCell(mContext);
+                    view = new PhotoPickerSearchCell(mContext, allowGifs);
                     ((PhotoPickerSearchCell) view).setDelegate(new PhotoPickerSearchCell.PhotoPickerSearchCellDelegate() {
                         @Override
                         public void didPressedSearchButton(int index) {

@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2015.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.messenger;
@@ -756,6 +756,8 @@ public class NotificationsController {
                         } else if (messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaDocument) {
                             if (messageObject.isSticker()) {
                                 msg = LocaleController.formatString("NotificationMessageSticker", R.string.NotificationMessageSticker, name);
+                            } else if (messageObject.isGif()) {
+                                msg = LocaleController.formatString("NotificationMessageGif", R.string.NotificationMessageGif, name);
                             } else {
                                 msg = LocaleController.formatString("NotificationMessageDocument", R.string.NotificationMessageDocument, name);
                             }
@@ -864,6 +866,8 @@ public class NotificationsController {
                                 } else if (messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaDocument) {
                                     if (messageObject.isSticker()) {
                                         msg = LocaleController.formatString("ChannelMessageSticker", R.string.ChannelMessageSticker, name, chat.title);
+                                    } else if (messageObject.isGif()) {
+                                        msg = LocaleController.formatString("ChannelMessageGIF", R.string.ChannelMessageGIF, name, chat.title);
                                     } else {
                                         msg = LocaleController.formatString("ChannelMessageDocument", R.string.ChannelMessageDocument, name, chat.title);
                                     }
@@ -888,6 +892,8 @@ public class NotificationsController {
                                 } else if (messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaDocument) {
                                     if (messageObject.isSticker()) {
                                         msg = LocaleController.formatString("ChannelMessageGroupSticker", R.string.ChannelMessageGroupSticker, name, chat.title);
+                                    } else if (messageObject.isGif()) {
+                                        msg = LocaleController.formatString("ChannelMessageGroupGif", R.string.ChannelMessageGroupGif, name, chat.title);
                                     } else {
                                         msg = LocaleController.formatString("ChannelMessageGroupDocument", R.string.ChannelMessageGroupDocument, name, chat.title);
                                     }
@@ -913,6 +919,8 @@ public class NotificationsController {
                             } else if (messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaDocument) {
                                 if (messageObject.isSticker()) {
                                     msg = LocaleController.formatString("NotificationMessageGroupSticker", R.string.NotificationMessageGroupSticker, name, chat.title);
+                                } else if (messageObject.isGif()) {
+                                    msg = LocaleController.formatString("NotificationMessageGroupGif", R.string.NotificationMessageGroupGif, name, chat.title);
                                 } else {
                                     msg = LocaleController.formatString("NotificationMessageGroupDocument", R.string.NotificationMessageGroupDocument, name, chat.title);
                                 }

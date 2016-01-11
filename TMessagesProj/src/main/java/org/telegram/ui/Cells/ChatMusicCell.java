@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2015.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.ui.Cells;
@@ -116,6 +116,7 @@ public class ChatMusicCell extends ChatBaseCell implements SeekBar.SeekBarDelega
                     buttonPressed = true;
                     invalidate();
                     result = true;
+                    radialProgress.swapBackground(getDrawableForCurrentState());
                 }
             } else if (buttonPressed) {
                 if (event.getAction() == MotionEvent.ACTION_UP) {
@@ -132,6 +133,7 @@ public class ChatMusicCell extends ChatBaseCell implements SeekBar.SeekBarDelega
                         invalidate();
                     }
                 }
+                radialProgress.swapBackground(getDrawableForCurrentState());
             }
             if (!result) {
                 result = super.onTouchEvent(event);
@@ -364,13 +366,13 @@ public class ChatMusicCell extends ChatBaseCell implements SeekBar.SeekBarDelega
             CharSequence stringFinal = TextUtils.ellipsize(messageObject.getMusicTitle().replace("\n", " "), titlePaint, maxWidth, TextUtils.TruncateAt.END);
             titleLayout = new StaticLayout(stringFinal, titlePaint, maxWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
             if (titleLayout.getLineCount() > 0) {
-                titleX = (int) Math.ceil(titleLayout.getLineLeft(0));
+                titleX = -(int) Math.ceil(titleLayout.getLineLeft(0));
             }
 
             stringFinal = TextUtils.ellipsize(messageObject.getMusicAuthor().replace("\n", " "), authorPaint, maxWidth, TextUtils.TruncateAt.END);
             authorLayout = new StaticLayout(stringFinal, authorPaint, maxWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
             if (authorLayout.getLineCount() > 0) {
-                authorX = (int) Math.ceil(authorLayout.getLineLeft(0));
+                authorX = -(int) Math.ceil(authorLayout.getLineLeft(0));
             }
 
             super.setMessageObject(messageObject);
@@ -378,9 +380,32 @@ public class ChatMusicCell extends ChatBaseCell implements SeekBar.SeekBarDelega
         updateButtonState(dataChanged);
     }
 
+    @Override
+    public void setCheckPressed(boolean value, boolean pressed) {
+        super.setCheckPressed(value, pressed);
+        if (radialProgress.swapBackground(getDrawableForCurrentState())) {
+            invalidate();
+        }
+    }
+
+    @Override
+    public void setHighlighted(boolean value) {
+        super.setHighlighted(value);
+        if (radialProgress.swapBackground(getDrawableForCurrentState())) {
+            invalidate();
+        }
+    }
+
+    @Override
+    public void setPressed(boolean pressed) {
+        super.setPressed(pressed);
+        if (radialProgress.swapBackground(getDrawableForCurrentState())) {
+            invalidate();
+        }
+    }
+
     private Drawable getDrawableForCurrentState() {
-        return ResourceLoader.audioStatesDrawable[currentMessageObject.isOutOwner() ? buttonState : buttonState + 5][0];
-        //buttonPressed ? 1 :
+        return ResourceLoader.audioStatesDrawable[currentMessageObject.isOutOwner() ? buttonState : buttonState + 5][isDrawSelectedBackground() ? 2 : (buttonPressed ? 1 : 0)];
     }
 
     @Override
@@ -394,7 +419,7 @@ public class ChatMusicCell extends ChatBaseCell implements SeekBar.SeekBarDelega
         if (currentMessageObject.isOutOwner()) {
             timePaint.setColor(0xff70b15c);
         } else {
-            timePaint.setColor(0xffa1aab3);
+            timePaint.setColor(isDrawSelectedBackground() ? 0xff89b4c1 : 0xffa1aab3);
         }
         radialProgress.draw(canvas);
 

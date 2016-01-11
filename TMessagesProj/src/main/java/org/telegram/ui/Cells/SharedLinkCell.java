@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2015.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.ui.Cells;
@@ -132,7 +132,7 @@ public class SharedLinkCell extends FrameLayout {
         boolean hasPhoto = false;
 
         if (message.messageOwner.media instanceof TLRPC.TL_messageMediaWebPage && message.messageOwner.media.webpage instanceof TLRPC.TL_webPage) {
-            TLRPC.TL_webPage webPage = (TLRPC.TL_webPage) message.messageOwner.media.webpage;
+            TLRPC.WebPage webPage = message.messageOwner.media.webpage;
             if (message.photoThumbs == null && webPage.photo != null) {
                 message.generateThumbs(true);
             }
@@ -144,7 +144,7 @@ public class SharedLinkCell extends FrameLayout {
             description = webPage.description;
             webPageLink = webPage.url;
         }
-        if (!message.messageOwner.entities.isEmpty()) {
+        if (message != null && !message.messageOwner.entities.isEmpty()) {
             for (int a = 0; a < message.messageOwner.entities.size(); a++) {
                 TLRPC.MessageEntity entity = message.messageOwner.entities.get(a);
                 if (entity.length <= 0 || entity.offset < 0 || entity.offset >= message.messageOwner.message.length()) {
@@ -227,7 +227,6 @@ public class SharedLinkCell extends FrameLayout {
         if (description != null) {
             try {
                 descriptionLayout = ChatMessageCell.generateStaticLayout(description, descriptionTextPaint, maxWidth, maxWidth, 0, 3);
-                int height = descriptionLayout.getLineBottom(descriptionLayout.getLineCount() - 1);
                 if (descriptionLayout.getLineCount() > 0) {
                     description2Y = descriptionY + descriptionLayout.getLineBottom(descriptionLayout.getLineCount() - 1) + AndroidUtilities.dp(1);
                 }
@@ -361,7 +360,7 @@ public class SharedLinkCell extends FrameLayout {
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         boolean result = false;
-        if (message != null && !linkLayout.isEmpty() && delegate.canPerformActions()) {
+        if (message != null && !linkLayout.isEmpty() && delegate != null && delegate.canPerformActions()) {
             if (event.getAction() == MotionEvent.ACTION_DOWN || linkPreviewPressed && event.getAction() == MotionEvent.ACTION_UP) {
                 int x = (int) event.getX();
                 int y = (int) event.getY();

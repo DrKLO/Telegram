@@ -168,6 +168,7 @@
     <string name="ChannelMessageGroupContact">%1$s قام بمشاركة جهة اتصال للقناة %2$s</string>
     <string name="ChannelMessageGroupMap">%1$s  قام بإرسال مكان للقناة %2$s</string>
     <string name="ChannelMessageGroupDocument">%1$s  قام بإرسال ملف للقناة %2$s</string>
+    <string name="ChannelMessageGroupGif">%1$s أرسل صورة متحركة للقناة %2$s</string>
     <string name="ChannelMessageGroupAudio">%1$s  قام بإرسال مقطع صوتي للقناة %2$s</string>
     <string name="ChannelMessageGroupSticker">%1$s  قام بإرسال ملصق للقناة %2$s</string>
     <string name="ChannelMessageNoText">%1$s أرسل رسالة</string>
@@ -176,6 +177,7 @@
     <string name="ChannelMessageContact">%1$s أرسل جهة اتصال</string>
     <string name="ChannelMessageMap">%1$s قام بإرسال موقع</string>
     <string name="ChannelMessageDocument">%1$s أرسل ملف</string>
+    <string name="ChannelMessageGIF">%1$s قام بنشر صورة متحركة</string>
     <string name="ChannelMessageAudio">%1$s أرسل رسالة صوتية</string>
     <string name="ChannelMessageSticker">%1$s أرسل ملصق</string>
     <!--broadcasts-->
@@ -245,6 +247,8 @@
     <string name="DeleteThisChat">حذف هذه الدردشة</string>
     <string name="SlideToCancel">قم بالسحب للإلغاء</string>
     <string name="SaveToDownloads">حفظ في الجهاز</string>
+    <string name="SaveToGIFs">حفظ في الصور المتحركة</string>
+    <string name="DeleteGif">هل ترغب بحذف الصورة المتحركة؟</string>
     <string name="SaveToMusic">احفظ في الموسيقى</string>
     <string name="ShareFile">مشاركة</string>
     <string name="ApplyLocalizationFile">تطبيق ملف التعريب</string>
@@ -265,6 +269,7 @@
     <string name="NobodyLikesSpamUrl">https://telegram.org/faq/can-39t-send-messages-to-non-contacts</string>
     <string name="MoreInfo">ملعومات إضافية</string>
     <string name="ShareSendTo">أرسل إلى...</string>
+    <string name="TapHereGifs">اضغط هنا للوصول للصور المتحركة المحفوظة</string>
     <!--notification-->
     <string name="MessageLifetimeChanged">%1$s قام بتعيين عداد التدمير الذاتي إلى to %2$s</string>
     <string name="MessageLifetimeChangedOutgoing">لقد قمت بتعيين التدمير الذاتي إلى %1$s</string>
@@ -278,6 +283,7 @@
     <string name="NotificationMessageContact">%1$s قام بإرسال جهة اتصال لك</string>
     <string name="NotificationMessageMap">%1$s قام بإرسال موقع لك</string>
     <string name="NotificationMessageDocument">%1$s قام بإرسال ملف لك</string>
+    <string name="NotificationMessageGif">%1$s أرسل لك صورة متحركة</string>
     <string name="NotificationMessageAudio">%1$s قام بإرسال مقطع صوتي لك</string>
     <string name="NotificationMessageSticker">%1$s قام بإرسال ملصق</string>
     <string name="NotificationMessageGroupText">%1$s @ %2$s: %3$s</string>
@@ -287,6 +293,7 @@
     <string name="NotificationMessageGroupContact">%1$s قام بإرسال جهة اتصال للمجموعة %2$s</string>
     <string name="NotificationMessageGroupMap">%1$s قام بإرسال موقع للمجموعة %2$s</string>
     <string name="NotificationMessageGroupDocument">%1$s قام بإرسال ملف للمجموعة %2$s</string>
+    <string name="NotificationMessageGroupGif">%1$s أرسل صورة متحركة للمجموعة %2$s</string>
     <string name="NotificationMessageGroupAudio">%1$s قام بإرسال مقطع صوتي للمجموعة %2$s</string>
     <string name="NotificationMessageGroupSticker">%1$s قام بإرسال ملصق للمجموعة %2$s</string>
     <string name="NotificationInvitedToGroup">%1$s قام بدعوتك للمجموعة %2$s</string>
@@ -469,6 +476,7 @@
     <string name="WhenConnectedOnWiFi">عند الاتصال بالشبكة اللاسلكية</string>
     <string name="WhenRoaming">عند تواجدك خارج البلاد</string>
     <string name="NoMediaAutoDownload">لا يوجد وسائط</string>
+    <string name="AutoplayGifs">تشغيل تلقائي للصور المتحركة</string>
     <string name="SaveToGallerySettings">حفظ في الجهاز</string>
     <string name="EditName">تعديل الاسم</string>
     <string name="NotificationsPriority">الأولوية</string>
@@ -718,6 +726,7 @@
     <string name="Back">رجوع</string>
     <string name="Done">تم</string>
     <string name="Open">فتح</string>
+    <string name="Save">حفظ</string>
     <string name="Cancel">إلغاء</string>
     <string name="Close">إغلاق</string>
     <string name="Add">إضافة</string>
@@ -759,6 +768,7 @@
     <string name="UnsupportedMedia">نسخة تيليجرام الموجودة لديك لا تدعم هذه الرسالة. الرجاء التحديث لأحدث نسخة لاستعراضها: https://telegram.org/update</string>
     <string name="AttachPhoto">صورة</string>
     <string name="AttachVideo">مقطع مرئي</string>
+    <string name="AttachGif">صورة متحركة</string>
     <string name="AttachLocation">موقع</string>
     <string name="AttachContact">جهة اتصال</string>
     <string name="AttachDocument">ملف</string>
@@ -1030,7 +1040,6 @@
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s الساعة %2$s</string>
     <!--update text-->
-    <string name="updateText">تيليجرام نسخة الأندرويد تم تحديثه. الجديد في نسخة ٣.٢.٢:\n\n- إدارة للذاكرة المخبئية: إمكانية التحكم بالذاكرة المخبئية، حذف محتوى لمحادثة معينة.\n- حذف الذاكرة المخبئية من المجموعات الخارقة والقنوات: الضغط والتعليق عليها ثم تحذفها من الذاكرة.n\- إدارة الملصقات: إعادة ترتيب ملصقاتك بشكل يدوي. ويتزامن الترتيب مع باقي أجهزتك.n\n\للإستزادة عن هذا التحديث من هنا:n\
-        https://telegram.org/blog/cache-and-stickers</string>
-    <string name="updateBuild">693</string>
+    <string name="updateText">تيليجرام نسخة الأندرويد تم تحديثه. الجديد في نسخة 3.4.0:\n\nثورة الصور المتحركة: صور متحركة أسرع بعشر أضعاف في الإرسال والتنزيل، تشغيل تلقائي، حفظ صورك المفضلة في قسم خاص مع الملصقات.\n\nللاستزادة عن الصور المتحركة:\nhttps://telegram.org/blog/gif-revolution\n\nالبوت أثناء الكتابة: طريقة جديدة لإضافة محتوى البوت لأي محادثة. اكتب معرف البوت ثم نص البحث بعده لتحصل على نتائج فورية لإرسالها. جرب كتابة @gif ثم أي كلمة بعدها. البوتات التجريبية حاليًا هي: @gif و @wiki و @bing و @vid و @bold .\n\nللاستزادة عن البوتات أثناء الكتابة، من هنا:\nhttps://telegram.org/blog/inline-bots</string>
+    <string name="updateBuild">704</string>
 </resources>

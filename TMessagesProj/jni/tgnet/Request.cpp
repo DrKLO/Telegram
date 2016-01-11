@@ -53,7 +53,7 @@ void Request::clear(bool time) {
 }
 
 void Request::onComplete(TLObject *result, TL_error *error) {
-    if (onCompleteRequestCallback != nullptr) {
+    if (onCompleteRequestCallback != nullptr && (result != nullptr || error != nullptr)) {
         onCompleteRequestCallback(result, error);
     }
 }

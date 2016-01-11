@@ -168,6 +168,7 @@
     <string name="ChannelMessageGroupContact">%1$s heeft een contact gedeeld met het kanaal %2$s</string>
     <string name="ChannelMessageGroupMap">%1$s heeft een locatie gestuurd naar het kanaal %2$s</string>
     <string name="ChannelMessageGroupDocument">%1$s heeft een bestand gestuurd naar het kanaal %2$s</string>
+    <string name="ChannelMessageGroupGif">%1$s heeft een GIF gestuurd naar het kanaal %2$s</string>
     <string name="ChannelMessageGroupAudio">%1$s heeft een geluidsbestand gestuurd naar het kanaal %2$s</string>
     <string name="ChannelMessageGroupSticker">%1$s heeft een sticker gestuurd naar het kanaal %2$s</string>
     <string name="ChannelMessageNoText">%1$s plaatste een bericht</string>
@@ -176,6 +177,7 @@
     <string name="ChannelMessageContact">%1$s plaatste een contact</string>
     <string name="ChannelMessageMap">%1$s plaatste een locatie</string>
     <string name="ChannelMessageDocument">%1$s plaatste een bestand</string>
+    <string name="ChannelMessageGIF">%1$s plaatste een GIF</string>
     <string name="ChannelMessageAudio">%1$s plaatste een spraakbericht</string>
     <string name="ChannelMessageSticker">%1$s plaatste een sticker</string>
     <!--broadcasts-->
@@ -245,6 +247,8 @@
     <string name="DeleteThisChat">Chat verwijderen</string>
     <string name="SlideToCancel">SLEEP OM TE ANNULEREN</string>
     <string name="SaveToDownloads">Opslaan in Downloads</string>
+    <string name="SaveToGIFs">GIF opslaan</string>
+    <string name="DeleteGif">GIF verwijderen?</string>
     <string name="SaveToMusic">Opslaan in muziek</string>
     <string name="ShareFile">Delen</string>
     <string name="ApplyLocalizationFile">Vertaling toepassen</string>
@@ -265,6 +269,7 @@
     <string name="NobodyLikesSpamUrl">https://telegram.org/faq#can-39t-send-messages-to-non-contacts</string>
     <string name="MoreInfo">Meer informatie</string>
     <string name="ShareSendTo">Versturen naar...</string>
+    <string name="TapHereGifs">Tik hier om opgeslagen GIF\'s te bekijken</string>
     <!--notification-->
     <string name="MessageLifetimeChanged">%1$s heeft de zelfvernietigingstimer ingesteld op %2$s</string>
     <string name="MessageLifetimeChangedOutgoing">Je hebt de zelfvernietigingstimer ingesteld op %1$s</string>
@@ -278,6 +283,7 @@
     <string name="NotificationMessageContact">%1$s heeft een contact met je gedeeld</string>
     <string name="NotificationMessageMap">%1$s heeft je een locatie gestuurd</string>
     <string name="NotificationMessageDocument">%1$s heeft je een bestand gestuurd</string>
+    <string name="NotificationMessageGif">%1$s heeft je een GIF gestuurd</string>
     <string name="NotificationMessageAudio">%1$s heeft je een geluidsbestand gestuurd</string>
     <string name="NotificationMessageSticker">%1$s heeft je een sticker gestuurd</string>
     <string name="NotificationMessageGroupText">%1$s @ %2$s: %3$s</string>
@@ -287,6 +293,7 @@
     <string name="NotificationMessageGroupContact">%1$s heeft een contact gedeeld met de groep %2$s</string>
     <string name="NotificationMessageGroupMap">%1$s heeft een locatie gestuurd naar de groep %2$s</string>
     <string name="NotificationMessageGroupDocument">%1$s heeft een bestand gestuurd naar de groep %2$s</string>
+    <string name="NotificationMessageGroupGif">%1$s heeft een GIF gestuurd naar de groep %2$s</string>
     <string name="NotificationMessageGroupAudio">%1$s heeft een geluidsbestand gestuurd naar de groep %2$s</string>
     <string name="NotificationMessageGroupSticker">%1$s heeft een sticker gestuurd naar de groep %2$s</string>
     <string name="NotificationInvitedToGroup">%1$s heeft je uitgenodigd voor de groep %2$s</string>
@@ -469,6 +476,7 @@
     <string name="WhenConnectedOnWiFi">Bij Wi-Fi-verbinding</string>
     <string name="WhenRoaming">Bij roaming</string>
     <string name="NoMediaAutoDownload">Geen media</string>
+    <string name="AutoplayGifs">GIF\'s automatisch afspelen</string>
     <string name="SaveToGallerySettings">Opslaan in galerij</string>
     <string name="EditName">Naam wijzigen</string>
     <string name="NotificationsPriority">Prioriteit</string>
@@ -718,6 +726,7 @@
     <string name="Back">Vorige</string>
     <string name="Done">Gereed</string>
     <string name="Open">Openen</string>
+    <string name="Save">Opslaan</string>
     <string name="Cancel">Annuleren</string>
     <string name="Close">Sluit</string>
     <string name="Add">Toevoegen</string>
@@ -759,6 +768,7 @@
     <string name="UnsupportedMedia">Dit bericht wordt niet ondersteund door jouw versie van Telegram. Werk Telegram bij om dit bericht te bekijken: https://telegram.org/update</string>
     <string name="AttachPhoto">Foto</string>
     <string name="AttachVideo">Video</string>
+    <string name="AttachGif">GIF</string>
     <string name="AttachLocation">Locatie</string>
     <string name="AttachContact">Contact</string>
     <string name="AttachDocument">Bestand</string>
@@ -1030,6 +1040,6 @@
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s om %2$s</string>
     <!--update text-->
-    <string name="updateText">Telegram voor Android is bijgewerkt. Nieuw in versie 3.3.2:\n\n- Cache-beheer: Meer controle over het ruimtegebruik van Telegram op je apparaat, je kunt de cache nu ook per soort content opschonen.\n- Cache verwijderen van supergroepen en kanalen? Tik ze aan en hou ze vast in het chats-overzicht, daarna: \'Cache opschonen\'.\n- Stickerbeheer: je kunt nu handmatig je stickerbundels sorteren, de volgorde synchroniseren we voor je, over al je apparaten.\n\nMeer weten? Kijk op:\nhttps://telegram.org/blog/cache-and-stickers</string>
-    <string name="updateBuild">693</string>
+    <string name="updateText">Telegram voor Android is bijgewerkt. Nieuw in versie 3.4.0:\n\nGIF-revolutie: 20 keer zo snel GIF\'s sturen en downloaden. Speel ze automatisch af en sla je favorieten op in het stickerpaneel.\n\nmeer over GIFs:\nhttps://telegram.org/blog/gif-revolution\n\nInline-bots: Voeg botcontent toe aan chats op een nieuwe manier! Geef in het invoerveld de naam van een bot en je commando in en stuur de resultaten naar je chatpartner. Probeer het eens met “@gif dog”. Voorbeelden: @gif, @wiki, @bing, @vid, @bold.\n\nMeer over inline-bots:\nhttps://telegram.org/blog/inline-bots</string>
+    <string name="updateBuild">704</string>
 </resources>

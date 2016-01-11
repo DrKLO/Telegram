@@ -32,7 +32,8 @@
         <activity android:name="net.hockeyapp.android.UpdateActivity" />
 
         <receiver
-            android:name=".GcmBroadcastReceiver"
+            android:name="com.google.android.gms.gcm.GcmReceiver"
+            android:exported="true"
             android:permission="com.google.android.c2dm.permission.SEND" >
             <intent-filter>
                 <action android:name="com.google.android.c2dm.intent.RECEIVE" />
@@ -40,6 +41,24 @@
                 <category android:name="org.telegram.messenger" />
             </intent-filter>
         </receiver>
+        <service
+            android:name=".GcmPushListenerService"
+            android:exported="false" >
+            <intent-filter>
+                <action android:name="com.google.android.c2dm.intent.RECEIVE" />
+            </intent-filter>
+        </service>
+        <service
+            android:name=".GcmInstanceIDListenerService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.android.gms.iid.InstanceID" />
+            </intent-filter>
+        </service>
+        <service
+            android:name=".GcmRegistrationIntentService"
+            android:exported="false">
+        </service>
 
         <uses-library android:name="com.google.android.maps" android:required="false"/>
 

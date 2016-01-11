@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2015.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.ui.Adapters;
@@ -83,7 +83,7 @@ public class PhotoAttachAdapter extends RecyclerView.Adapter {
                     v.setChecked(false, true);
                     photoEntry.imagePath = null;
                     photoEntry.thumbPath = null;
-                    v.setPhotoEntry(photoEntry, v.getTag() == MediaController.allPhotosAlbumEntry.photos.size() - 1);
+                    v.setPhotoEntry(photoEntry, (Integer) v.getTag() == MediaController.allPhotosAlbumEntry.photos.size() - 1);
                 } else {
                     selectedPhotos.put(photoEntry.imageId, photoEntry);
                     v.setChecked(true, true);

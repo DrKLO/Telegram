@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2015.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.messenger;
@@ -66,6 +66,7 @@ public class NotificationCenter {
     public static final int needShowAlert = totalEvents++;
     public static final int didUpdatedMessagesViews = totalEvents++;
     public static final int needReloadRecentDialogsSearch = totalEvents++;
+    public static final int locationPermissionGranted = totalEvents++;
 
     public static final int httpFileDidLoaded = totalEvents++;
     public static final int httpFileDidFailedLoad = totalEvents++;

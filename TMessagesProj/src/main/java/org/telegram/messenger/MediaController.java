@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2015.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.messenger;
@@ -46,7 +46,6 @@ import android.os.ParcelFileDescriptor;
 import android.os.PowerManager;
 import android.os.Vibrator;
 import android.provider.MediaStore;
-import android.view.View;
 
 import org.telegram.messenger.audioinfo.AudioInfo;
 import org.telegram.messenger.query.SharedMediaQuery;
@@ -56,8 +55,6 @@ import org.telegram.messenger.video.Mp4Movie;
 import org.telegram.messenger.video.OutputSurface;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
-import org.telegram.ui.Cells.ChatMediaCell;
-import org.telegram.ui.Components.GifDrawable;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -190,7 +187,6 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
     }
 
     public static class SearchImage {
-        public int uid;
         public String id;
         public String imageUrl;
         public String thumbUrl;
@@ -203,6 +199,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
         public String thumbPath;
         public String imagePath;
         public CharSequence caption;
+        public TLRPC.Document document;
     }
 
     public final static String MIME_TYPE = "video/avc";
@@ -230,6 +227,8 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
     public static final int AUTODOWNLOAD_MASK_AUDIO = 2;
     public static final int AUTODOWNLOAD_MASK_VIDEO = 4;
     public static final int AUTODOWNLOAD_MASK_DOCUMENT = 8;
+    public static final int AUTODOWNLOAD_MASK_MUSIC = 16;
+    public static final int AUTODOWNLOAD_MASK_GIF = 32;
     public int mobileDataDownloadMask = 0;
     public int wifiDownloadMask = 0;
     public int roamingDownloadMask = 0;
@@ -237,10 +236,13 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
     private ArrayList<DownloadObject> photoDownloadQueue = new ArrayList<>();
     private ArrayList<DownloadObject> audioDownloadQueue = new ArrayList<>();
     private ArrayList<DownloadObject> documentDownloadQueue = new ArrayList<>();
+    private ArrayList<DownloadObject> musicDownloadQueue = new ArrayList<>();
+    private ArrayList<DownloadObject> gifDownloadQueue = new ArrayList<>();
     private ArrayList<DownloadObject> videoDownloadQueue = new ArrayList<>();
     private HashMap<String, DownloadObject> downloadQueueKeys = new HashMap<>();
 
     private boolean saveToGallery = true;
+    private boolean autoplayGifs = true;
     private boolean shuffleMusic;
     private int repeatMode;
 
@@ -253,10 +255,6 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
     private HashMap<String, FileDownloadProgressListener> addLaterArray = new HashMap<>();
     private ArrayList<FileDownloadProgressListener> deleteLaterArray = new ArrayList<>();
     private int lastTag = 0;
-
-    private GifDrawable currentGifDrawable;
-    private MessageObject currentGifMessageObject;
-    private ChatMediaCell currentMediaCell;
 
     private boolean isPaused = false;
     private MediaPlayer audioPlayer = null;
@@ -535,10 +533,11 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
         fileDecodingQueue = new DispatchQueue("fileDecodingQueue");
 
         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
-        mobileDataDownloadMask = preferences.getInt("mobileDataDownloadMask", AUTODOWNLOAD_MASK_PHOTO | AUTODOWNLOAD_MASK_AUDIO);
-        wifiDownloadMask = preferences.getInt("wifiDownloadMask", AUTODOWNLOAD_MASK_PHOTO | AUTODOWNLOAD_MASK_AUDIO);
+        mobileDataDownloadMask = preferences.getInt("mobileDataDownloadMask", AUTODOWNLOAD_MASK_PHOTO | AUTODOWNLOAD_MASK_AUDIO | AUTODOWNLOAD_MASK_MUSIC | (Build.VERSION.SDK_INT >= 11 ? AUTODOWNLOAD_MASK_GIF : 0));
+        wifiDownloadMask = preferences.getInt("wifiDownloadMask", AUTODOWNLOAD_MASK_PHOTO | AUTODOWNLOAD_MASK_AUDIO | AUTODOWNLOAD_MASK_MUSIC | (Build.VERSION.SDK_INT >= 11 ? AUTODOWNLOAD_MASK_GIF : 0));
         roamingDownloadMask = preferences.getInt("roamingDownloadMask", 0);
         saveToGallery = preferences.getBoolean("save_gallery", false);
+        autoplayGifs = preferences.getBoolean("autoplay_gif", true) && Build.VERSION.SDK_INT >= 11;
         shuffleMusic = preferences.getBoolean("shuffleMusic", false);
         repeatMode = preferences.getInt("repeatMode", 0);
 
@@ -670,18 +669,14 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
 
     public void cleanup() {
         cleanupPlayer(false, true);
-        if (currentGifDrawable != null) {
-            currentGifDrawable.recycle();
-            currentGifDrawable = null;
-        }
-        currentMediaCell = null;
         audioInfo = null;
         playMusicAgain = false;
-        currentGifMessageObject = null;
         photoDownloadQueue.clear();
         audioDownloadQueue.clear();
         documentDownloadQueue.clear();
         videoDownloadQueue.clear();
+        musicDownloadQueue.clear();
+        gifDownloadQueue.clear();
         downloadQueueKeys.clear();
         videoConvertQueue.clear();
         playlist.clear();
@@ -704,6 +699,12 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
         if ((mobileDataDownloadMask & AUTODOWNLOAD_MASK_DOCUMENT) != 0 || (wifiDownloadMask & AUTODOWNLOAD_MASK_DOCUMENT) != 0 || (roamingDownloadMask & AUTODOWNLOAD_MASK_DOCUMENT) != 0) {
             mask |= AUTODOWNLOAD_MASK_DOCUMENT;
         }
+        if ((mobileDataDownloadMask & AUTODOWNLOAD_MASK_MUSIC) != 0 || (wifiDownloadMask & AUTODOWNLOAD_MASK_MUSIC) != 0 || (roamingDownloadMask & AUTODOWNLOAD_MASK_MUSIC) != 0) {
+            mask |= AUTODOWNLOAD_MASK_MUSIC;
+        }
+        if ((mobileDataDownloadMask & AUTODOWNLOAD_MASK_GIF) != 0 || (wifiDownloadMask & AUTODOWNLOAD_MASK_GIF) != 0 || (roamingDownloadMask & AUTODOWNLOAD_MASK_GIF) != 0) {
+            mask |= AUTODOWNLOAD_MASK_GIF;
+        }
         return mask;
     }
 
@@ -718,7 +719,8 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                 newDownloadObjectsAvailable(AUTODOWNLOAD_MASK_PHOTO);
             }
         } else {
-            for (DownloadObject downloadObject : photoDownloadQueue) {
+            for (int a = 0; a < photoDownloadQueue.size(); a++) {
+                DownloadObject downloadObject = photoDownloadQueue.get(a);
                 FileLoader.getInstance().cancelLoadFile((TLRPC.PhotoSize) downloadObject.object);
             }
             photoDownloadQueue.clear();
@@ -728,7 +730,8 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                 newDownloadObjectsAvailable(AUTODOWNLOAD_MASK_AUDIO);
             }
         } else {
-            for (DownloadObject downloadObject : audioDownloadQueue) {
+            for (int a = 0; a < audioDownloadQueue.size(); a++) {
+                DownloadObject downloadObject = audioDownloadQueue.get(a);
                 FileLoader.getInstance().cancelLoadFile((TLRPC.Audio) downloadObject.object);
             }
             audioDownloadQueue.clear();
@@ -738,8 +741,10 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                 newDownloadObjectsAvailable(AUTODOWNLOAD_MASK_DOCUMENT);
             }
         } else {
-            for (DownloadObject downloadObject : documentDownloadQueue) {
-                FileLoader.getInstance().cancelLoadFile((TLRPC.Document) downloadObject.object);
+            for (int a = 0; a < documentDownloadQueue.size(); a++) {
+                DownloadObject downloadObject = documentDownloadQueue.get(a);
+                TLRPC.Document document = (TLRPC.Document) downloadObject.object;
+                FileLoader.getInstance().cancelLoadFile(document);
             }
             documentDownloadQueue.clear();
         }
@@ -748,10 +753,35 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                 newDownloadObjectsAvailable(AUTODOWNLOAD_MASK_VIDEO);
             }
         } else {
-            for (DownloadObject downloadObject : videoDownloadQueue) {
+            for (int a = 0; a < videoDownloadQueue.size(); a++) {
+                DownloadObject downloadObject = videoDownloadQueue.get(a);
                 FileLoader.getInstance().cancelLoadFile((TLRPC.Video) downloadObject.object);
             }
             videoDownloadQueue.clear();
+        }
+        if ((currentMask & AUTODOWNLOAD_MASK_MUSIC) != 0) {
+            if (musicDownloadQueue.isEmpty()) {
+                newDownloadObjectsAvailable(AUTODOWNLOAD_MASK_MUSIC);
+            }
+        } else {
+            for (int a = 0; a < musicDownloadQueue.size(); a++) {
+                DownloadObject downloadObject = musicDownloadQueue.get(a);
+                TLRPC.Document document = (TLRPC.Document) downloadObject.object;
+                FileLoader.getInstance().cancelLoadFile(document);
+            }
+            musicDownloadQueue.clear();
+        }
+        if ((currentMask & AUTODOWNLOAD_MASK_GIF) != 0) {
+            if (gifDownloadQueue.isEmpty()) {
+                newDownloadObjectsAvailable(AUTODOWNLOAD_MASK_GIF);
+            }
+        } else {
+            for (int a = 0; a < gifDownloadQueue.size(); a++) {
+                DownloadObject downloadObject = gifDownloadQueue.get(a);
+                TLRPC.Document document = (TLRPC.Document) downloadObject.object;
+                FileLoader.getInstance().cancelLoadFile(document);
+            }
+            gifDownloadQueue.clear();
         }
 
         int mask = getAutodownloadMask();
@@ -769,6 +799,12 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
             }
             if ((mask & AUTODOWNLOAD_MASK_DOCUMENT) == 0) {
                 MessagesStorage.getInstance().clearDownloadQueue(AUTODOWNLOAD_MASK_DOCUMENT);
+            }
+            if ((mask & AUTODOWNLOAD_MASK_MUSIC) == 0) {
+                MessagesStorage.getInstance().clearDownloadQueue(AUTODOWNLOAD_MASK_MUSIC);
+            }
+            if ((mask & AUTODOWNLOAD_MASK_GIF) == 0) {
+                MessagesStorage.getInstance().clearDownloadQueue(AUTODOWNLOAD_MASK_GIF);
             }
         }
     }
@@ -800,9 +836,20 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
             queue = videoDownloadQueue;
         } else if (type == AUTODOWNLOAD_MASK_DOCUMENT) {
             queue = documentDownloadQueue;
+        } else if (type == AUTODOWNLOAD_MASK_MUSIC) {
+            queue = musicDownloadQueue;
+        } else if (type == AUTODOWNLOAD_MASK_GIF) {
+            queue = gifDownloadQueue;
         }
-        for (DownloadObject downloadObject : objects) {
-            String path = FileLoader.getAttachFileName(downloadObject.object);
+        for (int a = 0; a < objects.size(); a++) {
+            DownloadObject downloadObject = objects.get(a);
+            String path;
+            if (downloadObject.object instanceof TLRPC.Document) {
+                TLRPC.Document document = (TLRPC.Document) downloadObject.object;
+                path = FileLoader.getAttachFileName(document);
+            } else {
+                path = FileLoader.getAttachFileName(downloadObject.object);
+            }
             if (downloadQueueKeys.containsKey(path)) {
                 continue;
             }
@@ -815,7 +862,8 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
             } else if (downloadObject.object instanceof TLRPC.Video) {
                 FileLoader.getInstance().loadFile((TLRPC.Video) downloadObject.object, false);
             } else if (downloadObject.object instanceof TLRPC.Document) {
-                FileLoader.getInstance().loadFile((TLRPC.Document) downloadObject.object, false, false);
+                TLRPC.Document document = (TLRPC.Document) downloadObject.object;
+                FileLoader.getInstance().loadFile(document, false, false);
             } else {
                 added = false;
             }
@@ -839,6 +887,12 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
         }
         if ((mask & AUTODOWNLOAD_MASK_DOCUMENT) != 0 && (downloadMask & AUTODOWNLOAD_MASK_DOCUMENT) != 0 && documentDownloadQueue.isEmpty()) {
             MessagesStorage.getInstance().getDownloadQueue(AUTODOWNLOAD_MASK_DOCUMENT);
+        }
+        if ((mask & AUTODOWNLOAD_MASK_MUSIC) != 0 && (downloadMask & AUTODOWNLOAD_MASK_MUSIC) != 0 && musicDownloadQueue.isEmpty()) {
+            MessagesStorage.getInstance().getDownloadQueue(AUTODOWNLOAD_MASK_MUSIC);
+        }
+        if ((mask & AUTODOWNLOAD_MASK_GIF) != 0 && (downloadMask & AUTODOWNLOAD_MASK_GIF) != 0 && gifDownloadQueue.isEmpty()) {
+            MessagesStorage.getInstance().getDownloadQueue(AUTODOWNLOAD_MASK_GIF);
         }
     }
 
@@ -868,6 +922,16 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
                 documentDownloadQueue.remove(downloadObject);
                 if (documentDownloadQueue.isEmpty()) {
                     newDownloadObjectsAvailable(AUTODOWNLOAD_MASK_DOCUMENT);
+                }
+            } else if (downloadObject.type == AUTODOWNLOAD_MASK_MUSIC) {
+                musicDownloadQueue.remove(downloadObject);
+                if (musicDownloadQueue.isEmpty()) {
+                    newDownloadObjectsAvailable(AUTODOWNLOAD_MASK_MUSIC);
+                }
+            } else if (downloadObject.type == AUTODOWNLOAD_MASK_GIF) {
+                gifDownloadQueue.remove(downloadObject);
+                if (gifDownloadQueue.isEmpty()) {
+                    newDownloadObjectsAvailable(AUTODOWNLOAD_MASK_GIF);
                 }
             }
         }
@@ -1596,6 +1660,9 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
     }
 
     private void checkIsNextMusicFileDownloaded() {
+        if ((getCurrentDownloadMask() & AUTODOWNLOAD_MASK_MUSIC) == 0) {
+            return;
+        }
         ArrayList<MessageObject> currentPlayList = shuffleMusic ? shuffledPlaylist : playlist;
         if (currentPlayList == null || currentPlayList.size() < 2) {
             return;
@@ -1615,7 +1682,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
         final File cacheFile = file != null ? file : FileLoader.getPathToMessage(nextAudio.messageOwner);
         boolean exist = cacheFile != null && cacheFile.exists();
         if (cacheFile != null && cacheFile != file && !cacheFile.exists() && nextAudio.isMusic()) {
-            FileLoader.getInstance().loadFile(nextAudio.messageOwner.media.document, true, false);
+            FileLoader.getInstance().loadFile(nextAudio.messageOwner.media.document, false, false);
         }
     }
 
@@ -1643,7 +1710,7 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
         }
         final File cacheFile = file != null ? file : FileLoader.getPathToMessage(messageObject.messageOwner);
         if (cacheFile != null && cacheFile != file && !cacheFile.exists() && messageObject.isMusic()) {
-            FileLoader.getInstance().loadFile(messageObject.messageOwner.media.document, true, false);
+            FileLoader.getInstance().loadFile(messageObject.messageOwner.media.document, false, false);
             downloadingCurrentMessage = true;
             isPaused = false;
             lastProgress = 0;
@@ -2243,76 +2310,6 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
         }
     }
 
-    public GifDrawable getGifDrawable(ChatMediaCell cell, boolean create) {
-        if (cell == null) {
-            return null;
-        }
-
-        MessageObject messageObject = cell.getMessageObject();
-        if (messageObject == null) {
-            return null;
-        }
-
-        if (currentGifDrawable != null && currentGifMessageObject != null && messageObject.getId() == currentGifMessageObject.getId()) {
-            currentMediaCell = cell;
-            currentGifDrawable.parentView = new WeakReference<View>(cell);
-            return currentGifDrawable;
-        }
-
-        if (create) {
-            if (currentMediaCell != null) {
-                if (currentGifDrawable != null) {
-                    currentGifDrawable.stop();
-                    currentGifDrawable.recycle();
-                }
-                currentMediaCell.clearGifImage();
-            }
-            currentGifMessageObject = cell.getMessageObject();
-            currentMediaCell = cell;
-
-            File cacheFile = null;
-            if (currentGifMessageObject.messageOwner.attachPath != null && currentGifMessageObject.messageOwner.attachPath.length() != 0) {
-                File f = new File(currentGifMessageObject.messageOwner.attachPath);
-                if (f.length() > 0) {
-                    cacheFile = f;
-                }
-            }
-            if (cacheFile == null) {
-                cacheFile = FileLoader.getPathToMessage(messageObject.messageOwner);
-            }
-            try {
-                currentGifDrawable = new GifDrawable(cacheFile);
-                currentGifDrawable.parentView = new WeakReference<View>(cell);
-                return currentGifDrawable;
-            } catch (Exception e) {
-                FileLog.e("tmessages", e);
-            }
-        }
-
-        return null;
-    }
-
-    public void clearGifDrawable(ChatMediaCell cell) {
-        if (cell == null) {
-            return;
-        }
-
-        MessageObject messageObject = cell.getMessageObject();
-        if (messageObject == null) {
-            return;
-        }
-
-        if (currentGifMessageObject != null && messageObject.getId() == currentGifMessageObject.getId()) {
-            if (currentGifDrawable != null) {
-                currentGifDrawable.stop();
-                currentGifDrawable.recycle();
-                currentGifDrawable = null;
-            }
-            currentMediaCell = null;
-            currentGifMessageObject = null;
-        }
-    }
-
     public static boolean isWebp(Uri uri) {
         ParcelFileDescriptor parcelFD = null;
         FileInputStream input = null;
@@ -2437,6 +2434,14 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
         checkSaveToGalleryFiles();
     }
 
+    public void toggleAutoplayGifs() {
+        autoplayGifs = !autoplayGifs;
+        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+        SharedPreferences.Editor editor = preferences.edit();
+        editor.putBoolean("autoplay_gif", autoplayGifs);
+        editor.commit();
+    }
+
     public void checkSaveToGalleryFiles() {
         try {
             File telegramPath = new File(Environment.getExternalStorageDirectory(), "Telegram");
@@ -2467,6 +2472,10 @@ public class MediaController implements NotificationCenter.NotificationCenterDel
 
     public boolean canSaveToGallery() {
         return saveToGallery;
+    }
+
+    public boolean canAutoplayGifs() {
+        return autoplayGifs;
     }
 
     public static void loadGalleryPhotosAlbums(final int guid) {

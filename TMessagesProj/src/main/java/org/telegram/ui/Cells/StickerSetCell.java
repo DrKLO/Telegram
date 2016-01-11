@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2015.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.ui.Cells;
@@ -74,15 +74,8 @@ public class StickerSetCell extends FrameLayout {
         imageView.setAspectFit(true);
         addView(imageView, LayoutHelper.createFrame(48, 48, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 0 : 12, 8, LocaleController.isRTL ? 12 : 0, 0));
 
-        optionsButton = new ImageView(context) {
-            @Override
-            public boolean onTouchEvent(MotionEvent event) {
-                if (event.getAction() == MotionEvent.ACTION_UP) {
-                    StickerSetCell.this.getParent().requestDisallowInterceptTouchEvent(true);
-                }
-                return super.onTouchEvent(event);
-            }
-        };
+        optionsButton = new ImageView(context);
+        optionsButton.setFocusable(false);
         optionsButton.setBackgroundResource(R.drawable.bar_selector_grey);
         optionsButton.setImageResource(R.drawable.doc_actions_b);
         optionsButton.setScaleType(ImageView.ScaleType.CENTER);

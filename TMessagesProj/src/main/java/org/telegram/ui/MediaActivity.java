@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2015.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.ui;
@@ -1040,7 +1040,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                             }
                         }
                         File f = null;
-                        String fileName = FileLoader.getAttachFileName(message.messageOwner.media.document);
+                        String fileName = message.messageOwner.media != null ? FileLoader.getAttachFileName(message.messageOwner.media.document) : "";
                         if (message.messageOwner.attachPath != null && message.messageOwner.attachPath.length() != 0) {
                             f = new File(message.messageOwner.attachPath);
                         }
@@ -1092,7 +1092,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                             }
                         }
                     } else if (!cell.isLoading()) {
-                        FileLoader.getInstance().loadFile(cell.getDocument().messageOwner.media.document, true, false);
+                        FileLoader.getInstance().loadFile(cell.getDocument().messageOwner.media.document, false, false);
                         cell.updateFileExistIcon();
                     } else {
                         FileLoader.getInstance().cancelLoadFile(cell.getDocument().messageOwner.media.document);
@@ -1557,7 +1557,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                         TLRPC.messages_Messages res = (TLRPC.messages_Messages) response;
                         for (int a = 0; a < res.messages.size(); a++) {
                             TLRPC.Message message = res.messages.get(a);
-                            if (message.id > max_id) {
+                            if (max_id != 0 && message.id > max_id) {
                                 continue;
                             }
                             messageObjects.add(new MessageObject(message, null, false));

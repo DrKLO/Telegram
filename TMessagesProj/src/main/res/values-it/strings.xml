@@ -97,7 +97,7 @@
     <string name="ChannelPublic">Canale pubblico</string>
     <string name="ChannelPublicInfo">I canali pubblici possono essere trovati nella ricerca, chiunque può unirsi.</string>
     <string name="ChannelPrivate">Canale privato</string>
-    <string name="ChannelPrivateInfo">Ci si può unire ai canali privati solo tramite link di invito.</string>
+    <string name="ChannelPrivateInfo">Ci si può unire ai canali privati solo via link di invito.</string>
     <string name="ChannelLinkTitle">Link</string>
     <string name="ChannelInviteLinkTitle">Link di invito</string>
     <string name="ChannelAddMembers">Aggiungi membri</string>
@@ -141,7 +141,7 @@
     <string name="ChannelMute">SILENZIA</string>
     <string name="ChannelUnmute">SUONA</string>
     <string name="ChannelAddAdmin">Aggiungi amministratore</string>
-    <string name="ChannelInviteViaLink">Invita tramite link</string>
+    <string name="ChannelInviteViaLink">Invita via link</string>
     <string name="ChannelAddUserAdminAlert">Sei sicuro di voler rendere %1$s un amministratore?</string>
     <string name="ChannelRemoveUserAdmin">Rimuovi</string>
     <string name="ChannelMembersInfo">Solo gli amministratori del canale possono vedere questa lista.</string>
@@ -168,6 +168,7 @@
     <string name="ChannelMessageGroupContact">%1$s ha condiviso un contatto con il canale%2$s</string>
     <string name="ChannelMessageGroupMap">%1$s ha inviato una posizione al canale %2$s</string>
     <string name="ChannelMessageGroupDocument">%1$s ha inviato un file al canale %2$s</string>
+    <string name="ChannelMessageGroupGif">%1$s ha inviato una GIF al canale %2$s</string>
     <string name="ChannelMessageGroupAudio">%1$s ha inviato un audio al canale %2$s</string>
     <string name="ChannelMessageGroupSticker">%1$s ha inviato uno sticker al canale %2$s</string>
     <string name="ChannelMessageNoText">%1$s ha pubblicato un messaggio</string>
@@ -176,6 +177,7 @@
     <string name="ChannelMessageContact">%1$s ha pubblicato un contatto</string>
     <string name="ChannelMessageMap">%1$s ha pubblicato una posizione</string>
     <string name="ChannelMessageDocument">%1$s ha pubblicato un file</string>
+    <string name="ChannelMessageGIF">%1$s ha pubblicato una GIF</string>
     <string name="ChannelMessageAudio">%1$s ha pubblicato un messaggio vocale</string>
     <string name="ChannelMessageSticker">%1$s ha pubblicato uno sticker</string>
     <!--broadcasts-->
@@ -245,6 +247,8 @@
     <string name="DeleteThisChat">Elimina questa chat</string>
     <string name="SlideToCancel">ANNULLA</string>
     <string name="SaveToDownloads">Salva nei download</string>
+    <string name="SaveToGIFs">Salva nelle GIF</string>
+    <string name="DeleteGif">Eliminare GIF?</string>
     <string name="SaveToMusic">Salva nella musica</string>
     <string name="ShareFile">Condividi</string>
     <string name="ApplyLocalizationFile">Applica traduzione</string>
@@ -265,6 +269,7 @@
     <string name="NobodyLikesSpamUrl">https://telegram.org/faq/it#non-posso-inviare-messaggi-a-chi-non-far-parte-dei-miei-contatti</string>
     <string name="MoreInfo">Più info</string>
     <string name="ShareSendTo">Invia a...</string>
+    <string name="TapHereGifs">Premi qui per accedere alle GIF salvate</string>
     <!--notification-->
     <string name="MessageLifetimeChanged">%1$s ha impostato il timer di autodistruzione a %2$s</string>
     <string name="MessageLifetimeChangedOutgoing">Hai impostato il timer di autodistruzione a %1$s</string>
@@ -278,6 +283,7 @@
     <string name="NotificationMessageContact">%1$s ha condiviso un contatto con te</string>
     <string name="NotificationMessageMap">%1$s ti ha inviato una posizione</string>
     <string name="NotificationMessageDocument">%1$s ti ha inviato un file</string>
+    <string name="NotificationMessageGif">%1$s ti ha inviato una GIF</string>
     <string name="NotificationMessageAudio">%1$s ti ha inviato un audio</string>
     <string name="NotificationMessageSticker">%1$s ti ha inviato uno sticker</string>
     <string name="NotificationMessageGroupText">%1$s @ %2$s: %3$s</string>
@@ -287,6 +293,7 @@
     <string name="NotificationMessageGroupContact">%1$s ha condiviso un contatto con il gruppo %2$s</string>
     <string name="NotificationMessageGroupMap">%1$s ha inviato una posizione al gruppo %2$s</string>
     <string name="NotificationMessageGroupDocument">%1$s ha inviato un file al gruppo %2$s</string>
+    <string name="NotificationMessageGroupGif">%1$s ha inviato una GIF al gruppo %2$s</string>
     <string name="NotificationMessageGroupAudio">%1$s ha inviato un audio al gruppo %2$s</string>
     <string name="NotificationMessageGroupSticker">%1$s ha inviato uno sticker al gruppo %2$s</string>
     <string name="NotificationInvitedToGroup">%1$s ti ha invitato nel gruppo %2$s</string>
@@ -300,7 +307,7 @@
     <string name="NotificationContactJoined">%1$s si è unito a Telegram!</string>
     <string name="NotificationUnrecognizedDevice">%1$s,\nAbbiamo rilevato un accesso al tuo account da un nuovo dispositivo il %2$s\n\nDispositivo: %3$s\nPosizione: %4$s\n\nSe non sei stato tu, puoi andare su Impostazioni - Privacy e sicurezza - Sessioni - Termina tutte le sessioni.\n\nSe pensi che qualcuno si sia collegato al tuo account contro il tuo volere, ti raccomandiamo di attivare la verifica in due passaggi nelle impostazioni di Privacy e Sicurezza.\n\nGrazie,\nil team di Telegram</string>
     <string name="NotificationContactNewPhoto">%1$s ha aggiornato la foto del profilo</string>
-    <string name="NotificationInvitedToGroupByLink">%1$s si è unito al gruppo %2$s tramite link di invito</string>
+    <string name="NotificationInvitedToGroupByLink">%1$s si è unito al gruppo %2$s via link di invito</string>
     <string name="Reply">Rispondi</string>
     <string name="ReplyToGroup">Rispondi a %1$s</string>
     <string name="ReplyToUser">Rispondi a %1$s</string>
@@ -331,7 +338,7 @@
     <string name="JoinToGroupErrorFull">Spiacenti, questo gruppo è già pieno.</string>
     <string name="JoinToGroupErrorNotExist">Spiacenti, sembra che questa chat non esista.</string>
     <string name="LinkCopied">Link copiato negli appunti</string>
-    <string name="InviteToGroupByLink">Invita nel gruppo tramite link</string>
+    <string name="InviteToGroupByLink">Invita nel gruppo via link</string>
     <string name="InviteLink">Link di invito</string>
     <string name="RevokeAlert">Sei sicuro di voler revocare questo link? Una volta fatto, nessuno potrà unirsi utilizzandolo.</string>
     <string name="RevokeAlertNewLink">Il precedente link di invito è inattivo. Ne è appena stato creato uno nuovo.</string>
@@ -469,6 +476,7 @@
     <string name="WhenConnectedOnWiFi">Quando connesso tramite Wi-Fi</string>
     <string name="WhenRoaming">In roaming</string>
     <string name="NoMediaAutoDownload">Nessun media</string>
+    <string name="AutoplayGifs">Autoriproduzione GIF</string>
     <string name="SaveToGallerySettings">Salva nella galleria</string>
     <string name="EditName">Modifica nome</string>
     <string name="NotificationsPriority">Priorità</string>
@@ -503,7 +511,7 @@
     <string name="CacheSettings">Impostazioni cache</string>
     <string name="LocalDatabase">Database locale</string>
     <string name="LocalDatabaseClear">Eliminare i messaggi salvati nella cache?</string>
-    <string name="LocalDatabaseInfo">Cancellando il database locale verrà eliminato il testo dei messaggi salvati nella cache, e verrà compressa la dimensione del database per risparmiare spazio in memoria. Telegram necessita di alcuni dati per funzionare, quindi il database non raggiungerà mai uno spazio occupato pari a zero.\n\nQuesta operazione può richiedere alcuni minuti.</string>
+    <string name="LocalDatabaseInfo">Eliminando il database locale, verranno cancellati i messaggi nella cache e il database verrà compresso per risparmiare spazio. Telegram ha bisogno di alcuni dati per funzionare, quindi il database non sarà azzerato.\n\nQuesta operazione può richiedere alcuni minuti.</string>
     <string name="ClearMediaCache">Pulisci cache</string>
     <string name="CacheClear">Pulisci</string>
     <string name="CalculatingSize">Calcolando...</string>
@@ -652,7 +660,7 @@
     <string name="ResetMyAccount">RIPRISTINA IL MIO ACCOUNT</string>
     <string name="ResetMyAccountText">Perderai tutte le chat e i messaggi, insieme ai media e ai file condivisi, se procederai a ripristinare il tuo account.</string>
     <string name="ResetMyAccountWarning">Attenzione</string>
-    <string name="ResetMyAccountWarningText">Questa azione non può essere annullata.\n\nSe ripristini il tuo account, tutti i tuoi messaggi e chat saranno eliminati.</string>
+    <string name="ResetMyAccountWarningText">Questa azione non può essere annullata.\n\n Se ripristini il tuo account, tutti i tuoi messaggi e chat saranno eliminati.</string>
     <string name="ResetMyAccountWarningReset">Ripristina</string>
     <string name="LoginPassword">Password</string>
     <string name="LoginPasswordText">Hai attivato la verifica in due passaggi, così il tuo account è protetto con una password aggiuntiva.</string>
@@ -718,6 +726,7 @@
     <string name="Back">Indietro</string>
     <string name="Done">Fatto</string>
     <string name="Open">Apri</string>
+    <string name="Save">Salva</string>
     <string name="Cancel">Annulla</string>
     <string name="Close">Chiudi</string>
     <string name="Add">Aggiungi</string>
@@ -736,8 +745,8 @@
     <string name="OK">OK</string>
     <string name="Crop">RITAGLIA</string>
     <!--messages-->
-    <string name="ActionInviteYou">Ti sei unito al gruppo tramite link di invito</string>
-    <string name="ActionInviteUser">un1 si è unito al gruppo tramite link di invito</string>
+    <string name="ActionInviteYou">Ti sei unito al gruppo via link di invito</string>
+    <string name="ActionInviteUser">un1 si è unito al gruppo via link di invito</string>
     <string name="ActionKickUser">un1 ha rimosso un2</string>
     <string name="ActionLeftUser">un1 ha lasciato il gruppo</string>
     <string name="ActionAddUser">un1 ha aggiunto un2</string>
@@ -759,6 +768,7 @@
     <string name="UnsupportedMedia">Questo messaggio non è supportato sulla tua versione di Telegram. Aggiorna l\'applicazione per visualizzarlo: https://telegram.org/update</string>
     <string name="AttachPhoto">Foto</string>
     <string name="AttachVideo">Video</string>
+    <string name="AttachGif">GIF</string>
     <string name="AttachLocation">Posizione</string>
     <string name="AttachContact">Contatto</string>
     <string name="AttachDocument">File</string>
@@ -1030,6 +1040,6 @@
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s alle %2$s</string>
     <!--update text-->
-    <string name="updateText">Telegram per Android si è aggiornato. Nuovo nella versione 3.3.2:\n\n- Gestione della cache: Controlla quanto spazio Telegram usa sul tuo dispositivo, elimina la cache per contenuti speicifici.\n- Elimina la cache per i supergruppi e i canali: Tieni premuto su di essi nella lista delle cache e premi \'Elimina dalla cache\'.\n- Gestione degli sticker: Riordina manualmente i tuoi pacchetti di sticker. L\'ordine dei pacchetti è ora sincronizzato tra tutti i dispositivi.\n\nPiù info su questo update:\nhttps://telegram.org/blog/cache-and-stickers</string>
-    <string name="updateBuild">693</string>
+    <string name="updateText">Telegram per Android si è aggiornato. Nuovo nella versione 3.4.0:\n\nRivoluzione GIF: Invio e download 20 volte più veloci, autoriproduci e salva le tue preferite nel pannello sticker.\n\nPiù info sulle GIF:\nhttps://telegram.org/blog/gif-revolution\n\nBot Inline: Un nuovo modo di aggiungere contenuti in ogni chat. Menziona un bot e la tua domanda nel campo di scrittura e ottieni risultati immediati. Prova a scrivere “@gif dog” nella tua prossima chat. Bot di esempio: @gif, @wiki, @bing, @vid, @bold\n\nPiù info sui Bot Inline:\nhttps://telegram.org/blog/inline-bots</string>
+    <string name="updateBuild">704</string>
 </resources>

@@ -7,10 +7,10 @@
 #include <openssl/aes.h>
 #include "utils.h"
 #include "sqlite.h"
-#include "gif.h"
 #include "image.h"
 
 int registerNativeTgNetFunctions(JavaVM *vm, JNIEnv *env);
+int gifvideoOnJNILoad(JavaVM *vm, JNIEnv *env);
 
 jint JNI_OnLoad(JavaVM *vm, void *reserved) {
 	JNIEnv *env = 0;
@@ -27,18 +27,20 @@ jint JNI_OnLoad(JavaVM *vm, void *reserved) {
     if (imageOnJNILoad(vm, reserved, env) == -1) {
         return -1;
     }
+    
+    if (gifvideoOnJNILoad(vm, env) == -1) {
+        return -1;
+    }
 
     if (registerNativeTgNetFunctions(vm, env) != JNI_TRUE) {
         return -1;
     }
     
-    gifOnJNILoad(vm, reserved, env);
-    
 	return JNI_VERSION_1_6;
 }
 
 void JNI_OnUnload(JavaVM *vm, void *reserved) {
-    gifOnJNIUnload(vm, reserved);
+
 }
 
 JNIEXPORT void Java_org_telegram_messenger_Utilities_aesIgeEncryption(JNIEnv *env, jclass class, jobject buffer, jbyteArray key, jbyteArray iv, jboolean encrypt, int offset, int length) {

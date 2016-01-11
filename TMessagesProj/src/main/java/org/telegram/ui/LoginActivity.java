@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2015.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.ui;
@@ -146,6 +146,14 @@ public class LoginActivity extends BaseFragment {
         Bundle savedInstanceState = loadCurrentState();
         if (savedInstanceState != null) {
             currentViewNum = savedInstanceState.getInt("currentViewNum", 0);
+            if (currentViewNum == 1) {
+                int time = savedInstanceState.getInt("open");
+                if (time != 0 && Math.abs(System.currentTimeMillis() / 1000 - time) >= 24 * 60 * 60) {
+                    currentViewNum = 0;
+                    savedInstanceState = null;
+                    clearCurrentState();
+                }
+            }
         }
         actionBar.setTitle(views[currentViewNum].getHeaderName());
         for (int a = 0; a < views.length; a++) {
@@ -174,6 +182,17 @@ public class LoginActivity extends BaseFragment {
     public void onResume() {
         super.onResume();
         AndroidUtilities.requestAdjustResize(getParentActivity(), classGuid);
+        try {
+            if (currentViewNum == 1 && views[1] instanceof LoginActivitySmsView) {
+                int time = ((LoginActivitySmsView) views[1]).openTime;
+                if (time != 0 && Math.abs(System.currentTimeMillis() / 1000 - time) >= 24 * 60 * 60) {
+                    views[1].onBackPressed();
+                    setPage(0, false, null, true);
+                }
+            }
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
     }
 
     private Bundle loadCurrentState() {
@@ -295,7 +314,7 @@ public class LoginActivity extends BaseFragment {
     }
 
     public void setPage(int page, boolean animated, Bundle params, boolean back) {
-        if (android.os.Build.VERSION.SDK_INT > 13) {
+        if (android.os.Build.VERSION.SDK_INT > 13 && animated) {
             final SlideView outView = views[currentViewNum];
             final SlideView newView = views[page];
             currentViewNum = page;
@@ -478,7 +497,6 @@ public class LoginActivity extends BaseFragment {
                 @Override
                 public void afterTextChanged(Editable editable) {
                     if (ignoreOnTextChange) {
-                        ignoreOnTextChange = false;
                         return;
                     }
                     ignoreOnTextChange = true;
@@ -538,6 +556,7 @@ public class LoginActivity extends BaseFragment {
                             phoneField.setSelection(phoneField.length());
                         }
                     }
+                    ignoreOnTextChange = false;
                 }
             });
             codeField.setOnEditorActionListener(new TextView.OnEditorActionListener() {
@@ -729,6 +748,7 @@ public class LoginActivity extends BaseFragment {
                 String hint = phoneFormatMap.get(code);
                 phoneField.setHintText(hint != null ? hint.replace('X', '–') : null);
                 countryState = 0;
+                ignoreOnTextChange = false;
             }
         }
 
@@ -741,6 +761,7 @@ public class LoginActivity extends BaseFragment {
             ignoreOnTextChange = true;
             String str = countriesArray.get(i);
             codeField.setText(countriesMap.get(str));
+            ignoreOnTextChange = false;
         }
 
         @Override
@@ -881,6 +902,7 @@ public class LoginActivity extends BaseFragment {
 
         private Timer timeTimer;
         private Timer codeTimer;
+        private int openTime;
         private final Object timerSync = new Object();
         private volatile int time = 60000;
         private volatile int codeTime = 15000;
@@ -913,6 +935,9 @@ public class LoginActivity extends BaseFragment {
             codeField.setInputType(InputType.TYPE_CLASS_PHONE);
             codeField.setMaxLines(1);
             codeField.setPadding(0, 0, 0, 0);
+            InputFilter[] inputFilters = new InputFilter[1];
+            inputFilters[0] = new InputFilter.LengthFilter(5);
+            codeField.setFilters(inputFilters);
             addView(codeField, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 36, Gravity.CENTER_HORIZONTAL, 0, 20, 0, 0));
             codeField.addTextChangedListener(new TextWatcher() {
                 @Override
@@ -1022,6 +1047,7 @@ public class LoginActivity extends BaseFragment {
             requestPhone = params.getString("phoneFormated");
             phoneHash = params.getString("phoneHash");
             time = params.getInt("calltime");
+            openTime = (int) (System.currentTimeMillis() / 1000);
 
             if (phone == null) {
                 return;
@@ -1240,6 +1266,8 @@ public class LoginActivity extends BaseFragment {
                                     } else if (error.text.contains("PHONE_CODE_EMPTY") || error.text.contains("PHONE_CODE_INVALID")) {
                                         needShowAlert(LocaleController.getString("AppName", R.string.AppName), LocaleController.getString("InvalidCode", R.string.InvalidCode));
                                     } else if (error.text.contains("PHONE_CODE_EXPIRED")) {
+                                        onBackPressed();
+                                        setPage(0, true, null, true);
                                         needShowAlert(LocaleController.getString("AppName", R.string.AppName), LocaleController.getString("CodeExpired", R.string.CodeExpired));
                                     } else if (error.text.startsWith("FLOOD_WAIT")) {
                                         needShowAlert(LocaleController.getString("AppName", R.string.AppName), LocaleController.getString("FloodWait", R.string.FloodWait));
@@ -1292,6 +1320,7 @@ public class LoginActivity extends BaseFragment {
                 if (codeField != null) {
                     ignoreOnTextChange = true;
                     codeField.setText("" + args[0]);
+                    ignoreOnTextChange = false;
                     onNextPressed();
                 }
             }
@@ -1309,6 +1338,9 @@ public class LoginActivity extends BaseFragment {
             if (time != 0) {
                 bundle.putInt("time", time);
             }
+            if (openTime != 0) {
+                bundle.putInt("open", openTime);
+            }
         }
 
         @Override
@@ -1321,9 +1353,13 @@ public class LoginActivity extends BaseFragment {
             if (code != null) {
                 codeField.setText(code);
             }
-            Integer t = bundle.getInt("time");
+            int t = bundle.getInt("time");
             if (t != 0) {
                 time = t;
+            }
+            int t2 = bundle.getInt("open");
+            if (t2 != 0) {
+                openTime = t2;
             }
         }
     }

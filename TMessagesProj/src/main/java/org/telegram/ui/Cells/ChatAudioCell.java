@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2015.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.ui.Cells;
@@ -98,6 +98,7 @@ public class ChatAudioCell extends ChatBaseCell implements SeekBar.SeekBarDelega
                     buttonPressed = true;
                     invalidate();
                     result = true;
+                    radialProgress.swapBackground(getDrawableForCurrentState());
                 }
             } else if (buttonPressed) {
                 if (event.getAction() == MotionEvent.ACTION_UP) {
@@ -114,6 +115,7 @@ public class ChatAudioCell extends ChatBaseCell implements SeekBar.SeekBarDelega
                         invalidate();
                     }
                 }
+                radialProgress.swapBackground(getDrawableForCurrentState());
             }
             if (!result) {
                 result = super.onTouchEvent(event);
@@ -333,10 +335,8 @@ public class ChatAudioCell extends ChatBaseCell implements SeekBar.SeekBarDelega
 
             if (messageObject.isOutOwner()) {
                 seekBar.type = 0;
-                radialProgress.setProgressColor(0xff87bf78);
             } else {
                 seekBar.type = 1;
-                radialProgress.setProgressColor(0xffa2b5c7);
             }
 
             super.setMessageObject(messageObject);
@@ -344,9 +344,32 @@ public class ChatAudioCell extends ChatBaseCell implements SeekBar.SeekBarDelega
         updateButtonState(dataChanged);
     }
 
+    @Override
+    public void setCheckPressed(boolean value, boolean pressed) {
+        super.setCheckPressed(value, pressed);
+        if (radialProgress.swapBackground(getDrawableForCurrentState())) {
+            invalidate();
+        }
+    }
+
+    @Override
+    public void setHighlighted(boolean value) {
+        super.setHighlighted(value);
+        if (radialProgress.swapBackground(getDrawableForCurrentState())) {
+            invalidate();
+        }
+    }
+
+    @Override
+    public void setPressed(boolean pressed) {
+        super.setPressed(pressed);
+        if (radialProgress.swapBackground(getDrawableForCurrentState())) {
+            invalidate();
+        }
+    }
+
     private Drawable getDrawableForCurrentState() {
-        return ResourceLoader.audioStatesDrawable[currentMessageObject.isOutOwner() ? buttonState : buttonState + 5][0];
-        //buttonPressed ? 1 :
+        return ResourceLoader.audioStatesDrawable[currentMessageObject.isOutOwner() ? buttonState : buttonState + 5][isDrawSelectedBackground() ? 2 : (buttonPressed ? 1 : 0)];
     }
 
     @Override
@@ -362,13 +385,9 @@ public class ChatAudioCell extends ChatBaseCell implements SeekBar.SeekBarDelega
         seekBar.draw(canvas);
         canvas.restore();
 
-        if (currentMessageObject.isOutOwner()) {
-            timePaint.setColor(0xff70b15c);
-            circlePaint.setColor(0xff87bf78);
-        } else {
-            timePaint.setColor(0xffa1aab3);
-            circlePaint.setColor(0xff4195e5);
-        }
+        radialProgress.setProgressColor(currentMessageObject.isOutOwner() ? 0xff87bf78 : (isDrawSelectedBackground() ? 0xff83b2c2 : 0xffa2b5c7));
+        timePaint.setColor(currentMessageObject.isOutOwner() ? 0xff70b15c : (isDrawSelectedBackground() ? 0xff89b4c1 : 0xffa1aab3));
+        circlePaint.setColor(currentMessageObject.isOutOwner() ? 0xff87bf78 : 0xff4195e5);
         radialProgress.draw(canvas);
 
         canvas.save();

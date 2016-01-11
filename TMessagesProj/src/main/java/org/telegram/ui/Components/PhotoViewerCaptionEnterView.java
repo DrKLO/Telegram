@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2015.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.ui.Components;
@@ -295,7 +295,7 @@ public class PhotoViewerCaptionEnterView extends FrameLayoutFixed implements Not
     private void showPopup(int show) {
         if (show == 1) {
             if (emojiView == null) {
-                emojiView = new EmojiView(false, getContext());
+                emojiView = new EmojiView(false, false, getContext());
                 emojiView.setListener(new EmojiView.Listener() {
                     public boolean onBackspace() {
                         if (messageEditText.length() == 0) {
@@ -329,6 +329,21 @@ public class PhotoViewerCaptionEnterView extends FrameLayoutFixed implements Not
 
                     @Override
                     public void onStickersSettingsClick() {
+
+                    }
+
+                    @Override
+                    public void onGifSelected(TLRPC.Document gif) {
+
+                    }
+
+                    @Override
+                    public void onGifTab(boolean opened) {
+
+                    }
+
+                    @Override
+                    public void onStickersTab(boolean opened) {
 
                     }
                 });

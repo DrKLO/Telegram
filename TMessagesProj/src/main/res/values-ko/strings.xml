@@ -83,8 +83,7 @@
     <string name="GroupUserCantBot">죄송합니다, 그룹방에 너무 많은 봇이 있습니다.</string>
     <string name="ActionMigrateFromGroup">이 그룹방은 슈퍼그룹방으로 업그레이드 되었습니다.</string>
     <string name="ActionMigrateFromGroupNotify">%1$s 그룹방은 슈퍼그룹방으로 업그레이드 되었습니다.</string>
-  <string name="NoBlockedGroup">그룹방에서 차단되어 퇴장당한 사용자는 관리자가 초대해야지만 그룹방에 입장이 가능합니다.
-초대링크로는 초대가 되지 않습니다.</string>
+    <string name="NoBlockedGroup">그룹방에서 차단되어 퇴장당한 사용자는 관리자가 초대해야지만 그룹방에 입장이 가능합니다. 초대링크로는 초대가 되지 않습니다.</string>
     <string name="NewChannel">새 채널</string>
     <string name="EnterChannelName">채널명</string>
     <string name="Comments">코멘트들</string>
@@ -129,10 +128,8 @@
     <string name="ChannelLeaveAlert">채널에서 나가시겠습니까?</string>
     <string name="ChannelDeleteInfo">채널에 있는 모든 메시지가 삭제됩니다.</string>
     <string name="ChannelEdit">편집</string>
-  <string name="ChannelWasPrivateAlert">채널에 대한 공개링크를 선택하신 경우, 누구나 검색을 통하여 입장 가능합니다.\n\n
-비공개 채널로 유지를 하시고 싶으실 경우 링크 생성을 하지 말아주세요</string>
-  <string name="ChannelPublicEmptyUsername">유저들이 공개 채널에 대하여 검색 및 공유가 가능하도록 링크를 선택하여 주세요.\n\n
-채널을 공개하시지 싫으실 경우, 비공개 채널을 추천드립니다.</string>
+    <string name="ChannelWasPrivateAlert">채널에 대한 공개링크를 선택하신 경우, 누구나 검색을 통하여 입장 가능합니다.\n\n비공개 채널로 유지를 하시고 싶으실 경우 링크 생성을 하지 말아주세요</string>
+    <string name="ChannelPublicEmptyUsername">유저들이 공개 채널에 대하여 검색 및 공유가 가능하도록 링크를 선택하여 주세요.\n\n채널을 공개하시지 싫으실 경우, 비공개 채널을 추천드립니다.</string>
     <string name="ActionCreateChannel">채널 생성됨</string>
     <string name="ActionChannelChangedPhoto">채널 사진 업데이트됨</string>
     <string name="ActionChannelRemovedPhoto">채널 사진 삭제됨</string>
@@ -171,6 +168,7 @@
     <string name="ChannelMessageGroupContact">%1$s님이 %2$s 채널에 연락처를 공유했습니다</string>
     <string name="ChannelMessageGroupMap">%1$s님이 %2$s 채널에 위치를 보냈습니다</string>
     <string name="ChannelMessageGroupDocument">%1$s님이 %2$s 채널에 파일을 보냈습니다</string>
+    <string name="ChannelMessageGroupGif">%1$s님이 %2$s 채널에 GIF파일을 보냈습니다</string>
     <string name="ChannelMessageGroupAudio">%1$s님이 %2$s 채널에 오디오를 보냈습니다</string>
     <string name="ChannelMessageGroupSticker">%1$s님이 %2$s 채널에 스티커를 보냈습니다</string>
     <string name="ChannelMessageNoText">%1$s 님이 메시지를 보냈습니다</string>
@@ -179,6 +177,7 @@
     <string name="ChannelMessageContact">%1$s님이 연락처를 공유했습니다</string>
     <string name="ChannelMessageMap">%1$s님이 위치를 보냈습니다</string>
     <string name="ChannelMessageDocument">%1$s 님이 파일을 보냈습니다</string>
+    <string name="ChannelMessageGIF">%1$s 님이 GIF파일을 보냈습니다</string>
     <string name="ChannelMessageAudio">%1$s님이 음성메시지를 보냈습니다</string>
     <string name="ChannelMessageSticker">%1$s님이 스티커를 보냈습니다</string>
     <!--broadcasts-->
@@ -248,6 +247,8 @@
     <string name="DeleteThisChat">이 채팅방 삭제</string>
     <string name="SlideToCancel">밀어서 취소</string>
     <string name="SaveToDownloads">다운로드 폴더에 저장</string>
+    <string name="SaveToGIFs">GIF파일로 저장</string>
+    <string name="DeleteGif">GIF파일을 삭제하겠습니까?</string>
     <string name="SaveToMusic">음악으로 저장</string>
     <string name="ShareFile">공유</string>
     <string name="ApplyLocalizationFile">언어 파일 적용</string>
@@ -268,6 +269,7 @@
     <string name="NobodyLikesSpamUrl">https://telegram.org/faq#can-39t-send-messages-to-non-contacts</string>
     <string name="MoreInfo">더 보기</string>
     <string name="ShareSendTo">다음에게 보내기..</string>
+    <string name="TapHereGifs">저장된 GIF 파일을 보려면 탭하세요.</string>
     <!--notification-->
     <string name="MessageLifetimeChanged">%1$s님이 자동삭제를 %2$s 후로 설정했습니다</string>
     <string name="MessageLifetimeChangedOutgoing">자동삭제를 %1$s 후로 설정했습니다</string>
@@ -281,6 +283,7 @@
     <string name="NotificationMessageContact">%1$s님이 연락처를 공유했습니다</string>
     <string name="NotificationMessageMap">%1$s님이 위치를 보냈습니다</string>
     <string name="NotificationMessageDocument">%1$s님이 파일을 보냈습니다</string>
+    <string name="NotificationMessageGif">%1$s 님께서 GIF파일을 보내셨습니다</string>
     <string name="NotificationMessageAudio">%1$s님이 음성메시지를 보냈습니다</string>
     <string name="NotificationMessageSticker">%1$s님이 스티커를 보냈습니다</string>
     <string name="NotificationMessageGroupText">%1$s @ %2$s: %3$s</string>
@@ -290,6 +293,7 @@
     <string name="NotificationMessageGroupContact">%1$s님이 %2$s 그룹에 연락처를 공유했습니다</string>
     <string name="NotificationMessageGroupMap">%1$s님이 %2$s 그룹에 위치를 보냈습니다</string>
     <string name="NotificationMessageGroupDocument">%1$s님이 %2$s 그룹에 파일을 보냈습니다</string>
+    <string name="NotificationMessageGroupGif">%1$s 님께서 %2$s 그룹에 GIF파일을 보냈습니다</string>
     <string name="NotificationMessageGroupAudio">%1$s님이 %2$s 그룹에 음성메시지를 보냈습니다</string>
     <string name="NotificationMessageGroupSticker">%1$s님이 %2$s 그룹에 스티커를 보냈습니다</string>
     <string name="NotificationInvitedToGroup">%1$s님이 %2$s 그룹에 초대했습니다</string>
@@ -472,6 +476,7 @@
     <string name="WhenConnectedOnWiFi">Wi-Fi에 연결 중일 때</string>
     <string name="WhenRoaming">로밍 중일 때</string>
     <string name="NoMediaAutoDownload">다운로드 안함</string>
+    <string name="AutoplayGifs">GIF 자동재생</string>
     <string name="SaveToGallerySettings">앨범에 자동 저장</string>
     <string name="EditName">이름 편집</string>
     <string name="NotificationsPriority">우선순위</string>
@@ -721,6 +726,7 @@
     <string name="Back">뒤로</string>
     <string name="Done">완료</string>
     <string name="Open">열기</string>
+    <string name="Save">저장</string>
     <string name="Cancel">취소</string>
     <string name="Close">닫기</string>
     <string name="Add">추가</string>
@@ -762,6 +768,7 @@
     <string name="UnsupportedMedia">이 메시지는 현재 사용 중인 버전의 Telegram에서 지원되지 않습니다. 메시지를 보려면 https://telegram.org/update 에서 앱을 업데이트하세요.</string>
     <string name="AttachPhoto">사진</string>
     <string name="AttachVideo">동영상</string>
+    <string name="AttachGif">GIF파일</string>
     <string name="AttachLocation">위치</string>
     <string name="AttachContact">연락처</string>
     <string name="AttachDocument">파일</string>
@@ -1033,6 +1040,6 @@
     <string name="formatterDay12H">a h:mm</string>
     <string name="formatDateAtTime">%1$s %2$s</string>
     <!--update text-->
-    <string name="updateText">텔레그램 안드로이드 버전이 업데이트 되었습니다. 새로운 버전은 3.3.2 입니다:\n\n- 캐시 관리: 저장소에서 텔레그램이 어느정도 사용하는지 관리가능, 각 기기에서 특정 컨텐츠 삭제 가능.\n- 슈퍼그룹 및 채널 캐시 삭제: 채팅목록에서 꾹 누르고 있으면 \'캐시에서 삭제\' 메뉴 선택 가능.\n- 스티커 관리: 수동으로 스티커팩 수정가능. 팩 순서는 모든 기기와 동기화 됩니다.\n\n자세한 업데이트는 https://telegram.org/blog/cache-and-stickers에서 확인하세요.</string>
-    <string name="updateBuild">693</string>
+    <string name="updateText">텔레그램 안드로이드 버전이 업데이트 되었습니다. 새로운 버전은 3.4.0 입니다:\n\nGIF 혁명: 10배 빠른 전송, 다운로드 및 자동재생이 가능하며, 스티커 패널에서 즐겨찾는 GIF를 저장가능\n\nGIF에 대한 자세한 정보:\nhttps://telegram.org/blog/gif-revolution\n\n@-봇 : 모든 대화에 봇 기능을 추가 할 수 있습니다. 봇 아이디를 입력란에 같이 입력해주시면 즉시 결과값을 확인 할 수 있습니다."@gif dog"와 같은 명령어를 입력란에 같이 입력해보세요. 예시:@gif, @wiki, @bing, @vid, @bold.\n\n@-봇에 대한 자세한 정보\nhttps://telegram.org/blog/inline-bots</string>
+    <string name="updateBuild">704</string>
 </resources>

@@ -24,8 +24,6 @@ import android.util.SparseIntArray;
 import android.view.View;
 import android.view.ViewGroup;
 
-import org.telegram.messenger.support.widget.RecyclerView;
-
 import java.util.Arrays;
 
 /**

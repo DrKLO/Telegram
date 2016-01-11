@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2015.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.ui.Components;
@@ -82,7 +82,7 @@ public class AvatarUpdater implements NotificationCenter.NotificationCenterDeleg
                 return;
             }
         }
-        PhotoAlbumPickerActivity fragment = new PhotoAlbumPickerActivity(true, null);
+        PhotoAlbumPickerActivity fragment = new PhotoAlbumPickerActivity(true, false, null);
         fragment.setDelegate(new PhotoAlbumPickerActivity.PhotoAlbumPickerActivityDelegate() {
             @Override
             public void didSelectPhotos(ArrayList<String> photos, ArrayList<String> captions, ArrayList<MediaController.SearchImage> webPhotos) {

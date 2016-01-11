@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2015.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.messenger;
@@ -22,9 +22,9 @@ import java.util.Scanner;
 public class FileLoadOperation {
 
     private static class RequestInfo {
-        private int requestToken = 0;
-        private int offset = 0;
-        private TLRPC.TL_upload_file response = null;
+        private int requestToken;
+        private int offset;
+        private TLRPC.TL_upload_file response;
     }
 
     private final static int stateIdle = 0;
@@ -51,7 +51,7 @@ public class FileLoadOperation {
     private int requestsCount;
     private int renameRetryCount;
 
-    private int nextDownloadOffset = 0;
+    private int nextDownloadOffset;
     private ArrayList<RequestInfo> requestInfos;
     private ArrayList<RequestInfo> delayedRequestInfos;
 
@@ -62,9 +62,9 @@ public class FileLoadOperation {
     private String ext;
     private RandomAccessFile fileOutputStream;
     private RandomAccessFile fiv;
-    private File storePath = null;
-    private File tempPath = null;
-    private boolean isForceRequest = false;
+    private File storePath;
+    private File tempPath;
+    private boolean isForceRequest;
 
     public interface FileLoadOperationDelegate {
         void didFinishLoadingFile(FileLoadOperation operation, File finalFile);
@@ -143,19 +143,23 @@ public class FileLoadOperation {
             key = documentLocation.key;
         } else if (documentLocation instanceof TLRPC.TL_document) {
             location = new TLRPC.TL_inputDocumentFileLocation();
-            datacenter_id = documentLocation.dc_id;
             location.id = documentLocation.id;
             location.access_hash = documentLocation.access_hash;
+            datacenter_id = documentLocation.dc_id;
         }
-        totalBytesCount = documentLocation.size;
-        ext = FileLoader.getDocumentFileName(documentLocation);
-        int idx;
-        if (ext == null || (idx = ext.lastIndexOf(".")) == -1) {
-            ext = "";
-        } else {
-            ext = ext.substring(idx);
-            if (ext.length() <= 1) {
+        if (totalBytesCount <= 0) {
+            totalBytesCount = documentLocation.size;
+        }
+        if (ext == null) {
+            ext = FileLoader.getDocumentFileName(documentLocation);
+            int idx;
+            if (ext == null || (idx = ext.lastIndexOf(".")) == -1) {
                 ext = "";
+            } else {
+                ext = ext.substring(idx);
+                if (ext.length() <= 1) {
+                    ext = "";
+                }
             }
         }
     }

@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2015.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.messenger.query;
@@ -172,7 +172,7 @@ public class SharedMediaQuery {
             return false;
         } else if (message.media instanceof TLRPC.TL_messageMediaPhoto ||
                 message.media instanceof TLRPC.TL_messageMediaVideo ||
-                message.media instanceof TLRPC.TL_messageMediaDocument ||
+                message.media instanceof TLRPC.TL_messageMediaDocument && !MessageObject.isGifDocument(message.media.document) ||
                 message.media instanceof TLRPC.TL_messageMediaAudio) {
             return true;
         } else if (!message.entities.isEmpty()) {

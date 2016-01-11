@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2015.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.messenger;
@@ -375,6 +375,8 @@ public class MessageObject {
                     }
                 } else if (isMusic()) {
                     messageText = LocaleController.getString("AttachMusic", R.string.AttachMusic);
+                } else if (isGif()) {
+                    messageText = LocaleController.getString("AttachGif", R.string.AttachGif);
                 } else {
                     String name = FileLoader.getDocumentFileName(message.media.document);
                     if (name != null && name.length() > 0) {
@@ -418,7 +420,7 @@ public class MessageObject {
             } else if (message.media instanceof TLRPC.TL_messageMediaDocument) {
                 contentType = 1;
                 if (message.media.document.mime_type != null) {
-                    if (message.media.document.mime_type.equals("image/gif") && message.media.document.thumb != null && !(message.media.document.thumb instanceof TLRPC.TL_photoSizeEmpty)) {
+                    if (isGifDocument(message.media.document)) {
                         type = 8;
                     } else if (message.media.document.mime_type.equals("image/webp") && isSticker()) {
                         type = 13;
@@ -478,14 +480,31 @@ public class MessageObject {
         generateThumbs(false);
     }
 
+    public static boolean isGifDocument(TLRPC.Document document) {
+        return document != null && document.thumb != null && document.mime_type != null && (document.mime_type.equals("image/gif") || isNewGifDocument(document));
+    }
+
+    public static boolean isNewGifDocument(TLRPC.Document document) {
+        if (document != null && document.mime_type != null && document.mime_type.equals("video/mp4")) {
+            for (int a = 0; a < document.attributes.size(); a++) {
+                if (document.attributes.get(a) instanceof TLRPC.TL_documentAttributeAnimated) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     public void generateThumbs(boolean update) {
         if (messageOwner instanceof TLRPC.TL_messageService) {
             if (messageOwner.action instanceof TLRPC.TL_messageActionChatEditPhoto) {
                 if (!update) {
                     photoThumbs = new ArrayList<>(messageOwner.action.photo.sizes);
                 } else if (photoThumbs != null && !photoThumbs.isEmpty()) {
-                    for (TLRPC.PhotoSize photoObject : photoThumbs) {
-                        for (TLRPC.PhotoSize size : messageOwner.action.photo.sizes) {
+                    for (int a = 0; a < photoThumbs.size(); a++) {
+                        TLRPC.PhotoSize photoObject = photoThumbs.get(a);
+                        for (int b = 0; b < messageOwner.action.photo.sizes.size(); b++) {
+                            TLRPC.PhotoSize size = messageOwner.action.photo.sizes.get(b);
                             if (size instanceof TLRPC.TL_photoSizeEmpty) {
                                 continue;
                             }
@@ -499,11 +518,13 @@ public class MessageObject {
             }
         } else if (messageOwner.media != null && !(messageOwner.media instanceof TLRPC.TL_messageMediaEmpty)) {
             if (messageOwner.media instanceof TLRPC.TL_messageMediaPhoto) {
-                if (!update) {
+                if (!update || photoThumbs != null && photoThumbs.size() != messageOwner.media.photo.sizes.size()) {
                     photoThumbs = new ArrayList<>(messageOwner.media.photo.sizes);
                 } else if (photoThumbs != null && !photoThumbs.isEmpty()) {
-                    for (TLRPC.PhotoSize photoObject : photoThumbs) {
-                        for (TLRPC.PhotoSize size : messageOwner.media.photo.sizes) {
+                    for (int a = 0; a < photoThumbs.size(); a++) {
+                        TLRPC.PhotoSize photoObject = photoThumbs.get(a);
+                        for (int b = 0; b < messageOwner.media.photo.sizes.size(); b++) {
+                            TLRPC.PhotoSize size = messageOwner.media.photo.sizes.get(b);
                             if (size instanceof TLRPC.TL_photoSizeEmpty) {
                                 continue;
                             }
@@ -537,8 +558,10 @@ public class MessageObject {
                     if (!update || photoThumbs == null) {
                         photoThumbs = new ArrayList<>(messageOwner.media.webpage.photo.sizes);
                     } else if (!photoThumbs.isEmpty()) {
-                        for (TLRPC.PhotoSize photoObject : photoThumbs) {
-                            for (TLRPC.PhotoSize size : messageOwner.media.webpage.photo.sizes) {
+                        for (int a = 0; a < photoThumbs.size(); a++) {
+                            TLRPC.PhotoSize photoObject = photoThumbs.get(a);
+                            for (int b = 0; b < messageOwner.media.webpage.photo.sizes.size(); b++) {
+                                TLRPC.PhotoSize size = messageOwner.media.webpage.photo.sizes.get(b);
                                 if (size instanceof TLRPC.TL_photoSizeEmpty) {
                                     continue;
                                 }
@@ -749,7 +772,7 @@ public class MessageObject {
     private static void addUsernamesAndHashtags(CharSequence charSequence, boolean botCommands) {
         try {
             if (urlPattern == null) {
-                urlPattern = Pattern.compile("(^|\\s)/[a-zA-Z@\\d_]{1,255}|(^|\\s)@[a-zA-Z\\d_]{5,32}|(^|\\s)#[\\w\\.]+");
+                urlPattern = Pattern.compile("(^|\\s)/[a-zA-Z@\\d_]{1,255}|(^|\\s)@[a-zA-Z\\d_]{3,32}|(^|\\s)#[\\w\\.]+");
             }
             Matcher matcher = urlPattern.matcher(charSequence);
             while (matcher.find()) {
@@ -815,12 +838,13 @@ public class MessageObject {
                 messageOwner instanceof TLRPC.TL_messageForwarded_old ||
                 messageOwner instanceof TLRPC.TL_messageForwarded_old2 ||
                 messageOwner instanceof TLRPC.TL_message_secret ||
-                isOut() && messageOwner.send_state != MESSAGE_SEND_STATE_SENT || messageOwner.id < 0);
+                isOut() && messageOwner.send_state != MESSAGE_SEND_STATE_SENT ||
+                messageOwner.id < 0 || messageOwner.media instanceof TLRPC.TL_messageMediaUnsupported);
 
         if (useManualParse) {
             addLinks(messageText);
         } else {
-            if (messageText instanceof Spannable && messageText.length() < 100) {
+            if (messageText instanceof Spannable && messageText.length() < 200) {
                 try {
                     Linkify.addLinks((Spannable) messageText, Linkify.PHONE_NUMBERS);
                 } catch (Throwable e) {
@@ -844,7 +868,7 @@ public class MessageObject {
                 } else if (entity instanceof TLRPC.TL_messageEntityItalic) {
                     spannable.setSpan(new TypefaceSpan(AndroidUtilities.getTypeface("fonts/ritalic.ttf")), entity.offset, entity.offset + entity.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                 } else if (entity instanceof TLRPC.TL_messageEntityCode || entity instanceof TLRPC.TL_messageEntityPre) {
-                    spannable.setSpan(new TypefaceSpan(Typeface.MONOSPACE), entity.offset, entity.offset + entity.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                    spannable.setSpan(new TypefaceSpan(Typeface.MONOSPACE, AndroidUtilities.dp(MessagesController.getInstance().fontSize - 1)), entity.offset, entity.offset + entity.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                 } else if (!useManualParse) {
                     String url = messageOwner.message.substring(entity.offset, entity.offset + entity.length);
                     if (entity instanceof TLRPC.TL_messageEntityBotCommand) {
@@ -1313,6 +1337,14 @@ public class MessageObject {
 
     public boolean isMusic() {
         return isMusicMessage(messageOwner);
+    }
+
+    public boolean isGif() {
+        return isGifDocument(messageOwner.media.document);
+    }
+
+    public boolean isNewGif() {
+        return messageOwner.media != null && isNewGifDocument(messageOwner.media.document);
     }
 
     public String getMusicTitle() {

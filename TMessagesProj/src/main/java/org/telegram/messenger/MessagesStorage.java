@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2015.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.messenger;
@@ -153,7 +153,8 @@ public class MessagesStorage {
                 database.executeFast("CREATE TABLE user_photos(uid INTEGER, id INTEGER, data BLOB, PRIMARY KEY (uid, id))").stepThis().dispose();
                 database.executeFast("CREATE TABLE blocked_users(uid INTEGER PRIMARY KEY)").stepThis().dispose();
                 database.executeFast("CREATE TABLE dialog_settings(did INTEGER PRIMARY KEY, flags INTEGER);").stepThis().dispose();
-                database.executeFast("CREATE TABLE web_recent_v3(id TEXT, type INTEGER, image_url TEXT, thumb_url TEXT, local_url TEXT, width INTEGER, height INTEGER, size INTEGER, date INTEGER, PRIMARY KEY (id, type));").stepThis().dispose();
+                database.executeFast("CREATE TABLE web_recent_v3(id TEXT, type INTEGER, image_url TEXT, thumb_url TEXT, local_url TEXT, width INTEGER, height INTEGER, size INTEGER, date INTEGER, document BLOB, PRIMARY KEY (id, type));").stepThis().dispose();
+                database.executeFast("CREATE TABLE bot_recent(id INTEGER PRIMARY KEY, date INTEGER);").stepThis().dispose();
                 database.executeFast("CREATE TABLE stickers_v2(id INTEGER PRIMARY KEY, data BLOB, date INTEGER, hash TEXT);").stepThis().dispose();
                 database.executeFast("CREATE TABLE hashtag_recent_v2(id TEXT PRIMARY KEY, date INTEGER);").stepThis().dispose();
                 database.executeFast("CREATE TABLE webpage_pending(id INTEGER, mid INTEGER, PRIMARY KEY (id, mid));").stepThis().dispose();
@@ -165,7 +166,7 @@ public class MessagesStorage {
                 database.executeFast("CREATE TABLE bot_info(uid INTEGER PRIMARY KEY, info BLOB)").stepThis().dispose();
 
                 //version
-                database.executeFast("PRAGMA user_version = 27").stepThis().dispose();
+                database.executeFast("PRAGMA user_version = 29").stepThis().dispose();
 
                 //database.executeFast("CREATE TABLE secret_holes(uid INTEGER, seq_in INTEGER, seq_out INTEGER, data BLOB, PRIMARY KEY (uid, seq_in, seq_out));").stepThis().dispose();
                 //database.executeFast("CREATE TABLE attach_data(uid INTEGER, id INTEGER, data BLOB, PRIMARY KEY (uid, id))").stepThis().dispose();
@@ -199,7 +200,7 @@ public class MessagesStorage {
                     }
                 }
                 int version = database.executeInt("PRAGMA user_version");
-                if (version < 27) {
+                if (version < 29) {
                     updateDbToLastVersion(version);
                 }
             }
@@ -476,7 +477,17 @@ public class MessagesStorage {
                     if (version == 25 || version == 26) {
                         database.executeFast("CREATE TABLE IF NOT EXISTS channel_users_v2(did INTEGER, uid INTEGER, date INTEGER, data BLOB, PRIMARY KEY(did, uid))").stepThis().dispose();
                         database.executeFast("PRAGMA user_version = 27").stepThis().dispose();
-                        //version = 27;
+                        version = 27;
+                    }
+                    if (version == 27) {
+                        database.executeFast("ALTER TABLE web_recent_v3 ADD COLUMN document BLOB default NULL").stepThis().dispose();
+                        database.executeFast("PRAGMA user_version = 28").stepThis().dispose();
+                        version = 28;
+                    }
+                    if (version == 28) {
+                        database.executeFast("CREATE TABLE IF NOT EXISTS bot_recent(id INTEGER PRIMARY KEY, date INTEGER);").stepThis().dispose();
+                        database.executeFast("PRAGMA user_version = 29").stepThis().dispose();
+                        //version = 29;
                     }
                 } catch (Exception e) {
                     FileLog.e("tmessages", e);
@@ -752,7 +763,7 @@ public class MessagesStorage {
             @Override
             public void run() {
                 try {
-                    SQLiteCursor cursor = database.queryFinalized("SELECT id, image_url, thumb_url, local_url, width, height, size, date FROM web_recent_v3 WHERE type = " + type);
+                    SQLiteCursor cursor = database.queryFinalized("SELECT id, image_url, thumb_url, local_url, width, height, size, date, document FROM web_recent_v3 WHERE type = " + type + " ORDER BY date DESC");
                     final ArrayList<MediaController.SearchImage> arrayList = new ArrayList<>();
                     while (cursor.next()) {
                         MediaController.SearchImage searchImage = new MediaController.SearchImage();
@@ -764,28 +775,56 @@ public class MessagesStorage {
                         searchImage.height = cursor.intValue(5);
                         searchImage.size = cursor.intValue(6);
                         searchImage.date = cursor.intValue(7);
+                        if (!cursor.isNull(8)) {
+                            NativeByteBuffer data = new NativeByteBuffer(cursor.byteArrayLength(8));
+                            if (data != null && cursor.byteBufferValue(8, data) != 0) {
+                                searchImage.document = TLRPC.Document.TLdeserialize(data, data.readInt32(false), false);
+                            }
+                            data.reuse();
+                        }
                         searchImage.type = type;
                         arrayList.add(searchImage);
                     }
                     cursor.dispose();
-                    Collections.sort(arrayList, new Comparator<MediaController.SearchImage>() {
-                        @Override
-                        public int compare(MediaController.SearchImage lhs, MediaController.SearchImage rhs) {
-                            if (lhs.date < rhs.date) {
-                                return 1;
-                            } else if (lhs.date > rhs.date) {
-                                return -1;
-                            } else {
-                                return 0;
-                            }
-                        }
-                    });
                     AndroidUtilities.runOnUIThread(new Runnable() {
                         @Override
                         public void run() {
                             NotificationCenter.getInstance().postNotificationName(NotificationCenter.recentImagesDidLoaded, type, arrayList);
                         }
                     });
+                } catch (Throwable e) {
+                    FileLog.e("tmessages", e);
+                }
+            }
+        });
+    }
+
+    public void addRecentLocalFile(final String imageUrl, final String localUrl, final TLRPC.Document document) {
+        if (imageUrl == null || imageUrl.length() == 0 || ((localUrl == null || localUrl.length() == 0) && document == null)) {
+            return;
+        }
+        storageQueue.postRunnable(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    if (document != null) {
+                        SQLitePreparedStatement state = database.executeFast("UPDATE web_recent_v3 SET document = ? WHERE image_url = ?");
+                        state.requery();
+                        NativeByteBuffer data = new NativeByteBuffer(document.getObjectSize());
+                        document.serializeToStream(data);
+                        state.bindByteBuffer(1, data);
+                        state.bindString(2, imageUrl);
+                        state.step();
+                        state.dispose();
+                        data.reuse();
+                    } else {
+                        SQLitePreparedStatement state = database.executeFast("UPDATE web_recent_v3 SET local_url = ? WHERE image_url = ?");
+                        state.requery();
+                        state.bindString(1, localUrl);
+                        state.bindString(2, imageUrl);
+                        state.step();
+                        state.dispose();
+                    }
                 } catch (Exception e) {
                     FileLog.e("tmessages", e);
                 }
@@ -793,15 +832,15 @@ public class MessagesStorage {
         });
     }
 
-    public void addRecentLocalFile(final String imageUrl, final String localUrl) {
-        if (imageUrl == null || localUrl == null || imageUrl.length() == 0 || localUrl.length() == 0) {
+    public void removeWebRecent(final MediaController.SearchImage searchImage) {
+        if (searchImage == null) {
             return;
         }
         storageQueue.postRunnable(new Runnable() {
             @Override
             public void run() {
                 try {
-                    database.executeFast("UPDATE web_recent_v3 SET local_url = '" + localUrl + "' WHERE image_url = '" + imageUrl + "'").stepThis().dispose();
+                    database.executeFast("DELETE FROM web_recent_v3 WHERE id = '" + searchImage.id + "'").stepThis().dispose();
                 } catch (Exception e) {
                     FileLog.e("tmessages", e);
                 }
@@ -828,32 +867,40 @@ public class MessagesStorage {
             public void run() {
                 try {
                     database.beginTransaction();
-                    SQLitePreparedStatement state = database.executeFast("REPLACE INTO web_recent_v3 VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                    SQLitePreparedStatement state = database.executeFast("REPLACE INTO web_recent_v3 VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
                     for (int a = 0; a < arrayList.size(); a++) {
-                        if (a == 100) {
+                        if (a == 200) {
                             break;
                         }
                         MediaController.SearchImage searchImage = arrayList.get(a);
-                        if (searchImage.localUrl == null) {
-                            searchImage.localUrl = "";
-                        }
                         state.requery();
                         state.bindString(1, searchImage.id);
                         state.bindInteger(2, searchImage.type);
-                        state.bindString(3, searchImage.imageUrl);
-                        state.bindString(4, searchImage.thumbUrl);
-                        state.bindString(5, searchImage.localUrl);
+                        state.bindString(3, searchImage.imageUrl != null ? searchImage.imageUrl : "");
+                        state.bindString(4, searchImage.thumbUrl != null ? searchImage.thumbUrl : "");
+                        state.bindString(5, searchImage.localUrl != null ? searchImage.localUrl : "");
                         state.bindInteger(6, searchImage.width);
                         state.bindInteger(7, searchImage.height);
                         state.bindInteger(8, searchImage.size);
                         state.bindInteger(9, searchImage.date);
+                        NativeByteBuffer data = null;
+                        if (searchImage.document != null) {
+                            data = new NativeByteBuffer(searchImage.document.getObjectSize());
+                            searchImage.document.serializeToStream(data);
+                            state.bindByteBuffer(10, data);
+                        } else {
+                            state.bindNull(10);
+                        }
                         state.step();
+                        if (data != null) {
+                            data.reuse();
+                        }
                     }
                     state.dispose();
                     database.commitTransaction();
-                    if (arrayList.size() >= 100) {
+                    if (arrayList.size() >= 200) {
                         database.beginTransaction();
-                        for (int a = 100; a < arrayList.size(); a++) {
+                        for (int a = 200; a < arrayList.size(); a++) {
                             database.executeFast("DELETE FROM web_recent_v3 WHERE id = '" + arrayList.get(a).id + "'").stepThis().dispose();
                         }
                         database.commitTransaction();
@@ -3589,7 +3636,7 @@ public class MessagesStorage {
                                 type = MediaController.AUTODOWNLOAD_MASK_VIDEO;
                                 object = message.media.video;
                             }
-                        } else if (message.media instanceof TLRPC.TL_messageMediaDocument) {
+                        } else if (message.media instanceof TLRPC.TL_messageMediaDocument && !MessageObject.isMusicMessage(message) && !MessageObject.isGifDocument(message.media.document)) {
                             if ((downloadMask & MediaController.AUTODOWNLOAD_MASK_DOCUMENT) != 0) {
                                 id = message.media.document.id;
                                 type = MediaController.AUTODOWNLOAD_MASK_DOCUMENT;
@@ -4906,6 +4953,9 @@ public class MessagesStorage {
                 }
             }
         }
+        if (message.via_bot_id != 0 && !usersToLoad.contains(message.via_bot_id)) {
+            usersToLoad.add(message.via_bot_id);
+        }
         if (message.action != null) {
             if (message.action.user_id != 0 && !usersToLoad.contains(message.action.user_id)) {
                 usersToLoad.add(message.action.user_id);
@@ -5353,7 +5403,13 @@ public class MessagesStorage {
                         cursor.dispose();
                     }
                 }
-                semaphore.release();
+                try {
+                    if (semaphore != null) {
+                        semaphore.release();
+                    }
+                } catch (Exception e) {
+                    FileLog.e("tmessages", e);
+                }
             }
         });
         try {

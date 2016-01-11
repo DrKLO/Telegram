@@ -168,6 +168,7 @@
     <string name="ChannelMessageGroupContact">%1$s shared a contact in the channel %2$s</string>
     <string name="ChannelMessageGroupMap">%1$s sent a location to the channel %2$s</string>
     <string name="ChannelMessageGroupDocument">%1$s sent a file to the channel %2$s</string>
+    <string name="ChannelMessageGroupGif">%1$s sent a GIF to the channel %2$s</string>
     <string name="ChannelMessageGroupAudio">%1$s sent an audio to the channel %2$s</string>
     <string name="ChannelMessageGroupSticker">%1$s sent a sticker to the channel %2$s</string>
     <string name="ChannelMessageNoText">%1$s posted a message</string>
@@ -176,6 +177,7 @@
     <string name="ChannelMessageContact">%1$s posted a contact</string>
     <string name="ChannelMessageMap">%1$s posted a location</string>
     <string name="ChannelMessageDocument">%1$s posted a file</string>
+    <string name="ChannelMessageGIF">%1$s posted a GIF</string>
     <string name="ChannelMessageAudio">%1$s posted a voice message</string>
     <string name="ChannelMessageSticker">%1$s posted a sticker</string>
     <!--broadcasts-->
@@ -245,6 +247,8 @@
     <string name="DeleteThisChat">Delete this chat</string>
     <string name="SlideToCancel">SLIDE TO CANCEL</string>
     <string name="SaveToDownloads">Save to downloads</string>
+    <string name="SaveToGIFs">Save to GIFs</string>
+    <string name="DeleteGif">Delete GIF?</string>
     <string name="SaveToMusic">Save to music</string>
     <string name="ShareFile">Share</string>
     <string name="ApplyLocalizationFile">Apply localization file</string>
@@ -265,6 +269,7 @@
     <string name="NobodyLikesSpamUrl">https://telegram.org/faq#can-39t-send-messages-to-non-contacts</string>
     <string name="MoreInfo">More info</string>
     <string name="ShareSendTo">Send to...</string>
+    <string name="TapHereGifs">Tap here to access saved GIFs</string>
     <!--notification-->
     <string name="MessageLifetimeChanged">%1$s set the self-destruct timer to %2$s</string>
     <string name="MessageLifetimeChangedOutgoing">You set the self-destruct timer to %1$s</string>
@@ -278,6 +283,7 @@
     <string name="NotificationMessageContact">%1$s shared a contact with you</string>
     <string name="NotificationMessageMap">%1$s sent you a location</string>
     <string name="NotificationMessageDocument">%1$s sent you a file</string>
+    <string name="NotificationMessageGif">%1$s sent you a GIF</string>
     <string name="NotificationMessageAudio">%1$s sent you an audio</string>
     <string name="NotificationMessageSticker">%1$s sent you a sticker</string>
     <string name="NotificationMessageGroupText">%1$s @ %2$s: %3$s</string>
@@ -287,6 +293,7 @@
     <string name="NotificationMessageGroupContact">%1$s shared a contact in the group %2$s</string>
     <string name="NotificationMessageGroupMap">%1$s sent a location to the group %2$s</string>
     <string name="NotificationMessageGroupDocument">%1$s sent a file to the group %2$s</string>
+    <string name="NotificationMessageGroupGif">%1$s sent a GIF to the group %2$s</string>
     <string name="NotificationMessageGroupAudio">%1$s sent an audio to the group %2$s</string>
     <string name="NotificationMessageGroupSticker">%1$s sent a sticker to the group %2$s</string>
     <string name="NotificationInvitedToGroup">%1$s invited you to the group %2$s</string>
@@ -469,6 +476,7 @@
     <string name="WhenConnectedOnWiFi">When connected on Wi-Fi</string>
     <string name="WhenRoaming">When roaming</string>
     <string name="NoMediaAutoDownload">No media</string>
+    <string name="AutoplayGifs">Autoplay GIFs</string>
     <string name="SaveToGallerySettings">Save to gallery</string>
     <string name="EditName">Edit name</string>
     <string name="NotificationsPriority">Priority</string>
@@ -718,6 +726,7 @@
     <string name="Back">Back</string>
     <string name="Done">Done</string>
     <string name="Open">Open</string>
+    <string name="Save">Save</string>
     <string name="Cancel">Cancel</string>
     <string name="Close">Close</string>
     <string name="Add">Add</string>
@@ -739,14 +748,14 @@
     <string name="ActionInviteYou">You joined the group via invite link</string>
     <string name="ActionInviteUser">un1 joined the group via invite link</string>
     <string name="ActionKickUser">un1 removed un2</string>
-    <string name="ActionLeftUser">un1 left group</string>
+    <string name="ActionLeftUser">un1 left the group</string>
     <string name="ActionAddUser">un1 added un2</string>
     <string name="ActionRemovedPhoto">un1 removed the group photo</string>
     <string name="ActionChangedPhoto">un1 changed the group photo</string>
     <string name="ActionChangedTitle">un1 changed the group name to un2</string>
     <string name="ActionCreateGroup">un1 created the group</string>
     <string name="ActionYouKickUser">You removed un2</string>
-    <string name="ActionYouLeftUser">You left group</string>
+    <string name="ActionYouLeftUser">You left the group</string>
     <string name="ActionYouAddUser">You added un2</string>
     <string name="ActionYouRemovedPhoto">You removed the group photo</string>
     <string name="ActionYouChangedPhoto">You changed the group photo</string>
@@ -759,6 +768,7 @@
     <string name="UnsupportedMedia">This message is not supported on your version of Telegram. Update the app to view: https://telegram.org/update</string>
     <string name="AttachPhoto">Photo</string>
     <string name="AttachVideo">Video</string>
+    <string name="AttachGif">GIF</string>
     <string name="AttachLocation">Location</string>
     <string name="AttachContact">Contact</string>
     <string name="AttachDocument">File</string>
@@ -844,7 +854,7 @@
     <string name="Members_many">%1$d members</string>
     <string name="Members_other">%1$d members</string>
     <string name="AndMoreTyping_zero">and %1$d more people are typing</string>
-    <string name="AndMoreTyping_one">and %1$d more people are typing</string>
+    <string name="AndMoreTyping_one">and %1$d more person are typing</string>
     <string name="AndMoreTyping_two">and %1$d more people are typing</string>
     <string name="AndMoreTyping_few">and %1$d more people are typing</string>
     <string name="AndMoreTyping_many">and %1$d more people are typing</string>
@@ -1030,6 +1040,6 @@
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s at %2$s</string>
     <!--update text-->
-    <string name="updateText">Telegram for Android has been updated. New in version 3.3.2:\n\n- Cache management: Control how much disk space Telegram uses on your device, delete cache for specific types of content.\n- Delete cache from supergroups and channels: Tap and hold on them in the chats list and \'Delete from Cache\'.\n- Sticker management: Manually rearrange your sticker packs. Pack order is now synced across all your devices.\n\nMore about this update:\nhttps://telegram.org/blog/cache-and-stickers</string>
-    <string name="updateBuild">693</string>
+    <string name="updateText">Telegram for Android has been updated. New in version 3.4.0:\n\nGIF revolution: up to 20x faster downloading/sending, autoplay, save GIFs to a dedicated tab on the sticker panel.\n\nMore about GIFs:\nhttps://telegram.org/blog/gif-revolution\n\nInline bots: A new way to add bot content to any chat. Type a bot\'s username and your query in the text field to get instant results and send them to your chat partner. Try typing “@gif dog” in your next chat. Sample bots: @gif, @wiki, @bing, @vid, @bold.\n\nMore about inline bots:\nhttps://telegram.org/blog/inline-bots</string>
+    <string name="updateBuild">704</string>
 </resources>

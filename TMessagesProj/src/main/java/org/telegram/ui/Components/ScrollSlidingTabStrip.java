@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2015.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.ui.Components;
@@ -12,6 +12,7 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Paint.Style;
+import android.os.Build;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.FrameLayout;
@@ -77,6 +78,18 @@ public class ScrollSlidingTabStrip extends HorizontalScrollView {
         currentPosition = 0;
     }
 
+    public void selectTab(int num) {
+        if (num < 0 || num >= tabCount) {
+            return;
+        }
+        View tab = tabsContainer.getChildAt(num);
+        if (Build.VERSION.SDK_INT >= 15) {
+            tab.callOnClick();
+        } else {
+            tab.performClick();
+        }
+    }
+
     public void addIconTab(int resId) {
         final int position = tabCount++;
         ImageView tab = new ImageView(getContext());
@@ -121,7 +134,7 @@ public class ScrollSlidingTabStrip extends HorizontalScrollView {
     }
 
     private void scrollToChild(int position) {
-        if (tabCount == 0) {
+        if (tabCount == 0 || tabsContainer.getChildAt(position) == null) {
             return;
         }
         int newScrollX = tabsContainer.getChildAt(position).getLeft();
@@ -170,7 +183,11 @@ public class ScrollSlidingTabStrip extends HorizontalScrollView {
         canvas.drawRect(lineLeft, 0, lineRight, height, rectPaint);
     }
 
-    public void onPageScrolled(int position, int positionOffsetPixels) {
+    public int getCurrentPosition() {
+        return currentPosition;
+    }
+
+    public void onPageScrolled(int position, int first) {
         if (currentPosition == position) {
             return;
         }
@@ -181,7 +198,11 @@ public class ScrollSlidingTabStrip extends HorizontalScrollView {
         for (int a = 0; a < tabsContainer.getChildCount(); a++) {
             tabsContainer.getChildAt(a).setSelected(a == position);
         }
-        scrollToChild(position);
+        if (first == position && position > 1) {
+            scrollToChild(position - 1);
+        } else {
+            scrollToChild(position);
+        }
         invalidate();
     }
 

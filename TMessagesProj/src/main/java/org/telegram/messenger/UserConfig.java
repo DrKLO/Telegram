@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2015.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.messenger;
@@ -68,7 +68,7 @@ public class UserConfig {
                 SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("userconfing", Context.MODE_PRIVATE);
                 SharedPreferences.Editor editor = preferences.edit();
                 editor.putBoolean("registeredForPush", registeredForPush);
-                editor.putString("pushString", pushString);
+                editor.putString("pushString2", pushString);
                 editor.putInt("lastSendMessageId", lastSendMessageId);
                 editor.putInt("lastLocalId", lastLocalId);
                 editor.putString("contactsHash", contactsHash);
@@ -182,7 +182,7 @@ public class UserConfig {
 
                         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("userconfing", Context.MODE_PRIVATE);
                         registeredForPush = preferences.getBoolean("registeredForPush", false);
-                        pushString = preferences.getString("pushString", "");
+                        pushString = preferences.getString("pushString2", "");
                         lastSendMessageId = preferences.getInt("lastSendMessageId", -210000);
                         lastLocalId = preferences.getInt("lastLocalId", -210000);
                         contactsHash = preferences.getString("contactsHash", "");
@@ -209,7 +209,7 @@ public class UserConfig {
             } else {
                 SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("userconfing", Context.MODE_PRIVATE);
                 registeredForPush = preferences.getBoolean("registeredForPush", false);
-                pushString = preferences.getString("pushString", "");
+                pushString = preferences.getString("pushString2", "");
                 lastSendMessageId = preferences.getInt("lastSendMessageId", -210000);
                 lastLocalId = preferences.getInt("lastLocalId", -210000);
                 contactsHash = preferences.getString("contactsHash", "");

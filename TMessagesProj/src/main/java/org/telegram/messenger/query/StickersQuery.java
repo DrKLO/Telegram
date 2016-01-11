@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2015.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.messenger.query;
@@ -62,7 +62,7 @@ public class StickersQuery {
     }
 
     public static void checkStickers() {
-        if (!loadingStickers && (!stickersLoaded || loadDate < (System.currentTimeMillis() / 1000 - 60 * 60))) {
+        if (!loadingStickers && (!stickersLoaded || Math.abs(System.currentTimeMillis() / 1000 - loadDate) >= 60 * 60)) {
             loadStickers(true, false);
         }
     }
@@ -332,7 +332,7 @@ public class StickersQuery {
         Utilities.stageQueue.postRunnable(new Runnable() {
             @Override
             public void run() {
-                if (cache && (res == null || date < (int) (System.currentTimeMillis() / 1000 - 60 * 60)) || !cache && res == null && hash == 0) {
+                if (cache && (res == null || Math.abs(System.currentTimeMillis() / 1000 - date) >= 60 * 60) || !cache && res == null && hash == 0) {
                     AndroidUtilities.runOnUIThread(new Runnable() {
                         @Override
                         public void run() {
