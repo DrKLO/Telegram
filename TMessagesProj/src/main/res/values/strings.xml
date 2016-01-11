@@ -844,7 +844,7 @@
     <string name="Members_many">%1$d members</string>
     <string name="Members_other">%1$d members</string>
     <string name="AndMoreTyping_zero">and %1$d more people are typing</string>
-    <string name="AndMoreTyping_one">and %1$d more people are typing</string>
+    <string name="AndMoreTyping_one">and %1$d more person are typing</string>
     <string name="AndMoreTyping_two">and %1$d more people are typing</string>
     <string name="AndMoreTyping_few">and %1$d more people are typing</string>
     <string name="AndMoreTyping_many">and %1$d more people are typing</string>
