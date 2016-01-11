@@ -364,7 +364,7 @@ public class MessageObject {
             } else if (message.media instanceof TLRPC.TL_messageMediaContact) {
                 messageText = LocaleController.getString("AttachContact", R.string.AttachContact);
             } else if (message.media instanceof TLRPC.TL_messageMediaUnsupported) {
-                messageText = LocaleController.getString("UnsuppotedMedia", R.string.UnsuppotedMedia);
+                messageText = LocaleController.getString("UnsupportedMedia", R.string.UnsupportedMedia);
             } else if (message.media instanceof TLRPC.TL_messageMediaDocument) {
                 if (isSticker()) {
                     String sch = getStrickerChar();
