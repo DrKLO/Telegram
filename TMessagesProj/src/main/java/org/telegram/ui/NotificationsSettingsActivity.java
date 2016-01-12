@@ -88,6 +88,7 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
     private int otherSectionRow2;
     private int otherSectionRow;
     private int badgeNumberRow;
+    private int messageOrderRow;
     private int androidAutoAlertRow;
     private int repeatRow;
     private int resetSectionRow2;
@@ -141,6 +142,7 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
         otherSectionRow2 = rowCount++;
         otherSectionRow = rowCount++;
         badgeNumberRow = rowCount++;
+        messageOrderRow = rowCount++;
         androidAutoAlertRow = -1;
         repeatRow = rowCount++;
         resetSectionRow2 = rowCount++;
@@ -332,6 +334,12 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
                     editor.putBoolean("badgeNumber", !enabled);
                     editor.commit();
                     NotificationsController.getInstance().setBadgeEnabled(!enabled);
+                } else if (i == messageOrderRow) {
+                    SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+                    SharedPreferences.Editor editor = preferences.edit();
+                    enabled = preferences.getBoolean("messageOrder", true);
+                    editor.putBoolean("messageOrder", !enabled);
+                    editor.commit();
                 } else if (i == notificationsServiceRow) {
                     final SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
                     enabled = preferences.getBoolean("pushService", true);
@@ -716,6 +724,8 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
                     checkCell.setTextAndCheck(LocaleController.getString("NotificationsService", R.string.NotificationsService), preferences.getBoolean("pushService", true), false);
                 } else if (i == badgeNumberRow) {
                     checkCell.setTextAndCheck(LocaleController.getString("BadgeNumber", R.string.BadgeNumber), preferences.getBoolean("badgeNumber", true), true);
+                } else if (i == messageOrderRow) {
+                    checkCell.setTextAndCheck(LocaleController.getString("MessageOrder", R.string.MessageOrder), preferences.getBoolean("messageOrder", true), true);
                 } else if (i == inchatSoundRow) {
                     checkCell.setTextAndCheck(LocaleController.getString("InChatSound", R.string.InChatSound), preferences.getBoolean("EnableInChatSound", true), true);
                 }
@@ -838,7 +848,8 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
             } else if (i == messageAlertRow || i == messagePreviewRow || i == groupAlertRow ||
                     i == groupPreviewRow || i == inappSoundRow || i == inappVibrateRow ||
                     i == inappPreviewRow || i == contactJoinedRow ||
-                    i == notificationsServiceRow || i == badgeNumberRow || i == inappPriorityRow ||
+                    i == notificationsServiceRow || i == badgeNumberRow || i == messageOrderRow ||
+                    i == inappPriorityRow ||
                     i == inchatSoundRow || i == androidAutoAlertRow) {
                 return 1;
             } else if (i == messageLedRow || i == groupLedRow) {
