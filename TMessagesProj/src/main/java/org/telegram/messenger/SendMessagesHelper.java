@@ -2063,7 +2063,7 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
         if (idx != -1) {
             ext = path.substring(idx + 1);
         }
-        if (ext.toLowerCase().equals("mp3") || ext.toLowerCase().equals("m4a")) {
+        if (ext.toLowerCase().equals("mp3") || ext.toLowerCase().equals("m4a") || ext.toLowerCase().equals("wav") || ext.toLowerCase().equals("aac")) {
             AudioInfo audioInfo = AudioInfo.getAudioInfo(f);
             if (audioInfo != null && audioInfo.getDuration() != 0) {
                 if (isEncrypted) {
