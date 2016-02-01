@@ -164,6 +164,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     private ActionBarMenuItem searchUpItem;
     private ActionBarMenuItem searchDownItem;
     private TextView addContactItem;
+    private TextView sendContactItem;
     private RecyclerListView chatListView;
     private LinearLayoutManager chatLayoutManager;
     private ChatActivityAdapter chatAdapter;
@@ -315,6 +316,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     private final static int share_contact = 17;
     private final static int mute = 18;
     private final static int reply = 19;
+    private final static int send_contact = 20;
 
     private final static int bot_help = 30;
     private final static int bot_settings = 31;
@@ -831,6 +833,23 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     });
                     builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
                     showDialog(builder.create());
+                } else if (id == send_contact) {
+                    if (currentUser == null || getParentActivity() == null) {
+                        return;
+                    }
+                    AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                    builder.setMessage(LocaleController.getString("AreYouSureShareMyContactInfo", R.string.AreYouSureShareMyContactInfo));
+                    builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
+                    builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialogInterface, int i) {
+                            SendMessagesHelper.getInstance().sendMessage(UserConfig.getCurrentUser(), dialog_id, replyingMessageObject, chatActivityEnterView == null || chatActivityEnterView.asAdmin());
+                            moveScrollToLastMessage();
+                            showReplyPanel(false, null, null, null, false, true);
+                        }
+                    });
+                    builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+                    showDialog(builder.create());
                 } else if (id == share_contact) {
                     if (currentUser == null || getParentActivity() == null) {
                         return;
@@ -840,20 +859,6 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         args.putInt("user_id", currentUser.id);
                         args.putBoolean("addContact", true);
                         presentFragment(new ContactAddActivity(args));
-                    } else {
-                        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-                        builder.setMessage(LocaleController.getString("AreYouSureShareMyContactInfo", R.string.AreYouSureShareMyContactInfo));
-                        builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
-                        builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialogInterface, int i) {
-                                SendMessagesHelper.getInstance().sendMessage(UserConfig.getCurrentUser(), dialog_id, replyingMessageObject, chatActivityEnterView == null || chatActivityEnterView.asAdmin());
-                                moveScrollToLastMessage();
-                                showReplyPanel(false, null, null, null, false, true);
-                            }
-                        });
-                        builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-                        showDialog(builder.create());
                     }
                 } else if (id == mute) {
                     toggleMute(false);
@@ -1149,6 +1154,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         }
         if (currentUser != null) {
             addContactItem = headerItem.addSubItem(share_contact, "", 0);
+            sendContactItem = headerItem.addSubItem(send_contact, "", 0);
         }
         if (currentEncryptedChat != null) {
             timeItem2 = headerItem.addSubItem(chat_enc_timer, LocaleController.getString("SetTimer", R.string.SetTimer), 0);
@@ -5586,7 +5592,20 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         }
     }
 
+    private void updateSendContactStatus() {
+        if (sendContactItem == null) {
+            return;
+        }
+        if (currentUser == null) {
+            sendContactItem.setVisibility(View.GONE);
+        } else {
+          sendContactItem.setVisibility(View.VISIBLE);
+          sendContactItem.setText(LocaleController.getString("ShareMyContactInfo", R.string.ShareMyContactInfo));
+        }
+    }
+
     private void updateContactStatus() {
+        updateSendContactStatus();
         if (addContactItem == null) {
             return;
         }
@@ -5618,7 +5637,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     addToContactsButton.setVisibility(View.VISIBLE);
                     reportSpamContainer.setLayoutParams(LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, 0.5f, Gravity.LEFT | Gravity.TOP, 0, 0, 0, AndroidUtilities.dp(1)));
                 } else {
-                    addContactItem.setText(LocaleController.getString("ShareMyContactInfo", R.string.ShareMyContactInfo));
+                    addContactItem.setVisibility(View.GONE);
                     addToContactsButton.setVisibility(View.GONE);
                     reportSpamContainer.setLayoutParams(LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, 1.0f, Gravity.LEFT | Gravity.TOP, 0, 0, 0, AndroidUtilities.dp(1)));
                 }
