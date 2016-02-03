@@ -1,23 +1,18 @@
 apply plugin: 'com.android.application'
 
-repositories {
-    mavenCentral()
-}
-
-dependencies {
-    compile 'com.android.support:support-v4:23.3.0'
-    compile "com.google.android.gms:play-services-gcm:8.4.0"
-    compile "com.google.android.gms:play-services-maps:8.4.0"
-    compile 'net.hockeyapp.android:HockeySDK:4.0.+'
-    compile 'com.googlecode.mp4parser:isoparser:1.0.+'
-}
-
 android {
     compileSdkVersion 23
     buildToolsVersion '23.0.3'
 
+    defaultConfig {
+        applicationId "org.telegram.messenger"
+        minSdkVersion 9
+        targetSdkVersion 23
+        versionCode 803
+        versionName "3.9.0"
+    }
+
     useLibrary 'org.apache.http.legacy'
-    defaultConfig.applicationId = "org.telegram.messenger"
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_7
@@ -62,8 +57,6 @@ android {
             signingConfig signingConfigs.release
         }
     }
-
-    defaultConfig.versionCode = 803
 
     sourceSets.main {
         jniLibs.srcDir 'libs'
@@ -110,12 +103,14 @@ android {
         def abiVersion = variant.productFlavors.get(0).versionCode
         variant.mergedFlavor.versionCode = defaultConfig.versionCode * 10 + abiVersion;
     }
+}
 
-    defaultConfig {
-        minSdkVersion 9
-        targetSdkVersion 23
-        versionName "3.9.0"
-    }
+dependencies {
+    compile 'com.android.support:support-v4:23.3.0'
+    compile "com.google.android.gms:play-services-gcm:8.4.0"
+    compile "com.google.android.gms:play-services-maps:8.4.0"
+    compile 'net.hockeyapp.android:HockeySDK:4.0.+'
+    compile 'com.googlecode.mp4parser:isoparser:1.0.+'
 }
 
 apply plugin: 'com.google.gms.google-services'
