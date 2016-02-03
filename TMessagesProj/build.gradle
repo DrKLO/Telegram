@@ -109,8 +109,8 @@ dependencies {
     compile 'com.android.support:support-v4:23.3.0'
     compile "com.google.android.gms:play-services-gcm:8.4.0"
     compile "com.google.android.gms:play-services-maps:8.4.0"
-    compile 'net.hockeyapp.android:HockeySDK:4.0.+'
-    compile 'com.googlecode.mp4parser:isoparser:1.0.+'
+    compile 'net.hockeyapp.android:HockeySDK:4.0.1'
+    compile 'com.googlecode.mp4parser:isoparser:1.0.6'
 }
 
 apply plugin: 'com.google.gms.google-services'
