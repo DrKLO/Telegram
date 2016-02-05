@@ -104,10 +104,12 @@ public class ChatMediaCell extends ChatBaseCell {
         if (infoPaint == null) {
             infoPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
             infoPaint.setTextSize(AndroidUtilities.dp(12));
+            infoPaint.setTypeface(AndroidUtilities.getTypeface("fonts/segoeui.ttf"));
 
             namePaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
             namePaint.setColor(0xff212121);
             namePaint.setTextSize(AndroidUtilities.dp(16));
+            namePaint.setTypeface(AndroidUtilities.getTypeface("fonts/segoeui.ttf"));
 
             docBackPaint = new Paint();
 
@@ -116,10 +118,11 @@ public class ChatMediaCell extends ChatBaseCell {
 
             locationTitlePaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
             locationTitlePaint.setTextSize(AndroidUtilities.dp(14));
-            locationTitlePaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            locationTitlePaint.setTypeface(AndroidUtilities.getTypeface("fonts/segoeui.ttf"));
 
             locationAddressPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
             locationAddressPaint.setTextSize(AndroidUtilities.dp(14));
+            locationAddressPaint.setTypeface(AndroidUtilities.getTypeface("fonts/segoeui.ttf"));
         }
 
         photoImage = new ImageReceiver(this);

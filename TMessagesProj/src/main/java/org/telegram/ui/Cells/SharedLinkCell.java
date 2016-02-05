@@ -88,12 +88,13 @@ public class SharedLinkCell extends FrameLayout {
 
         if (titleTextPaint == null) {
             titleTextPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
-            titleTextPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            titleTextPaint.setTypeface(AndroidUtilities.getTypeface("fonts/segoeui.ttf"));
             titleTextPaint.setColor(0xff212121);
             titleTextPaint.setTextSize(AndroidUtilities.dp(16));
 
             descriptionTextPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
             descriptionTextPaint.setTextSize(AndroidUtilities.dp(16));
+            descriptionTextPaint.setTypeface(AndroidUtilities.getTypeface("fonts/segoeui.ttf"));
 
             paint = new Paint();
             paint.setColor(0xffd9d9d9);

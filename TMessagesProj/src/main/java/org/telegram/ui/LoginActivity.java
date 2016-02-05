@@ -1057,7 +1057,7 @@ public class LoginActivity extends BaseFragment {
             String str = String.format(LocaleController.getString("SentSmsCode", R.string.SentSmsCode) + " %s", number);
             try {
                 SpannableStringBuilder stringBuilder = new SpannableStringBuilder(str);
-                TypefaceSpan span = new TypefaceSpan(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+                TypefaceSpan span = new TypefaceSpan(AndroidUtilities.getTypeface("fonts/segoeui.ttf"));
                 int idx = str.indexOf(number);
                 stringBuilder.setSpan(span, idx, idx + number.length(), Spanned.SPAN_INCLUSIVE_INCLUSIVE);
                 confirmTextView.setText(stringBuilder);
@@ -1490,7 +1490,7 @@ public class LoginActivity extends BaseFragment {
             resetAccountButton.setTextColor(0xffff6666);
             resetAccountButton.setVisibility(GONE);
             resetAccountButton.setText(LocaleController.getString("ResetMyAccount", R.string.ResetMyAccount));
-            resetAccountButton.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            resetAccountButton.setTypeface(AndroidUtilities.getTypeface("fonts/segoeui.ttf"));
             resetAccountButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             resetAccountButton.setLineSpacing(AndroidUtilities.dp(2), 1.0f);
             resetAccountButton.setPadding(0, AndroidUtilities.dp(14), 0, 0);

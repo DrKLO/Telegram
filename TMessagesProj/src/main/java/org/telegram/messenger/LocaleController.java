@@ -142,6 +142,7 @@ public class LocaleController {
         addRules(new String[]{"ro", "mo"}, new PluralRules_Romanian());
         addRules(new String[]{"sl"}, new PluralRules_Slovenian());
         addRules(new String[]{"ar"}, new PluralRules_Arabic());
+        addRules(new String[]{"fa"}, new PluralRules_Persian());
         addRules(new String[]{"mk"}, new PluralRules_Macedonian());
         addRules(new String[]{"cy"}, new PluralRules_Welsh());
         addRules(new String[]{"br"}, new PluralRules_Breton());
@@ -150,7 +151,7 @@ public class LocaleController {
         addRules(new String[]{"mt"}, new PluralRules_Maltese());
         addRules(new String[]{"ga", "se", "sma", "smi", "smj", "smn", "sms"}, new PluralRules_Two());
         addRules(new String[]{"ak", "am", "bh", "fil", "tl", "guw", "hi", "ln", "mg", "nso", "ti", "wa"}, new PluralRules_Zero());
-        addRules(new String[]{"az", "bm", "fa", "ig", "hu", "ja", "kde", "kea", "ko", "my", "ses", "sg", "to",
+        addRules(new String[]{"az", "bm", "ig", "hu", "ja", "kde", "kea", "ko", "my", "ses", "sg", "to",
                 "tr", "vi", "wo", "yo", "zh", "bo", "dz", "id", "jv", "ka", "km", "kn", "ms", "th"}, new PluralRules_None());
 
         LocaleInfo localeInfo = new LocaleInfo();
@@ -196,6 +197,14 @@ public class LocaleController {
         localeInfo.name = "العربية";
         localeInfo.nameEnglish = "Arabic";
         localeInfo.shortName = "ar";
+        localeInfo.pathToFile = null;
+        sortedLanguages.add(localeInfo);
+        languagesDict.put(localeInfo.shortName, localeInfo);
+
+        localeInfo = new LocaleInfo();
+        localeInfo.name = "فارسی";
+        localeInfo.nameEnglish = "Persian";
+        localeInfo.shortName = "fa";
         localeInfo.pathToFile = null;
         sortedLanguages.add(localeInfo);
         languagesDict.put(localeInfo.shortName, localeInfo);
@@ -757,7 +766,13 @@ public class LocaleController {
         if (lang == null) {
             lang = "en";
         }
-        isRTL = lang.toLowerCase().equals("ar");
+
+        if (lang.toLowerCase().equals("fa") || lang.toLowerCase().equals("ar")) {
+            isRTL = true;
+        } else {
+            isRTL = false;
+        }
+
         nameDisplayOrder = lang.toLowerCase().equals("ko") ? 2 : 1;
 
         formatterMonth = createFormatter(locale, getStringInternal("formatterMonth", R.string.formatterMonth), "dd MMM");
@@ -767,7 +782,7 @@ public class LocaleController {
         chatFullDate = createFormatter(locale, getStringInternal("chatFullDate", R.string.chatFullDate), "d MMMM yyyy");
         formatterWeek = createFormatter(locale, getStringInternal("formatterWeek", R.string.formatterWeek), "EEE");
         formatterMonthYear = createFormatter(locale, getStringInternal("formatterMonthYear", R.string.formatterMonthYear), "MMMM yyyy");
-        formatterDay = createFormatter(lang.toLowerCase().equals("ar") || lang.toLowerCase().equals("ko") ? locale : Locale.US, is24HourFormat ? getStringInternal("formatterDay24H", R.string.formatterDay24H) : getStringInternal("formatterDay12H", R.string.formatterDay12H), is24HourFormat ? "HH:mm" : "h:mm a");
+        formatterDay = createFormatter(lang.toLowerCase().equals("fa") || lang.toLowerCase().equals("ar") || lang.toLowerCase().equals("ko") ? locale : Locale.US, is24HourFormat ? getStringInternal("formatterDay24H", R.string.formatterDay24H) : getStringInternal("formatterDay12H", R.string.formatterDay12H), is24HourFormat ? "HH:mm" : "h:mm a");
     }
 
     public static String stringForMessageListDate(long date) {
@@ -1631,6 +1646,25 @@ public class LocaleController {
     }
 
     public static class PluralRules_Arabic extends PluralRules {
+        public int quantityForNumber(int count) {
+            int rem100 = count % 100;
+            if (count == 0) {
+                return QUANTITY_ZERO;
+            } else if (count == 1) {
+                return QUANTITY_ONE;
+            } else if (count == 2) {
+                return QUANTITY_TWO;
+            } else if (rem100 >= 3 && rem100 <= 10) {
+                return QUANTITY_FEW;
+            } else if (rem100 >= 11 && rem100 <= 99) {
+                return QUANTITY_MANY;
+            } else {
+                return QUANTITY_OTHER;
+            }
+        }
+    }
+
+    public static class PluralRules_Persian extends PluralRules {
         public int quantityForNumber(int count) {
             int rem100 = count % 100;
             if (count == 0) {

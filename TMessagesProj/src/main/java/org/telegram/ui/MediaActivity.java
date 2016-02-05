@@ -462,7 +462,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
         dropDown.setMaxLines(1);
         dropDown.setEllipsize(TextUtils.TruncateAt.END);
         dropDown.setTextColor(0xffffffff);
-        dropDown.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        dropDown.setTypeface(AndroidUtilities.getTypeface("fonts/segoeui.ttf"));
         dropDown.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.ic_arrow_drop_down, 0);
         dropDown.setCompoundDrawablePadding(AndroidUtilities.dp(4));
         dropDown.setPadding(0, 0, AndroidUtilities.dp(10), 0);
@@ -472,7 +472,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
 
         selectedMessagesCountTextView = new NumberTextView(actionMode.getContext());
         selectedMessagesCountTextView.setTextSize(18);
-        selectedMessagesCountTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        selectedMessagesCountTextView.setTypeface(AndroidUtilities.getTypeface("fonts/segoeui.ttf"));
         selectedMessagesCountTextView.setTextColor(0xff737373);
         selectedMessagesCountTextView.setOnTouchListener(new View.OnTouchListener() {
             @Override

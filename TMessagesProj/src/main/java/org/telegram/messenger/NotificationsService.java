@@ -36,7 +36,7 @@ public class NotificationsService extends Service {
 
         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", MODE_PRIVATE);
         if (preferences.getBoolean("pushService", true)) {
-            Intent intent = new Intent("org.telegram.start");
+            Intent intent = new Intent("ir.persianfox.messenger.start");
             sendBroadcast(intent);
         }
     }

@@ -5,11 +5,14 @@ repositories {
 }
 
 dependencies {
-    compile 'com.android.support:support-v4:23.1.+'
+    compile fileTree(dir: 'libs', include: ['*.jar'])
+    compile 'com.android.support:support-v4:23.1.1'
     compile "com.google.android.gms:play-services-gcm:8.4.0"
     compile "com.google.android.gms:play-services-maps:8.4.0"
-    compile 'net.hockeyapp.android:HockeySDK:3.6.+'
-    compile 'com.googlecode.mp4parser:isoparser:1.0.+'
+    compile 'com.google.android.gms:play-services-analytics:8.4.0'
+    compile 'net.hockeyapp.android:HockeySDK:3.6.2'
+    compile 'com.googlecode.mp4parser:isoparser:1.0.6'
+    compile 'uk.co.chrisjenx:calligraphy:2.1.0'
 }
 
 android {
@@ -17,7 +20,7 @@ android {
     buildToolsVersion '23.0.2'
 
     useLibrary 'org.apache.http.legacy'
-    defaultConfig.applicationId = "org.telegram.messenger"
+    defaultConfig.applicationId = "ir.persianfox.messenger"
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_7
@@ -81,9 +84,15 @@ android {
     }
 
     defaultConfig {
+        applicationId "ir.persianfox.messenger"
         minSdkVersion 9
         targetSdkVersion 23
-        versionCode 719
+        versionCode 722
         versionName "3.4.2"
+    }
+
+    lintOptions {
+        abortOnError false
+        checkReleaseBuilds false
     }
 }

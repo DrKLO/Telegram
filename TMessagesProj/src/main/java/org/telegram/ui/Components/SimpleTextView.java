@@ -36,6 +36,7 @@ public class SimpleTextView extends View {
     public SimpleTextView(Context context) {
         super(context);
         textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
+        textPaint.setTypeface(AndroidUtilities.getTypeface("fonts/segoeui.ttf"));
     }
 
     public void setTextColor(int color) {

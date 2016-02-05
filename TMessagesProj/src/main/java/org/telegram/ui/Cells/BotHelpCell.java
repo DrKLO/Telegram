@@ -59,9 +59,11 @@ public class BotHelpCell extends View {
         textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
         textPaint.setTextSize(AndroidUtilities.dp(16));
         textPaint.setColor(0xff000000);
+        textPaint.setTypeface(AndroidUtilities.getTypeface("fonts/segoeui.ttf"));
         textPaint.linkColor = 0xff316f9f;
 
         urlPaint = new Paint();
+        urlPaint.setTypeface(AndroidUtilities.getTypeface("fonts/segoeui.ttf"));
         urlPaint.setColor(0x33316f9f);
     }
 
@@ -97,7 +99,7 @@ public class BotHelpCell extends View {
         stringBuilder.append("\n\n");
         stringBuilder.append(text);
         MessageObject.addLinks(stringBuilder);
-        stringBuilder.setSpan(new TypefaceSpan(AndroidUtilities.getTypeface("fonts/rmedium.ttf")), 0, help.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        stringBuilder.setSpan(new TypefaceSpan(AndroidUtilities.getTypeface("fonts/segoeui.ttf")), 0, help.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         Emoji.replaceEmoji(stringBuilder, textPaint.getFontMetricsInt(), AndroidUtilities.dp(20), false);
         textLayout = new StaticLayout(stringBuilder, textPaint, width, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
         width = 0;

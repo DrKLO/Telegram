@@ -84,7 +84,7 @@ public class AudioCell extends FrameLayout {
         titleTextView = new TextView(context);
         titleTextView.setTextColor(0xff212121);
         titleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
-        titleTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        titleTextView.setTypeface(AndroidUtilities.getTypeface("fonts/segoeui.ttf"));
         titleTextView.setLines(1);
         titleTextView.setMaxLines(1);
         titleTextView.setSingleLine(true);
@@ -97,6 +97,7 @@ public class AudioCell extends FrameLayout {
         genreTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         genreTextView.setLines(1);
         genreTextView.setMaxLines(1);
+        genreTextView.setTypeface(AndroidUtilities.getTypeface("fonts/segoeui.ttf"));
         genreTextView.setSingleLine(true);
         genreTextView.setEllipsize(TextUtils.TruncateAt.END);
         genreTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
@@ -107,6 +108,7 @@ public class AudioCell extends FrameLayout {
         authorTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         authorTextView.setLines(1);
         authorTextView.setMaxLines(1);
+        authorTextView.setTypeface(AndroidUtilities.getTypeface("fonts/segoeui.ttf"));
         authorTextView.setSingleLine(true);
         authorTextView.setEllipsize(TextUtils.TruncateAt.END);
         authorTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
@@ -117,6 +119,7 @@ public class AudioCell extends FrameLayout {
         timeTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
         timeTextView.setLines(1);
         timeTextView.setMaxLines(1);
+        timeTextView.setTypeface(AndroidUtilities.getTypeface("fonts/segoeui.ttf"));
         timeTextView.setSingleLine(true);
         timeTextView.setEllipsize(TextUtils.TruncateAt.END);
         timeTextView.setGravity((LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.TOP);

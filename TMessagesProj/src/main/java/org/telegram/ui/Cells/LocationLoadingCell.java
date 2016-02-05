@@ -35,6 +35,7 @@ public class LocationLoadingCell extends FrameLayout {
         textView.setTextColor(0xff999999);
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         textView.setText(LocaleController.getString("NoResult", R.string.NoResult));
+        textView.setTypeface(AndroidUtilities.getTypeface("fonts/segoeui.ttf"));
         addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
     }
 

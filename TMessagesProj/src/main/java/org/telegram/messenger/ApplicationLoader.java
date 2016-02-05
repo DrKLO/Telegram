@@ -27,6 +27,8 @@ import android.os.Handler;
 import android.os.PowerManager;
 import android.util.Base64;
 
+import com.google.android.gms.analytics.GoogleAnalytics;
+import com.google.android.gms.analytics.Tracker;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GooglePlayServicesUtil;
 
@@ -37,6 +39,8 @@ import org.telegram.ui.Components.ForegroundDetector;
 
 import java.io.File;
 import java.io.RandomAccessFile;
+
+import uk.co.chrisjenx.calligraphy.CalligraphyConfig;
 
 public class ApplicationLoader extends Application {
 
@@ -257,6 +261,21 @@ public class ApplicationLoader extends Application {
     @Override
     public void onCreate() {
         super.onCreate();
+
+
+        CalligraphyConfig.initDefault(new CalligraphyConfig.Builder()
+                        .setDefaultFontPath("fonts/segoeui.ttf")
+                        .setFontAttrId(R.attr.fontPath)
+                        .build()
+        );
+
+        GoogleAnalytics analytics = GoogleAnalytics.getInstance(this);
+        analytics.setLocalDispatchPeriod(1800);
+        Tracker tracker = analytics.newTracker("UA-63123968-1"); // Replace with actual tracker/property Id
+        tracker.enableExceptionReporting(true);
+        tracker.enableAdvertisingIdCollection(true);
+        tracker.enableAutoActivityTracking(true);
+        tracker.enableAdvertisingIdCollection(true);
 
         if (Build.VERSION.SDK_INT < 11) {
             java.lang.System.setProperty("java.net.preferIPv4Stack", "true");

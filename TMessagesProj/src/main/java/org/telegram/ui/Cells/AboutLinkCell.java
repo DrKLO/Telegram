@@ -60,9 +60,11 @@ public class AboutLinkCell extends FrameLayout {
         textPaint.setTextSize(AndroidUtilities.dp(16));
         textPaint.setColor(0xff000000);
         textPaint.linkColor = 0xff316f9f;
+        textPaint.setTypeface(AndroidUtilities.getTypeface("fonts/segoeui.ttf"));
 
         urlPaint = new Paint();
         urlPaint.setColor(0x33316f9f);
+        urlPaint.setTypeface(AndroidUtilities.getTypeface("fonts/segoeui.ttf"));
 
         imageView = new ImageView(context);
         imageView.setScaleType(ImageView.ScaleType.CENTER);

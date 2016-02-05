@@ -150,7 +150,7 @@ public class ContactAddActivity extends BaseFragment implements NotificationCent
         nameTextView.setSingleLine(true);
         nameTextView.setEllipsize(TextUtils.TruncateAt.END);
         nameTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT));
-        nameTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        nameTextView.setTypeface(AndroidUtilities.getTypeface("fonts/segoeui.ttf"));
         frameLayout.addView(nameTextView);
         layoutParams3 = (FrameLayout.LayoutParams) nameTextView.getLayoutParams();
         layoutParams3.width = LayoutHelper.WRAP_CONTENT;

@@ -9,6 +9,7 @@
 package org.telegram.ui.Adapters;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
@@ -43,7 +44,7 @@ public class DrawerLayoutAdapter extends BaseAdapter {
 
     @Override
     public int getCount() {
-        return UserConfig.isClientActivated() ? 10 : 0;
+        return UserConfig.isClientActivated() ? 12 : 0;
     }
 
     @Override
@@ -95,7 +96,22 @@ public class DrawerLayoutAdapter extends BaseAdapter {
             } else if (i == 8) {
                 actionCell.setTextAndIcon(LocaleController.getString("Settings", R.string.Settings), R.drawable.menu_settings);
             } else if (i == 9) {
+                actionCell.setTextAndIcon(LocaleController.getString("RateApp",R.string.RateApp), R.drawable.menu_rate);
+
+                //actionCell.setTextAndIcon(LocaleController.getString("TelegramFaq", R.string.TelegramFaq), R.drawable.menu_help);
+            }
+            else if (i == 10) {
                 actionCell.setTextAndIcon(LocaleController.getString("TelegramFaq", R.string.TelegramFaq), R.drawable.menu_help);
+            }
+
+            else if (i == 11) {
+                SharedPreferences removeAdsSharedPreferences = mContext.getSharedPreferences("ads",Context.MODE_PRIVATE);
+
+                if (removeAdsSharedPreferences.getBoolean("display",true)) {
+                    actionCell.setTextAndIcon(LocaleController.getString("RemoveAds",R.string.RemoveAds), R.drawable.menu_ads);
+                } else {
+                    actionCell.setTextAndIcon(LocaleController.getString("DisplayAds",R.string.DisplayAds), R.drawable.menu_ads);
+                }
             }
         }
 

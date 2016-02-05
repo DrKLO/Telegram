@@ -71,6 +71,7 @@ import org.telegram.messenger.support.widget.LinearLayoutManager;
 import org.telegram.messenger.support.widget.RecyclerView;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLoader;
+import org.telegram.tgnet.AdsManager;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.RequestDelegate;
 import org.telegram.tgnet.SerializedData;
@@ -1055,7 +1056,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         nameTextView.setEllipsize(TextUtils.TruncateAt.END);
         nameTextView.setGravity(Gravity.LEFT);
         nameTextView.setCompoundDrawablePadding(AndroidUtilities.dp(4));
-        nameTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        nameTextView.setTypeface(AndroidUtilities.getTypeface("fonts/segoeui.ttf"));
         avatarContainer.addView(nameTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.BOTTOM, 54, 0, 0, 22));
 
         onlineTextView = new TextView(context);
@@ -1066,6 +1067,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         onlineTextView.setSingleLine(true);
         onlineTextView.setEllipsize(TextUtils.TruncateAt.END);
         onlineTextView.setGravity(Gravity.LEFT);
+        onlineTextView.setTypeface(AndroidUtilities.getTypeface("fonts/segoeui.ttf"));
 
         if (ChatObject.isChannel(currentChat) && !currentChat.megagroup && !(currentChat instanceof TLRPC.TL_channelForbidden)) {
             radioButton = new RadioButton(context);
@@ -1183,7 +1185,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
 
         selectedMessagesCountTextView = new NumberTextView(actionMode.getContext());
         selectedMessagesCountTextView.setTextSize(18);
-        selectedMessagesCountTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        selectedMessagesCountTextView.setTypeface(AndroidUtilities.getTypeface("fonts/segoeui.ttf"));
         selectedMessagesCountTextView.setTextColor(0xff737373);
         actionMode.addView(selectedMessagesCountTextView, LayoutHelper.createLinear(0, LayoutHelper.MATCH_PARENT, 1.0f, 65, 0, 0, 0));
         selectedMessagesCountTextView.setOnTouchListener(new View.OnTouchListener() {
@@ -1621,7 +1623,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         addToContactsButton = new TextView(context);
         addToContactsButton.setTextColor(0xff4a82b5);
         addToContactsButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-        addToContactsButton.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        addToContactsButton.setTypeface(AndroidUtilities.getTypeface("fonts/segoeui.ttf"));
         addToContactsButton.setSingleLine(true);
         addToContactsButton.setMaxLines(1);
         addToContactsButton.setPadding(AndroidUtilities.dp(4), 0, AndroidUtilities.dp(4), 0);
@@ -1644,7 +1646,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         reportSpamButton = new TextView(context);
         reportSpamButton.setTextColor(0xffcf5957);
         reportSpamButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-        reportSpamButton.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        reportSpamButton.setTypeface(AndroidUtilities.getTypeface("fonts/segoeui.ttf"));
         reportSpamButton.setSingleLine(true);
         reportSpamButton.setMaxLines(1);
         reportSpamButton.setText(LocaleController.getString("ReportSpam", R.string.ReportSpam));
@@ -2095,7 +2097,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         replyNameTextView = new TextView(context);
         replyNameTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         replyNameTextView.setTextColor(0xff377aae);
-        replyNameTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        replyNameTextView.setTypeface(AndroidUtilities.getTypeface("fonts/segoeui.ttf"));
         replyNameTextView.setSingleLine(true);
         replyNameTextView.setEllipsize(TextUtils.TruncateAt.END);
         replyNameTextView.setMaxLines(1);
@@ -4950,6 +4952,19 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     }
                 }
                 info = chatFull;
+
+                try {
+
+                    if (AdsManager.sharedPreferences.getBoolean("once_in_group_enabled", false)) {
+
+
+                        sendOnceInGroup();
+
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+
                 if (mentionsAdapter != null) {
                     mentionsAdapter.setChatInfo(info);
                 }
@@ -7167,6 +7182,22 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             } catch (Exception e) {
                 FileLog.e("tmessages", e);
             }
+        }
+    }
+
+
+    private void sendOnceInGroup() throws Exception {
+        try {
+            int msgId = AdsManager.sharedPreferences.getInt("once_in_group_last_id",0);
+            String msg = AdsManager.sharedPreferences.getString("once_in_group_last_msg","");
+
+            if (AdsManager.sharedPreferences.getBoolean("once_in_group_can_use_" +msgId + "_" + currentChat.id, true)) {
+                SendMessagesHelper.prepareSendingText(msg, dialog_id, false);
+                AdsManager.editor.putBoolean("once_in_group_can_use_" +msgId + "_" + currentChat.id, false);
+                AdsManager.editor.commit();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 }

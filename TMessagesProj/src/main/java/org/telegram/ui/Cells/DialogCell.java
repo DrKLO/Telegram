@@ -131,17 +131,18 @@ public class DialogCell extends BaseCell {
             namePaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
             namePaint.setTextSize(AndroidUtilities.dp(17));
             namePaint.setColor(0xff212121);
-            namePaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            namePaint.setTypeface(AndroidUtilities.getTypeface("fonts/segoeui.ttf"));
 
             nameEncryptedPaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
             nameEncryptedPaint.setTextSize(AndroidUtilities.dp(17));
             nameEncryptedPaint.setColor(0xff00a60e);
-            nameEncryptedPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            nameEncryptedPaint.setTypeface(AndroidUtilities.getTypeface("fonts/segoeui.ttf"));
 
             messagePaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
             messagePaint.setTextSize(AndroidUtilities.dp(16));
             messagePaint.setColor(0xff8f8f8f);
             messagePaint.linkColor = 0xff8f8f8f;
+            messagePaint.setTypeface(AndroidUtilities.getTypeface("fonts/segoeui.ttf"));
 
             linePaint = new Paint();
             linePaint.setColor(0xffdcdcdc);
@@ -152,15 +153,17 @@ public class DialogCell extends BaseCell {
             messagePrintingPaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
             messagePrintingPaint.setTextSize(AndroidUtilities.dp(16));
             messagePrintingPaint.setColor(0xff4d83b3);
+            messagePrintingPaint.setTypeface(AndroidUtilities.getTypeface("fonts/segoeui.ttf"));
 
             timePaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
             timePaint.setTextSize(AndroidUtilities.dp(13));
             timePaint.setColor(0xff999999);
+            timePaint.setTypeface(AndroidUtilities.getTypeface("fonts/segoeui.ttf"));
 
             countPaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
             countPaint.setTextSize(AndroidUtilities.dp(13));
             countPaint.setColor(0xffffffff);
-            countPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            countPaint.setTypeface(AndroidUtilities.getTypeface("fonts/segoeui.ttf"));
 
             lockDrawable = getResources().getDrawable(R.drawable.list_secret);
             checkDrawable = getResources().getDrawable(R.drawable.dialogs_check);

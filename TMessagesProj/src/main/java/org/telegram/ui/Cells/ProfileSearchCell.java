@@ -95,20 +95,22 @@ public class ProfileSearchCell extends BaseCell {
             namePaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
             namePaint.setTextSize(AndroidUtilities.dp(17));
             namePaint.setColor(0xff212121);
-            namePaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            namePaint.setTypeface(AndroidUtilities.getTypeface("fonts/segoeui.ttf"));
 
             nameEncryptedPaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
             nameEncryptedPaint.setTextSize(AndroidUtilities.dp(17));
             nameEncryptedPaint.setColor(0xff00a60e);
-            nameEncryptedPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            nameEncryptedPaint.setTypeface(AndroidUtilities.getTypeface("fonts/segoeui.ttf"));
 
             onlinePaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
             onlinePaint.setTextSize(AndroidUtilities.dp(16));
             onlinePaint.setColor(0xff316f9f);
+            onlinePaint.setTypeface(AndroidUtilities.getTypeface("fonts/segoeui.ttf"));
 
             offlinePaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
             offlinePaint.setTextSize(AndroidUtilities.dp(16));
             offlinePaint.setColor(0xff999999);
+            offlinePaint.setTypeface(AndroidUtilities.getTypeface("fonts/segoeui.ttf"));
 
             linePaint = new Paint();
             linePaint.setColor(0xffdcdcdc);
@@ -116,7 +118,7 @@ public class ProfileSearchCell extends BaseCell {
             countPaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
             countPaint.setTextSize(AndroidUtilities.dp(13));
             countPaint.setColor(0xffffffff);
-            countPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            countPaint.setTypeface(AndroidUtilities.getTypeface("fonts/segoeui.ttf"));
 
             broadcastDrawable = getResources().getDrawable(R.drawable.list_broadcast);
             lockDrawable = getResources().getDrawable(R.drawable.list_secret);
