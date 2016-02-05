@@ -47,6 +47,7 @@ public class StickerEmojiCell extends FrameLayout {
 
         emojiTextView = new TextView(context);
         emojiTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+        emojiTextView.setTypeface(AndroidUtilities.getTypeface("fonts/segoeui.ttf"));
         addView(emojiTextView, LayoutHelper.createFrame(28, 28, Gravity.BOTTOM | Gravity.RIGHT));
     }
 

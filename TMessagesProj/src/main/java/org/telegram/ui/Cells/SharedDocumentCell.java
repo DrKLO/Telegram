@@ -81,7 +81,7 @@ public class SharedDocumentCell extends FrameLayout implements MediaController.F
         extTextView = new TextView(context);
         extTextView.setTextColor(0xffffffff);
         extTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-        extTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        extTextView.setTypeface(AndroidUtilities.getTypeface("fonts/segoeui.ttf"));
         extTextView.setLines(1);
         extTextView.setMaxLines(1);
         extTextView.setSingleLine(true);
@@ -102,7 +102,7 @@ public class SharedDocumentCell extends FrameLayout implements MediaController.F
         nameTextView = new TextView(context);
         nameTextView.setTextColor(0xff212121);
         nameTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
-        nameTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        nameTextView.setTypeface(AndroidUtilities.getTypeface("fonts/segoeui.ttf"));
         nameTextView.setLines(1);
         nameTextView.setMaxLines(1);
         nameTextView.setSingleLine(true);
@@ -120,6 +120,7 @@ public class SharedDocumentCell extends FrameLayout implements MediaController.F
         dateTextView.setLines(1);
         dateTextView.setMaxLines(1);
         dateTextView.setSingleLine(true);
+        dateTextView.setTypeface(AndroidUtilities.getTypeface("fonts/segoeui.ttf"));
         dateTextView.setEllipsize(TextUtils.TruncateAt.END);
         dateTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL);
         addView(dateTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 8 : 72, 30, LocaleController.isRTL ? 72 : 8, 0));

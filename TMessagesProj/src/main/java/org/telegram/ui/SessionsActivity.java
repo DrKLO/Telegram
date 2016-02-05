@@ -122,7 +122,7 @@ public class SessionsActivity extends BaseFragment implements NotificationCenter
         textView.setTextColor(0xff8a8a8a);
         textView.setGravity(Gravity.CENTER);
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 17);
-        textView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        textView.setTypeface(AndroidUtilities.getTypeface("fonts/segoeui.ttf"));
         textView.setText(LocaleController.getString("NoOtherSessions", R.string.NoOtherSessions));
         emptyLayout.addView(textView);
         layoutParams2 = (LinearLayout.LayoutParams) textView.getLayoutParams();

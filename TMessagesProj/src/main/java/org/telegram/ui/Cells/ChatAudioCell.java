@@ -63,6 +63,7 @@ public class ChatAudioCell extends ChatBaseCell implements SeekBar.SeekBarDelega
 
         if (timePaint == null) {
             timePaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
+            timePaint.setTypeface(AndroidUtilities.getTypeface("fonts/segoeui.ttf"));
             timePaint.setTextSize(AndroidUtilities.dp(12));
 
             circlePaint = new Paint(Paint.ANTI_ALIAS_FLAG);

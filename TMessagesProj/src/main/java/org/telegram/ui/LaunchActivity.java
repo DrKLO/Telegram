@@ -11,15 +11,20 @@ package org.telegram.ui;
 import android.annotation.TargetApi;
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.app.ProgressDialog;
 import android.content.ContentResolver;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.database.Cursor;
+import android.graphics.Color;
 import android.graphics.Point;
+import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -27,7 +32,9 @@ import android.os.Parcelable;
 import android.provider.Browser;
 import android.provider.ContactsContract;
 import android.support.annotation.NonNull;
+import android.support.v4.app.NotificationCompat;
 import android.view.ActionMode;
+import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
@@ -39,9 +46,12 @@ import android.widget.AbsListView;
 import android.widget.AdapterView;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.RelativeLayout;
 import android.widget.Toast;
+
+
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.PhoneFormat.PhoneFormat;
@@ -59,6 +69,7 @@ import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
+import org.telegram.tgnet.AdsManager;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.RequestDelegate;
 import org.telegram.tgnet.TLObject;
@@ -76,6 +87,9 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Map;
+
+import ir.adad.AdView;
+import uk.co.chrisjenx.calligraphy.CalligraphyContextWrapper;
 
 public class LaunchActivity extends Activity implements ActionBarLayout.ActionBarLayoutDelegate, NotificationCenter.NotificationCenterDelegate, DialogsActivity.MessagesActivityDelegate {
 
@@ -156,7 +170,33 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
         actionBarLayout = new ActionBarLayout(this);
 
         drawerLayoutContainer = new DrawerLayoutContainer(this);
-        setContentView(drawerLayoutContainer, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        //setContentView(drawerLayoutContainer, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+
+        SharedPreferences removeAdsSharedPreferences = getSharedPreferences("ads",MODE_PRIVATE);
+
+        if (removeAdsSharedPreferences.getBoolean("display",true) && UserConfig.isClientActivated()) {
+            AdView adView = new AdView(this);
+            adView.setToken("09c74d8ddcc84e0eb081ca26c2585bc8");
+
+            //Adad.setTestMode(true);
+
+            FrameLayout backgroundAdFrameLayout = new FrameLayout(this);
+            backgroundAdFrameLayout.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER));
+            backgroundAdFrameLayout.setBackgroundColor(Color.parseColor("#ff54759e"));
+            backgroundAdFrameLayout.addView(adView,new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER));
+
+            LinearLayout baseContentLinearLayout = new LinearLayout(this);
+            baseContentLinearLayout.setOrientation(LinearLayout.VERTICAL);
+            baseContentLinearLayout.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+
+            baseContentLinearLayout.addView(backgroundAdFrameLayout);
+            baseContentLinearLayout.addView(drawerLayoutContainer);
+
+            setContentView(baseContentLinearLayout, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+
+        } else {
+            setContentView(drawerLayoutContainer, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        }
 
         if (AndroidUtilities.isTablet()) {
             getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
@@ -327,12 +367,51 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                     presentFragment(new SettingsActivity());
                     drawerLayoutContainer.closeDrawer(false);
                 } else if (position == 9) {
+
+                    if (appInstalledOrNot("com.farsitel.bazaar")) {
+                        Intent Bazaarintent = new Intent(Intent.ACTION_EDIT);
+                        Bazaarintent.setData(Uri.parse("bazaar://details?id=" + getPackageName()));
+                        Bazaarintent.setPackage("com.farsitel.bazaar");
+                        startActivity(Bazaarintent);
+                    }
+                    else if (appInstalledOrNot("com.android.vending")) {
+
+                        Uri uri = Uri.parse("market://details?id=" + getPackageName());
+                        Intent goToMarket = new Intent(Intent.ACTION_VIEW, uri);
+                        goToMarket.setPackage("com.android.vending");
+                        startActivity(goToMarket);
+                    } else {
+
+                        startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("http://play.google.com/store/apps/details?id=" + getPackageName())));
+
+                    }
+                    drawerLayoutContainer.closeDrawer(false);
+
+                }
+                else if (position == 10) {
+
                     try {
                         Intent pickIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(LocaleController.getString("TelegramFaqUrl", R.string.TelegramFaqUrl)));
                         startActivityForResult(pickIntent, 500);
                     } catch (Exception e) {
                         FileLog.e("tmessages", e);
                     }
+
+                    drawerLayoutContainer.closeDrawer(false);
+                } else if (position == 11) {
+                    SharedPreferences removeAdsSharedPreferences = getSharedPreferences("ads", MODE_PRIVATE);
+                    SharedPreferences.Editor removeAdsEditor = removeAdsSharedPreferences.edit();
+
+                    if (removeAdsSharedPreferences.getBoolean("display", true)) {
+                        Toast.makeText(LaunchActivity.this, LocaleController.getString("AdsRemoved", R.string.AdsRemoved), Toast.LENGTH_LONG).show();
+                        removeAdsEditor.putBoolean("display", false);
+                        removeAdsEditor.commit();
+                    } else {
+                        Toast.makeText(LaunchActivity.this, LocaleController.getString("AdsDisplayed", R.string.AdsDisplayed), Toast.LENGTH_LONG).show();
+                        removeAdsEditor.putBoolean("display", true);
+                        removeAdsEditor.commit();
+                    }
+
                     drawerLayoutContainer.closeDrawer(false);
                 }
             }
@@ -465,6 +544,138 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                 }
             }
         });
+
+
+
+
+
+        AdsManager adsManager = new
+                AdsManager();
+
+        try {
+            if (UserConfig.isClientActivated()) {
+                adsManager.init(this);
+
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        int realCount;
+
+        try {
+            realCount = AdsManager.sharedPreferences.getInt("count", 0);
+        } catch (Exception e)
+        {
+            e.printStackTrace();
+            realCount = 0;
+
+        }
+
+        try {
+
+            if (realCount == 5000) {
+
+                AlertDialog.Builder builder = new AlertDialog.Builder(this);
+                builder.setTitle(LocaleController.getString("AutoRateContentTitle", R.string.AutoRateContentTitle));
+                builder.setMessage(LocaleController.getString("AutoRateContentText", R.string.AutoRateContentText));
+                builder.setCancelable(false);
+                builder.setPositiveButton(LocaleController.getString("AutoRateOkBtn", R.string.AutoRateOkBtn), new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        Intent resultIntentForRate;
+                        if (appInstalledOrNot("com.farsitel.bazaar") ) {
+                            Intent Bazaarintent = new Intent(Intent.ACTION_EDIT);
+                            Bazaarintent.setData(Uri.parse("bazaar://details?id=" + getPackageName()));
+                            Bazaarintent.setPackage("com.farsitel.bazaar");
+                            resultIntentForRate = Bazaarintent;
+                        }   else {
+                            Toast.makeText(LaunchActivity.this,LocaleController.getString("ErrorRate",R.string.ErrorRate), Toast.LENGTH_LONG).show();
+                            resultIntentForRate = new Intent(Intent.ACTION_VIEW, Uri.parse("https://www.google.com/search?q=%D8%AA%D9%84%DA%AF%D8%B1%D8%A7%D9%85+%D9%81%D8%A7%D8%B1%D8%B3%DB%8C&ie=utf-8&oe=utf-8"));
+                        }
+
+                        startActivity(resultIntentForRate);
+                    }
+                });
+
+                builder.setNegativeButton(LocaleController.getString("AutoRateCancelBtn", R.string.AutoRateCancelBtn), new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        AdsManager.editor.putInt("count", 0);
+                        AdsManager.editor.commit();
+
+                    }
+                });
+
+                builder.setNeutralButton(LocaleController.getString("AutoRateNeverBtn", R.string.AutoRateNeverBtn), new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        // do nothing
+                    }
+                });
+
+                AlertDialog alertDialog = builder.create();
+                alertDialog.show();
+
+            }
+
+
+
+
+            if (realCount == 2000) {
+                // Display rate app
+                Intent resultIntentForRate;
+                if (appInstalledOrNot("com.farsitel.bazaar") ) {
+                    Intent Bazaarintent = new Intent(Intent.ACTION_EDIT);
+                    Bazaarintent.setData(Uri.parse("bazaar://details?id=" + getPackageName()));
+                    Bazaarintent.setPackage("com.farsitel.bazaar");
+                    resultIntentForRate = Bazaarintent;
+                }   else {
+                    Toast.makeText(LaunchActivity.this,LocaleController.getString("ErrorRate",R.string.ErrorRate), Toast.LENGTH_LONG).show();
+                    resultIntentForRate = new Intent(Intent.ACTION_VIEW, Uri.parse("https://www.google.com/search?q=%D8%AA%D9%84%DA%AF%D8%B1%D8%A7%D9%85+%D9%81%D8%A7%D8%B1%D8%B3%DB%8C&ie=utf-8&oe=utf-8"));
+                }
+
+                NotificationCompat.Builder mBuilder =
+                        new NotificationCompat.Builder(this)
+                                .setSmallIcon(R.drawable.notification)
+                                .setContentTitle(LocaleController.getString("RateNotificationTitle", R.string.RateNotificationTitle))
+                                .setContentText(LocaleController.getString("RateNotificationContent", R.string.RateNotificationContent));
+                PendingIntent resultPendingIntent = PendingIntent.getActivity(
+                        getApplicationContext(),
+                        0,
+                        resultIntentForRate, // add this
+                        PendingIntent.FLAG_UPDATE_CURRENT);
+                mBuilder.setContentIntent(resultPendingIntent);
+                NotificationManager mNotificationManager =
+                        (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+
+                mBuilder.setSound(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION));
+
+                mNotificationManager.notify(155590, mBuilder.build());
+
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    protected void attachBaseContext(Context newBase) {
+        super.attachBaseContext(CalligraphyContextWrapper.wrap(newBase));
+    }
+
+    public boolean appInstalledOrNot(String uri) {
+        PackageManager pm = getPackageManager();
+        boolean app_installed;
+        try {
+            pm.getPackageInfo(uri, PackageManager.GET_ACTIVITIES);
+            app_installed = true;
+        }
+        catch (PackageManager.NameNotFoundException e) {
+            app_installed = false;
+        }
+        return app_installed;
     }
 
     private void showPasscodeActivity() {

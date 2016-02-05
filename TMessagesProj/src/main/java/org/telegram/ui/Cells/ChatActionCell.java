@@ -66,6 +66,7 @@ public class ChatActionCell extends BaseCell {
         if (textPaint == null) {
             textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
             textPaint.setColor(0xffffffff);
+            textPaint.setTypeface(AndroidUtilities.getTypeface("fonts/segoeui.ttf"));
             textPaint.linkColor = 0xffffffff;
         }
         imageReceiver = new ImageReceiver(this);

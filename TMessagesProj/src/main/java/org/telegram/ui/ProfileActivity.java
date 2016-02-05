@@ -832,7 +832,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             nameTextView[a].setSingleLine(true);
             nameTextView[a].setEllipsize(TextUtils.TruncateAt.END);
             nameTextView[a].setGravity(Gravity.LEFT);
-            nameTextView[a].setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            nameTextView[a].setTypeface(AndroidUtilities.getTypeface("fonts/segoeui.ttf"));
             nameTextView[a].setCompoundDrawablePadding(AndroidUtilities.dp(4));
             ViewProxy.setPivotX(nameTextView[a], 0);
             ViewProxy.setPivotY(nameTextView[a], 0);

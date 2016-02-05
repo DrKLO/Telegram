@@ -120,6 +120,7 @@ public class ActionBar extends FrameLayout {
         subTitleTextView.setSingleLine(true);
         subTitleTextView.setLines(1);
         subTitleTextView.setMaxLines(1);
+        subTitleTextView.setTypeface(AndroidUtilities.getTypeface("fonts/segoeui.ttf"));
         subTitleTextView.setEllipsize(TextUtils.TruncateAt.END);
         addView(subTitleTextView, 0, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP));
     }
@@ -153,7 +154,7 @@ public class ActionBar extends FrameLayout {
         titleTextView.setSingleLine(true);
         titleTextView.setEllipsize(TextUtils.TruncateAt.END);
         titleTextView.setTextColor(0xffffffff);
-        titleTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        titleTextView.setTypeface(AndroidUtilities.getTypeface("fonts/segoeui.ttf"));
         addView(titleTextView, 0, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP));
     }
 

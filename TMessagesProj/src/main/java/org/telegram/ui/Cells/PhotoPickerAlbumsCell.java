@@ -60,6 +60,7 @@ public class PhotoPickerAlbumsCell extends FrameLayoutFixed {
             nameTextView.setSingleLine(true);
             nameTextView.setEllipsize(TextUtils.TruncateAt.END);
             nameTextView.setMaxLines(1);
+            nameTextView.setTypeface(AndroidUtilities.getTypeface("fonts/segoeui.ttf"));
             nameTextView.setGravity(Gravity.CENTER_VERTICAL);
             linearLayout.addView(nameTextView, LayoutHelper.createLinear(0, LayoutHelper.MATCH_PARENT, 1.0f, 8, 0, 0, 0));
 
@@ -69,6 +70,7 @@ public class PhotoPickerAlbumsCell extends FrameLayoutFixed {
             countTextView.setSingleLine(true);
             countTextView.setEllipsize(TextUtils.TruncateAt.END);
             countTextView.setMaxLines(1);
+            countTextView.setTypeface(AndroidUtilities.getTypeface("fonts/segoeui.ttf"));
             countTextView.setGravity(Gravity.CENTER_VERTICAL);
             linearLayout.addView(countTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, 4, 0, 4, 0));
 

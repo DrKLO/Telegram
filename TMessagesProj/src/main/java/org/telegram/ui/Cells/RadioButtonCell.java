@@ -49,6 +49,7 @@ public class RadioButtonCell extends FrameLayoutFixed {
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         textView.setLines(1);
         textView.setMaxLines(1);
+        textView.setTypeface(AndroidUtilities.getTypeface("fonts/segoeui.ttf"));
         textView.setSingleLine(true);
         textView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL);
         addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, (LocaleController.isRTL ? 17 : 51), 10, (LocaleController.isRTL ? 51 : 17), 0));
@@ -59,6 +60,7 @@ public class RadioButtonCell extends FrameLayoutFixed {
         valueTextView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
         valueTextView.setLines(0);
         valueTextView.setMaxLines(0);
+        valueTextView.setTypeface(AndroidUtilities.getTypeface("fonts/segoeui.ttf"));
         valueTextView.setSingleLine(false);
         valueTextView.setPadding(0, 0, 0, AndroidUtilities.dp(12));
         addView(valueTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, (LocaleController.isRTL ? 17 : 51), 35, (LocaleController.isRTL ? 51 : 17), 0));

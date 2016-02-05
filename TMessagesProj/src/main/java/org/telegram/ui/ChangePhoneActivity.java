@@ -874,7 +874,7 @@ public class ChangePhoneActivity extends BaseFragment {
             String str = String.format(Locale.US, LocaleController.getString("SentSmsCode", R.string.SentSmsCode) + " %s", number);
             try {
                 SpannableStringBuilder stringBuilder = new SpannableStringBuilder(str);
-                TypefaceSpan span = new TypefaceSpan(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+                TypefaceSpan span = new TypefaceSpan(AndroidUtilities.getTypeface("fonts/segoeui.ttf"));
                 int idx = str.indexOf(number);
                 stringBuilder.setSpan(span, idx, idx + number.length(), Spanned.SPAN_INCLUSIVE_INCLUSIVE);
                 confirmTextView.setText(stringBuilder);

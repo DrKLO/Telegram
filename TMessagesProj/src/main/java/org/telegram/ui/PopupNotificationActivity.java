@@ -382,7 +382,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
         nameTextView.setSingleLine(true);
         nameTextView.setEllipsize(TextUtils.TruncateAt.END);
         nameTextView.setGravity(Gravity.LEFT);
-        nameTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        nameTextView.setTypeface(AndroidUtilities.getTypeface("fonts/segoeui.ttf"));
         avatarContainer.addView(nameTextView);
         layoutParams2 = (FrameLayout.LayoutParams) nameTextView.getLayoutParams();
         layoutParams2.width = LayoutHelper.WRAP_CONTENT;
@@ -706,6 +706,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
                     imageView.setVisibility(View.GONE);
                     messageText.setVisibility(View.VISIBLE);
                     messageText.setTextSize(TypedValue.COMPLEX_UNIT_SP, MessagesController.getInstance().fontSize);
+                    messageText.setTypeface(AndroidUtilities.getTypeface("fonts/segoeui.ttf"));
                     messageText.setText(messageObject.messageText);
                 } else {
                     imageView.setVisibility(View.VISIBLE);
@@ -768,7 +769,9 @@ public class PopupNotificationActivity extends Activity implements NotificationC
             TextView messageText = (TextView)view.findViewById(R.id.message_text);
             messageText.setTag(301);
             messageText.setTextSize(TypedValue.COMPLEX_UNIT_SP, MessagesController.getInstance().fontSize);
+            messageText.setTypeface(AndroidUtilities.getTypeface("fonts/segoeui.ttf"));
             messageText.setText(messageObject.messageText);
+
         }
         if (view.getParent() == null) {
             messageContainer.addView(view);

@@ -81,7 +81,7 @@ public class ContextLinkCell extends View implements MediaController.FileDownloa
 
         if (titleTextPaint == null) {
             titleTextPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
-            titleTextPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            titleTextPaint.setTypeface(AndroidUtilities.getTypeface("fonts/segoeui.ttf"));
             titleTextPaint.setColor(0xff212121);
             titleTextPaint.setTextSize(AndroidUtilities.dp(15));
 

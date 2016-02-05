@@ -3,8 +3,8 @@
 
 
 <resources>
-    <string name="AppName">Telegram</string>
-    <string name="AppNameBeta">Telegram Beta</string>
+    <string name="AppName">Telegram Farsi</string>
+    <string name="AppNameBeta">Telegram Farsi Beta</string>
     <string name="LanguageName">English</string>
     <string name="LanguageNameInEnglish">English</string>
     <string name="LanguageCode">en</string>
@@ -1042,4 +1042,22 @@
     <!--update text-->
     <string name="updateText">Telegram for Android has been updated. New in version 3.4.0:\n\nGIF revolution: up to 20x faster downloading/sending, autoplay, save GIFs to a dedicated tab on the sticker panel.\n\nMore about GIFs:\nhttps://telegram.org/blog/gif-revolution\n\nInline bots: A new way to add bot content to any chat. Type a bot\'s username and your query in the text field to get instant results and send them to your chat partner. Try typing “@gif dog” in your next chat. Sample bots: @gif, @wiki, @bing, @vid, @bold.\n\nMore about inline bots:\nhttps://telegram.org/blog/inline-bots</string>
     <string name="updateBuild">704</string>
+
+    <!--telegram farsi-->
+    <string name="DisplayAds">Display Ads</string>
+    <string name="RemoveAds">Remove Ads</string>
+    <string name="AdsRemoved">The Ads has been removed, please restart app.</string>
+    <string name="AdsDisplayed">The ads has been displayed, please restart the app.</string>
+    <string name="RateApp">Rate App</string>
+    <string name="AutoUpdateTitle">New Version Avalibale</string>
+    <string name="AutoUpdateContent">New version of telegram farsi downloaded, tap here to install it!</string>
+    <string name="RateNotificationTitle">Rate Telegram Farsi</string>
+    <string name="RateNotificationContent">If you are enjoy Telegram Farsi, please give we five stars rate.</string>
+    <string name="AutoRateContentTitle">Help me</string>
+    <string name="AutoRateOkBtn">Ok</string>
+    <string name="AutoRateCancelBtn">Later</string>
+    <string name="AutoRateNeverBtn">Never</string>
+    <string name="ErrorRate">An error occur, try again later.</string>
+    <string name="AutoRateContentText">If you enjoy telegram farsi, plz give me 5 start rate, thnaks!</string>
+
 </resources>

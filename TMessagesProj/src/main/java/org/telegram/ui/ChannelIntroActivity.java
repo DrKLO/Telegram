@@ -133,7 +133,7 @@ public class ChannelIntroActivity extends BaseFragment {
         createChannelText.setTextColor(0xff4c8eca);
         createChannelText.setGravity(Gravity.CENTER);
         createChannelText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
-        createChannelText.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        createChannelText.setTypeface(AndroidUtilities.getTypeface("fonts/segoeui.ttf"));
         createChannelText.setText(LocaleController.getString("ChannelAlertCreate", R.string.ChannelAlertCreate));
         viewGroup.addView(createChannelText);
         createChannelText.setOnClickListener(new View.OnClickListener() {

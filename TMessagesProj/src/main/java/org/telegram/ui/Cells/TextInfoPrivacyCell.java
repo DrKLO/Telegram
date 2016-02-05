@@ -30,6 +30,7 @@ public class TextInfoPrivacyCell extends FrameLayout {
         textView.setTextColor(0xff808080);
         textView.setLinkTextColor(0xff316f9f);
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+        textView.setTypeface(AndroidUtilities.getTypeface("fonts/segoeui.ttf"));
         textView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
         textView.setPadding(0, AndroidUtilities.dp(10), 0, AndroidUtilities.dp(17));
         textView.setMovementMethod(LinkMovementMethod.getInstance());

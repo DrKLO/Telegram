@@ -63,10 +63,12 @@ public class ChatContactCell extends ChatBaseCell {
         if (namePaint == null) {
             namePaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
             namePaint.setTextSize(AndroidUtilities.dp(15));
+            namePaint.setTypeface(AndroidUtilities.getTypeface("fonts/segoeui.ttf"));
 
             phonePaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
             phonePaint.setTextSize(AndroidUtilities.dp(15));
             phonePaint.setColor(0xff212121);
+            phonePaint.setTypeface(AndroidUtilities.getTypeface("fonts/segoeui.ttf"));
 
             addContactDrawableIn = getResources().getDrawable(R.drawable.addcontact_blue);
             addContactDrawableOut = getResources().getDrawable(R.drawable.addcontact_green);
