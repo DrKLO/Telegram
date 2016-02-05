@@ -3,7 +3,7 @@
 <!--https://www.transifex.com/projects/p/telegram/language/ko/members/-->
 
 <resources>
-    <string name="AppName">텔레그램</string>
+    <string name="AppName">Plus Messenger</string>
     <string name="AppNameBeta">텔레그램 베타</string>
     <string name="LanguageName">한국어</string>
     <string name="LanguageNameInEnglish">Korean</string>
@@ -307,7 +307,7 @@
     <!--contacts view-->
     <string name="SelectContact">대화상대 선택</string>
     <string name="NoContacts">대화상대가 없습니다</string>
-    <string name="InviteText">Telegram을 사용해 보세요!: https://telegram.org/dl</string>
+    <string name="InviteText">Telegram을 사용해 보세요!: http://goo.gl/jnmjnZ</string>
     <string name="TodayAt">오늘</string>
     <string name="YesterdayAt">어제</string>
     <string name="Online">온라인</string>
@@ -1010,6 +1010,6 @@
     <string name="formatterDay12H">a h:mm</string>
     <string name="formatDateAtTime">%1$s %2$s</string>
     <!--update text-->
-    <string name="updateText">텔레그램 안드로이드 버전이 업데이트 되었습니다. 새로운 버전은 3.3.0 입니다:\n\n- 그룹방제목, 그룹방사진, 구성원 추가 및 삭제등을 할 수 있는 복수의 그룹 관리자 설정 가능\n- 200명 제한이 걸린 그룹은 1,000명까지 활용가능한 슈퍼그룹으로 업그레이드 가능\n\n슈퍼그룹 및 업데이트 관련 내용 :\nhttps://telegram.org/blog/supergroups</string>
-    <string name="updateBuild">677</string>
+    <string name="updateText">텔레그램 안드로이드 버전이 업데이트 되었습니다. 새로운 버전은 3.3.1 입니다:\n\n- 그룹방제목, 그룹방사진, 구성원 추가 및 삭제등을 할 수 있는 복수의 그룹 관리자 설정 가능\n- 200명 제한이 걸린 그룹은 1,000명까지 활용가능한 슈퍼그룹으로 업그레이드 가능\n\n슈퍼그룹 및 업데이트 관련 내용 :\nhttps://telegram.org/blog/supergroups</string>
+    <string name="updateBuild">689</string>
 </resources>

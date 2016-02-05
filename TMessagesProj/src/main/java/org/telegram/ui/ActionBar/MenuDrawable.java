@@ -30,7 +30,8 @@ public class MenuDrawable extends Drawable {
 
     public MenuDrawable() {
         super();
-        paint.setColor(0xffffffff);
+        //paint.setColor(0xffffffff);
+        paint.setColor(AndroidUtilities.getIntDef("chatsHeaderIconsColor", 0xffffffff)); //Plus
         paint.setStrokeWidth(AndroidUtilities.dp(2));
     }
 
@@ -88,6 +89,7 @@ public class MenuDrawable extends Drawable {
         canvas.drawLine(startXDiff, -startYDiff, endXDiff, -endYDiff, paint);
         canvas.drawLine(startXDiff, startYDiff, endXDiff, endYDiff, paint);
         canvas.restore();
+        paint.setColor(AndroidUtilities.getIntDef("chatsHeaderIconsColor", 0xffffffff)); //Plus
     }
 
     @Override

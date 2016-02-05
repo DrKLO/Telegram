@@ -82,6 +82,8 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
     private final static int item_photos = 2;
     private final static int item_video = 3;
 
+    public static String imageFilter = "*";
+
     public PhotoAlbumPickerActivity(boolean singlePhoto, ChatActivity chatActivity) {
         super();
         this.chatActivity = chatActivity;
@@ -91,6 +93,8 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
     @Override
     public boolean onFragmentCreate() {
         loading = true;
+        MediaController.iFilter = imageFilter;
+        if(!imageFilter.equals("*"))singlePhoto = true;
         MediaController.loadGalleryPhotosAlbums(classGuid);
         NotificationCenter.getInstance().addObserver(this, NotificationCenter.albumsDidLoaded);
         NotificationCenter.getInstance().addObserver(this, NotificationCenter.recentImagesDidLoaded);
@@ -103,6 +107,7 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.albumsDidLoaded);
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.recentImagesDidLoaded);
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.closeChats);
+        imageFilter = "*";
         super.onFragmentDestroy();
     }
 
@@ -513,10 +518,10 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
         @Override
         public int getCount() {
             if (singlePhoto || selectedMode == 0) {
-                if (singlePhoto) {
-                    return albumsSorted != null ? (int) Math.ceil(albumsSorted.size() / (float) columnsCount) : 0;
-                }
-                return 1 + (albumsSorted != null ? (int) Math.ceil(albumsSorted.size() / (float) columnsCount) : 0);
+            if (singlePhoto) {
+                return albumsSorted != null ? (int) Math.ceil(albumsSorted.size() / (float) columnsCount) : 0;
+            }
+            return 1 + (albumsSorted != null ? (int) Math.ceil(albumsSorted.size() / (float) columnsCount) : 0);
             } else {
                 return (videoAlbumsSorted != null ? (int) Math.ceil(videoAlbumsSorted.size() / (float) columnsCount) : 0);
             }
@@ -563,12 +568,12 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
                         index = (i - 1) * columnsCount + a;
                     }
                     if (singlePhoto || selectedMode == 0) {
-                        if (index < albumsSorted.size()) {
-                            MediaController.AlbumEntry albumEntry = albumsSorted.get(index);
-                            photoPickerAlbumsCell.setAlbum(a, albumEntry);
-                        } else {
-                            photoPickerAlbumsCell.setAlbum(a, null);
-                        }
+                    if (index < albumsSorted.size()) {
+                        MediaController.AlbumEntry albumEntry = albumsSorted.get(index);
+                        photoPickerAlbumsCell.setAlbum(a, albumEntry);
+                    } else {
+                        photoPickerAlbumsCell.setAlbum(a, null);
+                    }
                     } else {
                         if (index < videoAlbumsSorted.size()) {
                             MediaController.AlbumEntry albumEntry = videoAlbumsSorted.get(index);

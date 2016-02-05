@@ -9,6 +9,7 @@
 package org.telegram.messenger;
 
 import android.util.Log;
+import android.widget.Toast;
 
 import org.telegram.messenger.time.FastDateFormat;
 
@@ -39,7 +40,8 @@ public class FileLog {
     }
 
     public FileLog() {
-        if (!BuildVars.DEBUG_VERSION) {
+        //if (!BuildVars.DEBUG_VERSION) {
+        if (!BuildConfig.DEBUG) {
             return;
         }
         dateFormat = FastDateFormat.getInstance("dd_MM_yyyy_HH_mm_ss", Locale.US);
@@ -86,7 +88,8 @@ public class FileLog {
     }
 
     public static void e(final String tag, final String message, final Throwable exception) {
-        if (!BuildVars.DEBUG_VERSION) {
+        //if (!BuildVars.DEBUG_VERSION) {
+        if (!BuildConfig.DEBUG) {
             return;
         }
         Log.e(tag, message, exception);
@@ -107,7 +110,8 @@ public class FileLog {
     }
 
     public static void e(final String tag, final String message) {
-        if (!BuildVars.DEBUG_VERSION) {
+        //if (!BuildVars.DEBUG_VERSION) {
+        if (!BuildConfig.DEBUG) {
             return;
         }
         Log.e(tag, message);
@@ -127,7 +131,8 @@ public class FileLog {
     }
 
     public static void e(final String tag, final Throwable e) {
-        if (!BuildVars.DEBUG_VERSION) {
+        //if (!BuildVars.DEBUG_VERSION) {
+        if (!BuildConfig.DEBUG) {
             return;
         }
         e.printStackTrace();
@@ -153,7 +158,8 @@ public class FileLog {
     }
 
     public static void d(final String tag, final String message) {
-        if (!BuildVars.DEBUG_VERSION) {
+        //if (!BuildVars.DEBUG_VERSION) {
+        if (!BuildConfig.DEBUG) {
             return;
         }
         Log.d(tag, message);
@@ -173,7 +179,8 @@ public class FileLog {
     }
 
     public static void w(final String tag, final String message) {
-        if (!BuildVars.DEBUG_VERSION) {
+        //if (!BuildVars.DEBUG_VERSION) {
+        if (!BuildConfig.DEBUG) {
             return;
         }
         Log.w(tag, message);
@@ -205,5 +212,14 @@ public class FileLog {
             }
             file.delete();
         }
+        //plus
+        final int i = files.length - 1;
+        AndroidUtilities.runOnUIThread(new Runnable() {
+            @Override
+            public void run() {
+                    Toast toast = Toast.makeText(ApplicationLoader.applicationContext, i + " " + LocaleController.getString("ClearLogsMsg", R.string.ClearLogsMsg), Toast.LENGTH_SHORT);
+                    toast.show();
+            }
+        });
     }
 }

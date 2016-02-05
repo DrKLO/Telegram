@@ -11,6 +11,8 @@ package org.telegram.ui;
 import android.app.Activity;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.graphics.PorterDuff;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.text.InputType;
 import android.util.TypedValue;
@@ -57,70 +59,75 @@ public class ChangeChatNameActivity extends BaseFragment {
 
     @Override
     public View createView(Context context) {
-        actionBar.setBackButtonImage(R.drawable.ic_ab_back);
-        actionBar.setAllowOverlayTitle(true);
-        actionBar.setTitle(LocaleController.getString("EditName", R.string.EditName));
-        actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
-            @Override
-            public void onItemClick(int id) {
-                if (id == -1) {
-                    finishFragment();
-                } else if (id == done_button) {
-                    if (firstNameField.getText().length() != 0) {
-                        saveName();
+            actionBar.setBackButtonImage(R.drawable.ic_ab_back);
+            actionBar.setAllowOverlayTitle(true);
+            actionBar.setTitle(LocaleController.getString("EditName", R.string.EditName));
+            actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
+                @Override
+                public void onItemClick(int id) {
+                    if (id == -1) {
                         finishFragment();
+                    } else if (id == done_button) {
+                        if (firstNameField.getText().length() != 0) {
+                            saveName();
+                            finishFragment();
+                        }
                     }
                 }
-            }
-        });
+            });
 
-        ActionBarMenu menu = actionBar.createMenu();
-        doneButton = menu.addItemWithWidth(done_button, R.drawable.ic_done, AndroidUtilities.dp(56));
+            ActionBarMenu menu = actionBar.createMenu();
+            //doneButton = menu.addItemWithWidth(done_button, R.drawable.ic_done, AndroidUtilities.dp(56));
+            Drawable done = getParentActivity().getResources().getDrawable(R.drawable.ic_done);
+            SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+            done.setColorFilter(themePrefs.getInt("prefHeaderIconsColor", 0xffffffff), PorterDuff.Mode.MULTIPLY);
+            doneButton = menu.addItemWithWidth(done_button, done, AndroidUtilities.dp(56));
 
-        TLRPC.Chat currentChat = MessagesController.getInstance().getChat(chat_id);
+            TLRPC.Chat currentChat = MessagesController.getInstance().getChat(chat_id);
 
         LinearLayout linearLayout = new LinearLayout(context);
         fragmentView = linearLayout;
-        fragmentView.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-        ((LinearLayout) fragmentView).setOrientation(LinearLayout.VERTICAL);
-        fragmentView.setOnTouchListener(new View.OnTouchListener() {
-            @Override
-            public boolean onTouch(View v, MotionEvent event) {
-                return true;
-            }
-        });
-
-        firstNameField = new EditText(context);
-        firstNameField.setText(currentChat.title);
-        firstNameField.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
-        firstNameField.setHintTextColor(0xff979797);
-        firstNameField.setTextColor(0xff212121);
-        firstNameField.setMaxLines(3);
-        firstNameField.setPadding(0, 0, 0, 0);
-        firstNameField.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
-        firstNameField.setInputType(InputType.TYPE_TEXT_FLAG_CAP_SENTENCES | InputType.TYPE_TEXT_FLAG_MULTI_LINE | InputType.TYPE_TEXT_FLAG_AUTO_CORRECT);
-        firstNameField.setImeOptions(EditorInfo.IME_ACTION_DONE);
-        firstNameField.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
-        AndroidUtilities.clearCursorDrawable(firstNameField);
-        firstNameField.setOnEditorActionListener(new TextView.OnEditorActionListener() {
-            @Override
-            public boolean onEditorAction(TextView textView, int i, KeyEvent keyEvent) {
-                if (i == EditorInfo.IME_ACTION_DONE && doneButton != null) {
-                    doneButton.performClick();
+            fragmentView.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+            ((LinearLayout) fragmentView).setOrientation(LinearLayout.VERTICAL);
+            fragmentView.setOnTouchListener(new View.OnTouchListener() {
+                @Override
+                public boolean onTouch(View v, MotionEvent event) {
                     return true;
                 }
-                return false;
-            }
-        });
+            });
+
+        firstNameField = new EditText(context);
+            firstNameField.setText(currentChat.title);
+            firstNameField.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
+            firstNameField.setHintTextColor(0xff979797);
+            firstNameField.setTextColor(0xff212121);
+            firstNameField.getBackground().setColorFilter(AndroidUtilities.getIntColor("themeColor"), PorterDuff.Mode.SRC_IN);
+            firstNameField.setMaxLines(3);
+            firstNameField.setPadding(0, 0, 0, 0);
+            firstNameField.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
+            firstNameField.setInputType(InputType.TYPE_TEXT_FLAG_CAP_SENTENCES | InputType.TYPE_TEXT_FLAG_MULTI_LINE | InputType.TYPE_TEXT_FLAG_AUTO_CORRECT);
+            firstNameField.setImeOptions(EditorInfo.IME_ACTION_DONE);
+            firstNameField.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
+            AndroidUtilities.clearCursorDrawable(firstNameField);
+            firstNameField.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+                @Override
+                public boolean onEditorAction(TextView textView, int i, KeyEvent keyEvent) {
+                    if (i == EditorInfo.IME_ACTION_DONE && doneButton != null) {
+                        doneButton.performClick();
+                        return true;
+                    }
+                    return false;
+                }
+            });
 
         linearLayout.addView(firstNameField, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 36, 24, 24, 24, 0));
 
-        if (chat_id > 0) {
-            firstNameField.setHint(LocaleController.getString("GroupName", R.string.GroupName));
-        } else {
-            firstNameField.setHint(LocaleController.getString("EnterListName", R.string.EnterListName));
-        }
-        firstNameField.setSelection(firstNameField.length());
+            if (chat_id > 0) {
+                firstNameField.setHint(LocaleController.getString("GroupName", R.string.GroupName));
+            } else {
+                firstNameField.setHint(LocaleController.getString("EnterListName", R.string.EnterListName));
+            }
+            firstNameField.setSelection(firstNameField.length());
 
         return fragmentView;
     }
@@ -134,7 +141,23 @@ public class ChangeChatNameActivity extends BaseFragment {
             firstNameField.requestFocus();
             AndroidUtilities.showKeyboard(firstNameField);
         }
+        updateTheme();
     }
+
+    private void updateTheme(){
+        SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+        int def = themePrefs.getInt("themeColor", AndroidUtilities.defColor);
+        actionBar.setBackgroundColor(themePrefs.getInt("prefHeaderColor", def));
+        actionBar.setTitleColor(themePrefs.getInt("prefHeaderTitleColor", 0xffffffff));
+
+        Drawable back = getParentActivity().getResources().getDrawable(R.drawable.ic_ab_back);
+        back.setColorFilter(themePrefs.getInt("prefHeaderIconsColor", 0xffffffff), PorterDuff.Mode.MULTIPLY);
+        actionBar.setBackButtonDrawable(back);
+
+        Drawable done = getParentActivity().getResources().getDrawable(R.drawable.ic_done);
+        done.setColorFilter(themePrefs.getInt("prefHeaderIconsColor", 0xffffffff), PorterDuff.Mode.MULTIPLY);
+    }
+
 
     @Override
     public void onTransitionAnimationEnd(boolean isOpen, boolean backward) {
@@ -143,10 +166,10 @@ public class ChangeChatNameActivity extends BaseFragment {
                 @Override
                 public void run() {
                     if (firstNameField != null) {
-                        firstNameField.requestFocus();
-                        AndroidUtilities.showKeyboard(firstNameField);
-                    }
-                }
+        firstNameField.requestFocus();
+        AndroidUtilities.showKeyboard(firstNameField);
+    }
+    }
             }, 100);
         }
     }

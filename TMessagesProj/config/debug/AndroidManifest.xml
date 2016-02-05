@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     package="org.telegram.messenger"
     android:installLocation="auto">
 
@@ -9,39 +10,49 @@
     <uses-feature android:name="android.hardware.LOCATION" android:required="false" />
 
     <uses-permission android:name="com.google.android.c2dm.permission.RECEIVE" />
-    <uses-permission android:name="org.telegram.messenger.permission.MAPS_RECEIVE"/>
-    <uses-permission android:name="org.telegram.messenger.permission.C2D_MESSAGE" />
+    <uses-permission android:name="org.telegram.plus.beta.permission.MAPS_RECEIVE"/>
+    <uses-permission android:name="org.telegram.plus.beta.permission.C2D_MESSAGE" />
     <uses-permission android:name="com.google.android.providers.gsf.permission.READ_GSERVICES"/>
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
 
-    <permission android:name="org.telegram.messenger.permission.MAPS_RECEIVE" android:protectionLevel="signature"/>
-    <permission android:name="org.telegram.messenger.permission.C2D_MESSAGE" android:protectionLevel="signature" />
+    <permission android:name="org.telegram.plus.beta.permission.MAPS_RECEIVE" android:protectionLevel="signature"/>
+    <permission android:name="org.telegram.plus.beta.permission.C2D_MESSAGE" android:protectionLevel="signature" />
+
+    <permission android:name="org.telegram.plus.beta.android.provider.ACCESS" android:protectionLevel="signature"/>
 
     <application
         android:allowBackup="false"
         android:icon="@drawable/ic_launcher"
-        android:label="@string/AppNameBeta"
+        android:label="Plus beta"
+        tools:replace="label"
         android:theme="@style/Theme.TMessages.Start"
         android:name=".ApplicationLoader"
         android:hardwareAccelerated="@bool/useHardwareAcceleration"
         android:largeHeap="true">
 
-        <meta-data android:name="com.google.android.maps.v2.API_KEY" android:value="AIzaSyA-t0jLPjUt2FxrA8VPK2EiYHcYcboIR6k" />
+        <meta-data android:name="com.google.android.maps.v2.API_KEY" android:value="AIzaSyDFiyV4uu3lh66i_Jyn0mmhrJMNLyo2-0s" /><!--org.telegram.plus/AIzaSyCZi83oDrfsCQ3_Aokfmlv53gTBYPIGJ2Q-->
 
         <activity android:name="net.hockeyapp.android.UpdateActivity" />
 
         <receiver
-            android:name=".GcmBroadcastReceiver"
+            android:name="org.telegram.messenger.GcmBroadcastReceiver"
             android:permission="com.google.android.c2dm.permission.SEND" >
             <intent-filter>
                 <action android:name="com.google.android.c2dm.intent.RECEIVE" />
                 <action android:name="com.google.android.c2dm.intent.REGISTRATION" />
-                <category android:name="org.telegram.messenger" />
+                <category android:name="org.telegram.plus.beta" />
             </intent-filter>
         </receiver>
 
         <uses-library android:name="com.google.android.maps" android:required="false"/>
+
+        <provider
+            android:authorities="org.telegram.plus.beta.android.provider.content"
+            android:name="org.telegram.messenger.ModuleContentProvider"
+            android:label="Plus beta"
+            android:exported="true"
+            android:permission="org.telegram.plus.beta.android.provider.ACCESS" />
 
     </application>
 

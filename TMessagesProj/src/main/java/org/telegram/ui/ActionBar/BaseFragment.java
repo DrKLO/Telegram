@@ -13,13 +13,19 @@ import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.TextView;
 
+import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.AnimationCompat.AnimatorSetProxy;
+import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
+import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.ConnectionsManager;
 
 public class BaseFragment {
@@ -61,26 +67,26 @@ public class BaseFragment {
     }
 
     protected void clearViews() {
-        if (fragmentView != null) {
-            ViewGroup parent = (ViewGroup) fragmentView.getParent();
-            if (parent != null) {
-                try {
-                    parent.removeView(fragmentView);
-                } catch (Exception e) {
-                    FileLog.e("tmessages", e);
+            if (fragmentView != null) {
+                ViewGroup parent = (ViewGroup) fragmentView.getParent();
+                if (parent != null) {
+                    try {
+                        parent.removeView(fragmentView);
+                    } catch (Exception e) {
+                        FileLog.e("tmessages", e);
+                    }
                 }
+                fragmentView = null;
             }
-            fragmentView = null;
-        }
-        if (actionBar != null) {
-            ViewGroup parent = (ViewGroup) actionBar.getParent();
-            if (parent != null) {
-                try {
-                    parent.removeView(actionBar);
-                } catch (Exception e) {
-                    FileLog.e("tmessages", e);
+            if (actionBar != null) {
+                ViewGroup parent = (ViewGroup) actionBar.getParent();
+                if (parent != null) {
+                    try {
+                        parent.removeView(actionBar);
+                    } catch (Exception e) {
+                        FileLog.e("tmessages", e);
+                    }
                 }
-            }
             actionBar = null;
         }
         parentLayout = null;
@@ -118,7 +124,8 @@ public class BaseFragment {
             if (parentLayout != null && actionBar == null) {
                 actionBar = new ActionBar(parentLayout.getContext());
                 actionBar.parentFragment = this;
-                actionBar.setBackgroundColor(0xff54759e);
+                //actionBar.setBackgroundColor(0xff54759e);
+                actionBar.setBackgroundResource(R.color.header); //Plus
                 actionBar.setItemsBackground(R.drawable.bar_selector);
             }
         }
@@ -155,7 +162,10 @@ public class BaseFragment {
     }
 
     public void onResume() {
-
+        if(AndroidUtilities.needRestart){
+            AndroidUtilities.needRestart = false;
+            Utilities.restartApp();
+        }
     }
 
     public void onPause() {
@@ -286,6 +296,23 @@ public class BaseFragment {
                 }
             });
             visibleDialog.show();
+            //Always after .show()
+            SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+            int color = preferences.getInt("dialogColor", preferences.getInt("themeColor", AndroidUtilities.defColor));
+            int id = visibleDialog.getContext().getResources().getIdentifier("android:id/alertTitle", null, null);
+            TextView tv = (TextView) visibleDialog.findViewById(id);
+            if(tv != null)tv.setTextColor(color);
+            id = visibleDialog.getContext().getResources().getIdentifier("android:id/titleDivider", null, null);
+            View divider = visibleDialog.findViewById(id);
+            if(divider != null)divider.setBackgroundColor(color);
+
+            Button btn = (Button) visibleDialog.findViewById(android.R.id.button1);
+            if(btn != null)btn.setTextColor(color);
+            btn = (Button) visibleDialog.findViewById(android.R.id.button2);
+            if(btn != null)btn.setTextColor(color);
+            btn = (Button) visibleDialog.findViewById(android.R.id.button3);
+            if(btn != null)btn.setTextColor(color);
+            //
             return visibleDialog;
         } catch (Exception e) {
             FileLog.e("tmessages", e);

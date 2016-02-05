@@ -12,6 +12,9 @@ import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.content.Context;
+import android.content.SharedPreferences;
+import android.graphics.PorterDuff;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.telephony.TelephonyManager;
 import android.text.Editable;
@@ -36,26 +39,26 @@ import android.widget.TextView;
 
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.MessagesStorage;
-import org.telegram.messenger.NotificationCenter;
-import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.BuildVars;
-import org.telegram.messenger.FileLog;
-import org.telegram.messenger.R;
-import org.telegram.tgnet.ConnectionsManager;
-import org.telegram.tgnet.RequestDelegate;
-import org.telegram.tgnet.TLObject;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.messenger.UserConfig;
-import org.telegram.ui.ActionBar.ActionBar;
-import org.telegram.ui.ActionBar.ActionBarMenu;
-import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.messenger.AnimationCompat.AnimatorListenerAdapterProxy;
 import org.telegram.messenger.AnimationCompat.AnimatorSetProxy;
 import org.telegram.messenger.AnimationCompat.ObjectAnimatorProxy;
 import org.telegram.messenger.AnimationCompat.ViewProxy;
+import org.telegram.messenger.ApplicationLoader;
+import org.telegram.messenger.BuildVars;
+import org.telegram.messenger.FileLog;
+import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.MessagesStorage;
+import org.telegram.messenger.NotificationCenter;
+import org.telegram.messenger.R;
+import org.telegram.messenger.UserConfig;
+import org.telegram.tgnet.ConnectionsManager;
+import org.telegram.tgnet.RequestDelegate;
+import org.telegram.tgnet.TLObject;
+import org.telegram.tgnet.TLRPC;
+import org.telegram.ui.ActionBar.ActionBar;
+import org.telegram.ui.ActionBar.ActionBarMenu;
+import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.Components.HintEditText;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.SlideView;
@@ -100,56 +103,61 @@ public class ChangePhoneActivity extends BaseFragment {
 
     @Override
     public View createView(Context context) {
-        actionBar.setTitle(LocaleController.getString("AppName", R.string.AppName));
-        actionBar.setBackButtonImage(R.drawable.ic_ab_back);
-        actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
-            @Override
-            public void onItemClick(int id) {
-                if (id == done_button) {
-                    views[currentViewNum].onNextPressed();
-                } else if (id == -1) {
-                    finishFragment();
+            actionBar.setTitle(LocaleController.getString("AppName", R.string.AppName));
+            actionBar.setBackButtonImage(R.drawable.ic_ab_back);
+            actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
+                @Override
+                public void onItemClick(int id) {
+                    if (id == done_button) {
+                        views[currentViewNum].onNextPressed();
+                    } else if (id == -1) {
+                        finishFragment();
+                    }
                 }
-            }
-        });
+            });
 
-        ActionBarMenu menu = actionBar.createMenu();
-        menu.addItemWithWidth(done_button, R.drawable.ic_done, AndroidUtilities.dp(56));
+            ActionBarMenu menu = actionBar.createMenu();
+            //menu.addItemWithWidth(done_button, R.drawable.ic_done, AndroidUtilities.dp(56));
+
+        SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+        Drawable done = getParentActivity().getResources().getDrawable(R.drawable.ic_done);
+        done.setColorFilter(themePrefs.getInt("prefHeaderIconsColor", 0xffffffff), PorterDuff.Mode.SRC_IN);
+        menu.addItemWithWidth(done_button, done, AndroidUtilities.dp(56));
 
         fragmentView = new ScrollView(context);
-        ScrollView scrollView = (ScrollView) fragmentView;
-        scrollView.setFillViewport(true);
+            ScrollView scrollView = (ScrollView) fragmentView;
+            scrollView.setFillViewport(true);
 
         FrameLayout frameLayout = new FrameLayout(context);
-        scrollView.addView(frameLayout);
-        ScrollView.LayoutParams layoutParams = (ScrollView.LayoutParams) frameLayout.getLayoutParams();
-        layoutParams.width = ScrollView.LayoutParams.MATCH_PARENT;
-        layoutParams.height = ScrollView.LayoutParams.WRAP_CONTENT;
-        layoutParams.gravity = Gravity.TOP | Gravity.LEFT;
-        frameLayout.setLayoutParams(layoutParams);
+            scrollView.addView(frameLayout);
+            ScrollView.LayoutParams layoutParams = (ScrollView.LayoutParams) frameLayout.getLayoutParams();
+            layoutParams.width = ScrollView.LayoutParams.MATCH_PARENT;
+            layoutParams.height = ScrollView.LayoutParams.WRAP_CONTENT;
+            layoutParams.gravity = Gravity.TOP | Gravity.LEFT;
+            frameLayout.setLayoutParams(layoutParams);
 
         views[0] = new PhoneView(context);
-        views[0].setVisibility(View.VISIBLE);
+            views[0].setVisibility(View.VISIBLE);
         frameLayout.addView(views[0], LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.LEFT, 16, 30, 16, 0));
 
         views[1] = new LoginActivitySmsView(context);
-        views[1].setVisibility(View.GONE);
+            views[1].setVisibility(View.GONE);
         frameLayout.addView(views[1], LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT, 16, 30, 16, 0));
 
-        try {
-            if (views[0] == null || views[1] == null) {
+            try {
+                if (views[0] == null || views[1] == null) {
                 FrameLayout parent = (FrameLayout) ((ScrollView) fragmentView).getChildAt(0);
-                for (int a = 0; a < views.length; a++) {
-                    if (views[a] == null) {
+                    for (int a = 0; a < views.length; a++) {
+                        if (views[a] == null) {
                         views[a] = (SlideView) parent.getChildAt(a);
+                        }
                     }
                 }
+            } catch (Exception e) {
+                FileLog.e("tmessages", e);
             }
-        } catch (Exception e) {
-            FileLog.e("tmessages", e);
-        }
 
-        actionBar.setTitle(views[0].getHeaderName());
+            actionBar.setTitle(views[0].getHeaderName());
 
         return fragmentView;
     }
@@ -158,6 +166,18 @@ public class ChangePhoneActivity extends BaseFragment {
     public void onResume() {
         super.onResume();
         AndroidUtilities.requestAdjustResize(getParentActivity(), classGuid);
+        updateTheme();
+    }
+
+    private void updateTheme(){
+        SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+        int def = themePrefs.getInt("themeColor", AndroidUtilities.defColor);
+        actionBar.setBackgroundColor(themePrefs.getInt("prefHeaderColor", def));
+        actionBar.setTitleColor(themePrefs.getInt("prefHeaderTitleColor", 0xffffffff));
+
+        Drawable back = getParentActivity().getResources().getDrawable(R.drawable.ic_ab_back);
+        back.setColorFilter(themePrefs.getInt("prefHeaderIconsColor", 0xffffffff), PorterDuff.Mode.MULTIPLY);
+        actionBar.setBackButtonDrawable(back);
     }
 
     @Override
@@ -178,8 +198,8 @@ public class ChangePhoneActivity extends BaseFragment {
     @Override
     public void onTransitionAnimationEnd(boolean isOpen, boolean backward) {
         if (isOpen) {
-            views[currentViewNum].onShow();
-        }
+        views[currentViewNum].onShow();
+    }
     }
 
     public void needShowAlert(final String text) {
@@ -393,7 +413,7 @@ public class ChangePhoneActivity extends BaseFragment {
                                 ignoreSelection = true;
                                 countryButton.setText(countriesArray.get(index));
                                 String hint = phoneFormatMap.get(text);
-                                phoneField.setHintText(hint != null ? hint.replace('X', '–') : null);
+                                phoneField.setHintText(hint != null ? hint.replace('X', '�') : null);
                                 countryState = 0;
                             } else {
                                 countryButton.setText(LocaleController.getString("WrongCountry", R.string.WrongCountry));
@@ -406,8 +426,8 @@ public class ChangePhoneActivity extends BaseFragment {
                             countryState = 2;
                         }
                         if (!ok) {
-                            codeField.setSelection(codeField.getText().length());
-                        }
+                        codeField.setSelection(codeField.getText().length());
+                    }
                         if (textToSet != null) {
                             phoneField.requestFocus();
                             phoneField.setText(textToSet);
@@ -431,6 +451,7 @@ public class ChangePhoneActivity extends BaseFragment {
             phoneField = new HintEditText(context);
             phoneField.setInputType(InputType.TYPE_CLASS_PHONE);
             phoneField.setTextColor(0xff212121);
+            phoneField.getBackground().setColorFilter(AndroidUtilities.getIntColor("themeColor"), PorterDuff.Mode.SRC_IN);
             phoneField.setHintTextColor(0xff979797);
             phoneField.setPadding(0, 0, 0, 0);
             AndroidUtilities.clearCursorDrawable(phoneField);
@@ -471,7 +492,7 @@ public class ChangePhoneActivity extends BaseFragment {
                         return;
                     }
                     int start = phoneField.getSelectionStart();
-                    String phoneChars = "0123456789";
+                        String phoneChars = "0123456789";
                     String str = phoneField.getText().toString();
                     if (characterAction == 3) {
                         str = str.substring(0, actionPosition) + str.substring(actionPosition + 1, str.length());
@@ -484,7 +505,7 @@ public class ChangePhoneActivity extends BaseFragment {
                             builder.append(ch);
                         }
                     }
-                    ignoreOnPhoneChange = true;
+                            ignoreOnPhoneChange = true;
                     String hint = phoneField.getHintText();
                     if (hint != null) {
                         for (int a = 0; a < builder.length(); a++) {
@@ -501,17 +522,17 @@ public class ChangePhoneActivity extends BaseFragment {
                                 if (start == a + 1 && characterAction != 2 && characterAction != 3) {
                                     start++;
                                 }
-                                break;
-                            }
+                                    break;
+                                }
                         }
-                    }
+                            }
                     phoneField.setText(builder);
                     if (start >= 0) {
                         phoneField.setSelection(start <= phoneField.length() ? start : phoneField.length());
                     }
                     phoneField.onTextChange();
-                    ignoreOnPhoneChange = false;
-                }
+                            ignoreOnPhoneChange = false;
+                        }
             });
             phoneField.setOnEditorActionListener(new TextView.OnEditorActionListener() {
                 @Override
@@ -603,7 +624,7 @@ public class ChangePhoneActivity extends BaseFragment {
                 codeField.setText(code);
                 countryButton.setText(name);
                 String hint = phoneFormatMap.get(code);
-                phoneField.setHintText(hint != null ? hint.replace('X', '–') : null);
+                phoneField.setHintText(hint != null ? hint.replace('X', '�') : null);
                 countryState = 0;
             }
         }
@@ -823,7 +844,8 @@ public class ChangePhoneActivity extends BaseFragment {
 
             TextView wrongNumber = new TextView(context);
             wrongNumber.setGravity(Gravity.LEFT | Gravity.CENTER_HORIZONTAL);
-            wrongNumber.setTextColor(0xff4d83b3);
+            //wrongNumber.setTextColor(0xff4d83b3);
+            wrongNumber.setTextColor(AndroidUtilities.getIntColor("themeColor"));
             wrongNumber.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             wrongNumber.setLineSpacing(AndroidUtilities.dp(2), 1.0f);
             wrongNumber.setPadding(0, AndroidUtilities.dp(24), 0, 0);
@@ -1079,15 +1101,15 @@ public class ChangePhoneActivity extends BaseFragment {
         @Override
         public void didReceivedNotification(int id, final Object... args) {
             if (id == NotificationCenter.didReceiveSmsCode) {
-                if (!waitingForSms) {
-                    return;
-                }
-                if (codeField != null) {
+                        if (!waitingForSms) {
+                            return;
+                        }
+                        if (codeField != null) {
                     ignoreOnTextChange = true;
-                    codeField.setText("" + args[0]);
-                    onNextPressed();
-                }
+                            codeField.setText("" + args[0]);
+                            onNextPressed();
+                        }
+                    }
+        }
             }
         }
-    }
-}

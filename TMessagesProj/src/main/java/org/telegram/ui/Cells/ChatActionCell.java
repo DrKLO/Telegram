@@ -9,9 +9,11 @@
 package org.telegram.ui.Cells;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.graphics.PorterDuff;
 import android.graphics.drawable.Drawable;
 import android.text.Layout;
 import android.text.Spannable;
@@ -22,17 +24,19 @@ import android.view.MotionEvent;
 import android.view.SoundEffectConstants;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.ImageReceiver;
-import org.telegram.messenger.MessageObject;
-import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
-import org.telegram.tgnet.TLRPC;
+import org.telegram.messenger.ImageReceiver;
+import org.telegram.messenger.MessageObject;
+import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
-import org.telegram.ui.Components.ResourceLoader;
-import org.telegram.ui.PhotoViewer;
+import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.Components.AvatarDrawable;
+import org.telegram.ui.Components.ResourceLoader;
+import org.telegram.ui.ImageListActivity;
+import org.telegram.ui.PhotoViewer;
 
 public class ChatActionCell extends BaseCell {
 
@@ -71,6 +75,11 @@ public class ChatActionCell extends BaseCell {
         imageReceiver = new ImageReceiver(this);
         imageReceiver.setRoundRadius(AndroidUtilities.dp(32));
         avatarDrawable = new AvatarDrawable();
+        //Chat Action Photo
+        int radius = AndroidUtilities.dp(AndroidUtilities.getIntDef("chatAvatarRadius", 32));
+        imageReceiver.setRoundRadius(radius);
+        avatarDrawable.setRadius(radius);
+        //
         textPaint.setTextSize(AndroidUtilities.dp(MessagesController.getInstance().fontSize));
     }
 
@@ -213,6 +222,7 @@ public class ChatActionCell extends BaseCell {
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        updateTheme();
         if (currentMessageObject == null) {
             setMeasuredDimension(MeasureSpec.getSize(widthMeasureSpec), textHeight + AndroidUtilities.dp(14));
             return;
@@ -252,6 +262,29 @@ public class ChatActionCell extends BaseCell {
         setMeasuredDimension(width, textHeight + AndroidUtilities.dp(14 + (currentMessageObject.type == 11 ? 70 : 0)));
     }
 
+    private void updateTheme(){
+        SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+        int color = themePrefs.getInt("chatDateColor", 0xffffffff);
+        textPaint.setColor(color);
+        if(color != 0xffffffff){
+            textPaint.linkColor = AndroidUtilities.getIntDarkerColor("chatDateColor", -0x50);
+        }
+        textPaint.setTextSize(AndroidUtilities.dp(themePrefs.getInt("chatDateSize", 16)));//16
+        setBubbles(themePrefs.getString("chatBubbleStyle", ImageListActivity.getBubbleName(0)));
+        ResourceLoader.backgroundWhite.setColorFilter(themePrefs.getInt("chatDateBubbleColor", 0x59000000), PorterDuff.Mode.MULTIPLY);
+    }
+
+    private void setBubbles(String bubble){
+        if(bubble.equals(ImageListActivity.getBubbleName(0))){
+            ResourceLoader.backgroundWhite = getResources().getDrawable(R.drawable.system_white);
+        } else if(bubble.equals(ImageListActivity.getBubbleName(1))){
+            ResourceLoader.backgroundWhite = getResources().getDrawable(R.drawable.system_white);
+        } else if(bubble.equals(ImageListActivity.getBubbleName(2))){
+            ResourceLoader.backgroundWhite = getResources().getDrawable(R.drawable.system_white_3);
+        } else if(bubble.equals(ImageListActivity.getBubbleName(3))){
+            ResourceLoader.backgroundWhite = getResources().getDrawable(R.drawable.system_white_4);
+        }
+    }
     @Override
     protected void onDraw(Canvas canvas) {
         if (currentMessageObject == null) {
@@ -260,9 +293,9 @@ public class ChatActionCell extends BaseCell {
 
         Drawable backgroundDrawable;
         if (ApplicationLoader.isCustomTheme()) {
-            backgroundDrawable = ResourceLoader.backgroundBlack;
+            backgroundDrawable = ResourceLoader.backgroundWhite;//backgroundBlack;
         } else {
-            backgroundDrawable = ResourceLoader.backgroundBlue;
+            backgroundDrawable = ResourceLoader.backgroundWhite;//backgroundBlue;
         }
         backgroundDrawable.setBounds(textX - AndroidUtilities.dp(5), AndroidUtilities.dp(5), textX + textWidth + AndroidUtilities.dp(5), AndroidUtilities.dp(9) + textHeight);
         backgroundDrawable.draw(canvas);

@@ -40,4 +40,12 @@ public class TextInfoCell extends FrameLayout {
     public void setText(String text) {
         textView.setText(text);
     }
+
+    public void setTextColor(int color) {
+        textView.setTextColor(color);
+    }
+
+    public void setTextSize(int size) {
+        textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP,size);
+    }
 }

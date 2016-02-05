@@ -9,6 +9,7 @@
 package org.telegram.ui.Adapters;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.text.TextUtils;
 import android.view.View;
 import android.view.ViewGroup;
@@ -16,6 +17,7 @@ import android.view.ViewGroup;
 import org.telegram.SQLite.SQLiteCursor;
 import org.telegram.SQLite.SQLitePreparedStatement;
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.LocaleController;
@@ -279,9 +281,9 @@ public class DialogsSearchAdapter extends BaseSearchAdapterRecycler {
                                     arrayList.remove(recentSearchObject);
                                 }
                             } else {
-                                hashMap.get(did).object = chat;
-                            }
+                            hashMap.get(did).object = chat;
                         }
+                    }
                     }
 
                     if (!usersToLoad.isEmpty()) {
@@ -504,17 +506,17 @@ public class DialogsSearchAdapter extends BaseSearchAdapterRecycler {
                                     if (data != null && cursor.byteBufferValue(0, data) != 0) {
                                         TLRPC.Chat chat = TLRPC.Chat.TLdeserialize(data, data.readInt32(false), false);
                                         if (!(chat == null || chat.deactivated || ChatObject.isChannel(chat) && ChatObject.isNotInChat(chat))) {
-                                            long dialog_id;
-                                            if (chat.id > 0) {
-                                                dialog_id = -chat.id;
-                                            } else {
-                                                dialog_id = AndroidUtilities.makeBroadcastId(chat.id);
-                                            }
-                                            DialogSearchResult dialogSearchResult = dialogsResult.get(dialog_id);
-                                            dialogSearchResult.name = AndroidUtilities.generateSearchName(chat.title, null, q);
-                                            dialogSearchResult.object = chat;
-                                            resultCount++;
+                                        long dialog_id;
+                                        if (chat.id > 0) {
+                                            dialog_id = -chat.id;
+                                        } else {
+                                            dialog_id = AndroidUtilities.makeBroadcastId(chat.id);
                                         }
+                                        DialogSearchResult dialogSearchResult = dialogsResult.get(dialog_id);
+                                        dialogSearchResult.name = AndroidUtilities.generateSearchName(chat.title, null, q);
+                                        dialogSearchResult.object = chat;
+                                        resultCount++;
+                                    }
                                     }
                                     data.reuse();
                                     break;
@@ -890,6 +892,7 @@ public class DialogsSearchAdapter extends BaseSearchAdapterRecycler {
 
     @Override
     public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
+        SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
         switch (holder.getItemViewType()) {
             case 0: {
                 ProfileSearchCell cell = (ProfileSearchCell) holder.itemView;
@@ -901,6 +904,9 @@ public class DialogsSearchAdapter extends BaseSearchAdapterRecycler {
                 CharSequence name = null;
                 boolean isRecent = false;
                 String un = null;
+                int darkColor = AndroidUtilities.getIntDarkerColor("themeColor", -0x40);
+                int hColor = themePrefs.getInt("chatsHighlightSearchColor", darkColor);
+                String hexDarkColor = String.format("#%08X", (0xFFFFFFFF & hColor));
                 Object obj = getItem(position);
 
                 if (obj instanceof TLRPC.User) {
@@ -939,7 +945,8 @@ public class DialogsSearchAdapter extends BaseSearchAdapterRecycler {
                             foundUserName = foundUserName.substring(1);
                         }
                         try {
-                            username = AndroidUtilities.replaceTags(String.format("<c#ff4d83b3>@%s</c>%s", un.substring(0, foundUserName.length()), un.substring(foundUserName.length())));
+                            //username = AndroidUtilities.replaceTags(String.format("<c#ff4d83b3>@%s</c>%s", un.substring(0, foundUserName.length()), un.substring(foundUserName.length())));
+                            username = AndroidUtilities.replaceTags(String.format("<c" + hexDarkColor + ">@%s</c>%s", un.substring(0, foundUserName.length()), un.substring(foundUserName.length())));
                         } catch (Exception e) {
                             username = un;
                             FileLog.e("tmessages", e);
@@ -951,6 +958,8 @@ public class DialogsSearchAdapter extends BaseSearchAdapterRecycler {
             }
             case 1: {
                 GreySectionCell cell = (GreySectionCell) holder.itemView;
+                cell.setBackgroundColor(themePrefs.getInt("chatsRowColor", 0xfff2f2f2));
+                cell.setTextColor(themePrefs.getInt("chatsNameColor", 0xff8a8a8a));
                 if (needMessagesSearch != 2 && (lastSearchText == null || lastSearchText.length() == 0) && !recentSearchObjects.isEmpty()) {
                     cell.setText(LocaleController.getString("Recent", R.string.Recent).toUpperCase());
                 } else if (!searchResultHashtags.isEmpty()) {
@@ -964,6 +973,8 @@ public class DialogsSearchAdapter extends BaseSearchAdapterRecycler {
             }
             case 2: {
                 DialogCell cell = (DialogCell) holder.itemView;
+                //Search from ChatActivity
+                cell.setBackgroundColor(themePrefs.getInt("chatsRowColor", 0xfff2f2f2));
                 cell.useSeparator = (position != getItemCount() - 1);
                 MessageObject messageObject = (MessageObject)getItem(position);
                 cell.setDialog(messageObject.getDialogId(), messageObject, messageObject.messageOwner.date);
@@ -974,6 +985,7 @@ public class DialogsSearchAdapter extends BaseSearchAdapterRecycler {
             }
             case 4: {
                 HashtagSearchCell cell = (HashtagSearchCell) holder.itemView;
+                cell.setTextColor(themePrefs.getInt("chatsMessageColor", 0xff000000));
                 cell.setText(searchResultHashtags.get(position - 1));
                 cell.setNeedDivider(position != searchResultHashtags.size());
                 break;

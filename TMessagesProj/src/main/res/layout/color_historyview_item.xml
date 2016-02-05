@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout android:gravity="bottom" android:layout_width="50.0dip" android:layout_height="50.0dip" android:layout_marginRight="2.0dip"
+  xmlns:android="http://schemas.android.com/apk/res/android">
+    <TextView android:textSize="12.0dip" android:gravity="bottom" android:id="@+id/colorbox" android:layout_width="50.0dip" android:layout_height="50.0dip"
+      xmlns:android="http://schemas.android.com/apk/res/android" />
+</LinearLayout>

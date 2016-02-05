@@ -14,7 +14,9 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.content.res.Configuration;
+import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Environment;
 import android.os.StatFs;
@@ -28,17 +30,17 @@ import android.widget.ListView;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.AnimationCompat.AnimatorSetProxy;
+import org.telegram.messenger.AnimationCompat.ObjectAnimatorProxy;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
-import org.telegram.ui.ActionBar.BackDrawable;
-import org.telegram.ui.Adapters.BaseFragmentAdapter;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
-import org.telegram.messenger.AnimationCompat.AnimatorSetProxy;
-import org.telegram.messenger.AnimationCompat.ObjectAnimatorProxy;
+import org.telegram.ui.ActionBar.BackDrawable;
 import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.ui.Adapters.BaseFragmentAdapter;
 import org.telegram.ui.Cells.SharedDocumentCell;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.NumberTextView;
@@ -76,6 +78,8 @@ public class DocumentSelectActivity extends BaseFragment {
     private boolean scrolling;
 
     private final static int done = 3;
+
+    public String fileFilter = "*";
 
     private class ListItem {
         int icon;
@@ -125,6 +129,7 @@ public class DocumentSelectActivity extends BaseFragment {
         } catch (Exception e) {
             FileLog.e("tmessages", e);
         }
+        fileFilter = "*";
         super.onFragmentDestroy();
     }
 
@@ -146,13 +151,17 @@ public class DocumentSelectActivity extends BaseFragment {
             ApplicationLoader.applicationContext.registerReceiver(receiver, filter);
         }
 
-        actionBar.setBackButtonDrawable(new BackDrawable(false));
-        actionBar.setAllowOverlayTitle(true);
-        actionBar.setTitle(LocaleController.getString("SelectFile", R.string.SelectFile));
-        actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
-            @Override
-            public void onItemClick(int id) {
-                if (id == -1) {
+        //actionBar.setBackButtonDrawable(new BackDrawable(false));
+        SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+        Drawable d = new BackDrawable(false);
+        ((BackDrawable) d).setColor(themePrefs.getInt("chatHeaderIconsColor", 0xffffffff));
+        actionBar.setBackButtonDrawable(d);
+            actionBar.setAllowOverlayTitle(true);
+            actionBar.setTitle(LocaleController.getString("SelectFile", R.string.SelectFile));
+            actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
+                @Override
+                public void onItemClick(int id) {
+                    if (id == -1) {
                     if (actionBar.isActionModeShowed()) {
                         selectedFiles.clear();
                         actionBar.hideActionMode();
@@ -160,183 +169,184 @@ public class DocumentSelectActivity extends BaseFragment {
                     } else {
                         finishFragment();
                     }
-                } else if (id == done) {
-                    if (delegate != null) {
-                        ArrayList<String> files = new ArrayList<>();
-                        files.addAll(selectedFiles.keySet());
-                        delegate.didSelectFiles(DocumentSelectActivity.this, files);
-                    }
-                }
-            }
-        });
-        selectedFiles.clear();
-        actionModeViews.clear();
-
-        final ActionBarMenu actionMode = actionBar.createActionMode();
-
-        selectedMessagesCountTextView = new NumberTextView(actionMode.getContext());
-        selectedMessagesCountTextView.setTextSize(18);
-        selectedMessagesCountTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
-        selectedMessagesCountTextView.setTextColor(0xff737373);
-        selectedMessagesCountTextView.setOnTouchListener(new View.OnTouchListener() {
-            @Override
-            public boolean onTouch(View v, MotionEvent event) {
-                return true;
-            }
-        });
-        actionMode.addView(selectedMessagesCountTextView, LayoutHelper.createLinear(0, LayoutHelper.MATCH_PARENT, 1.0f, 65, 0, 0, 0));
-
-        actionModeViews.add(actionMode.addItem(done, R.drawable.ic_ab_done_gray, R.drawable.bar_selector_mode, null, AndroidUtilities.dp(54)));
-
-        fragmentView = getParentActivity().getLayoutInflater().inflate(R.layout.document_select_layout, null, false);
-        listAdapter = new ListAdapter(context);
-        emptyView = (TextView) fragmentView.findViewById(R.id.searchEmptyView);
-        emptyView.setOnTouchListener(new View.OnTouchListener() {
-            @Override
-            public boolean onTouch(View v, MotionEvent event) {
-                return true;
-            }
-        });
-        listView = (ListView) fragmentView.findViewById(R.id.listView);
-        listView.setEmptyView(emptyView);
-        listView.setAdapter(listAdapter);
-
-        listView.setOnScrollListener(new AbsListView.OnScrollListener() {
-            @Override
-            public void onScrollStateChanged(AbsListView view, int scrollState) {
-                scrolling = scrollState != SCROLL_STATE_IDLE;
-            }
-
-            @Override
-            public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
-
-            }
-        });
-
-        listView.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
-            @Override
-            public boolean onItemLongClick(AdapterView<?> parent, View view, int i, long id) {
-                if (actionBar.isActionModeShowed() || i < 0 || i >= items.size()) {
-                    return false;
-                }
-                ListItem item = items.get(i);
-                File file = item.file;
-                if (file != null && !file.isDirectory()) {
-                    if (!file.canRead()) {
-                        showErrorBox(LocaleController.getString("AccessError", R.string.AccessError));
-                        return false;
-                    }
-                    if (sizeLimit != 0) {
-                        if (file.length() > sizeLimit) {
-                            showErrorBox(LocaleController.formatString("FileUploadLimit", R.string.FileUploadLimit, AndroidUtilities.formatFileSize(sizeLimit)));
-                            return false;
-                        }
-                    }
-                    if (file.length() == 0) {
-                        return false;
-                    }
-                    selectedFiles.put(file.toString(), item);
-                    selectedMessagesCountTextView.setNumber(1, false);
-                    if (Build.VERSION.SDK_INT >= 11) {
-                        AnimatorSetProxy animatorSet = new AnimatorSetProxy();
-                        ArrayList<Object> animators = new ArrayList<>();
-                        for (int a = 0; a < actionModeViews.size(); a++) {
-                            View view2 = actionModeViews.get(a);
-                            AndroidUtilities.clearDrawableAnimation(view2);
-                            animators.add(ObjectAnimatorProxy.ofFloat(view2, "scaleY", 0.1f, 1.0f));
-                        }
-                        animatorSet.playTogether(animators);
-                        animatorSet.setDuration(250);
-                        animatorSet.start();
-                    }
-                    scrolling = false;
-                    if (view instanceof SharedDocumentCell) {
-                        ((SharedDocumentCell) view).setChecked(true, true);
-                    }
-                    actionBar.showActionMode();
-                }
-                return true;
-            }
-        });
-
-        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
-                if (i < 0 || i >= items.size()) {
-                    return;
-                }
-                ListItem item = items.get(i);
-                File file = item.file;
-                if (file == null) {
-                    if (item.icon == R.drawable.ic_storage_gallery) {
-                        if (delegate != null) {
-                            delegate.startDocumentSelectActivity();
-                        }
-                        finishFragment(false);
-                    } else {
-                        HistoryEntry he = history.remove(history.size() - 1);
-                        actionBar.setTitle(he.title);
-                        if (he.dir != null) {
-                            listFiles(he.dir);
-                        } else {
-                            listRoots();
-                        }
-                        listView.setSelectionFromTop(he.scrollItem, he.scrollOffset);
-                    }
-                } else if (file.isDirectory()) {
-                    HistoryEntry he = new HistoryEntry();
-                    he.scrollItem = listView.getFirstVisiblePosition();
-                    he.scrollOffset = listView.getChildAt(0).getTop();
-                    he.dir = currentDir;
-                    he.title = actionBar.getTitle();
-                    history.add(he);
-                    if (!listFiles(file)) {
-                        history.remove(he);
-                        return;
-                    }
-                    actionBar.setTitle(item.title);
-                    listView.setSelection(0);
-                } else {
-                    if (!file.canRead()) {
-                        showErrorBox(LocaleController.getString("AccessError", R.string.AccessError));
-                        file = new File("/mnt/sdcard");
-                    }
-                    if (sizeLimit != 0) {
-                        if (file.length() > sizeLimit) {
-                            showErrorBox(LocaleController.formatString("FileUploadLimit", R.string.FileUploadLimit, AndroidUtilities.formatFileSize(sizeLimit)));
-                            return;
-                        }
-                    }
-                    if (file.length() == 0) {
-                        return;
-                    }
-                    if (actionBar.isActionModeShowed()) {
-                        if (selectedFiles.containsKey(file.toString())) {
-                            selectedFiles.remove(file.toString());
-                        } else {
-                            selectedFiles.put(file.toString(), item);
-                        }
-                        if (selectedFiles.isEmpty()) {
-                            actionBar.hideActionMode();
-                        } else {
-                            selectedMessagesCountTextView.setNumber(selectedFiles.size(), true);
-                        }
-                        scrolling = false;
-                        if (view instanceof SharedDocumentCell) {
-                            ((SharedDocumentCell) view).setChecked(selectedFiles.containsKey(item.file.toString()), true);
-                        }
-                    } else {
+                    } else if (id == done) {
                         if (delegate != null) {
                             ArrayList<String> files = new ArrayList<>();
-                            files.add(file.getAbsolutePath());
+                            files.addAll(selectedFiles.keySet());
                             delegate.didSelectFiles(DocumentSelectActivity.this, files);
                         }
                     }
                 }
-            }
-        });
+            });
+            selectedFiles.clear();
+            actionModeViews.clear();
 
-        listRoots();
+            final ActionBarMenu actionMode = actionBar.createActionMode();
+            //actionModeViews.add(actionMode.addItem(-2, R.drawable.ic_ab_back_grey, R.drawable.bar_selector_mode, null, AndroidUtilities.dp(54)));
+
+            selectedMessagesCountTextView = new NumberTextView(actionMode.getContext());
+            selectedMessagesCountTextView.setTextSize(18);
+            selectedMessagesCountTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            selectedMessagesCountTextView.setTextColor(0xff737373);
+            selectedMessagesCountTextView.setOnTouchListener(new View.OnTouchListener() {
+                @Override
+                public boolean onTouch(View v, MotionEvent event) {
+                    return true;
+                }
+            });
+        actionMode.addView(selectedMessagesCountTextView, LayoutHelper.createLinear(0, LayoutHelper.MATCH_PARENT, 1.0f, 65, 0, 0, 0));
+
+            actionModeViews.add(actionMode.addItem(done, R.drawable.ic_ab_done_gray, R.drawable.bar_selector_mode, null, AndroidUtilities.dp(54)));
+
+        fragmentView = getParentActivity().getLayoutInflater().inflate(R.layout.document_select_layout, null, false);
+        listAdapter = new ListAdapter(context);
+        emptyView = (TextView) fragmentView.findViewById(R.id.searchEmptyView);
+            emptyView.setOnTouchListener(new View.OnTouchListener() {
+                @Override
+                public boolean onTouch(View v, MotionEvent event) {
+                    return true;
+                }
+            });
+        listView = (ListView) fragmentView.findViewById(R.id.listView);
+            listView.setEmptyView(emptyView);
+            listView.setAdapter(listAdapter);
+
+            listView.setOnScrollListener(new AbsListView.OnScrollListener() {
+                @Override
+                public void onScrollStateChanged(AbsListView view, int scrollState) {
+                    scrolling = scrollState != SCROLL_STATE_IDLE;
+                }
+
+                @Override
+                public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
+
+                }
+            });
+
+            listView.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
+                @Override
+                public boolean onItemLongClick(AdapterView<?> parent, View view, int i, long id) {
+                    if (actionBar.isActionModeShowed() || i < 0 || i >= items.size()) {
+                        return false;
+                    }
+                    ListItem item = items.get(i);
+                    File file = item.file;
+                    if (file != null && !file.isDirectory()) {
+                        if (!file.canRead()) {
+                            showErrorBox(LocaleController.getString("AccessError", R.string.AccessError));
+                            return false;
+                        }
+                        if (sizeLimit != 0) {
+                            if (file.length() > sizeLimit) {
+                            showErrorBox(LocaleController.formatString("FileUploadLimit", R.string.FileUploadLimit, AndroidUtilities.formatFileSize(sizeLimit)));
+                                return false;
+                            }
+                        }
+                        if (file.length() == 0) {
+                            return false;
+                        }
+                        selectedFiles.put(file.toString(), item);
+                    selectedMessagesCountTextView.setNumber(1, false);
+                        if (Build.VERSION.SDK_INT >= 11) {
+                            AnimatorSetProxy animatorSet = new AnimatorSetProxy();
+                            ArrayList<Object> animators = new ArrayList<>();
+                            for (int a = 0; a < actionModeViews.size(); a++) {
+                                View view2 = actionModeViews.get(a);
+                                AndroidUtilities.clearDrawableAnimation(view2);
+                                    animators.add(ObjectAnimatorProxy.ofFloat(view2, "scaleY", 0.1f, 1.0f));
+                                }
+                            animatorSet.playTogether(animators);
+                            animatorSet.setDuration(250);
+                            animatorSet.start();
+                        }
+                        scrolling = false;
+                        if (view instanceof SharedDocumentCell) {
+                            ((SharedDocumentCell) view).setChecked(true, true);
+                        }
+                        actionBar.showActionMode();
+                    }
+                    return true;
+                }
+            });
+
+            listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                @Override
+                public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
+                    if (i < 0 || i >= items.size()) {
+                        return;
+                    }
+                    ListItem item = items.get(i);
+                    File file = item.file;
+                    if (file == null) {
+                        if (item.icon == R.drawable.ic_storage_gallery) {
+                            if (delegate != null) {
+                                delegate.startDocumentSelectActivity();
+                            }
+                            finishFragment(false);
+                        } else {
+                            HistoryEntry he = history.remove(history.size() - 1);
+                            actionBar.setTitle(he.title);
+                            if (he.dir != null) {
+                                listFiles(he.dir);
+                            } else {
+                                listRoots();
+                            }
+                            listView.setSelectionFromTop(he.scrollItem, he.scrollOffset);
+                        }
+                    } else if (file.isDirectory()) {
+                        HistoryEntry he = new HistoryEntry();
+                        he.scrollItem = listView.getFirstVisiblePosition();
+                        he.scrollOffset = listView.getChildAt(0).getTop();
+                        he.dir = currentDir;
+                    he.title = actionBar.getTitle();
+                        history.add(he);
+                        if (!listFiles(file)) {
+                            history.remove(he);
+                            return;
+                        }
+                        actionBar.setTitle(item.title);
+                        listView.setSelection(0);
+                    } else {
+                        if (!file.canRead()) {
+                            showErrorBox(LocaleController.getString("AccessError", R.string.AccessError));
+                        file = new File("/mnt/sdcard");
+                        }
+                        if (sizeLimit != 0) {
+                            if (file.length() > sizeLimit) {
+                            showErrorBox(LocaleController.formatString("FileUploadLimit", R.string.FileUploadLimit, AndroidUtilities.formatFileSize(sizeLimit)));
+                                return;
+                            }
+                        }
+                        if (file.length() == 0) {
+                            return;
+                        }
+                        if (actionBar.isActionModeShowed()) {
+                            if (selectedFiles.containsKey(file.toString())) {
+                                selectedFiles.remove(file.toString());
+                            } else {
+                                selectedFiles.put(file.toString(), item);
+                            }
+                            if (selectedFiles.isEmpty()) {
+                                actionBar.hideActionMode();
+                            } else {
+                            selectedMessagesCountTextView.setNumber(selectedFiles.size(), true);
+                            }
+                            scrolling = false;
+                            if (view instanceof SharedDocumentCell) {
+                                ((SharedDocumentCell) view).setChecked(selectedFiles.containsKey(item.file.toString()), true);
+                            }
+                        } else {
+                            if (delegate != null) {
+                                ArrayList<String> files = new ArrayList<>();
+                                files.add(file.getAbsolutePath());
+                                delegate.didSelectFiles(DocumentSelectActivity.this, files);
+                            }
+                        }
+                    }
+                }
+            });
+
+            listRoots();
 
         return fragmentView;
     }
@@ -465,6 +475,9 @@ public class DocumentSelectActivity extends BaseFragment {
                 item.subtitle = LocaleController.getString("Folder", R.string.Folder);
             } else {
                 String fname = file.getName();
+                if (!fileFilter.equals("*") && !fname.toLowerCase().endsWith(fileFilter)) {
+                    continue;
+                }
                 String[] sp = fname.split("\\.");
                 item.ext = sp.length > 1 ? sp[sp.length - 1] : "?";
                 item.subtitle = AndroidUtilities.formatFileSize(file.length());
@@ -513,17 +526,17 @@ public class DocumentSelectActivity extends BaseFragment {
         boolean isDefaultPathRemovable = Build.VERSION.SDK_INT >= 9 && Environment.isExternalStorageRemovable();
         String defaultPathState = Environment.getExternalStorageState();
         if (defaultPathState.equals(Environment.MEDIA_MOUNTED) || defaultPathState.equals(Environment.MEDIA_MOUNTED_READ_ONLY)) {
-            ListItem ext = new ListItem();
-            if (Build.VERSION.SDK_INT < 9 || Environment.isExternalStorageRemovable()) {
-                ext.title = LocaleController.getString("SdCard", R.string.SdCard);
+        ListItem ext = new ListItem();
+        if (Build.VERSION.SDK_INT < 9 || Environment.isExternalStorageRemovable()) {
+            ext.title = LocaleController.getString("SdCard", R.string.SdCard);
                 ext.icon = R.drawable.ic_external_storage;
-            } else {
-                ext.title = LocaleController.getString("InternalStorage", R.string.InternalStorage);
+        } else {
+            ext.title = LocaleController.getString("InternalStorage", R.string.InternalStorage);
                 ext.icon = R.drawable.ic_storage;
             }
             ext.subtitle = getRootSubtitle(defaultPath);
-            ext.file = Environment.getExternalStorageDirectory();
-            items.add(ext);
+        ext.file = Environment.getExternalStorageDirectory();
+        items.add(ext);
             paths.add(defaultPath);
         }
 
@@ -552,22 +565,22 @@ public class DocumentSelectActivity extends BaseFragment {
                                 }
                             }
                             paths.add(path);
-                            try {
-                                ListItem item = new ListItem();
-                                if (path.toLowerCase().contains("sd")) {
+                    try {
+                        ListItem item = new ListItem();
+                        if (path.toLowerCase().contains("sd")) {
                                     item.title = LocaleController.getString("SdCard", R.string.SdCard);
-                                } else {
+                        } else {
                                     item.title = LocaleController.getString("ExternalStorage", R.string.ExternalStorage);
-                                }
-                                item.icon = R.drawable.ic_external_storage;
-                                item.subtitle = getRootSubtitle(path);
-                                item.file = new File(path);
-                                items.add(item);
-                            } catch (Exception e) {
-                                FileLog.e("tmessages", e);
-                            }
                         }
+                        item.icon = R.drawable.ic_external_storage;
+                        item.subtitle = getRootSubtitle(path);
+                        item.file = new File(path);
+                        items.add(item);
+                    } catch (Exception e) {
+                        FileLog.e("tmessages", e);
                     }
+                }
+            }
                 }
             }
         } catch (Exception e) {
@@ -607,7 +620,7 @@ public class DocumentSelectActivity extends BaseFragment {
         fs.subtitle = LocaleController.getString("GalleryInfo", R.string.GalleryInfo);
         fs.icon = R.drawable.ic_storage_gallery;
         fs.file = null;
-        items.add(fs);
+        if(fileFilter.equals("*"))items.add(fs);
 
         AndroidUtilities.clearDrawableAnimation(listView);
         scrolling = true;
@@ -616,13 +629,13 @@ public class DocumentSelectActivity extends BaseFragment {
 
     private String getRootSubtitle(String path) {
         try {
-            StatFs stat = new StatFs(path);
-            long total = (long)stat.getBlockCount() * (long)stat.getBlockSize();
-            long free = (long)stat.getAvailableBlocks() * (long)stat.getBlockSize();
-            if (total == 0) {
-                return "";
-            }
-            return LocaleController.formatString("FreeOfTotal", R.string.FreeOfTotal, AndroidUtilities.formatFileSize(free), AndroidUtilities.formatFileSize(total));
+        StatFs stat = new StatFs(path);
+        long total = (long)stat.getBlockCount() * (long)stat.getBlockSize();
+        long free = (long)stat.getAvailableBlocks() * (long)stat.getBlockSize();
+        if (total == 0) {
+            return "";
+        }
+        return LocaleController.formatString("FreeOfTotal", R.string.FreeOfTotal, AndroidUtilities.formatFileSize(free), AndroidUtilities.formatFileSize(total));
         } catch (Exception e) {
             FileLog.e("tmessages", e);
         }

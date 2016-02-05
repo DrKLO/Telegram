@@ -337,7 +337,8 @@ public class PopupNotificationActivity extends Activity implements NotificationC
         actionBar = new ActionBar(this);
         actionBar.setOccupyStatusBar(false);
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
-        actionBar.setBackgroundColor(0xff54759e);
+        //actionBar.setBackgroundColor(0xff54759e);
+        actionBar.setBackgroundResource(R.color.header);
         actionBar.setItemsBackground(R.drawable.bar_selector);
         popupContainer.addView(actionBar);
         ViewGroup.LayoutParams layoutParams = actionBar.getLayoutParams();
@@ -1082,9 +1083,9 @@ public class PopupNotificationActivity extends Activity implements NotificationC
             try {
                 Integer type = MessagesController.getInstance().printingStringsTypes.get(currentMessageObject.getDialogId());
                 if (type == 0) {
-                    onlineTextView.setCompoundDrawablesWithIntrinsicBounds(typingDotsDrawable, null, null, null);
-                    onlineTextView.setCompoundDrawablePadding(AndroidUtilities.dp(4));
-                    typingDotsDrawable.start();
+                onlineTextView.setCompoundDrawablesWithIntrinsicBounds(typingDotsDrawable, null, null, null);
+                onlineTextView.setCompoundDrawablePadding(AndroidUtilities.dp(4));
+                typingDotsDrawable.start();
                     recordStatusDrawable.stop();
                 } else if (type == 1) {
                     onlineTextView.setCompoundDrawablesWithIntrinsicBounds(recordStatusDrawable, null, null, null);

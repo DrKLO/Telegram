@@ -9,12 +9,19 @@
 package org.telegram.ui.Components;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.graphics.Canvas;
+import android.graphics.ColorFilter;
 import android.graphics.Paint;
 import android.graphics.Paint.Style;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffColorFilter;
+import android.graphics.drawable.Drawable;
+import android.graphics.drawable.StateListDrawable;
 import android.os.Build;
 import android.support.v4.view.ViewPager;
 import android.support.v4.view.ViewPager.OnPageChangeListener;
+import android.util.SparseArray;
 import android.view.View;
 import android.view.ViewTreeObserver.OnGlobalLayoutListener;
 import android.widget.FrameLayout;
@@ -23,6 +30,8 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ApplicationLoader;
+import org.telegram.messenger.R;
 
 public class PagerSlidingTabStrip extends HorizontalScrollView {
 
@@ -45,8 +54,8 @@ public class PagerSlidingTabStrip extends HorizontalScrollView {
 
     private Paint rectPaint;
 
-    private int indicatorColor = 0xff666666;
-    private int underlineColor = 0x1a000000;
+    private int indicatorColor = 0xFF666666;
+    private int underlineColor = 0x1A000000;
 
     private boolean shouldExpand = false;
 
@@ -115,7 +124,8 @@ public class PagerSlidingTabStrip extends HorizontalScrollView {
     private void addIconTab(final int position, int resId) {
         ImageView tab = new ImageView(getContext());
         tab.setFocusable(true);
-        tab.setImageResource(resId);
+        //tab.setImageResource(resId);
+        tab.setImageDrawable(setImageButtonState(position));
         tab.setScaleType(ImageView.ScaleType.CENTER);
         tab.setOnClickListener(new OnClickListener() {
             @Override
@@ -126,6 +136,115 @@ public class PagerSlidingTabStrip extends HorizontalScrollView {
         tabsContainer.addView(tab);
         tab.setSelected(position == currentPosition);
     }
+    //Plus
+    private StateListDrawable setImageButtonState(int index)
+    {
+        Drawable nonactiveTab = getResources().getDrawable(icons[index]);
+        Drawable filteredNonactiveTab = nonactiveTab.getConstantState().newDrawable();
+        Drawable activeTab = getResources().getDrawable(icons_active[index]);
+        Drawable filteredActiveTab = activeTab.getConstantState().newDrawable();
+
+        SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+        int tabColor = themePrefs.getInt("chatEmojiViewTabColor", AndroidUtilities.getIntDarkerColor("themeColor", -0x15));
+        int iconColor = themePrefs.getInt("chatEmojiViewTabIconColor", 0xffa8a8a8);
+
+        int focused = android.R.attr.state_focused;
+        int selected = android.R.attr.state_selected;
+        int pressed = android.R.attr.state_pressed;
+
+        final FilterableStateListDrawable selectorDrawable = new FilterableStateListDrawable();
+
+        selectorDrawable.addState(new int[] {-focused, -selected, -pressed}, filteredNonactiveTab, new PorterDuffColorFilter(iconColor, PorterDuff.Mode.SRC_ATOP));
+        selectorDrawable.addState(new int[] {-focused, -selected, -pressed}, nonactiveTab);
+        selectorDrawable.addState(new int[] {-focused, selected, -pressed}, filteredActiveTab, new PorterDuffColorFilter(tabColor, PorterDuff.Mode.SRC_ATOP));
+        selectorDrawable.addState(new int[] {-focused, selected, -pressed}, activeTab);
+        selectorDrawable.addState(new int[] {pressed}, filteredActiveTab, new PorterDuffColorFilter(tabColor, PorterDuff.Mode.SRC_ATOP));
+        selectorDrawable.addState(new int[] {pressed}, activeTab);
+        selectorDrawable.addState(new int[]{focused, -selected, -pressed}, filteredNonactiveTab, new PorterDuffColorFilter(iconColor, PorterDuff.Mode.SRC_ATOP));
+        selectorDrawable.addState(new int[]{focused, -selected, -pressed}, nonactiveTab);
+        selectorDrawable.addState(new int[]{focused, selected, -pressed}, filteredNonactiveTab, new PorterDuffColorFilter(iconColor, PorterDuff.Mode.SRC_ATOP));
+        selectorDrawable.addState(new int[]{focused, selected, -pressed}, nonactiveTab);
+
+        return selectorDrawable;
+    }
+
+    public class FilterableStateListDrawable extends StateListDrawable {
+
+        private int currIdx = -1;
+        private int childrenCount = 0;
+        private SparseArray<ColorFilter> filterMap;
+
+        public FilterableStateListDrawable() {
+            super();
+            filterMap = new SparseArray<>();
+        }
+
+        @Override
+        public void addState(int[] stateSet, Drawable drawable) {
+            super.addState(stateSet, drawable);
+            childrenCount++;
+        }
+
+        public void addState(int[] stateSet, Drawable drawable, ColorFilter colorFilter) {
+            // this is a new custom method, does not exist in parent class
+            int currChild = childrenCount;
+            addState(stateSet, drawable);
+            filterMap.put(currChild, colorFilter);
+        }
+
+        @Override
+        public boolean selectDrawable(int idx) {
+            if (currIdx != idx) {
+                setColorFilter(getColorFilterForIdx(idx));
+            }
+            boolean result = super.selectDrawable(idx);
+            // check if the drawable has been actually changed to the one I expect
+            if (getCurrent() != null) {
+                currIdx = result ? idx : currIdx;
+                if (!result) {
+                    // it has not been changed, meaning, back to previous filter
+                    setColorFilter(getColorFilterForIdx(currIdx));
+                }
+            } else if (getCurrent() == null) {
+                currIdx = -1;
+                setColorFilter(null);
+            }
+            return result;
+        }
+
+        private ColorFilter getColorFilterForIdx(int idx) {
+            return filterMap != null ? filterMap.get(idx) : null;
+        }
+    }
+
+    private int[] icons = {
+            R.drawable.ic_smiles_recent,
+            R.drawable.ic_smiles_smile,
+            R.drawable.ic_smiles_flower,
+            R.drawable.ic_smiles_bell,
+            R.drawable.ic_smiles_car,
+            R.drawable.ic_smiles_grid,
+            R.drawable.ic_smiles_sticker};
+
+    private int[] icons_active = {
+            R.drawable.ic_smiles_recent_active,
+            R.drawable.ic_smiles_smile_active,
+            R.drawable.ic_smiles_flower_active,
+            R.drawable.ic_smiles_bell_active,
+            R.drawable.ic_smiles_car_active,
+            R.drawable.ic_smiles_grid_active,
+            R.drawable.ic_smiles_sticker_active};
+/*
+    private void paintTabIcons(int i){
+        SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+        int tabColor = themePrefs.getInt("chatEmojiViewTabColor", AndroidUtilities.getIntDarkerColor("themeColor", -0x15));
+        Drawable icon_active = getResources().getDrawable(icons_active[i]);
+        icon_active.setColorFilter(tabColor, PorterDuff.Mode.SRC_IN);
+        //Drawable icon = getResources().getDrawable(icons[i]);
+        //int iconColor = themePrefs.getInt("chatEmojiViewTabIconColor", 0xffa8a8a8);
+        //icon.setColorFilter(iconColor, PorterDuff.Mode.SRC_IN);
+        //iv.setImageDrawable(icon);
+    }*/
 
     private void updateTabStyles() {
         for (int i = 0; i < tabCount; i++) {

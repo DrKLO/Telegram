@@ -3,11 +3,11 @@
 <!--https://www.transifex.com/projects/p/telegram/language/pt_PT/members/-->
 
 <resources>
-    <string name="AppName">Telegram</string>
+    <string name="AppName">Plus Messenger</string>
     <string name="AppNameBeta">Telegram Beta</string>
-    <string name="LanguageName">Português (Brasil)</string>
-    <string name="LanguageNameInEnglish">Português (Brasil)</string>
-    <string name="LanguageCode">pt_BR</string>
+    <string name="LanguageName">Português (Portugal)</string>
+    <string name="LanguageNameInEnglish">Portuguese (Portugal)</string>
+    <string name="LanguageCode">pt_PT</string>
     <!--signin view-->
     <string name="YourPhone">Seu número</string>
     <string name="StartText">Confirme o código de seu país e preencha seu número de telefone.</string>
@@ -119,7 +119,7 @@
     <string name="LinkChecking">Verificando nome...</string>
     <string name="LinkAvailable">%1$s está disponível.</string>
     <string name="ChannelMembers">Membros</string>
-    <string name="ChannelBlockedUsers">Usuários bloqueados</string>
+    <string name="ChannelBlockedUsers">Usuários Bloqueados</string>
     <string name="ChannelAdministrators">Administradores</string>
     <string name="ChannelDelete">Apagar Canal</string>
     <string name="ChannelDeleteMenu">Apagar Canal</string>
@@ -307,7 +307,7 @@
     <!--contacts view-->
     <string name="SelectContact">Selecionar Contato</string>
     <string name="NoContacts">Ainda não há contatos</string>
-    <string name="InviteText">Ei, vamos mudar para o Telegram: https://telegram.org/dl</string>
+    <string name="InviteText">Ei, vamos mudar para o Plus Messenger: http://goo.gl/jnmjnZ</string>
     <string name="TodayAt">às</string>
     <string name="YesterdayAt">ontem às</string>
     <string name="Online">online</string>
@@ -345,7 +345,7 @@
     <string name="SetAdminsAllInfo">Todos os membros podem adicionar novos membros, editar o nome e a foto do grupo.</string>
     <string name="SetAdminsNotAllInfo">Somente administradores podem adicionar e remover membros, editar nome foto do grupo.</string>
     <!--group info view-->
-    <string name="SharedMedia">Mídia Compartilhada</string>
+    <string name="SharedMedia">Mídia compartilhada</string>
     <string name="SETTINGS">Configurações</string>
     <string name="AddMember">Adicionar membro</string>
     <string name="SetAdmins">Definir administradores</string>
@@ -384,7 +384,7 @@
     <string name="UsernameInvalidShort">O nome de usuário deve ter pelo menos 5 caracteres.</string>
     <string name="UsernameInvalidLong">O nome de usuário não pode exceder 32 caracteres.</string>
     <string name="UsernameInvalidStartNumber">Desculpe, o nome de usuário não pode começar com um número.</string>
-    <string name="UsernameHelp">Você pode escolher um nome de usuário no <![CDATA[<b>]]>Telegram<![CDATA[</b>]]>. Assim, outras pessoas poderão te encontrar pelo nome de usuário e entrar em contato sem precisar saber seu telefone. <![CDATA[<br><br>]]>Você pode usar <![CDATA[<b>]]>a–z<![CDATA[</b>]]>, <![CDATA[<b>]]>0–9<![CDATA[</b>]]> e underline. O tamanho mínimo é <![CDATA[<b>]]>5<![CDATA[</b>]]> caracteres.</string>
+    <string name="UsernameHelp">Você pode escolher um nome de usuário no <![CDATA[<b>]]>Plus Messenger<![CDATA[</b>]]>. Assim, outras pessoas poderão te encontrar pelo nome de usuário e entrar em contato sem precisar saber seu telefone. <![CDATA[<br><br>]]>Você pode usar <![CDATA[<b>]]>a–z<![CDATA[</b>]]>, <![CDATA[<b>]]>0–9<![CDATA[</b>]]> e underline. O tamanho mínimo é <![CDATA[<b>]]>5<![CDATA[</b>]]> caracteres.</string>
     <string name="UsernameChecking">Verificando nome de usuário...</string>
     <string name="UsernameAvailable">%1$s está disponível.</string>
     <string name="UsernameEmpty">Nenhum</string>
@@ -795,7 +795,7 @@
     <string name="PermissionNoLocation">Telegram precisa acessar sua localização para que você possa compartilhar com seus amigos.</string>
     <string name="PermissionOpenSettings">CONFIGURAÇÕES</string>
     <!--Intro view-->
-    <string name="Page1Title">Telegram</string>
+    <string name="Page1Title">Plus Messenger</string>
     <string name="Page2Title">Rápido</string>
     <string name="Page3Title">Gratuito</string>
     <string name="Page4Title">Seguro</string>
@@ -803,12 +803,12 @@
     <string name="Page6Title">Baseado na nuvem</string>
     <string name="Page7Title">Privado</string>
     <string name="Page1Message">O mais <![CDATA[<b>rápido</b>]]> aplicativo de mensagem do mundo. <![CDATA[<br/>]]>É <![CDATA[<b>gratuito</b>]]> e <![CDATA[<b>seguro</b>]]>.</string>
-    <string name="Page2Message">O <![CDATA[<b>Telegram</b>]]> envia mensagens mais rápido<![CDATA[<br/>]]>que qualquer outro aplicativo.</string>
-    <string name="Page3Message">O <![CDATA[<b>Telegram</b>]]> é grátis para sempre. <![CDATA[<br/>]]>Sem propagandas. Sem taxas.</string>
-    <string name="Page4Message">O <![CDATA[<b>Telegram</b>]]> mantém suas mensagens<![CDATA[<br/>]]>seguras de ataques de hackers.</string>
-    <string name="Page5Message">O <![CDATA[<b>Telegram</b>]]> não possui limites no tamanho<![CDATA[<br/>]]>de seus arquivos e conversas.</string>
-    <string name="Page6Message">O <![CDATA[<b>Telegram</b>]]> permite você acessar suas<![CDATA[<br/>]]> mensagens de múltiplos dispositivos.</string>
-    <string name="Page7Message">O <![CDATA[<b>Telegram</b>]]> possui mensagens fortemente<![CDATA[<br/>]]>encriptadas e podem se auto-destruir.</string>
+    <string name="Page2Message">O <![CDATA[<b>Plus Messenger</b>]]> envia mensagens mais rápido<![CDATA[<br/>]]>que qualquer outro aplicativo.</string>
+    <string name="Page3Message">O <![CDATA[<b>Plus Messenger</b>]]> é grátis para sempre. <![CDATA[<br/>]]>Sem propagandas. Sem taxas.</string>
+    <string name="Page4Message">O <![CDATA[<b>Plus Messenger</b>]]> mantém suas mensagens<![CDATA[<br/>]]>seguras de ataques de hackers.</string>
+    <string name="Page5Message">O <![CDATA[<b>Plus Messenger</b>]]> não possui limites no tamanho<![CDATA[<br/>]]>de seus arquivos e conversas.</string>
+    <string name="Page6Message">O <![CDATA[<b>Plus Messenger</b>]]> permite você acessar suas<![CDATA[<br/>]]> mensagens de múltiplos dispositivos.</string>
+    <string name="Page7Message">O <![CDATA[<b>Plus Messenger</b>]]> possui mensagens fortemente<![CDATA[<br/>]]>encriptadas e podem se auto-destruir.</string>
     <string name="StartMessaging">Comece a conversar</string>
     <!--plural-->
     <string name="Online_zero">%1$d online</string>
@@ -1010,6 +1010,111 @@
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s às %2$s</string>
     <!--update text-->
-    <string name="updateText">Telegram para Android foi atualizado. Novidades na versão 3.3.0:\n\n- Os grupos agora podem ter múltiplos administradores com permissão para editar o nome e a imagem do grupo, adicionar e remover membros.\n- Os grupos que alcançarem 200 usuários podem ser transformados em supergrupos, que permitem até 1000 membros.\n- Os canais contam com um botão de compartilhamento rápido ao lado das mensagens.\n\nVocê pode ver mais sobre os supergrupos e sobre os demais assuntos no nosso blog:\nhttps://telegram.org/blog/supergroups</string>
-    <string name="updateBuild">677</string>
+    <string name="updateText">Plus Messenger para Android foi atualizado. Novidades na versão 3.3.1:\n\n- Os grupos agora podem ter múltiplos administradores com permissão para editar o nome e a imagem do grupo, adicionar e remover membros.\n- Os grupos que alcançarem 200 usuários podem ser transformados em supergrupos, que permitem até 1000 membros.\n- Os canais contam com um botão de compartilhamento rápido ao lado das mensagens.\n\nVocê pode ver mais sobre os supergrupos e sobre os demais assuntos no nosso blog:\nhttps://telegram.org/blog/supergroups</string>
+    <string name="updateBuild">689</string>
+    <!--Telegram+-->
+  <string name="TelegramForAndroid">Plus Messenger para Android</string>
+  <string name="Theming">Temas</string>
+  <string name="colorHexInvalid">O código hexadecimal da cor é inválido!</string>
+    <string name="themeColor">Cor do Tema</string>
+  <string name="ResetThemeSettings">Repor Definições do Tema</string>
+  <string name="ResetThemeSettingsSum">Anular todas as definições do tema</string>
+  <string name="ResetThemeToastText">Repor as definições do tema para a predefinição!</string>
+    <string name="General">Geral</string>
+    <string name="Screens">Ecrãs</string>
+    <string name="MainScreen">Ecrã Principal</string>
+  <string name="ChatScreen">Ecrã de Conversação</string>
+  <string name="ContactsScreen">Ecrã dos Contactos</string>
+    <string name="Header">Cabeçalho</string>
+  <string name="Rows">Filas</string>
+    <string name="ChatList">Lista de Conversas</string>
+    <string name="ChatsList">Lista de Conversas</string>
+    <string name="ContactsList">Lista de Contactos</string>
+  <string name="HeaderColor">Cor do Cabeçalho</string>
+  <string name="NameColor">Cor do Nome</string>
+  <string name="NameSize">Tamanho do Nome</string>
+  <string name="MessageColor">Cor da Mensagem</string>
+  <string name="MessageSize">Tamanho da Mensagem</string>
+    <string name="TimeDateColor">Cor da Data/Hora</string>
+    <string name="TimeDateSize">Tamanho da Data/Hora</string>
+    <string name="CountColor">Cor da Contagem</string>
+    <string name="CountSize">Tamanho da Contagem</string>
+    <string name="RowColor">Cor da Linha</string>
+    <string name="CountBGColor">Cor de fundo da Contagem</string>
+  <string name="StatusColor">Cor do Estado</string>
+  <string name="StatusSize">Tamanho do Estado</string>
+    <string name="RBubbleColor">Cor da Bolha Direita</string>
+    <string name="LBubbleColor">Cor da Bolha Esquerda</string>
+    <string name="DateColor">Cor da Data</string>
+    <string name="DateSize">Tamanho da Data</string>
+    <string name="DateBubbleColor">Cor da Bolha da Data</string>
+  <string name="RTextColor">Cor do texto à direita</string>
+    <string name="LTextColor">Cor do Texto da Esquerdaa</string>
+    <string name="RTimeColor">Cor do Texto da Direita</string>
+    <string name="LTimeColor">Cor da Hora da Esquerda</string>
+    <string name="TimeSize">Tamanho da Hora</string>
+    <string name="EditTextColor">Cor do Texto Introduzido</string>
+    <string name="EditTextSize">Tamanho do Texto Introduzido</string>
+  <string name="EditTextBGColor">Cor de Fundo do Texto de Entrada</string>
+  <string name="EmojiViewBGColor">Cor de Fundo do Emoji</string>
+    <string name="EmojiViewTabColor">Cor da Tab dos Emoji</string>
+  <string name="OnlineColor">Cor do Estado On-line</string>
+    <string name="ChatMusic">Música</string>
+    <string name="SaveTheme">Guardar Tema</string>
+  <string name="SaveThemeSum">Guarde o seu tema na pasta Telegram/Themes</string>
+  <string name="SaveThemeToastText">Tema guardado!</string>
+    <string name="SavedTo">%1$s guardado em %2$s</string>
+  <string name="SaveErrorMsg0">O tema ainda não foi criado. Por favor, aplique primeiro qualquer MOD.</string>
+    <string name="restoreOkMsg">Preferências restauradas do cartão SD</string>
+  <string name="restoreErrorMsg">Não foi encontrado nenhum ficheiro de preferências em %s</string>
+    <string name="NoMediaMessage">Não foi encontrado nenhum cartão SD.</string>
+  <string name="EnterName">Inserir Nome</string>
+    <string name="Themes">Temas</string>
+    <string name="ApplyTheme">Aplicar Tema</string>
+  <string name="ApplyThemeSum">Aplicar tema xml a partir de uma pasta local</string>
+  <string name="MemberColor">Cor do Membro</string>
+    <string name="ChecksColor">Cor de Ticks</string>
+  <string name="MuteColor">Cor de Silenciar</string>
+    <string name="SendLogs">Enviar Registos</string>
+    <string name="SendLogsEmpty">Não existem registos</string>
+  <string name="SendIcon">Enviar Ícone</string>
+  <string name="HideMobile">Ocultar o número de telemóvel do menu</string>
+    <string name="FloatingPencilColor">Cor do Lápis Flutuante</string>
+    <string name="FloatingBGColor">Cor de Fundo do Botão Flutuante</string>
+    <string name="Community">Comunidade G+</string>
+  <string name="TypingColor">Cor da Digitação</string>
+  <string name="EditTextIconsColor">Cor dos ícones do texto de entrada</string>
+  <string name="NavigationDrawer">Menu de Navegação</string>
+  <string name="OptionsList">Lista de Opções</string>
+  <string name="ListColor">Cor da Lista</string>
+  <string name="OwnNameSize">Tamanho do Nome</string>
+  <string name="PhoneColor">Cor do Dispositivo</string>
+  <string name="PhoneSize">Tamanho do Dispositivo</string>
+  <string name="AvatarColor">Cor do Avatar</string>
+  <string name="IconColor">Opção da cor do ícone</string>
+  <string name="OptionColor">Cor da opção</string>
+  <string name="OptionSize">Tamanho da opção</string>
+  <string name="VersionColor">Cor da versão</string>
+  <string name="VersionSize">Tamanho da versão</string>
+  <string name="HeaderTitleColor">Cor do título do cabeçalho</string>
+  <string name="HeaderIconsColor">Cor dos ícones do cabeçalho</string>
+  <string name="DividerColor">Cor do separador</string>
+  <string name="AvatarRadius">Raio do Avatar</string>
+  <string name="SetMemberColor">Defina a cor do membro</string>
+  <string name="ForwardNameColor">Cor do nome de encaminhar</string>
+  <string name="HeaderTitle">Título do cabeçalho</string>
+  <string name="ForwardNoQuote">Encaminhar sem citação</string>
+  <string name="DisableMessageClick">Desativar a janela ao clicar</string>
+  <string name="ProfileScreen">Ecrã de Perfil do Grupo/Contacto</string>
+  <string name="HideBackground">Ocultar fundo personalizado</string>
+  <string name="RLinkColor">Cor da hiperligação direita</string>
+  <string name="LLinkColor">Cor da hiperligação esquerda</string>
+  <string name="ThemeApplied">Tema aplicado!</string>
+  <string name="ClickOkToRestart">Clique em \'Aceitar\' para reiniciar a app.</string>
+  <string name="ShowAndroidEmoji">Mostrar emoji de telemóvel</string>
+  <string name="KeepOriginalFilename">Manter nome de ficheiro original</string>
+  <string name="KeepOriginalFilenameHelp">Em vez de serem usados apenas números, os ficheiros serão guardados usando o formato name_date</string>
+  <string name="AvatarSize">Tamanho do Avatar</string>
+  <string name="AvatarAlignTop">Alinhar avatar no topo</string>
+  <string name="AvatarMarginLeft">Avatar na margem esquerda</string>
 </resources>

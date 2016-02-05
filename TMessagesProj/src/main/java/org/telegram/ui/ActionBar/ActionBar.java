@@ -186,7 +186,16 @@ public class ActionBar extends FrameLayout {
         }
         return titleTextView.getText().toString();
     }
-
+    //Plus
+    public void setTitleColor(int color) {
+        if (titleTextView == null) {
+            createTitleTextView();
+        }
+        if (titleTextView != null) {
+            titleTextView.setTextColor(color);
+        }
+    }
+	
     public ActionBarMenu createMenu() {
         if (menu != null) {
             return menu;
@@ -247,24 +256,24 @@ public class ActionBar extends FrameLayout {
             animatorSetProxy.addListener(new AnimatorListenerAdapterProxy() {
                 @Override
                 public void onAnimationStart(Object animation) {
-                    actionMode.setVisibility(VISIBLE);
-                    if (occupyStatusBar && actionModeTop != null) {
-                        actionModeTop.setVisibility(VISIBLE);
-                    }
+        actionMode.setVisibility(VISIBLE);
+        if (occupyStatusBar && actionModeTop != null) {
+            actionModeTop.setVisibility(VISIBLE);
+        }
                 }
 
                 @Override
                 public void onAnimationEnd(Object animation) {
-                    if (titleTextView != null) {
-                        titleTextView.setVisibility(INVISIBLE);
-                    }
-                    if (subTitleTextView != null) {
-                        subTitleTextView.setVisibility(INVISIBLE);
-                    }
-                    if (menu != null) {
-                        menu.setVisibility(INVISIBLE);
-                    }
-                }
+        if (titleTextView != null) {
+            titleTextView.setVisibility(INVISIBLE);
+        }
+        if (subTitleTextView != null) {
+            subTitleTextView.setVisibility(INVISIBLE);
+        }
+        if (menu != null) {
+            menu.setVisibility(INVISIBLE);
+        }
+    }
             });
             animatorSetProxy.start();
         } else {
@@ -568,6 +577,7 @@ public class ActionBar extends FrameLayout {
         if (backButtonImageView != null) {
             backButtonImageView.setBackgroundResource(itemsBackgroundResourceId);
         }
+        setBackgroundColor(AndroidUtilities.getIntColor("themeColor")); //Plus
     }
 
     public void setCastShadows(boolean value) {

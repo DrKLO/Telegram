@@ -11,9 +11,11 @@ package org.telegram.ui.ActionBar;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.drawable.Drawable;
+import android.graphics.drawable.GradientDrawable;
 import android.os.Build;
 import android.view.Gravity;
 import android.view.MotionEvent;
@@ -26,6 +28,7 @@ import android.widget.FrameLayout;
 import android.widget.ListView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
 import org.telegram.messenger.AnimationCompat.AnimatorListenerAdapterProxy;
@@ -90,27 +93,27 @@ public class DrawerLayoutContainer extends FrameLayout {
     @SuppressLint("NewApi")
     private void dispatchChildInsets(View child, Object insets, int drawerGravity) {
         WindowInsets wi = (WindowInsets) insets;
-        if (drawerGravity == Gravity.LEFT) {
-            wi = wi.replaceSystemWindowInsets(wi.getSystemWindowInsetLeft(), wi.getSystemWindowInsetTop(), 0, wi.getSystemWindowInsetBottom());
-        } else if (drawerGravity == Gravity.RIGHT) {
-            wi = wi.replaceSystemWindowInsets(0, wi.getSystemWindowInsetTop(), wi.getSystemWindowInsetRight(), wi.getSystemWindowInsetBottom());
+            if (drawerGravity == Gravity.LEFT) {
+                wi = wi.replaceSystemWindowInsets(wi.getSystemWindowInsetLeft(), wi.getSystemWindowInsetTop(), 0, wi.getSystemWindowInsetBottom());
+            } else if (drawerGravity == Gravity.RIGHT) {
+                wi = wi.replaceSystemWindowInsets(0, wi.getSystemWindowInsetTop(), wi.getSystemWindowInsetRight(), wi.getSystemWindowInsetBottom());
+            }
+            child.dispatchApplyWindowInsets(wi);
         }
-        child.dispatchApplyWindowInsets(wi);
-    }
 
     @SuppressLint("NewApi")
     private void applyMarginInsets(MarginLayoutParams lp, Object insets, int drawerGravity, boolean topOnly) {
         WindowInsets wi = (WindowInsets) insets;
-        if (drawerGravity == Gravity.LEFT) {
-            wi = wi.replaceSystemWindowInsets(wi.getSystemWindowInsetLeft(), wi.getSystemWindowInsetTop(), 0, wi.getSystemWindowInsetBottom());
-        } else if (drawerGravity == Gravity.RIGHT) {
-            wi = wi.replaceSystemWindowInsets(0, wi.getSystemWindowInsetTop(), wi.getSystemWindowInsetRight(), wi.getSystemWindowInsetBottom());
+            if (drawerGravity == Gravity.LEFT) {
+                wi = wi.replaceSystemWindowInsets(wi.getSystemWindowInsetLeft(), wi.getSystemWindowInsetTop(), 0, wi.getSystemWindowInsetBottom());
+            } else if (drawerGravity == Gravity.RIGHT) {
+                wi = wi.replaceSystemWindowInsets(0, wi.getSystemWindowInsetTop(), wi.getSystemWindowInsetRight(), wi.getSystemWindowInsetBottom());
+            }
+            lp.leftMargin = wi.getSystemWindowInsetLeft();
+            lp.topMargin = topOnly ? 0 : wi.getSystemWindowInsetTop();
+            lp.rightMargin = wi.getSystemWindowInsetRight();
+            lp.bottomMargin = wi.getSystemWindowInsetBottom();
         }
-        lp.leftMargin = wi.getSystemWindowInsetLeft();
-        lp.topMargin = topOnly ? 0 : wi.getSystemWindowInsetTop();
-        lp.rightMargin = wi.getSystemWindowInsetRight();
-        lp.bottomMargin = wi.getSystemWindowInsetBottom();
-    }
 
     private int getTopInset(Object insets) {
         if (Build.VERSION.SDK_INT >= 21) {
@@ -255,8 +258,8 @@ public class DrawerLayoutContainer extends FrameLayout {
         allowOpenDrawer = value;
         if (!allowOpenDrawer && drawerPosition != 0) {
             if (!animated) {
-                setDrawerPosition(0);
-                onDrawerAnimationEnd(false);
+            setDrawerPosition(0);
+            onDrawerAnimationEnd(false);
             } else {
                 closeDrawer(true);
             }
@@ -392,11 +395,11 @@ public class DrawerLayoutContainer extends FrameLayout {
             final LayoutParams lp = (LayoutParams) child.getLayoutParams();
 
             try {
-                if (drawerLayout != child) {
-                    child.layout(lp.leftMargin, lp.topMargin, lp.leftMargin + child.getMeasuredWidth(), lp.topMargin + child.getMeasuredHeight());
-                } else {
-                    child.layout(-child.getMeasuredWidth() + (int)drawerPosition, lp.topMargin, (int)drawerPosition, lp.topMargin + child.getMeasuredHeight());
-                }
+            if (drawerLayout != child) {
+                child.layout(lp.leftMargin, lp.topMargin, lp.leftMargin + child.getMeasuredWidth(), lp.topMargin + child.getMeasuredHeight());
+            } else {
+                child.layout(-child.getMeasuredWidth() + (int)drawerPosition, lp.topMargin, (int)drawerPosition, lp.topMargin + child.getMeasuredHeight());
+            }
             } catch (Exception e) {
                 FileLog.e("tmessages", e);
             }
@@ -450,6 +453,38 @@ public class DrawerLayoutContainer extends FrameLayout {
                 child.measure(drawerWidthSpec, drawerHeightSpec);
             }
         }
+        //getDrawerLayout().setBackgroundColor(AndroidUtilities.getIntDef("drawerListColor",0xffffffff));  //Plus
+        updateListBG();
+    }
+
+    private void updateListBG(){
+        SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+        int mainColor = themePrefs.getInt("drawerListColor", 0xffffffff);
+        int value = themePrefs.getInt("drawerRowGradient", 0);
+        boolean b = true;//themePrefs.getBoolean("drawerRowGradientListCheck", false);
+        if(value > 0 && b) {
+            GradientDrawable.Orientation go;
+            switch(value) {
+                case 2:
+                    go = GradientDrawable.Orientation.LEFT_RIGHT;
+                    break;
+                case 3:
+                    go = GradientDrawable.Orientation.TL_BR;
+                    break;
+                case 4:
+                    go = GradientDrawable.Orientation.BL_TR;
+                    break;
+                default:
+                    go = GradientDrawable.Orientation.TOP_BOTTOM;
+            }
+
+            int gradColor = themePrefs.getInt("drawerRowGradientColor", 0xffffffff);
+            int[] colors = new int[]{mainColor, gradColor};
+            GradientDrawable gd = new GradientDrawable(go, colors);
+            getDrawerLayout().setBackgroundDrawable(gd);
+        }else{
+            getDrawerLayout().setBackgroundColor(mainColor);
+        }
     }
 
     @Override
@@ -480,16 +515,16 @@ public class DrawerLayoutContainer extends FrameLayout {
                 }
             }
             if (clipLeft != 0) {
-                canvas.clipRect(clipLeft, 0, clipRight, getHeight());
-            }
+            canvas.clipRect(clipLeft, 0, clipRight, getHeight());
+        }
         }
         final boolean result = super.drawChild(canvas, child, drawingTime);
         canvas.restoreToCount(restoreCount);
 
         if (scrimOpacity > 0 && drawingContent) {
             if (indexOfChild(child) == lastVisibleChild) {
-                scrimPaint.setColor((int) (((0x99000000 & 0xff000000) >>> 24) * scrimOpacity) << 24);
-                canvas.drawRect(clipLeft, 0, clipRight, getHeight(), scrimPaint);
+            scrimPaint.setColor((int) (((0x99000000 & 0xff000000) >>> 24) * scrimOpacity) << 24);
+            canvas.drawRect(clipLeft, 0, clipRight, getHeight(), scrimPaint);
             }
         } else if (shadowLeft != null) {
             final float alpha = Math.max(0, Math.min(drawerPosition / AndroidUtilities.dp(20), 1.0f));

@@ -39,6 +39,14 @@ public class HashtagSearchCell extends TextView {
         setBackgroundResource(R.drawable.list_selector);
     }
 
+    public void setBackgroundColor(int color) {
+        setBackgroundColor(color);
+    }
+
+    public void setDividerColor(int color) {
+        paint.setColor(color);
+    }
+
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         if (Build.VERSION.SDK_INT >= 21 && getBackground() != null) {

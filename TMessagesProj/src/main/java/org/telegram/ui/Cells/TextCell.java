@@ -42,7 +42,8 @@ public class TextCell extends FrameLayout {
         addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 16 : 71, 0, LocaleController.isRTL ? 71 : 16, 0));
 
         valueTextView = new TextView(context);
-        valueTextView.setTextColor(0xff2f8cc9);
+        //valueTextView.setTextColor(0xff2f8cc9);
+        valueTextView.setTextColor(AndroidUtilities.getIntColor("themeColor"));
         valueTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         valueTextView.setLines(1);
         valueTextView.setMaxLines(1);
@@ -82,6 +83,22 @@ public class TextCell extends FrameLayout {
         valueTextView.setVisibility(INVISIBLE);
         valueImageView.setVisibility(INVISIBLE);
         imageView.setPadding(0, AndroidUtilities.dp(7), 0, 0);
+    }
+
+    public void setTextSize(int size) {
+        textView.setTextSize(size);
+    }
+
+    public void setTextAndIcon(String text, Drawable drawable) {
+        textView.setText(text);
+        imageView.setImageDrawable(drawable);
+        imageView.setVisibility(VISIBLE);
+        valueTextView.setVisibility(GONE);
+        valueImageView.setVisibility(GONE);
+    }
+
+    public void setValueColor(int color) {
+        valueTextView.setTextColor(color);
     }
 
     public void setTextAndValue(String text, String value) {

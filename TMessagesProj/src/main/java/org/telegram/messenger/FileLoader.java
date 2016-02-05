@@ -12,9 +12,12 @@ import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 
 import java.io.File;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.Locale;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
 
@@ -39,6 +42,7 @@ public class FileLoader {
     public static final int MEDIA_DIR_VIDEO = 2;
     public static final int MEDIA_DIR_DOCUMENT = 3;
     public static final int MEDIA_DIR_CACHE = 4;
+    public static final int MEDIA_DIR_THEME = 5;
 
     private HashMap<Integer, File> mediaDirs = null;
     private volatile DispatchQueue fileLoaderQueue = new DispatchQueue("fileUploadQueue");
@@ -614,39 +618,39 @@ public class FileLoader {
             if (attach instanceof TLRPC.Video) {
                 TLRPC.Video video = (TLRPC.Video) attach;
                 if (video.key != null) {
-                    dir = getInstance().getDirectory(MEDIA_DIR_CACHE);
-                } else {
-                    dir = getInstance().getDirectory(MEDIA_DIR_VIDEO);
-                }
-            } else if (attach instanceof TLRPC.Document) {
+                dir = getInstance().getDirectory(MEDIA_DIR_CACHE);
+            } else {
+                dir = getInstance().getDirectory(MEDIA_DIR_VIDEO);
+            }
+        } else if (attach instanceof TLRPC.Document) {
                 TLRPC.Document document = (TLRPC.Document) attach;
                 if (document.key != null) {
-                    dir = getInstance().getDirectory(MEDIA_DIR_CACHE);
-                } else {
-                    dir = getInstance().getDirectory(MEDIA_DIR_DOCUMENT);
-                }
-            } else if (attach instanceof TLRPC.PhotoSize) {
+                dir = getInstance().getDirectory(MEDIA_DIR_CACHE);
+            } else {
+                dir = getInstance().getDirectory(MEDIA_DIR_DOCUMENT);
+            }
+        } else if (attach instanceof TLRPC.PhotoSize) {
                 TLRPC.PhotoSize photoSize = (TLRPC.PhotoSize) attach;
                 if (photoSize.location == null || photoSize.location.key != null || photoSize.location.volume_id == Integer.MIN_VALUE && photoSize.location.local_id < 0 || photoSize.size < 0) {
-                    dir = getInstance().getDirectory(MEDIA_DIR_CACHE);
-                } else {
-                    dir = getInstance().getDirectory(MEDIA_DIR_IMAGE);
-                }
-            } else if (attach instanceof TLRPC.Audio) {
+                dir = getInstance().getDirectory(MEDIA_DIR_CACHE);
+            } else {
+                dir = getInstance().getDirectory(MEDIA_DIR_IMAGE);
+            }
+        } else if (attach instanceof TLRPC.Audio) {
                 TLRPC.Audio audio = (TLRPC.Audio) attach;
                 if (audio.key != null) {
-                    dir = getInstance().getDirectory(MEDIA_DIR_CACHE);
-                } else {
-                    dir = getInstance().getDirectory(MEDIA_DIR_AUDIO);
-                }
-            } else if (attach instanceof TLRPC.FileLocation) {
+                dir = getInstance().getDirectory(MEDIA_DIR_CACHE);
+            } else {
+                dir = getInstance().getDirectory(MEDIA_DIR_AUDIO);
+            }
+        } else if (attach instanceof TLRPC.FileLocation) {
                 TLRPC.FileLocation fileLocation = (TLRPC.FileLocation) attach;
                 if (fileLocation.key != null || fileLocation.volume_id == Integer.MIN_VALUE && fileLocation.local_id < 0) {
-                    dir = getInstance().getDirectory(MEDIA_DIR_CACHE);
-                } else {
-                    dir = getInstance().getDirectory(MEDIA_DIR_IMAGE);
-                }
+                dir = getInstance().getDirectory(MEDIA_DIR_CACHE);
+            } else {
+                dir = getInstance().getDirectory(MEDIA_DIR_IMAGE);
             }
+        }
         }
         if (dir == null) {
             return new File("");
@@ -671,9 +675,9 @@ public class FileLoader {
             if (byMinSide) {
                 int currentSide = obj.h >= obj.w ? obj.w : obj.h;
                 if (closestObject == null || side > 100 && closestObject.location != null && closestObject.location.dc_id == Integer.MIN_VALUE || obj instanceof TLRPC.TL_photoCachedSize || side > lastSide && lastSide < currentSide) {
-                    closestObject = obj;
-                    lastSide = currentSide;
-                }
+                closestObject = obj;
+                lastSide = currentSide;
+            }
             } else {
                 int currentSide = obj.w >= obj.h ? obj.w : obj.h;
                 if (closestObject == null || side > 100 && closestObject.location != null && closestObject.location.dc_id == Integer.MIN_VALUE || obj instanceof TLRPC.TL_photoCachedSize || currentSide <= side && lastSide < currentSide) {
@@ -726,6 +730,7 @@ public class FileLoader {
                 docExt = docExt.substring(idx);
             }
             if (docExt.length() > 1) {
+                if(ApplicationLoader.KEEP_ORIGINAL_FILENAME && !docExt.contains("webp"))return getDocName(document); //Plus
                 return document.dc_id + "_" + document.id + docExt;
             } else {
                 return document.dc_id + "_" + document.id;
@@ -744,6 +749,65 @@ public class FileLoader {
             return location.volume_id + "_" + location.local_id + "." + (ext != null ? ext : "jpg");
         }
         return "";
+    }
+    //Plus
+    public static String getAttachFileName(TLObject attach, boolean out) {
+        if (attach instanceof TLRPC.Video) {
+            TLRPC.Video video = (TLRPC.Video) attach;
+            return video.dc_id + "_" + video.id + "." + ("mp4");
+        } else if (attach instanceof TLRPC.Document) {
+            TLRPC.Document document = (TLRPC.Document) attach;
+            String docExt = getDocumentFileName(document);
+            int idx;
+            if (docExt == null || (idx = docExt.lastIndexOf(".")) == -1) {
+                docExt = "";
+            } else {
+                docExt = docExt.substring(idx);
+            }
+            if (docExt.length() > 1) {
+                if(!out && ApplicationLoader.KEEP_ORIGINAL_FILENAME && !docExt.contains("webp"))return getDocName(document);
+                return document.dc_id + "_" + document.id + docExt;
+            } else {
+                return document.dc_id + "_" + document.id;
+            }
+        } else if (attach instanceof TLRPC.PhotoSize) {
+            TLRPC.PhotoSize photo = (TLRPC.PhotoSize) attach;
+            if (photo.location == null) {
+                return "";
+            }
+            return photo.location.volume_id + "_" + photo.location.local_id + "." + ( "jpg");
+        } else if (attach instanceof TLRPC.Audio) {
+            TLRPC.Audio audio = (TLRPC.Audio) attach;
+            return audio.dc_id + "_" + audio.id + "." + ( "ogg");
+        } else if (attach instanceof TLRPC.FileLocation) {
+            TLRPC.FileLocation location = (TLRPC.FileLocation) attach;
+            return location.volume_id + "_" + location.local_id + "." + ( "jpg");
+        }
+        return "";
+    }
+
+    //Plus
+    public static String getDocName(TLRPC.Document document) {
+        String name = getDocumentFileName(document);
+        //boolean org = false;
+        //if(org)return name;
+        String date = document.date +"";
+        String ext = name;
+        int idx = -1;
+        if (ext == null || (idx = ext.lastIndexOf(".")) == -1) {
+            ext = "";
+        } else {
+            ext = ext.substring(idx);
+        }
+        int pos = name.lastIndexOf(".");
+        SimpleDateFormat formatter  = new SimpleDateFormat("ddMMyyHHmmss", Locale.US);
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTimeInMillis(document.date * 1000L);
+        date = formatter.format(calendar.getTime());
+        if (pos > 0) {
+            name = name.substring(0, pos) + "_" +  date + ext;
+        }
+        return name;
     }
 
     public void deleteFiles(final ArrayList<File> files) {

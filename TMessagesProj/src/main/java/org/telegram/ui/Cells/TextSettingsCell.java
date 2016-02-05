@@ -9,8 +9,10 @@
 package org.telegram.ui.Cells;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.graphics.drawable.Drawable;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -20,6 +22,7 @@ import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.ApplicationLoader;
 import org.telegram.ui.Components.LayoutHelper;
 
 public class TextSettingsCell extends FrameLayout {
@@ -47,10 +50,11 @@ public class TextSettingsCell extends FrameLayout {
         textView.setSingleLine(true);
         textView.setEllipsize(TextUtils.TruncateAt.END);
         textView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL);
-        addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, 17, 0, 17, 0));
+        addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, 17, 0, 45, 0));
 
         valueTextView = new TextView(context);
-        valueTextView.setTextColor(0xff2f8cc9);
+        //valueTextView.setTextColor(0xff2f8cc9);
+        valueTextView.setTextColor(AndroidUtilities.getIntColor("themeColor"));
         valueTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         valueTextView.setLines(1);
         valueTextView.setMaxLines(1);
@@ -67,6 +71,7 @@ public class TextSettingsCell extends FrameLayout {
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        setTheme();
         setMeasuredDimension(MeasureSpec.getSize(widthMeasureSpec), AndroidUtilities.dp(48) + (needDivider ? 1 : 0));
 
         int availableWidth = getMeasuredWidth() - getPaddingLeft() - getPaddingRight() - AndroidUtilities.dp(34);
@@ -85,6 +90,10 @@ public class TextSettingsCell extends FrameLayout {
 
     public void setTextColor(int color) {
         textView.setTextColor(color);
+    }
+
+    public void setDividerColor(int color) {
+        paint.setColor(color);
     }
 
     public void setText(String text, boolean divider) {
@@ -122,10 +131,48 @@ public class TextSettingsCell extends FrameLayout {
         setWillNotDraw(!divider);
     }
 
+    public void setTextAndIcon(String text, Drawable resDr, boolean divider) {
+        textView.setText(text);
+        valueTextView.setVisibility(INVISIBLE);
+        if (resDr != null) {
+            valueImageView.setVisibility(VISIBLE);
+            valueImageView.setImageDrawable(resDr);
+        } else {
+            valueImageView.setVisibility(INVISIBLE);
+        }
+        needDivider = divider;
+        setWillNotDraw(!divider);
+    }
+
     @Override
     protected void onDraw(Canvas canvas) {
         if (needDivider) {
             canvas.drawLine(getPaddingLeft(), getHeight() - 1, getWidth() - getPaddingRight(), getHeight() - 1, paint);
         }
+    }
+
+    private void setTheme(){
+        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+        int defColor = preferences.getInt("themeColor", AndroidUtilities.defColor);
+
+        int bgColor = preferences.getInt("prefBGColor", 0xffffffff);
+        int divColor = preferences.getInt("prefDividerColor", 0xffd9d9d9);
+        int titleColor = preferences.getInt("prefTitleColor", 0xff212121);
+        int sColor = preferences.getInt("prefSectionColor", defColor);
+        String tag = getTag() != null ? getTag().toString() : "";
+        if(tag.contains("Profile")){
+            bgColor = preferences.getInt("profileRowColor", 0xffffffff);
+            setBackgroundColor(bgColor);
+            if(bgColor != 0xffffffff)paint.setColor(bgColor);
+            titleColor = preferences.getInt("profileTitleColor", 0xff212121);
+            textView.setTextColor(titleColor);
+            if(bgColor != 0xffffffff)valueTextView.setTextColor(0x00000000);
+        }else{
+            setBackgroundColor(bgColor);
+            textView.setTextColor(titleColor);
+            paint.setColor(divColor);
+            valueTextView.setTextColor(sColor);
+        }
+
     }
 }

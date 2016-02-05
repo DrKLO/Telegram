@@ -15,16 +15,19 @@ import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.PixelFormat;
+import android.graphics.PorterDuff;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
+import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -49,40 +52,40 @@ import android.widget.Scroller;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.ImageLoader;
-import org.telegram.messenger.MessagesStorage;
-import org.telegram.messenger.UserObject;
-import org.telegram.messenger.query.SharedMediaQuery;
-import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.FileLoader;
-import org.telegram.messenger.FileLog;
-import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.MediaController;
-import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.NotificationCenter;
-import org.telegram.messenger.R;
-import org.telegram.tgnet.ConnectionsManager;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.messenger.UserConfig;
-import org.telegram.messenger.MessageObject;
-import org.telegram.messenger.Utilities;
-import org.telegram.ui.Adapters.MentionsAdapter;
 import org.telegram.messenger.AnimationCompat.AnimatorListenerAdapterProxy;
 import org.telegram.messenger.AnimationCompat.AnimatorSetProxy;
 import org.telegram.messenger.AnimationCompat.ObjectAnimatorProxy;
 import org.telegram.messenger.AnimationCompat.ViewProxy;
+import org.telegram.messenger.ApplicationLoader;
+import org.telegram.messenger.FileLoader;
+import org.telegram.messenger.FileLog;
+import org.telegram.messenger.ImageLoader;
+import org.telegram.messenger.ImageReceiver;
+import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MediaController;
+import org.telegram.messenger.MessageObject;
+import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.MessagesStorage;
+import org.telegram.messenger.NotificationCenter;
+import org.telegram.messenger.R;
+import org.telegram.messenger.UserConfig;
+import org.telegram.messenger.UserObject;
+import org.telegram.messenger.Utilities;
+import org.telegram.messenger.query.SharedMediaQuery;
+import org.telegram.tgnet.ConnectionsManager;
+import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
+import org.telegram.ui.Adapters.MentionsAdapter;
 import org.telegram.ui.Components.CheckBox;
 import org.telegram.ui.Components.ClippingImageView;
-import org.telegram.messenger.ImageReceiver;
 import org.telegram.ui.Components.GifDrawable;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.PhotoCropView;
 import org.telegram.ui.Components.PhotoFilterView;
-import org.telegram.ui.Components.PickerBottomLayout;
 import org.telegram.ui.Components.PhotoViewerCaptionEnterView;
+import org.telegram.ui.Components.PickerBottomLayout;
 import org.telegram.ui.Components.SizeNotifierFrameLayoutPhoto;
 
 import java.io.File;
@@ -934,10 +937,41 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         windowLayoutParams.flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
 
         actionBar = new ActionBar(activity);
-        actionBar.setBackgroundColor(0x7F000000);
+        //actionBar.setBackgroundColor(0x7F000000);
+        SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+        int def = themePrefs.getInt("themeColor", AndroidUtilities.defColor);
+
+        int hColor = themePrefs.getInt("chatHeaderColor", def);
+        actionBar.setBackgroundColor(hColor);
+        int val = themePrefs.getInt("chatHeaderGradient", 0);
+        if(val > 0) {
+            GradientDrawable.Orientation go;
+            switch(val) {
+                case 2:
+                    go = GradientDrawable.Orientation.LEFT_RIGHT;
+                    break;
+                case 3:
+                    go = GradientDrawable.Orientation.TL_BR;
+                    break;
+                case 4:
+                    go = GradientDrawable.Orientation.BL_TR;
+                    break;
+                default:
+                    go = GradientDrawable.Orientation.TOP_BOTTOM;
+            }
+            int gradColor = themePrefs.getInt("chatHeaderGradientColor", def);
+            int[] colors = new int[]{hColor, gradColor};
+            GradientDrawable gd = new GradientDrawable(go, colors);
+            actionBar.setBackgroundDrawable(gd);
+        }
         actionBar.setOccupyStatusBar(false);
         actionBar.setItemsBackground(R.drawable.bar_selector_white);
-        actionBar.setBackButtonImage(R.drawable.ic_ab_back);
+        //actionBar.setBackButtonImage(R.drawable.ic_ab_back);
+        Drawable back = parentActivity.getResources().getDrawable(R.drawable.ic_ab_back);
+        int iconsColor = themePrefs.getInt("chatHeaderIconsColor", 0xffffffff);
+        back.setColorFilter(iconsColor, PorterDuff.Mode.MULTIPLY);
+        actionBar.setBackButtonDrawable(back);
+        actionBar.setTitleColor(iconsColor);
         actionBar.setTitle(LocaleController.formatString("Of", R.string.Of, 1, 1));
         containerView.addView(actionBar, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
@@ -1148,7 +1182,10 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
 
         ActionBarMenu menu = actionBar.createMenu();
 
-        menuItem = menu.addItem(0, R.drawable.ic_ab_other);
+        //menuItem = menu.addItem(0, R.drawable.ic_ab_other);
+        Drawable dots = parentActivity.getResources().getDrawable(R.drawable.ic_ab_other);
+        dots.setColorFilter(AndroidUtilities.getIntDef("chatHeaderIconsColor", 0xffffffff), PorterDuff.Mode.MULTIPLY);
+        menuItem = menu.addItem(0, dots);
         menuItem.addSubItem(gallery_menu_showall, LocaleController.getString("ShowAllMedia", R.string.ShowAllMedia), 0);
         menuItem.addSubItem(gallery_menu_save, LocaleController.getString("SaveToGallery", R.string.SaveToGallery), 0);
         menuItem.addSubItem(gallery_menu_delete, LocaleController.getString("Delete", R.string.Delete), 0);

@@ -9,8 +9,10 @@
 package org.telegram.ui.Cells;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.graphics.PorterDuff;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.text.Layout;
@@ -21,16 +23,17 @@ import android.view.MotionEvent;
 
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.UserObject;
 import org.telegram.messenger.R;
+import org.telegram.messenger.UserConfig;
+import org.telegram.messenger.UserObject;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
-import org.telegram.messenger.UserConfig;
 import org.telegram.ui.Components.AvatarDrawable;
 
 public class ProfileSearchCell extends BaseCell {
@@ -94,7 +97,9 @@ public class ProfileSearchCell extends BaseCell {
         if (namePaint == null) {
             namePaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
             namePaint.setTextSize(AndroidUtilities.dp(17));
-            namePaint.setColor(0xff212121);
+            //namePaint.setColor(0xff212121);
+            SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+            namePaint.setColor(themePrefs.getInt("chatsNameColor", 0xff212121));
             namePaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
 
             nameEncryptedPaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
@@ -125,11 +130,20 @@ public class ProfileSearchCell extends BaseCell {
             countDrawableGrey = getResources().getDrawable(R.drawable.dialogs_badge2);
             checkDrawable = getResources().getDrawable(R.drawable.check_list);
             botDrawable = getResources().getDrawable(R.drawable.bot_list);
+            updateTheme();
         }
 
         avatarImage = new ImageReceiver(this);
         avatarImage.setRoundRadius(AndroidUtilities.dp(26));
         avatarDrawable = new AvatarDrawable();
+    }
+
+    private void updateTheme(){
+        SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+        int tColor = themePrefs.getInt("themeColor", AndroidUtilities.defColor);
+        countPaint.setTextSize(AndroidUtilities.dp(themePrefs.getInt("chatsCountSize", 13)));
+        countPaint.setColor(themePrefs.getInt("chatsCountColor", 0xffffffff));
+        countDrawable.setColorFilter(themePrefs.getInt("chatsCountBGColor", tColor), PorterDuff.Mode.SRC_IN);
     }
 
     @Override
@@ -218,9 +232,9 @@ public class ProfileSearchCell extends BaseCell {
                         drawNameBroadcast = true;
                         nameLockTop = AndroidUtilities.dp(28.5f);
                     } else {
-                        drawNameGroup = true;
-                        nameLockTop = AndroidUtilities.dp(30);
-                    }
+                    drawNameGroup = true;
+                    nameLockTop = AndroidUtilities.dp(30);
+                }
                 }
                 drawCheck = chat.verified;
                 if (!LocaleController.isRTL) {
@@ -338,12 +352,12 @@ public class ProfileSearchCell extends BaseCell {
                 if (user.bot) {
                     onlineString = LocaleController.getString("Bot", R.string.Bot);
                 } else {
-                    onlineString = LocaleController.formatUserStatus(user);
-                    if (user != null && (user.id == UserConfig.getClientUserId() || user.status != null && user.status.expires > ConnectionsManager.getInstance().getCurrentTime())) {
-                        currentOnlinePaint = onlinePaint;
-                        onlineString = LocaleController.getString("Online", R.string.Online);
-                    }
+                onlineString = LocaleController.formatUserStatus(user);
+                if (user != null && (user.id == UserConfig.getClientUserId() || user.status != null && user.status.expires > ConnectionsManager.getInstance().getCurrentTime())) {
+                    currentOnlinePaint = onlinePaint;
+                    onlineString = LocaleController.getString("Online", R.string.Online);
                 }
+            }
             }
 
             CharSequence onlineStringFinal = TextUtils.ellipsize(onlineString, currentOnlinePaint, onlineWidth - AndroidUtilities.dp(12), TextUtils.TruncateAt.END);
@@ -520,10 +534,10 @@ public class ProfileSearchCell extends BaseCell {
         }
 
         if (nameLayout != null) {
-            canvas.save();
-            canvas.translate(nameLeft, nameTop);
-            nameLayout.draw(canvas);
-            canvas.restore();
+        canvas.save();
+        canvas.translate(nameLeft, nameTop);
+        nameLayout.draw(canvas);
+        canvas.restore();
             if (drawCheck) {
                 if (LocaleController.isRTL) {
                     setDrawableBounds(checkDrawable, nameLeft - AndroidUtilities.dp(4) - checkDrawable.getIntrinsicWidth(), nameLockTop);
@@ -546,8 +560,8 @@ public class ProfileSearchCell extends BaseCell {
                 setDrawableBounds(countDrawableGrey, countLeft - AndroidUtilities.dp(5.5f), countTop, countWidth + AndroidUtilities.dp(11), countDrawableGrey.getIntrinsicHeight());
                 countDrawableGrey.draw(canvas);
             } else {
-                setDrawableBounds(countDrawable, countLeft - AndroidUtilities.dp(5.5f), countTop, countWidth + AndroidUtilities.dp(11), countDrawable.getIntrinsicHeight());
-                countDrawable.draw(canvas);
+            setDrawableBounds(countDrawable, countLeft - AndroidUtilities.dp(5.5f), countTop, countWidth + AndroidUtilities.dp(11), countDrawable.getIntrinsicHeight());
+            countDrawable.draw(canvas);
             }
             canvas.save();
             canvas.translate(countLeft, countTop + AndroidUtilities.dp(4));

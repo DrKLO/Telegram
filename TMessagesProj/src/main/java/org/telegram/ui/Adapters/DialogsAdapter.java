@@ -9,10 +9,13 @@
 package org.telegram.ui.Adapters;
 
 import android.content.Context;
+import android.content.SharedPreferences;
+import android.graphics.drawable.GradientDrawable;
 import android.view.View;
 import android.view.ViewGroup;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.support.widget.RecyclerView;
 import org.telegram.tgnet.TLRPC;
@@ -76,8 +79,8 @@ public class DialogsAdapter extends RecyclerView.Adapter {
     public TLRPC.Dialog getItem(int i) {
         ArrayList<TLRPC.Dialog> arrayList = getDialogsArray();
         if (i < 0 || i >= arrayList.size()) {
-            return null;
-        }
+                return null;
+            }
         return arrayList.get(i);
     }
 
@@ -92,8 +95,37 @@ public class DialogsAdapter extends RecyclerView.Adapter {
         if (viewType == 0) {
             view = new DialogCell(mContext);
         } else if (viewType == 1) {
-            view = new LoadingCell(mContext);
+                view = new LoadingCell(mContext);
         }
+
+        SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+        int mainColor = themePrefs.getInt("chatsRowColor", 0xffffffff);
+        int value = themePrefs.getInt("chatsRowGradient", 0);
+        boolean b = true;//themePrefs.getBoolean("chatsRowGradientListCheck", false);
+        if(value > 0 && b) {
+            GradientDrawable.Orientation go;
+            switch(value) {
+                case 2:
+                    go = GradientDrawable.Orientation.LEFT_RIGHT;
+                    break;
+                case 3:
+                    go = GradientDrawable.Orientation.TL_BR;
+                    break;
+                case 4:
+                    go = GradientDrawable.Orientation.BL_TR;
+                    break;
+                default:
+                    go = GradientDrawable.Orientation.TOP_BOTTOM;
+            }
+
+            int gradColor = themePrefs.getInt("chatsRowGradientColor", 0xffffffff);
+            int[] colors = new int[]{mainColor, gradColor};
+            GradientDrawable gd = new GradientDrawable(go, colors);
+            viewGroup.setBackgroundDrawable(gd);
+        }else{
+            viewGroup.setBackgroundColor(mainColor);
+        }
+        //viewGroup.setBackgroundColor(mainColor);
         return new Holder(view);
     }
 
@@ -108,6 +140,34 @@ public class DialogsAdapter extends RecyclerView.Adapter {
                     cell.setDialogSelected(dialog.id == openedDialogId);
                 }
             }
+            //Plus
+            SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+            int mainColor = themePrefs.getInt("chatsRowColor", 0xffffffff);
+            //cell.setBackgroundColor(mainColor);
+            int value = themePrefs.getInt("chatsRowGradient", 0);
+            boolean b = true;//themePrefs.getBoolean("chatsRowGradientListCheck", false);
+            if(value > 0 && !b) {
+                GradientDrawable.Orientation go;
+                switch(value) {
+                    case 2:
+                        go = GradientDrawable.Orientation.LEFT_RIGHT;
+                        break;
+                    case 3:
+                        go = GradientDrawable.Orientation.TL_BR;
+                        break;
+                    case 4:
+                        go = GradientDrawable.Orientation.BL_TR;
+                        break;
+                    default:
+                        go = GradientDrawable.Orientation.TOP_BOTTOM;
+                }
+
+                int gradColor = themePrefs.getInt("chatsRowGradientColor", 0xffffffff);
+                int[] colors = new int[]{mainColor, gradColor};
+                GradientDrawable gd = new GradientDrawable(go, colors);
+                cell.setBackgroundDrawable(gd);
+            }
+            //
             cell.setDialog(dialog, i, dialogsType);
         }
     }

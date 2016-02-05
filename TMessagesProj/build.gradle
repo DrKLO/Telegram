@@ -24,10 +24,7 @@ android {
 
     signingConfigs {
         debug {
-            storeFile file("config/release.keystore")
-            storePassword RELEASE_STORE_PASSWORD
-            keyAlias RELEASE_KEY_ALIAS
-            keyPassword RELEASE_KEY_PASSWORD
+            storeFile file("config/debug.keystore")
         }
 
         release {
@@ -49,7 +46,7 @@ android {
         release {
             debuggable false
             jniDebuggable false
-            signingConfig signingConfigs.release
+            //signingConfig signingConfigs.release
         }
 
         foss {
@@ -76,10 +73,16 @@ android {
         manifest.srcFile 'config/foss/AndroidManifest.xml'
     }
 
+    lintOptions {
+        checkReleaseBuilds false
+        abortOnError false
+    }
+
     defaultConfig {
+        applicationId "org.telegram.plus"
         minSdkVersion 8
         targetSdkVersion 23
-        versionCode 685
-        versionName "3.3.1"
+        versionCode 689
+        versionName "3.3.1.1"
     }
 }

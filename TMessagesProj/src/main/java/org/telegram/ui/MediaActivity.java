@@ -13,8 +13,10 @@ import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -204,6 +206,8 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
     private final static int forward = 3;
     private final static int delete = 4;
 
+private final static int quoteforward = 33;
+
     public MediaActivity(Bundle args) {
         super(args);
     }
@@ -240,7 +244,11 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
 
     @Override
     public View createView(Context context) {
-        actionBar.setBackButtonDrawable(new BackDrawable(false));
+        //actionBar.setBackButtonDrawable(new BackDrawable(false));
+        SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+        Drawable d = new BackDrawable(false);
+        ((BackDrawable) d).setColor(themePrefs.getInt("chatHeaderIconsColor", 0xffffffff));
+        actionBar.setBackButtonDrawable(d);
         actionBar.setTitle("");
         actionBar.setAllowOverlayTitle(false);
         actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
@@ -255,15 +263,15 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                         actionBar.hideActionMode();
                         listView.invalidateViews();
                     } else {
-                        if (Build.VERSION.SDK_INT < 11 && listView != null) {
-                            listView.setAdapter(null);
-                            listView = null;
-                            photoVideoAdapter = null;
-                            documentsAdapter = null;
+                    if (Build.VERSION.SDK_INT < 11 && listView != null) {
+                        listView.setAdapter(null);
+                        listView = null;
+                        photoVideoAdapter = null;
+                        documentsAdapter = null;
                             audioAdapter = null;
-                            linksAdapter = null;
-                        }
-                        finishFragment();
+                        linksAdapter = null;
+                    }
+                    finishFragment();
                     }
                 } else if (id == shared_media_item) {
                     if (selectedMode == 0) {
@@ -301,28 +309,28 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                         public void onClick(DialogInterface dialogInterface, int i) {
                             for (int a = 1; a >= 0; a--) {
                                 ArrayList<Integer> ids = new ArrayList<>(selectedFiles[a].keySet());
-                                ArrayList<Long> random_ids = null;
-                                TLRPC.EncryptedChat currentEncryptedChat = null;
-                                int channelId = 0;
-                                if (!ids.isEmpty()) {
+                            ArrayList<Long> random_ids = null;
+                            TLRPC.EncryptedChat currentEncryptedChat = null;
+                            int channelId = 0;
+                            if (!ids.isEmpty()) {
                                     MessageObject msg = selectedFiles[a].get(ids.get(0));
-                                    if (channelId == 0 && msg.messageOwner.to_id.channel_id != 0) {
-                                        channelId = msg.messageOwner.to_id.channel_id;
-                                    }
+                                if (channelId == 0 && msg.messageOwner.to_id.channel_id != 0) {
+                                    channelId = msg.messageOwner.to_id.channel_id;
                                 }
-                                if ((int) dialog_id == 0) {
-                                    currentEncryptedChat = MessagesController.getInstance().getEncryptedChat((int) (dialog_id >> 32));
-                                }
-                                if (currentEncryptedChat != null) {
-                                    random_ids = new ArrayList<>();
+                            }
+                            if ((int) dialog_id == 0) {
+                                currentEncryptedChat = MessagesController.getInstance().getEncryptedChat((int) (dialog_id >> 32));
+                            }
+                            if (currentEncryptedChat != null) {
+                                random_ids = new ArrayList<>();
                                     for (HashMap.Entry<Integer, MessageObject> entry : selectedFiles[a].entrySet()) {
-                                        MessageObject msg = entry.getValue();
-                                        if (msg.messageOwner.random_id != 0 && msg.type != 10) {
-                                            random_ids.add(msg.messageOwner.random_id);
-                                        }
+                                    MessageObject msg = entry.getValue();
+                                    if (msg.messageOwner.random_id != 0 && msg.type != 10) {
+                                        random_ids.add(msg.messageOwner.random_id);
                                     }
                                 }
-                                MessagesController.getInstance().deleteMessages(ids, random_ids, currentEncryptedChat, channelId);
+                            }
+                            MessagesController.getInstance().deleteMessages(ids, random_ids, currentEncryptedChat, channelId);
                                 selectedFiles[a].clear();
                             }
                             actionBar.hideActionMode();
@@ -332,10 +340,11 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                     });
                     builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
                     showDialog(builder.create());
-                } else if (id == forward) {
+                } else if (id == forward || id == quoteforward) {
                     Bundle args = new Bundle();
                     args.putBoolean("onlySelect", true);
                     args.putInt("dialogsType", 1);
+                    final boolean quoteForward = id == forward ? false : true;
                     DialogsActivity fragment = new DialogsActivity(args);
                     fragment.setDelegate(new DialogsActivity.MessagesActivityDelegate() {
                         @Override
@@ -344,6 +353,9 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                             if (lower_part != 0) {
                                 Bundle args = new Bundle();
                                 args.putBoolean("scrollToTopOnResume", true);
+                                //Plus
+                                args.putBoolean("quote", quoteForward);
+                                //
                                 if (lower_part > 0) {
                                     args.putInt("user_id", lower_part);
                                 } else if (lower_part < 0) {
@@ -353,12 +365,12 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                                 ArrayList<MessageObject> fmessages = new ArrayList<>();
                                 for (int a = 1; a >= 0; a--) {
                                     ArrayList<Integer> ids = new ArrayList<>(selectedFiles[a].keySet());
-                                    Collections.sort(ids);
-                                    for (Integer id : ids) {
-                                        if (id > 0) {
+                                Collections.sort(ids);
+                                for (Integer id : ids) {
+                                    if (id > 0) {
                                             fmessages.add(selectedFiles[a].get(id));
-                                        }
                                     }
+                                }
                                     selectedFiles[a].clear();
                                 }
                                 cantDeleteMessagesCount = 0;
@@ -483,6 +495,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
         actionMode.addView(selectedMessagesCountTextView, LayoutHelper.createLinear(0, LayoutHelper.MATCH_PARENT, 1.0f, 65, 0, 0, 0));
 
         if ((int) dialog_id != 0) {
+            actionModeViews.add(actionMode.addItem(quoteforward, R.drawable.ic_ab_fwd_quoteforward, R.drawable.bar_selector_mode, null, AndroidUtilities.dp(54)));
             actionModeViews.add(actionMode.addItem(forward, R.drawable.ic_ab_fwd_forward, R.drawable.bar_selector_mode, null, AndroidUtilities.dp(54)));
         }
         actionModeViews.add(actionMode.addItem(delete, R.drawable.ic_ab_fwd_delete, R.drawable.bar_selector_mode, null, AndroidUtilities.dp(54)));
@@ -635,14 +648,14 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                     SharedMediaQuery.loadMedia(mergeDialogId, 0, 50, sharedMediaData[selectedMode].max_id[1], type, true, classGuid);
                 }
                 if (!sharedMediaData[selectedMode].loading) {
-                    if (progressView != null) {
-                        progressView.setVisibility(View.GONE);
+                if (progressView != null) {
+                    progressView.setVisibility(View.GONE);
+                }
+                if (selectedMode == type && listView != null) {
+                    if (listView.getEmptyView() == null) {
+                        listView.setEmptyView(emptyView);
                     }
-                    if (selectedMode == type && listView != null) {
-                        if (listView.getEmptyView() == null) {
-                            listView.setEmptyView(emptyView);
-                        }
-                    }
+                }
                 }
                 scrolling = true;
                 if (selectedMode == 0 && type == 0) {
@@ -653,7 +666,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                     if (documentsAdapter != null) {
                         documentsAdapter.notifyDataSetChanged();
                     }
-                } else if (selectedMode == 3 && type == 3) {
+                }  else if (selectedMode == 3 && type == 3) {
                     if (linksAdapter != null) {
                         linksAdapter.notifyDataSetChanged();
                     }
@@ -911,10 +924,10 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                 listView.setPadding(0, 0, 0, AndroidUtilities.dp(4));
             } else if (selectedMode == 1 || selectedMode == 4) {
                 if (selectedMode == 1) {
-                    listView.setAdapter(documentsAdapter);
-                    dropDown.setText(LocaleController.getString("DocumentsTitle", R.string.DocumentsTitle));
-                    emptyImageView.setImageResource(R.drawable.tip2);
-                    emptyTextView.setText(LocaleController.getString("NoSharedFiles", R.string.NoSharedFiles));
+                listView.setAdapter(documentsAdapter);
+                dropDown.setText(LocaleController.getString("DocumentsTitle", R.string.DocumentsTitle));
+                emptyImageView.setImageResource(R.drawable.tip2);
+                emptyTextView.setText(LocaleController.getString("NoSharedFiles", R.string.NoSharedFiles));
                 } else if (selectedMode == 4) {
                     listView.setAdapter(audioAdapter);
                     dropDown.setText(LocaleController.getString("AudioTitle", R.string.AudioTitle));
@@ -977,8 +990,8 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
             for (int i = 0; i < actionModeViews.size(); i++) {
                 View view2 = actionModeViews.get(i);
                 AndroidUtilities.clearDrawableAnimation(view2);
-                animators.add(ObjectAnimatorProxy.ofFloat(view2, "scaleY", 0.1f, 1.0f));
-            }
+                    animators.add(ObjectAnimatorProxy.ofFloat(view2, "scaleY", 0.1f, 1.0f));
+                }
             animatorSet.playTogether(animators);
             animatorSet.setDuration(250);
             animatorSet.start();

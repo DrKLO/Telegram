@@ -65,6 +65,8 @@ public class FileLoadOperation {
     private File tempPath = null;
     private boolean isForceRequest = false;
 
+    private static String orgName = null;
+
     public interface FileLoadOperationDelegate {
         void didFinishLoadingFile(FileLoadOperation operation, File finalFile);
         void didFailedLoadingFile(FileLoadOperation operation, int state);
@@ -91,6 +93,7 @@ public class FileLoadOperation {
         }
         totalBytesCount = size;
         ext = extension != null ? extension : "jpg";
+        orgName = null;
     }
 
     public FileLoadOperation(TLRPC.Video videoLocation) {
@@ -156,6 +159,9 @@ public class FileLoadOperation {
             if (ext.length() <= 1) {
                 ext = "";
             }
+        }
+        if(ApplicationLoader.KEEP_ORIGINAL_FILENAME && !ext.contains("webp")){
+            orgName = FileLoader.getDocName(documentLocation);
         }
     }
 
@@ -226,9 +232,19 @@ public class FileLoadOperation {
                 return;
             }
         }
-
+        //
+        if(ApplicationLoader.KEEP_ORIGINAL_FILENAME && orgName != null){
+            fileNameFinal = orgName;
+        }
+        //
         cacheFileFinal = new File(storePath, fileNameFinal);
         boolean exist = cacheFileFinal.exists();
+        //
+        if(exist && orgName != null && ApplicationLoader.KEEP_ORIGINAL_FILENAME){
+            exist = false;
+            cacheFileFinal.delete();
+        }
+        //
         if (exist && totalBytesCount != 0 && totalBytesCount != cacheFileFinal.length()) {
             cacheFileFinal.delete();
         }
@@ -240,7 +256,8 @@ public class FileLoadOperation {
                 nextDownloadOffset = downloadedBytes = downloadedBytes / currentDownloadChunkSize * currentDownloadChunkSize;
             }
 
-            if (BuildVars.DEBUG_VERSION) {
+            //if (BuildVars.DEBUG_VERSION) {
+            if (BuildConfig.DEBUG) {
                 FileLog.d("tmessages", "start loading file to temp = " + cacheFileTemp + " final = " + cacheFileFinal);
             }
 
@@ -310,8 +327,8 @@ public class FileLoadOperation {
                 state = stateFailed;
                 cleanup();
                 if (requestInfos != null) {
-                    for (RequestInfo requestInfo : requestInfos) {
-                        if (requestInfo.requestToken != 0) {
+                for (RequestInfo requestInfo : requestInfos) {
+                    if (requestInfo.requestToken != 0) {
                             ConnectionsManager.getInstance().cancelRequest(requestInfo.requestToken, true);
                         }
                     }
@@ -340,14 +357,14 @@ public class FileLoadOperation {
             FileLog.e("tmessages", e);
         }
         if (delayedRequestInfos != null) {
-            for (RequestInfo requestInfo : delayedRequestInfos) {
-                if (requestInfo.response != null) {
-                    requestInfo.response.disableFree = false;
-                    requestInfo.response.freeResources();
-                }
+        for (RequestInfo requestInfo : delayedRequestInfos) {
+            if (requestInfo.response != null) {
+                requestInfo.response.disableFree = false;
+                requestInfo.response.freeResources();
             }
-            delayedRequestInfos.clear();
         }
+        delayedRequestInfos.clear();
+    }
     }
 
     private void onFinishLoadingFile() throws Exception {
@@ -361,13 +378,15 @@ public class FileLoadOperation {
         }
         if (cacheFileTemp != null) {
             if (!cacheFileTemp.renameTo(cacheFileFinal)) {
-                if (BuildVars.DEBUG_VERSION) {
+                //if (BuildVars.DEBUG_VERSION) {
+                if (BuildConfig.DEBUG) {
                     FileLog.e("tmessages", "unable to rename temp = " + cacheFileTemp + " to final = " + cacheFileFinal);
                 }
                 cacheFileFinal = cacheFileTemp;
             }
         }
-        if (BuildVars.DEBUG_VERSION) {
+        //if (BuildVars.DEBUG_VERSION) {
+        if (BuildConfig.DEBUG) {
             FileLog.e("tmessages", "finished downloading file to " + cacheFileFinal);
         }
         delegate.didFinishLoadingFile(FileLoadOperation.this, cacheFileFinal);

@@ -41,4 +41,9 @@ public class LetterSectionCell extends FrameLayout {
     public void setCellHeight(int height) {
         setLayoutParams(new ViewGroup.LayoutParams(AndroidUtilities.dp(54), height));
     }
+
+    public void setLetterColor(int color) {
+        textView.setTextColor(color);
+    }
+
 }

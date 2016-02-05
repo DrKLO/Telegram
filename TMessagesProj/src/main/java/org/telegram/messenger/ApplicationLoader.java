@@ -39,6 +39,7 @@ import org.telegram.ui.Components.ForegroundDetector;
 
 import java.io.File;
 import java.io.RandomAccessFile;
+import java.util.Calendar;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class ApplicationLoader extends Application {
@@ -61,6 +62,10 @@ public class ApplicationLoader extends Application {
 
     public static volatile boolean isScreenOn = false;
     public static volatile boolean mainInterfacePaused = true;
+
+    public static boolean SHOW_ANDROID_EMOJI;
+    public static boolean KEEP_ORIGINAL_FILENAME;
+    public static boolean USE_DEVICE_FONT;
 
     public static boolean isCustomTheme() {
         return isCustomTheme;
@@ -282,7 +287,12 @@ public class ApplicationLoader extends Application {
         }
 
         applicationHandler = new Handler(applicationContext.getMainLooper());
-
+        //plus
+        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+        SHOW_ANDROID_EMOJI = preferences.getBoolean("showAndroidEmoji", false);
+        KEEP_ORIGINAL_FILENAME = preferences.getBoolean("keepOriginalFilename", false);
+        USE_DEVICE_FONT = preferences.getBoolean("useDeviceFont", false);
+        //
         startPushService();
     }
 
@@ -291,17 +301,17 @@ public class ApplicationLoader extends Application {
 
         if (preferences.getBoolean("pushService", true)) {
             applicationContext.startService(new Intent(applicationContext, NotificationsService.class));
-
-            if (android.os.Build.VERSION.SDK_INT >= 19) {
-//                Calendar cal = Calendar.getInstance();
-//                PendingIntent pintent = PendingIntent.getService(applicationContext, 0, new Intent(applicationContext, NotificationsService.class), 0);
-//                AlarmManager alarm = (AlarmManager) applicationContext.getSystemService(Context.ALARM_SERVICE);
-//                alarm.setRepeating(AlarmManager.RTC_WAKEUP, cal.getTimeInMillis(), 30000, pintent);
-
+            //if (android.os.Build.VERSION.SDK_INT >= 19) {
+                FileLog.e("ApplicationLoader", "startPushService");
+                Calendar cal = Calendar.getInstance();
                 PendingIntent pintent = PendingIntent.getService(applicationContext, 0, new Intent(applicationContext, NotificationsService.class), 0);
-                AlarmManager alarm = (AlarmManager)applicationContext.getSystemService(Context.ALARM_SERVICE);
-                alarm.cancel(pintent);
-            }
+                AlarmManager alarm = (AlarmManager) applicationContext.getSystemService(Context.ALARM_SERVICE);
+                alarm.setRepeating(AlarmManager.RTC_WAKEUP, cal.getTimeInMillis(), 30000, pintent);
+
+                //PendingIntent pintent = PendingIntent.getService(applicationContext, 0, new Intent(applicationContext, NotificationsService.class), 0);
+                //AlarmManager alarm = (AlarmManager)applicationContext.getSystemService(Context.ALARM_SERVICE);
+                //alarm.cancel(pintent);
+            //}
         } else {
             stopPushService();
         }
@@ -330,19 +340,19 @@ public class ApplicationLoader extends Application {
         AndroidUtilities.runOnUIThread(new Runnable() {
             @Override
             public void run() {
-                if (checkPlayServices()) {
+        if (checkPlayServices()) {
                     gcm = GoogleCloudMessaging.getInstance(ApplicationLoader.this);
-                    regid = getRegistrationId();
+            regid = getRegistrationId();
 
-                    if (regid.length() == 0) {
-                        registerInBackground();
-                    } else {
-                        sendRegistrationIdToBackend(false);
-                    }
-                } else {
-                    FileLog.d("tmessages", "No valid Google Play Services APK found.");
-                }
+            if (regid.length() == 0) {
+                registerInBackground();
+            } else {
+                sendRegistrationIdToBackend(false);
             }
+        } else {
+            FileLog.d("tmessages", "No valid Google Play Services APK found.");
+        }
+    }
         }, 1000);
     }
 

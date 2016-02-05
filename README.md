@@ -1,32 +1,29 @@
-## Telegram messenger for Android
+### Plus Messenger for Android
 
-[Telegram](http://telegram.org) is a messaging app with a focus on speed and security. It’s superfast, simple and free.
-This repo contains the official source code for [Telegram App for Android](https://play.google.com/store/apps/details?id=org.telegram.messenger).
+This is an UNOFFICIAL app that uses [Telegram's API](https://core.telegram.org/api)
 
-##Creating your Telegram Application
+It adds some extra features to the official Telegram app:
 
-We welcome all developers to use our API and source code to create applications on our platform.
-There are several things we require from **all developers** for the moment.
+**THEMING:**
+Change colors and sizes of many objects as texts, icons, headers... and create your own theme.
+Save your theme and share it easily with your friends.
+Apply themes shared by other users.
 
-1. [**Obtain your own api_id**](https://core.telegram.org/api/obtaining_api_id) for your application.
-2. Please **do not** use the name Telegram for your app — or make sure your users understand that it is unofficial.
-3. Kindly **do not** use our standard logo (white paper plane in a blue circle) as your app's logo.
-3. Please study our [**security guidelines**](https://core.telegram.org/mtproto/security_guidelines) and take good care of your users' data and privacy.
-4. Please remember to publish **your** code too in order to comply with the licences.
+**MEDIA:** Audio files can be shared easily from Chat Screen
 
-### API, Protocol documentation
+**PRIVACY:** Mobile number can be hidden from Menu Drawer and Settings menu
 
-Telegram API manuals: http://core.telegram.org/api
+**SOCIAL:** Get in touch with other Plus Messenger users through [our Google+ community](https://plus.google.com/communities/106927015963860485525)
 
-MTproto protocol manuals: http://core.telegram.org/mtproto
+This repo contains the source code for [Plus Messenger App for Android](https://play.google.com/store/apps/details?id=org.telegram.plus).
 
-### Usage
-
+### USAGE
 **Beware of using the dev branch and uploading it to any markets, in many cases it not will work as expected**.
 
 First of all, take a look at **src/main/java/org/telegram/messenger/BuildVars.java** and fill it with correct values.
 Import the root folder into your IDE (tested on Android Studio), then run project.
 
-### Localization
+### LOCALIZATION
 
-We moved all translations to https://www.transifex.com/projects/p/telegram/. Please use it.
+Join our translation project if you want to collaborate: https://www.transifex.com/projects/p/plusmessenger/
+

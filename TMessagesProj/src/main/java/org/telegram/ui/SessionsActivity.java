@@ -12,6 +12,9 @@ import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.SharedPreferences;
+import android.graphics.PorterDuff;
+import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -32,6 +35,8 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
+import org.telegram.messenger.ApplicationLoader;
+import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
 import org.telegram.tgnet.ConnectionsManager;
@@ -103,15 +108,22 @@ public class SessionsActivity extends BaseFragment implements NotificationCenter
         fragmentView = new FrameLayout(context);
         FrameLayout frameLayout = (FrameLayout) fragmentView;
         frameLayout.setBackgroundColor(0xfff0f0f0);
-
+        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+        int bgColor = preferences.getInt("prefBGColor", 0xffffffff);
+        int summaryColor = preferences.getInt("prefSummaryColor", 0xff8a8a8a);
         emptyLayout = new LinearLayout(context);
         emptyLayout.setOrientation(LinearLayout.VERTICAL);
         emptyLayout.setGravity(Gravity.CENTER);
         emptyLayout.setBackgroundResource(R.drawable.greydivider_bottom);
         emptyLayout.setLayoutParams(new AbsListView.LayoutParams(AbsListView.LayoutParams.MATCH_PARENT, AndroidUtilities.displaySize.y - ActionBar.getCurrentActionBarHeight()));
-
+        if(bgColor != 0xffffffff)emptyLayout.setBackgroundColor(bgColor);
         ImageView imageView = new ImageView(context);
         imageView.setImageResource(R.drawable.devices);
+        if(summaryColor != 0xff8a8a8a) {
+            Drawable devices = getParentActivity().getResources().getDrawable(R.drawable.devices);
+            devices.setColorFilter(summaryColor, PorterDuff.Mode.SRC_IN);
+            imageView.setImageDrawable(devices);
+        }
         emptyLayout.addView(imageView);
         LinearLayout.LayoutParams layoutParams2 = (LinearLayout.LayoutParams) imageView.getLayoutParams();
         layoutParams2.width = LayoutHelper.WRAP_CONTENT;
@@ -119,7 +131,8 @@ public class SessionsActivity extends BaseFragment implements NotificationCenter
         imageView.setLayoutParams(layoutParams2);
 
         TextView textView = new TextView(context);
-        textView.setTextColor(0xff8a8a8a);
+        //textView.setTextColor(0xff8a8a8a);
+        textView.setTextColor(summaryColor);
         textView.setGravity(Gravity.CENTER);
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 17);
         textView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
@@ -133,7 +146,8 @@ public class SessionsActivity extends BaseFragment implements NotificationCenter
         textView.setLayoutParams(layoutParams2);
 
         textView = new TextView(context);
-        textView.setTextColor(0xff8a8a8a);
+        //textView.setTextColor(0xff8a8a8a);
+        textView.setTextColor(summaryColor);
         textView.setGravity(Gravity.CENTER);
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 17);
         textView.setPadding(AndroidUtilities.dp(20), 0, AndroidUtilities.dp(20), 0);
@@ -168,6 +182,7 @@ public class SessionsActivity extends BaseFragment implements NotificationCenter
         progressView.setLayoutParams(layoutParams);
 
         ListView listView = new ListView(context);
+        listView.setBackgroundColor(bgColor);
         listView.setDivider(null);
         listView.setDividerHeight(0);
         listView.setVerticalScrollBarEnabled(false);
@@ -278,6 +293,18 @@ public class SessionsActivity extends BaseFragment implements NotificationCenter
         if (listAdapter != null) {
             listAdapter.notifyDataSetChanged();
         }
+        updateTheme();
+    }
+
+    private void updateTheme(){
+        SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+        int def = themePrefs.getInt("themeColor", AndroidUtilities.defColor);
+        actionBar.setBackgroundColor(themePrefs.getInt("prefHeaderColor", def));
+        actionBar.setTitleColor(themePrefs.getInt("prefHeaderTitleColor", 0xffffffff));
+
+        Drawable back = getParentActivity().getResources().getDrawable(R.drawable.ic_ab_back);
+        back.setColorFilter(themePrefs.getInt("prefHeaderIconsColor", 0xffffffff), PorterDuff.Mode.MULTIPLY);
+        actionBar.setBackButtonDrawable(back);
     }
 
     @Override
@@ -400,7 +427,7 @@ public class SessionsActivity extends BaseFragment implements NotificationCenter
             if (type == 0) {
                 if (view == null) {
                     view = new TextSettingsCell(mContext);
-                    view.setBackgroundColor(0xffffffff);
+                    //view.setBackgroundColor(0xffffffff);
                 }
                 TextSettingsCell textCell = (TextSettingsCell) view;
                 if (i == terminateAllSessionsRow) {
@@ -421,7 +448,7 @@ public class SessionsActivity extends BaseFragment implements NotificationCenter
             } else if (type == 2) {
                 if (view == null) {
                     view = new HeaderCell(mContext);
-                    view.setBackgroundColor(0xffffffff);
+                    //view.setBackgroundColor(0xffffffff);
                 }
                 if (i == currentSessionSectionRow) {
                     ((HeaderCell) view).setText(LocaleController.getString("CurrentSession", R.string.CurrentSession));
@@ -438,7 +465,7 @@ public class SessionsActivity extends BaseFragment implements NotificationCenter
             } else if (type == 4) {
                 if (view == null) {
                     view = new SessionCell(mContext);
-                    view.setBackgroundColor(0xffffffff);
+                    //view.setBackgroundColor(0xffffffff);
                 }
                 if (i == currentSessionRow) {
                     ((SessionCell) view).setSession(currentSession, !sessions.isEmpty());

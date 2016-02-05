@@ -9,6 +9,7 @@
 package org.telegram.ui.Cells;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.util.TypedValue;
@@ -17,6 +18,7 @@ import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.ApplicationLoader;
 import org.telegram.ui.Components.FrameLayoutFixed;
 import org.telegram.ui.Components.LayoutHelper;
 
@@ -64,6 +66,7 @@ public class TextDetailSettingsCell extends FrameLayoutFixed {
         } else {
             super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED));
         }
+        setTheme();
     }
 
     public void setMultilineDetail(boolean value) {
@@ -88,10 +91,34 @@ public class TextDetailSettingsCell extends FrameLayoutFixed {
         setWillNotDraw(!divider);
     }
 
+    public void setTitleColor(int color) {
+        textView.setTextColor(color);
+    }
+
+    public void setSummaryColor(int color) {
+        valueTextView.setTextColor(color);
+    }
+
+    public void setDividerColor(int color) {
+        paint.setColor(color);
+    }
+
     @Override
     protected void onDraw(Canvas canvas) {
         if (needDivider) {
             canvas.drawLine(getPaddingLeft(), getHeight() - 1, getWidth() - getPaddingRight(), getHeight() - 1, paint);
         }
+    }
+
+    private void setTheme(){
+        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+        int bgColor = preferences.getInt("prefBGColor", 0xffffffff);
+        setBackgroundColor(bgColor);
+        int divColor = preferences.getInt("prefDividerColor", 0xffd9d9d9);
+        int titleColor = preferences.getInt("prefTitleColor", 0xff212121);
+        int summaryColor = preferences.getInt("prefSummaryColor", 0xff8a8a8a);
+        textView.setTextColor(titleColor);
+        valueTextView.setTextColor(summaryColor);
+        paint.setColor(divColor);
     }
 }

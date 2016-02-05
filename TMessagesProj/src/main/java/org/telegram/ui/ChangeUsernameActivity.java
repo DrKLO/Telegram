@@ -14,6 +14,8 @@ import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.SharedPreferences;
+import android.graphics.PorterDuff;
+import android.graphics.drawable.Drawable;
 import android.text.Editable;
 import android.text.InputType;
 import android.text.TextWatcher;
@@ -22,6 +24,7 @@ import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
 import android.widget.LinearLayout;
@@ -61,98 +64,104 @@ public class ChangeUsernameActivity extends BaseFragment {
 
     @Override
     public View createView(Context context) {
-        actionBar.setBackButtonImage(R.drawable.ic_ab_back);
-        actionBar.setAllowOverlayTitle(true);
-        actionBar.setTitle(LocaleController.getString("Username", R.string.Username));
-        actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
-            @Override
-            public void onItemClick(int id) {
-                if (id == -1) {
-                    finishFragment();
-                } else if (id == done_button) {
-                    saveName();
+            actionBar.setBackButtonImage(R.drawable.ic_ab_back);
+            actionBar.setAllowOverlayTitle(true);
+            actionBar.setTitle(LocaleController.getString("Username", R.string.Username));
+            actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
+                @Override
+                public void onItemClick(int id) {
+                    if (id == -1) {
+                        finishFragment();
+                    } else if (id == done_button) {
+                        saveName();
+                    }
                 }
+            });
+
+            ActionBarMenu menu = actionBar.createMenu();
+            //doneButton = menu.addItemWithWidth(done_button, R.drawable.ic_done, AndroidUtilities.dp(56));
+
+        SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+        Drawable done = getParentActivity().getResources().getDrawable(R.drawable.ic_done);
+        done.setColorFilter(themePrefs.getInt("prefHeaderIconsColor", 0xffffffff), PorterDuff.Mode.SRC_IN);
+        doneButton = menu.addItemWithWidth(done_button, done, AndroidUtilities.dp(56));
+
+            TLRPC.User user = MessagesController.getInstance().getUser(UserConfig.getClientUserId());
+            if (user == null) {
+                user = UserConfig.getCurrentUser();
             }
-        });
-
-        ActionBarMenu menu = actionBar.createMenu();
-        doneButton = menu.addItemWithWidth(done_button, R.drawable.ic_done, AndroidUtilities.dp(56));
-
-        TLRPC.User user = MessagesController.getInstance().getUser(UserConfig.getClientUserId());
-        if (user == null) {
-            user = UserConfig.getCurrentUser();
-        }
 
         fragmentView = new LinearLayout(context);
-        ((LinearLayout) fragmentView).setOrientation(LinearLayout.VERTICAL);
-        fragmentView.setOnTouchListener(new View.OnTouchListener() {
-            @Override
-            public boolean onTouch(View v, MotionEvent event) {
-                return true;
-            }
-        });
-
-        firstNameField = new EditText(context);
-        firstNameField.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
-        firstNameField.setHintTextColor(0xff979797);
-        firstNameField.setTextColor(0xff212121);
-        firstNameField.setMaxLines(1);
-        firstNameField.setLines(1);
-        firstNameField.setPadding(0, 0, 0, 0);
-        firstNameField.setSingleLine(true);
-        firstNameField.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
-        firstNameField.setInputType(InputType.TYPE_TEXT_FLAG_CAP_SENTENCES | InputType.TYPE_TEXT_FLAG_MULTI_LINE | InputType.TYPE_TEXT_FLAG_AUTO_CORRECT);
-        firstNameField.setImeOptions(EditorInfo.IME_ACTION_DONE);
-        firstNameField.setHint(LocaleController.getString("UsernamePlaceholder", R.string.UsernamePlaceholder));
-        AndroidUtilities.clearCursorDrawable(firstNameField);
-        firstNameField.setOnEditorActionListener(new TextView.OnEditorActionListener() {
-            @Override
-            public boolean onEditorAction(TextView textView, int i, KeyEvent keyEvent) {
-                if (i == EditorInfo.IME_ACTION_DONE && doneButton != null) {
-                    doneButton.performClick();
+            ((LinearLayout) fragmentView).setOrientation(LinearLayout.VERTICAL);
+            fragmentView.setOnTouchListener(new View.OnTouchListener() {
+                @Override
+                public boolean onTouch(View v, MotionEvent event) {
                     return true;
                 }
-                return false;
-            }
-        });
+            });
+
+        firstNameField = new EditText(context);
+            firstNameField.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
+            firstNameField.setHintTextColor(0xff979797);
+            firstNameField.setTextColor(0xff212121);
+            firstNameField.getBackground().setColorFilter(AndroidUtilities.getIntColor("themeColor"), PorterDuff.Mode.SRC_IN);
+            firstNameField.setMaxLines(1);
+            firstNameField.setLines(1);
+            firstNameField.setPadding(0, 0, 0, 0);
+            firstNameField.setSingleLine(true);
+            firstNameField.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
+            firstNameField.setInputType(InputType.TYPE_TEXT_FLAG_CAP_SENTENCES | InputType.TYPE_TEXT_FLAG_MULTI_LINE | InputType.TYPE_TEXT_FLAG_AUTO_CORRECT);
+            firstNameField.setImeOptions(EditorInfo.IME_ACTION_DONE);
+            firstNameField.setHint(LocaleController.getString("UsernamePlaceholder", R.string.UsernamePlaceholder));
+            AndroidUtilities.clearCursorDrawable(firstNameField);
+            firstNameField.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+                @Override
+                public boolean onEditorAction(TextView textView, int i, KeyEvent keyEvent) {
+                    if (i == EditorInfo.IME_ACTION_DONE && doneButton != null) {
+                        doneButton.performClick();
+                        return true;
+                    }
+                    return false;
+                }
+            });
 
         ((LinearLayout) fragmentView).addView(firstNameField, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 36, 24, 24, 24, 0));
 
-        if (user != null && user.username != null && user.username.length() > 0) {
-            firstNameField.setText(user.username);
-            firstNameField.setSelection(firstNameField.length());
-        }
+            if (user != null && user.username != null && user.username.length() > 0) {
+                firstNameField.setText(user.username);
+                firstNameField.setSelection(firstNameField.length());
+            }
 
         checkTextView = new TextView(context);
-        checkTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
-        checkTextView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
+            checkTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
+            checkTextView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
         ((LinearLayout) fragmentView).addView(checkTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT, 24, 12, 24, 0));
 
         TextView helpTextView = new TextView(context);
-        helpTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
-        helpTextView.setTextColor(0xff6d6d72);
-        helpTextView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
+            helpTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
+            helpTextView.setTextColor(0xff6d6d72);
+            helpTextView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
         helpTextView.setText(AndroidUtilities.replaceTags(LocaleController.getString("UsernameHelp", R.string.UsernameHelp)));
         ((LinearLayout) fragmentView).addView(helpTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT, 24, 10, 24, 0));
 
-        firstNameField.addTextChangedListener(new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence charSequence, int i, int i2, int i3) {
+            firstNameField.addTextChangedListener(new TextWatcher() {
+                @Override
+                public void beforeTextChanged(CharSequence charSequence, int i, int i2, int i3) {
 
-            }
+                }
 
-            @Override
-            public void onTextChanged(CharSequence charSequence, int i, int i2, int i3) {
-                checkUserName(firstNameField.getText().toString(), false);
-            }
+                @Override
+                public void onTextChanged(CharSequence charSequence, int i, int i2, int i3) {
+                    checkUserName(firstNameField.getText().toString(), false);
+                }
 
-            @Override
-            public void afterTextChanged(Editable editable) {
+                @Override
+                public void afterTextChanged(Editable editable) {
 
-            }
-        });
+                }
+            });
 
-        checkTextView.setVisibility(View.GONE);
+            checkTextView.setVisibility(View.GONE);
 
         return fragmentView;
     }
@@ -166,6 +175,18 @@ public class ChangeUsernameActivity extends BaseFragment {
             firstNameField.requestFocus();
             AndroidUtilities.showKeyboard(firstNameField);
         }
+        updateTheme();
+    }
+
+    private void updateTheme(){
+        SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+        int def = themePrefs.getInt("themeColor", AndroidUtilities.defColor);
+        actionBar.setBackgroundColor(themePrefs.getInt("prefHeaderColor", def));
+        actionBar.setTitleColor(themePrefs.getInt("prefHeaderTitleColor", 0xffffffff));
+
+        Drawable back = getParentActivity().getResources().getDrawable(R.drawable.ic_ab_back);
+        back.setColorFilter(themePrefs.getInt("prefHeaderIconsColor", 0xffffffff), PorterDuff.Mode.MULTIPLY);
+        actionBar.setBackButtonDrawable(back);
     }
 
     private void showErrorAlert(String error) {
@@ -387,8 +408,8 @@ public class ChangeUsernameActivity extends BaseFragment {
     @Override
     public void onTransitionAnimationEnd(boolean isOpen, boolean backward) {
         if (isOpen) {
-            firstNameField.requestFocus();
-            AndroidUtilities.showKeyboard(firstNameField);
-        }
+        firstNameField.requestFocus();
+        AndroidUtilities.showKeyboard(firstNameField);
     }
+}
 }

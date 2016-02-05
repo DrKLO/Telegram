@@ -16,6 +16,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.Point;
+import android.graphics.PorterDuff;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Build;
@@ -30,25 +31,24 @@ import android.widget.ImageView;
 import android.widget.ProgressBar;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ApplicationLoader;
+import org.telegram.messenger.FileLoader;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageLoader;
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MessagesStorage;
+import org.telegram.messenger.NotificationCenter;
+import org.telegram.messenger.R;
 import org.telegram.messenger.support.widget.LinearLayoutManager;
 import org.telegram.messenger.support.widget.RecyclerView;
-import org.telegram.messenger.ApplicationLoader;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.RequestDelegate;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
-import org.telegram.messenger.FileLoader;
-import org.telegram.messenger.FileLog;
-import org.telegram.messenger.MessagesStorage;
-import org.telegram.messenger.NotificationCenter;
-import org.telegram.messenger.R;
-
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
-import org.telegram.ui.Cells.WallpaperCell;
 import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.ui.Cells.WallpaperCell;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
 
@@ -148,6 +148,12 @@ public class WallpapersActivity extends BaseFragment implements NotificationCent
                         editor.putInt("selectedBackground", selectedBackground);
                         editor.putInt("selectedColor", selectedColor);
                         editor.commit();
+                        //
+                        SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+                        SharedPreferences.Editor edit = themePrefs.edit();
+                        edit.putBoolean("chatSolidBGColorCheck", false);
+                        edit.commit();
+                        //
                         ApplicationLoader.reloadWallpaper();
                     }
                     finishFragment();
@@ -156,7 +162,12 @@ public class WallpapersActivity extends BaseFragment implements NotificationCent
         });
 
         ActionBarMenu menu = actionBar.createMenu();
-        doneButton = menu.addItemWithWidth(done_button, R.drawable.ic_done, AndroidUtilities.dp(56));
+        //doneButton = menu.addItemWithWidth(done_button, R.drawable.ic_done, AndroidUtilities.dp(56));
+
+        SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+        Drawable done = getParentActivity().getResources().getDrawable(R.drawable.ic_done);
+        done.setColorFilter(themePrefs.getInt("prefHeaderIconsColor", 0xffffffff), PorterDuff.Mode.SRC_IN);
+        doneButton = menu.addItemWithWidth(done_button, done, AndroidUtilities.dp(56));
 
         FrameLayout frameLayout = new FrameLayout(context);
         fragmentView = frameLayout;
@@ -231,6 +242,13 @@ public class WallpapersActivity extends BaseFragment implements NotificationCent
                     listAdapter.notifyDataSetChanged();
                     processSelectedBackground();
                 }
+                //Plus
+                AndroidUtilities.runOnUIThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        NotificationCenter.getInstance().postNotificationName(NotificationCenter.wallpaperChanged);
+                    }
+                });
             }
         });
 
@@ -409,18 +427,18 @@ public class WallpapersActivity extends BaseFragment implements NotificationCent
             }
         } else if (id == NotificationCenter.wallpapersDidLoaded) {
             wallPapers = (ArrayList<TLRPC.WallPaper>) args[0];
-            wallpappersByIds.clear();
-            for (TLRPC.WallPaper wallPaper : wallPapers) {
-                wallpappersByIds.put(wallPaper.id, wallPaper);
-            }
-            if (listAdapter != null) {
-                listAdapter.notifyDataSetChanged();
-            }
-            if (!wallPapers.isEmpty() && backgroundImage != null) {
-                processSelectedBackground();
-            }
-            loadWallpapers();
-        }
+                    wallpappersByIds.clear();
+                    for (TLRPC.WallPaper wallPaper : wallPapers) {
+                        wallpappersByIds.put(wallPaper.id, wallPaper);
+                    }
+                    if (listAdapter != null) {
+                        listAdapter.notifyDataSetChanged();
+                    }
+                    if (!wallPapers.isEmpty() && backgroundImage != null) {
+                        processSelectedBackground();
+                    }
+                    loadWallpapers();
+                }
     }
 
     private void loadWallpapers() {
@@ -462,6 +480,18 @@ public class WallpapersActivity extends BaseFragment implements NotificationCent
             listAdapter.notifyDataSetChanged();
         }
         processSelectedBackground();
+        updateTheme();
+    }
+
+    private void updateTheme(){
+        SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+        int def = themePrefs.getInt("themeColor", AndroidUtilities.defColor);
+        actionBar.setBackgroundColor(themePrefs.getInt("prefHeaderColor", def));
+        actionBar.setTitleColor(themePrefs.getInt("prefHeaderTitleColor", 0xffffffff));
+
+        Drawable back = getParentActivity().getResources().getDrawable(R.drawable.ic_ab_back);
+        back.setColorFilter(themePrefs.getInt("prefHeaderIconsColor", 0xffffffff), PorterDuff.Mode.MULTIPLY);
+        actionBar.setBackButtonDrawable(back);
     }
 
     private class ListAdapter extends RecyclerView.Adapter {

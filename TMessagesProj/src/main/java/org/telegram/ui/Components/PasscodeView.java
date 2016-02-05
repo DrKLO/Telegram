@@ -744,22 +744,22 @@ public class PasscodeView extends FrameLayout {
 
     private void processDone(boolean fingerprint) {
         if (!fingerprint) {
-            String password = "";
-            if (UserConfig.passcodeType == 0) {
-                password = passwordEditText2.getString();
-            } else if (UserConfig.passcodeType == 1) {
-                password = passwordEditText.getText().toString();
-            }
-            if (password.length() == 0) {
-                onPasscodeError();
-                return;
-            }
-            if (!UserConfig.checkPasscode(password)) {
-                passwordEditText.setText("");
-                passwordEditText2.eraseAllCharacters(true);
-                onPasscodeError();
-                return;
-            }
+        String password = "";
+        if (UserConfig.passcodeType == 0) {
+            password = passwordEditText2.getString();
+        } else if (UserConfig.passcodeType == 1) {
+            password = passwordEditText.getText().toString();
+        }
+        if (password.length() == 0) {
+            onPasscodeError();
+            return;
+        }
+        if (!UserConfig.checkPasscode(password)) {
+            passwordEditText.setText("");
+            passwordEditText2.eraseAllCharacters(true);
+            onPasscodeError();
+            return;
+        }
         }
         passwordEditText.clearFocus();
         AndroidUtilities.hideKeyboard(passwordEditText);
@@ -857,7 +857,7 @@ public class PasscodeView extends FrameLayout {
     }
 
     private void checkFingerprint() {
-        Activity parentActivity = (Activity) getContext();
+            Activity parentActivity = (Activity) getContext();
         if (Build.VERSION.SDK_INT >= 23 && parentActivity != null && UserConfig.useFingerprint && !ApplicationLoader.mainInterfacePaused) {
             try {
                 if (fingerprintDialog != null && fingerprintDialog.isShowing()) {
@@ -994,13 +994,15 @@ public class PasscodeView extends FrameLayout {
         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
         int selectedBackground = preferences.getInt("selectedBackground", 1000001);
         if (selectedBackground == 1000001) {
-            backgroundFrameLayout.setBackgroundColor(0xff517c9e);
+            //backgroundFrameLayout.setBackgroundColor(0xff517c9e);
+            backgroundFrameLayout.setBackgroundColor(AndroidUtilities.getIntDarkerColor("themeColor", 0x15));
         } else {
             backgroundDrawable = ApplicationLoader.getCachedWallpaper();
             if (backgroundDrawable != null) {
                 backgroundFrameLayout.setBackgroundColor(0xbf000000);
             } else {
-                backgroundFrameLayout.setBackgroundColor(0xff517c9e);
+                //backgroundFrameLayout.setBackgroundColor(0xff517c9e);
+                backgroundFrameLayout.setBackgroundColor(AndroidUtilities.getIntDarkerColor("themeColor", 0x15));
             }
         }
 
@@ -1153,7 +1155,7 @@ public class PasscodeView extends FrameLayout {
 
         if (UserConfig.passcodeType == 1 && (AndroidUtilities.isTablet() || getContext().getResources().getConfiguration().orientation != Configuration.ORIENTATION_LANDSCAPE)) {
             int t = 0;
-            if (passwordFrameLayout.getTag() != 0) {
+            if ((Integer) passwordFrameLayout.getTag() != 0) {
                 t = (Integer) passwordFrameLayout.getTag();
             }
             LayoutParams layoutParams = (LayoutParams) passwordFrameLayout.getLayoutParams();

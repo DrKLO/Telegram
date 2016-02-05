@@ -19,14 +19,14 @@ import android.view.MotionEvent;
 import android.view.SoundEffectConstants;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.ImageLoader;
-import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.SendMessagesHelper;
-import org.telegram.messenger.BuildVars;
+import org.telegram.messenger.BuildConfig;
 import org.telegram.messenger.FileLoader;
+import org.telegram.messenger.FileLog;
+import org.telegram.messenger.ImageLoader;
 import org.telegram.messenger.MediaController;
 import org.telegram.messenger.MessageObject;
-import org.telegram.messenger.FileLog;
+import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.SendMessagesHelper;
 import org.telegram.ui.Components.RadialProgress;
 import org.telegram.ui.Components.ResourceLoader;
 import org.telegram.ui.Components.SeekBar;
@@ -60,7 +60,12 @@ public class ChatAudioCell extends ChatBaseCell implements SeekBar.SeekBarDelega
         seekBar.delegate = this;
         radialProgress = new RadialProgress(this);
         drawForwardedName = true;
-
+        /*avatarDrawable = new AvatarDrawable();
+        //Chat Audio Photo
+        int radius = AndroidUtilities.dp(AndroidUtilities.getIntDef("chatAvatarRadius", 32));
+        avatarImage.setRoundRadius(radius);
+        avatarDrawable.setRadius(radius);*/
+        //
         if (timePaint == null) {
             timePaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
             timePaint.setTextSize(AndroidUtilities.dp(12));
@@ -219,7 +224,8 @@ public class ChatAudioCell extends ChatBaseCell implements SeekBar.SeekBarDelega
             if (cacheFile == null) {
                 cacheFile = FileLoader.getPathToMessage(currentMessageObject.messageOwner);
             }
-            if (BuildVars.DEBUG_VERSION) {
+            //if (BuildVars.DEBUG_VERSION) {
+            if (BuildConfig.DEBUG) {
                 FileLog.d("tmessages", "looking for audio in " + cacheFile);
             }
             if (cacheFile.exists()) {
@@ -297,14 +303,21 @@ public class ChatAudioCell extends ChatBaseCell implements SeekBar.SeekBarDelega
         super.onLayout(changed, left, top, right, bottom);
 
         if (currentMessageObject.isOutOwner()) {
-            seekBarX = layoutWidth - backgroundWidth + AndroidUtilities.dp(55);
-            buttonX = layoutWidth - backgroundWidth + AndroidUtilities.dp(13);
-            timeX = layoutWidth - backgroundWidth + AndroidUtilities.dp(66);
+            //seekBarX = layoutWidth - backgroundWidth + AndroidUtilities.dp(55);
+            //buttonX = layoutWidth - backgroundWidth + AndroidUtilities.dp(13);
+            //timeX = layoutWidth - backgroundWidth + AndroidUtilities.dp(66);
+            seekBarX = layoutWidth - backgroundWidth + AndroidUtilities.dp(55) - (((showMyAvatar && !isChat) || (showMyAvatarGroup && isChat)) ? AndroidUtilities.dp(leftBound) : 0);
+            buttonX = layoutWidth - backgroundWidth + AndroidUtilities.dp(13) - (((showMyAvatar && !isChat) || (showMyAvatarGroup && isChat)) ? AndroidUtilities.dp(leftBound) : 0);
+            timeX = layoutWidth - backgroundWidth + AndroidUtilities.dp(66) - (((showMyAvatar && !isChat) || (showMyAvatarGroup && isChat)) ? AndroidUtilities.dp(leftBound) : 0);
         } else {
-            if (isChat && currentMessageObject.messageOwner.from_id > 0) {
-                seekBarX = AndroidUtilities.dp(116);
-                buttonX = AndroidUtilities.dp(74);
-                timeX = AndroidUtilities.dp(127);
+            //if (isChat && currentMessageObject.messageOwner.from_id > 0) {
+            if ((isChat || showAvatar) && currentMessageObject.messageOwner.from_id > 0) {
+                //seekBarX = AndroidUtilities.dp(116);
+                //buttonX = AndroidUtilities.dp(74);
+                //timeX = AndroidUtilities.dp(127);
+                seekBarX = AndroidUtilities.dp(leftBound + 64);
+                buttonX = AndroidUtilities.dp(leftBound + 22);
+                timeX = AndroidUtilities.dp(leftBound + 75);
             } else {
                 seekBarX = AndroidUtilities.dp(64);
                 buttonX = AndroidUtilities.dp(22);
@@ -326,9 +339,11 @@ public class ChatAudioCell extends ChatBaseCell implements SeekBar.SeekBarDelega
         boolean dataChanged = currentMessageObject == messageObject && isUserDataChanged();
         if (currentMessageObject != messageObject || dataChanged) {
             if (AndroidUtilities.isTablet()) {
-                backgroundWidth = Math.min(AndroidUtilities.getMinTabletSide() - AndroidUtilities.dp(isChat && messageObject.messageOwner.from_id > 0 ? 102 : 50), AndroidUtilities.dp(300));
+                //backgroundWidth = Math.min(AndroidUtilities.getMinTabletSide() - AndroidUtilities.dp(isChat && messageObject.messageOwner.from_id > 0 ? 102 : 50), AndroidUtilities.dp(300));
+                backgroundWidth = Math.min(AndroidUtilities.getMinTabletSide() - AndroidUtilities.dp( ((isChat || showAvatar) && messageObject.messageOwner.from_id > 0) || (messageObject.isOutOwner() && ((showMyAvatar && !isChat) || (showMyAvatarGroup && isChat))) ? leftBound + 50 : 50), AndroidUtilities.dp(300));
             } else {
-                backgroundWidth = Math.min(AndroidUtilities.displaySize.x - AndroidUtilities.dp(isChat && messageObject.messageOwner.from_id > 0 ? 102 : 50), AndroidUtilities.dp(300));
+                //backgroundWidth = Math.min(AndroidUtilities.displaySize.x - AndroidUtilities.dp(isChat && messageObject.messageOwner.from_id > 0 ? 102 : 50), AndroidUtilities.dp(300));
+                backgroundWidth = Math.min(AndroidUtilities.displaySize.x - AndroidUtilities.dp((isChat || showAvatar) || (messageObject.isOut() && ((showMyAvatar && !isChat) || (showMyAvatarGroup && isChat))) ? leftBound + 50 : 50), AndroidUtilities.dp(300));
             }
 
             if (messageObject.isOutOwner()) {

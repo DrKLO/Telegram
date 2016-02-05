@@ -8,12 +8,14 @@
 
 package org.telegram.ui.Components;
 
+import android.content.SharedPreferences;
 import android.graphics.Canvas;
 import android.graphics.ColorFilter;
 import android.graphics.Paint;
 import android.graphics.drawable.Drawable;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ApplicationLoader;
 
 public class SendingFileExDrawable extends Drawable {
 
@@ -25,7 +27,9 @@ public class SendingFileExDrawable extends Drawable {
 
     public SendingFileExDrawable() {
         super();
-        paint.setColor(0xffd7e8f7);
+        //paint.setColor(0xffd7e8f7);
+        SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+        paint.setColor(themePrefs.getInt("chatTypingColor",themePrefs.getInt("chatStatusColor", AndroidUtilities.getIntDarkerColor("themeColor", -0x40))));
         paint.setStyle(Paint.Style.STROKE);
         paint.setStrokeWidth(AndroidUtilities.dp(2));
         paint.setStrokeCap(Paint.Cap.ROUND);
