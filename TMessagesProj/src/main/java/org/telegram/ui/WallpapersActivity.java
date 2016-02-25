@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2015.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.ui;
@@ -372,7 +372,11 @@ public class WallpapersActivity extends BaseFragment implements NotificationCent
                     toFile = new File(ApplicationLoader.getFilesDirFixed(), "wallpaper.jpg");
                 }
                 if (toFile.exists()) {
-                    backgroundImage.setImageURI(Uri.fromFile(toFile));
+                    try{
+                        backgroundImage.setImageURI(Uri.fromFile(toFile));
+                    } catch (Exception e) {
+                        FileLog.e("tmessages", e);
+                    }
                 } else {
                     selectedBackground = 1000001;
                     processSelectedBackground();

@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2015.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.ui.Cells;
@@ -47,6 +47,7 @@ public class ProfileSearchCell extends BaseCell {
     private static Drawable botDrawable;
     private static Drawable broadcastDrawable;
     private static Drawable groupDrawable;
+    private static Drawable superGroupDrawable;
     private static Drawable countDrawable;
     private static Drawable countDrawableGrey;
     private static Drawable checkDrawable;
@@ -126,6 +127,7 @@ public class ProfileSearchCell extends BaseCell {
             broadcastDrawable = getResources().getDrawable(R.drawable.list_broadcast);
             lockDrawable = getResources().getDrawable(R.drawable.list_secret);
             groupDrawable = getResources().getDrawable(R.drawable.list_group);
+            superGroupDrawable = getResources().getDrawable(R.drawable.list_supergroup);
             countDrawable = getResources().getDrawable(R.drawable.dialogs_badge);
             countDrawableGrey = getResources().getDrawable(R.drawable.dialogs_badge2);
             checkDrawable = getResources().getDrawable(R.drawable.check_list);
@@ -239,9 +241,11 @@ public class ProfileSearchCell extends BaseCell {
                 drawCheck = chat.verified;
                 if (!LocaleController.isRTL) {
                     nameLockLeft = AndroidUtilities.dp(AndroidUtilities.leftBaseline);
-                    nameLeft = AndroidUtilities.dp(AndroidUtilities.leftBaseline + 4) + (drawNameGroup ? groupDrawable.getIntrinsicWidth() : broadcastDrawable.getIntrinsicWidth());
+                    //nameLeft = AndroidUtilities.dp(AndroidUtilities.leftBaseline + 4) + (drawNameGroup ? groupDrawable.getIntrinsicWidth() : broadcastDrawable.getIntrinsicWidth());
+                    nameLeft = AndroidUtilities.dp(AndroidUtilities.leftBaseline + 4) + (drawNameGroup ? chat.megagroup ? superGroupDrawable.getIntrinsicWidth() : groupDrawable.getIntrinsicWidth() : broadcastDrawable.getIntrinsicWidth());
                 } else {
-                    nameLockLeft = getMeasuredWidth() - AndroidUtilities.dp(AndroidUtilities.leftBaseline + 2) - (drawNameGroup ? groupDrawable.getIntrinsicWidth() : broadcastDrawable.getIntrinsicWidth());
+                    //nameLockLeft = getMeasuredWidth() - AndroidUtilities.dp(AndroidUtilities.leftBaseline + 2) - (drawNameGroup ? groupDrawable.getIntrinsicWidth() : broadcastDrawable.getIntrinsicWidth());
+                    nameLockLeft = getMeasuredWidth() - AndroidUtilities.dp(AndroidUtilities.leftBaseline + 2) - (drawNameGroup ? chat.megagroup ? superGroupDrawable.getIntrinsicWidth() : groupDrawable.getIntrinsicWidth() : broadcastDrawable.getIntrinsicWidth());
                     nameLeft = AndroidUtilities.dp(11);
                 }
             } else {
@@ -304,7 +308,8 @@ public class ProfileSearchCell extends BaseCell {
         } else if (drawNameBroadcast) {
             nameWidth -= AndroidUtilities.dp(6) + broadcastDrawable.getIntrinsicWidth();
         } else if (drawNameGroup) {
-            nameWidth -= AndroidUtilities.dp(6) + groupDrawable.getIntrinsicWidth();
+            //nameWidth -= AndroidUtilities.dp(6) + groupDrawable.getIntrinsicWidth();
+            nameWidth -= AndroidUtilities.dp(6) + (chat.megagroup ? superGroupDrawable.getIntrinsicWidth() : groupDrawable.getIntrinsicWidth());
         } else if (drawNameBot) {
             nameWidth -= AndroidUtilities.dp(6) + botDrawable.getIntrinsicWidth();
         }
@@ -523,8 +528,15 @@ public class ProfileSearchCell extends BaseCell {
             setDrawableBounds(lockDrawable, nameLockLeft, nameLockTop);
             lockDrawable.draw(canvas);
         } else if (drawNameGroup) {
-            setDrawableBounds(groupDrawable, nameLockLeft, nameLockTop);
-            groupDrawable.draw(canvas);
+            //setDrawableBounds(groupDrawable, nameLockLeft, nameLockTop);
+            //groupDrawable.draw(canvas);
+            if(chat.megagroup){
+                setDrawableBounds(superGroupDrawable, nameLockLeft, nameLockTop);
+                superGroupDrawable.draw(canvas);
+            }else{
+                setDrawableBounds(groupDrawable, nameLockLeft, nameLockTop);
+                groupDrawable.draw(canvas);
+            }
         } else if (drawNameBroadcast) {
             setDrawableBounds(broadcastDrawable, nameLockLeft, nameLockTop);
             broadcastDrawable.draw(canvas);

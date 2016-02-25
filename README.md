@@ -1,4 +1,4 @@
-### Plus Messenger for Android
+### Plus Messenger for Android (http://plusmessenger.org)
 
 This is an UNOFFICIAL app that uses [Telegram's API](https://core.telegram.org/api)
 

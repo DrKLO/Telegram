@@ -229,7 +229,6 @@
   <string name="TerminateAllSessions">अन्य सभी सत्रों को समाप्त करें</string>
   <string name="Events">घटनाक्रम</string>
   <string name="ContactJoined">कांटेक्ट टेलीग्राम में शामिल हुआ</string>
-  <string name="Pebble">PEBBLE</string>
   <string name="Language">भाषा</string>
   <string name="AskButton">स्वयंसेवक से पुछें</string>
   <string name="TelegramFaq">टेलीग्राम FAQ</string>
@@ -514,8 +513,8 @@
   <string name="formatterDay12H">h:mm a</string>
   <string name="formatDateAtTime">%1$s पर %2$s</string>
   <!--update text--><!--
-  <string name="updateText">Plus Messenger for Android has been updated. New in Version 3.0:\n\n\n\n- Dedicated tabs for each one of your custom sticker sets in the sticker panel. Add custom stickers like https://telegram.me/addstickers/Animals\n- New bot API, free for everyone. If you\'re an engineer, create your own bots for games, services or integrations. Learn more at https://telegram.org/blog/bot-revolution\n https://play.google.com/store/apps/details?id=es.rafalense.themes</string>-->
-  <string name="updateBuild">689</string>
+  <string name="updateText">Plus Messenger for Android has been updated. New in Version 3.0:\n\n\n\n- Dedicated tabs for each one of your custom sticker sets in the sticker panel. Add custom stickers like https://telegram.me/addstickers/Animals\n- New bot API, free for everyone. If you\'re an engineer, create your own bots for games, services or integrations. Learn more at https://telegram.org/blog/bot-revolution\n https://play.google.com/store/apps/details?id=es.rafalense.themes</string>
+  <string name="updateBuild">736</string>-->
   <!--Telegram+--><!--
   <string name="updatePlusText"></string>-->
   <string name="TelegramForAndroid">Android  के लिए प्लस मैसेंजर</string>
@@ -562,7 +561,8 @@
   <string name="EditTextSize">सन्देश लिखने का माप</string>
   <string name="EditTextBGColor">सन्देश लिखने की पृष्ठभूमि का रंग</string>
   <string name="EmojiViewBGColor">ईमोजी की पृष्ठभूमि का रंग</string>
-  <string name="EmojiViewTabColor">ईमोजी के पन्ने का रंग</string>
+  <string name="EmojiViewTabColor">चुना गया ईमोजी-टैब का रंग </string>
+  <string name="EmojiViewTabIconColor"> ईमोजी-टैब चिन्ह का रंग </string>
   <string name="OnlineColor">Online का रंग</string>
   <string name="ChatMusic">संगीत</string>
   <string name="SaveTheme">थीम सेव करे</string>
@@ -582,6 +582,8 @@
   <string name="MuteColor">मुक् का रंग</string>
   <string name="SendLogs">Log भेजे</string>
   <string name="SendLogsEmpty">कोई Log नहीं है</string>
+  <string name="ClearLogs">लॉग्स साफ़ करें  </string>
+  <string name="ClearLogsMsg">लॉग्स साफ़ कर दिया </string>
   <string name="SendIcon">भेजने का चिन्ह</string>
   <string name="HideMobile">मेनू में से मोबाइल नंबर छुपाये</string>
   <string name="FloatingPencilColor">तैरती पेंसिल का रंग</string>
@@ -621,8 +623,8 @@
   <string name="KeepOriginalFilename">फाइल का मूल नाम रखे</string>
   <string name="KeepOriginalFilenameHelp">नंबर के बदले नाम_दिनांक के प्रारूप में सेव करे</string>
   <string name="AvatarSize">अवतार का माप</string>
-  <string name="AvatarAlignTop">अवतार की ऊपर से सीध बांधे</string>
-  <string name="AvatarMarginLeft">अवतार से बायें का हाशिया</string>
+  <string name="AvatarAlignTop">संपर्क अवतारको ऊपर संरेखित करें </string>
+  <string name="AvatarMarginLeft">अवतारकी सीमा</string>
   <string name="GroupNameColor">समूह के नाम का रंग</string>
   <string name="GroupNameSize">समूह के नाम का माप</string>
   <string name="UnknownNameColor">नाम का रंग (अनजान नंबर)</string>
@@ -644,4 +646,61 @@
   <string name="UseDeviceFont">फ़ोन की लिपि दिखाए</string>
   <string name="AppWillRestart">प्लस मैसेंजर पुनप्रारंभ होरहा है </string>
   <string name="GroupIconColor">समूह चिह्नों का रंग</string>
+  <string name="SharedContactNameColor">शेयर किये कॉन्टक्ट का रंग</string>
+  <string name="AttachBGColor">Attach पृष्ठभूमि का रंग</string>
+  <string name="AttachTextColor">Attach टेक्स्ट का रंग</string>
+  <string name="ShowContactAvatar">संपर्क अवतार चैट स्क्रीन में दिखाएँ</string>
+  <string name="ShowOwnAvatar">खुदका अवतार चैट स्क्रीन में दिखाएँ</string>
+  <string name="ShowOwnAvatarGroup">खुदका अवतार ग्रुप स्क्रीन में दिखाएँ</string>
+  <string name="OwnAvatarAlignTop">खुदका अवतार ऊपर संरेखित करें</string>
+  <string name="DialogColor">संवाद शीर्षक/बटन का रंग</string>
+  <string name="ShowUsername">सदस्य नाम के साथ उपयोगकर्ता नाम दिखाएँ</string>
+  <string name="DisableAudioStop">ऑडियो को मत रोको</string>
+  <string name="ListDividerColor">सूची में विभक्त का रंग</string>
+  <string name="CenterAvatar">अवतार, नाम और फ़ोन को केंद्र में करे </string>
+  <string name="RowGradient">ग्रेडिएंट </string>
+  <string name="RowGradientColor">ग्रेडिएंट का रंग </string>
+  <string name="RowGradientDisabled">निर्योग्य </string>
+  <string name="RowGradientTopBottom">ऊपर से नीचे</string>
+  <string name="RowGradientLeftRight">बाएँ से दांए</string>
+  <string name="RowGradientTLBR">ऊपरी बाएं से नीची दाएं</string>
+  <string name="RowGradientBLTR">नीची-बाएं से ऊपरी-दाएं</string>
+  <string name="RowGradientList">सूची पृष्ठभूमि के लिए ग्रेडिएंट लागू करें</string>
+  <string name="Copied">%s क्लिपबोर्ड पर कॉपी किया गया हैं </string>
+  <string name="JoinChannel">\n\n प्लस मेसेंजर के अधिकृत चैनल का सदस्य बने : https://telegram.me/plusmsgr</string>
+  <string name="DownloadThemes">थीम्स डाउनलोड करें </string>
+  <string name="OfficialChannel">अधिकृत चैनल</string>
+  <string name="DialogsSettings">डायलॉग्स </string>
+  <string name="ClickOnContactPic">व्यक्ति चित्र पे क्लिक करें </string>
+  <string name="ClickOnGroupPic">समूह चित्र पे क्लिक करें </string>
+  <string name="ShowProfile">प्रोफ़ाइल</string>
+  <string name="ShowPics">तस्वीरें </string>
+  <string name="CountSilentBGColor">गिनती की पृष्ठभूमि का रंग</string>
+  <string name="CommandColorCheck">बॉट्स के आदेशों का रंग</string>
+  <string name="CommandColor">बॉट्स के आदेशों का रंग</string>
+  <string name="HighlightSearchColor">ख़ोज का रंग उभारे</string>
+  <string name="ThemeUpdated">%s अपडेट होगया </string>
+  <string name="HideStatusIndicator">उपयोगकर्ता स्थिति सूचक छुपाएँ</string>
+  <string name="HideTabs">टैब्स छुपाएँ</string>
+  <string name="All">सब</string>
+  <string name="Users">उपयोगकर्ते  </string>
+  <string name="Groups">ग्रुप्स </string>
+  <string name="SuperGroups">सुपरग्रुप</string>
+  <string name="Channels">चैनल्स </string>
+  <string name="Bots">बॉट्स </string>
+  <string name="Favorites">पसंदिदे</string>
+  <string name="TabsHeight">टैब्स की ऊंचाई</string>
+  <string name="SetAsDefaultTab">डिफ़ॉल्ट टैब के रूप में सेट करें</string>
+  <string name="ResetDefaultTab">डिफ़ॉल्ट टैब रीसेट करें</string>
+  <string name="SortByStatus">स्थिति द्वारा सॉर्ट करें</string>
+  <string name="SortByLastMessage">पिछले संदेश से सॉर्ट करें</string>
+  <string name="SortByUnreadCount">न पढ़े गए संदेशों द्वारा सॉर्ट करें</string>
+  <string name="ShowSuperGroupsTab">सुपरग्रुप टैब दिखाए</string>
+  <string name="HideSuperGroupsTab">सुपरग्रुप टैब छुपाएँ</string>
+  <string name="Tabs">टैब्स</string>
+  <string name="HideShowTabs">टैब्स दिखाए/छुपाएँ</string>
+  <string name="AddToFavorites">पसंदीदा टैब मे जोड़े </string>
+  <string name="DeleteFromFavorites">पसंदीदा टैबसे निकले  </string>
+  <string name="NoFavoritesHelp">कोई पसंदीदा नहीं \n\n नया संभाषण जोड़ने केलिये किसीभी संभाषण को पकड़कर \"पसंदीदा टैब मे जोड़े \" चुनें </string>
+  <string name="DisableTabsAnimation">स्क्रॉल करते वक़्त टैब्स न छिपाए </string>
 </resources>

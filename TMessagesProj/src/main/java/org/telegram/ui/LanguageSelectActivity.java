@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2015.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.ui;
@@ -14,6 +14,7 @@ import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.graphics.PorterDuff;
 import android.graphics.drawable.Drawable;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
@@ -175,6 +176,7 @@ public class LanguageSelectActivity extends BaseFragment {
                         localeInfo = LocaleController.getInstance().sortedLanguages.get(i);
                     }
                 }
+                Log.e("Language","localeInfo " + (localeInfo != null ? localeInfo.shortName : "NULL"));
                 if (localeInfo != null) {
                     LocaleController.getInstance().applyLanguage(localeInfo, true);
                     parentLayout.rebuildAllFragmentViews(false);

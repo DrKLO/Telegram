@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2015.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.messenger;
@@ -64,7 +64,8 @@ public class Utilities {
 
     public native static void loadBitmap(String path, Bitmap bitmap, int scale, int width, int height, int stride);
     public native static int pinBitmap(Bitmap bitmap);
-    public native static void blurBitmap(Object bitmap, int radius, int unpin);
+    public native static int unpinBitmap(Bitmap bitmap);
+    public native static void blurBitmap(Object bitmap, int radius, int unpin, int width, int height, int stride);
     public native static void calcCDT(ByteBuffer hsvBuffer, int width, int height, ByteBuffer buffer);
     public native static boolean loadWebpImage(Bitmap bitmap, ByteBuffer buffer, int len, BitmapFactory.Options options, boolean unpin);
     public native static int convertVideoFrame(ByteBuffer src, ByteBuffer dest, int destFormat, int width, int height, int padding, int swap);
@@ -84,6 +85,23 @@ public class Utilities {
             if (matcher.find()) {
                 String num = matcher.group(0);
                 val = Integer.parseInt(num);
+            }
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
+        return val;
+    }
+
+    public static Long parseLong(String value) {
+        if (value == null) {
+            return 0L;
+        }
+        Long val = 0L;
+        try {
+            Matcher matcher = pattern.matcher(value);
+            if (matcher.find()) {
+                String num = matcher.group(0);
+                val = Long.parseLong(num);
             }
         } catch (Exception e) {
             FileLog.e("tmessages", e);

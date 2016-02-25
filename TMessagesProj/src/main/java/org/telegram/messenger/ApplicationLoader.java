@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2015.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.messenger;
@@ -22,7 +22,6 @@ import android.content.pm.PackageInfo;
 import android.content.res.Configuration;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
-import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Handler;
 import android.os.PowerManager;
@@ -30,8 +29,8 @@ import android.util.Base64;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GooglePlayServicesUtil;
-import com.google.android.gms.gcm.GoogleCloudMessaging;
 
+import org.telegram.SQLite.DatabaseHandler;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.SerializedData;
 import org.telegram.tgnet.TLRPC;
@@ -40,17 +39,11 @@ import org.telegram.ui.Components.ForegroundDetector;
 import java.io.File;
 import java.io.RandomAccessFile;
 import java.util.Calendar;
-import java.util.concurrent.atomic.AtomicInteger;
 
 public class ApplicationLoader extends Application {
+    private static NetworkAlarm networkAlarm = null;
+    private static PendingIntent pendingIntent;
 
-    private GoogleCloudMessaging gcm;
-    private AtomicInteger msgId = new AtomicInteger();
-    private String regid;
-    public static final String EXTRA_MESSAGE = "message";
-    public static final String PROPERTY_REG_ID = "registration_id";
-    private static final String PROPERTY_APP_VERSION = "appVersion";
-    private static final int PLAY_SERVICES_RESOLUTION_REQUEST = 9000;
     private static Drawable cachedWallpaper;
     private static int selectedColor;
     private static boolean isCustomTheme;
@@ -63,6 +56,7 @@ public class ApplicationLoader extends Application {
     public static volatile boolean isScreenOn = false;
     public static volatile boolean mainInterfacePaused = true;
 
+    public static DatabaseHandler databaseHandler;
     public static boolean SHOW_ANDROID_EMOJI;
     public static boolean KEEP_ORIGINAL_FILENAME;
     public static boolean USE_DEVICE_FONT;
@@ -186,7 +180,8 @@ public class ApplicationLoader extends Application {
         } catch (Exception e) {
             FileLog.e("tmessages", e);
         }
-        return new File("/data/data/org.telegram.messenger/files");
+        //return new File("/data/data/org.telegram.messenger/files");
+        return new File("/data/data/org.telegram." + (BuildConfig.DEBUG ? "plus.beta" : "plus") +"/files");
     }
 
     public static void postInitApplication() {
@@ -239,16 +234,16 @@ public class ApplicationLoader extends Application {
             appVersion = "App version unknown";
             systemVersion = "SDK " + Build.VERSION.SDK_INT;
         }
-        if (langCode.length() == 0) {
+        if (langCode.trim().length() == 0) {
             langCode = "en";
         }
-        if (deviceModel.length() == 0) {
+        if (deviceModel.trim().length() == 0) {
             deviceModel = "Android unknown";
         }
-        if (appVersion.length() == 0) {
+        if (appVersion.trim().length() == 0) {
             appVersion = "App version unknown";
         }
-        if (systemVersion.length() == 0) {
+        if (systemVersion.trim().length() == 0) {
             systemVersion = "SDK Unknown";
         }
 
@@ -280,7 +275,11 @@ public class ApplicationLoader extends Application {
 
         applicationContext = getApplicationContext();
         NativeLoader.initNativeLibs(ApplicationLoader.applicationContext);
-        ConnectionsManager.native_setJava(Build.VERSION.SDK_INT == 14 || Build.VERSION.SDK_INT == 15);
+        try{
+            ConnectionsManager.native_setJava(Build.VERSION.SDK_INT == 14 || Build.VERSION.SDK_INT == 15);
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
 
         if (Build.VERSION.SDK_INT >= 14) {
             new ForegroundDetector(this);
@@ -288,10 +287,12 @@ public class ApplicationLoader extends Application {
 
         applicationHandler = new Handler(applicationContext.getMainLooper());
         //plus
-        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
-        SHOW_ANDROID_EMOJI = preferences.getBoolean("showAndroidEmoji", false);
-        KEEP_ORIGINAL_FILENAME = preferences.getBoolean("keepOriginalFilename", false);
-        USE_DEVICE_FONT = preferences.getBoolean("useDeviceFont", false);
+        databaseHandler = new DatabaseHandler(applicationContext);
+        //SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+        SharedPreferences plusPreferences = ApplicationLoader.applicationContext.getSharedPreferences("plusconfig", Activity.MODE_PRIVATE);
+        SHOW_ANDROID_EMOJI = plusPreferences.getBoolean("showAndroidEmoji", false);
+        KEEP_ORIGINAL_FILENAME = plusPreferences.getBoolean("keepOriginalFilename", false);
+        USE_DEVICE_FONT = plusPreferences.getBoolean("useDeviceFont", false);
         //
         startPushService();
     }
@@ -300,13 +301,22 @@ public class ApplicationLoader extends Application {
         SharedPreferences preferences = applicationContext.getSharedPreferences("Notifications", MODE_PRIVATE);
 
         if (preferences.getBoolean("pushService", true)) {
+            networkAlarm = new NetworkAlarm();
+        /*} else {
+            AlarmManager am = (AlarmManager) applicationContext.getSystemService(Context.ALARM_SERVICE);
+            Intent i = new Intent(applicationContext, ApplicationLoader.class);
+            pendingIntent = PendingIntent.getBroadcast(applicationContext, 0, i, 0);
+
+            am.cancel(pendingIntent);
+            am.setRepeating(AlarmManager.RTC_WAKEUP, System.currentTimeMillis(), 60000, pendingIntent);
+        }*/
             applicationContext.startService(new Intent(applicationContext, NotificationsService.class));
             //if (android.os.Build.VERSION.SDK_INT >= 19) {
-                FileLog.e("ApplicationLoader", "startPushService");
-                Calendar cal = Calendar.getInstance();
-                PendingIntent pintent = PendingIntent.getService(applicationContext, 0, new Intent(applicationContext, NotificationsService.class), 0);
-                AlarmManager alarm = (AlarmManager) applicationContext.getSystemService(Context.ALARM_SERVICE);
-                alarm.setRepeating(AlarmManager.RTC_WAKEUP, cal.getTimeInMillis(), 30000, pintent);
+                ///FileLog.e("ApplicationLoader", "startPushService");
+                ///Calendar cal = Calendar.getInstance();
+                ///PendingIntent pintent = PendingIntent.getService(applicationContext, 0, new Intent(applicationContext, NotificationsService.class), 0);
+                ///AlarmManager alarm = (AlarmManager) applicationContext.getSystemService(Context.ALARM_SERVICE);
+                ///alarm.setRepeating(AlarmManager.RTC_WAKEUP, cal.getTimeInMillis(), 30000, pintent);
 
                 //PendingIntent pintent = PendingIntent.getService(applicationContext, 0, new Intent(applicationContext, NotificationsService.class), 0);
                 //AlarmManager alarm = (AlarmManager)applicationContext.getSystemService(Context.ALARM_SERVICE);
@@ -318,13 +328,26 @@ public class ApplicationLoader extends Application {
     }
 
     public static void stopPushService() {
+        if (networkAlarm != null) {
+            networkAlarm = null;
+        }// else {
+         //   AlarmManager am = (AlarmManager) applicationContext.getSystemService(Context.ALARM_SERVICE);
+        //    am.cancel(pendingIntent);
+        //}
         applicationContext.stopService(new Intent(applicationContext, NotificationsService.class));
 
-        PendingIntent pintent = PendingIntent.getService(applicationContext, 0, new Intent(applicationContext, NotificationsService.class), 0);
-        AlarmManager alarm = (AlarmManager)applicationContext.getSystemService(Context.ALARM_SERVICE);
-        alarm.cancel(pintent);
+        ///PendingIntent pintent = PendingIntent.getService(applicationContext, 0, new Intent(applicationContext, NotificationsService.class), 0);
+        ///AlarmManager alarm = (AlarmManager)applicationContext.getSystemService(Context.ALARM_SERVICE);
+        ///alarm.cancel(pintent);
     }
 
+    public static void setAlarm(int timeout) {
+        FileLog.d("tmessages", "setting alarm to wake us in " + String.valueOf(timeout) + "ms");
+
+        if (networkAlarm != null) {
+            networkAlarm.setAlarm(applicationContext, timeout);
+        }
+    }
     @Override
     public void onConfigurationChanged(Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
@@ -341,13 +364,10 @@ public class ApplicationLoader extends Application {
             @Override
             public void run() {
         if (checkPlayServices()) {
-                    gcm = GoogleCloudMessaging.getInstance(ApplicationLoader.this);
-            regid = getRegistrationId();
-
-            if (regid.length() == 0) {
-                registerInBackground();
-            } else {
-                sendRegistrationIdToBackend(false);
+                    if (UserConfig.pushString == null || UserConfig.pushString.length() == 0) {
+                        FileLog.d("tmessages", "GCM Registration not found.");
+                        Intent intent = new Intent(applicationContext, GcmRegistrationIntentService.class);
+                        startService(intent);
             }
         } else {
             FileLog.d("tmessages", "No valid Google Play Services APK found.");
@@ -368,92 +388,5 @@ public class ApplicationLoader extends Application {
             return false;
         }
         return true;*/
-    }
-
-    private String getRegistrationId() {
-        final SharedPreferences prefs = getGCMPreferences(applicationContext);
-        String registrationId = prefs.getString(PROPERTY_REG_ID, "");
-        if (registrationId.length() == 0) {
-            FileLog.d("tmessages", "Registration not found.");
-            return "";
-        }
-        int registeredVersion = prefs.getInt(PROPERTY_APP_VERSION, Integer.MIN_VALUE);
-        if (registeredVersion != BuildVars.BUILD_VERSION) {
-            FileLog.d("tmessages", "App version changed.");
-            return "";
-        }
-        return registrationId;
-    }
-
-    private SharedPreferences getGCMPreferences(Context context) {
-        return getSharedPreferences(ApplicationLoader.class.getSimpleName(), Context.MODE_PRIVATE);
-    }
-
-    private void registerInBackground() {
-        AsyncTask<String, String, Boolean> task = new AsyncTask<String, String, Boolean>() {
-            @Override
-            protected Boolean doInBackground(String... objects) {
-                if (gcm == null) {
-                    gcm = GoogleCloudMessaging.getInstance(applicationContext);
-                }
-                int count = 0;
-                while (count < 1000) {
-                    try {
-                        count++;
-                        regid = gcm.register(BuildVars.GCM_SENDER_ID);
-                        sendRegistrationIdToBackend(true);
-                        storeRegistrationId(applicationContext, regid);
-                        return true;
-                    } catch (Exception e) {
-                        FileLog.e("tmessages", e);
-                    }
-                    try {
-                        if (count % 20 == 0) {
-                            Thread.sleep(60000 * 30);
-                        } else {
-                            Thread.sleep(5000);
-                        }
-                    } catch (InterruptedException e) {
-                        FileLog.e("tmessages", e);
-                    }
-                }
-                return false;
-            }
-        };
-
-        if (android.os.Build.VERSION.SDK_INT >= 11) {
-            task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, null, null, null);
-        } else {
-            task.execute(null, null, null);
-        }
-    }
-
-    private void sendRegistrationIdToBackend(final boolean isNew) {
-        Utilities.stageQueue.postRunnable(new Runnable() {
-            @Override
-            public void run() {
-                UserConfig.pushString = regid;
-                UserConfig.registeredForPush = !isNew;
-                UserConfig.saveConfig(false);
-                if (UserConfig.getClientUserId() != 0) {
-                    AndroidUtilities.runOnUIThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            MessagesController.getInstance().registerForPush(regid);
-                        }
-                    });
-                }
-            }
-        });
-    }
-
-    private void storeRegistrationId(Context context, String regId) {
-        final SharedPreferences prefs = getGCMPreferences(context);
-        int appVersion = BuildVars.BUILD_VERSION;
-        FileLog.e("tmessages", "Saving regId on app version " + appVersion);
-        SharedPreferences.Editor editor = prefs.edit();
-        editor.putString(PROPERTY_REG_ID, regId);
-        editor.putInt(PROPERTY_APP_VERSION, appVersion);
-        editor.commit();
     }
 }

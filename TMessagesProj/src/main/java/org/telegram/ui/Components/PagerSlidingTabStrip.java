@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2015.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.ui.Components;
@@ -154,15 +154,15 @@ public class PagerSlidingTabStrip extends HorizontalScrollView {
 
         final FilterableStateListDrawable selectorDrawable = new FilterableStateListDrawable();
 
-        selectorDrawable.addState(new int[] {-focused, -selected, -pressed}, filteredNonactiveTab, new PorterDuffColorFilter(iconColor, PorterDuff.Mode.SRC_ATOP));
+        selectorDrawable.addState(new int[] {-focused, -selected, -pressed}, filteredNonactiveTab, new PorterDuffColorFilter(iconColor, PorterDuff.Mode.SRC_IN));
         selectorDrawable.addState(new int[] {-focused, -selected, -pressed}, nonactiveTab);
-        selectorDrawable.addState(new int[] {-focused, selected, -pressed}, filteredActiveTab, new PorterDuffColorFilter(tabColor, PorterDuff.Mode.SRC_ATOP));
+        selectorDrawable.addState(new int[] {-focused, selected, -pressed}, filteredActiveTab, new PorterDuffColorFilter(tabColor, PorterDuff.Mode.SRC_IN));
         selectorDrawable.addState(new int[] {-focused, selected, -pressed}, activeTab);
-        selectorDrawable.addState(new int[] {pressed}, filteredActiveTab, new PorterDuffColorFilter(tabColor, PorterDuff.Mode.SRC_ATOP));
+        selectorDrawable.addState(new int[] {pressed}, filteredActiveTab, new PorterDuffColorFilter(tabColor, PorterDuff.Mode.SRC_IN));
         selectorDrawable.addState(new int[] {pressed}, activeTab);
-        selectorDrawable.addState(new int[]{focused, -selected, -pressed}, filteredNonactiveTab, new PorterDuffColorFilter(iconColor, PorterDuff.Mode.SRC_ATOP));
+        selectorDrawable.addState(new int[]{focused, -selected, -pressed}, filteredNonactiveTab, new PorterDuffColorFilter(iconColor, PorterDuff.Mode.SRC_IN));
         selectorDrawable.addState(new int[]{focused, -selected, -pressed}, nonactiveTab);
-        selectorDrawable.addState(new int[]{focused, selected, -pressed}, filteredNonactiveTab, new PorterDuffColorFilter(iconColor, PorterDuff.Mode.SRC_ATOP));
+        selectorDrawable.addState(new int[]{focused, selected, -pressed}, filteredNonactiveTab, new PorterDuffColorFilter(iconColor, PorterDuff.Mode.SRC_IN));
         selectorDrawable.addState(new int[]{focused, selected, -pressed}, nonactiveTab);
 
         return selectorDrawable;

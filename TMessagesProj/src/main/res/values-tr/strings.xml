@@ -296,7 +296,6 @@
   <string name="TerminateAllSessions">Tüm Diğer Oturumları Sonlandır</string>
   <string name="Events">Etkinlikler</string>
   <string name="ContactJoined">Kişi Telegram\'a katıldı</string>
-  <string name="Pebble">PEBBLE</string>
   <string name="Language">Dil</string>
   <string name="AskAQuestionInfo">Lütfen Telegram Desteğinin gönüllüler tarafından verildiğini unutmayın. Biz sizlere olanaklarımızın yettiği kadar hızlı yanıt vermeyi deniyoruz, ama yine de bu biraz zaman alabilir.<![CDATA[<br><br>]]>Lütfen <![CDATA[<a href=\"https://telegram.org/faq#general\">Telegram SSS</a>]]> sayfasına bakın: Çok sorulan soruların yanıtları ve sorun giderme ipuçları için <![CDATA[<a href=\"https://telegram.org/faq#troubleshooting\">sorun giderme</a>]]> sayfasına göz atın.</string>
   <string name="AskButton">Bir gönüllüye soru sor</string>
@@ -584,7 +583,7 @@
   <string name="ActionAddUserYou">un1 sizi ekledi</string>
   <string name="ActionAddUserSelf">un1 gruba geri döndü</string>
   <string name="ActionAddUserSelfYou">Gruba geri döndünüz</string>
-  <string name="UnsuppotedMedia">Telegram sürümünüz bu iletiyi desteklemiyor. Görmek için uygulamayı güncelleyin: https://telegram.org/update</string>
+  <string name="UnsupportedMedia">Telegram sürümünüz bu iletiyi desteklemiyor. Görmek için uygulamayı güncelleyin: https://telegram.org/update</string>
   <string name="AttachPhoto">Fotoğraf</string>
   <string name="AttachVideo">Video</string>
   <string name="AttachLocation">Konum</string>
@@ -829,13 +828,14 @@
   <string name="formatterDay12H">h:mm a</string>
   <string name="formatDateAtTime">%1$s %2$s</string>
   <!--update text--><!--
-  <string name="updateText">Plus Messenger için temalar indirin ve uygulayın. Hergün yeni temalar ekleniyor:\n https://play.google.com/store/apps/details?id=es.rafalense.themes</string>-->
-  <string name="updateBuild">689</string>
-  <!--Telegram+--><!--
+  <string name="updateText">Plus Messenger için temalar indirin ve uygulayın. Hergün yeni temalar ekleniyor:\n https://play.google.com/store/apps/details?id=es.rafalense.themes</string>
+  <string name="updateBuild">736</string>-->
+  <!--Telegram+-->
   <string name="updatePlusText">
-\n\n3.2.2.1\'deki Yenilikler:\n\n- Artık duvarkağıdı direkt olarak sohbet ekranından değişebiliyor\n- Tema duvarkağıtlarının uygulama yönteminde geliştirmeler yapıldı\n- Eğer profil ekranında işaretlenmişse kullanıcı adı kopyalanabilir\n- Hata düzeltmeleri</string>-->
+\n\n3.4.2.5 Sürüm Yenilikleri:\n\n- Grup ve süpergrup adminleri chat ekranında kullanıcı avatarına tıklayarak artık şunlardan birine erişebilir: \'Profili Göster\', \'Gruptan Sil\', \'Admin Yap\'\n- Hata düzeltmeleri</string>
   <string name="TelegramForAndroid">Android için Plus Messenger</string>
   <string name="Theming">Tema</string>
+  <string name="PlusSettings">Plus Ayarları</string>
   <string name="colorHexInvalid">Geçersiz renk hex kodu!</string>
   <string name="themeColor">Tema Rengi</string>
   <string name="ResetThemeSettings">Tema Ayarlarını Sıfırla</string>
@@ -899,6 +899,8 @@
   <string name="MuteColor">Sessiz Rengi</string>
   <string name="SendLogs">Logları Gönder</string>
   <string name="SendLogsEmpty">Log bulunmamakta</string>
+  <string name="ClearLogs">Kayıtları temizle</string>
+  <string name="ClearLogsMsg">kayıtlar silindi</string>
   <string name="SendIcon">Simge Gönder</string>
   <string name="HideMobile">Telefon Numaramı Gizle</string>
   <string name="FloatingPencilColor">Float Buton Kalem Rengi</string>
@@ -982,6 +984,44 @@
   <string name="RowGradientBLTR">Alt Sol Üst Sağ</string>
   <string name="RowGradientList">Arkaplana gradyan uygula</string>
   <string name="Copied">%s panoya kopyalandı</string>
-  <string name="JoinChannel">
-\n\nPlus Messenger resmi kanalına katılın: https://telegram.me/plusmsgr</string>
+  <string name="JoinChannel">\n\nPlus Messenger resmi kanalına katılın: https://telegram.me/plusmsgr</string>
+  <string name="DownloadThemes">Temaları indir</string>
+  <string name="OfficialChannel">Resmi kanal</string>
+  <string name="DialogsSettings">Diyaloglar</string>
+  <string name="ClickOnContactPic">Kişinin profil resmine tıkla</string>
+  <string name="ClickOnGroupPic">Grup profil resmine tıkla</string>
+  <string name="ShowProfile">Profil</string>
+  <string name="ShowPics">Profil resimleri</string>
+  <string name="CountSilentBGColor">Sessizdeki sayaçlarda arkaplan rengi</string>
+  <string name="CommandColorCheck">Bot komut rengi aktifliği</string>
+  <string name="CommandColor">Bot komut rengi</string>
+  <string name="HighlightSearchColor">Aranılan kelimeyi vurgula</string>
+  <string name="ThemeUpdated">%s güncellendi</string>
+  <string name="HideStatusIndicator">Üye durum göstergesini gizle</string>
+  <string name="HideTabs">Sekmeleri Gizle</string>
+  <string name="All">Tümü</string>
+  <string name="Users">Kişiler</string>
+  <string name="Groups">Gruplar</string>
+  <string name="SuperGroups">Süpergruplar</string>
+  <string name="Channels">Kanallar</string>
+  <string name="Bots">Botlar</string>
+  <string name="Favorites">Favoriler</string>
+  <string name="TabsHeight">Sekme yüksekliği</string>
+  <string name="SetAsDefaultTab">Varsayılan sekme olarak ayarla</string>
+  <string name="ResetDefaultTab">Varsayılan sekmeyi resetle</string>
+  <string name="SortByStatus">Duruma göre sırala</string>
+  <string name="SortByLastMessage">Son mesaja göre sırala</string>
+  <string name="SortByUnreadCount">Okunmamış mesaja göre sırala</string>
+  <string name="ShowSuperGroupsTab">Süpergruplar sekmesini göster</string>
+  <string name="HideSuperGroupsTab">Süpergruplar sekmesini gizle</string>
+  <string name="Tabs">Sekmeler</string>
+  <string name="HideShowTabs">Sekmeleri Göster/Gizle</string>
+  <string name="AddToFavorites">Favorilere ekle</string>
+  <string name="DeleteFromFavorites">Favorilerden kaldır</string>
+  <string name="NoFavoritesHelp">Favori Yok\n\nBu listeye eklemek istediğiniz konuşmaya basılı tutun ve ardından \'Favorilere ekle\' tuşuna basın.</string>
+  <string name="DisableTabsAnimation">Kaydırırken sekmeleri gizleme</string>
+  <string name="InfiniteSwipe">Sekmeler arası sonsuz geçiş</string>
+  <string name="ShowDirectShareButton">\"Direkt paylaş\" butonunu göster</string>
+  <string name="Quote">ALINTI</string>
+  <string name="RemoveUserAdmin">Admin listesinden kaldır</string>
 </resources>

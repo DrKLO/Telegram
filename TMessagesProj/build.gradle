@@ -6,7 +6,8 @@ repositories {
 
 dependencies {
     compile 'com.android.support:support-v4:23.1.+'
-    compile 'com.google.android.gms:play-services:3.2.+'
+    compile "com.google.android.gms:play-services-gcm:8.4.0"
+    compile "com.google.android.gms:play-services-maps:8.4.0"
     compile 'net.hockeyapp.android:HockeySDK:3.6.+'
     compile 'com.googlecode.mp4parser:isoparser:1.0.+'
 }
@@ -16,6 +17,8 @@ android {
     buildToolsVersion '23.0.2'
 
     useLibrary 'org.apache.http.legacy'
+    //defaultConfig.applicationId = "org.telegram.messenger"
+    defaultConfig.applicationId = "org.telegram.plus"
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_7
@@ -25,6 +28,10 @@ android {
     signingConfigs {
         debug {
             storeFile file("config/debug.keystore")
+            //storeFile file("config/release.keystore")
+            //storePassword RELEASE_STORE_PASSWORD
+            //keyAlias RELEASE_KEY_ALIAS
+            //keyPassword RELEASE_KEY_PASSWORD
         }
 
         release {
@@ -47,6 +54,8 @@ android {
             debuggable false
             jniDebuggable false
             //signingConfig signingConfigs.release
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
 
         foss {
@@ -79,10 +88,9 @@ android {
     }
 
     defaultConfig {
-        applicationId "org.telegram.plus"
-        minSdkVersion 8
+        minSdkVersion 9
         targetSdkVersion 23
-        versionCode 689
-        versionName "3.3.1.1"
+        versionCode 736
+        versionName "3.4.2.5"
     }
 }

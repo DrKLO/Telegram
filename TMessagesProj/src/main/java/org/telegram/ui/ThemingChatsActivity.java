@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2015.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.ui;
@@ -268,7 +268,7 @@ public class ThemingChatsActivity extends BaseFragment {
                             public void colorChanged(int color) {
                                 commitInt(key, color);
                             }
-                        },themePrefs.getInt( key, 0xffffffff), CENTER, 0, false);
+                        },themePrefs.getInt( key, 0xffffffff), CENTER, 0, true);
                         colorDialog.show();
                     } else if (i == rowColorRow) {
                         if (getParentActivity() == null) {
@@ -673,7 +673,7 @@ public class ThemingChatsActivity extends BaseFragment {
                         builder.setTitle(LocaleController.getString("AvatarSize", R.string.AvatarSize));
                         final NumberPicker numberPicker = new NumberPicker(getParentActivity());
                         final int currentValue = themePrefs.getInt( key, 52);
-                        numberPicker.setMinValue(1);
+                        numberPicker.setMinValue(0);
                         numberPicker.setMaxValue(72);
                         numberPicker.setValue(currentValue);
                         builder.setView(numberPicker);

@@ -4,7 +4,7 @@
 
 <resources>
     <string name="AppName">Plus Messenger</string>
-    <string name="AppNameBeta">Telegram Bèta</string>
+    <string name="AppNameBeta">Telegram-bèta</string>
     <string name="LanguageName">Nederlands</string>
     <string name="LanguageNameInEnglish">Dutch</string>
     <string name="LanguageCode">nl</string>
@@ -46,6 +46,7 @@
     <string name="EncryptedChatStartedOutgoing">%s neemt deel aan je geheime chat.</string>
     <string name="EncryptedChatStartedIncoming">Toegevoegd aan de geheime chat.</string>
     <string name="ClearHistory">Geschiedenis wissen</string>
+    <string name="ClearHistoryCache">Cache opschonen</string>
     <string name="DeleteChat">Verwijder en verlaat</string>
     <string name="DeleteChatUser">Chat verwijderen</string>
     <string name="HiddenName">Verwijderd account</string>
@@ -80,8 +81,8 @@
     <string name="GroupUserLeftError">Deze gebruiker heeft de groep verlaten. Je kunt hem/haar niet meer uitnodigen.</string>
     <string name="GroupUserCantAdmin">Maximaal aantal beheerders bereikt.</string>
     <string name="GroupUserCantBot">Maximaal aantal bots bereikt.</string>
-    <string name="ActionMigrateFromGroup">De groep is omgezet naar een supergroep</string>
-    <string name="ActionMigrateFromGroupNotify">%1$s is omgezet naar een supergroep</string>
+    <string name="ActionMigrateFromGroup">De groep is opgewaardeerd naar een supergroep</string>
+    <string name="ActionMigrateFromGroupNotify">%1$s is opgewaardeerd naar een supergroep</string>
     <string name="NoBlockedGroup">Geblokkeerde gebruikers kunnen alleen worden uitgenodigd door beheerders, uitnodigingslinks werken niet voor hen.</string>
     <string name="NewChannel">Nieuw kanaal</string>
     <string name="EnterChannelName">Kanaalnaam</string>
@@ -167,6 +168,7 @@
     <string name="ChannelMessageGroupContact">%1$s heeft een contact gedeeld met het kanaal %2$s</string>
     <string name="ChannelMessageGroupMap">%1$s heeft een locatie gestuurd naar het kanaal %2$s</string>
     <string name="ChannelMessageGroupDocument">%1$s heeft een bestand gestuurd naar het kanaal %2$s</string>
+    <string name="ChannelMessageGroupGif">%1$s heeft een GIF gestuurd naar het kanaal %2$s</string>
     <string name="ChannelMessageGroupAudio">%1$s heeft een geluidsbestand gestuurd naar het kanaal %2$s</string>
     <string name="ChannelMessageGroupSticker">%1$s heeft een sticker gestuurd naar het kanaal %2$s</string>
     <string name="ChannelMessageNoText">%1$s plaatste een bericht</string>
@@ -175,6 +177,7 @@
     <string name="ChannelMessageContact">%1$s plaatste een contact</string>
     <string name="ChannelMessageMap">%1$s plaatste een locatie</string>
     <string name="ChannelMessageDocument">%1$s plaatste een bestand</string>
+    <string name="ChannelMessageGIF">%1$s plaatste een GIF</string>
     <string name="ChannelMessageAudio">%1$s plaatste een spraakbericht</string>
     <string name="ChannelMessageSticker">%1$s plaatste een sticker</string>
     <!--broadcasts-->
@@ -244,6 +247,8 @@
     <string name="DeleteThisChat">Chat verwijderen</string>
     <string name="SlideToCancel">SLEEP OM TE ANNULEREN</string>
     <string name="SaveToDownloads">Opslaan in Downloads</string>
+    <string name="SaveToGIFs">GIF opslaan</string>
+    <string name="DeleteGif">GIF verwijderen?</string>
     <string name="SaveToMusic">Opslaan in muziek</string>
     <string name="ShareFile">Delen</string>
     <string name="ApplyLocalizationFile">Vertaling toepassen</string>
@@ -264,6 +269,7 @@
     <string name="NobodyLikesSpamUrl">https://telegram.org/faq#can-39t-send-messages-to-non-contacts</string>
     <string name="MoreInfo">Meer informatie</string>
     <string name="ShareSendTo">Versturen naar...</string>
+    <string name="TapHereGifs">Tik hier om opgeslagen GIF\'s te bekijken</string>
     <!--notification-->
     <string name="MessageLifetimeChanged">%1$s heeft de zelfvernietigingstimer ingesteld op %2$s</string>
     <string name="MessageLifetimeChangedOutgoing">Je hebt de zelfvernietigingstimer ingesteld op %1$s</string>
@@ -277,6 +283,7 @@
     <string name="NotificationMessageContact">%1$s heeft een contact met je gedeeld</string>
     <string name="NotificationMessageMap">%1$s heeft je een locatie gestuurd</string>
     <string name="NotificationMessageDocument">%1$s heeft je een bestand gestuurd</string>
+    <string name="NotificationMessageGif">%1$s heeft je een GIF gestuurd</string>
     <string name="NotificationMessageAudio">%1$s heeft je een geluidsbestand gestuurd</string>
     <string name="NotificationMessageSticker">%1$s heeft je een sticker gestuurd</string>
     <string name="NotificationMessageGroupText">%1$s @ %2$s: %3$s</string>
@@ -286,6 +293,7 @@
     <string name="NotificationMessageGroupContact">%1$s heeft een contact gedeeld met de groep %2$s</string>
     <string name="NotificationMessageGroupMap">%1$s heeft een locatie gestuurd naar de groep %2$s</string>
     <string name="NotificationMessageGroupDocument">%1$s heeft een bestand gestuurd naar de groep %2$s</string>
+    <string name="NotificationMessageGroupGif">%1$s heeft een GIF gestuurd naar de groep %2$s</string>
     <string name="NotificationMessageGroupAudio">%1$s heeft een geluidsbestand gestuurd naar de groep %2$s</string>
     <string name="NotificationMessageGroupSticker">%1$s heeft een sticker gestuurd naar de groep %2$s</string>
     <string name="NotificationInvitedToGroup">%1$s heeft je uitgenodigd voor de groep %2$s</string>
@@ -352,9 +360,9 @@
     <string name="DeleteAndExit">Groep verwijderen en verlaten</string>
     <string name="Notifications">Meldingen</string>
     <string name="KickFromGroup">Verwijderen uit groep</string>
-    <string name="ConvertGroup">Upgraden naar supergroep</string>
-    <string name="ConvertGroupAlert">Groepsdeelnemers moeten updaten naar de meest recente Telegram om je supergroep te kunnen zien. Groep echt upgraden?</string>
-    <string name="ConvertGroupInfo"><![CDATA[<b>]]>Deelnemerslimiet bereikt.<![CDATA[</b>]]>\n\nWil je extra functies en een hogere limiet? Upgrade naar een supergroep:\n\n• Supergroepen hebben tot %1$s\n• Nieuwe leden zien de hele geschiedenis\n• Beheerder wist berichten voor iedereen\n• Meldingen staan standaard uit</string>
+    <string name="ConvertGroup">Opwaarderen naar supergroep</string>
+    <string name="ConvertGroupAlert">Groepsdeelnemers moeten updaten naar de meest recente Telegram om je supergroep te kunnen zien. Groep echt opwaarderen?</string>
+    <string name="ConvertGroupInfo"><![CDATA[<b>]]>Deelnemerslimiet bereikt.<![CDATA[</b>]]>\n\nWil je extra functies en een hogere limiet? Waardeer op naar een supergroep:\n\n• Supergroepen hebben tot %1$s\n• Nieuwe leden zien de hele geschiedenis\n• Beheerder wist berichten voor iedereen\n• Meldingen staan standaard uit</string>
     <!--contact info view-->
     <string name="ShareContact">Delen</string>
     <string name="AddContact">Toevoegen</string>
@@ -437,7 +445,6 @@
     <string name="TerminateAllSessions">Beëindig alle andere sessies</string>
     <string name="Events">Gebeurtenissen</string>
     <string name="ContactJoined">Contact lid van Telegram</string>
-    <string name="Pebble">PEBBLE</string>
     <string name="Language">Taal</string>
     <string name="AskAQuestionInfo">De ondersteuning van Telegram wordt gedaan door vrijwilligers. We doen ons best om zo snel mogelijk te antwoorden.<![CDATA[<br><br>]]>Bekijk ook de <![CDATA[<a href=\"https://telegram.org/faq#general\">veelgestelde vragen</a>]]>: Hier staan de antwoorden op de meeste vragen en belangrijke tips voor <![CDATA[<a href=\"https://telegram.org/faq#troubleshooting\">het oplossen van problemen</a>]]>.</string>
     <string name="AskButton">Vraag een vrijwilliger</string>
@@ -462,13 +469,14 @@
     <string name="BadgeNumber">Badgenummer</string>
     <string name="Short">Kort</string>
     <string name="Long">Lang</string>
-    <string name="SystemDefault">Standaardinstelling</string>
+    <string name="SystemDefault">Systeeminstelling</string>
     <string name="SettingsDefault">Standaardinstelling</string>
     <string name="AutomaticMediaDownload">Automatisch media downloaden</string>
     <string name="WhenUsingMobileData">Bij mobiele verbinding</string>
     <string name="WhenConnectedOnWiFi">Bij Wi-Fi-verbinding</string>
     <string name="WhenRoaming">Bij roaming</string>
     <string name="NoMediaAutoDownload">Geen media</string>
+    <string name="AutoplayGifs">GIF\'s automatisch afspelen</string>
     <string name="SaveToGallerySettings">Opslaan in galerij</string>
     <string name="EditName">Naam wijzigen</string>
     <string name="NotificationsPriority">Prioriteit</string>
@@ -499,6 +507,24 @@
     <string name="SmartNotificationsTimes">keer</string>
     <string name="SmartNotificationsWithin">binnen</string>
     <string name="SmartNotificationsMinutes">minuten</string>
+    <!--cache view-->
+    <string name="CacheSettings">Cache-instellingen</string>
+    <string name="LocalDatabase">Lokale database</string>
+    <string name="LocalDatabaseClear">Gecachet tekstberichten wissen?</string>
+    <string name="LocalDatabaseInfo">Het opschonen van de lokale database zal de tekst van gecachet berichten verwijderen en de database comprimeren om ruimte te besparen. Telegram heeft wat ruimte nodig om te kunnen functioneren, dus de databasegrootte zal nooit nul worden.\n\nDit kan enkele minuten duren.</string>
+    <string name="ClearMediaCache">Cache opschonen</string>
+    <string name="CacheClear">Opschonen</string>
+    <string name="CalculatingSize">Berekenen...</string>
+    <string name="LocalDocumentCache">Bestanden</string>
+    <string name="LocalPhotoCache">Foto\'s</string>
+    <string name="LocalAudioCache">Spraakberichten</string>
+    <string name="LocalVideoCache">Video\'s</string>
+    <string name="LocalMusicCache">Muziek</string>
+    <string name="LocalCache">Overige bestanden</string>
+    <string name="CacheEmpty">Leeg</string>
+    <string name="KeepMedia">Media bewaren</string>
+    <string name="KeepMediaInfo">Foto\'s, video\'s en andere bestanden uit cloudchats die je gedurende deze periode niet hebt  <![CDATA[<b>geopend</b>]]> zullen worden verwijderd van dit apparaat om ruimte te besparen.\n\nAlle media zal in de Telegram-cloud bewaard blijven en kan opnieuw worden gedownload als je het weer nodig hebt.</string>
+    <string name="KeepMediaForever">Voor altijd</string>
     <!--sessions view-->
     <string name="SessionsTitle">Actieve sessies</string>
     <string name="CurrentSession">Huidige sessie</string>
@@ -700,6 +726,7 @@
     <string name="Back">Vorige</string>
     <string name="Done">Gereed</string>
     <string name="Open">Openen</string>
+    <string name="Save">Opslaan</string>
     <string name="Cancel">Annuleren</string>
     <string name="Close">Sluit</string>
     <string name="Add">Toevoegen</string>
@@ -738,9 +765,10 @@
     <string name="ActionAddUserYou">un1 heeft je toegevoegd</string>
     <string name="ActionAddUserSelf">un1 is terug in de groep</string>
     <string name="ActionAddUserSelfYou">Je keerde terug naar de groep</string>
-    <string name="UnsuppotedMedia">Dit bericht wordt niet ondersteund door jouw versie van Telegram. Werk Telegram bij om dit bericht te bekijken: https://telegram.org/update</string>
+    <string name="UnsupportedMedia">Dit bericht wordt niet ondersteund door jouw versie van Telegram. Werk Telegram bij om dit bericht te bekijken: https://telegram.org/update</string>
     <string name="AttachPhoto">Foto</string>
     <string name="AttachVideo">Video</string>
+    <string name="AttachGif">GIF</string>
     <string name="AttachLocation">Locatie</string>
     <string name="AttachContact">Contact</string>
     <string name="AttachDocument">Bestand</string>
@@ -781,6 +809,8 @@
     <string name="AreYouSureSecretChat">Weet je zeker dat je een geheime chat wilt starten?</string>
     <string name="AreYouSureRegistration">Weet je zeker dat je de registratie wilt annuleren?</string>
     <string name="AreYouSureClearHistory">Geschiedenis echt wissen? </string>
+    <string name="AreYouSureClearHistoryChannel">Kanaalcache opschonen?</string>
+    <string name="AreYouSureClearHistorySuper">Supergroepcache echt opschonen?</string>
     <string name="AreYouSureDeleteMessages">%1$s echt verwijderen?</string>
     <string name="SendMessagesToGroup">Berichten naar %1$s versturen?</string>
     <string name="SendContactToGroup">Contact delen met %1$s?</string>
@@ -824,7 +854,7 @@
     <string name="Members_many">%1$d deelnemers</string>
     <string name="Members_other">%1$d deelnemers</string>
     <string name="AndMoreTyping_zero">en nog %1$d personen zijn aan het typen</string>
-    <string name="AndMoreTyping_one">en nog %1$d personen zijn aan het typen</string>
+    <string name="AndMoreTyping_one">en nog %1$d persoon is aan het typen</string>
     <string name="AndMoreTyping_two">en nog %1$d personen zijn aan het typen</string>
     <string name="AndMoreTyping_few">en nog %1$d personen zijn aan het typen</string>
     <string name="AndMoreTyping_many">en nog %1$d personen zijn aan het typen</string>
@@ -962,7 +992,7 @@
     <string name="ForwardedPhoto_few">Bijlage: %1$d foto\'s</string>
     <string name="ForwardedPhoto_many">Bijlage: %1$d foto\'s</string>
     <string name="ForwardedPhoto_other">Bijlage: %1$d foto\'s</string>
-    <string name="ForwardedVideo_zero">Bijlage: %1$d foto\'s</string>
+    <string name="ForwardedVideo_zero">Bijlage: %1$d video\'s</string>
     <string name="ForwardedVideo_one">Bijlage: 1 video</string>
     <string name="ForwardedVideo_two">Bijlage: %1$d video\'s</string>
     <string name="ForwardedVideo_few">Bijlage: %1$d video\'s</string>
@@ -1010,12 +1040,13 @@
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s om %2$s</string>
     <!--update text-->
-    <string name="updateText">Plus Messenger voor Android is bijgewerkt. Nieuw in versie 3.3.1:\n\n- Meerdere beheerders in groepen, naast het wijzigen van de groepsnaam en afbeelding kunnen beheerders ook leden toevoegen en verwijderen.\n- Groepen die de limiet van 200 deelnemers hebben bereikt kunnen worden geüpgraded naar supergroepen met maximaal 1000 deelnemers.\n- Snel delen in kanalen via de knop rechts van de berichten.\n\nMeer informatie over deze update is hier te vinden:\nhttps://telegram.org/blog/supergroups</string>
-    <string name="updateBuild">689</string>
-    <!--Telegram+--><!--
-  <string name="updatePlusText"></string>-->
+    <string name="updateText">Plus Messenger voor Android is bijgewerkt. Nieuw in versie 3.4.0:\n\nGIF-revolutie: 20 keer zo snel GIF\'s sturen en downloaden. Speel ze automatisch af en sla je favorieten op in het stickerpaneel.\n\nmeer over GIFs:\nhttps://telegram.org/blog/gif-revolution\n\nInline-bots: Voeg botcontent toe aan chats op een nieuwe manier! Geef in het invoerveld de naam van een bot en je commando in en stuur de resultaten naar je chatpartner. Probeer het eens met “@gif dog”. Voorbeelden: @gif, @wiki, @bing, @vid, @bold.\n\nMeer over inline-bots:\nhttps://telegram.org/blog/inline-bots</string>
+    <string name="updateBuild">736</string>
+    <!--Telegram+-->
+  <string name="updatePlusText">\n\nNieuw in versie 3.4.2.5:\n\n- Nieuw Plus-menu toegevoegd en alle extra Plus-functionaliteiten hierin verplaatst\n- Optie toegevoegd om de knop om direct te delen weer te geven of te verbergen in alle soorten chats\n- Datumindicator toegevoegd als klein berichtje in alle chats\n- Bugfixes</string>
     <string name="TelegramForAndroid">Plus Messenger voor Android</string>
   <string name="Theming">Uiterlijk Aanpassen</string>
+  <string name="PlusSettings">Plus-instellingen</string>
   <string name="colorHexInvalid">Ongeldige hexadecimale kleurcode!</string>
     <string name="themeColor">Themakleur</string>
     <string name="ResetThemeSettings">Thema-instellingen herstellen</string>
@@ -1058,7 +1089,8 @@
     <string name="EditTextSize">Grootte van tekstinvoer</string>
     <string name="EditTextBGColor">Achtergrondkleur van tekstinvoer</string>
   <string name="EmojiViewBGColor">Achtergrondkleur van emoji</string>
-  <string name="EmojiViewTabColor">Tabbladkleur van emoji</string>
+  <string name="EmojiViewTabColor">Geselecteerd emojitabbladkleur</string>
+  <string name="EmojiViewTabIconColor">Emojitabbladicoon-kleur</string>
     <string name="OnlineColor">Online-kleur</string>
     <string name="ChatMusic">Muziek</string>
     <string name="SaveTheme">Thema opslaan</string>
@@ -1078,6 +1110,8 @@
     <string name="MuteColor">Kleur van gedempt</string>
     <string name="SendLogs">Logbestanden versturen</string>
     <string name="SendLogsEmpty">Er zijn geen logbestanden</string>
+  <string name="ClearLogs">Verwijder logboeken</string>
+  <string name="ClearLogsMsg">logboeken verwijderd</string>
     <string name="SendIcon">Verzendpictogram</string>
   <string name="HideMobile">Telefoonnummer verbergen in menu</string>
     <string name="FloatingPencilColor">Kleur van zwevend potlood</string>
@@ -1117,8 +1151,8 @@
   <string name="KeepOriginalFilename">Originele bestandsnaam behouden</string>
   <string name="KeepOriginalFilenameHelp">In plaats van alleen nummers worden bestanden opgeslagen onder een naam_datum-bestandsnaam</string>
   <string name="AvatarSize">Profielfotogrootte</string>
-  <string name="AvatarAlignTop">Profielfoto naar boven uitlijnen</string>
-  <string name="AvatarMarginLeft">Linkermarge van profielfoto</string>
+  <string name="AvatarAlignTop">Plaats contactavatar bovenaan</string>
+  <string name="AvatarMarginLeft">Profielfotomarge</string>
   <string name="GroupNameColor">Kleur van groepsnaam</string>
   <string name="GroupNameSize">Grootte van groepsnaam</string>
   <string name="UnknownNameColor">Naamkleur (onbekend nummer)</string>
@@ -1140,4 +1174,64 @@
   <string name="UseDeviceFont">Gebruik het apparaat lettertype</string>
   <string name="AppWillRestart">Plus Messenger zal nu herstarten</string>
   <string name="GroupIconColor">Kleur van het icoontje</string>
+  <string name="SharedContactNameColor">Gedeelde contacten naam kleur</string>
+  <string name="AttachBGColor">Voeg achtergrondkleur toe</string>
+  <string name="AttachTextColor">Voeg tekstkleur toe</string>
+  <string name="ShowContactAvatar">Toon contact avater in chatscherm</string>
+  <string name="ShowOwnAvatar">Toon eigen avater in chatscherm</string>
+  <string name="ShowOwnAvatarGroup">Toon eigen avater in groepsscherm</string>
+  <string name="OwnAvatarAlignTop">Plaats eigen avatar bovenaan</string>
+  <string name="DialogColor">Dialoog titel/knop kleur</string>
+  <string name="ShowUsername">Toon gebruikersnaam met lidnaam</string>
+  <string name="DisableAudioStop">Stop de audio niet</string>
+  <string name="ListDividerColor">Lijstverdeler kleur</string>
+  <string name="CenterAvatar">Centreer avatar, naam en telefoon</string>
+  <string name="RowGradient">Overgang</string>
+  <string name="RowGradientColor">Overgangskleur</string>
+  <string name="RowGradientDisabled">Uitgeschakeld</string>
+  <string name="RowGradientTopBottom">Boven Onder</string>
+  <string name="RowGradientLeftRight">Links Rechts</string>
+  <string name="RowGradientTLBR">Linksboven Rechtsonder</string>
+  <string name="RowGradientBLTR">Linkonder Rechtsboven</string>
+  <string name="RowGradientList">Pas kleurovergang toe op lijstachtergrond</string>
+  <string name="Copied">%s gekopieert naar het klembord</string>
+  <string name="JoinChannel">\n\nWord lid van het officiële Plus Messengerkanaal: https://telegram.me/plusmsgr</string>
+  <string name="DownloadThemes">Thema\'s downloaden</string>
+  <string name="OfficialChannel">Officieel kanaal</string>
+  <string name="DialogsSettings">Dialogen</string>
+  <string name="ClickOnContactPic">Klip op contactafbeelding</string>
+  <string name="ClickOnGroupPic">Klik op groepsafbeelding</string>
+  <string name="ShowProfile">Profiel</string>
+  <string name="ShowPics">Profielafbeeldingen</string>
+  <string name="CountSilentBGColor">Teller (stil) achtergrondkleur</string>
+  <string name="CommandColorCheck">Kleur van vinkje van botopdracht</string>
+  <string name="CommandColor">Kleur van botopdracht</string>
+  <string name="HighlightSearchColor">Kleur van zoekresultaten</string>
+  <string name="ThemeUpdated">%s is geüpdatet</string>
+  <string name="HideStatusIndicator">Verberg statusaanwijzer gebruiker</string>
+  <string name="HideTabs">Tabbladen verbergen</string>
+  <string name="All">Alle</string>
+  <string name="Users">Gebruikers</string>
+  <string name="Groups">Groepen</string>
+  <string name="SuperGroups">Supergroepen</string>
+  <string name="Channels">Kanalen</string>
+  <string name="Bots">Bots</string>
+  <string name="Favorites">Favorieten</string>
+  <string name="TabsHeight">Tabbladhoogte</string>
+  <string name="SetAsDefaultTab">Als standaardtabblad instellen</string>
+  <string name="ResetDefaultTab">Standaardtabbladen herstellen</string>
+  <string name="SortByStatus">Sorteren op status</string>
+  <string name="SortByLastMessage">Sorteren op laatste bericht</string>
+  <string name="SortByUnreadCount">Sorteren op ongelezen berichten</string>
+  <string name="ShowSuperGroupsTab">Tabblad met supergroepen tonen</string>
+  <string name="HideSuperGroupsTab">Tabblad met supergroepen verbergen</string>
+  <string name="Tabs">Tabbladen</string>
+  <string name="HideShowTabs">Tabbladen tonen/verbergen</string>
+  <string name="AddToFavorites">Voeg toe aan favorieten</string>
+  <string name="DeleteFromFavorites">Verwijder van favorieten</string>
+  <string name="NoFavoritesHelp">Geen favorieten\n\n Tik en houd een chat vast en klik vervolgens op\"Voeg toe aan favorieten\" om chats aan deze lijst toe te voegen.</string>
+  <string name="DisableTabsAnimation">Verberg tabbladen niet tijdens het scrollen</string>
+  <string name="InfiniteSwipe">Oneindig swipen tussen tabbladen</string>
+  <string name="ShowDirectShareButton">\'Direct delen\'-knop tonen</string>
+  <string name="Quote">CITEREN</string>
 </resources>

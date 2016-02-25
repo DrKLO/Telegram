@@ -68,7 +68,7 @@ static void fastBlurMore(int imageWidth, int imageHeight, int imageStride, void 
     const int r1 = radius + 1;
     const int div = radius * 2 + 1;
     
-    if (radius > 15 || div >= w || div >= h || w * h > 128 * 128 || imageStride > imageWidth * 4) {
+    if (radius > 15 || div >= w || div >= h || w * h > 150 * 150 || imageStride > imageWidth * 4) {
         return;
     }
     
@@ -151,6 +151,9 @@ static void fastBlurMore(int imageWidth, int imageHeight, int imageStride, void 
 
 static void fastBlur(int imageWidth, int imageHeight, int imageStride, void *pixels, int radius) {
     uint8_t *pix = (uint8_t *)pixels;
+    if (pix == NULL) {
+        return;
+    }
     const int w = imageWidth;
     const int h = imageHeight;
     const int stride = imageStride;
@@ -169,7 +172,7 @@ static void fastBlur(int imageWidth, int imageHeight, int imageStride, void *pix
         return;
     }
     
-    if (radius > 15 || div >= w || div >= h || w * h > 128 * 128 || imageStride > imageWidth * 4) {
+    if (radius > 15 || div >= w || div >= h || w * h > 150 * 150 || imageStride > imageWidth * 4) {
         return;
     }
     
@@ -265,18 +268,12 @@ METHODDEF(void) my_error_exit(j_common_ptr cinfo) {
     longjmp(myerr->setjmp_buffer, 1);
 }
 
-JNIEXPORT void Java_org_telegram_messenger_Utilities_blurBitmap(JNIEnv *env, jclass class, jobject bitmap, int radius, int unpin) {
+JNIEXPORT void Java_org_telegram_messenger_Utilities_blurBitmap(JNIEnv *env, jclass class, jobject bitmap, int radius, int unpin, int width, int height, int stride) {
     if (!bitmap) {
         return;
     }
     
-    AndroidBitmapInfo info;
-    
-    if (AndroidBitmap_getInfo(env, bitmap, &info) < 0) {
-        return;
-    }
-    
-    if (info.format != ANDROID_BITMAP_FORMAT_RGBA_8888 || !info.width || !info.height || !info.stride) {
+    if (!width || !height || !stride) {
         return;
     }
     
@@ -285,9 +282,9 @@ JNIEXPORT void Java_org_telegram_messenger_Utilities_blurBitmap(JNIEnv *env, jcl
         return;
     }
     if (radius <= 3) {
-        fastBlur(info.width, info.height, info.stride, pixels, radius);
+        fastBlur(width, height, stride, pixels, radius);
     } else {
-        fastBlurMore(info.width, info.height, info.stride, pixels, radius);
+        fastBlurMore(width, height, stride, pixels, radius);
     }
     if (unpin) {
         AndroidBitmap_unlockPixels(env, bitmap);
@@ -399,8 +396,18 @@ JNIEXPORT void Java_org_telegram_messenger_Utilities_calcCDT(JNIEnv *env, jclass
 }
 
 JNIEXPORT int Java_org_telegram_messenger_Utilities_pinBitmap(JNIEnv *env, jclass class, jobject bitmap) {
+    if (bitmap == NULL) {
+        return;
+    }
     unsigned char *pixels;
     return AndroidBitmap_lockPixels(env, bitmap, &pixels) >= 0 ? 1 : 0;
+}
+
+JNIEXPORT int Java_org_telegram_messenger_Utilities_unpinBitmap(JNIEnv *env, jclass class, jobject bitmap) {
+    if (bitmap == NULL) {
+        return;
+    }
+    AndroidBitmap_unlockPixels(env, bitmap);
 }
 
 JNIEXPORT void Java_org_telegram_messenger_Utilities_loadBitmap(JNIEnv *env, jclass class, jstring path, jobject bitmap, int scale, int width, int height, int stride) {

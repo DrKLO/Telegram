@@ -23,7 +23,7 @@
   <!--<string name="RegisterText">Set up your name and picture</string>-->
   <string name="FirstName">Имя (обязательно)</string>
   <string name="LastName">Фамилия (не обязательно)</string>
-  <string name="CancelRegistration">Отменить регистрацию</string>
+  <string name="CancelRegistration">Отмена регистрации</string>
   <!--chats view-->
   <string name="Settings">Настройки</string>
   <string name="Contacts">Контакты</string>
@@ -42,6 +42,7 @@
   <string name="EncryptedChatStartedOutgoing">%s присоединился(-лась) к вашему секретному чату.</string>
   <string name="EncryptedChatStartedIncoming">Вы присоединились к секретному чату.</string>
   <string name="ClearHistory">Очистить историю</string>
+  <string name="ClearHistoryCache">Удалить из кеша</string>
   <string name="DeleteChat">Удалить и выйти</string>
   <string name="DeleteChatUser">Удалить чат</string>
   <string name="HiddenName">Удалённый аккаунт</string>
@@ -57,7 +58,28 @@
   <string name="MuteDisable">Отключить</string>
   <string name="Hashtags">ХЕШТЕГИ</string>
   <string name="Recent">НЕДАВНЕЕ</string>
+  <string name="LinkPreview">Предпросмотр ссылок</string>
   <!--channels-->
+  <string name="SetAsAdmin">Назначить администратором</string>
+  <string name="DescriptionInfoMega">Можете указать дополнительное описание вашей группы.</string>
+  <string name="LeaveMega">Покинуть группу</string>
+  <string name="DeleteMega">Удалить группу</string>
+  <string name="LeaveMegaMenu">Покинуть группу</string>
+  <string name="DeleteMegaMenu">Удалить группу</string>
+  <string name="MegaDeleteInfo">Вы потеряете все сообщения из этой группы.</string>
+  <string name="MegaAdminsInfo">Вы можете добавлять администраторов для помощи в управлении вашей группой. Нажмите и удерживайте, чтобы удалить администраторов.</string>
+  <string name="MegaDeleteAlert">Подождите! Удаление этой группы также исключит всех участников и все сообщения будут утрачены. Всё равно удалить?</string>
+  <string name="ActionCreateMega">Группа создана</string>
+  <string name="MegaAddedBy">un1 добавил(а) вас в эту группу</string>
+  <string name="MegaLeaveAlert">Уверены, что хотите покинуть эту группу?</string>
+  <string name="GroupUserCantAdd">Извините, вы не можете добавлять этого пользователя в группы.</string>
+  <string name="GroupUserAddLimit">Извините, эта группа заполнена.</string>
+  <string name="GroupUserLeftError">Извините, этот пользователь решил покинуть данную группу, поэтому вы не можете пригласить его обратно.</string>
+  <string name="GroupUserCantAdmin">Извините, слишком много администраторов в этой группе.</string>
+  <string name="GroupUserCantBot">Извините, слишком много ботов в этой группе.</string>
+  <string name="ActionMigrateFromGroup">Эта группа была преобразована в супергруппу.</string>
+  <string name="ActionMigrateFromGroupNotify">%1$s была преобразована в супергруппу</string>
+  <string name="NoBlockedGroup">Заблокированные пользователи исключены из группы и могут вернуться обратно только по приглашению администратора. Пригласительные ссылки для них не работают.</string>
   <string name="NewChannel">Новый канал</string>
   <string name="EnterChannelName">Имя канала</string>
   <string name="Comments">Комментарии</string>
@@ -94,14 +116,14 @@
   <string name="LinkChecking">Проверка имени…</string>
   <string name="LinkAvailable">%1$s доступно.</string>
   <string name="ChannelMembers">Участники</string>
-  <string name="ChannelBlockedUsers">Чёрный список</string>
+  <string name="ChannelBlockedUsers">Заблокированные пользователи</string>
   <string name="ChannelAdministrators">Администраторы</string>
   <string name="ChannelDelete">Удалить канал</string>
   <string name="ChannelDeleteMenu">Удалить канал</string>
   <string name="ChannelDeleteAlert">Подождите! Удаление этого канала также исключит всех участников и все сообщения будут утрачены. Всё равно удалить?</string>
   <string name="ChannelLeaveAlert">Уверены, что хотите покинуть канал?</string>
   <string name="ChannelDeleteInfo">Вы потеряете все сообщения из этого канала.</string>
-  <string name="ChannelEdit">Редактировать</string>
+  <string name="ChannelEdit">Изменить</string>
   <string name="ChannelWasPrivateAlert">Пожалуйста, обратите внимание, что если вы создадите публичную ссылку на ваш канал, любой желающий сможет найти его через поиск и присоединиться к нему.\n\nНе создавайте эту ссылку, если хотите, чтобы ваш канал оставался частным.</string>
   <string name="ChannelPublicEmptyUsername">Выберите ссылку для вашего публичного канала, чтобы люди могли найти её через поиск и поделиться с другими.\n\nЕсли вы в этом не заинтересованы, можем вместо этого предложить вам создать частный канал.</string>
   <string name="ActionCreateChannel">Канал создан</string>
@@ -116,19 +138,20 @@
   <string name="ChannelUnmute">ВКЛЮЧИТЬ УВЕДОМЛЕНИЯ</string>
   <string name="ChannelAddAdmin">Добавить администратора</string>
   <string name="ChannelInviteViaLink">Пригласить по ссылке</string>
-  <string name="ChannelAddUserAdminAlert">Уверены, что хотите сделать %1$s администратором?</string>
+  <string name="ChannelAddUserAdminAlert">Уверены, что хотите назначить %1$s администратором?</string>
   <string name="ChannelRemoveUserAdmin">Удалить</string>
   <string name="ChannelMembersInfo">Только администраторы канала могут видеть этот список.</string>
   <string name="ChannelAdminNotParticipant">Этот пользователь пока ещё не присоединялся к данному каналу. Хотите пригласить его?</string>
   <string name="ChannelLinkInfo">Любой пользователь Telegram сможет присоединиться к вашему каналу, проследовав по этой ссылке.</string>
-  <string name="ChannelAdminsInfo">Вы можете добавлять администраторов для помощи в управлении каналом. Нажмите и удерживайте чтобы удалить администраторов.</string>
+  <string name="ChannelAdminsInfo">Вы можете добавлять администраторов для помощи в управлении вашим каналом. Нажмите и удерживайте, чтобы удалить администраторов.</string>
   <string name="ChannelJoinTo">Хотите присоединиться к каналу \'%1$s\'?</string>
-  <string name="ChannelCantOpenPrivate">Извините, этот канал больше недоступен.</string>
+  <string name="ChannelCantOpenPrivate">Извините, этот чат больше недоступен.</string>
   <string name="ChannelAddTo">Добавить пользователя %1$s на канал?</string>
-  <string name="ChannelUserLeftError">Извините, этот пользователь решил покинуть данную группу, поэтому вы не можете пригласить его обратно.</string>
+  <string name="ChannelUserLeftError">Извините, этот пользователь решил покинуть данный канал, поэтому вы не можете пригласить его обратно.</string>
   <string name="ChannelUserCantAdd">Извините, вы не можете добавить этого пользователя на каналы.</string>
   <string name="ChannelUserCantAdmin">Извините, у этого канала слишком много администраторов.</string>
-  <string name="ChannelUserAddLimit">Извините, вы можете добавлять только первых 200 участников на канал. Заметьте, что неограниченное количество людей может присоединиться по ссылке канала.</string>
+  <string name="ChannelUserCantBot">Извините, слишком много ботов на этом канале.</string>
+  <string name="ChannelUserAddLimit">Извините, вы можете добавлять только первых 200 участников на канал. Обратите внимание, что неограниченное количество людей может присоединиться по ссылке канала.</string>
   <string name="ChannelAddedBy">un1 добавил(а) вас на этот канал</string>
   <string name="ChannelJoined">Вы присоединились к этому каналу</string>
   <string name="ChannelRemoveUser">Удалить из канала</string>
@@ -141,16 +164,18 @@
   <string name="ChannelMessageGroupContact">%1$s поделился(-лась) контактом на канале %2$s</string>
   <string name="ChannelMessageGroupMap">%1$s опубликовал(а) расположение на канале %2$s</string>
   <string name="ChannelMessageGroupDocument">%1$s опубликовал(а) файл на канале %2$s</string>
+  <string name="ChannelMessageGroupGif">%1$s опубликовал(а) GIF на канале %2$s</string>
   <string name="ChannelMessageGroupAudio">%1$s опубликовал(а) аудио на канале %2$s</string>
   <string name="ChannelMessageGroupSticker">%1$s опубликовал(а) стикер на канале %2$s</string>
-  <string name="ChannelMessageNoText">%1$s опубликовал сообщение</string>
-  <string name="ChannelMessagePhoto">%1$s опубликовал фото</string>
-  <string name="ChannelMessageVideo">%1$s опубликовал видео</string>
-  <string name="ChannelMessageContact">%1$s опубликовал контакт</string>
-  <string name="ChannelMessageMap">%1$s опубликовал расположение</string>
-  <string name="ChannelMessageDocument">%1$s опубликовал файл</string>
-  <string name="ChannelMessageAudio">%1$s опубликовал голосовое сообщение</string>
-  <string name="ChannelMessageSticker">%1$s опубликовал стикер</string>
+  <string name="ChannelMessageNoText">%1$s опубликовал(а) сообщение</string>
+  <string name="ChannelMessagePhoto">%1$s опубликовал(а) фото</string>
+  <string name="ChannelMessageVideo">%1$s опубликовал(а) видео</string>
+  <string name="ChannelMessageContact">%1$s опубликовал(а) контакт</string>
+  <string name="ChannelMessageMap">%1$s опубликовал(а) расположение</string>
+  <string name="ChannelMessageDocument">%1$s опубликовал(а) файл</string>
+  <string name="ChannelMessageGIF">%1$s опубликовал(а) GIF</string>
+  <string name="ChannelMessageAudio">%1$s опубликовал(а) голосовое сообщение</string>
+  <string name="ChannelMessageSticker">%1$s опубликовал(а) стикер</string>
   <!--broadcasts-->
   <string name="NewBroadcastList">Новый список рассылки</string>
   <string name="EnterListName">Введите имя списка</string>
@@ -218,6 +243,8 @@
   <string name="DeleteThisChat">Удалить этот чат</string>
   <string name="SlideToCancel">ПРОВЕДИТЕ ДЛЯ ОТМЕНЫ</string>
   <string name="SaveToDownloads">Сохранить в загрузки</string>
+  <string name="SaveToGIFs">Сохранить в GIF</string>
+  <string name="DeleteGif">Удалить GIF?</string>
   <string name="SaveToMusic">Сохранить в музыку</string>
   <string name="ShareFile">Поделиться</string>
   <string name="ApplyLocalizationFile">Применить файл локализации</string>
@@ -237,6 +264,8 @@
   <string name="NobodyLikesSpam2">Извините, в данный момент вы можете добавлять в группы только взаимные контакты.</string>
   <string name="NobodyLikesSpamUrl">https://telegram.org/faq#can-39t-send-messages-to-non-contacts</string>
   <string name="MoreInfo">Больше информации</string>
+  <string name="ShareSendTo">Искать...</string>
+  <string name="TapHereGifs">Нажмите для доступа к сохранённым GIF</string>
   <!--notification-->
   <string name="MessageLifetimeChanged">%1$s поставил(а) таймер самоуничтожения на %2$s</string>
   <string name="MessageLifetimeChangedOutgoing">Вы поставили таймер самоуничтожения на %1$s</string>
@@ -250,6 +279,7 @@
   <string name="NotificationMessageContact">%1$s поделился(-лась) с вами контактом</string>
   <string name="NotificationMessageMap">%1$s отправил(а) вам расположение</string>
   <string name="NotificationMessageDocument">%1$s отправил(а) вам файл</string>
+  <string name="NotificationMessageGif">%1$s отправил(а) вам GIF</string>
   <string name="NotificationMessageAudio">%1$s отправил(а) вам аудио</string>
   <string name="NotificationMessageSticker">%1$s отправил(а) вам стикер</string>
   <string name="NotificationMessageGroupText">%1$s @ %2$s: %3$s</string>
@@ -259,11 +289,12 @@
   <string name="NotificationMessageGroupContact">%1$s поделился(-лась) контактом в группе %2$s</string>
   <string name="NotificationMessageGroupMap">%1$s отправил(а) расположение группе %2$s</string>
   <string name="NotificationMessageGroupDocument">%1$s отправил(а) файл группе %2$s</string>
+  <string name="NotificationMessageGroupGif">%1$s отправил(а) GIF группе %2$s</string>
   <string name="NotificationMessageGroupAudio">%1$s отправил(а) аудио группе %2$s</string>
   <string name="NotificationMessageGroupSticker">%1$s отправил(а) стикер группе %2$s</string>
   <string name="NotificationInvitedToGroup">%1$s пригласил(а) вас в группу %2$s</string>
-  <string name="NotificationEditedGroupName">%1$s отредактировал(а) имя группы %2$s</string>
-  <string name="NotificationEditedGroupPhoto">%1$s отредактировал(а) фото группы %2$s</string>
+  <string name="NotificationEditedGroupName">%1$s изменил(а) имя группы %2$s</string>
+  <string name="NotificationEditedGroupPhoto">%1$s изменил(а) фото группы %2$s</string>
   <string name="NotificationGroupAddMember">%1$s пригласил(а) пользователя %3$s в группу %2$s</string>
   <string name="NotificationGroupAddSelf">%1$s вернулся(-лась) в группу %2$s</string>
   <string name="NotificationGroupKickMember">%1$s исключил(а) пользователя %3$s из группы %2$s</string>
@@ -312,19 +343,28 @@
   <string name="CopyLink">Копировать ссылку</string>
   <string name="ShareLink">Поделиться ссылкой</string>
   <string name="LinkInfo">Любой пользователь Telegram сможет вступить в вашу группу, перейдя по этой ссылке.</string>
+  <!--set admins view-->
+  <string name="SetAdminsTitle">Администраторы чата</string>
+  <string name="SetAdminsAll">Все являются администраторами</string>
+  <string name="SetAdminsAllInfo">Все участники могут добавлять новых участников, изменять имя и фото группы.</string>
+  <string name="SetAdminsNotAllInfo">Только администраторы могут добавлять и исключать участников, изменять имя и фото группы.</string>
   <!--group info view-->
   <string name="SharedMedia">Общие медиа</string>
   <string name="SETTINGS">Настройки</string>
   <string name="AddMember">Добавить участника</string>
+  <string name="SetAdmins">Назначить администраторов</string>
   <string name="DeleteAndExit">Удалить и покинуть группу</string>
   <string name="Notifications">Уведомления</string>
   <string name="KickFromGroup">Исключить из группы</string>
+  <string name="ConvertGroup">Преобразовать в супергруппу</string>
+  <string name="ConvertGroupAlert">Пожалуйста, обратите внимание, что все участники группы должны обновить свои приложения Telegram до последней версии, чтобы видеть вашу супергруппу. Уверены, что хотите преобразовать эту группу?</string>
+  <string name="ConvertGroupInfo"><![CDATA[<b>]]>Достигнут лимит участников.<![CDATA[</b>]]>\n\nЧтобы обойти лимит и получить дополнительные возможности, преобразуйте группу в супергруппу:\n\n• Супергруппы могут достигать %1$s\n• Новые участники могут видеть всю историю сообщений\n• Администраторы имеют возможность удалять любые сообщения\n• Уведомления отключены по умолчанию</string>
   <!--contact info view-->
   <string name="ShareContact">Поделиться</string>
   <string name="AddContact">Добавить</string>
   <string name="AddContactTitle">Добавить контакт</string>
   <string name="BlockContact">Заблокировать</string>
-  <string name="EditContact">Редактировать</string>
+  <string name="EditContact">Изменить</string>
   <string name="DeleteContact">Удалить</string>
   <string name="PhoneHome">Дом</string>
   <string name="PhoneMobile">Мобильный</string>
@@ -374,22 +414,22 @@
   <string name="EnableAnimations">Анимация</string>
   <string name="Unblock">Разблокировать</string>
   <string name="UnblockText">Нажмите и удерживайте имя пользователя для разблокировки</string>
-  <string name="NoBlocked">Чёрный список пуст</string>
+  <string name="NoBlocked">Заблокированных пользователей пока нет</string>
   <string name="MessageNotifications">Сообщения</string>
   <string name="Alert">Сигнал</string>
-  <string name="MessagePreview">Предпросмотр</string>
+  <string name="MessagePreview">Предпросмотр сообщений</string>
   <string name="GroupNotifications">Группы</string>
   <string name="Sound">Звук</string>
   <string name="InAppNotifications">В приложении</string>
   <string name="InAppSounds">Звук</string>
   <string name="InAppVibrate">Вибросигнал</string>
   <string name="Vibrate">Вибросигнал</string>
-  <string name="InAppPreview">Предпросмотр</string>
+  <string name="InAppPreview">Предпросмотр в приложении</string>
   <string name="Reset">Сброс</string>
   <string name="ResetAllNotifications">Сбросить все уведомления</string>
   <string name="UndoAllCustom">Отменить все пользовательские настройки уведомлений для всех ваших контактов и групп</string>
   <string name="NotificationsAndSounds">Уведомления и звук</string>
-  <string name="BlockedUsers">Чёрный список</string>
+  <string name="BlockedUsers">Заблокированные пользователи</string>
   <string name="LogOut">Выход</string>
   <string name="NoSound">Без звука</string>
   <string name="Default">По умолчанию</string>
@@ -401,9 +441,8 @@
   <string name="TerminateAllSessions">Завершить все другие сеансы</string>
   <string name="Events">События</string>
   <string name="ContactJoined">Контакт присоединился к Telegram</string>
-  <string name="Pebble">PEBBLE</string>
   <string name="Language">Язык</string>
-  <string name="AskAQuestionInfo">Обратите внимание, что поддержка Telegram осуществляется добровольцами. Мы постараемся ответить как можно быстрее, но это может занять некоторое время.<![CDATA[<br><br>]]>Пожалуйста, ознакомьтесь с <![CDATA[<a href=\"https://telegram.org/faq#general\">вопросами и ответами о Telegram</a>]]>: там есть ответы на большинство вопросов и важные советы по <![CDATA[<a href=\"https://telegram.org/faq#troubleshooting\">устранению неполадок</a>]]>.</string>
+  <string name="AskAQuestionInfo">Пожалуйста, обратите внимание, что поддержка Telegram осуществляется добровольцами. Мы постараемся ответить как можно быстрее, но это может занять некоторое время.<![CDATA[<br><br>]]>Пожалуйста, ознакомьтесь с <![CDATA[<a href=\"https://telegram.org/faq#general\">вопросами и ответами о Telegram</a>]]>: там есть ответы на большинство вопросов и важные советы по <![CDATA[<a href=\"https://telegram.org/faq#troubleshooting\">устранению неполадок</a>]]>.</string>
   <string name="AskButton">Спросить добровольца</string>
   <string name="TelegramFaq">Вопросы и ответы о Telegram</string>
   <string name="TelegramFaqUrl">https://telegram.org/faq</string>
@@ -423,18 +462,19 @@
   <string name="OnlyWhenScreenOn">Только когда экран включён</string>
   <string name="OnlyWhenScreenOff">Только когда экран выключен</string>
   <string name="AlwaysShowPopup">Показывать всегда</string>
-  <string name="BadgeNumber">Счётчик значков</string>
+  <string name="BadgeNumber">Счётчик сообщений</string>
   <string name="Short">Короткий</string>
   <string name="Long">Долгий</string>
-  <string name="SystemDefault">Язык системы</string>
+  <string name="SystemDefault">Настройки системы</string>
   <string name="SettingsDefault">Настройки по умолчанию</string>
   <string name="AutomaticMediaDownload">Автозагрузка медиа</string>
   <string name="WhenUsingMobileData">По мобильной сети</string>
   <string name="WhenConnectedOnWiFi">По Wi-Fi</string>
   <string name="WhenRoaming">В роуминге</string>
   <string name="NoMediaAutoDownload">Не загружать</string>
+  <string name="AutoplayGifs">Автовоспроизведение GIF</string>
   <string name="SaveToGallerySettings">Сохранять в галерее</string>
-  <string name="EditName">Редактировать имя</string>
+  <string name="EditName">Изменить имя</string>
   <string name="NotificationsPriority">Приоритет</string>
   <string name="NotificationsPriorityDefault">По умолчанию</string>
   <string name="NotificationsPriorityLow">Низкий</string>
@@ -463,6 +503,24 @@
   <string name="SmartNotificationsTimes">раз(а)</string>
   <string name="SmartNotificationsWithin">в течение</string>
   <string name="SmartNotificationsMinutes">минут(ы)</string>
+  <!--cache view-->
+  <string name="CacheSettings">Настройки кеша</string>
+  <string name="LocalDatabase">Локальная база данных</string>
+  <string name="LocalDatabaseClear">Очистить кешированные текстовые сообщения?</string>
+  <string name="LocalDatabaseInfo">Очистка локальной базы данных удалит текст кешированных сообщений и сожмёт базу данных для экономии пространства внутреннего накопителя. Некоторые данные нужны для работы Telegram, поэтому размер базы данных не будет равен нулю.\n\nЭта операция может занять несколько минут.</string>
+  <string name="ClearMediaCache">Очистить кеш</string>
+  <string name="CacheClear">Очистить</string>
+  <string name="CalculatingSize">Вычисление...</string>
+  <string name="LocalDocumentCache">Документы</string>
+  <string name="LocalPhotoCache">Фото</string>
+  <string name="LocalAudioCache">Голосовые сообщения</string>
+  <string name="LocalVideoCache">Видео</string>
+  <string name="LocalMusicCache">Музыка</string>
+  <string name="LocalCache">Другие файлы</string>
+  <string name="CacheEmpty">Пусто</string>
+  <string name="KeepMedia">Срок хранения медиа</string>
+  <string name="KeepMediaInfo">Фото, видео и другие файлы, к которым вы <![CDATA[<b>не обращались</b>]]> в течение этого периода, будут удалены с этого устройства для экономии пространства накопителя.\n\nВсе медиа останутся в облаке Telegram и при необходимости могут быть загружены снова.</string>
+  <string name="KeepMediaForever">Всегда</string>
   <!--sessions view-->
   <string name="SessionsTitle">Активные сеансы</string>
   <string name="CurrentSession">Текущий сеанс</string>
@@ -476,7 +534,7 @@
   <!--passcode view-->
   <string name="Passcode">Код доступа</string>
   <string name="ChangePasscode">Сменить код доступа</string>
-  <string name="ChangePasscodeInfo">После установки дополнительного кода блокировки на странице чатов появится значок замка. Нажимайте на него для блокировки и разблокировки приложения Telegram.\n\nВнимание: если вы забудете код доступа, вам нужно будет удалить и переустановить это приложение. Все секретные чаты будут утрачены.</string>
+  <string name="ChangePasscodeInfo">После установки дополнительного кода блокировки на странице чатов появится значок замка. Нажимайте на него для блокировки и разблокировки приложения Telegram.\n\nОбратите внимание: если вы забудете код доступа, вам нужно будет удалить и переустановить это приложение. Все секретные чаты будут утрачены.</string>
   <string name="ChangePasscodeAlert">Теперь вы будете видеть значок замка на странице чатов. Нажмите на него, чтобы заблокировать приложение Telegram с помощью вашего нового кода доступа.</string>
   <string name="PasscodePIN">ПИН-код</string>
   <string name="PasscodePassword">Пароль</string>
@@ -637,7 +695,7 @@
   <string name="NeverShareWithTitle">Всегда скрывать</string>
   <string name="NeverShareWithPlaceholder">Всегда скрывать от пользователей...</string>
   <string name="EmpryUsersPlaceholder">Добавить</string>
-  <string name="PrivacyFloodControlError">Извините, слишком много запросов. Невозможно изменить настройки приватности прямо сейчас, пожалуйста, подождите.</string>
+  <string name="PrivacyFloodControlError">Извините, слишком много запросов. Не удаётся изменить настройки приватности прямо сейчас, пожалуйста, подождите.</string>
   <string name="ClearOtherSessionsHelp">Выйти на всех устройствах, кроме этого.</string>
   <string name="RemoveFromListText">Нажмите и удерживайте на пользователя для удаления.</string>
   <!--edit video view-->
@@ -664,14 +722,16 @@
   <string name="Back">Назад</string>
   <string name="Done">Готово</string>
   <string name="Open">Открыть</string>
-  <string name="Cancel">Отменить</string>
+  <string name="Save">Сохранить</string>
+  <string name="Cancel">Отмена</string>
   <string name="Close">Закрыть</string>
   <string name="Add">Добавить</string>
-  <string name="Edit">Редактировать</string>
+  <string name="Edit">Изменить</string>
   <string name="Send">Отправить</string>
   <string name="Call">Позвонить</string>
   <string name="Copy">Копировать</string>
   <string name="Delete">Удалить</string>
+  <string name="DeleteAndStop">Удалить и остановить</string>
   <string name="Forward">Переслать</string>
   <string name="Retry">Повторить</string>
   <string name="FromCamera">С камеры</string>
@@ -701,9 +761,10 @@
   <string name="ActionAddUserYou">un1 добавил(а) вас</string>
   <string name="ActionAddUserSelf">un1 вернулся(-лась) в группу</string>
   <string name="ActionAddUserSelfYou">Вы вернулись в группу</string>
-  <string name="UnsuppotedMedia">Это сообщение не поддерживается вашей версией Telegram. Для просмотра обновите приложение: https://telegram.org/update</string>
+  <string name="UnsupportedMedia">Это сообщение не поддерживается вашей версией Telegram. Для просмотра обновите приложение: https://telegram.org/update</string>
   <string name="AttachPhoto">Фото</string>
   <string name="AttachVideo">Видео</string>
+  <string name="AttachGif">GIF</string>
   <string name="AttachLocation">Расположение</string>
   <string name="AttachContact">Контакт</string>
   <string name="AttachDocument">Файл</string>
@@ -726,13 +787,14 @@
   <string name="NoHandleAppInstalled">У вас нет приложений, которые могут обрабатывать файлы типа «%1$s», пожалуйста, установите одно для продолжения.</string>
   <string name="InviteUser">У этого пользователя пока нет Telegram, отправить приглашение?</string>
   <string name="AreYouSure">Уверены?</string>
-  <string name="AddToTheGroupTitle">Добавить пользователя %1$s в группу %2$s?</string>
+  <string name="AddToTheGroupTitle">Добавить %1$s в чат %2$s?</string>
   <string name="AddToTheGroupForwardCount">Количество последних сообщений для пересылки:</string>
   <string name="AddToTheGroup">Добавить пользователя %1$s в группу?</string>
   <string name="UserAlreadyInGroup">Этот пользователь уже в этой группе.</string>
   <string name="ForwardMessagesTo">Переслать сообщение(-я) пользователю %1$s?</string>
   <string name="SendMessagesTo">Отправить сообщение(-я) пользователю %1$s?</string>
-  <string name="AreYouSureLogout">Уверены, что хотите выйти?\n\nОбратите внимание на то, что вы можете с лёгкостью пользоваться Telegram на всех ваших устройствах одновременно.\n\nПомните, выход уничтожает все ваши секретные чаты.</string>
+  <string name="SendContactTo">Отправить контакт %1$s?</string>
+  <string name="AreYouSureLogout">Уверены, что хотите выйти?\n\nОбратите внимание, что вы можете с лёгкостью пользоваться Telegram на всех ваших устройствах одновременно.\n\nПомните, выход уничтожает все ваши секретные чаты.</string>
   <string name="AreYouSureSessions">Уверены, что хотите завершить все другие сеансы?</string>
   <string name="AreYouSureDeleteAndExit">Уверены, что хотите удалить и покинуть эту группу?</string>
   <string name="AreYouSureDeleteThisChat">Уверены, что хотите удалить этот чат?</string>
@@ -741,18 +803,21 @@
   <string name="AreYouSureUnblockContact">Уверены, что хотите разблокировать этот контакт?</string>
   <string name="AreYouSureDeleteContact">Уверены, что хотите удалить этот контакт?</string>
   <string name="AreYouSureSecretChat">Уверены, что хотите начать секретный чат?</string>
-  <string name="AreYouSureRegistration">Уверены, что хотите прервать регистрацию?</string>
+  <string name="AreYouSureRegistration">Уверены, что хотите отменить регистрацию?</string>
   <string name="AreYouSureClearHistory">Уверены, что хотите очистить историю?</string>
+  <string name="AreYouSureClearHistoryChannel">Удалить весь кешированный текст и медиа этого канала?</string>
+  <string name="AreYouSureClearHistorySuper">Удалить весь кешированный текст и медиа этой супергруппы?</string>
   <string name="AreYouSureDeleteMessages">Уверены, что хотите удалить %1$s?</string>
   <string name="SendMessagesToGroup">Отправить сообщение(-я) группе %1$s?</string>
+  <string name="SendContactToGroup">Отправить контакт %1$s?</string>
   <string name="ForwardMessagesToGroup">Переслать сообщение(-я) %1$s?</string>
   <string name="FeatureUnavailable">Извините, эта возможность пока не доступна в вашей стране.</string>
-  <string name="NoUsernameFound">Нет аккаунта Telegram с таким именем.</string>
+  <string name="NoUsernameFound">Нет аккаунта Telegram с таким именем пользователя.</string>
   <string name="BotCantJoinGroups">Этот бот не может вступать в группы.</string>
   <!--permissions-->
   <string name="PermissionContacts">Telegram необходим доступ к вашим контактам, чтобы вы могли оставаться на связи с вашими друзьями с любого устройства.</string>
   <string name="PermissionStorage">Telegram необходим доступ к вашему хранилищу файлов, чтобы вы могли отправлять и сохранять фото, видео, музыку и прочее медиа.</string>
-  <string name="PermissionNoAudio">Telegram необходим доступ к вашему микрофону, чтобы вы могли отправлять голосовые сообщения</string>
+  <string name="PermissionNoAudio">Для отправки голосовых сообщений Telegram необходим доступ к микрофону.</string>
   <string name="PermissionNoLocation">Telegram необходим доступ к вашему расположению, чтобы вы могли делиться им со своими друзьями.</string>
   <string name="PermissionOpenSettings">НАСТРОЙКИ</string>
   <!--Intro view-->
@@ -961,22 +1026,24 @@
   <string name="AndOther_other">и %1$d других</string>
   <!--date formatters-->
   <string name="formatterMonthYear">MMMM yyyy</string>
-  <string name="formatterMonth">MMM dd</string>
+  <string name="formatterMonth">dd MMM</string>
   <string name="formatterYear">dd.MM.yy</string>
   <string name="formatterYearMax">dd.MM.yyyy</string>
-  <string name="chatDate">MMMM d</string>
-  <string name="chatFullDate">MMMM d, yyyy</string>
+  <string name="chatDate">d MMMM</string>
+  <string name="chatFullDate">d MMMM yyyy</string>
   <string name="formatterWeek">EEE</string>
   <string name="formatterDay24H">HH:mm</string>
   <string name="formatterDay12H">h:mm a</string>
   <string name="formatDateAtTime">%1$s в %2$s</string>
-  <!--update text--><!--
-  <string name="updateText">Telegram для Android обновлён. Новое в версии 3.2.6:\n\n- Новые анимации и множество визуальных усовершенствований\n- Поддержка новых эмодзи\n- Прочие улучшения и исправления ошибок</string>-->
-  <string name="updateBuild">689</string>
+  <!--update text-->
+  <string name="updateText">Telegram для Android обновлён. Новое в версии 3.4.0:\n\nРеволюция GIF: загрузка/отправка до 20 раз быстрее, автовоспроизведение, возможность сохранения GIF на отдельной вкладке в панели стикеров.\n\nПодробнее:\nhttps://telegram.org/blog/gif-revolution\n\nВстроенные боты: ещё один способ отправки сообщений от ботов в любом чате. Введите имя бота и свой запрос в поле ввода сообщения для мгновенного получения ответа и отправки его собеседнику. Попробуйте ввести «@gif dog» в чате. Примеры таких ботов: @gif, @wiki, @bing, @vid, @bold.\n\nПодробнее:\nhttps://telegram.org/blog/inline-bots</string>
+  <string name="updateBuild">736</string>
     <!--Telegram+-->
-  <string name="updatePlusText">\n\nНовое в версии 3.3.1.1:\n\n- Исправление ошибок</string>
+  <string name="updatePlusText">
+\n\nНовое в версии 3.4.2.5:\n\n- Добавлены разные опции в группы/супергруппы для админов при клике на аватаре пользователя на экране чата: \'Показать профиль\', \'Удалить из группы\' и \'Сделать админом\'\n- Исправление ошибок</string>
   <string name="TelegramForAndroid">Plus Messenger для Android</string>
   <string name="Theming">Кастомизация</string>
+  <string name="PlusSettings">Настройки Plus</string>
   <string name="colorHexInvalid">Неверный hex-код цвета!</string>
   <string name="themeColor">Цвет темы</string>
   <string name="ResetThemeSettings">Сброс настроек темы</string>
@@ -1040,6 +1107,8 @@
   <string name="MuteColor">Цвет беззвучного режима</string>
   <string name="SendLogs">Отправлять логи</string>
   <string name="SendLogsEmpty">Нет логов</string>
+  <string name="ClearLogs">Очистить журналы</string>
+  <string name="ClearLogsMsg">журналы удалены</string>
   <string name="SendIcon">Цвет иконки \"отправить\"</string>
   <string name="HideMobile">Скрыть номер телефона из меню</string>
   <string name="FloatingPencilColor">Цвет значка карандаша</string>
@@ -1136,4 +1205,32 @@
   <string name="CommandColorCheck">Изменить цвет команд бота</string>
   <string name="CommandColor">Цвет команд бота</string>
   <string name="HighlightSearchColor">Цвет подсветки поиска </string>
+  <string name="ThemeUpdated">%s обновлена</string>
+  <string name="HideStatusIndicator">Скрыть индикатор статуса пользователя</string>
+  <string name="HideTabs">Скрыть вкладки</string>
+  <string name="All">Все</string>
+  <string name="Users">Пользователи</string>
+  <string name="Groups">Группы</string>
+  <string name="SuperGroups">Супергруппы</string>
+  <string name="Channels">Каналы</string>
+  <string name="Bots">Боты</string>
+  <string name="Favorites">Избранное</string>
+  <string name="TabsHeight">Высота вкладок</string>
+  <string name="SetAsDefaultTab">Установить как вкладку по-умолчанию</string>
+  <string name="ResetDefaultTab">Сбросить вкладку по-умолчанию</string>
+  <string name="SortByStatus">Упорядочить по статусу</string>
+  <string name="SortByLastMessage">Упорядочить по последнему сообщению</string>
+  <string name="SortByUnreadCount">Упорядочить по непрочитанным сообщениям</string>
+  <string name="ShowSuperGroupsTab">Показать вкладку супергрупп</string>
+  <string name="HideSuperGroupsTab">Скрыть вкадку супергрупп</string>
+  <string name="Tabs">Вкладки</string>
+  <string name="HideShowTabs">Показать/Скрыть Вкладки</string>
+  <string name="AddToFavorites">Добавить в избранное</string>
+  <string name="DeleteFromFavorites">Удалить из избранного</string>
+  <string name="NoFavoritesHelp">Нет избранного\n\nДля добавления какого-либо чата в этот список, просто коснитесь чата и удерживайте, а затем выберите \'Добавить в избранное\'.</string>
+  <string name="DisableTabsAnimation">Не скрывать вкладки при прокрутке</string>
+  <string name="InfiniteSwipe">Бесконечное пролистование вкладок</string>
+  <string name="ShowDirectShareButton">Показывать кнопку \"прямой отправки\"</string>
+  <string name="Quote">ЦИТАТА</string>
+  <string name="RemoveUserAdmin">Удалить из списка админов</string>
 </resources>

@@ -46,6 +46,7 @@
     <string name="EncryptedChatStartedOutgoing">%s قام بالدخول للمحادثة السرية.</string>
     <string name="EncryptedChatStartedIncoming">لقد قمت بالدخول للمحادثة السرية.</string>
     <string name="ClearHistory">مسح سجل المحادثات</string>
+    <string name="ClearHistoryCache">حذف من الذاكرة المخبئية</string>
     <string name="DeleteChat">حذف وخروج</string>
     <string name="DeleteChatUser">حذف المحادثة</string>
     <string name="HiddenName">حساب محذوف</string>
@@ -167,6 +168,7 @@
     <string name="ChannelMessageGroupContact">%1$s قام بمشاركة جهة اتصال للقناة %2$s</string>
     <string name="ChannelMessageGroupMap">%1$s  قام بإرسال مكان للقناة %2$s</string>
     <string name="ChannelMessageGroupDocument">%1$s  قام بإرسال ملف للقناة %2$s</string>
+    <string name="ChannelMessageGroupGif">%1$s أرسل صورة متحركة للقناة %2$s</string>
     <string name="ChannelMessageGroupAudio">%1$s  قام بإرسال مقطع صوتي للقناة %2$s</string>
     <string name="ChannelMessageGroupSticker">%1$s  قام بإرسال ملصق للقناة %2$s</string>
     <string name="ChannelMessageNoText">%1$s أرسل رسالة</string>
@@ -175,6 +177,7 @@
     <string name="ChannelMessageContact">%1$s أرسل جهة اتصال</string>
     <string name="ChannelMessageMap">%1$s قام بإرسال موقع</string>
     <string name="ChannelMessageDocument">%1$s أرسل ملف</string>
+    <string name="ChannelMessageGIF">%1$s قام بنشر صورة متحركة</string>
     <string name="ChannelMessageAudio">%1$s أرسل رسالة صوتية</string>
     <string name="ChannelMessageSticker">%1$s أرسل ملصق</string>
     <!--broadcasts-->
@@ -244,6 +247,8 @@
     <string name="DeleteThisChat">حذف هذه الدردشة</string>
     <string name="SlideToCancel">قم بالسحب للإلغاء</string>
     <string name="SaveToDownloads">حفظ في الجهاز</string>
+    <string name="SaveToGIFs">حفظ في الصور المتحركة</string>
+    <string name="DeleteGif">هل ترغب بحذف الصورة المتحركة؟</string>
     <string name="SaveToMusic">احفظ في الموسيقى</string>
     <string name="ShareFile">مشاركة</string>
     <string name="ApplyLocalizationFile">تطبيق ملف التعريب</string>
@@ -264,6 +269,7 @@
     <string name="NobodyLikesSpamUrl">https://telegram.org/faq/can-39t-send-messages-to-non-contacts</string>
     <string name="MoreInfo">ملعومات إضافية</string>
     <string name="ShareSendTo">أرسل إلى...</string>
+    <string name="TapHereGifs">اضغط هنا للوصول للصور المتحركة المحفوظة</string>
     <!--notification-->
     <string name="MessageLifetimeChanged">%1$s قام بتعيين عداد التدمير الذاتي إلى to %2$s</string>
     <string name="MessageLifetimeChangedOutgoing">لقد قمت بتعيين التدمير الذاتي إلى %1$s</string>
@@ -277,6 +283,7 @@
     <string name="NotificationMessageContact">%1$s قام بإرسال جهة اتصال لك</string>
     <string name="NotificationMessageMap">%1$s قام بإرسال موقع لك</string>
     <string name="NotificationMessageDocument">%1$s قام بإرسال ملف لك</string>
+    <string name="NotificationMessageGif">%1$s أرسل لك صورة متحركة</string>
     <string name="NotificationMessageAudio">%1$s قام بإرسال مقطع صوتي لك</string>
     <string name="NotificationMessageSticker">%1$s قام بإرسال ملصق</string>
     <string name="NotificationMessageGroupText">%1$s @ %2$s: %3$s</string>
@@ -286,6 +293,7 @@
     <string name="NotificationMessageGroupContact">%1$s قام بإرسال جهة اتصال للمجموعة %2$s</string>
     <string name="NotificationMessageGroupMap">%1$s قام بإرسال موقع للمجموعة %2$s</string>
     <string name="NotificationMessageGroupDocument">%1$s قام بإرسال ملف للمجموعة %2$s</string>
+    <string name="NotificationMessageGroupGif">%1$s أرسل صورة متحركة للمجموعة %2$s</string>
     <string name="NotificationMessageGroupAudio">%1$s قام بإرسال مقطع صوتي للمجموعة %2$s</string>
     <string name="NotificationMessageGroupSticker">%1$s قام بإرسال ملصق للمجموعة %2$s</string>
     <string name="NotificationInvitedToGroup">%1$s قام بدعوتك للمجموعة %2$s</string>
@@ -437,7 +445,6 @@
     <string name="TerminateAllSessions">سجل الخروج من كافة الأجهزة الأخرى</string>
     <string name="Events">الأحداث</string>
     <string name="ContactJoined">اشترك صديق في تيليجرام</string>
-    <string name="Pebble">PEBBLE</string>
     <string name="Language">اللغة</string>
     <string name="AskAQuestionInfo">نرجو الأخذ بالعلم أن الدعم الفني في تيليجرام يقوم به مجموعة من المتطوعين. نحن نحاول الرد بسرعة قدر المستطاع، لكن ربما نستغرق القليل من الوقت.<![CDATA[<br><br>]]> <![CDATA[<a href=\"https://telegram.org/faq/ar\">صفحة الأسئلة الأكثر شيوعًا</a>]]>: يوجد بها حلول للمشاكل وإجابات لمعظم الأسئلة.</string>
     <string name="AskButton">اسأل أحد المتطوعين</string>
@@ -469,6 +476,7 @@
     <string name="WhenConnectedOnWiFi">عند الاتصال بالشبكة اللاسلكية</string>
     <string name="WhenRoaming">عند تواجدك خارج البلاد</string>
     <string name="NoMediaAutoDownload">لا يوجد وسائط</string>
+    <string name="AutoplayGifs">تشغيل تلقائي للصور المتحركة</string>
     <string name="SaveToGallerySettings">حفظ في الجهاز</string>
     <string name="EditName">تعديل الاسم</string>
     <string name="NotificationsPriority">الأولوية</string>
@@ -499,6 +507,24 @@
     <string name="SmartNotificationsTimes">الأوقات</string>
     <string name="SmartNotificationsWithin">خلال</string>
     <string name="SmartNotificationsMinutes">دقائق</string>
+    <!--cache view-->
+    <string name="CacheSettings">إعدادات الذاكرة المخبئية</string>
+    <string name="LocalDatabase">قاعدة البيانات على الجهاز</string>
+    <string name="LocalDatabaseClear">هل ترغب في مسح الرسائل المحفوظة في الذاكرة المخبئية؟</string>
+    <string name="LocalDatabaseInfo">مسح قاعدة البيانات على الجهاز سيحذف الرسائل التي تم تنزيلها على جهازك ويقوم بضغط قاعدة البيانات لتوفير مساحة على جهازك. تيليجرام يحتاج لبعض البيانات ليعمل، لذلك حجم قاعدة البيانات لن يصل إلى صفر.\n\nهذه العملية ربما تأخذ عدة دقائق لتتم.</string>
+    <string name="ClearMediaCache">مسح الذاكرة المخبئية</string>
+    <string name="CacheClear">مسح</string>
+    <string name="CalculatingSize">جاري الحساب...</string>
+    <string name="LocalDocumentCache">المستندات</string>
+    <string name="LocalPhotoCache">الصور</string>
+    <string name="LocalAudioCache">الرسائل الصوتية</string>
+    <string name="LocalVideoCache">المقاطع المرئية</string>
+    <string name="LocalMusicCache">الموسيقى</string>
+    <string name="LocalCache">الملفات الأخرى</string>
+    <string name="CacheEmpty">إفراغ</string>
+    <string name="KeepMedia">الإحتفاظ بالوسائط</string>
+    <string name="KeepMediaInfo">الصور، المقاطع المرئية، وجميع الملفات المحفوظة في خوادمنا التي لم <![CDATA[<b> تستخدمها </b>]]> خلال هذه المدة سيتم حذفها لتوفير المساحة. ملفات الوسائط ستبقى في خوادم تيليجرام ويمكنك إعادة تنزيلها متى ما احتجتها مرة أخرى.</string>
+    <string name="KeepMediaForever">إلى الأبد</string>
     <!--sessions view-->
     <string name="SessionsTitle">الأجهزة المسجّل دخول منها</string>
     <string name="CurrentSession">الجهاز الحالي</string>
@@ -700,6 +726,7 @@
     <string name="Back">رجوع</string>
     <string name="Done">تم</string>
     <string name="Open">فتح</string>
+    <string name="Save">حفظ</string>
     <string name="Cancel">إلغاء</string>
     <string name="Close">إغلاق</string>
     <string name="Add">إضافة</string>
@@ -721,14 +748,12 @@
     <string name="ActionInviteYou">لقد قمت بالدخول للمجموعة باستخدام رابط الدعوة</string>
     <string name="ActionInviteUser">un1 قام بالدخول للمجموعة باستخدام رابط الدعوة</string>
     <string name="ActionKickUser">un1 أزال un2</string>
-    <string name="ActionLeftUser">غادر المجموعة العضو un1</string>
     <string name="ActionAddUser">un1 قام بإضافة un2</string>
     <string name="ActionRemovedPhoto">تمت إزالة صورة المجموعة من قِبَل un1</string>
     <string name="ActionChangedPhoto">تم تغيير صورة المجموعة من قِبَل un1</string>
     <string name="ActionChangedTitle">un1 قام بتغيير اسم المجموعة إلى un2</string>
     <string name="ActionCreateGroup">تم إنشاء مجموعة جديدة من قِبَل un1</string>
     <string name="ActionYouKickUser">لقد قمت بإخراج un2</string>
-    <string name="ActionYouLeftUser">لقد قمت بمغادرة المجموعة</string>
     <string name="ActionYouAddUser">لقد قمت بإضافة un2</string>
     <string name="ActionYouRemovedPhoto">لقد قمت بإزالة صورة المجموعة</string>
     <string name="ActionYouChangedPhoto">لقد قمت بتغيير صورة المجموعة</string>
@@ -738,9 +763,10 @@
     <string name="ActionAddUserYou">un1 قام بإضافتك</string>
     <string name="ActionAddUserSelf">un1 عاد إلى المجموعة</string>
     <string name="ActionAddUserSelfYou">لقد عدت إلى المجموعة</string>
-    <string name="UnsuppotedMedia">نسخة تيليجرام الموجودة لديك لا تدعم هذه الرسالة. الرجاء التحديث لأحدث نسخة لاستعراضها: https://telegram.org/update</string>
+    <string name="UnsupportedMedia">نسخة تيليجرام الموجودة لديك لا تدعم هذه الرسالة. الرجاء التحديث لأحدث نسخة لاستعراضها: https://telegram.org/update</string>
     <string name="AttachPhoto">صورة</string>
     <string name="AttachVideo">مقطع مرئي</string>
+    <string name="AttachGif">صورة متحركة</string>
     <string name="AttachLocation">موقع</string>
     <string name="AttachContact">جهة اتصال</string>
     <string name="AttachDocument">ملف</string>
@@ -781,6 +807,8 @@
     <string name="AreYouSureSecretChat">هل أنت متأكد من أنك تريد بدء محادثة سرية؟</string>
     <string name="AreYouSureRegistration">هل أنت متأكد من رغبتك في إلغاء التسجيل؟</string>
     <string name="AreYouSureClearHistory">هل أنت متأكد من رغبتك في حذف سجل المحادثات؟</string>
+    <string name="AreYouSureClearHistoryChannel">حذف كافة المحادثات والوسائط المتعلقة بهذه القناة من الذاكرة المخبئية؟</string>
+    <string name="AreYouSureClearHistorySuper">حذف كافة المحادثات والوسائط المتعلقة بهذه المجموعة الخارقة من الذاكرة المخبئية؟</string>
     <string name="AreYouSureDeleteMessages">هل أنت متأكد من رغبتك في حذف %1$s؟</string>
     <string name="SendMessagesToGroup">هل ترغب في إرسال رسالة إلى %1$s؟</string>
     <string name="SendContactToGroup">أرسل جهة الاتصال إلى %1$s؟</string>
@@ -1010,8 +1038,8 @@
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s الساعة %2$s</string>
     <!--update text-->
-    <string name="updateText">تم تحديث تيليجرام على الأندرويد. الجديد في النسخة رقم 3.3.1:\n\n- المجموعات الآن يمكن أن يكون بها عدة مشرفين يمكنهم تغيير اسمها وشعارها وإضافة وإزالة الأعضاء.\n- المجموعات التي وصلت إلى ٢٠٠ عضو يمكن ترقيتها لتصبح مجموعة خارقة تصل إلى ١٠٠٠ عضو.\n- إضافة زر للمشاركة السريعة من خلال القنوات بجانب الرسائل.\n\nللإستزادة عن هذا التحديث من هنا:\nhttps://telegram.org/blog/supergroups</string>
-    <string name="updateBuild">689</string>
+    <string name="updateText">تيليجرام نسخة الأندرويد تم تحديثه. الجديد في نسخة 3.4.0:\n\nثورة الصور المتحركة: صور متحركة أسرع بعشر أضعاف في الإرسال والتنزيل، تشغيل تلقائي، حفظ صورك المفضلة في قسم خاص مع الملصقات.\n\nللاستزادة عن الصور المتحركة:\nhttps://telegram.org/blog/gif-revolution\n\nالبوت أثناء الكتابة: طريقة جديدة لإضافة محتوى البوت لأي محادثة. اكتب معرف البوت ثم نص البحث بعده لتحصل على نتائج فورية لإرسالها. جرب كتابة @gif ثم أي كلمة بعدها. البوتات التجريبية حاليًا هي: @gif و @wiki و @bing و @vid و @bold .\n\nللاستزادة عن البوتات أثناء الكتابة، من هنا:\nhttps://telegram.org/blog/inline-bots</string>
+    <string name="updateBuild">736</string>
     <!--Telegram+--><!--
   <string name="updatePlusText"></string>-->
   <string name="TelegramForAndroid">بلاس مسنجر للأندرويد</string>

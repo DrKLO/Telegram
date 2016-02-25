@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2015.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.ui;
@@ -453,7 +453,7 @@ public class ThemingDrawerActivity extends BaseFragment {
                         builder.setTitle(LocaleController.getString("AvatarSize", R.string.AvatarSize));
                         final NumberPicker numberPicker = new NumberPicker(getParentActivity());
                         final int currentValue = themePrefs.getInt("drawerAvatarSize", 64);
-                        numberPicker.setMinValue(1);
+                        numberPicker.setMinValue(0);
                         numberPicker.setMaxValue(75);
                         numberPicker.setValue(currentValue);
                         builder.setView(numberPicker);

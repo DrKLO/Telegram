@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2015.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.ui.Cells;
@@ -29,6 +29,7 @@ import android.widget.TextView;
 
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.UserObject;
@@ -152,7 +153,9 @@ public class DrawerProfileCell extends FrameLayout implements PhotoViewer.PhotoV
                 FileLog.e("tmessages", e);
             }
         }
-        if(AndroidUtilities.getBoolMain("hideMobile")){
+        //SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+        SharedPreferences plusPreferences = ApplicationLoader.applicationContext.getSharedPreferences("plusconfig", Activity.MODE_PRIVATE);
+        if(plusPreferences.getBoolean("hideMobile", false) && !plusPreferences.getBoolean("showUsername", false)){
             phoneTextView.setVisibility(GONE);
         }else{
             phoneTextView.setVisibility(VISIBLE);
@@ -203,7 +206,19 @@ public class DrawerProfileCell extends FrameLayout implements PhotoViewer.PhotoV
             photo = user.photo.photo_small;
         }
         nameTextView.setText(UserObject.getUserName(user));
-        phoneTextView.setText(PhoneFormat.getInstance().format("+" + user.phone));
+        //phoneTextView.setText(PhoneFormat.getInstance().format("+" + user.phone));
+        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("plusconfig", Activity.MODE_PRIVATE);
+        String value;
+        if(preferences.getBoolean("showUsername", false)) {
+            if (user.username != null && user.username.length() != 0) {
+                value = "@" + user.username;
+            } else {
+                value = LocaleController.getString("UsernameEmpty", R.string.UsernameEmpty);
+            }
+        } else{
+            value = PhoneFormat.getInstance().format("+" + user.phone);
+        }
+        phoneTextView.setText(value);
         AvatarDrawable avatarDrawable = new AvatarDrawable(user);
         avatarDrawable.setColor(0xff5c98cd);
         avatarImageView.setImage(photo, "50_50", avatarDrawable);
@@ -303,7 +318,10 @@ public class DrawerProfileCell extends FrameLayout implements PhotoViewer.PhotoV
         nameTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, themePrefs.getInt("drawerNameSize", 15));
         phoneTextView.setTextColor(themePrefs.getInt("drawerPhoneColor", dColor));
         phoneTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, themePrefs.getInt("drawerPhoneSize", 13));
-        if(AndroidUtilities.getBoolMain("hideMobile")){
+        //SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+        SharedPreferences plusPreferences = ApplicationLoader.applicationContext.getSharedPreferences("plusconfig", Activity.MODE_PRIVATE);
+
+        if(plusPreferences.getBoolean("hideMobile", false) && !plusPreferences.getBoolean("showUsername", false)){
             phoneTextView.setVisibility(GONE);
         }else{
             phoneTextView.setVisibility(VISIBLE);

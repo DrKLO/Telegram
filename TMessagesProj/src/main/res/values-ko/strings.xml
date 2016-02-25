@@ -15,7 +15,7 @@
     <string name="WrongCountry">올바른 국가번호를 입력하세요</string>
     <!--code enter view-->
     <string name="YourCode">인증코드 입력</string>
-    <string name="SentSmsCode">인증코드 메시지를 아래 번호로 전송했습니다<![CDATA[<br/>]]></string>
+    <string name="SentSmsCode">인증코드 메시지를 아래 번호로 전송했습니다</string>
     <string name="CallText">텔레그램이 %1$d:%2$02d 후에는 전화를 겁니다.</string>
     <string name="Calling">텔레그램이 전화 거는 중...</string>
     <string name="Code">코드</string>
@@ -46,6 +46,7 @@
     <string name="EncryptedChatStartedOutgoing">%s님이 비밀대화에 참여했습니다.</string>
     <string name="EncryptedChatStartedIncoming">비밀대화에 참여했습니다.</string>
     <string name="ClearHistory">대화내용 지우기</string>
+    <string name="ClearHistoryCache">캐시에서 삭제</string>
     <string name="DeleteChat">채팅방 나가기</string>
     <string name="DeleteChatUser">이 대화 삭제</string>
     <string name="HiddenName">탈퇴한 계정</string>
@@ -82,7 +83,7 @@
     <string name="GroupUserCantBot">죄송합니다, 그룹방에 너무 많은 봇이 있습니다.</string>
     <string name="ActionMigrateFromGroup">이 그룹방은 슈퍼그룹방으로 업그레이드 되었습니다.</string>
     <string name="ActionMigrateFromGroupNotify">%1$s 그룹방은 슈퍼그룹방으로 업그레이드 되었습니다.</string>
-    <string name="NoBlockedGroup">그룹방에서 차단되어 퇴장당한 사용자는 관리자가 초대해야지만 그룹방에 입장이 가능합니다.\n초대링크로는 초대가 되지 않습니다.</string>
+    <string name="NoBlockedGroup">그룹방에서 차단되어 퇴장당한 사용자는 관리자가 초대해야지만 그룹방에 입장이 가능합니다. 초대링크로는 초대가 되지 않습니다.</string>
     <string name="NewChannel">새 채널</string>
     <string name="EnterChannelName">채널명</string>
     <string name="Comments">코멘트들</string>
@@ -167,6 +168,7 @@
     <string name="ChannelMessageGroupContact">%1$s님이 %2$s 채널에 연락처를 공유했습니다</string>
     <string name="ChannelMessageGroupMap">%1$s님이 %2$s 채널에 위치를 보냈습니다</string>
     <string name="ChannelMessageGroupDocument">%1$s님이 %2$s 채널에 파일을 보냈습니다</string>
+    <string name="ChannelMessageGroupGif">%1$s님이 %2$s 채널에 GIF파일을 보냈습니다</string>
     <string name="ChannelMessageGroupAudio">%1$s님이 %2$s 채널에 오디오를 보냈습니다</string>
     <string name="ChannelMessageGroupSticker">%1$s님이 %2$s 채널에 스티커를 보냈습니다</string>
     <string name="ChannelMessageNoText">%1$s 님이 메시지를 보냈습니다</string>
@@ -175,6 +177,7 @@
     <string name="ChannelMessageContact">%1$s님이 연락처를 공유했습니다</string>
     <string name="ChannelMessageMap">%1$s님이 위치를 보냈습니다</string>
     <string name="ChannelMessageDocument">%1$s 님이 파일을 보냈습니다</string>
+    <string name="ChannelMessageGIF">%1$s 님이 GIF파일을 보냈습니다</string>
     <string name="ChannelMessageAudio">%1$s님이 음성메시지를 보냈습니다</string>
     <string name="ChannelMessageSticker">%1$s님이 스티커를 보냈습니다</string>
     <!--broadcasts-->
@@ -244,6 +247,8 @@
     <string name="DeleteThisChat">이 채팅방 삭제</string>
     <string name="SlideToCancel">밀어서 취소</string>
     <string name="SaveToDownloads">다운로드 폴더에 저장</string>
+    <string name="SaveToGIFs">GIF파일로 저장</string>
+    <string name="DeleteGif">GIF파일을 삭제하겠습니까?</string>
     <string name="SaveToMusic">음악으로 저장</string>
     <string name="ShareFile">공유</string>
     <string name="ApplyLocalizationFile">언어 파일 적용</string>
@@ -264,6 +269,7 @@
     <string name="NobodyLikesSpamUrl">https://telegram.org/faq#can-39t-send-messages-to-non-contacts</string>
     <string name="MoreInfo">더 보기</string>
     <string name="ShareSendTo">다음에게 보내기..</string>
+    <string name="TapHereGifs">저장된 GIF 파일을 보려면 탭하세요.</string>
     <!--notification-->
     <string name="MessageLifetimeChanged">%1$s님이 자동삭제를 %2$s 후로 설정했습니다</string>
     <string name="MessageLifetimeChangedOutgoing">자동삭제를 %1$s 후로 설정했습니다</string>
@@ -277,6 +283,7 @@
     <string name="NotificationMessageContact">%1$s님이 연락처를 공유했습니다</string>
     <string name="NotificationMessageMap">%1$s님이 위치를 보냈습니다</string>
     <string name="NotificationMessageDocument">%1$s님이 파일을 보냈습니다</string>
+    <string name="NotificationMessageGif">%1$s 님께서 GIF파일을 보내셨습니다</string>
     <string name="NotificationMessageAudio">%1$s님이 음성메시지를 보냈습니다</string>
     <string name="NotificationMessageSticker">%1$s님이 스티커를 보냈습니다</string>
     <string name="NotificationMessageGroupText">%1$s @ %2$s: %3$s</string>
@@ -286,6 +293,7 @@
     <string name="NotificationMessageGroupContact">%1$s님이 %2$s 그룹에 연락처를 공유했습니다</string>
     <string name="NotificationMessageGroupMap">%1$s님이 %2$s 그룹에 위치를 보냈습니다</string>
     <string name="NotificationMessageGroupDocument">%1$s님이 %2$s 그룹에 파일을 보냈습니다</string>
+    <string name="NotificationMessageGroupGif">%1$s 님께서 %2$s 그룹에 GIF파일을 보냈습니다</string>
     <string name="NotificationMessageGroupAudio">%1$s님이 %2$s 그룹에 음성메시지를 보냈습니다</string>
     <string name="NotificationMessageGroupSticker">%1$s님이 %2$s 그룹에 스티커를 보냈습니다</string>
     <string name="NotificationInvitedToGroup">%1$s님이 %2$s 그룹에 초대했습니다</string>
@@ -437,7 +445,6 @@
     <string name="TerminateAllSessions">다른 모든 세션 종료</string>
     <string name="Events">이벤트</string>
     <string name="ContactJoined">친구의 텔레그램 가입 알림</string>
-    <string name="Pebble">PEBBLE 스마트워치 지원</string>
     <string name="Language">언어</string>
     <string name="AskAQuestionInfo">텔레그램에 관한 질문은 자원봉사자들이 답변해 드립니다. 신속한 답변을 위해 노력하지만 답변이 다소 늦을 수 있습니다.<![CDATA[<br><br>]]>일반적인 문제와 <![CDATA[<a href=\"https://telegram.org/faq/ko#g\">해결방법</a>]]>에 대해서는 \'<![CDATA[<a href=\"https://telegram.org/faq/ko#a\">자주 묻는 질문</a>]]>\'을 확인해 보세요.</string>
     <string name="AskButton">질문하기</string>
@@ -469,6 +476,7 @@
     <string name="WhenConnectedOnWiFi">Wi-Fi에 연결 중일 때</string>
     <string name="WhenRoaming">로밍 중일 때</string>
     <string name="NoMediaAutoDownload">다운로드 안함</string>
+    <string name="AutoplayGifs">GIF 자동재생</string>
     <string name="SaveToGallerySettings">앨범에 자동 저장</string>
     <string name="EditName">이름 편집</string>
     <string name="NotificationsPriority">우선순위</string>
@@ -499,6 +507,24 @@
     <string name="SmartNotificationsTimes">번</string>
     <string name="SmartNotificationsWithin">이내</string>
     <string name="SmartNotificationsMinutes">분</string>
+    <!--cache view-->
+    <string name="CacheSettings">캐시 설정</string>
+    <string name="LocalDatabase">로컬 데이터베이스</string>
+    <string name="LocalDatabaseClear">캐시된 텍스트 메시지를 삭제하시겠습니까?</string>
+    <string name="LocalDatabaseInfo">압축된 데이터베이스 및 캐시에 저장된 메시지를 로컬 데이터베이스에서 삭제하면 내부 저장공간이 증가합니다. 데이터베이스는 Telegram이 작동하는데 어느정도 필요함으로 완전히 삭제가 되지는 않습니다.\n\n이 작업은 완료되기까지 몇분정도 소요가 될 수 있습니다.</string>
+    <string name="ClearMediaCache">캐시 삭제</string>
+    <string name="CacheClear">삭제</string>
+    <string name="CalculatingSize">계산중...</string>
+    <string name="LocalDocumentCache">문서</string>
+    <string name="LocalPhotoCache">사진</string>
+    <string name="LocalAudioCache">음성 메시지</string>
+    <string name="LocalVideoCache">동영상</string>
+    <string name="LocalMusicCache">음악</string>
+    <string name="LocalCache">다른 파일</string>
+    <string name="CacheEmpty">없음</string>
+    <string name="KeepMedia">미디어 저장</string>
+    <string name="KeepMediaInfo">이 기간 동안 클라우드 채팅방에서  <![CDATA[<b>접근하지 않은</b>]]> 사진이나 동영상, 기타 파일 등은 공간 절약을 위해 이 기기에서 삭제됩니다.\n\n모든 파일은 Telegram 클라우드에 여전히 남으며 필요하시면 언제든 다시 다운로드하실 수 있습니다.</string>
+    <string name="KeepMediaForever">영원히</string>
     <!--sessions view-->
     <string name="SessionsTitle">활성화된 세션</string>
     <string name="CurrentSession">현재 세션</string>
@@ -700,6 +726,7 @@
     <string name="Back">뒤로</string>
     <string name="Done">완료</string>
     <string name="Open">열기</string>
+    <string name="Save">저장</string>
     <string name="Cancel">취소</string>
     <string name="Close">닫기</string>
     <string name="Add">추가</string>
@@ -738,9 +765,10 @@
     <string name="ActionAddUserYou">un1님이 그룹에 초대했습니다</string>
     <string name="ActionAddUserSelf">un1 님께서 그룹에 돌아오셨습니다</string>
     <string name="ActionAddUserSelfYou">그룹에 돌아오셨습니다.</string>
-    <string name="UnsuppotedMedia">이 메시지는 현재 사용 중인 버전의 Telegram에서 지원되지 않습니다. 메시지를 보려면 https://telegram.org/update 에서 앱을 업데이트하세요.</string>
+    <string name="UnsupportedMedia">이 메시지는 현재 사용 중인 버전의 Telegram에서 지원되지 않습니다. 메시지를 보려면 https://telegram.org/update 에서 앱을 업데이트하세요.</string>
     <string name="AttachPhoto">사진</string>
     <string name="AttachVideo">동영상</string>
+    <string name="AttachGif">GIF파일</string>
     <string name="AttachLocation">위치</string>
     <string name="AttachContact">연락처</string>
     <string name="AttachDocument">파일</string>
@@ -781,6 +809,8 @@
     <string name="AreYouSureSecretChat">비밀대화를 시작할까요?</string>
     <string name="AreYouSureRegistration">정말로 가입을 취소하시겠습니까?</string>
     <string name="AreYouSureClearHistory">정말로 대화내용을 지우시겠습니까?</string>
+    <string name="AreYouSureClearHistoryChannel">채널에서 캐시된 모든 텍스트 및 미디어를 삭제하시겠습니까?</string>
+    <string name="AreYouSureClearHistorySuper">슈커그룹에서 캐시된 모든 텍스트 및 미디어를 삭제하시겠습니까?</string>
     <string name="AreYouSureDeleteMessages">%1$s: 정말로 삭제하시겠습니까?</string>
     <string name="SendMessagesToGroup">%1$s 그룹에 메시지를 보낼까요?</string>
     <string name="SendContactToGroup">%1$s에게 연락처를 보내시겠습니까?</string>
@@ -1010,6 +1040,6 @@
     <string name="formatterDay12H">a h:mm</string>
     <string name="formatDateAtTime">%1$s %2$s</string>
     <!--update text-->
-    <string name="updateText">텔레그램 안드로이드 버전이 업데이트 되었습니다. 새로운 버전은 3.3.1 입니다:\n\n- 그룹방제목, 그룹방사진, 구성원 추가 및 삭제등을 할 수 있는 복수의 그룹 관리자 설정 가능\n- 200명 제한이 걸린 그룹은 1,000명까지 활용가능한 슈퍼그룹으로 업그레이드 가능\n\n슈퍼그룹 및 업데이트 관련 내용 :\nhttps://telegram.org/blog/supergroups</string>
-    <string name="updateBuild">689</string>
+    <string name="updateText">텔레그램 안드로이드 버전이 업데이트 되었습니다. 새로운 버전은 3.4.0 입니다:\n\nGIF 혁명: 10배 빠른 전송, 다운로드 및 자동재생이 가능하며, 스티커 패널에서 즐겨찾는 GIF를 저장가능\n\nGIF에 대한 자세한 정보:\nhttps://telegram.org/blog/gif-revolution\n\n@-봇 : 모든 대화에 봇 기능을 추가 할 수 있습니다. 봇 아이디를 입력란에 같이 입력해주시면 즉시 결과값을 확인 할 수 있습니다."@gif dog"와 같은 명령어를 입력란에 같이 입력해보세요. 예시:@gif, @wiki, @bing, @vid, @bold.\n\n@-봇에 대한 자세한 정보\nhttps://telegram.org/blog/inline-bots</string>
+    <string name="updateBuild">736</string>
 </resources>

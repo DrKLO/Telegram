@@ -1,4 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
+
+<!--Translation by iLLogical2007, DanielGroeger and everyone from https://github.com/DrKLO/Telegram/pull/129 whom I didn't notice -->
+
 <resources>
     <string name="AppName">Plus Messenger</string>
     <string name="AppNameBeta">Telegram Beta</string>
@@ -43,6 +46,7 @@
     <string name="EncryptedChatStartedOutgoing">%s ist deinem geheimen Chat beigetreten.</string>
     <string name="EncryptedChatStartedIncoming">Du bist dem geheimen Chat beigetreten.</string>
     <string name="ClearHistory">Verlauf löschen</string>
+    <string name="ClearHistoryCache">Cache leeren</string>
     <string name="DeleteChat">Löschen und beenden</string>
     <string name="DeleteChatUser">Chat löschen</string>
     <string name="HiddenName">Gelöschtes Konto</string>
@@ -164,6 +168,7 @@
     <string name="ChannelMessageGroupContact">%1$s hat einen Kontakt an den Kanal %2$s gesendet</string>
     <string name="ChannelMessageGroupMap">%1$s hat einen Standort an den Kanal %2$s gesendet</string>
     <string name="ChannelMessageGroupDocument">%1$s hat eine Datei an den Kanal %2$s gesendet</string>
+    <string name="ChannelMessageGroupGif">%1$s hat ein GIF an den Kanal %2$s gesendet</string>
     <string name="ChannelMessageGroupAudio">%1$s hat eine Sprachnachricht an den Kanal %2$s gesendet</string>
     <string name="ChannelMessageGroupSticker">%1$s hat einen Sticker an den Kanal %2$s gesendet</string>
     <string name="ChannelMessageNoText">%1$s hat eine Nachricht gesendet</string>
@@ -172,6 +177,7 @@
     <string name="ChannelMessageContact">%1$s hat einen Kontakt gesendet</string>
     <string name="ChannelMessageMap">%1$s hat einen Standort gesendet</string>
     <string name="ChannelMessageDocument">%1$s hat eine Datei gesendet</string>
+    <string name="ChannelMessageGIF">%1$s hat ein GIF gesendet</string>
     <string name="ChannelMessageAudio">%1$s hat eine Sprachnachricht gesendet</string>
     <string name="ChannelMessageSticker">%1$s hat einen Sticker gesendet</string>
     <!--broadcasts-->
@@ -241,6 +247,8 @@
     <string name="DeleteThisChat">Diesen Chat löschen</string>
     <string name="SlideToCancel">WISCHEN UM ABZUBRECHEN</string>
     <string name="SaveToDownloads">In Downloads speichern</string>
+    <string name="SaveToGIFs">GIF hinzufügen</string>
+    <string name="DeleteGif">GIF löschen?</string>
     <string name="SaveToMusic">Musik speichern</string>
     <string name="ShareFile">Teilen</string>
     <string name="ApplyLocalizationFile">Sprachdatei benutzen</string>
@@ -261,6 +269,7 @@
     <string name="NobodyLikesSpamUrl">https://telegram.org/faq/de#kann-keine-nachrichten-an-nicht-kontakte-senden</string>
     <string name="MoreInfo">Mehr Infos</string>
     <string name="ShareSendTo">Sende an...</string>
+    <string name="TapHereGifs">Hier tippen um gespeicherte GIFs zu sehen</string>
     <!--notification-->
     <string name="MessageLifetimeChanged">%1$s hat den Selbstzerstörungs-Timer auf %2$s gesetzt</string>
     <string name="MessageLifetimeChangedOutgoing">Du hast den Selbstzerstörungs-Timer auf %1$s gesetzt</string>
@@ -274,6 +283,7 @@
     <string name="NotificationMessageContact">%1$s hat dir einen Kontakt gesendet</string>
     <string name="NotificationMessageMap">%1$s hat dir einen Standort gesendet</string>
     <string name="NotificationMessageDocument">%1$s hat dir eine Datei gesendet</string>
+    <string name="NotificationMessageGif">%1$s hat dir ein GIF gesendet</string>
     <string name="NotificationMessageAudio">%1$s hat dir eine Audio-Datei gesendet</string>
     <string name="NotificationMessageSticker">%1$s hat dir einen Sticker gesendet</string>
     <string name="NotificationMessageGroupText">%1$s @ %2$s: %3$s</string>
@@ -283,6 +293,7 @@
     <string name="NotificationMessageGroupContact">%1$s hat einen Kontakt an die Gruppe %2$s gesendet</string>
     <string name="NotificationMessageGroupMap">%1$s hat einen Standort an die Gruppe %2$s gesendet</string>
     <string name="NotificationMessageGroupDocument">%1$s hat eine Datei an die Gruppe %2$s gesendet</string>
+    <string name="NotificationMessageGroupGif">%1$s hat ein GIF an die Gruppe %2$s gesendet</string>
     <string name="NotificationMessageGroupAudio">%1$s hat eine Audio-Datei an die Gruppe %2$s gesendet</string>
     <string name="NotificationMessageGroupSticker">%1$s hat einen Sticker an die Gruppe %2$s gesendet</string>
     <string name="NotificationInvitedToGroup">%1$s hat dich in die Gruppe %2$s eingeladen</string>
@@ -323,7 +334,7 @@
     <string name="EnterGroupNamePlaceholder">Gruppenname</string>
     <string name="GroupName">Gruppenname</string>
     <string name="MembersCount">%1$d/%2$d Mitglieder</string>
-    <string name="JoinToGroup">Möchtest du dem Kanal  \'%1$s\' beitreten?</string>
+    <string name="JoinToGroup">Möchtest du dem Chat \'%1$s\' beitreten?</string>
     <string name="JoinToGroupErrorFull">Leider ist diese Gruppe schon voll.</string>
     <string name="JoinToGroupErrorNotExist">Leider gibt es diesen Chat nicht.</string>
     <string name="LinkCopied">Link in die Zwischenablage kopiert</string>
@@ -434,7 +445,6 @@
     <string name="TerminateAllSessions">Alle anderen Geräte abmelden</string>
     <string name="Events">Ereignisse</string>
     <string name="ContactJoined">Kontakt ist Telegram beigetreten</string>
-    <string name="Pebble">PEBBLE</string>
     <string name="Language">Sprache</string>
     <string name="AskAQuestionInfo">Bedenke bitte, dass der Telegram Support von ehrenamtlichen Helfern betreut wird. Wir versuchen so schnell wie möglich zu antworten, dies kann jedoch manchmal ein bisschen dauern.<![CDATA[<br><br>]]>Bitte schau auch in den <![CDATA[<a href=\"https://telegram.org/faq/de\">Fragen und Antworten </a>]]> nach. Dort findest du Antworten auf die meisten Fragen und wichtige Tipps zur <![CDATA[<a href=\"https://telegram.org/faq/de#problembehandlung\">Problembehandlung</a>]]>.</string>
     <string name="AskButton">Eine Frage stellen</string>
@@ -466,6 +476,7 @@
     <string name="WhenConnectedOnWiFi">Über W-LAN</string>
     <string name="WhenRoaming">Bei Roaming</string>
     <string name="NoMediaAutoDownload">kein automatischer Download</string>
+    <string name="AutoplayGifs">GIFs autom. Abspielen</string>
     <string name="SaveToGallerySettings">In der Galerie speichern</string>
     <string name="EditName">Name bearbeiten</string>
     <string name="NotificationsPriority">Priorität</string>
@@ -496,6 +507,24 @@
     <string name="SmartNotificationsTimes">Mal</string>
     <string name="SmartNotificationsWithin">innerhalb von</string>
     <string name="SmartNotificationsMinutes">Minuten</string>
+    <!--cache view-->
+    <string name="CacheSettings">Cache-Einstellungen</string>
+    <string name="LocalDatabase">Lokale Datenbank</string>
+    <string name="LocalDatabaseClear">Textnachrichten-Cache leeren?</string>
+    <string name="LocalDatabaseInfo">Zwischengespeicherte Textnachrichten werden entfernt und die Datenbank optimiert um Speicherplatz zurückzuerhalten. Auf Null lässt sich die Größe jedoch nicht reduzieren, da die App einige Daten für den laufenden Betrieb benötigt.\n\n\Hinweis: Der Vorgang kann mehrere Minuten dauern.</string>
+    <string name="ClearMediaCache">Cache Leeren</string>
+    <string name="CacheClear">Leeren</string>
+    <string name="CalculatingSize">Berechne...</string>
+    <string name="LocalDocumentCache">Dateien</string>
+    <string name="LocalPhotoCache">Bilder</string>
+    <string name="LocalAudioCache">Sprachnachrichten</string>
+    <string name="LocalVideoCache">Videos</string>
+    <string name="LocalMusicCache">Musik</string>
+    <string name="LocalCache">Sonstige Dateien</string>
+    <string name="CacheEmpty">Leer</string>
+    <string name="KeepMedia">Medien behalten</string>
+    <string name="KeepMediaInfo">Bilder, Videos und andere Dateien, auf die du während dieser Zeit <![CDATA[<b>nicht zugegriffen</b>]]> hast, werden von diesem Gerät gelöscht, um Speicherplatz zu sparen.\n\nAlle Medien bleiben in der Telegram Cloud gespeichert und können jederzeit wieder heruntergeladen werden.</string>
+    <string name="KeepMediaForever">Dauerhaft</string>
     <!--sessions view-->
     <string name="SessionsTitle">Sitzungen</string>
     <string name="CurrentSession">Aktuelles Gerät</string>
@@ -697,6 +726,7 @@
     <string name="Back">Zurück</string>
     <string name="Done">Fertig</string>
     <string name="Open">Öffnen</string>
+    <string name="Save">Speichern</string>
     <string name="Cancel">Abbrechen</string>
     <string name="Close">Schließen</string>
     <string name="Add">Hinzufügen</string>
@@ -735,9 +765,10 @@
     <string name="ActionAddUserYou">un1 hat dich hinzugefügt</string>
     <string name="ActionAddUserSelf">un1 ist in die Gruppe zurückgekehrt</string>
     <string name="ActionAddUserSelfYou">Du bist in die Gruppe zurückgekehrt</string>
-    <string name="UnsuppotedMedia">Diese Nachricht wird von deiner Telegram-Version nicht unterstützt. Bitte aktualisiere Telegram um sie zu sehen: https://telegram.org/update</string>
+    <string name="UnsupportedMedia">Diese Nachricht wird von deiner Telegram-Version nicht unterstützt. Bitte aktualisiere Telegram um sie zu sehen: https://telegram.org/update</string>
     <string name="AttachPhoto">Foto</string>
     <string name="AttachVideo">Video</string>
+    <string name="AttachGif">GIF</string>
     <string name="AttachLocation">Standort</string>
     <string name="AttachContact">Kontakt</string>
     <string name="AttachDocument">Datei</string>
@@ -778,6 +809,8 @@
     <string name="AreYouSureSecretChat">Geheimen Chat starten?</string>
     <string name="AreYouSureRegistration">Bist du dir sicher, dass du die Registrierung abbrechen willst?</string>
     <string name="AreYouSureClearHistory">Möchtest du wirklich den Verlauf löschen?</string>
+    <string name="AreYouSureClearHistoryChannel">Cache des Kanals wirklich löschen?</string>
+    <string name="AreYouSureClearHistorySuper">Cache der Supergruppe wirklich löschen?</string>
     <string name="AreYouSureDeleteMessages">Sicher, dass du %1$s löschen willst?</string>
     <string name="SendMessagesToGroup">Nachricht an %1$s senden?</string>
     <string name="SendContactToGroup">Kontakt senden an %1$s?</string>
@@ -1007,28 +1040,30 @@
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s um %2$s</string>
     <!--update text-->
-<string name="updateText">Plus Messenger für Android wurde aktualisiert. Neu in Version 3.3.1:\n\n- Gruppen erlauben ab sofort Administratoren: Diese können den Gruppennamen und das Bild ändern sowie Mitglieder hinzufügen und auch wieder entfernen.\n- Gruppen, die das Limit von 200 Mitgliedern erreicht haben, können in eine Supergruppe (1000 Mitglieder) geändert werden.\n- Kanäle unterstützen schnelles Teilen über den Knopf neben jeder Nachricht.\n\nAusführliche Informationen zu den neuen Funktionen in unserem Blog:\nhttps://telegram.org/blog/supergroups</string>
-    <string name="updateBuild">689</string>
+    <string name="updateText">Plus Messenger für Android wurde aktualisiert. Neu in Version 3.4.0:\n\nGIF-Revolution: GIFs bis zu 20x schneller senden und empfangen, GIF-Autoplay und GIF-Speicherung im Sticker-Panel.\n\nMehr über die neuen GIFs:\nhttps://telegram.org/blog/gif-revolution\n\nInline-Bots: Binde Inhalte der neuen Inline-Bots in alle Chats noch einfacher ein. Probiere mal "@gif dog" im Texteingabefeld aus. Beispiel-Bots: @gif, @wiki, @bing @vid und @bold.\n\nInfos zu Inline-Bots\nhttps://telegram.org/blog/inline-bots</string>
+    <string name="updateBuild">736</string>
     <!--Telegram+-->
-  <string name="updatePlusText">\n\nNeu in Version 3.3.1.1:\n\n- Fehlerbeseitigungen</string>
+  <string name="updatePlusText">
+\n\nNeu in Version 3.4.2.5:\n\n- \'Als gelesen markieren\' für individuelle Chats und \'Alle als gelesen markieren\' zu allen Tabs hinzugefügt\n- Neue Option in den Plus Einstellungen um den Benutzernamen statt der Telefonnummer im Menü anzuzeigen\n- Bug fixes</string>
     <string name="TelegramForAndroid">Plus Messenger für Android</string>
-  <string name="Theming">Themen bearbeiten</string>
+  <string name="Theming">Thema bearbeiten</string>
+  <string name="PlusSettings">Plus Einstellungen</string>
   <string name="colorHexInvalid">Ungültiger Hex-Code!</string>
   <string name="themeColor">Themenfarbe</string>
-  <string name="ResetThemeSettings">Thema Einstellungen zurücksetzen</string>
-  <string name="ResetThemeSettingsSum">Alle Thema Einstellungen rückgängig machen</string>
+  <string name="ResetThemeSettings">Thema zurücksetzen</string>
+  <string name="ResetThemeSettingsSum">Alle Änderungen des Themas verwerfen</string>
   <string name="ResetThemeToastText">Thema Einstellungen auf Standardwerte zurücksetzen!</string>
     <string name="General">Allgemein</string>
   <string name="Screens">Ansichten</string>
-  <string name="MainScreen">Chatübersicht</string>
-  <string name="ChatScreen">Chat</string>
+  <string name="MainScreen">Startübersicht</string>
+  <string name="ChatScreen">Chat-Ansicht</string>
     <string name="ContactsScreen">Kontaktübersicht</string>
     <string name="Header">Kopfzeile</string>
   <string name="Rows">Hintergrund</string>
   <string name="ChatList">Chatliste</string>
   <string name="ChatsList">Chatverlauf</string>
   <string name="ContactsList">Kontaktliste</string>
-  <string name="HeaderColor">Kopfzeile</string>
+  <string name="HeaderColor">Hintergrundfarbe</string>
   <string name="NameColor">Namen</string>
   <string name="NameSize">Namen</string>
   <string name="MessageColor">Nachrichten</string>
@@ -1037,7 +1072,7 @@
   <string name="TimeDateSize">Uhrzeit/Datum</string>
   <string name="CountColor">Benachrichtigungzähler</string>
   <string name="CountSize">Benachrichtigungszähler</string>
-  <string name="RowColor">Hintergrund</string>
+  <string name="RowColor">Zeilenfarbe</string>
   <string name="CountBGColor">Hintergrund Benachrichtigungszähler</string>
   <string name="StatusColor">Online Status</string>
   <string name="StatusSize">Online Status</string>
@@ -1060,7 +1095,7 @@
   <string name="OnlineColor">Online</string>
     <string name="ChatMusic">Musik</string>
   <string name="SaveTheme">Thema speichern</string>
-  <string name="SaveThemeSum">Thema im Ordner Telegram/Themen speichern</string>
+  <string name="SaveThemeSum">Thema im Ordner Telegram/Themes abspeichern</string>
   <string name="SaveThemeToastText">Thema gespeichert!</string>
     <string name="SavedTo">%1$s auf %2$s gespeichert</string>
   <string name="SaveErrorMsg0">Thema wurde noch nicht erstellt. Verwenden Sie bitte zuerst eine der Modifikationen.</string>
@@ -1068,7 +1103,7 @@
   <string name="restoreErrorMsg">Keine Datei für Voreinstellungen in %s gefunden</string>
   <string name="NoMediaMessage">Keine SD-Karte gefunden</string>
     <string name="EnterName">Name eingeben</string>
-  <string name="Themes">Themen auswählen</string>
+  <string name="Themes">Themen verwalten</string>
   <string name="ApplyTheme">Thema verwenden</string>
   <string name="ApplyThemeSum">Thema-XML aus einem lokalen Ordner verwenden</string>
   <string name="MemberColor">Gruppenmitglieder</string>
@@ -1085,7 +1120,7 @@
     <string name="Community">G+ Community</string>
   <string name="TypingColor">Text Eingabefeld</string>
   <string name="EditTextIconsColor">Symbol Texteingabefeld</string>
-  <string name="NavigationDrawer">Hauptmenü </string>
+  <string name="NavigationDrawer">Seitenleiste</string>
   <string name="OptionsList">Optionsliste</string>
   <string name="ListColor">Optionsliste Hintergrund </string>
   <string name="OwnNameSize">Benutzernamen</string>
@@ -1095,27 +1130,27 @@
   <string name="IconColor">Optionsliste Symbol</string>
   <string name="OptionColor">Optionsliste Text</string>
   <string name="OptionSize">Optionsliste Text</string>
-  <string name="VersionColor">Versionsanzeige Text</string>
-  <string name="VersionSize">Versionsanzeige Text</string>
-  <string name="HeaderTitleColor">Titel Kopfzeile</string>
-  <string name="HeaderIconsColor">Symbol Kopfzeile</string>
+  <string name="VersionColor">Farbe der Versionsanzeige</string>
+  <string name="VersionSize">Größe der Versionsanzeige</string>
+  <string name="HeaderTitleColor">Textfarbe</string>
+  <string name="HeaderIconsColor">Symbolfarbe</string>
   <string name="DividerColor">Trennstrich</string>
   <string name="AvatarRadius">Fotoecken</string>
   <string name="SetMemberColor">Gruppenmitglieder</string>
   <string name="ForwardNameColor">Hinweis weitergeleitete Nachricht</string>
-  <string name="HeaderTitle">Kopfzeilen Titel</string>
+  <string name="HeaderTitle">Text in Kopfzeile</string>
   <string name="ForwardNoQuote">Weiterleiten ohne Zitieren</string>
   <string name="DisableMessageClick">mit Klick Pop-up deaktivieren</string>
-  <string name="ProfileScreen">Gruppe/Kontakt Profil</string>
+  <string name="ProfileScreen">Profilansicht</string>
   <string name="HideBackground">Benutzerdefinerten Hintergrund ausblenden</string>
   <string name="RLinkColor">Link rechte Sprechblase</string>
   <string name="LLinkColor">Link linke Sprechblase </string>
   <string name="ThemeApplied">Thema angewendet!</string>
   <string name="ClickOkToRestart">OK klicken um die App neu zu starten</string>
-  <string name="ShowAndroidEmoji">Google Emojis verwenden</string>
+  <string name="ShowAndroidEmoji">Google-Emojis verwenden</string>
   <string name="BubbleStyle">Sprechblasen Form</string>
-  <string name="KeepOriginalFilename">original Dateinamen speichern</string>
-  <string name="KeepOriginalFilenameHelp">Statt Zahlen wird Dateiname_Datum gespeichert</string>
+  <string name="KeepOriginalFilename">Dateinamen beibehalten</string>
+  <string name="KeepOriginalFilenameHelp">Anstelle von Ziffern wird das Format Dateiname_Datum verwendet</string>
   <string name="AvatarSize">Profilbild</string>
   <string name="AvatarAlignTop">Kontakt Profibild nach oben</string>
   <string name="AvatarMarginLeft">Profilbild Rand</string>
@@ -1125,11 +1160,11 @@
   <string name="HideBackgroundShadow">Hintergrund Schatten ausblenden</string>
   <string name="SetSolidBGColor">Hintergrund festlegen</string>
   <string name="SolidBGColor">Hintergrund</string>
-  <string name="EmojiPopupSize">Emoji Fenstergröße</string>
+  <string name="EmojiPopupSize">Größe der Emoji-Auswahl</string>
   <string name="ForwardRightNameColor">Sprechblase rechts Name weiterleiten</string>
   <string name="ForwardLeftNameColor">Sprechblase links Name weiterleiten </string>
   <string name="IconsColor">Symbol</string>
-  <string name="SettingsScreen">Einstellungen Thema bearbeiten </string>
+  <string name="SettingsScreen">Einstellungen und Themenbearbeitung</string>
   <string name="BackgroundColor">Hintergrund</string>
   <string name="ShadowColor">Trennbalken</string>
   <string name="SectionColor">Überschrift</string>
@@ -1147,13 +1182,13 @@
   <string name="ShowOwnAvatar">Zeige eigenes Profilbild im Chat</string>
   <string name="ShowOwnAvatarGroup">Zeige eigenes Profilbild im Gruppenchat</string>
   <string name="OwnAvatarAlignTop">Eigenes Profilbild nach oben</string>
-  <string name="DialogColor">Dialoge Titel/Schaltflächen</string>
+  <string name="DialogColor">Titel und Knöpfe in Dialogen</string>
   <string name="ShowUsername">Zeige Benutzernamen mit Mitgliedsnamen</string>
   <string name="DisableAudioStop">Audio nicht stoppen</string>
   <string name="ListDividerColor">Optionliste Trennstrich</string>
   <string name="CenterAvatar">Profilbild, Name und Telefonnummer zentriert</string>
-  <string name="RowGradient">Verlauf</string>
-  <string name="RowGradientColor">Verlauf</string>
+  <string name="RowGradient">Verlauf als Hintergrund</string>
+  <string name="RowGradientColor">Farbe des Verlaufs</string>
   <string name="RowGradientDisabled">Deaktiviert</string>
   <string name="RowGradientTopBottom">von Oben</string>
   <string name="RowGradientLeftRight">Links nach Rechts</string>
@@ -1161,18 +1196,48 @@
   <string name="RowGradientBLTR">von unten Links nach oben Rechts</string>
   <string name="RowGradientList">Hintergrund Farbverlauf Liste oder Seite</string>
   <string name="Copied">%s in die Zwischenablage kopiert</string>
-  <string name="JoinChannel">\n\nPlus Messenger Mitglied werden im offiziellen Kanal: https://telegram.me/plusmsgr</string>
+  <string name="JoinChannel">
+\n\nPlus Messenger Mitglied im offiziellen Kanal werden: https://telegram.me/plusmsgr</string>
   <string name="DownloadThemes">Themen herunterladen</string>
   <string name="OfficialChannel">Offizieller Kanal</string>
   <string name="DialogsSettings">Dialoge</string>
-  <string name="ClickOnContactPic">Zeige bei Tip auf Kontaktbild</string>
-  <string name="ClickOnGroupPic">Zeige bei Tip auf Gruppenbild</string>
-  <string name="ShowProfile">Profil</string>
-  <string name="ShowPics">Profilbilder</string>
+  <string name="ClickOnContactPic">Kontaktbild antippen</string>
+  <string name="ClickOnGroupPic">Gruppenbild antippen</string>
+  <string name="ShowProfile">Profil öffnen</string>
+  <string name="ShowPics">Bild öffnen</string>
   <string name="CountSilentBGColor">Stumm im Hintergrund zählen</string>
   <string name="CommandColorCheck">Bot Befehl Farbprüfung</string>
   <string name="CommandColor">Bot Befehl</string>
-  <string name="HighlightSearchColor">Höhepunkt Suche</string>
+  <string name="HighlightSearchColor">Suchvorschau</string>
   <string name="ThemeUpdated">%s wurde aktualisiert </string>
   <string name="HideStatusIndicator">Benutzer Status Anzeige ausblenden</string>
+  <string name="HideTabs">Tabs ausblenden</string>
+  <string name="All">Alle</string>
+  <string name="Users">Benutzer</string>
+  <string name="Groups">Gruppen</string>
+  <string name="SuperGroups">Supergruppen</string>
+  <string name="Channels">Kanäle</string>
+  <string name="Bots">Bots</string>
+  <string name="Favorites">Favoriten</string>
+  <string name="TabsHeight">Höhe der Tabs</string>
+  <string name="SetAsDefaultTab">Beim Start anzeigen</string>
+  <string name="ResetDefaultTab">Start-Tab zurücksetzen</string>
+  <string name="SortByStatus">Nach Status sortieren</string>
+  <string name="SortByLastMessage">Nach letzter Nachricht sortieren</string>
+  <string name="SortByUnreadCount">Nach ungelesenen Nachrichten sortieren</string>
+  <string name="ShowSuperGroupsTab">Supergruppen anzeigen</string>
+  <string name="HideSuperGroupsTab">Supergruppen nicht anzeigen</string>
+  <string name="Tabs">Tabs</string>
+  <string name="HideShowTabs">Angezeigte Tabs</string>
+  <string name="AddToFavorites">Zu Favoriten hinzufügen</string>
+  <string name="DeleteFromFavorites">Aus Favoriten entfernen</string>
+  <string name="NoFavoritesHelp">Du hast keine Favoriten.\n\nFüge einen Chat zu den Favoriten hinzu, indem du ihn lange berührst und \'Zu Favoriten hinzufügen\' auswählst.</string>
+  <string name="DisableTabsAnimation">Tabs beim Scrollen nicht ausblenden</string>
+  <string name="InfiniteSwipe">Unendlich zwischen Tabs wechseln</string>
+  <string name="ShowDirectShareButton">\'Direkt teilen\' anzeigen bei</string>
+  <string name="Quote">ZITAT</string>
+  <string name="RemoveUserAdmin">Aus Admin-Liste entfernen</string>
+  <string name="ShowUsernameInMenu">Benutzernamen statt Telefonnummer anzeigen</string>
+  <string name="MarkAsRead">Als gelesen markieren</string>
+  <string name="MarkAllAsRead">Alle Dialoge als gelesen markieren</string>
 </resources>

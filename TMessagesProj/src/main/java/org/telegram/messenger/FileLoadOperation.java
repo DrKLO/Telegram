@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2015.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.messenger;
@@ -13,8 +13,8 @@ import org.telegram.tgnet.RequestDelegate;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 
-import java.io.RandomAccessFile;
 import java.io.File;
+import java.io.RandomAccessFile;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.Scanner;
@@ -22,9 +22,9 @@ import java.util.Scanner;
 public class FileLoadOperation {
 
     private static class RequestInfo {
-        private int requestToken = 0;
-        private int offset = 0;
-        private TLRPC.TL_upload_file response = null;
+        private int requestToken;
+        private int offset;
+        private TLRPC.TL_upload_file response;
     }
 
     private final static int stateIdle = 0;
@@ -49,8 +49,9 @@ public class FileLoadOperation {
     private int currentDownloadChunkSize;
     private int currentMaxDownloadRequests;
     private int requestsCount;
+    private int renameRetryCount;
 
-    private int nextDownloadOffset = 0;
+    private int nextDownloadOffset;
     private ArrayList<RequestInfo> requestInfos;
     private ArrayList<RequestInfo> delayedRequestInfos;
 
@@ -61,9 +62,9 @@ public class FileLoadOperation {
     private String ext;
     private RandomAccessFile fileOutputStream;
     private RandomAccessFile fiv;
-    private File storePath = null;
-    private File tempPath = null;
-    private boolean isForceRequest = false;
+    private File storePath;
+    private File tempPath;
+    private boolean isForceRequest;
 
     private static String orgName = null;
 
@@ -145,23 +146,28 @@ public class FileLoadOperation {
             key = documentLocation.key;
         } else if (documentLocation instanceof TLRPC.TL_document) {
             location = new TLRPC.TL_inputDocumentFileLocation();
-            datacenter_id = documentLocation.dc_id;
             location.id = documentLocation.id;
             location.access_hash = documentLocation.access_hash;
+            datacenter_id = documentLocation.dc_id;
         }
-        totalBytesCount = documentLocation.size;
-        ext = FileLoader.getDocumentFileName(documentLocation);
-        int idx;
-        if (ext == null || (idx = ext.lastIndexOf(".")) == -1) {
-            ext = "";
-        } else {
-            ext = ext.substring(idx);
-            if (ext.length() <= 1) {
+        if (totalBytesCount <= 0) {
+            totalBytesCount = documentLocation.size;
+        }
+        if (ext == null) {
+            ext = FileLoader.getDocumentFileName(documentLocation);
+            int idx;
+            if (ext == null || (idx = ext.lastIndexOf(".")) == -1) {
                 ext = "";
+            } else {
+                ext = ext.substring(idx);
+                if (ext.length() <= 1) {
+                    ext = "";
+                }
             }
-        }
-        if(ApplicationLoader.KEEP_ORIGINAL_FILENAME && !ext.contains("webp")){
-            orgName = FileLoader.getDocName(documentLocation);
+
+            if(ApplicationLoader.KEEP_ORIGINAL_FILENAME && !ext.contains("webp") && !FileLoader.isGif(documentLocation)) {
+                orgName = FileLoader.getDocName(documentLocation);
+            }
         }
     }
 
@@ -200,7 +206,7 @@ public class FileLoadOperation {
         String fileNameTemp;
         String fileNameIv = null;
         if (location.volume_id != 0 && location.local_id != 0) {
-            fileNameTemp = location.volume_id + "_" + location.local_id + "_temp." + ext;
+            fileNameTemp = location.volume_id + "_" + location.local_id + ".temp";
             fileNameFinal = location.volume_id + "_" + location.local_id + "." + ext;
             if (key != null) {
                 fileNameIv = location.volume_id + "_" + location.local_id + ".iv";
@@ -216,7 +222,7 @@ public class FileLoadOperation {
                 return;
             }
         } else {
-            fileNameTemp = datacenter_id + "_" + location.id + "_temp" + ext;
+            fileNameTemp = datacenter_id + "_" + location.id + ".temp";
             fileNameFinal = datacenter_id + "_" + location.id + ext;
             if (key != null) {
                 fileNameIv = datacenter_id + "_" + location.id + ".iv";
@@ -252,12 +258,11 @@ public class FileLoadOperation {
         if (!cacheFileFinal.exists()) {
             cacheFileTemp = new File(tempPath, fileNameTemp);
             if (cacheFileTemp.exists()) {
-                downloadedBytes = (int)cacheFileTemp.length();
+                downloadedBytes = (int) cacheFileTemp.length();
                 nextDownloadOffset = downloadedBytes = downloadedBytes / currentDownloadChunkSize * currentDownloadChunkSize;
             }
 
-            //if (BuildVars.DEBUG_VERSION) {
-            if (BuildConfig.DEBUG) {
+            if (BuildVars.DEBUG_VERSION) {
                 FileLog.d("tmessages", "start loading file to temp = " + cacheFileTemp + " final = " + cacheFileFinal);
             }
 
@@ -341,6 +346,11 @@ public class FileLoadOperation {
     private void cleanup() {
         try {
             if (fileOutputStream != null) {
+                try {
+                    fileOutputStream.getChannel().close();
+                } catch (Exception e) {
+                    FileLog.e("tmessages", e);
+                }
                 fileOutputStream.close();
                 fileOutputStream = null;
             }
@@ -357,7 +367,8 @@ public class FileLoadOperation {
             FileLog.e("tmessages", e);
         }
         if (delayedRequestInfos != null) {
-        for (RequestInfo requestInfo : delayedRequestInfos) {
+            for (int a = 0; a < delayedRequestInfos.size(); a++) {
+                RequestInfo requestInfo = delayedRequestInfos.get(a);
             if (requestInfo.response != null) {
                 requestInfo.response.disableFree = false;
                 requestInfo.response.freeResources();
@@ -375,18 +386,33 @@ public class FileLoadOperation {
         cleanup();
         if (cacheIvTemp != null) {
             cacheIvTemp.delete();
+            cacheIvTemp = null;
         }
         if (cacheFileTemp != null) {
-            if (!cacheFileTemp.renameTo(cacheFileFinal)) {
-                //if (BuildVars.DEBUG_VERSION) {
-                if (BuildConfig.DEBUG) {
-                    FileLog.e("tmessages", "unable to rename temp = " + cacheFileTemp + " to final = " + cacheFileFinal);
+            boolean renameResult = cacheFileTemp.renameTo(cacheFileFinal);
+            if (!renameResult) {
+                if (BuildVars.DEBUG_VERSION) {
+                    FileLog.e("tmessages", "unable to rename temp = " + cacheFileTemp + " to final = " + cacheFileFinal + " retry = " + renameRetryCount);
+                }
+                renameRetryCount++;
+                if (renameRetryCount < 3) {
+                    state = stateDownloading;
+                    Utilities.stageQueue.postRunnable(new Runnable() {
+                        @Override
+                        public void run() {
+                            try {
+                                onFinishLoadingFile();
+                            } catch (Exception e) {
+                                delegate.didFailedLoadingFile(FileLoadOperation.this, 0);
+                            }
+                        }
+                    }, 200);
+                    return;
                 }
                 cacheFileFinal = cacheFileTemp;
             }
         }
-        //if (BuildVars.DEBUG_VERSION) {
-        if (BuildConfig.DEBUG) {
+        if (BuildVars.DEBUG_VERSION) {
             FileLog.e("tmessages", "finished downloading file to " + cacheFileFinal);
         }
         delegate.didFinishLoadingFile(FileLoadOperation.this, cacheFileFinal);

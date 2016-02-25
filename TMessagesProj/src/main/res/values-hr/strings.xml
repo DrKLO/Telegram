@@ -285,7 +285,6 @@
     <string name="TerminateAllSessions">Ugasi sve ostale sesije</string>
     <string name="Events">Događaji</string>
     <string name="ContactJoined">Kontakt se pridružio Telegramu</string>
-    <string name="Pebble">PEBBLE</string>
     <string name="Language">Jezik</string>
     <string name="AskButton">Pitaj dobrovoljca</string>
     <string name="TelegramFaq">Često postavljana pitanja</string>
@@ -750,7 +749,7 @@
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s u %2$s</string>
   <!--update text-->
-  <string name="updateBuild">689</string>
+  <string name="updateBuild">736</string>
     <!--Telegram+-->
   <string name="TelegramForAndroid">Plus Messenger za Android</string>
   <string name="Theming">Izrada teme</string>

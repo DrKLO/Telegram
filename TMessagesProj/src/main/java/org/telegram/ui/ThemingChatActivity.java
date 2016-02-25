@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2015.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.ui;
@@ -665,11 +665,8 @@ public class ThemingChatActivity extends BaseFragment {
                         if (getParentActivity() == null) {
                             return;
                         }
-
                         LayoutInflater li = (LayoutInflater)getParentActivity().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-
                         li.inflate(R.layout.colordialog, null, false);
-
                         ColorSelectorDialog colorDialog = new ColorSelectorDialog(getParentActivity(), new OnColorChangedListener() {
                             @Override
                             public void colorChanged(int color) {
@@ -677,7 +674,6 @@ public class ThemingChatActivity extends BaseFragment {
                             }
 
                         },themePrefs.getInt(key, 0xffffffff), CENTER, 0, true);
-
                         colorDialog.show();
                     } else if (i == rTextColorRow) {
                         if (getParentActivity() == null) {
@@ -805,7 +801,7 @@ public class ThemingChatActivity extends BaseFragment {
                             public void colorChanged(int color) {
                                 commitInt( key, color);
                             }
-                        },themePrefs.getInt( key, 0xffffffff), CENTER, 0, false);
+                        },themePrefs.getInt( key, 0xffffffff), CENTER, 0, true);
                         colorDialog.show();
                     } else if (i == nameColorRow) {
                         if (getParentActivity() == null) {
@@ -1130,7 +1126,7 @@ public class ThemingChatActivity extends BaseFragment {
                         builder.setTitle(LocaleController.getString("AvatarSize", R.string.AvatarSize));
                         final NumberPicker numberPicker = new NumberPicker(getParentActivity());
                         final int currentValue = themePrefs.getInt( key, 42);
-                        numberPicker.setMinValue(1);
+                        numberPicker.setMinValue(0);
                         numberPicker.setMaxValue(56);
                         numberPicker.setValue(currentValue);
                         builder.setView(numberPicker);

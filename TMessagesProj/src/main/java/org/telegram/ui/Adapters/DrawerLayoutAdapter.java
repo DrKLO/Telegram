@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2015.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.ui.Adapters;
@@ -41,10 +41,10 @@ public class DrawerLayoutAdapter extends BaseAdapter {
     private int themesRow = 7;
     private int themingRow = 8;
     private int settingsRow = 9;
-    private int channelRow = 10;
-    private int communityRow = 11;
-    private int versionRow = 12;
-
+    private int plusSettingsRow = 10;
+    private int channelRow = 11;
+    private int communityRow = 12;
+    private int versionRow = 13;
 
     //private int rowCount = 0;
 
@@ -65,7 +65,7 @@ public class DrawerLayoutAdapter extends BaseAdapter {
     @Override
     public int getCount() {
         //return UserConfig.isClientActivated() ? 10 : 0;
-        return UserConfig.isClientActivated() ? 13 : 0;
+        return UserConfig.isClientActivated() ? versionRow + 1 : 0;
     }
 
     @Override
@@ -140,6 +140,8 @@ public class DrawerLayoutAdapter extends BaseAdapter {
                 actionCell.setTextAndIcon(LocaleController.getString("DownloadThemes", R.string.DownloadThemes), R.drawable.menu_themes);
             } else if (i == themingRow) {
                 actionCell.setTextAndIcon(LocaleController.getString("Theming", R.string.Theming), R.drawable.menu_theming);
+            } else if (i == plusSettingsRow) {
+                actionCell.setTextAndIcon(LocaleController.getString("Theming", R.string.PlusSettings), R.drawable.menu_plus);
             } else if (i == settingsRow) {
                 actionCell.setTextAndIcon(LocaleController.getString("Settings", R.string.Settings), R.drawable.menu_settings);
             } else if (i == channelRow) {

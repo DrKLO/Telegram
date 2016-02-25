@@ -1,11 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="auth_client_needs_enabling_title">Perkhidmatan Google Play perlu didayakan untuk menggunakan aplikasi.</string>
-    <string name="auth_client_needs_installation_title">Perkhidmatan Google Play perlu dipasang untuk mengguankan aplikasi.</string>
-    <string name="auth_client_needs_update_title">Perkhidmatan Google Play perlu dikemas kini untuk menggunakan aplikasi.</string>
-    <string name="auth_client_play_services_err_notification_msg">Ralat perkhidmatan Google Play</string>
-    <string name="auth_client_requested_by_msg">Diminta oleh %1$s</string>
-    <string name="auth_client_using_bad_version_title">Aplikasi cuba menggunakan versi Perkhidmatan Google Play yang rosak.</string>
     <string name="common_google_play_services_enable_button">Dayakan perkhidmatan Google Play</string>
     <string name="common_google_play_services_enable_text">Apl ini tidak akan berfungsi kecuali anda mendayakan perkhidmatan Google Play.</string>
     <string name="common_google_play_services_enable_title">Dayakan perkhidmatan Google Play</string>

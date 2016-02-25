@@ -27,7 +27,7 @@
         android:label="Plus beta"
         tools:replace="label"
         android:theme="@style/Theme.TMessages.Start"
-        android:name=".ApplicationLoader"
+        android:name="org.telegram.messenger.ApplicationLoader"
         android:hardwareAccelerated="@bool/useHardwareAcceleration"
         android:largeHeap="true">
 
@@ -36,7 +36,8 @@
         <activity android:name="net.hockeyapp.android.UpdateActivity" />
 
         <receiver
-            android:name="org.telegram.messenger.GcmBroadcastReceiver"
+            android:name="com.google.android.gms.gcm.GcmReceiver"
+            android:exported="true"
             android:permission="com.google.android.c2dm.permission.SEND" >
             <intent-filter>
                 <action android:name="com.google.android.c2dm.intent.RECEIVE" />
@@ -44,6 +45,24 @@
                 <category android:name="org.telegram.plus.beta" />
             </intent-filter>
         </receiver>
+        <service
+            android:name="org.telegram.messenger.GcmPushListenerService"
+            android:exported="false" >
+            <intent-filter>
+                <action android:name="com.google.android.c2dm.intent.RECEIVE" />
+            </intent-filter>
+        </service>
+        <service
+            android:name="org.telegram.messenger.GcmInstanceIDListenerService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.android.gms.iid.InstanceID" />
+            </intent-filter>
+        </service>
+        <service
+            android:name="org.telegram.messenger.GcmRegistrationIntentService"
+            android:exported="false">
+        </service>
 
         <uses-library android:name="com.google.android.maps" android:required="false"/>
 

@@ -3,12 +3,13 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2015.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.ui.Cells;
 
 import android.annotation.SuppressLint;
+import android.app.Activity;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
@@ -19,10 +20,13 @@ import android.graphics.PorterDuff;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.text.Layout;
+import android.text.SpannableStringBuilder;
+import android.text.Spanned;
 import android.text.StaticLayout;
 import android.text.TextPaint;
 import android.text.TextUtils;
 import android.text.style.ClickableSpan;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.SoundEffectConstants;
 
@@ -44,11 +48,13 @@ import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.LinkPath;
 import org.telegram.ui.Components.ResourceLoader;
 import org.telegram.ui.Components.StaticLayoutEx;
+import org.telegram.ui.Components.TypefaceSpan;
 
 public class ChatBaseCell extends BaseCell implements MediaController.FileDownloadProgressListener {
 
     public interface ChatBaseCellDelegate {
         void didPressedUserAvatar(ChatBaseCell cell, TLRPC.User user);
+        void didPressedViaBot(ChatBaseCell cell, TLRPC.User user);
         void didPressedChannelAvatar(ChatBaseCell cell, TLRPC.Chat chat);
         void didPressedCancelSendButton(ChatBaseCell cell);
         void didLongPressed(ChatBaseCell cell);
@@ -66,21 +72,21 @@ public class ChatBaseCell extends BaseCell implements MediaController.FileDownlo
     protected static Paint urlPaint;
     private int TAG;
 
-    public boolean isChat = false;
-    protected boolean isPressed = false;
-    protected boolean forwardName = false;
-    protected boolean isHighlighted = false;
-    protected boolean media = false;
+    public boolean isChat;
+    protected boolean isPressed;
+    protected boolean forwardName;
+    protected boolean isHighlighted;
+    protected boolean media;
     protected boolean isCheckPressed = true;
-    private boolean wasLayout = false;
-    protected boolean isAvatarVisible = false;
+    private boolean wasLayout;
+    protected boolean isAvatarVisible;
     protected boolean drawBackground = true;
-    protected boolean allowAssistant = false;
+    protected boolean allowAssistant;
     protected MessageObject currentMessageObject;
+    private int viaWidth;
+    private int viaNameWidth;
 
-    private static TextPaint timePaintIn;
-    private static TextPaint timePaintOut;
-    private static TextPaint timeMediaPaint;
+    private static TextPaint timePaint;
     private static TextPaint namePaint;
     private static TextPaint forwardNamePaint;
     protected static TextPaint replyNamePaint;
@@ -94,8 +100,9 @@ public class ChatBaseCell extends BaseCell implements MediaController.FileDownlo
 
     private ImageReceiver avatarImage;
     private AvatarDrawable avatarDrawable;
-    private boolean avatarPressed = false;
-    private boolean forwardNamePressed = false;
+    private boolean avatarPressed;
+    private boolean forwardNamePressed;
+    private boolean forwardBotPressed;
 
     private StaticLayout replyNameLayout;
     private StaticLayout replyTextLayout;
@@ -106,32 +113,33 @@ public class ChatBaseCell extends BaseCell implements MediaController.FileDownlo
     private float replyNameOffset;
     protected int replyTextWidth;
     private float replyTextOffset;
-    private boolean needReplyImage = false;
-    private boolean replyPressed = false;
+    private boolean needReplyImage;
+    private boolean replyPressed;
     private TLRPC.FileLocation currentReplyPhoto;
 
-    private boolean drawShareButton;
+    //private boolean drawShareButton;
+    protected boolean drawShareButton;
     private boolean sharePressed;
     private int shareStartX;
     private int shareStartY;
 
     private StaticLayout nameLayout;
     protected int nameWidth;
-    private float nameOffsetX = 0;
-    protected boolean drawName = false;
+    private float nameOffsetX;
+    private float nameX;
+    protected boolean drawName;
 
     private StaticLayout forwardedNameLayout;
     protected int forwardedNameWidth;
-    protected boolean drawForwardedName = false;
+    protected boolean drawForwardedName;
     private int forwardNameX;
     private int forwardNameY;
-    private float forwardNameOffsetX = 0;
+    private float forwardNameOffsetX;
 
     private StaticLayout timeLayout;
     protected int timeWidth;
     private int timeTextWidth;
     private int timeX;
-    private TextPaint currentTimePaint;
     private String currentTimeString;
     protected boolean drawTime = true;
 
@@ -145,6 +153,7 @@ public class ChatBaseCell extends BaseCell implements MediaController.FileDownlo
     private String currentNameString;
 
     private TLRPC.User currentForwardUser;
+    private TLRPC.User currentViaBotUser;
     private TLRPC.Chat currentForwardChannel;
     private String currentForwardNameString;
 
@@ -172,18 +181,9 @@ public class ChatBaseCell extends BaseCell implements MediaController.FileDownlo
 
     public ChatBaseCell(Context context) {
         super(context);
-        if (timePaintIn == null) {
-            timePaintIn = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
-            timePaintIn.setTextSize(AndroidUtilities.dp(12));
-            timePaintIn.setColor(0xffa1aab3);
-
-            timePaintOut = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
-            timePaintOut.setTextSize(AndroidUtilities.dp(12));
-            timePaintOut.setColor(0xff70b15c);
-
-            timeMediaPaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
-            timeMediaPaint.setTextSize(AndroidUtilities.dp(12));
-            timeMediaPaint.setColor(0xffffffff);
+        if (timePaint == null) {
+            timePaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
+            timePaint.setTextSize(AndroidUtilities.dp(12));
 
             namePaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
             namePaint.setTextSize(AndroidUtilities.dp(15));
@@ -258,16 +258,18 @@ public class ChatBaseCell extends BaseCell implements MediaController.FileDownlo
             int lBubbleColor = themePrefs.getInt("chatLBubbleColor", 0xffffffff);
             int lBubbleSColor = AndroidUtilities.setDarkColor(lBubbleColor, 0x15);
 
-            timePaintOut.setColor(themePrefs.getInt("chatRTimeColor", dColor));
-            timePaintOut.setTextSize(AndroidUtilities.dp(themePrefs.getInt("chatTimeSize", 12)));
-            timePaintIn.setColor(themePrefs.getInt("chatLTimeColor", 0xffa1aab3));
-            timePaintIn.setTextSize(AndroidUtilities.dp(themePrefs.getInt("chatTimeSize", 12)));
+            //timePaintOut.setColor(themePrefs.getInt("chatRTimeColor", dColor));
+            //timePaintOut.setTextSize(AndroidUtilities.dp(themePrefs.getInt("chatTimeSize", 12)));
+            //timePaintIn.setColor(themePrefs.getInt("chatLTimeColor", 0xffa1aab3));
+            //timePaintIn.setTextSize(AndroidUtilities.dp(themePrefs.getInt("chatTimeSize", 12)));
 
             int linkColor = themePrefs.getInt("chatLLinkColor", defColor);
             int bColor = AndroidUtilities.getIntAlphaColor("chatLBubbleColor", 0xffffffff, 0.9f);
+            int vColor = themePrefs.getInt("chatLTimeColor", 0xffa1aab3);
             if(currentMessageObject.isOut()){
                 bColor = AndroidUtilities.getIntAlphaColor("chatRBubbleColor", lColor, 0.9f);
                 linkColor = themePrefs.getInt("chatRLinkColor", defColor);
+                vColor = themePrefs.getInt("chatRTimeColor", defColor);
             }
             replyTextPaint.linkColor = linkColor;
 
@@ -290,6 +292,8 @@ public class ChatBaseCell extends BaseCell implements MediaController.FileDownlo
             ResourceLoader.checkMediaDrawable.setColorFilter(checksColor, PorterDuff.Mode.MULTIPLY);
             ResourceLoader.halfCheckMediaDrawable.setColorFilter(checksColor, PorterDuff.Mode.MULTIPLY);
             ResourceLoader.halfCheckMediaDrawable.setColorFilter(checksColor, PorterDuff.Mode.MULTIPLY);
+
+            ResourceLoader.viewsCountDrawable.setColorFilter(vColor, PorterDuff.Mode.SRC_IN);
         } catch (NullPointerException e) {
             FileLog.e("tmessages", e);
         }
@@ -412,16 +416,19 @@ public class ChatBaseCell extends BaseCell implements MediaController.FileDownlo
             return true;
         }
 
+        if (drawForwardedName) {
         newNameString = currentMessageObject.getForwardedName();
         return currentForwardNameString == null && newNameString != null || currentForwardNameString != null && newNameString == null || currentForwardNameString != null && newNameString != null && !currentForwardNameString.equals(newNameString);
+    }
+        return false;
     }
 
     protected void measureTime(MessageObject messageObject) {
         currentTimeString = LocaleController.getInstance().formatterDay.format((long) (messageObject.messageOwner.date) * 1000);
-        timeTextWidth = timeWidth = (int) Math.ceil(timeMediaPaint.measureText(currentTimeString));
+        timeTextWidth = timeWidth = (int) Math.ceil(timePaint.measureText(currentTimeString));
         if ((messageObject.messageOwner.flags & TLRPC.MESSAGE_FLAG_HAS_VIEWS) != 0) {
             currentViewsString = String.format("%s", LocaleController.formatShortNumber(Math.max(1, messageObject.messageOwner.views), null));
-            timeWidth += (int) Math.ceil(timeMediaPaint.measureText(currentViewsString)) + ResourceLoader.viewsCountDrawable.getIntrinsicWidth() + AndroidUtilities.dp(10);
+            timeWidth += (int) Math.ceil(timePaint.measureText(currentViewsString)) + ResourceLoader.viewsCountDrawable.getIntrinsicWidth() + AndroidUtilities.dp(10);
         }
     }
 
@@ -439,9 +446,12 @@ public class ChatBaseCell extends BaseCell implements MediaController.FileDownlo
         replyTextLayout = null;
         replyNameWidth = 0;
         replyTextWidth = 0;
+        viaWidth = 0;
+        viaNameWidth = 0;
         currentReplyPhoto = null;
         currentUser = null;
         currentChat = null;
+        currentViaBotUser = null;
 
         if ((messageObject.messageOwner.flags & TLRPC.MESSAGE_FLAG_HAS_VIEWS) != 0) {
             if (currentMessageObject.isContentUnread() && !currentMessageObject.isOut()) {
@@ -453,14 +463,30 @@ public class ChatBaseCell extends BaseCell implements MediaController.FileDownlo
             }
         }
 
+        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("plusconfig", Activity.MODE_PRIVATE);
+
+        //Log.e("chatBaseCell","messageObject.messageOwner.from_id " + messageObject.messageOwner.from_id);
         if (messageObject.messageOwner.from_id > 0) {
             currentUser = MessagesController.getInstance().getUser(messageObject.messageOwner.from_id);
+            if(currentUser != null && !currentMessageObject.isOut() && messageObject.type != 13){
+                //Log.e("chatBaseCell"," chat_id " + messageObject.messageOwner.to_id.chat_id);
+                boolean showDSBtnUsers = preferences.getBoolean("showDSBtnUsers", false);
+                boolean showDSBtnGroups = preferences.getBoolean("showDSBtnGroups", true);
+                boolean showDSBtnSGroups = preferences.getBoolean("showDSBtnSGroups", true);
+                boolean showDSBtnBots = preferences.getBoolean("showDSBtnBots", true);
+                if(showDSBtnBots && currentUser.bot || !isChat && !currentUser.bot && showDSBtnUsers || showDSBtnSGroups && messageObject.isMegagroup() || messageObject.messageOwner.to_id.chat_id != 0 && showDSBtnGroups)drawShareButton = true; // Users Bots Supergroups
+            }
         } else if (messageObject.messageOwner.from_id < 0) {
             currentChat = MessagesController.getInstance().getChat(-messageObject.messageOwner.from_id);
             if (messageObject.messageOwner.to_id.channel_id != 0 && (messageObject.messageOwner.reply_to_msg_id == 0 || messageObject.type != 13)) {
                 drawShareButton = true;
             }
+            if(!currentMessageObject.isOut() && messageObject.type != 13){
+                boolean showDSBtnChannels = preferences.getBoolean("showDSBtnChannels", true);
+                drawShareButton = messageObject.messageOwner.to_id.channel_id != 0 && showDSBtnChannels; // Groups Channels
+            }
         }
+
         setStatusColor(currentUser);
         //if (isChat && !messageObject.isOutOwner() && messageObject.messageOwner.from_id > 0) {
         if ( ((isChat || showAvatar) && !messageObject.isOutOwner() && messageObject.messageOwner.from_id > 0)
@@ -489,27 +515,46 @@ public class ChatBaseCell extends BaseCell implements MediaController.FileDownlo
             avatarImage.setImage(currentPhoto, "50_50", avatarDrawable, null, false);
         }
 
-        if (!media) {
+        /*if (!media) {
             if (currentMessageObject.isOutOwner()) {
-                currentTimePaint = timePaintOut;
+                //currentTimePaint = timePaintOut;
             } else {
-                currentTimePaint = timePaintIn;
+                //currentTimePaint = timePaintIn;
             }
         } else {
-            currentTimePaint = timeMediaPaint;
-        }
+            //currentTimePaint = timeMediaPaint;
+        }*/
 
         currentTimeString = LocaleController.getInstance().formatterDay.format((long) (messageObject.messageOwner.date) * 1000);
-        timeTextWidth = timeWidth = (int)Math.ceil(currentTimePaint.measureText(currentTimeString));
+        timeTextWidth = timeWidth = (int)Math.ceil(timePaint.measureText(currentTimeString));
         if ((messageObject.messageOwner.flags & TLRPC.MESSAGE_FLAG_HAS_VIEWS) != 0) {
             currentViewsString = String.format("%s", LocaleController.formatShortNumber(Math.max(1, messageObject.messageOwner.views), null));
-            viewsTextWidth = (int) Math.ceil(currentTimePaint.measureText(currentViewsString));
+            viewsTextWidth = (int) Math.ceil(timePaint.measureText(currentViewsString));
             timeWidth += viewsTextWidth + ResourceLoader.viewsCountDrawable.getIntrinsicWidth() + AndroidUtilities.dp(10);
         }
 
         namesOffset = 0;
 
-        if (drawName && isChat && !currentMessageObject.isOutOwner()) {
+        String viaUsername = null;
+        String viaString = null;
+        if (messageObject.messageOwner.via_bot_id != 0) {
+            TLRPC.User botUser = MessagesController.getInstance().getUser(messageObject.messageOwner.via_bot_id);
+            if (botUser != null && botUser.username != null && botUser.username.length() > 0) {
+                viaUsername = "@" + botUser.username;
+                viaString = " via " + viaUsername;
+                viaWidth = (int) Math.ceil(forwardNamePaint.measureText(viaString));
+                currentViaBotUser = botUser;
+            }
+        }
+        boolean authorName = drawName && isChat && !currentMessageObject.isOutOwner();
+        boolean viaBot = messageObject.messageOwner.fwd_from_id == null && currentViaBotUser != null;
+        if (authorName || viaBot) {
+            drawName = true;
+            nameWidth = getMaxNameWidth();
+            if (nameWidth < 0) {
+                nameWidth = AndroidUtilities.dp(100);
+            }
+            if (authorName || !currentMessageObject.isOutOwner()) {
             if (currentUser != null) {
                 currentNameString = UserObject.getUserName(currentUser);
                 String currentUsernameString = currentUser.username;
@@ -522,12 +567,41 @@ public class ChatBaseCell extends BaseCell implements MediaController.FileDownlo
             } else {
                 currentNameString = "DELETED";
             }
-            nameWidth = getMaxNameWidth();
-            if (nameWidth < 0) {
-                nameWidth = AndroidUtilities.dp(100);
+            } else {
+                currentNameString = "";
             }
 
-            CharSequence nameStringFinal = TextUtils.ellipsize(currentNameString.replace("\n", " "), namePaint, nameWidth - AndroidUtilities.dp(12), TextUtils.TruncateAt.END);
+            CharSequence nameStringFinal = TextUtils.ellipsize(currentNameString.replace("\n", " "), namePaint, nameWidth - AndroidUtilities.dp(12) - (viaBot ? viaWidth : 0), TextUtils.TruncateAt.END);
+            if (viaBot) {
+                viaNameWidth = (int) Math.ceil(namePaint.measureText(nameStringFinal, 0, nameStringFinal.length()));
+                if (viaNameWidth != 0) {
+                    viaNameWidth += AndroidUtilities.dp(4);
+                }
+                SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+                int defColor = themePrefs.getInt("themeColor", AndroidUtilities.defColor);
+                int rColor = 0xff4a923c;
+                int lColor = 0xff006fc8;
+                if (currentMessageObject.isOutOwner()) {
+                    rColor = themePrefs.getInt("chatForwardRColor", AndroidUtilities.setDarkColor(defColor, 0x15));
+                }else{
+                    lColor = themePrefs.getInt("chatForwardLColor", defColor);
+                }
+                if (currentNameString.length() > 0) {
+                    SpannableStringBuilder stringBuilder = new SpannableStringBuilder(String.format("%s via @%s", nameStringFinal, currentViaBotUser.username));
+                    //stringBuilder.setSpan(new TypefaceSpan(null, 0, currentMessageObject.isOutOwner() ? 0xff4a923c : 0xff006fc8), nameStringFinal.length() + 1, nameStringFinal.length() + 4, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                    stringBuilder.setSpan(new TypefaceSpan(null, 0, currentMessageObject.isOutOwner() ? rColor : lColor), nameStringFinal.length() + 1, nameStringFinal.length() + 4, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                    //stringBuilder.setSpan(new TypefaceSpan(AndroidUtilities.getTypeface("fonts/rmedium.ttf"), 0, currentMessageObject.isOutOwner() ? 0xff4a923c : 0xff006fc8), nameStringFinal.length() + 5, stringBuilder.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                    stringBuilder.setSpan(new TypefaceSpan(AndroidUtilities.getTypeface("fonts/rmedium.ttf"), 0, currentMessageObject.isOutOwner() ? rColor : lColor), nameStringFinal.length() + 5, stringBuilder.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                    nameStringFinal = stringBuilder;
+                } else {
+                    SpannableStringBuilder stringBuilder = new SpannableStringBuilder(String.format("via @%s", currentViaBotUser.username));
+                    //stringBuilder.setSpan(new TypefaceSpan(null, 0, currentMessageObject.isOutOwner() ? 0xff4a923c : 0xff006fc8), 0, 4, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                    stringBuilder.setSpan(new TypefaceSpan(null, 0, currentMessageObject.isOutOwner() ? rColor : lColor), 0, 4, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                    //stringBuilder.setSpan(new TypefaceSpan(AndroidUtilities.getTypeface("fonts/rmedium.ttf"), 0, currentMessageObject.isOutOwner() ? 0xff4a923c : 0xff006fc8), 4, stringBuilder.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                    stringBuilder.setSpan(new TypefaceSpan(AndroidUtilities.getTypeface("fonts/rmedium.ttf"), 0, currentMessageObject.isOutOwner() ? rColor : lColor), 4, stringBuilder.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                    nameStringFinal = stringBuilder;
+                }
+            }
             try {
             nameLayout = new StaticLayout(nameStringFinal, namePaint, nameWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
                 if (nameLayout != null && nameLayout.getLineCount() > 0) {
@@ -563,9 +637,20 @@ public class ChatBaseCell extends BaseCell implements MediaController.FileDownlo
                 }
 
                 forwardedNameWidth = getMaxNameWidth();
-
-                CharSequence str = TextUtils.ellipsize(currentForwardNameString.replace("\n", " "), forwardNamePaint, forwardedNameWidth - AndroidUtilities.dp(40), TextUtils.TruncateAt.END);
-                str = AndroidUtilities.replaceTags(String.format("%s\n%s <b>%s</b>", LocaleController.getString("ForwardedMessage", R.string.ForwardedMessage), LocaleController.getString("From", R.string.From), str));
+                /*SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+                int defColor = themePrefs.getInt("themeColor", AndroidUtilities.defColor);
+                if (currentMessageObject.isOutOwner()) {
+                    forwardNamePaint.setColor(themePrefs.getInt("chatForwardRColor", AndroidUtilities.setDarkColor(defColor, 0x15)));
+                }else{
+                    forwardNamePaint.setColor(themePrefs.getInt("chatForwardLColor", defColor));
+                }*/
+                CharSequence str = TextUtils.ellipsize(currentForwardNameString.replace("\n", " "), forwardNamePaint, forwardedNameWidth - AndroidUtilities.dp(40) - viaWidth, TextUtils.TruncateAt.END);
+                if (viaString != null) {
+                    viaNameWidth = (int) Math.ceil(forwardNamePaint.measureText(LocaleController.getString("From", R.string.From) + " " + str));
+                    str = AndroidUtilities.replaceTags(String.format("%s\n%s <b>%s</b> via <b>%s</b>", LocaleController.getString("ForwardedMessage", R.string.ForwardedMessage), LocaleController.getString("From", R.string.From), str, viaUsername));
+                } else {
+                    str = AndroidUtilities.replaceTags(String.format("%s\n%s <b>%s</b>", LocaleController.getString("ForwardedMessage", R.string.ForwardedMessage), LocaleController.getString("From", R.string.From), str));
+                }
                 forwardedNameLayout = StaticLayoutEx.createStaticLayout(str, forwardNamePaint, forwardedNameWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false, TextUtils.TruncateAt.END, forwardedNameWidth, 2);
                 if (forwardedNameLayout.getLineCount() > 1) {
                     forwardedNameWidth = Math.max((int) Math.ceil(forwardedNameLayout.getLineWidth(0)), (int) Math.ceil(forwardedNameLayout.getLineWidth(1)));
@@ -715,7 +800,14 @@ public class ChatBaseCell extends BaseCell implements MediaController.FileDownlo
                     avatarPressed = true;
                     result = true;
                 } else if (drawForwardedName && forwardedNameLayout != null && x >= forwardNameX && x <= forwardNameX + forwardedNameWidth && y >= forwardNameY && y <= forwardNameY + AndroidUtilities.dp(32)) {
+                    if (viaWidth != 0 && x >= forwardNameX + viaNameWidth + AndroidUtilities.dp(4)) {
+                        forwardBotPressed = true;
+                    } else {
                         forwardNamePressed = true;
+                    }
+                    result = true;
+                } else if (drawName && nameLayout != null && viaWidth != 0 && x >= nameX + viaNameWidth && x <= nameX + viaNameWidth + viaWidth && y >= AndroidUtilities.dp(6) && y <= AndroidUtilities.dp(30)) {
+                    forwardBotPressed = true;
                         result = true;
                 } else if (currentMessageObject.isReply() && x >= replyStartX && x <= replyStartX + Math.max(replyNameWidth, replyTextWidth) && y >= replyStartY && y <= replyStartY + AndroidUtilities.dp(35)) {
                         replyPressed = true;
@@ -769,6 +861,26 @@ public class ChatBaseCell extends BaseCell implements MediaController.FileDownlo
                         forwardNamePressed = false;
                     }
                 }
+            } else if (forwardBotPressed) {
+                if (event.getAction() == MotionEvent.ACTION_UP) {
+                    forwardBotPressed = false;
+                    playSoundEffect(SoundEffectConstants.CLICK);
+                    if (delegate != null) {
+                        delegate.didPressedViaBot(this, currentViaBotUser);
+                    }
+                } else if (event.getAction() == MotionEvent.ACTION_CANCEL) {
+                    forwardBotPressed = false;
+                } else if (event.getAction() == MotionEvent.ACTION_MOVE) {
+                    if (drawForwardedName && forwardedNameLayout != null) {
+                        if (!(x >= forwardNameX && x <= forwardNameX + forwardedNameWidth && y >= forwardNameY && y <= forwardNameY + AndroidUtilities.dp(32))) {
+                            forwardBotPressed = false;
+                        }
+                    } else {
+                        if (!(x >= nameX + viaNameWidth && x <= nameX + viaNameWidth + viaWidth && y >= AndroidUtilities.dp(6) && y <= AndroidUtilities.dp(30))) {
+                            forwardBotPressed = false;
+                        }
+                    }
+                }
             } else if (replyPressed) {
                 if (event.getAction() == MotionEvent.ACTION_UP) {
                     replyPressed = false;
@@ -815,7 +927,7 @@ public class ChatBaseCell extends BaseCell implements MediaController.FileDownlo
             layoutWidth = getMeasuredWidth();
             layoutHeight = getMeasuredHeight();
 
-            timeLayout = new StaticLayout(currentTimeString, currentTimePaint, timeTextWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+            timeLayout = new StaticLayout(currentTimeString, timePaint, timeTextWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
             if (!media) {
                 if (!currentMessageObject.isOutOwner()) {
                     //timeX = backgroundWidth - AndroidUtilities.dp(9) - timeWidth + (isChat && currentMessageObject.messageOwner.from_id > 0 ? AndroidUtilities.dp(52) : 0);
@@ -837,7 +949,7 @@ public class ChatBaseCell extends BaseCell implements MediaController.FileDownlo
             }
 
             if ((currentMessageObject.messageOwner.flags & TLRPC.MESSAGE_FLAG_HAS_VIEWS) != 0) {
-                viewsLayout = new StaticLayout(currentViewsString, currentTimePaint, viewsTextWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+                viewsLayout = new StaticLayout(currentViewsString, timePaint, viewsTextWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
             } else {
                 viewsLayout = null;
             }
@@ -871,6 +983,10 @@ public class ChatBaseCell extends BaseCell implements MediaController.FileDownlo
         }
     }
 
+    protected boolean isDrawSelectedBackground() {
+        return isPressed() && isCheckPressed || !isCheckPressed && isPressed || isHighlighted;
+    }
+
     @Override
     protected void onDraw(Canvas canvas) {
         if (currentMessageObject == null) {
@@ -889,10 +1005,23 @@ public class ChatBaseCell extends BaseCell implements MediaController.FileDownlo
                 statusBG.draw(canvas);
             }
         }
+
+        //if (media) {
+        //    timePaint.setColor(0xffffffff);
+        //} else {
+            if (currentMessageObject.isOutOwner()) {
+                //timePaint.setColor(0xff70b15c);
+                timePaint.setColor(themePrefs.getInt("chatRTimeColor", AndroidUtilities.setDarkColor(themePrefs.getInt("themeColor", AndroidUtilities.defColor), 0x15)));
+            } else {
+                //timePaint.setColor(isDrawSelectedBackground() ? 0xff89b4c1 : 0xffa1aab3);
+                timePaint.setColor(isDrawSelectedBackground() ? 0xff89b4c1 : themePrefs.getInt("chatLTimeColor", 0xffa1aab3));
+            }
+        //}
+
         updateTheme();
         Drawable currentBackgroundDrawable;
         if (currentMessageObject.isOutOwner()) {
-            if (isPressed() && isCheckPressed || !isCheckPressed && isPressed || isHighlighted) {
+            if (isDrawSelectedBackground()) {
                 if (!media) {
                     currentBackgroundDrawable = ResourceLoader.backgroundDrawableOutSelected;
                 } else {
@@ -909,11 +1038,11 @@ public class ChatBaseCell extends BaseCell implements MediaController.FileDownlo
             if ((showMyAvatar && !isChat) || (showMyAvatarGroup && isChat)) {
                 setDrawableBounds(currentBackgroundDrawable, layoutWidth - backgroundWidth - (!media ? 0 : AndroidUtilities.dp(9)) - AndroidUtilities.dp(leftBound), AndroidUtilities.dp(1), backgroundWidth, layoutHeight - AndroidUtilities.dp(2));
             }else{
-            setDrawableBounds(currentBackgroundDrawable, layoutWidth - backgroundWidth - (!media ? 0 : AndroidUtilities.dp(9)), AndroidUtilities.dp(1), backgroundWidth, layoutHeight - AndroidUtilities.dp(2));
+                setDrawableBounds(currentBackgroundDrawable, layoutWidth - backgroundWidth - (!media ? 0 : AndroidUtilities.dp(9)), AndroidUtilities.dp(1), backgroundWidth, layoutHeight - AndroidUtilities.dp(2));
             }
 
         } else {
-            if (isPressed() && isCheckPressed || !isCheckPressed && isPressed || isHighlighted) {
+            if (isDrawSelectedBackground()) {
                 if (!media) {
                     currentBackgroundDrawable = ResourceLoader.backgroundDrawableInSelected;
                 } else {
@@ -927,8 +1056,10 @@ public class ChatBaseCell extends BaseCell implements MediaController.FileDownlo
                 }
             }
             if ((isChat || showAvatar) && currentMessageObject.messageOwner.from_id > 0) {
+                //Log.e("chatBaseCell","1 backgroundWidth: " + backgroundWidth);
                 setDrawableBounds(currentBackgroundDrawable, AndroidUtilities.dp(leftBound + (!media ? 0 : 9)), AndroidUtilities.dp(1), backgroundWidth, layoutHeight - AndroidUtilities.dp(2));
             } else {
+                //Log.e("chatBaseCell","2 backgroundWidth: " + backgroundWidth);
                 setDrawableBounds(currentBackgroundDrawable, (!media ? 0 : AndroidUtilities.dp(9)), AndroidUtilities.dp(1), backgroundWidth, layoutHeight - AndroidUtilities.dp(2));
             }
         }
@@ -939,7 +1070,9 @@ public class ChatBaseCell extends BaseCell implements MediaController.FileDownlo
         onAfterBackgroundDraw(canvas);
 
         if (drawShareButton) {
-            ResourceLoader.shareDrawable[ApplicationLoader.isCustomTheme() ? 1 : 0][sharePressed ? 1 : 0].setBounds(shareStartX = currentBackgroundDrawable.getBounds().right + AndroidUtilities.dp(8), shareStartY = layoutHeight - AndroidUtilities.dp(41), currentBackgroundDrawable.getBounds().right + AndroidUtilities.dp(40), layoutHeight - AndroidUtilities.dp(9));
+            //ResourceLoader.shareDrawable[ApplicationLoader.isCustomTheme() ? 1 : 0][sharePressed ? 1 : 0].setBounds(shareStartX = currentBackgroundDrawable.getBounds().right + AndroidUtilities.dp(8), shareStartY = layoutHeight - AndroidUtilities.dp(41), currentBackgroundDrawable.getBounds().right + AndroidUtilities.dp(40), layoutHeight - AndroidUtilities.dp(9));
+            //boolean b = currentMessageObject.messageOwner.from_id < 0 && (currentMessageObject.messageOwner.to_id.channel_id != 0 && (currentMessageObject.messageOwner.reply_to_msg_id == 0 || currentMessageObject.type != 13));
+            ResourceLoader.shareDrawable[ApplicationLoader.isCustomTheme() ? 1 : 0][sharePressed ? 1 : 0].setBounds(shareStartX = currentBackgroundDrawable.getBounds().right + AndroidUtilities.dp(1), shareStartY = layoutHeight - AndroidUtilities.dp(35), currentBackgroundDrawable.getBounds().right + AndroidUtilities.dp(33), layoutHeight - AndroidUtilities.dp(3));
             ResourceLoader.shareDrawable[ApplicationLoader.isCustomTheme() ? 1 : 0][sharePressed ? 1 : 0].draw(canvas);
         }
 
@@ -948,10 +1081,10 @@ public class ChatBaseCell extends BaseCell implements MediaController.FileDownlo
         int mColor = themePrefs.getInt("chatMemberColor", AndroidUtilities.getIntDarkerColor("themeColor", 0x15));
         if (drawName && nameLayout != null) {
             canvas.save();
-            if (media) {
-                canvas.translate(currentBackgroundDrawable.getBounds().left + AndroidUtilities.dp(10) - nameOffsetX, AndroidUtilities.dp(10));
+            if (media || currentMessageObject.isOutOwner()) {
+                canvas.translate(nameX = currentBackgroundDrawable.getBounds().left + AndroidUtilities.dp(10) - nameOffsetX, AndroidUtilities.dp(10));
             } else {
-                canvas.translate(currentBackgroundDrawable.getBounds().left + AndroidUtilities.dp(19) - nameOffsetX, AndroidUtilities.dp(10));
+                canvas.translate(nameX = currentBackgroundDrawable.getBounds().left + AndroidUtilities.dp(19) - nameOffsetX, AndroidUtilities.dp(10));
             }
             if (currentUser != null) {
                 if(mCheck){
@@ -974,6 +1107,10 @@ public class ChatBaseCell extends BaseCell implements MediaController.FileDownlo
             }
             nameLayout.draw(canvas);
             canvas.restore();
+
+            /*if (forwardedNameLayout == null && viaWidth != 0) {
+                canvas.drawRect(nameX + viaNameWidth, AndroidUtilities.dp(6), nameX + viaNameWidth + viaWidth, AndroidUtilities.dp(30), namePaint);
+            }*/
         }
 
         if (drawForwardedName && forwardedNameLayout != null) {
@@ -983,7 +1120,9 @@ public class ChatBaseCell extends BaseCell implements MediaController.FileDownlo
                 //forwardNamePaint.setColor(0xff4a923c);
                 forwardNamePaint.setColor(themePrefs.getInt("chatForwardRColor", AndroidUtilities.setDarkColor(defColor, 0x15)));
                 forwardNameX = currentBackgroundDrawable.getBounds().left + AndroidUtilities.dp(10);
-                if((showMyAvatar && !isChat) || (showMyAvatarGroup && isChat))forwardNameY = AndroidUtilities.dp((drawName ? 10 : 0));
+                if(showMyAvatarGroup && isChat)forwardNameY = AndroidUtilities.dp(10);
+                //if((showMyAvatar && !isChat) || (showMyAvatarGroup && isChat))forwardNameY = AndroidUtilities.dp((drawName ? 10 : 0));
+                if(!isChat && showMyAvatar)forwardNameY = AndroidUtilities.dp(10);
             } else {
                 //forwardNamePaint.setColor(0xff006fc8);
                 forwardNamePaint.setColor(themePrefs.getInt("chatForwardLColor", defColor));
@@ -992,12 +1131,16 @@ public class ChatBaseCell extends BaseCell implements MediaController.FileDownlo
                 } else {
                     forwardNameX = currentBackgroundDrawable.getBounds().left + AndroidUtilities.dp(19);
                 }
-                if((!isChat && showAvatar))forwardNameY = AndroidUtilities.dp((drawName ? 10 : 0));
+                if(!isChat && showAvatar)forwardNameY = AndroidUtilities.dp(10);
             }
             canvas.save();
             canvas.translate(forwardNameX - forwardNameOffsetX, forwardNameY);
             forwardedNameLayout.draw(canvas);
             canvas.restore();
+
+            /*if (viaWidth != 0) {
+                canvas.drawRect(forwardNameX + viaNameWidth, forwardNameY, forwardNameX + viaNameWidth + viaWidth, forwardNameY + AndroidUtilities.dp(32), namePaint);
+            }*/
         }
 
         if (currentMessageObject.isReply()) {
@@ -1102,12 +1245,13 @@ public class ChatBaseCell extends BaseCell implements MediaController.FileDownlo
                             ResourceLoader.errorDrawable.draw(canvas);
                         }
                     } else {
-                        setDrawableBounds(ResourceLoader.viewsMediaCountDrawable, timeX, layoutHeight - AndroidUtilities.dp(10) - timeLayout.getHeight());
-                        ResourceLoader.viewsMediaCountDrawable.draw(canvas);
+                        Drawable countDrawable = ResourceLoader.viewsMediaCountDrawable[isDrawSelectedBackground() ? 1 : 0];
+                        setDrawableBounds(countDrawable, timeX, layoutHeight - AndroidUtilities.dp(10) - timeLayout.getHeight());
+                        countDrawable.draw(canvas);
 
                         if (viewsLayout != null) {
                             canvas.save();
-                            canvas.translate(timeX + ResourceLoader.viewsMediaCountDrawable.getIntrinsicWidth() + AndroidUtilities.dp(3), layoutHeight - AndroidUtilities.dp(12.0f) - timeLayout.getHeight());
+                            canvas.translate(timeX + countDrawable.getIntrinsicWidth() + AndroidUtilities.dp(3), layoutHeight - AndroidUtilities.dp(12.0f) - timeLayout.getHeight());
                             viewsLayout.draw(canvas);
                             canvas.restore();
                         }
@@ -1125,8 +1269,9 @@ public class ChatBaseCell extends BaseCell implements MediaController.FileDownlo
 
                     if (currentMessageObject.isSending()) {
                         if (!currentMessageObject.isOutOwner()) {
-                            setDrawableBounds(ResourceLoader.clockChannelDrawable, timeX + AndroidUtilities.dp(11), layoutHeight - AndroidUtilities.dp(8.5f) - ResourceLoader.clockChannelDrawable.getIntrinsicHeight());
-                            ResourceLoader.clockChannelDrawable.draw(canvas);
+                            Drawable clockDrawable = ResourceLoader.clockChannelDrawable[isDrawSelectedBackground() ? 1 : 0];
+                            setDrawableBounds(clockDrawable, timeX + AndroidUtilities.dp(11), layoutHeight - AndroidUtilities.dp(8.5f) - clockDrawable.getIntrinsicHeight());
+                            clockDrawable.draw(canvas);
                         }
                     } else if (currentMessageObject.isSendError()) {
                         if (!currentMessageObject.isOutOwner()) {

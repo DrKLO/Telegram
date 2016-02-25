@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2015.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.ui;
@@ -413,7 +413,7 @@ public class ChangePhoneActivity extends BaseFragment {
                                 ignoreSelection = true;
                                 countryButton.setText(countriesArray.get(index));
                                 String hint = phoneFormatMap.get(text);
-                                phoneField.setHintText(hint != null ? hint.replace('X', '�') : null);
+                                phoneField.setHintText(hint != null ? hint.replace('X', '–') : null);
                                 countryState = 0;
                             } else {
                                 countryButton.setText(LocaleController.getString("WrongCountry", R.string.WrongCountry));
@@ -624,7 +624,7 @@ public class ChangePhoneActivity extends BaseFragment {
                 codeField.setText(code);
                 countryButton.setText(name);
                 String hint = phoneFormatMap.get(code);
-                phoneField.setHintText(hint != null ? hint.replace('X', '�') : null);
+                phoneField.setHintText(hint != null ? hint.replace('X', '–') : null);
                 countryState = 0;
             }
         }

@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2015.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.ui.ActionBar;
@@ -453,37 +453,39 @@ public class DrawerLayoutContainer extends FrameLayout {
                 child.measure(drawerWidthSpec, drawerHeightSpec);
             }
         }
-        //getDrawerLayout().setBackgroundColor(AndroidUtilities.getIntDef("drawerListColor",0xffffffff));  //Plus
+        //Plus
         updateListBG();
     }
 
     private void updateListBG(){
-        SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
-        int mainColor = themePrefs.getInt("drawerListColor", 0xffffffff);
-        int value = themePrefs.getInt("drawerRowGradient", 0);
-        boolean b = true;//themePrefs.getBoolean("drawerRowGradientListCheck", false);
-        if(value > 0 && b) {
-            GradientDrawable.Orientation go;
-            switch(value) {
-                case 2:
-                    go = GradientDrawable.Orientation.LEFT_RIGHT;
-                    break;
-                case 3:
-                    go = GradientDrawable.Orientation.TL_BR;
-                    break;
-                case 4:
-                    go = GradientDrawable.Orientation.BL_TR;
-                    break;
-                default:
-                    go = GradientDrawable.Orientation.TOP_BOTTOM;
-            }
+        if(getDrawerLayout() != null) {
+            SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+            int mainColor = themePrefs.getInt("drawerListColor", 0xffffffff);
+            int value = themePrefs.getInt("drawerRowGradient", 0);
+            boolean b = true;//themePrefs.getBoolean("drawerRowGradientListCheck", false);
+            if (value > 0 && b) {
+                GradientDrawable.Orientation go;
+                switch (value) {
+                    case 2:
+                        go = GradientDrawable.Orientation.LEFT_RIGHT;
+                        break;
+                    case 3:
+                        go = GradientDrawable.Orientation.TL_BR;
+                        break;
+                    case 4:
+                        go = GradientDrawable.Orientation.BL_TR;
+                        break;
+                    default:
+                        go = GradientDrawable.Orientation.TOP_BOTTOM;
+                }
 
-            int gradColor = themePrefs.getInt("drawerRowGradientColor", 0xffffffff);
-            int[] colors = new int[]{mainColor, gradColor};
-            GradientDrawable gd = new GradientDrawable(go, colors);
-            getDrawerLayout().setBackgroundDrawable(gd);
-        }else{
-            getDrawerLayout().setBackgroundColor(mainColor);
+                int gradColor = themePrefs.getInt("drawerRowGradientColor", 0xffffffff);
+                int[] colors = new int[]{mainColor, gradColor};
+                GradientDrawable gd = new GradientDrawable(go, colors);
+                getDrawerLayout().setBackgroundDrawable(gd);
+            } else {
+                getDrawerLayout().setBackgroundColor(mainColor);
+            }
         }
     }
 

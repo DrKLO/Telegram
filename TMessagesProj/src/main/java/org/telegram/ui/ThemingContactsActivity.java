@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2015.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.ui;
@@ -213,7 +213,7 @@ public class ThemingContactsActivity extends BaseFragment {
                             public void colorChanged(int color) {
                                 commitInt( "contactsHeaderIconsColor", color);
                             }
-                        },themePrefs.getInt( "contactsHeaderIconsColor", 0xffffffff), CENTER, 0, false);
+                        },themePrefs.getInt( "contactsHeaderIconsColor", 0xffffffff), CENTER, 0, true);
                         colorDialog.show();
                     } else if (i == iconsColorRow) {
                         if (getParentActivity() == null) {

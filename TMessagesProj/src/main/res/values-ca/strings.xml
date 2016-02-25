@@ -42,6 +42,7 @@
   <string name="EncryptedChatStartedOutgoing">%s s\'ha unit al xat secret.</string>
   <string name="EncryptedChatStartedIncoming">Us heu unit al xat secret.</string>
   <string name="ClearHistory">Esborra l\'historial</string>
+  <string name="ClearHistoryCache">Elimina de la memòria cau</string>
   <string name="DeleteChat">Elimina i surt</string>
   <string name="DeleteChatUser">Elimina el xat</string>
   <string name="HiddenName">Compte eliminat</string>
@@ -52,12 +53,33 @@
   <string name="Search">Cerca</string>
   <string name="MuteNotifications">Silencia les notificacions</string>
   <string name="MuteFor">Silencia %1$s</string>
-  <string name="UnmuteNotifications">Restaura les notificacions</string>
+  <string name="UnmuteNotifications">No silenciïs</string>
   <string name="WillUnmuteIn">D\'aquí %1$s</string>
   <string name="MuteDisable">Inhabilita</string>
   <string name="Hashtags">ETIQUETES</string>
   <string name="Recent">RECENT</string>
+  <string name="LinkPreview">Vista prèvia de l\'enllaç</string>
   <!--channels-->
+  <string name="SetAsAdmin">Promou a administrador</string>
+  <string name="DescriptionInfoMega">Podeu establir una descripció opcional per al grup.</string>
+  <string name="LeaveMega">Abandona el grup</string>
+  <string name="DeleteMega">Elimina el grup</string>
+  <string name="LeaveMegaMenu">Abandona el grup</string>
+  <string name="DeleteMegaMenu">Elimina el grup</string>
+  <string name="MegaDeleteInfo">Perdreu tots els missatges del grup.</string>
+  <string name="MegaAdminsInfo">Podeu afegir administradors perquè us ajudin a gestionar el grup. Mantingueu premut per eliminar-los.</string>
+  <string name="MegaDeleteAlert">En eliminar el grup s\'expulsarà a tots els membres i els missatges es perdran. Segur que voleu eliminar-lo?</string>
+  <string name="ActionCreateMega">Grup creat</string>
+  <string name="MegaAddedBy">un1 t\'ha afegit al grup</string>
+  <string name="MegaLeaveAlert">Segur que voleu abandonar el grup?</string>
+  <string name="GroupUserCantAdd">No podeu afegir aquest usuari al grup.</string>
+  <string name="GroupUserAddLimit">Aquest grup és ple.</string>
+  <string name="GroupUserLeftError">Ho sentim, aquest usuari ha decidit deixar aquest grup i no el pots tornar a convidar a participar-hi.</string>
+  <string name="GroupUserCantAdmin">Hi ha masses administradors en aquest grup.</string>
+  <string name="GroupUserCantBot">Hi ha masses bots en aquest grup.</string>
+  <string name="ActionMigrateFromGroup">Aquest grup s\'ha actualitzat a super-grup.</string>
+  <string name="ActionMigrateFromGroupNotify">%1$s s\'ha actualitzat a super-grup.</string>
+  <string name="NoBlockedGroup">Els usuaris bloquejats són borrats del grup i només poden tornar-hi si són convidats per l\'administrador. Els enllaços per convidar-los no funcionaran per a ells.</string>
   <string name="NewChannel">Canal nou</string>
   <string name="EnterChannelName">Nom del canal</string>
   <string name="Comments">Comentaris</string>
@@ -99,15 +121,13 @@
   <string name="ChannelDelete">Elimina el canal</string>
   <string name="ChannelDeleteMenu">Elimina el canal</string>
   <string name="ChannelDeleteAlert">En eliminar el canal se suprimiran tots els membres i els missatges es perdran. Esteu segur de voler eliminar-lo?</string>
-  <string name="ChannelLeaveAlert">Segur que voleu deixar el canal?</string>
+  <string name="ChannelLeaveAlert">Segur que voleu abandonar el canal?</string>
   <string name="ChannelDeleteInfo">Perdreu tots els missatges d\'aquest canal.</string>
   <string name="ChannelEdit">Edita</string>
   <string name="ChannelWasPrivateAlert">Tingueu en compte que si trieu un enllaç públic per al vostre canal, qualsevol podrà cercar-lo i afegir-s\'hi.
 
 Si voleu que el vostre canal romangui privat, no creeu l\'enllaç.</string>
-  <string name="ChannelPublicEmptyUsername">Seleccioneu un enllaç per al vostre canal public perquè la gent el pugui trobar i compartir.
-
-Si no us interessa, us suggerim crear un canal privat.</string>
+  <string name="ChannelPublicEmptyUsername">Seleccioneu un enllaç per al vostre canal public perquè la gent el pugui trobar i compartir.\n\nSi no us interessa, us suggerim crear un canal privat.</string>
   <string name="ActionCreateChannel">S\'ha creat el canal</string>
   <string name="ActionChannelChangedPhoto">S\'ha canviat la foto del canal</string>
   <string name="ActionChannelRemovedPhoto">S\'ha eliminat la foto del canal</string>
@@ -127,11 +147,12 @@ Si no us interessa, us suggerim crear un canal privat.</string>
   <string name="ChannelLinkInfo">Qualsevol que tingui el Telegram instal·lat podrà afegir-se al canal a través de l\'enllaç.</string>
   <string name="ChannelAdminsInfo">Podeu afegir administradors perquè us ajudin a gestionar el canal. Mantingueu premut per eliminar-los.</string>
   <string name="ChannelJoinTo">Voleu afegir-vos al canal «%1$s»?</string>
-  <string name="ChannelCantOpenPrivate">Aquest canal ja no és accessible.</string>
+  <string name="ChannelCantOpenPrivate">Aquest xat no és accessible.</string>
   <string name="ChannelAddTo">Voleu afegir %1$s al canal?</string>
-  <string name="ChannelUserLeftError">L\'usuari ha decidit abandonar aquest grup, no podeu tornar a convidar-lo.</string>
+  <string name="ChannelUserLeftError">Aquest usuari ha decidit abandonar el canal, així que no el podeu convidar de nou.</string>
   <string name="ChannelUserCantAdd">No podeu afegir aquest usuari als canals.</string>
   <string name="ChannelUserCantAdmin">Hi ha massa administradors en aquest canal.</string>
+  <string name="ChannelUserCantBot">Hi ha masses bots en aquest canal.</string>
   <string name="ChannelUserAddLimit">Només hi podeu afegir els primers 200 membres. Per a nombres majors, l\'adhesió s\'ha de fer a través dels enllaços del canal.</string>
   <string name="ChannelAddedBy">un1 us ha afegit a aquest canal</string>
   <string name="ChannelJoined">Us heu afegit al canal</string>
@@ -145,6 +166,7 @@ Si no us interessa, us suggerim crear un canal privat.</string>
   <string name="ChannelMessageGroupContact">%1$s ha compartit un contacte al canal %2$s</string>
   <string name="ChannelMessageGroupMap">%1$s ha enviat una ubicació al canal %2$s</string>
   <string name="ChannelMessageGroupDocument">%1$s ha enviat un fitxer al canal %2$s</string>
+  <string name="ChannelMessageGroupGif">%1$s ha enviat un GIF al canal %2$s</string>
   <string name="ChannelMessageGroupAudio">%1$s ha enviat un àudio al canal %2$s</string>
   <string name="ChannelMessageGroupSticker">%1$s ha enviat un adhesiu al canal %2$s</string>
   <string name="ChannelMessageNoText">%1$s ha publicat un missatge</string>
@@ -153,6 +175,7 @@ Si no us interessa, us suggerim crear un canal privat.</string>
   <string name="ChannelMessageContact">%1$s ha publicat un contacte</string>
   <string name="ChannelMessageMap">%1$s ha publicat una ubicació</string>
   <string name="ChannelMessageDocument">%1$s ha publicat un fitxer</string>
+  <string name="ChannelMessageGIF">%1$s ha publicat un GIF</string>
   <string name="ChannelMessageAudio">%1$s ha publicat un missatge de veu</string>
   <string name="ChannelMessageSticker">%1$s ha publicat un adhesiu</string>
   <!--broadcasts-->
@@ -222,6 +245,8 @@ Si no us interessa, us suggerim crear un canal privat.</string>
   <string name="DeleteThisChat">Elimina aquest xat</string>
   <string name="SlideToCancel">LLISQUEU PER CANCEL·LAR</string>
   <string name="SaveToDownloads">Desa a «Baixades»</string>
+  <string name="SaveToGIFs">Desa als GIF</string>
+  <string name="DeleteGif">Voleu eliminar el GIF?</string>
   <string name="SaveToMusic">Desa-ho a música</string>
   <string name="ShareFile">Comparteix</string>
   <string name="ApplyLocalizationFile">Aplica la localització</string>
@@ -241,6 +266,8 @@ Si no us interessa, us suggerim crear un canal privat.</string>
   <string name="NobodyLikesSpam2">Ho sentim, per ara només podeu afegir contactes mutus als grups.</string>
   <string name="NobodyLikesSpamUrl">https://telegram.org/faq#can-39t-send-messages-to-non-contacts</string>
   <string name="MoreInfo">Més informació</string>
+  <string name="ShareSendTo">Envia a...</string>
+  <string name="TapHereGifs">Toqueu per accedir als fitxers GIF desats</string>
   <!--notification-->
   <string name="MessageLifetimeChanged">%1$s ha definit l\'autodestrucció en %2$s</string>
   <string name="MessageLifetimeChangedOutgoing">Heu definit l\'autodestrucció en %1$s</string>
@@ -254,6 +281,7 @@ Si no us interessa, us suggerim crear un canal privat.</string>
   <string name="NotificationMessageContact">%1$s ha compartit un contacte</string>
   <string name="NotificationMessageMap">%1$s us ha enviat una ubicació</string>
   <string name="NotificationMessageDocument">%1$s us ha enviat un fitxer</string>
+  <string name="NotificationMessageGif">%1$s us ha enviat un GIF</string>
   <string name="NotificationMessageAudio">%1$s us ha enviat un fitxer d\'àudio</string>
   <string name="NotificationMessageSticker">%1$s us ha enviat un adhesiu</string>
   <string name="NotificationMessageGroupText">%1$s @ %2$s: %3$s</string>
@@ -263,6 +291,7 @@ Si no us interessa, us suggerim crear un canal privat.</string>
   <string name="NotificationMessageGroupContact">%1$s ha compartit un contacte amb el grup %2$s</string>
   <string name="NotificationMessageGroupMap">%1$s ha enviat una ubicació al grup %2$s</string>
   <string name="NotificationMessageGroupDocument">%1$s ha enviat un fitxer al grup %2$s</string>
+  <string name="NotificationMessageGroupGif">%1$s ha enviat un GIF al grup %2$s</string>
   <string name="NotificationMessageGroupAudio">%1$s ha enviat un fitxer d\'àudio al grup %2$s</string>
   <string name="NotificationMessageGroupSticker">%1$s ha enviat un adhesiu al grup %2$s</string>
   <string name="NotificationInvitedToGroup">%1$s us ha convidat al grup %2$s</string>
@@ -274,7 +303,7 @@ Si no us interessa, us suggerim crear un canal privat.</string>
   <string name="NotificationGroupKickYou">%1$s us ha fet fora del grup %2$s</string>
   <string name="NotificationGroupLeftMember">%1$s ha abandonat el grup %2$s</string>
   <string name="NotificationContactJoined">%1$s s\'ha unit al Telegram.</string>
-  <string name="NotificationUnrecognizedDevice">%1$s,\nHem detectat un inici de sessió al vostre compte en un dispositiu nou el %2$s\n\nDispositiu: %3$s\nUbicació: %4$s\n\nSi no sou vós, aneu a Configuració - Privadesa i seguretat - Sessions i finalitzeu aquesta sessió.\n\nSi penseu que algú altre ha iniciat sessió en el vostre compte contra la vostra voluntat, podeu activar la Verificació en dos passos a la configuració de Privadesa i seguretat.\n\nAtentament,\nL\'equip del Telegram</string>
+  <string name="NotificationUnrecognizedDevice">%1$s,\nHem detectat un inici de sessió al vostre compte des d\'un dispositiu nou el %2$s\n\nDispositiu: %3$s\nUbicació: %4$s\n\nSi no en sabeu res, aneu Configuració - Privadesa i seguretat - Sessions i finalitzeu aquesta sessió.\n\nSi penseu que algú altre ha iniciat sessió en el vostre compte contra la vostra voluntat, podeu activar la verificació en dos passos a la configuració de Privadesa i seguretat.\n\nAtentament,\nL\'equip del Telegram</string>
   <string name="NotificationContactNewPhoto">%1$s ha actualitzat la foto del perfil</string>
   <string name="NotificationInvitedToGroupByLink">%1$s s\'ha afegit al grup %2$s via enllaç d\'invitació</string>
   <string name="Reply">Respon</string>
@@ -284,14 +313,14 @@ Si no us interessa, us suggerim crear un canal privat.</string>
   <!--contacts view-->
   <string name="SelectContact">Trieu un contacte</string>
   <string name="NoContacts">No hi ha cap contacte</string>
-  <string name="InviteText">Ep, canvieu al Telegram: http://goo.gl/jnmjnZ</string>
+  <string name="InviteText">Ep, canvieu al Plus Messenger: http://goo.gl/jnmjnZ</string>
   <string name="TodayAt">a les</string>
   <string name="YesterdayAt">ahir a les</string>
   <string name="Online">en línia</string>
   <string name="LastSeen">vist:</string>
   <string name="LastSeenDate">vist:</string>
   <string name="LastSeenNow">vist fa poc</string>
-  <string name="InviteFriends">Convida els contactes</string>
+  <string name="InviteFriends">Convida contactes</string>
   <string name="GlobalSearch">CERCA GLOBAL</string>
   <string name="Lately">vist fa poc</string>
   <string name="WithinAWeek">vist fa uns dies</string>
@@ -316,13 +345,22 @@ Si no us interessa, us suggerim crear un canal privat.</string>
   <string name="CopyLink">Copia l\'enllaç</string>
   <string name="ShareLink">Comparteix l\'enllaç</string>
   <string name="LinkInfo">Qualsevol qui tingui Telegram instal·lat serà capaç d\'afegir-se al grup a través de l\'enllaç.</string>
+  <!--set admins view-->
+  <string name="SetAdminsTitle">Administradors del xat</string>
+  <string name="SetAdminsAll">Tots els membres són administradors</string>
+  <string name="SetAdminsAllInfo">Tots els membres poden afegir nous membres, editar el nom i la foto del grup.</string>
+  <string name="SetAdminsNotAllInfo">Només els administradors poden afegir i eliminar membres, editar el nom i canviar la fotografia del grup.</string>
   <!--group info view-->
   <string name="SharedMedia">Elements compartits</string>
   <string name="SETTINGS">Configuració</string>
   <string name="AddMember">Afegeix un membre</string>
+  <string name="SetAdmins">Tria administradors</string>
   <string name="DeleteAndExit">Elimina i surt del grup</string>
   <string name="Notifications">Notificacions</string>
   <string name="KickFromGroup">Fes fora del grup</string>
+  <string name="ConvertGroup">Actualitza a super-grup</string>
+  <string name="ConvertGroupAlert">Siusplau, avisa als membres d\'aquest grup que necessiten actualitzar l\'aplicació de Telegram a l\'última versió per veure el teu supergrup. Estàs segur que vols convertir aquest grup a supergrup?</string>
+  <string name="ConvertGroupInfo"><![CDATA[<b>]]>S\'ha arribat al límit de membres.<![CDATA[</b>]]>\n\nPer superar el límit i obtenir més característiques, actualitzeu a un supergrup:\n\n• Els supergrups poden tindre fins a %1$s\n• Els nous membres veuen tot l\'historial del grup\n• Els administradors eliminen missatges per tothom\n• Les notificacions són en silenci per defecte</string>
   <!--contact info view-->
   <string name="ShareContact">Comparteix</string>
   <string name="AddContact">Afegeix</string>
@@ -391,7 +429,7 @@ Si no us interessa, us suggerim crear un canal privat.</string>
   <string name="InAppPreview">Vista prèvia</string>
   <string name="Reset">Reinicialitza</string>
   <string name="ResetAllNotifications">Restaura totes les notificacions</string>
-  <string name="UndoAllCustom">Desfà la configuració de les notificacions personalitzades per a tots els contactes i grups.</string>
+  <string name="UndoAllCustom">Desfà la configuració de les notificacions per a tots els contactes i grups.</string>
   <string name="NotificationsAndSounds">Notificacions i sons</string>
   <string name="BlockedUsers">Usuaris blocats</string>
   <string name="LogOut">Tanca la sessió</string>
@@ -405,7 +443,6 @@ Si no us interessa, us suggerim crear un canal privat.</string>
   <string name="TerminateAllSessions">Tanca les altres sessions</string>
   <string name="Events">Esdeveniments</string>
   <string name="ContactJoined">En unir-se un contacte al Telegram</string>
-  <string name="Pebble">PEBBLE</string>
   <string name="Language">Llengua</string>
   <string name="AskAQuestionInfo">Tingueu present que el suport del Telegram és ofert per voluntaris. Intentem respondre tan ràpid com ens és possible, però podem trigar una mica.<![CDATA[<br><br>]]>Feu una ullada a les <![CDATA[<a href=\"https://telegram.org/faq#general\">PMF del Telegram</a>]]>. Tenen la resposta a la majoria de preguntes i també consells importants per a la <![CDATA[<a href=\"https://telegram.org/faq#troubleshooting\">resolució de problemes</a>]]>.</string>
   <string name="AskButton">Pregunta-ho a un voluntari</string>
@@ -437,6 +474,7 @@ Si no us interessa, us suggerim crear un canal privat.</string>
   <string name="WhenConnectedOnWiFi">Amb connexió Wi-Fi</string>
   <string name="WhenRoaming">En itinerància</string>
   <string name="NoMediaAutoDownload">Cap fitxer</string>
+  <string name="AutoplayGifs">GIF - Reproducció automàtica</string>
   <string name="SaveToGallerySettings">Desa-ho a la galeria</string>
   <string name="EditName">Edita el nom</string>
   <string name="NotificationsPriority">Prioritat</string>
@@ -447,10 +485,10 @@ Si no us interessa, us suggerim crear un canal privat.</string>
   <string name="RepeatNotificationsNever">Mai</string>
   <string name="RepeatNotifications">Repetició de notificacions</string>
   <string name="PhoneNumberHelp">Aquí podeu canviar el vostre número de telèfon del Telegram. El vostre compte i les dades al núvol (missatges, fitxers, contactes, etc.) es mouran al número nou.\n\n<![CDATA[<b>Important:</b>]]> el <![CDATA[<b>número nou</b>]]> s\'afegirà a l\'agenda de tots els vostres contactes del Telegram que tinguin el número antic i que no hàgiu blocat al Telegram.</string>
-  <string name="PhoneNumberAlert">El número nou s\'afegirà a l\'agenda de tots els vostres contactes del Telegram que tinguin el número vell i que no hàgiu blocat al Telegram.</string>
-  <string name="PhoneNumberChange">CANVI DE NÚMERO</string>
+  <string name="PhoneNumberAlert">El número nou s\'afegirà a l\'agenda de tots els vostres contactes del Telegram que tinguin el número antic i que no hàgiu blocat al Telegram.</string>
+  <string name="PhoneNumberChange">CANVIA EL NÚMERO</string>
   <string name="ChangePhoneNewNumber">Número nou</string>
-  <string name="ChangePhoneHelp">Us enviarem un SMS amb un codi de verificació al vostre nou número.</string>
+  <string name="ChangePhoneHelp">S\'enviarà un SMS amb un codi de verificació al vostre número nou.</string>
   <string name="ChangePhoneNumberOccupied">El número %1$s ja està connectat a un compte del Telegram. Elimineu aquest compte abans de canviar de número.</string>
   <string name="NotificationsOther">Altres</string>
   <string name="NotificationsDisabled">Inhabilitades</string>
@@ -467,6 +505,24 @@ Si no us interessa, us suggerim crear un canal privat.</string>
   <string name="SmartNotificationsTimes">vegades</string>
   <string name="SmartNotificationsWithin">durant</string>
   <string name="SmartNotificationsMinutes">minuts</string>
+  <!--cache view-->
+  <string name="CacheSettings">Configuració de la memòria cau</string>
+  <string name="LocalDatabase">Base de dades local</string>
+  <string name="LocalDatabaseClear">Voleu eliminar els missatges de text de la memòria cau?</string>
+  <string name="LocalDatabaseInfo">En buidar la base de dades local, s\'eliminaran els missatges a la memòria cau i aquesta es comprimirà per estalviar espai intern. El Telegram necessita certes dades per funcionar, així que la mida de la base de dades no arribarà a zero.\n\nAixò pot trigar uns minuts.</string>
+  <string name="ClearMediaCache">Esborra la memòria cau</string>
+  <string name="CacheClear">Esborra</string>
+  <string name="CalculatingSize">Calculant...</string>
+  <string name="LocalDocumentCache">Documents</string>
+  <string name="LocalPhotoCache">Fotografies</string>
+  <string name="LocalAudioCache">Missatges de veu</string>
+  <string name="LocalVideoCache">Vídeo</string>
+  <string name="LocalMusicCache">Música</string>
+  <string name="LocalCache">Altres fitxers</string>
+  <string name="CacheEmpty">Buit</string>
+  <string name="KeepMedia">Mantén els fitxers</string>
+  <string name="KeepMediaInfo">Les fotos, vídeos i altres fitxers dels xats al núvol <![CDATA[<b>que no hàgiu consultat</b>]]> durant aquest període s\'eliminaran d\'aquest dispositiu per estalviar espai.\n\nTots els fitxers es mantindran al núvol del Telegram i podeu tornar-los a baixar sempre que els necessiteu.</string>
+  <string name="KeepMediaForever">Per sempre</string>
   <!--sessions view-->
   <string name="SessionsTitle">Sessions actives</string>
   <string name="CurrentSession">Sessió actual</string>
@@ -668,6 +724,7 @@ Si no us interessa, us suggerim crear un canal privat.</string>
   <string name="Back">Enrere</string>
   <string name="Done">Fet</string>
   <string name="Open">Obre</string>
+  <string name="Save">Desa</string>
   <string name="Cancel">Cancel·la</string>
   <string name="Close">Tanca</string>
   <string name="Add">Afegeix</string>
@@ -676,6 +733,7 @@ Si no us interessa, us suggerim crear un canal privat.</string>
   <string name="Call">Truca</string>
   <string name="Copy">Copia</string>
   <string name="Delete">Elimina</string>
+  <string name="DeleteAndStop">Elimina i atura</string>
   <string name="Forward">Reenvia</string>
   <string name="Retry">Reintenta</string>
   <string name="FromCamera">Des de la càmera</string>
@@ -685,8 +743,8 @@ Si no us interessa, us suggerim crear un canal privat.</string>
   <string name="OK">D\'acord</string>
   <string name="Crop">RETALLA</string>
   <!--messages-->
-  <string name="ActionInviteYou">Us heu unit al grup via enllaç d\'invitació</string>
-  <string name="ActionInviteUser">un1 s\'ha unit al grup via l\'enllaç d\'invitació</string>
+  <string name="ActionInviteYou">Us heu unit al grup mitjançant un enllaç d\'invitació</string>
+  <string name="ActionInviteUser">un1 s\'ha unit al grup mitjançant un enllaç d\'invitació</string>
   <string name="ActionKickUser">un1 ha fet fora un2</string>
   <string name="ActionLeftUser">un1 ha abandonat el grup</string>
   <string name="ActionAddUser">un1 ha afegit un2</string>
@@ -695,7 +753,7 @@ Si no us interessa, us suggerim crear un canal privat.</string>
   <string name="ActionChangedTitle">un1 ha canviat el nom del grup a un2</string>
   <string name="ActionCreateGroup">un1 ha creat el grup</string>
   <string name="ActionYouKickUser">Heu tret un2</string>
-  <string name="ActionYouLeftUser"> Heu abandonat el grup</string>
+  <string name="ActionYouLeftUser">Heu abandonat el grup</string>
   <string name="ActionYouAddUser">Heu afegit un2</string>
   <string name="ActionYouRemovedPhoto">Heu eliminat la foto del grup</string>
   <string name="ActionYouChangedPhoto">Heu canviat la foto del grup</string>
@@ -705,15 +763,16 @@ Si no us interessa, us suggerim crear un canal privat.</string>
   <string name="ActionAddUserYou">un1 us ha afegit</string>
   <string name="ActionAddUserSelf">un1 ha tornat al grup</string>
   <string name="ActionAddUserSelfYou">Heu tornat al grup</string>
-  <string name="UnsuppotedMedia">Aquest missatge no és compatible amb la vostra versió del Telegram. Actualitzeu l\'aplicació per veure\'l: https://telegram.org/update</string>
+  <string name="UnsupportedMedia">Aquest missatge no és compatible amb la vostra versió del Telegram. Actualitzeu l\'aplicació per veure\'l: https://telegram.org/update</string>
   <string name="AttachPhoto">Foto</string>
   <string name="AttachVideo">Vídeo</string>
+  <string name="AttachGif">GIF</string>
   <string name="AttachLocation">Ubicació</string>
   <string name="AttachContact">Contacte</string>
   <string name="AttachDocument">Fitxer</string>
   <string name="AttachSticker">Adhesiu</string>
   <string name="AttachAudio">Àudio</string>
-  <string name="FromYou">Usuari</string>
+  <string name="FromYou">Jo</string>
   <string name="ActionTakeScreenshootYou">Heu fet una captura de pantalla</string>
   <string name="ActionTakeScreenshoot">un1 ha fet una captura de pantalla</string>
   <!--Alert messages-->
@@ -730,12 +789,13 @@ Si no us interessa, us suggerim crear un canal privat.</string>
   <string name="NoHandleAppInstalled">No teniu cap aplicació que permeti obrir fitxers de tipus MIME «%1$s». Instal·leu-ne una per continuar</string>
   <string name="InviteUser">Aquest usuari encara no té el Telegram. Voleu enviar-li una invitació?</string>
   <string name="AreYouSure">N\'esteu segur?</string>
-  <string name="AddToTheGroupTitle">Voleu afegir %1$s al grup %2$s?</string>
+  <string name="AddToTheGroupTitle">Voleu afegir %1$s al xat %2$s?</string>
   <string name="AddToTheGroupForwardCount">Nombre d\'últims missatges a reenviar:</string>
   <string name="AddToTheGroup">Voleu afegir %1$s al grup?</string>
   <string name="UserAlreadyInGroup">Aquest usuari ja és en aquest grup</string>
   <string name="ForwardMessagesTo">Voleu reenviar els missatges a %1$s?</string>
   <string name="SendMessagesTo">Voleu enviar els missatges a %1$s?</string>
+  <string name="SendContactTo">Voleu enviar el contacte a %1$s?</string>
   <string name="AreYouSureLogout">Esteu segur que voleu sortir?\n\nPodeu utilitzar igualment el Telegram en tots els vostres dispositius alhora.\n\nRecordeu que en tancar la sessió s\'eliminen els Xats Secrets.</string>
   <string name="AreYouSureSessions">Esteu segur que voleu tancar totes les altres sessions?</string>
   <string name="AreYouSureDeleteAndExit">Esteu segur que voleu eliminar i abandonar el grup?</string>
@@ -747,8 +807,11 @@ Si no us interessa, us suggerim crear un canal privat.</string>
   <string name="AreYouSureSecretChat">Esteu segur que voleu iniciar el xat secret?</string>
   <string name="AreYouSureRegistration">Esteu segur que voleu cancel·lar el registre?</string>
   <string name="AreYouSureClearHistory">Esteu segur que voleu esborrar l\'historial?</string>
+  <string name="AreYouSureClearHistoryChannel">Voleu eliminar tot el text i fitxers a la memòria d\'aquest canal?</string>
+  <string name="AreYouSureClearHistorySuper">Voleu eliminar tot el text i fitxers a la memòria d\'aquest supergrup?</string>
   <string name="AreYouSureDeleteMessages">Esteu segur que voleu eliminar %1$s?</string>
   <string name="SendMessagesToGroup">Voleu enviar els missatges a %1$s?</string>
+  <string name="SendContactToGroup">Voleu enviar el contacte a %1$s?</string>
   <string name="ForwardMessagesToGroup">Voleu reenviar els missatges a %1$s?</string>
   <string name="FeatureUnavailable">Aquesta característica no es troba disponible al teu país.</string>
   <string name="NoUsernameFound">No hi ha cap compte de Telegram amb aquest nom d\'usuari.</string>
@@ -974,17 +1037,14 @@ Si no us interessa, us suggerim crear un canal privat.</string>
   <string name="formatterDay24H">HH:mm</string>
   <string name="formatterDay12H">h:mm a</string>
   <string name="formatDateAtTime">%1$s a les %2$s</string>
-  <!--update text--><!--
-  <string name="updateText">El Telegram per a Android s\'ha actualitzat. Novetats a la versió 3.2.6:
-
-- Animacions noves i moltes millores visuals
-- Compatibilitat amb els emojis nous
-- Altres millores i correcció d\'errors</string>
-<string name="updateBuild">689</string>-->
+  <!--update text-->
+  <string name="updateText">S\'ha actualitzat el Telegram per a Android. Novetats de la versió 3.4.0:\n\nRevolució als fitxers GIF: Fins a 20x més ràpid en baixar/enviar, reproducció automàtica, podeu desar els fitxers GIF en una pestanya exclusiva al panell d\'adhesius.\n\nMés informació dels fitxers GIF:\nhttps://telegram.org/blog/gif-revolution\n\nBots en línia: Una forma nova d\'afegir el contingut d\'un bot en qualsevol xat. Escriviu el nom d\'un bot i la cerca al camp de text per aconseguir resultats instantanis i envieu-los en un xat. Proveu inserint “@gif dog” a la propera xerrada. p. ex.: @gif, @wiki, @bing, @vid, @bold.\n\nMés informació dels bots en línia:\nhttps://telegram.org/blog/inline-bots</string>
+  <string name="updateBuild">736</string>
     <!--Telegram+-->
-  <string name="updatePlusText">\n\nNovetats a la versió 3.3.1.1:\n\n- Correcció d\'errors</string>
+  <string name="updatePlusText">\n\nNovetats a la versió 3.4.2.5:\n\n- S\'ha afegit «Marca\'l com a llegit» per a cada xat i «Marca\'ls tots com a llegits» en cada pestanya.\n- S\'ha afegit una opció a la Configuració del Plus per mostrar el nom d\'usuari en compte del número de telèfon al menú.\n- Correcció d\'errors.</string>
     <string name="TelegramForAndroid">Plus Messenger per Android</string>
   <string name="Theming">Aparença</string>
+  <string name="PlusSettings">Configuració del Plus</string>
   <string name="colorHexInvalid">Codi de color hexadecimal no vàlid.</string>
   <string name="themeColor">Color del tema</string>
   <string name="ResetThemeSettings">Restableix la configuració del tema</string>
@@ -1048,6 +1108,8 @@ Si no us interessa, us suggerim crear un canal privat.</string>
   <string name="MuteColor">Color de l\'icona de silenci</string>
   <string name="SendLogs">Envia registres</string>
   <string name="SendLogsEmpty">No hi ha cap registre</string>
+  <string name="ClearLogs">Buida els registres</string>
+  <string name="ClearLogsMsg">registres eliminats</string>
   <string name="SendIcon">Icona d\'enviar</string>
   <string name="HideMobile">Amaga el telèfon al menú</string>
   <string name="FloatingPencilColor">Color del botó de llapis</string>
@@ -1087,7 +1149,7 @@ Si no us interessa, us suggerim crear un canal privat.</string>
   <string name="KeepOriginalFilename">Conserva el nom original</string>
   <string name="KeepOriginalFilenameHelp">En compte de només números, els fitxers es desaran usant el format nom_data</string>
   <string name="AvatarSize">Mida de l\'avatar</string>
-  <string name="AvatarAlignTop">Alinea l\'avatar dels contactes a dalt</string>
+  <string name="AvatarAlignTop">Alinea a dalt l\'avatar dels contactes</string>
   <string name="AvatarMarginLeft">Marge de l\'avatar</string>
   <string name="GroupNameColor">Color del nom del grup</string>
   <string name="GroupNameSize">Mida del nom del grup</string>
@@ -1113,8 +1175,8 @@ Si no us interessa, us suggerim crear un canal privat.</string>
   <string name="SharedContactNameColor">Color del nom de contacte compartit</string>
   <string name="AttachBGColor">Color del fons del menú Adjuntar</string>
   <string name="AttachTextColor">Color del text del menú Adjuntar</string>
-  <string name="ShowContactAvatar">Mostra l\'avatar dels contactes al xat</string>
-  <string name="ShowOwnAvatar">Mostra el meu propi avatar al xat</string>
+  <string name="ShowContactAvatar">Mostra l\'avatar dels contactes</string>
+  <string name="ShowOwnAvatar">Mostra el meu avatar al xat</string>
   <string name="ShowOwnAvatarGroup">Mostra el meu avatar als grups</string>
   <string name="OwnAvatarAlignTop">Alinea el meu avatar a dalt</string>
   <string name="DialogColor">Color del títol/botó dels diàlegs</string>
@@ -1134,13 +1196,44 @@ Si no us interessa, us suggerim crear un canal privat.</string>
   <string name="JoinChannel">\n\nAfegiu-vos al canal oficial del Plus Messenger (en castellà): https://telegram.me/plusmsgres</string>
   <string name="DownloadThemes">Baixa temes nous</string>
   <string name="OfficialChannel">Canal oficial</string>
-  <string name="DialogsSettings">En tocar...</string>
-  <string name="ClickOnContactPic">Imatge d\'un contacte</string>
-  <string name="ClickOnGroupPic">Imatge d\'un grup</string>
+  <string name="DialogsSettings">Diàlegs</string>
+  <string name="ClickOnContactPic">En tocar la imatge d\'un contacte</string>
+  <string name="ClickOnGroupPic">En tocar la imatge d\'un grup</string>
   <string name="ShowProfile">Perfil</string>
   <string name="ShowPics">Fotos de perfil</string>
   <string name="CountSilentBGColor">Color de fons dels comptadors silenciats</string>
   <string name="CommandColorCheck">Color a les ordres del bots</string>
   <string name="CommandColor">Color de les ordres dels bots</string>
   <string name="HighlightSearchColor">Color de cerca ressaltada</string>
+  <string name="ThemeUpdated">%s s\'ha actualitzat</string>
+  <string name="HideStatusIndicator">Amaga l\'indicador de connexió</string>
+  <string name="HideTabs">Amaga les pestanyes</string>
+  <string name="All">Tot</string>
+  <string name="Users">Usuaris</string>
+  <string name="Groups">Grups</string>
+  <string name="SuperGroups">Supergrups</string>
+  <string name="Channels">Canals</string>
+  <string name="Bots">Bots</string>
+  <string name="Favorites">Favorits</string>
+  <string name="TabsHeight">Alçada de les pestanyes</string>
+  <string name="SetAsDefaultTab">Fes-la pestanya d\'inici</string>
+  <string name="ResetDefaultTab">Restableix la pestanya d\'inici</string>
+  <string name="SortByStatus">Ordena per l\'estat</string>
+  <string name="SortByLastMessage">Ordena per l\'últim missatge</string>
+  <string name="SortByUnreadCount">Ordena per missatges sense llegir</string>
+  <string name="ShowSuperGroupsTab">Mostra la pestanya de supergrups</string>
+  <string name="HideSuperGroupsTab">Amaga la pestanya de supergrups</string>
+  <string name="Tabs">Pestanyes</string>
+  <string name="HideShowTabs">Mostra/Amaga les pestanyes</string>
+  <string name="AddToFavorites">Afegeix als favorits</string>
+  <string name="DeleteFromFavorites">Elimina dels favorits</string>
+  <string name="NoFavoritesHelp">Cap favorit\n\nPer afegir qualsevol xat a la llista, manteniu-lo premut i seleccioneu «Afegeix als favorits».</string>
+  <string name="DisableTabsAnimation">Mostra sempre les pestanyes</string>
+  <string name="InfiniteSwipe">Lliscament infinit entre pestanyes</string>
+  <string name="ShowDirectShareButton">Mostra el botó «Compartició directa»</string>
+  <string name="Quote">CITA</string>
+  <string name="RemoveUserAdmin">Elimina dels administradors</string>
+  <string name="ShowUsernameInMenu">Mostra el nom d\'usuari en compte del mòbil</string>
+  <string name="MarkAsRead">Marca\'l com a llegit</string>
+  <string name="MarkAllAsRead">Marca\'ls tots com a llegits</string>
 </resources>

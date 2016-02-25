@@ -11,7 +11,6 @@
 #include "libyuv/convert_argb.h"
 
 #include "libyuv/cpu_id.h"
-#include "libyuv/format_conversion.h"
 #ifdef HAVE_JPEG
 #include "libyuv/mjpeg_decoder.h"
 #endif
@@ -144,36 +143,6 @@ int ConvertToARGB(const uint8* sample, size_t sample_size,
                          crop_argb, argb_stride,
                          crop_width, inv_crop_height);
       break;
-    // TODO(fbarchard): Support cropping Bayer by odd numbers
-    // by adjusting fourcc.
-    case FOURCC_BGGR:
-      src = sample + (src_width * crop_y + crop_x);
-      r = BayerBGGRToARGB(src, src_width,
-                          crop_argb, argb_stride,
-                          crop_width, inv_crop_height);
-      break;
-
-    case FOURCC_GBRG:
-      src = sample + (src_width * crop_y + crop_x);
-      r = BayerGBRGToARGB(src, src_width,
-                          crop_argb, argb_stride,
-                          crop_width, inv_crop_height);
-      break;
-
-    case FOURCC_GRBG:
-      src = sample + (src_width * crop_y + crop_x);
-      r = BayerGRBGToARGB(src, src_width,
-                          crop_argb, argb_stride,
-                          crop_width, inv_crop_height);
-      break;
-
-    case FOURCC_RGGB:
-      src = sample + (src_width * crop_y + crop_x);
-      r = BayerRGGBToARGB(src, src_width,
-                          crop_argb, argb_stride,
-                          crop_width, inv_crop_height);
-      break;
-
     case FOURCC_I400:
       src = sample + src_width * crop_y + crop_x;
       r = I400ToARGB(src, src_width,
@@ -205,15 +174,6 @@ int ConvertToARGB(const uint8* sample, size_t sample_size,
                      crop_argb, argb_stride,
                      crop_width, inv_crop_height);
       break;
-//    case FOURCC_Q420:
-//      src = sample + (src_width + aligned_src_width * 2) * crop_y + crop_x;
-//      src_uv = sample + (src_width + aligned_src_width * 2) * crop_y +
-//               src_width + crop_x * 2;
-//      r = Q420ToARGB(src, src_width * 3,
-//                    src_uv, src_width * 3,
-//                    crop_argb, argb_stride,
-//                    crop_width, inv_crop_height);
-//      break;
     // Triplanar formats
     case FOURCC_I420:
     case FOURCC_YU12:
@@ -241,6 +201,25 @@ int ConvertToARGB(const uint8* sample, size_t sample_size,
                      crop_width, inv_crop_height);
       break;
     }
+
+    case FOURCC_J420: {
+      const uint8* src_y = sample + (src_width * crop_y + crop_x);
+      const uint8* src_u;
+      const uint8* src_v;
+      int halfwidth = (src_width + 1) / 2;
+      int halfheight = (abs_src_height + 1) / 2;
+      src_u = sample + src_width * abs_src_height +
+          (halfwidth * crop_y + crop_x) / 2;
+      src_v = sample + src_width * abs_src_height +
+          halfwidth * (halfheight + crop_y / 2) + crop_x / 2;
+      r = J420ToARGB(src_y, src_width,
+                     src_u, halfwidth,
+                     src_v, halfwidth,
+                     crop_argb, argb_stride,
+                     crop_width, inv_crop_height);
+      break;
+    }
+
     case FOURCC_I422:
     case FOURCC_YV16: {
       const uint8* src_y = sample + src_width * crop_y + crop_x;

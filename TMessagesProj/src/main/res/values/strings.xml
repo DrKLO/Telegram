@@ -1,7 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 
-
-
 <resources>
     <string name="AppName">Plus Messenger</string>
     <string name="AppNameBeta">Plus Messenger Beta</string>
@@ -47,6 +45,7 @@
     <string name="EncryptedChatStartedOutgoing">%s joined your secret chat.</string>
     <string name="EncryptedChatStartedIncoming">You joined the secret chat.</string>
     <string name="ClearHistory">Clear history</string>
+    <string name="ClearHistoryCache">Delete from cache</string>
     <string name="DeleteChat">Delete and exit</string>
     <string name="DeleteChatUser">Delete chat</string>
     <string name="HiddenName">Deleted Account</string>
@@ -168,6 +167,7 @@
     <string name="ChannelMessageGroupContact">%1$s shared a contact in the channel %2$s</string>
     <string name="ChannelMessageGroupMap">%1$s sent a location to the channel %2$s</string>
     <string name="ChannelMessageGroupDocument">%1$s sent a file to the channel %2$s</string>
+    <string name="ChannelMessageGroupGif">%1$s sent a GIF to the channel %2$s</string>
     <string name="ChannelMessageGroupAudio">%1$s sent an audio to the channel %2$s</string>
     <string name="ChannelMessageGroupSticker">%1$s sent a sticker to the channel %2$s</string>
     <string name="ChannelMessageNoText">%1$s posted a message</string>
@@ -176,6 +176,7 @@
     <string name="ChannelMessageContact">%1$s posted a contact</string>
     <string name="ChannelMessageMap">%1$s posted a location</string>
     <string name="ChannelMessageDocument">%1$s posted a file</string>
+    <string name="ChannelMessageGIF">%1$s posted a GIF</string>
     <string name="ChannelMessageAudio">%1$s posted a voice message</string>
     <string name="ChannelMessageSticker">%1$s posted a sticker</string>
     <!--broadcasts-->
@@ -245,6 +246,8 @@
     <string name="DeleteThisChat">Delete this chat</string>
     <string name="SlideToCancel">SLIDE TO CANCEL</string>
     <string name="SaveToDownloads">Save to downloads</string>
+    <string name="SaveToGIFs">Save to GIFs</string>
+    <string name="DeleteGif">Delete GIF?</string>
     <string name="SaveToMusic">Save to music</string>
     <string name="ShareFile">Share</string>
     <string name="ApplyLocalizationFile">Apply localization file</string>
@@ -265,6 +268,7 @@
     <string name="NobodyLikesSpamUrl">https://telegram.org/faq#can-39t-send-messages-to-non-contacts</string>
     <string name="MoreInfo">More info</string>
     <string name="ShareSendTo">Send to...</string>
+    <string name="TapHereGifs">Tap here to access saved GIFs</string>
     <!--notification-->
     <string name="MessageLifetimeChanged">%1$s set the self-destruct timer to %2$s</string>
     <string name="MessageLifetimeChangedOutgoing">You set the self-destruct timer to %1$s</string>
@@ -278,6 +282,7 @@
     <string name="NotificationMessageContact">%1$s shared a contact with you</string>
     <string name="NotificationMessageMap">%1$s sent you a location</string>
     <string name="NotificationMessageDocument">%1$s sent you a file</string>
+    <string name="NotificationMessageGif">%1$s sent you a GIF</string>
     <string name="NotificationMessageAudio">%1$s sent you an audio</string>
     <string name="NotificationMessageSticker">%1$s sent you a sticker</string>
     <string name="NotificationMessageGroupText">%1$s @ %2$s: %3$s</string>
@@ -287,6 +292,7 @@
     <string name="NotificationMessageGroupContact">%1$s shared a contact in the group %2$s</string>
     <string name="NotificationMessageGroupMap">%1$s sent a location to the group %2$s</string>
     <string name="NotificationMessageGroupDocument">%1$s sent a file to the group %2$s</string>
+    <string name="NotificationMessageGroupGif">%1$s sent a GIF to the group %2$s</string>
     <string name="NotificationMessageGroupAudio">%1$s sent an audio to the group %2$s</string>
     <string name="NotificationMessageGroupSticker">%1$s sent a sticker to the group %2$s</string>
     <string name="NotificationInvitedToGroup">%1$s invited you to the group %2$s</string>
@@ -438,7 +444,6 @@
     <string name="TerminateAllSessions">Terminate All Other Sessions</string>
     <string name="Events">Events</string>
     <string name="ContactJoined">Contact joined Telegram</string>
-    <string name="Pebble">PEBBLE</string>
     <string name="Language">Language</string>
     <string name="AskAQuestionInfo">Please note that Telegram Support is done by volunteers. We try to respond as quickly as possible, but it may take a while.<![CDATA[<br><br>]]>Please take a look at the <![CDATA[<a href=\"https://telegram.org/faq#general\">Telegram FAQ</a>]]>: it has answers to most questions and important tips for <![CDATA[<a href=\"https://telegram.org/faq#troubleshooting\">troubleshooting</a>]]>.</string>
     <string name="AskButton">Ask a volunteer</string>
@@ -470,6 +475,7 @@
     <string name="WhenConnectedOnWiFi">When connected on Wi-Fi</string>
     <string name="WhenRoaming">When roaming</string>
     <string name="NoMediaAutoDownload">No media</string>
+    <string name="AutoplayGifs">Autoplay GIFs</string>
     <string name="SaveToGallerySettings">Save to gallery</string>
     <string name="EditName">Edit name</string>
     <string name="NotificationsPriority">Priority</string>
@@ -500,6 +506,24 @@
     <string name="SmartNotificationsTimes">times</string>
     <string name="SmartNotificationsWithin">within</string>
     <string name="SmartNotificationsMinutes">minutes</string>
+    <!--cache view-->
+    <string name="CacheSettings">Cache Settings</string>
+    <string name="LocalDatabase">Local Database</string>
+    <string name="LocalDatabaseClear">Clear cached text messages?</string>
+    <string name="LocalDatabaseInfo">Clearing the local database will delete the texts of cached messages and compress the database to save internal disk space. Telegram needs some data to work, so database size will not reach zero.\n\nThis operation can take a few minutes to complete.</string>
+    <string name="ClearMediaCache">Clear Cache</string>
+    <string name="CacheClear">Clear</string>
+    <string name="CalculatingSize">Calculating...</string>
+    <string name="LocalDocumentCache">Documents</string>
+    <string name="LocalPhotoCache">Photos</string>
+    <string name="LocalAudioCache">Voice messages</string>
+    <string name="LocalVideoCache">Videos</string>
+    <string name="LocalMusicCache">Music</string>
+    <string name="LocalCache">Other files</string>
+    <string name="CacheEmpty">Empty</string>
+    <string name="KeepMedia">Keep Media</string>
+    <string name="KeepMediaInfo">Photos, videos and other files from cloud chats that you have <![CDATA[<b>not accessed</b>]]> during this period will be removed from this device to save disk space.\n\nAll media will stay in the Telegram cloud and can be re-downloaded if you need it again.</string>
+    <string name="KeepMediaForever">Forever</string>
     <!--sessions view-->
     <string name="SessionsTitle">Active Sessions</string>
     <string name="CurrentSession">Current session</string>
@@ -701,6 +725,7 @@
     <string name="Back">Back</string>
     <string name="Done">Done</string>
     <string name="Open">Open</string>
+    <string name="Save">Save</string>
     <string name="Cancel">Cancel</string>
     <string name="Close">Close</string>
     <string name="Add">Add</string>
@@ -722,14 +747,14 @@
     <string name="ActionInviteYou">You joined the group via invite link</string>
     <string name="ActionInviteUser">un1 joined the group via invite link</string>
     <string name="ActionKickUser">un1 removed un2</string>
-    <string name="ActionLeftUser">un1 left group</string>
+    <string name="ActionLeftUser">un1 left the group</string>
     <string name="ActionAddUser">un1 added un2</string>
     <string name="ActionRemovedPhoto">un1 removed the group photo</string>
     <string name="ActionChangedPhoto">un1 changed the group photo</string>
     <string name="ActionChangedTitle">un1 changed the group name to un2</string>
     <string name="ActionCreateGroup">un1 created the group</string>
     <string name="ActionYouKickUser">You removed un2</string>
-    <string name="ActionYouLeftUser">You left group</string>
+    <string name="ActionYouLeftUser">You left the group</string>
     <string name="ActionYouAddUser">You added un2</string>
     <string name="ActionYouRemovedPhoto">You removed the group photo</string>
     <string name="ActionYouChangedPhoto">You changed the group photo</string>
@@ -739,9 +764,10 @@
     <string name="ActionAddUserYou">un1 added you</string>
     <string name="ActionAddUserSelf">un1 returned to the group</string>
     <string name="ActionAddUserSelfYou">You returned to the group</string>
-    <string name="UnsuppotedMedia">This message is not supported on your version of Telegram. Update the app to view: https://telegram.org/update</string>
+    <string name="UnsupportedMedia">This message is not supported on your version of Telegram. Update the app to view: https://telegram.org/update</string>
     <string name="AttachPhoto">Photo</string>
     <string name="AttachVideo">Video</string>
+    <string name="AttachGif">GIF</string>
     <string name="AttachLocation">Location</string>
     <string name="AttachContact">Contact</string>
     <string name="AttachDocument">File</string>
@@ -782,6 +808,8 @@
     <string name="AreYouSureSecretChat">Are you sure you want to start a secret chat?</string>
     <string name="AreYouSureRegistration">Are you sure you want to cancel registration?</string>
     <string name="AreYouSureClearHistory">Are you sure you want to clear history?</string>
+    <string name="AreYouSureClearHistoryChannel">Delete all cached text and media from this channel?</string>
+    <string name="AreYouSureClearHistorySuper">Delete all cached text and media from this supergroup?</string>
     <string name="AreYouSureDeleteMessages">Are you sure you want to delete %1$s?</string>
     <string name="SendMessagesToGroup">Send messages to %1$s?</string>
     <string name="SendContactToGroup">Send contact to %1$s?</string>
@@ -825,7 +853,7 @@
     <string name="Members_many">%1$d members</string>
     <string name="Members_other">%1$d members</string>
     <string name="AndMoreTyping_zero">and %1$d more people are typing</string>
-    <string name="AndMoreTyping_one">and %1$d more people are typing</string>
+    <string name="AndMoreTyping_one">and %1$d more person are typing</string>
     <string name="AndMoreTyping_two">and %1$d more people are typing</string>
     <string name="AndMoreTyping_few">and %1$d more people are typing</string>
     <string name="AndMoreTyping_many">and %1$d more people are typing</string>
@@ -1011,12 +1039,15 @@
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s at %2$s</string>
     <!--update text-->
-    <string name="updateText">Plus Messenger for Android has been updated. New in version 3.3.1:\n\n- Groups can now have multiple administrators with the ability to edit the name and logo, and add and remove members.\n- Groups that have reached their capacity of 200 users can be upgraded to supergroups of up to 1,000 members.\n- Channels got a new Quick Share button right next to messages.\n\nMore about this update:\nhttps://telegram.org/blog/supergroups</string>
-    <string name="updateBuild">689</string>
+    <string name="updateText">Plus Messenger for Android has been updated. New in version 3.4.0:\n\nGIF revolution: up to 20x faster downloading/sending, autoplay, save GIFs to a dedicated tab on the sticker panel.\n\nMore about GIFs:\nhttps://telegram.org/blog/gif-revolution\n\nInline bots: A new way to add bot content to any chat. Type a bot\'s username and your query in the text field to get instant results and send them to your chat partner. Try typing “@gif dog” in your next chat. Sample bots: @gif, @wiki, @bing, @vid, @bold.\n\nMore about inline bots:\nhttps://telegram.org/blog/inline-bots</string>
+    <string name="updateBuild">736</string>
+    <!-- google_app_id --><!--
+    <string name="google_app_id">326898382893</string>-->
     <!--Telegram+-->
-    <string name="updatePlusText">\n\nNew in version 3.3.1.1:\n\n- Added user status indicator to main and chat screen\n- Added option to hide status indicators\n- Bug fixes</string>
+    <string name="updatePlusText">\n\nNew in version 3.4.2.5:\n\n- Added \'Mark as read\' for individual chats and \'Mark all as read\' for every tab\n- Added option in Plus settings to show username instead of mobile number in menu\n- Bug fixes</string>
     <string name="TelegramForAndroid">Plus Messenger for Android</string>
     <string name="Theming">Theming</string>
+    <string name="PlusSettings">Plus Settings</string>
     <string name="colorHexInvalid">Invalid color hex code!</string>
     <string name="themeColor">Theme color</string>
     <string name="ResetThemeSettings">Reset theme settings</string>
@@ -1179,4 +1210,35 @@
     <string name="HighlightSearchColor">Highlight search color</string>
     <string name="ThemeUpdated">%s has been updated</string>
     <string name="HideStatusIndicator">Hide user status indicator</string>
+    <string name="HideTabs">Hide Tabs</string>
+    <string name="All">All</string>
+    <string name="Users">Users</string>
+    <string name="Groups">Groups</string>
+    <string name="SuperGroups">Supergroups</string>
+    <string name="Channels">Channels</string>
+    <string name="Bots">Bots</string>
+    <string name="Favorites">Favorites</string>
+    <string name="TabsHeight">Tabs height</string>
+    <string name="SetAsDefaultTab">Set as default tab</string>
+    <string name="ResetDefaultTab">Reset default tab</string>
+    <string name="SortByStatus">Sort by status</string>
+    <string name="SortByLastMessage">Sort by last message</string>
+    <string name="SortByUnreadCount">Sort by unread messages</string>
+    <string name="ShowSuperGroupsTab">Show supergroups tab</string>
+    <string name="HideSuperGroupsTab">Hide supergroups tab</string>
+    <string name="Tabs">Tabs</string>
+    <string name="HideShowTabs">Hide/Show Tabs</string>
+    <string name="AddToFavorites">Add to favorites</string>
+    <string name="DeleteFromFavorites">Delete from favorites</string>
+    <string name="NoFavoritesHelp">"No Favorites\n\nTo add any chat to this list just tap and hold a chat and then click \'Add to favorites\'."</string>
+    <string name="DisableTabsAnimation">Don\'t hide tabs on scroll</string>
+    <string name="InfiniteSwipe">Infinite swipe between tabs</string>
+    <string name="ShowDirectShareButton">Show \'direct share\' button</string>
+    <string name="Quote">QUOTE</string>
+    <string name="RemoveUserAdmin">Remove from admin list</string>
+    <string name="ShowUsernameInMenu">Show username instead of mobile</string>
+    <string name="MarkAsRead">Mark as read</string>
+    <string name="MarkAllAsRead">Mark all dialogs as read</string>
+    <string name="LeaveWithoutDelete">Leave with return possibility</string>
+    <string name="CheckStyle">Check style</string>
 </resources>

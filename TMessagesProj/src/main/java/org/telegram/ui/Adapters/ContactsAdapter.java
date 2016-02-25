@@ -3,26 +3,24 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2015.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.ui.Adapters;
 
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.graphics.PorterDuff;
-import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Build;
 import android.view.View;
 import android.view.ViewGroup;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.LocaleController;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.R;
 import org.telegram.messenger.AnimationCompat.ViewProxy;
 import org.telegram.ui.Cells.DividerCell;
@@ -231,33 +229,19 @@ public class ContactsAdapter extends BaseSectionsAdapter {
             TextCell actionCell = (TextCell) convertView;
             actionCell.setTextColor(cColorBlack);
             if (needPhonebook) {
-                //actionCell.setTextAndIcon(LocaleController.getString("InviteFriends", R.string.InviteFriends), R.drawable.menu_invite);
-                Drawable invite = mContext.getResources().getDrawable(R.drawable.menu_invite);
-                invite.setColorFilter(iconsColor, PorterDuff.Mode.SRC_IN);
-                actionCell.setTextAndIcon(LocaleController.getString("InviteFriends", R.string.InviteFriends), invite);
+                actionCell.setTextAndIcon(LocaleController.getString("InviteFriends", R.string.InviteFriends), R.drawable.menu_invite);
             } else if (isAdmin) {
-                //actionCell.setTextAndIcon(LocaleController.getString("InviteToGroupByLink", R.string.InviteToGroupByLink), R.drawable.menu_invite);
-                Drawable invite = mContext.getResources().getDrawable(R.drawable.menu_invite);
-                invite.setColorFilter(iconsColor, PorterDuff.Mode.SRC_IN);
-                actionCell.setTextAndIcon(LocaleController.getString("InviteToGroupByLink", R.string.InviteToGroupByLink), invite);
+                actionCell.setTextAndIcon(LocaleController.getString("InviteToGroupByLink", R.string.InviteToGroupByLink), R.drawable.menu_invite);
             } else {
                 if (position == 0) {
-                    //actionCell.setTextAndIcon(LocaleController.getString("NewGroup", R.string.NewGroup), R.drawable.menu_newgroup);
-                    Drawable newGroup = mContext.getResources().getDrawable(R.drawable.menu_newgroup);
-                    newGroup.setColorFilter(iconsColor, PorterDuff.Mode.SRC_IN);
-                    actionCell.setTextAndIcon(LocaleController.getString("NewGroup", R.string.NewGroup), newGroup);
+                    actionCell.setTextAndIcon(LocaleController.getString("NewGroup", R.string.NewGroup), R.drawable.menu_newgroup);
                 } else if (position == 1) {
-                    //actionCell.setTextAndIcon(LocaleController.getString("NewSecretChat", R.string.NewSecretChat), R.drawable.menu_secret);
-                    Drawable secret = mContext.getResources().getDrawable(R.drawable.menu_secret);
-                    secret.setColorFilter(iconsColor, PorterDuff.Mode.SRC_IN);
-                    actionCell.setTextAndIcon(LocaleController.getString("NewSecretChat", R.string.NewSecretChat), secret);
+                    actionCell.setTextAndIcon(LocaleController.getString("NewSecretChat", R.string.NewSecretChat), R.drawable.menu_secret);
                 } else if (position == 2) {
-                    //actionCell.setTextAndIcon(LocaleController.getString("NewChannel", R.string.NewChannel), R.drawable.menu_broadcast);
-                    Drawable broadcast = mContext.getResources().getDrawable(R.drawable.menu_broadcast);
-                    broadcast.setColorFilter(iconsColor, PorterDuff.Mode.SRC_IN);
-                    actionCell.setTextAndIcon(LocaleController.getString("NewChannel", R.string.NewChannel), broadcast);
+                    actionCell.setTextAndIcon(LocaleController.getString("NewChannel", R.string.NewChannel), R.drawable.menu_broadcast);
                 }
             }
+            actionCell.setIconColor(iconsColor);
         } else if (type == 1) {
             if (convertView == null) {
                 convertView = new TextCell(mContext);
@@ -276,6 +260,7 @@ public class ContactsAdapter extends BaseSectionsAdapter {
         } else if (type == 0) {
             if (convertView == null) {
                 convertView = new UserCell(mContext, 58, 1);
+                ((UserCell) convertView).setStatusColors(0xffa8a8a8, 0xff3b84c0);
                 convertView.setTag("Contacts");
             }
             updateViewColor(convertView);
@@ -297,7 +282,6 @@ public class ContactsAdapter extends BaseSectionsAdapter {
                 }
             }
         }
-        //parent.setBackgroundColor(themePrefs.getInt("contactsRowColor", 0xffffffff)); //Plus
         updateListBG(parent);
         return convertView;
     }

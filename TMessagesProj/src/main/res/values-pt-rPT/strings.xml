@@ -46,6 +46,7 @@
     <string name="EncryptedChatStartedOutgoing">%s entrou no chat secreto</string>
     <string name="EncryptedChatStartedIncoming">Você entrou no chat secreto</string>
     <string name="ClearHistory">Limpar histórico</string>
+    <string name="ClearHistoryCache">Apagar do cache</string>
     <string name="DeleteChat">Apagar e sair</string>
     <string name="DeleteChatUser">Apagar conversa</string>
     <string name="HiddenName">Conta Excluída</string>
@@ -167,6 +168,7 @@
     <string name="ChannelMessageGroupContact">%1$s enviou um contato ao canal %2$s</string>
     <string name="ChannelMessageGroupMap">%1$s enviou uma localização ao canal %2$s</string>
     <string name="ChannelMessageGroupDocument">%1$s enviou um arquivo ao canal %2$s</string>
+    <string name="ChannelMessageGroupGif">%1$s enviou um GIF ao canal %2$s</string>
     <string name="ChannelMessageGroupAudio">%1$s enviou um áudio ao canal %2$s</string>
     <string name="ChannelMessageGroupSticker">%1$s enviou um sticker ao canal %2$s</string>
     <string name="ChannelMessageNoText">%1$s postou uma mensagem</string>
@@ -175,6 +177,7 @@
     <string name="ChannelMessageContact">%1$s postou um contato</string>
     <string name="ChannelMessageMap">%1$s postou uma foto</string>
     <string name="ChannelMessageDocument">%1$s postou um arquivo</string>
+    <string name="ChannelMessageGIF">%1$s postou um GIF</string>
     <string name="ChannelMessageAudio">%1$s postou uma mensagem de voz</string>
     <string name="ChannelMessageSticker">%1$s postou um sticker</string>
     <!--broadcasts-->
@@ -244,6 +247,8 @@
     <string name="DeleteThisChat">Apagar este chat</string>
     <string name="SlideToCancel">DESLIZE PARA CANCELAR</string>
     <string name="SaveToDownloads">Salvar em downloads</string>
+    <string name="SaveToGIFs">Salvar em GIFs</string>
+    <string name="DeleteGif">Apagar GIF?</string>
     <string name="SaveToMusic">Salvar em músicas</string>
     <string name="ShareFile">Compartilhar</string>
     <string name="ApplyLocalizationFile">Aplicar arquivo de localização</string>
@@ -264,6 +269,7 @@
     <string name="NobodyLikesSpamUrl">https://telegram.org/faq/br#no-consigo-enviar-mensagens-para-no-contatos</string>
     <string name="MoreInfo">Mais informações</string>
     <string name="ShareSendTo">Enviar para...</string>
+    <string name="TapHereGifs">Toque aqui para acessar os GIFs salvos</string>
     <!--notification-->
     <string name="MessageLifetimeChanged">%1$s estabeleceu o tempo de autodestruição para %2$s </string>
     <string name="MessageLifetimeChangedOutgoing">Você estabeleceu o tempo de autodestruição para %1$s</string>
@@ -277,6 +283,7 @@
     <string name="NotificationMessageContact">%1$s compartilhou um contato com você</string>
     <string name="NotificationMessageMap">%1$s enviou uma localização</string>
     <string name="NotificationMessageDocument">%1$s lhe enviou um arquivo</string>
+    <string name="NotificationMessageGif">%1$s te enviou um GIF</string>
     <string name="NotificationMessageAudio">%1$s te enviou um áudio</string>
     <string name="NotificationMessageSticker">%1$s lhe enviou um sticker</string>
     <string name="NotificationMessageGroupText">%1$s @ %2$s: %3$s</string>
@@ -286,6 +293,7 @@
     <string name="NotificationMessageGroupContact">%1$s compartilhou um contato para o grupo %2$s</string>
     <string name="NotificationMessageGroupMap">%1$s enviou uma localização para o grupo %2$s</string>
     <string name="NotificationMessageGroupDocument">%1$s enviou um arquivo para o grupo %2$s</string>
+    <string name="NotificationMessageGroupGif">%1$s enviou um GIF para o grupo %2$s</string>
     <string name="NotificationMessageGroupAudio">%1$s enviou um áudio para o grupo %2$s</string>
     <string name="NotificationMessageGroupSticker">%1$s enviou um sticker ao grupo %2$s</string>
     <string name="NotificationInvitedToGroup">%1$s convidou você para o grupo %2$s</string>
@@ -437,7 +445,6 @@
     <string name="TerminateAllSessions">Terminar todas as outras sessões</string>
     <string name="Events">Eventos</string>
     <string name="ContactJoined">Contato entrou para o Telegram</string>
-    <string name="Pebble">PEBBLE</string>
     <string name="Language">Idioma</string>
     <string name="AskAQuestionInfo">Por favor entenda que o suporte do Telegram é feito por voluntários. Tentaremos responder o mais rápido possível, mas poderemos demorar um pouco.<![CDATA[<br><br>]]>Por favor verifique a <![CDATA[<a href=\"https://telegram.org/faq#general\">página de perguntas frequentes do Telegram</a>]]>: há dicas e respostas para a maioria dos <![CDATA[<a href=\"https://telegram.org/faq#troubleshooting\">problemas</a>]]>.</string>
     <string name="AskButton">Pergunte a um voluntário</string>
@@ -469,6 +476,7 @@
     <string name="WhenConnectedOnWiFi">Quando conectado em Wi-Fi</string>
     <string name="WhenRoaming">Quando em roaming</string>
     <string name="NoMediaAutoDownload">Sem mídia</string>
+    <string name="AutoplayGifs">Auto-Reproduzir GIFs</string>
     <string name="SaveToGallerySettings">Salvar na galeria</string>
     <string name="EditName">Editar nome</string>
     <string name="NotificationsPriority">Prioridade</string>
@@ -499,6 +507,24 @@
     <string name="SmartNotificationsTimes">vezes</string>
     <string name="SmartNotificationsWithin">a cada</string>
     <string name="SmartNotificationsMinutes">minutos</string>
+    <!--cache view-->
+    <string name="CacheSettings">Configurações de Cache</string>
+    <string name="LocalDatabase">Banco de Dados Local</string>
+    <string name="LocalDatabaseClear">Limpar todos os textos em cache?</string>
+    <string name="LocalDatabaseInfo">Limpar o banco de dados local apagará todos os textos das mensagens em cache e compactará o banco de dados para economizar espaço. O Telegram precisa de alguns dados para trabalhar, então o tamanho do banco não vai chegar a zero.\n\nEssa operação pode demorar alguns minutos para ser concluída.</string>
+    <string name="ClearMediaCache">Limpar Cache</string>
+    <string name="CacheClear">Limpar</string>
+    <string name="CalculatingSize">Calculando...</string>
+    <string name="LocalDocumentCache">Documentos</string>
+    <string name="LocalPhotoCache">Fotos</string>
+    <string name="LocalAudioCache">Mensagens de voz</string>
+    <string name="LocalVideoCache">Vídeos</string>
+    <string name="LocalMusicCache">Música</string>
+    <string name="LocalCache">Outros arquivos</string>
+    <string name="CacheEmpty">Vazio</string>
+    <string name="KeepMedia">Manter Mídias</string>
+    <string name="KeepMediaInfo">Fotos, vídeos e outros arquivos da nuvem que você <![CDATA[<b>não acessou</b>]]> durante esse período serão removidos deste dispositivo para economizar espaço em disco.\n\nTodas as mídias permanecerão na nuvem do Telegram e poderão ser baixadas novamente conforme necessário.</string>
+    <string name="KeepMediaForever">Permanentemente</string>
     <!--sessions view-->
     <string name="SessionsTitle">Sessões Ativas</string>
     <string name="CurrentSession">Sessão atual</string>
@@ -700,6 +726,7 @@
     <string name="Back">Voltar</string>
     <string name="Done">Concluído</string>
     <string name="Open">Abrir</string>
+    <string name="Save">Salvar</string>
     <string name="Cancel">Cancelar</string>
     <string name="Close">Fechar</string>
     <string name="Add">Adicionar</string>
@@ -738,9 +765,10 @@
     <string name="ActionAddUserYou">un1 adicionou você</string>
     <string name="ActionAddUserSelf">un1 retornou ao grupo</string>
     <string name="ActionAddUserSelfYou">Você retornou ao grupo</string>
-    <string name="UnsuppotedMedia">Esta mensagem não é suportada na sua versão do Telegram. Para visualiza-la atualize seu aplicativo em https://telegram.org/update</string>
+    <string name="UnsupportedMedia">Esta mensagem não é suportada na sua versão do Telegram. Para visualiza-la atualize seu aplicativo em https://telegram.org/update</string>
     <string name="AttachPhoto">Foto</string>
     <string name="AttachVideo">Vídeo</string>
+    <string name="AttachGif">GIF</string>
     <string name="AttachLocation">Localização</string>
     <string name="AttachContact">Contato</string>
     <string name="AttachDocument">Arquivo</string>
@@ -781,6 +809,8 @@
     <string name="AreYouSureSecretChat">Você tem certeza que deseja começar um chat secreto?</string>
     <string name="AreYouSureRegistration">Você tem certeza que deseja cancelar o registro?</string>
     <string name="AreYouSureClearHistory">Você tem certeza que deseja limpar o histórico?</string>
+    <string name="AreYouSureClearHistoryChannel">Apagar todos os textos e mídias em cache desse canal?</string>
+    <string name="AreYouSureClearHistorySuper">Apagar todos os textos e mídias em cache desse supergrupo?</string>
     <string name="AreYouSureDeleteMessages">Você tem certeza que deseja apagar %1$s?</string>
     <string name="SendMessagesToGroup">Enviar mensagens para %1$s?</string>
     <string name="SendContactToGroup">Enviar contato para %1$s?</string>
@@ -1010,8 +1040,8 @@
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s às %2$s</string>
     <!--update text-->
-    <string name="updateText">Plus Messenger para Android foi atualizado. Novidades na versão 3.3.1:\n\n- Os grupos agora podem ter múltiplos administradores com permissão para editar o nome e a imagem do grupo, adicionar e remover membros.\n- Os grupos que alcançarem 200 usuários podem ser transformados em supergrupos, que permitem até 1000 membros.\n- Os canais contam com um botão de compartilhamento rápido ao lado das mensagens.\n\nVocê pode ver mais sobre os supergrupos e sobre os demais assuntos no nosso blog:\nhttps://telegram.org/blog/supergroups</string>
-    <string name="updateBuild">689</string>
+    <string name="updateText">O Plus Messenger para Android foi atualizado. Novidades da versão 3.4.0:\n\nRevolução do GIF: baixe e envie 20x mais rápido, reprodução automática, salve seus GIFs favoritos numa aba dedicada no painel de stickers.\n\nMais sobre GIFs:\nhttps://telegram.org/blog/gif-revolution\n\nBots integrados: Novo modo de inserir conteúdo de bots numa conversa. Digite o nome de usuário do bot e um comando na mensagem e envie o resultado na conversa. Tente usar "@gif gato" na conversa. Ex. de bots: @gif, @wiki, @bing, @vid, @bold.\n\nMais sobre bots integrados:\nhttps://telegram.org/blog/inline-bots</string>
+    <string name="updateBuild">736</string>
     <!--Telegram+-->
   <string name="TelegramForAndroid">Plus Messenger para Android</string>
   <string name="Theming">Temas</string>
@@ -1117,4 +1147,5 @@
   <string name="AvatarSize">Tamanho do Avatar</string>
   <string name="AvatarAlignTop">Alinhar avatar no topo</string>
   <string name="AvatarMarginLeft">Avatar na margem esquerda</string>
+      <string name="JoinChannel">\n\nJunte-se ao canal oficial do Plus Messenger: https://telegram.me/plusmsgrpt</string>
 </resources>

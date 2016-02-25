@@ -3,12 +3,13 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2015.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.ui.Cells;
 
 import android.content.Context;
+import android.graphics.PorterDuff;
 import android.graphics.drawable.Drawable;
 import android.text.TextUtils;
 import android.util.TypedValue;
@@ -89,12 +90,8 @@ public class TextCell extends FrameLayout {
         textView.setTextSize(size);
     }
 
-    public void setTextAndIcon(String text, Drawable drawable) {
-        textView.setText(text);
-        imageView.setImageDrawable(drawable);
-        imageView.setVisibility(VISIBLE);
-        valueTextView.setVisibility(GONE);
-        valueImageView.setVisibility(GONE);
+    public void setIconColor(int color) {
+        imageView.setColorFilter(color, PorterDuff.Mode.SRC_IN);
     }
 
     public void setValueColor(int color) {

@@ -3,19 +3,25 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2015.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.ui.Components;
 
+import android.content.SharedPreferences;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.PorterDuff;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
+import android.util.Log;
 import android.view.View;
 import android.view.animation.DecelerateInterpolator;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ApplicationLoader;
+import org.telegram.messenger.FileLog;
 
 public class RadialProgress {
 
@@ -40,6 +46,10 @@ public class RadialProgress {
     private static DecelerateInterpolator decelerateInterpolator = null;
     private static Paint progressPaint = null;
 
+    private Paint progressText;
+    private long docSize;
+    private int docType;
+
     public RadialProgress(View parentView) {
         if (decelerateInterpolator == null) {
             decelerateInterpolator = new DecelerateInterpolator();
@@ -48,6 +58,12 @@ public class RadialProgress {
             progressPaint.setStrokeCap(Paint.Cap.ROUND);
             progressPaint.setStrokeWidth(AndroidUtilities.dp(2));
         }
+        progressText = new Paint(Paint.ANTI_ALIAS_FLAG);
+        progressText.setColor(Color.BLACK);
+        progressText.setTextSize(AndroidUtilities.dp(11));
+        progressText.setFakeBoldText(true);
+        progressText.setTextAlign(Paint.Align.CENTER);
+
         parent = parentView;
     }
 
@@ -55,38 +71,51 @@ public class RadialProgress {
         progressRect.set(left, top, right, bottom);
     }
 
-    private void updateAnimation() {
+    private void updateAnimation(boolean progress) {
         long newTime = System.currentTimeMillis();
         long dt = newTime - lastUpdateTime;
         lastUpdateTime = newTime;
 
-        if (animatedProgressValue != 1) {
-            radOffset += 360 * dt / 3000.0f;
-            float progressDiff = currentProgress - animationProgressStart;
-            if (progressDiff > 0) {
-                currentProgressTime += dt;
-                if (currentProgressTime >= 300) {
-                    animatedProgressValue = currentProgress;
-                    animationProgressStart = currentProgress;
-                    currentProgressTime = 0;
-                } else {
-                    animatedProgressValue = animationProgressStart + progressDiff * decelerateInterpolator.getInterpolation(currentProgressTime / 300.0f);
+        if (progress) {
+            if (animatedProgressValue != 1) {
+                radOffset += 360 * dt / 3000.0f;
+                float progressDiff = currentProgress - animationProgressStart;
+                if (progressDiff > 0) {
+                    currentProgressTime += dt;
+                    if (currentProgressTime >= 300) {
+                        animatedProgressValue = currentProgress;
+                        animationProgressStart = currentProgress;
+                        currentProgressTime = 0;
+                    } else {
+                        animatedProgressValue = animationProgressStart + progressDiff * decelerateInterpolator.getInterpolation(currentProgressTime / 300.0f);
+                    }
                 }
+                invalidateParent();
             }
-            invalidateParent();
-        }
-        if (animatedProgressValue >= 1 && previousDrawable != null) {
-            animatedAlphaValue -= dt / 200.0f;
-            if (animatedAlphaValue <= 0) {
-                animatedAlphaValue = 0.0f;
-                previousDrawable = null;
+            if (animatedProgressValue >= 1 && previousDrawable != null) {
+                animatedAlphaValue -= dt / 200.0f;
+                if (animatedAlphaValue <= 0) {
+                    animatedAlphaValue = 0.0f;
+                    previousDrawable = null;
+                }
+                invalidateParent();
             }
-            invalidateParent();
+        } else {
+            if (previousDrawable != null) {
+                animatedAlphaValue -= dt / 200.0f;
+                if (animatedAlphaValue <= 0) {
+                    animatedAlphaValue = 0.0f;
+                    previousDrawable = null;
+                }
+                invalidateParent();
+            }
         }
     }
 
     public void setProgressColor(int color) {
         progressColor = color;
+        SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+        progressText.setColor(themePrefs.getInt(color == 0xff87bf78 || color == 0xff81bd72 ? "chatRTextColor" : "chatLTextColor", 0xff000000));
     }
 
     public void setHideCurrentDrawable(boolean value) {
@@ -102,10 +131,14 @@ public class RadialProgress {
         }
         currentProgress = value;
         currentProgressTime = 0;
-
         invalidateParent();
     }
-
+    // plus
+    public void setSizeAndType(long size, int type) {
+        docSize = size;
+        docType = type;
+    }
+    //
     private void invalidateParent() {
         int offset = AndroidUtilities.dp(2);
         parent.invalidate((int)progressRect.left - offset, (int)progressRect.top - offset, (int)progressRect.right + offset * 2, (int)progressRect.bottom + offset * 2);
@@ -124,11 +157,19 @@ public class RadialProgress {
         }
         currentWithRound = withRound;
         currentDrawable = drawable;
-        invalidateParent();
+        if (!animated) {
+            parent.invalidate();
+        } else {
+            invalidateParent();
+        }
     }
 
-    public void swapBackground(Drawable drawable) {
-        currentDrawable = drawable;
+    public boolean swapBackground(Drawable drawable) {
+        if (currentDrawable != drawable) {
+            currentDrawable = drawable;
+            return true;
+        }
+        return false;
     }
 
     public float getAlpha() {
@@ -148,7 +189,7 @@ public class RadialProgress {
             } else {
                 currentDrawable.setAlpha(255);
             }
-            currentDrawable.setBounds((int)progressRect.left, (int)progressRect.top, (int)progressRect.right, (int)progressRect.bottom);
+            currentDrawable.setBounds((int) progressRect.left, (int) progressRect.top, (int) progressRect.right, (int) progressRect.bottom);
             currentDrawable.draw(canvas);
         }
 
@@ -162,7 +203,20 @@ public class RadialProgress {
             }
             cicleRect.set(progressRect.left + diff, progressRect.top + diff, progressRect.right - diff, progressRect.bottom - diff);
             canvas.drawArc(cicleRect, -90 + radOffset, Math.max(4, 360 * animatedProgressValue), false, progressPaint);
-            updateAnimation();
+            if(currentDrawable != null && progressText != null) {
+                if (currentProgress < 1.0f && docSize > 0) {
+                    if(docType > 0)progressText.setColor(progressColor);
+                    if(docType == 1 || docType == 3 || docType == 8){
+                        ResourceLoader.mediaBackgroundDrawable.setBounds((int) progressRect.left - AndroidUtilities.dp(20), (int) progressRect.bottom + AndroidUtilities.dp(2), (int) progressRect.right + AndroidUtilities.dp(20) , (int) progressRect.bottom + AndroidUtilities.dp(18));
+                        ResourceLoader.mediaBackgroundDrawable.draw(canvas);
+                    }
+                    String s = AndroidUtilities.formatFileSize((long) (docSize * currentProgress)) + (docType != 0 ? " | " + String.format(docSize * currentProgress < 104857000 ? "%.1f" : "%.0f", currentProgress * 100) + '%' : ""); //AndroidUtilities.formatFileSize(docSize)*/ //String.format("%.1f", currentProgress * 100) + '%'
+                    canvas.drawText(s, (int) progressRect.left + (currentDrawable.getIntrinsicWidth() / 2) + AndroidUtilities.dp(1), (int) progressRect.bottom + AndroidUtilities.dp(14), progressText);
+                }
+            }
+            updateAnimation(true);
+        } else {
+            updateAnimation(false);
         }
     }
 }

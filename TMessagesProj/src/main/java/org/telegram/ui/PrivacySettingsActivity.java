@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2015.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.ui;
@@ -62,7 +62,7 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
     private int deleteAccountSectionRow;
     private int deleteAccountRow;
     private int deleteAccountDetailRow;
-    private int hideMobileNumberRow;
+
     private int rowCount;
 
     @Override
@@ -73,7 +73,7 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
 
         rowCount = 0;
         privacySectionRow = rowCount++;
-        hideMobileNumberRow  = rowCount++;
+
         blockedRow = rowCount++;
         lastSeenRow = rowCount++;
         lastSeenDetailRow = rowCount++;
@@ -199,17 +199,6 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                         } else {
                             presentFragment(new PasscodeActivity(0));
                         }
-                    } else if (i == hideMobileNumberRow) {
-                        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
-                        boolean scr = preferences.getBoolean("hideMobile", false);
-                        SharedPreferences.Editor editor = preferences.edit();
-                        editor.putBoolean("hideMobile", !scr);
-                        editor.commit();
-                        //AndroidUtilities.hideMobile = !scr;
-                        if (view instanceof TextCheckCell) {
-                            ((TextCheckCell) view).setChecked(!scr);
-                        }
-                        NotificationCenter.getInstance().postNotificationName(NotificationCenter.mainUserInfoChanged);
                     }
                 }
             });
@@ -309,8 +298,7 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
 
         @Override
         public boolean isEnabled(int i) {
-            return i == passcodeRow || i == passwordRow || i == blockedRow || i == sessionsRow || i == lastSeenRow && !ContactsController.getInstance().getLoadingLastSeenInfo() || i == deleteAccountRow && !ContactsController.getInstance().getLoadingDeleteInfo() ||
-                   i == hideMobileNumberRow;
+            return i == passcodeRow || i == passwordRow || i == blockedRow || i == sessionsRow || i == lastSeenRow && !ContactsController.getInstance().getLoadingLastSeenInfo() || i == deleteAccountRow && !ContactsController.getInstance().getLoadingDeleteInfo();
         }
 
         @Override
@@ -400,17 +388,6 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                 } else if (i == deleteAccountSectionRow) {
                     ((HeaderCell) view).setText(LocaleController.getString("DeleteAccountTitle", R.string.DeleteAccountTitle));
                 }
-            }  else if (type == 3) {
-                if (view == null) {
-                    view = new TextCheckCell(mContext);
-                    view.setBackgroundColor(0xffffffff);
-                }
-                TextCheckCell textCell = (TextCheckCell) view;
-
-                SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
-                if (i == hideMobileNumberRow) {
-                    textCell.setTextAndCheck(LocaleController.getString("HideMobile", R.string.HideMobile), preferences.getBoolean("hideMobile", false), true);
-                }
             }
             return view;
         }
@@ -423,15 +400,13 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                 return 1;
             } else if (i == securitySectionRow || i == deleteAccountSectionRow || i == privacySectionRow) {
                 return 2;
-            }  else if (i == hideMobileNumberRow) {
-                return 3;
             }
             return 0;
         }
 
         @Override
         public int getViewTypeCount() {
-            return 4;
+            return 3;
         }
 
         @Override
