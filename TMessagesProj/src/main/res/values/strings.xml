@@ -557,6 +557,9 @@
     <string name="FingerprintInfo">Confirm fingerprint to continue</string>
     <string name="FingerprintHelp">Touch sensor</string>
     <string name="FingerprintNotRecognized">Fingerprint not recognized. Try again</string>
+    <string name="PanicCode">Panic code</string>
+    <string name="ChangePanicCode">Change panic code</string>
+    <string name="ChangePanicCodeInfo">When you enter your panic code instead of your passcode all secret chats history will be erased.</string>
     <!--media view-->
     <string name="NoMedia">Share photos and videos in this chat and access them on any of your devices.</string>
     <string name="DocumentsTitle">Shared Files</string>
