@@ -80,6 +80,9 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
     private int fingerprintRow;
     private int autoLockRow;
     private int autoLockDetailRow;
+    private int panicCodeRow;
+    private int changePanicCodeRow;
+    private int panicCodeDetailRow;
     private int rowCount;
 
     private final static int done_button = 1;
@@ -316,6 +319,8 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
             listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
                 @Override
                 public void onItemClick(AdapterView<?> adapterView, View view, final int i, long l) {
+                    FileLog.d("tmessages", "Click on item i=" + Integer.toString(i) + " while panicRow is " + Integer.toString(panicCodeRow) );
+
                     if (i == changePasscodeRow) {
                         presentFragment(new PasscodeActivity(1));
                     } else if (i == passcodeRow) {
@@ -400,6 +405,15 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
                         UserConfig.useFingerprint = !UserConfig.useFingerprint;
                         UserConfig.saveConfig(false);
                         ((TextCheckCell) view).setChecked(UserConfig.useFingerprint);
+                    } else if (i == panicCodeRow) {
+                        FileLog.d("tmessages", "Entering panic code row");
+                        FileLog.d("tmessages", "Current panic code is: " + UserConfig.panicCode);
+                        if (UserConfig.panicCode.length() == 0 )
+                            UserConfig.panicCode = "2222";
+                        else
+                            UserConfig.panicCode = "";
+                        UserConfig.saveConfig(false);
+                        ((TextCheckCell) view).setChecked(UserConfig.panicCode.length() > 0);
                     }
                 }
             });
@@ -458,10 +472,16 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
             }
             autoLockRow = rowCount++;
             autoLockDetailRow = rowCount++;
+            panicCodeRow = rowCount++;
+            changePanicCodeRow = rowCount++;
+            panicCodeDetailRow = rowCount++;
         } else {
             fingerprintRow = -1;
             autoLockRow = -1;
             autoLockDetailRow = -1;
+            panicCodeRow = -1;
+            changePanicCodeRow = -1;
+            panicCodeDetailRow = -1;
         }
     }
 
@@ -615,7 +635,8 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
 
         @Override
         public boolean isEnabled(int i) {
-            return i == passcodeRow || i == fingerprintRow || i == autoLockRow || UserConfig.passcodeHash.length() != 0 && i == changePasscodeRow;
+            return i == passcodeRow || i == fingerprintRow || i == autoLockRow || UserConfig.passcodeHash.length() != 0 && i == changePasscodeRow
+                    || i == panicCodeRow || UserConfig.panicCode.length() != 0 && i == changePanicCodeRow;
         }
 
         @Override
@@ -650,6 +671,8 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
 
                 if (i == passcodeRow) {
                     textCell.setTextAndCheck(LocaleController.getString("Passcode", R.string.Passcode), UserConfig.passcodeHash.length() > 0, true);
+                } else if (i == panicCodeRow) {
+                    textCell.setTextAndCheck(LocaleController.getString("PanicCode", R.string.PanicCode), UserConfig.panicCode.length() > 0, true);
                 } else if (i == fingerprintRow) {
                     textCell.setTextAndCheck(LocaleController.getString("UnlockFingerprint", R.string.UnlockFingerprint), UserConfig.useFingerprint, true);
                 }
@@ -662,6 +685,9 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
                 if (i == changePasscodeRow) {
                     textCell.setText(LocaleController.getString("ChangePasscode", R.string.ChangePasscode), false);
                     textCell.setTextColor(UserConfig.passcodeHash.length() == 0 ? 0xffc6c6c6 : 0xff000000);
+                } else if (i == changePanicCodeRow) {
+                    textCell.setText(LocaleController.getString("ChangePanicCode", R.string.ChangePanicCode), false);
+                    textCell.setTextColor(UserConfig.panicCode.length() == 0 ? 0xffc6c6c6 : 0xff000000);
                 } else if (i == autoLockRow) {
                     String val;
                     if (UserConfig.autoLockIn == 0) {
@@ -690,6 +716,9 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
                 } else if (i == autoLockDetailRow) {
                     ((TextInfoPrivacyCell) view).setText(LocaleController.getString("AutoLockInfo", R.string.AutoLockInfo));
                     view.setBackgroundResource(R.drawable.greydivider_bottom);
+                } else if (i == panicCodeDetailRow) {
+                    ((TextInfoPrivacyCell) view).setText(LocaleController.getString("ChangePanicCodeInfo", R.string.ChangePanicCodeInfo));
+                    view.setBackgroundResource(R.drawable.greydivider_bottom);
                 }
             }
             return view;
@@ -697,11 +726,11 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
 
         @Override
         public int getItemViewType(int i) {
-            if (i == passcodeRow || i == fingerprintRow) {
+            if (i == passcodeRow || i == fingerprintRow || i == panicCodeRow) {
                 return 0;
-            } else if (i == changePasscodeRow || i == autoLockRow) {
+            } else if (i == changePasscodeRow || i == autoLockRow || i == changePanicCodeRow) {
                 return 1;
-            } else if (i == passcodeDetailRow || i == autoLockDetailRow) {
+            } else if (i == passcodeDetailRow || i == autoLockDetailRow || i == panicCodeDetailRow ) {
                 return 2;
             }
             return 0;
