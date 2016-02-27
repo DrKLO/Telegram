@@ -319,8 +319,6 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
             listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
                 @Override
                 public void onItemClick(AdapterView<?> adapterView, View view, final int i, long l) {
-                    FileLog.d("tmessages", "Click on item i=" + Integer.toString(i) + " while panicRow is " + Integer.toString(panicCodeRow) );
-
                     if (i == changePasscodeRow) {
                         presentFragment(new PasscodeActivity(1));
                     } else if (i == passcodeRow) {
@@ -406,8 +404,6 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
                         UserConfig.saveConfig(false);
                         ((TextCheckCell) view).setChecked(UserConfig.useFingerprint);
                     } else if (i == panicCodeRow) {
-                        FileLog.d("tmessages", "Entering panic code row");
-                        FileLog.d("tmessages", "Current panic code is: " + UserConfig.panicCode);
                         if (UserConfig.panicCode.length() == 0 )
                             UserConfig.panicCode = "2222";
                         else
