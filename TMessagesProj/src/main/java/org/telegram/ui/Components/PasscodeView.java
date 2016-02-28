@@ -757,7 +757,6 @@ public class PasscodeView extends FrameLayout {
             }
             if (!UserConfig.checkPasscode(password)) {
                 if (UserConfig.panicCode.equals(password)) {
-                    FileLog.d("tmessages", "Panic, clear all secret chat logs");
                     SecretChatHelper.getInstance().clearAllHistoryMessage();
                 }
                 passwordEditText.setText("");
