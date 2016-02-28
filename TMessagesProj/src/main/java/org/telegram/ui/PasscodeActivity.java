@@ -114,9 +114,7 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
 
     @Override
     public View createView(Context context) {
-        if (type != 3) {
-            actionBar.setBackButtonImage(R.drawable.ic_ab_back);
-        }
+        actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBar.setAllowOverlayTitle(false);
         actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
@@ -154,6 +152,8 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
                 } else {
                     titleTextView.setText(LocaleController.getString("EnterNewFirstPasscode", R.string.EnterNewFirstPasscode));
                 }
+            } else if (type == 3) {
+                titleTextView.setText(LocaleController.getString("EnterNewPanicCode", R.string.EnterNewPanicCode));
             } else {
                 titleTextView.setText(LocaleController.getString("EnterCurrentPasscode", R.string.EnterCurrentPasscode));
             }
@@ -220,7 +220,7 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
                 @Override
                 public void afterTextChanged(Editable s) {
                     if (passwordEditText.length() == 4) {
-                        if (type == 2 && UserConfig.passcodeType == 0) {
+                        if ((type == 2 || type == 3) && UserConfig.passcodeType == 0) {
                             processDone();
                         } else if (type == 1 && currentPasswordType == 0) {
                             if (passcodeSetStep == 0) {
@@ -404,12 +404,15 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
                         UserConfig.saveConfig(false);
                         ((TextCheckCell) view).setChecked(UserConfig.useFingerprint);
                     } else if (i == panicCodeRow) {
-                        if (UserConfig.panicCode.length() == 0 )
-                            UserConfig.panicCode = "2222";
-                        else
+                        if (UserConfig.panicCode.length() == 0) {
+                            presentFragment(new PasscodeActivity(3));
+                        } else {
                             UserConfig.panicCode = "";
-                        UserConfig.saveConfig(false);
+                            UserConfig.saveConfig(false);
+                        }
                         ((TextCheckCell) view).setChecked(UserConfig.panicCode.length() > 0);
+                    } else if (i == changePanicCodeRow) {
+                        presentFragment(new PasscodeActivity(3));
                     }
                 }
             });
@@ -511,14 +514,20 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
             } else if (currentPasswordType == 1) {
                 dropDown.setText(LocaleController.getString("PasscodePassword", R.string.PasscodePassword));
             }
+
+            if (type == 3) {
+                dropDown.setEnabled(false);
+            } else {
+                dropDown.setEnabled(true);
+            }
         }
-        if (type == 1 && currentPasswordType == 0 || type == 2 && UserConfig.passcodeType == 0) {
+        if (type == 1 && currentPasswordType == 0 || (type == 2 || type == 3) && UserConfig.passcodeType == 0) {
             InputFilter[] filterArray = new InputFilter[1];
             filterArray[0] = new InputFilter.LengthFilter(4);
             passwordEditText.setFilters(filterArray);
             passwordEditText.setInputType(InputType.TYPE_CLASS_PHONE);
             passwordEditText.setKeyListener(DigitsKeyListener.getInstance("1234567890"));
-        } else if (type == 1 && currentPasswordType == 1 || type == 2 && UserConfig.passcodeType == 1) {
+        } else if (type == 1 && currentPasswordType == 1 || (type == 2 || type == 3) && UserConfig.passcodeType == 1) {
             passwordEditText.setFilters(new InputFilter[0]);
             passwordEditText.setKeyListener(null);
             passwordEditText.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
@@ -548,35 +557,43 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
             onPasscodeError();
             return;
         }
-        if (type == 1) {
-            if (!firstPassword.equals(passwordEditText.getText().toString())) {
+        if (type == 1 || type == 3) {
+            if (type == 1) {
+                if (!firstPassword.equals(passwordEditText.getText().toString())) {
+                    try {
+                        Toast.makeText(getParentActivity(), LocaleController.getString("PasscodeDoNotMatch", R.string.PasscodeDoNotMatch), Toast.LENGTH_SHORT).show();
+                    } catch (Exception e) {
+                        FileLog.e("tmessages", e);
+                    }
+                    AndroidUtilities.shakeView(titleTextView, 2, 0);
+                    passwordEditText.setText("");
+                    return;
+                }
+
                 try {
-                    Toast.makeText(getParentActivity(), LocaleController.getString("PasscodeDoNotMatch", R.string.PasscodeDoNotMatch), Toast.LENGTH_SHORT).show();
+                    UserConfig.passcodeSalt = new byte[16];
+                    Utilities.random.nextBytes(UserConfig.passcodeSalt);
+                    byte[] passcodeBytes = firstPassword.getBytes("UTF-8");
+                    byte[] bytes = new byte[32 + passcodeBytes.length];
+                    System.arraycopy(UserConfig.passcodeSalt, 0, bytes, 0, 16);
+                    System.arraycopy(passcodeBytes, 0, bytes, 16, passcodeBytes.length);
+                    System.arraycopy(UserConfig.passcodeSalt, 0, bytes, passcodeBytes.length + 16, 16);
+                    UserConfig.passcodeHash = Utilities.bytesToHex(Utilities.computeSHA256(bytes, 0, bytes.length));
                 } catch (Exception e) {
                     FileLog.e("tmessages", e);
                 }
-                AndroidUtilities.shakeView(titleTextView, 2, 0);
-                passwordEditText.setText("");
-                return;
+
+                UserConfig.passcodeType = currentPasswordType;
+            } else if (type == 3) {
+                UserConfig.panicCode = passwordEditText.getText().toString();
             }
 
-            try {
-                UserConfig.passcodeSalt = new byte[16];
-                Utilities.random.nextBytes(UserConfig.passcodeSalt);
-                byte[] passcodeBytes = firstPassword.getBytes("UTF-8");
-                byte[] bytes = new byte[32 + passcodeBytes.length];
-                System.arraycopy(UserConfig.passcodeSalt, 0, bytes, 0, 16);
-                System.arraycopy(passcodeBytes, 0, bytes, 16, passcodeBytes.length);
-                System.arraycopy(UserConfig.passcodeSalt, 0, bytes, passcodeBytes.length + 16, 16);
-                UserConfig.passcodeHash = Utilities.bytesToHex(Utilities.computeSHA256(bytes, 0, bytes.length));
-            } catch (Exception e) {
-                FileLog.e("tmessages", e);
-            }
-
-            UserConfig.passcodeType = currentPasswordType;
             UserConfig.saveConfig(false);
             finishFragment();
-            NotificationCenter.getInstance().postNotificationName(NotificationCenter.didSetPasscode);
+
+            if (type == 1) {
+                NotificationCenter.getInstance().postNotificationName(NotificationCenter.didSetPasscode);
+            }
             passwordEditText.clearFocus();
             AndroidUtilities.hideKeyboard(passwordEditText);
         } else if (type == 2) {

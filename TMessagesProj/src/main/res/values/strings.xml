@@ -549,6 +549,7 @@
     <string name="ReEnterYourPasscode">Re-enter your new passcode</string>
     <string name="InvalidPasscode">Invalid passcode</string>
     <string name="PasscodeDoNotMatch">Passcodes do not match</string>
+    <string name="EnterNewPanicCode">Enter your new panic code</string>
     <string name="AutoLock">Auto-lock</string>
     <string name="AutoLockInfo">Require passcode if away for a time.</string>
     <string name="AutoLockInTime">in %1$s</string>
