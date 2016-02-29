@@ -103,6 +103,10 @@ android {
         def abiVersion = variant.productFlavors.get(0).versionCode
         variant.mergedFlavor.versionCode = defaultConfig.versionCode * 10 + abiVersion;
     }
+
+    lintOptions {
+        abortOnError false
+    }
 }
 
 dependencies {
