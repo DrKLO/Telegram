@@ -19,19 +19,16 @@ android {
         targetCompatibility JavaVersion.VERSION_1_7
     }
 
-    signingConfigs {
-        debug {
-            storeFile file("config/release.keystore")
-            storePassword RELEASE_STORE_PASSWORD
-            keyAlias RELEASE_KEY_ALIAS
-            keyPassword RELEASE_KEY_PASSWORD
-        }
+    def keystoreExists = file("config/release.keystore").exists()
 
-        release {
-            storeFile file("config/release.keystore")
-            storePassword RELEASE_STORE_PASSWORD
-            keyAlias RELEASE_KEY_ALIAS
-            keyPassword RELEASE_KEY_PASSWORD
+    signingConfigs {
+        if (keystoreExists) {
+            release {
+                storeFile file("config/release.keystore")
+                storePassword RELEASE_STORE_PASSWORD
+                keyAlias RELEASE_KEY_ALIAS
+                keyPassword RELEASE_KEY_PASSWORD
+            }
         }
     }
 
@@ -39,14 +36,13 @@ android {
         debug {
             debuggable true
             jniDebuggable true
-            signingConfig signingConfigs.debug
             applicationIdSuffix ".beta"
         }
 
         release {
             debuggable false
             jniDebuggable false
-            signingConfig signingConfigs.release
+            signingConfig keystoreExists ? signingConfigs.release : null
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
@@ -54,7 +50,7 @@ android {
         foss {
             debuggable false
             jniDebuggable false
-            signingConfig signingConfigs.release
+            signingConfig keystoreExists ? signingConfigs.release : null
         }
     }
 
