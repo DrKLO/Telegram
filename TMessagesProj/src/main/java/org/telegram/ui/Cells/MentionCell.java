@@ -16,6 +16,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.R;
 import org.telegram.messenger.UserObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.Components.AvatarDrawable;
@@ -33,6 +34,8 @@ public class MentionCell extends LinearLayout {
         super(context);
 
         setOrientation(HORIZONTAL);
+
+        setBackgroundResource(R.drawable.list_selector);
 
         avatarDrawable = new AvatarDrawable();
         avatarDrawable.setSmallStyle(true);

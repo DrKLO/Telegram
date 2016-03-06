@@ -207,6 +207,11 @@ public class SharedDocumentCell extends FrameLayout implements MediaController.F
         if (document != null && document.messageOwner.media != null && document.messageOwner.media.document != null) {
             int idx;
             String name = FileLoader.getDocumentFileName(document.messageOwner.media.document);
+            if (name.length() == 0) {
+                if (document.isMusic()) {
+                    name = document.getMusicAuthor() + " - " + document.getMusicTitle();
+                }
+            }
             placeholderImabeView.setVisibility(VISIBLE);
             extTextView.setVisibility(VISIBLE);
             placeholderImabeView.setImageResource(getThumbForNameOrMime(name, document.messageOwner.media.document.mime_type));

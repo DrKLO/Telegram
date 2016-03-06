@@ -10,10 +10,7 @@ package org.telegram.ui.Components;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
-import android.content.Intent;
-import android.net.Uri;
 import android.os.Build;
-import android.provider.Browser;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -95,10 +92,7 @@ public class WebFrameLayout extends FrameLayout {
         textView.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
-                Uri uri = Uri.parse(openUrl);
-                Intent intent = new Intent(Intent.ACTION_VIEW, uri);
-                intent.putExtra(Browser.EXTRA_APPLICATION_ID, getContext().getPackageName());
-                getContext().startActivity(intent);
+                AndroidUtilities.openUrl(getContext(), openUrl);
                 if (dialog != null) {
                     dialog.dismiss();
                 }

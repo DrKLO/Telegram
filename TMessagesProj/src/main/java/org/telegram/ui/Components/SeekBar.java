@@ -33,7 +33,7 @@ public class SeekBar {
     private boolean pressed = false;
     public int width;
     public int height;
-    public SeekBarDelegate delegate;
+    private SeekBarDelegate delegate;
 
     public SeekBar(Context context) {
         if (innerPaint1 == null) {
@@ -52,6 +52,10 @@ public class SeekBar {
             thumbWidth = AndroidUtilities.dp(24);
             thumbHeight = AndroidUtilities.dp(24);
         }
+    }
+
+    public void setDelegate(SeekBarDelegate seekBarDelegate) {
+        delegate = seekBarDelegate;
     }
 
     public boolean onTouch(int action, float x, float y) {

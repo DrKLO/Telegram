@@ -226,14 +226,21 @@ public class SharedPhotoVideoCell extends FrameLayoutFixed {
             PhotoVideoView photoVideoView = photoVideoViews[a];
             photoVideoView.imageView.getImageReceiver().setParentMessageObject(messageObject);
             photoVideoView.imageView.getImageReceiver().setVisible(!PhotoViewer.getInstance().isShowingImage(messageObject), false);
-            if (messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaVideo && messageObject.messageOwner.media.video != null) {
+            if (messageObject.isVideo()) {
                 photoVideoView.videoInfoContainer.setVisibility(VISIBLE);
-                int duration = messageObject.messageOwner.media.video.duration;
+                int duration = 0;
+                for (int b = 0; b < messageObject.messageOwner.media.document.attributes.size(); b++) {
+                    TLRPC.DocumentAttribute attribute = messageObject.messageOwner.media.document.attributes.get(b);
+                    if (attribute instanceof TLRPC.TL_documentAttributeVideo) {
+                        duration = attribute.duration;
+                        break;
+                    }
+                }
                 int minutes = duration / 60;
                 int seconds = duration - minutes * 60;
                 photoVideoView.videoTextView.setText(String.format("%d:%02d", minutes, seconds));
-                if (messageObject.messageOwner.media.video.thumb != null) {
-                    TLRPC.FileLocation location = messageObject.messageOwner.media.video.thumb.location;
+                if (messageObject.messageOwner.media.document.thumb != null) {
+                    TLRPC.FileLocation location = messageObject.messageOwner.media.document.thumb.location;
                     photoVideoView.imageView.setImage(null, null, null, ApplicationLoader.applicationContext.getResources().getDrawable(R.drawable.photo_placeholder_in), null, location, "b", null, 0);
                 } else {
                     photoVideoView.imageView.setImageResource(R.drawable.photo_placeholder_in);

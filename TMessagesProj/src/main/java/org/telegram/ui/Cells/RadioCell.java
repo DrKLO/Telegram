@@ -22,14 +22,14 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RadioButton;
 
-public class LastSeenRadioCell extends FrameLayout {
+public class RadioCell extends FrameLayout {
 
     private TextView textView;
     private RadioButton radioButton;
     private static Paint paint;
     private boolean needDivider;
 
-    public LastSeenRadioCell(Context context) {
+    public RadioCell(Context context) {
         super(context);
 
         if (paint == null) {

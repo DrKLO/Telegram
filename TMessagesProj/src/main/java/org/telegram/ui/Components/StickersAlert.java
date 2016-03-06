@@ -12,6 +12,7 @@ import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.database.DataSetObserver;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
@@ -22,6 +23,7 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.Cells.StickerEmojiCell;
+import org.telegram.ui.StickerPreviewViewer;
 
 import java.util.ArrayList;
 
@@ -42,10 +44,22 @@ public class StickersAlert extends AlertDialog implements NotificationCenter.Not
         };
         setView(container, AndroidUtilities.dp(16), 0, AndroidUtilities.dp(16), 0);
 
-        gridView = new GridView(context);
+        gridView = new GridView(context) {
+            @Override
+            public boolean onInterceptTouchEvent(MotionEvent event) {
+                boolean result = StickerPreviewViewer.getInstance().onInterceptTouchEvent(event, gridView, 0);
+                return super.onInterceptTouchEvent(event) || result;
+            }
+        };
         gridView.setNumColumns(4);
         gridView.setAdapter(new GridAdapter(context));
         gridView.setVerticalScrollBarEnabled(false);
+        gridView.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                return StickerPreviewViewer.getInstance().onTouch(event, gridView, 0, null);
+            }
+        });
         container.addView(gridView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
         setTitle(set.set.title);
@@ -77,6 +91,10 @@ public class StickersAlert extends AlertDialog implements NotificationCenter.Not
             if (gridView != null) {
                 gridView.invalidateViews();
             }
+            if (StickerPreviewViewer.getInstance().isVisible()) {
+                StickerPreviewViewer.getInstance().close();
+            }
+            StickerPreviewViewer.getInstance().reset();
         }
     }
 

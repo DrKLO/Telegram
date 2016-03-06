@@ -94,73 +94,59 @@ public class FileLoadOperation {
         ext = extension != null ? extension : "jpg";
     }
 
-    public FileLoadOperation(TLRPC.Video videoLocation) {
-        if (videoLocation instanceof TLRPC.TL_videoEncrypted) {
-            location = new TLRPC.TL_inputEncryptedFileLocation();
-            location.id = videoLocation.id;
-            location.access_hash = videoLocation.access_hash;
-            datacenter_id = videoLocation.dc_id;
-            iv = new byte[32];
-            System.arraycopy(videoLocation.iv, 0, iv, 0, iv.length);
-            key = videoLocation.key;
-        } else if (videoLocation instanceof TLRPC.TL_video) {
-            location = new TLRPC.TL_inputVideoFileLocation();
-            datacenter_id = videoLocation.dc_id;
-            location.id = videoLocation.id;
-            location.access_hash = videoLocation.access_hash;
-        }
-        totalBytesCount = videoLocation.size;
-        ext = ".mp4";
-    }
-
-    public FileLoadOperation(TLRPC.Audio audioLocation) {
-        if (audioLocation instanceof TLRPC.TL_audioEncrypted) {
-            location = new TLRPC.TL_inputEncryptedFileLocation();
-            location.id = audioLocation.id;
-            location.access_hash = audioLocation.access_hash;
-            datacenter_id = audioLocation.dc_id;
-            iv = new byte[32];
-            System.arraycopy(audioLocation.iv, 0, iv, 0, iv.length);
-            key = audioLocation.key;
-        } else if (audioLocation instanceof TLRPC.TL_audio) {
-            location = new TLRPC.TL_inputAudioFileLocation();
-            datacenter_id = audioLocation.dc_id;
-            location.id = audioLocation.id;
-            location.access_hash = audioLocation.access_hash;
-        }
-        totalBytesCount = audioLocation.size;
-        ext = ".ogg";
-    }
-
     public FileLoadOperation(TLRPC.Document documentLocation) {
-        if (documentLocation instanceof TLRPC.TL_documentEncrypted) {
-            location = new TLRPC.TL_inputEncryptedFileLocation();
-            location.id = documentLocation.id;
-            location.access_hash = documentLocation.access_hash;
-            datacenter_id = documentLocation.dc_id;
-            iv = new byte[32];
-            System.arraycopy(documentLocation.iv, 0, iv, 0, iv.length);
-            key = documentLocation.key;
-        } else if (documentLocation instanceof TLRPC.TL_document) {
-            location = new TLRPC.TL_inputDocumentFileLocation();
-            location.id = documentLocation.id;
-            location.access_hash = documentLocation.access_hash;
-            datacenter_id = documentLocation.dc_id;
-        }
-        if (totalBytesCount <= 0) {
-            totalBytesCount = documentLocation.size;
-        }
-        if (ext == null) {
+        try {
+            if (documentLocation instanceof TLRPC.TL_documentEncrypted) {
+                location = new TLRPC.TL_inputEncryptedFileLocation();
+                location.id = documentLocation.id;
+                location.access_hash = documentLocation.access_hash;
+                datacenter_id = documentLocation.dc_id;
+                iv = new byte[32];
+                System.arraycopy(documentLocation.iv, 0, iv, 0, iv.length);
+                key = documentLocation.key;
+            } else if (documentLocation instanceof TLRPC.TL_document) {
+                location = new TLRPC.TL_inputDocumentFileLocation();
+                location.id = documentLocation.id;
+                location.access_hash = documentLocation.access_hash;
+                datacenter_id = documentLocation.dc_id;
+            }
+            if (totalBytesCount <= 0) {
+                totalBytesCount = documentLocation.size;
+            }
             ext = FileLoader.getDocumentFileName(documentLocation);
             int idx;
             if (ext == null || (idx = ext.lastIndexOf(".")) == -1) {
                 ext = "";
             } else {
                 ext = ext.substring(idx);
-                if (ext.length() <= 1) {
+            }
+            if (ext.length() <= 1) {
+                if (documentLocation.mime_type != null) {
+                    switch (documentLocation.mime_type) {
+                        case "video/mp4":
+                            ext = ".mp4";
+                            break;
+                        case "audio/ogg":
+                            ext = ".ogg";
+                            break;
+                        default:
+                            ext = "";
+                            break;
+                    }
+                } else {
                     ext = "";
                 }
             }
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+            state = stateFailed;
+            cleanup();
+            Utilities.stageQueue.postRunnable(new Runnable() {
+                @Override
+                public void run() {
+                    delegate.didFailedLoadingFile(FileLoadOperation.this, 0);
+                }
+            });
         }
     }
 
@@ -187,6 +173,7 @@ public class FileLoadOperation {
         delayedRequestInfos = new ArrayList<>(currentMaxDownloadRequests - 1);
         state = stateDownloading;
         if (location == null) {
+            cleanup();
             Utilities.stageQueue.postRunnable(new Runnable() {
                 @Override
                 public void run() {
@@ -315,7 +302,8 @@ public class FileLoadOperation {
                 state = stateFailed;
                 cleanup();
                 if (requestInfos != null) {
-                    for (RequestInfo requestInfo : requestInfos) {
+                    for (int a = 0; a < requestInfos.size(); a++) {
+                        RequestInfo requestInfo = requestInfos.get(a);
                         if (requestInfo.requestToken != 0) {
                             ConnectionsManager.getInstance().cancelRequest(requestInfo.requestToken, true);
                         }

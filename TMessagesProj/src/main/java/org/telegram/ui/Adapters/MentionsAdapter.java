@@ -71,6 +71,7 @@ public class MentionsAdapter extends BaseSearchAdapterRecycler {
     private boolean isDarkTheme;
     private int botsCount;
     private boolean loadingBotRecent;
+    private boolean botRecentLoaded;
 
     private String searchingContextUsername;
     private String searchingContextQuery;
@@ -96,7 +97,7 @@ public class MentionsAdapter extends BaseSearchAdapterRecycler {
     }
 
     private void loadBotRecent() {
-        if (loadingBotRecent) {
+        if (loadingBotRecent || botRecentLoaded) {
             return;
         }
         loadingBotRecent = true;
@@ -120,6 +121,7 @@ public class MentionsAdapter extends BaseSearchAdapterRecycler {
                             public void run() {
                                 botRecent = users;
                                 loadingBotRecent = false;
+                                botRecentLoaded = true;
                                 if (lastText != null) {
                                     searchUsernameOrHashtag(lastText, lastPosition, messages);
                                 }
@@ -130,6 +132,7 @@ public class MentionsAdapter extends BaseSearchAdapterRecycler {
                             @Override
                             public void run() {
                                 loadingBotRecent = false;
+                                botRecentLoaded = true;
                             }
                         });
                     }
@@ -239,6 +242,10 @@ public class MentionsAdapter extends BaseSearchAdapterRecycler {
 
     public int getContextBotId() {
         return foundContextBot != null ? foundContextBot.id : 0;
+    }
+
+    public String getContextBotName() {
+        return foundContextBot != null ? foundContextBot.username : "";
     }
 
     private void searchForContextBot(final String username, final String query) {
@@ -457,7 +464,7 @@ public class MentionsAdapter extends BaseSearchAdapterRecycler {
             int index = text.indexOf(' ');
             if (index > 0) {
                 String username = text.substring(1, index);
-                if (username.length() >= 3) {
+                if (username.length() >= 1) {
                     for (int a = 1; a < username.length(); a++) {
                         char ch = username.charAt(a);
                         if (!(ch >= '0' && ch <= '9' || ch >= 'a' && ch <= 'z' || ch >= 'A' && ch <= 'Z' || ch == '_')) {
@@ -488,7 +495,7 @@ public class MentionsAdapter extends BaseSearchAdapterRecycler {
             char ch = text.charAt(a);
             if (a == 0 || text.charAt(a - 1) == ' ' || text.charAt(a - 1) == '\n') {
                 if (ch == '@') {
-                    if (needUsernames || botRecent != null && a == 0) {
+                    if (needUsernames || needBotContext && botRecent != null && a == 0) {
                         if (hasIllegalUsernameCharacters) {
                             delegate.needChangePanelVisibility(false);
                             return;
@@ -556,7 +563,7 @@ public class MentionsAdapter extends BaseSearchAdapterRecycler {
             String usernameString = result.toString().toLowerCase();
             ArrayList<TLRPC.User> newResult = new ArrayList<>();
             final HashMap<Integer, TLRPC.User> newResultsHashMap = new HashMap<>();
-            if (dogPostion == 0 && botRecent != null) {
+            if (needBotContext && dogPostion == 0 && botRecent != null) {
                 for (int a = 0; a < botRecent.size(); a++) {
                     TLRPC.User user = botRecent.get(a);
                     if (user.username != null && user.username.length() > 0 && (usernameString.length() > 0 && user.username.toLowerCase().startsWith(usernameString) || usernameString.length() == 0)) {
@@ -609,7 +616,8 @@ public class MentionsAdapter extends BaseSearchAdapterRecycler {
         } else if (foundType == 1) {
             ArrayList<String> newResult = new ArrayList<>();
             String hashtagString = result.toString().toLowerCase();
-            for (HashtagObject hashtagObject : hashtags) {
+            for (int a = 0; a < hashtags.size(); a++) {
+                HashtagObject hashtagObject = hashtags.get(a);
                 if (hashtagObject != null && hashtagObject.hashtag != null && hashtagObject.hashtag.startsWith(hashtagString)) {
                     newResult.add(hashtagObject.hashtag);
                 }
@@ -711,7 +719,7 @@ public class MentionsAdapter extends BaseSearchAdapterRecycler {
     }
 
     public boolean isLongClickEnabled() {
-        return searchResultHashtags != null;
+        return searchResultHashtags != null || searchResultCommands != null;
     }
 
     public boolean isBotCommands() {

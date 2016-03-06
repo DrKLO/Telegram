@@ -43,6 +43,7 @@ public class StickersQuery {
     private static int loadDate;
     private static ArrayList<TLRPC.TL_messages_stickerSet> stickerSets = new ArrayList<>();
     private static HashMap<Long, TLRPC.TL_messages_stickerSet> stickerSetsById = new HashMap<>();
+    private static HashMap<String, TLRPC.TL_messages_stickerSet> stickerSetsByName = new HashMap<>();
     private static HashMap<Long, String> stickersByEmoji = new HashMap<>();
     private static HashMap<Long, TLRPC.Document> stickersById = new HashMap<>();
     private static HashMap<String, ArrayList<TLRPC.Document>> allStickers = new HashMap<>();
@@ -57,6 +58,7 @@ public class StickersQuery {
         stickerSets.clear();
         stickersByEmoji.clear();
         stickerSetsById.clear();
+        stickerSetsByName.clear();
         loadingStickers = false;
         stickersLoaded = false;
     }
@@ -95,6 +97,10 @@ public class StickersQuery {
         return stickerSetsById.containsKey(id);
     }
 
+    public static boolean isStickerPackInstalled(String name) {
+        return stickerSetsByName.containsKey(name);
+    }
+
     public static String getEmojiForSticker(long id) {
         String value = stickersByEmoji.get(id);
         return value != null ? value : "";
@@ -124,32 +130,34 @@ public class StickersQuery {
     }
 
     public static void addNewStickerSet(final TLRPC.TL_messages_stickerSet set) {
-        if (!stickerSetsById.containsKey(set.set.id)) {
-            stickerSets.add(0, set);
-            stickerSetsById.put(set.set.id, set);
-            for (int a = 0; a < set.documents.size(); a++) {
-                TLRPC.Document document = set.documents.get(a);
-                stickersById.put(document.id, document);
-            }
-            for (int a = 0; a < set.packs.size(); a++) {
-                TLRPC.TL_stickerPack stickerPack = set.packs.get(a);
-                stickerPack.emoticon = stickerPack.emoticon.replace("\uFE0F", "");
-                ArrayList<TLRPC.Document> arrayList = allStickers.get(stickerPack.emoticon);
-                if (arrayList == null) {
-                    arrayList = new ArrayList<>();
-                    allStickers.put(stickerPack.emoticon, arrayList);
-                }
-                for (int c = 0; c < stickerPack.documents.size(); c++) {
-                    Long id = stickerPack.documents.get(c);
-                    if (!stickersByEmoji.containsKey(id)) {
-                        stickersByEmoji.put(id, stickerPack.emoticon);
-                    }
-                    arrayList.add(stickersById.get(id));
-                }
-            }
-            loadHash = calcStickersHash(stickerSets);
-            NotificationCenter.getInstance().postNotificationName(NotificationCenter.stickersDidLoaded);
+        if (stickerSetsById.containsKey(set.set.id) || stickerSetsByName.containsKey(set.set.short_name)) {
+            return;
         }
+        stickerSets.add(0, set);
+        stickerSetsById.put(set.set.id, set);
+        stickerSetsByName.put(set.set.short_name, set);
+        for (int a = 0; a < set.documents.size(); a++) {
+            TLRPC.Document document = set.documents.get(a);
+            stickersById.put(document.id, document);
+        }
+        for (int a = 0; a < set.packs.size(); a++) {
+            TLRPC.TL_stickerPack stickerPack = set.packs.get(a);
+            stickerPack.emoticon = stickerPack.emoticon.replace("\uFE0F", "");
+            ArrayList<TLRPC.Document> arrayList = allStickers.get(stickerPack.emoticon);
+            if (arrayList == null) {
+                arrayList = new ArrayList<>();
+                allStickers.put(stickerPack.emoticon, arrayList);
+            }
+            for (int c = 0; c < stickerPack.documents.size(); c++) {
+                Long id = stickerPack.documents.get(c);
+                if (!stickersByEmoji.containsKey(id)) {
+                    stickersByEmoji.put(id, stickerPack.emoticon);
+                }
+                arrayList.add(stickersById.get(id));
+            }
+        }
+        loadHash = calcStickersHash(stickerSets);
+        NotificationCenter.getInstance().postNotificationName(NotificationCenter.stickersDidLoaded);
         StickersQuery.loadStickers(false, true);
     }
 
@@ -258,22 +266,23 @@ public class StickersQuery {
         }
     }
 
-    private static void putStickersToCache(final ArrayList<TLRPC.TL_messages_stickerSet> stickers, final int date, final int hash) {
+    private static void putStickersToCache(ArrayList<TLRPC.TL_messages_stickerSet> stickers, final int date, final int hash) {
+        final ArrayList<TLRPC.TL_messages_stickerSet> stickersFinal = stickers != null ? new ArrayList<>(stickers) : null;
         MessagesStorage.getInstance().getStorageQueue().postRunnable(new Runnable() {
             @Override
             public void run() {
                 try {
-                    if (stickers != null) {
+                    if (stickersFinal != null) {
                         SQLitePreparedStatement state = MessagesStorage.getInstance().getDatabase().executeFast("REPLACE INTO stickers_v2 VALUES(?, ?, ?, ?)");
                         state.requery();
                         int size = 4;
-                        for (int a = 0; a < stickers.size(); a++) {
-                            size += stickers.get(a).getObjectSize();
+                        for (int a = 0; a < stickersFinal.size(); a++) {
+                            size += stickersFinal.get(a).getObjectSize();
                         }
                         NativeByteBuffer data = new NativeByteBuffer(size);
-                        data.writeInt32(stickers.size());
-                        for (int a = 0; a < stickers.size(); a++) {
-                            stickers.get(a).serializeToStream(data);
+                        data.writeInt32(stickersFinal.size());
+                        for (int a = 0; a < stickersFinal.size(); a++) {
+                            stickersFinal.get(a).serializeToStream(data);
                         }
                         state.bindInteger(1, 1);
                         state.bindByteBuffer(2, data);
@@ -294,6 +303,11 @@ public class StickersQuery {
                 }
             }
         });
+    }
+
+    public static String getStickerSetName(long setId) {
+        TLRPC.TL_messages_stickerSet stickerSet = stickerSetsById.get(setId);
+        return stickerSet != null ? stickerSet.set.short_name : null;
     }
 
     public static long getStickerSetId(TLRPC.Document document) {
@@ -350,6 +364,7 @@ public class StickersQuery {
                     try {
                         final ArrayList<TLRPC.TL_messages_stickerSet> stickerSetsNew = new ArrayList<>();
                         final HashMap<Long, TLRPC.TL_messages_stickerSet> stickerSetsByIdNew = new HashMap<>();
+                        final HashMap<String, TLRPC.TL_messages_stickerSet> stickerSetsByNameNew = new HashMap<>();
                         final HashMap<Long, String> stickersByEmojiNew = new HashMap<>();
                         final HashMap<Long, TLRPC.Document> stickersByIdNew = new HashMap<>();
                         final HashMap<String, ArrayList<TLRPC.Document>> allStickersNew = new HashMap<>();
@@ -361,6 +376,7 @@ public class StickersQuery {
                             }
                             stickerSetsNew.add(stickerSet);
                             stickerSetsByIdNew.put(stickerSet.set.id, stickerSet);
+                            stickerSetsByNameNew.put(stickerSet.set.short_name, stickerSet);
 
                             for (int b = 0; b < stickerSet.documents.size(); b++) {
                                 TLRPC.Document document = stickerSet.documents.get(b);
@@ -400,6 +416,7 @@ public class StickersQuery {
                             public void run() {
                                 stickersById = stickersByIdNew;
                                 stickerSetsById = stickerSetsByIdNew;
+                                stickerSetsByName = stickerSetsByNameNew;
                                 stickerSets = stickerSetsNew;
                                 allStickers = allStickersNew;
                                 stickersByEmoji = stickersByEmojiNew;
@@ -469,7 +486,11 @@ public class StickersQuery {
                                                                 if (error == null) {
                                                                     Toast.makeText(fragment.getParentActivity(), LocaleController.getString("AddStickersInstalled", R.string.AddStickersInstalled), Toast.LENGTH_SHORT).show();
                                                                 } else {
-                                                                    Toast.makeText(fragment.getParentActivity(), LocaleController.getString("ErrorOccurred", R.string.ErrorOccurred), Toast.LENGTH_SHORT).show();
+                                                                    if (error.text.equals("STICKERSETS_TOO_MUCH")) {
+                                                                        Toast.makeText(fragment.getParentActivity(), LocaleController.getString("TooMuchStickersets", R.string.TooMuchStickersets), Toast.LENGTH_SHORT).show();
+                                                                    } else {
+                                                                        Toast.makeText(fragment.getParentActivity(), LocaleController.getString("ErrorOccurred", R.string.ErrorOccurred), Toast.LENGTH_SHORT).show();
+                                                                    }
                                                                 }
                                                             }
                                                             loadStickers(false, true);
@@ -539,6 +560,7 @@ public class StickersQuery {
                 }
             }
             loadHash = calcStickersHash(stickerSets);
+            putStickersToCache(stickerSets, loadDate, loadHash);
             NotificationCenter.getInstance().postNotificationName(NotificationCenter.stickersDidLoaded);
             TLRPC.TL_messages_installStickerSet req = new TLRPC.TL_messages_installStickerSet();
             req.stickerset = stickerSetID;

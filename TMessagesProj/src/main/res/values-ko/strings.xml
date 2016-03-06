@@ -90,6 +90,7 @@
     <string name="CommentsInfo">코멘트를 허용할 경우, 유저들이 회원님 글에 대하여 코멘트 등록이 가능합니다.</string>
     <string name="AddMutual">채널에 친구 추가</string>
     <string name="ChannelUsernameHelp">텔레그램 검색을 통하여 다른 유저들이 채널을 찾을 수 있습니다.</string>
+    <!--<string name="MegaUsernameHelp">People can share this link with others and find your supergroup using Telegram search.</string>-->
     <string name="ChannelUsernamePlaceholder">링크</string>
     <string name="ChannelPrivateLinkHelp">이 링크를 통하여 다른 유저들이 채널에 입장 할 수 있습니다. 이 링크는 언제든지 폐기 가능합니다.</string>
     <string name="DescriptionPlaceholder">설명</string>
@@ -117,6 +118,8 @@
     <string name="LinkInvalidShort">채널명은 최소 5 글자 이상 입력해야 합니다.</string>
     <string name="LinkInvalidLong">이름은 최대 32자까지만 가능합니다.</string>
     <string name="LinkInvalidStartNumber">채널명은 숫자로 시작 할 수 없습니다.</string>
+    <!--<string name="LinkInvalidShortMega">Supergroup names must have at least 5 characters.</string>-->
+    <!--<string name="LinkInvalidStartNumberMega">Supergroup names can\'t start with a number.</string>-->
     <string name="LinkChecking">이름 확인 중..</string>
     <string name="LinkAvailable">%1$s은 사용 가능합니다.</string>
     <string name="ChannelMembers">구성원</string>
@@ -128,6 +131,7 @@
     <string name="ChannelLeaveAlert">채널에서 나가시겠습니까?</string>
     <string name="ChannelDeleteInfo">채널에 있는 모든 메시지가 삭제됩니다.</string>
     <string name="ChannelEdit">편집</string>
+    <!--<string name="MegaWasPrivateAlert">Please note that if you choose a public link for your supergroup, anyone will be able to find it in search and join.\n\nDo not create this link if you want your supergroup to stay private.</string>-->
     <string name="ChannelWasPrivateAlert">채널에 대한 공개링크를 선택하신 경우, 누구나 검색을 통하여 입장 가능합니다.\n\n비공개 채널로 유지를 하시고 싶으실 경우 링크 생성을 하지 말아주세요</string>
     <string name="ChannelPublicEmptyUsername">유저들이 공개 채널에 대하여 검색 및 공유가 가능하도록 링크를 선택하여 주세요.\n\n채널을 공개하시지 싫으실 경우, 비공개 채널을 추천드립니다.</string>
     <string name="ActionCreateChannel">채널 생성됨</string>
@@ -169,7 +173,7 @@
     <string name="ChannelMessageGroupMap">%1$s님이 %2$s 채널에 위치를 보냈습니다</string>
     <string name="ChannelMessageGroupDocument">%1$s님이 %2$s 채널에 파일을 보냈습니다</string>
     <string name="ChannelMessageGroupGif">%1$s님이 %2$s 채널에 GIF파일을 보냈습니다</string>
-    <string name="ChannelMessageGroupAudio">%1$s님이 %2$s 채널에 오디오를 보냈습니다</string>
+    <string name="ChannelMessageGroupAudio">%1$s님이 %2$s 채널에 음성메시지를 보냈습니다</string>
     <string name="ChannelMessageGroupSticker">%1$s님이 %2$s 채널에 스티커를 보냈습니다</string>
     <string name="ChannelMessageNoText">%1$s 님이 메시지를 보냈습니다</string>
     <string name="ChannelMessagePhoto">%1$s 님이 사진을 보냈습니다</string>
@@ -180,6 +184,13 @@
     <string name="ChannelMessageGIF">%1$s 님이 GIF파일을 보냈습니다</string>
     <string name="ChannelMessageAudio">%1$s님이 음성메시지를 보냈습니다</string>
     <string name="ChannelMessageSticker">%1$s님이 스티커를 보냈습니다</string>
+    <string name="WhoCanAddMembers">초대가 가능한 구성원</string>
+    <string name="WhoCanAddMembersAllMembers">모든 구성원</string>
+    <string name="WhoCanAddMembersAdmins">관리자만 가능</string>
+    <string name="ChannelNotifyMembersInfoOn">메시지 알림 대상</string>
+    <string name="ChannelNotifyMembersInfoOff">메시지 미알림 대상</string>
+    <string name="ChannelSignMessages">메시지 서명</string>
+    <string name="ChannelSignMessagesInfo">메시지 작성하는 관리자 추가</string>
     <!--broadcasts-->
     <string name="NewBroadcastList">새 단체 메시지 리스트</string>
     <string name="EnterListName">리스트 이름을 입력하세요</string>
@@ -211,11 +222,11 @@
     <string name="Typing">입력 중...</string>
     <string name="IsTyping">님이 입력 중...</string>
     <string name="AreTyping">님이 입력 중...</string>
-    <string name="IsRecordingAudio">%1$s님이 녹음 중...</string>
+    <string name="IsRecordingAudio">%1$s님이 음성메시지를 녹음중입니다...</string>
     <string name="IsSendingPhoto">%1$s님이 사진 보내는 중...</string>
     <string name="IsSendingVideo">%1$s님이 동영상 보내는 중...</string>
     <string name="IsSendingFile">%1$s님이 파일 보내는 중...</string>
-    <string name="RecordingAudio">음성메시지 녹음 중...</string>
+    <string name="RecordingAudio">음성메시지를 녹음 중입니다..</string>
     <string name="SendingPhoto">사진 전송 중..</string>
     <string name="SendingVideoStatus">동영상 전송 중..</string>
     <string name="SendingFile">파일 전송 중...</string>
@@ -331,6 +342,7 @@
     <string name="NewMessageTitle">새 메시지</string>
     <!--group create view-->
     <string name="SendMessageTo">메시지 보내기...</string>
+    <string name="SoftUserLimitAlert">이 그룹 생성을 완료하시고 슈퍼그룹으로 전환하시면 더 많은 구성원을 추가 할 수 있습니다.</string>
     <string name="EnterGroupNamePlaceholder">그룹 이름 입력</string>
     <string name="GroupName">그룹 이름</string>
     <string name="MembersCount">대화상대 %1$d/%2$d</string>
@@ -380,7 +392,8 @@
     <string name="EncryptionKey">암호화 키</string>
     <string name="MessageLifetime">자동삭제 타이머</string>
     <string name="ShortMessageLifetimeForever">해제</string>
-    <string name="EncryptionKeyDescription">이 이미지는 <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>님과의 비밀대화에 사용 중인 암호화 키의 모습입니다.<![CDATA[<br><br>]]>이 이미지가 <![CDATA[<b>]]>%2$s<![CDATA[</b>]]>님의 암호화 키와 똑같다면 대화는 200%% 안전합니다.<![CDATA[<br><br>]]>더 자세한 사항은 telegram.org 를 참고해 주세요.</string>
+    <string name="EncryptionKeyDescription">이 이미지와 텍스트는 <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>.<![CDATA[<br><br>]]> 님과의 현재 비밀대화에 대한 비밀키에서 파생된 것입니다. 이 이미지와 텍스트가 <![CDATA[<b>]]>%2$s\'s<![CDATA[</b>]]>  님의 휴대전화와 동일하다면 단말기간(end-to-end)의 암호화가 정상적으로 진행되고 있음을 보장합니다.<![CDATA[<br><br>]]> 자세한 사항은 telegram.org를 참고해 주세요.</string>
+    <string name="EncryptionKeyLink">https://telegram.org/faq#secret-chats</string>
     <string name="NumberUnknown">알 수 없음</string>
     <string name="Info">정보</string>
     <string name="Phone">전화번호</string>
@@ -411,6 +424,7 @@
     <string name="StickersCopy">링크 복사</string>
     <string name="StickersRemove">삭제</string>
     <string name="NoStickers">스티커가 아직 없음</string>
+    <string name="TooMuchStickersets">죄송합니다, 스티커 세트수가 최대치입니다.</string>
     <!--settings view-->
     <string name="ResetNotificationsText">모든 알림 설정이 초기화되었습니다</string>
     <string name="TextSize">채팅 글자 크기</string>
@@ -477,6 +491,7 @@
     <string name="WhenRoaming">로밍 중일 때</string>
     <string name="NoMediaAutoDownload">다운로드 안함</string>
     <string name="AutoplayGifs">GIF 자동재생</string>
+    <string name="RaiseToSpeak">기기를 들어 말하기</string>
     <string name="SaveToGallerySettings">앨범에 자동 저장</string>
     <string name="EditName">이름 편집</string>
     <string name="NotificationsPriority">우선순위</string>
@@ -507,6 +522,8 @@
     <string name="SmartNotificationsTimes">번</string>
     <string name="SmartNotificationsWithin">이내</string>
     <string name="SmartNotificationsMinutes">분</string>
+    <string name="SecretWebPage">링크 프리뷰</string>
+    <string name="SecretChat">비밀대화</string>
     <!--cache view-->
     <string name="CacheSettings">캐시 설정</string>
     <string name="LocalDatabase">로컬 데이터베이스</string>
@@ -606,6 +623,15 @@
     <string name="Shadows">그림자</string>
     <string name="Grain">그레인</string>
     <string name="Sharpen">선명</string>
+    <string name="Fade">흐리기</string>
+    <string name="Tint">색조</string>
+    <string name="TintShadows">새도우</string>
+    <string name="TintHighlights">하이라이트</string>
+    <string name="Curves">커브</string>
+    <string name="CurvesAll">모두</string>
+    <string name="CurvesRed">빨강</string>
+    <string name="CurvesGreen">초록</string>
+    <string name="CurvesBlue">파랑</string>
     <string name="Blur">흐림</string>
     <string name="BlurOff">끔</string>
     <string name="BlurLinear">선형</string>
@@ -620,6 +646,7 @@
     <string name="AddCaption">설명 추가...</string>
     <string name="PhotoCaption">사진 설명</string>
     <string name="VideoCaption">동영상 설명</string>
+    <string name="Caption">설명</string>
     <!--password view-->
     <string name="TwoStepVerification">2단계 인증</string>
     <string name="SetAdditionalPassword">개별 비밀번호 설정</string>
@@ -632,7 +659,7 @@
     <string name="RecoveryEmail">복구 이메일</string>
     <string name="YourEmail">이메일</string>
     <string name="YourEmailInfo">올바른 이메일을 입력해주세요. 비밀번호 분실시 유일하게 복구가 가능한 수단입니다.</string>
-    <string name="YourEmailSkip">건너뛱</string>
+    <string name="YourEmailSkip">건너뛰기</string>
     <string name="YourEmailSkipWarning">경고</string>
     <string name="YourEmailSkipWarningText">비밀번호 분실시\n\n텔레그램에 대한 모든 접속 권한을 상실하시게 됩니다.\n비밀번호 분실시 복구는 불가능 합니다.</string>
     <string name="YourEmailAlmostThere">거의 마무리 되었습니다!</string>
@@ -702,6 +729,18 @@
     <string name="PrivacyFloodControlError">죄송합니다. 너무 많이 변경하셨습니다. 개인정보 설정을 변경할 수 없으니 잠시 기다려 주세요.</string>
     <string name="ClearOtherSessionsHelp">이 기기를 제외한 다른 기기에서 로그아웃합니다.</string>
     <string name="RemoveFromListText">사용자를 탭하고 눌러서 삭제하세요.</string>
+    <string name="GroupsAndChannels">그룹</string>
+    <string name="WhoCanAddMe">나를 그룹에 초대가능한 사용자</string>
+    <string name="WhoCanAddMeInfo">회원님을 그룹 및 채널에 초대할 수 있는 상대방을 세세하게 설정 가능합니다.</string>
+    <string name="AlwaysAllow">항상 허용</string>
+    <string name="NeverAllow">항상 거부</string>
+    <string name="AlwaysAllowPlaceholder">항상 허용..</string>
+    <string name="NeverAllowPlaceholder">항상 거부..</string>
+    <string name="CustomShareInfo">위의 설정과 무관하게 해당 사용자는 회원님을 그룹 및 채널에 초대 할 수 없습니다.</string>
+    <string name="GroupsAndChannelsHelp">그룹 및 채널에 초대가능한 사용자 변경</string>
+    <string name="InviteToGroupError">죄송합니다,  이 이용자는 개인 설정으로 인하여 그룹에 초대 할 수 없습니다.</string>
+    <string name="InviteToChannelError">죄송합니다,  이 이용자는 개인 설정으로 인하여 채널에 초대 할 수 없습니다.</string>
+    <string name="CreateGroupError">죄송합니다,  이 이용자들의 개인 설정으로 인하여 그룹을 생성 할 수 없습니다.</string>
     <!--edit video view-->
     <string name="EditVideo">동영상 편집</string>
     <string name="OriginalVideo">동영상 원본</string>
@@ -748,14 +787,14 @@
     <string name="ActionInviteYou">초대링크를 타고 그룹에 참여하였습니다.</string>
     <string name="ActionInviteUser">초대링크를 타고 그룹에 un1님이 참여하였습니다.</string>
     <string name="ActionKickUser">un1님이 un2님을 퇴장시켰습니다.</string>
-    <string name="ActionLeftUser">un1님이 퇴장했습니다</string>
+    <string name="ActionLeftUser">un1님이 그룹에서 나갔습니다.</string>
     <string name="ActionAddUser">un1님이 un2님을 초대했습니다</string>
     <string name="ActionRemovedPhoto">un1님이 그룹 사진을 삭제했습니다</string>
     <string name="ActionChangedPhoto">un1님이 그룹 사진을 변경했습니다</string>
     <string name="ActionChangedTitle">un1님이 그룹 이름을 un2 그룹으로 변경했습니다</string>
     <string name="ActionCreateGroup">un1님이 그룹을 만들었습니다</string>
     <string name="ActionYouKickUser">un2님을 퇴장시켰습니다.</string>
-    <string name="ActionYouLeftUser">그룹을 떠났습니다</string>
+    <string name="ActionYouLeftUser">그룹에서 나갔습니다.</string>
     <string name="ActionYouAddUser">un2님을 초대했습니다</string>
     <string name="ActionYouRemovedPhoto">그룹 사진을 삭제했습니다</string>
     <string name="ActionYouChangedPhoto">그룹 사진을 변경했습니다</string>
@@ -765,7 +804,7 @@
     <string name="ActionAddUserYou">un1님이 그룹에 초대했습니다</string>
     <string name="ActionAddUserSelf">un1 님께서 그룹에 돌아오셨습니다</string>
     <string name="ActionAddUserSelfYou">그룹에 돌아오셨습니다.</string>
-    <string name="UnsupportedMedia">이 메시지는 현재 사용 중인 버전의 Telegram에서 지원되지 않습니다. 메시지를 보려면 https://telegram.org/update 에서 앱을 업데이트하세요.</string>
+    <string name="UnsupportedMedia">이 메시지는 현재 사용 중인 버전의 Telegram에서 지원되지 않습니다. 메시지를 보려면 http://telegram.org/update에서 앱을 업데이트하세요.</string>
     <string name="AttachPhoto">사진</string>
     <string name="AttachVideo">동영상</string>
     <string name="AttachGif">GIF파일</string>
@@ -773,7 +812,7 @@
     <string name="AttachContact">연락처</string>
     <string name="AttachDocument">파일</string>
     <string name="AttachSticker">스티커</string>
-    <string name="AttachAudio">음성메시지</string>
+    <string name="AttachAudio">음성 메시지</string>
     <string name="FromYou">나</string>
     <string name="ActionTakeScreenshootYou">화면을 캡처했습니다!</string>
     <string name="ActionTakeScreenshoot">un1님이 화면을 캡처했습니다!</string>
@@ -818,6 +857,10 @@
     <string name="FeatureUnavailable">이 기능은 회원님의 국가에서는 사용할 수 없습니다.</string>
     <string name="NoUsernameFound">입력된 아이디와 일치하는 텔레그램 계정이 없습니다.</string>
     <string name="BotCantJoinGroups">이 봇은 그룹에 참여 할 수 없습니다.</string>
+    <string name="SecretLinkPreviewAlert">비밀대화에서 링크 미리보기를 활성화하시겠습니까? 링크 프리뷰는 텔레그램 서버에서 생성이 됩니다.</string>
+    <string name="SecretChatContextBotAlert">인라인 봇은 제3자 개발자로 부터 제공이 됩니다. 봇이 작동을 하려면 봇의 아이디 및 뒤의 메시지가 담당 개발자에게 전송이 됩니다.</string>
+    <string name="RaiseToSpeakAlert">\"기기를 들어 말하기\"기능을 음성 메시지에 활성화 하시겠습니까?</string>
+    <string name="EditMessageError">죄송합니다, 메시지 수정을 할 수 없습니다.</string>
     <!--permissions-->
     <string name="PermissionContacts">Telegram은 여러 기기에서 친구와 메시지를 주고받을 수 있도록 회원님의 연락처 접근이 필요합니다.</string>
     <string name="PermissionStorage">Telegram은 사진, 비디오, 음악 및 다양한 미디어를 공유 및 저장하기 위하여 스토리지 접근이 필요합니다.</string>
@@ -998,12 +1041,18 @@
     <string name="ForwardedVideo_few">%1$d 개의 전달된 비디오</string>
     <string name="ForwardedVideo_many">%1$d 개의 전달된 비디오</string>
     <string name="ForwardedVideo_other">%1$d 개의 전달된 비디오</string>
-    <string name="ForwardedAudio_zero">%1$d 개의 전달된 오디오</string>
-    <string name="ForwardedAudio_one">전달된 오디오</string>
-    <string name="ForwardedAudio_two">%1$d 개의 전달된 오디오</string>
-    <string name="ForwardedAudio_few">%1$d 개의 전달된 오디오</string>
-    <string name="ForwardedAudio_many">%1$d 개의 전달된 오디오</string>
-    <string name="ForwardedAudio_other">%1$d 개의 전달된 오디오</string>
+    <string name="ForwardedMusic_zero">%1$d개의 전달된 트랙</string>
+    <string name="ForwardedMusic_one">전달된 트랙</string>
+    <string name="ForwardedMusic_two">%1$d개의 전달된 트랙</string>
+    <string name="ForwardedMusic_few">%1$d 전달된 트랙%</string>
+    <string name="ForwardedMusic_many">%1$d 전달된 트랙</string>
+    <string name="ForwardedMusic_other">%1$d 전달된 트랙</string>
+    <string name="ForwardedAudio_zero">%1$d 개의 전달된 메시지</string>
+    <string name="ForwardedAudio_one">전달된 음성메시지</string>
+    <string name="ForwardedAudio_two">%1$d 개의 전달된 음성메시지</string>
+    <string name="ForwardedAudio_few">%1$d 개의 전달된 음성메시지</string>
+    <string name="ForwardedAudio_many">%1$d 개의 전달된 음성메시지</string>
+    <string name="ForwardedAudio_other">%1$d 개의 전달된 음성 메시지</string>
     <string name="ForwardedLocation_zero">%1$d 개의 전달된 위치</string>
     <string name="ForwardedLocation_one">전달된 위치</string>
     <string name="ForwardedLocation_two">%1$d 개의 전달된 위치</string>
@@ -1039,7 +1088,4 @@
     <string name="formatterDay24H">HH:mm</string>
     <string name="formatterDay12H">a h:mm</string>
     <string name="formatDateAtTime">%1$s %2$s</string>
-    <!--update text-->
-    <string name="updateText">텔레그램 안드로이드 버전이 업데이트 되었습니다. 새로운 버전은 3.4.0 입니다:\n\nGIF 혁명: 10배 빠른 전송, 다운로드 및 자동재생이 가능하며, 스티커 패널에서 즐겨찾는 GIF를 저장가능\n\nGIF에 대한 자세한 정보:\nhttps://telegram.org/blog/gif-revolution\n\n@-봇 : 모든 대화에 봇 기능을 추가 할 수 있습니다. 봇 아이디를 입력란에 같이 입력해주시면 즉시 결과값을 확인 할 수 있습니다."@gif dog"와 같은 명령어를 입력란에 같이 입력해보세요. 예시:@gif, @wiki, @bing, @vid, @bold.\n\n@-봇에 대한 자세한 정보\nhttps://telegram.org/blog/inline-bots</string>
-    <string name="updateBuild">704</string>
 </resources>

@@ -400,7 +400,7 @@ public class LoginActivity extends BaseFragment {
         NotificationCenter.getInstance().postNotificationName(NotificationCenter.mainUserInfoChanged);
     }
 
-    public class PhoneView extends SlideView implements AdapterView.OnItemSelectedListener {
+    public class PhoneView extends SlideView implements AdapterView.OnItemSelectedListener, NotificationCenter.NotificationCenterDelegate {
 
         private EditText codeField;
         private HintEditText phoneField;
@@ -753,6 +753,17 @@ public class LoginActivity extends BaseFragment {
         }
 
         @Override
+        public void didReceivedNotification(int id, final Object... args) {
+            /*if (id == NotificationCenter.didReceiveCall) {
+                if (codeField != null) {
+                    String phone = (String) args[0];
+                    phone = PhoneFormat.stripExceptNumbers(phone);
+                    codeField.setText(phone);
+                }
+            }*/
+        }
+
+        @Override
         public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
             if (ignoreSelection) {
                 ignoreSelection = false;
@@ -785,6 +796,7 @@ public class LoginActivity extends BaseFragment {
                 needShowAlert(LocaleController.getString("AppName", R.string.AppName), LocaleController.getString("InvalidPhoneNumber", R.string.InvalidPhoneNumber));
                 return;
             }
+            //NotificationCenter.getInstance().removeObserver(this, NotificationCenter.didReceiveCall);
 
             ConnectionsManager.getInstance().cleanUp();
             TLRPC.TL_auth_sendCode req = new TLRPC.TL_auth_sendCode();
@@ -857,6 +869,7 @@ public class LoginActivity extends BaseFragment {
                     codeField.requestFocus();
                 }
             }
+            //NotificationCenter.getInstance().addObserver(this, NotificationCenter.didReceiveCall);
         }
 
         @Override
@@ -1071,9 +1084,14 @@ public class LoginActivity extends BaseFragment {
 
             destroyTimer();
             destroyCodeTimer();
-            timeText.setText(LocaleController.formatString("CallText", R.string.CallText, 1, 0));
-            lastCurrentTime = System.currentTimeMillis();
-            problemText.setVisibility(time < 1000 ? VISIBLE : GONE);
+            if (time >= 3600 * 1000) {
+                timeText.setVisibility(GONE);
+                problemText.setVisibility(GONE);
+            } else {
+                timeText.setText(LocaleController.formatString("CallText", R.string.CallText, 1, 0));
+                lastCurrentTime = System.currentTimeMillis();
+                problemText.setVisibility(time < 1000 ? VISIBLE : GONE);
+            }
 
             createTimer();
         }
@@ -1119,7 +1137,7 @@ public class LoginActivity extends BaseFragment {
         }
 
         private void createTimer() {
-            if (timeTimer != null) {
+            if (timeTimer != null || time >= 3600 * 1000) {
                 return;
             }
             timeTimer = new Timer();

@@ -138,7 +138,8 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
         if ((fileLocation == null && httpUrl == null && thumbLocation == null)
                 || (fileLocation != null && !(fileLocation instanceof TLRPC.TL_fileLocation)
                 && !(fileLocation instanceof TLRPC.TL_fileEncryptedLocation)
-                && !(fileLocation instanceof TLRPC.TL_document))) {
+                && !(fileLocation instanceof TLRPC.TL_document)
+                && !(fileLocation instanceof TLRPC.TL_documentEncrypted))) {
             recycleBitmap(null, false);
             recycleBitmap(null, true);
             currentKey = null;
@@ -260,6 +261,12 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
     }
 
     public void setOrientation(int angle, boolean center) {
+        while (angle < 0) {
+            angle += 360;
+        }
+        while (angle > 360) {
+            angle -= 360;
+        }
         orientation = angle;
         centerRotation = center;
     }
@@ -376,7 +383,7 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
             } else {
                 int bitmapW;
                 int bitmapH;
-                if (orientation == 90 || orientation == 270) {
+                if (orientation % 360 == 90 || orientation % 360 == 270) {
                     bitmapW = bitmapDrawable.getIntrinsicHeight();
                     bitmapH = bitmapDrawable.getIntrinsicWidth();
                 } else {
@@ -413,7 +420,7 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
                         canvas.save();
                         canvas.clipRect(imageX, imageY, imageX + imageW, imageY + imageH);
 
-                        if (orientation != 0) {
+                        if (orientation % 360 != 0) {
                             if (centerRotation) {
                                 canvas.rotate(orientation, imageW / 2, imageH / 2);
                             } else {
@@ -428,7 +435,7 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
                             bitmapH /= scaleW;
                             drawRegion.set(imageX, imageY - (bitmapH - imageH) / 2, imageX + imageW, imageY + (bitmapH + imageH) / 2);
                         }
-                        if (orientation == 90 || orientation == 270) {
+                        if (orientation % 360 == 90 || orientation % 360 == 270) {
                             int width = (drawRegion.right - drawRegion.left) / 2;
                             int height = (drawRegion.bottom - drawRegion.top) / 2;
                             int centerX = (drawRegion.right + drawRegion.left) / 2;
@@ -457,7 +464,7 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
                         canvas.restore();
                     } else {
                         canvas.save();
-                        if (orientation != 0) {
+                        if (orientation % 360 != 0) {
                             if (centerRotation) {
                                 canvas.rotate(orientation, imageW / 2, imageH / 2);
                             } else {
@@ -465,7 +472,7 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
                             }
                         }
                         drawRegion.set(imageX, imageY, imageX + imageW, imageY + imageH);
-                        if (orientation == 90 || orientation == 270) {
+                        if (orientation % 360 == 90 || orientation % 360 == 270) {
                             int width = (drawRegion.right - drawRegion.left) / 2;
                             int height = (drawRegion.bottom - drawRegion.top) / 2;
                             int centerX = (drawRegion.right + drawRegion.left) / 2;
@@ -597,18 +604,18 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
 
     public int getBitmapWidth() {
         if (currentImage instanceof AnimatedFileDrawable) {
-            return orientation == 0 || orientation == 180 ? currentImage.getIntrinsicWidth() : currentImage.getIntrinsicHeight();
+            return orientation % 360 == 0 || orientation % 360 == 180 ? currentImage.getIntrinsicWidth() : currentImage.getIntrinsicHeight();
         }
         Bitmap bitmap = getBitmap();
-        return orientation == 0 || orientation == 180 ? bitmap.getWidth() : bitmap.getHeight();
+        return orientation % 360 == 0 || orientation % 360 == 180 ? bitmap.getWidth() : bitmap.getHeight();
     }
 
     public int getBitmapHeight() {
         if (currentImage instanceof AnimatedFileDrawable) {
-            return orientation == 0 || orientation == 180 ? currentImage.getIntrinsicHeight() : currentImage.getIntrinsicWidth();
+            return orientation % 360 == 0 || orientation % 360 == 180 ? currentImage.getIntrinsicHeight() : currentImage.getIntrinsicWidth();
         }
         Bitmap bitmap = getBitmap();
-        return orientation == 0 || orientation == 180 ? bitmap.getHeight() : bitmap.getWidth();
+        return orientation % 360 == 0 || orientation % 360 == 180 ? bitmap.getHeight() : bitmap.getWidth();
     }
 
     public void setVisible(boolean value, boolean invalidate) {

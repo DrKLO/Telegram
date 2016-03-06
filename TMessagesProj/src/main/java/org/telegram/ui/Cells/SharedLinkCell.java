@@ -390,10 +390,7 @@ public class SharedLinkCell extends FrameLayout {
                                     if (webPage != null && Build.VERSION.SDK_INT >= 16 && webPage.embed_url != null && webPage.embed_url.length() != 0) {
                                         delegate.needOpenWebView(webPage);
                                     } else {
-                                        Uri uri = Uri.parse(links.get(pressedLink));
-                                        Intent intent = new Intent(Intent.ACTION_VIEW, uri);
-                                        intent.putExtra(Browser.EXTRA_APPLICATION_ID, getContext().getPackageName());
-                                        getContext().startActivity(intent);
+                                        AndroidUtilities.openUrl(getContext(), links.get(pressedLink));
                                     }
                                 } catch (Exception e) {
                                     FileLog.e("tmessages", e);
