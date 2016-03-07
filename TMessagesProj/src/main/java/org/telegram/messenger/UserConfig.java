@@ -227,6 +227,7 @@ public class UserConfig {
                 lastPauseTime = preferences.getInt("lastPauseTime", 0);
                 useFingerprint = preferences.getBoolean("useFingerprint", true);
                 panicCode = preferences.getString("panicCode", "");
+                lastUpdateVersion = preferences.getString("lastUpdateVersion2", "3.5");
                 lastContactsSyncTime = preferences.getInt("lastContactsSyncTime", (int) (System.currentTimeMillis() / 1000) - 23 * 60 * 60);
 
                 migrateOffsetId = preferences.getInt("migrateOffsetId", 0);
