@@ -90,6 +90,7 @@
     <string name="CommentsInfo">إذا قمت بتفعيل التعليقات، الأعضاء سيتمكنون من مناقشة ما تنشره في قناتك.</string>
     <string name="AddMutual">إضافة جهات اتصال لقناتك</string>
     <string name="ChannelUsernameHelp">يستطيع الناس مشاركة هذا الرابط مع غيرهم ويمكنهم إيجاد قناتك من خلال البحث في تيليجرام.</string>
+    <!--<string name="MegaUsernameHelp">People can share this link with others and find your supergroup using Telegram search.</string>-->
     <string name="ChannelUsernamePlaceholder">الرابط</string>
     <string name="ChannelPrivateLinkHelp">يستطيع الناس الدخول إلى قناتك فقط من خلال الرابط أدناه. يمكنك تعطيل هذا الرابط في أي وقت.</string>
     <string name="DescriptionPlaceholder">الوصف</string>
@@ -117,6 +118,8 @@
     <string name="LinkInvalidShort">اسم القناة يجب أن يتكوّن من ٥ حروف على الأقل.</string>
     <string name="LinkInvalidLong">الاسم يجب ألا يتخطى ٣٢ حرف كحد أقصى.</string>
     <string name="LinkInvalidStartNumber">أسماء القنوات لا يمكن أن تبدأ برقم.</string>
+    <!--<string name="LinkInvalidShortMega">Supergroup names must have at least 5 characters.</string>-->
+    <!--<string name="LinkInvalidStartNumberMega">Supergroup names can\'t start with a number.</string>-->
     <string name="LinkChecking">جاري مراجعة الاسم...</string>
     <string name="LinkAvailable">%1$s متاح.</string>
     <string name="ChannelMembers">أعضاء</string>
@@ -128,6 +131,7 @@
     <string name="ChannelLeaveAlert">هل أنت متأكد من رغبتك في مغادرة القناة؟</string>
     <string name="ChannelDeleteInfo">ستخسر كافة الرسائل في هذه القناة.</string>
     <string name="ChannelEdit">تعديل</string>
+    <!--<string name="MegaWasPrivateAlert">Please note that if you choose a public link for your supergroup, anyone will be able to find it in search and join.\n\nDo not create this link if you want your supergroup to stay private.</string>-->
     <string name="ChannelWasPrivateAlert">يرجى ملاحظة أنه في حال اخترت رابط عام لقناتك، سيستطيع أي شخص إيجادها من خلال البحث والدخول إليها.\n\nلا تقم بإنشاء هذا الرابط إذا رغبت في أن تستمر قناتك خاصة.</string>
     <string name="ChannelPublicEmptyUsername">فضلًا اختر رابط لقناتك العامة ليتمكن الناس من إيجادها من خلال البحث ومشاركتها مع غيرهم.\n\nإلى لم ترغب بذلك، يفضّل إنشاء قناة خاصة بدلًا من العامة.</string>
     <string name="ActionCreateChannel">تم إنشاء القناة</string>
@@ -169,7 +173,7 @@
     <string name="ChannelMessageGroupMap">%1$s  قام بإرسال مكان للقناة %2$s</string>
     <string name="ChannelMessageGroupDocument">%1$s  قام بإرسال ملف للقناة %2$s</string>
     <string name="ChannelMessageGroupGif">%1$s أرسل صورة متحركة للقناة %2$s</string>
-    <string name="ChannelMessageGroupAudio">%1$s  قام بإرسال مقطع صوتي للقناة %2$s</string>
+    <string name="ChannelMessageGroupAudio">%1$s أرسل رسالة صوتية للقناة %2$s</string>
     <string name="ChannelMessageGroupSticker">%1$s  قام بإرسال ملصق للقناة %2$s</string>
     <string name="ChannelMessageNoText">%1$s أرسل رسالة</string>
     <string name="ChannelMessagePhoto">%1$s أرسل صورة</string>
@@ -180,6 +184,13 @@
     <string name="ChannelMessageGIF">%1$s قام بنشر صورة متحركة</string>
     <string name="ChannelMessageAudio">%1$s أرسل رسالة صوتية</string>
     <string name="ChannelMessageSticker">%1$s أرسل ملصق</string>
+    <string name="WhoCanAddMembers">من يستطيع إضافة أعضاء؟</string>
+    <string name="WhoCanAddMembersAllMembers">جميع الأعضاء</string>
+    <string name="WhoCanAddMembersAdmins">فقط المشرفون</string>
+    <string name="ChannelNotifyMembersInfoOn">سيتم إشعار الأعضاء عند إرسال الرسائل.</string>
+    <string name="ChannelNotifyMembersInfoOff">لن يتم إشعار الأعضاء عند إرسال الرسائل.</string>
+    <string name="ChannelSignMessages">وقّع الرسائل</string>
+    <string name="ChannelSignMessagesInfo">قم بإضافة أسماء المشرفين للرسائل التي يرسلونها.</string>
     <!--broadcasts-->
     <string name="NewBroadcastList">رسالة جماعية جديدة</string>
     <string name="EnterListName">أدخل اسم القائمة</string>
@@ -211,11 +222,11 @@
     <string name="Typing">جاري الكتابة… </string>
     <string name="IsTyping">يكتب… </string>
     <string name="AreTyping">يكتبون… </string>
-    <string name="IsRecordingAudio">%1$s يقوم بإرسال مقطع صوتي...</string>
+    <string name="IsRecordingAudio">%1$s يقوم بتسجيل رسالة صوتية...</string>
     <string name="IsSendingPhoto">%1$s يقوم بإرسال صورة...</string>
     <string name="IsSendingVideo">%1$s يقوم بإرسال مقطع مرئي...</string>
     <string name="IsSendingFile">%1$s يقوم بإرسال ملف...</string>
-    <string name="RecordingAudio">جاري تسجيل المقطع الصوتي...</string>
+    <string name="RecordingAudio">جاري تسجيل الرسالة الصوتية...</string>
     <string name="SendingPhoto">جاري إرسال الصورة...</string>
     <string name="SendingVideoStatus">جاري إرسال المقطع المرئي...</string>
     <string name="SendingFile">جاري إرسال الملف...</string>
@@ -284,7 +295,7 @@
     <string name="NotificationMessageMap">%1$s قام بإرسال موقع لك</string>
     <string name="NotificationMessageDocument">%1$s قام بإرسال ملف لك</string>
     <string name="NotificationMessageGif">%1$s أرسل لك صورة متحركة</string>
-    <string name="NotificationMessageAudio">%1$s قام بإرسال مقطع صوتي لك</string>
+    <string name="NotificationMessageAudio">%1$s قام بإرسال رسالة صوتية</string>
     <string name="NotificationMessageSticker">%1$s قام بإرسال ملصق</string>
     <string name="NotificationMessageGroupText">%1$s @ %2$s: %3$s</string>
     <string name="NotificationMessageGroupNoText">%1$s  قام بإرسال رسالة للمجموعة %2$s</string>
@@ -294,7 +305,7 @@
     <string name="NotificationMessageGroupMap">%1$s قام بإرسال موقع للمجموعة %2$s</string>
     <string name="NotificationMessageGroupDocument">%1$s قام بإرسال ملف للمجموعة %2$s</string>
     <string name="NotificationMessageGroupGif">%1$s أرسل صورة متحركة للمجموعة %2$s</string>
-    <string name="NotificationMessageGroupAudio">%1$s قام بإرسال مقطع صوتي للمجموعة %2$s</string>
+    <string name="NotificationMessageGroupAudio">%1$s أرسل رسالة صوتية للمجموعة %2$s</string>
     <string name="NotificationMessageGroupSticker">%1$s قام بإرسال ملصق للمجموعة %2$s</string>
     <string name="NotificationInvitedToGroup">%1$s قام بدعوتك للمجموعة %2$s</string>
     <string name="NotificationEditedGroupName">%1$s قام بتعديل اسم المجموعة %2$s</string>
@@ -331,6 +342,7 @@
     <string name="NewMessageTitle">رسالة جديدة</string>
     <!--group create view-->
     <string name="SendMessageTo">إرسال الرسالة إلى...</string>
+    <string name="SoftUserLimitAlert">ستتمكن من إضافة أعضاء أكثر إذا انتهيت من إنشاء المجموعة وقمت بتحويلها إلى مجموعة خارقة.</string>
     <string name="EnterGroupNamePlaceholder">أدخل اسم للمجموعة</string>
     <string name="GroupName">اسم المجموعة</string>
     <string name="MembersCount">%1$d/%2$d عضو</string>
@@ -380,7 +392,8 @@
     <string name="EncryptionKey">مفتاح التشفير</string>
     <string name="MessageLifetime">عداد التدمير الذاتي</string>
     <string name="ShortMessageLifetimeForever">إيقاف</string>
-    <string name="EncryptionKeyDescription">هذه الصورة هي تصور لمفتاح التشفير لهذه المحادثة السرية مع <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>.<![CDATA[<br><br>]]>إذا كانت مطابقة للصورة التي في جهاز <![CDATA[<b>]]>%2$s<![CDATA[</b>]]>, فمحادثتكم آمنة ٢٠٠٪.<![CDATA[<br><br>]]>للمزيد نرجو الذهاب إلى telegram.org</string>
+    <string name="EncryptionKeyDescription">هذه الصورة والنص تم اشتقاقهم من مفتاح التشفير لهذه المحادثة السرية مع <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>.<![CDATA[<br><br>]]>إذا كانت مطابقة لما يظهر على جهاز <![CDATA[<b>]]>%2$s<![CDATA[</b>]]> ، التشفير من البداية للنهاية مضمون.<![CDATA[<br><br>]]>للإستزادة، إطلع على telegram.org </string>
+    <string name="EncryptionKeyLink">https://telegram.org/faq#secret-chats</string>
     <string name="NumberUnknown">غير معروف</string>
     <string name="Info">معلومات</string>
     <string name="Phone">هاتف</string>
@@ -411,6 +424,7 @@
     <string name="StickersCopy">نسخ الرابط</string>
     <string name="StickersRemove">حذف</string>
     <string name="NoStickers">لا يوجد ملصقات بعد</string>
+    <string name="TooMuchStickersets">المعذرة، لقد وصلت الحد الأعلى لحزم الملصقات.</string>
     <!--settings view-->
     <string name="ResetNotificationsText">تم تعيين كافة الإشعارات افتراضيا</string>
     <string name="TextSize">حجم نص الرسائل</string>
@@ -477,6 +491,7 @@
     <string name="WhenRoaming">عند تواجدك خارج البلاد</string>
     <string name="NoMediaAutoDownload">لا يوجد وسائط</string>
     <string name="AutoplayGifs">تشغيل تلقائي للصور المتحركة</string>
+    <string name="RaiseToSpeak">ارفع الجهاز للتحدث</string>
     <string name="SaveToGallerySettings">حفظ في الجهاز</string>
     <string name="EditName">تعديل الاسم</string>
     <string name="NotificationsPriority">الأولوية</string>
@@ -507,6 +522,8 @@
     <string name="SmartNotificationsTimes">الأوقات</string>
     <string name="SmartNotificationsWithin">خلال</string>
     <string name="SmartNotificationsMinutes">دقائق</string>
+    <string name="SecretWebPage">معاينة الرابط</string>
+    <string name="SecretChat">المحادثات السرية</string>
     <!--cache view-->
     <string name="CacheSettings">إعدادات الذاكرة المخبئية</string>
     <string name="LocalDatabase">قاعدة البيانات على الجهاز</string>
@@ -606,6 +623,15 @@
     <string name="Shadows">الظل</string>
     <string name="Grain">الحبوب</string>
     <string name="Sharpen">زيادة الحدة</string>
+    <string name="Fade">تلاشي</string>
+    <string name="Tint">تظليل</string>
+    <string name="TintShadows">الظلال</string>
+    <string name="TintHighlights">الإضاءات</string>
+    <string name="Curves">المنحنيات</string>
+    <string name="CurvesAll">الكل</string>
+    <string name="CurvesRed">أحمر</string>
+    <string name="CurvesGreen">أخضر</string>
+    <string name="CurvesBlue">أزرق</string>
     <string name="Blur">الطمس</string>
     <string name="BlurOff">إيقاف</string>
     <string name="BlurLinear">طولي</string>
@@ -620,6 +646,7 @@
     <string name="AddCaption">أضف تعليق...</string>
     <string name="PhotoCaption">تعليق الصورة</string>
     <string name="VideoCaption">تعليق المقطع المرئي</string>
+    <string name="Caption">تعليق</string>
     <!--password view-->
     <string name="TwoStepVerification">التحقق بخطوتين</string>
     <string name="SetAdditionalPassword">تعيين كلمة مرور إضافية</string>
@@ -702,6 +729,18 @@
     <string name="PrivacyFloodControlError">المعذرة، يوجد الكثير من الطلبات حاليًا. لا نستطيع تغيير إعدادات الخصوصية الآن، يرجى الإنتظار.</string>
     <string name="ClearOtherSessionsHelp">قم بتسجيل الخروج من جميع الأجهزة الأخرى باستثناء هذا الجهاز</string>
     <string name="RemoveFromListText">إضغط بإستمرار على المستخدم لحذفه</string>
+    <string name="GroupsAndChannels">المجموعات</string>
+    <string name="WhoCanAddMe">من يستطيع إضافتي للمجموعات؟</string>
+    <string name="WhoCanAddMeInfo">بإمكانك تحديد من يستطيع إضافتك للمجموعات والقنوات كيفما تشاء.</string>
+    <string name="AlwaysAllow">دائمًا اسمح</string>
+    <string name="NeverAllow">لا تسمح أبدًا</string>
+    <string name="AlwaysAllowPlaceholder">دائمًا اسمح...</string>
+    <string name="NeverAllowPlaceholder">لا تسمح أبدًا...</string>
+    <string name="CustomShareInfo">هؤلاء المستخدمين يمكنهم أو لا يمكنهم إضافتك للمجموعات والقنوات بغض النظر عن الأعدادات أعلاه.</string>
+    <string name="GroupsAndChannelsHelp">غيّر من يستطيع إضافتك للمجموعات والقنوات.</string>
+    <string name="InviteToGroupError">المعذرة، لا يمكنك إضافة هذا المستخدم للمجموعات بسبب إعدادات الخصوصية المتعلقة به.</string>
+    <string name="InviteToChannelError">المعذرة، لا يمكنك إضافة هذا المستخدم للقنوات بسبب إعدادات الخصوصية المتعلقة به.</string>
+    <string name="CreateGroupError">المعذرة، لا يمكنك إنشاء مجموعة مع هؤلاء المستخدمين نظرًا لإعدادات الخصوصية المتعلقة بهم.</string>
     <!--edit video view-->
     <string name="EditVideo">تحرير الفيديو</string>
     <string name="OriginalVideo">الفيديو الأصلي</string>
@@ -748,14 +787,14 @@
     <string name="ActionInviteYou">لقد قمت بالدخول للمجموعة باستخدام رابط الدعوة</string>
     <string name="ActionInviteUser">un1 قام بالدخول للمجموعة باستخدام رابط الدعوة</string>
     <string name="ActionKickUser">un1 أزال un2</string>
-    <string name="ActionLeftUser">غادر المجموعة العضو un1</string>
+    <string name="ActionLeftUser">un1 غادر المجموعة</string>
     <string name="ActionAddUser">un1 قام بإضافة un2</string>
     <string name="ActionRemovedPhoto">تمت إزالة صورة المجموعة من قِبَل un1</string>
     <string name="ActionChangedPhoto">تم تغيير صورة المجموعة من قِبَل un1</string>
     <string name="ActionChangedTitle">un1 قام بتغيير اسم المجموعة إلى un2</string>
     <string name="ActionCreateGroup">تم إنشاء مجموعة جديدة من قِبَل un1</string>
     <string name="ActionYouKickUser">لقد قمت بإخراج un2</string>
-    <string name="ActionYouLeftUser">لقد قمت بمغادرة المجموعة</string>
+    <string name="ActionYouLeftUser">أنت غادرت المجموعة</string>
     <string name="ActionYouAddUser">لقد قمت بإضافة un2</string>
     <string name="ActionYouRemovedPhoto">لقد قمت بإزالة صورة المجموعة</string>
     <string name="ActionYouChangedPhoto">لقد قمت بتغيير صورة المجموعة</string>
@@ -765,7 +804,7 @@
     <string name="ActionAddUserYou">un1 قام بإضافتك</string>
     <string name="ActionAddUserSelf">un1 عاد إلى المجموعة</string>
     <string name="ActionAddUserSelfYou">لقد عدت إلى المجموعة</string>
-    <string name="UnsupportedMedia">نسخة تيليجرام الموجودة لديك لا تدعم هذه الرسالة. الرجاء التحديث لأحدث نسخة لاستعراضها: https://telegram.org/update</string>
+    <string name="UnsupportedMedia">نسخة تيليجرام الموجودة لديك لا تدعم هذه الرسالة. الرجاء التحديث لأحدث نسخة: https://telegram.org/update</string>
     <string name="AttachPhoto">صورة</string>
     <string name="AttachVideo">مقطع مرئي</string>
     <string name="AttachGif">صورة متحركة</string>
@@ -773,7 +812,7 @@
     <string name="AttachContact">جهة اتصال</string>
     <string name="AttachDocument">ملف</string>
     <string name="AttachSticker">ملصق</string>
-    <string name="AttachAudio">مقطع صوتي</string>
+    <string name="AttachAudio">رسالة صوتية</string>
     <string name="FromYou">أنت</string>
     <string name="ActionTakeScreenshootYou">أنت أخذت لقطة للشاشة !</string>
     <string name="ActionTakeScreenshoot">un1 أخذ لقطة للشاشة !</string>
@@ -818,6 +857,10 @@
     <string name="FeatureUnavailable">.Sorry, this feature is currently not available in your country</string>
     <string name="NoUsernameFound">لا يوجد حساب تيليجرام بهذا الاسم.</string>
     <string name="BotCantJoinGroups">هذا البوت لا يستطيع الدخول للمجموعات.</string>
+    <string name="SecretLinkPreviewAlert">هل ترغب في تفعيل معاينة الروابط المطولة في المحادثات السرية؟ تذكر أن هذه المعاينات يتم إنشاؤها في خوادم تيليجرام.</string>
+    <string name="SecretChatContextBotAlert">يرجى ملاحظة أن البوتات أثناء الكتابة يتم تطويرها من مطورين مستقلين. لكي تعمل هذه البوتات، ما تكتبه بعد معرف البوت يذهب لمطور البوت.</string>
+    <string name="RaiseToSpeakAlert">هل ترغب في تفعيل خاصية رفع الجهاز لإرسال الرسائل الصوتية؟</string>
+    <string name="EditMessageError">المعذرة، لا يمكنك التعديل على هذه الرسالة.</string>
     <!--permissions-->
     <string name="PermissionContacts">تيليجرام يحتاج للسماح له بالوصول لجهات الاتصال الخاصة بك لتتمكن من محادثة أصدقائك من كافة أجهزتك.</string>
     <string name="PermissionStorage">تيليجرام يحتاج للسماح له بالوصول للذاكرة الخاصة بك لتتمكن من إرسال وحفظ الصور، المقاطع المرئية، الموسيقى وغيرها من الوسائط.</string>
@@ -998,12 +1041,18 @@
     <string name="ForwardedVideo_few">%1$d مقطع مرئي معاد توجيهه</string>
     <string name="ForwardedVideo_many">%1$d مقطع مرئي معاد توجيهه</string>
     <string name="ForwardedVideo_other">%1$d مقطع مرئي معاد توجيهه</string>
-    <string name="ForwardedAudio_zero">%1$d مقطع صوتي معاد توجيهه</string>
-    <string name="ForwardedAudio_one">مقطع صوتي معاد توجيهه</string>
-    <string name="ForwardedAudio_two">%1$d مقطع صوتي معاد توجيهه</string>
-    <string name="ForwardedAudio_few">%1$d مقطع صوتي معاد توجيهه</string>
-    <string name="ForwardedAudio_many">%1$d مقطع صوتي معاد توجيهه</string>
-    <string name="ForwardedAudio_other">%1$d مقطع صوتي معاد توجيهه</string>
+    <string name="ForwardedMusic_zero">%1$d مقاطع صوتية معاد إرسالها</string>
+    <string name="ForwardedMusic_one">مقاطع صوتية معاد إرسالها</string>
+    <string name="ForwardedMusic_two">%1$d مقاطع صوتية معاد إرسالها</string>
+    <string name="ForwardedMusic_few">%1$d مقاطع صوتية معاد إرسالها</string>
+    <string name="ForwardedMusic_many">%1$d مقاطع صوتية معاد إرسالها</string>
+    <string name="ForwardedMusic_other">%1$d مقاطع صوتية معاد إرسالها</string>
+    <string name="ForwardedAudio_zero">%1$d رسالة صوتية معاد توجيهها</string>
+    <string name="ForwardedAudio_one">رسالة صوتية معاد توجيهها</string>
+    <string name="ForwardedAudio_two">%1$d رسالة صوتية معاد توجيهها</string>
+    <string name="ForwardedAudio_few">%1$d رسالة صوتية معاد توجيهها</string>
+    <string name="ForwardedAudio_many">%1$d رسالة صوتية معاد توجيهها</string>
+    <string name="ForwardedAudio_other">%1$d رسالة صوتية معاد توجيهها</string>
     <string name="ForwardedLocation_zero">%1$d موقع معاد توجيهه</string>
     <string name="ForwardedLocation_one">موقع معاد توجيهه</string>
     <string name="ForwardedLocation_two">%1$d موقع معاد توجيهه</string>
@@ -1039,7 +1088,4 @@
     <string name="formatterDay24H">HH:mm</string>
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s الساعة %2$s</string>
-    <!--update text-->
-    <string name="updateText">تيليجرام نسخة الأندرويد تم تحديثه. الجديد في نسخة 3.4.0:\n\nثورة الصور المتحركة: صور متحركة أسرع بعشر أضعاف في الإرسال والتنزيل، تشغيل تلقائي، حفظ صورك المفضلة في قسم خاص مع الملصقات.\n\nللاستزادة عن الصور المتحركة:\nhttps://telegram.org/blog/gif-revolution\n\nالبوت أثناء الكتابة: طريقة جديدة لإضافة محتوى البوت لأي محادثة. اكتب معرف البوت ثم نص البحث بعده لتحصل على نتائج فورية لإرسالها. جرب كتابة @gif ثم أي كلمة بعدها. البوتات التجريبية حاليًا هي: @gif و @wiki و @bing و @vid و @bold .\n\nللاستزادة عن البوتات أثناء الكتابة، من هنا:\nhttps://telegram.org/blog/inline-bots</string>
-    <string name="updateBuild">704</string>
 </resources>

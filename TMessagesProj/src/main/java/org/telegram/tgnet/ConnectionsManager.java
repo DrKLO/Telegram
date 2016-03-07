@@ -120,42 +120,46 @@ public class ConnectionsManager {
             @Override
             public void run() {
                 FileLog.d("tmessages", "send request " + object + " with token = " + requestToken);
-                NativeByteBuffer buffer = new NativeByteBuffer(object.getObjectSize());
-                object.serializeToStream(buffer);
-                object.freeResources();
+                try {
+                    NativeByteBuffer buffer = new NativeByteBuffer(object.getObjectSize());
+                    object.serializeToStream(buffer);
+                    object.freeResources();
 
-                native_sendRequest(buffer.address, new RequestDelegateInternal() {
-                    @Override
-                    public void run(int response, int errorCode, String errorText) {
-                        try {
-                            TLObject resp = null;
-                            TLRPC.TL_error error = null;
-                            if (response != 0) {
-                                NativeByteBuffer buff = NativeByteBuffer.wrap(response);
-                                resp = object.deserializeResponse(buff, buff.readInt32(true), true);
-                            } else if (errorText != null) {
-                                error = new TLRPC.TL_error();
-                                error.code = errorCode;
-                                error.text = errorText;
-                                FileLog.e("tmessages", object + " got error " + error.code + " " + error.text);
-                            }
-                            FileLog.d("tmessages", "java received " + resp + " error = " + error);
-                            final TLObject finalResponse = resp;
-                            final TLRPC.TL_error finalError = error;
-                            Utilities.stageQueue.postRunnable(new Runnable() {
-                                @Override
-                                public void run() {
-                                    onComplete.run(finalResponse, finalError);
-                                    if (finalResponse != null) {
-                                        finalResponse.freeResources();
-                                    }
+                    native_sendRequest(buffer.address, new RequestDelegateInternal() {
+                        @Override
+                        public void run(int response, int errorCode, String errorText) {
+                            try {
+                                TLObject resp = null;
+                                TLRPC.TL_error error = null;
+                                if (response != 0) {
+                                    NativeByteBuffer buff = NativeByteBuffer.wrap(response);
+                                    resp = object.deserializeResponse(buff, buff.readInt32(true), true);
+                                } else if (errorText != null) {
+                                    error = new TLRPC.TL_error();
+                                    error.code = errorCode;
+                                    error.text = errorText;
+                                    FileLog.e("tmessages", object + " got error " + error.code + " " + error.text);
                                 }
-                            });
-                        } catch (Exception e) {
-                            FileLog.e("tmessages", e);
+                                FileLog.d("tmessages", "java received " + resp + " error = " + error);
+                                final TLObject finalResponse = resp;
+                                final TLRPC.TL_error finalError = error;
+                                Utilities.stageQueue.postRunnable(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        onComplete.run(finalResponse, finalError);
+                                        if (finalResponse != null) {
+                                            finalResponse.freeResources();
+                                        }
+                                    }
+                                });
+                            } catch (Exception e) {
+                                FileLog.e("tmessages", e);
+                            }
                         }
-                    }
-                }, onQuickAck, flags, datacenterId, connetionType, immediate, requestToken);
+                    }, onQuickAck, flags, datacenterId, connetionType, immediate, requestToken);
+                } catch (Exception e) {
+                    FileLog.e("tmessages", e);
+                }
             }
         });
         return requestToken;

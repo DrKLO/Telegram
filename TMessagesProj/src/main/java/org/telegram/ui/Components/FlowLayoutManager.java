@@ -13,6 +13,8 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.BuildVars;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.support.widget.RecyclerView;
 
 import java.util.ArrayList;
@@ -356,11 +358,14 @@ public class FlowLayoutManager extends RecyclerView.LayoutManager {
         }
         preferredRowSize = getHeight() / 2.0f;
         float viewPortAvailableSize = getWidth();
+        if (BuildVars.DEBUG_VERSION) {
+            FileLog.d("tmessages", "preferredRowSize = " + preferredRowSize + " width = " + viewPortAvailableSize);
+        }
 
         float totalItemSize = 0;
         int[] weights = new int[getItemCount()];
         for (int a = 0; a < getItemCount(); a++) {
-            Size size = getSizeForItem(a);
+            Size size = sizeForItem(a);
             totalItemSize += (size.width / size.height) * preferredRowSize;
             weights[a] = Math.round(size.width / size.height * 100);
         }
@@ -377,7 +382,7 @@ public class FlowLayoutManager extends RecyclerView.LayoutManager {
 
             float summedRatios = 0;
             for (int j = i, n = i + row.size(); j < n; j++) {
-                Size preferredSize = getSizeForItem(j);
+                Size preferredSize = sizeForItem(j);
                 summedRatios += preferredSize.width / preferredSize.height;
             }
 
@@ -392,7 +397,7 @@ public class FlowLayoutManager extends RecyclerView.LayoutManager {
             }
 
             for (int j = i, n = i + row.size(); j < n; j++) {
-                Size preferredSize = getSizeForItem(j);
+                Size preferredSize = sizeForItem(j);
 
                 actualSize.width = Math.round(rowSize / summedRatios * (preferredSize.width / preferredSize.height));
                 actualSize.height = preferredRowSize;//Math.round(rowSize / summedRatios);
@@ -503,7 +508,22 @@ public class FlowLayoutManager extends RecyclerView.LayoutManager {
         return answer;
     }
 
+    private Size sizeForItem(int i) {
+        Size size = getSizeForItem(i);
+        if (size.width == 0) {
+            size.width = 100;
+        }
+        if (size.height == 0) {
+            size.height = 100;
+        }
+        float aspect = size.width / size.height;
+        if (aspect > 4.0f || aspect < 0.2f) {
+            size.height = size.width = Math.max(size.width, size.height);
+        }
+        return size;
+    }
+
     protected Size getSizeForItem(int i) {
-        return new Size(1, 1);
+        return new Size(100, 100);
     }
 }

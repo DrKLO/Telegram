@@ -85,6 +85,7 @@ public class RadioButton extends View {
     public void setColor(int color1, int color2) {
         color = color1;
         checkedColor = color2;
+        invalidate();
     }
 
     private void cancelCheckAnimator() {

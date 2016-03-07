@@ -252,7 +252,7 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
                             progressDialog.show();
                             return;
                         }
-                        final int reqId = MessagesController.getInstance().createChat(nameTextView.getText().toString(), new ArrayList<Integer>(), descriptionTextView.getText().toString(), ChatObject.CHAT_TYPE_CHANNEL);
+                        final int reqId = MessagesController.getInstance().createChat(nameTextView.getText().toString(), new ArrayList<Integer>(), descriptionTextView.getText().toString(), ChatObject.CHAT_TYPE_CHANNEL, ChannelCreateActivity.this);
                         progressDialog = new ProgressDialog(getParentActivity());
                         progressDialog.setMessage(LocaleController.getString("Loading", R.string.Loading));
                         progressDialog.setCanceledOnTouchOutside(false);

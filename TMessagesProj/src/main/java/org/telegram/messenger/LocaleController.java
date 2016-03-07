@@ -700,6 +700,30 @@ public class LocaleController {
         return "LOC_ERR";
     }
 
+    public static String formatDateAudio(long date) {
+        try {
+            Calendar rightNow = Calendar.getInstance();
+            int day = rightNow.get(Calendar.DAY_OF_YEAR);
+            int year = rightNow.get(Calendar.YEAR);
+            rightNow.setTimeInMillis(date * 1000);
+            int dateDay = rightNow.get(Calendar.DAY_OF_YEAR);
+            int dateYear = rightNow.get(Calendar.YEAR);
+
+            if (dateDay == day && year == dateYear) {
+                return String.format("%s %s", LocaleController.getString("TodayAt", R.string.TodayAt), getInstance().formatterDay.format(new Date(date * 1000)));
+            } else if (dateDay + 1 == day && year == dateYear) {
+                return String.format("%s %s", LocaleController.getString("YesterdayAt", R.string.YesterdayAt), getInstance().formatterDay.format(new Date(date * 1000)));
+            } else if (year == dateYear) {
+                return LocaleController.formatString("formatDateAtTime", R.string.formatDateAtTime, getInstance().formatterMonth.format(new Date(date * 1000)), getInstance().formatterDay.format(new Date(date * 1000)));
+            } else {
+                return LocaleController.formatString("formatDateAtTime", R.string.formatDateAtTime, getInstance().formatterYear.format(new Date(date * 1000)), getInstance().formatterDay.format(new Date(date * 1000)));
+            }
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
+        return "LOC_ERR";
+    }
+
     public static String formatDateOnline(long date) {
         try {
             Calendar rightNow = Calendar.getInstance();

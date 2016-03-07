@@ -38,9 +38,9 @@ import org.telegram.ui.Components.LayoutHelper;
 
 import java.util.ArrayList;
 
-public class LastSeenUsersActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
+public class PrivacyUsersActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
 
-    public interface LastSeenUsersActivityDelegate {
+    public interface PrivacyActivityDelegate {
         void didUpdatedUserList(ArrayList<Integer> ids, boolean added);
     }
 
@@ -48,17 +48,20 @@ public class LastSeenUsersActivity extends BaseFragment implements NotificationC
     private ListAdapter listViewAdapter;
     private int selectedUserId;
 
+    private boolean isGroup;
+
     private ArrayList<Integer> uidArray;
     private boolean isAlwaysShare;
 
-    private LastSeenUsersActivityDelegate delegate;
+    private PrivacyActivityDelegate delegate;
 
     private final static int block_user = 1;
 
-    public LastSeenUsersActivity(ArrayList<Integer> users, boolean always) {
+    public PrivacyUsersActivity(ArrayList<Integer> users, boolean group, boolean always) {
         super();
         uidArray = users;
         isAlwaysShare = always;
+        isGroup = group;
     }
 
     @Override
@@ -78,10 +81,18 @@ public class LastSeenUsersActivity extends BaseFragment implements NotificationC
     public View createView(Context context) {
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBar.setAllowOverlayTitle(true);
-        if (isAlwaysShare) {
-            actionBar.setTitle(LocaleController.getString("AlwaysShareWithTitle", R.string.AlwaysShareWithTitle));
+        if (isGroup) {
+            if (isAlwaysShare) {
+                actionBar.setTitle(LocaleController.getString("AlwaysAllow", R.string.AlwaysAllow));
+            } else {
+                actionBar.setTitle(LocaleController.getString("NeverAllow", R.string.NeverAllow));
+            }
         } else {
-            actionBar.setTitle(LocaleController.getString("NeverShareWithTitle", R.string.NeverShareWithTitle));
+            if (isAlwaysShare) {
+                actionBar.setTitle(LocaleController.getString("AlwaysShareWithTitle", R.string.AlwaysShareWithTitle));
+            } else {
+                actionBar.setTitle(LocaleController.getString("NeverShareWithTitle", R.string.NeverShareWithTitle));
+            }
         }
         actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
@@ -91,6 +102,7 @@ public class LastSeenUsersActivity extends BaseFragment implements NotificationC
                 } else if (id == block_user) {
                     Bundle args = new Bundle();
                     args.putBoolean(isAlwaysShare ? "isAlwaysShare" : "isNeverShare", true);
+                    args.putBoolean("isGroup", isGroup);
                     GroupCreateActivity fragment = new GroupCreateActivity(args);
                     fragment.setDelegate(new GroupCreateActivity.GroupCreateActivityDelegate() {
                         @Override
@@ -216,8 +228,8 @@ public class LastSeenUsersActivity extends BaseFragment implements NotificationC
         }
     }
 
-    public void setDelegate(LastSeenUsersActivityDelegate delegate) {
-        this.delegate = delegate;
+    public void setDelegate(PrivacyActivityDelegate privacyActivityDelegate) {
+        delegate = privacyActivityDelegate;
     }
 
     @Override

@@ -22,7 +22,6 @@ import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.Emoji;
@@ -99,8 +98,8 @@ public class PhotoViewerCaptionEnterView extends FrameLayoutFixed implements Not
 
         messageEditText = new EditText(context);
         messageEditText.setHint(LocaleController.getString("AddCaption", R.string.AddCaption));
-        messageEditText.setImeOptions(EditorInfo.IME_FLAG_NO_EXTRACT_UI | EditorInfo.IME_ACTION_DONE);
-        messageEditText.setInputType(EditorInfo.TYPE_TEXT_FLAG_CAP_SENTENCES | EditorInfo.TYPE_CLASS_TEXT);
+        messageEditText.setImeOptions(EditorInfo.IME_FLAG_NO_EXTRACT_UI);
+        messageEditText.setInputType(messageEditText.getInputType() | EditorInfo.TYPE_TEXT_FLAG_CAP_SENTENCES);
         messageEditText.setMaxLines(4);
         messageEditText.setHorizontallyScrolling(false);
         messageEditText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
@@ -111,7 +110,7 @@ public class PhotoViewerCaptionEnterView extends FrameLayoutFixed implements Not
         messageEditText.setTextColor(0xffffffff);
         messageEditText.setHintTextColor(0xb2ffffff);
         InputFilter[] inputFilters = new InputFilter[1];
-        inputFilters[0] = new InputFilter.LengthFilter(140);
+        inputFilters[0] = new InputFilter.LengthFilter(200);
         messageEditText.setFilters(inputFilters);
         frameLayout.addView(messageEditText, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.BOTTOM, 52, 0, 6, 0));
         messageEditText.setOnKeyListener(new OnKeyListener() {
@@ -121,9 +120,6 @@ public class PhotoViewerCaptionEnterView extends FrameLayoutFixed implements Not
                     if (keyEvent.getAction() == 1) {
                         showPopup(0);
                     }
-                    return true;
-                } else if (i == KeyEvent.KEYCODE_ENTER && keyEvent.getAction() == KeyEvent.ACTION_DOWN) {
-                    delegate.onCaptionEnter();
                     return true;
                 }
                 return false;
@@ -137,19 +133,20 @@ public class PhotoViewerCaptionEnterView extends FrameLayoutFixed implements Not
                 }
             }
         });
-        messageEditText.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+        /*messageEditText.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             @Override
             public boolean onEditorAction(TextView textView, int i, KeyEvent keyEvent) {
                 if (i == EditorInfo.IME_ACTION_DONE || i == EditorInfo.IME_ACTION_NEXT) {
                     delegate.onCaptionEnter();
                     return true;
-                } else if (keyEvent != null && i == EditorInfo.IME_NULL && keyEvent.getAction() == KeyEvent.ACTION_DOWN) {
+                } else
+                if (keyEvent != null && i == EditorInfo.IME_NULL && keyEvent.getAction() == KeyEvent.ACTION_DOWN) {
                     delegate.onCaptionEnter();
                     return true;
                 }
                 return false;
             }
-        });
+        });*/
         messageEditText.addTextChangedListener(new TextWatcher() {
             boolean processChange = false;
 

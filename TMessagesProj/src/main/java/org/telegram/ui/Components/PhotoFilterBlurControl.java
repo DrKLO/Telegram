@@ -61,7 +61,7 @@ public class PhotoFilterBlurControl extends FrameLayout {
     private float pointerScale = 1;
     private boolean isMoving;
     private boolean isZooming;
-    private boolean checkForMoving;
+    private boolean checkForMoving = true;
     private boolean checkForZooming;
 
     private int type;

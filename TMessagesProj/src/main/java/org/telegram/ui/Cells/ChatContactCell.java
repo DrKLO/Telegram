@@ -112,7 +112,7 @@ public class ChatContactCell extends ChatBaseCell {
             if (x >= avatarImage.getImageX() && x <= avatarImage.getImageX() + namesWidth + AndroidUtilities.dp(42) && y >= avatarImage.getImageY() && y <= avatarImage.getImageY() + avatarImage.getImageHeight()) {
                 avatarPressed = true;
                 result = true;
-            } else if (x >= avatarImage.getImageX() + namesWidth + AndroidUtilities.dp(52) && y >= AndroidUtilities.dp(13) + namesOffset && x <= avatarImage.getImageX() + namesWidth + AndroidUtilities.dp(92) && y <= AndroidUtilities.dp(52) + namesOffset) {
+            } else if (drawAddButton && x >= avatarImage.getImageX() + namesWidth + AndroidUtilities.dp(52) && y >= AndroidUtilities.dp(13) + namesOffset && x <= avatarImage.getImageX() + namesWidth + AndroidUtilities.dp(92) && y <= AndroidUtilities.dp(52) + namesOffset) {
                 buttonPressed = true;
                 result = true;
             }
@@ -196,7 +196,20 @@ public class ChatContactCell extends ChatBaseCell {
             }
             avatarImage.setImage(currentPhoto, "50_50", avatarDrawable, null, false);
 
+            String phone = messageObject.messageOwner.media.phone_number;
+            if (phone != null && phone.length() != 0) {
+                if (!phone.startsWith("+")) {
+                    phone = "+" + phone;
+                }
+                phone = PhoneFormat.getInstance().format(phone);
+            } else {
+                phone = LocaleController.getString("NumberUnknown", R.string.NumberUnknown);
+            }
+
             String currentNameString = ContactsController.formatName(messageObject.messageOwner.media.first_name, messageObject.messageOwner.media.last_name);
+            if (currentNameString.length() == 0) {
+                currentNameString = phone;
+            }
             int nameWidth = Math.min((int) Math.ceil(namePaint.measureText(currentNameString)), maxWidth);
             if (maxWidth < 0) {
                 maxWidth = AndroidUtilities.dp(100);
@@ -210,15 +223,7 @@ public class ChatContactCell extends ChatBaseCell {
                 nameWidth = 0;
             }
 
-            String phone = messageObject.messageOwner.media.phone_number;
-            if (phone != null && phone.length() != 0) {
-                if (!phone.startsWith("+")) {
-                    phone = "+" + phone;
-                }
-                phone = PhoneFormat.getInstance().format(phone);
-            } else {
-                phone = LocaleController.getString("NumberUnknown", R.string.NumberUnknown);
-            }
+
             int phoneWidth = Math.min((int) Math.ceil(phonePaint.measureText(phone)), maxWidth);
             stringFinal = TextUtils.ellipsize(phone.replace("\n", " "), phonePaint, phoneWidth, TextUtils.TruncateAt.END);
             phoneLayout = new StaticLayout(stringFinal, phonePaint, phoneWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
@@ -230,6 +235,7 @@ public class ChatContactCell extends ChatBaseCell {
 
             namesWidth = Math.max(nameWidth, phoneWidth);
             backgroundWidth = AndroidUtilities.dp(77 + (drawAddButton ? 42 : 0)) + namesWidth;
+            availableTimeWidth = backgroundWidth - AndroidUtilities.dp(29);
 
             super.setMessageObject(messageObject);
         }
@@ -237,7 +243,7 @@ public class ChatContactCell extends ChatBaseCell {
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        setMeasuredDimension(MeasureSpec.getSize(widthMeasureSpec), AndroidUtilities.dp(71) + namesOffset);
+        setMeasuredDimension(MeasureSpec.getSize(widthMeasureSpec), AndroidUtilities.dp(75) + namesOffset);
     }
 
     @Override
@@ -253,7 +259,7 @@ public class ChatContactCell extends ChatBaseCell {
         if (currentMessageObject.isOutOwner()) {
             x = layoutWidth - backgroundWidth + AndroidUtilities.dp(8);
         } else {
-            if (isChat && currentMessageObject.messageOwner.from_id > 0) {
+            if (isChat && currentMessageObject.isFromUser()) {
                 x = AndroidUtilities.dp(69);
             } else {
                 x = AndroidUtilities.dp(16);

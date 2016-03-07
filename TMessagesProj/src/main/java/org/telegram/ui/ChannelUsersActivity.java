@@ -36,7 +36,10 @@ import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.Adapters.BaseFragmentAdapter;
+import org.telegram.ui.Cells.HeaderCell;
+import org.telegram.ui.Cells.RadioCell;
 import org.telegram.ui.Cells.ShadowSectionCell;
+import org.telegram.ui.Cells.TextCell;
 import org.telegram.ui.Cells.TextInfoPrivacyCell;
 import org.telegram.ui.Cells.TextSettingsCell;
 import org.telegram.ui.Cells.UserCell;
@@ -78,7 +81,7 @@ public class ChannelUsersActivity extends BaseFragment implements NotificationCe
         if (type == 0) {
             participantsStartRow = 0;
         } else if (type == 1) {
-            participantsStartRow = isAdmin ? 2 : 0;
+            participantsStartRow = isAdmin && isMegagroup ? 4 : 0;
         } else if (type == 2) {
             participantsStartRow = isAdmin ? (isPublic ? 2 : 3) : 0;
         }
@@ -134,7 +137,7 @@ public class ChannelUsersActivity extends BaseFragment implements NotificationCe
         }
         frameLayout.addView(emptyView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
-        ListView listView = new ListView(context);
+        final ListView listView = new ListView(context);
         listView.setEmptyView(emptyView);
         listView.setDivider(null);
         listView.setDividerHeight(0);
@@ -173,7 +176,33 @@ public class ChannelUsersActivity extends BaseFragment implements NotificationCe
 
                 } else if (type == 1) {
                     if (isAdmin) {
-                        if (i == 0) {
+                        if (isMegagroup && (i == 1 || i == 2)) {
+                            TLRPC.Chat chat = MessagesController.getInstance().getChat(chatId);
+                            if (chat == null) {
+                                return;
+                            }
+                            boolean changed = false;
+                            if (i == 1 && !chat.democracy) {
+                                chat.democracy = true;
+                                changed = true;
+                            } else if (i == 2 && chat.democracy) {
+                                chat.democracy = false;
+                                changed = true;
+                            }
+                            if (changed) {
+                                MessagesController.getInstance().toogleChannelInvites(chatId, chat.democracy);
+                                int count = listView.getChildCount();
+                                for (int a = 0; a < count; a++) {
+                                    View child = listView.getChildAt(a);
+                                    if (child instanceof RadioCell) {
+                                        int num = (Integer) child.getTag();
+                                        ((RadioCell) child).setChecked(num == 0 && chat.democracy || num == 1 && !chat.democracy, true);
+                                    }
+                                }
+                            }
+                            return;
+                        }
+                        if (i == participantsStartRow + participants.size()) {
                             Bundle args = new Bundle();
                             args.putBoolean("onlyUsers", true);
                             args.putBoolean("destroyAfterSelect", true);
@@ -192,6 +221,7 @@ public class ChannelUsersActivity extends BaseFragment implements NotificationCe
                                 }
                             });
                             presentFragment(fragment);
+                            return;
                         }
                     }
                 }
@@ -243,16 +273,18 @@ public class ChannelUsersActivity extends BaseFragment implements NotificationCe
                                         ConnectionsManager.getInstance().sendRequest(req, new RequestDelegate() {
                                             @Override
                                             public void run(TLObject response, TLRPC.TL_error error) {
-                                                final TLRPC.Updates updates = (TLRPC.Updates) response;
-                                                MessagesController.getInstance().processUpdates(updates, false);
-                                                if (!updates.chats.isEmpty()) {
-                                                    AndroidUtilities.runOnUIThread(new Runnable() {
-                                                        @Override
-                                                        public void run() {
-                                                            TLRPC.Chat chat = updates.chats.get(0);
-                                                            MessagesController.getInstance().loadFullChat(chat.id, 0, true);
-                                                        }
-                                                    }, 1000);
+                                                if (response != null) {
+                                                    final TLRPC.Updates updates = (TLRPC.Updates) response;
+                                                    MessagesController.getInstance().processUpdates(updates, false);
+                                                    if (!updates.chats.isEmpty()) {
+                                                        AndroidUtilities.runOnUIThread(new Runnable() {
+                                                            @Override
+                                                            public void run() {
+                                                                TLRPC.Chat chat = updates.chats.get(0);
+                                                                MessagesController.getInstance().loadFullChat(chat.id, 0, true);
+                                                            }
+                                                        }, 1000);
+                                                    }
                                                 }
                                             }
                                         });
@@ -487,12 +519,12 @@ public class ChannelUsersActivity extends BaseFragment implements NotificationCe
                     }
                 }
             } else if (type == 1) {
-                if (isAdmin) {
-                    if (i == 0) {
-                        return true;
-                    } else if (i == 1) {
-                        return false;
-                    }
+                if (i == participantsStartRow + participants.size()) {
+                    return isAdmin;
+                } else if (i == participantsStartRow + participants.size() + 1) {
+                    return false;
+                } else if (isMegagroup && isAdmin && i < 4) {
+                    return i == 1 || i == 2;
                 }
             }
             return i != participants.size() + participantsStartRow && participants.get(i - participantsStartRow).user_id != UserConfig.getClientUserId();
@@ -502,6 +534,8 @@ public class ChannelUsersActivity extends BaseFragment implements NotificationCe
         public int getCount() {
             if (participants.isEmpty() && type == 0 || loadingUsers && !firstLoaded) {
                 return 0;
+            } else if (type == 1) {
+                return participants.size() + (isAdmin ? 2 : 1) + (isAdmin && isMegagroup ? 4 : 0);
             }
             return participants.size() + participantsStartRow + 1;
         }
@@ -557,13 +591,14 @@ public class ChannelUsersActivity extends BaseFragment implements NotificationCe
                     ((TextInfoPrivacyCell) view).setText(String.format("%1$s\n\n%2$s", LocaleController.getString("NoBlockedGroup", R.string.NoBlockedGroup), LocaleController.getString("UnblockText", R.string.UnblockText)));
                     view.setBackgroundResource(R.drawable.greydivider_bottom);
                 } else if (type == 1) {
-                    if (i == 1 && isAdmin) {
+                    if (isAdmin) {
                         if (isMegagroup) {
                             ((TextInfoPrivacyCell) view).setText(LocaleController.getString("MegaAdminsInfo", R.string.MegaAdminsInfo));
+                            view.setBackgroundResource(R.drawable.greydivider_bottom);
                         } else {
                             ((TextInfoPrivacyCell) view).setText(LocaleController.getString("ChannelAdminsInfo", R.string.ChannelAdminsInfo));
+                            view.setBackgroundResource(R.drawable.greydivider_bottom);
                         }
-                        view.setBackgroundResource(R.drawable.greydivider);
                     } else {
                         ((TextInfoPrivacyCell) view).setText("");
                         view.setBackgroundResource(R.drawable.greydivider_bottom);
@@ -594,11 +629,37 @@ public class ChannelUsersActivity extends BaseFragment implements NotificationCe
                         actionCell.setText(LocaleController.getString("ChannelInviteViaLink", R.string.ChannelInviteViaLink), false);
                     }
                 } else if (type == 1) {
-                    actionCell.setText(LocaleController.getString("ChannelAddAdmin", R.string.ChannelAddAdmin), true);
+                    actionCell.setTextAndIcon(LocaleController.getString("ChannelAddAdmin", R.string.ChannelAddAdmin), R.drawable.managers, false);
                 }
             } else if (viewType == 3) {
                 if (view == null) {
                     view = new ShadowSectionCell(mContext);
+                }
+            } else if (viewType == 4) {
+                if (view == null) {
+                    view = new TextCell(mContext);
+                    view.setBackgroundColor(0xffffffff);
+                }
+                ((TextCell) view).setTextAndIcon(LocaleController.getString("ChannelAddAdmin", R.string.ChannelAddAdmin), R.drawable.managers);
+            } else if (viewType == 5) {
+                if (view == null) {
+                    view = new HeaderCell(mContext);
+                    view.setBackgroundColor(0xffffffff);
+                }
+                ((HeaderCell) view).setText(LocaleController.getString("WhoCanAddMembers", R.string.WhoCanAddMembers));
+            } else if (viewType == 6) {
+                if (view == null) {
+                    view = new RadioCell(mContext);
+                    view.setBackgroundColor(0xffffffff);
+                }
+                RadioCell radioCell = (RadioCell) view;
+                TLRPC.Chat chat = MessagesController.getInstance().getChat(chatId);
+                if (i == 1) {
+                    radioCell.setTag(0);
+                    radioCell.setText(LocaleController.getString("WhoCanAddMembersAllMembers", R.string.WhoCanAddMembersAllMembers), chat != null && chat.democracy, true);
+                } else if (i == 2) {
+                    radioCell.setTag(1);
+                    radioCell.setText(LocaleController.getString("WhoCanAddMembersAdmins", R.string.WhoCanAddMembersAdmins), chat != null && !chat.democracy, false);
                 }
             }
             return view;
@@ -608,9 +669,18 @@ public class ChannelUsersActivity extends BaseFragment implements NotificationCe
         public int getItemViewType(int i) {
             if (type == 1) {
                 if (isAdmin) {
-                    if (i == 0) {
-                        return 2;
-                    } else if (i == 1) {
+                    if (isMegagroup) {
+                        if (i == 0) {
+                            return 5;
+                        } else if (i == 1 || i == 2) {
+                            return 6;
+                        } else if (i == 3) {
+                            return 3;
+                        }
+                    }
+                    if (i == participantsStartRow + participants.size()) {
+                        return 4;
+                    } else if (i == participantsStartRow + participants.size() + 1) {
                         return 1;
                     }
                 }
@@ -639,12 +709,12 @@ public class ChannelUsersActivity extends BaseFragment implements NotificationCe
 
         @Override
         public int getViewTypeCount() {
-            return 4;
+            return 7;
         }
 
         @Override
         public boolean isEmpty() {
-            return participants.isEmpty();
+            return getCount() == 0 || participants.isEmpty() && loadingUsers;
         }
     }
 }

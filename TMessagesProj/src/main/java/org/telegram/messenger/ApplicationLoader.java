@@ -325,6 +325,8 @@ public class ApplicationLoader extends Application {
                         FileLog.d("tmessages", "GCM Registration not found.");
                         Intent intent = new Intent(applicationContext, GcmRegistrationIntentService.class);
                         startService(intent);
+                    } else {
+                        FileLog.d("tmessages", "GCM regId = " + UserConfig.pushString);
                     }
                 } else {
                     FileLog.d("tmessages", "No valid Google Play Services APK found.");

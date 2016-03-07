@@ -9,6 +9,7 @@
 package org.telegram.ui.Components;
 
 import android.content.Context;
+import android.os.Build;
 import android.text.Editable;
 import android.text.InputType;
 import android.text.TextUtils;
@@ -26,9 +27,11 @@ import android.widget.GridView;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import org.telegram.SQLite.SQLiteCursor;
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
@@ -37,7 +40,9 @@ import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SendMessagesHelper;
+import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.NativeByteBuffer;
+import org.telegram.tgnet.RequestDelegate;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.BottomSheet;
@@ -66,12 +71,44 @@ public class ShareFrameLayout extends FrameLayout {
     private EmptyTextProgressView searchEmptyView;
     private HashMap<Long, TLRPC.Dialog> selectedDialogs = new HashMap<>();
 
-    public ShareFrameLayout(Context context, BottomSheet bottomSheet, MessageObject messageObject) {
+    private TLRPC.TL_exportedMessageLink exportedMessageLink;
+    private boolean loadingLink;
+    private boolean copyLinkOnEnd;
+
+    private boolean isPublicChannel;
+
+    public ShareFrameLayout(final Context context, BottomSheet bottomSheet, final MessageObject messageObject, boolean publicChannel) {
         super(context);
 
         parentBottomSheet = bottomSheet;
         sendingMessageObject = messageObject;
         searchAdapter = new ShareSearchAdapter(context);
+        isPublicChannel = publicChannel;
+
+        if (publicChannel) {
+            loadingLink = true;
+            TLRPC.TL_channels_exportMessageLink req = new TLRPC.TL_channels_exportMessageLink();
+            req.id = messageObject.getId();
+            req.channel = MessagesController.getInputChannel(messageObject.messageOwner.to_id.channel_id);
+            ConnectionsManager.getInstance().sendRequest(req, new RequestDelegate() {
+                @Override
+                public void run(final TLObject response, TLRPC.TL_error error) {
+                    AndroidUtilities.runOnUIThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            if (response != null) {
+                                exportedMessageLink = (TLRPC.TL_exportedMessageLink) response;
+                                if (copyLinkOnEnd) {
+                                    copyLink(context);
+                                }
+                            }
+                            loadingLink = false;
+                        }
+                    });
+
+                }
+            });
+        }
 
         FrameLayout frameLayout = new FrameLayout(context);
         frameLayout.setBackgroundColor(0xffffffff);
@@ -85,21 +122,31 @@ public class ShareFrameLayout extends FrameLayout {
         doneButton.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
-                ArrayList<MessageObject> arrayList = new ArrayList<>();
-                arrayList.add(sendingMessageObject);
-                for (HashMap.Entry<Long, TLRPC.Dialog> entry : selectedDialogs.entrySet()) {
-                    TLRPC.Dialog dialog = entry.getValue();
-                    boolean asAdmin = true;
-                    int lower_id = (int) dialog.id;
-                    if (lower_id < 0) {
-                        TLRPC.Chat chat = MessagesController.getInstance().getChat(-lower_id);
-                        if (chat.megagroup) {
-                            asAdmin = false;
-                        }
+                if (selectedDialogs.isEmpty() && isPublicChannel) {
+                    if (loadingLink) {
+                        copyLinkOnEnd = true;
+                        Toast.makeText(ShareFrameLayout.this.getContext(), LocaleController.getString("Loading", R.string.Loading), Toast.LENGTH_SHORT).show();
+                    } else {
+                        copyLink(ShareFrameLayout.this.getContext());
                     }
-                    SendMessagesHelper.getInstance().sendMessage(arrayList, entry.getKey(), asAdmin);
+                    parentBottomSheet.dismiss();
+                } else {
+                    ArrayList<MessageObject> arrayList = new ArrayList<>();
+                    arrayList.add(sendingMessageObject);
+                    for (HashMap.Entry<Long, TLRPC.Dialog> entry : selectedDialogs.entrySet()) {
+                        TLRPC.Dialog dialog = entry.getValue();
+                        boolean asAdmin = true;
+                        int lower_id = (int) dialog.id;
+                        if (lower_id < 0) {
+                            TLRPC.Chat chat = MessagesController.getInstance().getChat(-lower_id);
+                            if (chat.megagroup) {
+                                asAdmin = false;
+                            }
+                        }
+                        SendMessagesHelper.getInstance().sendMessage(arrayList, entry.getKey(), asAdmin);
+                    }
+                    parentBottomSheet.dismiss();
                 }
-                parentBottomSheet.dismiss();
             }
         });
 
@@ -118,7 +165,6 @@ public class ShareFrameLayout extends FrameLayout {
         doneButtonTextView.setTextColor(0xff19a7e8);
         doneButtonTextView.setGravity(Gravity.CENTER);
         doneButtonTextView.setCompoundDrawablePadding(AndroidUtilities.dp(8));
-        doneButtonTextView.setText(LocaleController.getString("Send", R.string.Send).toUpperCase());
         doneButtonTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         doneButton.addView(doneButtonTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL));
 
@@ -218,7 +264,7 @@ public class ShareFrameLayout extends FrameLayout {
                     selectedDialogs.put(dialog.id, dialog);
                     cell.setChecked(true, true);
                 }
-                updateSelectedCount(selectedDialogs.size(), true);
+                updateSelectedCount();
             }
         });
 
@@ -229,20 +275,47 @@ public class ShareFrameLayout extends FrameLayout {
         gridView.setEmptyView(searchEmptyView);
         addView(searchEmptyView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT, 0, 48, 0, 0));
 
-        updateSelectedCount(selectedDialogs.size(), true);
+        updateSelectedCount();
     }
 
-    public void updateSelectedCount(int count, boolean disable) {
-        if (count == 0) {
+    public void copyLink(Context context) {
+        if (exportedMessageLink == null) {
+            return;
+        }
+        try {
+            if (Build.VERSION.SDK_INT < 11) {
+                android.text.ClipboardManager clipboard = (android.text.ClipboardManager) ApplicationLoader.applicationContext.getSystemService(Context.CLIPBOARD_SERVICE);
+                clipboard.setText(exportedMessageLink.link);
+            } else {
+                android.content.ClipboardManager clipboard = (android.content.ClipboardManager) ApplicationLoader.applicationContext.getSystemService(Context.CLIPBOARD_SERVICE);
+                android.content.ClipData clip = android.content.ClipData.newPlainText("label", exportedMessageLink.link);
+                clipboard.setPrimaryClip(clip);
+            }
+            Toast.makeText(context, LocaleController.getString("LinkCopied", R.string.LinkCopied), Toast.LENGTH_SHORT).show();
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
+    }
+
+    public void updateSelectedCount() {
+        if (selectedDialogs.isEmpty()) {
             doneButtonBadgeTextView.setVisibility(View.GONE);
-            doneButtonTextView.setTextColor(0xffb3b3b3);
-            doneButton.setEnabled(false);
+            if (!isPublicChannel) {
+                doneButtonTextView.setTextColor(0xffb3b3b3);
+                doneButton.setEnabled(false);
+                doneButtonTextView.setText(LocaleController.getString("Send", R.string.Send).toUpperCase());
+            } else {
+                doneButtonTextView.setTextColor(0xff517fad);
+                doneButton.setEnabled(true);
+                doneButtonTextView.setText(LocaleController.getString("CopyLink", R.string.CopyLink).toUpperCase());
+            }
         } else {
             doneButtonTextView.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0);
             doneButtonBadgeTextView.setVisibility(View.VISIBLE);
-            doneButtonBadgeTextView.setText(String.format("%d", count));
+            doneButtonBadgeTextView.setText(String.format("%d", selectedDialogs.size()));
             doneButtonTextView.setTextColor(0xff3ec1f9);
             doneButton.setEnabled(true);
+            doneButtonTextView.setText(LocaleController.getString("Send", R.string.Send).toUpperCase());
         }
     }
 

@@ -43,14 +43,14 @@ import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.Adapters.BaseFragmentAdapter;
 import org.telegram.ui.Cells.HeaderCell;
-import org.telegram.ui.Cells.LastSeenRadioCell;
+import org.telegram.ui.Cells.RadioCell;
 import org.telegram.ui.Cells.TextInfoPrivacyCell;
 import org.telegram.ui.Cells.TextSettingsCell;
 import org.telegram.ui.Components.LayoutHelper;
 
 import java.util.ArrayList;
 
-public class LastSeenActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
+public class PrivacyControlActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
 
     private ListAdapter listAdapter;
     private View doneButton;
@@ -60,11 +60,15 @@ public class LastSeenActivity extends BaseFragment implements NotificationCenter
     private ArrayList<Integer> currentMinus;
     private int lastCheckedType = -1;
 
-    private int lastSeenSectionRow;
+    private boolean isGroup;
+
+    private boolean enableAnimation;
+
+    private int sectionRow;
     private int everybodyRow;
     private int myContactsRow;
     private int nobodyRow;
-    private int lastSeenDetailRow;
+    private int detailRow;
     private int shareSectionRow;
     private int alwaysShareRow;
     private int neverShareRow;
@@ -83,6 +87,11 @@ public class LastSeenActivity extends BaseFragment implements NotificationCenter
             }
             return false;
         }
+    }
+
+    public PrivacyControlActivity(boolean group) {
+        super();
+        isGroup = group;
     }
 
     @Override
@@ -104,7 +113,11 @@ public class LastSeenActivity extends BaseFragment implements NotificationCenter
     public View createView(Context context) {
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBar.setAllowOverlayTitle(true);
-        actionBar.setTitle(LocaleController.getString("PrivacyLastSeen", R.string.PrivacyLastSeen));
+        if (isGroup) {
+            actionBar.setTitle(LocaleController.getString("GroupsAndChannels", R.string.GroupsAndChannels));
+        } else {
+            actionBar.setTitle(LocaleController.getString("PrivacyLastSeen", R.string.PrivacyLastSeen));
+        }
         actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
             public void onItemClick(int id) {
@@ -115,12 +128,16 @@ public class LastSeenActivity extends BaseFragment implements NotificationCenter
                         return;
                     }
 
-                    if (currentType != 0) {
+                    if (currentType != 0 && !isGroup) {
                         final SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
                         boolean showed = preferences.getBoolean("privacyAlertShowed", false);
                         if (!showed) {
                             AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-                            builder.setMessage(LocaleController.getString("CustomHelp", R.string.CustomHelp));
+                            if (isGroup) {
+                                builder.setMessage(LocaleController.getString("WhoCanAddMeInfo", R.string.WhoCanAddMeInfo));
+                            } else {
+                                builder.setMessage(LocaleController.getString("CustomHelp", R.string.CustomHelp));
+                            }
                             builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
                             builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), new DialogInterface.OnClickListener() {
                                 @Override
@@ -176,6 +193,7 @@ public class LastSeenActivity extends BaseFragment implements NotificationCenter
                     if (newType == currentType) {
                         return;
                     }
+                    enableAnimation = true;
                     doneButton.setVisibility(View.VISIBLE);
                     lastCheckedType = currentType;
                     currentType = newType;
@@ -190,19 +208,20 @@ public class LastSeenActivity extends BaseFragment implements NotificationCenter
                     if (createFromArray.isEmpty()) {
                         Bundle args = new Bundle();
                         args.putBoolean(i == neverShareRow ? "isNeverShare" : "isAlwaysShare", true);
+                        args.putBoolean("isGroup", isGroup);
                         GroupCreateActivity fragment = new GroupCreateActivity(args);
                         fragment.setDelegate(new GroupCreateActivity.GroupCreateActivityDelegate() {
                             @Override
                             public void didSelectUsers(ArrayList<Integer> ids) {
                                 if (i == neverShareRow) {
                                     currentMinus = ids;
-                                    for (Integer id : currentMinus) {
-                                        currentPlus.remove(id);
+                                    for (int a = 0; a < currentMinus.size(); a++) {
+                                        currentPlus.remove(currentMinus.get(a));
                                     }
                                 } else {
                                     currentPlus = ids;
-                                    for (Integer id : currentPlus) {
-                                        currentMinus.remove(id);
+                                    for (int a = 0; a < currentPlus.size(); a++) {
+                                        currentMinus.remove(currentPlus.get(a));
                                     }
                                 }
                                 doneButton.setVisibility(View.VISIBLE);
@@ -212,22 +231,22 @@ public class LastSeenActivity extends BaseFragment implements NotificationCenter
                         });
                         presentFragment(fragment);
                     } else {
-                        LastSeenUsersActivity fragment = new LastSeenUsersActivity(createFromArray, i == alwaysShareRow);
-                        fragment.setDelegate(new LastSeenUsersActivity.LastSeenUsersActivityDelegate() {
+                        PrivacyUsersActivity fragment = new PrivacyUsersActivity(createFromArray, isGroup, i == alwaysShareRow);
+                        fragment.setDelegate(new PrivacyUsersActivity.PrivacyActivityDelegate() {
                             @Override
                             public void didUpdatedUserList(ArrayList<Integer> ids, boolean added) {
                                 if (i == neverShareRow) {
                                     currentMinus = ids;
                                     if (added) {
-                                        for (Integer id : currentMinus) {
-                                            currentPlus.remove(id);
+                                        for (int a = 0; a < currentMinus.size(); a++) {
+                                            currentPlus.remove(currentMinus.get(a));
                                         }
                                     }
                                 } else {
                                     currentPlus = ids;
                                     if (added) {
-                                        for (Integer id : currentPlus) {
-                                            currentMinus.remove(id);
+                                        for (int a = 0; a < currentPlus.size(); a++) {
+                                            currentMinus.remove(currentPlus.get(a));
                                         }
                                     }
                                 }
@@ -253,11 +272,15 @@ public class LastSeenActivity extends BaseFragment implements NotificationCenter
 
     private void applyCurrentPrivacySettings() {
         TLRPC.TL_account_setPrivacy req = new TLRPC.TL_account_setPrivacy();
-        req.key = new TLRPC.TL_inputPrivacyKeyStatusTimestamp();
+        if (isGroup) {
+            req.key = new TLRPC.TL_inputPrivacyKeyChatInvite();
+        } else {
+            req.key = new TLRPC.TL_inputPrivacyKeyStatusTimestamp();
+        }
         if (currentType != 0 && currentPlus.size() > 0) {
             TLRPC.TL_inputPrivacyValueAllowUsers rule = new TLRPC.TL_inputPrivacyValueAllowUsers();
-            for (Integer uid : currentPlus) {
-                TLRPC.User user = MessagesController.getInstance().getUser(uid);
+            for (int a = 0; a < currentPlus.size(); a++) {
+                TLRPC.User user = MessagesController.getInstance().getUser(currentPlus.get(a));
                 if (user != null) {
                     TLRPC.InputUser inputUser = MessagesController.getInputUser(user);
                     if (inputUser != null) {
@@ -269,8 +292,8 @@ public class LastSeenActivity extends BaseFragment implements NotificationCenter
         }
         if (currentType != 1 && currentMinus.size() > 0) {
             TLRPC.TL_inputPrivacyValueDisallowUsers rule = new TLRPC.TL_inputPrivacyValueDisallowUsers();
-            for (Integer uid : currentMinus) {
-                TLRPC.User user = MessagesController.getInstance().getUser(uid);
+            for (int a = 0; a < currentMinus.size(); a++) {
+                TLRPC.User user = MessagesController.getInstance().getUser(currentMinus.get(a));
                 if (user != null) {
                     TLRPC.InputUser inputUser = MessagesController.getInputUser(user);
                     if (inputUser != null) {
@@ -313,7 +336,7 @@ public class LastSeenActivity extends BaseFragment implements NotificationCenter
                             finishFragment();
                             TLRPC.TL_account_privacyRules rules = (TLRPC.TL_account_privacyRules) response;
                             MessagesController.getInstance().putUsers(rules.users, false);
-                            ContactsController.getInstance().setPrivacyRules(rules.rules);
+                            ContactsController.getInstance().setPrivacyRules(rules.rules, isGroup);
                         } else {
                             showErrorAlert();
                         }
@@ -337,13 +360,14 @@ public class LastSeenActivity extends BaseFragment implements NotificationCenter
     private void checkPrivacy() {
         currentPlus = new ArrayList<>();
         currentMinus = new ArrayList<>();
-        ArrayList<TLRPC.PrivacyRule> privacyRules = ContactsController.getInstance().getPrivacyRules();
+        ArrayList<TLRPC.PrivacyRule> privacyRules = ContactsController.getInstance().getPrivacyRules(isGroup);
         if (privacyRules.size() == 0) {
             currentType = 1;
             return;
         }
         int type = -1;
-        for (TLRPC.PrivacyRule rule : privacyRules) {
+        for (int a = 0; a < privacyRules.size(); a++) {
+            TLRPC.PrivacyRule rule = privacyRules.get(a);
             if (rule instanceof TLRPC.TL_privacyValueAllowUsers) {
                 currentPlus.addAll(rule.users);
             } else if (rule instanceof TLRPC.TL_privacyValueDisallowUsers) {
@@ -371,11 +395,15 @@ public class LastSeenActivity extends BaseFragment implements NotificationCenter
 
     private void updateRows() {
         rowCount = 0;
-        lastSeenSectionRow = rowCount++;
+        sectionRow = rowCount++;
         everybodyRow = rowCount++;
         myContactsRow = rowCount++;
-        nobodyRow = rowCount++;
-        lastSeenDetailRow = rowCount++;
+        if (isGroup) {
+            nobodyRow = -1;
+        } else {
+            nobodyRow = rowCount++;
+        }
+        detailRow = rowCount++;
         shareSectionRow = rowCount++;
         if (currentType == 1 || currentType == 2) {
             alwaysShareRow = rowCount++;
@@ -397,9 +425,7 @@ public class LastSeenActivity extends BaseFragment implements NotificationCenter
     public void onResume() {
         super.onResume();
         lastCheckedType = -1;
-        if (listAdapter != null) {
-            listAdapter.notifyDataSetChanged();
-        }
+        enableAnimation = false;
     }
 
     private class ListAdapter extends BaseFragmentAdapter {
@@ -455,7 +481,11 @@ public class LastSeenActivity extends BaseFragment implements NotificationCenter
                     } else {
                         value = LocaleController.getString("EmpryUsersPlaceholder", R.string.EmpryUsersPlaceholder);
                     }
-                    textCell.setTextAndValue(LocaleController.getString("AlwaysShareWith", R.string.AlwaysShareWith), value, neverShareRow != -1);
+                    if (isGroup) {
+                        textCell.setTextAndValue(LocaleController.getString("AlwaysAllow", R.string.AlwaysAllow), value, neverShareRow != -1);
+                    } else {
+                        textCell.setTextAndValue(LocaleController.getString("AlwaysShareWith", R.string.AlwaysShareWith), value, neverShareRow != -1);
+                    }
                 } else if (i == neverShareRow) {
                     String value;
                     if (currentMinus.size() != 0) {
@@ -463,18 +493,30 @@ public class LastSeenActivity extends BaseFragment implements NotificationCenter
                     } else {
                         value = LocaleController.getString("EmpryUsersPlaceholder", R.string.EmpryUsersPlaceholder);
                     }
-                    textCell.setTextAndValue(LocaleController.getString("NeverShareWith", R.string.NeverShareWith), value, false);
+                    if (isGroup) {
+                        textCell.setTextAndValue(LocaleController.getString("NeverAllow", R.string.NeverAllow), value, false);
+                    } else {
+                        textCell.setTextAndValue(LocaleController.getString("NeverShareWith", R.string.NeverShareWith), value, false);
+                    }
                 }
             } else if (type == 1) {
                 if (view == null) {
                     view = new TextInfoPrivacyCell(mContext);
                     view.setBackgroundColor(0xffffffff);
                 }
-                if (i == lastSeenDetailRow) {
-                    ((TextInfoPrivacyCell) view).setText(LocaleController.getString("CustomHelp", R.string.CustomHelp));
+                if (i == detailRow) {
+                    if (isGroup) {
+                        ((TextInfoPrivacyCell) view).setText(LocaleController.getString("WhoCanAddMeInfo", R.string.WhoCanAddMeInfo));
+                    } else {
+                        ((TextInfoPrivacyCell) view).setText(LocaleController.getString("CustomHelp", R.string.CustomHelp));
+                    }
                     view.setBackgroundResource(R.drawable.greydivider);
                 } else if (i == shareDetailRow) {
-                    ((TextInfoPrivacyCell) view).setText(LocaleController.getString("CustomShareSettingsHelp", R.string.CustomShareSettingsHelp));
+                    if (isGroup) {
+                        ((TextInfoPrivacyCell) view).setText(LocaleController.getString("CustomShareInfo", R.string.CustomShareInfo));
+                    } else {
+                        ((TextInfoPrivacyCell) view).setText(LocaleController.getString("CustomShareSettingsHelp", R.string.CustomShareSettingsHelp));
+                    }
                     view.setBackgroundResource(R.drawable.greydivider_bottom);
                 }
             } else if (type == 2) {
@@ -482,32 +524,36 @@ public class LastSeenActivity extends BaseFragment implements NotificationCenter
                     view = new HeaderCell(mContext);
                     view.setBackgroundColor(0xffffffff);
                 }
-                if (i == lastSeenSectionRow) {
-                    ((HeaderCell) view).setText(LocaleController.getString("LastSeenTitle", R.string.LastSeenTitle));
+                if (i == sectionRow) {
+                    if (isGroup) {
+                        ((HeaderCell) view).setText(LocaleController.getString("WhoCanAddMe", R.string.WhoCanAddMe));
+                    } else {
+                        ((HeaderCell) view).setText(LocaleController.getString("LastSeenTitle", R.string.LastSeenTitle));
+                    }
                 } else if (i == shareSectionRow) {
                     ((HeaderCell) view).setText(LocaleController.getString("AddExceptions", R.string.AddExceptions));
                 }
             } else if (type == 3) {
                 if (view == null) {
-                    view = new LastSeenRadioCell(mContext);
+                    view = new RadioCell(mContext);
                     view.setBackgroundColor(0xffffffff);
                 }
-                LastSeenRadioCell textCell = (LastSeenRadioCell) view;
+                RadioCell textCell = (RadioCell) view;
                 int checkedType = 0;
                 if (i == everybodyRow) {
                     textCell.setText(LocaleController.getString("LastSeenEverybody", R.string.LastSeenEverybody), lastCheckedType == 0, true);
                     checkedType = 0;
                 } else if (i == myContactsRow) {
-                    textCell.setText(LocaleController.getString("LastSeenContacts", R.string.LastSeenContacts), lastCheckedType == 2, true);
+                    textCell.setText(LocaleController.getString("LastSeenContacts", R.string.LastSeenContacts), lastCheckedType == 2, nobodyRow != -1);
                     checkedType = 2;
                 } else if (i == nobodyRow) {
                     textCell.setText(LocaleController.getString("LastSeenNobody", R.string.LastSeenNobody), lastCheckedType == 1, false);
                     checkedType = 1;
                 }
                 if (lastCheckedType == checkedType) {
-                    textCell.setChecked(false, true);
+                    textCell.setChecked(false, enableAnimation);
                 } else if (currentType == checkedType) {
-                    textCell.setChecked(true, true);
+                    textCell.setChecked(true, enableAnimation);
                 }
             }
             return view;
@@ -517,9 +563,9 @@ public class LastSeenActivity extends BaseFragment implements NotificationCenter
         public int getItemViewType(int i) {
             if (i == alwaysShareRow || i == neverShareRow) {
                 return 0;
-            } else if (i == shareDetailRow || i == lastSeenDetailRow) {
+            } else if (i == shareDetailRow || i == detailRow) {
                 return 1;
-            } else if (i == lastSeenSectionRow || i == shareSectionRow) {
+            } else if (i == sectionRow || i == shareSectionRow) {
                 return 2;
             } else if (i == everybodyRow || i == myContactsRow || i == nobodyRow) {
                 return 3;

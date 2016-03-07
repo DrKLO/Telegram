@@ -27,6 +27,8 @@ import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
+import android.os.Parcelable;
+import android.provider.Browser;
 import android.provider.DocumentsContract;
 import android.provider.MediaStore;
 import android.text.Spannable;
@@ -406,6 +408,29 @@ public class AndroidUtilities {
                 leftSide = dp(320);
             }
             return Math.min(smallSide, maxSide - leftSide);
+        }
+    }
+
+    public static void openUrl(Context context, String url) {
+        if (context == null || url == null) {
+            return;
+        }
+        openUrl(context, Uri.parse(url));
+    }
+
+    public static void openUrl(Context context, Uri uri) {
+        if (context == null || uri == null) {
+            return;
+        }
+        try {
+            Intent intent = new Intent(Intent.ACTION_VIEW, uri);
+            intent.putExtra("android.support.customtabs.extra.SESSION", (Parcelable) null);
+            intent.putExtra("android.support.customtabs.extra.TOOLBAR_COLOR", 0xff54759e);
+            intent.putExtra("android.support.customtabs.extra.TITLE_VISIBILITY", 1);
+            intent.putExtra(Browser.EXTRA_APPLICATION_ID, context.getPackageName());
+            context.startActivity(intent);
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
         }
     }
 
@@ -1056,5 +1081,12 @@ public class AndroidUtilities {
             }
         }
         return true;
+    }
+
+    public static byte[] calcAuthKeyHash(byte[] auth_key) {
+        byte[] sha1 = Utilities.computeSHA1(auth_key);
+        byte[] key_hash = new byte[16];
+        System.arraycopy(sha1, 0, key_hash, 0, 16);
+        return key_hash;
     }
 }

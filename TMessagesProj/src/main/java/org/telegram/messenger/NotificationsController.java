@@ -78,8 +78,10 @@ public class NotificationsController {
     private SoundPool soundPool;
     private int soundIn;
     private int soundOut;
+    private int soundRecord;
     private boolean soundInLoaded;
     private boolean soundOutLoaded;
+    private boolean soundRecordLoaded;
     protected AudioManager audioManager;
     private AlarmManager alarmManager;
 
@@ -681,7 +683,11 @@ public class NotificationsController {
         int chat_id = messageObject.messageOwner.to_id.chat_id != 0 ? messageObject.messageOwner.to_id.chat_id : messageObject.messageOwner.to_id.channel_id;
         int from_id = messageObject.messageOwner.to_id.user_id;
         if (from_id == 0) {
-            from_id = messageObject.messageOwner.from_id;
+            if (messageObject.isFromUser()) {
+                from_id = messageObject.messageOwner.from_id;
+            } else {
+                from_id = -chat_id;
+            }
         } else if (from_id == UserConfig.getClientUserId()) {
             from_id = messageObject.messageOwner.from_id;
         }
@@ -747,8 +753,10 @@ public class NotificationsController {
                             }
                         } else if (messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaPhoto) {
                             msg = LocaleController.formatString("NotificationMessagePhoto", R.string.NotificationMessagePhoto, name);
-                        } else if (messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaVideo) {
+                        } else if (messageObject.isVideo()) {
                             msg = LocaleController.formatString("NotificationMessageVideo", R.string.NotificationMessageVideo, name);
+                        } else if (messageObject.isVoice()) {
+                            msg = LocaleController.formatString("NotificationMessageAudio", R.string.NotificationMessageAudio, name);
                         } else if (messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaContact) {
                             msg = LocaleController.formatString("NotificationMessageContact", R.string.NotificationMessageContact, name);
                         } else if (messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaGeo || messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaVenue) {
@@ -761,8 +769,6 @@ public class NotificationsController {
                             } else {
                                 msg = LocaleController.formatString("NotificationMessageDocument", R.string.NotificationMessageDocument, name);
                             }
-                        } else if (messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaAudio) {
-                            msg = LocaleController.formatString("NotificationMessageAudio", R.string.NotificationMessageAudio, name);
                         }
                     }
                 } else {
@@ -857,8 +863,10 @@ public class NotificationsController {
                                     }
                                 } else if (messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaPhoto) {
                                     msg = LocaleController.formatString("ChannelMessagePhoto", R.string.ChannelMessagePhoto, name, chat.title);
-                                } else if (messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaVideo) {
+                                } else if (messageObject.isVideo()) {
                                     msg = LocaleController.formatString("ChannelMessageVideo", R.string.ChannelMessageVideo, name, chat.title);
+                                } else if (messageObject.isVoice()) {
+                                    msg = LocaleController.formatString("ChannelMessageAudio", R.string.ChannelMessageAudio, name, chat.title);
                                 } else if (messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaContact) {
                                     msg = LocaleController.formatString("ChannelMessageContact", R.string.ChannelMessageContact, name, chat.title);
                                 } else if (messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaGeo || messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaVenue) {
@@ -871,8 +879,6 @@ public class NotificationsController {
                                     } else {
                                         msg = LocaleController.formatString("ChannelMessageDocument", R.string.ChannelMessageDocument, name, chat.title);
                                     }
-                                } else if (messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaAudio) {
-                                    msg = LocaleController.formatString("ChannelMessageAudio", R.string.ChannelMessageAudio, name, chat.title);
                                 }
                             } else {
                                 if (messageObject.isMediaEmpty()) {
@@ -883,8 +889,10 @@ public class NotificationsController {
                                     }
                                 } else if (messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaPhoto) {
                                     msg = LocaleController.formatString("ChannelMessageGroupPhoto", R.string.ChannelMessageGroupPhoto, name, chat.title);
-                                } else if (messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaVideo) {
+                                } else if (messageObject.isVideo()) {
                                     msg = LocaleController.formatString("ChannelMessageGroupVideo", R.string.ChannelMessageGroupVideo, name, chat.title);
+                                } else if (messageObject.isVoice()) {
+                                    msg = LocaleController.formatString("ChannelMessageGroupAudio", R.string.ChannelMessageGroupAudio, name, chat.title);
                                 } else if (messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaContact) {
                                     msg = LocaleController.formatString("ChannelMessageGroupContact", R.string.ChannelMessageGroupContact, name, chat.title);
                                 } else if (messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaGeo || messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaVenue) {
@@ -897,8 +905,6 @@ public class NotificationsController {
                                     } else {
                                         msg = LocaleController.formatString("ChannelMessageGroupDocument", R.string.ChannelMessageGroupDocument, name, chat.title);
                                     }
-                                } else if (messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaAudio) {
-                                    msg = LocaleController.formatString("ChannelMessageGroupAudio", R.string.ChannelMessageGroupAudio, name, chat.title);
                                 }
                             }
                         } else {
@@ -910,8 +916,10 @@ public class NotificationsController {
                                 }
                             } else if (messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaPhoto) {
                                 msg = LocaleController.formatString("NotificationMessageGroupPhoto", R.string.NotificationMessageGroupPhoto, name, chat.title);
-                            } else if (messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaVideo) {
+                            } else if (messageObject.isVideo()) {
                                 msg = LocaleController.formatString("NotificationMessageGroupVideo", R.string.NotificationMessageGroupVideo, name, chat.title);
+                            } else if (messageObject.isVoice()) {
+                                msg = LocaleController.formatString("NotificationMessageGroupAudio", R.string.NotificationMessageGroupAudio, name, chat.title);
                             } else if (messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaContact) {
                                 msg = LocaleController.formatString("NotificationMessageGroupContact", R.string.NotificationMessageGroupContact, name, chat.title);
                             } else if (messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaGeo || messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaVenue) {
@@ -924,13 +932,15 @@ public class NotificationsController {
                                 } else {
                                     msg = LocaleController.formatString("NotificationMessageGroupDocument", R.string.NotificationMessageGroupDocument, name, chat.title);
                                 }
-                            } else if (messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaAudio) {
-                                msg = LocaleController.formatString("NotificationMessageGroupAudio", R.string.NotificationMessageGroupAudio, name, chat.title);
                             }
                         }
                     }
                 } else {
-                    msg = LocaleController.formatString("NotificationMessageGroupNoText", R.string.NotificationMessageGroupNoText, name, chat.title);
+                    if (ChatObject.isChannel(chat) && !chat.megagroup) {
+                        msg = LocaleController.formatString("ChannelMessageNoText", R.string.ChannelMessageNoText, name, chat.title);
+                    } else {
+                        msg = LocaleController.formatString("NotificationMessageGroupNoText", R.string.NotificationMessageGroupNoText, name, chat.title);
+                    }
                 }
             }
         }
@@ -1012,8 +1022,45 @@ public class NotificationsController {
         }
     }
 
+    /*public void playRecordSound() {
+        try {
+            if (audioManager.getRingerMode() == AudioManager.RINGER_MODE_SILENT) {
+                return;
+            }
+            notificationsQueue.postRunnable(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        if (soundPool == null) {
+                            soundPool = new SoundPool(3, AudioManager.STREAM_SYSTEM, 0);
+                            soundPool.setOnLoadCompleteListener(new SoundPool.OnLoadCompleteListener() {
+                                @Override
+                                public void onLoadComplete(SoundPool soundPool, int sampleId, int status) {
+                                    if (status == 0) {
+                                        soundPool.play(sampleId, 1.0f, 1.0f, 1, 0, 1.0f);
+                                    }
+                                }
+                            });
+                        }
+                        if (soundRecord == 0 && !soundRecordLoaded) {
+                            soundRecordLoaded = true;
+                            soundRecord = soundPool.load(ApplicationLoader.applicationContext, R.raw.sound_record, 1);
+                        }
+                        if (soundRecord != 0) {
+                            soundPool.play(soundRecord, 1.0f, 1.0f, 1, 0, 1.0f);
+                        }
+                    } catch (Exception e) {
+                        FileLog.e("tmessages", e);
+                    }
+                }
+            });
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
+    }*/
+
     private void playInChatSound() {
-        if (!inChatSoundEnabled) {
+        if (!inChatSoundEnabled || MediaController.getInstance().isRecordingAudio()) {
             return;
         }
         try {
@@ -1038,7 +1085,7 @@ public class NotificationsController {
                     }
                     try {
                         if (soundPool == null) {
-                            soundPool = new SoundPool(2, AudioManager.STREAM_SYSTEM, 0);
+                            soundPool = new SoundPool(3, AudioManager.STREAM_SYSTEM, 0);
                             soundPool.setOnLoadCompleteListener(new SoundPool.OnLoadCompleteListener() {
                                 @Override
                                 public void onLoadComplete(SoundPool soundPool, int sampleId, int status) {
@@ -1298,26 +1345,17 @@ public class NotificationsController {
                     .setGroupSummary(true)
                     .setColor(0xff2ca5e0);
 
-            if (!notifyAboutLast) {
-                mBuilder.setPriority(NotificationCompat.PRIORITY_LOW);
-            } else {
-                if (priority == 0) {
-                    mBuilder.setPriority(NotificationCompat.PRIORITY_DEFAULT);
-                } else if (priority == 1) {
-                    mBuilder.setPriority(NotificationCompat.PRIORITY_HIGH);
-                } else if (priority == 2) {
-                    mBuilder.setPriority(NotificationCompat.PRIORITY_MAX);
-                }
-            }
-
             mBuilder.setCategory(NotificationCompat.CATEGORY_MESSAGE);
             if (chat == null && user != null && user.phone != null && user.phone.length() > 0) {
                 mBuilder.addPerson("tel:+" + user.phone);
             }
 
+            int silent = 2;
             String lastMessage = null;
             if (pushMessages.size() == 1) {
-                String message = lastMessage = getStringForMessage(pushMessages.get(0), false);
+                MessageObject messageObject = pushMessages.get(0);
+                String message = lastMessage = getStringForMessage(messageObject, false);
+                silent = messageObject.messageOwner.silent ? 1 : 0;
                 if (message == null) {
                     return;
                 }
@@ -1336,12 +1374,14 @@ public class NotificationsController {
                 inboxStyle.setBigContentTitle(name);
                 int count = Math.min(10, pushMessages.size());
                 for (int i = 0; i < count; i++) {
-                    String message = getStringForMessage(pushMessages.get(i), false);
+                    MessageObject messageObject = pushMessages.get(i);
+                    String message = getStringForMessage(messageObject, false);
                     if (message == null) {
                         continue;
                     }
-                    if (i == 0) {
+                    if (silent == 2) {
                         lastMessage = message;
+                        silent = messageObject.messageOwner.silent ? 1 : 0;
                     }
                     if (pushDialogs.size() == 1) {
                         if (replace) {
@@ -1365,29 +1405,44 @@ public class NotificationsController {
                 }
             }
 
-            if (!notifyDisabled) {
+            if (silent == 1) {
+                FileLog.e("tmessages", "don't notify " + lastMessage);
+            } else {
+                FileLog.e("tmessages", "notify" + lastMessage);
+            }
+
+            if (!notifyAboutLast || silent == 1) {
+                mBuilder.setPriority(NotificationCompat.PRIORITY_LOW);
+            } else {
+                if (priority == 0) {
+                    mBuilder.setPriority(NotificationCompat.PRIORITY_DEFAULT);
+                } else if (priority == 1) {
+                    mBuilder.setPriority(NotificationCompat.PRIORITY_HIGH);
+                } else if (priority == 2) {
+                    mBuilder.setPriority(NotificationCompat.PRIORITY_MAX);
+                }
+            }
+
+            if (silent != 1 && !notifyDisabled) {
                 if (ApplicationLoader.mainInterfacePaused || inAppPreview) {
                     if (lastMessage.length() > 100) {
                         lastMessage = lastMessage.substring(0, 100).replace("\n", " ").trim() + "...";
                     }
                     mBuilder.setTicker(lastMessage);
                 }
-                if (choosenSoundPath != null && !choosenSoundPath.equals("NoSound")) {
-                    if (choosenSoundPath.equals(defaultPath)) {
-                        /*MediaPlayer mediaPlayer = new MediaPlayer();
-                        mediaPlayer.setAudioStreamType(AudioManager.STREAM_ALARM);
-                        mediaPlayer.setDataSource(ApplicationLoader.applicationContext, Settings.System.DEFAULT_NOTIFICATION_URI);
-                        mediaPlayer.prepare();
-                        mediaPlayer.start();*/
-                        mBuilder.setSound(Settings.System.DEFAULT_NOTIFICATION_URI, AudioManager.STREAM_NOTIFICATION);
-                    } else {
-                        mBuilder.setSound(Uri.parse(choosenSoundPath), AudioManager.STREAM_NOTIFICATION);
+                if (!MediaController.getInstance().isRecordingAudio()) {
+                    if (choosenSoundPath != null && !choosenSoundPath.equals("NoSound")) {
+                        if (choosenSoundPath.equals(defaultPath)) {
+                            mBuilder.setSound(Settings.System.DEFAULT_NOTIFICATION_URI, AudioManager.STREAM_NOTIFICATION);
+                        } else {
+                            mBuilder.setSound(Uri.parse(choosenSoundPath), AudioManager.STREAM_NOTIFICATION);
+                        }
                     }
                 }
                 if (ledColor != 0) {
                     mBuilder.setLights(ledColor, 1000, 1000);
                 }
-                if (needVibrate == 2) {
+                if (needVibrate == 2 || MediaController.getInstance().isRecordingAudio()) {
                     mBuilder.setVibrate(new long[]{0, 0});
                 } else if (needVibrate == 1) {
                     mBuilder.setVibrate(new long[]{0, 100, 0, 100});
@@ -1597,7 +1652,7 @@ public class NotificationsController {
     }
 
     public void playOutChatSound() {
-        if (!inChatSoundEnabled) {
+        if (!inChatSoundEnabled || MediaController.getInstance().isRecordingAudio()) {
             return;
         }
         try {
@@ -1616,7 +1671,7 @@ public class NotificationsController {
                     }
                     lastSoundOutPlay = System.currentTimeMillis();
                     if (soundPool == null) {
-                        soundPool = new SoundPool(2, AudioManager.STREAM_SYSTEM, 0);
+                        soundPool = new SoundPool(3, AudioManager.STREAM_SYSTEM, 0);
                         soundPool.setOnLoadCompleteListener(new SoundPool.OnLoadCompleteListener() {
                             @Override
                             public void onLoadComplete(SoundPool soundPool, int sampleId, int status) {
@@ -1642,14 +1697,13 @@ public class NotificationsController {
 
     public static void updateServerNotificationsSettings(long dialog_id) {
         NotificationCenter.getInstance().postNotificationName(NotificationCenter.notificationsSettingsUpdated);
-        if ((int)dialog_id == 0) {
+        if ((int) dialog_id == 0) {
             return;
         }
         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
         TLRPC.TL_account_updateNotifySettings req = new TLRPC.TL_account_updateNotifySettings();
         req.settings = new TLRPC.TL_inputPeerNotifySettings();
         req.settings.sound = "default";
-        req.settings.events_mask = 0;
         int mute_type = preferences.getInt("notify2_" + dialog_id, 0);
         if (mute_type == 3) {
             req.settings.mute_until = preferences.getInt("notifyuntil_" + dialog_id, 0);
@@ -1657,14 +1711,9 @@ public class NotificationsController {
             req.settings.mute_until = mute_type != 2 ? 0 : Integer.MAX_VALUE;
         }
         req.settings.show_previews = preferences.getBoolean("preview_" + dialog_id, true);
-
+        req.settings.silent = preferences.getBoolean("silent_" + dialog_id, false);
         req.peer = new TLRPC.TL_inputNotifyPeer();
-
-        ((TLRPC.TL_inputNotifyPeer)req.peer).peer = MessagesController.getInputPeer((int) dialog_id);
-        if (((TLRPC.TL_inputNotifyPeer)req.peer).peer == null) {
-            return;
-        }
-
+        ((TLRPC.TL_inputNotifyPeer) req.peer).peer = MessagesController.getInputPeer((int) dialog_id);
         ConnectionsManager.getInstance().sendRequest(req, new RequestDelegate() {
             @Override
             public void run(TLObject response, TLRPC.TL_error error) {

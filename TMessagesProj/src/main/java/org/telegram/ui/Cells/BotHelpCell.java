@@ -18,6 +18,7 @@ import android.text.Spanned;
 import android.text.StaticLayout;
 import android.text.TextPaint;
 import android.text.style.ClickableSpan;
+import android.text.style.URLSpan;
 import android.view.MotionEvent;
 import android.view.View;
 
@@ -160,7 +161,11 @@ public class BotHelpCell extends View {
                                 }
                             }
                         } else {
-                            pressedLink.onClick(this);
+                            if (pressedLink instanceof URLSpan) {
+                                AndroidUtilities.openUrl(getContext(), ((URLSpan) pressedLink).getURL());
+                            } else {
+                                pressedLink.onClick(this);
+                            }
                         }
                     } catch (Exception e) {
                         FileLog.e("tmessages", e);

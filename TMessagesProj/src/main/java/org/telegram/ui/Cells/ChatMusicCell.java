@@ -68,7 +68,7 @@ public class ChatMusicCell extends ChatBaseCell implements SeekBar.SeekBarDelega
         super(context);
 
         seekBar = new SeekBar(context);
-        seekBar.delegate = this;
+        seekBar.setDelegate(this);
         radialProgress = new RadialProgress(this);
         drawForwardedName = false;
 
@@ -194,7 +194,8 @@ public class ChatMusicCell extends ChatBaseCell implements SeekBar.SeekBarDelega
 
         int duration = 0;
         int currentProgress = 0;
-        for (TLRPC.DocumentAttribute attribute : currentMessageObject.messageOwner.media.document.attributes) {
+        for (int a = 0; a < currentMessageObject.messageOwner.media.document.attributes.size(); a++) {
+            TLRPC.DocumentAttribute attribute = currentMessageObject.messageOwner.media.document.attributes.get(a);
             if (attribute instanceof TLRPC.TL_documentAttributeAudio) {
                 duration = attribute.duration;
                 break;
@@ -323,7 +324,7 @@ public class ChatMusicCell extends ChatBaseCell implements SeekBar.SeekBarDelega
             buttonX = layoutWidth - backgroundWidth + AndroidUtilities.dp(13);
             timeX = layoutWidth - backgroundWidth + AndroidUtilities.dp(63);
         } else {
-            if (isChat && currentMessageObject.messageOwner.from_id > 0) {
+            if (isChat && currentMessageObject.isFromUser()) {
                 seekBarX = AndroidUtilities.dp(113);
                 buttonX = AndroidUtilities.dp(74);
                 timeX = AndroidUtilities.dp(124);
@@ -348,9 +349,9 @@ public class ChatMusicCell extends ChatBaseCell implements SeekBar.SeekBarDelega
         boolean dataChanged = currentMessageObject == messageObject && isUserDataChanged();
         if (currentMessageObject != messageObject || dataChanged) {
             if (AndroidUtilities.isTablet()) {
-                backgroundWidth = Math.min(AndroidUtilities.getMinTabletSide() - AndroidUtilities.dp(isChat && messageObject.messageOwner.from_id > 0 ? 102 : 50), AndroidUtilities.dp(300));
+                backgroundWidth = Math.min(AndroidUtilities.getMinTabletSide() - AndroidUtilities.dp(isChat && messageObject.isFromUser() && !messageObject.isOutOwner() ? 102 : 50), AndroidUtilities.dp(300));
             } else {
-                backgroundWidth = Math.min(AndroidUtilities.displaySize.x - AndroidUtilities.dp(isChat && messageObject.messageOwner.from_id > 0 ? 102 : 50), AndroidUtilities.dp(300));
+                backgroundWidth = Math.min(AndroidUtilities.displaySize.x - AndroidUtilities.dp(isChat && messageObject.isFromUser() && !messageObject.isOutOwner() ? 102 : 50), AndroidUtilities.dp(300));
             }
 
             if (messageObject.isOutOwner()) {
@@ -374,6 +375,16 @@ public class ChatMusicCell extends ChatBaseCell implements SeekBar.SeekBarDelega
             if (authorLayout.getLineCount() > 0) {
                 authorX = -(int) Math.ceil(authorLayout.getLineLeft(0));
             }
+
+            int duration = 0;
+            for (int a = 0; a < messageObject.messageOwner.media.document.attributes.size(); a++) {
+                TLRPC.DocumentAttribute attribute = messageObject.messageOwner.media.document.attributes.get(a);
+                if (attribute instanceof TLRPC.TL_documentAttributeAudio) {
+                    duration = attribute.duration;
+                    break;
+                }
+            }
+            availableTimeWidth = backgroundWidth - AndroidUtilities.dp(72 + 14) - (int) Math.ceil(timePaint.measureText(String.format("%d:%02d / %d:%02d", duration / 60, duration % 60, duration / 60, duration % 60)));
 
             super.setMessageObject(messageObject);
         }

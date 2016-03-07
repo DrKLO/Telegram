@@ -817,10 +817,10 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
         if (messageObject != null && avatarImageView != null) {
             int fromId = messageObject.messageOwner.from_id;
             if (messageObject.isForwarded()) {
-                if (messageObject.messageOwner.fwd_from_id.user_id != 0) {
-                    fromId = messageObject.messageOwner.fwd_from_id.user_id;
+                if (messageObject.messageOwner.fwd_from.channel_id != 0) {
+                    fromId = -messageObject.messageOwner.fwd_from.channel_id;
                 } else {
-                    fromId = -messageObject.messageOwner.fwd_from_id.channel_id;
+                    fromId = messageObject.messageOwner.fwd_from.from_id;
                 }
             }
             String name = "";

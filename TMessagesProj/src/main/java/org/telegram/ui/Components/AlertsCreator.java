@@ -13,12 +13,9 @@ import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
-import android.content.Intent;
 import android.content.SharedPreferences;
-import android.net.Uri;
-import android.provider.Browser;
 
-import org.telegram.messenger.FileLog;
+import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.MessagesStorage;
@@ -97,13 +94,7 @@ public class AlertsCreator {
                 builder.setNegativeButton(LocaleController.getString("MoreInfo", R.string.MoreInfo), new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialogInterface, int i) {
-                        try {
-                            Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(LocaleController.getString("NobodyLikesSpamUrl", R.string.NobodyLikesSpamUrl)));
-                            intent.putExtra(Browser.EXTRA_APPLICATION_ID, fragment.getParentActivity().getPackageName());
-                            fragment.getParentActivity().startActivity(intent);
-                        } catch (Exception e) {
-                            FileLog.e("tmessages", e);
-                        }
+                        AndroidUtilities.openUrl(fragment.getParentActivity(), LocaleController.getString("NobodyLikesSpamUrl", R.string.NobodyLikesSpamUrl));
                     }
                 });
                 break;
@@ -143,6 +134,16 @@ public class AlertsCreator {
                 } else {
                     builder.setMessage(LocaleController.getString("GroupUserCantBot", R.string.GroupUserCantBot));
                 }
+                break;
+            case "USER_PRIVACY_RESTRICTED":
+                if (isChannel) {
+                    builder.setMessage(LocaleController.getString("InviteToChannelError", R.string.InviteToChannelError));
+                } else {
+                    builder.setMessage(LocaleController.getString("InviteToGroupError", R.string.InviteToGroupError));
+                }
+                break;
+            case "USERS_TOO_FEW":
+                builder.setMessage(LocaleController.getString("CreateGroupError", R.string.CreateGroupError));
                 break;
         }
         builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), null);
