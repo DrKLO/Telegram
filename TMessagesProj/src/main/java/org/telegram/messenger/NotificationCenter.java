@@ -77,6 +77,7 @@ public class NotificationCenter {
     public static final int closeOtherAppActivities = totalEvents++;
     public static final int didUpdatedConnectionState = totalEvents++;
     public static final int didReceiveSmsCode = totalEvents++;
+    public static final int didReceiveCall = totalEvents++;
     public static final int emojiDidLoaded = totalEvents++;
     public static final int appDidLogout = totalEvents++;
 

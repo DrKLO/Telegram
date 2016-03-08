@@ -309,6 +309,11 @@ public class PopupNotificationActivity extends Activity implements NotificationC
             }
 
             @Override
+            public void onMessageEditEnd() {
+
+            }
+
+            @Override
             public void needSendTyping() {
                 if (currentMessageObject != null) {
                     MessagesController.getInstance().sendTyping(currentMessageObject.getDialogId(), 0, classGuid);

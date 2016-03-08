@@ -129,15 +129,25 @@
             android:windowSoftInputMode="adjustResize|stateHidden">
         </activity>
 
-        <receiver android:name=".AutoMessageHeardReceiver">
+        <receiver
+            android:name=".AutoMessageHeardReceiver"
+            android:exported="false">
             <intent-filter>
                 <action android:name="org.telegram.messenger.ACTION_MESSAGE_HEARD"/>
             </intent-filter>
         </receiver>
 
-        <receiver android:name=".AutoMessageReplyReceiver">
+        <receiver
+            android:name=".AutoMessageReplyReceiver"
+            android:exported="false">
             <intent-filter>
                 <action android:name="org.telegram.messenger.ACTION_MESSAGE_REPLY"/>
+            </intent-filter>
+        </receiver>
+
+        <receiver android:name=".CallReceiver" >
+            <intent-filter>
+                <action android:name="android.intent.action.PHONE_STATE" />
             </intent-filter>
         </receiver>
 

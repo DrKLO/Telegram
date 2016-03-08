@@ -28,7 +28,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.BuildConfig;
+import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.tgnet.ConnectionsManager;
@@ -221,7 +221,7 @@ public class IntroActivity extends Activity {
                 finish();
             }
         });
-        if (BuildConfig.DEBUG) {
+        if (BuildVars.DEBUG_VERSION) {
             startMessagingButton.setOnLongClickListener(new View.OnLongClickListener() {
                 @Override
                 public boolean onLongClick(View v) {

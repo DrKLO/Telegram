@@ -241,8 +241,8 @@ public class CacheControlActivity extends BaseFragment {
                             File[] array = file.listFiles();
                             if (array != null) {
                                 for (int b = 0; b < array.length; b++) {
+                                    String name = array[b].getName().toLowerCase();
                                     if (documentsMusicType == 1 || documentsMusicType == 2) {
-                                        String name = array[b].getName().toLowerCase();
                                         if (name.endsWith(".mp3") || name.endsWith(".m4a")) {
                                             if (documentsMusicType == 1) {
                                                 continue;
@@ -250,6 +250,9 @@ public class CacheControlActivity extends BaseFragment {
                                         } else if (documentsMusicType == 2) {
                                             continue;
                                         }
+                                    }
+                                    if (name.equals(".nomedia")) {
+                                        continue;
                                     }
                                     if (array[b].isFile()) {
                                         array[b].delete();

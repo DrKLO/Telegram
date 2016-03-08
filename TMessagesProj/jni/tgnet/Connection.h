@@ -12,6 +12,7 @@
 #include <pthread.h>
 #include <vector>
 #include <string>
+#include <openssl/aes.h>
 #include "ConnectionSession.h"
 #include "ConnectionSocket.h"
 #include "Defines.h"
@@ -67,6 +68,16 @@ private:
     bool wasConnected = false;
     uint32_t willRetryConnectCount = 5;
     Timer *reconnectTimer;
+    
+    AES_KEY encryptKey;
+    uint8_t encryptIv[16];
+    uint32_t encryptNum;
+    uint8_t encryptCount[16];
+    
+    AES_KEY decryptKey;
+    uint8_t decryptIv[16];
+    uint32_t decryptNum;
+    uint8_t decryptCount[16];
 
     friend class ConnectionsManager;
 };

@@ -415,7 +415,7 @@ public class AudioPlayerActivity extends BaseFragment implements NotificationCen
     private void updateTitle(boolean shutdown) {
         MessageObject messageObject = MediaController.getInstance().getPlayingMessageObject();
         if (messageObject == null && shutdown || messageObject != null && !messageObject.isMusic()) {
-            if (!parentLayout.fragmentsStack.isEmpty() && parentLayout.fragmentsStack.get(parentLayout.fragmentsStack.size() - 1) == this) {
+            if (parentLayout != null && !parentLayout.fragmentsStack.isEmpty() && parentLayout.fragmentsStack.get(parentLayout.fragmentsStack.size() - 1) == this) {
                 finishFragment();
             } else {
                 removeSelfFromStack();

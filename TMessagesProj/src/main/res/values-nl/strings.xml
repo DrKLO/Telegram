@@ -90,6 +90,7 @@
     <string name="CommentsInfo">Als je reacties inschakelt kunnen deelnemers reageren op je bericht in het kanaal.</string>
     <string name="AddMutual">Contacten aan je kanaal toevoegen</string>
     <string name="ChannelUsernameHelp">Deze link kan gedeeld worden met anderen en je kanaal kan worden gevonden via de zoekfunctie.</string>
+    <!--<string name="MegaUsernameHelp">People can share this link with others and find your supergroup using Telegram search.</string>-->
     <string name="ChannelUsernamePlaceholder">link</string>
     <string name="ChannelPrivateLinkHelp">Deelnemen aan je kanaal kan door deze link te volgen, je kunt de link altijd intrekken.</string>
     <string name="DescriptionPlaceholder">Beschrijving</string>
@@ -117,6 +118,8 @@
     <string name="LinkInvalidShort">Een kanaalnaam moet minimaal 5 tekens hebben.</string>
     <string name="LinkInvalidLong">De naam mag niet langer zijn dan 32 tekens.</string>
     <string name="LinkInvalidStartNumber">Sorry, begincijfers zijn niet toegestaan.</string>
+    <!--<string name="LinkInvalidShortMega">Supergroup names must have at least 5 characters.</string>-->
+    <!--<string name="LinkInvalidStartNumberMega">Supergroup names can\'t start with a number.</string>-->
     <string name="LinkChecking">Naam controleren...</string>
     <string name="LinkAvailable">%1$s is beschikbaar.</string>
     <string name="ChannelMembers">Deelnemers</string>
@@ -128,6 +131,7 @@
     <string name="ChannelLeaveAlert">Kanaal echt verlaten?</string>
     <string name="ChannelDeleteInfo">Je raakt alle berichten in dit kanaal kwijt.</string>
     <string name="ChannelEdit">Wijzig</string>
+    <!--<string name="MegaWasPrivateAlert">Please note that if you choose a public link for your supergroup, anyone will be able to find it in search and join.\n\nDo not create this link if you want your supergroup to stay private.</string>-->
     <string name="ChannelWasPrivateAlert">Als je een publieke link voor je kanaal instelt kan iedereen deze vinden en deelnemen via de zoekfunctie.\n\nStel geen link in als je je kanaal privé wilt houden.</string>
     <string name="ChannelPublicEmptyUsername">Stel een link in voor je publieke kanaal, om deze vindbaar te maken via de zoekfunctie en te delen met anderen.\n\nWil je dit niet dan kun je een privé-kanaal aanmaken.</string>
     <string name="ActionCreateChannel">Kanaal gemaakt</string>
@@ -169,7 +173,7 @@
     <string name="ChannelMessageGroupMap">%1$s heeft een locatie gestuurd naar het kanaal %2$s</string>
     <string name="ChannelMessageGroupDocument">%1$s heeft een bestand gestuurd naar het kanaal %2$s</string>
     <string name="ChannelMessageGroupGif">%1$s heeft een GIF gestuurd naar het kanaal %2$s</string>
-    <string name="ChannelMessageGroupAudio">%1$s heeft een geluidsbestand gestuurd naar het kanaal %2$s</string>
+    <string name="ChannelMessageGroupAudio">%1$s heeft een spraakbericht gestuurd naar het kanaal %2$s</string>
     <string name="ChannelMessageGroupSticker">%1$s heeft een sticker gestuurd naar het kanaal %2$s</string>
     <string name="ChannelMessageNoText">%1$s plaatste een bericht</string>
     <string name="ChannelMessagePhoto">%1$s plaatste een foto</string>
@@ -180,6 +184,13 @@
     <string name="ChannelMessageGIF">%1$s plaatste een GIF</string>
     <string name="ChannelMessageAudio">%1$s plaatste een spraakbericht</string>
     <string name="ChannelMessageSticker">%1$s plaatste een sticker</string>
+    <string name="WhoCanAddMembers">Wie kan deelnemers toevoegen?</string>
+    <string name="WhoCanAddMembersAllMembers">Alle deelnemers</string>
+    <string name="WhoCanAddMembersAdmins">Alleen beheerders</string>
+    <string name="ChannelNotifyMembersInfoOn">Berichtgeving voor deelnemers</string>
+    <string name="ChannelNotifyMembersInfoOff">Geen berichtgeving voor deelnemers</string>
+    <string name="ChannelSignMessages">Ondertekenen</string>
+    <string name="ChannelSignMessagesInfo">Beheerdersnaam bij alle uitgaande berichten.</string>
     <!--broadcasts-->
     <string name="NewBroadcastList">Nieuwe verzendlijst</string>
     <string name="EnterListName">Naam van lijst</string>
@@ -211,11 +222,11 @@
     <string name="Typing">aan het typen</string>
     <string name="IsTyping">is aan het typen</string>
     <string name="AreTyping">zijn aan het typen</string>
-    <string name="IsRecordingAudio">%1$s neemt geluid op</string>
+    <string name="IsRecordingAudio">%1$s neemt een spraakbericht op...</string>
     <string name="IsSendingPhoto">%1$s verstuurt een foto</string>
     <string name="IsSendingVideo">%1$s verstuurt een video</string>
     <string name="IsSendingFile">%1$s verstuurt een bestand</string>
-    <string name="RecordingAudio">geluid opnemen</string>
+    <string name="RecordingAudio">neemt een spraakbericht op...</string>
     <string name="SendingPhoto">foto versturen</string>
     <string name="SendingVideoStatus">video versturen</string>
     <string name="SendingFile">bestand versturen</string>
@@ -284,7 +295,7 @@
     <string name="NotificationMessageMap">%1$s heeft je een locatie gestuurd</string>
     <string name="NotificationMessageDocument">%1$s heeft je een bestand gestuurd</string>
     <string name="NotificationMessageGif">%1$s heeft je een GIF gestuurd</string>
-    <string name="NotificationMessageAudio">%1$s heeft je een geluidsbestand gestuurd</string>
+    <string name="NotificationMessageAudio">%1$s heeft je een spraakbericht gestuurd</string>
     <string name="NotificationMessageSticker">%1$s heeft je een sticker gestuurd</string>
     <string name="NotificationMessageGroupText">%1$s @ %2$s: %3$s</string>
     <string name="NotificationMessageGroupNoText">%1$s heeft een bericht gestuurd naar de groep %2$s</string>
@@ -294,7 +305,7 @@
     <string name="NotificationMessageGroupMap">%1$s heeft een locatie gestuurd naar de groep %2$s</string>
     <string name="NotificationMessageGroupDocument">%1$s heeft een bestand gestuurd naar de groep %2$s</string>
     <string name="NotificationMessageGroupGif">%1$s heeft een GIF gestuurd naar de groep %2$s</string>
-    <string name="NotificationMessageGroupAudio">%1$s heeft een geluidsbestand gestuurd naar de groep %2$s</string>
+    <string name="NotificationMessageGroupAudio">%1$s heeft een spraakbericht gestuurd naar de groep %2$s</string>
     <string name="NotificationMessageGroupSticker">%1$s heeft een sticker gestuurd naar de groep %2$s</string>
     <string name="NotificationInvitedToGroup">%1$s heeft je uitgenodigd voor de groep %2$s</string>
     <string name="NotificationEditedGroupName">%1$s heeft de naam van de groep %2$s gewijzigd</string>
@@ -331,6 +342,7 @@
     <string name="NewMessageTitle">Nieuw bericht</string>
     <!--group create view-->
     <string name="SendMessageTo">Bericht versturen naar</string>
+    <string name="SoftUserLimitAlert">Nadat je de groep hebt aangemaakt kun je meer gebruikers toevoegen en omzetten naar een supergroep.</string>
     <string name="EnterGroupNamePlaceholder">Groepsnaam</string>
     <string name="GroupName">Groepsnaam</string>
     <string name="MembersCount">%1$d/%2$d deelnemers</string>
@@ -380,7 +392,8 @@
     <string name="EncryptionKey">Encryptiesleutel</string>
     <string name="MessageLifetime">Zelfvernietigingstimer</string>
     <string name="ShortMessageLifetimeForever">Uit</string>
-    <string name="EncryptionKeyDescription">Dit is een weergave van de encryptiesleutel voor deze geheime chat met <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>.<![CDATA[<br><br>]]>Als deze afbeelding er bij <![CDATA[<b>]]>%2$s<![CDATA[</b>]]> hetzelfde uitziet, is jullie chat 200%% beveiligd.<![CDATA[<br><br>]]>Lees meer op telegram.org.</string>
+    <string name="EncryptionKeyDescription">Deze afbeelding en tekst zijn afgeleid van de encryptiesleutel voor deze geheime chat met <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>.<![CDATA[<br><br>]]>Als dit er hetzelfde uitziet op het apparaat van <![CDATA[<b>]]>%2$s<![CDATA[</b>]]>, dan is end-to-end-encryptie gegarandeerd.<![CDATA[<br><br>]]>Lees meer op telegram.org</string>
+    <string name="EncryptionKeyLink">https://telegram.org/faq#secret-chats</string>
     <string name="NumberUnknown">Onbekend</string>
     <string name="Info">Info</string>
     <string name="Phone">Telefoon</string>
@@ -411,6 +424,7 @@
     <string name="StickersCopy">Link kopiëren</string>
     <string name="StickersRemove">Verwijder</string>
     <string name="NoStickers">Nog geen stickers</string>
+    <string name="TooMuchStickersets">Je hebt het maximale aantal stickerbundels bereikt.</string>
     <!--settings view-->
     <string name="ResetNotificationsText">Meldingen gereset</string>
     <string name="TextSize">Tekstgrootte berichten</string>
@@ -477,6 +491,7 @@
     <string name="WhenRoaming">Bij roaming</string>
     <string name="NoMediaAutoDownload">Geen media</string>
     <string name="AutoplayGifs">GIF\'s automatisch afspelen</string>
+    <string name="RaiseToSpeak">Houd bij oor</string>
     <string name="SaveToGallerySettings">Opslaan in galerij</string>
     <string name="EditName">Naam wijzigen</string>
     <string name="NotificationsPriority">Prioriteit</string>
@@ -507,6 +522,8 @@
     <string name="SmartNotificationsTimes">keer</string>
     <string name="SmartNotificationsWithin">binnen</string>
     <string name="SmartNotificationsMinutes">minuten</string>
+    <string name="SecretWebPage">Linkvoorvertoningen</string>
+    <string name="SecretChat">Geheime chats</string>
     <!--cache view-->
     <string name="CacheSettings">Cache-instellingen</string>
     <string name="LocalDatabase">Lokale database</string>
@@ -606,6 +623,15 @@
     <string name="Shadows">Schaduwen</string>
     <string name="Grain">Korrel</string>
     <string name="Sharpen">Scherper</string>
+    <string name="Fade">Vervagen</string>
+    <string name="Tint">Tint</string>
+    <string name="TintShadows">SCHADUWEN</string>
+    <string name="TintHighlights">ACCENTUEREN</string>
+    <string name="Curves">Curven</string>
+    <string name="CurvesAll">ALLE</string>
+    <string name="CurvesRed">ROOD</string>
+    <string name="CurvesGreen">GROEN</string>
+    <string name="CurvesBlue">BLAUW</string>
     <string name="Blur">Vager</string>
     <string name="BlurOff">Uit</string>
     <string name="BlurLinear">Lineair</string>
@@ -620,6 +646,7 @@
     <string name="AddCaption">Onderschrift toevoegen</string>
     <string name="PhotoCaption">Foto-onderschrift</string>
     <string name="VideoCaption">Video-onderschrift</string>
+    <string name="Caption">Onderschrift</string>
     <!--password view-->
     <string name="TwoStepVerification">Twee-staps-verificatie</string>
     <string name="SetAdditionalPassword">Extra wachtwoord instellen</string>
@@ -702,6 +729,18 @@
     <string name="PrivacyFloodControlError">Sorry, te veel verzoeken. Momenteel is het niet mogelijk om de privacyinstellingen te wijzigen, even geduld alsjeblieft.</string>
     <string name="ClearOtherSessionsHelp">Logt alle apparaten behalve deze uit.</string>
     <string name="RemoveFromListText">Gebruiker vasthouden om te verwijderen.</string>
+    <string name="GroupsAndChannels">Groepen</string>
+    <string name="WhoCanAddMe">Wie kan me toevoegen aan groepchats?</string>
+    <string name="WhoCanAddMeInfo">Je kunt met precisie bepalen wie je aan groepen en kanalen mag toevoegen.</string>
+    <string name="AlwaysAllow">Altijd toestaan</string>
+    <string name="NeverAllow">Nooit toestaan</string>
+    <string name="AlwaysAllowPlaceholder">Altijd toestaan...</string>
+    <string name="NeverAllowPlaceholder">Nooit toestaan...</string>
+    <string name="CustomShareInfo">Deze gebruikers altijd toestaan of verbieden je aan groepen en kanalen toe te voegen.</string>
+    <string name="GroupsAndChannelsHelp">Wijzig wie je aan groepen en kanalen kan toevoegen.</string>
+    <string name="InviteToGroupError">Je kunt deze gebruiker niet toevoegen aan groepen vanwege de privacyinstellingen van deze gebruiker.</string>
+    <string name="InviteToChannelError">Je kunt deze gebruiker niet toevoegen aan kanalen vanwege de privacyinstellingen van deze gebruiker.</string>
+    <string name="CreateGroupError">Je kan geen groep maken met deze gebruikers vanwege de privacyinstellingen van deze gebruikers.</string>
     <!--edit video view-->
     <string name="EditVideo">Video bewerken</string>
     <string name="OriginalVideo">Originele video</string>
@@ -773,7 +812,7 @@
     <string name="AttachContact">Contact</string>
     <string name="AttachDocument">Bestand</string>
     <string name="AttachSticker">Sticker</string>
-    <string name="AttachAudio">Geluidsbestand</string>
+    <string name="AttachAudio">Spraakbericht</string>
     <string name="FromYou">Jij</string>
     <string name="ActionTakeScreenshootYou">Schermafdruk gemaakt!</string>
     <string name="ActionTakeScreenshoot">un1 heeft een schermafdruk gemaakt!</string>
@@ -818,6 +857,10 @@
     <string name="FeatureUnavailable">Sorry, deze functie is momenteel niet beschikbaar in jouw land.</string>
     <string name="NoUsernameFound">Er is geen Telegram-account met deze gebruikersnaam.</string>
     <string name="BotCantJoinGroups">Deze bot kan geen groepslid worden.</string>
+    <string name="SecretLinkPreviewAlert">Wil je uitgebreide link-voorvertoning inschakelen voor geheime chats? Let op: deze worden gegenereerd op onze servers.</string>
+    <string name="SecretChatContextBotAlert">Let op: inline-bots worden aangeboden door externe ontwikkelaars. Voor de werking van de bot worden de karakters die je na de botnaam typt naar deze ontwikkelaar verstuurd.</string>
+    <string name="RaiseToSpeakAlert">Wil je \"Houd bij oor\" inschakelen voor spraakberichten?</string>
+    <string name="EditMessageError">Je mag dit bericht niet bewerken.</string>
     <!--permissions-->
     <string name="PermissionContacts">Telegram heeft toegang tot je contacten nodig zodat je kan chatten met je vrienden vanaf al je apparaten.</string>
     <string name="PermissionStorage">Telegram heeft toegang tot je opslaggeheugen nodig zodat je foto\'s, video\'s, muziek en andere media kunt opslaan en versturen.</string>
@@ -998,12 +1041,18 @@
     <string name="ForwardedVideo_few">Bijlage: %1$d video\'s</string>
     <string name="ForwardedVideo_many">Bijlage: %1$d video\'s</string>
     <string name="ForwardedVideo_other">Bijlage: %1$d video\'s</string>
-    <string name="ForwardedAudio_zero">Bijlage: %1$d geluidsbestanden</string>
-    <string name="ForwardedAudio_one">Bijlage: 1 geluidsbestand</string>
-    <string name="ForwardedAudio_two">Bijlage: %1$d geluidsbestanden</string>
-    <string name="ForwardedAudio_few">Bijlage: %1$d geluidsbestanden</string>
-    <string name="ForwardedAudio_many">Bijlage: %1$d geluidsbestanden</string>
-    <string name="ForwardedAudio_other">Bijlage: %1$d geluidsbestanden</string>
+    <string name="ForwardedMusic_zero">Bijlage: %1$d muziekbestanden</string>
+    <string name="ForwardedMusic_one">Doorgestuurd muziekbestand</string>
+    <string name="ForwardedMusic_two">Bijlage: %1$d muziekbestanden</string>
+    <string name="ForwardedMusic_few">Bijlage: %1$d muziekbestanden</string>
+    <string name="ForwardedMusic_many">Bijlage: %1$d muziekbestanden</string>
+    <string name="ForwardedMusic_other">Bijlage: %1$d muziekbestanden</string>
+    <string name="ForwardedAudio_zero">Bijlage: %1$d spraakberichten</string>
+    <string name="ForwardedAudio_one">Bijlage: 1 spraakbericht</string>
+    <string name="ForwardedAudio_two">Bijlage: %1$d spraakberichten</string>
+    <string name="ForwardedAudio_few">Bijlage: %1$d spraakberichten</string>
+    <string name="ForwardedAudio_many">Bijlage: %1$d spraakberichten</string>
+    <string name="ForwardedAudio_other">Bijlage: %1$d spraakberichten</string>
     <string name="ForwardedLocation_zero">Bijlage: %1$d locaties</string>
     <string name="ForwardedLocation_one">Bijlage: 1 locatie</string>
     <string name="ForwardedLocation_two">Bijlage: %1$d locaties</string>
@@ -1039,7 +1088,4 @@
     <string name="formatterDay24H">HH:mm</string>
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s om %2$s</string>
-    <!--update text-->
-    <string name="updateText">Telegram voor Android is bijgewerkt. Nieuw in versie 3.4.0:\n\nGIF-revolutie: 20 keer zo snel GIF\'s sturen en downloaden. Speel ze automatisch af en sla je favorieten op in het stickerpaneel.\n\nmeer over GIFs:\nhttps://telegram.org/blog/gif-revolution\n\nInline-bots: Voeg botcontent toe aan chats op een nieuwe manier! Geef in het invoerveld de naam van een bot en je commando in en stuur de resultaten naar je chatpartner. Probeer het eens met “@gif dog”. Voorbeelden: @gif, @wiki, @bing, @vid, @bold.\n\nMeer over inline-bots:\nhttps://telegram.org/blog/inline-bots</string>
-    <string name="updateBuild">704</string>
 </resources>

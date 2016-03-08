@@ -90,6 +90,7 @@
     <string name="CommentsInfo">Se attivi i commenti, i membri potranno discutere quello che pubblichi nel canale.</string>
     <string name="AddMutual">Aggiungi contatti al tuo canale</string>
     <string name="ChannelUsernameHelp">Le persone possono condividere questo link con gli altri e trovare il tuo canale usando la ricerca di Telegram.</string>
+    <!--<string name="MegaUsernameHelp">People can share this link with others and find your supergroup using Telegram search.</string>-->
     <string name="ChannelUsernamePlaceholder">link</string>
     <string name="ChannelPrivateLinkHelp">Le persone possono unirsi al tuo canale tramite questo link. Puoi revocare il link in ogni momento.</string>
     <string name="DescriptionPlaceholder">Descrizione</string>
@@ -117,6 +118,8 @@
     <string name="LinkInvalidShort">I nomi devi canali devono avere almeno 5 caratteri.</string>
     <string name="LinkInvalidLong">Il nome non può superare i 32 caratteri.</string>
     <string name="LinkInvalidStartNumber">I nomi dei canali non possono iniziare con un numero.</string>
+    <!--<string name="LinkInvalidShortMega">Supergroup names must have at least 5 characters.</string>-->
+    <!--<string name="LinkInvalidStartNumberMega">Supergroup names can\'t start with a number.</string>-->
     <string name="LinkChecking">Controllo il nome...</string>
     <string name="LinkAvailable">%1$s è disponibile.</string>
     <string name="ChannelMembers">Membri</string>
@@ -128,6 +131,7 @@
     <string name="ChannelLeaveAlert">Sei sicuro di voler lasciare il canale?</string>
     <string name="ChannelDeleteInfo">Perderai tutti i messaggi in questo canale.</string>
     <string name="ChannelEdit">Modifica</string>
+    <!--<string name="MegaWasPrivateAlert">Please note that if you choose a public link for your supergroup, anyone will be able to find it in search and join.\n\nDo not create this link if you want your supergroup to stay private.</string>-->
     <string name="ChannelWasPrivateAlert">Per favore ricorda che se scegli un link pubblico per il tuo canale, chiunque sarà in grado di trovarlo nella ricerca e unirsi.\n\nNon creare questo link se vuoi che il tuo canale rimanga privato.</string>
     <string name="ChannelPublicEmptyUsername">Per favore scegli un link per il tuo canale pubblico, in modo che possa essere trovato nella ricerca e condiviso con altri.\n\nSe non sei interessato, ti consigliamo di creare un canale privato.</string>
     <string name="ActionCreateChannel">Canale creato</string>
@@ -169,7 +173,7 @@
     <string name="ChannelMessageGroupMap">%1$s ha inviato una posizione al canale %2$s</string>
     <string name="ChannelMessageGroupDocument">%1$s ha inviato un file al canale %2$s</string>
     <string name="ChannelMessageGroupGif">%1$s ha inviato una GIF al canale %2$s</string>
-    <string name="ChannelMessageGroupAudio">%1$s ha inviato un audio al canale %2$s</string>
+    <string name="ChannelMessageGroupAudio">%1$s ha inviato un messaggio vocale al canale %2$s</string>
     <string name="ChannelMessageGroupSticker">%1$s ha inviato uno sticker al canale %2$s</string>
     <string name="ChannelMessageNoText">%1$s ha pubblicato un messaggio</string>
     <string name="ChannelMessagePhoto">%1$s ha pubblicato una foto</string>
@@ -180,6 +184,13 @@
     <string name="ChannelMessageGIF">%1$s ha pubblicato una GIF</string>
     <string name="ChannelMessageAudio">%1$s ha pubblicato un messaggio vocale</string>
     <string name="ChannelMessageSticker">%1$s ha pubblicato uno sticker</string>
+    <string name="WhoCanAddMembers">Chi può aggiungere nuovi membri?</string>
+    <string name="WhoCanAddMembersAllMembers">Tutti i membri</string>
+    <string name="WhoCanAddMembersAdmins">Solo gli amministratori</string>
+    <string name="ChannelNotifyMembersInfoOn">Notifica i membri quando pubblichi</string>
+    <string name="ChannelNotifyMembersInfoOff">Non notifica i membri quando pubblichi</string>
+    <string name="ChannelSignMessages">Firma messaggi</string>
+    <string name="ChannelSignMessagesInfo">Aggiungi i nomi degli amministratori nei messaggi che pubblicano.</string>
     <!--broadcasts-->
     <string name="NewBroadcastList">Nuova lista broadcast</string>
     <string name="EnterListName">Inserisci il nome della lista</string>
@@ -211,11 +222,11 @@
     <string name="Typing">sta scrivendo…</string>
     <string name="IsTyping">sta scrivendo…</string>
     <string name="AreTyping">stanno scrivendo…</string>
-    <string name="IsRecordingAudio">%1$s sta registrando un audio...</string>
+    <string name="IsRecordingAudio">%1$s sta registrando un messaggio vocale...</string>
     <string name="IsSendingPhoto">%1$s sta inviando una foto...</string>
     <string name="IsSendingVideo">%1$s sta inviando un video...</string>
     <string name="IsSendingFile">%1$s sta inviando un file...</string>
-    <string name="RecordingAudio">registrando un audio...</string>
+    <string name="RecordingAudio">registrando un messaggio vocale...</string>
     <string name="SendingPhoto">inviando una foto...</string>
     <string name="SendingVideoStatus">inviando un video...</string>
     <string name="SendingFile">inviando un file...</string>
@@ -284,7 +295,7 @@
     <string name="NotificationMessageMap">%1$s ti ha inviato una posizione</string>
     <string name="NotificationMessageDocument">%1$s ti ha inviato un file</string>
     <string name="NotificationMessageGif">%1$s ti ha inviato una GIF</string>
-    <string name="NotificationMessageAudio">%1$s ti ha inviato un audio</string>
+    <string name="NotificationMessageAudio">%1$s ti ha inviato un messaggio vocale</string>
     <string name="NotificationMessageSticker">%1$s ti ha inviato uno sticker</string>
     <string name="NotificationMessageGroupText">%1$s @ %2$s: %3$s</string>
     <string name="NotificationMessageGroupNoText">%1$s ha inviato un messaggio al gruppo %2$s</string>
@@ -294,7 +305,7 @@
     <string name="NotificationMessageGroupMap">%1$s ha inviato una posizione al gruppo %2$s</string>
     <string name="NotificationMessageGroupDocument">%1$s ha inviato un file al gruppo %2$s</string>
     <string name="NotificationMessageGroupGif">%1$s ha inviato una GIF al gruppo %2$s</string>
-    <string name="NotificationMessageGroupAudio">%1$s ha inviato un audio al gruppo %2$s</string>
+    <string name="NotificationMessageGroupAudio">%1$s ha inviato un messaggio vocale al gruppo %2$s</string>
     <string name="NotificationMessageGroupSticker">%1$s ha inviato uno sticker al gruppo %2$s</string>
     <string name="NotificationInvitedToGroup">%1$s ti ha invitato nel gruppo %2$s</string>
     <string name="NotificationEditedGroupName">%1$s ha modificato il nome del gruppo %2$s</string>
@@ -331,6 +342,7 @@
     <string name="NewMessageTitle">Nuovo messaggio</string>
     <!--group create view-->
     <string name="SendMessageTo">Invia messaggio a...</string>
+    <string name="SoftUserLimitAlert">Sarai in grado di aggiungere più utenti dopo aver creato il gruppo e averlo convertito in supergruppo.</string>
     <string name="EnterGroupNamePlaceholder">Immetti il nome del gruppo</string>
     <string name="GroupName">Nome gruppo</string>
     <string name="MembersCount">%1$d/%2$d membri</string>
@@ -380,7 +392,8 @@
     <string name="EncryptionKey">Chiave di cifratura</string>
     <string name="MessageLifetime">Timer di autodistruzione</string>
     <string name="ShortMessageLifetimeForever">Spento</string>
-    <string name="EncryptionKeyDescription">Questa immagine è una visualizzazione della chiave di cifratura per questa chat segreta con <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>.<![CDATA[<br><br>]]>Se questa immagine è uguale sul telefono di <![CDATA[<b>]]>%2$s<![CDATA[</b>]]>, la chat è sicura al 200%%.<![CDATA[<br><br>]]>Per saperne di più, visita Telegram.org</string>
+    <string name="EncryptionKeyDescription">Questa immagine e il testo sono derivati dalla chiave di crittografia per questa chat segreta con <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>.<![CDATA[<br><br>]]>Se sono uguali sul dispositivo di <![CDATA[<b>]]>%2$s<![CDATA[</b>]]>, la crittografia end-to-end è garantita.<![CDATA[<br><br>]]>Ulteriori informazioni su telegram.org</string>
+    <string name="EncryptionKeyLink">https://telegram.org/faq#secret-chats</string>
     <string name="NumberUnknown">Sconosciuto</string>
     <string name="Info">Info</string>
     <string name="Phone">Telefono</string>
@@ -411,6 +424,7 @@
     <string name="StickersCopy">Copia link</string>
     <string name="StickersRemove">Rimuovi</string>
     <string name="NoStickers">Ancora nessuno sticker</string>
+    <string name="TooMuchStickersets">Spiacenti, hai raggiunto il numero massimo di set di sticker.</string>
     <!--settings view-->
     <string name="ResetNotificationsText">Ripristina tutte le impostazioni di notifica predefinite</string>
     <string name="TextSize">Dimensione testo messaggi</string>
@@ -477,6 +491,7 @@
     <string name="WhenRoaming">In roaming</string>
     <string name="NoMediaAutoDownload">Nessun media</string>
     <string name="AutoplayGifs">Autoriproduzione GIF</string>
+    <string name="RaiseToSpeak">Alza per parlare</string>
     <string name="SaveToGallerySettings">Salva nella galleria</string>
     <string name="EditName">Modifica nome</string>
     <string name="NotificationsPriority">Priorità</string>
@@ -507,6 +522,8 @@
     <string name="SmartNotificationsTimes">volte</string>
     <string name="SmartNotificationsWithin">in</string>
     <string name="SmartNotificationsMinutes">minuti</string>
+    <string name="SecretWebPage">Anteprime link</string>
+    <string name="SecretChat">Chat segrete</string>
     <!--cache view-->
     <string name="CacheSettings">Impostazioni cache</string>
     <string name="LocalDatabase">Database locale</string>
@@ -517,7 +534,7 @@
     <string name="CalculatingSize">Calcolando...</string>
     <string name="LocalDocumentCache">Documenti</string>
     <string name="LocalPhotoCache">Foto</string>
-    <string name="LocalAudioCache">Note vocali</string>
+    <string name="LocalAudioCache">Messaggi vocali</string>
     <string name="LocalVideoCache">Video</string>
     <string name="LocalMusicCache">Musica</string>
     <string name="LocalCache">Altri file</string>
@@ -606,6 +623,15 @@
     <string name="Shadows">Ombre</string>
     <string name="Grain">Grana</string>
     <string name="Sharpen">Nitidezza</string>
+    <string name="Fade">Sfumatura</string>
+    <string name="Tint">Colore</string>
+    <string name="TintShadows">OMBRE</string>
+    <string name="TintHighlights">ALTE LUCI</string>
+    <string name="Curves">Curve</string>
+    <string name="CurvesAll">TUTTO</string>
+    <string name="CurvesRed">ROSSO</string>
+    <string name="CurvesGreen">VERDE</string>
+    <string name="CurvesBlue">BLU</string>
     <string name="Blur">Sfocatura</string>
     <string name="BlurOff">No</string>
     <string name="BlurLinear">Lineare</string>
@@ -620,6 +646,7 @@
     <string name="AddCaption">Aggiungi una didascalia...</string>
     <string name="PhotoCaption">Didascalia foto</string>
     <string name="VideoCaption">Didascalia video</string>
+    <string name="Caption">Didascalia</string>
     <!--password view-->
     <string name="TwoStepVerification">Verifica in due passaggi</string>
     <string name="SetAdditionalPassword">Imposta password aggiuntiva</string>
@@ -702,6 +729,18 @@
     <string name="PrivacyFloodControlError">Spiacenti, troppe richieste. Impossibile cambiare le impostazioni di privacy ora, attendi.</string>
     <string name="ClearOtherSessionsHelp">Disconnette tutti i dispositivi tranne questo.</string>
     <string name="RemoveFromListText">Tieni premuto sull\'utente per eliminarlo.</string>
+    <string name="GroupsAndChannels">Gruppo</string>
+    <string name="WhoCanAddMe">Chi può aggiungermi ai gruppi?</string>
+    <string name="WhoCanAddMeInfo">Puoi decidere chi può aggiungerti a gruppi e canali con precisione granulare.</string>
+    <string name="AlwaysAllow">Consenti sempre</string>
+    <string name="NeverAllow">Non consentire mai</string>
+    <string name="AlwaysAllowPlaceholder">Consenti sempre...</string>
+    <string name="NeverAllowPlaceholder">Non consentire mai...</string>
+    <string name="CustomShareInfo">Questi utenti saranno o non saranno in grado di aggiungerti a gruppi e canali indipendentemente dalle impostazioni precedenti.</string>
+    <string name="GroupsAndChannelsHelp">Cambia chi può aggiungerti a gruppi e canali.</string>
+    <string name="InviteToGroupError">Spiacenti, non puoi aggiungere questo utente al gruppo a causa delle sue impostazioni di privacy.</string>
+    <string name="InviteToChannelError">Spiacenti, non puoi aggiungere questo utente al canale a causa delle sue impostazioni di privacy.</string>
+    <string name="CreateGroupError">Spiacenti, non puoi creare un gruppo con questi utenti a causa delle loro impostazioni di privacy.</string>
     <!--edit video view-->
     <string name="EditVideo">Modifica video</string>
     <string name="OriginalVideo">Video originale</string>
@@ -765,7 +804,7 @@
     <string name="ActionAddUserYou">un1 ti ha aggiunto</string>
     <string name="ActionAddUserSelf">un1 è tornato nel gruppo</string>
     <string name="ActionAddUserSelfYou">Sei tornato nel gruppo</string>
-    <string name="UnsupportedMedia">Questo messaggio non è supportato sulla tua versione di Telegram. Aggiorna l\'applicazione per visualizzarlo: https://telegram.org/update</string>
+    <string name="UnsupportedMedia">Questo messaggio non è supportato dalla tua versione di Telegram. Aggiorna l\'app per visualizzarlo: https://telegram.org/update</string>
     <string name="AttachPhoto">Foto</string>
     <string name="AttachVideo">Video</string>
     <string name="AttachGif">GIF</string>
@@ -773,7 +812,7 @@
     <string name="AttachContact">Contatto</string>
     <string name="AttachDocument">File</string>
     <string name="AttachSticker">Sticker</string>
-    <string name="AttachAudio">Audio</string>
+    <string name="AttachAudio">Messaggio vocale</string>
     <string name="FromYou">Tu</string>
     <string name="ActionTakeScreenshootYou">Hai fatto uno screenshot!</string>
     <string name="ActionTakeScreenshoot">un1 ha fatto uno screenshot!</string>
@@ -818,6 +857,10 @@
     <string name="FeatureUnavailable">Spiacenti, questa funzione non è disponibile nel tuo paese.</string>
     <string name="NoUsernameFound">Non esiste alcun account Telegram con questo username.</string>
     <string name="BotCantJoinGroups">Questo bot non può unirsi ai gruppi.</string>
+    <string name="SecretLinkPreviewAlert">Vuoi attivare le anteprime estese per i link nelle Chat Segrete? Ricorda che le anteprime dei link sono generate sui server di Telegram.</string>
+    <string name="SecretChatContextBotAlert">Per favore ricorda che i bot inline sono forniti da sviluppatori di terze parti. Per far funzionare il bot, i simboli che digiti dopo l\'username del bot sono inviati al rispettivo sviluppatore.</string>
+    <string name="RaiseToSpeakAlert">Vuoi attivare \"Alza per parlare\" per i messaggi vocali?</string>
+    <string name="EditMessageError">Spiacenti, non puoi modificare questo messaggio.</string>
     <!--permissions-->
     <string name="PermissionContacts">Telegram deve accedere ai tuoi contatti per poterti connettere con i tuoi amici su tutti i tuoi dispositivi.</string>
     <string name="PermissionStorage">Telegram deve accedere alla tua memoria per poter inviare e salvare foto,video, musica e altri media.</string>
@@ -854,7 +897,7 @@
     <string name="Members_many">%1$d membri</string>
     <string name="Members_other">%1$d membri</string>
     <string name="AndMoreTyping_zero">e %1$d altre persone stanno scrivendo</string>
-    <string name="AndMoreTyping_one">e %1$d altra persona stanno scrivendo</string>
+    <string name="AndMoreTyping_one">e %1$d altre persone stanno scrivendo</string>
     <string name="AndMoreTyping_two">e %1$d altre persone stanno scrivendo</string>
     <string name="AndMoreTyping_few">e %1$d altre persone stanno scrivendo</string>
     <string name="AndMoreTyping_many">e %1$d altre persone stanno scrivendo</string>
@@ -998,12 +1041,18 @@
     <string name="ForwardedVideo_few">%1$d video inoltrati</string>
     <string name="ForwardedVideo_many">%1$d video inoltrati</string>
     <string name="ForwardedVideo_other">%1$d video inoltrati</string>
-    <string name="ForwardedAudio_zero">%1$d audio inoltrati</string>
-    <string name="ForwardedAudio_one">Audio inoltrato</string>
-    <string name="ForwardedAudio_two">%1$d audio inoltrati</string>
-    <string name="ForwardedAudio_few">%1$d audio inoltrati</string>
-    <string name="ForwardedAudio_many">%1$d audio inoltrati</string>
-    <string name="ForwardedAudio_other">%1$d audio inoltrati</string>
+    <string name="ForwardedMusic_zero">%1$d tracce inoltrate</string>
+    <string name="ForwardedMusic_one">Traccia inoltrata</string>
+    <string name="ForwardedMusic_two">%1$d tracce inoltrate</string>
+    <string name="ForwardedMusic_few">%1$d tracce inoltrate</string>
+    <string name="ForwardedMusic_many">%1$d tracce inoltrate</string>
+    <string name="ForwardedMusic_other">%1$d tracce inoltrate</string>
+    <string name="ForwardedAudio_zero">%1$d messaggi vocali inoltrati</string>
+    <string name="ForwardedAudio_one">Messaggio vocale inoltrato</string>
+    <string name="ForwardedAudio_two">%1$d messaggi vocali inoltrati</string>
+    <string name="ForwardedAudio_few">%1$d messaggi vocali inoltrati</string>
+    <string name="ForwardedAudio_many">%1$d messaggi vocali inoltrati</string>
+    <string name="ForwardedAudio_other">%1$d messaggi vocali inoltrati</string>
     <string name="ForwardedLocation_zero">%1$d posizioni inoltrate</string>
     <string name="ForwardedLocation_one">Posizione inoltrata</string>
     <string name="ForwardedLocation_two">%1$d posizione inoltrate</string>
@@ -1039,7 +1088,4 @@
     <string name="formatterDay24H">HH:mm</string>
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s alle %2$s</string>
-    <!--update text-->
-    <string name="updateText">Telegram per Android si è aggiornato. Nuovo nella versione 3.4.0:\n\nRivoluzione GIF: Invio e download 20 volte più veloci, autoriproduci e salva le tue preferite nel pannello sticker.\n\nPiù info sulle GIF:\nhttps://telegram.org/blog/gif-revolution\n\nBot Inline: Un nuovo modo di aggiungere contenuti in ogni chat. Menziona un bot e la tua domanda nel campo di scrittura e ottieni risultati immediati. Prova a scrivere “@gif dog” nella tua prossima chat. Bot di esempio: @gif, @wiki, @bing, @vid, @bold\n\nPiù info sui Bot Inline:\nhttps://telegram.org/blog/inline-bots</string>
-    <string name="updateBuild">704</string>
 </resources>

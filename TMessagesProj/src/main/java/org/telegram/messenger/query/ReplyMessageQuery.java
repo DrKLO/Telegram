@@ -32,111 +32,188 @@ import java.util.Locale;
 public class ReplyMessageQuery {
 
     public static void loadReplyMessagesForMessages(final ArrayList<MessageObject> messages, final long dialog_id) {
-        final ArrayList<Integer> replyMessages = new ArrayList<>();
-        final HashMap<Integer, ArrayList<MessageObject>> replyMessageOwners = new HashMap<>();
-        final StringBuilder stringBuilder = new StringBuilder();
-        int channelId = 0;
-        for (MessageObject messageObject : messages) {
-            if (messageObject.getId() > 0 && messageObject.isReply() && messageObject.replyMessageObject == null) {
-                Integer id = messageObject.messageOwner.reply_to_msg_id;
-                long messageId = id;
-                if (messageObject.messageOwner.to_id.channel_id != 0) {
-                    messageId |= ((long) messageObject.messageOwner.to_id.channel_id) << 32;
-                    channelId = messageObject.messageOwner.to_id.channel_id;
-                }
-                if (stringBuilder.length() > 0) {
-                    stringBuilder.append(',');
-                }
-                stringBuilder.append(messageId);
-                ArrayList<MessageObject> messageObjects = replyMessageOwners.get(id);
-                if (messageObjects == null) {
-                    messageObjects = new ArrayList<>();
-                    replyMessageOwners.put(id, messageObjects);
-                }
-                messageObjects.add(messageObject);
-                if (!replyMessages.contains(id)) {
-                    replyMessages.add(id);
+        if ((int) dialog_id == 0) {
+            final ArrayList<Long> replyMessages = new ArrayList<>();
+            final HashMap<Long, ArrayList<MessageObject>> replyMessageRandomOwners = new HashMap<>();
+            final StringBuilder stringBuilder = new StringBuilder();
+            for (int a = 0; a < messages.size(); a++) {
+                MessageObject messageObject = messages.get(a);
+                if (messageObject.isReply() && messageObject.replyMessageObject == null) {
+                    Long id = messageObject.messageOwner.reply_to_random_id;
+                    if (stringBuilder.length() > 0) {
+                        stringBuilder.append(',');
+                    }
+                    stringBuilder.append(id);
+                    ArrayList<MessageObject> messageObjects = replyMessageRandomOwners.get(id);
+                    if (messageObjects == null) {
+                        messageObjects = new ArrayList<>();
+                        replyMessageRandomOwners.put(id, messageObjects);
+                    }
+                    messageObjects.add(messageObject);
+                    if (!replyMessages.contains(id)) {
+                        replyMessages.add(id);
+                    }
                 }
             }
-        }
-        if (replyMessages.isEmpty()) {
-            return;
-        }
+            if (replyMessages.isEmpty()) {
+                return;
+            }
 
-        final int channelIdFinal = channelId;
-        MessagesStorage.getInstance().getStorageQueue().postRunnable(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    final ArrayList<TLRPC.Message> result = new ArrayList<>();
-                    final ArrayList<TLRPC.User> users = new ArrayList<>();
-                    final ArrayList<TLRPC.Chat> chats = new ArrayList<>();
-                    ArrayList<Integer> usersToLoad = new ArrayList<>();
-                    ArrayList<Integer> chatsToLoad = new ArrayList<>();
+            MessagesStorage.getInstance().getStorageQueue().postRunnable(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        SQLiteCursor cursor = MessagesStorage.getInstance().getDatabase().queryFinalized(String.format(Locale.US, "SELECT m.data, m.mid, m.date, r.random_id FROM randoms as r INNER JOIN messages as m ON r.mid = m.mid WHERE r.random_id IN(%s)", TextUtils.join(",", replyMessages)));
+                        while (cursor.next()) {
+                            NativeByteBuffer data = new NativeByteBuffer(cursor.byteArrayLength(0));
+                            if (data != null && cursor.byteBufferValue(0, data) != 0) {
+                                TLRPC.Message message = TLRPC.Message.TLdeserialize(data, data.readInt32(false), false);
+                                message.id = cursor.intValue(1);
+                                message.date = cursor.intValue(2);
+                                message.dialog_id = dialog_id;
 
-                    SQLiteCursor cursor = MessagesStorage.getInstance().getDatabase().queryFinalized(String.format(Locale.US, "SELECT data, mid, date FROM messages WHERE mid IN(%s)", stringBuilder.toString()));
-                    while (cursor.next()) {
-                        NativeByteBuffer data = new NativeByteBuffer(cursor.byteArrayLength(0));
-                        if (data != null && cursor.byteBufferValue(0, data) != 0) {
-                            TLRPC.Message message = TLRPC.Message.TLdeserialize(data, data.readInt32(false), false);
-                            message.id = cursor.intValue(1);
-                            message.date = cursor.intValue(2);
-                            message.dialog_id = dialog_id;
-                            MessagesStorage.addUsersAndChatsFromMessage(message, usersToLoad, chatsToLoad);
-                            result.add(message);
-                            replyMessages.remove((Integer) message.id);
-                        }
-                        data.reuse();
-                    }
-                    cursor.dispose();
 
-                    if (!usersToLoad.isEmpty()) {
-                        MessagesStorage.getInstance().getUsersInternal(TextUtils.join(",", usersToLoad), users);
-                    }
-                    if (!chatsToLoad.isEmpty()) {
-                        MessagesStorage.getInstance().getChatsInternal(TextUtils.join(",", chatsToLoad), chats);
-                    }
-                    broadcastReplyMessages(result, replyMessageOwners, users, chats, dialog_id, true);
-
-                    if (!replyMessages.isEmpty()) {
-                        if (channelIdFinal != 0) {
-                            final TLRPC.TL_channels_getMessages req = new TLRPC.TL_channels_getMessages();
-                            req.channel = MessagesController.getInputChannel(channelIdFinal);
-                            req.id = replyMessages;
-                            ConnectionsManager.getInstance().sendRequest(req, new RequestDelegate() {
-                                @Override
-                                public void run(TLObject response, TLRPC.TL_error error) {
-                                    if (error == null) {
-                                        TLRPC.messages_Messages messagesRes = (TLRPC.messages_Messages) response;
-                                        ImageLoader.saveMessagesThumbs(messagesRes.messages);
-                                        broadcastReplyMessages(messagesRes.messages, replyMessageOwners, messagesRes.users, messagesRes.chats, dialog_id, false);
-                                        MessagesStorage.getInstance().putUsersAndChats(messagesRes.users, messagesRes.chats, true, true);
-                                        saveReplyMessages(replyMessageOwners, messagesRes.messages);
+                                ArrayList<MessageObject> arrayList = replyMessageRandomOwners.remove(cursor.longValue(3));
+                                if (arrayList != null) {
+                                    MessageObject messageObject = new MessageObject(message, null, null, false);
+                                    for (int b = 0; b < arrayList.size(); b++) {
+                                        MessageObject object = arrayList.get(b);
+                                        object.replyMessageObject = messageObject;
+                                        object.messageOwner.reply_to_msg_id = messageObject.getId();
                                     }
                                 }
-                            });
-                        } else {
-                            TLRPC.TL_messages_getMessages req = new TLRPC.TL_messages_getMessages();
-                            req.id = replyMessages;
-                            ConnectionsManager.getInstance().sendRequest(req, new RequestDelegate() {
-                                @Override
-                                public void run(TLObject response, TLRPC.TL_error error) {
-                                    if (error == null) {
-                                        TLRPC.messages_Messages messagesRes = (TLRPC.messages_Messages) response;
-                                        ImageLoader.saveMessagesThumbs(messagesRes.messages);
-                                        broadcastReplyMessages(messagesRes.messages, replyMessageOwners, messagesRes.users, messagesRes.chats, dialog_id, false);
-                                        MessagesStorage.getInstance().putUsersAndChats(messagesRes.users, messagesRes.chats, true, true);
-                                        saveReplyMessages(replyMessageOwners, messagesRes.messages);
-                                    }
-                                }
-                            });
+                            }
+                            data.reuse();
                         }
+                        cursor.dispose();
+                        if (!replyMessageRandomOwners.isEmpty()) {
+                            for (HashMap.Entry<Long, ArrayList<MessageObject>> entry : replyMessageRandomOwners.entrySet()) {
+                                ArrayList<MessageObject> arrayList = entry.getValue();
+                                for (int a = 0; a < arrayList.size(); a++) {
+                                    arrayList.get(a).messageOwner.reply_to_random_id = 0;
+                                }
+                            }
+                        }
+                        AndroidUtilities.runOnUIThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                NotificationCenter.getInstance().postNotificationName(NotificationCenter.didLoadedReplyMessages, dialog_id);
+                            }
+                        });
+                    } catch (Exception e) {
+                        FileLog.e("tmessages", e);
                     }
-                } catch (Exception e) {
-                    FileLog.e("tmessages", e);
+                }
+            });
+
+        } else {
+            final ArrayList<Integer> replyMessages = new ArrayList<>();
+            final HashMap<Integer, ArrayList<MessageObject>> replyMessageOwners = new HashMap<>();
+            final StringBuilder stringBuilder = new StringBuilder();
+            int channelId = 0;
+            for (int a = 0; a < messages.size(); a++) {
+                MessageObject messageObject = messages.get(a);
+                if (messageObject.getId() > 0 && messageObject.isReply() && messageObject.replyMessageObject == null) {
+                    Integer id = messageObject.messageOwner.reply_to_msg_id;
+                    long messageId = id;
+                    if (messageObject.messageOwner.to_id.channel_id != 0) {
+                        messageId |= ((long) messageObject.messageOwner.to_id.channel_id) << 32;
+                        channelId = messageObject.messageOwner.to_id.channel_id;
+                    }
+                    if (stringBuilder.length() > 0) {
+                        stringBuilder.append(',');
+                    }
+                    stringBuilder.append(messageId);
+                    ArrayList<MessageObject> messageObjects = replyMessageOwners.get(id);
+                    if (messageObjects == null) {
+                        messageObjects = new ArrayList<>();
+                        replyMessageOwners.put(id, messageObjects);
+                    }
+                    messageObjects.add(messageObject);
+                    if (!replyMessages.contains(id)) {
+                        replyMessages.add(id);
+                    }
                 }
             }
-        });
+            if (replyMessages.isEmpty()) {
+                return;
+            }
+
+            final int channelIdFinal = channelId;
+            MessagesStorage.getInstance().getStorageQueue().postRunnable(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        final ArrayList<TLRPC.Message> result = new ArrayList<>();
+                        final ArrayList<TLRPC.User> users = new ArrayList<>();
+                        final ArrayList<TLRPC.Chat> chats = new ArrayList<>();
+                        ArrayList<Integer> usersToLoad = new ArrayList<>();
+                        ArrayList<Integer> chatsToLoad = new ArrayList<>();
+
+                        SQLiteCursor cursor = MessagesStorage.getInstance().getDatabase().queryFinalized(String.format(Locale.US, "SELECT data, mid, date FROM messages WHERE mid IN(%s)", stringBuilder.toString()));
+                        while (cursor.next()) {
+                            NativeByteBuffer data = new NativeByteBuffer(cursor.byteArrayLength(0));
+                            if (data != null && cursor.byteBufferValue(0, data) != 0) {
+                                TLRPC.Message message = TLRPC.Message.TLdeserialize(data, data.readInt32(false), false);
+                                message.id = cursor.intValue(1);
+                                message.date = cursor.intValue(2);
+                                message.dialog_id = dialog_id;
+                                MessagesStorage.addUsersAndChatsFromMessage(message, usersToLoad, chatsToLoad);
+                                result.add(message);
+                                replyMessages.remove((Integer) message.id);
+                            }
+                            data.reuse();
+                        }
+                        cursor.dispose();
+
+                        if (!usersToLoad.isEmpty()) {
+                            MessagesStorage.getInstance().getUsersInternal(TextUtils.join(",", usersToLoad), users);
+                        }
+                        if (!chatsToLoad.isEmpty()) {
+                            MessagesStorage.getInstance().getChatsInternal(TextUtils.join(",", chatsToLoad), chats);
+                        }
+                        broadcastReplyMessages(result, replyMessageOwners, users, chats, dialog_id, true);
+
+                        if (!replyMessages.isEmpty()) {
+                            if (channelIdFinal != 0) {
+                                final TLRPC.TL_channels_getMessages req = new TLRPC.TL_channels_getMessages();
+                                req.channel = MessagesController.getInputChannel(channelIdFinal);
+                                req.id = replyMessages;
+                                ConnectionsManager.getInstance().sendRequest(req, new RequestDelegate() {
+                                    @Override
+                                    public void run(TLObject response, TLRPC.TL_error error) {
+                                        if (error == null) {
+                                            TLRPC.messages_Messages messagesRes = (TLRPC.messages_Messages) response;
+                                            ImageLoader.saveMessagesThumbs(messagesRes.messages);
+                                            broadcastReplyMessages(messagesRes.messages, replyMessageOwners, messagesRes.users, messagesRes.chats, dialog_id, false);
+                                            MessagesStorage.getInstance().putUsersAndChats(messagesRes.users, messagesRes.chats, true, true);
+                                            saveReplyMessages(replyMessageOwners, messagesRes.messages);
+                                        }
+                                    }
+                                });
+                            } else {
+                                TLRPC.TL_messages_getMessages req = new TLRPC.TL_messages_getMessages();
+                                req.id = replyMessages;
+                                ConnectionsManager.getInstance().sendRequest(req, new RequestDelegate() {
+                                    @Override
+                                    public void run(TLObject response, TLRPC.TL_error error) {
+                                        if (error == null) {
+                                            TLRPC.messages_Messages messagesRes = (TLRPC.messages_Messages) response;
+                                            ImageLoader.saveMessagesThumbs(messagesRes.messages);
+                                            broadcastReplyMessages(messagesRes.messages, replyMessageOwners, messagesRes.users, messagesRes.chats, dialog_id, false);
+                                            MessagesStorage.getInstance().putUsersAndChats(messagesRes.users, messagesRes.chats, true, true);
+                                            saveReplyMessages(replyMessageOwners, messagesRes.messages);
+                                        }
+                                    }
+                                });
+                            }
+                        }
+                    } catch (Exception e) {
+                        FileLog.e("tmessages", e);
+                    }
+                }
+            });
+        }
     }
 
     private static void saveReplyMessages(final HashMap<Integer, ArrayList<MessageObject>> replyMessageOwners, final ArrayList<TLRPC.Message> result) {

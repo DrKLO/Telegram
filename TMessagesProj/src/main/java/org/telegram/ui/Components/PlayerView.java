@@ -99,7 +99,8 @@ public class PlayerView extends FrameLayout implements NotificationCenter.Notifi
         setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (fragment != null) {
+                MessageObject messageObject = MediaController.getInstance().getPlayingMessageObject();
+                if (messageObject != null && messageObject.isMusic() && fragment != null) {
                     fragment.presentFragment(new AudioPlayerActivity());
                 }
             }
@@ -158,7 +159,7 @@ public class PlayerView extends FrameLayout implements NotificationCenter.Notifi
                 create = true;
             }
         }
-        if (messageObject == null || !messageObject.isMusic()) {
+        if (messageObject == null || messageObject.getId() == 0/* || !messageObject.isMusic()*/) {
             lastMessageObject = null;
             if (visible) {
                 visible = false;
@@ -224,7 +225,14 @@ public class PlayerView extends FrameLayout implements NotificationCenter.Notifi
             }
             if (lastMessageObject != messageObject) {
                 lastMessageObject = messageObject;
-                SpannableStringBuilder stringBuilder = new SpannableStringBuilder(String.format("%s - %s", messageObject.getMusicAuthor(), messageObject.getMusicTitle()));
+                SpannableStringBuilder stringBuilder;
+                if (lastMessageObject.isVoice()) {
+                    stringBuilder = new SpannableStringBuilder(String.format("%s %s", messageObject.getMusicAuthor(), messageObject.getMusicTitle()));
+                    titleTextView.setEllipsize(TextUtils.TruncateAt.MIDDLE);
+                } else {
+                    stringBuilder = new SpannableStringBuilder(String.format("%s - %s", messageObject.getMusicAuthor(), messageObject.getMusicTitle()));
+                    titleTextView.setEllipsize(TextUtils.TruncateAt.END);
+                }
                 TypefaceSpan span = new TypefaceSpan(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
                 stringBuilder.setSpan(span, 0, messageObject.getMusicAuthor().length(), Spanned.SPAN_INCLUSIVE_INCLUSIVE);
                 titleTextView.setText(stringBuilder);

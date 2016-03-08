@@ -39,9 +39,9 @@ public class ResourceLoader {
 
     public static Drawable[][] shareDrawable = new Drawable[2][2];
 
-    public static Drawable viewsCountDrawable;
+    public static Drawable[] viewsCountDrawable = new Drawable[2];
     public static Drawable viewsOutCountDrawable;
-    public static Drawable[] viewsMediaCountDrawable = new Drawable[2];
+    public static Drawable viewsMediaCountDrawable;
 
     public static Drawable geoInDrawable;
     public static Drawable geoOutDrawable;
@@ -79,10 +79,10 @@ public class ResourceLoader {
             backgroundBlack = context.getResources().getDrawable(R.drawable.system_black);
             backgroundBlue = context.getResources().getDrawable(R.drawable.system_blue);
 
-            viewsCountDrawable = context.getResources().getDrawable(R.drawable.post_views);
+            viewsCountDrawable[0] = context.getResources().getDrawable(R.drawable.post_views);
+            viewsCountDrawable[1] = context.getResources().getDrawable(R.drawable.post_views_s);
             viewsOutCountDrawable = context.getResources().getDrawable(R.drawable.post_viewsg);
-            viewsMediaCountDrawable[0] = context.getResources().getDrawable(R.drawable.post_views_w);
-            viewsMediaCountDrawable[1] = context.getResources().getDrawable(R.drawable.post_views_s);
+            viewsMediaCountDrawable = context.getResources().getDrawable(R.drawable.post_views_w);
 
             audioStatesDrawable[0][2] = audioStatesDrawable[0][0] = context.getResources().getDrawable(R.drawable.play_w2);
             audioStatesDrawable[0][1] = context.getResources().getDrawable(R.drawable.play_w2_pressed);

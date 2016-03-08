@@ -18,6 +18,7 @@ import android.text.SpannableStringBuilder;
 import android.text.StaticLayout;
 import android.text.TextPaint;
 import android.text.style.ClickableSpan;
+import android.text.style.URLSpan;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.widget.FrameLayout;
@@ -152,7 +153,11 @@ public class AboutLinkCell extends FrameLayout {
                                 }
                             }
                         } else {
-                            pressedLink.onClick(this);
+                            if (pressedLink instanceof URLSpan) {
+                                AndroidUtilities.openUrl(getContext(), ((URLSpan) pressedLink).getURL());
+                            } else {
+                                pressedLink.onClick(this);
+                            }
                         }
                     } catch (Exception e) {
                         FileLog.e("tmessages", e);

@@ -59,3 +59,16 @@ JNIEXPORT void Java_org_telegram_messenger_Utilities_aesIgeEncryption(JNIEnv *en
     (*env)->ReleaseByteArrayElements(env, key, keyBuff, JNI_ABORT);
     (*env)->ReleaseByteArrayElements(env, iv, ivBuff, 0);
 }
+
+JNIEXPORT jstring Java_org_telegram_messenger_Utilities_readlink(JNIEnv *env, jclass class, jstring path) {
+    static char buf[1000];
+    char *fileName = (*env)->GetStringUTFChars(env, path, NULL);
+    int result = readlink(fileName, buf, 999);
+    jstring value = 0;
+    if (result != -1) {
+        buf[result] = '\0';
+        value = (*env)->NewStringUTF(env, buf);
+    }
+    (*env)->ReleaseStringUTFChars(env, path, fileName);
+    return value;
+}

@@ -6,6 +6,8 @@
  * Copyright Nikolai Kudashov, 2015.
  */
 
+#include <openssl/rand.h>
+#include <stdlib.h>
 #include "Connection.h"
 #include "ConnectionsManager.h"
 #include "BuffersStorage.h"
@@ -55,6 +57,8 @@ void Connection::suspendConnection() {
 }
 
 void Connection::onReceivedData(NativeByteBuffer *buffer) {
+    //AES_ctr128_encrypt(buffer->bytes(), buffer->bytes(), buffer->limit(), &decryptKey, decryptIv, decryptCount, &decryptNum);
+    
     failedConnectionCount = 0;
 
     NativeByteBuffer *parseLaterBuffer = nullptr;
@@ -305,12 +309,47 @@ void Connection::sendData(NativeByteBuffer *buff, bool reportAck) {
         bufferLen += 4;
     }
     if (!firstPacketSent) {
-        bufferLen++;
+        bufferLen += 64;
     }
 
     NativeByteBuffer *buffer = BuffersStorage::getInstance().getFreeBuffer(bufferLen);
+    uint8_t *bytes = buffer->bytes();
+    
     if (!firstPacketSent) {
-        buffer->writeByte(0xef);
+        buffer->position(64);
+        static uint8_t temp[64];
+        while (true) {
+            RAND_bytes(bytes, 64);
+            uint32_t val = (bytes[3] << 24) | (bytes[2] << 16) | (bytes[1] << 8) | (bytes[0]);
+            uint32_t val2 = (bytes[7] << 24) | (bytes[6] << 16) | (bytes[5] << 8) | (bytes[4]);
+            if (bytes[0] != 0xef && val != 0x44414548 && val != 0x54534f50 && val != 0x20544547 && val != 0x4954504f && val != 0xeeeeeeee && val2 != 0x00000000) {
+                //bytes[56] = bytes[57] = bytes[58] = bytes[59] = 0xef;
+                break;
+            }
+        }
+        /*for (int a = 0; a < 48; a++) {
+            temp[a] = bytes[55 - a];
+        }
+        
+        encryptNum = decryptNum = 0;
+        memset(encryptCount, 0, 16);
+        memset(decryptCount, 0, 16);
+        
+        if (AES_set_encrypt_key(bytes + 8, 256, &encryptKey) < 0) {
+            DEBUG_E("unable to set encryptKey");
+            exit(1);
+        }
+        memcpy(encryptIv, bytes + 40, 16);
+        
+        if (AES_set_encrypt_key(temp, 256, &decryptKey) < 0) {
+            DEBUG_E("unable to set decryptKey");
+            exit(1);
+        }
+        memcpy(decryptIv, temp + 32, 16);
+        
+        AES_ctr128_encrypt(bytes, temp, 64, &encryptKey, encryptIv, encryptCount, &encryptNum);
+        memcpy(bytes + 56, temp + 56, 8);*/
+        
         firstPacketSent = true;
     }
     if (packetLength < 0x7f) {
@@ -318,17 +357,22 @@ void Connection::sendData(NativeByteBuffer *buff, bool reportAck) {
             packetLength |= (1 << 7);
         }
         buffer->writeByte((uint8_t) packetLength);
+        bytes += (buffer->limit() - 1);
+        //AES_ctr128_encrypt(bytes, bytes, 1, &encryptKey, encryptIv, encryptCount, &encryptNum);
     } else {
         packetLength = (packetLength << 8) + 0x7f;
         if (reportAck) {
             packetLength |= (1 << 7);
         }
         buffer->writeInt32(packetLength);
+        bytes += (buffer->limit() - 4);
+        //AES_ctr128_encrypt(bytes, bytes, 4, &encryptKey, encryptIv, encryptCount, &encryptNum);
     }
 
     buffer->rewind();
     writeBuffer(buffer);
     buff->rewind();
+    //AES_ctr128_encrypt(buff->bytes(), buff->bytes(), buff->limit(), &encryptKey, encryptIv, encryptCount, &encryptNum);
     writeBuffer(buff);
 }
 

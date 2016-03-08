@@ -384,6 +384,7 @@ public class BottomSheet extends Dialog {
             titleView.setText(title);
             titleView.setTextColor(0xff757575);
             titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+            titleView.setEllipsize(TextUtils.TruncateAt.MIDDLE);
             titleView.setPadding(AndroidUtilities.dp(16), 0, AndroidUtilities.dp(16), AndroidUtilities.dp(8));
             titleView.setGravity(Gravity.CENTER_VERTICAL);
             containerView.addView(titleView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48));

@@ -39,6 +39,7 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.ImageLoader;
 import org.telegram.messenger.LocaleController;
@@ -277,7 +278,11 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             } else {
                 actionBar.setBackButtonDrawable(new MenuDrawable());
             }
-            actionBar.setTitle(LocaleController.getString("AppName", R.string.AppName));
+            if (BuildVars.DEBUG_VERSION) {
+                actionBar.setTitle(LocaleController.getString("AppNameBeta", R.string.AppNameBeta));
+            } else {
+                actionBar.setTitle(LocaleController.getString("AppName", R.string.AppName));
+            }
         }
         actionBar.setAllowOverlayTitle(true);
 
@@ -849,7 +854,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                         ContactsController.getInstance().readContacts();
                         break;
                     case Manifest.permission.WRITE_EXTERNAL_STORAGE:
-                        ImageLoader.getInstance().createMediaPaths();
+                        ImageLoader.getInstance().checkMediaPaths();
                         break;
                 }
             }

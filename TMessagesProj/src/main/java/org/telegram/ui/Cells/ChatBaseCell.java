@@ -25,6 +25,7 @@ import android.view.MotionEvent;
 import android.view.SoundEffectConstants;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaController;
@@ -47,8 +48,8 @@ public class ChatBaseCell extends BaseCell implements MediaController.FileDownlo
 
     public interface ChatBaseCellDelegate {
         void didPressedUserAvatar(ChatBaseCell cell, TLRPC.User user);
-        void didPressedViaBot(ChatBaseCell cell, TLRPC.User user);
-        void didPressedChannelAvatar(ChatBaseCell cell, TLRPC.Chat chat);
+        void didPressedViaBot(ChatBaseCell cell, String username);
+        void didPressedChannelAvatar(ChatBaseCell cell, TLRPC.Chat chat, int postId);
         void didPressedCancelSendButton(ChatBaseCell cell);
         void didLongPressed(ChatBaseCell cell);
         void didPressReplyMessage(ChatBaseCell cell, int id);
@@ -78,6 +79,7 @@ public class ChatBaseCell extends BaseCell implements MediaController.FileDownlo
     protected MessageObject currentMessageObject;
     private int viaWidth;
     private int viaNameWidth;
+    protected int availableTimeWidth;
 
     private static TextPaint timePaint;
     private static TextPaint namePaint;
@@ -110,7 +112,7 @@ public class ChatBaseCell extends BaseCell implements MediaController.FileDownlo
     private boolean replyPressed;
     private TLRPC.FileLocation currentReplyPhoto;
 
-    private boolean drawShareButton;
+    protected boolean drawShareButton;
     private boolean sharePressed;
     private int shareStartX;
     private int shareStartY;
@@ -255,10 +257,12 @@ public class ChatBaseCell extends BaseCell implements MediaController.FileDownlo
 
         TLRPC.User newUser = null;
         TLRPC.Chat newChat = null;
-        if (currentMessageObject.messageOwner.from_id > 0) {
+        if (currentMessageObject.isFromUser()) {
             newUser = MessagesController.getInstance().getUser(currentMessageObject.messageOwner.from_id);
         } else if (currentMessageObject.messageOwner.from_id < 0) {
             newChat = MessagesController.getInstance().getChat(-currentMessageObject.messageOwner.from_id);
+        } else if (currentMessageObject.messageOwner.post) {
+            newChat = MessagesController.getInstance().getChat(currentMessageObject.messageOwner.to_id.channel_id);
         }
         TLRPC.FileLocation newPhoto = null;
 
@@ -312,12 +316,52 @@ public class ChatBaseCell extends BaseCell implements MediaController.FileDownlo
     }
 
     protected void measureTime(MessageObject messageObject) {
-        currentTimeString = LocaleController.getInstance().formatterDay.format((long) (messageObject.messageOwner.date) * 1000);
+        boolean hasSign = !messageObject.isOutOwner() && messageObject.messageOwner.from_id > 0 && messageObject.messageOwner.post;
+        TLRPC.User signUser = MessagesController.getInstance().getUser(messageObject.messageOwner.from_id);
+        if (hasSign && signUser == null) {
+            hasSign = false;
+        }
+        if (hasSign) {
+            currentTimeString = ", " + LocaleController.getInstance().formatterDay.format((long) (messageObject.messageOwner.date) * 1000);
+        } else {
+            currentTimeString = LocaleController.getInstance().formatterDay.format((long) (messageObject.messageOwner.date) * 1000);
+        }
         timeTextWidth = timeWidth = (int) Math.ceil(timePaint.measureText(currentTimeString));
         if ((messageObject.messageOwner.flags & TLRPC.MESSAGE_FLAG_HAS_VIEWS) != 0) {
             currentViewsString = String.format("%s", LocaleController.formatShortNumber(Math.max(1, messageObject.messageOwner.views), null));
-            timeWidth += (int) Math.ceil(timePaint.measureText(currentViewsString)) + ResourceLoader.viewsCountDrawable.getIntrinsicWidth() + AndroidUtilities.dp(10);
+            viewsTextWidth = (int) Math.ceil(timePaint.measureText(currentViewsString));
+            timeWidth += viewsTextWidth + ResourceLoader.viewsCountDrawable[0].getIntrinsicWidth() + AndroidUtilities.dp(10);
         }
+        if (hasSign) {
+            if (availableTimeWidth == 0) {
+                availableTimeWidth = AndroidUtilities.dp(100);
+            }
+            CharSequence name = ContactsController.formatName(signUser.first_name, signUser.last_name).replace('\n', ' ');
+            int widthForSign = availableTimeWidth - timeWidth;
+            int width = (int) Math.ceil(timePaint.measureText(name, 0, name.length()));
+            if (width > widthForSign) {
+                name = TextUtils.ellipsize(name, timePaint, widthForSign, TextUtils.TruncateAt.END);
+                width = widthForSign;
+            }
+            currentTimeString = name + currentTimeString;
+            timeTextWidth += width;
+            timeWidth += width;
+        }
+    }
+
+    protected boolean checkNeedDrawShareButton(MessageObject messageObject) {
+        if (messageObject.isFromUser()) {
+            TLRPC.User user = MessagesController.getInstance().getUser(messageObject.messageOwner.from_id);
+            if (user != null && user.bot && messageObject.type != 13 && !(messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaEmpty || messageObject.messageOwner.media == null
+                    || messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaWebPage && !(messageObject.messageOwner.media.webpage instanceof TLRPC.TL_webPage))) {
+                return true;
+            }
+        } else if (messageObject.messageOwner.from_id < 0 || messageObject.messageOwner.post) {
+            if (messageObject.messageOwner.to_id.channel_id != 0 && (messageObject.messageOwner.reply_to_msg_id == 0 || messageObject.type != 13)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public void setMessageObject(MessageObject messageObject) {
@@ -329,7 +373,7 @@ public class ChatBaseCell extends BaseCell implements MediaController.FileDownlo
         isCheckPressed = true;
         isAvatarVisible = false;
         wasLayout = false;
-        drawShareButton = false;
+        drawShareButton = checkNeedDrawShareButton(messageObject);
         replyNameLayout = null;
         replyTextLayout = null;
         replyNameWidth = 0;
@@ -351,15 +395,15 @@ public class ChatBaseCell extends BaseCell implements MediaController.FileDownlo
             }
         }
 
-        if (messageObject.messageOwner.from_id > 0) {
-            currentUser = MessagesController.getInstance().getUser(messageObject.messageOwner.from_id);
-        } else if (messageObject.messageOwner.from_id < 0) {
-            currentChat = MessagesController.getInstance().getChat(-messageObject.messageOwner.from_id);
-            if (messageObject.messageOwner.to_id.channel_id != 0 && (messageObject.messageOwner.reply_to_msg_id == 0 || messageObject.type != 13)) {
-                drawShareButton = true;
-            }
+        if (currentMessageObject.isFromUser()) {
+            currentUser = MessagesController.getInstance().getUser(currentMessageObject.messageOwner.from_id);
+        } else if (currentMessageObject.messageOwner.from_id < 0) {
+            currentChat = MessagesController.getInstance().getChat(-currentMessageObject.messageOwner.from_id);
+        } else if (currentMessageObject.messageOwner.post) {
+            currentChat = MessagesController.getInstance().getChat(currentMessageObject.messageOwner.to_id.channel_id);
         }
-        if (isChat && !messageObject.isOutOwner() && messageObject.messageOwner.from_id > 0) {
+
+        if (isChat && !messageObject.isOutOwner() && messageObject.isFromUser()) {
             isAvatarVisible = true;
             if (currentUser != null) {
                 if (currentUser.photo != null) {
@@ -382,13 +426,8 @@ public class ChatBaseCell extends BaseCell implements MediaController.FileDownlo
             avatarImage.setImage(currentPhoto, "50_50", avatarDrawable, null, false);
         }
 
-        currentTimeString = LocaleController.getInstance().formatterDay.format((long) (messageObject.messageOwner.date) * 1000);
-        timeTextWidth = timeWidth = (int)Math.ceil(timePaint.measureText(currentTimeString));
-        if ((messageObject.messageOwner.flags & TLRPC.MESSAGE_FLAG_HAS_VIEWS) != 0) {
-            currentViewsString = String.format("%s", LocaleController.formatShortNumber(Math.max(1, messageObject.messageOwner.views), null));
-            viewsTextWidth = (int) Math.ceil(timePaint.measureText(currentViewsString));
-            timeWidth += viewsTextWidth + ResourceLoader.viewsCountDrawable.getIntrinsicWidth() + AndroidUtilities.dp(10);
-        }
+
+        measureTime(messageObject);
 
         namesOffset = 0;
 
@@ -402,10 +441,14 @@ public class ChatBaseCell extends BaseCell implements MediaController.FileDownlo
                 viaWidth = (int) Math.ceil(forwardNamePaint.measureText(viaString));
                 currentViaBotUser = botUser;
             }
+        } else if (messageObject.messageOwner.via_bot_name != null && messageObject.messageOwner.via_bot_name.length() > 0) {
+            viaUsername = "@" + messageObject.messageOwner.via_bot_name;
+            viaString = " via " + messageObject.messageOwner.via_bot_name;
+            viaWidth = (int) Math.ceil(forwardNamePaint.measureText(viaString));
         }
 
         boolean authorName = drawName && isChat && !currentMessageObject.isOutOwner();
-        boolean viaBot = messageObject.messageOwner.fwd_from_id == null && currentViaBotUser != null;
+        boolean viaBot = messageObject.messageOwner.fwd_from == null && viaUsername != null;
         if (authorName || viaBot) {
             drawName = true;
             nameWidth = getMaxNameWidth();
@@ -413,7 +456,7 @@ public class ChatBaseCell extends BaseCell implements MediaController.FileDownlo
                 nameWidth = AndroidUtilities.dp(100);
             }
 
-            if (authorName || !currentMessageObject.isOutOwner()) {
+            if (authorName) {
                 if (currentUser != null) {
                     currentNameString = UserObject.getUserName(currentUser);
                 } else if (currentChat != null) {
@@ -432,12 +475,12 @@ public class ChatBaseCell extends BaseCell implements MediaController.FileDownlo
                     viaNameWidth += AndroidUtilities.dp(4);
                 }
                 if (currentNameString.length() > 0) {
-                    SpannableStringBuilder stringBuilder = new SpannableStringBuilder(String.format("%s via @%s", nameStringFinal, currentViaBotUser.username));
+                    SpannableStringBuilder stringBuilder = new SpannableStringBuilder(String.format("%s via %s", nameStringFinal, viaUsername));
                     stringBuilder.setSpan(new TypefaceSpan(null, 0, currentMessageObject.isOutOwner() ? 0xff4a923c : 0xff006fc8), nameStringFinal.length() + 1, nameStringFinal.length() + 4, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                     stringBuilder.setSpan(new TypefaceSpan(AndroidUtilities.getTypeface("fonts/rmedium.ttf"), 0, currentMessageObject.isOutOwner() ? 0xff4a923c : 0xff006fc8), nameStringFinal.length() + 5, stringBuilder.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                     nameStringFinal = stringBuilder;
                 } else {
-                    SpannableStringBuilder stringBuilder = new SpannableStringBuilder(String.format("via @%s", currentViaBotUser.username));
+                    SpannableStringBuilder stringBuilder = new SpannableStringBuilder(String.format("via %s", viaUsername));
                     stringBuilder.setSpan(new TypefaceSpan(null, 0, currentMessageObject.isOutOwner() ? 0xff4a923c : 0xff006fc8), 0, 4, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                     stringBuilder.setSpan(new TypefaceSpan(AndroidUtilities.getTypeface("fonts/rmedium.ttf"), 0, currentMessageObject.isOutOwner() ? 0xff4a923c : 0xff006fc8), 4, stringBuilder.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                     nameStringFinal = stringBuilder;
@@ -462,19 +505,24 @@ public class ChatBaseCell extends BaseCell implements MediaController.FileDownlo
         }
 
         if (drawForwardedName && messageObject.isForwarded()) {
-            if (messageObject.messageOwner.fwd_from_id instanceof TLRPC.TL_peerChannel) {
-                currentForwardChannel = MessagesController.getInstance().getChat(messageObject.messageOwner.fwd_from_id.channel_id);
-                currentForwardUser = null;
-            } else if (messageObject.messageOwner.fwd_from_id instanceof TLRPC.TL_peerUser) {
-                currentForwardChannel = null;
-                currentForwardUser = MessagesController.getInstance().getUser(messageObject.messageOwner.fwd_from_id.user_id);
+            currentForwardUser = null;
+            currentForwardChannel = null;
+            if (messageObject.messageOwner.fwd_from.channel_id != 0) {
+                currentForwardChannel = MessagesController.getInstance().getChat(messageObject.messageOwner.fwd_from.channel_id);
+            }
+            if (messageObject.messageOwner.fwd_from.from_id != 0) {
+                currentForwardUser = MessagesController.getInstance().getUser(messageObject.messageOwner.fwd_from.from_id);
             }
 
             if (currentForwardUser != null || currentForwardChannel != null) {
-                if (currentForwardUser != null) {
+                if (currentForwardChannel != null) {
+                    if (currentForwardUser != null) {
+                        currentForwardNameString = String.format("%s (%s)", currentForwardChannel.title, UserObject.getUserName(currentForwardUser));
+                    } else {
+                        currentForwardNameString = currentForwardChannel.title;
+                    }
+                } else if (currentForwardUser != null) {
                     currentForwardNameString = UserObject.getUserName(currentForwardUser);
-                } else {
-                    currentForwardNameString = currentForwardChannel.title;
                 }
 
                 forwardedNameWidth = getMaxNameWidth();
@@ -537,7 +585,7 @@ public class ChatBaseCell extends BaseCell implements MediaController.FileDownlo
                 if (messageObject.isOutOwner()) {
                     maxWidth = width - backgroundWidth - AndroidUtilities.dp(60);
                 } else {
-                    maxWidth = width - backgroundWidth - AndroidUtilities.dp(56 + (isChat && messageObject.messageOwner.from_id > 0 ? 61 : 0));
+                    maxWidth = width - backgroundWidth - AndroidUtilities.dp(56 + (isChat && messageObject.isFromUser() ? 61 : 0));
                 }
             } else {
                 maxWidth = getMaxNameWidth() - AndroidUtilities.dp(22);
@@ -550,7 +598,7 @@ public class ChatBaseCell extends BaseCell implements MediaController.FileDownlo
             CharSequence stringFinalText = null;
             if (messageObject.replyMessageObject != null) {
                 TLRPC.PhotoSize photoSize = FileLoader.getClosestPhotoSizeWithSize(messageObject.replyMessageObject.photoThumbs, 80);
-                if (photoSize == null || messageObject.replyMessageObject.type == 13 || messageObject.type == 13 && !AndroidUtilities.isTablet()) {
+                if (photoSize == null || messageObject.replyMessageObject.type == 13 || messageObject.type == 13 && !AndroidUtilities.isTablet() || messageObject.replyMessageObject.isSecretMedia()) {
                     replyImageReceiver.setImageBitmap((Drawable) null);
                     needReplyImage = false;
                 } else {
@@ -561,13 +609,18 @@ public class ChatBaseCell extends BaseCell implements MediaController.FileDownlo
                 }
 
                 String name = null;
-                if (messageObject.replyMessageObject.messageOwner.from_id > 0) {
+                if (messageObject.replyMessageObject.isFromUser()) {
                     TLRPC.User user = MessagesController.getInstance().getUser(messageObject.replyMessageObject.messageOwner.from_id);
                     if (user != null) {
                         name = UserObject.getUserName(user);
                     }
-                } else {
+                } else if (messageObject.replyMessageObject.messageOwner.from_id < 0) {
                     TLRPC.Chat chat = MessagesController.getInstance().getChat(-messageObject.replyMessageObject.messageOwner.from_id);
+                    if (chat != null) {
+                        name = chat.title;
+                    }
+                } else {
+                    TLRPC.Chat chat = MessagesController.getInstance().getChat(messageObject.replyMessageObject.messageOwner.to_id.channel_id);
                     if (chat != null) {
                         name = chat.title;
                     }
@@ -666,7 +719,7 @@ public class ChatBaseCell extends BaseCell implements MediaController.FileDownlo
                         if (currentUser != null) {
                             delegate.didPressedUserAvatar(this, currentUser);
                         } else if (currentChat != null) {
-                            delegate.didPressedChannelAvatar(this, currentChat);
+                            delegate.didPressedChannelAvatar(this, currentChat, 0);
                         }
                     }
                 } else if (event.getAction() == MotionEvent.ACTION_CANCEL) {
@@ -681,10 +734,10 @@ public class ChatBaseCell extends BaseCell implements MediaController.FileDownlo
                     forwardNamePressed = false;
                     playSoundEffect(SoundEffectConstants.CLICK);
                     if (delegate != null) {
-                        if (currentForwardUser != null) {
+                        if (currentForwardChannel != null) {
+                            delegate.didPressedChannelAvatar(this, currentForwardChannel, currentMessageObject.messageOwner.fwd_from.channel_post);
+                        } else if (currentForwardUser != null) {
                             delegate.didPressedUserAvatar(this, currentForwardUser);
-                        } else {
-                            delegate.didPressedChannelAvatar(this, currentForwardChannel);
                         }
                     }
                 } else if (event.getAction() == MotionEvent.ACTION_CANCEL) {
@@ -699,7 +752,7 @@ public class ChatBaseCell extends BaseCell implements MediaController.FileDownlo
                     forwardBotPressed = false;
                     playSoundEffect(SoundEffectConstants.CLICK);
                     if (delegate != null) {
-                        delegate.didPressedViaBot(this, currentViaBotUser);
+                        delegate.didPressedViaBot(this, currentViaBotUser != null ? currentViaBotUser.username : currentMessageObject.messageOwner.via_bot_name);
                     }
                 } else if (event.getAction() == MotionEvent.ACTION_CANCEL) {
                     forwardBotPressed = false;
@@ -763,13 +816,13 @@ public class ChatBaseCell extends BaseCell implements MediaController.FileDownlo
             timeLayout = new StaticLayout(currentTimeString, timePaint, timeTextWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
             if (!media) {
                 if (!currentMessageObject.isOutOwner()) {
-                    timeX = backgroundWidth - AndroidUtilities.dp(9) - timeWidth + (isChat && currentMessageObject.messageOwner.from_id > 0 ? AndroidUtilities.dp(52) : 0);
+                    timeX = backgroundWidth - AndroidUtilities.dp(9) - timeWidth + (isChat && currentMessageObject.isFromUser() ? AndroidUtilities.dp(52) : 0);
                 } else {
                     timeX = layoutWidth - timeWidth - AndroidUtilities.dp(38.5f);
                 }
             } else {
                 if (!currentMessageObject.isOutOwner()) {
-                    timeX = backgroundWidth - AndroidUtilities.dp(4) - timeWidth + (isChat && currentMessageObject.messageOwner.from_id > 0 ? AndroidUtilities.dp(52) : 0);
+                    timeX = backgroundWidth - AndroidUtilities.dp(4) - timeWidth + (isChat && currentMessageObject.isFromUser() ? AndroidUtilities.dp(52) : 0);
                 } else {
                     timeX = layoutWidth - timeWidth - AndroidUtilities.dp(42.0f);
                 }
@@ -863,7 +916,7 @@ public class ChatBaseCell extends BaseCell implements MediaController.FileDownlo
                     currentBackgroundDrawable = ResourceLoader.backgroundMediaDrawableIn;
                 }
             }
-            if (isChat && currentMessageObject.messageOwner.from_id > 0) {
+            if (isChat && currentMessageObject.isFromUser()) {
                 setDrawableBounds(currentBackgroundDrawable, AndroidUtilities.dp(52 + (!media ? 0 : 9)), AndroidUtilities.dp(1), backgroundWidth, layoutHeight - AndroidUtilities.dp(2));
             } else {
                 setDrawableBounds(currentBackgroundDrawable, (!media ? 0 : AndroidUtilities.dp(9)), AndroidUtilities.dp(1), backgroundWidth, layoutHeight - AndroidUtilities.dp(2));
@@ -1012,7 +1065,7 @@ public class ChatBaseCell extends BaseCell implements MediaController.FileDownlo
                             ResourceLoader.errorDrawable.draw(canvas);
                         }
                     } else {
-                        Drawable countDrawable = ResourceLoader.viewsMediaCountDrawable[isDrawSelectedBackground() ? 1 : 0];
+                        Drawable countDrawable = ResourceLoader.viewsMediaCountDrawable;
                         setDrawableBounds(countDrawable, timeX, layoutHeight - AndroidUtilities.dp(10) - timeLayout.getHeight());
                         countDrawable.draw(canvas);
 
@@ -1047,8 +1100,8 @@ public class ChatBaseCell extends BaseCell implements MediaController.FileDownlo
                         }
                     } else {
                         if (!currentMessageObject.isOutOwner()) {
-                            setDrawableBounds(ResourceLoader.viewsCountDrawable, timeX, layoutHeight - AndroidUtilities.dp(4.5f) - timeLayout.getHeight());
-                            ResourceLoader.viewsCountDrawable.draw(canvas);
+                            setDrawableBounds(ResourceLoader.viewsCountDrawable[isDrawSelectedBackground() ? 1 : 0], timeX, layoutHeight - AndroidUtilities.dp(4.5f) - timeLayout.getHeight());
+                            ResourceLoader.viewsCountDrawable[isDrawSelectedBackground() ? 1 : 0].draw(canvas);
                         } else {
                             setDrawableBounds(ResourceLoader.viewsOutCountDrawable, timeX, layoutHeight - AndroidUtilities.dp(4.5f) - timeLayout.getHeight());
                             ResourceLoader.viewsOutCountDrawable.draw(canvas);

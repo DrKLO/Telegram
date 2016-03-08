@@ -156,7 +156,7 @@ public class ID3v2Info extends AudioInfo {
                                     smallCover = cover;
                                 }
                             }
-						} catch (Exception e) {
+						} catch (Throwable e) {
 							e.printStackTrace();
 						}
 						coverPictureType = picture.type;

@@ -9,10 +9,15 @@
 package org.telegram.ui.Components;
 
 public class Rect {
+
     public float x;
     public float y;
     public float width;
     public float height;
+
+    public Rect() {
+
+    }
 
     public Rect(float x, float y, float width, float height) {
         this.x = x;

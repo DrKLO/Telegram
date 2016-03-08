@@ -25,6 +25,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
@@ -44,6 +45,7 @@ import org.telegram.ui.Cells.PhotoEditToolCell;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
+import java.util.ArrayList;
 import java.util.concurrent.Semaphore;
 
 import javax.microedition.khronos.egl.EGL10;
@@ -57,9 +59,35 @@ import javax.microedition.khronos.opengles.GL10;
 @SuppressLint("NewApi")
 public class PhotoFilterView extends FrameLayout {
 
+    private final int[] tintShadowColors = new int[] {
+            0x00000000,
+            0xffff4d4d,
+            0xfff48022,
+            0xffffcd00,
+            0xff81d281,
+            0xff71c5d6,
+            0xff0072bc,
+            0xff662d91
+    };
+
+    private final int[] tintHighlighsColors = new int[] {
+            0x00000000,
+            0xffef9286,
+            0xffeacea2,
+            0xfff2e17c,
+            0xffa4edae,
+            0xff89dce5,
+            0xff2e8bc8,
+            0xffcd98e5
+    };
+
     private boolean showOriginal;
 
     private float previousValue;
+    private int previousValueInt;
+    private int previousValueInt2;
+
+    private int selectedTintMode;
 
     private int selectedTool = -1;
     private int enhanceTool = 0;
@@ -67,24 +95,35 @@ public class PhotoFilterView extends FrameLayout {
     private int contrastTool = 2;
     private int warmthTool = 3;
     private int saturationTool = 4;
-    private int highlightsTool = 5;
-    private int shadowsTool = 6;
-    private int vignetteTool = 7;
-    private int grainTool = 8;
-    private int blurTool = 9;
-    private int sharpenTool = 10;
+    private int tintTool = 5;
+    private int fadeTool = 6;
+    private int highlightsTool = 7;
+    private int shadowsTool = 8;
+    private int vignetteTool = 9;
+    private int grainTool = 10;
+    private int blurTool = 11;
+    private int sharpenTool = 12;
+    private int curvesTool = 13;
 
-    private float highlightsValue = 0; //0 100
-    private float contrastValue = 0; //-100 100
-    private float shadowsValue = 0; //0 100
-    private float exposureValue = 0; //-100 100
     private float enhanceValue = 0; //0 100
-    private float saturationValue = 0; //-100 100
+    private float exposureValue = 0; //-100 100
+    private float contrastValue = 0; //-100 100
     private float warmthValue = 0; //-100 100
+    private float saturationValue = 0; //-100 100
+    private float fadeValue = 0; // 0 100
+    private int tintShadowsColor = 0; //0 0xffffffff
+    private int tintHighlightsColor = 0; //0 0xffffffff
+    private float highlightsValue = 0; //-100 100
+    private float shadowsValue = 0; //-100 100
     private float vignetteValue = 0; //0 100
     private float grainValue = 0; //0 100
-    private float sharpenValue = 0; //0 100
     private int blurType = 0; //0 none, 1 radial, 2 linear
+    private float sharpenValue = 0; //0 100
+    private CurvesToolValue curvesToolValue = new CurvesToolValue();
+
+    private final static int curveGranularity = 100;
+    private final static int curveDataStep = 2;
+
     private float blurExcludeSize = 0.35f;
     private Point blurExcludePoint = new Point(0.5f, 0.5f);
     private float blurExcludeBlurSize = 0.15f;
@@ -95,7 +134,7 @@ public class PhotoFilterView extends FrameLayout {
     private FrameLayout toolsView;
     private FrameLayout editView;
     private TextView paramTextView;
-    private TextView blurTextView;
+    private TextView infoTextView;
     private TextView valueTextView;
     private TextView doneTextView;
     private TextView cancelTextView;
@@ -104,12 +143,168 @@ public class PhotoFilterView extends FrameLayout {
     private RecyclerListView recyclerListView;
     private FrameLayout blurLayout;
     private PhotoFilterBlurControl blurControl;
+    private PhotoFilterCurvesControl curvesControl;
     private TextView blurOffButton;
     private TextView blurRadialButton;
     private TextView blurLinearButton;
+    private FrameLayout tintLayout;
+    private TextView tintShadowsButton;
+    private TextView tintHighlightsButton;
+    private LinearLayout tintButtonsContainer;
+    private FrameLayout curveLayout;
+    private TextView[] curveTextView = new TextView[4];
 
     private Bitmap bitmapToEdit;
     private int orientation;
+
+    public static class CurvesValue {
+
+        public float blacksLevel = 0.0f;
+        public float shadowsLevel = 25.0f;
+        public float midtonesLevel = 50.0f;
+        public float highlightsLevel = 75.0f;
+        public float whitesLevel = 100.0f;
+
+        public float previousBlacksLevel = 0.0f;
+        public float previousShadowsLevel = 25.0f;
+        public float previousMidtonesLevel = 50.0f;
+        public float previousHighlightsLevel = 75.0f;
+        public float previousWhitesLevel = 100.0f;
+
+        public float[] cachedDataPoints;
+
+        public float[] getDataPoints() {
+            if (cachedDataPoints == null) {
+                interpolateCurve();
+            }
+            return cachedDataPoints;
+        }
+
+        public void saveValues() {
+            previousBlacksLevel = blacksLevel;
+            previousShadowsLevel = shadowsLevel;
+            previousMidtonesLevel = midtonesLevel;
+            previousHighlightsLevel = highlightsLevel;
+            previousWhitesLevel = whitesLevel;
+        }
+
+        public void restoreValues() {
+            blacksLevel = previousBlacksLevel;
+            shadowsLevel = previousShadowsLevel;
+            midtonesLevel = previousMidtonesLevel;
+            highlightsLevel = previousHighlightsLevel;
+            whitesLevel = previousWhitesLevel;
+            interpolateCurve();
+        }
+
+        public float[] interpolateCurve() {
+            float[] points = new float[] {
+                    -0.001f, blacksLevel / 100.0f,
+                    0.0f, blacksLevel / 100.0f,
+                    0.25f, shadowsLevel / 100.0f,
+                    0.5f, midtonesLevel / 100.0f,
+                    0.75f, highlightsLevel / 100.0f,
+                    1f, whitesLevel / 100.0f,
+                    1.001f, whitesLevel / 100.0f
+            };
+
+            ArrayList<Float> dataPoints = new ArrayList<>(100);
+            ArrayList<Float> interpolatedPoints = new ArrayList<>(100);
+
+            interpolatedPoints.add(points[0]);
+            interpolatedPoints.add(points[1]);
+
+            for (int index = 1; index < points.length / 2 - 2; index++) {
+                float point0x = points[(index - 1) * 2];
+                float point0y = points[(index - 1) * 2 + 1];
+                float point1x = points[(index) * 2];
+                float point1y = points[(index) * 2 + 1];
+                float point2x = points[(index + 1) * 2];
+                float point2y = points[(index + 1) * 2 + 1];
+                float point3x = points[(index + 2) * 2];
+                float point3y = points[(index + 2) * 2 + 1];
+
+
+                for (int i = 1; i < curveGranularity; i++) {
+                    float t = (float) i * (1.0f / (float) curveGranularity);
+                    float tt = t * t;
+                    float ttt = tt * t;
+
+                    float pix = 0.5f * (2 * point1x + (point2x - point0x) * t + (2 * point0x - 5 * point1x + 4 * point2x - point3x) * tt + (3 * point1x - point0x - 3 * point2x + point3x) * ttt);
+                    float piy = 0.5f * (2 * point1y + (point2y - point0y) * t + (2 * point0y - 5 * point1y + 4 * point2y - point3y) * tt + (3 * point1y - point0y - 3 * point2y + point3y) * ttt);
+
+                    piy = Math.max(0, Math.min(1, piy));
+
+                    if (pix > point0x) {
+                        interpolatedPoints.add(pix);
+                        interpolatedPoints.add(piy);
+                    }
+
+                    if ((i - 1) % curveDataStep == 0) {
+                        dataPoints.add(piy);
+                    }
+                }
+                interpolatedPoints.add(point2x);
+                interpolatedPoints.add(point2y);
+            }
+            interpolatedPoints.add(points[12]);
+            interpolatedPoints.add(points[13]);
+
+            cachedDataPoints = new float[dataPoints.size()];
+            for (int a = 0; a < cachedDataPoints.length; a++) {
+                cachedDataPoints[a] = dataPoints.get(a);
+            }
+            float[] retValue = new float[interpolatedPoints.size()];
+            for (int a = 0; a < retValue.length; a++) {
+                retValue[a] = interpolatedPoints.get(a);
+            }
+            return retValue;
+        }
+
+        public boolean isDefault() {
+            return Math.abs(blacksLevel - 0) < 0.00001 && Math.abs(shadowsLevel - 25) < 0.00001 && Math.abs(midtonesLevel - 50) < 0.00001 && Math.abs(highlightsLevel - 75) < 0.00001 && Math.abs(whitesLevel - 100) < 0.00001;
+        }
+    }
+
+    public static class CurvesToolValue {
+
+        public CurvesValue luminanceCurve = new CurvesValue();
+        public CurvesValue redCurve = new CurvesValue();
+        public CurvesValue greenCurve = new CurvesValue();
+        public CurvesValue blueCurve = new CurvesValue();
+        public ByteBuffer curveBuffer = null;
+
+        public int activeType;
+
+        public final static int CurvesTypeLuminance = 0;
+        public final static int CurvesTypeRed = 1;
+        public final static int CurvesTypeGreen = 2;
+        public final static int CurvesTypeBlue = 3;
+
+        public CurvesToolValue() {
+            curveBuffer = ByteBuffer.allocateDirect(200 * 4);
+            curveBuffer.order(ByteOrder.LITTLE_ENDIAN);
+        }
+
+        public void fillBuffer() {
+            curveBuffer.position(0);
+            float[] luminanceCurveData = luminanceCurve.getDataPoints();
+            float[] redCurveData = redCurve.getDataPoints();
+            float[] greenCurveData = greenCurve.getDataPoints();
+            float[] blueCurveData = blueCurve.getDataPoints();
+            for (int a = 0; a < 200; a++) {
+                curveBuffer.put((byte) (redCurveData[a] * 255));
+                curveBuffer.put((byte) (greenCurveData[a] * 255));
+                curveBuffer.put((byte) (blueCurveData[a] * 255));
+                curveBuffer.put((byte) (luminanceCurveData[a] * 255));
+            }
+            curveBuffer.position(0);
+        }
+
+        public boolean shouldBeSkipped() {
+            return luminanceCurve.isDefault() && redCurve.isDefault() && greenCurve.isDefault() && blueCurve.isDefault();
+        }
+    }
 
     public class EGLThread extends DispatchQueue {
 
@@ -141,18 +336,26 @@ public class PhotoFilterView extends FrameLayout {
 
         private int toolsShaderProgram;
         private int positionHandle;
-        private int inputTexCoordHandle;
-        private int sourceImageHandle;
-        private int shadowsHandle;
-        private int highlightsHandle;
-        private int exposureHandle;
-        private int contrastHandle;
-        private int saturationHandle;
-        private int warmthHandle;
-        private int vignetteHandle;
-        private int grainHandle;
-        private int widthHandle;
-        private int heightHandle;
+        private int inputTexCoordHandle; //"varying vec2 texCoord;" +
+        private int sourceImageHandle; //"uniform sampler2D sourceImage;" +
+        private int shadowsHandle; //"uniform float shadows;" +
+        private int highlightsHandle; //"uniform float highlights;" +
+        private int exposureHandle; //"uniform float exposure;" +
+        private int contrastHandle; //"uniform float contrast;" +
+        private int saturationHandle; //"uniform float saturation;" +
+        private int warmthHandle; //"uniform float warmth;" +
+        private int vignetteHandle; //"uniform float vignette;" +
+        private int grainHandle; //"uniform float grain;" +
+        private int widthHandle; //"uniform float width;" +
+        private int heightHandle; //"uniform float height;" +
+
+        private int curvesImageHandle; //"uniform sampler2D curvesImage;" +
+        private int skipToneHandle; //"uniform lowp float skipTone;" +
+        private int fadeAmountHandle; //"uniform lowp float fadeAmount;" +
+        private int shadowsTintIntensityHandle; //"uniform lowp float shadowsTintIntensity;" +
+        private int highlightsTintIntensityHandle; //"uniform lowp float highlightsTintIntensity;" +
+        private int shadowsTintColorHandle; //"uniform lowp vec3 shadowsTintColor;" +
+        private int highlightsTintColorHandle; //"uniform lowp vec3 highlightsTintColor;" +
 
         private int blurShaderProgram;
         private int blurPositionHandle;
@@ -198,6 +401,7 @@ public class PhotoFilterView extends FrameLayout {
         private int[] enhanceTextures = new int[2];
         private int[] renderTexture = new int[3];
         private int[] renderFrameBuffer = new int[3];
+        private int[] curveTextures = new int[1];
         private boolean hsvGenerated;
         private int renderBufferWidth;
         private int renderBufferHeight;
@@ -212,6 +416,8 @@ public class PhotoFilterView extends FrameLayout {
 
         private final static int PGPhotoEnhanceHistogramBins = 256;
         private final static int PGPhotoEnhanceSegments = 4;
+
+        private long lastRenderCallTime;
 
         private static final String radialBlurFragmentShaderCode =
                 "varying highp vec2 texCoord;" +
@@ -402,105 +608,285 @@ public class PhotoFilterView extends FrameLayout {
                     "gl_FragColor = result;" +
                 "}";
 
+        /*
         private static final String toolsFragmentShaderCode =
-                "precision highp float;" +
-                "varying vec2 texCoord;" +
-                "uniform float inputWidth;" +
-                "uniform float inputHeight;" +
+                "varying highp vec2 texCoord;" +
                 "uniform sampler2D sourceImage;" +
-                "uniform float shadows;" +
-                "uniform float width;" +
-                "uniform float height;" +
-                "const vec3 hsLuminanceWeighting = vec3(0.3, 0.3, 0.3);" +
-                "uniform float highlights;" +
-                "uniform float exposure;" +
-                "uniform float contrast;" +
-                "const vec3 satLuminanceWeighting = vec3(0.2126, 0.7152, 0.0722);" +
-                "uniform float saturation;" +
-                "uniform float warmth;" +
-                "uniform float grain;" +
-                "const float permTexUnit = 1.0 / 256.0;" +
-                "const float permTexUnitHalf = 0.5 / 256.0;" +
-                "const float grainsize = 2.3;" +
-                "uniform float vignette;" +
-                "float getLuma(vec3 rgbP) { " +
-                    "return (0.299 * rgbP.r) + (0.587 * rgbP.g) + (0.114 * rgbP.b); " +
+                "uniform highp float width;" +
+                "uniform highp float height;" +
+                "uniform lowp float rgbCurveValues[200];" +
+                "uniform lowp float redCurveValues[200];" +
+                "uniform lowp float greenCurveValues[200];" +
+                "uniform lowp float blueCurveValues[200];" +
+                "uniform lowp float skipTone;" +
+                "uniform lowp float shadows;" +
+                "const mediump vec3 hsLuminanceWeighting = vec3(0.3, 0.3, 0.3);" +
+                "uniform lowp float highlights;" +
+                "uniform lowp float contrast;" +
+                "uniform lowp float fadeAmount;" +
+                "const mediump vec3 satLuminanceWeighting = vec3(0.2126, 0.7152, 0.0722);" +
+                "uniform lowp float saturation;" +
+                "uniform lowp float shadowsTintIntensity;" +
+                "uniform lowp float highlightsTintIntensity;" +
+                "uniform lowp vec3 shadowsTintColor;" +
+                "uniform lowp vec3 highlightsTintColor;" +
+                "uniform lowp float exposure;" +
+                "uniform lowp float warmth;" +
+                "uniform lowp float grain;" +
+                "const lowp float permTexUnit = 1.0 / 256.0;" +
+                "const lowp float permTexUnitHalf = 0.5 / 256.0;" +
+                "const lowp float grainsize = 2.3;" +
+                "uniform lowp float vignette;" +
+                "highp float getLuma(highp vec3 rgbP) {" +
+                    "return (0.299 * rgbP.r) + (0.587 * rgbP.g) + (0.114 * rgbP.b);" +
                 "}" +
-                "vec3 rgbToYuv(vec3 inP) {" +
-                    "vec3 outP;" +
+                "lowp vec3 rgbToHsv(lowp vec3 c) {" +
+                    "highp vec4 K = vec4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);" +
+                    "highp vec4 p = c.g < c.b ? vec4(c.bg, K.wz) : vec4(c.gb, K.xy);" +
+                    "highp vec4 q = c.r < p.x ? vec4(p.xyw, c.r) : vec4(c.r, p.yzx);" +
+                    "highp float d = q.x - min(q.w, q.y);" +
+                    "highp float e = 1.0e-10;" +
+                    "return vec3(abs(q.z + (q.w - q.y) / (6.0 * d + e)), d / (q.x + e), q.x);" +
+                "}" +
+                "lowp vec3 hsvToRgb(lowp vec3 c) {" +
+                    "highp vec4 K = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);" +
+                    "highp vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);" +
+                    "return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);" +
+                "}" +
+                "highp vec3 rgbToHsl(highp vec3 color) {" +
+                    "highp vec3 hsl;" +
+                    "highp float fmin = min(min(color.r, color.g), color.b);" +
+                    "highp float fmax = max(max(color.r, color.g), color.b);" +
+                    "highp float delta = fmax - fmin;" +
+                    "hsl.z = (fmax + fmin) / 2.0;" +
+                    "if (delta == 0.0) {" +
+                        "hsl.x = 0.0;" +
+                        "hsl.y = 0.0;" +
+                    "} else {" +
+                        "if (hsl.z < 0.5) {" +
+                            "hsl.y = delta / (fmax + fmin);" +
+                        "} else {" +
+                            "hsl.y = delta / (2.0 - fmax - fmin);" +
+                        "}" +
+                        "highp float deltaR = (((fmax - color.r) / 6.0) + (delta / 2.0)) / delta;" +
+                        "highp float deltaG = (((fmax - color.g) / 6.0) + (delta / 2.0)) / delta;" +
+                        "highp float deltaB = (((fmax - color.b) / 6.0) + (delta / 2.0)) / delta;" +
+                        "if (color.r == fmax) {" +
+                            "hsl.x = deltaB - deltaG;" +
+                        "} else if (color.g == fmax) {" +
+                            "hsl.x = (1.0 / 3.0) + deltaR - deltaB;" +
+                        "} else if (color.b == fmax) {" +
+                            "hsl.x = (2.0 / 3.0) + deltaG - deltaR;" +
+                        "}" +
+                        "if (hsl.x < 0.0) {" +
+                            "hsl.x += 1.0;" +
+                        "} else if (hsl.x > 1.0) {" +
+                            "hsl.x -= 1.0;" +
+                        "}" +
+                    "}" +
+                    "return hsl;" +
+                "}" +
+                "highp float hueToRgb(highp float f1, highp float f2, highp float hue) {" +
+                    "if (hue < 0.0) {" +
+                        "hue += 1.0;" +
+                    "} else if (hue > 1.0) {" +
+                        "hue -= 1.0;" +
+                    "}" +
+                    "highp float res;" +
+                    "if ((6.0 * hue) < 1.0) {" +
+                        "res = f1 + (f2 - f1) * 6.0 * hue;" +
+                    "} else if ((2.0 * hue) < 1.0) {" +
+                        "res = f2;" +
+                    "} else if ((3.0 * hue) < 2.0) {" +
+                        "res = f1 + (f2 - f1) * ((2.0 / 3.0) - hue) * 6.0;" +
+                    "} else {" +
+                        "res = f1;" +
+                    "} return res;" +
+                "}" +
+                "highp vec3 hslToRgb(highp vec3 hsl) {" +
+                    "highp vec3 rgb;" +
+                    "if (hsl.y == 0.0) {" +
+                        "rgb = vec3(hsl.z);" +
+                    "} else {" +
+                        "highp float f2;" +
+                        "if (hsl.z < 0.5) {" +
+                            "f2 = hsl.z * (1.0 + hsl.y);" +
+                        "} else {" +
+                            "f2 = (hsl.z + hsl.y) - (hsl.y * hsl.z);" +
+                        "}" +
+                        "highp float f1 = 2.0 * hsl.z - f2;" +
+                        "rgb.r = hueToRgb(f1, f2, hsl.x + (1.0/3.0));" +
+                        "rgb.g = hueToRgb(f1, f2, hsl.x);" +
+                        "rgb.b = hueToRgb(f1, f2, hsl.x - (1.0/3.0));" +
+                    "}" +
+                    "return rgb;" +
+                "}" +
+                "highp vec3 rgbToYuv(highp vec3 inP) {" +
+                    "highp vec3 outP;" +
                     "outP.r = getLuma(inP);" +
                     "outP.g = (1.0 / 1.772) * (inP.b - outP.r);" +
                     "outP.b = (1.0 / 1.402) * (inP.r - outP.r);" +
-                    "return outP; " +
+                    "return outP;" +
                 "}" +
-                "vec3 yuvToRgb(vec3 inP) {" +
-                    "return vec3(1.402 * inP.b + inP.r, (inP.r - (0.299 * 1.402 / 0.587) * inP.b - (0.114 * 1.772 / 0.587) * inP.g), 1.772 * inP.g + inP.r);" +
+                "lowp vec3 yuvToRgb(highp vec3 inP) {" +
+                    "highp float y = inP.r;" +
+                    "highp float u = inP.g;" +
+                    "highp float v = inP.b;" +
+                    "lowp vec3 outP;" +
+                    "outP.r = 1.402 * v + y;" +
+                    "outP.g = (y - (0.299 * 1.402 / 0.587) * v - (0.114 * 1.772 / 0.587) * u);" +
+                    "outP.b = 1.772 * u + y;" +
+                    "return outP;" +
                 "}" +
-                "float easeInOutSigmoid(float value, float strength) {" +
-                    "float t = 1.0 / (1.0 - strength);" +
+                "lowp float easeInOutSigmoid(lowp float value, lowp float strength) {" +
+                    "lowp float t = 1.0 / (1.0 - strength);" +
                     "if (value > 0.5) {" +
                         "return 1.0 - pow(2.0 - 2.0 * value, t) * 0.5;" +
                     "} else {" +
-                        "return pow(2.0 * value, t) * 0.5; " +
+                        "return pow(2.0 * value, t) * 0.5;" +
                     "}" +
                 "}" +
-                "vec4 rnm(in vec2 tc) {" +
-                    "float noise = sin(dot(tc,vec2(12.9898,78.233))) * 43758.5453;" +
-                    "float noiseR = fract(noise)*2.0-1.0;" +
-                    "float noiseG = fract(noise*1.2154)*2.0-1.0;" +
-                    "float noiseB = fract(noise*1.3453)*2.0-1.0;" +
-                    "float noiseA = fract(noise*1.3647)*2.0-1.0;" +
+                "lowp vec3 applyLuminanceCurve(lowp vec3 pixel) {" +
+                    "int index = int(clamp(pixel.z / (1.0 / 200.0), 0.0, 199.0));" +
+                    "highp float value = rgbCurveValues[index];" +
+                    "highp float grayscale = (smoothstep(0.0, 0.1, pixel.z) * (1.0 - smoothstep(0.8, 1.0, pixel.z)));" +
+                    "highp float saturation = mix(0.0, pixel.y, grayscale);" +
+                    "pixel.y = saturation;" +
+                    "pixel.z = value;" +
+                    "return pixel;" +
+                "}" +
+                "lowp vec3 applyRGBCurve(lowp vec3 pixel) {" +
+                    "int index = int(clamp(pixel.r / (1.0 / 200.0), 0.0, 199.0));" +
+                    "highp float value = redCurveValues[index];" +
+                    "pixel.r = value;" +
+                    "index = int(clamp(pixel.g / (1.0 / 200.0), 0.0, 199.0));" +
+                    "value = greenCurveValues[index];" +
+                    "pixel.g = clamp(value, 0.0, 1.0);" +
+                    "index = int(clamp(pixel.b / (1.0 / 200.0), 0.0, 199.0));" +
+                    "value = blueCurveValues[index];" +
+                    "pixel.b = clamp(value, 0.0, 1.0);" +
+                    "return pixel;" +
+                "}" +
+                "highp vec3 fadeAdjust(highp vec3 color, highp float fadeVal) {" +
+                    "highp vec3 co1 = vec3(-0.9772);" +
+                    "highp vec3 co2 = vec3(1.708);" +
+                    "highp vec3 co3 = vec3(-0.1603);" +
+                    "highp vec3 co4 = vec3(0.2878);" +
+                    "highp vec3 comp1 = co1 * pow(vec3(color), vec3(3.0));" +
+                    "highp vec3 comp2 = co2 * pow(vec3(color), vec3(2.0));" +
+                    "highp vec3 comp3 = co3 * vec3(color);" +
+                    "highp vec3 comp4 = co4;" +
+                    "highp vec3 finalComponent = comp1 + comp2 + comp3 + comp4;" +
+                    "highp vec3 difference = finalComponent - color;" +
+                    "highp vec3 scalingValue = vec3(0.9);" +
+                    "highp vec3 faded = color + (difference * scalingValue);" +
+                    "return (color * (1.0 - fadeVal)) + (faded * fadeVal);" +
+                "}" +
+                "lowp vec3 tintRaiseShadowsCurve(lowp vec3 color) {" +
+                    "highp vec3 co1 = vec3(-0.003671);" +
+                    "highp vec3 co2 = vec3(0.3842);" +
+                    "highp vec3 co3 = vec3(0.3764);" +
+                    "highp vec3 co4 = vec3(0.2515);" +
+                    "highp vec3 comp1 = co1 * pow(color, vec3(3.0));" +
+                    "highp vec3 comp2 = co2 * pow(color, vec3(2.0));" +
+                    "highp vec3 comp3 = co3 * color;" +
+                    "highp vec3 comp4 = co4;" +
+                    "return comp1 + comp2 + comp3 + comp4;" +
+                "}" +
+                "lowp vec3 tintShadows(lowp vec3 texel, lowp vec3 tintColor, lowp float tintAmount) {" +
+                    "highp vec3 raisedShadows = tintRaiseShadowsCurve(texel);" +
+                    "highp vec3 tintedShadows = mix(texel, raisedShadows, tintColor);" +
+                    "highp vec3 tintedShadowsWithAmount = mix(texel, tintedShadows, tintAmount);" +
+                    "return clamp(tintedShadowsWithAmount, 0.0, 1.0);" +
+                "} " +
+                "lowp vec3 tintHighlights(lowp vec3 texel, lowp vec3 tintColor, lowp float tintAmount) {" +
+                    "lowp vec3 loweredHighlights = vec3(1.0) - tintRaiseShadowsCurve(vec3(1.0) - texel);" +
+                    "lowp vec3 tintedHighlights = mix(texel, loweredHighlights, (vec3(1.0) - tintColor));" +
+                    "lowp vec3 tintedHighlightsWithAmount = mix(texel, tintedHighlights, tintAmount);" +
+                    "return clamp(tintedHighlightsWithAmount, 0.0, 1.0);" +
+                "}" +
+                "highp vec4 rnm(in highp vec2 tc) {" +
+                    "highp float noise = sin(dot(tc,vec2(12.9898,78.233))) * 43758.5453;" +
+                    "highp float noiseR = fract(noise)*2.0-1.0;" +
+                    "highp float noiseG = fract(noise*1.2154)*2.0-1.0;" +
+                    "highp float noiseB = fract(noise*1.3453)*2.0-1.0;" +
+                    "highp float noiseA = fract(noise*1.3647)*2.0-1.0;" +
                     "return vec4(noiseR,noiseG,noiseB,noiseA);" +
                 "}" +
-                "float fade(in float t) {" +
+                "highp float fade(in highp float t) {" +
                     "return t*t*t*(t*(t*6.0-15.0)+10.0);" +
                 "}" +
-                "float pnoise3D(in vec3 p) {" +
-                    "vec3 pi = permTexUnit*floor(p)+permTexUnitHalf;" +
-                    "vec3 pf = fract(p);" +
-                    "float perm00 = rnm(pi.xy).a;" +
-                    "vec3 grad000 = rnm(vec2(perm00, pi.z)).rgb * 4.0 - 1.0;" +
-                    "float n000 = dot(grad000, pf);" +
-                    "vec3 grad001 = rnm(vec2(perm00, pi.z + permTexUnit)).rgb * 4.0 - 1.0;" +
-                    "float n001 = dot(grad001, pf - vec3(0.0, 0.0, 1.0));" +
-                    "float perm01 = rnm(pi.xy + vec2(0.0, permTexUnit)).a;" +
-                    "vec3 grad010 = rnm(vec2(perm01, pi.z)).rgb * 4.0 - 1.0;" +
-                    "float n010 = dot(grad010, pf - vec3(0.0, 1.0, 0.0));" +
-                    "vec3 grad011 = rnm(vec2(perm01, pi.z + permTexUnit)).rgb * 4.0 - 1.0;" +
-                    "float n011 = dot(grad011, pf - vec3(0.0, 1.0, 1.0));" +
-                    "float perm10 = rnm(pi.xy + vec2(permTexUnit, 0.0)).a;" +
-                    "vec3 grad100 = rnm(vec2(perm10, pi.z)).rgb * 4.0 - 1.0;" +
-                    "float n100 = dot(grad100, pf - vec3(1.0, 0.0, 0.0));" +
-                    "vec3 grad101 = rnm(vec2(perm10, pi.z + permTexUnit)).rgb * 4.0 - 1.0;" +
-                    "float n101 = dot(grad101, pf - vec3(1.0, 0.0, 1.0));" +
-                    "float perm11 = rnm(pi.xy + vec2(permTexUnit, permTexUnit)).a;" +
-                    "vec3 grad110 = rnm(vec2(perm11, pi.z)).rgb * 4.0 - 1.0;" +
-                    "float n110 = dot(grad110, pf - vec3(1.0, 1.0, 0.0));" +
-                    "vec3 grad111 = rnm(vec2(perm11, pi.z + permTexUnit)).rgb * 4.0 - 1.0;" +
-                    "float n111 = dot(grad111, pf - vec3(1.0, 1.0, 1.0));" +
-                    "vec4 n_x = mix(vec4(n000, n001, n010, n011), vec4(n100, n101, n110, n111), fade(pf.x));" +
-                    "vec2 n_xy = mix(n_x.xy, n_x.zw, fade(pf.y));" +
-                    "float n_xyz = mix(n_xy.x, n_xy.y, fade(pf.z));" +
+                "highp float pnoise3D(in highp vec3 p) {" +
+                    "highp vec3 pi = permTexUnit*floor(p)+permTexUnitHalf;" +
+                    "highp vec3 pf = fract(p);" +
+                    "highp float perm00 = rnm(pi.xy).a;" +
+                    "highp vec3 grad000 = rnm(vec2(perm00, pi.z)).rgb * 4.0 - 1.0;" +
+                    "highp float n000 = dot(grad000, pf);" +
+                    "highp vec3 grad001 = rnm(vec2(perm00, pi.z + permTexUnit)).rgb * 4.0 - 1.0;" +
+                    "highp float n001 = dot(grad001, pf - vec3(0.0, 0.0, 1.0));" +
+                    "highp float perm01 = rnm(pi.xy + vec2(0.0, permTexUnit)).a;" +
+                    "highp vec3 grad010 = rnm(vec2(perm01, pi.z)).rgb * 4.0 - 1.0;" +
+                    "highp float n010 = dot(grad010, pf - vec3(0.0, 1.0, 0.0));" +
+                    "highp vec3 grad011 = rnm(vec2(perm01, pi.z + permTexUnit)).rgb * 4.0 - 1.0;" +
+                    "highp float n011 = dot(grad011, pf - vec3(0.0, 1.0, 1.0));" +
+                    "highp float perm10 = rnm(pi.xy + vec2(permTexUnit, 0.0)).a;" +
+                    "highp vec3 grad100 = rnm(vec2(perm10, pi.z)).rgb * 4.0 - 1.0;" +
+                    "highp float n100 = dot(grad100, pf - vec3(1.0, 0.0, 0.0));" +
+                    "highp vec3 grad101 = rnm(vec2(perm10, pi.z + permTexUnit)).rgb * 4.0 - 1.0;" +
+                    "highp float n101 = dot(grad101, pf - vec3(1.0, 0.0, 1.0));" +
+                    "highp float perm11 = rnm(pi.xy + vec2(permTexUnit, permTexUnit)).a;" +
+                    "highp vec3 grad110 = rnm(vec2(perm11, pi.z)).rgb * 4.0 - 1.0;" +
+                    "highp float n110 = dot(grad110, pf - vec3(1.0, 1.0, 0.0));" +
+                    "highp vec3 grad111 = rnm(vec2(perm11, pi.z + permTexUnit)).rgb * 4.0 - 1.0;" +
+                    "highp float n111 = dot(grad111, pf - vec3(1.0, 1.0, 1.0));" +
+                    "highp vec4 n_x = mix(vec4(n000, n001, n010, n011), vec4(n100, n101, n110, n111), fade(pf.x));" +
+                    "highp vec2 n_xy = mix(n_x.xy, n_x.zw, fade(pf.y));" +
+                    "highp float n_xyz = mix(n_xy.x, n_xy.y, fade(pf.z));" +
                     "return n_xyz;" +
                 "}" +
-                "vec2 coordRot(in vec2 tc, in float angle) {" +
-                    "float rotX = ((tc.x * 2.0 - 1.0) * cos(angle)) - ((tc.y * 2.0 - 1.0) * sin(angle));" +
-                    "float rotY = ((tc.y * 2.0 - 1.0) * cos(angle)) + ((tc.x * 2.0 - 1.0) * sin(angle));" +
-                    "return vec2(rotX * 0.5 + 0.5, rotY * 0.5 + 0.5);" +
+                "lowp vec2 coordRot(in lowp vec2 tc, in lowp float angle) {" +
+                    "lowp float rotX = ((tc.x * 2.0 - 1.0) * cos(angle)) - ((tc.y * 2.0 - 1.0) * sin(angle));" +
+                    "lowp float rotY = ((tc.y * 2.0 - 1.0) * cos(angle)) + ((tc.x * 2.0 - 1.0) * sin(angle));" +
+                    "rotX = rotX * 0.5 + 0.5;" +
+                    "rotY = rotY * 0.5 + 0.5;" +
+                    "return vec2(rotX,rotY);" +
                 "}" +
                 "void main() {" +
-                    "vec4 result = texture2D(sourceImage, texCoord);" +
-                    "const float toolEpsilon = 0.005;" +
-
-                    "float hsLuminance = dot(result.rgb, hsLuminanceWeighting);" +
-                    "float shadow = clamp((pow(hsLuminance, 1.0 / (shadows + 1.0)) + (-0.76) * pow(hsLuminance, 2.0 / (shadows + 1.0))) - hsLuminance, 0.0, 1.0);" +
-                    "float highlight = clamp((1.0 - (pow(1.0 - hsLuminance, 1.0 / (2.0 - highlights)) + (-0.8) * pow(1.0 - hsLuminance, 2.0 / (2.0 - highlights)))) - hsLuminance, -1.0, 0.0);" +
-                    "vec3 shresult = (hsLuminance + shadow + highlight) * (result.rgb / hsLuminance);" +
-                    "result = vec4(shresult.rgb, result.a);" +
-
+                    "lowp vec4 source = texture2D(sourceImage, texCoord);" +
+                    "lowp vec4 result = source;" +
+                    "const lowp float toolEpsilon = 0.005;" +
+                    "if (skipTone < toolEpsilon) {" +
+                        "result = vec4(applyRGBCurve(hslToRgb(applyLuminanceCurve(rgbToHsl(result.rgb)))), result.a);" +
+                    "}" +
+                    "mediump float hsLuminance = dot(result.rgb, hsLuminanceWeighting);" +
+                    "mediump float shadow = clamp((pow(hsLuminance, 1.0 / shadows) + (-0.76) * pow(hsLuminance, 2.0 / shadows)) - hsLuminance, 0.0, 1.0);" +
+                    "mediump float highlight = clamp((1.0 - (pow(1.0 - hsLuminance, 1.0 / (2.0 - highlights)) + (-0.8) * pow(1.0 - hsLuminance, 2.0 / (2.0 - highlights)))) - hsLuminance, -1.0, 0.0);" +
+                    "lowp vec3 hsresult = vec3(0.0, 0.0, 0.0) + ((hsLuminance + shadow + highlight) - 0.0) * ((result.rgb - vec3(0.0, 0.0, 0.0)) / (hsLuminance - 0.0));" +
+                    "mediump float contrastedLuminance = ((hsLuminance - 0.5) * 1.5) + 0.5;" +
+                    "mediump float whiteInterp = contrastedLuminance * contrastedLuminance * contrastedLuminance;" +
+                    "mediump float whiteTarget = clamp(highlights, 1.0, 2.0) - 1.0;" +
+                    "hsresult = mix(hsresult, vec3(1.0), whiteInterp * whiteTarget);" +
+                    "mediump float invContrastedLuminance = 1.0 - contrastedLuminance;" +
+                    "mediump float blackInterp = invContrastedLuminance * invContrastedLuminance * invContrastedLuminance;" +
+                    "mediump float blackTarget = 1.0 - clamp(shadows, 0.0, 1.0);" +
+                    "hsresult = mix(hsresult, vec3(0.0), blackInterp * blackTarget);" +
+                    "result = vec4(hsresult.rgb, result.a);" +
+                    "result = vec4(clamp(((result.rgb - vec3(0.5)) * contrast + vec3(0.5)), 0.0, 1.0), result.a);" +
+                    "if (abs(fadeAmount) > toolEpsilon) {" +
+                        "result.rgb = fadeAdjust(result.rgb, fadeAmount);" +
+                    "}" +
+                    "lowp float satLuminance = dot(result.rgb, satLuminanceWeighting);" +
+                    "lowp vec3 greyScaleColor = vec3(satLuminance);" +
+                    "result = vec4(clamp(mix(greyScaleColor, result.rgb, saturation), 0.0, 1.0), result.a);" +
+                    "if (abs(shadowsTintIntensity) > toolEpsilon) {" +
+                        "result.rgb = tintShadows(result.rgb, shadowsTintColor, shadowsTintIntensity * 2.0);" +
+                    "}" +
+                    "if (abs(highlightsTintIntensity) > toolEpsilon) {" +
+                        "result.rgb = tintHighlights(result.rgb, highlightsTintColor, highlightsTintIntensity * 2.0);" +
+                    "}" +
                     "if (abs(exposure) > toolEpsilon) {" +
-                        "float mag = exposure * 1.045;" +
-                        "float exppower = 1.0 + abs(mag);" +
+                        "mediump float mag = exposure * 1.045;" +
+                        "mediump float exppower = 1.0 + abs(mag);" +
                         "if (mag < 0.0) {" +
                             "exppower = 1.0 / exppower;" +
                         "}" +
@@ -508,41 +894,290 @@ public class PhotoFilterView extends FrameLayout {
                         "result.g = 1.0 - pow((1.0 - result.g), exppower);" +
                         "result.b = 1.0 - pow((1.0 - result.b), exppower);" +
                     "}" +
-                    "result = vec4(((result.rgb - vec3(0.5)) * contrast + vec3(0.5)), result.a);" +
-                    "float satLuminance = dot(result.rgb, satLuminanceWeighting);" +
-                    "vec3 greyScaleColor = vec3(satLuminance);" +
-                    "result = vec4(mix(greyScaleColor, result.rgb, saturation), result.a);" +
                     "if (abs(warmth) > toolEpsilon) {" +
-                        "vec3 yuvVec; if (warmth > 0.0 ) {" +
+                        "highp vec3 yuvVec;" +
+                        "if (warmth > 0.0 ) {" +
                             "yuvVec = vec3(0.1765, -0.1255, 0.0902);" +
                         "} else {" +
                             "yuvVec = -vec3(0.0588, 0.1569, -0.1255);" +
                         "}" +
-                        "vec3 yuvColor = rgbToYuv(result.rgb);" +
-                        "float luma = yuvColor.r;" +
-                        "float curveScale = sin(luma * 3.14159);" +
+                        "highp vec3 yuvColor = rgbToYuv(result.rgb);" +
+                        "highp float luma = yuvColor.r;" +
+                        "highp float curveScale = sin(luma * 3.14159);" +
                         "yuvColor += 0.375 * warmth * curveScale * yuvVec;" +
                         "result.rgb = yuvToRgb(yuvColor);" +
                     "}" +
                     "if (abs(grain) > toolEpsilon) {" +
-                        "vec3 rotOffset = vec3(1.425, 3.892, 5.835);" +
-                        "vec2 rotCoordsR = coordRot(texCoord, rotOffset.x);" +
-                        "vec3 noise = vec3(pnoise3D(vec3(rotCoordsR * vec2(width / grainsize, height / grainsize),0.0)));" +
-                        "vec3 lumcoeff = vec3(0.299,0.587,0.114);" +
-                        "float luminance = dot(result.rgb, lumcoeff);" +
-                        "float lum = smoothstep(0.2, 0.0, luminance);" +
+                        "highp vec3 rotOffset = vec3(1.425, 3.892, 5.835);" +
+                        "highp vec2 rotCoordsR = coordRot(texCoord, rotOffset.x);" +
+                        "highp vec3 noise = vec3(pnoise3D(vec3(rotCoordsR * vec2(width / grainsize, height / grainsize),0.0)));" +
+                        "lowp vec3 lumcoeff = vec3(0.299,0.587,0.114);" +
+                        "lowp float luminance = dot(result.rgb, lumcoeff);" +
+                        "lowp float lum = smoothstep(0.2, 0.0, luminance);" +
                         "lum += luminance;" +
                         "noise = mix(noise,vec3(0.0),pow(lum,4.0));" +
                         "result.rgb = result.rgb + noise * grain;" +
                     "}" +
                     "if (abs(vignette) > toolEpsilon) {" +
-                        "const float midpoint = 0.7;" +
-                        "const float fuzziness = 0.62;" +
-                        "float radDist = length(texCoord - 0.5) / sqrt(0.5);" +
-                        "float mag = easeInOutSigmoid(radDist * midpoint, fuzziness) * vignette * 0.645;" +
+                        "const lowp float midpoint = 0.7;" +
+                        "const lowp float fuzziness = 0.62;" +
+                        "lowp float radDist = length(texCoord - 0.5) / sqrt(0.5);" +
+                        "lowp float mag = easeInOutSigmoid(radDist * midpoint, fuzziness) * vignette * 0.645;" +
                         "result.rgb = mix(pow(result.rgb, vec3(1.0 / (1.0 - mag))), vec3(0.0), mag * mag);" +
                     "}" +
+                    "gl_FragColor = result;" +
+                "}";
+         */
 
+        private static final String toolsFragmentShaderCode =
+                "varying highp vec2 texCoord;" +
+                "uniform sampler2D sourceImage;" +
+                "uniform highp float width;" +
+                "uniform highp float height;" +
+                "uniform sampler2D curvesImage;" +
+                "uniform lowp float skipTone;" +
+                "uniform lowp float shadows;" +
+                "const mediump vec3 hsLuminanceWeighting = vec3(0.3, 0.3, 0.3);" +
+                "uniform lowp float highlights;" +
+                "uniform lowp float contrast;" +
+                "uniform lowp float fadeAmount;" +
+                "const mediump vec3 satLuminanceWeighting = vec3(0.2126, 0.7152, 0.0722);" +
+                "uniform lowp float saturation;" +
+                "uniform lowp float shadowsTintIntensity;" +
+                "uniform lowp float highlightsTintIntensity;" +
+                "uniform lowp vec3 shadowsTintColor;" +
+                "uniform lowp vec3 highlightsTintColor;" +
+                "uniform lowp float exposure;" +
+                "uniform lowp float warmth;" +
+                "uniform lowp float grain;" +
+                "const lowp float permTexUnit = 1.0 / 256.0;" +
+                "const lowp float permTexUnitHalf = 0.5 / 256.0;" +
+                "const lowp float grainsize = 2.3;" +
+                "uniform lowp float vignette;" +
+                "highp float getLuma(highp vec3 rgbP) {" +
+                    "return (0.299 * rgbP.r) + (0.587 * rgbP.g) + (0.114 * rgbP.b);" +
+                "}" +
+                "lowp vec3 rgbToHsv(lowp vec3 c) {" +
+                    "highp vec4 K = vec4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);" +
+                    "highp vec4 p = c.g < c.b ? vec4(c.bg, K.wz) : vec4(c.gb, K.xy);" +
+                    "highp vec4 q = c.r < p.x ? vec4(p.xyw, c.r) : vec4(c.r, p.yzx);" +
+                    "highp float d = q.x - min(q.w, q.y);" +
+                    "highp float e = 1.0e-10;" +
+                    "return vec3(abs(q.z + (q.w - q.y) / (6.0 * d + e)), d / (q.x + e), q.x);" +
+                "}" +
+                "lowp vec3 hsvToRgb(lowp vec3 c) {" +
+                    "highp vec4 K = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);" +
+                    "highp vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);" +
+                    "return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);" +
+                "}" +
+                "highp vec3 rgbToHsl(highp vec3 color) {" +
+                    "highp vec3 hsl;" +
+                    "highp float fmin = min(min(color.r, color.g), color.b);" +
+                    "highp float fmax = max(max(color.r, color.g), color.b);" +
+                    "highp float delta = fmax - fmin;" +
+                    "hsl.z = (fmax + fmin) / 2.0;" +
+                    "if (delta == 0.0) {" +
+                        "hsl.x = 0.0;" +
+                        "hsl.y = 0.0;" +
+                    "} else {" +
+                        "if (hsl.z < 0.5) {" +
+                            "hsl.y = delta / (fmax + fmin);" +
+                        "} else {" +
+                            "hsl.y = delta / (2.0 - fmax - fmin);" +
+                        "}" +
+                        "highp float deltaR = (((fmax - color.r) / 6.0) + (delta / 2.0)) / delta;" +
+                        "highp float deltaG = (((fmax - color.g) / 6.0) + (delta / 2.0)) / delta;" +
+                        "highp float deltaB = (((fmax - color.b) / 6.0) + (delta / 2.0)) / delta;" +
+                        "if (color.r == fmax) {" +
+                            "hsl.x = deltaB - deltaG;" +
+                        "} else if (color.g == fmax) {" +
+                            "hsl.x = (1.0 / 3.0) + deltaR - deltaB;" +
+                        "} else if (color.b == fmax) {" +
+                            "hsl.x = (2.0 / 3.0) + deltaG - deltaR;" +
+                        "}" +
+                        "if (hsl.x < 0.0) {" +
+                            "hsl.x += 1.0;" +
+                        "} else if (hsl.x > 1.0) {" +
+                            "hsl.x -= 1.0;" +
+                        "}" +
+                    "}" +
+                    "return hsl;" +
+                "}" +
+                "highp float hueToRgb(highp float f1, highp float f2, highp float hue) {" +
+                    "if (hue < 0.0) {" +
+                        "hue += 1.0;" +
+                    "} else if (hue > 1.0) {" +
+                        "hue -= 1.0;" +
+                    "}" +
+                    "highp float res;" +
+                    "if ((6.0 * hue) < 1.0) {" +
+                        "res = f1 + (f2 - f1) * 6.0 * hue;" +
+                    "} else if ((2.0 * hue) < 1.0) {" +
+                        "res = f2;" +
+                    "} else if ((3.0 * hue) < 2.0) {" +
+                        "res = f1 + (f2 - f1) * ((2.0 / 3.0) - hue) * 6.0;" +
+                    "} else {" +
+                        "res = f1;" +
+                    "} return res;" +
+                "}" +
+                "highp vec3 hslToRgb(highp vec3 hsl) {" +
+                    "if (hsl.y == 0.0) {" +
+                        "return vec3(hsl.z);" +
+                    "} else {" +
+                        "highp float f2;" +
+                        "if (hsl.z < 0.5) {" +
+                            "f2 = hsl.z * (1.0 + hsl.y);" +
+                        "} else {" +
+                            "f2 = (hsl.z + hsl.y) - (hsl.y * hsl.z);" +
+                        "}" +
+                        "highp float f1 = 2.0 * hsl.z - f2;" +
+                        "return vec3(hueToRgb(f1, f2, hsl.x + (1.0/3.0)), hueToRgb(f1, f2, hsl.x), hueToRgb(f1, f2, hsl.x - (1.0/3.0)));" +
+                    "}" +
+                "}" +
+                "highp vec3 rgbToYuv(highp vec3 inP) {" +
+                    "highp float luma = getLuma(inP);" +
+                    "return vec3(luma, (1.0 / 1.772) * (inP.b - luma), (1.0 / 1.402) * (inP.r - luma));" +
+                "}" +
+                "lowp vec3 yuvToRgb(highp vec3 inP) {" +
+                    "return vec3(1.402 * inP.b + inP.r, (inP.r - (0.299 * 1.402 / 0.587) * inP.b - (0.114 * 1.772 / 0.587) * inP.g), 1.772 * inP.g + inP.r);" +
+                "}" +
+                "lowp float easeInOutSigmoid(lowp float value, lowp float strength) {" +
+                    "if (value > 0.5) {" +
+                        "return 1.0 - pow(2.0 - 2.0 * value, 1.0 / (1.0 - strength)) * 0.5;" +
+                    "} else {" +
+                        "return pow(2.0 * value, 1.0 / (1.0 - strength)) * 0.5;" +
+                    "}" +
+                "}" +
+                "lowp vec3 applyLuminanceCurve(lowp vec3 pixel) {" +
+                    "highp float index = floor(clamp(pixel.z / (1.0 / 200.0), 0.0, 199.0));" +
+                    "pixel.y = mix(0.0, pixel.y, smoothstep(0.0, 0.1, pixel.z) * (1.0 - smoothstep(0.8, 1.0, pixel.z)));" +
+                    "pixel.z = texture2D(curvesImage, vec2(1.0 / 200.0 * index, 0)).a;" +
+                    "return pixel;" +
+                "}" +
+                "lowp vec3 applyRGBCurve(lowp vec3 pixel) {" +
+                    "highp float index = floor(clamp(pixel.r / (1.0 / 200.0), 0.0, 199.0));" +
+                    "pixel.r = texture2D(curvesImage, vec2(1.0 / 200.0 * index, 0)).r;" +
+                    "index = floor(clamp(pixel.g / (1.0 / 200.0), 0.0, 199.0));" +
+                    "pixel.g = clamp(texture2D(curvesImage, vec2(1.0 / 200.0 * index, 0)).g, 0.0, 1.0);" +
+                    "index = floor(clamp(pixel.b / (1.0 / 200.0), 0.0, 199.0));" +
+                    "pixel.b = clamp(texture2D(curvesImage, vec2(1.0 / 200.0 * index, 0)).b, 0.0, 1.0);" +
+                    "return pixel;" +
+                "}" +
+                "highp vec3 fadeAdjust(highp vec3 color, highp float fadeVal) {" +
+                    "return (color * (1.0 - fadeVal)) + ((color + (vec3(-0.9772) * pow(vec3(color), vec3(3.0)) + vec3(1.708) * pow(vec3(color), vec3(2.0)) + vec3(-0.1603) * vec3(color) + vec3(0.2878) - color * vec3(0.9))) * fadeVal);" +
+                "}" +
+                "lowp vec3 tintRaiseShadowsCurve(lowp vec3 color) {" +
+                    "return vec3(-0.003671) * pow(color, vec3(3.0)) + vec3(0.3842) * pow(color, vec3(2.0)) + vec3(0.3764) * color + vec3(0.2515);" +
+                "}" +
+                "lowp vec3 tintShadows(lowp vec3 texel, lowp vec3 tintColor, lowp float tintAmount) {" +
+                    "return clamp(mix(texel, mix(texel, tintRaiseShadowsCurve(texel), tintColor), tintAmount), 0.0, 1.0);" +
+                "} " +
+                "lowp vec3 tintHighlights(lowp vec3 texel, lowp vec3 tintColor, lowp float tintAmount) {" +
+                    "return clamp(mix(texel, mix(texel, vec3(1.0) - tintRaiseShadowsCurve(vec3(1.0) - texel), (vec3(1.0) - tintColor)), tintAmount), 0.0, 1.0);" +
+                "}" +
+                "highp vec4 rnm(in highp vec2 tc) {" +
+                    "highp float noise = sin(dot(tc, vec2(12.9898, 78.233))) * 43758.5453;" +
+                    "return vec4(fract(noise), fract(noise * 1.2154), fract(noise * 1.3453), fract(noise * 1.3647)) * 2.0 - 1.0;" +
+                "}" +
+                "highp float fade(in highp float t) {" +
+                    "return t * t * t * (t * (t * 6.0 - 15.0) + 10.0);" +
+                "}" +
+                "highp float pnoise3D(in highp vec3 p) {" +
+                    "highp vec3 pi = permTexUnit * floor(p) + permTexUnitHalf;" +
+                    "highp vec3 pf = fract(p);" +
+                    "highp float perm = rnm(pi.xy).a;" +
+                    "highp float n000 = dot(rnm(vec2(perm, pi.z)).rgb * 4.0 - 1.0, pf);" +
+                    "highp float n001 = dot(rnm(vec2(perm, pi.z + permTexUnit)).rgb * 4.0 - 1.0, pf - vec3(0.0, 0.0, 1.0));" +
+                    "perm = rnm(pi.xy + vec2(0.0, permTexUnit)).a;" +
+                    "highp float n010 = dot(rnm(vec2(perm, pi.z)).rgb * 4.0 - 1.0, pf - vec3(0.0, 1.0, 0.0));" +
+                    "highp float n011 = dot(rnm(vec2(perm, pi.z + permTexUnit)).rgb * 4.0 - 1.0, pf - vec3(0.0, 1.0, 1.0));" +
+                    "perm = rnm(pi.xy + vec2(permTexUnit, 0.0)).a;" +
+                    "highp float n100 = dot(rnm(vec2(perm, pi.z)).rgb * 4.0 - 1.0, pf - vec3(1.0, 0.0, 0.0));" +
+                    "highp float n101 = dot(rnm(vec2(perm, pi.z + permTexUnit)).rgb * 4.0 - 1.0, pf - vec3(1.0, 0.0, 1.0));" +
+                    "perm = rnm(pi.xy + vec2(permTexUnit, permTexUnit)).a;" +
+                    "highp float n110 = dot(rnm(vec2(perm, pi.z)).rgb * 4.0 - 1.0, pf - vec3(1.0, 1.0, 0.0));" +
+                    "highp float n111 = dot(rnm(vec2(perm, pi.z + permTexUnit)).rgb * 4.0 - 1.0, pf - vec3(1.0, 1.0, 1.0));" +
+                    "highp vec4 n_x = mix(vec4(n000, n001, n010, n011), vec4(n100, n101, n110, n111), fade(pf.x));" +
+                    "highp vec2 n_xy = mix(n_x.xy, n_x.zw, fade(pf.y));" +
+                    "return mix(n_xy.x, n_xy.y, fade(pf.z));" +
+                "}" +
+                "lowp vec2 coordRot(in lowp vec2 tc, in lowp float angle) {" +
+                    "return vec2(((tc.x * 2.0 - 1.0) * cos(angle) - (tc.y * 2.0 - 1.0) * sin(angle)) * 0.5 + 0.5, ((tc.y * 2.0 - 1.0) * cos(angle) + (tc.x * 2.0 - 1.0) * sin(angle)) * 0.5 + 0.5);" +
+                "}" +
+                "void main() {" +
+                    "lowp vec4 source = texture2D(sourceImage, texCoord);" +
+                    "lowp vec4 result = source;" +
+                    "const lowp float toolEpsilon = 0.005;" +
+                    "if (skipTone < toolEpsilon) {" +
+                        "result = vec4(applyRGBCurve(hslToRgb(applyLuminanceCurve(rgbToHsl(result.rgb)))), result.a);" +
+                    "}" +
+                    "mediump float hsLuminance = dot(result.rgb, hsLuminanceWeighting);" +
+                    "mediump float shadow = clamp((pow(hsLuminance, 1.0 / shadows) + (-0.76) * pow(hsLuminance, 2.0 / shadows)) - hsLuminance, 0.0, 1.0);" +
+                    "mediump float highlight = clamp((1.0 - (pow(1.0 - hsLuminance, 1.0 / (2.0 - highlights)) + (-0.8) * pow(1.0 - hsLuminance, 2.0 / (2.0 - highlights)))) - hsLuminance, -1.0, 0.0);" +
+                    "lowp vec3 hsresult = vec3(0.0, 0.0, 0.0) + ((hsLuminance + shadow + highlight) - 0.0) * ((result.rgb - vec3(0.0, 0.0, 0.0)) / (hsLuminance - 0.0));" +
+                    "mediump float contrastedLuminance = ((hsLuminance - 0.5) * 1.5) + 0.5;" +
+                    "mediump float whiteInterp = contrastedLuminance * contrastedLuminance * contrastedLuminance;" +
+                    "mediump float whiteTarget = clamp(highlights, 1.0, 2.0) - 1.0;" +
+                    "hsresult = mix(hsresult, vec3(1.0), whiteInterp * whiteTarget);" +
+                    "mediump float invContrastedLuminance = 1.0 - contrastedLuminance;" +
+                    "mediump float blackInterp = invContrastedLuminance * invContrastedLuminance * invContrastedLuminance;" +
+                    "mediump float blackTarget = 1.0 - clamp(shadows, 0.0, 1.0);" +
+                    "hsresult = mix(hsresult, vec3(0.0), blackInterp * blackTarget);" +
+                    "result = vec4(hsresult.rgb, result.a);" +
+                    "result = vec4(clamp(((result.rgb - vec3(0.5)) * contrast + vec3(0.5)), 0.0, 1.0), result.a);" +
+                    "if (abs(fadeAmount) > toolEpsilon) {" +
+                        "result.rgb = fadeAdjust(result.rgb, fadeAmount);" +
+                    "}" +
+                    "lowp float satLuminance = dot(result.rgb, satLuminanceWeighting);" +
+                    "lowp vec3 greyScaleColor = vec3(satLuminance);" +
+                    "result = vec4(clamp(mix(greyScaleColor, result.rgb, saturation), 0.0, 1.0), result.a);" +
+                    "if (abs(shadowsTintIntensity) > toolEpsilon) {" +
+                        "result.rgb = tintShadows(result.rgb, shadowsTintColor, shadowsTintIntensity * 2.0);" +
+                    "}" +
+                    "if (abs(highlightsTintIntensity) > toolEpsilon) {" +
+                        "result.rgb = tintHighlights(result.rgb, highlightsTintColor, highlightsTintIntensity * 2.0);" +
+                    "}" +
+                    "if (abs(exposure) > toolEpsilon) {" +
+                        "mediump float mag = exposure * 1.045;" +
+                        "mediump float exppower = 1.0 + abs(mag);" +
+                        "if (mag < 0.0) {" +
+                            "exppower = 1.0 / exppower;" +
+                        "}" +
+                        "result.r = 1.0 - pow((1.0 - result.r), exppower);" +
+                        "result.g = 1.0 - pow((1.0 - result.g), exppower);" +
+                        "result.b = 1.0 - pow((1.0 - result.b), exppower);" +
+                    "}" +
+                    "if (abs(warmth) > toolEpsilon) {" +
+                        "highp vec3 yuvVec;" +
+                        "if (warmth > 0.0 ) {" +
+                            "yuvVec = vec3(0.1765, -0.1255, 0.0902);" +
+                        "} else {" +
+                            "yuvVec = -vec3(0.0588, 0.1569, -0.1255);" +
+                        "}" +
+                        "highp vec3 yuvColor = rgbToYuv(result.rgb);" +
+                        "highp float luma = yuvColor.r;" +
+                        "highp float curveScale = sin(luma * 3.14159);" +
+                        "yuvColor += 0.375 * warmth * curveScale * yuvVec;" +
+                        "result.rgb = yuvToRgb(yuvColor);" +
+                    "}" +
+                    "if (abs(grain) > toolEpsilon) {" +
+                        "highp vec3 rotOffset = vec3(1.425, 3.892, 5.835);" +
+                        "highp vec2 rotCoordsR = coordRot(texCoord, rotOffset.x);" +
+                        "highp vec3 noise = vec3(pnoise3D(vec3(rotCoordsR * vec2(width / grainsize, height / grainsize),0.0)));" +
+                        "lowp vec3 lumcoeff = vec3(0.299,0.587,0.114);" +
+                        "lowp float luminance = dot(result.rgb, lumcoeff);" +
+                        "lowp float lum = smoothstep(0.2, 0.0, luminance);" +
+                        "lum += luminance;" +
+                        "noise = mix(noise,vec3(0.0),pow(lum,4.0));" +
+                        "result.rgb = result.rgb + noise * grain;" +
+                    "}" +
+                    "if (abs(vignette) > toolEpsilon) {" +
+                        "const lowp float midpoint = 0.7;" +
+                        "const lowp float fuzziness = 0.62;" +
+                        "lowp float radDist = length(texCoord - 0.5) / sqrt(0.5);" +
+                        "lowp float mag = easeInOutSigmoid(radDist * midpoint, fuzziness) * vignette * 0.645;" +
+                        "result.rgb = mix(pow(result.rgb, vec3(1.0 / (1.0 - mag))), vec3(0.0), mag * mag);" +
+                    "}" +
                     "gl_FragColor = result;" +
                 "}";
 
@@ -559,6 +1194,7 @@ public class PhotoFilterView extends FrameLayout {
             int[] compileStatus = new int[1];
             GLES20.glGetShaderiv(shader, GLES20.GL_COMPILE_STATUS, compileStatus, 0);
             if (compileStatus[0] == 0) {
+                FileLog.e("tmessages", GLES20.glGetShaderInfoLog(shader));
                 GLES20.glDeleteShader(shader);
                 shader = 0;
             }
@@ -671,6 +1307,7 @@ public class PhotoFilterView extends FrameLayout {
             textureBuffer.put(textureCoordinates);
             textureBuffer.position(0);
 
+            GLES20.glGenTextures(1, curveTextures, 0);
             GLES20.glGenTextures(2, enhanceTextures, 0);
 
             int vertexShader = loadShader(GLES20.GL_VERTEX_SHADER, simpleVertexShaderCode);
@@ -705,6 +1342,13 @@ public class PhotoFilterView extends FrameLayout {
                     grainHandle = GLES20.glGetUniformLocation(toolsShaderProgram, "grain");
                     widthHandle = GLES20.glGetUniformLocation(toolsShaderProgram, "width");
                     heightHandle = GLES20.glGetUniformLocation(toolsShaderProgram, "height");
+                    curvesImageHandle = GLES20.glGetUniformLocation(toolsShaderProgram, "curvesImage");
+                    skipToneHandle = GLES20.glGetUniformLocation(toolsShaderProgram, "skipTone");
+                    fadeAmountHandle = GLES20.glGetUniformLocation(toolsShaderProgram, "fadeAmount");
+                    shadowsTintIntensityHandle = GLES20.glGetUniformLocation(toolsShaderProgram, "shadowsTintIntensity");
+                    highlightsTintIntensityHandle = GLES20.glGetUniformLocation(toolsShaderProgram, "highlightsTintIntensity");
+                    shadowsTintColorHandle = GLES20.glGetUniformLocation(toolsShaderProgram, "shadowsTintColor");
+                    highlightsTintColorHandle = GLES20.glGetUniformLocation(toolsShaderProgram, "highlightsTintColor");
                 }
             } else {
                 finish();
@@ -1032,7 +1676,7 @@ public class PhotoFilterView extends FrameLayout {
             GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, renderTexture[0]);
             GLES20.glUniform1i(sourceImageHandle, 0);
             if (showOriginal) {
-                GLES20.glUniform1f(shadowsHandle, 0);
+                GLES20.glUniform1f(shadowsHandle, 1);
                 GLES20.glUniform1f(highlightsHandle, 1);
                 GLES20.glUniform1f(exposureHandle, 0);
                 GLES20.glUniform1f(contrastHandle, 1);
@@ -1040,6 +1684,12 @@ public class PhotoFilterView extends FrameLayout {
                 GLES20.glUniform1f(warmthHandle, 0);
                 GLES20.glUniform1f(vignetteHandle, 0);
                 GLES20.glUniform1f(grainHandle, 0);
+                GLES20.glUniform1f(fadeAmountHandle, 0);
+                GLES20.glUniform3f(highlightsTintColorHandle, 0, 0, 0);
+                GLES20.glUniform1f(highlightsTintIntensityHandle, 0);
+                GLES20.glUniform3f(shadowsTintColorHandle, 0, 0, 0);
+                GLES20.glUniform1f(shadowsTintIntensityHandle, 0);
+                GLES20.glUniform1f(skipToneHandle, 1);
             } else {
                 GLES20.glUniform1f(shadowsHandle, getShadowsValue());
                 GLES20.glUniform1f(highlightsHandle, getHighlightsValue());
@@ -1049,7 +1699,26 @@ public class PhotoFilterView extends FrameLayout {
                 GLES20.glUniform1f(warmthHandle, getWarmthValue());
                 GLES20.glUniform1f(vignetteHandle, getVignetteValue());
                 GLES20.glUniform1f(grainHandle, getGrainValue());
+                GLES20.glUniform1f(fadeAmountHandle, getFadeValue());
+                GLES20.glUniform3f(highlightsTintColorHandle, (tintHighlightsColor >> 16 & 0xff) / 255.0f, (tintHighlightsColor >> 8 & 0xff) / 255.0f, (tintHighlightsColor & 0xff) / 255.0f);
+                GLES20.glUniform1f(highlightsTintIntensityHandle, getTintHighlightsIntensityValue());
+                GLES20.glUniform3f(shadowsTintColorHandle, (tintShadowsColor >> 16 & 0xff) / 255.0f, (tintShadowsColor >> 8 & 0xff) / 255.0f, (tintShadowsColor & 0xff) / 255.0f);
+                GLES20.glUniform1f(shadowsTintIntensityHandle, getTintShadowsIntensityValue());
+                boolean skipTone = curvesToolValue.shouldBeSkipped();
+                GLES20.glUniform1f(skipToneHandle, skipTone ? 1.0f : 0.0f);
+                if (!skipTone) {
+                    curvesToolValue.fillBuffer();
+                    GLES20.glActiveTexture(GLES20.GL_TEXTURE1);
+                    GLES20.glBindTexture(GL10.GL_TEXTURE_2D, curveTextures[0]);
+                    GLES20.glTexParameteri(GL10.GL_TEXTURE_2D, GL10.GL_TEXTURE_MIN_FILTER, GL10.GL_LINEAR);
+                    GLES20.glTexParameteri(GL10.GL_TEXTURE_2D, GL10.GL_TEXTURE_MAG_FILTER, GL10.GL_LINEAR);
+                    GLES20.glTexParameteri(GL10.GL_TEXTURE_2D, GL10.GL_TEXTURE_WRAP_S, GL10.GL_CLAMP_TO_EDGE);
+                    GLES20.glTexParameteri(GL10.GL_TEXTURE_2D, GL10.GL_TEXTURE_WRAP_T, GL10.GL_CLAMP_TO_EDGE);
+                    GLES20.glTexImage2D(GLES20.GL_TEXTURE_2D, 0, GLES20.GL_RGBA, 200, 1, 0, GLES20.GL_RGBA, GLES20.GL_UNSIGNED_BYTE, curvesToolValue.curveBuffer);
+                    GLES20.glUniform1i(curvesImageHandle, 1);
+                }
             }
+
             GLES20.glUniform1f(widthHandle, renderBufferWidth);
             GLES20.glUniform1f(heightHandle, renderBufferHeight);
             GLES20.glEnableVertexAttribArray(inputTexCoordHandle);
@@ -1203,36 +1872,17 @@ public class PhotoFilterView extends FrameLayout {
         }
 
         private Bitmap createBitmap(Bitmap bitmap, int w, int h, float scale) {
-            //Bitmap result = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
-            //Canvas canvas = new Canvas(result);
-            //Paint paint = new Paint();
-            //paint.setFilterBitmap(true);
-
             Matrix matrix = new Matrix();
             matrix.setScale(scale, scale);
-            //matrix.postTranslate(-bitmap.getWidth() / 2, -bitmap.getHeight() / 2);
             matrix.postRotate(orientation);
-            /*if (orientation == 90 || orientation == 270) {
-                matrix.postTranslate(bitmap.getHeight() / 2, bitmap.getWidth() / 2);
-            } else {
-                matrix.postTranslate(bitmap.getWidth() / 2, bitmap.getHeight() / 2);
-            }*/
-            //canvas.drawBitmap(bitmap, matrix, paint);
-            //try {
-            //    canvas.setBitmap(null);
-            //} catch (Exception e) {
-                //don't promt, this will crash on 2.x
-            //}
             return Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, true);
-
-            //return result;
         }
 
         private void loadTexture(Bitmap bitmap) {
             renderBufferWidth = bitmap.getWidth();
             renderBufferHeight = bitmap.getHeight();
             float maxSize = AndroidUtilities.getPhotoSize();
-            if (renderBufferWidth > maxSize || renderBufferHeight > maxSize || orientation != 0) {
+            if (renderBufferWidth > maxSize || renderBufferHeight > maxSize || orientation % 360 != 0) {
                 float scale = 1;
                 if (renderBufferWidth > maxSize || renderBufferHeight > maxSize) {
                     float scaleX = maxSize / bitmap.getWidth();
@@ -1248,7 +1898,7 @@ public class PhotoFilterView extends FrameLayout {
                     }
                 }
 
-                if (orientation == 90 || orientation == 270) {
+                if (orientation % 360 == 90 || orientation % 360 == 270) {
                     int temp = renderBufferWidth;
                     renderBufferWidth = renderBufferHeight;
                     renderBufferHeight = temp;
@@ -1313,8 +1963,13 @@ public class PhotoFilterView extends FrameLayout {
                     if (!needUpdateBlurTexture) {
                         needUpdateBlurTexture = updateBlur;
                     }
-                    cancelRunnable(drawRunnable);
-                    postRunnable(drawRunnable);
+                    long newTime = System.currentTimeMillis();
+                    if (Math.abs(lastRenderCallTime - newTime) > 30) {
+                        lastRenderCallTime = newTime;
+                        drawRunnable.run();
+                        //cancelRunnable(drawRunnable);
+                        //postRunnable(drawRunnable, 30);
+                    }
                 }
             });
         }
@@ -1331,13 +1986,8 @@ public class PhotoFilterView extends FrameLayout {
             //setLayerType(LAYER_TYPE_HARDWARE, null);
             //textureView.setLayerType(LAYER_TYPE_HARDWARE, null);
         }
-        addView(textureView);
+        addView(textureView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT));
         textureView.setVisibility(INVISIBLE);
-        LayoutParams layoutParams = (LayoutParams) textureView.getLayoutParams();
-        layoutParams.width = LayoutHelper.MATCH_PARENT;
-        layoutParams.height = LayoutHelper.MATCH_PARENT;
-        layoutParams.gravity = Gravity.TOP | Gravity.LEFT;
-        textureView.setLayoutParams(layoutParams);
         textureView.setSurfaceTextureListener(new TextureView.SurfaceTextureListener() {
             @Override
             public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
@@ -1379,12 +2029,7 @@ public class PhotoFilterView extends FrameLayout {
 
         blurControl = new PhotoFilterBlurControl(context);
         blurControl.setVisibility(INVISIBLE);
-        addView(blurControl);
-        layoutParams = (LayoutParams) blurControl.getLayoutParams();
-        layoutParams.width = LayoutHelper.MATCH_PARENT;
-        layoutParams.height = LayoutHelper.MATCH_PARENT;
-        layoutParams.gravity = Gravity.LEFT | Gravity.TOP;
-        blurControl.setLayoutParams(layoutParams);
+        addView(blurControl, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.TOP));
         blurControl.setDelegate(new PhotoFilterBlurControl.PhotoFilterLinearBlurControlDelegate() {
             @Override
             public void valueChanged(Point centerPoint, float falloff, float size, float angle) {
@@ -1398,22 +2043,24 @@ public class PhotoFilterView extends FrameLayout {
             }
         });
 
+        curvesControl = new PhotoFilterCurvesControl(context, curvesToolValue);
+        curvesControl.setDelegate(new PhotoFilterCurvesControl.PhotoFilterCurvesControlDelegate() {
+            @Override
+            public void valueChanged() {
+                if (eglThread != null) {
+                    eglThread.requestRender(false);
+                }
+            }
+        });
+        curvesControl.setVisibility(INVISIBLE);
+        addView(curvesControl, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.TOP));
+
         toolsView = new FrameLayout(context);
-        addView(toolsView);
-        layoutParams = (LayoutParams) toolsView.getLayoutParams();
-        layoutParams.width = LayoutHelper.MATCH_PARENT;
-        layoutParams.height = AndroidUtilities.dp(126);
-        layoutParams.gravity = Gravity.LEFT | Gravity.BOTTOM;
-        toolsView.setLayoutParams(layoutParams);
+        addView(toolsView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 126, Gravity.LEFT | Gravity.BOTTOM));
 
         FrameLayout frameLayout = new FrameLayout(context);
         frameLayout.setBackgroundColor(0xff1a1a1a);
-        toolsView.addView(frameLayout);
-        layoutParams = (LayoutParams) frameLayout.getLayoutParams();
-        layoutParams.width = LayoutHelper.MATCH_PARENT;
-        layoutParams.height = AndroidUtilities.dp(48);
-        layoutParams.gravity = Gravity.BOTTOM | Gravity.LEFT;
-        frameLayout.setLayoutParams(layoutParams);
+        toolsView.addView(frameLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.BOTTOM | Gravity.LEFT));
 
         cancelTextView = new TextView(context);
         cancelTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
@@ -1423,12 +2070,7 @@ public class PhotoFilterView extends FrameLayout {
         cancelTextView.setPadding(AndroidUtilities.dp(29), 0, AndroidUtilities.dp(29), 0);
         cancelTextView.setText(LocaleController.getString("Cancel", R.string.Cancel).toUpperCase());
         cancelTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
-        frameLayout.addView(cancelTextView);
-        layoutParams = (LayoutParams) cancelTextView.getLayoutParams();
-        layoutParams.width = LayoutHelper.WRAP_CONTENT;
-        layoutParams.height = LayoutHelper.MATCH_PARENT;
-        layoutParams.gravity = Gravity.TOP | Gravity.LEFT;
-        cancelTextView.setLayoutParams(layoutParams);
+        frameLayout.addView(cancelTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT));
 
         doneTextView = new TextView(context);
         doneTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
@@ -1438,12 +2080,7 @@ public class PhotoFilterView extends FrameLayout {
         doneTextView.setPadding(AndroidUtilities.dp(29), 0, AndroidUtilities.dp(29), 0);
         doneTextView.setText(LocaleController.getString("Done", R.string.Done).toUpperCase());
         doneTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
-        frameLayout.addView(doneTextView);
-        layoutParams = (LayoutParams) doneTextView.getLayoutParams();
-        layoutParams.width = LayoutHelper.WRAP_CONTENT;
-        layoutParams.height = LayoutHelper.MATCH_PARENT;
-        layoutParams.gravity = Gravity.TOP | Gravity.RIGHT;
-        doneTextView.setLayoutParams(layoutParams);
+        frameLayout.addView(doneTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.RIGHT));
 
         recyclerListView = new RecyclerListView(context);
         LinearLayoutManager layoutManager = new LinearLayoutManager(context);
@@ -1454,12 +2091,7 @@ public class PhotoFilterView extends FrameLayout {
             recyclerListView.setOverScrollMode(RecyclerListView.OVER_SCROLL_NEVER);
         }
         recyclerListView.setAdapter(toolsAdapter = new ToolsAdapter(context));
-        toolsView.addView(recyclerListView);
-        layoutParams = (FrameLayout.LayoutParams) recyclerListView.getLayoutParams();
-        layoutParams.width = LayoutHelper.MATCH_PARENT;
-        layoutParams.height = AndroidUtilities.dp(60);
-        layoutParams.gravity = Gravity.LEFT | Gravity.TOP;
-        recyclerListView.setLayoutParams(layoutParams);
+        toolsView.addView(recyclerListView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 60, Gravity.LEFT | Gravity.TOP));
         recyclerListView.setOnItemClickListener(new RecyclerListView.OnItemClickListener() {
             @Override
             public void onItemClick(View view, int position) {
@@ -1470,7 +2102,7 @@ public class PhotoFilterView extends FrameLayout {
                     paramTextView.setText(LocaleController.getString("Enhance", R.string.Enhance));
                 } else if (position == highlightsTool) {
                     previousValue = highlightsValue;
-                    valueSeekBar.setMinMax(0, 100);
+                    valueSeekBar.setMinMax(-100, 100);
                     paramTextView.setText(LocaleController.getString("Highlights", R.string.Highlights));
                 } else if (position == contrastTool) {
                     previousValue = contrastValue;
@@ -1494,18 +2126,30 @@ public class PhotoFilterView extends FrameLayout {
                     paramTextView.setText(LocaleController.getString("Vignette", R.string.Vignette));
                 } else if (position == shadowsTool) {
                     previousValue = shadowsValue;
-                    valueSeekBar.setMinMax(0, 100);
+                    valueSeekBar.setMinMax(-100, 100);
                     paramTextView.setText(LocaleController.getString("Shadows", R.string.Shadows));
                 } else if (position == grainTool) {
                     previousValue = grainValue;
                     valueSeekBar.setMinMax(0, 100);
                     paramTextView.setText(LocaleController.getString("Grain", R.string.Grain));
+                } else if (position == fadeTool) {
+                    previousValue = fadeValue;
+                    valueSeekBar.setMinMax(0, 100);
+                    paramTextView.setText(LocaleController.getString("Fade", R.string.Fade));
                 } else if (position == sharpenTool) {
                     previousValue = sharpenValue;
                     valueSeekBar.setMinMax(0, 100);
                     paramTextView.setText(LocaleController.getString("Sharpen", R.string.Sharpen));
                 } else if (position == blurTool) {
-                    previousValue = blurType;
+                    previousValueInt = blurType;
+                } else if (position == tintTool) {
+                    previousValueInt = tintShadowsColor;
+                    previousValueInt2 = tintHighlightsColor;
+                } else if (position == curvesTool) {
+                    curvesToolValue.luminanceCurve.saveValues();
+                    curvesToolValue.redCurve.saveValues();
+                    curvesToolValue.greenCurve.saveValues();
+                    curvesToolValue.blueCurve.saveValues();
                 }
                 valueSeekBar.setProgress((int) previousValue, false);
                 updateValueTextView();
@@ -1515,32 +2159,17 @@ public class PhotoFilterView extends FrameLayout {
 
         editView = new FrameLayout(context);
         editView.setVisibility(GONE);
-        addView(editView);
-        layoutParams = (LayoutParams) editView.getLayoutParams();
-        layoutParams.width = LayoutHelper.MATCH_PARENT;
-        layoutParams.height = AndroidUtilities.dp(126);
-        layoutParams.gravity = Gravity.LEFT | Gravity.BOTTOM;
-        editView.setLayoutParams(layoutParams);
+        addView(editView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 126, Gravity.LEFT | Gravity.BOTTOM));
 
         frameLayout = new FrameLayout(context);
         frameLayout.setBackgroundColor(0xff1a1a1a);
-        editView.addView(frameLayout);
-        layoutParams = (LayoutParams) frameLayout.getLayoutParams();
-        layoutParams.width = LayoutHelper.MATCH_PARENT;
-        layoutParams.height = AndroidUtilities.dp(48);
-        layoutParams.gravity = Gravity.BOTTOM | Gravity.LEFT;
-        frameLayout.setLayoutParams(layoutParams);
+        editView.addView(frameLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.BOTTOM | Gravity.LEFT));
 
         ImageView imageView = new ImageView(context);
         imageView.setImageResource(R.drawable.edit_cancel);
         imageView.setBackgroundResource(R.drawable.bar_selector_picker);
         imageView.setPadding(AndroidUtilities.dp(22), 0, AndroidUtilities.dp(22), 0);
-        frameLayout.addView(imageView);
-        layoutParams = (LayoutParams) imageView.getLayoutParams();
-        layoutParams.width = LayoutHelper.WRAP_CONTENT;
-        layoutParams.height = LayoutHelper.MATCH_PARENT;
-        layoutParams.gravity = Gravity.TOP | Gravity.LEFT;
-        imageView.setLayoutParams(layoutParams);
+        frameLayout.addView(imageView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT));
         imageView.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -1564,8 +2193,18 @@ public class PhotoFilterView extends FrameLayout {
                     grainValue = previousValue;
                 } else if (selectedTool == sharpenTool) {
                     sharpenValue = previousValue;
+                } else if (selectedTool == fadeTool) {
+                    fadeValue = previousValue;
                 } else if (selectedTool == blurTool) {
-                    blurType = (int) previousValue;
+                    blurType = previousValueInt;
+                } else if (selectedTool == tintTool) {
+                    tintShadowsColor = previousValueInt;
+                    tintHighlightsColor = previousValueInt2;
+                } else if (selectedTool == curvesTool) {
+                    curvesToolValue.luminanceCurve.restoreValues();
+                    curvesToolValue.redCurve.restoreValues();
+                    curvesToolValue.greenCurve.restoreValues();
+                    curvesToolValue.blueCurve.restoreValues();
                 }
                 if (eglThread != null) {
                     eglThread.requestRender(selectedTool != blurTool);
@@ -1578,12 +2217,7 @@ public class PhotoFilterView extends FrameLayout {
         imageView.setImageResource(R.drawable.edit_doneblue);
         imageView.setBackgroundResource(R.drawable.bar_selector_picker);
         imageView.setPadding(AndroidUtilities.dp(22), AndroidUtilities.dp(1), AndroidUtilities.dp(22), 0);
-        frameLayout.addView(imageView);
-        layoutParams = (LayoutParams) imageView.getLayoutParams();
-        layoutParams.width = LayoutHelper.WRAP_CONTENT;
-        layoutParams.height = LayoutHelper.MATCH_PARENT;
-        layoutParams.gravity = Gravity.TOP | Gravity.RIGHT;
-        imageView.setLayoutParams(layoutParams);
+        frameLayout.addView(imageView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.RIGHT));
         imageView.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -1592,39 +2226,20 @@ public class PhotoFilterView extends FrameLayout {
             }
         });
 
-        blurTextView = new TextView(context);
-        blurTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
-        blurTextView.setTextColor(0xffffffff);
-        blurTextView.setText(LocaleController.getString("Blur", R.string.Blur));
-        frameLayout.addView(blurTextView);
-        layoutParams = (LayoutParams) blurTextView.getLayoutParams();
-        layoutParams.width = LayoutHelper.WRAP_CONTENT;
-        layoutParams.height = LayoutHelper.WRAP_CONTENT;
-        layoutParams.gravity = Gravity.CENTER_HORIZONTAL;
-        layoutParams.topMargin = AndroidUtilities.dp(9);
-        blurTextView.setLayoutParams(layoutParams);
+        infoTextView = new TextView(context);
+        infoTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
+        infoTextView.setTextColor(0xffffffff);
+        frameLayout.addView(infoTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 0, 9, 0, 0));
 
         paramTextView = new TextView(context);
         paramTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
         paramTextView.setTextColor(0xff808080);
-        frameLayout.addView(paramTextView);
-        layoutParams = (LayoutParams) paramTextView.getLayoutParams();
-        layoutParams.width = LayoutHelper.WRAP_CONTENT;
-        layoutParams.height = LayoutHelper.WRAP_CONTENT;
-        layoutParams.gravity = Gravity.CENTER_HORIZONTAL;
-        layoutParams.topMargin = AndroidUtilities.dp(26);
-        paramTextView.setLayoutParams(layoutParams);
+        frameLayout.addView(paramTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 0, 26, 0, 0));
 
         valueTextView = new TextView(context);
         valueTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
         valueTextView.setTextColor(0xffffffff);
-        frameLayout.addView(valueTextView);
-        layoutParams = (LayoutParams) valueTextView.getLayoutParams();
-        layoutParams.width = LayoutHelper.WRAP_CONTENT;
-        layoutParams.height = LayoutHelper.WRAP_CONTENT;
-        layoutParams.gravity = Gravity.CENTER_HORIZONTAL;
-        layoutParams.topMargin = AndroidUtilities.dp(3);
-        valueTextView.setLayoutParams(layoutParams);
+        frameLayout.addView(valueTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 0, 3, 0, 0));
 
         valueSeekBar = new PhotoEditorSeekBar(context);
         valueSeekBar.setDelegate(new PhotoEditorSeekBar.PhotoEditorSeekBarDelegate() {
@@ -1651,6 +2266,8 @@ public class PhotoFilterView extends FrameLayout {
                     grainValue = progress;
                 } else if (selectedTool == sharpenTool) {
                     sharpenValue = progress;
+                }  else if (selectedTool == fadeTool) {
+                    fadeValue = progress;
                 }
                 updateValueTextView();
                 if (eglThread != null) {
@@ -1658,41 +2275,116 @@ public class PhotoFilterView extends FrameLayout {
                 }
             }
         });
-        editView.addView(valueSeekBar);
-        layoutParams = (LayoutParams) valueSeekBar.getLayoutParams();
-        layoutParams.height = AndroidUtilities.dp(60);
-        layoutParams.leftMargin = AndroidUtilities.dp(14);
-        layoutParams.rightMargin = AndroidUtilities.dp(14);
-        layoutParams.topMargin = AndroidUtilities.dp(10);
-        if (AndroidUtilities.isTablet()) {
-            layoutParams.width = AndroidUtilities.dp(498);
-            layoutParams.gravity = Gravity.CENTER_HORIZONTAL | Gravity.TOP;
-        } else {
-            layoutParams.width = LayoutHelper.MATCH_PARENT;
-            layoutParams.gravity = Gravity.LEFT | Gravity.TOP;
+        editView.addView(valueSeekBar, LayoutHelper.createFrame(AndroidUtilities.isTablet() ? 498 : LayoutHelper.MATCH_PARENT, 60, AndroidUtilities.isTablet() ? Gravity.CENTER_HORIZONTAL | Gravity.TOP : Gravity.LEFT | Gravity.TOP, 14, 10, 14, 0));
+
+        curveLayout = new FrameLayout(context);
+        editView.addView(curveLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 78, Gravity.CENTER_HORIZONTAL));
+
+        LinearLayout curveTextViewContainer = new LinearLayout(context);
+        curveTextViewContainer.setOrientation(LinearLayout.HORIZONTAL);
+        curveLayout.addView(curveTextViewContainer, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 28, Gravity.CENTER_HORIZONTAL));
+
+        for (int a = 0; a < 4; a++) {
+            curveTextView[a] = new TextView(context);
+            curveTextView[a].setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+            curveTextView[a].setGravity(Gravity.CENTER_VERTICAL);
+            curveTextView[a].setTag(a);
+            if (a == 0) {
+                curveTextView[a].setText(LocaleController.getString("CurvesAll", R.string.CurvesAll).toUpperCase());
+            } else if (a == 1) {
+                curveTextView[a].setText(LocaleController.getString("CurvesRed", R.string.CurvesRed).toUpperCase());
+            } else if (a == 2) {
+                curveTextView[a].setText(LocaleController.getString("CurvesGreen", R.string.CurvesGreen).toUpperCase());
+            } else if (a == 3) {
+                curveTextView[a].setText(LocaleController.getString("CurvesBlue", R.string.CurvesBlue).toUpperCase());
+            }
+            curveTextView[a].setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            curveTextViewContainer.addView(curveTextView[a], LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, 28, a == 0 ? 0 : 30, 0, 0, 0));
+            curveTextView[a].setOnClickListener(new OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    int num = (Integer) v.getTag();
+                    for (int a = 0; a < 4; a++) {
+                        curveTextView[a].setTextColor(a == num ? 0xffffffff : 0xff808080);
+                    }
+                    curvesToolValue.activeType = num;
+                    curvesControl.invalidate();
+                }
+            });
         }
-        valueSeekBar.setLayoutParams(layoutParams);
+
+        tintLayout = new FrameLayout(context);
+        editView.addView(tintLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 78, Gravity.CENTER_HORIZONTAL));
+
+        LinearLayout tintTextViewContainer = new LinearLayout(context);
+        tintTextViewContainer.setOrientation(LinearLayout.HORIZONTAL);
+        tintLayout.addView(tintTextViewContainer, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 28, Gravity.CENTER_HORIZONTAL));
+
+        tintShadowsButton = new TextView(context);
+        tintShadowsButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+        tintShadowsButton.setGravity(Gravity.CENTER_VERTICAL);
+        tintShadowsButton.setText(LocaleController.getString("TintShadows", R.string.TintShadows).toUpperCase());
+        tintShadowsButton.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        tintTextViewContainer.addView(tintShadowsButton, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, 28));
+        tintShadowsButton.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                selectedTintMode = 0;
+                updateSelectedTintButton(true);
+            }
+        });
+
+        tintHighlightsButton = new TextView(context);
+        tintHighlightsButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+        tintHighlightsButton.setGravity(Gravity.CENTER_VERTICAL);
+        tintHighlightsButton.setText(LocaleController.getString("TintHighlights", R.string.TintHighlights).toUpperCase());
+        tintHighlightsButton.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        tintTextViewContainer.addView(tintHighlightsButton, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, 28, 100, 0, 0, 0));
+        tintHighlightsButton.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                selectedTintMode = 1;
+                updateSelectedTintButton(true);
+            }
+        });
+
+        tintButtonsContainer = new LinearLayout(context);
+        tintButtonsContainer.setOrientation(LinearLayout.HORIZONTAL);
+        tintButtonsContainer.setPadding(AndroidUtilities.dp(10), 0, AndroidUtilities.dp(10), 0);
+        tintLayout.addView(tintButtonsContainer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 50, Gravity.LEFT | Gravity.TOP, 0, 24, 0, 0));
+        for (int a = 0; a < tintShadowColors.length; a++) {
+            RadioButton radioButton = new RadioButton(context);
+            radioButton.setSize(AndroidUtilities.dp(20));
+            radioButton.setTag(a);
+            tintButtonsContainer.addView(radioButton, LayoutHelper.createLinear(0, LayoutHelper.MATCH_PARENT, 1.0f / tintShadowColors.length));
+            radioButton.setOnClickListener(new OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    RadioButton radioButton = (RadioButton) v;
+                    if (selectedTintMode == 0) {
+                        tintShadowsColor = tintShadowColors[(Integer) radioButton.getTag()];
+                    } else {
+                        tintHighlightsColor = tintHighlighsColors[(Integer) radioButton.getTag()];
+                    }
+                    updateSelectedTintButton(true);
+                    if (eglThread != null) {
+                        eglThread.requestRender(false);
+                    }
+                }
+            });
+        }
 
         blurLayout = new FrameLayout(context);
-        editView.addView(blurLayout);
-        layoutParams = (LayoutParams) blurLayout.getLayoutParams();
-        layoutParams.width = AndroidUtilities.dp(280);
-        layoutParams.height = AndroidUtilities.dp(60);
-        layoutParams.topMargin = AndroidUtilities.dp(10);
-        layoutParams.gravity = Gravity.CENTER_HORIZONTAL;
-        blurLayout.setLayoutParams(layoutParams);
+        editView.addView(blurLayout, LayoutHelper.createFrame(280, 60, Gravity.CENTER_HORIZONTAL, 0, 10, 0, 0));
 
         blurOffButton = new TextView(context);
         blurOffButton.setCompoundDrawablesWithIntrinsicBounds(0, R.drawable.blur_off_active, 0, 0);
+        blurOffButton.setCompoundDrawablePadding(AndroidUtilities.dp(2));
         blurOffButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
         blurOffButton.setTextColor(0xff51bdf3);
         blurOffButton.setGravity(Gravity.CENTER_HORIZONTAL);
         blurOffButton.setText(LocaleController.getString("BlurOff", R.string.BlurOff));
-        blurLayout.addView(blurOffButton);
-        layoutParams = (LayoutParams) blurOffButton.getLayoutParams();
-        layoutParams.width = AndroidUtilities.dp(80);
-        layoutParams.height = AndroidUtilities.dp(60);
-        blurOffButton.setLayoutParams(layoutParams);
+        blurLayout.addView(blurOffButton, LayoutHelper.createFrame(80, 60));
         blurOffButton.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -1707,16 +2399,12 @@ public class PhotoFilterView extends FrameLayout {
 
         blurRadialButton = new TextView(context);
         blurRadialButton.setCompoundDrawablesWithIntrinsicBounds(0, R.drawable.blur_radial, 0, 0);
+        blurRadialButton.setCompoundDrawablePadding(AndroidUtilities.dp(2));
         blurRadialButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
         blurRadialButton.setTextColor(0xffffffff);
         blurRadialButton.setGravity(Gravity.CENTER_HORIZONTAL);
         blurRadialButton.setText(LocaleController.getString("BlurRadial", R.string.BlurRadial));
-        blurLayout.addView(blurRadialButton);
-        layoutParams = (LayoutParams) blurRadialButton.getLayoutParams();
-        layoutParams.width = AndroidUtilities.dp(80);
-        layoutParams.height = AndroidUtilities.dp(60);
-        layoutParams.leftMargin = AndroidUtilities.dp(100);
-        blurRadialButton.setLayoutParams(layoutParams);
+        blurLayout.addView(blurRadialButton, LayoutHelper.createFrame(80, 80, Gravity.LEFT | Gravity.TOP, 100, 0, 0, 0));
         blurRadialButton.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -1732,16 +2420,12 @@ public class PhotoFilterView extends FrameLayout {
 
         blurLinearButton = new TextView(context);
         blurLinearButton.setCompoundDrawablesWithIntrinsicBounds(0, R.drawable.blur_linear, 0, 0);
+        blurLinearButton.setCompoundDrawablePadding(AndroidUtilities.dp(2));
         blurLinearButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
         blurLinearButton.setTextColor(0xffffffff);
         blurLinearButton.setGravity(Gravity.CENTER_HORIZONTAL);
         blurLinearButton.setText(LocaleController.getString("BlurLinear", R.string.BlurLinear));
-        blurLayout.addView(blurLinearButton);
-        layoutParams = (LayoutParams) blurLinearButton.getLayoutParams();
-        layoutParams.width = AndroidUtilities.dp(80);
-        layoutParams.height = AndroidUtilities.dp(60);
-        layoutParams.leftMargin = AndroidUtilities.dp(200);
-        blurLinearButton.setLayoutParams(layoutParams);
+        blurLayout.addView(blurLinearButton, LayoutHelper.createFrame(80, 80, Gravity.LEFT | Gravity.TOP, 200, 0, 0, 0));
         blurLinearButton.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -1781,6 +2465,23 @@ public class PhotoFilterView extends FrameLayout {
         }
     }
 
+    private void updateSelectedTintButton(boolean animated) {
+        tintHighlightsButton.setTextColor(selectedTintMode == 1 ? 0xffffffff : 0xff808080);
+        tintShadowsButton.setTextColor(selectedTintMode == 1 ? 0xff808080 : 0xffffffff);
+        int childCount = tintButtonsContainer.getChildCount();
+        for (int a = 0; a < childCount; a++) {
+            View child = tintButtonsContainer.getChildAt(a);
+            if (child instanceof RadioButton) {
+                RadioButton radioButton = (RadioButton) child;
+                int num = (Integer) radioButton.getTag();
+                int color1 = selectedTintMode == 0 ? tintShadowsColor : tintHighlightsColor;
+                int color2 = selectedTintMode == 0 ? tintShadowColors[num] : tintHighlighsColors[num];
+                radioButton.setChecked(color1 == color2, animated);
+                radioButton.setColor(num == 0 ? 0xffffffff : (selectedTintMode == 0 ? tintShadowColors[num] : tintHighlighsColors[num]), num == 0 ? 0xffffffff : (selectedTintMode == 0 ? tintShadowColors[num] : tintHighlighsColors[num]));
+            }
+        }
+    }
+
     private void updateValueTextView() {
         int value = 0;
         if (selectedTool == enhanceTool) {
@@ -1803,6 +2504,8 @@ public class PhotoFilterView extends FrameLayout {
             value = (int) grainValue;
         } else if (selectedTool == sharpenTool) {
             value = (int) sharpenValue;
+        }  else if (selectedTool == fadeTool) {
+            value = (int) fadeValue;
         }
         if (value > 0) {
             valueTextView.setText("+" + value);
@@ -1813,7 +2516,7 @@ public class PhotoFilterView extends FrameLayout {
 
     public boolean hasChanges() {
         return enhanceValue != 0 || contrastValue != 0 || highlightsValue != 0 || exposureValue != 0 || warmthValue != 0 || saturationValue != 0 || vignetteValue != 0 ||
-                shadowsValue != 0 || grainValue != 0 || sharpenValue != 0;
+                shadowsValue != 0 || grainValue != 0 || sharpenValue != 0 || fadeValue != 0 || tintHighlightsColor != 0 || tintShadowsColor != 0 || !curvesToolValue.shouldBeSkipped();
     }
 
     public void onTouch(MotionEvent event) {
@@ -1844,29 +2547,49 @@ public class PhotoFilterView extends FrameLayout {
             viewFrom = toolsView;
             viewTo = editView;
 
-            if (selectedTool == blurTool) {
-                blurLayout.setVisibility(VISIBLE);
+            if (selectedTool == blurTool || selectedTool == tintTool || selectedTool == curvesTool) {
+                blurLayout.setVisibility(selectedTool == blurTool ? VISIBLE : INVISIBLE);
+                tintLayout.setVisibility(selectedTool == tintTool ? VISIBLE : INVISIBLE);
+                curveLayout.setVisibility(selectedTool == curvesTool ? VISIBLE : INVISIBLE);
+                if (selectedTool == blurTool) {
+                    infoTextView.setText(LocaleController.getString("Blur", R.string.Blur));
+                    if (blurType != 0) {
+                        blurControl.setVisibility(VISIBLE);
+                    }
+                } else if (selectedTool == curvesTool) {
+                    infoTextView.setText(LocaleController.getString("Curves", R.string.Curves));
+                    curvesControl.setVisibility(VISIBLE);
+                    curvesToolValue.activeType = 0;
+                    for (int a = 0; a < 4; a++) {
+                        curveTextView[a].setTextColor(a == 0 ? 0xffffffff : 0xff808080);
+                    }
+                } else {
+                    selectedTintMode = 0;
+                    updateSelectedTintButton(false);
+                    infoTextView.setText(LocaleController.getString("Tint", R.string.Tint));
+                }
+                infoTextView.setVisibility(VISIBLE);
                 valueSeekBar.setVisibility(INVISIBLE);
-                blurTextView.setVisibility(VISIBLE);
                 paramTextView.setVisibility(INVISIBLE);
                 valueTextView.setVisibility(INVISIBLE);
-                if (blurType != 0) {
-                    blurControl.setVisibility(VISIBLE);
-                }
                 updateSelectedBlurType();
             } else {
+                tintLayout.setVisibility(INVISIBLE);
+                curveLayout.setVisibility(INVISIBLE);
                 blurLayout.setVisibility(INVISIBLE);
                 valueSeekBar.setVisibility(VISIBLE);
-                blurTextView.setVisibility(INVISIBLE);
+                infoTextView.setVisibility(INVISIBLE);
                 paramTextView.setVisibility(VISIBLE);
                 valueTextView.setVisibility(VISIBLE);
                 blurControl.setVisibility(INVISIBLE);
+                curvesControl.setVisibility(INVISIBLE);
             }
         } else {
             selectedTool = -1;
             viewFrom = editView;
             viewTo = toolsView;
             blurControl.setVisibility(INVISIBLE);
+            curvesControl.setVisibility(INVISIBLE);
         }
 
         AnimatorSetProxy animatorSet = new AnimatorSetProxy();
@@ -1928,7 +2651,7 @@ public class PhotoFilterView extends FrameLayout {
 
         float bitmapW;
         float bitmapH;
-        if (orientation == 90 || orientation == 270) {
+        if (orientation % 360 == 90 || orientation % 360 == 270) {
             bitmapW = bitmapToEdit.getHeight();
             bitmapH = bitmapToEdit.getWidth();
         } else {
@@ -1954,11 +2677,16 @@ public class PhotoFilterView extends FrameLayout {
         layoutParams.width = (int) bitmapW;
         layoutParams.height = (int) bitmapH;
         textureView.setLayoutParams(layoutParams);
+        curvesControl.setActualArea(bitmapX, bitmapY, layoutParams.width, layoutParams.height);
 
         blurControl.setActualAreaSize(layoutParams.width, layoutParams.height);
         layoutParams = (LayoutParams) blurControl.getLayoutParams();
         layoutParams.height = viewHeight + AndroidUtilities.dp(28);
         blurControl.setLayoutParams(layoutParams);
+
+        layoutParams = (LayoutParams) curvesControl.getLayoutParams();
+        layoutParams.height = viewHeight + AndroidUtilities.dp(28);
+        curvesControl.setLayoutParams(layoutParams);
 
         if (AndroidUtilities.isTablet()) {
             int total = AndroidUtilities.dp(86) * 10;
@@ -1981,11 +2709,11 @@ public class PhotoFilterView extends FrameLayout {
     }
 
     private float getShadowsValue() {
-        return (shadowsValue / 100.0f) * 0.65f;
+        return (shadowsValue * 0.55f + 100.0f) / 100.0f;
     }
 
     private float getHighlightsValue() {
-        return 1 - (highlightsValue / 100.0f);
+        return (highlightsValue * 0.75f + 100.0f) / 100.0f;
     }
 
     private float getEnhanceValue() {
@@ -2014,6 +2742,20 @@ public class PhotoFilterView extends FrameLayout {
 
     private float getGrainValue() {
         return grainValue / 100.0f * 0.04f;
+    }
+
+    private float getFadeValue() {
+        return fadeValue / 100.0f;
+    }
+
+    private float getTintHighlightsIntensityValue() {
+        float tintHighlightsIntensity = 50.0f;
+        return tintHighlightsColor == 0 ? 0 : tintHighlightsIntensity / 100.0f;
+    }
+
+    private float getTintShadowsIntensityValue() {
+        float tintShadowsIntensity = 50.0f;
+        return tintShadowsColor == 0 ? 0 : tintShadowsIntensity / 100.0f;
     }
 
     private float getSaturationValue() {
@@ -2078,7 +2820,7 @@ public class PhotoFilterView extends FrameLayout {
 
         @Override
         public int getItemCount() {
-            return 11;
+            return 14;
         }
 
         @Override
@@ -2115,6 +2857,12 @@ public class PhotoFilterView extends FrameLayout {
                 ((PhotoEditToolCell) holder.itemView).setIconAndTextAndValue(R.drawable.tool_grain, LocaleController.getString("Grain", R.string.Grain), grainValue);
             } else if (i == sharpenTool) {
                 ((PhotoEditToolCell) holder.itemView).setIconAndTextAndValue(R.drawable.tool_details, LocaleController.getString("Sharpen", R.string.Sharpen), sharpenValue);
+            } else if (i == tintTool) {
+                ((PhotoEditToolCell) holder.itemView).setIconAndTextAndValue(R.drawable.tool_tint, LocaleController.getString("Tint", R.string.Tint), tintHighlightsColor != 0 || tintShadowsColor != 0 ? "◆" : "");
+            } else if (i == fadeTool) {
+                ((PhotoEditToolCell) holder.itemView).setIconAndTextAndValue(R.drawable.tool_fade, LocaleController.getString("Fade", R.string.Fade), fadeValue);
+            } else if (i == curvesTool) {
+                ((PhotoEditToolCell) holder.itemView).setIconAndTextAndValue(R.drawable.tool_curve, LocaleController.getString("Curves", R.string.Curves), curvesToolValue.shouldBeSkipped() ? "" : "◆");
             } else if (i == blurTool) {
                 String value = "";
                 if (blurType == 1) {

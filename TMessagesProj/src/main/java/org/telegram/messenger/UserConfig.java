@@ -39,7 +39,7 @@ public class UserConfig {
     public static int lastPauseTime = 0;
     public static boolean isWaitingForPasscodeEnter = false;
     public static boolean useFingerprint = true;
-    public static int lastUpdateVersion;
+    public static String lastUpdateVersion;
     public static int lastContactsSyncTime;
 
     public static int migrateOffsetId = -1;
@@ -83,7 +83,7 @@ public class UserConfig {
                 editor.putInt("passcodeType", passcodeType);
                 editor.putInt("autoLockIn", autoLockIn);
                 editor.putInt("lastPauseTime", lastPauseTime);
-                editor.putInt("lastUpdateVersion", lastUpdateVersion);
+                editor.putString("lastUpdateVersion2", lastUpdateVersion);
                 editor.putInt("lastContactsSyncTime", lastContactsSyncTime);
                 editor.putBoolean("useFingerprint", useFingerprint);
 
@@ -224,7 +224,7 @@ public class UserConfig {
                 autoLockIn = preferences.getInt("autoLockIn", 60 * 60);
                 lastPauseTime = preferences.getInt("lastPauseTime", 0);
                 useFingerprint = preferences.getBoolean("useFingerprint", true);
-                lastUpdateVersion = preferences.getInt("lastUpdateVersion", 511);
+                lastUpdateVersion = preferences.getString("lastUpdateVersion2", "3.5");
                 lastContactsSyncTime = preferences.getInt("lastContactsSyncTime", (int) (System.currentTimeMillis() / 1000) - 23 * 60 * 60);
 
                 migrateOffsetId = preferences.getInt("migrateOffsetId", 0);
@@ -314,7 +314,7 @@ public class UserConfig {
         lastPauseTime = 0;
         useFingerprint = true;
         isWaitingForPasscodeEnter = false;
-        lastUpdateVersion = BuildVars.BUILD_VERSION;
+        lastUpdateVersion = BuildVars.BUILD_VERSION_STRING;
         lastContactsSyncTime = (int) (System.currentTimeMillis() / 1000) - 23 * 60 * 60;
         saveConfig(true);
     }

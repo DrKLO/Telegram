@@ -47,6 +47,7 @@ import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.Cells.ShadowSectionCell;
+import org.telegram.ui.Cells.TextCheckCell;
 import org.telegram.ui.Cells.TextInfoPrivacyCell;
 import org.telegram.ui.Cells.TextSettingsCell;
 import org.telegram.ui.Components.AvatarDrawable;
@@ -81,6 +82,7 @@ public class ChannelEditActivity extends BaseFragment implements AvatarUpdater.A
     private TLRPC.InputFile uploadedAvatar;
     private boolean wasPrivate;
     private boolean privateAlertShown;
+    private boolean signMessages;
 
     private boolean createAfterUpload;
     private boolean donePressed;
@@ -133,6 +135,7 @@ public class ChannelEditActivity extends BaseFragment implements AvatarUpdater.A
         avatarUpdater.parentFragment = this;
         avatarUpdater.delegate = this;
         allowComments = !currentChat.broadcast;
+        signMessages = currentChat.signatures;
         return super.onFragmentCreate();
     }
 
@@ -228,6 +231,10 @@ public class ChannelEditActivity extends BaseFragment implements AvatarUpdater.A
                         if (!oldUserName.equals(userNameTextView.getText().toString())) {
                             MessagesController.getInstance().updateChannelUserName(chatId, userNameTextView.getText().toString());
                         }
+                    }
+                    if (signMessages != currentChat.signatures) {
+                        currentChat.signatures = true;
+                        MessagesController.getInstance().toogleChannelSignatures(chatId, signMessages);
                     }
                     if (uploadedAvatar != null) {
                         MessagesController.getInstance().changeChatAvatar(chatId, uploadedAvatar);
@@ -392,13 +399,14 @@ public class ChannelEditActivity extends BaseFragment implements AvatarUpdater.A
         TextInfoPrivacyCell infoCell = new TextInfoPrivacyCell(context);
         if (currentChat.megagroup) {
             infoCell.setText(LocaleController.getString("DescriptionInfoMega", R.string.DescriptionInfoMega));
+            infoCell.setBackgroundResource(currentChat.creator ? R.drawable.greydivider : R.drawable.greydivider_bottom);
         } else {
             infoCell.setText(LocaleController.getString("DescriptionInfo", R.string.DescriptionInfo));
+            infoCell.setBackgroundResource(R.drawable.greydivider);
         }
-        infoCell.setBackgroundResource(R.drawable.greydivider);
         linearLayout.addView(infoCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
-        if (!currentChat.megagroup) {
+        if (/*BuildVars.DEBUG_VERSION && currentChat.megagroup && currentChat.creator || */!currentChat.megagroup) {
             linearLayout2 = new LinearLayout(context);
             linearLayout2.setOrientation(LinearLayout.VERTICAL);
             linearLayout2.setBackgroundColor(0xffffffff);
@@ -443,7 +451,11 @@ public class ChannelEditActivity extends BaseFragment implements AvatarUpdater.A
                     if (wasPrivate && hasFocus && !privateAlertShown) {
                         AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                         builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
-                        builder.setMessage(LocaleController.getString("ChannelWasPrivateAlert", R.string.ChannelWasPrivateAlert));
+                        if (currentChat.megagroup) {
+                            //builder.setMessage(LocaleController.getString("MegaWasPrivateAlert", R.string.MegaWasPrivateAlert));
+                        } else {
+                            builder.setMessage(LocaleController.getString("ChannelWasPrivateAlert", R.string.ChannelWasPrivateAlert));
+                        }
                         builder.setPositiveButton(LocaleController.getString("Close", R.string.Close), null);
                         showDialog(builder.create());
                     }
@@ -476,10 +488,13 @@ public class ChannelEditActivity extends BaseFragment implements AvatarUpdater.A
 
             infoCell = new TextInfoPrivacyCell(context);
             infoCell.setBackgroundResource(R.drawable.greydivider);
-            infoCell.setText(LocaleController.getString("ChannelUsernameHelp", R.string.ChannelUsernameHelp));
+            if (currentChat.megagroup) {
+                //infoCell.setText(LocaleController.getString("MegaUsernameHelp", R.string.MegaUsernameHelp));
+            } else {
+                infoCell.setText(LocaleController.getString("ChannelUsernameHelp", R.string.ChannelUsernameHelp));
+            }
             linearLayout.addView(infoCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
         }
-
 
         /*frameLayout = new FrameLayoutFixed(context);
         frameLayout.setBackgroundColor(0xffffffff);
@@ -502,55 +517,80 @@ public class ChannelEditActivity extends BaseFragment implements AvatarUpdater.A
         infoCell.setBackgroundResource(R.drawable.greydivider);
         linearLayout.addView(infoCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));*/
 
-        frameLayout = new FrameLayoutFixed(context);
-        frameLayout.setBackgroundColor(0xffffffff);
-        linearLayout.addView(frameLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+        if (!currentChat.megagroup && currentChat.creator) {
+            frameLayout = new FrameLayoutFixed(context);
+            frameLayout.setBackgroundColor(0xffffffff);
+            linearLayout.addView(frameLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
-        TextSettingsCell textCell = new TextSettingsCell(context);
-        textCell.setTextColor(0xffed3d39);
-        textCell.setBackgroundResource(R.drawable.list_selector);
-        if (currentChat.megagroup) {
-            textCell.setText(LocaleController.getString("DeleteMega", R.string.DeleteMega), false);
-        } else {
-            textCell.setText(LocaleController.getString("ChannelDelete", R.string.ChannelDelete), false);
-        }
-        frameLayout.addView(textCell, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
-        textCell.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-                if (currentChat.megagroup) {
-                    builder.setMessage(LocaleController.getString("MegaDeleteAlert", R.string.MegaDeleteAlert));
-                } else {
-                    builder.setMessage(LocaleController.getString("ChannelDeleteAlert", R.string.ChannelDeleteAlert));
+            TextCheckCell textCell = new TextCheckCell(context);
+            textCell.setBackgroundResource(R.drawable.list_selector);
+            textCell.setTextAndCheck(LocaleController.getString("ChannelSignMessages", R.string.ChannelSignMessages), signMessages, false);
+            frameLayout.addView(textCell, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+            textCell.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    signMessages = !signMessages;
+                    ((TextCheckCell) v).setChecked(signMessages);
                 }
-                builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
-                builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialogInterface, int i) {
-                        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.closeChats);
-                        if (AndroidUtilities.isTablet()) {
-                            NotificationCenter.getInstance().postNotificationName(NotificationCenter.closeChats, -(long) chatId);
-                        } else {
-                            NotificationCenter.getInstance().postNotificationName(NotificationCenter.closeChats);
-                        }
-                        MessagesController.getInstance().deleteUserFromChat(chatId, MessagesController.getInstance().getUser(UserConfig.getClientUserId()), info);
-                        finishFragment();
-                    }
-                });
-                builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-                showDialog(builder.create());
-            }
-        });
+            });
 
-        infoCell = new TextInfoPrivacyCell(context);
-        infoCell.setBackgroundResource(R.drawable.greydivider_bottom);
-        if (currentChat.megagroup) {
-            infoCell.setText(LocaleController.getString("MegaDeleteInfo", R.string.MegaDeleteInfo));
-        } else {
-            infoCell.setText(LocaleController.getString("ChannelDeleteInfo", R.string.ChannelDeleteInfo));
+            infoCell = new TextInfoPrivacyCell(context);
+            infoCell.setBackgroundResource(R.drawable.greydivider);
+            infoCell.setText(LocaleController.getString("ChannelSignMessagesInfo", R.string.ChannelSignMessagesInfo));
+            linearLayout.addView(infoCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
         }
-        linearLayout.addView(infoCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+
+        if (currentChat.creator) {
+            frameLayout = new FrameLayoutFixed(context);
+            frameLayout.setBackgroundColor(0xffffffff);
+            linearLayout.addView(frameLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+
+            TextSettingsCell textCell = new TextSettingsCell(context);
+            textCell.setTextColor(0xffed3d39);
+            textCell.setBackgroundResource(R.drawable.list_selector);
+            if (currentChat.megagroup) {
+                textCell.setText(LocaleController.getString("DeleteMega", R.string.DeleteMega), false);
+            } else {
+                textCell.setText(LocaleController.getString("ChannelDelete", R.string.ChannelDelete), false);
+            }
+            frameLayout.addView(textCell, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+            textCell.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                    if (currentChat.megagroup) {
+                        builder.setMessage(LocaleController.getString("MegaDeleteAlert", R.string.MegaDeleteAlert));
+                    } else {
+                        builder.setMessage(LocaleController.getString("ChannelDeleteAlert", R.string.ChannelDeleteAlert));
+                    }
+                    builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
+                    builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialogInterface, int i) {
+                            NotificationCenter.getInstance().removeObserver(this, NotificationCenter.closeChats);
+                            if (AndroidUtilities.isTablet()) {
+                                NotificationCenter.getInstance().postNotificationName(NotificationCenter.closeChats, -(long) chatId);
+                            } else {
+                                NotificationCenter.getInstance().postNotificationName(NotificationCenter.closeChats);
+                            }
+                            MessagesController.getInstance().deleteUserFromChat(chatId, MessagesController.getInstance().getUser(UserConfig.getClientUserId()), info);
+                            finishFragment();
+                        }
+                    });
+                    builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+                    showDialog(builder.create());
+                }
+            });
+
+            infoCell = new TextInfoPrivacyCell(context);
+            infoCell.setBackgroundResource(R.drawable.greydivider_bottom);
+            if (currentChat.megagroup) {
+                infoCell.setText(LocaleController.getString("MegaDeleteInfo", R.string.MegaDeleteInfo));
+            } else {
+                infoCell.setText(LocaleController.getString("ChannelDeleteInfo", R.string.ChannelDeleteInfo));
+            }
+            linearLayout.addView(infoCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+        }
 
         nameTextView.setText(currentChat.title);
         nameTextView.setSelection(nameTextView.length());
@@ -655,11 +695,20 @@ public class ChannelEditActivity extends BaseFragment implements AvatarUpdater.A
             for (int a = 0; a < name.length(); a++) {
                 char ch = name.charAt(a);
                 if (a == 0 && ch >= '0' && ch <= '9') {
-                    if (alert) {
-                        showErrorAlert(LocaleController.getString("LinkInvalidStartNumber", R.string.LinkInvalidStartNumber));
+                    if (currentChat.megagroup) {
+                        if (alert) {
+                            //showErrorAlert(LocaleController.getString("LinkInvalidStartNumberMega", R.string.LinkInvalidStartNumberMega));
+                        } else {
+                            //checkTextView.setText(LocaleController.getString("LinkInvalidStartNumberMega", R.string.LinkInvalidStartNumberMega));
+                            checkTextView.setTextColor(0xffcf3030);
+                        }
                     } else {
-                        checkTextView.setText(LocaleController.getString("LinkInvalidStartNumber", R.string.LinkInvalidStartNumber));
-                        checkTextView.setTextColor(0xffcf3030);
+                        if (alert) {
+                            showErrorAlert(LocaleController.getString("LinkInvalidStartNumber", R.string.LinkInvalidStartNumber));
+                        } else {
+                            checkTextView.setText(LocaleController.getString("LinkInvalidStartNumber", R.string.LinkInvalidStartNumber));
+                            checkTextView.setTextColor(0xffcf3030);
+                        }
                     }
                     return false;
                 }
@@ -675,11 +724,20 @@ public class ChannelEditActivity extends BaseFragment implements AvatarUpdater.A
             }
         }
         if (name == null || name.length() < 5) {
-            if (alert) {
-                showErrorAlert(LocaleController.getString("LinkInvalidShort", R.string.LinkInvalidShort));
+            if (currentChat.megagroup) {
+                if (alert) {
+                    //showErrorAlert(LocaleController.getString("LinkInvalidShortMega", R.string.LinkInvalidShortMega));
+                } else {
+                    //checkTextView.setText(LocaleController.getString("LinkInvalidShortMega", R.string.LinkInvalidShortMega));
+                    checkTextView.setTextColor(0xffcf3030);
+                }
             } else {
-                checkTextView.setText(LocaleController.getString("LinkInvalidShort", R.string.LinkInvalidShort));
-                checkTextView.setTextColor(0xffcf3030);
+                if (alert) {
+                    showErrorAlert(LocaleController.getString("LinkInvalidShort", R.string.LinkInvalidShort));
+                } else {
+                    checkTextView.setText(LocaleController.getString("LinkInvalidShort", R.string.LinkInvalidShort));
+                    checkTextView.setTextColor(0xffcf3030);
+                }
             }
             return false;
         }

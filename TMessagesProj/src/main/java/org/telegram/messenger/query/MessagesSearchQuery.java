@@ -60,6 +60,9 @@ public class MessagesSearchQuery {
                         lastReturnedNum--;
                         return;
                     }
+                    if (searchResultMessages.isEmpty()) {
+                        return;
+                    }
                     query = lastSearchQuery;
                     MessageObject messageObject = searchResultMessages.get(searchResultMessages.size() - 1);
                     if (messageObject.getDialogId() == dialog_id && !messagesSearchEndReached[0]) {

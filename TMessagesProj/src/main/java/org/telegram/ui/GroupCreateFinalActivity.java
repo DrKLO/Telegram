@@ -164,7 +164,7 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
                     donePressed = true;
 
                     if (chatType == ChatObject.CHAT_TYPE_BROADCAST) {
-                        MessagesController.getInstance().createChat(nameTextView.getText().toString(), selectedContacts, null, chatType);
+                        MessagesController.getInstance().createChat(nameTextView.getText().toString(), selectedContacts, null, chatType, GroupCreateFinalActivity.this);
                     } else {
                         if (avatarUpdater.uploadingAvatar != null) {
                             createAfterUpload = true;
@@ -174,7 +174,7 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
                             progressDialog.setCanceledOnTouchOutside(false);
                             progressDialog.setCancelable(false);
 
-                            final int reqId = MessagesController.getInstance().createChat(nameTextView.getText().toString(), selectedContacts, null, chatType);
+                            final int reqId = MessagesController.getInstance().createChat(nameTextView.getText().toString(), selectedContacts, null, chatType, GroupCreateFinalActivity.this);
 
                             progressDialog.setButton(DialogInterface.BUTTON_NEGATIVE, LocaleController.getString("Cancel", R.string.Cancel), new DialogInterface.OnClickListener() {
                                 @Override
@@ -335,7 +335,7 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
                 avatarImage.setImage(avatar, "50_50", avatarDrawable);
                 if (createAfterUpload) {
                     FileLog.e("tmessages", "avatar did uploaded");
-                    MessagesController.getInstance().createChat(nameTextView.getText().toString(), selectedContacts, null, chatType);
+                    MessagesController.getInstance().createChat(nameTextView.getText().toString(), selectedContacts, null, chatType, GroupCreateFinalActivity.this);
                 }
             }
         });

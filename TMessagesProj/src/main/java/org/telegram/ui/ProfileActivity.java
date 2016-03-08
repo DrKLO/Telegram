@@ -1909,7 +1909,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     if (!currentChat.creator && !currentChat.left && !currentChat.kicked && !currentChat.megagroup) {
                         leaveChannelRow = rowCount++;
                     }
-                    if (currentChat.megagroup && (currentChat.editor || currentChat.creator)) {
+                    if (currentChat.megagroup && (currentChat.editor || currentChat.creator || currentChat.democracy)) {
                         if (info == null || info.participants_count < MessagesController.getInstance().maxMegagroupCount) {
                             addMemberRow = rowCount++;
                         }
@@ -2150,12 +2150,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 }
                 if (ChatObject.isChannel(chat)) {
                     ActionBarMenuItem item = null;
-                    if (chat.creator) {
+                    if (chat.creator || chat.megagroup && chat.editor) {
                         item = menu.addItem(10, R.drawable.ic_ab_other);
                         item.addSubItem(edit_channel, LocaleController.getString("ChannelEdit", R.string.ChannelEdit), 0);
-                    } else if (chat.megagroup && chat.editor) {
-                        item = menu.addItem(10, R.drawable.ic_ab_other);
-                        item.addSubItem(edit_name, LocaleController.getString("EditName", R.string.EditName), 0);
                     }
                     if (!chat.creator && !chat.left && !chat.kicked && chat.megagroup) {
                         if (item == null) {

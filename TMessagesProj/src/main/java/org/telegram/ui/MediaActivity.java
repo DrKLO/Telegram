@@ -18,7 +18,6 @@ import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
-import android.provider.Browser;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -446,6 +445,11 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
         if ((int) dialog_id != 0) {
             dropDownContainer.addSubItem(links_item, LocaleController.getString("LinksTitle", R.string.LinksTitle), 0);
             dropDownContainer.addSubItem(music_item, LocaleController.getString("AudioTitle", R.string.AudioTitle), 0);
+        } else {
+            TLRPC.EncryptedChat currentEncryptedChat = MessagesController.getInstance().getEncryptedChat((int) (dialog_id >> 32));
+            if (currentEncryptedChat != null && AndroidUtilities.getPeerLayerVersion(currentEncryptedChat.layer) >= 46) {
+                dropDownContainer.addSubItem(music_item, LocaleController.getString("AudioTitle", R.string.AudioTitle), 0);
+            }
         }
         actionBar.addView(dropDownContainer, 0, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT, AndroidUtilities.isTablet() ? 64 : 56, 0, 40, 0));
         dropDownContainer.setOnClickListener(new View.OnClickListener() {
@@ -1115,10 +1119,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                         link = ((SharedLinkCell) view).getLink(0);
                     }
                     if (link != null) {
-                        Uri uri = Uri.parse(link);
-                        Intent intent = new Intent(Intent.ACTION_VIEW, uri);
-                        intent.putExtra(Browser.EXTRA_APPLICATION_ID, getParentActivity().getPackageName());
-                        getParentActivity().startActivity(intent);
+                        AndroidUtilities.openUrl(getParentActivity(), link);
                     }
                 } catch (Exception e) {
                     FileLog.e("tmessages", e);
@@ -1541,7 +1542,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
             } else if (currentType == 3) {
                 req.filter = new TLRPC.TL_inputMessagesFilterUrl();
             } else if (currentType == 4) {
-                req.filter = new TLRPC.TL_inputMessagesFilterAudioDocuments();
+                req.filter = new TLRPC.TL_inputMessagesFilterMusic();
             }
             req.q = query;
             req.peer = MessagesController.getInputPeer(uid);
