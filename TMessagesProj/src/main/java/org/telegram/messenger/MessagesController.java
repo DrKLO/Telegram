@@ -200,7 +200,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         maxMegagroupCount = preferences.getInt("maxMegagroupCount", 1000);
         maxEditTime = preferences.getInt("maxEditTime", 3600);
         groupBigSize = preferences.getInt("groupBigSize", 10);
-        fontSize = preferences.getInt("fons_size", AndroidUtilities.isTablet() ? 18 : 16);
+        fontSize = preferences.getInt("font_size", AndroidUtilities.isTablet() ? 18 : 16);
         String disabledFeaturesString = preferences.getString("disabledFeatures", null);
         if (disabledFeaturesString != null && disabledFeaturesString.length() != 0) {
             try {
