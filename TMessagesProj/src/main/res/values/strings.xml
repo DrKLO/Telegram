@@ -79,7 +79,7 @@
     <string name="GroupUserCantAdd">Sorry, you can\'t add this user to groups.</string>
     <string name="GroupUserAddLimit">Sorry, this group is full.</string>
     <string name="GroupUserLeftError">Sorry, this user decided to leave this group, so you cannot invite them back here.</string>
-    <string name="GroupUserCantAdmin">Sorry, too many adminstrators in this group.</string>
+    <string name="GroupUserCantAdmin">Sorry, too many administrators in this group.</string>
     <string name="GroupUserCantBot">Sorry, too many bots in this group.</string>
     <string name="ActionMigrateFromGroup">This group was upgraded to a supergroup</string>
     <string name="ActionMigrateFromGroupNotify">%1$s was upgraded to a supergroup</string>
