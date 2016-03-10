@@ -383,7 +383,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                         public void onClick(DialogInterface dialog, int which) {
                             SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
                             SharedPreferences.Editor editor = preferences.edit();
-                            editor.putInt("fons_size", numberPicker.getValue());
+                            editor.putInt("font_size", numberPicker.getValue());
                             MessagesController.getInstance().fontSize = numberPicker.getValue();
                             editor.commit();
                             if (listView != null) {
@@ -1176,7 +1176,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 TextSettingsCell textCell = (TextSettingsCell) view;
                 if (i == textSizeRow) {
                     SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
-                    int size = preferences.getInt("fons_size", AndroidUtilities.isTablet() ? 18 : 16);
+                    int size = preferences.getInt("font_size", AndroidUtilities.isTablet() ? 18 : 16);
                     textCell.setTextAndValue(LocaleController.getString("TextSize", R.string.TextSize), String.format("%d", size), true);
                 } else if (i == languageRow) {
                     textCell.setTextAndValue(LocaleController.getString("Language", R.string.Language), LocaleController.getCurrentLanguageName(), true);
