@@ -57,7 +57,7 @@ void Connection::suspendConnection() {
 }
 
 void Connection::onReceivedData(NativeByteBuffer *buffer) {
-    //AES_ctr128_encrypt(buffer->bytes(), buffer->bytes(), buffer->limit(), &decryptKey, decryptIv, decryptCount, &decryptNum);
+    AES_ctr128_encrypt(buffer->bytes(), buffer->bytes(), buffer->limit(), &decryptKey, decryptIv, decryptCount, &decryptNum);
     
     failedConnectionCount = 0;
 
@@ -323,11 +323,11 @@ void Connection::sendData(NativeByteBuffer *buff, bool reportAck) {
             uint32_t val = (bytes[3] << 24) | (bytes[2] << 16) | (bytes[1] << 8) | (bytes[0]);
             uint32_t val2 = (bytes[7] << 24) | (bytes[6] << 16) | (bytes[5] << 8) | (bytes[4]);
             if (bytes[0] != 0xef && val != 0x44414548 && val != 0x54534f50 && val != 0x20544547 && val != 0x4954504f && val != 0xeeeeeeee && val2 != 0x00000000) {
-                //bytes[56] = bytes[57] = bytes[58] = bytes[59] = 0xef;
+                bytes[56] = bytes[57] = bytes[58] = bytes[59] = 0xef;
                 break;
             }
         }
-        /*for (int a = 0; a < 48; a++) {
+        for (int a = 0; a < 48; a++) {
             temp[a] = bytes[55 - a];
         }
         
@@ -348,7 +348,7 @@ void Connection::sendData(NativeByteBuffer *buff, bool reportAck) {
         memcpy(decryptIv, temp + 32, 16);
         
         AES_ctr128_encrypt(bytes, temp, 64, &encryptKey, encryptIv, encryptCount, &encryptNum);
-        memcpy(bytes + 56, temp + 56, 8);*/
+        memcpy(bytes + 56, temp + 56, 8);
         
         firstPacketSent = true;
     }
@@ -358,7 +358,7 @@ void Connection::sendData(NativeByteBuffer *buff, bool reportAck) {
         }
         buffer->writeByte((uint8_t) packetLength);
         bytes += (buffer->limit() - 1);
-        //AES_ctr128_encrypt(bytes, bytes, 1, &encryptKey, encryptIv, encryptCount, &encryptNum);
+        AES_ctr128_encrypt(bytes, bytes, 1, &encryptKey, encryptIv, encryptCount, &encryptNum);
     } else {
         packetLength = (packetLength << 8) + 0x7f;
         if (reportAck) {
@@ -366,13 +366,13 @@ void Connection::sendData(NativeByteBuffer *buff, bool reportAck) {
         }
         buffer->writeInt32(packetLength);
         bytes += (buffer->limit() - 4);
-        //AES_ctr128_encrypt(bytes, bytes, 4, &encryptKey, encryptIv, encryptCount, &encryptNum);
+        AES_ctr128_encrypt(bytes, bytes, 4, &encryptKey, encryptIv, encryptCount, &encryptNum);
     }
 
     buffer->rewind();
     writeBuffer(buffer);
     buff->rewind();
-    //AES_ctr128_encrypt(buff->bytes(), buff->bytes(), buff->limit(), &encryptKey, encryptIv, encryptCount, &encryptNum);
+    AES_ctr128_encrypt(buff->bytes(), buff->bytes(), buff->limit(), &encryptKey, encryptIv, encryptCount, &encryptNum);
     writeBuffer(buff);
 }
 

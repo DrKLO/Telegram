@@ -84,6 +84,7 @@ public class SimpleTextView extends View {
                     } else {
                         offsetX = 0;
                     }
+                    offsetX += getPaddingLeft();
                 }
             } catch (Exception e) {
                 //ignore
@@ -94,7 +95,7 @@ public class SimpleTextView extends View {
     @Override
     protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
         if (changed) {
-            createLayout(right - left);
+            createLayout(right - left - getPaddingLeft() - getPaddingRight());
             invalidate();
             wasLayout = true;
         }
@@ -103,7 +104,7 @@ public class SimpleTextView extends View {
     public void setText(CharSequence value) {
         text = value;
         if (wasLayout) {
-            createLayout(getMeasuredWidth());
+            createLayout(getMeasuredWidth() - getPaddingLeft() - getPaddingRight());
             invalidate();
         } else {
             requestLayout();

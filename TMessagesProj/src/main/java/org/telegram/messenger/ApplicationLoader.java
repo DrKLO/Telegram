@@ -37,6 +37,8 @@ import org.telegram.ui.Components.ForegroundDetector;
 
 import java.io.File;
 import java.io.RandomAccessFile;
+import java.util.ArrayList;
+import java.util.Locale;
 
 public class ApplicationLoader extends Application {
 

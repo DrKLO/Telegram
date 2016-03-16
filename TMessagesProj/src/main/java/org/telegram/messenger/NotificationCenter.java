@@ -53,6 +53,7 @@ public class NotificationCenter {
     public static final int didSetTwoStepPassword = totalEvents++;
     public static final int screenStateChanged = totalEvents++;
     public static final int didLoadedReplyMessages = totalEvents++;
+    public static final int didLoadedPinnedMessage = totalEvents++;
     public static final int newSessionReceived = totalEvents++;
     public static final int didReceivedWebpages = totalEvents++;
     public static final int didReceivedWebpagesInUpdates = totalEvents++;
@@ -60,6 +61,7 @@ public class NotificationCenter {
     public static final int didReplacedPhotoInMemCache = totalEvents++;
     public static final int messagesReadContent = totalEvents++;
     public static final int botInfoDidLoaded = totalEvents++;
+    public static final int userInfoDidLoaded = totalEvents++;
     public static final int botKeyboardDidLoaded = totalEvents++;
     public static final int chatSearchResultsAvailable = totalEvents++;
     public static final int musicDidLoaded = totalEvents++;
@@ -67,6 +69,7 @@ public class NotificationCenter {
     public static final int didUpdatedMessagesViews = totalEvents++;
     public static final int needReloadRecentDialogsSearch = totalEvents++;
     public static final int locationPermissionGranted = totalEvents++;
+    public static final int peerSettingsDidLoaded = totalEvents++;
 
     public static final int httpFileDidLoaded = totalEvents++;
     public static final int httpFileDidFailedLoad = totalEvents++;

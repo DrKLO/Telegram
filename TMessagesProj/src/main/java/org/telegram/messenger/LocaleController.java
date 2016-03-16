@@ -322,7 +322,7 @@ public class LocaleController {
         StringBuilder result = new StringBuilder(11);
         result.append(languageCode);
         if (countryCode.length() > 0 || variantCode.length() > 0) {
-            result.append('_');
+            result.append('-');
         }
         result.append(countryCode);
         if (variantCode.length() > 0) {
@@ -664,16 +664,21 @@ public class LocaleController {
     }
 
     public static String formatDateChat(long date) {
-        Calendar rightNow = Calendar.getInstance();
-        int year = rightNow.get(Calendar.YEAR);
+        try {
+            Calendar rightNow = Calendar.getInstance();
+            int year = rightNow.get(Calendar.YEAR);
 
-        rightNow.setTimeInMillis(date * 1000);
-        int dateYear = rightNow.get(Calendar.YEAR);
+            rightNow.setTimeInMillis(date * 1000);
+            int dateYear = rightNow.get(Calendar.YEAR);
 
-        if (year == dateYear) {
-            return getInstance().chatDate.format(date * 1000);
+            if (year == dateYear) {
+                return getInstance().chatDate.format(date * 1000);
+            }
+            return getInstance().chatFullDate.format(date * 1000);
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
         }
-        return getInstance().chatFullDate.format(date * 1000);
+        return "LOC_ERR: formatDateChat";
     }
 
     public static String formatDate(long date) {
@@ -697,7 +702,7 @@ public class LocaleController {
         } catch (Exception e) {
             FileLog.e("tmessages", e);
         }
-        return "LOC_ERR";
+        return "LOC_ERR: formatDate";
     }
 
     public static String formatDateAudio(long date) {

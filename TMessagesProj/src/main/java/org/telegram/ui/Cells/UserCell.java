@@ -37,6 +37,7 @@ public class UserCell extends FrameLayout {
     private ImageView imageView;
     private CheckBox checkBox;
     private CheckBoxSquare checkBoxBig;
+    private ImageView adminImage;
 
     private AvatarDrawable avatarDrawable;
     private TLObject currentObject = null;
@@ -52,7 +53,7 @@ public class UserCell extends FrameLayout {
     private int statusColor = 0xffa8a8a8;
     private int statusOnlineColor = 0xff3b84c0;
 
-    public UserCell(Context context, int padding, int checkbox) {
+    public UserCell(Context context, int padding, int checkbox, boolean admin) {
         super(context);
 
         avatarDrawable = new AvatarDrawable();
@@ -65,7 +66,7 @@ public class UserCell extends FrameLayout {
         nameTextView.setTextColor(0xff212121);
         nameTextView.setTextSize(17);
         nameTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
-        addView(nameTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 20, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 28 : (68 + padding), 11.5f, LocaleController.isRTL ? (68 + padding) : 28, 0));
+        addView(nameTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 20, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 28 + (checkbox == 2 ? 18 : 0) : (68 + padding), 11.5f, LocaleController.isRTL ? (68 + padding) : 28 + (checkbox == 2 ? 18 : 0), 0));
 
         statusTextView = new SimpleTextView(context);
         statusTextView.setTextSize(14);
@@ -85,6 +86,20 @@ public class UserCell extends FrameLayout {
             checkBox.setVisibility(INVISIBLE);
             addView(checkBox, LayoutHelper.createFrame(22, 22, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 0 : 37 + padding, 38, LocaleController.isRTL ? 37 + padding : 0, 0));
         }
+
+        if (admin) {
+            adminImage = new ImageView(context);
+            adminImage.setImageResource(R.drawable.admin_star);
+            addView(adminImage, LayoutHelper.createFrame(16, 16, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.TOP, LocaleController.isRTL ? 24 : 0, 13.5f, LocaleController.isRTL ? 0 : 24, 0));
+        }
+    }
+
+    public void setIsAdmin(boolean value) {
+        if (adminImage == null) {
+            return;
+        }
+        adminImage.setVisibility(value ? VISIBLE : GONE);
+        nameTextView.setPadding(LocaleController.isRTL && value ? AndroidUtilities.dp(16) : 0, 0, !LocaleController.isRTL && value ? AndroidUtilities.dp(16) : 0, 0);
     }
 
     public void setData(TLObject user, CharSequence name, CharSequence status, int resId) {

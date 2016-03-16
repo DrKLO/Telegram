@@ -820,6 +820,7 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
         req.message = message;
         req.id = messageObject.getId();
         req.no_webpage = !searchLinks;
+        FileLog.d("tmessages", "try to edit message " + req.id + " in channel " + req.channel.channel_id + " hash " + req.channel.access_hash + " message " + req.message);
         final int reqId = ConnectionsManager.getInstance().sendRequest(req, new RequestDelegate() {
             @Override
             public void run(TLObject response, TLRPC.TL_error error) {
@@ -2002,6 +2003,7 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
 
                             if (!isSentError) {
                                 newMsgObj.send_state = MessageObject.MESSAGE_SEND_STATE_SENT;
+                                NotificationCenter.getInstance().postNotificationName(NotificationCenter.messageReceivedByServer, oldId, (isBroadcast ? oldId : newMsgObj.id), newMsgObj, newMsgObj.dialog_id); //TODO remove later?
                                 MessagesStorage.getInstance().getStorageQueue().postRunnable(new Runnable() {
                                     @Override
                                     public void run() {
@@ -2274,7 +2276,7 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
             if (extension == null) {
                 extension = "txt";
             }
-            path = MediaController.copyDocumentToCache(uri, extension);
+            path = MediaController.copyFileToCache(uri, extension);
             if (path == null) {
                 return false;
             }
@@ -2923,12 +2925,12 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                         if (MediaController.isGif(uri)) {
                             isDocument = true;
                             originalPath = uri.toString();
-                            tempPath = MediaController.copyDocumentToCache(uri, "gif");
+                            tempPath = MediaController.copyFileToCache(uri, "gif");
                             extension = "gif";
                         } else if (MediaController.isWebp(uri)) {
                             isDocument = true;
                             originalPath = uri.toString();
-                            tempPath = MediaController.copyDocumentToCache(uri, "webp");
+                            tempPath = MediaController.copyFileToCache(uri, "webp");
                             extension = "webp";
                         }
                     }
@@ -3009,8 +3011,7 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                     }
                     TLRPC.TL_document document = null;
                     if (!isEncrypted) {
-                        TLObject object = MessagesStorage.getInstance().getSentFile(originalPath, !isEncrypted ? 2 : 5);
-                        document = (TLRPC.TL_document) object;
+                        //document = (TLRPC.TL_document) MessagesStorage.getInstance().getSentFile(originalPath, !isEncrypted ? 2 : 5);
                     }
                     if (document == null) {
                         Bitmap thumb = ThumbnailUtils.createVideoThumbnail(videoPath, MediaStore.Video.Thumbnails.MINI_KIND);

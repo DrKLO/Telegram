@@ -57,6 +57,8 @@ public class ChatActionCell extends BaseCell {
     private int previousWidth = 0;
     private boolean imagePressed = false;
 
+    private boolean hasReplyMessage;
+
     private MessageObject currentMessageObject;
 
     private ChatActionCellDelegate delegate;
@@ -79,10 +81,11 @@ public class ChatActionCell extends BaseCell {
     }
 
     public void setMessageObject(MessageObject messageObject) {
-        if (currentMessageObject == messageObject) {
+        if (currentMessageObject == messageObject && (hasReplyMessage || messageObject.replyMessageObject == null)) {
             return;
         }
         currentMessageObject = messageObject;
+        hasReplyMessage = messageObject.replyMessageObject != null;
         previousWidth = 0;
         if (currentMessageObject.type == 11) {
             int id = 0;
@@ -220,8 +223,8 @@ public class ChatActionCell extends BaseCell {
         int width = Math.max(AndroidUtilities.dp(30), MeasureSpec.getSize(widthMeasureSpec));
         if (width != previousWidth) {
             previousWidth = width;
-
-            textLayout = new StaticLayout(currentMessageObject.messageText, textPaint, width - AndroidUtilities.dp(30), Layout.Alignment.ALIGN_CENTER, 1.0f, 0.0f, false);
+            int maxWidth = width - AndroidUtilities.dp(30);
+            textLayout = new StaticLayout(currentMessageObject.messageText, textPaint, maxWidth, Layout.Alignment.ALIGN_CENTER, 1.0f, 0.0f, false);
             textHeight = 0;
             textWidth = 0;
             try {
@@ -230,6 +233,9 @@ public class ChatActionCell extends BaseCell {
                     float lineWidth;
                     try {
                         lineWidth = textLayout.getLineWidth(a);
+                        if (lineWidth > maxWidth) {
+                            lineWidth = maxWidth;
+                        }
                         textHeight = (int)Math.max(textHeight, Math.ceil(textLayout.getLineBottom(a)));
                     } catch (Exception e) {
                         FileLog.e("tmessages", e);

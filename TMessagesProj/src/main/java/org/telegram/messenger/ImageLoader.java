@@ -23,7 +23,6 @@ import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Environment;
-import android.os.ParcelFileDescriptor;
 import android.provider.MediaStore;
 
 import org.telegram.tgnet.ConnectionsManager;
@@ -33,7 +32,6 @@ import org.telegram.ui.Components.AnimatedFileDrawable;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileDescriptor;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.InputStream;
@@ -2031,8 +2029,7 @@ public class ImageLoader {
     public static Bitmap loadBitmap(String path, Uri uri, float maxWidth, float maxHeight, boolean useMaxScale) {
         BitmapFactory.Options bmOptions = new BitmapFactory.Options();
         bmOptions.inJustDecodeBounds = true;
-        FileDescriptor fileDescriptor = null;
-        ParcelFileDescriptor parcelFD = null;
+        InputStream inputStream = null;
 
         if (path == null && uri != null && uri.getScheme() != null) {
             String imageFilePath = null;
@@ -2052,9 +2049,10 @@ public class ImageLoader {
         } else if (uri != null) {
             boolean error = false;
             try {
-                parcelFD = ApplicationLoader.applicationContext.getContentResolver().openFileDescriptor(uri, "r");
-                fileDescriptor = parcelFD.getFileDescriptor();
-                BitmapFactory.decodeFileDescriptor(fileDescriptor, null, bmOptions);
+                inputStream = ApplicationLoader.applicationContext.getContentResolver().openInputStream(uri);
+                BitmapFactory.decodeStream(inputStream, null, bmOptions);
+                inputStream.close();
+                inputStream = ApplicationLoader.applicationContext.getContentResolver().openInputStream(uri);
             } catch (Throwable e) {
                 FileLog.e("tmessages", e);
                 return null;
@@ -2138,7 +2136,7 @@ public class ImageLoader {
             }
         } else if (uri != null) {
             try {
-                b = BitmapFactory.decodeFileDescriptor(fileDescriptor, null, bmOptions);
+                b = BitmapFactory.decodeStream(inputStream, null, bmOptions);
                 if (b != null) {
                     if (bmOptions.inPurgeable) {
                         Utilities.pinBitmap(b);
@@ -2153,7 +2151,7 @@ public class ImageLoader {
                 FileLog.e("tmessages", e);
             } finally {
                 try {
-                    parcelFD.close();
+                    inputStream.close();
                 } catch (Throwable e) {
                     FileLog.e("tmessages", e);
                 }

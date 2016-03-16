@@ -166,6 +166,7 @@ public class ChangeNameActivity extends BaseFragment {
             return;
         }
         TLRPC.TL_account_updateProfile req = new TLRPC.TL_account_updateProfile();
+        req.flags = 3;
         currentUser.first_name = req.first_name = newFirst;
         currentUser.last_name = req.last_name = newLast;
         TLRPC.User user = MessagesController.getInstance().getUser(UserConfig.getClientUserId());

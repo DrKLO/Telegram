@@ -40,6 +40,7 @@ import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.SecretChatHelper;
+import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.messenger.ContactsController;
@@ -289,12 +290,17 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                         didSelectResult(user, true, null);
                     } else {
                         if (createSecretChat) {
+                            if (user.id == UserConfig.getClientUserId()) {
+                                return;
+                            }
                             creatingChat = true;
                             SecretChatHelper.getInstance().startSecretChat(getParentActivity(), user);
                         } else {
                             Bundle args = new Bundle();
                             args.putInt("user_id", user.id);
-                            presentFragment(new ChatActivity(args), true);
+                            if (MessagesController.checkCanOpenChat(args, ContactsActivity.this)) {
+                                presentFragment(new ChatActivity(args), true);
+                            }
                         }
                     }
                 } else {
@@ -330,6 +336,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                                 args.putBoolean("onlyUsers", true);
                                 args.putBoolean("destroyAfterSelect", true);
                                 args.putBoolean("createSecretChat", true);
+                                args.putBoolean("allowBots", false);
                                 presentFragment(new ContactsActivity(args), false);
                             } else if (row == 2) {
                                 if (!MessagesController.isFeatureEnabled("broadcast_create", ContactsActivity.this)) {
@@ -363,7 +370,9 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                                 } else {
                                     Bundle args = new Bundle();
                                     args.putInt("user_id", user.id);
-                                    presentFragment(new ChatActivity(args), true);
+                                    if (MessagesController.checkCanOpenChat(args, ContactsActivity.this)) {
+                                        presentFragment(new ChatActivity(args), true);
+                                    }
                                 }
                             }
                         } else if (item instanceof ContactsController.Contact) {

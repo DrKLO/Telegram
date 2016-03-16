@@ -15,7 +15,6 @@ import android.graphics.Paint;
 import android.graphics.drawable.BitmapDrawable;
 import android.net.Uri;
 import android.os.Bundle;
-import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.FrameLayout;
@@ -55,16 +54,6 @@ public class PhotoCropActivity extends BaseFragment {
 
         public PhotoCropView(Context context) {
             super(context);
-            init();
-        }
-
-        public PhotoCropView(Context context, AttributeSet attrs) {
-            super(context, attrs);
-            init();
-        }
-
-        public PhotoCropView(Context context, AttributeSet attrs, int defStyle) {
-            super(context, attrs, defStyle);
             init();
         }
 

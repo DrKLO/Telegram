@@ -348,6 +348,9 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                                 } else if (lower_part < 0) {
                                     args.putInt("chat_id", -lower_part);
                                 }
+                                if (!MessagesController.checkCanOpenChat(args, fragment)) {
+                                    return;
+                                }
 
                                 ArrayList<MessageObject> fmessages = new ArrayList<>();
                                 for (int a = 1; a >= 0; a--) {
@@ -364,6 +367,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                                 actionBar.hideActionMode();
 
                                 NotificationCenter.getInstance().postNotificationName(NotificationCenter.closeChats);
+
                                 ChatActivity chatActivity = new ChatActivity(args);
                                 presentFragment(chatActivity, true);
                                 chatActivity.showReplyPanel(true, null, fmessages, null, false, false);
@@ -901,7 +905,11 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                 listView.setAdapter(photoVideoAdapter);
                 dropDown.setText(LocaleController.getString("SharedMediaTitle", R.string.SharedMediaTitle));
                 emptyImageView.setImageResource(R.drawable.tip1);
-                emptyTextView.setText(LocaleController.getString("NoMedia", R.string.NoMedia));
+                if ((int) dialog_id == 0) {
+                    emptyTextView.setText(LocaleController.getString("NoMediaSecret", R.string.NoMediaSecret));
+                } else {
+                    emptyTextView.setText(LocaleController.getString("NoMedia", R.string.NoMedia));
+                }
                 searchItem.setVisibility(View.GONE);
                 if (sharedMediaData[selectedMode].loading && sharedMediaData[selectedMode].messages.isEmpty()) {
                     progressView.setVisibility(View.VISIBLE);
@@ -918,12 +926,20 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                     listView.setAdapter(documentsAdapter);
                     dropDown.setText(LocaleController.getString("DocumentsTitle", R.string.DocumentsTitle));
                     emptyImageView.setImageResource(R.drawable.tip2);
-                    emptyTextView.setText(LocaleController.getString("NoSharedFiles", R.string.NoSharedFiles));
+                    if ((int) dialog_id == 0) {
+                        emptyTextView.setText(LocaleController.getString("NoSharedFilesSecret", R.string.NoSharedFilesSecret));
+                    } else {
+                        emptyTextView.setText(LocaleController.getString("NoSharedFiles", R.string.NoSharedFiles));
+                    }
                 } else if (selectedMode == 4) {
                     listView.setAdapter(audioAdapter);
                     dropDown.setText(LocaleController.getString("AudioTitle", R.string.AudioTitle));
                     emptyImageView.setImageResource(R.drawable.tip4);
-                    emptyTextView.setText(LocaleController.getString("NoSharedAudio", R.string.NoSharedAudio));
+                    if ((int) dialog_id == 0) {
+                        emptyTextView.setText(LocaleController.getString("NoSharedAudioSecret", R.string.NoSharedAudioSecret));
+                    } else {
+                        emptyTextView.setText(LocaleController.getString("NoSharedAudio", R.string.NoSharedAudio));
+                    }
                 }
                 searchItem.setVisibility(!sharedMediaData[selectedMode].messages.isEmpty() ? View.VISIBLE : View.GONE);
                 if (!sharedMediaData[selectedMode].loading && !sharedMediaData[selectedMode].endReached[0] && sharedMediaData[selectedMode].messages.isEmpty()) {
@@ -944,7 +960,11 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                 listView.setAdapter(linksAdapter);
                 dropDown.setText(LocaleController.getString("LinksTitle", R.string.LinksTitle));
                 emptyImageView.setImageResource(R.drawable.tip3);
-                emptyTextView.setText(LocaleController.getString("NoSharedLinks", R.string.NoSharedLinks));
+                if ((int) dialog_id == 0) {
+                    emptyTextView.setText(LocaleController.getString("NoSharedLinksSecret", R.string.NoSharedLinksSecret));
+                } else {
+                    emptyTextView.setText(LocaleController.getString("NoSharedLinks", R.string.NoSharedLinks));
+                }
                 searchItem.setVisibility(!sharedMediaData[3].messages.isEmpty() ? View.VISIBLE : View.GONE);
                 if (!sharedMediaData[selectedMode].loading && !sharedMediaData[selectedMode].endReached[0] && sharedMediaData[selectedMode].messages.isEmpty()) {
                     sharedMediaData[selectedMode].loading = true;

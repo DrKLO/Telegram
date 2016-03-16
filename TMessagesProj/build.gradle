@@ -5,7 +5,7 @@ repositories {
 }
 
 dependencies {
-    compile 'com.android.support:support-v4:23.1.+'
+    compile 'com.android.support:support-v4:23.2.1'
     compile "com.google.android.gms:play-services-gcm:8.4.0"
     compile "com.google.android.gms:play-services-maps:8.4.0"
     compile 'net.hockeyapp.android:HockeySDK:3.6.+'
@@ -63,6 +63,8 @@ android {
         }
     }
 
+    defaultConfig.versionCode = 767
+
     sourceSets.main {
         jniLibs.srcDir 'libs'
         jni.srcDirs = [] //disable automatic ndk-build call
@@ -80,10 +82,38 @@ android {
         manifest.srcFile 'config/foss/AndroidManifest.xml'
     }
 
+    productFlavors {
+        x86 {
+            ndk {
+                abiFilter "x86"
+            }
+            versionCode = 2
+        }
+        arm {
+            ndk {
+                abiFilter "armeabi"
+            }
+            versionCode = 0
+        }
+        armv7 {
+            ndk {
+                abiFilter "armeabi-v7a"
+            }
+            versionCode = 1
+        }
+        fat {
+            versionCode = 3
+        }
+    }
+
+    applicationVariants.all { variant ->
+        def abiVersion = variant.productFlavors.get(0).versionCode
+        variant.mergedFlavor.versionCode = defaultConfig.versionCode * 10 + abiVersion;
+    }
+
     defaultConfig {
         minSdkVersion 9
         targetSdkVersion 23
-        versionCode 755
-        versionName "3.6.1"
+        versionName "3.7.0"
     }
 }

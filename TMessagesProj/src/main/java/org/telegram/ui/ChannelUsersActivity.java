@@ -560,7 +560,7 @@ public class ChannelUsersActivity extends BaseFragment implements NotificationCe
             int viewType = getItemViewType(i);
             if (viewType == 0) {
                 if (view == null) {
-                    view = new UserCell(mContext, 1, 0);
+                    view = new UserCell(mContext, 1, 0, false);
                     view.setBackgroundColor(0xffffffff);
                 }
                 UserCell userCell = (UserCell) view;

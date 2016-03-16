@@ -179,7 +179,7 @@ public class BotQuery {
     }
 
     public static void putBotInfo(final TLRPC.BotInfo botInfo) {
-        if (botInfo == null || botInfo instanceof TLRPC.TL_botInfoEmpty) {
+        if (botInfo == null) {
             return;
         }
         botInfos.put(botInfo.user_id, botInfo);

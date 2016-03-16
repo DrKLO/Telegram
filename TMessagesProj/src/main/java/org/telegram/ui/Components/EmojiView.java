@@ -48,6 +48,7 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaController;
 import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.NotificationCenter;
+import org.telegram.messenger.Utilities;
 import org.telegram.messenger.query.StickersQuery;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
@@ -77,6 +78,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
         void onGifSelected(TLRPC.Document gif);
         void onGifTab(boolean opened);
         void onStickersTab(boolean opened);
+        void onClearEmojiRecent();
     }
 
     private static final Field superListenerField;
@@ -160,6 +162,8 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
                         pickerViewPopup.showAsDropDown(view, xOffset, -view.getMeasuredHeight() - popupHeight + (view.getMeasuredHeight() - emojiSize) / 2 - yOffset);
                         view.getParent().requestDisallowInterceptTouchEvent(true);
                         return true;
+                    } else if (pager.getCurrentItem() == 0) {
+                        listener.onClearEmojiRecent();
                     }
                     return false;
                 }
@@ -519,7 +523,6 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
     private GifsAdapter gifsAdapter;
     private AdapterView.OnItemClickListener stickersOnItemClickListener;
 
-
     private EmojiColorPickerView pickerView;
     private EmojiPopupWindow pickerViewPopup;
     private int popupWidth;
@@ -530,8 +533,6 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
     private int recentTabBum = -2;
     private int gifTabBum = -2;
     private boolean switchToGifTab;
-
-
 
     private int oldWidth;
     private int lastNotifyWidth;
@@ -667,7 +668,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
                             return;
                         }
                         TLRPC.Document document = recentImages.get(position).document;
-                        listener.onStickerSelected(document);
+                        listener.onGifSelected(document);
                     }
                 });
                 gifsGridView.setOnItemLongClickListener(new RecyclerListView.OnItemLongClickListener() {
@@ -964,6 +965,15 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
         });
 
         loadRecents();
+    }
+
+    public void clearRecentEmoji() {
+        SharedPreferences preferences = getContext().getSharedPreferences("emoji", Activity.MODE_PRIVATE);
+        preferences.edit().putBoolean("filled_default", true).commit();
+        emojiUseHistory.clear();
+        recentEmoji.clear();
+        saveRecentEmoji();
+        adapters.get(0).notifyDataSetChanged();
     }
 
     private void showGifTab() {
@@ -1268,7 +1278,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
                     String[] args = str.split(",");
                     for (String arg : args) {
                         String[] args2 = arg.split("=");
-                        long value = Long.parseLong(args2[0]);
+                        long value = Utilities.parseLong(args2[0]);
                         String string = "";
                         for (int a = 0; a < 4; a++) {
                             char ch = (char) value;
@@ -1279,7 +1289,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
                             }
                         }
                         if (string.length() > 0) {
-                            emojiUseHistory.put(string, Integer.parseInt(args2[1]));
+                            emojiUseHistory.put(string, Utilities.parseInt(args2[1]));
                         }
                     }
                 }
@@ -1291,22 +1301,25 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
                     String[] args = str.split(",");
                     for (String arg : args) {
                         String[] args2 = arg.split("=");
-                        emojiUseHistory.put(args2[0], Integer.parseInt(args2[1]));
+                        emojiUseHistory.put(args2[0], Utilities.parseInt(args2[1]));
                     }
                 }
             }
             if (emojiUseHistory.isEmpty()) {
-                String[] newRecent = new String[]{
-                        "\uD83D\uDE02", "\uD83D\uDE18", "\u2764", "\uD83D\uDE0D", "\uD83D\uDE0A", "\uD83D\uDE01",
-                        "\uD83D\uDC4D", "\u263A", "\uD83D\uDE14", "\uD83D\uDE04", "\uD83D\uDE2D", "\uD83D\uDC8B",
-                        "\uD83D\uDE12", "\uD83D\uDE33", "\uD83D\uDE1C", "\uD83D\uDE48", "\uD83D\uDE09", "\uD83D\uDE03",
-                        "\uD83D\uDE22", "\uD83D\uDE1D", "\uD83D\uDE31", "\uD83D\uDE21", "\uD83D\uDE0F", "\uD83D\uDE1E",
-                        "\uD83D\uDE05", "\uD83D\uDE1A", "\uD83D\uDE4A", "\uD83D\uDE0C", "\uD83D\uDE00", "\uD83D\uDE0B",
-                        "\uD83D\uDE06", "\uD83D\uDC4C", "\uD83D\uDE10", "\uD83D\uDE15"};
-                for (int i = 0; i < newRecent.length; i++) {
-                    emojiUseHistory.put(newRecent[i], newRecent.length - i);
+                if (!preferences.getBoolean("filled_default", false)) {
+                    String[] newRecent = new String[]{
+                            "\uD83D\uDE02", "\uD83D\uDE18", "\u2764", "\uD83D\uDE0D", "\uD83D\uDE0A", "\uD83D\uDE01",
+                            "\uD83D\uDC4D", "\u263A", "\uD83D\uDE14", "\uD83D\uDE04", "\uD83D\uDE2D", "\uD83D\uDC8B",
+                            "\uD83D\uDE12", "\uD83D\uDE33", "\uD83D\uDE1C", "\uD83D\uDE48", "\uD83D\uDE09", "\uD83D\uDE03",
+                            "\uD83D\uDE22", "\uD83D\uDE1D", "\uD83D\uDE31", "\uD83D\uDE21", "\uD83D\uDE0F", "\uD83D\uDE1E",
+                            "\uD83D\uDE05", "\uD83D\uDE1A", "\uD83D\uDE4A", "\uD83D\uDE0C", "\uD83D\uDE00", "\uD83D\uDE0B",
+                            "\uD83D\uDE06", "\uD83D\uDC4C", "\uD83D\uDE10", "\uD83D\uDE15"};
+                    for (int i = 0; i < newRecent.length; i++) {
+                        emojiUseHistory.put(newRecent[i], newRecent.length - i);
+                    }
+                    preferences.edit().putBoolean("filled_default", true).commit();
+                    saveRecentEmoji();
                 }
-                saveRecentEmoji();
             }
             sortEmoji();
             adapters.get(0).notifyDataSetChanged();
@@ -1338,8 +1351,8 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
                     for (int a = 0; a < args.length; a++) {
                         String arg = args[a];
                         String[] args2 = arg.split("=");
-                        Long key = Long.parseLong(args2[0]);
-                        stickersUseHistory.put(key, Integer.parseInt(args2[1]));
+                        Long key = Utilities.parseLong(args2[0]);
+                        stickersUseHistory.put(key, Utilities.parseInt(args2[1]));
                         newRecentStickers.add(key);
                     }
                     Collections.sort(newRecentStickers, new Comparator<Long>() {
@@ -1367,7 +1380,13 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
                     str = preferences.getString("stickers2", "");
                     String[] args = str.split(",");
                     for (int a = 0; a < args.length; a++) {
-                        newRecentStickers.add(Long.parseLong(args[a]));
+                        if (args[a].length() == 0) {
+                            continue;
+                        }
+                        long id = Utilities.parseLong(args[a]);
+                        if (id != 0) {
+                            newRecentStickers.add(id);
+                        }
                     }
                 }
                 sortStickers();

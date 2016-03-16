@@ -187,11 +187,6 @@ public class DrawerLayoutContainer extends FrameLayout {
             public void onAnimationEnd(Object animator) {
                 onDrawerAnimationEnd(true);
             }
-
-            @Override
-            public void onAnimationCancel(Object animator) {
-                onDrawerAnimationEnd(true);
-            }
         });
         animatorSet.start();
         currentAnimation = animatorSet;
@@ -212,11 +207,6 @@ public class DrawerLayoutContainer extends FrameLayout {
         animatorSet.addListener(new AnimatorListenerAdapterProxy() {
             @Override
             public void onAnimationEnd(Object animator) {
-                onDrawerAnimationEnd(false);
-            }
-
-            @Override
-            public void onAnimationCancel(Object animator) {
                 onDrawerAnimationEnd(false);
             }
         });

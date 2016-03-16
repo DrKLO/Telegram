@@ -343,6 +343,11 @@ public class PhotoViewerCaptionEnterView extends FrameLayoutFixed implements Not
                     public void onStickersTab(boolean opened) {
 
                     }
+
+                    @Override
+                    public void onClearEmojiRecent() {
+
+                    }
                 });
                 sizeNotifierLayout.addView(emojiView);
             }

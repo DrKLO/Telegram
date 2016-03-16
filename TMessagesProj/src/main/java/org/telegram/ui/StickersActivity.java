@@ -375,6 +375,7 @@ public class StickersActivity extends BaseFragment implements NotificationCenter
                     view.setBackgroundResource(R.drawable.greydivider_bottom);
                     break;
             }
+            view.setLayoutParams(new RecyclerView.LayoutParams(RecyclerView.LayoutParams.MATCH_PARENT, RecyclerView.LayoutParams.WRAP_CONTENT));
             return new Holder(view);
         }
 

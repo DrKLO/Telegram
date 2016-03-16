@@ -419,6 +419,7 @@ public class MentionsAdapter extends BaseSearchAdapterRecycler {
                             boolean added = false;
                             if (searchResultBotContext == null || offset.length() == 0) {
                                 searchResultBotContext = res.results;
+                                contextMedia = res.gallery;
                             } else {
                                 added = true;
                                 searchResultBotContext.addAll(res.results);
@@ -426,7 +427,6 @@ public class MentionsAdapter extends BaseSearchAdapterRecycler {
                                     nextQueryOffset = "";
                                 }
                             }
-                            contextMedia = res.gallery;
                             searchResultHashtags = null;
                             searchResultUsernames = null;
                             searchResultCommands = null;

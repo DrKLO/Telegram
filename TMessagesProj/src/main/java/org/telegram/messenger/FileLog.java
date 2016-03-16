@@ -196,14 +196,17 @@ public class FileLog {
         File sdCard = ApplicationLoader.applicationContext.getExternalFilesDir(null);
         File dir = new File (sdCard.getAbsolutePath() + "/logs");
         File[] files = dir.listFiles();
-        for (File file : files) {
-            if (getInstance().currentFile != null && file.getAbsolutePath().equals(getInstance().currentFile.getAbsolutePath())) {
-                continue;
+        if (files != null) {
+            for (int a = 0; a < files.length; a++) {
+                File file = files[a];
+                if (getInstance().currentFile != null && file.getAbsolutePath().equals(getInstance().currentFile.getAbsolutePath())) {
+                    continue;
+                }
+                if (getInstance().networkFile != null && file.getAbsolutePath().equals(getInstance().networkFile.getAbsolutePath())) {
+                    continue;
+                }
+                file.delete();
             }
-            if (getInstance().networkFile != null && file.getAbsolutePath().equals(getInstance().networkFile.getAbsolutePath())) {
-                continue;
-            }
-            file.delete();
         }
     }
 }

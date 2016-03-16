@@ -413,10 +413,9 @@ public class CacheControlActivity extends BaseFragment {
                                                         NativeByteBuffer data = new NativeByteBuffer(cursor2.byteArrayLength(0));
                                                         if (data != null && cursor2.byteBufferValue(0, data) != 0) {
                                                             TLRPC.Message message = TLRPC.Message.TLdeserialize(data, data.readInt32(false), false);
-                                                            if (message == null) {
-                                                                continue;
+                                                            if (message != null) {
+                                                                arrayList.add(message);
                                                             }
-                                                            arrayList.add(message);
                                                         }
                                                         data.reuse();
                                                     }

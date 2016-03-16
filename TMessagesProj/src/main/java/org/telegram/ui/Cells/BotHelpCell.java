@@ -100,12 +100,16 @@ public class BotHelpCell extends View {
         MessageObject.addLinks(stringBuilder);
         stringBuilder.setSpan(new TypefaceSpan(AndroidUtilities.getTypeface("fonts/rmedium.ttf")), 0, help.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         Emoji.replaceEmoji(stringBuilder, textPaint.getFontMetricsInt(), AndroidUtilities.dp(20), false);
-        textLayout = new StaticLayout(stringBuilder, textPaint, width, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
-        width = 0;
-        height = textLayout.getHeight() + AndroidUtilities.dp(4 + 18);
-        int count = textLayout.getLineCount();
-        for (int a = 0; a < count; a++) {
-            width = (int) Math.ceil(Math.max(width, textLayout.getLineWidth(a) + textLayout.getLineLeft(a)));
+        try {
+            textLayout = new StaticLayout(stringBuilder, textPaint, width, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+            width = 0;
+            height = textLayout.getHeight() + AndroidUtilities.dp(4 + 18);
+            int count = textLayout.getLineCount();
+            for (int a = 0; a < count; a++) {
+                width = (int) Math.ceil(Math.max(width, textLayout.getLineWidth(a) + textLayout.getLineLeft(a)));
+            }
+        } catch (Exception e) {
+            FileLog.e("tmessage", e);
         }
         width += AndroidUtilities.dp(4 + 18);
     }

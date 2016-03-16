@@ -443,11 +443,6 @@ public class ActionBarLayout extends FrameLayout {
                             public void onAnimationEnd(Object animator) {
                                 onSlideAnimationEnd(backAnimation);
                             }
-
-                            @Override
-                            public void onAnimationCancel(Object animator) {
-                                onSlideAnimationEnd(backAnimation);
-                            }
                         });
                         animatorSet.start();
                         animationInProgress = true;
@@ -693,11 +688,6 @@ public class ActionBarLayout extends FrameLayout {
                     public void onAnimationEnd(Object animation) {
                         onAnimationEndCheck(false);
                     }
-
-                    @Override
-                    public void onAnimationCancel(Object animation) {
-                        onAnimationEndCheck(false);
-                    }
                 });
                 currentAnimation.start();
             } else {
@@ -925,11 +915,6 @@ public class ActionBarLayout extends FrameLayout {
 
                     @Override
                     public void onAnimationEnd(Object animation) {
-                        onAnimationEndCheck(false);
-                    }
-
-                    @Override
-                    public void onAnimationCancel(Object animation) {
                         onAnimationEndCheck(false);
                     }
                 });

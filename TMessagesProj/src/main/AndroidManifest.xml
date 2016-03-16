@@ -99,6 +99,8 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:host="telegram.me" android:scheme="http" />
                 <data android:host="telegram.me" android:scheme="https" />
+                <data android:host="telegram.dog" android:scheme="http" />
+                <data android:host="telegram.dog" android:scheme="https" />
             </intent-filter>
             <intent-filter android:icon="@drawable/ic_launcher" android:priority="1">
                 <action android:name="android.intent.action.VIEW" />

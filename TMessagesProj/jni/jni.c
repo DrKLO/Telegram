@@ -5,6 +5,7 @@
 #include <inttypes.h>
 #include <stdlib.h>
 #include <openssl/aes.h>
+#include <unistd.h>
 #include "utils.h"
 #include "sqlite.h"
 #include "image.h"

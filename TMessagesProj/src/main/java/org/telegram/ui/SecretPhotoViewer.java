@@ -202,6 +202,9 @@ public class SecretPhotoViewer implements NotificationCenter.NotificationCenterD
         windowView.setBackgroundColor(0xff000000);
         windowView.setFocusable(true);
         windowView.setFocusableInTouchMode(true);
+        if (Build.VERSION.SDK_INT >= 23) {
+            windowView.setFitsSystemWindows(true); //TODO ?
+        }
 
         containerView = new FrameLayoutDrawer(activity);
         containerView.setFocusable(false);

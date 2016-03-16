@@ -14,9 +14,13 @@
     <string name="ChooseCountry">Elige un país</string>
     <string name="WrongCountry">Código de país incorrecto</string>
     <!--code enter view-->
-    <string name="YourCode">Tu código</string>
-    <string name="SentSmsCode">Enviamos un SMS con el código de activación al número</string>
+    <string name="YourCode">Verificación</string>
+    <string name="SentSmsCode">Enviamos un SMS con el código de activación al <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>.</string>
+    <string name="SentAppCode">Enviamos el código a la aplicación <![CDATA[<b>]]>Telegram<![CDATA[</b>]]> en tu otro dispositivo.</string>
+    <string name="SentCallCode">Enviamos una llamada de activación al <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>.\n\nNo la contestes. Telegram hará todo el proceso automáticamente.</string>
+    <string name="SentCallOnly">Estamos llamando al <![CDATA[<b>]]>%1$s<![CDATA[</b>]]> para dictar un código.</string>
     <string name="CallText">Te llamaremos en %1$d:%2$02d</string>
+    <string name="SmsText">Te enviaremos un SMS en %1$d:%2$02d</string>
     <string name="Calling">Llamándote...</string>
     <string name="Code">Código</string>
     <string name="WrongNumber">¿Número incorrecto?</string>
@@ -64,6 +68,10 @@
     <string name="Recent">RECIENTES</string>
     <string name="LinkPreview">Vista previa del enlace</string>
     <!--channels-->
+    <string name="GroupType">Tipo de grupo</string>
+    <string name="ChannelType">Tipo de canal</string>
+    <string name="ChannelTypePublic">Público</string>
+    <string name="ChannelTypePrivate">Privado</string>
     <string name="SetAsAdmin">Nombrar como administrador</string>
     <string name="DescriptionInfoMega">Puedes poner una descripción para tu grupo.</string>
     <string name="LeaveMega">Dejar el grupo</string>
@@ -71,7 +79,7 @@
     <string name="LeaveMegaMenu">Dejar el grupo</string>
     <string name="DeleteMegaMenu">Eliminar grupo</string>
     <string name="MegaDeleteInfo">Perderás todos los mensajes en este grupo.</string>
-    <string name="MegaAdminsInfo">Puedes añadir administradores para que te ayuden a dirigir el canal. Mantén pulsado para eliminarlos.</string>
+    <string name="MegaAdminsInfo">Puedes añadir administradores para que te ayuden en el grupo. Mantén pulsado para eliminarlos.</string>
     <string name="MegaDeleteAlert">¡Espera! Al eliminar este grupo, todos los miembros y los mensajes se perderán. ¿Quieres eliminarlo?</string>
     <string name="ActionCreateMega">Grupo creado</string>
     <string name="MegaAddedBy">un1 te añadió a este grupo</string>
@@ -79,8 +87,19 @@
     <string name="GroupUserCantAdd">Lo sentimos, no puedes añadir este usuario a grupos.</string>
     <string name="GroupUserAddLimit">Lo sentimos, el grupo está lleno.</string>
     <string name="GroupUserLeftError">Lo sentimos, este usuario decidió dejar el grupo, así que no puedes invitarlo otra vez.</string>
-    <string name="GroupUserCantAdmin">Lo sentimos, hay demasiados administradores en el grupo.</string>
+    <string name="GroupUserCantAdmin">Hay demasiados administradores en el grupo.</string>
     <string name="GroupUserCantBot">Lo sentimos, hay demasiados bots en el grupo.</string>
+    <string name="ActionPinnedText">un1 ancló \"%1$s\"</string>
+    <string name="ActionPinnedNoText">un1 ancló un mensaje</string>
+    <string name="ActionPinnedPhoto">un1 ancló una foto</string>
+    <string name="ActionPinnedVideo">un1 ancló un vídeo</string>
+    <string name="ActionPinnedFile">un1 ancló un archivo</string>
+    <string name="ActionPinnedSticker">un1 ancló un sticker</string>
+    <string name="ActionPinnedVoice">un1 ancló un mensaje de voz</string>
+    <string name="ActionPinnedContact">un1 ancló un contacto</string>
+    <string name="ActionPinnedGeo">un1 ancló un mapa</string>
+    <string name="ActionPinnedGif">un1 ancló un GIF</string>
+    <string name="ActionPinnedMusic">un1 ancló una pista</string>
     <string name="ActionMigrateFromGroup">Este grupo fue convertido en un supergrupo</string>
     <string name="ActionMigrateFromGroupNotify">%1$s fue convertido en un supergrupo</string>
     <string name="NoBlockedGroup">Los usuarios bloqueados son eliminados del grupo y sólo pueden volver si son invitados por un administrador. Los enlaces de invitación no funcionan para ellos.</string>
@@ -90,15 +109,21 @@
     <string name="CommentsInfo">Si activas los comentarios, las personas podrán hablar de tus mensajes en el canal.</string>
     <string name="AddMutual">Añadir contactos a tu canal</string>
     <string name="ChannelUsernameHelp">Las personas pueden compartir este enlace con los demás y encontrar tu canal usando la búsqueda de Telegram.</string>
-    <!--<string name="MegaUsernameHelp">People can share this link with others and find your supergroup using Telegram search.</string>-->
+    <string name="MegaUsernameHelp">Las personas pueden compartir este enlace con los demás y encontrar tu grupo usando la búsqueda de Telegram.</string>
     <string name="ChannelUsernamePlaceholder">Enlace</string>
     <string name="ChannelPrivateLinkHelp">Las personas pueden unirse a tu canal siguiendo este enlace. Puedes anular el enlace en cualquier momento.</string>
+    <string name="MegaPrivateLinkHelp">Las personas pueden unirse a tu canal siguiendo este enlace. Puedes anular el enlace en cualquier momento.</string>
+    <string name="DescriptionOptionalPlaceholder">Descripción (opcional)</string>
     <string name="DescriptionPlaceholder">Descripción</string>
     <string name="DescriptionInfo">Puedes poner una descripción para tu canal.</string>
     <string name="ChannelPublic">Canal público</string>
+    <string name="MegaPublic">Grupo público</string>
     <string name="ChannelPublicInfo">Cualquiera puede unirse a los canales públicos, tras encontrarlos en la búsqueda.</string>
+    <string name="MegaPublicInfo">Los grupos públicos pueden encontrarse en la búsqueda, su historial está disponible para todos y cualquiera puede unirse.</string>
     <string name="ChannelPrivate">Canal privado</string>
+    <string name="MegaPrivate">Grupo privado</string>
     <string name="ChannelPrivateInfo">Puedes unirte a canales privados sólo con enlaces de invitación.</string>
+    <string name="MegaPrivateInfo">Puedes unirte a un grupo privado sólo si te invitan o tienes un enlace de invitación.</string>
     <string name="ChannelLinkTitle">Enlace</string>
     <string name="ChannelInviteLinkTitle">Enlace de invitación</string>
     <string name="ChannelAddMembers">Añadir miembros</string>
@@ -108,6 +133,7 @@
     <string name="ChannelJoin">UNIRSE</string>
     <string name="OpenChannelProfile">Información</string>
     <string name="ChannelBroadcast">Difundir</string>
+    <string name="ChannelSilentBroadcast">Difusión en silencio</string>
     <string name="ChannelComment">Comentario</string>
     <string name="ShowDiscussion">mostrar comentarios</string>
     <string name="ChannelAlertTitle">¿Qué es un canal?</string>
@@ -118,8 +144,8 @@
     <string name="LinkInvalidShort">El nombre del canal debe tener al menos 5 caracteres.</string>
     <string name="LinkInvalidLong">El nombre no debe exceder los 32 caracteres.</string>
     <string name="LinkInvalidStartNumber">El nombre del canal no puede comenzar con un número.</string>
-    <!--<string name="LinkInvalidShortMega">Supergroup names must have at least 5 characters.</string>-->
-    <!--<string name="LinkInvalidStartNumberMega">Supergroup names can\'t start with a number.</string>-->
+    <string name="LinkInvalidShortMega">El nombre del grupo debe tener al menos 5 caracteres.</string>
+    <string name="LinkInvalidStartNumberMega">El nombre del grupo no puede comenzar con un número.</string>
     <string name="LinkChecking">Verificando nombre...</string>
     <string name="LinkAvailable">%1$s está disponible.</string>
     <string name="ChannelMembers">Miembros</string>
@@ -131,14 +157,15 @@
     <string name="ChannelLeaveAlert">¿Quieres dejar este canal?</string>
     <string name="ChannelDeleteInfo">Perderás todos los mensajes en este canal.</string>
     <string name="ChannelEdit">Editar</string>
-    <!--<string name="MegaWasPrivateAlert">Please note that if you choose a public link for your supergroup, anyone will be able to find it in search and join.\n\nDo not create this link if you want your supergroup to stay private.</string>-->
-    <string name="ChannelWasPrivateAlert">Por favor, ten en cuenta que si eliges un enlace público para tu canal, cualquiera podrá encontrarlo en la búsqueda y unirse.\n\nNo crees este enlace si quieres que tu canal sea privado.</string>
+    <string name="MegaWasPrivateAlert">Ten en cuenta que, si eliges un enlace público para tu grupo, cualquiera podrá encontrarlo en la búsqueda y unirse.\n\nNo crees este enlace si quieres que tu supergrupo sea privado.</string>
+    <string name="ChannelWasPrivateAlert">Ten en cuenta que, si eliges un enlace público para tu canal, cualquiera podrá encontrarlo en la búsqueda y unirse.\n\nNo crees este enlace si quieres que tu canal sea privado.</string>
     <string name="ChannelPublicEmptyUsername">Por favor, elige un enlace para tu canal público. Así, las personas podrán encontrarlo en la búsqueda y compartirlo con otros.\n\nSi no estás interesado, te sugerimos crear un canal privado.</string>
     <string name="ActionCreateChannel">Canal creado</string>
     <string name="ActionChannelChangedPhoto">Foto del canal cambiada</string>
     <string name="ActionChannelRemovedPhoto">Foto del canal eliminada</string>
     <string name="ActionChannelChangedTitle">Nombre del canal cambiado a un2</string>
     <string name="ChannelPublicLimitReached">Lo sentimos, has creado demasiados canales públicos. Puedes crear un canal privado o eliminar uno de tus canales existentes primero.</string>
+    <string name="ChangePublicLimitReached">Has creado demasiados canales públicos. Prueba eliminando o haciendo privado uno de tus grupos o canales.</string>
     <string name="ChannelModerator">Moderador</string>
     <string name="ChannelCreator">Creador</string>
     <string name="ChannelEditor">Administrador</string>
@@ -151,9 +178,11 @@
     <string name="ChannelMembersInfo">Sólo los administradores del canal pueden ver esta lista.</string>
     <string name="ChannelAdminNotParticipant">Este usuario aún no se ha unido al canal. ¿Quieres invitarlo?</string>
     <string name="ChannelLinkInfo">Cualquiera que tenga Telegram instalada podrá unirse a tu canal siguiendo este enlace.</string>
-    <string name="ChannelAdminsInfo">Puedes añadir administradores para que te ayuden en el canal. Mantén pulsado para eliminar un administrador.</string>
+    <string name="ChannelAdminsInfo">Puedes añadir administradores para que te ayuden en el canal. Mantén pulsado para eliminarlos.</string>
     <string name="ChannelJoinTo">¿Quieres unirte al canal \'%1$s\'?</string>
-    <string name="ChannelCantOpenPrivate">Lo sentimos, este canal ya no es accesible.</string>
+    <string name="ChannelCantOpenPrivate">Lo sentimos, este chat ya no es accesible.</string>
+    <string name="ChannelCantOpenBanned">Lamentablemente, fuiste suspendido de participar en grupos públicos.</string>
+    <string name="ChannelCantOpenNa">Lo sentimos, este chat ya no es accesible.</string>
     <string name="ChannelAddTo">¿Añadir a %1$s al canal?</string>
     <string name="ChannelUserLeftError">Lo sentimos, este usuario decidió dejar el canal, así que no puedes invitarlo otra vez.</string>
     <string name="ChannelUserCantAdd">Lo sentimos, no puedes añadir a este usuario a canales.</string>
@@ -161,7 +190,8 @@
     <string name="ChannelUserCantBot">Lo sentimos, hay demasiados bots en el canal.</string>
     <string name="ChannelUserAddLimit">Lo sentimos, sólo puedes añadir a los primeros 200 miembros a un canal. Sin embargo, una cantidad ilimitada de personas pueden unirse por el enlace del canal.</string>
     <string name="ChannelAddedBy">un1 te añadió a este canal</string>
-    <string name="ChannelJoined">Te uniste al canal</string>
+    <string name="ChannelJoined">Te uniste a este canal</string>
+    <string name="ChannelMegaJoined">Te uniste a este grupo</string>
     <string name="ChannelRemoveUser">Eliminar del canal</string>
     <string name="ChannelCantSendMessage">Lo sentimos, no puedes enviar mensajes en este canal.</string>
     <string name="ChannelAddedByNotification">%1$s te añadió al canal %2$s</string>
@@ -174,6 +204,7 @@
     <string name="ChannelMessageGroupDocument">%1$s envió un archivo al canal %2$s</string>
     <string name="ChannelMessageGroupGif">%1$s envió un GIF al canal %2$s</string>
     <string name="ChannelMessageGroupAudio">%1$s envió un mensaje de voz al canal %2$s</string>
+    <string name="ChannelMessageGroupMusic">%1$s envió una pista al canal %2$s</string>
     <string name="ChannelMessageGroupSticker">%1$s envió un sticker al canal %2$s</string>
     <string name="ChannelMessageNoText">%1$s publicó un mensaje</string>
     <string name="ChannelMessagePhoto">%1$s publicó una foto</string>
@@ -183,6 +214,7 @@
     <string name="ChannelMessageDocument">%1$s publicó un archivo</string>
     <string name="ChannelMessageGIF">%1$s publicó un GIF</string>
     <string name="ChannelMessageAudio">%1$s publicó un mensaje de voz</string>
+    <string name="ChannelMessageMusic">%1$s publicó una pista</string>
     <string name="ChannelMessageSticker">%1$s publicó un sticker</string>
     <string name="WhoCanAddMembers">¿Quién puede invitar?</string>
     <string name="WhoCanAddMembersAllMembers">Todos</string>
@@ -272,15 +304,33 @@
     <string name="SendItems">Enviar %1$s</string>
     <string name="OpenUrlAlert">¿Abrir %1$s?</string>
     <string name="ReportSpam">REPORTAR SPAM</string>
+    <string name="ReportSpamAndLeave">REPORTAR SPAM Y SALIR</string>
     <string name="AddContactChat">AÑADIR CONTACTO</string>
     <string name="ReportSpamAlert">¿Quieres reportar a este usuario como spam?</string>
     <string name="ReportSpamAlertGroup">¿Quieres reportar a este grupo como spam?</string>
+    <string name="ReportSpamAlertChannel">¿Quieres reportar spam de este canal?</string>
     <string name="NobodyLikesSpam1">Lo sentimos, por ahora puedes enviar mensajes sólo a contactos mutuos.</string>
     <string name="NobodyLikesSpam2">Lo sentimos, por ahora sólo puedes añadir contactos mutuos a un grupo.</string>
     <string name="NobodyLikesSpamUrl">https://telegram.org/faq/es#no-puedo-enviar-mensajes-a-quienes-no-son-mis-contactos</string>
     <string name="MoreInfo">Más información</string>
     <string name="ShareSendTo">Enviar a...</string>
     <string name="TapHereGifs">Pulsa y ve los GIF guardados</string>
+    <string name="PinMessage">Anclar</string>
+    <string name="PinNotify">Notificar a los miembros</string>
+    <string name="UnpinMessage">Desanclar</string>
+    <string name="PinMessageAlert">¿Quieres anclar este mensaje en el grupo?</string>
+    <string name="UnpinMessageAlert">¿Quieres desanclar este mensaje?</string>
+    <string name="DeleteBanUser">Suspender usuario</string>
+    <string name="DeleteReportSpam">Reportar spam</string>
+    <string name="DeleteAllFrom">Eliminar todo lo de %1$s</string>
+    <string name="ClearRecentEmoji">¿Borrar los emojis recientes?</string>
+    <string name="ReportChat">Reportar</string>
+    <string name="ReportChatSpam">Spam</string>
+    <string name="ReportChatViolence">Violencia</string>
+    <string name="ReportChatPornography">Pornografía</string>
+    <string name="ReportChatOther">Otros</string>
+    <string name="ReportChatDescription">Descripción</string>
+    <string name="PinnedMessage">Mensaje anclado</string>
     <!--notification-->
     <string name="MessageLifetimeChanged">%1$s activó la autodestrucción en %2$s</string>
     <string name="MessageLifetimeChangedOutgoing">Activaste la autodestrucción en %1$s</string>
@@ -296,6 +346,7 @@
     <string name="NotificationMessageDocument">%1$s te envió un archivo</string>
     <string name="NotificationMessageGif">%1$s te envió un GIF</string>
     <string name="NotificationMessageAudio">%1$s te envió un mensaje de voz</string>
+    <string name="NotificationMessageMusic">%1$s te envió una pista</string>
     <string name="NotificationMessageSticker">%1$s te envió un sticker</string>
     <string name="NotificationMessageGroupText">%1$s @ %2$s: %3$s</string>
     <string name="NotificationMessageGroupNoText">%1$s envió un mensaje al grupo %2$s</string>
@@ -306,12 +357,14 @@
     <string name="NotificationMessageGroupDocument">%1$s envió un archivo al grupo %2$s</string>
     <string name="NotificationMessageGroupGif">%1$s envió un GIF al grupo %2$s</string>
     <string name="NotificationMessageGroupAudio">%1$s envió un mensaje de voz al grupo %2$s</string>
+    <string name="NotificationMessageGroupMusic">%1$s envió una pista al grupo %2$s</string>
     <string name="NotificationMessageGroupSticker">%1$s envió un sticker al grupo %2$s</string>
     <string name="NotificationInvitedToGroup">%1$s te invitó al grupo %2$s</string>
     <string name="NotificationEditedGroupName">%1$s cambió el nombre del grupo %2$s</string>
     <string name="NotificationEditedGroupPhoto">%1$s cambió la foto del grupo %2$s</string>
     <string name="NotificationGroupAddMember">%1$s invitó a %3$s al grupo %2$s</string>
     <string name="NotificationGroupAddSelf">%1$s volvió al grupo %2$s</string>
+    <string name="NotificationGroupAddSelfMega">%1$s se unió al grupo %2$s</string>
     <string name="NotificationGroupKickMember">%1$s eliminó a %3$s del grupo %2$s</string>
     <string name="NotificationGroupKickYou">%1$s te eliminó del grupo %2$s</string>
     <string name="NotificationGroupLeftMember">%1$s dejó el grupo %2$s</string>
@@ -323,6 +376,28 @@
     <string name="ReplyToGroup">Responder a %1$s</string>
     <string name="ReplyToUser">Responder a %1$s</string>
     <string name="NotificationMessagesPeopleDisplayOrder">%1$s %2$s</string>
+    <string name="NotificationActionPinnedText">%1$s ancló \"%2$s\" en el grupo %3$s</string>
+    <string name="NotificationActionPinnedNoText">%1$s ancló un mensaje en el grupo %2$s</string>
+    <string name="NotificationActionPinnedPhoto">%1$s ancló una foto en el grupo %2$s</string>
+    <string name="NotificationActionPinnedVideo">%1$s ancló un vídeo en el grupo %2$s</string>
+    <string name="NotificationActionPinnedFile">%1$s ancló un archivo en el grupo %2$s</string>
+    <string name="NotificationActionPinnedSticker">%1$s ancló un sticker en el grupo %2$s</string>
+    <string name="NotificationActionPinnedVoice">%1$s ancló un mensaje de voz en el grupo %2$s</string>
+    <string name="NotificationActionPinnedContact">%1$s ancló un contacto en el grupo %2$s</string>
+    <string name="NotificationActionPinnedGeo">%1$s ancló un mapa en el grupo %2$s</string>
+    <string name="NotificationActionPinnedGif">%1$s ancló un GIF en el grupo %2$s</string>
+    <string name="NotificationActionPinnedMusic">%1$s ancló una pista en el grupo %2$s</string>
+    <string name="NotificationActionPinnedTextChannel">%1$s ancló \"%2$s\"</string>
+    <string name="NotificationActionPinnedNoTextChannel">%1$s ancló un mensaje</string>
+    <string name="NotificationActionPinnedPhotoChannel">%1$s ancló una foto</string>
+    <string name="NotificationActionPinnedVideoChannel">%1$s ancló un vídeo</string>
+    <string name="NotificationActionPinnedFileChannel">%1$s ancló un archivo</string>
+    <string name="NotificationActionPinnedStickerChannel">%1$s ancló un sticker</string>
+    <string name="NotificationActionPinnedVoiceChannel">%1$s ancló un mensaje de voz</string>
+    <string name="NotificationActionPinnedContactChannel">%1$s ancló un contacto</string>
+    <string name="NotificationActionPinnedGeoChannel">%1$s ancló un mapa</string>
+    <string name="NotificationActionPinnedGifChannel">%1$s ancló un GIF</string>
+    <string name="NotificationActionPinnedMusicChannel">%1$s ancló una pista</string>
     <!--contacts view-->
     <string name="SelectContact">Elegir contacto</string>
     <string name="NoContacts">Aún sin contactos</string>
@@ -372,9 +447,14 @@
     <string name="DeleteAndExit">Eliminar y dejar el grupo</string>
     <string name="Notifications">Notificaciones</string>
     <string name="KickFromGroup">Eliminar del grupo</string>
+    <string name="UpgradeGroup">Convertir en supergrupo</string>
     <string name="ConvertGroup">Convertir en supergrupo</string>
-    <string name="ConvertGroupAlert">Por favor, ten en cuenta que los miembros del grupo tendrán que actualizar Telegram a la última versión para ver tu supergrupo. ¿Quieres convertir el grupo?</string>
-    <string name="ConvertGroupInfo"><![CDATA[<b>]]>Límite de miembros alcanzado.<![CDATA[</b>]]>\n\nPara superar el límite y tener características adicionales, conviértelo en un supergrupo:\n\n• Permiten hasta %1$s\n• Nuevos miembros ven todo el historial\n• Un admin. borra mensajes para todos\n• Notificaciones silenciadas por defecto</string>
+    <string name="ConvertGroupMenu">Convertir en supergrupo</string>
+    <string name="ConvertGroupAlertWarning">Advertencia</string>
+    <string name="ConvertGroupAlert">Esta acción es irreversible. No puedes convertir un supergrupo en un grupo normal.</string>
+    <string name="ConvertGroupInfo"><![CDATA[<b>]]>Límite de miembros alcanzado.<![CDATA[</b>]]>\n\nPara superar el límite y tener características adicionales, conviértelo en un supergrupo:\n\n• Permiten hasta %1$s\n• Nuevos miembros ven todo el historial\n• Un mensaje eliminado se borra para todos\n• Un miembro puede editar sus mensajes\n• El creador puede generar un enlace público</string>
+    <string name="ConvertGroupInfo2"><![CDATA[<b>]]>En los supergrupos:<![CDATA[</b>]]>\n\n• Los nuevos miembros ven todo el historial\n• Un mensaje eliminado se borra para todos\n• Un miembro puede editar sus mensajes\n• El creador puede generar un enlace público</string>
+    <string name="ConvertGroupInfo3"><![CDATA[<b>]]>Importante:<![CDATA[</b>]]> Esta acción no se puede deshacer.</string>
     <!--contact info view-->
     <string name="ShareContact">Compartir</string>
     <string name="AddContact">Añadir</string>
@@ -464,6 +544,8 @@
     <string name="AskButton">Preguntar</string>
     <string name="TelegramFaq">Preguntas frecuentes</string>
     <string name="TelegramFaqUrl">https://telegram.org/faq/es</string>
+    <string name="PrivacyPolicy">Política de privacidad</string>
+    <string name="PrivacyPolicyUrl">https://telegram.org/privacy</string>
     <string name="DeleteLocalization">¿Eliminar traducción?</string>
     <string name="IncorrectLocalization">Archivo de traducción incorrecto</string>
     <string name="Enabled">Activadas</string>
@@ -524,6 +606,10 @@
     <string name="SmartNotificationsMinutes">minutos</string>
     <string name="SecretWebPage">Vistas previas de enlaces</string>
     <string name="SecretChat">Chats secretos</string>
+    <string name="ChromeCustomTabs">Usar navegador interno</string>
+    <string name="ChromeCustomTabsInfo">Abrir enlaces externos en la aplicación</string>
+    <string name="DirectShare">Direct Share</string>
+    <string name="DirectShareInfo">Mostrar los chats recientes al compartir</string>
     <!--cache view-->
     <string name="CacheSettings">Ajustes de caché</string>
     <string name="LocalDatabase">Base de datos local</string>
@@ -575,14 +661,18 @@
     <string name="FingerprintHelp">Sensor táctil</string>
     <string name="FingerprintNotRecognized">Huella digital no reconocida. Reinténtalo</string>
     <!--media view-->
-    <string name="NoMedia">Comparte fotos y vídeos en este chat y accede a ellos desde cualquier dispositivo.</string>
     <string name="DocumentsTitle">Archivos</string>
     <string name="SharedMediaTitle">Multimedia</string>
     <string name="LinksTitle">Enlaces</string>
     <string name="AudioTitle">Música</string>
+    <string name="NoMedia">Comparte fotos y vídeos en este chat y accede a ellos desde cualquier dispositivo.</string>
     <string name="NoSharedAudio">Comparte música en este chat y accede a ella desde cualquier dispositivo.</string>
     <string name="NoSharedFiles">Comparte archivos en este chat y accede a ellos desde cualquier dispositivo.</string>
     <string name="NoSharedLinks">Comparte enlaces en este chat y accede a ellos desde cualquiera de tus dispositivos.</string>
+    <string name="NoMediaSecret">Las fotos y vídeos de este chat aparecerán aquí.</string>
+    <string name="NoSharedAudioSecret">La música de este chat aparecerá aquí.</string>
+    <string name="NoSharedFilesSecret">Los archivos de este chat aparecerán aquí.</string>
+    <string name="NoSharedLinksSecret">Los enlaces de este chat aparecerán aquí.</string>
     <!--map view-->
     <string name="Map">Mapa</string>
     <string name="Satellite">Satélite</string>
@@ -687,7 +777,7 @@
     <string name="ResetMyAccount">RESTABLECER MI CUENTA</string>
     <string name="ResetMyAccountText">Si continúas con el reinicio de tu cuenta, perderás todos tus chats y mensajes, junto con toda la multimedia y archivos que compartiste.</string>
     <string name="ResetMyAccountWarning">Advertencia</string>
-    <string name="ResetMyAccountWarningText">Esta acción no puede deshacerse.\n\nSi reinicias tu cuenta, todos tus mensajes y chats se eliminarán.</string>
+    <string name="ResetMyAccountWarningText">Esta acción no se puede deshacer.\n\nSi restableces tu cuenta, todos tus mensajes y chats se eliminarán.</string>
     <string name="ResetMyAccountWarningReset">Restablecer</string>
     <string name="LoginPassword">Contraseña</string>
     <string name="LoginPasswordText">Activaste la verificación en dos pasos, así que tu cuenta está protegida con una contraseña adicional.</string>
@@ -803,6 +893,7 @@
     <string name="ActionKickUserYou">un1 te eliminó</string>
     <string name="ActionAddUserYou">un1 te añadió</string>
     <string name="ActionAddUserSelf">un1 volvió al grupo</string>
+    <string name="ActionAddUserSelfMega">un1 se unió al grupo</string>
     <string name="ActionAddUserSelfYou">Volviste al grupo</string>
     <string name="UnsupportedMedia">Tu versión de Telegram no soporta este mensaje. Por favor, actualiza tu app para verlo: https://telegram.org/update</string>
     <string name="AttachPhoto">Foto</string>
@@ -849,7 +940,7 @@
     <string name="AreYouSureRegistration">¿Quieres cancelar el registro?</string>
     <string name="AreYouSureClearHistory">¿Quieres eliminar el historial?</string>
     <string name="AreYouSureClearHistoryChannel">¿Eliminar de la caché los mensajes y multimedia de este canal?</string>
-    <string name="AreYouSureClearHistorySuper">¿Eliminar de la caché los mensajes y multimedia de este supergrupo?</string>
+    <string name="AreYouSureClearHistorySuper">¿Eliminar de la caché los mensajes y multimedia de este grupo?</string>
     <string name="AreYouSureDeleteMessages">¿Quieres eliminar %1$s?</string>
     <string name="SendMessagesToGroup">¿Enviar mensajes a %1$s?</string>
     <string name="SendContactToGroup">¿Enviar contacto a %1$s?</string>
@@ -861,6 +952,9 @@
     <string name="SecretChatContextBotAlert">Ten en cuenta que los bots integrados son hechos por terceros. Para que funcione, los símbolos escritos después del alias del bot, son enviados al desarrollador respectivo.</string>
     <string name="RaiseToSpeakAlert">¿Quieres habilitar \"Elevar para hablar\" para mensajes de voz?</string>
     <string name="EditMessageError">No puedes editar este mensaje.</string>
+    <string name="AllowReadSms">Por favor, permite a Telegram recibir SMS, para ingresar el código automáticamente.</string>
+    <string name="AllowReadCall">Por favor, permite a Telegram recibir llamadas, para ingresar el código automáticamente.</string>
+    <string name="AllowReadCallAndSms">Por favor, permite a Telegram recibir llamadas y SMS, para ingresar el código automáticamente.</string>
     <!--permissions-->
     <string name="PermissionContacts">Telegram necesita el acceso a tus contactos, para que puedas comunicarte con ellos en todos tus dispositivos.</string>
     <string name="PermissionStorage">Telegram necesita acceso a tu almacenamiento, para que puedas enviar y guardar fotos, vídeos, música y otros archivos.</string>

@@ -87,6 +87,10 @@ public class TextSettingsCell extends FrameLayout {
         textView.setTextColor(color);
     }
 
+    public void setTextValueColor(int color) {
+        valueTextView.setTextColor(color);
+    }
+
     public void setText(String text, boolean divider) {
         textView.setText(text);
         valueTextView.setVisibility(INVISIBLE);

@@ -2006,7 +2006,9 @@ public class PhotoFilterView extends FrameLayout {
                     eglThread.postRunnable(new Runnable() {
                         @Override
                         public void run() {
-                            eglThread.requestRender(false);
+                            if (eglThread != null) {
+                                eglThread.requestRender(false);
+                            }
                         }
                     });
                 }

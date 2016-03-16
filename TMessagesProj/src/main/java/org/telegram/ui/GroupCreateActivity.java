@@ -78,7 +78,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
     private int beforeChangeIndex;
     private boolean ignoreChange;
     private CharSequence changeString;
-    private int maxCount = 1000;
+    private int maxCount = 5000;
     private int chatType = ChatObject.CHAT_TYPE_CHAT;
     private boolean isAlwaysShare;
     private boolean isNeverShare;

@@ -94,6 +94,7 @@ public class DialogsAdapter extends RecyclerView.Adapter {
         } else if (viewType == 1) {
             view = new LoadingCell(mContext);
         }
+        view.setLayoutParams(new RecyclerView.LayoutParams(RecyclerView.LayoutParams.MATCH_PARENT, RecyclerView.LayoutParams.WRAP_CONTENT));
         return new Holder(view);
     }
 

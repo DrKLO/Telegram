@@ -14,6 +14,7 @@ import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.SharedPreferences;
+import android.os.Bundle;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
@@ -22,10 +23,14 @@ import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.NotificationsController;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.R;
+import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.ConnectionsManager;
+import org.telegram.tgnet.RequestDelegate;
+import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
+import org.telegram.ui.ReportOtherActivity;
 
 public class AlertsCreator {
 
@@ -80,6 +85,68 @@ public class AlertsCreator {
                 }
         );
         return builder.create();
+    }
+
+    public static Dialog createReportAlert(Context context, final long dialog_id, final BaseFragment parentFragment) {
+        if (context == null || parentFragment == null) {
+            return null;
+        }
+
+        BottomSheet.Builder builder = new BottomSheet.Builder(context);
+        builder.setTitle(LocaleController.getString("ReportChat", R.string.ReportChat));
+        CharSequence[] items = new CharSequence[]{
+                LocaleController.getString("ReportChatSpam", R.string.ReportChatSpam),
+                LocaleController.getString("ReportChatViolence", R.string.ReportChatViolence),
+                LocaleController.getString("ReportChatPornography", R.string.ReportChatPornography),
+                LocaleController.getString("ReportChatOther", R.string.ReportChatOther)
+        };
+        builder.setItems(items, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        if (i == 3) {
+                            Bundle args = new Bundle();
+                            args.putLong("dialog_id", dialog_id);
+                            parentFragment.presentFragment(new ReportOtherActivity(args));
+                            return;
+                        }
+                        TLRPC.TL_account_reportPeer req = new TLRPC.TL_account_reportPeer();
+                        req.peer = MessagesController.getInputPeer((int) dialog_id);
+                        if (i == 0) {
+                            req.reason = new TLRPC.TL_inputReportReasonSpam();
+                        } else if (i == 1) {
+                            req.reason = new TLRPC.TL_inputReportReasonViolence();
+                        } else if (i == 2) {
+                            req.reason = new TLRPC.TL_inputReportReasonPornography();
+                        }
+                        ConnectionsManager.getInstance().sendRequest(req, new RequestDelegate() {
+                            @Override
+                            public void run(TLObject response, TLRPC.TL_error error) {
+
+                            }
+                        });
+                    }
+                }
+        );
+        return builder.create();
+    }
+
+    public static void showFloodWaitAlert(String error, final BaseFragment fragment) {
+        if (error == null || !error.startsWith("FLOOD_WAIT") || fragment == null || fragment.getParentActivity() == null) {
+            return;
+        }
+        int time = Utilities.parseInt(error);
+        String timeString;
+        if (time < 60) {
+            timeString = LocaleController.formatPluralString("Seconds", time);
+        } else {
+            timeString = LocaleController.formatPluralString("Minutes", time / 60);
+        }
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(fragment.getParentActivity());
+        builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
+        builder.setMessage(LocaleController.formatString("FloodWaitTime", R.string.FloodWaitTime, timeString));
+        builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), null);
+        fragment.showDialog(builder.create(), true);
     }
 
     public static void showAddUserAlert(String error, final BaseFragment fragment, boolean isChannel) {

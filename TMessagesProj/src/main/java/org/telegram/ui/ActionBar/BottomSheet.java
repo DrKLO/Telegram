@@ -610,11 +610,6 @@ public class BottomSheet extends Dialog {
                     }
                 }
             }
-
-            @Override
-            public void onAnimationCancel(Animator animation) {
-                onAnimationEnd(animation);
-            }
         });
         animatorSet.start();
     }
@@ -706,11 +701,6 @@ public class BottomSheet extends Dialog {
                     }
                 });
             }
-
-            @Override
-            public void onAnimationCancel(Object animation) {
-                onAnimationEnd(animation);
-            }
         });
         animatorSetProxy.start();
     }
@@ -744,11 +734,6 @@ public class BottomSheet extends Dialog {
                             }
                         }
                     });
-                }
-
-                @Override
-                public void onAnimationCancel(Object animation) {
-                    onAnimationEnd(animation);
                 }
             });
             animatorSetProxy.start();

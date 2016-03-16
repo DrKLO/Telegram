@@ -442,7 +442,7 @@ public class SetAdminsActivity extends BaseFragment implements NotificationCente
                 }
             } else if (type == 2) {
                 if (view == null) {
-                    view = new UserCell(mContext, 1, 2);
+                    view = new UserCell(mContext, 1, 2, false);
                     view.setBackgroundColor(0xffffffff);
                 }
                 UserCell userCell = (UserCell) view;
@@ -629,7 +629,7 @@ public class SetAdminsActivity extends BaseFragment implements NotificationCente
         @Override
         public View getView(int i, View view, ViewGroup viewGroup) {
             if (view == null) {
-                view = new UserCell(mContext, 1, 2);
+                view = new UserCell(mContext, 1, 2, false);
             }
 
             TLRPC.ChatParticipant participant = getItem(i);

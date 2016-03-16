@@ -671,8 +671,7 @@ JNIEXPORT int Java_org_telegram_messenger_MediaController_isOpusFile(JNIEnv *env
     return result;
 }
 
-static inline void set_bits(uint8_t *bytes, int32_t bitOffset, int32_t numBits, int32_t value) {
-    numBits = (unsigned int) (2 << (numBits - 1)) - 1;
+static inline void set_bits(uint8_t *bytes, int32_t bitOffset, int32_t value) {
     bytes += bitOffset / 8;
     bitOffset %= 8;
     *((int32_t *) bytes) |= (value << bitOffset);
@@ -727,7 +726,7 @@ JNIEXPORT jbyteArray Java_org_telegram_messenger_MediaController_getWaveform2(JN
     
     for (int i = 0; i < resultSamples; i++) {
         int32_t value = min(31, abs((int32_t) samples[i]) * 31 / peak);
-        set_bits(bytes, i * 5, 5, value & 31);
+        set_bits(bytes, i * 5, value & 31);
     }
     
     (*env)->ReleaseByteArrayElements(env, result, bytes, JNI_COMMIT);
@@ -805,7 +804,7 @@ JNIEXPORT jbyteArray Java_org_telegram_messenger_MediaController_getWaveform(JNI
         
         for (int i = 0; i < resultSamples; i++) {
             int32_t value = min(31, abs((int32_t) samples[i]) * 31 / peak);
-            set_bits(bytes, i * 5, 5, value & 31);
+            set_bits(bytes, i * 5, value & 31);
         }
 
         (*env)->ReleaseByteArrayElements(env, result, bytes, JNI_COMMIT);

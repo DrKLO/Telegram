@@ -67,8 +67,9 @@ public class Track {
         samplingFrequencyIndexMap.put(8000, 0xb);
     }
 
-    public Track(int id, MediaFormat format, boolean isAudio) throws Exception {
+    public Track(int id, MediaFormat format, boolean audio) throws Exception {
         trackId = id;
+        isAudio = audio;
         if (!isAudio) {
             sampleDurations.add((long) 3015);
             duration = 3015;
@@ -136,7 +137,6 @@ public class Track {
         } else {
             sampleDurations.add((long) 1024);
             duration = 1024;
-            isAudio = true;
             volume = 1;
             timeScale = format.getInteger(MediaFormat.KEY_SAMPLE_RATE);
             handler = "soun";
@@ -184,15 +184,18 @@ public class Track {
     }
 
     public void addSample(long offset, MediaCodec.BufferInfo bufferInfo) {
+        long delta = bufferInfo.presentationTimeUs - lastPresentationTimeUs;
+        if (delta < 0) {
+            return;
+        }
         boolean isSyncFrame = !isAudio && (bufferInfo.flags & MediaCodec.BUFFER_FLAG_SYNC_FRAME) != 0;
         samples.add(new Sample(offset, bufferInfo.size));
         if (syncSamples != null && isSyncFrame) {
             syncSamples.add(samples.size());
         }
 
-        long delta = bufferInfo.presentationTimeUs - lastPresentationTimeUs;
-        lastPresentationTimeUs = bufferInfo.presentationTimeUs;
         delta = (delta * timeScale + 500000L) / 1000000L;
+        lastPresentationTimeUs = bufferInfo.presentationTimeUs;
         if (!first) {
             sampleDurations.add(sampleDurations.size() - 1, delta);
             duration += delta;

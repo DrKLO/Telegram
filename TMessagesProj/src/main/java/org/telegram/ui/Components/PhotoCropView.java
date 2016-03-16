@@ -24,6 +24,7 @@ public class PhotoCropView extends FrameLayout {
 
     public interface PhotoCropViewDelegate {
         void needMoveImageTo(float x, float y, float s, boolean animated);
+        Bitmap getBitmap();
     }
 
     private boolean freeformCrop = true;
@@ -38,11 +39,11 @@ public class PhotoCropView extends FrameLayout {
     private float oldX = 0, oldY = 0;
     private int bitmapWidth = 1, bitmapHeight = 1, bitmapX, bitmapY;
     private float rectX = -1, rectY = -1;
-    private Bitmap bitmapToEdit;
     private float bitmapGlobalScale = 1;
     private float bitmapGlobalX = 0;
     private float bitmapGlobalY = 0;
     private PhotoCropViewDelegate delegate;
+    private Bitmap bitmapToEdit;
 
     private RectF animationStartValues;
     private RectF animationEndValues;
@@ -472,6 +473,11 @@ public class PhotoCropView extends FrameLayout {
     }
 
     private Bitmap createBitmap(int x, int y, int w, int h) {
+        Bitmap newBimap = delegate.getBitmap();
+        if (newBimap != null) {
+            bitmapToEdit = newBimap;
+        }
+
         Bitmap bitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
         Canvas canvas = new Canvas(bitmap);
         Paint paint = new Paint(Paint.FILTER_BITMAP_FLAG | Paint.DITHER_FLAG);
@@ -495,6 +501,11 @@ public class PhotoCropView extends FrameLayout {
     }
 
     public Bitmap getBitmap() {
+        Bitmap newBimap = delegate.getBitmap();
+        if (newBimap != null) {
+            bitmapToEdit = newBimap;
+        }
+
         float bitmapScaledWidth = bitmapWidth * bitmapGlobalScale;
         float bitmapScaledHeight = bitmapHeight * bitmapGlobalScale;
         float bitmapStartX = (getWidth() - AndroidUtilities.dp(28) - bitmapScaledWidth) / 2 + bitmapGlobalX + AndroidUtilities.dp(14);
@@ -657,6 +668,11 @@ public class PhotoCropView extends FrameLayout {
     @Override
     protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
         super.onLayout(changed, left, top, right, bottom);
+
+        Bitmap newBimap = delegate.getBitmap();
+        if (newBimap != null) {
+            bitmapToEdit = newBimap;
+        }
 
         if (bitmapToEdit == null) {
             return;

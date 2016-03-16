@@ -238,7 +238,7 @@ public class ContactsAdapter extends BaseSectionsAdapter {
             }
         } else if (type == 0) {
             if (convertView == null) {
-                convertView = new UserCell(mContext, 58, 1);
+                convertView = new UserCell(mContext, 58, 1, false);
                 ((UserCell) convertView).setStatusColors(0xffa8a8a8, 0xff3b84c0);
             }
 
