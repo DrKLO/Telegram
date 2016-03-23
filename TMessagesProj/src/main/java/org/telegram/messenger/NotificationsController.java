@@ -418,7 +418,11 @@ public class NotificationsController {
                             popupArray.add(0, messageObject);
                         }
                         delayedPushMessages.add(messageObject);
-                        pushMessages.add(0, messageObject);
+                        if (preferences.getBoolean("InvertMessageOrder", true)) {
+                            pushMessages.add(0, messageObject);
+                        } else {
+                            pushMessages.add(messageObject);
+                        }
                         pushMessagesDict.put(mid, messageObject);
                         if (original_dialog_id != dialog_id) {
                             pushDialogsOverrideMention.put(original_dialog_id, 1);

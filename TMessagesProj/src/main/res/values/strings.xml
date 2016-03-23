@@ -516,6 +516,7 @@
     <string name="NoBlocked">No blocked users yet</string>
     <string name="MessageNotifications">Message notifications</string>
     <string name="Alert">Alert</string>
+    <string name="InvertMessageOrder">Invert Message Order</string>
     <string name="MessagePreview">Message Preview</string>
     <string name="GroupNotifications">Group notifications</string>
     <string name="Sound">Sound</string>
