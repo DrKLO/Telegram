@@ -513,10 +513,7 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
                     if (i == messageOrderRow) {
                         enabled = preferences.getBoolean("InvertMessageOrder", true);
                         editor.putBoolean("InvertMessageOrder", !enabled);
-                    }// else if (i == groupAlertRow) {
-                    //    enabled = preferences.getBoolean("EnableGroup", true);
-                    //    editor.putBoolean("EnableGroup", !enabled);
-                    //}
+                    }
                     editor.commit();
                     updateServerNotificationsSettings(i == groupAlertRow);
 
