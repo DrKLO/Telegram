@@ -5,12 +5,13 @@
 #include <inttypes.h>
 #include <stdlib.h>
 #include <openssl/aes.h>
+#include <unistd.h>
 #include "utils.h"
 #include "sqlite.h"
-#include "gif.h"
 #include "image.h"
 
 int registerNativeTgNetFunctions(JavaVM *vm, JNIEnv *env);
+int gifvideoOnJNILoad(JavaVM *vm, JNIEnv *env);
 
 jint JNI_OnLoad(JavaVM *vm, void *reserved) {
 	JNIEnv *env = 0;
@@ -27,18 +28,20 @@ jint JNI_OnLoad(JavaVM *vm, void *reserved) {
     if (imageOnJNILoad(vm, reserved, env) == -1) {
         return -1;
     }
+    
+    if (gifvideoOnJNILoad(vm, env) == -1) {
+        return -1;
+    }
 
     if (registerNativeTgNetFunctions(vm, env) != JNI_TRUE) {
         return -1;
     }
     
-    gifOnJNILoad(vm, reserved, env);
-    
 	return JNI_VERSION_1_6;
 }
 
 void JNI_OnUnload(JavaVM *vm, void *reserved) {
-    gifOnJNIUnload(vm, reserved);
+
 }
 
 JNIEXPORT void Java_org_telegram_messenger_Utilities_aesIgeEncryption(JNIEnv *env, jclass class, jobject buffer, jbyteArray key, jbyteArray iv, jboolean encrypt, int offset, int length) {
@@ -56,4 +59,17 @@ JNIEXPORT void Java_org_telegram_messenger_Utilities_aesIgeEncryption(JNIEnv *en
     }
     (*env)->ReleaseByteArrayElements(env, key, keyBuff, JNI_ABORT);
     (*env)->ReleaseByteArrayElements(env, iv, ivBuff, 0);
+}
+
+JNIEXPORT jstring Java_org_telegram_messenger_Utilities_readlink(JNIEnv *env, jclass class, jstring path) {
+    static char buf[1000];
+    char *fileName = (*env)->GetStringUTFChars(env, path, NULL);
+    int result = readlink(fileName, buf, 999);
+    jstring value = 0;
+    if (result != -1) {
+        buf[result] = '\0';
+        value = (*env)->NewStringUTF(env, buf);
+    }
+    (*env)->ReleaseStringUTFChars(env, path, fileName);
+    return value;
 }

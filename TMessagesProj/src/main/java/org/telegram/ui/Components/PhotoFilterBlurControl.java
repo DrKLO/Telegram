@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2015.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.ui.Components;
@@ -61,7 +61,7 @@ public class PhotoFilterBlurControl extends FrameLayout {
     private float pointerScale = 1;
     private boolean isMoving;
     private boolean isZooming;
-    private boolean checkForMoving;
+    private boolean checkForMoving = true;
     private boolean checkForZooming;
 
     private int type;

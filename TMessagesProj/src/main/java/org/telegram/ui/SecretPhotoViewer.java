@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2015.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.ui;
@@ -202,6 +202,9 @@ public class SecretPhotoViewer implements NotificationCenter.NotificationCenterD
         windowView.setBackgroundColor(0xff000000);
         windowView.setFocusable(true);
         windowView.setFocusableInTouchMode(true);
+        if (Build.VERSION.SDK_INT >= 23) {
+            windowView.setFitsSystemWindows(true); //TODO ?
+        }
 
         containerView = new FrameLayoutDrawer(activity);
         containerView.setFocusable(false);

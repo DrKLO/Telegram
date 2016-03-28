@@ -3,12 +3,13 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2015.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.ui;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
@@ -77,12 +78,13 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
     private int beforeChangeIndex;
     private boolean ignoreChange;
     private CharSequence changeString;
-    private int maxCount = 199;
+    private int maxCount = 5000;
     private int chatType = ChatObject.CHAT_TYPE_CHAT;
     private boolean isAlwaysShare;
     private boolean isNeverShare;
     private boolean searchWas;
     private boolean searching;
+    private boolean isGroup;
     private HashMap<Integer, ChipSpan> selectedContacts = new HashMap<>();
     private ArrayList<ChipSpan> allSpans = new ArrayList<>();
 
@@ -97,7 +99,8 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
         chatType = args.getInt("chatType", ChatObject.CHAT_TYPE_CHAT);
         isAlwaysShare = args.getBoolean("isAlwaysShare", false);
         isNeverShare = args.getBoolean("isNeverShare", false);
-        maxCount = chatType == ChatObject.CHAT_TYPE_CHAT ? (MessagesController.getInstance().maxGroupCount - 1) : MessagesController.getInstance().maxBroadcastCount;
+        isGroup = args.getBoolean("isGroup", false);
+        maxCount = chatType == ChatObject.CHAT_TYPE_CHAT ? MessagesController.getInstance().maxMegagroupCount : MessagesController.getInstance().maxBroadcastCount;
     }
 
     @Override
@@ -124,9 +127,17 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBar.setAllowOverlayTitle(true);
         if (isAlwaysShare) {
-            actionBar.setTitle(LocaleController.getString("AlwaysShareWithTitle", R.string.AlwaysShareWithTitle));
+            if (isGroup) {
+                actionBar.setTitle(LocaleController.getString("AlwaysAllow", R.string.AlwaysAllow));
+            } else {
+                actionBar.setTitle(LocaleController.getString("AlwaysShareWithTitle", R.string.AlwaysShareWithTitle));
+            }
         } else if (isNeverShare) {
-            actionBar.setTitle(LocaleController.getString("NeverShareWithTitle", R.string.NeverShareWithTitle));
+            if (isGroup) {
+                actionBar.setTitle(LocaleController.getString("NeverAllow", R.string.NeverAllow));
+            } else {
+                actionBar.setTitle(LocaleController.getString("NeverShareWithTitle", R.string.NeverShareWithTitle));
+            }
         } else {
             actionBar.setTitle(chatType == ChatObject.CHAT_TYPE_CHAT ? LocaleController.getString("NewGroup", R.string.NewGroup) : LocaleController.getString("NewBroadcastList", R.string.NewBroadcastList));
             actionBar.setSubtitle(LocaleController.formatString("MembersCount", R.string.MembersCount, selectedContacts.size(), maxCount));
@@ -191,9 +202,17 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
         frameLayout.addView(userSelectEditText, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.LEFT, 10, 0, 10, 0));
 
         if (isAlwaysShare) {
-            userSelectEditText.setHint(LocaleController.getString("AlwaysShareWithPlaceholder", R.string.AlwaysShareWithPlaceholder));
+            if (isGroup) {
+                userSelectEditText.setHint(LocaleController.getString("AlwaysAllowPlaceholder", R.string.AlwaysAllowPlaceholder));
+            } else {
+                userSelectEditText.setHint(LocaleController.getString("AlwaysShareWithPlaceholder", R.string.AlwaysShareWithPlaceholder));
+            }
         } else if (isNeverShare) {
-            userSelectEditText.setHint(LocaleController.getString("NeverShareWithPlaceholder", R.string.NeverShareWithPlaceholder));
+            if (isGroup) {
+                userSelectEditText.setHint(LocaleController.getString("NeverAllowPlaceholder", R.string.NeverAllowPlaceholder));
+            } else {
+                userSelectEditText.setHint(LocaleController.getString("NeverShareWithPlaceholder", R.string.NeverShareWithPlaceholder));
+            }
         } else {
             userSelectEditText.setHint(LocaleController.getString("SendMessageTo", R.string.SendMessageTo));
         }
@@ -354,6 +373,14 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                     }
                 } else {
                     if (maxCount != 0 && selectedContacts.size() == maxCount) {
+                        return;
+                    }
+                    if (chatType == ChatObject.CHAT_TYPE_CHAT && selectedContacts.size() == MessagesController.getInstance().maxGroupCount - 1) {
+                        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                        builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
+                        builder.setMessage(LocaleController.getString("SoftUserLimitAlert", R.string.SoftUserLimitAlert));
+                        builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), null);
+                        showDialog(builder.create());
                         return;
                     }
                     ignoreChange = true;

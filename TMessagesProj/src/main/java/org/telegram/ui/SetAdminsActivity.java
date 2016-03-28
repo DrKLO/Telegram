@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2015.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.ui;
@@ -442,7 +442,7 @@ public class SetAdminsActivity extends BaseFragment implements NotificationCente
                 }
             } else if (type == 2) {
                 if (view == null) {
-                    view = new UserCell(mContext, 1, 2);
+                    view = new UserCell(mContext, 1, 2, false);
                     view.setBackgroundColor(0xffffffff);
                 }
                 UserCell userCell = (UserCell) view;
@@ -629,7 +629,7 @@ public class SetAdminsActivity extends BaseFragment implements NotificationCente
         @Override
         public View getView(int i, View view, ViewGroup viewGroup) {
             if (view == null) {
-                view = new UserCell(mContext, 1, 2);
+                view = new UserCell(mContext, 1, 2, false);
             }
 
             TLRPC.ChatParticipant participant = getItem(i);

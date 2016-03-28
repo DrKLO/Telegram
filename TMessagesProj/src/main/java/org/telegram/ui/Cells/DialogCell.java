@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2015.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.ui.Cells;
@@ -358,10 +358,10 @@ public class DialogCell extends BaseCell {
         } else {
             TLRPC.User fromUser = null;
             TLRPC.Chat fromChat = null;
-            if (message.messageOwner.from_id > 0) {
+            if (message.isFromUser()) {
                 fromUser = MessagesController.getInstance().getUser(message.messageOwner.from_id);
-            } else if (message.messageOwner.from_id < 0) {
-                fromChat = MessagesController.getInstance().getChat(-message.messageOwner.from_id);
+            } else {
+                fromChat = MessagesController.getInstance().getChat(message.messageOwner.to_id.channel_id);
             }
 
             if (lastMessageDate != 0) {
@@ -859,7 +859,11 @@ public class DialogCell extends BaseCell {
         if (messageLayout != null) {
             canvas.save();
             canvas.translate(messageLeft, messageTop);
-            messageLayout.draw(canvas);
+            try {
+                messageLayout.draw(canvas);
+            } catch (Exception e) {
+                FileLog.e("tmessages", e);
+            }
             canvas.restore();
         }
 

@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2015.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.ui.ActionBar;
@@ -187,11 +187,6 @@ public class DrawerLayoutContainer extends FrameLayout {
             public void onAnimationEnd(Object animator) {
                 onDrawerAnimationEnd(true);
             }
-
-            @Override
-            public void onAnimationCancel(Object animator) {
-                onDrawerAnimationEnd(true);
-            }
         });
         animatorSet.start();
         currentAnimation = animatorSet;
@@ -212,11 +207,6 @@ public class DrawerLayoutContainer extends FrameLayout {
         animatorSet.addListener(new AnimatorListenerAdapterProxy() {
             @Override
             public void onAnimationEnd(Object animator) {
-                onDrawerAnimationEnd(false);
-            }
-
-            @Override
-            public void onAnimationCancel(Object animator) {
                 onDrawerAnimationEnd(false);
             }
         });

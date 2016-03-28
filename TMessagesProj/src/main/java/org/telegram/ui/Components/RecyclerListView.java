@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2015.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.ui.Components;
@@ -16,6 +16,7 @@ import android.view.MotionEvent;
 import android.view.SoundEffectConstants;
 import android.view.View;
 import android.view.ViewConfiguration;
+import android.view.ViewGroup;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.support.widget.RecyclerView;
@@ -118,6 +119,21 @@ public class RecyclerListView extends RecyclerView {
 
             if ((action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_POINTER_DOWN) && currentChildView == null && isScrollIdle) {
                 currentChildView = view.findChildViewUnder(event.getX(), event.getY());
+                if (currentChildView instanceof ViewGroup) {
+                    ViewGroup viewGroup = (ViewGroup) currentChildView;
+                    float x = event.getX() - currentChildView.getLeft();
+                    float y = event.getY() - currentChildView.getTop();
+                    final int count = viewGroup.getChildCount();
+                    for (int i = count - 1; i >= 0; i--) {
+                        final View child = viewGroup.getChildAt(i);
+                        if (x >= child.getLeft() && x <= child.getRight() && y >= child.getTop() && y <= child.getBottom()) {
+                            if (child.isClickable()) {
+                                currentChildView = null;
+                                break;
+                            }
+                        }
+                    }
+                }
                 currentChildPosition = -1;
                 if (currentChildView != null) {
                     currentChildPosition = view.getChildPosition(currentChildView);

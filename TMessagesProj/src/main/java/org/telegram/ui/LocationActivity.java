@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2015.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.ui;
@@ -130,6 +130,7 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
         super.onFragmentCreate();
         swipeBackEnabled = false;
         NotificationCenter.getInstance().addObserver(this, NotificationCenter.closeChats);
+        NotificationCenter.getInstance().addObserver(this, NotificationCenter.locationPermissionGranted);
         if (messageObject != null) {
             NotificationCenter.getInstance().addObserver(this, NotificationCenter.updateInterfaces);
         }
@@ -140,6 +141,7 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
     public void onFragmentDestroy() {
         super.onFragmentDestroy();
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.updateInterfaces);
+        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.locationPermissionGranted);
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.closeChats);
         if (mapView != null) {
             mapView.onDestroy();
@@ -502,7 +504,11 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
                     return super.onInterceptTouchEvent(ev);
                 }
             };
-            mapView.onCreate(null);
+            try {
+                mapView.onCreate(null);
+            } catch (Exception e) {
+                FileLog.e("tmessages", e);
+            }
             try {
                 MapsInitializer.initialize(context);
                 googleMap = mapView.getMap();
@@ -562,7 +568,7 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
             emptyTextLayout = new LinearLayout(context);
             emptyTextLayout.setVisibility(View.GONE);
             emptyTextLayout.setOrientation(LinearLayout.VERTICAL);
-            frameLayout.addView(emptyTextLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.TOP));
+            frameLayout.addView(emptyTextLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.TOP, 0, 100, 0, 0));
             emptyTextLayout.setOnTouchListener(new View.OnTouchListener() {
                 @Override
                 public boolean onTouch(View v, MotionEvent event) {
@@ -620,7 +626,11 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
         }
 
         if (googleMap != null) {
-            googleMap.setMyLocationEnabled(true);
+            try {
+                googleMap.setMyLocationEnabled(true);
+            } catch (Exception e) {
+                FileLog.e("tmessages", e);
+            }
             googleMap.getUiSettings().setMyLocationButtonEnabled(false);
             googleMap.getUiSettings().setZoomControlsEnabled(false);
             googleMap.getUiSettings().setCompassEnabled(false);
@@ -807,10 +817,10 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
         if (messageObject != null && avatarImageView != null) {
             int fromId = messageObject.messageOwner.from_id;
             if (messageObject.isForwarded()) {
-                if (messageObject.messageOwner.fwd_from_id.user_id != 0) {
-                    fromId = messageObject.messageOwner.fwd_from_id.user_id;
+                if (messageObject.messageOwner.fwd_from.channel_id != 0) {
+                    fromId = -messageObject.messageOwner.fwd_from.channel_id;
                 } else {
-                    fromId = -messageObject.messageOwner.fwd_from_id.channel_id;
+                    fromId = messageObject.messageOwner.fwd_from.from_id;
                 }
             }
             String name = "";
@@ -891,6 +901,14 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
             }
         } else if (id == NotificationCenter.closeChats) {
             removeSelfFromStack();
+        } else if (id == NotificationCenter.locationPermissionGranted) {
+            if (googleMap != null) {
+                try {
+                    googleMap.setMyLocationEnabled(true);
+                } catch (Exception e) {
+                    FileLog.e("tmessages", e);
+                }
+            }
         }
     }
 
@@ -911,7 +929,11 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
         super.onResume();
         AndroidUtilities.removeAdjustResize(getParentActivity(), classGuid);
         if (mapView != null) {
-            mapView.onResume();
+            try {
+                mapView.onResume();
+            } catch (Throwable e) {
+                FileLog.e("tmessages", e);
+            }
         }
         updateUserData();
         fixLayoutInternal(true);

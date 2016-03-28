@@ -27,7 +27,7 @@ import android.view.Surface;
 
 @TargetApi(17)
 public class InputSurface {
-    private static final boolean VERBOSE = false;
+
     private static final int EGL_RECORDABLE_ANDROID = 0x3142;
     private static final int EGL_OPENGL_ES2_BIT = 4;
     private EGLDisplay mEGLDisplay;
@@ -124,8 +124,7 @@ public class InputSurface {
 
     private void checkEglError(String msg) {
         boolean failed = false;
-        int error;
-        while ((error = EGL14.eglGetError()) != EGL14.EGL_SUCCESS) {
+        while (EGL14.eglGetError() != EGL14.EGL_SUCCESS) {
             failed = true;
         }
         if (failed) {

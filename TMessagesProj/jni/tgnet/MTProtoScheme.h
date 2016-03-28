@@ -657,7 +657,7 @@ public:
 class TL_config : public TLObject {
 
 public:
-    static const uint32_t constructor = 0x6cb6e65e;
+    static const uint32_t constructor = 0x317ceef4;
 
     int32_t date;
     int32_t expires;
@@ -676,6 +676,8 @@ public:
     int32_t chat_big_size;
     int32_t push_chat_period_ms;
     int32_t push_chat_limit;
+    int32_t saved_gifs_limit;
+    int32_t edit_time_limit;
     std::vector<std::unique_ptr<TL_disabledFeature>> disabled_features;
 
     static TL_config *TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, bool &error);
@@ -860,6 +862,8 @@ public:
     std::unique_ptr<UserStatus> status;
     int32_t flags;
     int32_t bot_info_version;
+    std::string restriction_reason;
+    std::string bot_inline_placeholder;
 
     static User *TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, bool &error);
 };
@@ -876,7 +880,7 @@ public:
 class TL_user : public User {
 
 public:
-    static const uint32_t constructor = 0x22e49072;
+    static const uint32_t constructor = 0xd10d979a;
 
     void readParams(NativeByteBuffer *stream, bool &error);
     void serializeToStream(NativeByteBuffer *stream);
@@ -978,6 +982,8 @@ class TL_updatesTooLong : public TLObject {
 
 public:
     static const uint32_t constructor = 0xe317af7e;
+    
+    void serializeToStream(NativeByteBuffer *stream);
 };
 
 #endif

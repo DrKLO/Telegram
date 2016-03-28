@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2015.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.ui;
@@ -241,8 +241,8 @@ public class CacheControlActivity extends BaseFragment {
                             File[] array = file.listFiles();
                             if (array != null) {
                                 for (int b = 0; b < array.length; b++) {
+                                    String name = array[b].getName().toLowerCase();
                                     if (documentsMusicType == 1 || documentsMusicType == 2) {
-                                        String name = array[b].getName().toLowerCase();
                                         if (name.endsWith(".mp3") || name.endsWith(".m4a")) {
                                             if (documentsMusicType == 1) {
                                                 continue;
@@ -250,6 +250,9 @@ public class CacheControlActivity extends BaseFragment {
                                         } else if (documentsMusicType == 2) {
                                             continue;
                                         }
+                                    }
+                                    if (name.equals(".nomedia")) {
+                                        continue;
                                     }
                                     if (array[b].isFile()) {
                                         array[b].delete();
@@ -350,7 +353,6 @@ public class CacheControlActivity extends BaseFragment {
                         }
                     });
                     showDialog(builder.create());
-
                 } else if (i == databaseRow) {
                     AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                     builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
@@ -411,10 +413,9 @@ public class CacheControlActivity extends BaseFragment {
                                                         NativeByteBuffer data = new NativeByteBuffer(cursor2.byteArrayLength(0));
                                                         if (data != null && cursor2.byteBufferValue(0, data) != 0) {
                                                             TLRPC.Message message = TLRPC.Message.TLdeserialize(data, data.readInt32(false), false);
-                                                            if (message == null) {
-                                                                continue;
+                                                            if (message != null) {
+                                                                arrayList.add(message);
                                                             }
-                                                            arrayList.add(message);
                                                         }
                                                         data.reuse();
                                                     }

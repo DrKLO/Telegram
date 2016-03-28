@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2015.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.ui;
@@ -309,6 +309,11 @@ public class PopupNotificationActivity extends Activity implements NotificationC
             }
 
             @Override
+            public void onMessageEditEnd() {
+
+            }
+
+            @Override
             public void needSendTyping() {
                 if (currentMessageObject != null) {
                     MessagesController.getInstance().sendTyping(currentMessageObject.getDialogId(), 0, classGuid);
@@ -327,6 +332,11 @@ public class PopupNotificationActivity extends Activity implements NotificationC
 
             @Override
             public void onWindowSizeChanged(int size) {
+
+            }
+
+            @Override
+            public void onStickersTab(boolean opened) {
 
             }
         });

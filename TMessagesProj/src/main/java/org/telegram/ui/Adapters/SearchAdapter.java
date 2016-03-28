@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2015.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.ui.Adapters;
@@ -238,7 +238,7 @@ public class SearchAdapter extends BaseSearchAdapter {
         } else {
             if (view == null) {
                 if (useUserCell) {
-                    view = new UserCell(mContext, 1, 1);
+                    view = new UserCell(mContext, 1, 1, false);
                     if (checkedMap != null) {
                         ((UserCell) view).setChecked(false, false);
                     }

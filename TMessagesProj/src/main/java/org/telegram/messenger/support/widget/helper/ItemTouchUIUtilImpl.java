@@ -21,16 +21,16 @@ import android.support.v4.view.ViewCompat;
 import org.telegram.messenger.support.widget.RecyclerView;
 import android.view.View;
 
+
 /**
  * Package private class to keep implementations. Putting them inside ItemTouchUIUtil makes them
  * public API, which is not desired in this case.
  */
 class ItemTouchUIUtilImpl {
-
     static class Lollipop extends Honeycomb {
         @Override
         public void onDraw(Canvas c, RecyclerView recyclerView, View view,
-                           float dX, float dY, int actionState, boolean isCurrentlyActive) {
+                float dX, float dY, int actionState, boolean isCurrentlyActive) {
             if (isCurrentlyActive) {
                 Object originalElevation = view.getTag();
                 if (originalElevation == null) {
@@ -85,14 +85,14 @@ class ItemTouchUIUtilImpl {
 
         @Override
         public void onDraw(Canvas c, RecyclerView recyclerView, View view,
-                           float dX, float dY, int actionState, boolean isCurrentlyActive) {
+                float dX, float dY, int actionState, boolean isCurrentlyActive) {
             ViewCompat.setTranslationX(view, dX);
             ViewCompat.setTranslationY(view, dY);
         }
 
         @Override
         public void onDrawOver(Canvas c, RecyclerView recyclerView,
-                               View view, float dX, float dY, int actionState, boolean isCurrentlyActive) {
+                View view, float dX, float dY, int actionState, boolean isCurrentlyActive) {
 
         }
     }
@@ -100,7 +100,7 @@ class ItemTouchUIUtilImpl {
     static class Gingerbread implements ItemTouchUIUtil {
 
         private void draw(Canvas c, RecyclerView parent, View view,
-                          float dX, float dY) {
+                float dX, float dY) {
             c.save();
             c.translate(dX, dY);
             parent.drawChild(c, view, 0);
@@ -119,7 +119,7 @@ class ItemTouchUIUtilImpl {
 
         @Override
         public void onDraw(Canvas c, RecyclerView recyclerView, View view,
-                           float dX, float dY, int actionState, boolean isCurrentlyActive) {
+                float dX, float dY, int actionState, boolean isCurrentlyActive) {
             if (actionState != ItemTouchHelper.ACTION_STATE_DRAG) {
                 draw(c, recyclerView, view, dX, dY);
             }
@@ -127,8 +127,8 @@ class ItemTouchUIUtilImpl {
 
         @Override
         public void onDrawOver(Canvas c, RecyclerView recyclerView,
-                               View view, float dX, float dY,
-                               int actionState, boolean isCurrentlyActive) {
+                View view, float dX, float dY,
+                int actionState, boolean isCurrentlyActive) {
             if (actionState == ItemTouchHelper.ACTION_STATE_DRAG) {
                 draw(c, recyclerView, view, dX, dY);
             }

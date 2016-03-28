@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <opusfile.h>
+#include <math.h>
 #include "utils.h"
 
 typedef struct {
@@ -662,6 +663,155 @@ JNIEXPORT int Java_org_telegram_messenger_MediaController_isOpusFile(JNIEnv *env
         
         result = error == OPUS_OK;
     }
+    
+    if (pathStr != 0) {
+        (*env)->ReleaseStringUTFChars(env, path, pathStr);
+    }
+    
+    return result;
+}
+
+static inline void set_bits(uint8_t *bytes, int32_t bitOffset, int32_t value) {
+    bytes += bitOffset / 8;
+    bitOffset %= 8;
+    *((int32_t *) bytes) |= (value << bitOffset);
+}
+
+JNIEXPORT jbyteArray Java_org_telegram_messenger_MediaController_getWaveform2(JNIEnv *env, jclass class, jshortArray array, jint length) {
+    
+    jshort *sampleBuffer = (*env)->GetShortArrayElements(env, array, 0);
+    
+    jbyteArray result = 0;
+    int32_t resultSamples = 100;
+    uint16_t *samples = malloc(100 * 2);
+    uint64_t sampleIndex = 0;
+    uint16_t peakSample = 0;
+    int32_t sampleRate = (int32_t) max(1, length / resultSamples);
+    int index = 0;
+
+    for (int i = 0; i < length; i++) {
+        uint16_t sample = (uint16_t) abs(sampleBuffer[i]);
+        if (sample > peakSample) {
+            peakSample = sample;
+        }
+        if (sampleIndex++ % sampleRate == 0) {
+            if (index < resultSamples) {
+                samples[index++] = peakSample;
+            }
+            peakSample = 0;
+        }
+    }
+    
+    int64_t sumSamples = 0;
+    for (int i = 0; i < resultSamples; i++) {
+        sumSamples += samples[i];
+    }
+    uint16_t peak = (uint16_t) (sumSamples * 1.8f / resultSamples);
+    if (peak < 2500) {
+        peak = 2500;
+    }
+    
+    for (int i = 0; i < resultSamples; i++) {
+        uint16_t sample = (uint16_t) ((int64_t) samples[i]);
+        if (sample > peak) {
+            samples[i] = peak;
+        }
+    }
+    
+    (*env)->ReleaseShortArrayElements(env, array, sampleBuffer, 0);
+    
+    int bitstreamLength = (resultSamples * 5) / 8 + (((resultSamples * 5) % 8) == 0 ? 0 : 1);
+    result = (*env)->NewByteArray(env, bitstreamLength);
+    jbyte *bytes = (*env)->GetByteArrayElements(env, result, NULL);
+    
+    for (int i = 0; i < resultSamples; i++) {
+        int32_t value = min(31, abs((int32_t) samples[i]) * 31 / peak);
+        set_bits(bytes, i * 5, value & 31);
+    }
+    
+    (*env)->ReleaseByteArrayElements(env, result, bytes, JNI_COMMIT);
+    free(samples);
+    
+    return result;
+}
+
+int16_t *sampleBuffer = NULL;
+
+
+JNIEXPORT jbyteArray Java_org_telegram_messenger_MediaController_getWaveform(JNIEnv *env, jclass class, jstring path) {
+    const char *pathStr = (*env)->GetStringUTFChars(env, path, 0);
+    jbyteArray result = 0;
+    
+    int error = OPUS_OK;
+    OggOpusFile *opusFile = op_open_file(pathStr, &error);
+    if (opusFile != NULL && error == OPUS_OK) {
+        int64_t totalSamples = op_pcm_total(opusFile, -1);
+        int32_t resultSamples = 100;
+        int32_t sampleRate = (int32_t) max(1, totalSamples / resultSamples);
+        
+        uint16_t *samples = malloc(100 * 2);
+        
+        int bufferSize = 1024 * 128;
+        if (sampleBuffer == NULL) {
+            sampleBuffer = malloc(bufferSize);
+        }
+        uint64_t sampleIndex = 0;
+        uint16_t peakSample = 0;
+        
+        int index = 0;
+        
+        while (1) {
+            int readSamples = op_read(opusFile, sampleBuffer, bufferSize / 2, NULL);
+            for (int i = 0; i < readSamples; i++) {
+                uint16_t sample = (uint16_t) abs(sampleBuffer[i]);
+                if (sample > peakSample) {
+                    peakSample = sample;
+                }
+                if (sampleIndex++ % sampleRate == 0) {
+                    if (index < resultSamples) {
+                        samples[index++] = peakSample;
+                    }
+                    peakSample = 0;
+                }
+            }
+            if (readSamples == 0) {
+                break;
+            }
+        }
+        
+        int64_t sumSamples = 0;
+        for (int i = 0; i < resultSamples; i++) {
+            sumSamples += samples[i];
+        }
+        uint16_t peak = (uint16_t) (sumSamples * 1.8f / resultSamples);
+        if (peak < 2500) {
+            peak = 2500;
+        }
+        
+        for (int i = 0; i < resultSamples; i++) {
+            uint16_t sample = (uint16_t) ((int64_t) samples[i]);
+            if (sample > peak) {
+                samples[i] = peak;
+            }
+        }
+        
+        //free(sampleBuffer);
+        op_free(opusFile);
+        
+        int bitstreamLength = (resultSamples * 5) / 8 + (((resultSamples * 5) % 8) == 0 ? 0 : 1);
+        result = (*env)->NewByteArray(env, bitstreamLength);
+        jbyte *bytes = (*env)->GetByteArrayElements(env, result, NULL);
+        
+        for (int i = 0; i < resultSamples; i++) {
+            int32_t value = min(31, abs((int32_t) samples[i]) * 31 / peak);
+            set_bits(bytes, i * 5, value & 31);
+        }
+
+        (*env)->ReleaseByteArrayElements(env, result, bytes, JNI_COMMIT);
+        free(samples);
+    }
+    
+    
     
     if (pathStr != 0) {
         (*env)->ReleaseStringUTFChars(env, path, pathStr);

@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2015.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.messenger;
@@ -11,6 +11,7 @@ package org.telegram.messenger;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.PendingIntent;
 import android.content.ContentUris;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -19,6 +20,7 @@ import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.database.Cursor;
+import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.graphics.Point;
 import android.graphics.Rect;
@@ -26,7 +28,10 @@ import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Build;
+import android.os.Bundle;
 import android.os.Environment;
+import android.os.Parcelable;
+import android.provider.Browser;
 import android.provider.DocumentsContract;
 import android.provider.MediaStore;
 import android.text.Spannable;
@@ -82,7 +87,9 @@ public class AndroidUtilities {
     private static final Hashtable<String, Typeface> typefaceCache = new Hashtable<>();
     private static int prevOrientation = -10;
     private static boolean waitingForSms = false;
+    private static boolean waitingForCall = false;
     private static final Object smsLock = new Object();
+    private static final Object callLock = new Object();
 
     public static int statusBarHeight = 0;
     public static float density = 1;
@@ -235,6 +242,20 @@ public class AndroidUtilities {
     public static void setWaitingForSms(boolean value) {
         synchronized (smsLock) {
             waitingForSms = value;
+        }
+    }
+
+    public static boolean isWaitingForCall() {
+        boolean value;
+        synchronized (callLock) {
+            value = waitingForCall;
+        }
+        return value;
+    }
+
+    public static void setWaitingForCall(boolean value) {
+        synchronized (callLock) {
+            waitingForCall = value;
         }
     }
 
@@ -406,6 +427,46 @@ public class AndroidUtilities {
                 leftSide = dp(320);
             }
             return Math.min(smallSide, maxSide - leftSide);
+        }
+    }
+
+    public static void openUrl(Context context, String url) {
+        if (context == null || url == null) {
+            return;
+        }
+        openUrl(context, Uri.parse(url));
+    }
+
+    public static void openUrl(Context context, Uri uri) {
+        if (context == null || uri == null) {
+            return;
+        }
+
+        try {
+            Intent intent = new Intent(Intent.ACTION_VIEW, uri);
+            if (MediaController.getInstance().canCustomTabs()) {
+                intent.putExtra("android.support.customtabs.extra.SESSION", (Parcelable) null);
+                intent.putExtra("android.support.customtabs.extra.TOOLBAR_COLOR", 0xff54759e);
+                intent.putExtra("android.support.customtabs.extra.TITLE_VISIBILITY", 1);
+
+                Intent actionIntent = new Intent(Intent.ACTION_SEND);
+                actionIntent.setType("text/plain");
+                actionIntent.putExtra(Intent.EXTRA_TEXT, uri.toString());
+                actionIntent.putExtra(Intent.EXTRA_SUBJECT, "");
+                PendingIntent pendingIntent = PendingIntent.getActivity(ApplicationLoader.applicationContext, 0, actionIntent, PendingIntent.FLAG_ONE_SHOT);
+
+                Bundle bundle = new Bundle();
+                bundle.putInt("android.support.customtabs.customaction.ID", 0);
+                bundle.putParcelable("android.support.customtabs.customaction.ICON", BitmapFactory.decodeResource(context.getResources(), R.drawable.abc_ic_menu_share_mtrl_alpha));
+                bundle.putString("android.support.customtabs.customaction.DESCRIPTION", LocaleController.getString("ShareFile", R.string.ShareFile));
+                bundle.putParcelable("android.support.customtabs.customaction.PENDING_INTENT", pendingIntent);
+                intent.putExtra("android.support.customtabs.extra.ACTION_BUTTON_BUNDLE", bundle);
+                intent.putExtra("android.support.customtabs.extra.TINT_ACTION_BUTTON", false);
+            }
+            intent.putExtra(Browser.EXTRA_APPLICATION_ID, context.getPackageName());
+            context.startActivity(intent);
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
         }
     }
 
@@ -892,7 +953,11 @@ public class AndroidUtilities {
             cursor = context.getContentResolver().query(uri, projection, selection, selectionArgs, null);
             if (cursor != null && cursor.moveToFirst()) {
                 final int column_index = cursor.getColumnIndexOrThrow(column);
-                return cursor.getString(column_index);
+                String value = cursor.getString(column_index);
+                if (value.startsWith("content://") || !value.startsWith("/") && !value.startsWith("file://")) {
+                    return null;
+                }
+                return value;
             }
         } catch (Exception e) {
             FileLog.e("tmessages", e);
@@ -1056,5 +1121,12 @@ public class AndroidUtilities {
             }
         }
         return true;
+    }
+
+    public static byte[] calcAuthKeyHash(byte[] auth_key) {
+        byte[] sha1 = Utilities.computeSHA1(auth_key);
+        byte[] key_hash = new byte[16];
+        System.arraycopy(sha1, 0, key_hash, 0, 16);
+        return key_hash;
     }
 }

@@ -66,6 +66,9 @@ TLObject *TLClassStore::TLdeserialize(NativeByteBuffer *stream, uint32_t bytes, 
         case TL_destroy_session_none::constructor:
             object = new TL_destroy_session_none();
             break;
+        case TL_updatesTooLong::constructor:
+            object = new TL_updatesTooLong();
+            break;
         default:
             return nullptr;
     }
@@ -942,6 +945,8 @@ void TL_config::readParams(NativeByteBuffer *stream, bool &error) {
     chat_big_size = stream->readInt32(&error);
     push_chat_period_ms = stream->readInt32(&error);
     push_chat_limit = stream->readInt32(&error);
+    saved_gifs_limit = stream->readInt32(&error);
+    edit_time_limit = stream->readInt32(&error);
     magic = stream->readUint32(&error);
     if (magic != 0x1cb5c415) {
         error = true;
@@ -982,6 +987,8 @@ void TL_config::serializeToStream(NativeByteBuffer *stream) {
     stream->writeInt32(chat_big_size);
     stream->writeInt32(push_chat_period_ms);
     stream->writeInt32(push_chat_limit);
+    stream->writeInt32(saved_gifs_limit);
+    stream->writeInt32(edit_time_limit);
     stream->writeInt32(0x1cb5c415);
     count = (uint32_t) disabled_features.size();
     stream->writeInt32(count);
@@ -1053,7 +1060,7 @@ User *User::TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, bool &
         case 0x200250ba:
             result = new TL_userEmpty();
             break;
-        case 0x22e49072:
+        case 0xd10d979a:
             result = new TL_user();
             break;
         default:
@@ -1101,6 +1108,12 @@ void TL_user::readParams(NativeByteBuffer *stream, bool &error) {
     if ((flags & 16384) != 0) {
         bot_info_version = stream->readInt32(&error);
     }
+    if ((flags & 262144) != 0) {
+        restriction_reason = stream->readString(&error);
+    }
+    if ((flags & 524288) != 0) {
+        bot_inline_placeholder = stream->readString(&error);
+    }
 }
 
 void TL_user::serializeToStream(NativeByteBuffer *stream) {
@@ -1130,6 +1143,12 @@ void TL_user::serializeToStream(NativeByteBuffer *stream) {
     }
     if ((flags & 16384) != 0) {
         stream->writeInt32(bot_info_version);
+    }
+    if ((flags & 262144) != 0) {
+        stream->writeString(restriction_reason);
+    }
+    if ((flags & 524288) != 0) {
+        stream->writeString(bot_inline_placeholder);
     }
 }
 
@@ -1395,4 +1414,8 @@ void TL_auth_sendCode::serializeToStream(NativeByteBuffer *stream) {
     stream->writeInt32(api_id);
     stream->writeString(api_hash);
     stream->writeString(lang_code);
+}
+
+void TL_updatesTooLong::serializeToStream(NativeByteBuffer *stream) {
+    stream->writeInt32(constructor);
 }

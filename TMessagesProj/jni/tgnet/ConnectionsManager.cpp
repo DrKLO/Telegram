@@ -715,18 +715,7 @@ void ConnectionsManager::onConnectionDataReceived(Connection *connection, Native
         }
 
         if (!doNotProcess) {
-            TLObject *object = nullptr;
-            if (connection->getConnectionType() == ConnectionTypePush) {
-                uint32_t position = data->position();
-                uint32_t constructor = data->readUint32(&error);
-                if (constructor == TL_updatesTooLong::constructor) {
-                    object = new TL_updatesTooLong();
-                }
-                data->position(position);
-            }
-            if (object == nullptr) {
-                object = TLdeserialize(nullptr, messageLength, data);
-            }
+            TLObject *object = TLdeserialize(nullptr, messageLength, data);
             if (object != nullptr) {
                 DEBUG_D("connection(%p, dc%u, type %d) received object %s", connection, datacenter->getDatacenterId(), connection->getConnectionType(), typeid(*object).name());
                 processServerResponse(object, messageId, messageSeqNo, messageServerSalt, connection, 0, 0);
@@ -959,6 +948,8 @@ void ConnectionsManager::processServerResponse(TLObject *message, int64_t messag
                             TLObject *object = TLdeserialize(request->rawRequest, unpacked_data->limit(), unpacked_data);
                             if (object != nullptr) {
                                 response->result = std::unique_ptr<TLObject>(object);
+                            } else {
+                                response->result = std::unique_ptr<TLObject>(nullptr);
                             }
                         }
 
@@ -1215,19 +1206,29 @@ void ConnectionsManager::processServerResponse(TLObject *message, int64_t messag
             }
         }
         data->reuse();
-    } else if (connection->connectionType == ConnectionTypePush && typeInfo == typeid(TL_updatesTooLong)) {
-        if (networkPaused) {
-            lastPauseTime = getCurrentTimeMillis();
-            nextSleepTimeout = 30000;
-            DEBUG_D("received internal push: wakeup network in background");
-        } else if (lastPauseTime != 0) {
-            lastPauseTime = getCurrentTimeMillis();
-            DEBUG_D("received internal push: reset sleep timeout");
+    } else if (typeInfo == typeid(TL_updatesTooLong)) {
+        if (connection->connectionType == ConnectionTypePush) {
+            if (networkPaused) {
+                lastPauseTime = getCurrentTimeMillis();
+                nextSleepTimeout = 30000;
+                DEBUG_D("received internal push: wakeup network in background");
+            } else if (lastPauseTime != 0) {
+                lastPauseTime = getCurrentTimeMillis();
+                DEBUG_D("received internal push: reset sleep timeout");
+            } else {
+                DEBUG_D("received internal push");
+            }
+            if (delegate != nullptr) {
+                delegate->onInternalPushReceived();
+            }
         } else {
-            DEBUG_D("received internal push");
-        }
-        if (delegate != nullptr) {
-            delegate->onInternalPushReceived();
+            if (delegate != nullptr) {
+                NativeByteBuffer *data = BuffersStorage::getInstance().getFreeBuffer(message->getObjectSize());
+                message->serializeToStream(data);
+                data->position(0);
+                delegate->onUnparsedMessageReceived(0, data, connection->getConnectionType());
+                data->reuse();
+            }
         }
     }
 }
@@ -2223,7 +2224,7 @@ void ConnectionsManager::updateDcSettings(uint32_t dcNum) {
             return;
         }
 
-        if (error == nullptr) {
+        if (response != nullptr) {
             TL_config *config = (TL_config *) response;
             int32_t updateIn = config->expires - getCurrentTime();
             if (updateIn <= 0) {

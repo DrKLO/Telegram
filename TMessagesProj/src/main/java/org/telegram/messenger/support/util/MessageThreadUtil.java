@@ -18,10 +18,11 @@ package org.telegram.messenger.support.util;
 
 import android.os.Handler;
 import android.os.Looper;
+import android.support.v4.content.ParallelExecutorCompat;
 import android.util.Log;
 
 import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 class MessageThreadUtil<T> implements ThreadUtil<T> {
 
@@ -83,7 +84,8 @@ class MessageThreadUtil<T> implements ThreadUtil<T> {
     public BackgroundCallback<T> getBackgroundProxy(final BackgroundCallback<T> callback) {
         return new BackgroundCallback<T>() {
             final private MessageQueue mQueue = new MessageQueue();
-            final private Executor mExecutor = Executors.newSingleThreadExecutor();
+            final private Executor mExecutor = ParallelExecutorCompat.getParallelExecutor();
+            AtomicBoolean mBackgroundRunning = new AtomicBoolean(false);
 
             private static final int REFRESH = 1;
             private static final int UPDATE_RANGE = 2;
@@ -114,42 +116,51 @@ class MessageThreadUtil<T> implements ThreadUtil<T> {
 
             private void sendMessage(SyncQueueItem msg) {
                 mQueue.sendMessage(msg);
-                mExecutor.execute(mBackgroundRunnable);
+                maybeExecuteBackgroundRunnable();
             }
 
             private void sendMessageAtFrontOfQueue(SyncQueueItem msg) {
                 mQueue.sendMessageAtFrontOfQueue(msg);
-                mExecutor.execute(mBackgroundRunnable);
+                maybeExecuteBackgroundRunnable();
+            }
+
+            private void maybeExecuteBackgroundRunnable() {
+                if (mBackgroundRunning.compareAndSet(false, true)) {
+                    mExecutor.execute(mBackgroundRunnable);
+                }
             }
 
             private Runnable mBackgroundRunnable = new Runnable() {
                 @Override
                 public void run() {
-                    SyncQueueItem msg = mQueue.next();
-                    if (msg == null) {
-                        return;
+                    while (true) {
+                        SyncQueueItem msg = mQueue.next();
+                        if (msg == null) {
+                            break;
+                        }
+                        switch (msg.what) {
+                            case REFRESH:
+                                mQueue.removeMessages(REFRESH);
+                                callback.refresh(msg.arg1);
+                                break;
+                            case UPDATE_RANGE:
+                                mQueue.removeMessages(UPDATE_RANGE);
+                                mQueue.removeMessages(LOAD_TILE);
+                                callback.updateRange(
+                                        msg.arg1, msg.arg2, msg.arg3, msg.arg4, msg.arg5);
+                                break;
+                            case LOAD_TILE:
+                                callback.loadTile(msg.arg1, msg.arg2);
+                                break;
+                            case RECYCLE_TILE:
+                                //noinspection unchecked
+                                callback.recycleTile((TileList.Tile<T>) msg.data);
+                                break;
+                            default:
+                                Log.e("ThreadUtil", "Unsupported message, what=" + msg.what);
+                        }
                     }
-                    switch (msg.what) {
-                        case REFRESH:
-                            mQueue.removeMessages(REFRESH);
-                            callback.refresh(msg.arg1);
-                            break;
-                        case UPDATE_RANGE:
-                            mQueue.removeMessages(UPDATE_RANGE);
-                            mQueue.removeMessages(LOAD_TILE);
-                            callback.updateRange(
-                                    msg.arg1, msg.arg2, msg.arg3, msg.arg4, msg.arg5);
-                            break;
-                        case LOAD_TILE:
-                            callback.loadTile(msg.arg1, msg.arg2);
-                            break;
-                        case RECYCLE_TILE:
-                            //noinspection unchecked
-                            callback.recycleTile((TileList.Tile<T>) msg.data);
-                            break;
-                        default:
-                            Log.e("ThreadUtil", "Unsupported message, what=" + msg.what);
-                    }
+                    mBackgroundRunning.set(false);
                 }
             };
         };

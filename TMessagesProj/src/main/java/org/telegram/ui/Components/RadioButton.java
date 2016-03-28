@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2015.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.ui.Components;
@@ -85,6 +85,7 @@ public class RadioButton extends View {
     public void setColor(int color1, int color2) {
         color = color1;
         checkedColor = color2;
+        invalidate();
     }
 
     private void cancelCheckAnimator() {

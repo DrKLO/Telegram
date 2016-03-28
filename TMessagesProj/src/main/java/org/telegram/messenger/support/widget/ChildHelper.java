@@ -208,8 +208,8 @@ class ChildHelper {
         for (int i = 0; i < count; i++) {
             final View view = mHiddenViews.get(i);
             RecyclerView.ViewHolder holder = mCallback.getChildViewHolder(view);
-            if (holder.getLayoutPosition() == position && !holder.isInvalid() &&
-                    (type == RecyclerView.INVALID_TYPE || holder.getItemViewType() == type)) {
+            if (holder.getLayoutPosition() == position && !holder.isInvalid() && !holder.isRemoved()
+                    && (type == RecyclerView.INVALID_TYPE || holder.getItemViewType() == type)) {
                 return view;
             }
         }
@@ -337,6 +337,25 @@ class ChildHelper {
         if (DEBUG) {
             Log.d(TAG, "hiding child " + view + " at offset " + offset+ ", " + this);
         }
+    }
+
+    /**
+     * Moves a child view from hidden list to regular list.
+     * Calling this method should probably be followed by a detach, otherwise, it will suddenly
+     * show up in LayoutManager's children list.
+     *
+     * @param view The hidden View to unhide
+     */
+    void unhide(View view) {
+        final int offset = mCallback.indexOfChild(view);
+        if (offset < 0) {
+            throw new IllegalArgumentException("view is not a child, cannot hide " + view);
+        }
+        if (!mBucket.get(offset)) {
+            throw new RuntimeException("trying to unhide a view that was not hidden" + view);
+        }
+        mBucket.clear(offset);
+        unhideViewInternal(view);
     }
 
     @Override

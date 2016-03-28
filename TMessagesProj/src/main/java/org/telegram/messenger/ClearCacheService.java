@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2015.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.messenger;
@@ -48,6 +48,9 @@ public class ClearCacheService extends IntentService {
                             for (int b = 0; b < array.length; b++) {
                                 File f = array[b];
                                 if (f.isFile()) {
+                                    if (f.getName().equals(".nomedia")) {
+                                        continue;
+                                    }
                                     if (Build.VERSION.SDK_INT >= 21) {
                                         try {
                                             StructStat stat = Os.stat(f.getPath());

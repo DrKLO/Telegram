@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2015.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.ui.ActionBar;
@@ -384,6 +384,7 @@ public class BottomSheet extends Dialog {
             titleView.setText(title);
             titleView.setTextColor(0xff757575);
             titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+            titleView.setEllipsize(TextUtils.TruncateAt.MIDDLE);
             titleView.setPadding(AndroidUtilities.dp(16), 0, AndroidUtilities.dp(16), AndroidUtilities.dp(8));
             titleView.setGravity(Gravity.CENTER_VERTICAL);
             containerView.addView(titleView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48));
@@ -609,11 +610,6 @@ public class BottomSheet extends Dialog {
                     }
                 }
             }
-
-            @Override
-            public void onAnimationCancel(Animator animation) {
-                onAnimationEnd(animation);
-            }
         });
         animatorSet.start();
     }
@@ -705,11 +701,6 @@ public class BottomSheet extends Dialog {
                     }
                 });
             }
-
-            @Override
-            public void onAnimationCancel(Object animation) {
-                onAnimationEnd(animation);
-            }
         });
         animatorSetProxy.start();
     }
@@ -743,11 +734,6 @@ public class BottomSheet extends Dialog {
                             }
                         }
                     });
-                }
-
-                @Override
-                public void onAnimationCancel(Object animation) {
-                    onAnimationEnd(animation);
                 }
             });
             animatorSetProxy.start();

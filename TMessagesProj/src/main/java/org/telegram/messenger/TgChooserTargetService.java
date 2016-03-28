@@ -3,14 +3,16 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2015.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.messenger;
 
 import android.annotation.TargetApi;
+import android.app.Activity;
 import android.content.ComponentName;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.BitmapShader;
@@ -48,6 +50,11 @@ public class TgChooserTargetService extends ChooserTargetService {
         if (!UserConfig.isClientActivated()) {
             return targets;
         }
+        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+        if (!preferences.getBoolean("direct_share", true)) {
+            return targets;
+        }
+
         ImageLoader imageLoader = ImageLoader.getInstance();
         final Semaphore semaphore = new Semaphore(0);
         final ComponentName componentName = new ComponentName(getPackageName(), LaunchActivity.class.getCanonicalName());

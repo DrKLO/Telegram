@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2015.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.ui.Components;
@@ -173,7 +173,7 @@ public class ChatAttachView extends FrameLayout implements NotificationCenter.No
                 LocaleController.getString("ChatCamera", R.string.ChatCamera),
                 LocaleController.getString("ChatGallery", R.string.ChatGallery),
                 LocaleController.getString("ChatVideo", R.string.ChatVideo),
-                LocaleController.getString("AttachAudio", R.string.AttachAudio),
+                LocaleController.getString("AttachMusic", R.string.AttachMusic),
                 LocaleController.getString("ChatDocument", R.string.ChatDocument),
                 LocaleController.getString("AttachContact", R.string.AttachContact),
                 LocaleController.getString("ChatLocation", R.string.ChatLocation),

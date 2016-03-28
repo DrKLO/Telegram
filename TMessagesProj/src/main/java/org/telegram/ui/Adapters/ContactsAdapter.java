@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2015.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.ui.Adapters;
@@ -238,7 +238,7 @@ public class ContactsAdapter extends BaseSectionsAdapter {
             }
         } else if (type == 0) {
             if (convertView == null) {
-                convertView = new UserCell(mContext, 58, 1);
+                convertView = new UserCell(mContext, 58, 1, false);
                 ((UserCell) convertView).setStatusColors(0xffa8a8a8, 0xff3b84c0);
             }
 

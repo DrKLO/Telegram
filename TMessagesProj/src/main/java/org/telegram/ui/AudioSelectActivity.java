@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2015.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.ui;
@@ -85,7 +85,7 @@ public class AudioSelectActivity extends BaseFragment implements NotificationCen
     public View createView(Context context) {
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBar.setAllowOverlayTitle(true);
-        actionBar.setTitle(LocaleController.getString("AttachAudio", R.string.AttachAudio));
+        actionBar.setTitle(LocaleController.getString("AttachMusic", R.string.AttachMusic));
         actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
             public void onItemClick(int id) {
@@ -243,6 +243,7 @@ public class AudioSelectActivity extends BaseFragment implements NotificationCen
                         attributeAudio.duration = audioEntry.duration;
                         attributeAudio.title = audioEntry.title;
                         attributeAudio.performer = audioEntry.author;
+                        attributeAudio.flags |= 3;
                         message.media.document.attributes.add(attributeAudio);
 
                         TLRPC.TL_documentAttributeFilename fileName = new TLRPC.TL_documentAttributeFilename();

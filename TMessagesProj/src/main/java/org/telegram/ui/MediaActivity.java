@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2015.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.ui;
@@ -18,7 +18,6 @@ import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
-import android.provider.Browser;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -349,6 +348,9 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                                 } else if (lower_part < 0) {
                                     args.putInt("chat_id", -lower_part);
                                 }
+                                if (!MessagesController.checkCanOpenChat(args, fragment)) {
+                                    return;
+                                }
 
                                 ArrayList<MessageObject> fmessages = new ArrayList<>();
                                 for (int a = 1; a >= 0; a--) {
@@ -365,6 +367,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                                 actionBar.hideActionMode();
 
                                 NotificationCenter.getInstance().postNotificationName(NotificationCenter.closeChats);
+
                                 ChatActivity chatActivity = new ChatActivity(args);
                                 presentFragment(chatActivity, true);
                                 chatActivity.showReplyPanel(true, null, fmessages, null, false, false);
@@ -446,6 +449,11 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
         if ((int) dialog_id != 0) {
             dropDownContainer.addSubItem(links_item, LocaleController.getString("LinksTitle", R.string.LinksTitle), 0);
             dropDownContainer.addSubItem(music_item, LocaleController.getString("AudioTitle", R.string.AudioTitle), 0);
+        } else {
+            TLRPC.EncryptedChat currentEncryptedChat = MessagesController.getInstance().getEncryptedChat((int) (dialog_id >> 32));
+            if (currentEncryptedChat != null && AndroidUtilities.getPeerLayerVersion(currentEncryptedChat.layer) >= 46) {
+                dropDownContainer.addSubItem(music_item, LocaleController.getString("AudioTitle", R.string.AudioTitle), 0);
+            }
         }
         actionBar.addView(dropDownContainer, 0, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT, AndroidUtilities.isTablet() ? 64 : 56, 0, 40, 0));
         dropDownContainer.setOnClickListener(new View.OnClickListener() {
@@ -897,7 +905,11 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                 listView.setAdapter(photoVideoAdapter);
                 dropDown.setText(LocaleController.getString("SharedMediaTitle", R.string.SharedMediaTitle));
                 emptyImageView.setImageResource(R.drawable.tip1);
-                emptyTextView.setText(LocaleController.getString("NoMedia", R.string.NoMedia));
+                if ((int) dialog_id == 0) {
+                    emptyTextView.setText(LocaleController.getString("NoMediaSecret", R.string.NoMediaSecret));
+                } else {
+                    emptyTextView.setText(LocaleController.getString("NoMedia", R.string.NoMedia));
+                }
                 searchItem.setVisibility(View.GONE);
                 if (sharedMediaData[selectedMode].loading && sharedMediaData[selectedMode].messages.isEmpty()) {
                     progressView.setVisibility(View.VISIBLE);
@@ -914,12 +926,20 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                     listView.setAdapter(documentsAdapter);
                     dropDown.setText(LocaleController.getString("DocumentsTitle", R.string.DocumentsTitle));
                     emptyImageView.setImageResource(R.drawable.tip2);
-                    emptyTextView.setText(LocaleController.getString("NoSharedFiles", R.string.NoSharedFiles));
+                    if ((int) dialog_id == 0) {
+                        emptyTextView.setText(LocaleController.getString("NoSharedFilesSecret", R.string.NoSharedFilesSecret));
+                    } else {
+                        emptyTextView.setText(LocaleController.getString("NoSharedFiles", R.string.NoSharedFiles));
+                    }
                 } else if (selectedMode == 4) {
                     listView.setAdapter(audioAdapter);
                     dropDown.setText(LocaleController.getString("AudioTitle", R.string.AudioTitle));
                     emptyImageView.setImageResource(R.drawable.tip4);
-                    emptyTextView.setText(LocaleController.getString("NoSharedAudio", R.string.NoSharedAudio));
+                    if ((int) dialog_id == 0) {
+                        emptyTextView.setText(LocaleController.getString("NoSharedAudioSecret", R.string.NoSharedAudioSecret));
+                    } else {
+                        emptyTextView.setText(LocaleController.getString("NoSharedAudio", R.string.NoSharedAudio));
+                    }
                 }
                 searchItem.setVisibility(!sharedMediaData[selectedMode].messages.isEmpty() ? View.VISIBLE : View.GONE);
                 if (!sharedMediaData[selectedMode].loading && !sharedMediaData[selectedMode].endReached[0] && sharedMediaData[selectedMode].messages.isEmpty()) {
@@ -940,7 +960,11 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                 listView.setAdapter(linksAdapter);
                 dropDown.setText(LocaleController.getString("LinksTitle", R.string.LinksTitle));
                 emptyImageView.setImageResource(R.drawable.tip3);
-                emptyTextView.setText(LocaleController.getString("NoSharedLinks", R.string.NoSharedLinks));
+                if ((int) dialog_id == 0) {
+                    emptyTextView.setText(LocaleController.getString("NoSharedLinksSecret", R.string.NoSharedLinksSecret));
+                } else {
+                    emptyTextView.setText(LocaleController.getString("NoSharedLinks", R.string.NoSharedLinks));
+                }
                 searchItem.setVisibility(!sharedMediaData[3].messages.isEmpty() ? View.VISIBLE : View.GONE);
                 if (!sharedMediaData[selectedMode].loading && !sharedMediaData[selectedMode].endReached[0] && sharedMediaData[selectedMode].messages.isEmpty()) {
                     sharedMediaData[selectedMode].loading = true;
@@ -1040,7 +1064,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                             }
                         }
                         File f = null;
-                        String fileName = FileLoader.getAttachFileName(message.messageOwner.media.document);
+                        String fileName = message.messageOwner.media != null ? FileLoader.getAttachFileName(message.messageOwner.media.document) : "";
                         if (message.messageOwner.attachPath != null && message.messageOwner.attachPath.length() != 0) {
                             f = new File(message.messageOwner.attachPath);
                         }
@@ -1092,7 +1116,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                             }
                         }
                     } else if (!cell.isLoading()) {
-                        FileLoader.getInstance().loadFile(cell.getDocument().messageOwner.media.document, true, false);
+                        FileLoader.getInstance().loadFile(cell.getDocument().messageOwner.media.document, false, false);
                         cell.updateFileExistIcon();
                     } else {
                         FileLoader.getInstance().cancelLoadFile(cell.getDocument().messageOwner.media.document);
@@ -1115,10 +1139,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                         link = ((SharedLinkCell) view).getLink(0);
                     }
                     if (link != null) {
-                        Uri uri = Uri.parse(link);
-                        Intent intent = new Intent(Intent.ACTION_VIEW, uri);
-                        intent.putExtra(Browser.EXTRA_APPLICATION_ID, getParentActivity().getPackageName());
-                        getParentActivity().startActivity(intent);
+                        AndroidUtilities.openUrl(getParentActivity(), link);
                     }
                 } catch (Exception e) {
                     FileLog.e("tmessages", e);
@@ -1541,7 +1562,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
             } else if (currentType == 3) {
                 req.filter = new TLRPC.TL_inputMessagesFilterUrl();
             } else if (currentType == 4) {
-                req.filter = new TLRPC.TL_inputMessagesFilterAudioDocuments();
+                req.filter = new TLRPC.TL_inputMessagesFilterMusic();
             }
             req.q = query;
             req.peer = MessagesController.getInputPeer(uid);
@@ -1557,7 +1578,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                         TLRPC.messages_Messages res = (TLRPC.messages_Messages) response;
                         for (int a = 0; a < res.messages.size(); a++) {
                             TLRPC.Message message = res.messages.get(a);
-                            if (message.id > max_id) {
+                            if (max_id != 0 && message.id > max_id) {
                                 continue;
                             }
                             messageObjects.add(new MessageObject(message, null, false));

@@ -23,9 +23,6 @@ namespace libyuv {
 extern "C" {
 #endif
 
-// Remove this macro if OVERREAD is safe.
-#define AVOID_OVERREAD 1
-
 static __inline int Abs(int v) {
   return v >= 0 ? v : -v;
 }
@@ -44,9 +41,8 @@ static void ScalePlaneDown2(int src_width, int src_height,
   int y;
   void (*ScaleRowDown2)(const uint8* src_ptr, ptrdiff_t src_stride,
                         uint8* dst_ptr, int dst_width) =
-    filtering == kFilterNone ? ScaleRowDown2_C :
-        (filtering == kFilterLinear ? ScaleRowDown2Linear_C :
-        ScaleRowDown2Box_C);
+      filtering == kFilterNone ? ScaleRowDown2_C :
+      (filtering == kFilterLinear ? ScaleRowDown2Linear_C : ScaleRowDown2Box_C);
   int row_stride = src_stride << 1;
   if (!filtering) {
     src_ptr += src_stride;  // Point to odd rows.
@@ -54,23 +50,42 @@ static void ScalePlaneDown2(int src_width, int src_height,
   }
 
 #if defined(HAS_SCALEROWDOWN2_NEON)
-  if (TestCpuFlag(kCpuHasNEON) && IS_ALIGNED(dst_width, 16)) {
-    ScaleRowDown2 = filtering ? ScaleRowDown2Box_NEON : ScaleRowDown2_NEON;
-  }
-#elif defined(HAS_SCALEROWDOWN2_SSE2)
-  if (TestCpuFlag(kCpuHasSSE2) && IS_ALIGNED(dst_width, 16)) {
-    ScaleRowDown2 = filtering == kFilterNone ? ScaleRowDown2_Unaligned_SSE2 :
-        (filtering == kFilterLinear ? ScaleRowDown2Linear_Unaligned_SSE2 :
-        ScaleRowDown2Box_Unaligned_SSE2);
-    if (IS_ALIGNED(src_ptr, 16) &&
-        IS_ALIGNED(src_stride, 16) && IS_ALIGNED(row_stride, 16) &&
-        IS_ALIGNED(dst_ptr, 16) && IS_ALIGNED(dst_stride, 16)) {
-      ScaleRowDown2 = filtering == kFilterNone ? ScaleRowDown2_SSE2 :
-          (filtering == kFilterLinear ? ScaleRowDown2Linear_SSE2 :
-          ScaleRowDown2Box_SSE2);
+  if (TestCpuFlag(kCpuHasNEON)) {
+    ScaleRowDown2 = filtering == kFilterNone ? ScaleRowDown2_Any_NEON :
+        (filtering == kFilterLinear ? ScaleRowDown2Linear_Any_NEON :
+        ScaleRowDown2Box_Any_NEON);
+    if (IS_ALIGNED(dst_width, 16)) {
+      ScaleRowDown2 = filtering == kFilterNone ? ScaleRowDown2_NEON :
+          (filtering == kFilterLinear ? ScaleRowDown2Linear_NEON :
+          ScaleRowDown2Box_NEON);
     }
   }
-#elif defined(HAS_SCALEROWDOWN2_MIPS_DSPR2)
+#endif
+#if defined(HAS_SCALEROWDOWN2_SSSE3)
+  if (TestCpuFlag(kCpuHasSSSE3)) {
+    ScaleRowDown2 = filtering == kFilterNone ? ScaleRowDown2_Any_SSSE3 :
+        (filtering == kFilterLinear ? ScaleRowDown2Linear_Any_SSSE3 :
+        ScaleRowDown2Box_Any_SSSE3);
+    if (IS_ALIGNED(dst_width, 16)) {
+      ScaleRowDown2 = filtering == kFilterNone ? ScaleRowDown2_SSSE3 :
+          (filtering == kFilterLinear ? ScaleRowDown2Linear_SSSE3 :
+          ScaleRowDown2Box_SSSE3);
+    }
+  }
+#endif
+#if defined(HAS_SCALEROWDOWN2_AVX2)
+  if (TestCpuFlag(kCpuHasAVX2)) {
+    ScaleRowDown2 = filtering == kFilterNone ? ScaleRowDown2_Any_AVX2 :
+        (filtering == kFilterLinear ? ScaleRowDown2Linear_Any_AVX2 :
+        ScaleRowDown2Box_Any_AVX2);
+    if (IS_ALIGNED(dst_width, 32)) {
+      ScaleRowDown2 = filtering == kFilterNone ? ScaleRowDown2_AVX2 :
+          (filtering == kFilterLinear ? ScaleRowDown2Linear_AVX2 :
+          ScaleRowDown2Box_AVX2);
+    }
+  }
+#endif
+#if defined(HAS_SCALEROWDOWN2_MIPS_DSPR2)
   if (TestCpuFlag(kCpuHasMIPS_DSPR2) && IS_ALIGNED(src_ptr, 4) &&
       IS_ALIGNED(src_stride, 4) && IS_ALIGNED(row_stride, 4) &&
       IS_ALIGNED(dst_ptr, 4) && IS_ALIGNED(dst_stride, 4)) {
@@ -112,21 +127,15 @@ static void ScalePlaneDown2_16(int src_width, int src_height,
     ScaleRowDown2 = filtering ? ScaleRowDown2Box_16_NEON :
         ScaleRowDown2_16_NEON;
   }
-#elif defined(HAS_SCALEROWDOWN2_16_SSE2)
+#endif
+#if defined(HAS_SCALEROWDOWN2_16_SSE2)
   if (TestCpuFlag(kCpuHasSSE2) && IS_ALIGNED(dst_width, 16)) {
-    ScaleRowDown2 = filtering == kFilterNone ?
-        ScaleRowDown2_Unaligned_16_SSE2 :
-        (filtering == kFilterLinear ? ScaleRowDown2Linear_Unaligned_16_SSE2 :
-        ScaleRowDown2Box_Unaligned_16_SSE2);
-    if (IS_ALIGNED(src_ptr, 16) &&
-        IS_ALIGNED(src_stride, 16) && IS_ALIGNED(row_stride, 16) &&
-        IS_ALIGNED(dst_ptr, 16) && IS_ALIGNED(dst_stride, 16)) {
-      ScaleRowDown2 = filtering == kFilterNone ? ScaleRowDown2_16_SSE2 :
-          (filtering == kFilterLinear ? ScaleRowDown2Linear_16_SSE2 :
-          ScaleRowDown2Box_16_SSE2);
-    }
+    ScaleRowDown2 = filtering == kFilterNone ? ScaleRowDown2_16_SSE2 :
+        (filtering == kFilterLinear ? ScaleRowDown2Linear_16_SSE2 :
+        ScaleRowDown2Box_16_SSE2);
   }
-#elif defined(HAS_SCALEROWDOWN2_16_MIPS_DSPR2)
+#endif
+#if defined(HAS_SCALEROWDOWN2_16_MIPS_DSPR2)
   if (TestCpuFlag(kCpuHasMIPS_DSPR2) && IS_ALIGNED(src_ptr, 4) &&
       IS_ALIGNED(src_stride, 4) && IS_ALIGNED(row_stride, 4) &&
       IS_ALIGNED(dst_ptr, 4) && IS_ALIGNED(dst_stride, 4)) {
@@ -165,16 +174,33 @@ static void ScalePlaneDown4(int src_width, int src_height,
     src_stride = 0;
   }
 #if defined(HAS_SCALEROWDOWN4_NEON)
-  if (TestCpuFlag(kCpuHasNEON) && IS_ALIGNED(dst_width, 8)) {
-    ScaleRowDown4 = filtering ? ScaleRowDown4Box_NEON : ScaleRowDown4_NEON;
+  if (TestCpuFlag(kCpuHasNEON)) {
+    ScaleRowDown4 = filtering ?
+        ScaleRowDown4Box_Any_NEON : ScaleRowDown4_Any_NEON;
+    if (IS_ALIGNED(dst_width, 8)) {
+      ScaleRowDown4 = filtering ? ScaleRowDown4Box_NEON : ScaleRowDown4_NEON;
+    }
   }
-#elif defined(HAS_SCALEROWDOWN4_SSE2)
-  if (TestCpuFlag(kCpuHasSSE2) &&
-      IS_ALIGNED(dst_width, 8) && IS_ALIGNED(row_stride, 16) &&
-      IS_ALIGNED(src_ptr, 16) && IS_ALIGNED(src_stride, 16)) {
-    ScaleRowDown4 = filtering ? ScaleRowDown4Box_SSE2 : ScaleRowDown4_SSE2;
+#endif
+#if defined(HAS_SCALEROWDOWN4_SSSE3)
+  if (TestCpuFlag(kCpuHasSSSE3)) {
+    ScaleRowDown4 = filtering ?
+        ScaleRowDown4Box_Any_SSSE3 : ScaleRowDown4_Any_SSSE3;
+    if (IS_ALIGNED(dst_width, 8)) {
+      ScaleRowDown4 = filtering ? ScaleRowDown4Box_SSSE3 : ScaleRowDown4_SSSE3;
+    }
   }
-#elif defined(HAS_SCALEROWDOWN4_MIPS_DSPR2)
+#endif
+#if defined(HAS_SCALEROWDOWN4_AVX2)
+  if (TestCpuFlag(kCpuHasAVX2)) {
+    ScaleRowDown4 = filtering ?
+        ScaleRowDown4Box_Any_AVX2 : ScaleRowDown4_Any_AVX2;
+    if (IS_ALIGNED(dst_width, 16)) {
+      ScaleRowDown4 = filtering ? ScaleRowDown4Box_AVX2 : ScaleRowDown4_AVX2;
+    }
+  }
+#endif
+#if defined(HAS_SCALEROWDOWN4_MIPS_DSPR2)
   if (TestCpuFlag(kCpuHasMIPS_DSPR2) && IS_ALIGNED(row_stride, 4) &&
       IS_ALIGNED(src_ptr, 4) && IS_ALIGNED(src_stride, 4) &&
       IS_ALIGNED(dst_ptr, 4) && IS_ALIGNED(dst_stride, 4)) {
@@ -212,14 +238,14 @@ static void ScalePlaneDown4_16(int src_width, int src_height,
     ScaleRowDown4 = filtering ? ScaleRowDown4Box_16_NEON :
         ScaleRowDown4_16_NEON;
   }
-#elif defined(HAS_SCALEROWDOWN4_16_SSE2)
-  if (TestCpuFlag(kCpuHasSSE2) &&
-      IS_ALIGNED(dst_width, 8) && IS_ALIGNED(row_stride, 16) &&
-      IS_ALIGNED(src_ptr, 16) && IS_ALIGNED(src_stride, 16)) {
+#endif
+#if defined(HAS_SCALEROWDOWN4_16_SSE2)
+  if (TestCpuFlag(kCpuHasSSE2) && IS_ALIGNED(dst_width, 8)) {
     ScaleRowDown4 = filtering ? ScaleRowDown4Box_16_SSE2 :
         ScaleRowDown4_16_SSE2;
   }
-#elif defined(HAS_SCALEROWDOWN4_16_MIPS_DSPR2)
+#endif
+#if defined(HAS_SCALEROWDOWN4_16_MIPS_DSPR2)
   if (TestCpuFlag(kCpuHasMIPS_DSPR2) && IS_ALIGNED(row_stride, 4) &&
       IS_ALIGNED(src_ptr, 4) && IS_ALIGNED(src_stride, 4) &&
       IS_ALIGNED(dst_ptr, 4) && IS_ALIGNED(dst_stride, 4)) {
@@ -260,25 +286,42 @@ static void ScalePlaneDown34(int src_width, int src_height,
     ScaleRowDown34_1 = ScaleRowDown34_1_Box_C;
   }
 #if defined(HAS_SCALEROWDOWN34_NEON)
-  if (TestCpuFlag(kCpuHasNEON) && (dst_width % 24 == 0)) {
+  if (TestCpuFlag(kCpuHasNEON)) {
     if (!filtering) {
-      ScaleRowDown34_0 = ScaleRowDown34_NEON;
-      ScaleRowDown34_1 = ScaleRowDown34_NEON;
+      ScaleRowDown34_0 = ScaleRowDown34_Any_NEON;
+      ScaleRowDown34_1 = ScaleRowDown34_Any_NEON;
     } else {
-      ScaleRowDown34_0 = ScaleRowDown34_0_Box_NEON;
-      ScaleRowDown34_1 = ScaleRowDown34_1_Box_NEON;
+      ScaleRowDown34_0 = ScaleRowDown34_0_Box_Any_NEON;
+      ScaleRowDown34_1 = ScaleRowDown34_1_Box_Any_NEON;
+    }
+    if (dst_width % 24 == 0) {
+      if (!filtering) {
+        ScaleRowDown34_0 = ScaleRowDown34_NEON;
+        ScaleRowDown34_1 = ScaleRowDown34_NEON;
+      } else {
+        ScaleRowDown34_0 = ScaleRowDown34_0_Box_NEON;
+        ScaleRowDown34_1 = ScaleRowDown34_1_Box_NEON;
+      }
     }
   }
 #endif
 #if defined(HAS_SCALEROWDOWN34_SSSE3)
-  if (TestCpuFlag(kCpuHasSSSE3) && (dst_width % 24 == 0) &&
-      IS_ALIGNED(src_ptr, 16) && IS_ALIGNED(src_stride, 16)) {
+  if (TestCpuFlag(kCpuHasSSSE3)) {
     if (!filtering) {
-      ScaleRowDown34_0 = ScaleRowDown34_SSSE3;
-      ScaleRowDown34_1 = ScaleRowDown34_SSSE3;
+      ScaleRowDown34_0 = ScaleRowDown34_Any_SSSE3;
+      ScaleRowDown34_1 = ScaleRowDown34_Any_SSSE3;
     } else {
-      ScaleRowDown34_0 = ScaleRowDown34_0_Box_SSSE3;
-      ScaleRowDown34_1 = ScaleRowDown34_1_Box_SSSE3;
+      ScaleRowDown34_0 = ScaleRowDown34_0_Box_Any_SSSE3;
+      ScaleRowDown34_1 = ScaleRowDown34_1_Box_Any_SSSE3;
+    }
+    if (dst_width % 24 == 0) {
+      if (!filtering) {
+        ScaleRowDown34_0 = ScaleRowDown34_SSSE3;
+        ScaleRowDown34_1 = ScaleRowDown34_SSSE3;
+      } else {
+        ScaleRowDown34_0 = ScaleRowDown34_0_Box_SSSE3;
+        ScaleRowDown34_1 = ScaleRowDown34_1_Box_SSSE3;
+      }
     }
   }
 #endif
@@ -351,8 +394,7 @@ static void ScalePlaneDown34_16(int src_width, int src_height,
   }
 #endif
 #if defined(HAS_SCALEROWDOWN34_16_SSSE3)
-  if (TestCpuFlag(kCpuHasSSSE3) && (dst_width % 24 == 0) &&
-      IS_ALIGNED(src_ptr, 16) && IS_ALIGNED(src_stride, 16)) {
+  if (TestCpuFlag(kCpuHasSSSE3) && (dst_width % 24 == 0)) {
     if (!filtering) {
       ScaleRowDown34_0 = ScaleRowDown34_16_SSSE3;
       ScaleRowDown34_1 = ScaleRowDown34_16_SSSE3;
@@ -435,28 +477,47 @@ static void ScalePlaneDown38(int src_width, int src_height,
     ScaleRowDown38_3 = ScaleRowDown38_3_Box_C;
     ScaleRowDown38_2 = ScaleRowDown38_2_Box_C;
   }
+
 #if defined(HAS_SCALEROWDOWN38_NEON)
-  if (TestCpuFlag(kCpuHasNEON) && (dst_width % 12 == 0)) {
+  if (TestCpuFlag(kCpuHasNEON)) {
     if (!filtering) {
-      ScaleRowDown38_3 = ScaleRowDown38_NEON;
-      ScaleRowDown38_2 = ScaleRowDown38_NEON;
+      ScaleRowDown38_3 = ScaleRowDown38_Any_NEON;
+      ScaleRowDown38_2 = ScaleRowDown38_Any_NEON;
     } else {
-      ScaleRowDown38_3 = ScaleRowDown38_3_Box_NEON;
-      ScaleRowDown38_2 = ScaleRowDown38_2_Box_NEON;
+      ScaleRowDown38_3 = ScaleRowDown38_3_Box_Any_NEON;
+      ScaleRowDown38_2 = ScaleRowDown38_2_Box_Any_NEON;
+    }
+    if (dst_width % 12 == 0) {
+      if (!filtering) {
+        ScaleRowDown38_3 = ScaleRowDown38_NEON;
+        ScaleRowDown38_2 = ScaleRowDown38_NEON;
+      } else {
+        ScaleRowDown38_3 = ScaleRowDown38_3_Box_NEON;
+        ScaleRowDown38_2 = ScaleRowDown38_2_Box_NEON;
+      }
     }
   }
-#elif defined(HAS_SCALEROWDOWN38_SSSE3)
-  if (TestCpuFlag(kCpuHasSSSE3) && (dst_width % 24 == 0) &&
-      IS_ALIGNED(src_ptr, 16) && IS_ALIGNED(src_stride, 16)) {
+#endif
+#if defined(HAS_SCALEROWDOWN38_SSSE3)
+  if (TestCpuFlag(kCpuHasSSSE3)) {
     if (!filtering) {
+      ScaleRowDown38_3 = ScaleRowDown38_Any_SSSE3;
+      ScaleRowDown38_2 = ScaleRowDown38_Any_SSSE3;
+    } else {
+      ScaleRowDown38_3 = ScaleRowDown38_3_Box_Any_SSSE3;
+      ScaleRowDown38_2 = ScaleRowDown38_2_Box_Any_SSSE3;
+    }
+    if (dst_width % 12 == 0 && !filtering) {
       ScaleRowDown38_3 = ScaleRowDown38_SSSE3;
       ScaleRowDown38_2 = ScaleRowDown38_SSSE3;
-    } else {
+    }
+    if (dst_width % 6 == 0 && filtering) {
       ScaleRowDown38_3 = ScaleRowDown38_3_Box_SSSE3;
       ScaleRowDown38_2 = ScaleRowDown38_2_Box_SSSE3;
     }
   }
-#elif defined(HAS_SCALEROWDOWN38_MIPS_DSPR2)
+#endif
+#if defined(HAS_SCALEROWDOWN38_MIPS_DSPR2)
   if (TestCpuFlag(kCpuHasMIPS_DSPR2) && (dst_width % 12 == 0) &&
       IS_ALIGNED(src_ptr, 4) && IS_ALIGNED(src_stride, 4) &&
       IS_ALIGNED(dst_ptr, 4) && IS_ALIGNED(dst_stride, 4)) {
@@ -522,9 +583,9 @@ static void ScalePlaneDown38_16(int src_width, int src_height,
       ScaleRowDown38_2 = ScaleRowDown38_2_Box_16_NEON;
     }
   }
-#elif defined(HAS_SCALEROWDOWN38_16_SSSE3)
-  if (TestCpuFlag(kCpuHasSSSE3) && (dst_width % 24 == 0) &&
-      IS_ALIGNED(src_ptr, 16) && IS_ALIGNED(src_stride, 16)) {
+#endif
+#if defined(HAS_SCALEROWDOWN38_16_SSSE3)
+  if (TestCpuFlag(kCpuHasSSSE3) && (dst_width % 24 == 0)) {
     if (!filtering) {
       ScaleRowDown38_3 = ScaleRowDown38_16_SSSE3;
       ScaleRowDown38_2 = ScaleRowDown38_16_SSSE3;
@@ -533,7 +594,8 @@ static void ScalePlaneDown38_16(int src_width, int src_height,
       ScaleRowDown38_2 = ScaleRowDown38_2_Box_16_SSSE3;
     }
   }
-#elif defined(HAS_SCALEROWDOWN38_16_MIPS_DSPR2)
+#endif
+#if defined(HAS_SCALEROWDOWN38_16_MIPS_DSPR2)
   if (TestCpuFlag(kCpuHasMIPS_DSPR2) && (dst_width % 12 == 0) &&
       IS_ALIGNED(src_ptr, 4) && IS_ALIGNED(src_stride, 4) &&
       IS_ALIGNED(dst_ptr, 4) && IS_ALIGNED(dst_stride, 4)) {
@@ -570,65 +632,7 @@ static void ScalePlaneDown38_16(int src_width, int src_height,
   }
 }
 
-static __inline uint32 SumBox(int iboxwidth, int iboxheight,
-                              ptrdiff_t src_stride, const uint8* src_ptr) {
-  uint32 sum = 0u;
-  int y;
-  assert(iboxwidth > 0);
-  assert(iboxheight > 0);
-  for (y = 0; y < iboxheight; ++y) {
-    int x;
-    for (x = 0; x < iboxwidth; ++x) {
-      sum += src_ptr[x];
-    }
-    src_ptr += src_stride;
-  }
-  return sum;
-}
-
-static __inline uint32 SumBox_16(int iboxwidth, int iboxheight,
-                                 ptrdiff_t src_stride, const uint16* src_ptr) {
-  uint32 sum = 0u;
-  int y;
-  assert(iboxwidth > 0);
-  assert(iboxheight > 0);
-  for (y = 0; y < iboxheight; ++y) {
-    int x;
-    for (x = 0; x < iboxwidth; ++x) {
-      sum += src_ptr[x];
-    }
-    src_ptr += src_stride;
-  }
-  return sum;
-}
-
-static void ScalePlaneBoxRow_C(int dst_width, int boxheight,
-                               int x, int dx, ptrdiff_t src_stride,
-                               const uint8* src_ptr, uint8* dst_ptr) {
-  int i;
-  int boxwidth;
-  for (i = 0; i < dst_width; ++i) {
-    int ix = x >> 16;
-    x += dx;
-    boxwidth = (x >> 16) - ix;
-    *dst_ptr++ = SumBox(boxwidth, boxheight, src_stride, src_ptr + ix) /
-        (boxwidth * boxheight);
-  }
-}
-
-static void ScalePlaneBoxRow_16_C(int dst_width, int boxheight,
-                                  int x, int dx, ptrdiff_t src_stride,
-                                  const uint16* src_ptr, uint16* dst_ptr) {
-  int i;
-  int boxwidth;
-  for (i = 0; i < dst_width; ++i) {
-    int ix = x >> 16;
-    x += dx;
-    boxwidth = (x >> 16) - ix;
-    *dst_ptr++ = SumBox_16(boxwidth, boxheight, src_stride, src_ptr + ix) /
-        (boxwidth * boxheight);
-  }
-}
+#define MIN1(x) ((x) < 1 ? 1 : (x))
 
 static __inline uint32 SumPixels(int iboxwidth, const uint16* src_ptr) {
   uint32 sum = 0u;
@@ -654,15 +658,15 @@ static void ScaleAddCols2_C(int dst_width, int boxheight, int x, int dx,
                             const uint16* src_ptr, uint8* dst_ptr) {
   int i;
   int scaletbl[2];
-  int minboxwidth = (dx >> 16);
+  int minboxwidth = dx >> 16;
   int* scaleptr = scaletbl - minboxwidth;
   int boxwidth;
-  scaletbl[0] = 65536 / (minboxwidth * boxheight);
-  scaletbl[1] = 65536 / ((minboxwidth + 1) * boxheight);
+  scaletbl[0] = 65536 / (MIN1(minboxwidth) * boxheight);
+  scaletbl[1] = 65536 / (MIN1(minboxwidth + 1) * boxheight);
   for (i = 0; i < dst_width; ++i) {
     int ix = x >> 16;
     x += dx;
-    boxwidth = (x >> 16) - ix;
+    boxwidth = MIN1((x >> 16) - ix);
     *dst_ptr++ = SumPixels(boxwidth, src_ptr + ix) * scaleptr[boxwidth] >> 16;
   }
 }
@@ -671,25 +675,36 @@ static void ScaleAddCols2_16_C(int dst_width, int boxheight, int x, int dx,
                                const uint32* src_ptr, uint16* dst_ptr) {
   int i;
   int scaletbl[2];
-  int minboxwidth = (dx >> 16);
+  int minboxwidth = dx >> 16;
   int* scaleptr = scaletbl - minboxwidth;
   int boxwidth;
-  scaletbl[0] = 65536 / (minboxwidth * boxheight);
-  scaletbl[1] = 65536 / ((minboxwidth + 1) * boxheight);
+  scaletbl[0] = 65536 / (MIN1(minboxwidth) * boxheight);
+  scaletbl[1] = 65536 / (MIN1(minboxwidth + 1) * boxheight);
   for (i = 0; i < dst_width; ++i) {
     int ix = x >> 16;
     x += dx;
-    boxwidth = (x >> 16) - ix;
-    *dst_ptr++ = SumPixels_16(boxwidth, src_ptr + ix) *
-        scaleptr[boxwidth] >> 16;
+    boxwidth = MIN1((x >> 16) - ix);
+    *dst_ptr++ =
+        SumPixels_16(boxwidth, src_ptr + ix) * scaleptr[boxwidth] >> 16;
+  }
+}
+
+static void ScaleAddCols0_C(int dst_width, int boxheight, int x, int,
+                            const uint16* src_ptr, uint8* dst_ptr) {
+  int scaleval = 65536 / boxheight;
+  int i;
+  src_ptr += (x >> 16);
+  for (i = 0; i < dst_width; ++i) {
+    *dst_ptr++ = src_ptr[i] * scaleval >> 16;
   }
 }
 
 static void ScaleAddCols1_C(int dst_width, int boxheight, int x, int dx,
                             const uint16* src_ptr, uint8* dst_ptr) {
-  int boxwidth = (dx >> 16);
+  int boxwidth = MIN1(dx >> 16);
   int scaleval = 65536 / (boxwidth * boxheight);
   int i;
+  x >>= 16;
   for (i = 0; i < dst_width; ++i) {
     *dst_ptr++ = SumPixels(boxwidth, src_ptr + x) * scaleval >> 16;
     x += boxwidth;
@@ -698,7 +713,7 @@ static void ScaleAddCols1_C(int dst_width, int boxheight, int x, int dx,
 
 static void ScaleAddCols1_16_C(int dst_width, int boxheight, int x, int dx,
                                const uint32* src_ptr, uint16* dst_ptr) {
-  int boxwidth = (dx >> 16);
+  int boxwidth = MIN1(dx >> 16);
   int scaleval = 65536 / (boxwidth * boxheight);
   int i;
   for (i = 0; i < dst_width; ++i) {
@@ -718,7 +733,7 @@ static void ScalePlaneBox(int src_width, int src_height,
                           int dst_width, int dst_height,
                           int src_stride, int dst_stride,
                           const uint8* src_ptr, uint8* dst_ptr) {
-  int j;
+  int j, k;
   // Initial source x/y coordinate and step values as 16.16 fixed point.
   int x = 0;
   int y = 0;
@@ -728,10 +743,40 @@ static void ScalePlaneBox(int src_width, int src_height,
   ScaleSlope(src_width, src_height, dst_width, dst_height, kFilterBox,
              &x, &y, &dx, &dy);
   src_width = Abs(src_width);
-  // TODO(fbarchard): Remove this and make AddRows handle boxheight 1.
-  if (!IS_ALIGNED(src_width, 16) || dst_height * 2 > src_height) {
-    uint8* dst = dst_ptr;
-    int j;
+  {
+    // Allocate a row buffer of uint16.
+    align_buffer_64(row16, src_width * 2);
+    void (*ScaleAddCols)(int dst_width, int boxheight, int x, int dx,
+        const uint16* src_ptr, uint8* dst_ptr) =
+        (dx & 0xffff) ? ScaleAddCols2_C:
+        ((dx != 0x10000) ? ScaleAddCols1_C : ScaleAddCols0_C);
+    void (*ScaleAddRow)(const uint8* src_ptr, uint16* dst_ptr, int src_width) =
+        ScaleAddRow_C;
+#if defined(HAS_SCALEADDROW_SSE2)
+    if (TestCpuFlag(kCpuHasSSE2)) {
+      ScaleAddRow = ScaleAddRow_Any_SSE2;
+      if (IS_ALIGNED(src_width, 16)) {
+        ScaleAddRow = ScaleAddRow_SSE2;
+      }
+    }
+#endif
+#if defined(HAS_SCALEADDROW_AVX2)
+    if (TestCpuFlag(kCpuHasAVX2)) {
+      ScaleAddRow = ScaleAddRow_Any_AVX2;
+      if (IS_ALIGNED(src_width, 32)) {
+        ScaleAddRow = ScaleAddRow_AVX2;
+      }
+    }
+#endif
+#if defined(HAS_SCALEADDROW_NEON)
+    if (TestCpuFlag(kCpuHasNEON)) {
+      ScaleAddRow = ScaleAddRow_Any_NEON;
+      if (IS_ALIGNED(src_width, 16)) {
+        ScaleAddRow = ScaleAddRow_NEON;
+      }
+    }
+#endif
+
     for (j = 0; j < dst_height; ++j) {
       int boxheight;
       int iy = y >> 16;
@@ -740,46 +785,13 @@ static void ScalePlaneBox(int src_width, int src_height,
       if (y > max_y) {
         y = max_y;
       }
-      boxheight = (y >> 16) - iy;
-      ScalePlaneBoxRow_C(dst_width, boxheight,
-                         x, dx, src_stride,
-                         src, dst);
-      dst += dst_stride;
-    }
-    return;
-  }
-  {
-    // Allocate a row buffer of uint16.
-    align_buffer_64(row16, src_width * 2);
-    void (*ScaleAddCols)(int dst_width, int boxheight, int x, int dx,
-        const uint16* src_ptr, uint8* dst_ptr) =
-        (dx & 0xffff) ? ScaleAddCols2_C: ScaleAddCols1_C;
-    void (*ScaleAddRows)(const uint8* src_ptr, ptrdiff_t src_stride,
-        uint16* dst_ptr, int src_width, int src_height) = ScaleAddRows_C;
-
-#if defined(HAS_SCALEADDROWS_SSE2)
-    if (TestCpuFlag(kCpuHasSSE2) &&
-#ifdef AVOID_OVERREAD
-        IS_ALIGNED(src_width, 16) &&
-#endif
-        IS_ALIGNED(src_ptr, 16) && IS_ALIGNED(src_stride, 16)) {
-      ScaleAddRows = ScaleAddRows_SSE2;
-    }
-#endif
-
-    for (j = 0; j < dst_height; ++j) {
-      int boxheight;
-      int iy = y >> 16;
-      const uint8* src = src_ptr + iy * src_stride;
-      y += dy;
-      if (y > (src_height << 16)) {
-        y = (src_height << 16);
+      boxheight = MIN1((y >> 16) - iy);
+      memset(row16, 0, src_width * 2);
+      for (k = 0; k < boxheight; ++k) {
+        ScaleAddRow(src, (uint16 *)(row16), src_width);
+        src += src_stride;
       }
-      boxheight = (y >> 16) - iy;
-      ScaleAddRows(src, src_stride, (uint16*)(row16),
-                 src_width, boxheight);
-      ScaleAddCols(dst_width, boxheight, x, dx, (uint16*)(row16),
-                 dst_ptr);
+      ScaleAddCols(dst_width, boxheight, x, dx, (uint16*)(row16), dst_ptr);
       dst_ptr += dst_stride;
     }
     free_aligned_buffer_64(row16);
@@ -790,7 +802,7 @@ static void ScalePlaneBox_16(int src_width, int src_height,
                              int dst_width, int dst_height,
                              int src_stride, int dst_stride,
                              const uint16* src_ptr, uint16* dst_ptr) {
-  int j;
+  int j, k;
   // Initial source x/y coordinate and step values as 16.16 fixed point.
   int x = 0;
   int y = 0;
@@ -800,10 +812,21 @@ static void ScalePlaneBox_16(int src_width, int src_height,
   ScaleSlope(src_width, src_height, dst_width, dst_height, kFilterBox,
              &x, &y, &dx, &dy);
   src_width = Abs(src_width);
-  // TODO(fbarchard): Remove this and make AddRows handle boxheight 1.
-  if (!IS_ALIGNED(src_width, 16) || dst_height * 2 > src_height) {
-    uint16* dst = dst_ptr;
-    int j;
+  {
+    // Allocate a row buffer of uint32.
+    align_buffer_64(row32, src_width * 4);
+    void (*ScaleAddCols)(int dst_width, int boxheight, int x, int dx,
+        const uint32* src_ptr, uint16* dst_ptr) =
+        (dx & 0xffff) ? ScaleAddCols2_16_C: ScaleAddCols1_16_C;
+    void (*ScaleAddRow)(const uint16* src_ptr, uint32* dst_ptr, int src_width) =
+        ScaleAddRow_16_C;
+
+#if defined(HAS_SCALEADDROW_16_SSE2)
+    if (TestCpuFlag(kCpuHasSSE2) && IS_ALIGNED(src_width, 16)) {
+      ScaleAddRow = ScaleAddRow_16_SSE2;
+    }
+#endif
+
     for (j = 0; j < dst_height; ++j) {
       int boxheight;
       int iy = y >> 16;
@@ -812,46 +835,13 @@ static void ScalePlaneBox_16(int src_width, int src_height,
       if (y > max_y) {
         y = max_y;
       }
-      boxheight = (y >> 16) - iy;
-      ScalePlaneBoxRow_16_C(dst_width, boxheight,
-                            x, dx, src_stride,
-                            src, dst);
-      dst += dst_stride;
-    }
-    return;
-  }
-  {
-    // Allocate a row buffer of uint32.
-    align_buffer_64(row32, src_width * 4);
-    void (*ScaleAddCols)(int dst_width, int boxheight, int x, int dx,
-        const uint32* src_ptr, uint16* dst_ptr) =
-        (dx & 0xffff) ? ScaleAddCols2_16_C: ScaleAddCols1_16_C;
-    void (*ScaleAddRows)(const uint16* src_ptr, ptrdiff_t src_stride,
-        uint32* dst_ptr, int src_width, int src_height) = ScaleAddRows_16_C;
-
-#if defined(HAS_SCALEADDROWS_16_SSE2)
-    if (TestCpuFlag(kCpuHasSSE2) &&
-#ifdef AVOID_OVERREAD
-        IS_ALIGNED(src_width, 16) &&
-#endif
-        IS_ALIGNED(src_ptr, 16) && IS_ALIGNED(src_stride, 16)) {
-      ScaleAddRows = ScaleAddRows_16_SSE2;
-    }
-#endif
-
-    for (j = 0; j < dst_height; ++j) {
-      int boxheight;
-      int iy = y >> 16;
-      const uint16* src = src_ptr + iy * src_stride;
-      y += dy;
-      if (y > (src_height << 16)) {
-        y = (src_height << 16);
+      boxheight = MIN1((y >> 16) - iy);
+      memset(row32, 0, src_width * 4);
+      for (k = 0; k < boxheight; ++k) {
+        ScaleAddRow(src, (uint32 *)(row32), src_width);
+        src += src_stride;
       }
-      boxheight = (y >> 16) - iy;
-      ScaleAddRows(src, src_stride, (uint32*)(row32),
-                 src_width, boxheight);
-      ScaleAddCols(dst_width, boxheight, x, dx, (uint32*)(row32),
-                 dst_ptr);
+      ScaleAddCols(dst_width, boxheight, x, dx, (uint32*)(row32), dst_ptr);
       dst_ptr += dst_stride;
     }
     free_aligned_buffer_64(row32);
@@ -885,30 +875,16 @@ void ScalePlaneBilinearDown(int src_width, int src_height,
              &x, &y, &dx, &dy);
   src_width = Abs(src_width);
 
-#if defined(HAS_INTERPOLATEROW_SSE2)
-  if (TestCpuFlag(kCpuHasSSE2) && src_width >= 16) {
-    InterpolateRow = InterpolateRow_Any_SSE2;
-    if (IS_ALIGNED(src_width, 16)) {
-      InterpolateRow = InterpolateRow_Unaligned_SSE2;
-      if (IS_ALIGNED(src_ptr, 16) && IS_ALIGNED(src_stride, 16)) {
-        InterpolateRow = InterpolateRow_SSE2;
-      }
-    }
-  }
-#endif
 #if defined(HAS_INTERPOLATEROW_SSSE3)
-  if (TestCpuFlag(kCpuHasSSSE3) && src_width >= 16) {
+  if (TestCpuFlag(kCpuHasSSSE3)) {
     InterpolateRow = InterpolateRow_Any_SSSE3;
     if (IS_ALIGNED(src_width, 16)) {
-      InterpolateRow = InterpolateRow_Unaligned_SSSE3;
-      if (IS_ALIGNED(src_ptr, 16) && IS_ALIGNED(src_stride, 16)) {
-        InterpolateRow = InterpolateRow_SSSE3;
-      }
+      InterpolateRow = InterpolateRow_SSSE3;
     }
   }
 #endif
 #if defined(HAS_INTERPOLATEROW_AVX2)
-  if (TestCpuFlag(kCpuHasAVX2) && src_width >= 32) {
+  if (TestCpuFlag(kCpuHasAVX2)) {
     InterpolateRow = InterpolateRow_Any_AVX2;
     if (IS_ALIGNED(src_width, 32)) {
       InterpolateRow = InterpolateRow_AVX2;
@@ -916,7 +892,7 @@ void ScalePlaneBilinearDown(int src_width, int src_height,
   }
 #endif
 #if defined(HAS_INTERPOLATEROW_NEON)
-  if (TestCpuFlag(kCpuHasNEON) && src_width >= 16) {
+  if (TestCpuFlag(kCpuHasNEON)) {
     InterpolateRow = InterpolateRow_Any_NEON;
     if (IS_ALIGNED(src_width, 16)) {
       InterpolateRow = InterpolateRow_NEON;
@@ -924,7 +900,7 @@ void ScalePlaneBilinearDown(int src_width, int src_height,
   }
 #endif
 #if defined(HAS_INTERPOLATEROW_MIPS_DSPR2)
-  if (TestCpuFlag(kCpuHasMIPS_DSPR2) && src_width >= 4) {
+  if (TestCpuFlag(kCpuHasMIPS_DSPR2)) {
     InterpolateRow = InterpolateRow_Any_MIPS_DSPR2;
     if (IS_ALIGNED(src_width, 4)) {
       InterpolateRow = InterpolateRow_MIPS_DSPR2;
@@ -936,6 +912,14 @@ void ScalePlaneBilinearDown(int src_width, int src_height,
 #if defined(HAS_SCALEFILTERCOLS_SSSE3)
   if (TestCpuFlag(kCpuHasSSSE3) && src_width < 32768) {
     ScaleFilterCols = ScaleFilterCols_SSSE3;
+  }
+#endif
+#if defined(HAS_SCALEFILTERCOLS_NEON)
+  if (TestCpuFlag(kCpuHasNEON) && src_width < 32768) {
+    ScaleFilterCols = ScaleFilterCols_Any_NEON;
+    if (IS_ALIGNED(dst_width, 8)) {
+      ScaleFilterCols = ScaleFilterCols_NEON;
+    }
   }
 #endif
   if (y > max_y) {
@@ -988,29 +972,23 @@ void ScalePlaneBilinearDown_16(int src_width, int src_height,
   src_width = Abs(src_width);
 
 #if defined(HAS_INTERPOLATEROW_16_SSE2)
-  if (TestCpuFlag(kCpuHasSSE2) && src_width >= 16) {
+  if (TestCpuFlag(kCpuHasSSE2)) {
     InterpolateRow = InterpolateRow_Any_16_SSE2;
     if (IS_ALIGNED(src_width, 16)) {
-      InterpolateRow = InterpolateRow_Unaligned_16_SSE2;
-      if (IS_ALIGNED(src_ptr, 16) && IS_ALIGNED(src_stride, 16)) {
-        InterpolateRow = InterpolateRow_16_SSE2;
-      }
+      InterpolateRow = InterpolateRow_16_SSE2;
     }
   }
 #endif
 #if defined(HAS_INTERPOLATEROW_16_SSSE3)
-  if (TestCpuFlag(kCpuHasSSSE3) && src_width >= 16) {
+  if (TestCpuFlag(kCpuHasSSSE3)) {
     InterpolateRow = InterpolateRow_Any_16_SSSE3;
     if (IS_ALIGNED(src_width, 16)) {
-      InterpolateRow = InterpolateRow_Unaligned_16_SSSE3;
-      if (IS_ALIGNED(src_ptr, 16) && IS_ALIGNED(src_stride, 16)) {
-        InterpolateRow = InterpolateRow_16_SSSE3;
-      }
+      InterpolateRow = InterpolateRow_16_SSSE3;
     }
   }
 #endif
 #if defined(HAS_INTERPOLATEROW_16_AVX2)
-  if (TestCpuFlag(kCpuHasAVX2) && src_width >= 32) {
+  if (TestCpuFlag(kCpuHasAVX2)) {
     InterpolateRow = InterpolateRow_Any_16_AVX2;
     if (IS_ALIGNED(src_width, 32)) {
       InterpolateRow = InterpolateRow_16_AVX2;
@@ -1018,7 +996,7 @@ void ScalePlaneBilinearDown_16(int src_width, int src_height,
   }
 #endif
 #if defined(HAS_INTERPOLATEROW_16_NEON)
-  if (TestCpuFlag(kCpuHasNEON) && src_width >= 16) {
+  if (TestCpuFlag(kCpuHasNEON)) {
     InterpolateRow = InterpolateRow_Any_16_NEON;
     if (IS_ALIGNED(src_width, 16)) {
       InterpolateRow = InterpolateRow_16_NEON;
@@ -1026,7 +1004,7 @@ void ScalePlaneBilinearDown_16(int src_width, int src_height,
   }
 #endif
 #if defined(HAS_INTERPOLATEROW_16_MIPS_DSPR2)
-  if (TestCpuFlag(kCpuHasMIPS_DSPR2) && src_width >= 4) {
+  if (TestCpuFlag(kCpuHasMIPS_DSPR2)) {
     InterpolateRow = InterpolateRow_Any_16_MIPS_DSPR2;
     if (IS_ALIGNED(src_width, 4)) {
       InterpolateRow = InterpolateRow_16_MIPS_DSPR2;
@@ -1080,36 +1058,22 @@ void ScalePlaneBilinearUp(int src_width, int src_height,
       ptrdiff_t src_stride, int dst_width, int source_y_fraction) =
       InterpolateRow_C;
   void (*ScaleFilterCols)(uint8* dst_ptr, const uint8* src_ptr,
-       int dst_width, int x, int dx) =
-       filtering ? ScaleFilterCols_C : ScaleCols_C;
+      int dst_width, int x, int dx) =
+      filtering ? ScaleFilterCols_C : ScaleCols_C;
   ScaleSlope(src_width, src_height, dst_width, dst_height, filtering,
              &x, &y, &dx, &dy);
   src_width = Abs(src_width);
 
-#if defined(HAS_INTERPOLATEROW_SSE2)
-  if (TestCpuFlag(kCpuHasSSE2) && dst_width >= 16) {
-    InterpolateRow = InterpolateRow_Any_SSE2;
-    if (IS_ALIGNED(dst_width, 16)) {
-      InterpolateRow = InterpolateRow_Unaligned_SSE2;
-      if (IS_ALIGNED(dst_ptr, 16) && IS_ALIGNED(dst_stride, 16)) {
-        InterpolateRow = InterpolateRow_SSE2;
-      }
-    }
-  }
-#endif
 #if defined(HAS_INTERPOLATEROW_SSSE3)
-  if (TestCpuFlag(kCpuHasSSSE3) && dst_width >= 16) {
+  if (TestCpuFlag(kCpuHasSSSE3)) {
     InterpolateRow = InterpolateRow_Any_SSSE3;
     if (IS_ALIGNED(dst_width, 16)) {
-      InterpolateRow = InterpolateRow_Unaligned_SSSE3;
-      if (IS_ALIGNED(dst_ptr, 16) && IS_ALIGNED(dst_stride, 16)) {
-        InterpolateRow = InterpolateRow_SSSE3;
-      }
+      InterpolateRow = InterpolateRow_SSSE3;
     }
   }
 #endif
 #if defined(HAS_INTERPOLATEROW_AVX2)
-  if (TestCpuFlag(kCpuHasAVX2) && dst_width >= 32) {
+  if (TestCpuFlag(kCpuHasAVX2)) {
     InterpolateRow = InterpolateRow_Any_AVX2;
     if (IS_ALIGNED(dst_width, 32)) {
       InterpolateRow = InterpolateRow_AVX2;
@@ -1117,7 +1081,7 @@ void ScalePlaneBilinearUp(int src_width, int src_height,
   }
 #endif
 #if defined(HAS_INTERPOLATEROW_NEON)
-  if (TestCpuFlag(kCpuHasNEON) && dst_width >= 16) {
+  if (TestCpuFlag(kCpuHasNEON)) {
     InterpolateRow = InterpolateRow_Any_NEON;
     if (IS_ALIGNED(dst_width, 16)) {
       InterpolateRow = InterpolateRow_NEON;
@@ -1125,7 +1089,7 @@ void ScalePlaneBilinearUp(int src_width, int src_height,
   }
 #endif
 #if defined(HAS_INTERPOLATEROW_MIPS_DSPR2)
-  if (TestCpuFlag(kCpuHasMIPS_DSPR2) && dst_width >= 4) {
+  if (TestCpuFlag(kCpuHasMIPS_DSPR2)) {
     InterpolateRow = InterpolateRow_Any_MIPS_DSPR2;
     if (IS_ALIGNED(dst_width, 4)) {
       InterpolateRow = InterpolateRow_MIPS_DSPR2;
@@ -1141,12 +1105,18 @@ void ScalePlaneBilinearUp(int src_width, int src_height,
     ScaleFilterCols = ScaleFilterCols_SSSE3;
   }
 #endif
+#if defined(HAS_SCALEFILTERCOLS_NEON)
+  if (filtering && TestCpuFlag(kCpuHasNEON) && src_width < 32768) {
+    ScaleFilterCols = ScaleFilterCols_Any_NEON;
+    if (IS_ALIGNED(dst_width, 8)) {
+      ScaleFilterCols = ScaleFilterCols_NEON;
+    }
+  }
+#endif
   if (!filtering && src_width * 2 == dst_width && x < 0x8000) {
     ScaleFilterCols = ScaleColsUp2_C;
 #if defined(HAS_SCALECOLS_SSE2)
-    if (TestCpuFlag(kCpuHasSSE2) && IS_ALIGNED(dst_width, 8) &&
-        IS_ALIGNED(src_ptr, 16) && IS_ALIGNED(src_stride, 16) &&
-        IS_ALIGNED(dst_ptr, 16) && IS_ALIGNED(dst_stride, 16)) {
+    if (TestCpuFlag(kCpuHasSSE2) && IS_ALIGNED(dst_width, 8)) {
       ScaleFilterCols = ScaleColsUp2_SSE2;
     }
 #endif
@@ -1160,7 +1130,7 @@ void ScalePlaneBilinearUp(int src_width, int src_height,
     const uint8* src = src_ptr + yi * src_stride;
 
     // Allocate 2 row buffers.
-    const int kRowSize = (dst_width + 15) & ~15;
+    const int kRowSize = (dst_width + 31) & ~31;
     align_buffer_64(row, kRowSize * 2);
 
     uint8* rowptr = row;
@@ -1219,36 +1189,30 @@ void ScalePlaneBilinearUp_16(int src_width, int src_height,
       ptrdiff_t src_stride, int dst_width, int source_y_fraction) =
       InterpolateRow_16_C;
   void (*ScaleFilterCols)(uint16* dst_ptr, const uint16* src_ptr,
-       int dst_width, int x, int dx) =
-       filtering ? ScaleFilterCols_16_C : ScaleCols_16_C;
+      int dst_width, int x, int dx) =
+      filtering ? ScaleFilterCols_16_C : ScaleCols_16_C;
   ScaleSlope(src_width, src_height, dst_width, dst_height, filtering,
              &x, &y, &dx, &dy);
   src_width = Abs(src_width);
 
 #if defined(HAS_INTERPOLATEROW_16_SSE2)
-  if (TestCpuFlag(kCpuHasSSE2) && dst_width >= 16) {
+  if (TestCpuFlag(kCpuHasSSE2)) {
     InterpolateRow = InterpolateRow_Any_16_SSE2;
     if (IS_ALIGNED(dst_width, 16)) {
-      InterpolateRow = InterpolateRow_Unaligned_16_SSE2;
-      if (IS_ALIGNED(dst_ptr, 16) && IS_ALIGNED(dst_stride, 16)) {
-        InterpolateRow = InterpolateRow_16_SSE2;
-      }
+      InterpolateRow = InterpolateRow_16_SSE2;
     }
   }
 #endif
 #if defined(HAS_INTERPOLATEROW_16_SSSE3)
-  if (TestCpuFlag(kCpuHasSSSE3) && dst_width >= 16) {
+  if (TestCpuFlag(kCpuHasSSSE3)) {
     InterpolateRow = InterpolateRow_Any_16_SSSE3;
     if (IS_ALIGNED(dst_width, 16)) {
-      InterpolateRow = InterpolateRow_Unaligned_16_SSSE3;
-      if (IS_ALIGNED(dst_ptr, 16) && IS_ALIGNED(dst_stride, 16)) {
-        InterpolateRow = InterpolateRow_16_SSSE3;
-      }
+      InterpolateRow = InterpolateRow_16_SSSE3;
     }
   }
 #endif
 #if defined(HAS_INTERPOLATEROW_16_AVX2)
-  if (TestCpuFlag(kCpuHasAVX2) && dst_width >= 32) {
+  if (TestCpuFlag(kCpuHasAVX2)) {
     InterpolateRow = InterpolateRow_Any_16_AVX2;
     if (IS_ALIGNED(dst_width, 32)) {
       InterpolateRow = InterpolateRow_16_AVX2;
@@ -1256,7 +1220,7 @@ void ScalePlaneBilinearUp_16(int src_width, int src_height,
   }
 #endif
 #if defined(HAS_INTERPOLATEROW_16_NEON)
-  if (TestCpuFlag(kCpuHasNEON) && dst_width >= 16) {
+  if (TestCpuFlag(kCpuHasNEON)) {
     InterpolateRow = InterpolateRow_Any_16_NEON;
     if (IS_ALIGNED(dst_width, 16)) {
       InterpolateRow = InterpolateRow_16_NEON;
@@ -1264,7 +1228,7 @@ void ScalePlaneBilinearUp_16(int src_width, int src_height,
   }
 #endif
 #if defined(HAS_INTERPOLATEROW_16_MIPS_DSPR2)
-  if (TestCpuFlag(kCpuHasMIPS_DSPR2) && dst_width >= 4) {
+  if (TestCpuFlag(kCpuHasMIPS_DSPR2)) {
     InterpolateRow = InterpolateRow_Any_16_MIPS_DSPR2;
     if (IS_ALIGNED(dst_width, 4)) {
       InterpolateRow = InterpolateRow_16_MIPS_DSPR2;
@@ -1283,9 +1247,7 @@ void ScalePlaneBilinearUp_16(int src_width, int src_height,
   if (!filtering && src_width * 2 == dst_width && x < 0x8000) {
     ScaleFilterCols = ScaleColsUp2_16_C;
 #if defined(HAS_SCALECOLS_16_SSE2)
-    if (TestCpuFlag(kCpuHasSSE2) && IS_ALIGNED(dst_width, 8) &&
-        IS_ALIGNED(src_ptr, 16) && IS_ALIGNED(src_stride, 16) &&
-        IS_ALIGNED(dst_ptr, 16) && IS_ALIGNED(dst_stride, 16)) {
+    if (TestCpuFlag(kCpuHasSSE2) && IS_ALIGNED(dst_width, 8)) {
       ScaleFilterCols = ScaleColsUp2_16_SSE2;
     }
 #endif
@@ -1299,7 +1261,7 @@ void ScalePlaneBilinearUp_16(int src_width, int src_height,
     const uint16* src = src_ptr + yi * src_stride;
 
     // Allocate 2 row buffers.
-    const int kRowSize = (dst_width + 15) & ~15;
+    const int kRowSize = (dst_width + 31) & ~31;
     align_buffer_64(row, kRowSize * 4);
 
     uint16* rowptr = (uint16*)row;
@@ -1366,17 +1328,14 @@ static void ScalePlaneSimple(int src_width, int src_height,
   if (src_width * 2 == dst_width && x < 0x8000) {
     ScaleCols = ScaleColsUp2_C;
 #if defined(HAS_SCALECOLS_SSE2)
-    if (TestCpuFlag(kCpuHasSSE2) && IS_ALIGNED(dst_width, 8) &&
-        IS_ALIGNED(src_ptr, 16) && IS_ALIGNED(src_stride, 16) &&
-        IS_ALIGNED(dst_ptr, 16) && IS_ALIGNED(dst_stride, 16)) {
+    if (TestCpuFlag(kCpuHasSSE2) && IS_ALIGNED(dst_width, 8)) {
       ScaleCols = ScaleColsUp2_SSE2;
     }
 #endif
   }
 
   for (i = 0; i < dst_height; ++i) {
-    ScaleCols(dst_ptr, src_ptr + (y >> 16) * src_stride,
-              dst_width, x, dx);
+    ScaleCols(dst_ptr, src_ptr + (y >> 16) * src_stride, dst_width, x, dx);
     dst_ptr += dst_stride;
     y += dy;
   }
@@ -1401,9 +1360,7 @@ static void ScalePlaneSimple_16(int src_width, int src_height,
   if (src_width * 2 == dst_width && x < 0x8000) {
     ScaleCols = ScaleColsUp2_16_C;
 #if defined(HAS_SCALECOLS_16_SSE2)
-    if (TestCpuFlag(kCpuHasSSE2) && IS_ALIGNED(dst_width, 8) &&
-        IS_ALIGNED(src_ptr, 16) && IS_ALIGNED(src_stride, 16) &&
-        IS_ALIGNED(dst_ptr, 16) && IS_ALIGNED(dst_stride, 16)) {
+    if (TestCpuFlag(kCpuHasSSE2) && IS_ALIGNED(dst_width, 8)) {
       ScaleCols = ScaleColsUp2_16_SSE2;
     }
 #endif
@@ -1428,8 +1385,7 @@ void ScalePlane(const uint8* src, int src_stride,
                 enum FilterMode filtering) {
   // Simplify filtering when possible.
   filtering = ScaleFilterReduce(src_width, src_height,
-                                dst_width, dst_height,
-                                filtering);
+                                dst_width, dst_height, filtering);
 
   // Negative height means invert the image.
   if (src_height < 0) {
@@ -1445,9 +1401,9 @@ void ScalePlane(const uint8* src, int src_stride,
     CopyPlane(src, src_stride, dst, dst_stride, dst_width, dst_height);
     return;
   }
-  if (dst_width == src_width) {
+  if (dst_width == src_width && filtering != kFilterBox) {
     int dy = FixedDiv(src_height, dst_height);
-    // Arbitrary scale vertically, but unscaled vertically.
+    // Arbitrary scale vertically, but unscaled horizontally.
     ScalePlaneVertical(src_height,
                        dst_width, dst_height,
                        src_stride, dst_stride, src, dst,
@@ -1478,7 +1434,7 @@ void ScalePlane(const uint8* src, int src_stride,
       return;
     }
     if (4 * dst_width == src_width && 4 * dst_height == src_height &&
-               filtering != kFilterBilinear) {
+        (filtering == kFilterBox || filtering == kFilterNone)) {
       // optimized, 1/4
       ScalePlaneDown4(src_width, src_height, dst_width, dst_height,
                       src_stride, dst_stride, src, dst, filtering);
@@ -1512,8 +1468,7 @@ void ScalePlane_16(const uint16* src, int src_stride,
                   enum FilterMode filtering) {
   // Simplify filtering when possible.
   filtering = ScaleFilterReduce(src_width, src_height,
-                                dst_width, dst_height,
-                                filtering);
+                                dst_width, dst_height, filtering);
 
   // Negative height means invert the image.
   if (src_height < 0) {
@@ -1606,6 +1561,7 @@ int I420Scale(const uint8* src_y, int src_stride_y,
   int dst_halfwidth = SUBSAMPLE(dst_width, 1, 1);
   int dst_halfheight = SUBSAMPLE(dst_height, 1, 1);
   if (!src_y || !src_u || !src_v || src_width == 0 || src_height == 0 ||
+      src_width > 32768 || src_height > 32768 ||
       !dst_y || !dst_u || !dst_v || dst_width <= 0 || dst_height <= 0) {
     return -1;
   }
@@ -1637,6 +1593,7 @@ int I420Scale_16(const uint16* src_y, int src_stride_y,
   int dst_halfwidth = SUBSAMPLE(dst_width, 1, 1);
   int dst_halfheight = SUBSAMPLE(dst_height, 1, 1);
   if (!src_y || !src_u || !src_v || src_width == 0 || src_height == 0 ||
+      src_width > 32768 || src_height > 32768 ||
       !dst_y || !dst_u || !dst_v || dst_width <= 0 || dst_height <= 0) {
     return -1;
   }
