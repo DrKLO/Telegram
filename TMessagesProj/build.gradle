@@ -112,7 +112,7 @@ android {
     }
 
     defaultConfig {
-        minSdkVersion 9
+        minSdkVersion 10
         targetSdkVersion 23
         versionName "3.7.0"
     }
