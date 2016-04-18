@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 3.x.x.
+ * This is the source code of Telegram for Android v. 1.3.2.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2016.
+ * Copyright Nikolai Kudashov, 2013.
  */
 
 package org.telegram.ui;
@@ -263,19 +263,11 @@ public class BlockedUsersActivity extends BaseFragment implements NotificationCe
             int type = getItemViewType(i);
             if (type == 0) {
                 if (view == null) {
-                    view = new UserCell(mContext, 1, 0, false);
+                    view = new UserCell(mContext, 1);
                 }
                 TLRPC.User user = MessagesController.getInstance().getUser(MessagesController.getInstance().blockedUsers.get(i));
                 if (user != null) {
-                    String number;
-                    if (user.bot) {
-                        number = LocaleController.getString("Bot", R.string.Bot).substring(0, 1).toUpperCase() + LocaleController.getString("Bot", R.string.Bot).substring(1);
-                    } else if (user.phone != null && user.phone.length() != 0) {
-                        number = PhoneFormat.getInstance().format("+" + user.phone);
-                    } else {
-                        number = LocaleController.getString("NumberUnknown", R.string.NumberUnknown);
-                    }
-                    ((UserCell) view).setData(user, null, number, 0);
+                    ((UserCell) view).setData(user, null, user.phone != null && user.phone.length() != 0 ? PhoneFormat.getInstance().format("+" + user.phone) : LocaleController.getString("NumberUnknown", R.string.NumberUnknown), 0);
                 }
             } else if (type == 1) {
                 if (view == null) {

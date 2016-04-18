@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 3.x.x.
+ * This is the source code of Telegram for Android v. 1.3.2.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2016.
+ * Copyright Nikolai Kudashov, 2013.
  */
 
 package org.telegram.ui;
@@ -166,7 +166,6 @@ public class ChangeNameActivity extends BaseFragment {
             return;
         }
         TLRPC.TL_account_updateProfile req = new TLRPC.TL_account_updateProfile();
-        req.flags = 3;
         currentUser.first_name = req.first_name = newFirst;
         currentUser.last_name = req.last_name = newLast;
         TLRPC.User user = MessagesController.getInstance().getUser(UserConfig.getClientUserId());
@@ -186,17 +185,8 @@ public class ChangeNameActivity extends BaseFragment {
     }
 
     @Override
-    public void onTransitionAnimationEnd(boolean isOpen, boolean backward) {
-        if (isOpen) {
-            AndroidUtilities.runOnUIThread(new Runnable() {
-                @Override
-                public void run() {
-                    if (firstNameField != null) {
-                        firstNameField.requestFocus();
-                        AndroidUtilities.showKeyboard(firstNameField);
-                    }
-                }
-            }, 100);
-        }
+    public void onOpenAnimationEnd() {
+        firstNameField.requestFocus();
+        AndroidUtilities.showKeyboard(firstNameField);
     }
 }

@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 3.x.x.
+ * This is the source code of Telegram for Android v. 1.7.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2016.
+ * Copyright Nikolai Kudashov, 2013-2014.
  */
 
 package org.telegram.ui;
@@ -385,10 +385,8 @@ public class ChangeUsernameActivity extends BaseFragment {
     }
 
     @Override
-    public void onTransitionAnimationEnd(boolean isOpen, boolean backward) {
-        if (isOpen) {
-            firstNameField.requestFocus();
-            AndroidUtilities.showKeyboard(firstNameField);
-        }
+    public void onOpenAnimationEnd() {
+        firstNameField.requestFocus();
+        AndroidUtilities.showKeyboard(firstNameField);
     }
 }
