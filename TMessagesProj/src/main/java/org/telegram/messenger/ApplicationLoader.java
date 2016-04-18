@@ -29,7 +29,16 @@ import android.util.Base64;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GooglePlayServicesUtil;
+import com.nostra13.universalimageloader.cache.disc.impl.UnlimitedDiscCache;
+import com.nostra13.universalimageloader.cache.disc.naming.HashCodeFileNameGenerator;
+import com.nostra13.universalimageloader.cache.memory.impl.LruMemoryCache;
+import com.nostra13.universalimageloader.core.DisplayImageOptions;
+import com.nostra13.universalimageloader.core.ImageLoaderConfiguration;
+import com.nostra13.universalimageloader.core.assist.QueueProcessingType;
+import com.nostra13.universalimageloader.core.download.BaseImageDownloader;
+import com.nostra13.universalimageloader.utils.StorageUtils;
 
+import org.telegram.SQLite.DatabaseHandler;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.SerializedData;
 import org.telegram.tgnet.TLRPC;
@@ -37,8 +46,6 @@ import org.telegram.ui.Components.ForegroundDetector;
 
 import java.io.File;
 import java.io.RandomAccessFile;
-import java.util.ArrayList;
-import java.util.Locale;
 
 public class ApplicationLoader extends Application {
 
@@ -50,10 +57,21 @@ public class ApplicationLoader extends Application {
     public static volatile Context applicationContext;
     public static volatile Handler applicationHandler;
     private static volatile boolean applicationInited = false;
-
+    public static DatabaseHandler databaseHandler;
+    public static boolean KEEP_ORIGINAL_FILENAME;
+    public static boolean SHOW_ANDROID_EMOJI;
+    public static boolean USE_DEVICE_FONT;
     public static volatile boolean isScreenOn = false;
     public static volatile boolean mainInterfacePaused = true;
-
+    public static Context GetC()
+    {
+        return applicationContext;
+    }
+    public static void SetC(Context c)
+    {
+        applicationContext = c;
+    }
+    public static String trans="0";
     public static boolean isCustomTheme() {
         return isCustomTheme;
     }
@@ -173,7 +191,7 @@ public class ApplicationLoader extends Application {
         } catch (Exception e) {
             FileLog.e("tmessages", e);
         }
-        return new File("/data/data/org.telegram.messenger/files");
+        return new File("/data/data/ir.pishroid.telehgram/files");
     }
 
     public static void postInitApplication() {
@@ -221,13 +239,13 @@ public class ApplicationLoader extends Application {
             appVersion = pInfo.versionName + " (" + pInfo.versionCode + ")";
             systemVersion = "SDK " + Build.VERSION.SDK_INT;
         } catch (Exception e) {
-            langCode = "en";
+            langCode = "fa";
             deviceModel = "Android unknown";
             appVersion = "App version unknown";
             systemVersion = "SDK " + Build.VERSION.SDK_INT;
         }
         if (langCode.trim().length() == 0) {
-            langCode = "en";
+            langCode = "fa";
         }
         if (deviceModel.trim().length() == 0) {
             deviceModel = "Android unknown";
@@ -255,6 +273,28 @@ public class ApplicationLoader extends Application {
         ContactsController.getInstance().checkAppAccount();
         MediaController.getInstance();
     }
+    public static void initImageLoader(Context context) {
+        File cacheDir = StorageUtils.getCacheDirectory(context);
+        ImageLoaderConfiguration config = new ImageLoaderConfiguration.Builder(context)
+                .memoryCacheExtraOptions(480, 800)
+                .diskCacheExtraOptions(480, 800, null)
+                .threadPoolSize(3)
+                .threadPriority(Thread.NORM_PRIORITY - 2)
+                .tasksProcessingOrder(QueueProcessingType.FIFO)
+                .denyCacheImageMultipleSizesInMemory()
+                .memoryCache(new LruMemoryCache(2 * 1024 * 1024))
+                .memoryCacheSize(2 * 1024 * 1024)
+                .memoryCacheSizePercentage(13)
+                .diskCache(new UnlimitedDiscCache(cacheDir))
+                .diskCacheSize(50 * 1024 * 1024)
+                .diskCacheFileCount(100)
+                .diskCacheFileNameGenerator(new HashCodeFileNameGenerator()) // default
+                .imageDownloader(new BaseImageDownloader(context)) // default
+                .defaultDisplayImageOptions(DisplayImageOptions.createSimple()) // default
+                .writeDebugLogs()
+                .build();
+        com.nostra13.universalimageloader.core.ImageLoader.getInstance().init(config);
+    }
 
     @Override
     public void onCreate() {
@@ -264,8 +304,9 @@ public class ApplicationLoader extends Application {
             java.lang.System.setProperty("java.net.preferIPv4Stack", "true");
             java.lang.System.setProperty("java.net.preferIPv6Addresses", "false");
         }
-
         applicationContext = getApplicationContext();
+        ApplicationLoader.SetC(getApplicationContext());
+        initImageLoader(getApplicationContext());
         NativeLoader.initNativeLibs(ApplicationLoader.applicationContext);
         ConnectionsManager.native_setJava(Build.VERSION.SDK_INT == 14 || Build.VERSION.SDK_INT == 15);
 
@@ -274,8 +315,13 @@ public class ApplicationLoader extends Application {
         }
 
         applicationHandler = new Handler(applicationContext.getMainLooper());
-
+        databaseHandler = new DatabaseHandler(applicationContext);
+        SharedPreferences plusPreferences = applicationContext.getSharedPreferences("plusconfig", 0);
+        SHOW_ANDROID_EMOJI = plusPreferences.getBoolean("showAndroidEmoji", false);
+        KEEP_ORIGINAL_FILENAME = plusPreferences.getBoolean("keepOriginalFilename", false);
+        USE_DEVICE_FONT = plusPreferences.getBoolean("useDeviceFont", false);
         startPushService();
+
     }
 
     public static void startPushService() {
@@ -327,8 +373,6 @@ public class ApplicationLoader extends Application {
                         FileLog.d("tmessages", "GCM Registration not found.");
                         Intent intent = new Intent(applicationContext, GcmRegistrationIntentService.class);
                         startService(intent);
-                    } else {
-                        FileLog.d("tmessages", "GCM regId = " + UserConfig.pushString);
                     }
                 } else {
                     FileLog.d("tmessages", "No valid Google Play Services APK found.");
