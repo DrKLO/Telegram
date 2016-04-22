@@ -27,6 +27,7 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.FileLog;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.ui.Cells.ContextLinkCell;
 import org.telegram.ui.Cells.StickerCell;
 import org.telegram.ui.Cells.StickerEmojiCell;
 import org.telegram.ui.Components.LayoutHelper;
@@ -88,6 +89,8 @@ public class StickerPreviewViewer {
                 ((StickerEmojiCell) currentStickerPreviewCell).setScaled(false);
             } else if (currentStickerPreviewCell instanceof StickerCell) {
                 ((StickerCell) currentStickerPreviewCell).setScaled(false);
+            } else if (currentStickerPreviewCell instanceof ContextLinkCell) {
+                ((ContextLinkCell) currentStickerPreviewCell).setScaled(false);
             }
             currentStickerPreviewCell = null;
         }
@@ -116,6 +119,8 @@ public class StickerPreviewViewer {
                             ((StickerEmojiCell) currentStickerPreviewCell).setScaled(false);
                         } else if (currentStickerPreviewCell instanceof StickerCell) {
                             ((StickerCell) currentStickerPreviewCell).setScaled(false);
+                        } else if (currentStickerPreviewCell instanceof ContextLinkCell) {
+                            ((ContextLinkCell) currentStickerPreviewCell).setScaled(false);
                         }
                         currentStickerPreviewCell = null;
                     }
@@ -148,13 +153,23 @@ public class StickerPreviewViewer {
                             if (top > y || bottom < y || left > x || right < x) {
                                 continue;
                             }
-                            if (!(view instanceof StickerEmojiCell) && !(view instanceof StickerCell) || view == currentStickerPreviewCell) {
+                            boolean ok = false;
+                            if (view instanceof StickerEmojiCell) {
+                                ok = true;
+                            } else if (view instanceof StickerCell) {
+                                ok = true;
+                            } else if (view instanceof ContextLinkCell) {
+                                ok = ((ContextLinkCell) view).isSticker();
+                            }
+                            if (!ok || view == currentStickerPreviewCell) {
                                 break;
                             }
                             if (currentStickerPreviewCell instanceof StickerEmojiCell) {
                                 ((StickerEmojiCell) currentStickerPreviewCell).setScaled(false);
                             } else if (currentStickerPreviewCell instanceof StickerCell) {
                                 ((StickerCell) currentStickerPreviewCell).setScaled(false);
+                            } else if (currentStickerPreviewCell instanceof ContextLinkCell) {
+                                ((ContextLinkCell) currentStickerPreviewCell).setScaled(false);
                             }
                             currentStickerPreviewCell = view;
                             setKeyboardHeight(height);
@@ -164,6 +179,9 @@ public class StickerPreviewViewer {
                             } else if (currentStickerPreviewCell instanceof StickerCell) {
                                 open(((StickerCell) currentStickerPreviewCell).getSticker());
                                 ((StickerCell) currentStickerPreviewCell).setScaled(true);
+                            } else if (currentStickerPreviewCell instanceof ContextLinkCell) {
+                                open(((ContextLinkCell) currentStickerPreviewCell).getDocument());
+                                ((ContextLinkCell) currentStickerPreviewCell).setScaled(true);
                             }
                             return true;
                         }
@@ -212,7 +230,16 @@ public class StickerPreviewViewer {
                 if (top > y || bottom < y || left > x || right < x) {
                     continue;
                 }
-                if (!(view instanceof StickerEmojiCell) && !(view instanceof StickerCell) || view instanceof StickerEmojiCell && !((StickerEmojiCell) view).showingBitmap() || view instanceof StickerCell && !((StickerCell) view).showingBitmap()) {
+                boolean ok = false;
+                if (view instanceof StickerEmojiCell) {
+                    ok = ((StickerEmojiCell) view).showingBitmap();
+                } else if (view instanceof StickerCell) {
+                    ok = ((StickerCell) view).showingBitmap();
+                } else if (view instanceof ContextLinkCell) {
+                    ContextLinkCell cell = (ContextLinkCell) view;
+                    ok = cell.isSticker() && cell.showingBitmap();
+                }
+                if (!ok) {
                     return false;
                 }
                 startX = x;
@@ -240,6 +267,9 @@ public class StickerPreviewViewer {
                         } else if (currentStickerPreviewCell instanceof StickerCell) {
                             open(((StickerCell) currentStickerPreviewCell).getSticker());
                             ((StickerCell) currentStickerPreviewCell).setScaled(true);
+                        } else if (currentStickerPreviewCell instanceof ContextLinkCell) {
+                            open(((ContextLinkCell) currentStickerPreviewCell).getDocument());
+                            ((ContextLinkCell) currentStickerPreviewCell).setScaled(true);
                         }
                     }
                 };
@@ -260,7 +290,7 @@ public class StickerPreviewViewer {
         windowView.setFocusable(true);
         windowView.setFocusableInTouchMode(true);
         if (Build.VERSION.SDK_INT >= 23) {
-            windowView.setFitsSystemWindows(true); //TODO ?
+            windowView.setFitsSystemWindows(true);
         }
 
         containerView = new FrameLayoutDrawer(activity);

@@ -1147,7 +1147,7 @@ public class ChangePhoneActivity extends BaseFragment {
                     timeText.setText(LocaleController.formatString("SmsText", R.string.SmsText, 1, 0));
                 }
                 createTimer();
-            } else if (currentType == 2 && nextType == 4) {
+            } else if (currentType == 2 && (nextType == 4 || nextType == 3)) {
                 timeText.setVisibility(VISIBLE);
                 timeText.setText(LocaleController.formatString("CallText", R.string.CallText, 2, 0));
                 problemText.setVisibility(time < 1000 ? VISIBLE : GONE);
@@ -1220,7 +1220,7 @@ public class ChangePhoneActivity extends BaseFragment {
                             if (time >= 1000) {
                                 int minutes = time / 1000 / 60;
                                 int seconds = time / 1000 - minutes * 60;
-                                if (nextType == 4) {
+                                if (nextType == 4 || nextType == 3) {
                                     timeText.setText(LocaleController.formatString("CallText", R.string.CallText, minutes, seconds));
                                 } else if (nextType == 2) {
                                     timeText.setText(LocaleController.formatString("SmsText", R.string.SmsText, minutes, seconds));
@@ -1239,25 +1239,33 @@ public class ChangePhoneActivity extends BaseFragment {
                                     waitingForEvent = false;
                                     destroyCodeTimer();
                                     resendCode();
-                                } else {
-                                    timeText.setText(LocaleController.getString("Calling", R.string.Calling));
-                                    createCodeTimer();
-                                    TLRPC.TL_auth_resendCode req = new TLRPC.TL_auth_resendCode();
-                                    req.phone_number = requestPhone;
-                                    req.phone_code_hash = phoneHash;
-                                    ConnectionsManager.getInstance().sendRequest(req, new RequestDelegate() {
-                                        @Override
-                                        public void run(TLObject response, final TLRPC.TL_error error) {
-                                            if (error != null && error.text != null) {
-                                                AndroidUtilities.runOnUIThread(new Runnable() {
-                                                    @Override
-                                                    public void run() {
-                                                        lastError = error.text;
-                                                    }
-                                                });
+                                } else if (currentType == 2) {
+                                    if (nextType == 4) {
+                                        timeText.setText(LocaleController.getString("Calling", R.string.Calling));
+                                        createCodeTimer();
+                                        TLRPC.TL_auth_resendCode req = new TLRPC.TL_auth_resendCode();
+                                        req.phone_number = requestPhone;
+                                        req.phone_code_hash = phoneHash;
+                                        ConnectionsManager.getInstance().sendRequest(req, new RequestDelegate() {
+                                            @Override
+                                            public void run(TLObject response, final TLRPC.TL_error error) {
+                                                if (error != null && error.text != null) {
+                                                    AndroidUtilities.runOnUIThread(new Runnable() {
+                                                        @Override
+                                                        public void run() {
+                                                            lastError = error.text;
+                                                        }
+                                                    });
+                                                }
                                             }
-                                        }
-                                    }, ConnectionsManager.RequestFlagFailOnServerErrors);
+                                        }, ConnectionsManager.RequestFlagFailOnServerErrors);
+                                    } else if (nextType == 3) {
+                                        AndroidUtilities.setWaitingForSms(false);
+                                        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.didReceiveSmsCode);
+                                        waitingForEvent = false;
+                                        destroyCodeTimer();
+                                        resendCode();
+                                    }
                                 }
                             }
                         }
@@ -1320,7 +1328,7 @@ public class ChangePhoneActivity extends BaseFragment {
                                 finishFragment();
                             } else {
                                 lastError = error.text;
-                                if (currentType == 3 && (nextType == 4 || nextType == 2) || currentType == 2 && nextType == 4) {
+                                if (currentType == 3 && (nextType == 4 || nextType == 2) || currentType == 2 && (nextType == 4 || nextType == 3)) {
                                     createTimer();
                                 }
                                 if (currentType == 2) {

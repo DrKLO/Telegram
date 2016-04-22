@@ -46,6 +46,7 @@ public class GcmPushListenerService extends GcmListenerService {
                     FileLog.e("tmessages", e);
                 }
 
+                ConnectionsManager.onInternalPushReceived();
                 ConnectionsManager.getInstance().resumeNetworkMaybe();
             }
         });

@@ -27,7 +27,7 @@ public class RadialProgress {
     private float animatedProgressValue = 0;
     private RectF progressRect = new RectF();
     private RectF cicleRect = new RectF();
-    private View parent = null;
+    private View parent;
     private float animatedAlphaValue = 1.0f;
 
     private boolean currentWithRound;
@@ -37,8 +37,9 @@ public class RadialProgress {
     private boolean hideCurrentDrawable;
     private int progressColor = 0xffffffff;
 
-    private static DecelerateInterpolator decelerateInterpolator = null;
-    private static Paint progressPaint = null;
+    private static DecelerateInterpolator decelerateInterpolator;
+    private static Paint progressPaint;
+    private boolean alphaForPrevious = true;
 
     public RadialProgress(View parentView) {
         if (decelerateInterpolator == null) {
@@ -46,13 +47,17 @@ public class RadialProgress {
             progressPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
             progressPaint.setStyle(Paint.Style.STROKE);
             progressPaint.setStrokeCap(Paint.Cap.ROUND);
-            progressPaint.setStrokeWidth(AndroidUtilities.dp(2));
+            progressPaint.setStrokeWidth(AndroidUtilities.dp(3));
         }
         parent = parentView;
     }
 
     public void setProgressRect(int left, int top, int right, int bottom) {
         progressRect.set(left, top, right, bottom);
+    }
+
+    public void setAlphaForPrevious(boolean value) {
+        alphaForPrevious = value;
     }
 
     private void updateAnimation(boolean progress) {
@@ -105,10 +110,17 @@ public class RadialProgress {
     }
 
     public void setProgress(float value, boolean animated) {
+        if (value != 1 && animatedAlphaValue != 0 && previousDrawable != null) {
+            animatedAlphaValue = 0.0f;
+            previousDrawable = null;
+        }
         if (!animated) {
             animatedProgressValue = value;
             animationProgressStart = value;
         } else {
+            if (animatedProgressValue > value) {
+                animatedProgressValue = value;
+            }
             animationProgressStart = animatedProgressValue;
         }
         currentProgress = value;
@@ -125,10 +137,10 @@ public class RadialProgress {
     public void setBackground(Drawable drawable, boolean withRound, boolean animated) {
         lastUpdateTime = System.currentTimeMillis();
         if (animated && currentDrawable != drawable) {
-            setProgress(1, animated);
             previousDrawable = currentDrawable;
             previousWithRound = currentWithRound;
             animatedAlphaValue = 1.0f;
+            setProgress(1, animated);
         } else {
             previousDrawable = null;
             previousWithRound = false;
@@ -156,7 +168,11 @@ public class RadialProgress {
 
     public void draw(Canvas canvas) {
         if (previousDrawable != null) {
-            previousDrawable.setAlpha((int)(255 * animatedAlphaValue));
+            if (alphaForPrevious) {
+                previousDrawable.setAlpha((int) (255 * animatedAlphaValue));
+            } else {
+                previousDrawable.setAlpha(255);
+            }
             previousDrawable.setBounds((int)progressRect.left, (int)progressRect.top, (int)progressRect.right, (int)progressRect.bottom);
             previousDrawable.draw(canvas);
         }
@@ -172,7 +188,7 @@ public class RadialProgress {
         }
 
         if (currentWithRound || previousWithRound) {
-            int diff = AndroidUtilities.dp(1);
+            int diff = AndroidUtilities.dp(4);
             progressPaint.setColor(progressColor);
             if (previousWithRound) {
                 progressPaint.setAlpha((int)(255 * animatedAlphaValue));

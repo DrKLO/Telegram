@@ -82,6 +82,13 @@ public class DialogsAdapter extends RecyclerView.Adapter {
     }
 
     @Override
+    public void onViewAttachedToWindow(RecyclerView.ViewHolder holder) {
+        if (holder.itemView instanceof DialogCell) {
+            ((DialogCell) holder.itemView).checkCurrentDialogIndex();
+        }
+    }
+
+    @Override
     public long getItemId(int i) {
         return i;
     }

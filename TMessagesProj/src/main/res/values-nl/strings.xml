@@ -255,10 +255,12 @@
     <string name="IsTyping">is aan het typen</string>
     <string name="AreTyping">zijn aan het typen</string>
     <string name="IsRecordingAudio">%1$s neemt een spraakbericht op...</string>
+    <string name="IsSendingAudio">%1$s verstuurt een geluid...</string>
     <string name="IsSendingPhoto">%1$s verstuurt een foto</string>
     <string name="IsSendingVideo">%1$s verstuurt een video</string>
     <string name="IsSendingFile">%1$s verstuurt een bestand</string>
     <string name="RecordingAudio">neemt een spraakbericht op...</string>
+    <string name="SendingAudio">audio versturen...</string>
     <string name="SendingPhoto">foto versturen</string>
     <string name="SendingVideoStatus">video versturen</string>
     <string name="SendingFile">bestand versturen</string>
@@ -504,6 +506,7 @@
     <string name="StickersCopy">Link kopiëren</string>
     <string name="StickersRemove">Verwijder</string>
     <string name="NoStickers">Nog geen stickers</string>
+    <string name="SendSticker">STICKER STUREN</string>
     <string name="TooMuchStickersets">Je hebt het maximale aantal stickerbundels bereikt.</string>
     <!--settings view-->
     <string name="ResetNotificationsText">Meldingen gereset</string>
@@ -539,6 +542,7 @@
     <string name="TerminateAllSessions">Beëindig alle andere sessies</string>
     <string name="Events">Gebeurtenissen</string>
     <string name="ContactJoined">Contact lid van Telegram</string>
+    <string name="PinnedMessages">Vastgezet berichten</string>
     <string name="Language">Taal</string>
     <string name="AskAQuestionInfo">De ondersteuning van Telegram wordt gedaan door vrijwilligers. We doen ons best om zo snel mogelijk te antwoorden.<![CDATA[<br><br>]]>Bekijk ook de <![CDATA[<a href=\"https://telegram.org/faq#general\">veelgestelde vragen</a>]]>: Hier staan de antwoorden op de meeste vragen en belangrijke tips voor <![CDATA[<a href=\"https://telegram.org/faq#troubleshooting\">het oplossen van problemen</a>]]>.</string>
     <string name="AskButton">Vraag een vrijwilliger</string>
@@ -551,7 +555,9 @@
     <string name="Enabled">Inschakelen</string>
     <string name="Disabled">Uitgeschakeld</string>
     <string name="NotificationsService">Meldingenservice</string>
-    <string name="NotificationsServiceDisableInfo">Als Google Play Services genoeg voor je is om meldingen te ontvangen kun je de meldingenservice uitschakelen. We raden echter aan dit ingeschakeld te laten om de app in de achtergrond te laten draaien en directe meldingen te ontvangen.</string>
+    <string name="NotificationsServiceInfo">App automatisch herstarten bij afsluiten om meldingen weer te kunnen blijven geven.</string>
+    <string name="NotificationsServiceConnection">Achtergrondverbinding</string>
+    <string name="NotificationsServiceConnectionInfo">Achtergrondverbinding voor meldingen. Inschakelen voor betrouwbare meldingen.</string>
     <string name="SortBy">Sorteren op</string>
     <string name="ImportContacts">Importeer contacten</string>
     <string name="SortFirstName">Voornaam</string>
@@ -932,7 +938,15 @@
     <string name="AreYouSureSessions">Alle apparaten behalve het huidige apparaat uitloggen?</string>
     <string name="AreYouSureDeleteAndExit">Verwijderen en de groep verlaten?</string>
     <string name="AreYouSureDeleteThisChat">Chat echt verwijderen?</string>
-    <string name="AreYouSureShareMyContactInfo">Weet je zeker dat je je contactinformatie wilt delen?</string>
+    <string name="ShareYouLocationTitle">Locatie delen?</string>
+    <string name="ShareYouLocationInfo">Huidige locatie naar deze bot sturen?</string>
+    <string name="ShareYouLocationUnable">Huidige locatie kon niet worden vastgesteld</string>
+    <string name="ShareYouLocationUnableManually">Handmatig kiezen</string>
+    <string name="ShareYouLocationInline">Deze bot wil toegang tot je locatie voor ieder verzoek dat je stuurt. Dit kan gebruikt worden voor locatiespecifieke resultaten.</string>
+    <string name="ShareYouPhoneNumberTitle">Telefoonnummer delen?</string>
+    <string name="AreYouSureShareMyContactInfoBot">De bot krijgt je telefoonnummer, dit kan handig zijn voor de integratie met andere diensten.</string>
+    <string name="AreYouSureShareMyContactInfoUser">Telefoonnummer %1$s delen met <![CDATA[<b>]]>%2$s<![CDATA[</b>]]>?</string>
+    <string name="AreYouSureShareMyContactInfo">Telefoonnummer echt delen?</string>
     <string name="AreYouSureBlockContact">Weet je zeker dat je deze persoon wilt blokkeren?</string>
     <string name="AreYouSureUnblockContact">Weet je zeker dat je deze persoon wilt deblokkeren?</string>
     <string name="AreYouSureDeleteContact">Contact echt verwijderen?</string>
@@ -955,11 +969,13 @@
     <string name="AllowReadSms">Sta het ontvangen van SMS toe zodat we automatisch je inlogcode kunnen invoeren.</string>
     <string name="AllowReadCall">Sta het ontvangen van oproepen toe zodat we automatisch je inlogcode kunnen invoeren.</string>
     <string name="AllowReadCallAndSms">Sta het ontvangen van oproepen en SMS toe zodat we automatisch je inlogcode kunnen invoeren.</string>
+    <string name="UserRestricted">Je mag deze actie niet uitvoeren.</string>
     <!--permissions-->
     <string name="PermissionContacts">Telegram heeft toegang tot je contacten nodig zodat je kan chatten met je vrienden vanaf al je apparaten.</string>
     <string name="PermissionStorage">Telegram heeft toegang tot je opslaggeheugen nodig zodat je foto\'s, video\'s, muziek en andere media kunt opslaan en versturen.</string>
     <string name="PermissionNoAudio">Telegram heeft toegang tot je microfoon nodig om spraakberichten te kunnen verzenden.</string>
     <string name="PermissionNoLocation">Telegram heeft toegang tot je locatie nodig om deze te kunnen delen met je vrienden.</string>
+    <string name="PermissionNoLocationPosition">Telegram heeft toegang tot je locatie nodig.</string>
     <string name="PermissionOpenSettings">INSTELLINGEN</string>
     <!--Intro view-->
     <string name="Page1Title">Telegram</string>

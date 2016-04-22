@@ -49,6 +49,7 @@ import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.VideoSeekBarView;
 import org.telegram.ui.Components.VideoTimelineView;
@@ -225,8 +226,8 @@ public class VideoEditorActivity extends BaseFragment implements TextureView.Sur
 
     @Override
     public View createView(Context context) {
-        actionBar.setBackgroundColor(0xff333333);
-        actionBar.setItemsBackground(R.drawable.bar_selector_white);
+        actionBar.setBackgroundColor(Theme.ACTION_BAR_MEDIA_PICKER_COLOR);
+        actionBar.setItemsBackgroundColor(Theme.ACTION_BAR_PICKER_SELECTOR_COLOR);
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBar.setTitle(LocaleController.getString("EditVideo", R.string.EditVideo));
         actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {

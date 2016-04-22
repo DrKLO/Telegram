@@ -47,7 +47,7 @@ public class Utilities {
 
     public native static void loadBitmap(String path, Bitmap bitmap, int scale, int width, int height, int stride);
     public native static int pinBitmap(Bitmap bitmap);
-    public native static int unpinBitmap(Bitmap bitmap);
+    public native static void unpinBitmap(Bitmap bitmap);
     public native static void blurBitmap(Object bitmap, int radius, int unpin, int width, int height, int stride);
     public native static void calcCDT(ByteBuffer hsvBuffer, int width, int height, ByteBuffer buffer);
     public native static boolean loadWebpImage(Bitmap bitmap, ByteBuffer buffer, int len, BitmapFactory.Options options, boolean unpin);
@@ -255,8 +255,8 @@ public class Utilities {
             java.security.MessageDigest md = java.security.MessageDigest.getInstance("MD5");
             byte[] array = md.digest(md5.getBytes());
             StringBuilder sb = new StringBuilder();
-            for (byte anArray : array) {
-                sb.append(Integer.toHexString((anArray & 0xFF) | 0x100).substring(1, 3));
+            for (int a = 0; a < array.length; a++) {
+                sb.append(Integer.toHexString((array[a] & 0xFF) | 0x100).substring(1, 3));
             }
             return sb.toString();
         } catch (java.security.NoSuchAlgorithmException e) {

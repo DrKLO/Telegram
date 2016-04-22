@@ -19,7 +19,6 @@ import android.view.ViewGroup;
 
 import org.telegram.messenger.AnimationCompat.AnimatorSetProxy;
 import org.telegram.messenger.FileLog;
-import org.telegram.messenger.R;
 import org.telegram.tgnet.ConnectionsManager;
 
 public class BaseFragment {
@@ -116,12 +115,17 @@ public class BaseFragment {
                 }
             }
             if (parentLayout != null && actionBar == null) {
-                actionBar = new ActionBar(parentLayout.getContext());
+                actionBar = createActionBar(parentLayout.getContext());
                 actionBar.parentFragment = this;
-                actionBar.setBackgroundColor(0xff54759e);
-                actionBar.setItemsBackground(R.drawable.bar_selector);
             }
         }
+    }
+
+    protected ActionBar createActionBar(Context context) {
+        ActionBar actionBar = new ActionBar(context);
+        actionBar.setBackgroundColor(Theme.ACTION_BAR_COLOR);
+        actionBar.setItemsBackgroundColor(Theme.ACTION_BAR_SELECTOR_COLOR);
+        return actionBar;
     }
 
     public void finishFragment() {

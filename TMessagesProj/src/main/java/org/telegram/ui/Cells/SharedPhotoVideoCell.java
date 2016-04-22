@@ -123,11 +123,18 @@ public class SharedPhotoVideoCell extends FrameLayoutFixed {
                 animator.addListener(new AnimatorListenerAdapterProxy() {
                     @Override
                     public void onAnimationEnd(Object animation) {
-                        if (animator.equals(animation)) {
+                        if (animator != null && animator.equals(animation)) {
                             animator = null;
                             if (!checked) {
                                 setBackgroundColor(0);
                             }
+                        }
+                    }
+
+                    @Override
+                    public void onAnimationCancel(Object animation) {
+                        if (animator != null && animator.equals(animation)) {
+                            animator = null;
                         }
                     }
                 });
@@ -229,8 +236,8 @@ public class SharedPhotoVideoCell extends FrameLayoutFixed {
             if (messageObject.isVideo()) {
                 photoVideoView.videoInfoContainer.setVisibility(VISIBLE);
                 int duration = 0;
-                for (int b = 0; b < messageObject.messageOwner.media.document.attributes.size(); b++) {
-                    TLRPC.DocumentAttribute attribute = messageObject.messageOwner.media.document.attributes.get(b);
+                for (int b = 0; b < messageObject.getDocument().attributes.size(); b++) {
+                    TLRPC.DocumentAttribute attribute = messageObject.getDocument().attributes.get(b);
                     if (attribute instanceof TLRPC.TL_documentAttributeVideo) {
                         duration = attribute.duration;
                         break;
@@ -239,8 +246,8 @@ public class SharedPhotoVideoCell extends FrameLayoutFixed {
                 int minutes = duration / 60;
                 int seconds = duration - minutes * 60;
                 photoVideoView.videoTextView.setText(String.format("%d:%02d", minutes, seconds));
-                if (messageObject.messageOwner.media.document.thumb != null) {
-                    TLRPC.FileLocation location = messageObject.messageOwner.media.document.thumb.location;
+                if (messageObject.getDocument().thumb != null) {
+                    TLRPC.FileLocation location = messageObject.getDocument().thumb.location;
                     photoVideoView.imageView.setImage(null, null, null, ApplicationLoader.applicationContext.getResources().getDrawable(R.drawable.photo_placeholder_in), null, location, "b", null, 0);
                 } else {
                     photoVideoView.imageView.setImageResource(R.drawable.photo_placeholder_in);

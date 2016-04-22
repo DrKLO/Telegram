@@ -12,7 +12,7 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
-import android.graphics.drawable.Drawable;
+import android.graphics.RectF;
 import android.text.Layout;
 import android.text.Spannable;
 import android.text.StaticLayout;
@@ -22,15 +22,15 @@ import android.view.MotionEvent;
 import android.view.SoundEffectConstants;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.messenger.UserConfig;
-import org.telegram.ui.Components.ResourceLoader;
+import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.PhotoViewer;
 import org.telegram.ui.Components.AvatarDrawable;
 
@@ -43,6 +43,8 @@ public class ChatActionCell extends BaseCell {
     }
 
     private static TextPaint textPaint;
+    private static Paint backPaint;
+    private static RectF rect;
 
     private URLSpan pressedLink;
 
@@ -69,11 +71,17 @@ public class ChatActionCell extends BaseCell {
             textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
             textPaint.setColor(0xffffffff);
             textPaint.linkColor = 0xffffffff;
+            textPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+
+            backPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+            rect = new RectF();
         }
+        backPaint.setColor(ApplicationLoader.getServiceMessageColor());
+
         imageReceiver = new ImageReceiver(this);
         imageReceiver.setRoundRadius(AndroidUtilities.dp(32));
         avatarDrawable = new AvatarDrawable();
-        textPaint.setTextSize(AndroidUtilities.dp(MessagesController.getInstance().fontSize));
+        textPaint.setTextSize(AndroidUtilities.dp(MessagesController.getInstance().fontSize - 2));
     }
 
     public void setDelegate(ChatActionCellDelegate delegate) {
@@ -258,26 +266,148 @@ public class ChatActionCell extends BaseCell {
         setMeasuredDimension(width, textHeight + AndroidUtilities.dp(14 + (currentMessageObject.type == 11 ? 70 : 0)));
     }
 
+    private int findMaxWidthAroundLine(int line) {
+        int width = (int) Math.ceil(textLayout.getLineWidth(line));
+        int count = textLayout.getLineCount();
+        for (int a = line + 1; a < count; a++) {
+            int w = (int) Math.ceil(textLayout.getLineWidth(a));
+            if (Math.abs(w - width) < AndroidUtilities.dp(12)) {
+                width = Math.max(w, width);
+            } else {
+                break;
+            }
+        }
+        for (int a = line - 1; a >= 0; a--) {
+            int w = (int) Math.ceil(textLayout.getLineWidth(a));
+            if (Math.abs(w - width) < AndroidUtilities.dp(12)) {
+                width = Math.max(w, width);
+            } else {
+                break;
+            }
+        }
+        return width;
+    }
+
     @Override
     protected void onDraw(Canvas canvas) {
         if (currentMessageObject == null) {
             return;
         }
 
-        Drawable backgroundDrawable;
-        if (ApplicationLoader.isCustomTheme()) {
-            backgroundDrawable = ResourceLoader.backgroundBlack;
-        } else {
-            backgroundDrawable = ResourceLoader.backgroundBlue;
-        }
-        backgroundDrawable.setBounds(textX - AndroidUtilities.dp(5), AndroidUtilities.dp(5), textX + textWidth + AndroidUtilities.dp(5), AndroidUtilities.dp(9) + textHeight);
-        backgroundDrawable.draw(canvas);
-
         if (currentMessageObject.type == 11) {
             imageReceiver.draw(canvas);
         }
 
         if (textLayout != null) {
+            final int count = textLayout.getLineCount();
+            final int corner = AndroidUtilities.dp(6);
+            int y = AndroidUtilities.dp(7);
+            int previousLineBottom = 0;
+            int dx;
+            int dy;
+            for (int a = 0; a < count; a++) {
+                int width = findMaxWidthAroundLine(a);
+                int x = (getMeasuredWidth() - width) / 2 - AndroidUtilities.dp(3);
+                width += AndroidUtilities.dp(6);
+                int lineBottom = textLayout.getLineBottom(a);
+                int height = lineBottom - previousLineBottom;
+                int additionalHeight = 0;
+                previousLineBottom = lineBottom;
+
+                boolean drawBottomCorners = a == count - 1;
+                boolean drawTopCorners = a == 0;
+
+                if (drawTopCorners) {
+                    y -= AndroidUtilities.dp(3);
+                    height += AndroidUtilities.dp(3);
+                }
+                if (drawBottomCorners) {
+                    height += AndroidUtilities.dp(3);
+                }
+                canvas.drawRect(x, y, x + width, y + height, backPaint);
+
+                if (!drawBottomCorners && a + 1 < count) {
+                    int nextLineWidth = findMaxWidthAroundLine(a + 1) + AndroidUtilities.dp(6);
+                    if (nextLineWidth + corner * 2 < width) {
+                        int nextX = (getMeasuredWidth() - nextLineWidth) / 2;
+                        drawBottomCorners = true;
+                        additionalHeight = AndroidUtilities.dp(3);
+
+                        canvas.drawRect(x, y + height, nextX, y + height + AndroidUtilities.dp(3), backPaint);
+                        canvas.drawRect(nextX + nextLineWidth, y + height, x + width, y + height + AndroidUtilities.dp(3), backPaint);
+                    } else if (width + corner * 2 < nextLineWidth) {
+                        additionalHeight = AndroidUtilities.dp(3);
+
+                        dy = y + height - AndroidUtilities.dp(9);
+
+                        dx = x - corner * 2;
+                        Theme.cornerInner[2].setBounds(dx, dy, dx + corner, dy + corner);
+                        Theme.cornerInner[2].draw(canvas);
+
+                        dx = x + width + corner;
+                        Theme.cornerInner[3].setBounds(dx, dy, dx + corner, dy + corner);
+                        Theme.cornerInner[3].draw(canvas);
+                    } else {
+                        additionalHeight = AndroidUtilities.dp(6);
+                    }
+                }
+                if (!drawTopCorners && a > 0) {
+                    int prevLineWidth = findMaxWidthAroundLine(a - 1) + AndroidUtilities.dp(6);
+                    if (prevLineWidth + corner * 2 < width) {
+                        int prevX = (getMeasuredWidth() - prevLineWidth) / 2;
+                        drawTopCorners = true;
+                        y -= AndroidUtilities.dp(3);
+                        height += AndroidUtilities.dp(3);
+
+                        canvas.drawRect(x, y, prevX, y + AndroidUtilities.dp(3), backPaint);
+                        canvas.drawRect(prevX + prevLineWidth, y, x + width, y + AndroidUtilities.dp(3), backPaint);
+                    } else if (width + corner * 2 < prevLineWidth) {
+                        y -= AndroidUtilities.dp(3);
+                        height += AndroidUtilities.dp(3);
+
+                        dy = y + corner;
+
+                        dx = x - corner * 2;
+                        Theme.cornerInner[0].setBounds(dx, dy, dx + corner, dy + corner);
+                        Theme.cornerInner[0].draw(canvas);
+
+                        dx = x + width + corner;
+                        Theme.cornerInner[1].setBounds(dx, dy, dx + corner, dy + corner);
+                        Theme.cornerInner[1].draw(canvas);
+                    } else {
+                        y -= AndroidUtilities.dp(6);
+                        height += AndroidUtilities.dp(6);
+                    }
+                }
+
+                canvas.drawRect(x - corner, y + corner, x, y + height + additionalHeight - corner, backPaint);
+                canvas.drawRect(x + width, y + corner, x + width + corner, y + height + additionalHeight - corner, backPaint);
+
+                if (drawTopCorners) {
+                    dx = x - corner;
+                    Theme.cornerOuter[0].setBounds(dx, y, dx + corner, y + corner);
+                    Theme.cornerOuter[0].draw(canvas);
+
+                    dx = x + width;
+                    Theme.cornerOuter[1].setBounds(dx, y, dx + corner, y + corner);
+                    Theme.cornerOuter[1].draw(canvas);
+                }
+
+                if (drawBottomCorners) {
+                    dy = y + height + additionalHeight - corner;
+
+                    dx = x + width;
+                    Theme.cornerOuter[2].setBounds(dx, dy, dx + corner, dy + corner);
+                    Theme.cornerOuter[2].draw(canvas);
+
+                    dx = x - corner;
+                    Theme.cornerOuter[3].setBounds(dx, dy, dx + corner, dy + corner);
+                    Theme.cornerOuter[3].draw(canvas);
+                }
+
+                y += height;
+            }
+
             canvas.save();
             canvas.translate(textXLeft, textY);
             textLayout.draw(canvas);

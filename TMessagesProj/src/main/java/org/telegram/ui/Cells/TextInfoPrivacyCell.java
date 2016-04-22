@@ -18,6 +18,7 @@ import android.widget.TextView;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.ActionBar.Theme;
 
 public class TextInfoPrivacyCell extends FrameLayout {
 
@@ -28,7 +29,7 @@ public class TextInfoPrivacyCell extends FrameLayout {
 
         textView = new TextView(context);
         textView.setTextColor(0xff808080);
-        textView.setLinkTextColor(0xff316f9f);
+        textView.setLinkTextColor(Theme.MSG_LINK_TEXT_COLOR);
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         textView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
         textView.setPadding(0, AndroidUtilities.dp(10), 0, AndroidUtilities.dp(17));

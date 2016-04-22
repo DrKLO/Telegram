@@ -21,13 +21,13 @@ public class SeekBarWaveform {
 
     private static Paint paintInner;
     private static Paint paintOuter;
-    public int thumbX = 0;
-    public int thumbDX = 0;
+    private int thumbX = 0;
+    private int thumbDX = 0;
     private float startX;
     private boolean startDraging = false;
     private boolean pressed = false;
-    public int width;
-    public int height;
+    private int width;
+    private int height;
     private SeekBar.SeekBarDelegate delegate;
     private byte[] waveformBytes;
     private MessageObject messageObject;
@@ -126,6 +126,11 @@ public class SeekBarWaveform {
 
     public boolean isDragging() {
         return pressed;
+    }
+
+    public void setSize(int w, int h) {
+        width = w;
+        height = h;
     }
 
     public void draw(Canvas canvas) {

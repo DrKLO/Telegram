@@ -37,6 +37,7 @@ import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Adapters.BaseFragmentAdapter;
 import org.telegram.ui.Cells.PhotoPickerAlbumsCell;
 import org.telegram.ui.Cells.PhotoPickerSearchCell;
@@ -111,8 +112,8 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
     @SuppressWarnings("unchecked")
     @Override
     public View createView(Context context) {
-        actionBar.setBackgroundColor(0xff333333);
-        actionBar.setItemsBackground(R.drawable.bar_selector_picker);
+        actionBar.setBackgroundColor(Theme.ACTION_BAR_MEDIA_PICKER_COLOR);
+        actionBar.setItemsBackgroundColor(Theme.ACTION_BAR_PICKER_SELECTOR_COLOR);
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
@@ -160,7 +161,7 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
         if (!singlePhoto) {
             selectedMode = 0;
 
-            dropDownContainer = new ActionBarMenuItem(context, menu, R.drawable.bar_selector_picker);
+            dropDownContainer = new ActionBarMenuItem(context, menu, 0);
             dropDownContainer.setSubMenuOpenSide(1);
             dropDownContainer.addSubItem(item_photos, LocaleController.getString("PickerPhotos", R.string.PickerPhotos), 0);
             dropDownContainer.addSubItem(item_video, LocaleController.getString("PickerVideo", R.string.PickerVideo), 0);

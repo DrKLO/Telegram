@@ -59,6 +59,7 @@ import android.view.FocusFinder;
 import android.view.MotionEvent;
 import android.view.VelocityTracker;
 import android.view.View;
+import android.view.View.MeasureSpec;
 import android.view.ViewConfiguration;
 import android.view.ViewGroup;
 import android.view.ViewParent;
@@ -152,6 +153,9 @@ public class RecyclerView extends ViewGroup implements ScrollingView, NestedScro
 
     private static final boolean DEBUG = false;
 
+    private static final int[]  NESTED_SCROLLING_ATTRS
+            = {16843830 /* android.R.attr.nestedScrollingEnabled */};
+
     /**
      * On Kitkat and JB MR2, there is a bug which prevents DisplayList from being invalidated if
      * a View is two levels deep(wrt to ViewHolder.itemView). DisplayList can be invalidated by
@@ -161,8 +165,14 @@ public class RecyclerView extends ViewGroup implements ScrollingView, NestedScro
      */
     private static final boolean FORCE_INVALIDATE_DISPLAY_LIST = Build.VERSION.SDK_INT == 18
             || Build.VERSION.SDK_INT == 19 || Build.VERSION.SDK_INT == 20;
+    /**
+     * On M+, an unspecified measure spec may include a hint which we can use. On older platforms,
+     * this value might be garbage. To save LayoutManagers from it, RecyclerView sets the size to
+     * 0 when mode is unspecified.
+     */
+    static final boolean ALLOW_SIZE_IN_UNSPECIFIED_SPEC = Build.VERSION.SDK_INT >= 23;
 
-    private static final boolean DISPATCH_TEMP_DETACH = false;
+    static final boolean DISPATCH_TEMP_DETACH = false;
     public static final int HORIZONTAL = 0;
     public static final int VERTICAL = 1;
 
@@ -392,7 +402,7 @@ public class RecyclerView extends ViewGroup implements ScrollingView, NestedScro
     // preserved not to create a new one in each layout pass
     private final int[] mMinMaxLayoutPositions = new int[2];
 
-    private final NestedScrollingChildHelper mScrollingChildHelper;
+    private NestedScrollingChildHelper mScrollingChildHelper;
     private final int[] mScrollOffset = new int[2];
     private final int[] mScrollConsumed = new int[2];
     private final int[] mNestedOffsets = new int[2];
@@ -485,8 +495,9 @@ public class RecyclerView extends ViewGroup implements ScrollingView, NestedScro
         mAccessibilityManager = (AccessibilityManager) getContext()
                 .getSystemService(Context.ACCESSIBILITY_SERVICE);
         setAccessibilityDelegateCompat(new RecyclerViewAccessibilityDelegate(this));
+        // Create the layoutManager if specified.
 
-        mScrollingChildHelper = new NestedScrollingChildHelper(this);
+        // Re-set whether nested scrolling is enabled so that it is set on all API levels
         setNestedScrollingEnabled(true);
     }
 
@@ -568,7 +579,7 @@ public class RecyclerView extends ViewGroup implements ScrollingView, NestedScro
         if (className.charAt(0) == '.') {
             return context.getPackageName() + className;
         }
-        if (className.contains(".")) {
+        if (className.indexOf('.') != -1) {
             return className;
         }
         return RecyclerView.class.getPackage().getName() + '.' + className;
@@ -1037,6 +1048,11 @@ public class RecyclerView extends ViewGroup implements ScrollingView, NestedScro
 
     @Override
     protected void onRestoreInstanceState(Parcelable state) {
+        if (!(state instanceof SavedState)) {
+            super.onRestoreInstanceState(state);
+            return;
+        }
+
         mPendingSavedState = (SavedState) state;
         super.onRestoreInstanceState(mPendingSavedState.getSuperState());
         if (mLayout != null && mPendingSavedState.mLayoutState != null) {
@@ -1327,6 +1343,14 @@ public class RecyclerView extends ViewGroup implements ScrollingView, NestedScro
         }
     }
 
+    /**
+     * Convenience method to scroll to a certain position.
+     *
+     * RecyclerView does not implement scrolling logic, rather forwards the call to
+     * {@link android.support.v7.widget.RecyclerView.LayoutManager#scrollToPosition(int)}
+     * @param position Scroll to this adapter position
+     * @see android.support.v7.widget.RecyclerView.LayoutManager#scrollToPosition(int)
+     */
     public void scrollToPosition(int position) {
         if (mLayoutFrozen) {
             return;
@@ -3188,17 +3212,10 @@ public class RecyclerView extends ViewGroup implements ScrollingView, NestedScro
         if (count == 0) {
             return minPositionPreLayout != 0 || maxPositionPreLayout != 0;
         }
-        for (int i = 0; i < count; ++i) {
-            final ViewHolder holder = getChildViewHolderInt(mChildHelper.getChildAt(i));
-            if (holder.shouldIgnore()) {
-                continue;
-            }
-            final int pos = holder.getLayoutPosition();
-            if (pos < minPositionPreLayout || pos > maxPositionPreLayout) {
-                return true;
-            }
-        }
-        return false;
+        // get the new min max
+        findMinMaxChildLayoutPositions(mMinMaxLayoutPositions);
+        return mMinMaxLayoutPositions[0] != minPositionPreLayout ||
+                mMinMaxLayoutPositions[1] != maxPositionPreLayout;
     }
 
     @Override
@@ -5990,28 +6007,43 @@ public class RecyclerView extends ViewGroup implements ScrollingView, NestedScro
          * onMeasure method OR fake measure specs created by the RecyclerView.
          * For example, when a layout is run, RecyclerView always sets these specs to be
          * EXACTLY because a LayoutManager cannot resize RecyclerView during a layout pass.
+         * <p>
+         * Also, to be able to use the hint in unspecified measure specs, RecyclerView checks the
+         * API level and sets the size to 0 pre-M to avoid any issue that might be caused by
+         * corrupt values. Older platforms have no responsibility to provide a size if they set
+         * mode to unspecified.
          */
-        private int mWidthSpec, mHeightSpec;
+        private int mWidthMode, mHeightMode;
+        private int mWidth, mHeight;
 
         void setRecyclerView(RecyclerView recyclerView) {
             if (recyclerView == null) {
                 mRecyclerView = null;
                 mChildHelper = null;
-                mWidthSpec = MeasureSpec.makeMeasureSpec(0, MeasureSpec.EXACTLY);
-                mHeightSpec = MeasureSpec.makeMeasureSpec(0, MeasureSpec.EXACTLY);
+                mWidth = 0;
+                mHeight = 0;
             } else {
                 mRecyclerView = recyclerView;
                 mChildHelper = recyclerView.mChildHelper;
-                mWidthSpec = MeasureSpec
-                        .makeMeasureSpec(recyclerView.getWidth(), MeasureSpec.EXACTLY);
-                mHeightSpec = MeasureSpec
-                        .makeMeasureSpec(recyclerView.getHeight(), MeasureSpec.EXACTLY);
+                mWidth = recyclerView.getWidth();
+                mHeight = recyclerView.getHeight();
             }
+            mWidthMode = MeasureSpec.EXACTLY;
+            mHeightMode = MeasureSpec.EXACTLY;
         }
 
         void setMeasureSpecs(int wSpec, int hSpec) {
-            mWidthSpec = wSpec;
-            mHeightSpec = hSpec;
+            mWidth = MeasureSpec.getSize(wSpec);
+            mWidthMode = MeasureSpec.getMode(wSpec);
+            if (mWidthMode == MeasureSpec.UNSPECIFIED && !ALLOW_SIZE_IN_UNSPECIFIED_SPEC) {
+                mWidth = 0;
+            }
+
+            mHeight = MeasureSpec.getSize(hSpec);
+            mHeightMode = MeasureSpec.getMode(hSpec);
+            if (mHeightMode == MeasureSpec.UNSPECIFIED && !ALLOW_SIZE_IN_UNSPECIFIED_SPEC) {
+                mHeight = 0;
+            }
         }
 
         /**
@@ -7054,7 +7086,7 @@ public class RecyclerView extends ViewGroup implements ScrollingView, NestedScro
          * @see View#onMeasure(int, int)
          */
         public int getWidthMode() {
-            return MeasureSpec.getMode(mWidthSpec);
+            return mWidthMode;
         }
 
         /**
@@ -7072,7 +7104,7 @@ public class RecyclerView extends ViewGroup implements ScrollingView, NestedScro
          * @see View#onMeasure(int, int)
          */
         public int getHeightMode() {
-            return MeasureSpec.getMode(mHeightSpec);
+            return mHeightMode;
         }
 
         /**
@@ -7081,7 +7113,7 @@ public class RecyclerView extends ViewGroup implements ScrollingView, NestedScro
          * @return Width in pixels
          */
         public int getWidth() {
-            return MeasureSpec.getSize(mWidthSpec);
+            return mWidth;
         }
 
         /**
@@ -7090,7 +7122,7 @@ public class RecyclerView extends ViewGroup implements ScrollingView, NestedScro
          * @return Height in pixels
          */
         public int getHeight() {
-            return MeasureSpec.getSize(mHeightSpec);
+            return mHeight;
         }
 
         /**
@@ -7567,6 +7599,7 @@ public class RecyclerView extends ViewGroup implements ScrollingView, NestedScro
 
                 }
             }
+            //noinspection WrongConstant
             return MeasureSpec.makeMeasureSpec(resultSize, resultMode);
         }
 
@@ -9310,49 +9343,49 @@ public class RecyclerView extends ViewGroup implements ScrollingView, NestedScro
 
     @Override
     public void setNestedScrollingEnabled(boolean enabled) {
-        mScrollingChildHelper.setNestedScrollingEnabled(enabled);
+        getScrollingChildHelper().setNestedScrollingEnabled(enabled);
     }
 
     @Override
     public boolean isNestedScrollingEnabled() {
-        return mScrollingChildHelper.isNestedScrollingEnabled();
+        return getScrollingChildHelper().isNestedScrollingEnabled();
     }
 
     @Override
     public boolean startNestedScroll(int axes) {
-        return mScrollingChildHelper.startNestedScroll(axes);
+        return getScrollingChildHelper().startNestedScroll(axes);
     }
 
     @Override
     public void stopNestedScroll() {
-        mScrollingChildHelper.stopNestedScroll();
+        getScrollingChildHelper().stopNestedScroll();
     }
 
     @Override
     public boolean hasNestedScrollingParent() {
-        return mScrollingChildHelper.hasNestedScrollingParent();
+        return getScrollingChildHelper().hasNestedScrollingParent();
     }
 
     @Override
     public boolean dispatchNestedScroll(int dxConsumed, int dyConsumed, int dxUnconsumed,
             int dyUnconsumed, int[] offsetInWindow) {
-        return mScrollingChildHelper.dispatchNestedScroll(dxConsumed, dyConsumed,
+        return getScrollingChildHelper().dispatchNestedScroll(dxConsumed, dyConsumed,
                 dxUnconsumed, dyUnconsumed, offsetInWindow);
     }
 
     @Override
     public boolean dispatchNestedPreScroll(int dx, int dy, int[] consumed, int[] offsetInWindow) {
-        return mScrollingChildHelper.dispatchNestedPreScroll(dx, dy, consumed, offsetInWindow);
+        return getScrollingChildHelper().dispatchNestedPreScroll(dx, dy, consumed, offsetInWindow);
     }
 
     @Override
     public boolean dispatchNestedFling(float velocityX, float velocityY, boolean consumed) {
-        return mScrollingChildHelper.dispatchNestedFling(velocityX, velocityY, consumed);
+        return getScrollingChildHelper().dispatchNestedFling(velocityX, velocityY, consumed);
     }
 
     @Override
     public boolean dispatchNestedPreFling(float velocityX, float velocityY) {
-        return mScrollingChildHelper.dispatchNestedPreFling(velocityX, velocityY);
+        return getScrollingChildHelper().dispatchNestedPreFling(velocityX, velocityY);
     }
 
     /**
@@ -11055,5 +11088,12 @@ public class RecyclerView extends ViewGroup implements ScrollingView, NestedScro
          * @see RecyclerView#setChildDrawingOrderCallback(RecyclerView.ChildDrawingOrderCallback)
          */
         int onGetChildDrawingOrder(int childCount, int i);
+    }
+
+    private NestedScrollingChildHelper getScrollingChildHelper() {
+        if (mScrollingChildHelper == null) {
+            mScrollingChildHelper = new NestedScrollingChildHelper(this);
+        }
+        return mScrollingChildHelper;
     }
 }

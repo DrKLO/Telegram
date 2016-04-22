@@ -24,9 +24,15 @@ public class GcmRegistrationIntentService extends IntentService {
     protected void onHandleIntent(Intent intent) {
         try {
             InstanceID instanceID = InstanceID.getInstance(this);
-            String token = instanceID.getToken(BuildVars.GCM_SENDER_ID, GoogleCloudMessaging.INSTANCE_ID_SCOPE, null);
+            final String token = instanceID.getToken(getString(R.string.gcm_defaultSenderId), GoogleCloudMessaging.INSTANCE_ID_SCOPE, null);
             FileLog.d("tmessages", "GCM Registration Token: " + token);
-            sendRegistrationToServer(token);
+            AndroidUtilities.runOnUIThread(new Runnable() {
+                @Override
+                public void run() {
+                    ApplicationLoader.postInitApplication();
+                    sendRegistrationToServer(token);
+                }
+            });
         } catch (Exception e) {
             FileLog.e("tmessages", e);
             final int failCount = intent.getIntExtra("failCount", 0);

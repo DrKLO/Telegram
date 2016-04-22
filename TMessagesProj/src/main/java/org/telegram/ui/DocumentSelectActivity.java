@@ -33,6 +33,7 @@ import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.BackDrawable;
+import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Adapters.BaseFragmentAdapter;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
@@ -186,7 +187,7 @@ public class DocumentSelectActivity extends BaseFragment {
         });
         actionMode.addView(selectedMessagesCountTextView, LayoutHelper.createLinear(0, LayoutHelper.MATCH_PARENT, 1.0f, 65, 0, 0, 0));
 
-        actionModeViews.add(actionMode.addItem(done, R.drawable.ic_ab_done_gray, R.drawable.bar_selector_mode, null, AndroidUtilities.dp(54)));
+        actionModeViews.add(actionMode.addItem(done, R.drawable.ic_ab_done_gray, Theme.ACTION_BAR_MODE_SELECTOR_COLOR, null, AndroidUtilities.dp(54)));
 
         fragmentView = getParentActivity().getLayoutInflater().inflate(R.layout.document_select_layout, null, false);
         listAdapter = new ListAdapter(context);
@@ -453,8 +454,9 @@ public class DocumentSelectActivity extends BaseFragment {
                 }*/
             }
         });
-        for (File file : files) {
-            if (file.getName().startsWith(".")) {
+        for (int a = 0; a < files.length; a++) {
+            File file = files[a];
+            if (file.getName().indexOf('.') == 0) {
                 continue;
             }
             ListItem item = new ListItem();
@@ -514,7 +516,7 @@ public class DocumentSelectActivity extends BaseFragment {
         String defaultPathState = Environment.getExternalStorageState();
         if (defaultPathState.equals(Environment.MEDIA_MOUNTED) || defaultPathState.equals(Environment.MEDIA_MOUNTED_READ_ONLY)) {
             ListItem ext = new ListItem();
-            if (Build.VERSION.SDK_INT < 9 || Environment.isExternalStorageRemovable()) {
+            if (Environment.isExternalStorageRemovable()) {
                 ext.title = LocaleController.getString("SdCard", R.string.SdCard);
                 ext.icon = R.drawable.ic_external_storage;
             } else {

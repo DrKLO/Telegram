@@ -380,6 +380,7 @@ public class NotificationsController {
                 int oldCount = popupArray.size();
                 HashMap<Long, Boolean> settingsCache = new HashMap<>();
                 SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Context.MODE_PRIVATE);
+                boolean allowPinned = preferences.getBoolean("PinnedMessages", true);
                 int popup = 0;
 
                 for (int a = 0; a < messageObjects.size(); a++) {
@@ -398,6 +399,9 @@ public class NotificationsController {
                         continue;
                     }
                     if (messageObject.messageOwner.mentioned) {
+                        if (!allowPinned && messageObject.messageOwner.action instanceof TLRPC.TL_messageActionPinMessage) {
+                            continue;
+                        }
                         dialog_id = messageObject.messageOwner.from_id;
                     }
                     if (isPersonalMessage(messageObject)) {
@@ -683,7 +687,7 @@ public class NotificationsController {
         int chat_id = messageObject.messageOwner.to_id.chat_id != 0 ? messageObject.messageOwner.to_id.chat_id : messageObject.messageOwner.to_id.channel_id;
         int from_id = messageObject.messageOwner.to_id.user_id;
         if (from_id == 0) {
-            if (messageObject.isFromUser()) {
+            if (messageObject.isFromUser() || messageObject.getId() < 0) {
                 from_id = messageObject.messageOwner.from_id;
             } else {
                 from_id = -chat_id;
@@ -725,7 +729,7 @@ public class NotificationsController {
         }
 
         String msg = null;
-        if ((int)dialog_id == 0 || AndroidUtilities.needShowPasscode(false) || UserConfig.isWaitingForPasscodeEnter) {
+        if ((int) dialog_id == 0 || AndroidUtilities.needShowPasscode(false) || UserConfig.isWaitingForPasscodeEnter) {
             msg = LocaleController.getString("YouHaveNewMessage", R.string.YouHaveNewMessage);
         } else {
             if (chat_id == 0 && from_id != 0) {
@@ -787,12 +791,6 @@ public class NotificationsController {
                             }
                             if (singleUserId != 0) {
                                 if (messageObject.messageOwner.to_id.channel_id != 0 && !messageObject.isMegagroup()) {
-                                    TLRPC.User user = MessagesController.getInstance().getUser(singleUserId);
-                                    if (user != null) {
-                                        name = UserObject.getUserName(user);
-                                    } else {
-                                        name = "";
-                                    }
                                     msg = LocaleController.formatString("ChannelAddedByNotification", R.string.ChannelAddedByNotification, name, chat.title);
                                 } else {
                                     if (singleUserId == UserConfig.getClientUserId()) {
@@ -1513,7 +1511,7 @@ public class NotificationsController {
             if (silent != 1 && !notifyDisabled) {
                 if (ApplicationLoader.mainInterfacePaused || inAppPreview) {
                     if (lastMessage.length() > 100) {
-                        lastMessage = lastMessage.substring(0, 100).replace("\n", " ").trim() + "...";
+                        lastMessage = lastMessage.substring(0, 100).replace('\n', ' ').trim() + "...";
                     }
                     mBuilder.setTicker(lastMessage);
                 }

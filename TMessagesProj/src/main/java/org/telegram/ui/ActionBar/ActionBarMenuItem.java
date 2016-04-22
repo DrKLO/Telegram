@@ -85,9 +85,11 @@ public class ActionBarMenuItem extends FrameLayoutFixed {
     protected boolean overrideMenuClick;
     private boolean processedPopupClick;
 
-    public ActionBarMenuItem(Context context, ActionBarMenu menu, int background) {
+    public ActionBarMenuItem(Context context, ActionBarMenu menu, int backgroundColor) {
         super(context);
-        setBackgroundResource(background);
+        if (backgroundColor != 0) {
+            setBackgroundDrawable(Theme.createBarSelectorDrawable(backgroundColor));
+        }
         parentMenu = menu;
 
         iconView = new ImageView(context);

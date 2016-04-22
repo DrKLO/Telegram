@@ -11,7 +11,6 @@ package org.telegram.messenger;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.AlertDialog;
-import android.app.PendingIntent;
 import android.content.ContentUris;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -20,21 +19,19 @@ import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.database.Cursor;
-import android.graphics.BitmapFactory;
+import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.Point;
 import android.graphics.Rect;
 import android.graphics.Typeface;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Build;
-import android.os.Bundle;
 import android.os.Environment;
-import android.os.Parcelable;
-import android.provider.Browser;
 import android.provider.DocumentsContract;
 import android.provider.MediaStore;
-import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.style.ForegroundColorSpan;
@@ -62,6 +59,7 @@ import org.telegram.messenger.AnimationCompat.AnimatorListenerAdapterProxy;
 import org.telegram.messenger.AnimationCompat.AnimatorSetProxy;
 import org.telegram.messenger.AnimationCompat.ObjectAnimatorProxy;
 import org.telegram.messenger.AnimationCompat.ViewProxy;
+import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.Components.ForegroundDetector;
 import org.telegram.ui.Components.NumberPicker;
 import org.telegram.ui.Components.TypefaceSpan;
@@ -129,12 +127,109 @@ public class AndroidUtilities {
         }
     }
 
-
-
     static {
         density = ApplicationLoader.applicationContext.getResources().getDisplayMetrics().density;
         leftBaseline = isTablet() ? 80 : 72;
         checkDisplaySize();
+    }
+
+    public static int[] calcDrawableColor(Drawable drawable) {
+        int bitmapColor = 0xff000000;
+        int result[] = new int[2];
+        try {
+            if (drawable instanceof BitmapDrawable) {
+                Bitmap bitmap = ((BitmapDrawable) drawable).getBitmap();
+                if (bitmap != null) {
+                    Bitmap b = Bitmaps.createScaledBitmap(bitmap, 1, 1, true);
+                    if (b != null) {
+                        bitmapColor = b.getPixel(0, 0);
+                        b.recycle();
+                    }
+                }
+            } else if (drawable instanceof ColorDrawable) {
+                if (Build.VERSION.SDK_INT >= 11) {
+                    bitmapColor = ((ColorDrawable) drawable).getColor();
+                } else {
+                    bitmapColor = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE).getInt("selectedColor", 0xff000000);
+                }
+            }
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
+
+        double[] hsv = rgbToHsv((bitmapColor >> 16) & 0xff, (bitmapColor >> 8) & 0xff, bitmapColor & 0xff);
+        hsv[1] = Math.min(1.0, hsv[1] + 0.05 + 0.1 * (1.0 - hsv[1]));
+        hsv[2] = Math.max(0, hsv[2] * 0.65);
+        int rgb[] = hsvToRgb(hsv[0], hsv[1], hsv[2]);
+        result[0] = Color.argb(0x66, rgb[0], rgb[1], rgb[2]);
+        result[1] = Color.argb(0x88, rgb[0], rgb[1], rgb[2]);
+        return result;
+    }
+
+    private static double[] rgbToHsv(int r, int g, int b) {
+        double rf = r / 255.0;
+        double gf = g / 255.0;
+        double bf = b / 255.0;
+        double max = (rf > gf && rf > bf) ? rf : (gf > bf) ? gf : bf;
+        double min = (rf < gf && rf < bf) ? rf : (gf < bf) ? gf : bf;
+        double h, s;
+        double d = max - min;
+        s = max == 0 ? 0 : d / max;
+        if (max == min) {
+            h = 0;
+        } else {
+            if (rf > gf && rf > bf) {
+                h = (gf - bf) / d + (gf < bf ? 6 : 0);
+            } else if (gf > bf) {
+                h = (bf - rf) / d + 2;
+            } else {
+                h = (rf - gf) / d + 4;
+            }
+            h /= 6;
+        }
+        return new double[]{h, s, max};
+    }
+
+    private static int[] hsvToRgb(double h, double s, double v) {
+        double r = 0, g = 0, b = 0;
+        double i = (int) Math.floor(h * 6);
+        double f = h * 6 - i;
+        double p = v * (1 - s);
+        double q = v * (1 - f * s);
+        double t = v * (1 - (1 - f) * s);
+        switch ((int) i % 6) {
+            case 0:
+                r = v;
+                g = t;
+                b = p;
+                break;
+            case 1:
+                r = q;
+                g = v;
+                b = p;
+                break;
+            case 2:
+                r = p;
+                g = v;
+                b = t;
+                break;
+            case 3:
+                r = p;
+                g = q;
+                b = v;
+                break;
+            case 4:
+                r = t;
+                g = p;
+                b = v;
+                break;
+            case 5:
+                r = v;
+                g = p;
+                b = q;
+                break;
+        }
+        return new int[]{(int) (r * 255), (int) (g * 255), (int) (b * 255)};
     }
 
     public static void requestAdjustResize(Activity activity, int classGuid) {
@@ -154,8 +249,36 @@ public class AndroidUtilities {
         }
     }
 
+    public static boolean isGoogleMapsInstalled(final BaseFragment fragment) {
+        try {
+            ApplicationLoader.applicationContext.getPackageManager().getApplicationInfo("com.google.android.apps.maps", 0);
+            return true;
+        } catch (PackageManager.NameNotFoundException e) {
+            if (fragment.getParentActivity() == null) {
+                return false;
+            }
+            AlertDialog.Builder builder = new AlertDialog.Builder(fragment.getParentActivity());
+            builder.setMessage("Install Google Maps?");
+            builder.setCancelable(true);
+            builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialogInterface, int i) {
+                    try {
+                        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=com.google.android.apps.maps"));
+                        fragment.getParentActivity().startActivityForResult(intent, 500);
+                    } catch (Exception e) {
+                        FileLog.e("tmessages", e);
+                    }
+                }
+            });
+            builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+            fragment.showDialog(builder.create());
+            return false;
+        }
+    }
+
     public static void lockOrientation(Activity activity) {
-        if (activity == null || prevOrientation != -10 || Build.VERSION.SDK_INT < 9) {
+        if (activity == null || prevOrientation != -10) {
             return;
         }
         try {
@@ -164,22 +287,16 @@ public class AndroidUtilities {
             if (manager != null && manager.getDefaultDisplay() != null) {
                 int rotation = manager.getDefaultDisplay().getRotation();
                 int orientation = activity.getResources().getConfiguration().orientation;
-                int SCREEN_ORIENTATION_REVERSE_LANDSCAPE = 8;
-                int SCREEN_ORIENTATION_REVERSE_PORTRAIT = 9;
-                if (Build.VERSION.SDK_INT < 9) {
-                    SCREEN_ORIENTATION_REVERSE_LANDSCAPE = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE;
-                    SCREEN_ORIENTATION_REVERSE_PORTRAIT = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT;
-                }
 
                 if (rotation == Surface.ROTATION_270) {
                     if (orientation == Configuration.ORIENTATION_PORTRAIT) {
                         activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
                     } else {
-                        activity.setRequestedOrientation(SCREEN_ORIENTATION_REVERSE_LANDSCAPE);
+                        activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE);
                     }
                 } else if (rotation == Surface.ROTATION_90) {
                     if (orientation == Configuration.ORIENTATION_PORTRAIT) {
-                        activity.setRequestedOrientation(SCREEN_ORIENTATION_REVERSE_PORTRAIT);
+                        activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_REVERSE_PORTRAIT);
                     } else {
                         activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
                     }
@@ -191,9 +308,9 @@ public class AndroidUtilities {
                     }
                 } else {
                     if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
-                        activity.setRequestedOrientation(SCREEN_ORIENTATION_REVERSE_LANDSCAPE);
+                        activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE);
                     } else {
-                        activity.setRequestedOrientation(SCREEN_ORIENTATION_REVERSE_PORTRAIT);
+                        activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_REVERSE_PORTRAIT);
                     }
                 }
             }
@@ -203,7 +320,7 @@ public class AndroidUtilities {
     }
 
     public static void unlockOrientation(Activity activity) {
-        if (activity == null || Build.VERSION.SDK_INT < 9) {
+        if (activity == null) {
             return;
         }
         try {
@@ -430,46 +547,6 @@ public class AndroidUtilities {
         }
     }
 
-    public static void openUrl(Context context, String url) {
-        if (context == null || url == null) {
-            return;
-        }
-        openUrl(context, Uri.parse(url));
-    }
-
-    public static void openUrl(Context context, Uri uri) {
-        if (context == null || uri == null) {
-            return;
-        }
-
-        try {
-            Intent intent = new Intent(Intent.ACTION_VIEW, uri);
-            if (MediaController.getInstance().canCustomTabs()) {
-                intent.putExtra("android.support.customtabs.extra.SESSION", (Parcelable) null);
-                intent.putExtra("android.support.customtabs.extra.TOOLBAR_COLOR", 0xff54759e);
-                intent.putExtra("android.support.customtabs.extra.TITLE_VISIBILITY", 1);
-
-                Intent actionIntent = new Intent(Intent.ACTION_SEND);
-                actionIntent.setType("text/plain");
-                actionIntent.putExtra(Intent.EXTRA_TEXT, uri.toString());
-                actionIntent.putExtra(Intent.EXTRA_SUBJECT, "");
-                PendingIntent pendingIntent = PendingIntent.getActivity(ApplicationLoader.applicationContext, 0, actionIntent, PendingIntent.FLAG_ONE_SHOT);
-
-                Bundle bundle = new Bundle();
-                bundle.putInt("android.support.customtabs.customaction.ID", 0);
-                bundle.putParcelable("android.support.customtabs.customaction.ICON", BitmapFactory.decodeResource(context.getResources(), R.drawable.abc_ic_menu_share_mtrl_alpha));
-                bundle.putString("android.support.customtabs.customaction.DESCRIPTION", LocaleController.getString("ShareFile", R.string.ShareFile));
-                bundle.putParcelable("android.support.customtabs.customaction.PENDING_INTENT", pendingIntent);
-                intent.putExtra("android.support.customtabs.extra.ACTION_BUTTON_BUNDLE", bundle);
-                intent.putExtra("android.support.customtabs.extra.TINT_ACTION_BUTTON", false);
-            }
-            intent.putExtra(Browser.EXTRA_APPLICATION_ID, context.getPackageName());
-            context.startActivity(intent);
-        } catch (Exception e) {
-            FileLog.e("tmessages", e);
-        }
-    }
-
     public static int getPhotoSize() {
         if (photoSize == null) {
             if (Build.VERSION.SDK_INT >= 16) {
@@ -685,11 +762,11 @@ public class AndroidUtilities {
     public static final int FLAG_TAG_COLOR = 4;
     public static final int FLAG_TAG_ALL = FLAG_TAG_BR | FLAG_TAG_BOLD | FLAG_TAG_COLOR;
 
-    public static Spannable replaceTags(String str) {
+    public static SpannableStringBuilder replaceTags(String str) {
         return replaceTags(str, FLAG_TAG_ALL);
     }
 
-    public static Spannable replaceTags(String str, int flag) {
+    public static SpannableStringBuilder replaceTags(String str, int flag) {
         try {
             int start;
             int end;

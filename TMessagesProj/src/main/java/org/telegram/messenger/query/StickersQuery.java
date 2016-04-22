@@ -8,11 +8,7 @@
 
 package org.telegram.messenger.query;
 
-import android.app.AlertDialog;
-import android.app.ProgressDialog;
 import android.content.Context;
-import android.content.DialogInterface;
-import android.os.Message;
 import android.widget.Toast;
 
 import org.telegram.SQLite.SQLiteCursor;
@@ -29,8 +25,6 @@ import org.telegram.tgnet.RequestDelegate;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.messenger.Utilities;
-import org.telegram.ui.ActionBar.BaseFragment;
-import org.telegram.ui.Components.StickersAlert;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -83,6 +77,14 @@ public class StickersQuery {
             }
         }
         return document;
+    }
+
+    public static TLRPC.TL_messages_stickerSet getStickerSetByName(String name) {
+        return stickerSetsByName.get(name);
+    }
+
+    public static TLRPC.TL_messages_stickerSet getStickerSetById(Long id) {
+        return stickerSetsById.get(id);
     }
 
     public static HashMap<String, ArrayList<TLRPC.Document>> getAllStickers() {
@@ -439,100 +441,6 @@ public class StickersQuery {
                 }
             }
         });
-    }
-
-    public static void loadStickers(final BaseFragment fragment, final TLRPC.InputStickerSet stickerSet) {
-        if (fragment == null || stickerSet == null) {
-            return;
-        }
-
-        final ProgressDialog progressDialog = new ProgressDialog(fragment.getParentActivity());
-        progressDialog.setMessage(LocaleController.getString("Loading", R.string.Loading));
-        progressDialog.setCanceledOnTouchOutside(false);
-        progressDialog.setCancelable(false);
-
-        TLRPC.TL_messages_getStickerSet req = new TLRPC.TL_messages_getStickerSet();
-        req.stickerset = stickerSet;
-
-        final int reqId = ConnectionsManager.getInstance().sendRequest(req, new RequestDelegate() {
-            @Override
-            public void run(final TLObject response, final TLRPC.TL_error error) {
-                AndroidUtilities.runOnUIThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        try {
-                            progressDialog.dismiss();
-                        } catch (Exception e) {
-                            FileLog.e("tmessages", e);
-                        }
-                        if (fragment.getParentActivity() != null && !fragment.getParentActivity().isFinishing()) {
-                            if (error == null) {
-                                final TLRPC.TL_messages_stickerSet res = (TLRPC.TL_messages_stickerSet) response;
-
-                                StickersAlert alert = new StickersAlert(fragment.getParentActivity(), res);
-                                if (res.set == null || !StickersQuery.isStickerPackInstalled(res.set.id)) {
-                                    alert.setButton(AlertDialog.BUTTON_POSITIVE, LocaleController.getString("AddStickers", R.string.AddStickers), new DialogInterface.OnClickListener() {
-                                        @Override
-                                        public void onClick(DialogInterface dialog, int which) {
-                                            TLRPC.TL_messages_installStickerSet req = new TLRPC.TL_messages_installStickerSet();
-                                            req.stickerset = stickerSet;
-                                            ConnectionsManager.getInstance().sendRequest(req, new RequestDelegate() {
-                                                @Override
-                                                public void run(TLObject response, final TLRPC.TL_error error) {
-                                                    AndroidUtilities.runOnUIThread(new Runnable() {
-                                                        @Override
-                                                        public void run() {
-                                                            if (fragment.getParentActivity() != null) {
-                                                                if (error == null) {
-                                                                    Toast.makeText(fragment.getParentActivity(), LocaleController.getString("AddStickersInstalled", R.string.AddStickersInstalled), Toast.LENGTH_SHORT).show();
-                                                                } else {
-                                                                    if (error.text.equals("STICKERSETS_TOO_MUCH")) {
-                                                                        Toast.makeText(fragment.getParentActivity(), LocaleController.getString("TooMuchStickersets", R.string.TooMuchStickersets), Toast.LENGTH_SHORT).show();
-                                                                    } else {
-                                                                        Toast.makeText(fragment.getParentActivity(), LocaleController.getString("ErrorOccurred", R.string.ErrorOccurred), Toast.LENGTH_SHORT).show();
-                                                                    }
-                                                                }
-                                                            }
-                                                            loadStickers(false, true);
-                                                        }
-                                                    });
-                                                }
-                                            });
-                                        }
-                                    });
-                                } else {
-                                    alert.setButton(AlertDialog.BUTTON_NEUTRAL, LocaleController.getString("StickersRemove", R.string.StickersRemove), new DialogInterface.OnClickListener() {
-                                        @Override
-                                        public void onClick(DialogInterface dialog, int which) {
-                                            removeStickersSet(fragment.getParentActivity(), res.set, 0);
-                                        }
-                                    });
-                                }
-                                alert.setButton(AlertDialog.BUTTON_NEGATIVE, LocaleController.getString("Close", R.string.Close), (Message) null);
-                                fragment.setVisibleDialog(alert);
-                                alert.show();
-                            } else {
-                                Toast.makeText(fragment.getParentActivity(), LocaleController.getString("AddStickersNotFound", R.string.AddStickersNotFound), Toast.LENGTH_SHORT).show();
-                            }
-                        }
-                    }
-                });
-            }
-        });
-
-        progressDialog.setButton(DialogInterface.BUTTON_NEGATIVE, LocaleController.getString("Cancel", R.string.Cancel), new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                ConnectionsManager.getInstance().cancelRequest(reqId, true);
-                try {
-                    dialog.dismiss();
-                } catch (Exception e) {
-                    FileLog.e("tmessages", e);
-                }
-            }
-        });
-        fragment.setVisibleDialog(progressDialog);
-        progressDialog.show();
     }
 
     public static void removeStickersSet(final Context context, TLRPC.StickerSet stickerSet, int hide) {

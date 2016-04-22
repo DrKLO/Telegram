@@ -37,8 +37,8 @@ import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.support.widget.LinearLayoutManager;
 import org.telegram.messenger.R;
+import org.telegram.messenger.support.widget.RecyclerView;
 import org.telegram.tgnet.TLRPC;
-import org.telegram.ui.Adapters.PhotoAttachAdapter;
 import org.telegram.ui.Cells.PhotoAttachPhotoCell;
 import org.telegram.ui.ChatActivity;
 import org.telegram.ui.PhotoViewer;
@@ -60,12 +60,13 @@ public class ChatAttachView extends FrameLayout implements NotificationCenter.No
     private RecyclerListView attachPhotoRecyclerView;
     private View lineView;
     private EmptyTextProgressView progressView;
+    private ArrayList<PhotoAttachAdapter.Holder> viewsCache = new ArrayList<>(8);
 
     private float[] distCache = new float[20];
 
     private DecelerateInterpolator decelerateInterpolator = new DecelerateInterpolator();
 
-    private boolean loading;
+    private boolean loading = true;
 
     private ChatAttachViewDelegate delegate;
 
@@ -106,12 +107,6 @@ public class ChatAttachView extends FrameLayout implements NotificationCenter.No
         super(context);
 
         NotificationCenter.getInstance().addObserver(this, NotificationCenter.albumsDidLoaded);
-        if (MediaController.allPhotosAlbumEntry == null) {
-            if (Build.VERSION.SDK_INT >= 21) {
-                MediaController.loadGalleryPhotosAlbums(0);
-            }
-            loading = true;
-        }
 
         views[8] = attachPhotoRecyclerView = new RecyclerListView(context);
         attachPhotoRecyclerView.setVerticalScrollBarEnabled(true);
@@ -132,12 +127,6 @@ public class ChatAttachView extends FrameLayout implements NotificationCenter.No
         };
         attachPhotoLayoutManager.setOrientation(LinearLayoutManager.HORIZONTAL);
         attachPhotoRecyclerView.setLayoutManager(attachPhotoLayoutManager);
-        photoAttachAdapter.setDelegate(new PhotoAttachAdapter.PhotoAttachAdapterDelegate() {
-            @Override
-            public void selectedPhotosChanged() {
-                updatePhotosButton();
-            }
-        });
         attachPhotoRecyclerView.setOnItemClickListener(new RecyclerListView.OnItemClickListener() {
             @SuppressWarnings("unchecked")
             @Override
@@ -215,6 +204,10 @@ public class ChatAttachView extends FrameLayout implements NotificationCenter.No
             }
         });
 
+        for (int a = 0; a < 8; a++) {
+            viewsCache.add(photoAttachAdapter.createHolder());
+        }
+
         if (loading) {
             progressView.showProgress();
         } else {
@@ -285,6 +278,14 @@ public class ChatAttachView extends FrameLayout implements NotificationCenter.No
     public void onRevealAnimationEnd(boolean open) {
         if (open && Build.VERSION.SDK_INT <= 19 && MediaController.allPhotosAlbumEntry == null) {
             MediaController.loadGalleryPhotosAlbums(0);
+        }
+    }
+
+    public void loadGalleryPhotos() {
+        if (MediaController.allPhotosAlbumEntry == null) {
+            if (Build.VERSION.SDK_INT >= 21) {
+                MediaController.loadGalleryPhotosAlbums(0);
+            }
         }
     }
 
@@ -522,5 +523,99 @@ public class ChatAttachView extends FrameLayout implements NotificationCenter.No
     @Override
     public int getSelectedCount() {
         return photoAttachAdapter.getSelectedPhotos().size();
+    }
+
+    @Override
+    public boolean hasOverlappingRendering() {
+        return false;
+    }
+
+    public class PhotoAttachAdapter extends RecyclerView.Adapter {
+
+        private Context mContext;
+        private HashMap<Integer, MediaController.PhotoEntry> selectedPhotos = new HashMap<>();
+
+        private class Holder extends RecyclerView.ViewHolder {
+
+            public Holder(View itemView) {
+                super(itemView);
+            }
+        }
+
+        public PhotoAttachAdapter(Context context) {
+            mContext = context;
+        }
+
+        public void clearSelectedPhotos() {
+            if (!selectedPhotos.isEmpty()) {
+                for (HashMap.Entry<Integer, MediaController.PhotoEntry> entry : selectedPhotos.entrySet()) {
+                    MediaController.PhotoEntry photoEntry = entry.getValue();
+                    photoEntry.imagePath = null;
+                    photoEntry.thumbPath = null;
+                    photoEntry.caption = null;
+                }
+                selectedPhotos.clear();
+                updatePhotosButton();
+                notifyDataSetChanged();
+            }
+        }
+
+        public Holder createHolder() {
+            PhotoAttachPhotoCell cell = new PhotoAttachPhotoCell(mContext);
+            cell.setDelegate(new PhotoAttachPhotoCell.PhotoAttachPhotoCellDelegate() {
+                @Override
+                public void onCheckClick(PhotoAttachPhotoCell v) {
+                    MediaController.PhotoEntry photoEntry = v.getPhotoEntry();
+                    if (selectedPhotos.containsKey(photoEntry.imageId)) {
+                        selectedPhotos.remove(photoEntry.imageId);
+                        v.setChecked(false, true);
+                        photoEntry.imagePath = null;
+                        photoEntry.thumbPath = null;
+                        v.setPhotoEntry(photoEntry, (Integer) v.getTag() == MediaController.allPhotosAlbumEntry.photos.size() - 1);
+                    } else {
+                        selectedPhotos.put(photoEntry.imageId, photoEntry);
+                        v.setChecked(true, true);
+                    }
+                    updatePhotosButton();
+                }
+            });
+            return new Holder(cell);
+        }
+
+        public HashMap<Integer, MediaController.PhotoEntry> getSelectedPhotos() {
+            return selectedPhotos;
+        }
+
+        @Override
+        public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
+            PhotoAttachPhotoCell cell = (PhotoAttachPhotoCell) holder.itemView;
+            MediaController.PhotoEntry photoEntry = MediaController.allPhotosAlbumEntry.photos.get(position);
+            cell.setPhotoEntry(photoEntry, position == MediaController.allPhotosAlbumEntry.photos.size() - 1);
+            cell.setChecked(selectedPhotos.containsKey(photoEntry.imageId), false);
+            cell.getImageView().setTag(position);
+            cell.setTag(position);
+        }
+
+        @Override
+        public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+            Holder holder;
+            if (!viewsCache.isEmpty()) {
+                holder = viewsCache.get(0);
+                viewsCache.remove(0);
+            } else {
+                holder = createHolder();
+            }
+            return holder;
+        }
+
+        @Override
+        public int getItemCount() {
+            return (MediaController.allPhotosAlbumEntry != null ? MediaController.allPhotosAlbumEntry.photos.size() : 0);
+        }
+
+        @Override
+        public int getItemViewType(int position) {
+            return 0;
+        }
     }
 }

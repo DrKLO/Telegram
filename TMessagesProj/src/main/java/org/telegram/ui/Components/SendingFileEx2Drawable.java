@@ -14,6 +14,7 @@ import android.graphics.Paint;
 import android.graphics.drawable.Drawable;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.ui.ActionBar.Theme;
 
 public class SendingFileEx2Drawable extends Drawable {
 
@@ -25,7 +26,7 @@ public class SendingFileEx2Drawable extends Drawable {
 
     public SendingFileEx2Drawable() {
         super();
-        paint.setColor(0xffd7e8f7);
+        paint.setColor(Theme.ACTION_BAR_SUBTITLE_COLOR);
         paint.setStyle(Paint.Style.STROKE);
         paint.setStrokeWidth(AndroidUtilities.dp(3));
         paint.setStrokeCap(Paint.Cap.ROUND);

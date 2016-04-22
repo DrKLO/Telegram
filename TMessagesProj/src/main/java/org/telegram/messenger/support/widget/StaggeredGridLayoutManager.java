@@ -27,6 +27,7 @@ import android.graphics.PointF;
 import android.graphics.Rect;
 import android.os.Parcel;
 import android.os.Parcelable;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.view.ViewCompat;
 import android.support.v4.view.accessibility.AccessibilityEventCompat;
@@ -110,7 +111,9 @@ public class StaggeredGridLayoutManager extends RecyclerView.LayoutManager {
      * Primary orientation is the layout's orientation, secondary orientation is the orientation
      * for spans. Having both makes code much cleaner for calculations.
      */
+    @NonNull
     OrientationHelper mPrimaryOrientation;
+    @NonNull
     OrientationHelper mSecondaryOrientation;
 
     private int mOrientation;
@@ -120,7 +123,8 @@ public class StaggeredGridLayoutManager extends RecyclerView.LayoutManager {
      */
     private int mSizePerSpan;
 
-    private LayoutState mLayoutState;
+    @NonNull
+    private final LayoutState mLayoutState;
 
     private boolean mReverseLayout = false;
 
@@ -221,6 +225,8 @@ public class StaggeredGridLayoutManager extends RecyclerView.LayoutManager {
         setSpanCount(properties.spanCount);
         setReverseLayout(properties.reverseLayout);
         setAutoMeasureEnabled(mGapStrategy != GAP_HANDLING_NONE);
+        mLayoutState = new LayoutState();
+        createOrientationHelpers();
     }
 
     /**
@@ -234,6 +240,14 @@ public class StaggeredGridLayoutManager extends RecyclerView.LayoutManager {
         mOrientation = orientation;
         setSpanCount(spanCount);
         setAutoMeasureEnabled(mGapStrategy != GAP_HANDLING_NONE);
+        mLayoutState = new LayoutState();
+        createOrientationHelpers();
+    }
+
+    private void createOrientationHelpers() {
+        mPrimaryOrientation = OrientationHelper.createOrientationHelper(this, mOrientation);
+        mSecondaryOrientation = OrientationHelper
+                .createOrientationHelper(this, 1 - mOrientation);
     }
 
     /**
@@ -426,12 +440,9 @@ public class StaggeredGridLayoutManager extends RecyclerView.LayoutManager {
             return;
         }
         mOrientation = orientation;
-        if (mPrimaryOrientation != null && mSecondaryOrientation != null) {
-            // swap
-            OrientationHelper tmp = mPrimaryOrientation;
-            mPrimaryOrientation = mSecondaryOrientation;
-            mSecondaryOrientation = tmp;
-        }
+        OrientationHelper tmp = mPrimaryOrientation;
+        mPrimaryOrientation = mSecondaryOrientation;
+        mSecondaryOrientation = tmp;
         requestLayout();
     }
 
@@ -526,15 +537,6 @@ public class StaggeredGridLayoutManager extends RecyclerView.LayoutManager {
         requestLayout();
     }
 
-    private void ensureOrientationHelper() {
-        if (mPrimaryOrientation == null) {
-            mPrimaryOrientation = OrientationHelper.createOrientationHelper(this, mOrientation);
-            mSecondaryOrientation = OrientationHelper
-                    .createOrientationHelper(this, 1 - mOrientation);
-            mLayoutState = new LayoutState();
-        }
-    }
-
     /**
      * Calculates the views' layout order. (e.g. from end to start or start to end)
      * RTL layout support is applied automatically. So if layout is RTL and
@@ -593,7 +595,6 @@ public class StaggeredGridLayoutManager extends RecyclerView.LayoutManager {
 
     private void onLayoutChildren(RecyclerView.Recycler recycler, RecyclerView.State state,
             boolean shouldCheckForGaps) {
-        ensureOrientationHelper();
         final AnchorInfo anchorInfo = mAnchorInfo;
         anchorInfo.reset();
 
@@ -1036,7 +1037,6 @@ public class StaggeredGridLayoutManager extends RecyclerView.LayoutManager {
         if (getChildCount() == 0) {
             return 0;
         }
-        ensureOrientationHelper();
         return ScrollbarHelper.computeScrollOffset(state, mPrimaryOrientation,
                 findFirstVisibleItemClosestToStart(!mSmoothScrollbarEnabled, true)
                 , findFirstVisibleItemClosestToEnd(!mSmoothScrollbarEnabled, true),
@@ -1057,7 +1057,6 @@ public class StaggeredGridLayoutManager extends RecyclerView.LayoutManager {
         if (getChildCount() == 0) {
             return 0;
         }
-        ensureOrientationHelper();
         return ScrollbarHelper.computeScrollExtent(state, mPrimaryOrientation,
                 findFirstVisibleItemClosestToStart(!mSmoothScrollbarEnabled, true)
                 , findFirstVisibleItemClosestToEnd(!mSmoothScrollbarEnabled, true),
@@ -1078,7 +1077,6 @@ public class StaggeredGridLayoutManager extends RecyclerView.LayoutManager {
         if (getChildCount() == 0) {
             return 0;
         }
-        ensureOrientationHelper();
         return ScrollbarHelper.computeScrollRange(state, mPrimaryOrientation,
                 findFirstVisibleItemClosestToStart(!mSmoothScrollbarEnabled, true)
                 , findFirstVisibleItemClosestToEnd(!mSmoothScrollbarEnabled, true),
@@ -1175,7 +1173,6 @@ public class StaggeredGridLayoutManager extends RecyclerView.LayoutManager {
         }
 
         if (getChildCount() > 0) {
-            ensureOrientationHelper();
             state.mAnchorPosition = mLastLayoutFromEnd ? getLastChildPosition()
                     : getFirstChildPosition();
             state.mVisibleAnchorPosition = findFirstVisibleItemPositionInt();
@@ -1288,7 +1285,6 @@ public class StaggeredGridLayoutManager extends RecyclerView.LayoutManager {
      * children order.
      */
     View findFirstVisibleItemClosestToStart(boolean fullyVisible, boolean acceptPartiallyVisible) {
-        ensureOrientationHelper();
         final int boundsStart = mPrimaryOrientation.getStartAfterPadding();
         final int boundsEnd = mPrimaryOrientation.getEndAfterPadding();
         final int limit = getChildCount();
@@ -1319,7 +1315,6 @@ public class StaggeredGridLayoutManager extends RecyclerView.LayoutManager {
      * children order.
      */
     View findFirstVisibleItemClosestToEnd(boolean fullyVisible, boolean acceptPartiallyVisible) {
-        ensureOrientationHelper();
         final int boundsStart = mPrimaryOrientation.getStartAfterPadding();
         final int boundsEnd = mPrimaryOrientation.getEndAfterPadding();
         View partiallyVisible = null;
@@ -1407,7 +1402,8 @@ public class StaggeredGridLayoutManager extends RecyclerView.LayoutManager {
         }
         mLayoutState.mStopInFocusable = false;
         mLayoutState.mRecycle = true;
-        mLayoutState.mInfinite = mPrimaryOrientation.getMode() == View.MeasureSpec.UNSPECIFIED;
+        mLayoutState.mInfinite = mPrimaryOrientation.getMode() == View.MeasureSpec.UNSPECIFIED &&
+                mPrimaryOrientation.getEnd() == 0;
     }
 
     private void setLayoutStateDirection(int direction) {
@@ -2046,7 +2042,6 @@ public class StaggeredGridLayoutManager extends RecyclerView.LayoutManager {
     }
 
     int scrollBy(int dt, RecyclerView.Recycler recycler, RecyclerView.State state) {
-        ensureOrientationHelper();
         final int referenceChildPosition;
         final int layoutDir;
         if (dt > 0) { // layout towards end
@@ -2124,6 +2119,7 @@ public class StaggeredGridLayoutManager extends RecyclerView.LayoutManager {
         return 0;
     }
 
+    @SuppressWarnings("deprecation")
     @Override
     public RecyclerView.LayoutParams generateDefaultLayoutParams() {
         if (mOrientation == HORIZONTAL) {
@@ -2171,7 +2167,6 @@ public class StaggeredGridLayoutManager extends RecyclerView.LayoutManager {
             return null;
         }
 
-        ensureOrientationHelper();
         resolveShouldLayoutReverse();
         final int layoutDir = convertFocusDirectionToLayoutDirection(direction);
         if (layoutDir == LayoutState.INVALID_LAYOUT) {

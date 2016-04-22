@@ -53,6 +53,7 @@ import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Adapters.BaseFragmentAdapter;
 import org.telegram.ui.Cells.TextCheckCell;
 import org.telegram.ui.Cells.TextInfoPrivacyCell;
@@ -255,7 +256,7 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
             }
 
             if (type == 1) {
-                dropDownContainer = new ActionBarMenuItem(context, menu, R.drawable.bar_selector);
+                dropDownContainer = new ActionBarMenuItem(context, menu, 0);
                 dropDownContainer.setSubMenuOpenSide(1);
                 dropDownContainer.addSubItem(pin_item, LocaleController.getString("PasscodePIN", R.string.PasscodePIN), 0);
                 dropDownContainer.addSubItem(password_item, LocaleController.getString("PasscodePassword", R.string.PasscodePassword), 0);
@@ -362,7 +363,7 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
                             @Override
                             public String format(int value) {
                                 if (value == 0) {
-                                    return LocaleController.getString("Disabled", R.string.Disabled);
+                                    return LocaleController.getString("AutoLockDisabled", R.string.AutoLockDisabled);
                                 } else if (value == 1) {
                                     return LocaleController.formatString("AutoLockInTime", R.string.AutoLockInTime, LocaleController.formatPluralString("Minutes", 1));
                                 } else if (value == 2) {

@@ -18,6 +18,7 @@ public class AutoMessageReplyReceiver extends BroadcastReceiver {
 
     @Override
     public void onReceive(Context context, Intent intent) {
+        ApplicationLoader.postInitApplication();
         Bundle remoteInput = RemoteInput.getResultsFromIntent(intent);
         if (remoteInput == null) {
             return;
@@ -31,7 +32,7 @@ public class AutoMessageReplyReceiver extends BroadcastReceiver {
         if (dialog_id == 0 || max_id == 0) {
             return;
         }
-        SendMessagesHelper.getInstance().sendMessage(text.toString(), dialog_id, null, null, true, false, null, null);
+        SendMessagesHelper.getInstance().sendMessage(text.toString(), dialog_id, null, null, true, false, null, null, null);
         MessagesController.getInstance().markDialogAsRead(dialog_id, max_id, max_id, 0, true, false);
     }
 }

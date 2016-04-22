@@ -255,10 +255,12 @@
     <string name="IsTyping">يكتب… </string>
     <string name="AreTyping">يكتبون… </string>
     <string name="IsRecordingAudio">%1$s يقوم بتسجيل رسالة صوتية...</string>
+    <string name="IsSendingAudio">%1$s يقوم بإرسال مقطع صوتي...</string>
     <string name="IsSendingPhoto">%1$s يقوم بإرسال صورة...</string>
     <string name="IsSendingVideo">%1$s يقوم بإرسال مقطع مرئي...</string>
     <string name="IsSendingFile">%1$s يقوم بإرسال ملف...</string>
     <string name="RecordingAudio">جاري تسجيل الرسالة الصوتية...</string>
+    <string name="SendingAudio">جاري إرسال المقطع الصوتي...</string>
     <string name="SendingPhoto">جاري إرسال الصورة...</string>
     <string name="SendingVideoStatus">جاري إرسال المقطع المرئي...</string>
     <string name="SendingFile">جاري إرسال الملف...</string>
@@ -504,6 +506,7 @@
     <string name="StickersCopy">نسخ الرابط</string>
     <string name="StickersRemove">حذف</string>
     <string name="NoStickers">لا يوجد ملصقات بعد</string>
+    <string name="SendSticker">أرسل ملصق</string>
     <string name="TooMuchStickersets">المعذرة، لقد وصلت الحد الأعلى لحزم الملصقات.</string>
     <!--settings view-->
     <string name="ResetNotificationsText">تم تعيين كافة الإشعارات افتراضيا</string>
@@ -539,6 +542,7 @@
     <string name="TerminateAllSessions">سجل الخروج من كافة الأجهزة الأخرى</string>
     <string name="Events">الأحداث</string>
     <string name="ContactJoined">اشترك صديق في تيليجرام</string>
+    <string name="PinnedMessages">رسائل مثبتة</string>
     <string name="Language">اللغة</string>
     <string name="AskAQuestionInfo">نرجو الأخذ بالعلم أن الدعم الفني في تيليجرام يقوم به مجموعة من المتطوعين. نحن نحاول الرد بسرعة قدر المستطاع، لكن ربما نستغرق القليل من الوقت.<![CDATA[<br><br>]]> <![CDATA[<a href=\"https://telegram.org/faq/ar\">صفحة الأسئلة الأكثر شيوعًا</a>]]>: يوجد بها حلول للمشاكل وإجابات لمعظم الأسئلة.</string>
     <string name="AskButton">اسأل أحد المتطوعين</string>
@@ -550,8 +554,10 @@
     <string name="IncorrectLocalization">ملف التعريب غير صحيح</string>
     <string name="Enabled">تمكين</string>
     <string name="Disabled">تعطيل</string>
-    <string name="NotificationsService">خدمة الإشعارات</string>
-    <string name="NotificationsServiceDisableInfo">إذا كانت خدمات Google play كافية بالنسبة لك لتلقي الإشعارات ، يمكنك تعطيل \" خدمة الإشعارات \" . ومع ذلك نحن نوصي بترك هذه الخدمة مفعلة للحفاظ على تشغيل التطبيق في الخلفية ، ولتلقي إشعارات الدردشة .</string>
+    <string name="NotificationsService">خدمة التشغيل المستمر</string>
+    <string name="NotificationsServiceInfo">إعادة تشغيل التطبيق في حال تم إقفاله من المستخدم أو النظام. هذا سيساعد في إظهار التطبيق للإشعارات.</string>
+    <string name="NotificationsServiceConnection">الاتصال في الخلفية</string>
+    <string name="NotificationsServiceConnectionInfo">استخدام اتصال طفيف في الخلفية للتأكد من وصول إشعارات تيليجرام. قم بالتفعيل لإشعارات أقوى.</string>
     <string name="SortBy">فرز حسب</string>
     <string name="ImportContacts">استيراد جهات الاتصال</string>
     <string name="SortFirstName">الاسم الأول</string>
@@ -932,7 +938,15 @@
     <string name="AreYouSureSessions">هل أنت متأكد من تسجيل الخروج من جميع الأجهزة الأخرى باستثناء هذا الجهاز؟</string>
     <string name="AreYouSureDeleteAndExit">هل أنت متأكد من أنك تريد حذف المجموعة والخروج منها؟</string>
     <string name="AreYouSureDeleteThisChat">هل أنت متأكد من رغبتك في حذف المحادثة؟</string>
-    <string name="AreYouSureShareMyContactInfo">هل أنت متأكد من أنك تريد مشاركة معلومات جهة الاتصال الخاصة بك؟</string>
+    <string name="ShareYouLocationTitle">هل ترغب في مشاركة موقعك؟</string>
+    <string name="ShareYouLocationInfo">هذا الخيار سيرسل موقعك الحالي للبوت.</string>
+    <string name="ShareYouLocationUnable">لا يستطيع التطبيق تحديد موقعك الحالي</string>
+    <string name="ShareYouLocationUnableManually">اختر بشكل يدوي</string>
+    <string name="ShareYouLocationInline">هذا البوت يرغب في معرفة موقعك في كل مرة ترسل له طلب. هذا يمكن الاستفادة منه لإعطائك نتائج مناسبة لموقعك.</string>
+    <string name="ShareYouPhoneNumberTitle">هل ترغب في مشاركة رقم هاتفك؟</string>
+    <string name="AreYouSureShareMyContactInfoBot">البوت سيعلم رقم هاتفك. سيكون هذا مفيد لتفعيله في خدمات أخرى.</string>
+    <string name="AreYouSureShareMyContactInfoUser">هل أنت متأكد من رغبتك في مشاركة رقم هاتفك %1$s مع <![CDATA[<b>]]>%2$s<![CDATA[</b>]]>؟</string>
+    <string name="AreYouSureShareMyContactInfo">هل أنت متأكد من رغبتك في مشاركة رقم هاتفك؟</string>
     <string name="AreYouSureBlockContact">هل أنت متأكد من رغبتك في حظر جهة الاتصال هذه؟</string>
     <string name="AreYouSureUnblockContact">هل أنت متأكد من رغبتك في إزالة الحظر عن جهة الاتصال هذه؟</string>
     <string name="AreYouSureDeleteContact">هل أنت متأكد من رغبتك في حذف جهة الاتصال هذه؟</string>
@@ -955,11 +969,13 @@
     <string name="AllowReadSms">فصلًا قم بالسماح لتيليجرام باستقبال رسائل قصيرة ليتمكن من إدخال الرمز لك تلقائيًا.</string>
     <string name="AllowReadCall">فصلًا قم بالسماح لتيليجرام باستقبال اتصالات ليتمكن من إدخال الرمز لك تلقائيًا.</string>
     <string name="AllowReadCallAndSms">فصلًا قم بالسماح لتيليجرام باستقبال اتصالات ورسائل قصيرة ليتمكن من إدخال الرمز لك تلقائيًا.</string>
+    <string name="UserRestricted">المعذرة، لا يمكنك القيام بذلك.</string>
     <!--permissions-->
     <string name="PermissionContacts">تيليجرام يحتاج للسماح له بالوصول لجهات الاتصال الخاصة بك لتتمكن من محادثة أصدقائك من كافة أجهزتك.</string>
     <string name="PermissionStorage">تيليجرام يحتاج للسماح له بالوصول للذاكرة الخاصة بك لتتمكن من إرسال وحفظ الصور، المقاطع المرئية، الموسيقى وغيرها من الوسائط.</string>
     <string name="PermissionNoAudio">تيليجرام يحتاج للسماح له بالوصول للمايكروفون الخاص بك لتتمكن من إرسال رسائل صوتية.</string>
     <string name="PermissionNoLocation">تيليجرام يحتاج للسماح له بالوصول لمكانك لتتمكن من مشاركته مع أصدقائك من خلاله.</string>
+    <string name="PermissionNoLocationPosition">تيليجرام يحتاج صلاحية الحصول على موقعك.</string>
     <string name="PermissionOpenSettings">الإعدادات</string>
     <!--Intro view-->
     <string name="Page1Title">تيليجرام</string>

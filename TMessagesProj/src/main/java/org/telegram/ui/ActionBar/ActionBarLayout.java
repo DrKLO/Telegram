@@ -28,6 +28,7 @@ import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
 import org.telegram.messenger.AnimationCompat.AnimatorListenerAdapterProxy;
 import org.telegram.messenger.AnimationCompat.AnimatorSetProxy;
@@ -248,7 +249,7 @@ public class ActionBarLayout extends FrameLayout {
         }
 
         final int restoreCount = canvas.save();
-        if (!transitionAnimationInProgress && clipLeft != 0 && clipRight != 0) {
+        if (!transitionAnimationInProgress) {
             canvas.clipRect(clipLeft, 0, clipRight, getHeight());
         }
         final boolean result = super.drawChild(canvas, child, drawingTime);
@@ -427,7 +428,7 @@ public class ActionBarLayout extends FrameLayout {
                             distToMove = containerView.getMeasuredWidth() - x;
                             animatorSet.playTogether(
                                     ObjectAnimatorProxy.ofFloat(containerView, "translationX", containerView.getMeasuredWidth()),
-                                    ObjectAnimatorProxy.ofFloat(this, "innerTranslationX", (float)containerView.getMeasuredWidth())
+                                    ObjectAnimatorProxy.ofFloat(this, "innerTranslationX", (float) containerView.getMeasuredWidth())
                             );
                         } else {
                             distToMove = x;
@@ -706,6 +707,7 @@ public class ActionBarLayout extends FrameLayout {
                         ViewProxy.setTranslationX(containerView, 0);
                     }
                 };
+                FileLog.e("tmessages", "onOpenAnimationsStart");
                 fragment.onTransitionAnimationStart(true, false);
                 AnimatorSetProxy animation = fragment.onCustomTransitionAnimation(true, new Runnable() {
                     @Override
@@ -828,6 +830,7 @@ public class ActionBarLayout extends FrameLayout {
             layoutParams.width = LayoutHelper.MATCH_PARENT;
             layoutParams.height = LayoutHelper.MATCH_PARENT;
             fragmentView.setLayoutParams(layoutParams);
+            FileLog.e("tmessages", "onCloseAnimationStart");
             previousFragment.onTransitionAnimationStart(true, true);
             currentFragment.onTransitionAnimationStart(false, false);
             previousFragment.onResume();
@@ -918,6 +921,7 @@ public class ActionBarLayout extends FrameLayout {
                         onAnimationEndCheck(false);
                     }
                 });
+                FileLog.e("tmessages", "onCloseAnimationsStart");
                 currentAnimation.start();
             } else {
                 removeFragmentFromStackInternal(currentFragment);
@@ -1043,11 +1047,13 @@ public class ActionBarLayout extends FrameLayout {
             if (post) {
                 new Handler().post(new Runnable() {
                     public void run() {
+                        FileLog.e("tmessages", "onCloseAnimationEnd");
                         onCloseAnimationEndRunnable.run();
                         onCloseAnimationEndRunnable = null;
                     }
                 });
             } else {
+                FileLog.e("tmessages", "onCloseAnimationEnd");
                 onCloseAnimationEndRunnable.run();
                 onCloseAnimationEndRunnable = null;
             }
@@ -1061,11 +1067,13 @@ public class ActionBarLayout extends FrameLayout {
             if (post) {
                 new Handler().post(new Runnable() {
                     public void run() {
+                        FileLog.e("tmessages", "onOpenAnimationEnd");
                         onOpenAnimationEndRunnable.run();
                         onOpenAnimationEndRunnable = null;
                     }
                 });
             } else {
+                FileLog.e("tmessages", "onOpenAnimationEnd");
                 onOpenAnimationEndRunnable.run();
                 onOpenAnimationEndRunnable = null;
             }

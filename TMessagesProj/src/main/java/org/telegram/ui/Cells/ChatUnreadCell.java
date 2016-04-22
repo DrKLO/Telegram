@@ -18,6 +18,7 @@ import android.widget.TextView;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.R;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.ActionBar.Theme;
 
 public class ChatUnreadCell extends FrameLayout {
 
@@ -38,7 +39,8 @@ public class ChatUnreadCell extends FrameLayout {
         textView = new TextView(context);
         textView.setPadding(0, 0, 0, AndroidUtilities.dp(1));
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-        textView.setTextColor(0xff4a7297);
+        textView.setTextColor(Theme.CHAT_UNREAD_TEXT_COLOR);
+        textView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
     }
 

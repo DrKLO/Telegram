@@ -15,6 +15,7 @@ import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.ui.ActionBar.Theme;
 
 public class RecordStatusDrawable extends Drawable {
 
@@ -27,7 +28,7 @@ public class RecordStatusDrawable extends Drawable {
 
     public RecordStatusDrawable() {
         super();
-        paint.setColor(0xffd7e8f7);
+        paint.setColor(Theme.ACTION_BAR_SUBTITLE_COLOR);
         paint.setStyle(Paint.Style.STROKE);
         paint.setStrokeWidth(AndroidUtilities.dp(2));
         paint.setStrokeCap(Paint.Cap.ROUND);

@@ -40,6 +40,7 @@ import org.telegram.messenger.AnimationCompat.AnimatorListenerAdapterProxy;
 import org.telegram.messenger.AnimationCompat.AnimatorSetProxy;
 import org.telegram.messenger.AnimationCompat.ObjectAnimatorProxy;
 import org.telegram.messenger.AnimationCompat.ViewProxy;
+import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.PhotoEditToolCell;
 
 import java.nio.ByteBuffer;
@@ -2068,7 +2069,7 @@ public class PhotoFilterView extends FrameLayout {
         cancelTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         cancelTextView.setTextColor(0xffffffff);
         cancelTextView.setGravity(Gravity.CENTER);
-        cancelTextView.setBackgroundResource(R.drawable.bar_selector_picker);
+        cancelTextView.setBackgroundDrawable(Theme.createBarSelectorDrawable(Theme.ACTION_BAR_PICKER_SELECTOR_COLOR, false));
         cancelTextView.setPadding(AndroidUtilities.dp(29), 0, AndroidUtilities.dp(29), 0);
         cancelTextView.setText(LocaleController.getString("Cancel", R.string.Cancel).toUpperCase());
         cancelTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
@@ -2078,7 +2079,7 @@ public class PhotoFilterView extends FrameLayout {
         doneTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         doneTextView.setTextColor(0xff51bdf3);
         doneTextView.setGravity(Gravity.CENTER);
-        doneTextView.setBackgroundResource(R.drawable.bar_selector_picker);
+        doneTextView.setBackgroundDrawable(Theme.createBarSelectorDrawable(Theme.ACTION_BAR_PICKER_SELECTOR_COLOR, false));
         doneTextView.setPadding(AndroidUtilities.dp(29), 0, AndroidUtilities.dp(29), 0);
         doneTextView.setText(LocaleController.getString("Done", R.string.Done).toUpperCase());
         doneTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
@@ -2169,7 +2170,7 @@ public class PhotoFilterView extends FrameLayout {
 
         ImageView imageView = new ImageView(context);
         imageView.setImageResource(R.drawable.edit_cancel);
-        imageView.setBackgroundResource(R.drawable.bar_selector_picker);
+        imageView.setBackgroundDrawable(Theme.createBarSelectorDrawable(Theme.ACTION_BAR_PICKER_SELECTOR_COLOR, false));
         imageView.setPadding(AndroidUtilities.dp(22), 0, AndroidUtilities.dp(22), 0);
         frameLayout.addView(imageView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT));
         imageView.setOnClickListener(new OnClickListener() {
@@ -2217,7 +2218,7 @@ public class PhotoFilterView extends FrameLayout {
 
         imageView = new ImageView(context);
         imageView.setImageResource(R.drawable.edit_doneblue);
-        imageView.setBackgroundResource(R.drawable.bar_selector_picker);
+        imageView.setBackgroundDrawable(Theme.createBarSelectorDrawable(Theme.ACTION_BAR_PICKER_SELECTOR_COLOR, false));
         imageView.setPadding(AndroidUtilities.dp(22), AndroidUtilities.dp(1), AndroidUtilities.dp(22), 0);
         frameLayout.addView(imageView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.RIGHT));
         imageView.setOnClickListener(new OnClickListener() {

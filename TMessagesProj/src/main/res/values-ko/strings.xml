@@ -255,10 +255,12 @@
     <string name="IsTyping">님이 입력 중...</string>
     <string name="AreTyping">님이 입력 중...</string>
     <string name="IsRecordingAudio">%1$s님이 음성메시지를 녹음중입니다...</string>
+    <string name="IsSendingAudio">%1$s님이 음성파일을 전송중입니다...</string>
     <string name="IsSendingPhoto">%1$s님이 사진 보내는 중...</string>
     <string name="IsSendingVideo">%1$s님이 동영상 보내는 중...</string>
     <string name="IsSendingFile">%1$s님이 파일 보내는 중...</string>
     <string name="RecordingAudio">음성메시지를 녹음 중입니다..</string>
+    <string name="SendingAudio">음성파일 전송 중..</string>
     <string name="SendingPhoto">사진 전송 중..</string>
     <string name="SendingVideoStatus">동영상 전송 중..</string>
     <string name="SendingFile">파일 전송 중...</string>
@@ -504,6 +506,7 @@
     <string name="StickersCopy">링크 복사</string>
     <string name="StickersRemove">삭제</string>
     <string name="NoStickers">스티커가 아직 없음</string>
+    <string name="SendSticker">스티커 전송</string>
     <string name="TooMuchStickersets">죄송합니다, 스티커 세트수가 최대치입니다.</string>
     <!--settings view-->
     <string name="ResetNotificationsText">모든 알림 설정이 초기화되었습니다</string>
@@ -539,6 +542,7 @@
     <string name="TerminateAllSessions">다른 모든 세션 종료</string>
     <string name="Events">이벤트</string>
     <string name="ContactJoined">친구의 텔레그램 가입 알림</string>
+    <string name="PinnedMessages">고정된 메시지</string>
     <string name="Language">언어</string>
     <string name="AskAQuestionInfo">텔레그램에 관한 질문은 자원봉사자들이 답변해 드립니다. 신속한 답변을 위해 노력하지만 답변이 다소 늦을 수 있습니다.<![CDATA[<br><br>]]>일반적인 문제와 <![CDATA[<a href=\"https://telegram.org/faq/ko#g\">해결방법</a>]]>에 대해서는 \'<![CDATA[<a href=\"https://telegram.org/faq/ko#a\">자주 묻는 질문</a>]]>\'을 확인해 보세요.</string>
     <string name="AskButton">질문하기</string>
@@ -550,8 +554,10 @@
     <string name="IncorrectLocalization">언어 파일이 올바르지 않습니다.</string>
     <string name="Enabled">켜기</string>
     <string name="Disabled">끄기</string>
-    <string name="NotificationsService">알림 서비스</string>
-    <string name="NotificationsServiceDisableInfo">알림 서비스를 비활성화 하면 새로운 메시지의 알림이 다소 늦을 수 있습니다.<![CDATA[\n]]>텔레그램이 백그라운드에서 작동하며 알림을 바로 알릴 수 있도록 활성화 하는것을 권장합니다.</string>
+    <string name="NotificationsService">항상 활성화 서비스</string>
+    <string name="NotificationsServiceInfo">시스템이나 사용자에 의하여 닫힌 앱을 재시작합니다. 해당 작업은 알림을 보여지게 합니다.</string>
+    <string name="NotificationsServiceConnection">백그라운드 연결</string>
+    <string name="NotificationsServiceConnectionInfo">알림을 받기 위하여 텔레그램 백그라운드 연결을 최소화로 유지합니다. 안정적인 알림을 유지합니다.</string>
     <string name="SortBy">정렬</string>
     <string name="ImportContacts">연락처 가져오기</string>
     <string name="SortFirstName">이름</string>
@@ -932,7 +938,15 @@
     <string name="AreYouSureSessions">현재 기기를 제외하고 다른 기기에 로그인된 세션을 모두 종료시킬까요?</string>
     <string name="AreYouSureDeleteAndExit">그룹에서 나갈까요?</string>
     <string name="AreYouSureDeleteThisChat">채팅방을 삭제할까요?</string>
-    <string name="AreYouSureShareMyContactInfo">연락처를 공유할까요?</string>
+    <string name="ShareYouLocationTitle">위치를 공유하겠습니까?</string>
+    <string name="ShareYouLocationInfo">현재 위치를 봇에게 전송합니다.</string>
+    <string name="ShareYouLocationUnable">앱에서 현재 위치를 확인하지 못하였습니다.</string>
+    <string name="ShareYouLocationUnableManually">수동 선택</string>
+    <string name="ShareYouLocationInline">요청시마다 봇이 위치를 확인합니다. 이 요청으로 인하여 특정 위치에 대한 결과 확인이 가능합니다.</string>
+    <string name="ShareYouPhoneNumberTitle">전화번호를 공유하겠습니까?</string>
+    <string name="AreYouSureShareMyContactInfoBot">봇이 전화번호를 인지를 하며, 다른 서비스와의 통합에 활용이 됩니다.</string>
+    <string name="AreYouSureShareMyContactInfoUser">%1$s 님에게 <![CDATA[<b>]]>%2$s<![CDATA[</b>]]> 번호를 공유하겠습니까?</string>
+    <string name="AreYouSureShareMyContactInfo">정말로 전화번호를 공유하겠습니까?</string>
     <string name="AreYouSureBlockContact">대화상대를 차단할까요?</string>
     <string name="AreYouSureUnblockContact">차단을 해제할까요?</string>
     <string name="AreYouSureDeleteContact">대화상대를 삭제할까요?</string>
@@ -955,11 +969,13 @@
     <string name="AllowReadSms">텔레그램이 SMS를 수신 할 수 있도록 설정해주셔야 자동으로 코드 입력이 가능합니다.</string>
     <string name="AllowReadCall">텔레그램이 전화를 수신 할 수 있도록 설정해주셔야 자동으로 코드 입력이 가능합니다.</string>
     <string name="AllowReadCallAndSms">텔레그램이 SMS 및 전화를 수신 할 수 있도록 설정해주셔야 자동으로 코드 입력이 가능합니다.</string>
+    <string name="UserRestricted">죄송합니다, 이 작업이 제한되었습니다.</string>
     <!--permissions-->
     <string name="PermissionContacts">Telegram은 여러 기기에서 친구와 메시지를 주고받을 수 있도록 회원님의 연락처 접근이 필요합니다.</string>
     <string name="PermissionStorage">Telegram은 사진, 비디오, 음악 및 다양한 미디어를 공유 및 저장하기 위하여 스토리지 접근이 필요합니다.</string>
     <string name="PermissionNoAudio">Telegram이 음성 메시지를 보내기 위하여 마이크에 대한 접근이 필요합니다.</string>
     <string name="PermissionNoLocation">Telegram이 위치를 친구분들과 공유하기 위해 위치에 대한 접근 권한을 필요로 합니다.</string>
+    <string name="PermissionNoLocationPosition">텔레그램이 위치에 대한 권한이 필요합니다.</string>
     <string name="PermissionOpenSettings">설정</string>
     <!--Intro view-->
     <string name="Page1Title">텔레그램</string>

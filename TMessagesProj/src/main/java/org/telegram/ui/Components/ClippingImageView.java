@@ -51,6 +51,9 @@ public class ClippingImageView extends View {
         matrix = new Matrix();
         drawRect = new RectF();
         bitmapRect = new RectF();
+        roundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        roundRect = new RectF();
+        shaderMatrix = new Matrix();
     }
 
     public void setAnimationValues(float[][] values) {
@@ -109,10 +112,32 @@ public class ClippingImageView extends View {
             canvas.save();
 
             if (needRadius) {
-                roundRect.set(0, 0, getWidth(), getHeight());
                 shaderMatrix.reset();
-                shaderMatrix.setRectToRect(bitmapRect, roundRect, Matrix.ScaleToFit.FILL);
+                roundRect.set(0, 0, getWidth(), getHeight());
+
+                int bitmapW;
+                int bitmapH;
+                if (orientation % 360 == 90 || orientation % 360 == 270) {
+                    bitmapW = bmp.getHeight();
+                    bitmapH = bmp.getWidth();
+                } else {
+                    bitmapW = bmp.getWidth();
+                    bitmapH = bmp.getHeight();
+                }
+                float scaleW = getWidth() != 0 ? bitmapW / getWidth() : 1.0f;
+                float scaleH = getHeight() != 0 ? bitmapH / getHeight() : 1.0f;
+                float scale = Math.min(scaleW, scaleH);
+                if (Math.abs(scaleW - scaleH) > 0.00001f) {
+                    int w = (int) Math.floor(getWidth() * scale);
+                    int h = (int) Math.floor(getHeight() * scale);
+                    bitmapRect.set((bitmapW - w) / 2, (bitmapH - h) / 2, w, h);
+                    shaderMatrix.setRectToRect(bitmapRect, roundRect, Matrix.ScaleToFit.START);
+                } else {
+                    bitmapRect.set(0, 0, bmp.getWidth(), bmp.getHeight());
+                    shaderMatrix.setRectToRect(bitmapRect, roundRect, Matrix.ScaleToFit.FILL);
+                }
                 bitmapShader.setLocalMatrix(shaderMatrix);
+                canvas.clipRect(clipLeft / scaleY, clipTop / scaleY, getWidth() - clipRight / scaleY, getHeight() - clipBottom / scaleY);
                 canvas.drawRoundRect(roundRect, radius, radius, roundPaint);
             } else {
                 if (orientation == 90 || orientation == 270) {
@@ -182,10 +207,7 @@ public class ClippingImageView extends View {
         if (bitmap != null) {
             bitmapRect.set(0, 0, bitmap.getWidth(), bitmap.getHeight());
             if (needRadius) {
-                roundRect = new RectF();
-                shaderMatrix = new Matrix();
                 bitmapShader = new BitmapShader(bitmap, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP);
-                roundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
                 roundPaint.setShader(bitmapShader);
             }
         }

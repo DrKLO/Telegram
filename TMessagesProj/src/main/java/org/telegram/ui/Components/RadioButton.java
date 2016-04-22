@@ -21,6 +21,7 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.AnimationCompat.ObjectAnimatorProxy;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageLoader;
+import org.telegram.ui.ActionBar.Theme;
 
 public class RadioButton extends View {
 
@@ -30,8 +31,8 @@ public class RadioButton extends View {
     private static Paint eraser;
     private static Paint checkedPaint;
 
-    private int checkedColor = 0xffd7e8f7;
-    private int color = 0xffd7e8f7;
+    private int checkedColor = Theme.ACTION_BAR_SUBTITLE_COLOR;
+    private int color = Theme.ACTION_BAR_SUBTITLE_COLOR;
 
     private float progress;
     private ObjectAnimatorProxy checkAnimator;
