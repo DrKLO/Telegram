@@ -62,7 +62,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Locale;
 
-public class ChatMessageCell extends ChatBaseCell implements SeekBar.SeekBarDelegate {
+public class ChatMessageCell extends ChatBaseCell implements SeekBar.SeekBarDelegate, ImageReceiver.ImageReceiverDelegate {
 
     private final static int DOCUMENT_ATTACH_TYPE_NONE = 0;
     private final static int DOCUMENT_ATTACH_TYPE_DOCUMENT = 1;
@@ -202,6 +202,7 @@ public class ChatMessageCell extends ChatBaseCell implements SeekBar.SeekBarDele
         super(context);
         avatarDrawable = new AvatarDrawable();
         photoImage = new ImageReceiver(this);
+        photoImage.setDelegate(this);
         radialProgress = new RadialProgress(this);
         seekBar = new SeekBar(context);
         seekBar.setDelegate(this);
@@ -1703,6 +1704,7 @@ public class ChatMessageCell extends ChatBaseCell implements SeekBar.SeekBarDele
                             }
                         }
                     } else if (webPage.photo != null) {
+                        drawImageButton = webPage.type != null && webPage.type.equals("photo");
                         currentPhotoObject = FileLoader.getClosestPhotoSizeWithSize(messageObject.photoThumbs, drawImageButton ? AndroidUtilities.getPhotoSize() : maxPhotoWidth, !drawImageButton);
                         currentPhotoObjectThumb = FileLoader.getClosestPhotoSizeWithSize(messageObject.photoThumbs, 80);
                         if (currentPhotoObjectThumb == currentPhotoObject) {
@@ -3297,6 +3299,14 @@ public class ChatMessageCell extends ChatBaseCell implements SeekBar.SeekBarDele
                     setMessageObject(currentMessageObject);
                 }
             }
+        }
+    }
+
+    @Override
+    public void didSetImage(ImageReceiver imageReceiver, boolean set, boolean thumb) {
+        if (currentMessageObject != null && set && !thumb && !currentMessageObject.mediaExists && !currentMessageObject.attachPathExists) {
+            currentMessageObject.mediaExists = true;
+            updateButtonState(true);
         }
     }
 

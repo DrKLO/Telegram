@@ -10,6 +10,7 @@ package org.telegram.ui.Components;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
+import android.net.Uri;
 import android.os.Build;
 import android.text.TextUtils;
 import android.util.TypedValue;
@@ -38,6 +39,8 @@ import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
 
 import java.util.HashMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class WebFrameLayout extends FrameLayout {
 
@@ -52,11 +55,67 @@ public class WebFrameLayout extends FrameLayout {
     private int height;
     private String openUrl;
     private boolean hasDescription;
+    private String embedUrl;
+
+    final static Pattern youtubeIdRegex = Pattern.compile("(?:youtube(?:-nocookie)?\\.com\\/(?:[^\\/\\n\\s]+\\/\\S+\\/|(?:v|e(?:mbed)?)\\/|\\S*?[?&]v=)|youtu\\.be\\/)([a-zA-Z0-9_-]{11})");
+    private final String youtubeFrame = "<!DOCTYPE html><html><head><style>" +
+            "body { margin: 0; width:100%%; height:100%%;  background-color:#000; }" +
+            "html { width:100%%; height:100%%; background-color:#000; }" +
+            ".embed-container iframe," +
+            ".embed-container object," +
+            "    .embed-container embed {" +
+            "        position: absolute;" +
+            "        top: 0;" +
+            "        left: 0;" +
+            "        width: 100%% !important;" +
+            "        height: 100%% !important;" +
+            "    }" +
+            "    </style></head><body>" +
+            "    <div class=\"embed-container\">" +
+            "        <div id=\"player\"></div>" +
+            "    </div>" +
+            "    <script src=\"https://www.youtube.com/iframe_api\"></script>" +
+            "    <script>" +
+            "    var player;" +
+            "    YT.ready(function() {" +
+            "         player = new YT.Player(\"player\", {" +
+            "                                \"width\" : \"100%%\"," +
+            "                                \"events\" : {" +
+            "                                \"onReady\" : \"onReady\"," +
+            "                                }," +
+            "                                \"videoId\" : \"%1$s\"," +
+            "                                \"height\" : \"100%%\"," +
+            "                                \"playerVars\" : {" +
+            "                                \"start\" : 0," +
+            "                                \"rel\" : 0," +
+            "                                \"showinfo\" : 0," +
+            "                                \"modestbranding\" : 1," +
+            "                                \"iv_load_policy\" : 3," +
+            "                                \"autohide\" : 1," +
+            "                                \"cc_load_policy\" : 1," +
+            "                                \"playsinline\" : 1," +
+            "                                \"controls\" : 1" +
+            "                                }" +
+            "                                });" +
+            "        player.setSize(window.innerWidth, window.innerHeight);" +
+            "    });" +
+            "    function onReady(event) {" +
+            "        player.playVideo();" +
+            "    }" +
+            "    window.onresize = function() {" +
+            "        player.setSize(window.innerWidth, window.innerHeight);" +
+            "    }" +
+            "    </script>" +
+            "</body>" +
+            "</html>";
 
     @SuppressLint("SetJavaScriptEnabled")
     public WebFrameLayout(Context context, final BottomSheet parentDialog, String title, String descripton, String originalUrl, final String url, int w, int h) {
         super(context);
-
+        embedUrl = url;
+        if (embedUrl.toLowerCase().contains("youtube")) {
+            //embedUrl += "&enablejsapi=1";
+        }
         hasDescription = descripton != null && descripton.length() > 0;
         openUrl = originalUrl;
         width = w;
@@ -161,9 +220,6 @@ public class WebFrameLayout extends FrameLayout {
 
         progressBar = new ProgressBar(context);
         addView(progressBar, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER, 0, 0, 0, (48 + 36 + (hasDescription ? 22 : 0)) / 2));
-
-        //TODO 16m
-        //TODO 14
 
         TextView textView;
 
@@ -282,10 +338,30 @@ public class WebFrameLayout extends FrameLayout {
             public void onOpenAnimationEnd() {
                 HashMap<String, String> args = new HashMap<>();
                 args.put("Referer", "http://youtube.com");
+                boolean ok = false;
                 try {
-                    webView.loadUrl(url, args);
+                    Uri uri = Uri.parse(openUrl);
+                    String host = uri.getHost().toLowerCase();
+                    if (host != null && host.endsWith("youtube.com") || host.endsWith("youtu.be")) {
+                        Matcher matcher = youtubeIdRegex.matcher(openUrl);
+                        String id = null;
+                        if (matcher.find()) {
+                            id = matcher.group(1);
+                        }
+                        if (id != null) {
+                            ok = true;
+                            webView.loadDataWithBaseURL("http://youtube.com", String.format(youtubeFrame, id), "text/html", "UTF-8", "http://youtube.com");
+                        }
+                    }
                 } catch (Exception e) {
                     FileLog.e("tmessages", e);
+                }
+                if (!ok) {
+                    try {
+                        webView.loadUrl(embedUrl, args);
+                    } catch (Exception e) {
+                        FileLog.e("tmessages", e);
+                    }
                 }
             }
         });

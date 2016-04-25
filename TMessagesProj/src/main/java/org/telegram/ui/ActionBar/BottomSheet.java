@@ -233,6 +233,9 @@ public class BottomSheet extends Dialog {
             protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
                 int width = MeasureSpec.getSize(widthMeasureSpec);
                 int height = MeasureSpec.getSize(heightMeasureSpec);
+                if (lastInsets != null && Build.VERSION.SDK_INT >= 21) {
+                    width -= lastInsets.getSystemWindowInsetRight() + lastInsets.getSystemWindowInsetLeft();
+                }
 
                 setMeasuredDimension(width, height);
                 boolean isPortrait = width < height;
@@ -262,9 +265,6 @@ public class BottomSheet extends Dialog {
                     if (child.getVisibility() == GONE || child == containerView) {
                         continue;
                     }
-                    if (lastInsets != null && Build.VERSION.SDK_INT >= 21) {
-                        child.dispatchApplyWindowInsets(lastInsets);
-                    }
                     measureChildWithMargins(child, MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY), 0, MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY), 0);
                 }
             }
@@ -272,15 +272,15 @@ public class BottomSheet extends Dialog {
             @Override
             protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
                 if (containerView != null) {
-                    int l = ((right - left) - containerView.getMeasuredWidth()) / 2;
                     int t = (bottom - top) - containerView.getMeasuredHeight();
                     if (lastInsets != null && Build.VERSION.SDK_INT >= 21) {
-                        l += lastInsets.getSystemWindowInsetLeft() / 2;
-                        l -= lastInsets.getSystemWindowInsetRight() / 2;
+                        left += lastInsets.getSystemWindowInsetLeft();
+                        right += lastInsets.getSystemWindowInsetLeft();
                         if (focusable) {
                             t -= lastInsets.getSystemWindowInsetBottom();
                         }
                     }
+                    int l = ((right - left) - containerView.getMeasuredWidth()) / 2;
                     containerView.layout(l, t, l + containerView.getMeasuredWidth(), t + getMeasuredHeight());
                 }
 
@@ -381,6 +381,12 @@ public class BottomSheet extends Dialog {
             @Override
             protected boolean drawChild(Canvas canvas, View child, long drawingTime) {
                 return super.drawChild(canvas, child, drawingTime);
+            }
+
+            @Override
+            protected void onLayout(boolean changed, int l, int t, int r, int b) {
+                super.onLayout(changed, l, t, r, b);
+                FileLog.e("tmessages", "container on layout");
             }
         };
         if (Build.VERSION.SDK_INT >= 21) {
@@ -548,7 +554,7 @@ public class BottomSheet extends Dialog {
     private void startRevealAnimation(final boolean open) {
         ViewProxy.setTranslationY(containerView, 0);
 
-        AnimatorSet animatorSet = new AnimatorSet();
+        final AnimatorSet animatorSet = new AnimatorSet();
 
         View view = delegate.getRevealView();
         if (view.getVisibility() == View.VISIBLE && ((ViewGroup) view.getParent()).getVisibility() == View.VISIBLE) {
@@ -580,6 +586,7 @@ public class BottomSheet extends Dialog {
         for (int a = 0; a < 4; a++) {
             finalRevealRadius = Math.max(finalRevealRadius, (int) Math.ceil(Math.sqrt((revealX - corners[a][0]) * (revealX - corners[a][0]) + (revealY - corners[a][1]) * (revealY - corners[a][1]))));
         }
+        int finalRevealX = revealX <= containerView.getMeasuredWidth() ? revealX : containerView.getMeasuredWidth();
 
         ArrayList<Animator> animators = new ArrayList<>(3);
         animators.add(ObjectAnimator.ofFloat(this, "revealRadius", open ? 0 : finalRevealRadius, open ? finalRevealRadius : 0));
@@ -587,7 +594,7 @@ public class BottomSheet extends Dialog {
         if (Build.VERSION.SDK_INT >= 21) {
             containerView.setElevation(AndroidUtilities.dp(10));
             try {
-                animators.add(ViewAnimationUtils.createCircularReveal(containerView, revealX <= containerView.getMeasuredWidth() ? revealX : containerView.getMeasuredWidth(), revealY, open ? 0 : finalRevealRadius, open ? finalRevealRadius : 0));
+                animators.add(ViewAnimationUtils.createCircularReveal(containerView, finalRevealX, revealY, open ? 0 : finalRevealRadius, open ? finalRevealRadius : 0));
             } catch (Exception e) {
                 FileLog.e("tmessages", e);
             }
@@ -626,7 +633,7 @@ public class BottomSheet extends Dialog {
                 }
                 containerView.invalidate();
                 if (Build.VERSION.SDK_INT >= 11) {
-                    container.setLayerType(View.LAYER_TYPE_NONE, null);
+                    containerView.setLayerType(View.LAYER_TYPE_NONE, null);
                 }
                 if (!open) {
                     containerView.setVisibility(View.INVISIBLE);
@@ -642,17 +649,20 @@ public class BottomSheet extends Dialog {
     }
 
     private void startOpenAnimation() {
-        if (Build.VERSION.SDK_INT >= 20) {
-            container.setLayerType(View.LAYER_TYPE_HARDWARE, null);
-        }
         if (containerView.getMeasuredHeight() == 0) {
             containerView.measure(View.MeasureSpec.makeMeasureSpec(AndroidUtilities.displaySize.x, View.MeasureSpec.AT_MOST), View.MeasureSpec.makeMeasureSpec(AndroidUtilities.displaySize.y, View.MeasureSpec.AT_MOST));
         }
         backgroundDrawable.setAlpha(0);
         containerView.setVisibility(View.VISIBLE);
         if (useRevealAnimation) {
+            if (Build.VERSION.SDK_INT >= 20) {
+                containerView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
+            }
             startRevealAnimation(true);
         } else {
+            if (Build.VERSION.SDK_INT >= 20) {
+                container.setLayerType(View.LAYER_TYPE_HARDWARE, null);
+            }
             ViewProxy.setTranslationY(containerView, containerView.getMeasuredHeight());
             backgroundDrawable.setAlpha(0);
             AnimatorSetProxy animatorSetProxy = new AnimatorSetProxy();

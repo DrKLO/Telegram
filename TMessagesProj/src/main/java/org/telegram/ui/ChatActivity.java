@@ -250,7 +250,6 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     private Runnable waitingForCharaterEnterRunnable;
 
     private boolean openAnimationEnded;
-    private boolean attachAttachViewFirstShow = true;
 
     private int readWithDate;
     private int readWithMid;
@@ -702,7 +701,10 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         cantDeleteMessagesCount = 0;
 
         hasOwnBackground = true;
-        chatAttachView = null;
+        if (chatAttachView != null){
+            chatAttachView.onDestroy();
+            chatAttachView = null;
+        }
         chatAttachViewSheet = null;
 
         Theme.loadRecources(context);
@@ -876,17 +878,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     }
 
                     chatAttachView.init(ChatActivity.this);
-                    if (attachAttachViewFirstShow) {
-                        AndroidUtilities.runOnUIThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                showDialog(chatAttachViewSheet);
-                            }
-                        });
-                        attachAttachViewFirstShow = false;
-                    } else {
-                        showDialog(chatAttachViewSheet);
-                    }
+                    showDialog(chatAttachViewSheet);
                 } else if (id == bot_help) {
                     SendMessagesHelper.getInstance().sendMessage("/help", dialog_id, null, null, false, chatActivityEnterView == null || chatActivityEnterView.asAdmin(), null, null, null);
                 } else if (id == bot_settings) {
@@ -2845,11 +2837,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             int totalItemCount = chatAdapter.getItemCount();
             int checkLoadCount;
             if (scroll) {
-                if (lastLoadIndex < 3) {
-                    checkLoadCount = 5;
-                } else {
-                    checkLoadCount = 25;
-                }
+                checkLoadCount = 25;
             } else  {
                 checkLoadCount = 5;
             }

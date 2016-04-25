@@ -1191,8 +1191,8 @@ public class ImageLoader {
                                 AndroidUtilities.addMediaToGallery(finalFile.toString());
                             }
                         }
-                        ImageLoader.this.fileDidLoaded(location, finalFile, type);
                         NotificationCenter.getInstance().postNotificationName(NotificationCenter.FileDidLoaded, location);
+                        ImageLoader.this.fileDidLoaded(location, finalFile, type);
                     }
                 });
             }

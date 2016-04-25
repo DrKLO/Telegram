@@ -779,7 +779,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                                                 group = path.replace("joinchat/", "");
                                             } else if (path.startsWith("addstickers/")) {
                                                 sticker = path.replace("addstickers/", "");
-                                            } else if (path.startsWith("msg/")) {
+                                            } else if (path.startsWith("msg/") || path.startsWith("share/")) {
                                                 message = data.getQueryParameter("url");
                                                 if (message == null) {
                                                     message = "";
@@ -823,8 +823,8 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                                         url = url.replace("tg:addstickers", "tg://telegram.org").replace("tg://addstickers", "tg://telegram.org");
                                         data = Uri.parse(url);
                                         sticker = data.getQueryParameter("set");
-                                    } else if (url.startsWith("tg:msg") || url.startsWith("tg://msg")) {
-                                        url = url.replace("tg:msg", "tg://telegram.org").replace("tg://msg", "tg://telegram.org");
+                                    } else if (url.startsWith("tg:msg") || url.startsWith("tg://msg") || url.startsWith("tg://share") || url.startsWith("tg:share")) {
+                                        url = url.replace("tg:msg", "tg://telegram.org").replace("tg://msg", "tg://telegram.org").replace("tg://share", "tg://telegram.org").replace("tg:share", "tg://telegram.org");
                                         data = Uri.parse(url);
                                         message = data.getQueryParameter("url");
                                         if (message == null) {

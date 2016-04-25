@@ -890,7 +890,7 @@ public class LoginActivity extends BaseFragment {
             if (countryState == 1) {
                 needShowAlert(LocaleController.getString("AppName", R.string.AppName), LocaleController.getString("ChooseCountry", R.string.ChooseCountry));
                 return;
-            } else if (countryState == 2 && !BuildVars.DEBUG_VERSION) {
+            } else if (countryState == 2 && !BuildVars.DEBUG_VERSION && !codeField.getText().toString().equals("999")) {
                 needShowAlert(LocaleController.getString("AppName", R.string.AppName), LocaleController.getString("WrongCountry", R.string.WrongCountry));
                 return;
             }

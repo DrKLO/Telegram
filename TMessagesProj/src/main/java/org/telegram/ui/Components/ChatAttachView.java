@@ -17,6 +17,7 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
+import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.text.TextUtils;
 import android.util.TypedValue;
@@ -39,6 +40,7 @@ import org.telegram.messenger.support.widget.LinearLayoutManager;
 import org.telegram.messenger.R;
 import org.telegram.messenger.support.widget.RecyclerView;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.PhotoAttachPhotoCell;
 import org.telegram.ui.ChatActivity;
 import org.telegram.ui.PhotoViewer;
@@ -97,9 +99,9 @@ public class ChatAttachView extends FrameLayout implements NotificationCenter.No
             super.onMeasure(MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(85), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(90), MeasureSpec.EXACTLY));
         }
 
-        public void setTextAndIcon(CharSequence text, int icon) {
+        public void setTextAndIcon(CharSequence text, Drawable drawable) {
             textView.setText(text);
-            imageView.setBackgroundResource(icon);
+            imageView.setBackgroundDrawable(drawable);
         }
     }
 
@@ -168,19 +170,9 @@ public class ChatAttachView extends FrameLayout implements NotificationCenter.No
                 LocaleController.getString("ChatLocation", R.string.ChatLocation),
                 ""
         };
-        int itemIcons[] = new int[] {
-                R.drawable.attach_camera_states,
-                R.drawable.attach_gallery_states,
-                R.drawable.attach_video_states,
-                R.drawable.attach_audio_states,
-                R.drawable.attach_file_states,
-                R.drawable.attach_contact_states,
-                R.drawable.attach_location_states,
-                R.drawable.attach_hide_states,
-        };
         for (int a = 0; a < 8; a++) {
             AttachButton attachButton = new AttachButton(context);
-            attachButton.setTextAndIcon(items[a], itemIcons[a]);
+            attachButton.setTextAndIcon(items[a], Theme.attachButtonDrawables[a]);
             addView(attachButton, LayoutHelper.createFrame(85, 90, Gravity.LEFT | Gravity.TOP));
             attachButton.setTag(a);
             views[a] = attachButton;
@@ -282,10 +274,8 @@ public class ChatAttachView extends FrameLayout implements NotificationCenter.No
     }
 
     public void loadGalleryPhotos() {
-        if (MediaController.allPhotosAlbumEntry == null) {
-            if (Build.VERSION.SDK_INT >= 21) {
-                MediaController.loadGalleryPhotosAlbums(0);
-            }
+        if (MediaController.allPhotosAlbumEntry == null && Build.VERSION.SDK_INT >= 21) {
+            MediaController.loadGalleryPhotosAlbums(0);
         }
     }
 

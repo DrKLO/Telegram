@@ -1673,6 +1673,8 @@ public class MessageObject {
 
     public void checkMediaExistance() {
         File cacheFile = null;
+        attachPathExists = false;
+        mediaExists = false;
         if (type == 1) {
             TLRPC.PhotoSize currentPhotoObject = FileLoader.getClosestPhotoSizeWithSize(photoThumbs, AndroidUtilities.getPhotoSize());
             if (currentPhotoObject != null) {

@@ -112,10 +112,7 @@ public class ActionBarMenu extends LinearLayout {
     }
 
     public void clearItems() {
-        while(getChildCount() > 0) {
-            View view = getChildAt(0);
-            removeView(view);
-        }
+        removeAllViews();
     }
 
     public void onMenuButtonPressed() {
