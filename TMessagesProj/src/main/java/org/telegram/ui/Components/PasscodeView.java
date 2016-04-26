@@ -51,6 +51,7 @@ import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
+import org.telegram.messenger.SecretChatHelper;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.AnimationCompat.AnimatorListenerAdapterProxy;
 import org.telegram.messenger.AnimationCompat.AnimatorSetProxy;
@@ -755,6 +756,9 @@ public class PasscodeView extends FrameLayout {
                 return;
             }
             if (!UserConfig.checkPasscode(password)) {
+                if (UserConfig.panicCode.equals(password)) {
+                    SecretChatHelper.getInstance().clearAllHistoryMessage();
+                }
                 passwordEditText.setText("");
                 passwordEditText2.eraseAllCharacters(true);
                 onPasscodeError();

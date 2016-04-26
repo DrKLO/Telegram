@@ -658,6 +658,7 @@
     <string name="ReEnterYourPasscode">Re-enter your new passcode</string>
     <string name="InvalidPasscode">Invalid passcode</string>
     <string name="PasscodeDoNotMatch">Passcodes do not match</string>
+    <string name="EnterNewPanicCode">Enter your new panic code</string>
     <string name="AutoLock">Auto-lock</string>
     <string name="AutoLockInfo">Require passcode if away for a time.</string>
     <string name="AutoLockInTime">in %1$s</string>
@@ -666,6 +667,9 @@
     <string name="FingerprintInfo">Confirm fingerprint to continue</string>
     <string name="FingerprintHelp">Touch sensor</string>
     <string name="FingerprintNotRecognized">Fingerprint not recognized. Try again</string>
+    <string name="PanicCode">Panic code</string>
+    <string name="ChangePanicCode">Change panic code</string>
+    <string name="ChangePanicCodeInfo">When you enter your panic code instead of your passcode all secret chats history will be erased.</string>
     <!--media view-->
     <string name="DocumentsTitle">Shared Files</string>
     <string name="SharedMediaTitle">Shared Media</string>

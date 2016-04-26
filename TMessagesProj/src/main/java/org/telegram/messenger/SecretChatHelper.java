@@ -13,6 +13,7 @@ import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.support.annotation.Nullable;
 
 import org.telegram.tgnet.AbstractSerializedData;
 import org.telegram.tgnet.ConnectionsManager;
@@ -309,6 +310,14 @@ public class SecretChatHelper {
         reqSend.random_id = message.random_id;
 
         performSendEncryptedRequest(reqSend, message, encryptedChat, null, null);
+    }
+
+    public void clearAllHistoryMessage()
+    {
+        for(TLRPC.EncryptedChat encryptedChat : MessagesController.getInstance().getEncryptedChats().values()) {
+            flushHistory(encryptedChat);
+            sendClearHistoryMessage(encryptedChat, null);
+        }
     }
 
     public void sendNotifyLayerMessage(final TLRPC.EncryptedChat encryptedChat, TLRPC.Message resendMessage) {
@@ -1146,35 +1155,7 @@ public class SecretChatHelper {
                     newMessage.dialog_id = ((long) chat.id) << 32;
                     return newMessage;
                 } else if (serviceMessage.action instanceof TLRPC.TL_decryptedMessageActionFlushHistory) {
-                    final long did = ((long) chat.id) << 32;
-                    AndroidUtilities.runOnUIThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            TLRPC.Dialog dialog = MessagesController.getInstance().dialogs_dict.get(did);
-                            if (dialog != null) {
-                                dialog.unread_count = 0;
-                                MessagesController.getInstance().dialogMessage.remove(dialog.id);
-                            }
-                            MessagesStorage.getInstance().getStorageQueue().postRunnable(new Runnable() {
-                                @Override
-                                public void run() {
-                                    AndroidUtilities.runOnUIThread(new Runnable() {
-                                        @Override
-                                        public void run() {
-                                            NotificationsController.getInstance().processReadMessages(null, did, 0, Integer.MAX_VALUE, false);
-                                            HashMap<Long, Integer> dialogsToUpdate = new HashMap<>();
-                                            dialogsToUpdate.put(did, 0);
-                                            NotificationsController.getInstance().processDialogsUpdateRead(dialogsToUpdate);
-                                        }
-                                    });
-                                }
-                            });
-                            MessagesStorage.getInstance().deleteDialog(did, 1);
-                            NotificationCenter.getInstance().postNotificationName(NotificationCenter.dialogsNeedReload);
-                            NotificationCenter.getInstance().postNotificationName(NotificationCenter.removeAllMessagesFromDialog, did, false);
-                        }
-                    });
-                    return null;
+                    return flushHistory(chat);
                 } else if (serviceMessage.action instanceof TLRPC.TL_decryptedMessageActionDeleteMessages) {
                     if (!serviceMessage.action.random_ids.isEmpty()) {
                         pendingEncMessagesToDelete.addAll(serviceMessage.action.random_ids);
@@ -1357,6 +1338,39 @@ public class SecretChatHelper {
         } else {
             FileLog.e("tmessages", "unknown TLObject");
         }
+        return null;
+    }
+
+    @Nullable
+    private TLRPC.Message flushHistory(TLRPC.EncryptedChat chat) {
+        final long did = ((long) chat.id) << 32;
+        AndroidUtilities.runOnUIThread(new Runnable() {
+            @Override
+            public void run() {
+                TLRPC.Dialog dialog = MessagesController.getInstance().dialogs_dict.get(did);
+                if (dialog != null) {
+                    dialog.unread_count = 0;
+                    MessagesController.getInstance().dialogMessage.remove(dialog.id);
+                }
+                MessagesStorage.getInstance().getStorageQueue().postRunnable(new Runnable() {
+                    @Override
+                    public void run() {
+                        AndroidUtilities.runOnUIThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                NotificationsController.getInstance().processReadMessages(null, did, 0, Integer.MAX_VALUE, false);
+                                HashMap<Long, Integer> dialogsToUpdate = new HashMap<>();
+                                dialogsToUpdate.put(did, 0);
+                                NotificationsController.getInstance().processDialogsUpdateRead(dialogsToUpdate);
+                            }
+                        });
+                    }
+                });
+                MessagesStorage.getInstance().deleteDialog(did, 1);
+                NotificationCenter.getInstance().postNotificationName(NotificationCenter.dialogsNeedReload);
+                NotificationCenter.getInstance().postNotificationName(NotificationCenter.removeAllMessagesFromDialog, did, false);
+            }
+        });
         return null;
     }
 

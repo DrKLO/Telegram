@@ -572,6 +572,10 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         return chats.get(id);
     }
 
+    public ConcurrentHashMap<Integer, TLRPC.EncryptedChat> getEncryptedChats() {
+        return encryptedChats;
+    }
+
     public TLRPC.EncryptedChat getEncryptedChat(Integer id) {
         return encryptedChats.get(id);
     }
