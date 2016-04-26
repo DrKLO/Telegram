@@ -1,19 +1,16 @@
 /*
- * This is the source code of Telegram for Android v. 2.x.x.
+ * This is the source code of Telegram for Android v. 3.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2015.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.ui.Components;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
-import android.content.Intent;
-import android.net.Uri;
 import android.os.Build;
-import android.provider.Browser;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -30,9 +27,10 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import org.telegram.android.AndroidUtilities;
-import org.telegram.android.LocaleController;
+import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.ApplicationLoader;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.BottomSheet;
 
@@ -58,10 +56,17 @@ public class WebFrameLayout extends FrameLayout {
         openUrl = originalUrl;
         width = w;
         height = h;
+        if (width == 0 || height == 0) {
+            width = AndroidUtilities.displaySize.x;
+            height = AndroidUtilities.displaySize.y / 2;
+        }
         dialog = parentDialog;
 
         fullscreenVideoContainer = new FrameLayout(context);
         fullscreenVideoContainer.setBackgroundColor(0xff000000);
+        if (Build.VERSION.SDK_INT >= 21) {
+            fullscreenVideoContainer.setFitsSystemWindows(true);
+        }
         dialog.getContainer().addView(fullscreenVideoContainer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
         fullscreenVideoContainer.setVisibility(INVISIBLE);
 
@@ -87,10 +92,7 @@ public class WebFrameLayout extends FrameLayout {
         textView.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
-                Uri uri = Uri.parse(openUrl);
-                Intent intent = new Intent(Intent.ACTION_VIEW, uri);
-                intent.putExtra(Browser.EXTRA_APPLICATION_ID, getContext().getPackageName());
-                getContext().startActivity(intent);
+                AndroidUtilities.openUrl(getContext(), openUrl);
                 if (dialog != null) {
                     dialog.dismiss();
                 }
@@ -106,13 +108,17 @@ public class WebFrameLayout extends FrameLayout {
         textView.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (Build.VERSION.SDK_INT < 11) {
-                    android.text.ClipboardManager clipboard = (android.text.ClipboardManager) ApplicationLoader.applicationContext.getSystemService(Context.CLIPBOARD_SERVICE);
-                    clipboard.setText(openUrl);
-                } else {
-                    android.content.ClipboardManager clipboard = (android.content.ClipboardManager) ApplicationLoader.applicationContext.getSystemService(Context.CLIPBOARD_SERVICE);
-                    android.content.ClipData clip = android.content.ClipData.newPlainText("label", openUrl);
-                    clipboard.setPrimaryClip(clip);
+                try {
+                    if (Build.VERSION.SDK_INT < 11) {
+                        android.text.ClipboardManager clipboard = (android.text.ClipboardManager) ApplicationLoader.applicationContext.getSystemService(Context.CLIPBOARD_SERVICE);
+                        clipboard.setText(openUrl);
+                    } else {
+                        android.content.ClipboardManager clipboard = (android.content.ClipboardManager) ApplicationLoader.applicationContext.getSystemService(Context.CLIPBOARD_SERVICE);
+                        android.content.ClipData clip = android.content.ClipData.newPlainText("label", openUrl);
+                        clipboard.setPrimaryClip(clip);
+                    }
+                } catch (Exception e) {
+                    FileLog.e("tmessages", e);
                 }
                 Toast.makeText(getContext(), LocaleController.getString("LinkCopied", R.string.LinkCopied), Toast.LENGTH_SHORT).show();
                 if (dialog != null) {
@@ -122,11 +128,16 @@ public class WebFrameLayout extends FrameLayout {
         });
 
         View lineView = new View(context);
-        lineView.setBackgroundColor(0xffcdcdcd);
-        addView(lineView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 1, Gravity.TOP | Gravity.LEFT, 0, 40, 0, 0));
+        lineView.setBackgroundResource(R.drawable.header_shadow);
+        addView(lineView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 3, Gravity.TOP | Gravity.LEFT, 0, 40, 0, 0));
 
         webView = new WebView(context);
         webView.getSettings().setJavaScriptEnabled(true);
+        webView.getSettings().setDomStorageEnabled(true);
+        if (Build.VERSION.SDK_INT >= 17) {
+            webView.getSettings().setMediaPlaybackRequiresUserGesture(false);
+        }
+
         String userAgent = webView.getSettings().getUserAgentString();
         if (userAgent != null) {
             userAgent = userAgent.replace("Android", "");
@@ -205,11 +216,16 @@ public class WebFrameLayout extends FrameLayout {
         });
 
         parentDialog.setDelegate(new BottomSheet.BottomSheetDelegate() {
+
             @Override
             public void onOpenAnimationEnd() {
                 HashMap<String, String> args = new HashMap<>();
                 args.put("Referer", "http://youtube.com");
-                webView.loadUrl(url, args);
+                try {
+                    webView.loadUrl(url, args);
+                } catch (Exception e) {
+                    FileLog.e("tmessages", e);
+                }
             }
         });
     }
@@ -217,9 +233,14 @@ public class WebFrameLayout extends FrameLayout {
     @Override
     protected void onDetachedFromWindow() {
         super.onDetachedFromWindow();
-        webView.stopLoading();
-        webView.loadUrl("about:blank");
-        webView.destroy();
+        try {
+            removeView(webView);
+            webView.stopLoading();
+            webView.loadUrl("about:blank");
+            webView.destroy();
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
     }
 
     @Override

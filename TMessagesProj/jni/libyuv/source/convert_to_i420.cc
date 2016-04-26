@@ -12,7 +12,6 @@
 
 #include "libyuv/convert.h"
 
-#include "libyuv/format_conversion.h"
 #include "libyuv/video_common.h"
 
 #ifdef __cplusplus
@@ -173,40 +172,6 @@ int ConvertToI420(const uint8* sample,
                      v, v_stride,
                      crop_width, inv_crop_height);
       break;
-    // TODO(fbarchard): Support cropping Bayer by odd numbers
-    // by adjusting fourcc.
-    case FOURCC_BGGR:
-      src = sample + (src_width * crop_y + crop_x);
-      r = BayerBGGRToI420(src, src_width,
-                          y, y_stride,
-                          u, u_stride,
-                          v, v_stride,
-                          crop_width, inv_crop_height);
-      break;
-    case FOURCC_GBRG:
-      src = sample + (src_width * crop_y + crop_x);
-      r = BayerGBRGToI420(src, src_width,
-                          y, y_stride,
-                          u, u_stride,
-                          v, v_stride,
-                          crop_width, inv_crop_height);
-      break;
-    case FOURCC_GRBG:
-      src = sample + (src_width * crop_y + crop_x);
-      r = BayerGRBGToI420(src, src_width,
-                          y, y_stride,
-                          u, u_stride,
-                          v, v_stride,
-                          crop_width, inv_crop_height);
-      break;
-    case FOURCC_RGGB:
-      src = sample + (src_width * crop_y + crop_x);
-      r = BayerRGGBToI420(src, src_width,
-                          y, y_stride,
-                          u, u_stride,
-                          v, v_stride,
-                          crop_width, inv_crop_height);
-      break;
     case FOURCC_I400:
       src = sample + src_width * crop_y + crop_x;
       r = I400ToI420(src, src_width,
@@ -218,7 +183,8 @@ int ConvertToI420(const uint8* sample,
     // Biplanar formats
     case FOURCC_NV12:
       src = sample + (src_width * crop_y + crop_x);
-      src_uv = sample + aligned_src_width * (src_height + crop_y / 2) + crop_x;
+      src_uv = sample + (src_width * src_height) +
+        ((crop_y / 2) * aligned_src_width) + ((crop_x / 2) * 2);
       r = NV12ToI420Rotate(src, src_width,
                            src_uv, aligned_src_width,
                            y, y_stride,
@@ -228,7 +194,8 @@ int ConvertToI420(const uint8* sample,
       break;
     case FOURCC_NV21:
       src = sample + (src_width * crop_y + crop_x);
-      src_uv = sample + aligned_src_width * (src_height + crop_y / 2) + crop_x;
+      src_uv = sample + (src_width * src_height) +
+        ((crop_y / 2) * aligned_src_width) + ((crop_x / 2) * 2);
       // Call NV12 but with u and v parameters swapped.
       r = NV12ToI420Rotate(src, src_width,
                            src_uv, aligned_src_width,
@@ -244,17 +211,6 @@ int ConvertToI420(const uint8* sample,
                      u, u_stride,
                      v, v_stride,
                      crop_width, inv_crop_height);
-      break;
-    case FOURCC_Q420:
-      src = sample + (src_width + aligned_src_width * 2) * crop_y + crop_x;
-      src_uv = sample + (src_width + aligned_src_width * 2) * crop_y +
-               src_width + crop_x * 2;
-      r = Q420ToI420(src, src_width * 3,
-                    src_uv, src_width * 3,
-                    y, y_stride,
-                    u, u_stride,
-                    v, v_stride,
-                    crop_width, inv_crop_height);
       break;
     // Triplanar formats
     case FOURCC_I420:

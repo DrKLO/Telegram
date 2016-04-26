@@ -31,7 +31,6 @@ void ScaleRowDown2_MIPS_DSPR2(const uint8* src_ptr, ptrdiff_t src_stride,
     "beqz           $t9, 2f                        \n"
     " nop                                          \n"
 
-    ".p2align       2                              \n"
   "1:                                              \n"
     "lw             $t0, 0(%[src_ptr])             \n"  // |3|2|1|0|
     "lw             $t1, 4(%[src_ptr])             \n"  // |7|6|5|4|
@@ -90,7 +89,6 @@ void ScaleRowDown2Box_MIPS_DSPR2(const uint8* src_ptr, ptrdiff_t src_stride,
     "bltz           $t9, 2f                       \n"
     " nop                                         \n"
 
-    ".p2align       2                             \n"
   "1:                                             \n"
     "lw             $t0, 0(%[src_ptr])            \n"  // |3|2|1|0|
     "lw             $t1, 4(%[src_ptr])            \n"  // |7|6|5|4|
@@ -188,7 +186,6 @@ void ScaleRowDown4_MIPS_DSPR2(const uint8* src_ptr, ptrdiff_t src_stride,
       "beqz           $t9, 2f                       \n"
       " nop                                         \n"
 
-      ".p2align       2                             \n"
      "1:                                            \n"
       "lw             $t1, 0(%[src_ptr])            \n"  // |3|2|1|0|
       "lw             $t2, 4(%[src_ptr])            \n"  // |7|6|5|4|
@@ -248,7 +245,6 @@ void ScaleRowDown4Box_MIPS_DSPR2(const uint8* src_ptr, ptrdiff_t src_stride,
       "srl           $t9, %[dst_width], 1         \n"
       "andi          $t8, %[dst_width], 1         \n"
 
-      ".p2align      2                            \n"
      "1:                                          \n"
       "lw            $t0, 0(%[src_ptr])           \n"  // |3|2|1|0|
       "lw            $t1, 0(%[s1])                \n"  // |7|6|5|4|
@@ -319,7 +315,6 @@ void ScaleRowDown34_MIPS_DSPR2(const uint8* src_ptr, ptrdiff_t src_stride,
   __asm__ __volatile__ (
       ".set push                                          \n"
       ".set noreorder                                     \n"
-      ".p2align        2                                  \n"
     "1:                                                   \n"
       "lw              $t1, 0(%[src_ptr])                 \n"  // |3|2|1|0|
       "lw              $t2, 4(%[src_ptr])                 \n"  // |7|6|5|4|
@@ -368,7 +363,6 @@ void ScaleRowDown34_0_Box_MIPS_DSPR2(const uint8* src_ptr, ptrdiff_t src_stride,
       ".set noreorder                                    \n"
       "repl.ph           $t3, 3                          \n"  // 0x00030003
 
-     ".p2align           2                               \n"
     "1:                                                  \n"
       "lw                $t0, 0(%[src_ptr])              \n"  // |S3|S2|S1|S0|
       "lwx               $t1, %[src_stride](%[src_ptr])  \n"  // |T3|T2|T1|T0|
@@ -425,7 +419,6 @@ void ScaleRowDown34_1_Box_MIPS_DSPR2(const uint8* src_ptr, ptrdiff_t src_stride,
       ".set noreorder                                      \n"
       "repl.ph           $t2, 3                            \n"  // 0x00030003
 
-      ".p2align          2                                 \n"
     "1:                                                    \n"
       "lw                $t0, 0(%[src_ptr])                \n"  // |S3|S2|S1|S0|
       "lwx               $t1, %[src_stride](%[src_ptr])    \n"  // |T3|T2|T1|T0|
@@ -477,7 +470,6 @@ void ScaleRowDown38_MIPS_DSPR2(const uint8* src_ptr, ptrdiff_t src_stride,
       ".set push                                     \n"
       ".set noreorder                                \n"
 
-      ".p2align   2                                  \n"
     "1:                                              \n"
       "lw         $t0, 0(%[src_ptr])                 \n"  // |3|2|1|0|
       "lw         $t1, 4(%[src_ptr])                 \n"  // |7|6|5|4|
@@ -528,7 +520,6 @@ void ScaleRowDown38_2_Box_MIPS_DSPR2(const uint8* src_ptr, ptrdiff_t src_stride,
       ".set push                                         \n"
       ".set noreorder                                    \n"
 
-      ".p2align        2                                 \n"
     "1:                                                  \n"
       "lw              $t0, 0(%[src_ptr])                \n"  // |S3|S2|S1|S0|
       "lw              $t1, 4(%[src_ptr])                \n"  // |S7|S6|S5|S4|
@@ -586,7 +577,6 @@ void ScaleRowDown38_3_Box_MIPS_DSPR2(const uint8* src_ptr,
       ".set push                                         \n"
       ".set noreorder                                    \n"
 
-      ".p2align        2                                 \n"
     "1:                                                  \n"
       "lw              $t0, 0(%[src_ptr])                \n"  // |S3|S2|S1|S0|
       "lw              $t1, 4(%[src_ptr])                \n"  // |S7|S6|S5|S4|

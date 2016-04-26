@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2014.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.ui.Components;
@@ -14,7 +14,7 @@ import android.graphics.Paint;
 import android.view.View;
 import android.view.animation.DecelerateInterpolator;
 
-import org.telegram.android.AndroidUtilities;
+import org.telegram.messenger.AndroidUtilities;
 
 public class LineProgressView extends View {
 
@@ -24,6 +24,9 @@ public class LineProgressView extends View {
     private long currentProgressTime = 0;
     private float animatedProgressValue = 0;
     private float animatedAlphaValue = 1.0f;
+
+    private int backColor;
+    private int progressColor = 0xff36a2ee;
 
     private static DecelerateInterpolator decelerateInterpolator = null;
     private static Paint progressPaint = null;
@@ -37,7 +40,6 @@ public class LineProgressView extends View {
             progressPaint.setStyle(Paint.Style.STROKE);
             progressPaint.setStrokeCap(Paint.Cap.ROUND);
             progressPaint.setStrokeWidth(AndroidUtilities.dp(2));
-            progressPaint.setColor(0xff36a2ee);
         }
     }
 
@@ -70,7 +72,11 @@ public class LineProgressView extends View {
     }
 
     public void setProgressColor(int color) {
-        progressPaint.setColor(color);
+        progressColor = color;
+    }
+
+    public void setBackColor(int color) {
+        backColor = color;
     }
 
     public void setProgress(float value, boolean animated) {
@@ -91,6 +97,14 @@ public class LineProgressView extends View {
     }
 
     public void onDraw(Canvas canvas) {
+        if (backColor != 0 && animatedProgressValue != 1) {
+            progressPaint.setColor(backColor);
+            progressPaint.setAlpha((int) (255 * animatedAlphaValue));
+            int start = (int) (getWidth() * animatedProgressValue);
+            canvas.drawRect(start, 0, getWidth(), getHeight(), progressPaint);
+        }
+
+        progressPaint.setColor(progressColor);
         progressPaint.setAlpha((int)(255 * animatedAlphaValue));
         canvas.drawRect(0, 0, getWidth() * animatedProgressValue, getHeight(), progressPaint);
         updateAnimation();

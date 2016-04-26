@@ -33,7 +33,7 @@ static const struct FourCCAliasEntry kFourCCAliases[] = {
   {FOURCC_2VUY, FOURCC_UYVY},  // kCMPixelFormat_422YpCbCr8
   {FOURCC_JPEG, FOURCC_MJPG},  // Note: JPEG has DHT while MJPG does not.
   {FOURCC_DMB1, FOURCC_MJPG},
-  {FOURCC_BA81, FOURCC_BGGR},
+  {FOURCC_BA81, FOURCC_BGGR},  // deprecated.
   {FOURCC_RGB3, FOURCC_RAW },
   {FOURCC_BGR3, FOURCC_24BG},
   {FOURCC_CM32, FOURCC_BGRA},  // kCMPixelFormat_32ARGB

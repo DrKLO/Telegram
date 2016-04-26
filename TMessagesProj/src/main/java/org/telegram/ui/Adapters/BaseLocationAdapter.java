@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 2.x
+ * This is the source code of Telegram for Android v. 3.x.x
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2015.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.ui.Adapters;
@@ -12,17 +12,17 @@ import android.location.Location;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
-import org.telegram.android.AndroidUtilities;
-import org.telegram.android.volley.Request;
-import org.telegram.android.volley.RequestQueue;
-import org.telegram.android.volley.Response;
-import org.telegram.android.volley.VolleyError;
-import org.telegram.android.volley.toolbox.JsonObjectRequest;
-import org.telegram.android.volley.toolbox.Volley;
+import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.volley.Request;
+import org.telegram.messenger.volley.RequestQueue;
+import org.telegram.messenger.volley.Response;
+import org.telegram.messenger.volley.VolleyError;
+import org.telegram.messenger.volley.toolbox.JsonObjectRequest;
+import org.telegram.messenger.volley.toolbox.Volley;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.FileLog;
-import org.telegram.messenger.TLRPC;
+import org.telegram.tgnet.TLRPC;
 
 import java.net.URLEncoder;
 import java.util.ArrayList;
@@ -208,6 +208,7 @@ public class BaseLocationAdapter extends BaseFragmentAdapter {
                             }
                         }
                     });
+            jsonObjReq.setShouldCache(false);
             jsonObjReq.setTag("search");
             requestQueue.add(jsonObjReq);
         } catch (Exception e) {

@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 2.x.x.
+ * This is the source code of Telegram for Android v. 3.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2015.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.ui.Components;
@@ -17,7 +17,8 @@ import android.widget.FrameLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
-import org.telegram.android.LocaleController;
+import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 
 public class EmptyTextProgressView extends FrameLayout {
@@ -39,6 +40,7 @@ public class EmptyTextProgressView extends FrameLayout {
         textView.setTextColor(0xff808080);
         textView.setGravity(Gravity.CENTER);
         textView.setVisibility(INVISIBLE);
+        textView.setPadding(AndroidUtilities.dp(20), 0, AndroidUtilities.dp(20), 0);
         textView.setText(LocaleController.getString("NoResult", R.string.NoResult));
         addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
 
@@ -64,6 +66,10 @@ public class EmptyTextProgressView extends FrameLayout {
         textView.setText(text);
     }
 
+    public void setTextSize(int size) {
+        textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, size);
+    }
+
     public void setShowAtCenter(boolean value) {
         showAtCenter = value;
     }
@@ -81,7 +87,6 @@ public class EmptyTextProgressView extends FrameLayout {
                 continue;
             }
 
-            LayoutParams lp = (LayoutParams) child.getLayoutParams();
             int x = (width - child.getMeasuredWidth()) / 2;
             int y;
             if (showAtCenter) {

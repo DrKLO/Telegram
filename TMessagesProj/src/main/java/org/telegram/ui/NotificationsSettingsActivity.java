@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 1.3.2.
+ * This is the source code of Telegram for Android v. 3.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.ui;
@@ -20,7 +20,6 @@ import android.net.Uri;
 import android.os.Build;
 import android.provider.Settings;
 import android.view.Gravity;
-import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
@@ -29,18 +28,18 @@ import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.Toast;
 
-import org.telegram.android.AndroidUtilities;
-import org.telegram.android.LocaleController;
-import org.telegram.android.NotificationsController;
-import org.telegram.android.NotificationCenter;
+import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.NotificationsController;
+import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.TLObject;
-import org.telegram.messenger.TLRPC;
-import org.telegram.messenger.ConnectionsManager;
+import org.telegram.tgnet.ConnectionsManager;
+import org.telegram.tgnet.RequestDelegate;
+import org.telegram.tgnet.TLObject;
+import org.telegram.tgnet.TLRPC;
 import org.telegram.messenger.FileLog;
-import org.telegram.android.MessagesController;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
-import org.telegram.messenger.RPCRequest;
 import org.telegram.ui.Adapters.BaseFragmentAdapter;
 import org.telegram.ui.Cells.HeaderCell;
 import org.telegram.ui.Cells.ShadowSectionCell;
@@ -53,6 +52,7 @@ import org.telegram.ui.Components.ColorPickerView;
 import org.telegram.ui.Components.LayoutHelper;
 
 public class NotificationsSettingsActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
+
     private ListView listView;
     private boolean reseting = false;
 
@@ -88,7 +88,7 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
     private int otherSectionRow2;
     private int otherSectionRow;
     private int badgeNumberRow;
-    private int pebbleAlertRow;
+    private int androidAutoAlertRow;
     private int repeatRow;
     private int resetSectionRow2;
     private int resetSectionRow;
@@ -141,7 +141,7 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
         otherSectionRow2 = rowCount++;
         otherSectionRow = rowCount++;
         badgeNumberRow = rowCount++;
-        pebbleAlertRow = rowCount++;
+        androidAutoAlertRow = -1;
         repeatRow = rowCount++;
         resetSectionRow2 = rowCount++;
         resetSectionRow = rowCount++;
@@ -159,7 +159,7 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
     }
 
     @Override
-    public View createView(Context context, LayoutInflater inflater) {
+    public View createView(Context context) {
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBar.setAllowOverlayTitle(true);
         actionBar.setTitle(LocaleController.getString("NotificationsAndSounds", R.string.NotificationsAndSounds));
@@ -187,7 +187,7 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
         listView.setAdapter(new ListAdapter(context));
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
-            public void onItemClick(AdapterView<?> adapterView, View view, final int i, long l) {
+            public void onItemClick(AdapterView<?> adapterView, final View view, final int i, long l) {
                 boolean enabled = false;
                 if (i == messageAlertRow || i == groupAlertRow) {
                     SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
@@ -258,7 +258,7 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
                     }
                     reseting = true;
                     TLRPC.TL_account_resetNotifySettings req = new TLRPC.TL_account_resetNotifySettings();
-                    ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
+                    ConnectionsManager.getInstance().sendRequest(req, new RequestDelegate() {
                         @Override
                         public void run(TLObject response, TLRPC.TL_error error) {
                             AndroidUtilities.runOnUIThread(new Runnable() {
@@ -319,11 +319,11 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
                     MessagesController.getInstance().enableJoined = !enabled;
                     editor.putBoolean("EnableContactJoined", !enabled);
                     editor.commit();
-                } else if (i == pebbleAlertRow) {
+                } else if (i == androidAutoAlertRow) {
                     SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
                     SharedPreferences.Editor editor = preferences.edit();
-                    enabled = preferences.getBoolean("EnablePebbleNotifications", false);
-                    editor.putBoolean("EnablePebbleNotifications", !enabled);
+                    enabled = preferences.getBoolean("EnableAutoNotifications", false);
+                    editor.putBoolean("EnableAutoNotifications", !enabled);
                     editor.commit();
                 } else if (i == badgeNumberRow) {
                     SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
@@ -357,7 +357,12 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
                                 listView.invalidateViews();
                             }
                         });
-                        builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+                        builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                ((TextCheckCell) view).setChecked(true);
+                            }
+                        });
                         showDialog(builder.create());
                     }
                 } else if (i == messageLedRow || i == groupLedRow) {
@@ -385,13 +390,15 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
                         public void onClick(DialogInterface dialogInterface, int which) {
                             final SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
                             SharedPreferences.Editor editor = preferences.edit();
+                            TextColorCell textCell = (TextColorCell) view;
                             if (i == messageLedRow) {
                                 editor.putInt("MessagesLed", colorPickerView.getColor());
+                                textCell.setTextAndColor(LocaleController.getString("LedColor", R.string.LedColor), colorPickerView.getColor(), true);
                             } else if (i == groupLedRow) {
                                 editor.putInt("GroupLed", colorPickerView.getColor());
+                                textCell.setTextAndColor(LocaleController.getString("LedColor", R.string.LedColor), colorPickerView.getColor(), true);
                             }
                             editor.commit();
-                            listView.invalidateViews();
                         }
                     });
                     builder.setNeutralButton(LocaleController.getString("LedDisabled", R.string.LedDisabled), new DialogInterface.OnClickListener() {
@@ -399,10 +406,13 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
                         public void onClick(DialogInterface dialog, int which) {
                             final SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
                             SharedPreferences.Editor editor = preferences.edit();
+                            TextColorCell textCell = (TextColorCell) view;
                             if (i == messageLedRow) {
                                 editor.putInt("MessagesLed", 0);
+                                textCell.setTextAndColor(LocaleController.getString("LedColor", R.string.LedColor), 0, true);
                             } else if (i == groupLedRow) {
                                 editor.putInt("GroupLed", 0);
+                                textCell.setTextAndColor(LocaleController.getString("LedColor", R.string.LedColor), 0, true);
                             }
                             editor.commit();
                             listView.invalidateViews();
@@ -440,7 +450,7 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
                     builder.setTitle(LocaleController.getString("Vibrate", R.string.Vibrate));
                     builder.setItems(new CharSequence[]{
                             LocaleController.getString("VibrationDisabled", R.string.VibrationDisabled),
-                            LocaleController.getString("Default", R.string.Default),
+                            LocaleController.getString("VibrationDefault", R.string.VibrationDefault),
                             LocaleController.getString("Short", R.string.Short),
                             LocaleController.getString("Long", R.string.Long),
                             LocaleController.getString("OnlyIfSilent", R.string.OnlyIfSilent)
@@ -558,7 +568,7 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
             req.settings.mute_until = preferences.getBoolean("EnableGroup", true) ? 0 : Integer.MAX_VALUE;
             req.settings.show_previews = preferences.getBoolean("EnablePreviewGroup", true);
         }
-        ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
+        ConnectionsManager.getInstance().sendRequest(req, new RPCRequest.RPCRequestDelegate() {
             @Override
             public void run(TLObject response, TLRPC.TL_error error) {
 
@@ -700,8 +710,8 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
                     checkCell.setTextAndCheck(LocaleController.getString("NotificationsPriority", R.string.NotificationsPriority), preferences.getBoolean("EnableInAppPriority", false), false);
                 } else if (i == contactJoinedRow) {
                     checkCell.setTextAndCheck(LocaleController.getString("ContactJoined", R.string.ContactJoined), preferences.getBoolean("EnableContactJoined", true), false);
-                } else if (i == pebbleAlertRow) {
-                    checkCell.setTextAndCheck(LocaleController.getString("Pebble", R.string.Pebble), preferences.getBoolean("EnablePebbleNotifications", false), true);
+                } else if (i == androidAutoAlertRow) {
+                    checkCell.setTextAndCheck("Android Auto", preferences.getBoolean("EnableAutoNotifications", false), true);
                 } else if (i == notificationsServiceRow) {
                     checkCell.setTextAndCheck(LocaleController.getString("NotificationsService", R.string.NotificationsService), preferences.getBoolean("pushService", true), false);
                 } else if (i == badgeNumberRow) {
@@ -761,7 +771,7 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
                         value = preferences.getInt("vibrate_group", 0);
                     }
                     if (value == 0) {
-                        textCell.setTextAndValue(LocaleController.getString("Vibrate", R.string.Vibrate), LocaleController.getString("Default", R.string.Default), true);
+                        textCell.setTextAndValue(LocaleController.getString("Vibrate", R.string.Vibrate), LocaleController.getString("VibrationDefault", R.string.VibrationDefault), true);
                     } else if (value == 1) {
                         textCell.setTextAndValue(LocaleController.getString("Vibrate", R.string.Vibrate), LocaleController.getString("Short", R.string.Short), true);
                     } else if (value == 2) {
@@ -827,9 +837,9 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
                 return 0;
             } else if (i == messageAlertRow || i == messagePreviewRow || i == groupAlertRow ||
                     i == groupPreviewRow || i == inappSoundRow || i == inappVibrateRow ||
-                    i == inappPreviewRow || i == contactJoinedRow || i == pebbleAlertRow ||
+                    i == inappPreviewRow || i == contactJoinedRow ||
                     i == notificationsServiceRow || i == badgeNumberRow || i == inappPriorityRow ||
-                    i == inchatSoundRow) {
+                    i == inchatSoundRow || i == androidAutoAlertRow) {
                 return 1;
             } else if (i == messageLedRow || i == groupLedRow) {
                 return 3;

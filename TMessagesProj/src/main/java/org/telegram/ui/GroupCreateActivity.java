@@ -1,20 +1,19 @@
 /*
- * This is the source code of Telegram for Android v. 1.3.2.
+ * This is the source code of Telegram for Android v. 3.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.ui;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
-import android.graphics.Paint;
 import android.graphics.drawable.BitmapDrawable;
-import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
 import android.text.Editable;
@@ -38,15 +37,16 @@ import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
 
-import org.telegram.android.AndroidUtilities;
+import org.telegram.messenger.AndroidUtilities;
 import org.telegram.PhoneFormat.PhoneFormat;
-import org.telegram.android.LocaleController;
+import org.telegram.messenger.ChatObject;
+import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.UserObject;
 import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.TLRPC;
-import org.telegram.android.ContactsController;
+import org.telegram.tgnet.TLRPC;
 import org.telegram.messenger.FileLog;
-import org.telegram.android.MessagesController;
-import org.telegram.android.NotificationCenter;
+import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.ui.Adapters.ContactsAdapter;
 import org.telegram.ui.Adapters.SearchAdapter;
@@ -54,6 +54,7 @@ import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.Cells.UserCell;
+import org.telegram.ui.Components.ChipSpan;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.LetterSectionsListView;
 
@@ -66,31 +67,6 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
         void didSelectUsers(ArrayList<Integer> ids);
     }
 
-    private class XImageSpan extends ImageSpan {
-        public int uid;
-
-        public XImageSpan(Drawable d, int verticalAlignment) {
-            super(d, verticalAlignment);
-        }
-
-        @Override
-        public int getSize(Paint paint, CharSequence text, int start, int end, Paint.FontMetricsInt fm) {
-            if (fm == null) {
-                fm = new Paint.FontMetricsInt();
-            }
-
-            int sz = super.getSize(paint, text, start, end, fm);
-            int offset = AndroidUtilities.dp(6);
-            int w = (fm.bottom - fm.top) / 2;
-            fm.top = -w - offset;
-            fm.bottom = w - offset;
-            fm.ascent = -w - offset;
-            fm.leading = 0;
-            fm.descent = w - offset;
-            return sz;
-        }
-    }
-
     private ContactsAdapter listViewAdapter;
     private TextView emptyTextView;
     private EditText userSelectEditText;
@@ -100,16 +76,17 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
     private GroupCreateActivityDelegate delegate;
 
     private int beforeChangeIndex;
-    private int maxCount = 199;
-    private boolean ignoreChange = false;
-    private boolean isBroadcast = false;
-    private boolean isAlwaysShare = false;
-    private boolean isNeverShare = false;
+    private boolean ignoreChange;
+    private CharSequence changeString;
+    private int maxCount = 5000;
+    private int chatType = ChatObject.CHAT_TYPE_CHAT;
+    private boolean isAlwaysShare;
+    private boolean isNeverShare;
     private boolean searchWas;
     private boolean searching;
-    private CharSequence changeString;
-    private HashMap<Integer, XImageSpan> selectedContacts = new HashMap<>();
-    private ArrayList<XImageSpan> allSpans = new ArrayList<>();
+    private boolean isGroup;
+    private HashMap<Integer, ChipSpan> selectedContacts = new HashMap<>();
+    private ArrayList<ChipSpan> allSpans = new ArrayList<>();
 
     private final static int done_button = 1;
 
@@ -119,10 +96,11 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
 
     public GroupCreateActivity(Bundle args) {
         super(args);
-        isBroadcast = args.getBoolean("broadcast", false);
+        chatType = args.getInt("chatType", ChatObject.CHAT_TYPE_CHAT);
         isAlwaysShare = args.getBoolean("isAlwaysShare", false);
         isNeverShare = args.getBoolean("isNeverShare", false);
-        maxCount = !isBroadcast ? (MessagesController.getInstance().maxGroupCount - 1) : MessagesController.getInstance().maxBroadcastCount;
+        isGroup = args.getBoolean("isGroup", false);
+        maxCount = chatType == ChatObject.CHAT_TYPE_CHAT ? MessagesController.getInstance().maxMegagroupCount : MessagesController.getInstance().maxBroadcastCount;
     }
 
     @Override
@@ -142,18 +120,26 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
     }
 
     @Override
-    public View createView(Context context, LayoutInflater inflater) {
+    public View createView(Context context) {
         searching = false;
         searchWas = false;
 
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBar.setAllowOverlayTitle(true);
         if (isAlwaysShare) {
-            actionBar.setTitle(LocaleController.getString("AlwaysShareWithTitle", R.string.AlwaysShareWithTitle));
+            if (isGroup) {
+                actionBar.setTitle(LocaleController.getString("AlwaysAllow", R.string.AlwaysAllow));
+            } else {
+                actionBar.setTitle(LocaleController.getString("AlwaysShareWithTitle", R.string.AlwaysShareWithTitle));
+            }
         } else if (isNeverShare) {
-            actionBar.setTitle(LocaleController.getString("NeverShareWithTitle", R.string.NeverShareWithTitle));
+            if (isGroup) {
+                actionBar.setTitle(LocaleController.getString("NeverAllow", R.string.NeverAllow));
+            } else {
+                actionBar.setTitle(LocaleController.getString("NeverShareWithTitle", R.string.NeverShareWithTitle));
+            }
         } else {
-            actionBar.setTitle(isBroadcast ? LocaleController.getString("NewBroadcastList", R.string.NewBroadcastList) : LocaleController.getString("NewGroup", R.string.NewGroup));
+            actionBar.setTitle(chatType == ChatObject.CHAT_TYPE_CHAT ? LocaleController.getString("NewGroup", R.string.NewGroup) : LocaleController.getString("NewBroadcastList", R.string.NewBroadcastList));
             actionBar.setSubtitle(LocaleController.formatString("MembersCount", R.string.MembersCount, selectedContacts.size(), maxCount));
         }
 
@@ -176,7 +162,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                     } else {
                         Bundle args = new Bundle();
                         args.putIntegerArrayList("result", result);
-                        args.putBoolean("broadcast", isBroadcast);
+                        args.putInt("chatType", chatType);
                         presentFragment(new GroupCreateFinalActivity(args));
                     }
                 }
@@ -185,10 +171,10 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
         ActionBarMenu menu = actionBar.createMenu();
         menu.addItemWithWidth(done_button, R.drawable.ic_done, AndroidUtilities.dp(56));
 
-        searchListViewAdapter = new SearchAdapter(context, null, false);
+        searchListViewAdapter = new SearchAdapter(context, null, false, false, false, false);
         searchListViewAdapter.setCheckedMap(selectedContacts);
         searchListViewAdapter.setUseUserCell(true);
-        listViewAdapter = new ContactsAdapter(context, true, false, null, false);
+        listViewAdapter = new ContactsAdapter(context, 1, false, null, false);
         listViewAdapter.setCheckedMap(selectedContacts);
 
         fragmentView = new LinearLayout(context);
@@ -196,12 +182,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
         linearLayout.setOrientation(LinearLayout.VERTICAL);
 
         FrameLayout frameLayout = new FrameLayout(context);
-        linearLayout.addView(frameLayout);
-        LinearLayout.LayoutParams layoutParams = (LinearLayout.LayoutParams) frameLayout.getLayoutParams();
-        layoutParams.width = LayoutHelper.MATCH_PARENT;
-        layoutParams.height = LayoutHelper.WRAP_CONTENT;
-        layoutParams.gravity = Gravity.TOP;
-        frameLayout.setLayoutParams(layoutParams);
+        linearLayout.addView(frameLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
         userSelectEditText = new EditText(context);
         userSelectEditText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
@@ -218,19 +199,20 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
         userSelectEditText.setImeOptions(EditorInfo.IME_ACTION_DONE | EditorInfo.IME_FLAG_NO_EXTRACT_UI);
         userSelectEditText.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL);
         AndroidUtilities.clearCursorDrawable(userSelectEditText);
-        frameLayout.addView(userSelectEditText);
-        FrameLayout.LayoutParams layoutParams1 = (FrameLayout.LayoutParams) userSelectEditText.getLayoutParams();
-        layoutParams1.width = LayoutHelper.MATCH_PARENT;
-        layoutParams1.height = LayoutHelper.WRAP_CONTENT;
-        layoutParams1.leftMargin = AndroidUtilities.dp(10);
-        layoutParams1.rightMargin = AndroidUtilities.dp(10);
-        layoutParams1.gravity = Gravity.TOP;
-        userSelectEditText.setLayoutParams(layoutParams1);
+        frameLayout.addView(userSelectEditText, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.LEFT, 10, 0, 10, 0));
 
         if (isAlwaysShare) {
-            userSelectEditText.setHint(LocaleController.getString("AlwaysShareWithPlaceholder", R.string.AlwaysShareWithPlaceholder));
+            if (isGroup) {
+                userSelectEditText.setHint(LocaleController.getString("AlwaysAllowPlaceholder", R.string.AlwaysAllowPlaceholder));
+            } else {
+                userSelectEditText.setHint(LocaleController.getString("AlwaysShareWithPlaceholder", R.string.AlwaysShareWithPlaceholder));
+            }
         } else if (isNeverShare) {
-            userSelectEditText.setHint(LocaleController.getString("NeverShareWithPlaceholder", R.string.NeverShareWithPlaceholder));
+            if (isGroup) {
+                userSelectEditText.setHint(LocaleController.getString("NeverAllowPlaceholder", R.string.NeverAllowPlaceholder));
+            } else {
+                userSelectEditText.setHint(LocaleController.getString("NeverShareWithPlaceholder", R.string.NeverShareWithPlaceholder));
+            }
         } else {
             userSelectEditText.setHint(LocaleController.getString("SendMessageTo", R.string.SendMessageTo));
         }
@@ -269,7 +251,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                             }
                             Spannable span = userSelectEditText.getText();
                             for (int a = 0; a < allSpans.size(); a++) {
-                                XImageSpan sp = allSpans.get(a);
+                                ChipSpan sp = allSpans.get(a);
                                 if (span.getSpanStart(sp) == -1) {
                                     allSpans.remove(sp);
                                     selectedContacts.remove(sp.uid);
@@ -324,11 +306,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
         LinearLayout emptyTextLayout = new LinearLayout(context);
         emptyTextLayout.setVisibility(View.INVISIBLE);
         emptyTextLayout.setOrientation(LinearLayout.VERTICAL);
-        linearLayout.addView(emptyTextLayout);
-        layoutParams = (LinearLayout.LayoutParams) emptyTextLayout.getLayoutParams();
-        layoutParams.width = LayoutHelper.MATCH_PARENT;
-        layoutParams.height = LayoutHelper.MATCH_PARENT;
-        emptyTextLayout.setLayoutParams(layoutParams);
+        linearLayout.addView(emptyTextLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
         emptyTextLayout.setOnTouchListener(new View.OnTouchListener() {
             @Override
             public boolean onTouch(View v, MotionEvent event) {
@@ -341,20 +319,10 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
         emptyTextView.setTextSize(20);
         emptyTextView.setGravity(Gravity.CENTER);
         emptyTextView.setText(LocaleController.getString("NoContacts", R.string.NoContacts));
-        emptyTextLayout.addView(emptyTextView);
-        layoutParams = (LinearLayout.LayoutParams) emptyTextView.getLayoutParams();
-        layoutParams.width = LayoutHelper.MATCH_PARENT;
-        layoutParams.height = LayoutHelper.MATCH_PARENT;
-        layoutParams.weight = 0.5f;
-        emptyTextView.setLayoutParams(layoutParams);
+        emptyTextLayout.addView(emptyTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, 0.5f));
 
         FrameLayout frameLayout2 = new FrameLayout(context);
-        emptyTextLayout.addView(frameLayout2);
-        layoutParams = (LinearLayout.LayoutParams) frameLayout2.getLayoutParams();
-        layoutParams.width = LayoutHelper.MATCH_PARENT;
-        layoutParams.height = LayoutHelper.MATCH_PARENT;
-        layoutParams.weight = 0.5f;
-        frameLayout2.setLayoutParams(layoutParams);
+        emptyTextLayout.addView(frameLayout2, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, 0.5f));
 
         listView = new LetterSectionsListView(context);
         listView.setEmptyView(emptyTextLayout);
@@ -368,17 +336,13 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
             listView.setFastScrollAlwaysVisible(true);
             listView.setVerticalScrollbarPosition(LocaleController.isRTL ? ListView.SCROLLBAR_POSITION_LEFT : ListView.SCROLLBAR_POSITION_RIGHT);
         }
-        linearLayout.addView(listView);
-        layoutParams = (LinearLayout.LayoutParams) listView.getLayoutParams();
-        layoutParams.width = LayoutHelper.MATCH_PARENT;
-        layoutParams.height = LayoutHelper.MATCH_PARENT;
-        listView.setLayoutParams(layoutParams);
+        linearLayout.addView(listView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
                 TLRPC.User user;
                 if (searching && searchWas) {
-                    user = searchListViewAdapter.getItem(i);
+                    user = (TLRPC.User) searchListViewAdapter.getItem(i);
                 } else {
                     int section = listViewAdapter.getSectionForPosition(i);
                     int row = listViewAdapter.getPositionInSectionForPosition(i);
@@ -395,7 +359,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                 if (selectedContacts.containsKey(user.id)) {
                     check = false;
                     try {
-                        XImageSpan span = selectedContacts.get(user.id);
+                        ChipSpan span = selectedContacts.get(user.id);
                         selectedContacts.remove(user.id);
                         SpannableStringBuilder text = new SpannableStringBuilder(userSelectEditText.getText());
                         text.delete(text.getSpanStart(span), text.getSpanEnd(span));
@@ -408,11 +372,19 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                         FileLog.e("tmessages", e);
                     }
                 } else {
-                    if (selectedContacts.size() == maxCount) {
+                    if (maxCount != 0 && selectedContacts.size() == maxCount) {
+                        return;
+                    }
+                    if (chatType == ChatObject.CHAT_TYPE_CHAT && selectedContacts.size() == MessagesController.getInstance().maxGroupCount - 1) {
+                        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                        builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
+                        builder.setMessage(LocaleController.getString("SoftUserLimitAlert", R.string.SoftUserLimitAlert));
+                        builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), null);
+                        showDialog(builder.create());
                         return;
                     }
                     ignoreChange = true;
-                    XImageSpan span = createAndPutChipForUser(user);
+                    ChipSpan span = createAndPutChipForUser(user);
                     span.uid = user.id;
                     ignoreChange = false;
                 }
@@ -502,11 +474,11 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
         this.delegate = delegate;
     }
 
-    private XImageSpan createAndPutChipForUser(TLRPC.User user) {
+    private ChipSpan createAndPutChipForUser(TLRPC.User user) {
         LayoutInflater lf = (LayoutInflater) ApplicationLoader.applicationContext.getSystemService(Activity.LAYOUT_INFLATER_SERVICE);
         View textView = lf.inflate(R.layout.group_create_bubble, null);
         TextView text = (TextView)textView.findViewById(R.id.bubble_text_view);
-        String name = ContactsController.formatName(user.first_name, user.last_name);
+        String name = UserObject.getUserName(user);
         if (name.length() == 0 && user.phone != null && user.phone.length() != 0) {
             name = PhoneFormat.getInstance().format("+" + user.phone);
         }
@@ -528,7 +500,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
         bmpDrawable.setBounds(0, 0, b.getWidth(), b.getHeight());
 
         SpannableStringBuilder ssb = new SpannableStringBuilder("");
-        XImageSpan span = new XImageSpan(bmpDrawable, ImageSpan.ALIGN_BASELINE);
+        ChipSpan span = new ChipSpan(bmpDrawable, ImageSpan.ALIGN_BASELINE);
         allSpans.add(span);
         selectedContacts.put(user.id, span);
         for (ImageSpan sp : allSpans) {

@@ -8,8 +8,8 @@ jint sqliteOnJNILoad(JavaVM *vm, void *reserved, JNIEnv *env) {
 	return JNI_VERSION_1_6;
 }
 
-int Java_org_telegram_SQLite_SQLitePreparedStatement_step(JNIEnv* env, jobject object, int statementHandle) {
-	sqlite3_stmt *handle = (sqlite3_stmt *)statementHandle;
+int Java_org_telegram_SQLite_SQLitePreparedStatement_step(JNIEnv *env, jobject object, int statementHandle) {
+	sqlite3_stmt *handle = (sqlite3_stmt *) statementHandle;
     
     int errcode = sqlite3_step(handle);
     if (errcode == SQLITE_ROW)  {
@@ -23,7 +23,7 @@ int Java_org_telegram_SQLite_SQLitePreparedStatement_step(JNIEnv* env, jobject o
 }
 
 int Java_org_telegram_SQLite_SQLitePreparedStatement_prepare(JNIEnv *env, jobject object, int sqliteHandle, jstring sql) {
-	sqlite3* handle = (sqlite3 *)sqliteHandle;
+	sqlite3 *handle = (sqlite3 *) sqliteHandle;
 
     char const *sqlStr = (*env)->GetStringUTFChars(env, sql, 0);
 
@@ -41,11 +41,11 @@ int Java_org_telegram_SQLite_SQLitePreparedStatement_prepare(JNIEnv *env, jobjec
         (*env)->ReleaseStringUTFChars(env, sql, sqlStr);
     }
 
-    return (int)stmt_handle;
+    return (int) stmt_handle;
 }
 
 void Java_org_telegram_SQLite_SQLitePreparedStatement_reset(JNIEnv *env, jobject object, int statementHandle) {
-	sqlite3_stmt *handle = (sqlite3_stmt *)statementHandle;
+	sqlite3_stmt *handle = (sqlite3_stmt *) statementHandle;
 
 	int errcode = sqlite3_reset(handle);
     if (SQLITE_OK != errcode) {
@@ -54,16 +54,11 @@ void Java_org_telegram_SQLite_SQLitePreparedStatement_reset(JNIEnv *env, jobject
 }
 
 void Java_org_telegram_SQLite_SQLitePreparedStatement_finalize(JNIEnv *env, jobject object, int statementHandle) {
-	sqlite3_stmt *handle = (sqlite3_stmt *)statementHandle;
-
-	int errcode = sqlite3_finalize (handle);
-    if (SQLITE_OK != errcode) {
-    	throw_sqlite3_exception(env, sqlite3_db_handle(handle), errcode);
-    }
+    sqlite3_finalize((sqlite3_stmt *) statementHandle);
 }
 
 void Java_org_telegram_SQLite_SQLitePreparedStatement_bindByteBuffer(JNIEnv *env, jobject object, int statementHandle, int index, jobject value, int length) {
-	sqlite3_stmt *handle = (sqlite3_stmt *)statementHandle;
+	sqlite3_stmt *handle = (sqlite3_stmt *) statementHandle;
     jbyte *buf = (*env)->GetDirectBufferAddress(env, value);
     
 	int errcode = sqlite3_bind_blob(handle, index, buf, length, SQLITE_STATIC);
@@ -73,7 +68,7 @@ void Java_org_telegram_SQLite_SQLitePreparedStatement_bindByteBuffer(JNIEnv *env
 }
 
 void Java_org_telegram_SQLite_SQLitePreparedStatement_bindString(JNIEnv *env, jobject object, int statementHandle, int index, jstring value) {
-	sqlite3_stmt *handle = (sqlite3_stmt*)statementHandle;
+	sqlite3_stmt *handle = (sqlite3_stmt *) statementHandle;
 
 	char const *valueStr = (*env)->GetStringUTFChars(env, value, 0);
 
@@ -88,7 +83,7 @@ void Java_org_telegram_SQLite_SQLitePreparedStatement_bindString(JNIEnv *env, jo
 }
 
 void Java_org_telegram_SQLite_SQLitePreparedStatement_bindInt(JNIEnv *env, jobject object, int statementHandle, int index, int value) {
-	sqlite3_stmt *handle = (sqlite3_stmt*)statementHandle;
+	sqlite3_stmt *handle = (sqlite3_stmt *) statementHandle;
 
 	int errcode = sqlite3_bind_int(handle, index, value);
     if (SQLITE_OK != errcode) {
@@ -97,7 +92,7 @@ void Java_org_telegram_SQLite_SQLitePreparedStatement_bindInt(JNIEnv *env, jobje
 }
 
 void Java_org_telegram_SQLite_SQLitePreparedStatement_bindLong(JNIEnv *env, jobject object, int statementHandle, int index, long long value) {
-	sqlite3_stmt *handle = (sqlite3_stmt*)statementHandle;
+	sqlite3_stmt *handle = (sqlite3_stmt *) statementHandle;
     
 	int errcode = sqlite3_bind_int64(handle, index, value);
     if (SQLITE_OK != errcode) {
@@ -105,8 +100,8 @@ void Java_org_telegram_SQLite_SQLitePreparedStatement_bindLong(JNIEnv *env, jobj
     }
 }
 
-void Java_org_telegram_SQLite_SQLitePreparedStatement_bindDouble(JNIEnv* env, jobject object, int statementHandle, int index, double value) {
-	sqlite3_stmt *handle = (sqlite3_stmt*)statementHandle;
+void Java_org_telegram_SQLite_SQLitePreparedStatement_bindDouble(JNIEnv *env, jobject object, int statementHandle, int index, double value) {
+	sqlite3_stmt *handle = (sqlite3_stmt *) statementHandle;
 
 	int errcode = sqlite3_bind_double(handle, index, value);
     if (SQLITE_OK != errcode) {
@@ -114,8 +109,8 @@ void Java_org_telegram_SQLite_SQLitePreparedStatement_bindDouble(JNIEnv* env, jo
     }
 }
 
-void Java_org_telegram_SQLite_SQLitePreparedStatement_bindNull(JNIEnv* env, jobject object, int statementHandle, int index) {
-	sqlite3_stmt *handle = (sqlite3_stmt*)statementHandle;
+void Java_org_telegram_SQLite_SQLitePreparedStatement_bindNull(JNIEnv *env, jobject object, int statementHandle, int index) {
+	sqlite3_stmt *handle = (sqlite3_stmt *) statementHandle;
 
 	int errcode = sqlite3_bind_null(handle, index);
     if (SQLITE_OK != errcode) {

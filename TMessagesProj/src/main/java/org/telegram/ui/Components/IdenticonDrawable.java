@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 1.7.x.
+ * This is the source code of Telegram for Android v. 3.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2014.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.ui.Components;
@@ -13,9 +13,8 @@ import android.graphics.ColorFilter;
 import android.graphics.Paint;
 import android.graphics.drawable.Drawable;
 
-import org.telegram.android.AndroidUtilities;
-import org.telegram.messenger.TLRPC;
-import org.telegram.messenger.Utilities;
+import org.telegram.messenger.AndroidUtilities;
+import org.telegram.tgnet.TLRPC;
 
 public class IdenticonDrawable extends Drawable {
 
@@ -35,9 +34,7 @@ public class IdenticonDrawable extends Drawable {
     public void setEncryptedChat(TLRPC.EncryptedChat encryptedChat) {
         data = encryptedChat.key_hash;
         if (data == null) {
-            byte[] sha1 = Utilities.computeSHA1(encryptedChat.auth_key);
-            encryptedChat.key_hash = data = new byte[16];
-            System.arraycopy(sha1, 0, data, 0, data.length);
+            encryptedChat.key_hash = data = AndroidUtilities.calcAuthKeyHash(encryptedChat.auth_key);
         }
         invalidateSelf();
     }
@@ -48,17 +45,33 @@ public class IdenticonDrawable extends Drawable {
             return;
         }
 
-        int bitPointer = 0;
-        float rectSize = (float)Math.floor(Math.min(getBounds().width(), getBounds().height()) / 8.0f);
-        float xOffset = Math.max(0, (getBounds().width() - rectSize * 8) / 2);
-        float yOffset = Math.max(0, (getBounds().height() - rectSize * 8) / 2);
-        for (int iy = 0; iy < 8; iy++) {
-            for (int ix = 0; ix < 8; ix++) {
-                int byteValue = getBits(bitPointer);
-                bitPointer += 2;
-                int colorIndex = Math.abs(byteValue) % 4;
-                paint.setColor(colors[colorIndex]);
-                canvas.drawRect(xOffset + ix * rectSize, iy * rectSize + yOffset, xOffset + ix * rectSize + rectSize, iy * rectSize + rectSize + yOffset, paint);
+        if (data.length == 16) {
+            int bitPointer = 0;
+            float rectSize = (float) Math.floor(Math.min(getBounds().width(), getBounds().height()) / 8.0f);
+            float xOffset = Math.max(0, (getBounds().width() - rectSize * 8) / 2);
+            float yOffset = Math.max(0, (getBounds().height() - rectSize * 8) / 2);
+            for (int iy = 0; iy < 8; iy++) {
+                for (int ix = 0; ix < 8; ix++) {
+                    int byteValue = getBits(bitPointer);
+                    bitPointer += 2;
+                    int colorIndex = Math.abs(byteValue) % 4;
+                    paint.setColor(colors[colorIndex]);
+                    canvas.drawRect(xOffset + ix * rectSize, iy * rectSize + yOffset, xOffset + ix * rectSize + rectSize, iy * rectSize + rectSize + yOffset, paint);
+                }
+            }
+        } else {
+            int bitPointer = 0;
+            float rectSize = (float) Math.floor(Math.min(getBounds().width(), getBounds().height()) / 12.0f);
+            float xOffset = Math.max(0, (getBounds().width() - rectSize * 12) / 2);
+            float yOffset = Math.max(0, (getBounds().height() - rectSize * 12) / 2);
+            for (int iy = 0; iy < 12; iy++) {
+                for (int ix = 0; ix < 12; ix++) {
+                    int byteValue = getBits(bitPointer);
+                    int colorIndex = Math.abs(byteValue) % 4;
+                    paint.setColor(colors[colorIndex]);
+                    canvas.drawRect(xOffset + ix * rectSize, iy * rectSize + yOffset, xOffset + ix * rectSize + rectSize, iy * rectSize + rectSize + yOffset, paint);
+                    bitPointer += 2;
+                }
             }
         }
     }

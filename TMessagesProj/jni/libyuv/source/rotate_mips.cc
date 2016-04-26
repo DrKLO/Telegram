@@ -9,6 +9,7 @@
  */
 
 #include "libyuv/row.h"
+#include "libyuv/rotate_row.h"
 
 #include "libyuv/basic_types.h"
 
@@ -22,8 +23,7 @@ extern "C" {
     (_MIPS_SIM == _MIPS_SIM_ABI32)
 
 void TransposeWx8_MIPS_DSPR2(const uint8* src, int src_stride,
-                             uint8* dst, int dst_stride,
-                             int width) {
+                             uint8* dst, int dst_stride, int width) {
    __asm__ __volatile__ (
       ".set push                                         \n"
       ".set noreorder                                    \n"
@@ -106,9 +106,8 @@ void TransposeWx8_MIPS_DSPR2(const uint8* src, int src_stride,
   );
 }
 
-void TransposeWx8_FAST_MIPS_DSPR2(const uint8* src, int src_stride,
-                                  uint8* dst, int dst_stride,
-                                  int width) {
+void TransposeWx8_Fast_MIPS_DSPR2(const uint8* src, int src_stride,
+                                  uint8* dst, int dst_stride, int width) {
   __asm__ __volatile__ (
       ".set noat                                         \n"
       ".set push                                         \n"

@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2014.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.ui;
@@ -12,7 +12,6 @@ import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.view.Gravity;
-import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
@@ -24,9 +23,9 @@ import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
 
-import org.telegram.android.AndroidUtilities;
+import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLog;
-import org.telegram.android.LocaleController;
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.Adapters.BaseFragmentAdapter;
@@ -53,7 +52,7 @@ public class LanguageSelectActivity extends BaseFragment {
     public ArrayList<LocaleController.LocaleInfo> searchResult;
 
     @Override
-    public View createView(Context context, LayoutInflater inflater) {
+    public View createView(Context context) {
         searching = false;
         searchWas = false;
 
@@ -78,7 +77,7 @@ public class LanguageSelectActivity extends BaseFragment {
             }
 
             @Override
-            public boolean onSearchCollapse() {
+            public void onSearchCollapse() {
                 search(null);
                 searching = false;
                 searchWas = false;
@@ -86,8 +85,6 @@ public class LanguageSelectActivity extends BaseFragment {
                     emptyTextView.setVisibility(View.GONE);
                     listView.setAdapter(listAdapter);
                 }
-
-                return true;
             }
 
             @Override

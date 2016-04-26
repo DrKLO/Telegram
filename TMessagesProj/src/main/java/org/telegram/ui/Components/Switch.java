@@ -30,10 +30,10 @@ import android.view.VelocityTracker;
 import android.view.ViewConfiguration;
 import android.widget.CompoundButton;
 
-import org.telegram.android.AndroidUtilities;
-import org.telegram.android.LocaleController;
+import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
-import org.telegram.android.AnimationCompat.ObjectAnimatorProxy;
+import org.telegram.messenger.AnimationCompat.ObjectAnimatorProxy;
 
 public class Switch extends CompoundButton {
 
@@ -391,6 +391,7 @@ public class Switch extends CompoundButton {
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
         attachedToWindow = true;
+        requestLayout();
     }
 
     @Override
@@ -555,8 +556,6 @@ public class Switch extends CompoundButton {
 
         final int switchTop = mSwitchTop;
         final int switchBottom = mSwitchBottom;
-        final int switchInnerTop = switchTop + padding.top;
-        final int switchInnerBottom = switchBottom - padding.bottom;
 
         final Drawable thumbDrawable = mThumbDrawable;
         if (trackDrawable != null) {

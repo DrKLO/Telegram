@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 1.7.x.
+ * This is the source code of Telegram for Android v. 3.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2014.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.ui.Cells;
@@ -19,14 +19,14 @@ import android.view.MotionEvent;
 import android.view.SoundEffectConstants;
 
 import org.telegram.PhoneFormat.PhoneFormat;
-import org.telegram.android.AndroidUtilities;
-import org.telegram.android.ContactsController;
-import org.telegram.android.ImageReceiver;
-import org.telegram.android.LocaleController;
-import org.telegram.android.MessageObject;
-import org.telegram.android.MessagesController;
+import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ContactsController;
+import org.telegram.messenger.ImageReceiver;
+import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MessageObject;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
-import org.telegram.messenger.TLRPC;
+import org.telegram.tgnet.TLRPC;
 import org.telegram.messenger.UserConfig;
 import org.telegram.ui.Components.AvatarDrawable;
 
@@ -108,12 +108,11 @@ public class ChatContactCell extends ChatBaseCell {
         float y = event.getY();
 
         boolean result = false;
-        int side = AndroidUtilities.dp(36);
         if (event.getAction() == MotionEvent.ACTION_DOWN) {
             if (x >= avatarImage.getImageX() && x <= avatarImage.getImageX() + namesWidth + AndroidUtilities.dp(42) && y >= avatarImage.getImageY() && y <= avatarImage.getImageY() + avatarImage.getImageHeight()) {
                 avatarPressed = true;
                 result = true;
-            } else if (x >= avatarImage.getImageX() + namesWidth + AndroidUtilities.dp(52) && y >= AndroidUtilities.dp(13) + namesOffset && x <= avatarImage.getImageX() + namesWidth + AndroidUtilities.dp(92) && y <= AndroidUtilities.dp(52) + namesOffset) {
+            } else if (drawAddButton && x >= avatarImage.getImageX() + namesWidth + AndroidUtilities.dp(52) && y >= AndroidUtilities.dp(13) + namesOffset && x <= avatarImage.getImageX() + namesWidth + AndroidUtilities.dp(92) && y <= AndroidUtilities.dp(52) + namesOffset) {
                 buttonPressed = true;
                 result = true;
             }
@@ -197,17 +196,6 @@ public class ChatContactCell extends ChatBaseCell {
             }
             avatarImage.setImage(currentPhoto, "50_50", avatarDrawable, null, false);
 
-            String currentNameString = ContactsController.formatName(messageObject.messageOwner.media.first_name, messageObject.messageOwner.media.last_name);
-            int nameWidth = Math.min((int) Math.ceil(namePaint.measureText(currentNameString)), maxWidth);
-
-            CharSequence stringFinal = TextUtils.ellipsize(currentNameString.replace("\n", " "), namePaint, nameWidth, TextUtils.TruncateAt.END);
-            nameLayout = new StaticLayout(stringFinal, namePaint, nameWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
-            if (nameLayout.getLineCount() > 0) {
-                nameWidth = (int)Math.ceil(nameLayout.getLineWidth(0));
-            } else {
-                nameWidth = 0;
-            }
-
             String phone = messageObject.messageOwner.media.phone_number;
             if (phone != null && phone.length() != 0) {
                 if (!phone.startsWith("+")) {
@@ -217,6 +205,25 @@ public class ChatContactCell extends ChatBaseCell {
             } else {
                 phone = LocaleController.getString("NumberUnknown", R.string.NumberUnknown);
             }
+
+            String currentNameString = ContactsController.formatName(messageObject.messageOwner.media.first_name, messageObject.messageOwner.media.last_name);
+            if (currentNameString.length() == 0) {
+                currentNameString = phone;
+            }
+            int nameWidth = Math.min((int) Math.ceil(namePaint.measureText(currentNameString)), maxWidth);
+            if (maxWidth < 0) {
+                maxWidth = AndroidUtilities.dp(100);
+            }
+
+            CharSequence stringFinal = TextUtils.ellipsize(currentNameString.replace("\n", " "), namePaint, nameWidth, TextUtils.TruncateAt.END);
+            nameLayout = new StaticLayout(stringFinal, namePaint, nameWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+            if (nameLayout.getLineCount() > 0) {
+                nameWidth = (int)Math.ceil(nameLayout.getLineWidth(0));
+            } else {
+                nameWidth = 0;
+            }
+
+
             int phoneWidth = Math.min((int) Math.ceil(phonePaint.measureText(phone)), maxWidth);
             stringFinal = TextUtils.ellipsize(phone.replace("\n", " "), phonePaint, phoneWidth, TextUtils.TruncateAt.END);
             phoneLayout = new StaticLayout(stringFinal, phonePaint, phoneWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
@@ -228,6 +235,7 @@ public class ChatContactCell extends ChatBaseCell {
 
             namesWidth = Math.max(nameWidth, phoneWidth);
             backgroundWidth = AndroidUtilities.dp(77 + (drawAddButton ? 42 : 0)) + namesWidth;
+            availableTimeWidth = backgroundWidth - AndroidUtilities.dp(29);
 
             super.setMessageObject(messageObject);
         }
@@ -235,7 +243,7 @@ public class ChatContactCell extends ChatBaseCell {
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        setMeasuredDimension(MeasureSpec.getSize(widthMeasureSpec), AndroidUtilities.dp(71) + namesOffset);
+        setMeasuredDimension(MeasureSpec.getSize(widthMeasureSpec), AndroidUtilities.dp(75) + namesOffset);
     }
 
     @Override
@@ -248,10 +256,10 @@ public class ChatContactCell extends ChatBaseCell {
 
         int x;
 
-        if (currentMessageObject.isOut()) {
+        if (currentMessageObject.isOutOwner()) {
             x = layoutWidth - backgroundWidth + AndroidUtilities.dp(8);
         } else {
-            if (isChat) {
+            if (isChat && currentMessageObject.isFromUser()) {
                 x = AndroidUtilities.dp(69);
             } else {
                 x = AndroidUtilities.dp(16);
@@ -286,7 +294,7 @@ public class ChatContactCell extends ChatBaseCell {
 
         if (drawAddButton) {
             Drawable addContactDrawable;
-            if (currentMessageObject.isOut()) {
+            if (currentMessageObject.isOutOwner()) {
                 addContactDrawable = addContactDrawableOut;
             } else {
                 addContactDrawable = addContactDrawableIn;

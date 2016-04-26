@@ -4,7 +4,7 @@
 #include <android/log.h>
 #include <jni.h>
 
-#define LOG_TAG "tmessages"
+#define LOG_TAG "tmessages_native"
 #ifndef LOG_DISABLED
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
 #define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__)
