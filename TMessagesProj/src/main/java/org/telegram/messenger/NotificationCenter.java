@@ -70,6 +70,7 @@ public class NotificationCenter {
     public static final int needReloadRecentDialogsSearch = totalEvents++;
     public static final int locationPermissionGranted = totalEvents++;
     public static final int peerSettingsDidLoaded = totalEvents++;
+    public static final int wasUnableToFindCurrentLocation = totalEvents++;
 
     public static final int httpFileDidLoaded = totalEvents++;
     public static final int httpFileDidFailedLoad = totalEvents++;
@@ -115,6 +116,8 @@ public class NotificationCenter {
     private int broadcasting = 0;
     private boolean animationInProgress;
 
+    private int[] allowedNotifications;
+
     public interface NotificationCenterDelegate {
         void didReceivedNotification(int id, Object... args);
     }
@@ -145,6 +148,10 @@ public class NotificationCenter {
         return localInstance;
     }
 
+    public void setAllowedNotificationsDutingAnimation(int notifications[]) {
+        allowedNotifications = notifications;
+    }
+
     public void setAnimationInProgress(boolean value) {
         animationInProgress = value;
         if (!animationInProgress && !delayedPosts.isEmpty()) {
@@ -157,8 +164,13 @@ public class NotificationCenter {
 
     public void postNotificationName(int id, Object... args) {
         boolean allowDuringAnimation = false;
-        if (id == chatInfoDidLoaded || id == dialogsNeedReload || id == closeChats || id == messagesDidLoaded || id == mediaCountDidLoaded || id == mediaDidLoaded || id == botInfoDidLoaded || id == botKeyboardDidLoaded) {
-            allowDuringAnimation = true;
+        if (allowedNotifications != null) {
+            for (int a = 0; a < allowedNotifications.length; a++) {
+                if (allowedNotifications[a] == id) {
+                    allowDuringAnimation = true;
+                    break;
+                }
+            }
         }
         postNotificationNameInternal(id, allowDuringAnimation, args);
     }

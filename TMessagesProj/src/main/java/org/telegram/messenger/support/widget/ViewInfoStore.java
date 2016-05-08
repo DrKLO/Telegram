@@ -32,7 +32,11 @@ import static org.telegram.messenger.support.widget.ViewInfoStore.InfoRecord.FLA
 import static org.telegram.messenger.support.widget.ViewInfoStore.InfoRecord.FLAG_APPEAR;
 import static org.telegram.messenger.support.widget.ViewInfoStore.InfoRecord.FLAG_PRE;
 import static org.telegram.messenger.support.widget.ViewInfoStore.InfoRecord.FLAG_POST;
-
+/**
+ * This class abstracts all tracking for Views to run animations
+ *
+ * @hide
+ */
 class ViewInfoStore {
 
     private static final boolean DEBUG = false;

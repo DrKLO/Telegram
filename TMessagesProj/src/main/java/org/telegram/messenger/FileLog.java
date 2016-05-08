@@ -138,8 +138,8 @@ public class FileLog {
                     try {
                         getInstance().streamWriter.write(getInstance().dateFormat.format(System.currentTimeMillis()) + " E/" + tag + "﹕ " + e + "\n");
                         StackTraceElement[] stack = e.getStackTrace();
-                        for (StackTraceElement el : stack) {
-                            getInstance().streamWriter.write(getInstance().dateFormat.format(System.currentTimeMillis()) + " E/" + tag + "﹕ " + el + "\n");
+                        for (int a = 0; a < stack.length; a++) {
+                            getInstance().streamWriter.write(getInstance().dateFormat.format(System.currentTimeMillis()) + " E/" + tag + "﹕ " + stack[a] + "\n");
                         }
                         getInstance().streamWriter.flush();
                     } catch (Exception e) {
@@ -194,6 +194,9 @@ public class FileLog {
 
     public static void cleanupLogs() {
         File sdCard = ApplicationLoader.applicationContext.getExternalFilesDir(null);
+        if (sdCard == null) {
+            return;
+        }
         File dir = new File (sdCard.getAbsolutePath() + "/logs");
         File[] files = dir.listFiles();
         if (files != null) {

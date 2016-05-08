@@ -144,12 +144,14 @@ public class SharedMediaQuery {
         if (message == null) {
             return -1;
         }
-        if (message.media instanceof TLRPC.TL_messageMediaPhoto || MessageObject.isVideoMessage(message)) {
+        if (message.media instanceof TLRPC.TL_messageMediaPhoto) {
             return MEDIA_PHOTOVIDEO;
-        } else if (MessageObject.isVoiceMessage(message)) {
-            return MEDIA_AUDIO;
         } else if (message.media instanceof TLRPC.TL_messageMediaDocument) {
-            if (MessageObject.isStickerMessage(message)) {
+            if (MessageObject.isVoiceMessage(message)) {
+                return MEDIA_AUDIO;
+            } else if (MessageObject.isVideoMessage(message)) {
+                return MEDIA_PHOTOVIDEO;
+            } else if (MessageObject.isStickerMessage(message)) {
                 return -1;
             } else if (MessageObject.isMusicMessage(message)) {
                 return MEDIA_MUSIC;

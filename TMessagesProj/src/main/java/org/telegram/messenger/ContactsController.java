@@ -173,7 +173,7 @@ public class ContactsController {
         if (!updatingInviteText && (inviteText == null || time + 86400 < (int)(System.currentTimeMillis() / 1000))) {
             updatingInviteText = true;
             TLRPC.TL_help_getInviteText req = new TLRPC.TL_help_getInviteText();
-            req.lang_code = LocaleController.getLocaleString(LocaleController.getInstance().getSystemDefaultLocale());
+            req.lang_code = LocaleController.getLocaleStringIso639();
             if (req.lang_code.length() == 0) {
                 req.lang_code = "en";
             }
@@ -1652,7 +1652,8 @@ public class ContactsController {
                     }
                 }*/
 
-                for (final TLRPC.User u : res.users) {
+                for (int a = 0; a < res.users.size(); a++) {
+                    final TLRPC.User u = res.users.get(a);
                     Utilities.phoneBookQueue.postRunnable(new Runnable() {
                         @Override
                         public void run() {

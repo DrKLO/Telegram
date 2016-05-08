@@ -16,7 +16,6 @@ import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 
-import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.MessagesStorage;
@@ -161,7 +160,7 @@ public class AlertsCreator {
                 builder.setNegativeButton(LocaleController.getString("MoreInfo", R.string.MoreInfo), new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialogInterface, int i) {
-                        AndroidUtilities.openUrl(fragment.getParentActivity(), LocaleController.getString("NobodyLikesSpamUrl", R.string.NobodyLikesSpamUrl));
+                        MessagesController.openByUserName("spambot", fragment, 1);
                     }
                 });
                 break;
@@ -211,6 +210,12 @@ public class AlertsCreator {
                 break;
             case "USERS_TOO_FEW":
                 builder.setMessage(LocaleController.getString("CreateGroupError", R.string.CreateGroupError));
+                break;
+            case "USER_RESTRICTED":
+                builder.setMessage(LocaleController.getString("UserRestricted", R.string.UserRestricted));
+                break;
+            default:
+                builder.setMessage(error);
                 break;
         }
         builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), null);

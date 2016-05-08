@@ -39,6 +39,7 @@ import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.Components.IdenticonDrawable;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.URLSpanReplacement;
 
 public class IdenticonActivity extends BaseFragment {
@@ -114,7 +115,7 @@ public class IdenticonActivity extends BaseFragment {
         textView.setClickable(true);
         textView.setMovementMethod(new LinkMovementMethodMy());
         //textView.setAutoLinkMask(Linkify.WEB_URLS);
-        textView.setLinkTextColor(0xff316f9f);
+        textView.setLinkTextColor(Theme.MSG_LINK_TEXT_COLOR);
         textView.setGravity(Gravity.CENTER);
         frameLayout.addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 

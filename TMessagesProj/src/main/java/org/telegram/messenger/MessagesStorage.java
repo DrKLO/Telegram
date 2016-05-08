@@ -423,7 +423,7 @@ public class MessagesStorage {
                         while (cursor.next()) {
                             int chat_id = cursor.intValue(0);
                             NativeByteBuffer data = new NativeByteBuffer(cursor.byteArrayLength(1));
-                            if (data != null && cursor.byteBufferValue(1, data) != 0) {
+                            if (cursor.byteBufferValue(1, data) != 0) {
                                 TLRPC.ChatParticipants participants = TLRPC.ChatParticipants.TLdeserialize(data, data.readInt32(false), false);
                                 if (participants != null) {
                                     TLRPC.TL_chatFull chatFull = new TLRPC.TL_chatFull();
@@ -663,7 +663,7 @@ public class MessagesStorage {
                         cursor = database.queryFinalized("SELECT read_state, data, send_state, mid, date, uid FROM messages WHERE uid IN (" + ids.toString() + ") AND out = 0 AND read_state IN(0,2) ORDER BY date DESC LIMIT 50");
                         while (cursor.next()) {
                             NativeByteBuffer data = new NativeByteBuffer(cursor.byteArrayLength(1));
-                            if (data != null && cursor.byteBufferValue(1, data) != 0) {
+                            if (cursor.byteBufferValue(1, data) != 0) {
                                 TLRPC.Message message = TLRPC.Message.TLdeserialize(data, data.readInt32(false), false);
                                 MessageObject.setUnreadFlags(message, cursor.intValue(0));
                                 message.id = cursor.intValue(3);
@@ -793,7 +793,7 @@ public class MessagesStorage {
                         searchImage.date = cursor.intValue(7);
                         if (!cursor.isNull(8)) {
                             NativeByteBuffer data = new NativeByteBuffer(cursor.byteArrayLength(8));
-                            if (data != null && cursor.byteBufferValue(8, data) != 0) {
+                            if (cursor.byteBufferValue(8, data) != 0) {
                                 searchImage.document = TLRPC.Document.TLdeserialize(data, data.readInt32(false), false);
                             }
                             data.reuse();
@@ -937,7 +937,7 @@ public class MessagesStorage {
                     final ArrayList<TLRPC.WallPaper> wallPapers = new ArrayList<>();
                     while (cursor.next()) {
                         NativeByteBuffer data = new NativeByteBuffer(cursor.byteArrayLength(0));
-                        if (data != null && cursor.byteBufferValue(0, data) != 0) {
+                        if (cursor.byteBufferValue(0, data) != 0) {
                             TLRPC.WallPaper wallPaper = TLRPC.WallPaper.TLdeserialize(data, data.readInt32(false), false);
                             wallPapers.add(wallPaper);
                         }
@@ -1040,7 +1040,7 @@ public class MessagesStorage {
                     try {
                         while (cursor.next()) {
                             NativeByteBuffer data = new NativeByteBuffer(cursor.byteArrayLength(0));
-                            if (data != null && cursor.byteBufferValue(0, data) != 0) {
+                            if (cursor.byteBufferValue(0, data) != 0) {
                                 TLRPC.Message message = TLRPC.Message.TLdeserialize(data, data.readInt32(false), false);
                                 if (message != null && message.from_id == uid && message.id != 1) {
                                     mids.add(message.id);
@@ -1104,7 +1104,7 @@ public class MessagesStorage {
                         try {
                             while (cursor.next()) {
                                 NativeByteBuffer data = new NativeByteBuffer(cursor.byteArrayLength(0));
-                                if (data != null && cursor.byteBufferValue(0, data) != 0) {
+                                if (cursor.byteBufferValue(0, data) != 0) {
                                     TLRPC.Message message = TLRPC.Message.TLdeserialize(data, data.readInt32(false), false);
                                     if (message != null && message.media != null) {
                                         if (message.media instanceof TLRPC.TL_messageMediaPhoto) {
@@ -1163,7 +1163,7 @@ public class MessagesStorage {
                             try {
                                 while (cursor2.next()) {
                                     NativeByteBuffer data = new NativeByteBuffer(cursor2.byteArrayLength(0));
-                                    if (data != null && cursor2.byteBufferValue(0, data) != 0) {
+                                    if (cursor2.byteBufferValue(0, data) != 0) {
                                         TLRPC.Message message = TLRPC.Message.TLdeserialize(data, data.readInt32(false), false);
                                         if (message != null) {
                                             arrayList.add(message);
@@ -1240,7 +1240,7 @@ public class MessagesStorage {
 
                     while (cursor.next()) {
                         NativeByteBuffer data = new NativeByteBuffer(cursor.byteArrayLength(0));
-                        if (data != null && cursor.byteBufferValue(0, data) != 0) {
+                        if (cursor.byteBufferValue(0, data) != 0) {
                             TLRPC.Photo photo = TLRPC.Photo.TLdeserialize(data, data.readInt32(false), false);
                             res.photos.add(photo);
                         }
@@ -1514,7 +1514,7 @@ public class MessagesStorage {
                     ArrayList<TLRPC.User> loadedUsers = new ArrayList<>();
                     if (cursor.next()) {
                         NativeByteBuffer data = new NativeByteBuffer(cursor.byteArrayLength(0));
-                        if (data != null && cursor.byteBufferValue(0, data) != 0) {
+                        if (cursor.byteBufferValue(0, data) != 0) {
                             info = TLRPC.ChatFull.TLdeserialize(data, data.readInt32(false), false);
                             info.pinned_msg_id = cursor.intValue(1);
                         }
@@ -1696,7 +1696,7 @@ public class MessagesStorage {
                     ArrayList<TLRPC.User> loadedUsers = new ArrayList<>();
                     if (cursor.next()) {
                         NativeByteBuffer data = new NativeByteBuffer(cursor.byteArrayLength(0));
-                        if (data != null && cursor.byteBufferValue(0, data) != 0) {
+                        if (cursor.byteBufferValue(0, data) != 0) {
                             info = TLRPC.ChatFull.TLdeserialize(data, data.readInt32(false), false);
                             info.pinned_msg_id = cursor.intValue(1);
                         }
@@ -1783,7 +1783,7 @@ public class MessagesStorage {
                     ArrayList<TLRPC.User> loadedUsers = new ArrayList<>();
                     if (cursor.next()) {
                         NativeByteBuffer data = new NativeByteBuffer(cursor.byteArrayLength(0));
-                        if (data != null && cursor.byteBufferValue(0, data) != 0) {
+                        if (cursor.byteBufferValue(0, data) != 0) {
                             info = TLRPC.ChatFull.TLdeserialize(data, data.readInt32(false), false);
                         }
                         data.reuse();
@@ -1814,13 +1814,14 @@ public class MessagesStorage {
         storageQueue.postRunnable(new Runnable() {
             @Override
             public void run() {
+                MessageObject pinnedMessageObject = null;
+                TLRPC.ChatFull info = null;
+                ArrayList<TLRPC.User> loadedUsers = new ArrayList<>();
                 try {
                     SQLiteCursor cursor = database.queryFinalized("SELECT info, pinned FROM chat_settings_v2 WHERE uid = " + chat_id);
-                    TLRPC.ChatFull info = null;
-                    ArrayList<TLRPC.User> loadedUsers = new ArrayList<>();
                     if (cursor.next()) {
                         NativeByteBuffer data = new NativeByteBuffer(cursor.byteArrayLength(0));
-                        if (data != null && cursor.byteBufferValue(0, data) != 0) {
+                        if (cursor.byteBufferValue(0, data) != 0) {
                             info = TLRPC.ChatFull.TLdeserialize(data, data.readInt32(false), false);
                             info.pinned_msg_id = cursor.intValue(1);
                         }
@@ -1847,7 +1848,7 @@ public class MessagesStorage {
                             try {
                                 NativeByteBuffer data = new NativeByteBuffer(cursor.byteArrayLength(0));
                                 NativeByteBuffer data2 = new NativeByteBuffer(cursor.byteArrayLength(2));
-                                if (data != null && cursor.byteBufferValue(0, data) != 0 && data2 != null && cursor.byteBufferValue(2, data2) != 0) {
+                                if (cursor.byteBufferValue(0, data) != 0 && cursor.byteBufferValue(2, data2) != 0) {
                                     TLRPC.User user = TLRPC.User.TLdeserialize(data, data.readInt32(false), false);
                                     TLRPC.ChannelParticipant participant = TLRPC.ChannelParticipant.TLdeserialize(data2, data2.readInt32(false), false);
                                     if (user != null && participant != null) {
@@ -1886,15 +1887,13 @@ public class MessagesStorage {
                     if (semaphore != null) {
                         semaphore.release();
                     }
-                    MessageObject pinnedMessageObject = null;
                     if (info instanceof TLRPC.TL_channelFull && info.pinned_msg_id != 0) {
                         pinnedMessageObject = MessagesQuery.loadPinnedMessage(chat_id, info.pinned_msg_id, false);
                     }
-                    MessagesController.getInstance().processChatInfo(chat_id, info, loadedUsers, true, force, byChannelUsers, pinnedMessageObject);
-
                 } catch (Exception e) {
                     FileLog.e("tmessages", e);
                 } finally {
+                    MessagesController.getInstance().processChatInfo(chat_id, info, loadedUsers, true, force, byChannelUsers, pinnedMessageObject);
                     if (semaphore != null) {
                         semaphore.release();
                     }
@@ -2162,7 +2161,7 @@ public class MessagesStorage {
                     SQLiteCursor cursor = database.queryFinalized("SELECT m.read_state, m.data, m.send_state, m.mid, m.date, r.random_id, m.uid, s.seq_in, s.seq_out, m.ttl FROM messages as m LEFT JOIN randoms as r ON r.mid = m.mid LEFT JOIN messages_seq as s ON m.mid = s.mid WHERE m.mid < 0 AND m.send_state = 1 ORDER BY m.mid DESC LIMIT " + count);
                     while (cursor.next()) {
                         NativeByteBuffer data = new NativeByteBuffer(cursor.byteArrayLength(1));
-                        if (data != null && cursor.byteBufferValue(1, data) != 0) {
+                        if (cursor.byteBufferValue(1, data) != 0) {
                             TLRPC.Message message = TLRPC.Message.TLdeserialize(data, data.readInt32(false), false);
                             if (!messageHashMap.containsKey(message.id)) {
                                 MessageObject.setUnreadFlags(message, cursor.intValue(0));
@@ -2306,6 +2305,7 @@ public class MessagesStorage {
                     messageMaxId |= ((long) channelId) << 32;
                 }
                 boolean isEnd = false;
+                int num = dialog_id == 777000 ? 4 : 1;
                 try {
                     ArrayList<Integer> usersToLoad = new ArrayList<>();
                     ArrayList<Integer> chatsToLoad = new ArrayList<>();
@@ -2346,12 +2346,26 @@ public class MessagesStorage {
                                         }
                                         cursor.dispose();
                                     }
+                                } else if (max_id_query == 0) {
+                                    int existingUnreadCount = 0;
+                                    cursor = database.queryFinalized(String.format(Locale.US, "SELECT COUNT(*) FROM messages WHERE uid = %d AND mid > 0 " + imp + "AND out = 0 AND read_state IN(0,2)", dialog_id));
+                                    if (cursor.next()) {
+                                        existingUnreadCount = cursor.intValue(0);
+                                    }
+                                    cursor.dispose();
+                                    if (existingUnreadCount == count_unread) {
+                                        cursor = database.queryFinalized(String.format(Locale.US, "SELECT min(mid) FROM messages WHERE uid = %d AND out = 0 AND read_state IN(0,2) AND mid > 0" + imp, dialog_id));
+                                        if (cursor.next()) {
+                                            messageMaxId = max_id_query = min_unread_id = cursor.intValue(0);
+                                        }
+                                        cursor.dispose();
+                                    }
                                 }
                             }
 
-                            if (count_query > count_unread || count_unread < 4) {
+                            if (count_query > count_unread || count_unread < num) {
                                 count_query = Math.max(count_query, count_unread + 10);
-                                if (count_unread < 4) {
+                                if (count_unread < num) {
                                     count_unread = 0;
                                     min_unread_id = 0;
                                     messageMaxId = 0;
@@ -2393,12 +2407,14 @@ public class MessagesStorage {
                             }
                             cursor.dispose();
 
-                            boolean containMessage = true;
-                            cursor = database.queryFinalized(String.format(Locale.US, "SELECT start FROM " + holesTable + " WHERE uid = %d AND start < %d AND end > %d", dialog_id, max_id_query, max_id_query));
-                            if (cursor.next()) {
-                                containMessage = false;
+                            boolean containMessage = max_id_query != 0;
+                            if (containMessage) {
+                                cursor = database.queryFinalized(String.format(Locale.US, "SELECT start FROM " + holesTable + " WHERE uid = %d AND start < %d AND end > %d", dialog_id, max_id_query, max_id_query));
+                                if (cursor.next()) {
+                                    containMessage = false;
+                                }
+                                cursor.dispose();
                             }
-                            cursor.dispose();
 
                             if (containMessage) {
                                 long holeMessageMaxId = 0;
@@ -2430,11 +2446,11 @@ public class MessagesStorage {
                                             holeMessageMaxId |= ((long) channelId) << 32;
                                         }
                                     }
-                                    cursor = database.queryFinalized(String.format(Locale.US, "SELECT * FROM (SELECT m.read_state, m.data, m.send_state, m.mid, m.date, r.random_id, m.replydata, m.media FROM messages as m LEFT JOIN randoms as r ON r.mid = m.mid WHERE m.uid = %d AND m.mid <= %d AND m.mid >= %d " + imp + "ORDER BY m.date DESC, m.mid DESC LIMIT %d) UNION " +
-                                            "SELECT * FROM (SELECT m.read_state, m.data, m.send_state, m.mid, m.date, r.random_id, m.replydata, m.media FROM messages as m LEFT JOIN randoms as r ON r.mid = m.mid WHERE m.uid = %d AND m.mid > %d AND m.mid <= %d " + imp + "ORDER BY m.date ASC, m.mid ASC LIMIT %d)", dialog_id, messageMaxId, holeMessageMinId, count_query / 2, dialog_id, messageMaxId, holeMessageMaxId, count_query / 2));
+                                    cursor = database.queryFinalized(String.format(Locale.US, "SELECT * FROM (SELECT m.read_state, m.data, m.send_state, m.mid, m.date, r.random_id, m.replydata, m.media, m.ttl FROM messages as m LEFT JOIN randoms as r ON r.mid = m.mid WHERE m.uid = %d AND m.mid <= %d AND m.mid >= %d " + imp + "ORDER BY m.date DESC, m.mid DESC LIMIT %d) UNION " +
+                                            "SELECT * FROM (SELECT m.read_state, m.data, m.send_state, m.mid, m.date, r.random_id, m.replydata, m.media, m.ttl FROM messages as m LEFT JOIN randoms as r ON r.mid = m.mid WHERE m.uid = %d AND m.mid > %d AND m.mid <= %d " + imp + "ORDER BY m.date ASC, m.mid ASC LIMIT %d)", dialog_id, messageMaxId, holeMessageMinId, count_query / 2, dialog_id, messageMaxId, holeMessageMaxId, count_query / 2));
                                 } else {
-                                    cursor = database.queryFinalized(String.format(Locale.US, "SELECT * FROM (SELECT m.read_state, m.data, m.send_state, m.mid, m.date, r.random_id, m.replydata, m.media FROM messages as m LEFT JOIN randoms as r ON r.mid = m.mid WHERE m.uid = %d AND m.mid <= %d " + imp + "ORDER BY m.date DESC, m.mid DESC LIMIT %d) UNION " +
-                                            "SELECT * FROM (SELECT m.read_state, m.data, m.send_state, m.mid, m.date, r.random_id, m.replydata, m.media FROM messages as m LEFT JOIN randoms as r ON r.mid = m.mid WHERE m.uid = %d AND m.mid > %d " + imp + "ORDER BY m.date ASC, m.mid ASC LIMIT %d)", dialog_id, messageMaxId, count_query / 2, dialog_id, messageMaxId, count_query / 2));
+                                    cursor = database.queryFinalized(String.format(Locale.US, "SELECT * FROM (SELECT m.read_state, m.data, m.send_state, m.mid, m.date, r.random_id, m.replydata, m.media, m.ttl FROM messages as m LEFT JOIN randoms as r ON r.mid = m.mid WHERE m.uid = %d AND m.mid <= %d " + imp + "ORDER BY m.date DESC, m.mid DESC LIMIT %d) UNION " +
+                                            "SELECT * FROM (SELECT m.read_state, m.data, m.send_state, m.mid, m.date, r.random_id, m.replydata, m.media, m.ttl FROM messages as m LEFT JOIN randoms as r ON r.mid = m.mid WHERE m.uid = %d AND m.mid > %d " + imp + "ORDER BY m.date ASC, m.mid ASC LIMIT %d)", dialog_id, messageMaxId, count_query / 2, dialog_id, messageMaxId, count_query / 2));
                                 }
                             } else {
                                 cursor = null;
@@ -2450,9 +2466,9 @@ public class MessagesStorage {
                             }
                             cursor.dispose();
                             if (holeMessageId != 0) {
-                                cursor = database.queryFinalized(String.format(Locale.US, "SELECT m.read_state, m.data, m.send_state, m.mid, m.date, r.random_id, m.replydata, m.media FROM messages as m LEFT JOIN randoms as r ON r.mid = m.mid WHERE m.uid = %d AND m.date >= %d AND m.mid > %d AND m.mid <= %d " + imp + "ORDER BY m.date ASC, m.mid ASC LIMIT %d", dialog_id, minDate, messageMaxId, holeMessageId, count_query));
+                                cursor = database.queryFinalized(String.format(Locale.US, "SELECT m.read_state, m.data, m.send_state, m.mid, m.date, r.random_id, m.replydata, m.media, m.ttl FROM messages as m LEFT JOIN randoms as r ON r.mid = m.mid WHERE m.uid = %d AND m.date >= %d AND m.mid > %d AND m.mid <= %d " + imp + "ORDER BY m.date ASC, m.mid ASC LIMIT %d", dialog_id, minDate, messageMaxId, holeMessageId, count_query));
                             } else {
-                                cursor = database.queryFinalized(String.format(Locale.US, "SELECT m.read_state, m.data, m.send_state, m.mid, m.date, r.random_id, m.replydata, m.media FROM messages as m LEFT JOIN randoms as r ON r.mid = m.mid WHERE m.uid = %d AND m.date >= %d AND m.mid > %d " + imp + "ORDER BY m.date ASC, m.mid ASC LIMIT %d", dialog_id, minDate, messageMaxId, count_query));
+                                cursor = database.queryFinalized(String.format(Locale.US, "SELECT m.read_state, m.data, m.send_state, m.mid, m.date, r.random_id, m.replydata, m.media, m.ttl FROM messages as m LEFT JOIN randoms as r ON r.mid = m.mid WHERE m.uid = %d AND m.date >= %d AND m.mid > %d " + imp + "ORDER BY m.date ASC, m.mid ASC LIMIT %d", dialog_id, minDate, messageMaxId, count_query));
                             }
                         } else if (minDate != 0) {
                             if (messageMaxId != 0) {
@@ -2466,12 +2482,12 @@ public class MessagesStorage {
                                 }
                                 cursor.dispose();
                                 if (holeMessageId != 0) {
-                                    cursor = database.queryFinalized(String.format(Locale.US, "SELECT m.read_state, m.data, m.send_state, m.mid, m.date, r.random_id, m.replydata, m.media FROM messages as m LEFT JOIN randoms as r ON r.mid = m.mid WHERE m.uid = %d AND m.date <= %d AND m.mid < %d AND (m.mid >= %d OR m.mid < 0) " + imp + "ORDER BY m.date DESC, m.mid DESC LIMIT %d", dialog_id, minDate, messageMaxId, holeMessageId, count_query));
+                                    cursor = database.queryFinalized(String.format(Locale.US, "SELECT m.read_state, m.data, m.send_state, m.mid, m.date, r.random_id, m.replydata, m.media, m.ttl FROM messages as m LEFT JOIN randoms as r ON r.mid = m.mid WHERE m.uid = %d AND m.date <= %d AND m.mid < %d AND (m.mid >= %d OR m.mid < 0) " + imp + "ORDER BY m.date DESC, m.mid DESC LIMIT %d", dialog_id, minDate, messageMaxId, holeMessageId, count_query));
                                 } else {
-                                    cursor = database.queryFinalized(String.format(Locale.US, "SELECT m.read_state, m.data, m.send_state, m.mid, m.date, r.random_id, m.replydata, m.media FROM messages as m LEFT JOIN randoms as r ON r.mid = m.mid WHERE m.uid = %d AND m.date <= %d AND m.mid < %d " + imp + "ORDER BY m.date DESC, m.mid DESC LIMIT %d", dialog_id, minDate, messageMaxId, count_query));
+                                    cursor = database.queryFinalized(String.format(Locale.US, "SELECT m.read_state, m.data, m.send_state, m.mid, m.date, r.random_id, m.replydata, m.media, m.ttl FROM messages as m LEFT JOIN randoms as r ON r.mid = m.mid WHERE m.uid = %d AND m.date <= %d AND m.mid < %d " + imp + "ORDER BY m.date DESC, m.mid DESC LIMIT %d", dialog_id, minDate, messageMaxId, count_query));
                                 }
                             } else {
-                                cursor = database.queryFinalized(String.format(Locale.US, "SELECT m.read_state, m.data, m.send_state, m.mid, m.date, r.random_id, m.replydata, m.media FROM messages as m LEFT JOIN randoms as r ON r.mid = m.mid WHERE m.uid = %d AND m.date <= %d " + imp + "ORDER BY m.date DESC, m.mid DESC LIMIT %d,%d", dialog_id, minDate, offset_query, count_query));
+                                cursor = database.queryFinalized(String.format(Locale.US, "SELECT m.read_state, m.data, m.send_state, m.mid, m.date, r.random_id, m.replydata, m.media, m.ttl FROM messages as m LEFT JOIN randoms as r ON r.mid = m.mid WHERE m.uid = %d AND m.date <= %d " + imp + "ORDER BY m.date DESC, m.mid DESC LIMIT %d,%d", dialog_id, minDate, offset_query, count_query));
                             }
                         } else {
                             cursor = database.queryFinalized(String.format(Locale.US, "SELECT max(mid) FROM messages WHERE uid = %d AND mid > 0", dialog_id));
@@ -2490,20 +2506,20 @@ public class MessagesStorage {
                             }
                             cursor.dispose();
                             if (holeMessageId != 0) {
-                                cursor = database.queryFinalized(String.format(Locale.US, "SELECT m.read_state, m.data, m.send_state, m.mid, m.date, r.random_id, m.replydata, m.media FROM messages as m LEFT JOIN randoms as r ON r.mid = m.mid WHERE m.uid = %d AND (m.mid >= %d OR m.mid < 0) " + imp + "ORDER BY m.date DESC, m.mid DESC LIMIT %d,%d", dialog_id, holeMessageId, offset_query, count_query));
+                                cursor = database.queryFinalized(String.format(Locale.US, "SELECT m.read_state, m.data, m.send_state, m.mid, m.date, r.random_id, m.replydata, m.media, m.ttl FROM messages as m LEFT JOIN randoms as r ON r.mid = m.mid WHERE m.uid = %d AND (m.mid >= %d OR m.mid < 0) " + imp + "ORDER BY m.date DESC, m.mid DESC LIMIT %d,%d", dialog_id, holeMessageId, offset_query, count_query));
                             } else {
-                                cursor = database.queryFinalized(String.format(Locale.US, "SELECT m.read_state, m.data, m.send_state, m.mid, m.date, r.random_id, m.replydata, m.media FROM messages as m LEFT JOIN randoms as r ON r.mid = m.mid WHERE m.uid = %d " + imp + "ORDER BY m.date DESC, m.mid DESC LIMIT %d,%d", dialog_id, offset_query, count_query));
+                                cursor = database.queryFinalized(String.format(Locale.US, "SELECT m.read_state, m.data, m.send_state, m.mid, m.date, r.random_id, m.replydata, m.media, m.ttl FROM messages as m LEFT JOIN randoms as r ON r.mid = m.mid WHERE m.uid = %d " + imp + "ORDER BY m.date DESC, m.mid DESC LIMIT %d,%d", dialog_id, offset_query, count_query));
                             }
                         }
                     } else {
                         isEnd = true;
                         if (load_type == 1) {
-                            cursor = database.queryFinalized(String.format(Locale.US, "SELECT m.read_state, m.data, m.send_state, m.mid, m.date, r.random_id, m.replydata, m.media FROM messages as m LEFT JOIN randoms as r ON r.mid = m.mid WHERE m.uid = %d AND m.mid < %d ORDER BY m.mid DESC LIMIT %d", dialog_id, max_id, count_query));
+                            cursor = database.queryFinalized(String.format(Locale.US, "SELECT m.read_state, m.data, m.send_state, m.mid, m.date, r.random_id, m.replydata, m.media, m.ttl FROM messages as m LEFT JOIN randoms as r ON r.mid = m.mid WHERE m.uid = %d AND m.mid < %d ORDER BY m.mid DESC LIMIT %d", dialog_id, max_id, count_query));
                         } else if (minDate != 0) {
                             if (max_id != 0) {
-                                cursor = database.queryFinalized(String.format(Locale.US, "SELECT m.read_state, m.data, m.send_state, m.mid, m.date, r.random_id, m.replydata, m.media FROM messages as m LEFT JOIN randoms as r ON r.mid = m.mid WHERE m.uid = %d AND m.mid > %d ORDER BY m.mid ASC LIMIT %d", dialog_id, max_id, count_query));
+                                cursor = database.queryFinalized(String.format(Locale.US, "SELECT m.read_state, m.data, m.send_state, m.mid, m.date, r.random_id, m.replydata, m.media, m.ttl FROM messages as m LEFT JOIN randoms as r ON r.mid = m.mid WHERE m.uid = %d AND m.mid > %d ORDER BY m.mid ASC LIMIT %d", dialog_id, max_id, count_query));
                             } else {
-                                cursor = database.queryFinalized(String.format(Locale.US, "SELECT m.read_state, m.data, m.send_state, m.mid, m.date, r.random_id, m.replydata, m.media FROM messages as m LEFT JOIN randoms as r ON r.mid = m.mid WHERE m.uid = %d AND m.date <= %d ORDER BY m.mid ASC LIMIT %d,%d", dialog_id, minDate, offset_query, count_query));
+                                cursor = database.queryFinalized(String.format(Locale.US, "SELECT m.read_state, m.data, m.send_state, m.mid, m.date, r.random_id, m.replydata, m.media, m.ttl FROM messages as m LEFT JOIN randoms as r ON r.mid = m.mid WHERE m.uid = %d AND m.date <= %d ORDER BY m.mid ASC LIMIT %d,%d", dialog_id, minDate, offset_query, count_query));
                             }
                         } else {
                             if (load_type == 2) {
@@ -2528,9 +2544,9 @@ public class MessagesStorage {
                                 }
                             }
 
-                            if (count_query > count_unread || count_unread < 4) {
+                            if (count_query > count_unread || count_unread < num) {
                                 count_query = Math.max(count_query, count_unread + 10);
-                                if (count_unread < 4) {
+                                if (count_unread < num) {
                                     count_unread = 0;
                                     min_unread_id = 0;
                                     last_message_id = 0;
@@ -2539,13 +2555,13 @@ public class MessagesStorage {
                                 offset_query = count_unread - count_query;
                                 count_query += 10;
                             }
-                            cursor = database.queryFinalized(String.format(Locale.US, "SELECT m.read_state, m.data, m.send_state, m.mid, m.date, r.random_id, m.replydata, m.media FROM messages as m LEFT JOIN randoms as r ON r.mid = m.mid WHERE m.uid = %d ORDER BY m.mid ASC LIMIT %d,%d", dialog_id, offset_query, count_query));
+                            cursor = database.queryFinalized(String.format(Locale.US, "SELECT m.read_state, m.data, m.send_state, m.mid, m.date, r.random_id, m.replydata, m.media, m.ttl FROM messages as m LEFT JOIN randoms as r ON r.mid = m.mid WHERE m.uid = %d ORDER BY m.mid ASC LIMIT %d,%d", dialog_id, offset_query, count_query));
                         }
                     }
                     if (cursor != null) {
                         while (cursor.next()) {
                             NativeByteBuffer data = new NativeByteBuffer(cursor.byteArrayLength(1));
-                            if (data != null && cursor.byteBufferValue(1, data) != 0) {
+                            if (cursor.byteBufferValue(1, data) != 0) {
                                 TLRPC.Message message = TLRPC.Message.TLdeserialize(data, data.readInt32(false), false);
                                 MessageObject.setUnreadFlags(message, cursor.intValue(0));
                                 message.id = cursor.intValue(3);
@@ -2554,6 +2570,7 @@ public class MessagesStorage {
                                 if ((message.flags & TLRPC.MESSAGE_FLAG_HAS_VIEWS) != 0) {
                                     message.views = cursor.intValue(7);
                                 }
+                                message.ttl = cursor.intValue(8);
                                 res.messages.add(message);
 
                                 addUsersAndChatsFromMessage(message, usersToLoad, chatsToLoad);
@@ -2561,7 +2578,7 @@ public class MessagesStorage {
                                 if (message.reply_to_msg_id != 0 || message.reply_to_random_id != 0) {
                                     if (!cursor.isNull(6)) {
                                         NativeByteBuffer data2 = new NativeByteBuffer(cursor.byteArrayLength(6));
-                                        if (data2 != null && cursor.byteBufferValue(6, data2) != 0) {
+                                        if (cursor.byteBufferValue(6, data2) != 0) {
                                             message.replyMessage = TLRPC.Message.TLdeserialize(data2, data2.readInt32(false), false);
                                             if (message.replyMessage != null) {
                                                 addUsersAndChatsFromMessage(message.replyMessage, usersToLoad, chatsToLoad);
@@ -2685,7 +2702,7 @@ public class MessagesStorage {
                         }
                         while (cursor.next()) {
                             NativeByteBuffer data = new NativeByteBuffer(cursor.byteArrayLength(0));
-                            if (data != null && cursor.byteBufferValue(0, data) != 0) {
+                            if (cursor.byteBufferValue(0, data) != 0) {
                                 TLRPC.Message message = TLRPC.Message.TLdeserialize(data, data.readInt32(false), false);
                                 message.id = cursor.intValue(1);
                                 message.date = cursor.intValue(2);
@@ -2800,7 +2817,7 @@ public class MessagesStorage {
                         SQLiteCursor cursor = database.queryFinalized(String.format(Locale.US, "SELECT data FROM sent_files_v2 WHERE uid = '%s' AND type = %d", id, type));
                         if (cursor.next()) {
                             NativeByteBuffer data = new NativeByteBuffer(cursor.byteArrayLength(0));
-                            if (data != null && cursor.byteBufferValue(0, data) != 0) {
+                            if (cursor.byteBufferValue(0, data) != 0) {
                                 TLObject file = TLRPC.MessageMedia.TLdeserialize(data, data.readInt32(false), false);
                                 if (file instanceof TLRPC.TL_messageMediaDocument) {
                                     result.add(((TLRPC.TL_messageMediaDocument) file).document);
@@ -3170,23 +3187,9 @@ public class MessagesStorage {
                 if (cursor.next()) {
                     try {
                         NativeByteBuffer data = new NativeByteBuffer(cursor.byteArrayLength(0));
-                        if (data != null && cursor.byteBufferValue(0, data) != 0) {
+                        if (cursor.byteBufferValue(0, data) != 0) {
                             TLRPC.User oldUser = TLRPC.User.TLdeserialize(data, data.readInt32(false), false);
                             if (oldUser != null) {
-                                if (user.first_name != null) {
-                                    oldUser.first_name = user.first_name;
-                                    oldUser.flags |= 2;
-                                } else {
-                                    oldUser.first_name = null;
-                                    oldUser.flags = oldUser.flags &~ 2;
-                                }
-                                if (user.last_name != null) {
-                                    oldUser.last_name = user.last_name;
-                                    oldUser.flags |= 4;
-                                } else {
-                                    oldUser.last_name = null;
-                                    oldUser.flags = oldUser.flags &~ 4;
-                                }
                                 if (user.username != null) {
                                     oldUser.username = user.username;
                                     oldUser.flags |= 8;
@@ -3246,7 +3249,7 @@ public class MessagesStorage {
                 if (cursor.next()) {
                     try {
                         NativeByteBuffer data = new NativeByteBuffer(cursor.byteArrayLength(0));
-                        if (data != null && cursor.byteBufferValue(0, data) != 0) {
+                        if (cursor.byteBufferValue(0, data) != 0) {
                             TLRPC.Chat oldChat = TLRPC.Chat.TLdeserialize(data, data.readInt32(false), false);
                             if (oldChat != null) {
                                 oldChat.title = chat.title;
@@ -3296,7 +3299,7 @@ public class MessagesStorage {
         while (cursor.next()) {
             try {
                 NativeByteBuffer data = new NativeByteBuffer(cursor.byteArrayLength(0));
-                if (data != null && cursor.byteBufferValue(0, data) != 0) {
+                if (cursor.byteBufferValue(0, data) != 0) {
                     TLRPC.User user = TLRPC.User.TLdeserialize(data, data.readInt32(false), false);
                     if (user != null) {
                         if (user.status != null) {
@@ -3321,7 +3324,7 @@ public class MessagesStorage {
         while (cursor.next()) {
             try {
                 NativeByteBuffer data = new NativeByteBuffer(cursor.byteArrayLength(0));
-                if (data != null && cursor.byteBufferValue(0, data) != 0) {
+                if (cursor.byteBufferValue(0, data) != 0) {
                     TLRPC.Chat chat = TLRPC.Chat.TLdeserialize(data, data.readInt32(false), false);
                     if (chat != null) {
                         result.add(chat);
@@ -3343,7 +3346,7 @@ public class MessagesStorage {
         while (cursor.next()) {
             try {
                 NativeByteBuffer data = new NativeByteBuffer(cursor.byteArrayLength(0));
-                if (data != null && cursor.byteBufferValue(0, data) != 0) {
+                if (cursor.byteBufferValue(0, data) != 0) {
                     TLRPC.EncryptedChat chat = TLRPC.EncryptedChat.TLdeserialize(data, data.readInt32(false), false);
                     if (chat != null) {
                         chat.user_id = cursor.intValue(1);
@@ -3460,7 +3463,7 @@ public class MessagesStorage {
                         downloadObject.type = cursor.intValue(1);
                         downloadObject.id = cursor.longValue(0);
                         NativeByteBuffer data = new NativeByteBuffer(cursor.byteArrayLength(2));
-                        if (data != null && cursor.byteBufferValue(2, data) != 0) {
+                        if (cursor.byteBufferValue(2, data) != 0) {
                             TLRPC.MessageMedia messageMedia = TLRPC.MessageMedia.TLdeserialize(data, data.readInt32(false), false);
                             if (messageMedia.document != null) {
                                 downloadObject.object = messageMedia.document;
@@ -3522,7 +3525,7 @@ public class MessagesStorage {
                     while (cursor.next()) {
                         int mid = cursor.intValue(0);
                         NativeByteBuffer data = new NativeByteBuffer(cursor.byteArrayLength(1));
-                        if (data != null && cursor.byteBufferValue(1, data) != 0) {
+                        if (cursor.byteBufferValue(1, data) != 0) {
                             TLRPC.Message message = TLRPC.Message.TLdeserialize(data, data.readInt32(false), false);
                             if (message.media instanceof TLRPC.TL_messageMediaWebPage) {
                                 message.id = mid;
@@ -3679,6 +3682,10 @@ public class MessagesStorage {
         });
     }
 
+    private boolean isValidKeyboardToSave(TLRPC.Message message) {
+        return message.reply_markup != null && !(message.reply_markup instanceof TLRPC.TL_replyInlineMarkup) && (!message.reply_markup.selective || message.mentioned);
+    }
+
     private void putMessagesInternal(final ArrayList<TLRPC.Message> messages, final boolean withTransaction, final boolean doNotUpdateDialogDate, final int downloadMask) {
         try {
             if (withTransaction) {
@@ -3759,7 +3766,7 @@ public class MessagesStorage {
                     messagesMediaIdsMap.put(messageId, message.dialog_id);
                     mediaTypes.put(messageId, SharedMediaQuery.getMediaType(message));
                 }
-                if (message.reply_markup != null && (!message.reply_markup.selective || message.mentioned)) {
+                if (isValidKeyboardToSave(message)) {
                     TLRPC.Message oldMessage = botKeyboards.get(message.dialog_id);
                     if (oldMessage == null || oldMessage.id < message.id) {
                         botKeyboards.put(message.dialog_id, message);
@@ -4556,7 +4563,7 @@ public class MessagesStorage {
                         continue;
                     }
                     NativeByteBuffer data = new NativeByteBuffer(cursor.byteArrayLength(1));
-                    if (data != null && cursor.byteBufferValue(1, data) != 0) {
+                    if (cursor.byteBufferValue(1, data) != 0) {
                         TLRPC.Message message = TLRPC.Message.TLdeserialize(data, data.readInt32(false), false);
                         if (message != null && message.media != null) {
                             if (message.media instanceof TLRPC.TL_messageMediaPhoto) {
@@ -4671,7 +4678,7 @@ public class MessagesStorage {
                 dialogs.dialogs.add(dialog);
 
                 NativeByteBuffer data = new NativeByteBuffer(cursor.byteArrayLength(4));
-                if (data != null && cursor.byteBufferValue(4, data) != 0) {
+                if (cursor.byteBufferValue(4, data) != 0) {
                     TLRPC.Message message = TLRPC.Message.TLdeserialize(data, data.readInt32(false), false);
                     MessageObject.setUnreadFlags(message, cursor.intValue(5));
                     message.id = cursor.intValue(6);
@@ -5096,7 +5103,7 @@ public class MessagesStorage {
                             state3.bindInteger(5, message.id);
                             state3.bindInteger(6, 0);
                             state3.bindLong(7, messageId);
-                            state3.bindInteger(8, load_type < 0 ? message.ttl : 0);
+                            state3.bindInteger(8, message.ttl);
                             state3.bindInteger(9, messages.pts);
                             state3.bindInteger(10, message.date);
                             state3.step();
@@ -5157,7 +5164,7 @@ public class MessagesStorage {
                         }
                         data.reuse();
 
-                        if (load_type == 0 && message.reply_markup != null && (!message.reply_markup.selective || message.mentioned)) {
+                        if (load_type == 0 && isValidKeyboardToSave(message)) {
                             if (botKeyboard == null || botKeyboard.id < message.id) {
                                 botKeyboard = message;
                             }
@@ -5338,7 +5345,7 @@ public class MessagesStorage {
                         dialogs.dialogs.add(dialog);
 
                         NativeByteBuffer data = new NativeByteBuffer(cursor.byteArrayLength(4));
-                        if (data != null && cursor.byteBufferValue(4, data) != 0) {
+                        if (cursor.byteBufferValue(4, data) != 0) {
                             TLRPC.Message message = TLRPC.Message.TLdeserialize(data, data.readInt32(false), false);
                             if (message != null) {
                                 MessageObject.setUnreadFlags(message, cursor.intValue(5));
@@ -5413,7 +5420,7 @@ public class MessagesStorage {
                         cursor = database.queryFinalized(String.format(Locale.US, "SELECT data, mid, date, uid FROM messages WHERE mid IN(%s)", TextUtils.join(",", replyMessages)));
                         while (cursor.next()) {
                             NativeByteBuffer data = new NativeByteBuffer(cursor.byteArrayLength(0));
-                            if (data != null && cursor.byteBufferValue(0, data) != 0) {
+                            if (cursor.byteBufferValue(0, data) != 0) {
                                 TLRPC.Message message = TLRPC.Message.TLdeserialize(data, data.readInt32(false), false);
                                 message.id = cursor.intValue(1);
                                 message.date = cursor.intValue(2);
@@ -5594,7 +5601,7 @@ public class MessagesStorage {
                             }
                             isMegagroup = MessageObject.isMegagroup(message);
 
-                            if (message.reply_markup != null && (!message.reply_markup.selective || message.mentioned)) {
+                            if (isValidKeyboardToSave(message)) {
                                 BotQuery.putBotKeyboard(dialog.id, message);
                             }
 

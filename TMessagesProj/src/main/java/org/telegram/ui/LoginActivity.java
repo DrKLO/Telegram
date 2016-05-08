@@ -290,7 +290,7 @@ public class LoginActivity extends BaseFragment {
 
     @Override
     protected void onDialogDismiss(Dialog dialog) {
-        if (Build.VERSION.SDK_INT >= 23 && dialog == permissionsDialog && !permissionsItems.isEmpty()) {
+        if (Build.VERSION.SDK_INT >= 23 && dialog == permissionsDialog && !permissionsItems.isEmpty() && getParentActivity() != null) {
             getParentActivity().requestPermissions(permissionsItems.toArray(new String[permissionsItems.size()]), 6);
         }
     }
@@ -890,7 +890,7 @@ public class LoginActivity extends BaseFragment {
             if (countryState == 1) {
                 needShowAlert(LocaleController.getString("AppName", R.string.AppName), LocaleController.getString("ChooseCountry", R.string.ChooseCountry));
                 return;
-            } else if (countryState == 2 && !BuildVars.DEBUG_VERSION) {
+            } else if (countryState == 2 && !BuildVars.DEBUG_VERSION && !codeField.getText().toString().equals("999")) {
                 needShowAlert(LocaleController.getString("AppName", R.string.AppName), LocaleController.getString("WrongCountry", R.string.WrongCountry));
                 return;
             }
@@ -906,7 +906,7 @@ public class LoginActivity extends BaseFragment {
             req.api_hash = BuildVars.APP_HASH;
             req.api_id = BuildVars.APP_ID;
             req.phone_number = phone;
-            req.lang_code = LocaleController.getLocaleString(LocaleController.getInstance().getSystemDefaultLocale());
+            req.lang_code = LocaleController.getLocaleStringIso639();
             if (req.lang_code.length() == 0) {
                 req.lang_code = "en";
             }
@@ -1339,7 +1339,7 @@ public class LoginActivity extends BaseFragment {
                     timeText.setText(LocaleController.formatString("SmsText", R.string.SmsText, 1, 0));
                 }
                 createTimer();
-            } else if (currentType == 2 && nextType == 4) {
+            } else if (currentType == 2 && (nextType == 4 || nextType == 3)) {
                 timeText.setVisibility(VISIBLE);
                 timeText.setText(LocaleController.formatString("CallText", R.string.CallText, 2, 0));
                 problemText.setVisibility(time < 1000 ? VISIBLE : GONE);
@@ -1412,7 +1412,7 @@ public class LoginActivity extends BaseFragment {
                             if (time >= 1000) {
                                 int minutes = time / 1000 / 60;
                                 int seconds = time / 1000 - minutes * 60;
-                                if (nextType == 4) {
+                                if (nextType == 4 || nextType == 3) {
                                     timeText.setText(LocaleController.formatString("CallText", R.string.CallText, minutes, seconds));
                                 } else if (nextType == 2) {
                                     timeText.setText(LocaleController.formatString("SmsText", R.string.SmsText, minutes, seconds));
@@ -1431,25 +1431,33 @@ public class LoginActivity extends BaseFragment {
                                     waitingForEvent = false;
                                     destroyCodeTimer();
                                     resendCode();
-                                } else {
-                                    timeText.setText(LocaleController.getString("Calling", R.string.Calling));
-                                    createCodeTimer();
-                                    TLRPC.TL_auth_resendCode req = new TLRPC.TL_auth_resendCode();
-                                    req.phone_number = requestPhone;
-                                    req.phone_code_hash = phoneHash;
-                                    ConnectionsManager.getInstance().sendRequest(req, new RequestDelegate() {
-                                        @Override
-                                        public void run(TLObject response, final TLRPC.TL_error error) {
-                                            if (error != null && error.text != null) {
-                                                AndroidUtilities.runOnUIThread(new Runnable() {
-                                                    @Override
-                                                    public void run() {
-                                                        lastError = error.text;
-                                                    }
-                                                });
+                                } else if (currentType == 2) {
+                                    if (nextType == 4) {
+                                        timeText.setText(LocaleController.getString("Calling", R.string.Calling));
+                                        createCodeTimer();
+                                        TLRPC.TL_auth_resendCode req = new TLRPC.TL_auth_resendCode();
+                                        req.phone_number = requestPhone;
+                                        req.phone_code_hash = phoneHash;
+                                        ConnectionsManager.getInstance().sendRequest(req, new RequestDelegate() {
+                                            @Override
+                                            public void run(TLObject response, final TLRPC.TL_error error) {
+                                                if (error != null && error.text != null) {
+                                                    AndroidUtilities.runOnUIThread(new Runnable() {
+                                                        @Override
+                                                        public void run() {
+                                                            lastError = error.text;
+                                                        }
+                                                    });
+                                                }
                                             }
-                                        }
-                                    }, ConnectionsManager.RequestFlagFailOnServerErrors | ConnectionsManager.RequestFlagWithoutLogin);
+                                        }, ConnectionsManager.RequestFlagFailOnServerErrors | ConnectionsManager.RequestFlagWithoutLogin);
+                                    } else if (nextType == 3) {
+                                        AndroidUtilities.setWaitingForSms(false);
+                                        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.didReceiveSmsCode);
+                                        waitingForEvent = false;
+                                        destroyCodeTimer();
+                                        resendCode();
+                                    }
                                 }
                             }
                         }
@@ -1559,7 +1567,7 @@ public class LoginActivity extends BaseFragment {
                                     destroyCodeTimer();
                                 } else {
                                     needHideProgress();
-                                    if (currentType == 3 && (nextType == 4 || nextType == 2) || currentType == 2 && nextType == 4) {
+                                    if (currentType == 3 && (nextType == 4 || nextType == 2) || currentType == 2 && (nextType == 4 || nextType == 3)) {
                                         createTimer();
                                     }
                                     if (currentType == 2) {

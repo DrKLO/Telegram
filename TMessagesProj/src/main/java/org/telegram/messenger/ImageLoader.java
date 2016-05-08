@@ -1191,8 +1191,8 @@ public class ImageLoader {
                                 AndroidUtilities.addMediaToGallery(finalFile.toString());
                             }
                         }
-                        ImageLoader.this.fileDidLoaded(location, finalFile, type);
                         NotificationCenter.getInstance().postNotificationName(NotificationCenter.FileDidLoaded, location);
+                        ImageLoader.this.fileDidLoaded(location, finalFile, type);
                     }
                 });
             }
@@ -1809,7 +1809,7 @@ public class ImageLoader {
                 key = document.dc_id + "_" + document.id;
                 String docExt = FileLoader.getDocumentFileName(document);
                 int idx;
-                if (docExt == null || (idx = docExt.lastIndexOf(".")) == -1) {
+                if (docExt == null || (idx = docExt.lastIndexOf('.')) == -1) {
                     docExt = "";
                 } else {
                     docExt = docExt.substring(idx);
@@ -1946,21 +1946,12 @@ public class ImageLoader {
         }
     }
 
-    public void loadHttpFile(String url, String extension) {
+    public void loadHttpFile(String url, String defaultExt) {
         if (url == null || url.length() == 0 || httpFileLoadTasksByKeys.containsKey(url)) {
             return;
         }
-        String ext = extension;
-        if (ext == null) {
-            int idx = url.lastIndexOf(".");
-            if (idx != -1) {
-                ext = url.substring(idx + 1);
-            }
-            if (ext == null || ext.length() == 0 || ext.length() > 4) {
-                ext = "jpg";
-            }
-        }
-        File file = new File(FileLoader.getInstance().getDirectory(FileLoader.MEDIA_DIR_CACHE), Utilities.MD5(url) + "_temp." + getHttpUrlExtension(url, extension));
+        String ext = getHttpUrlExtension(url, defaultExt);
+        File file = new File(FileLoader.getInstance().getDirectory(FileLoader.MEDIA_DIR_CACHE), Utilities.MD5(url) + "_temp." + ext);
         file.delete();
 
         HttpFileTask task = new HttpFileTask(url, file, ext);
@@ -2276,7 +2267,7 @@ public class ImageLoader {
 
     public static String getHttpUrlExtension(String url, String defaultExt) {
         String ext = null;
-        int idx = url.lastIndexOf(".");
+        int idx = url.lastIndexOf('.');
         if (idx != -1) {
             ext = url.substring(idx + 1);
         }

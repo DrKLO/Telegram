@@ -32,6 +32,7 @@ import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.messenger.UserConfig;
 import org.telegram.ui.Components.AvatarDrawable;
+import org.telegram.ui.ActionBar.Theme;
 
 public class ProfileSearchCell extends BaseCell {
 
@@ -104,7 +105,7 @@ public class ProfileSearchCell extends BaseCell {
 
             onlinePaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
             onlinePaint.setTextSize(AndroidUtilities.dp(16));
-            onlinePaint.setColor(0xff316f9f);
+            onlinePaint.setColor(Theme.MSG_LINK_TEXT_COLOR);
 
             offlinePaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
             offlinePaint.setTextSize(AndroidUtilities.dp(16));
@@ -263,7 +264,7 @@ public class ProfileSearchCell extends BaseCell {
             } else if (user != null) {
                 nameString2 = UserObject.getUserName(user);
             }
-            nameString = nameString2.replace("\n", " ");
+            nameString = nameString2.replace('\n', ' ');
         }
         if (nameString.length() == 0) {
             if (user != null && user.phone != null && user.phone.length() != 0) {

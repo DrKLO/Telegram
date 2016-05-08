@@ -90,16 +90,16 @@
     <string name="GroupUserCantAdmin">Desculpe, há administradores demais neste grupo.</string>
     <string name="GroupUserCantBot">Desculpe, há bots demais neste grupo.</string>
     <string name="ActionPinnedText">un1 fixou \"%1$s\"</string>
-    <string name="ActionPinnedNoText">un1 ficou uma mensagem</string>
-    <string name="ActionPinnedPhoto">un1 ficou uma foto</string>
-    <string name="ActionPinnedVideo">un1 ficou um vídeo</string>
-    <string name="ActionPinnedFile">un1 ficou um arquivo</string>
-    <string name="ActionPinnedSticker">un1 ficou um sticker</string>
+    <string name="ActionPinnedNoText">un1 fixou uma mensagem</string>
+    <string name="ActionPinnedPhoto">un1 fixou uma foto</string>
+    <string name="ActionPinnedVideo">un1 fixou um vídeo</string>
+    <string name="ActionPinnedFile">un1 fixou um arquivo</string>
+    <string name="ActionPinnedSticker">un1 fixou um sticker</string>
     <string name="ActionPinnedVoice">un1 fixou uma mensagem de voz </string>
-    <string name="ActionPinnedContact">un1 ficou um contato</string>
-    <string name="ActionPinnedGeo">un1 ficou um mapa</string>
-    <string name="ActionPinnedGif">un1 ficou um GIF</string>
-    <string name="ActionPinnedMusic">un1 ficou uma música</string>
+    <string name="ActionPinnedContact">un1 fixou um contato</string>
+    <string name="ActionPinnedGeo">un1 fixou um mapa</string>
+    <string name="ActionPinnedGif">un1 fixou um GIF</string>
+    <string name="ActionPinnedMusic">un1 fixou uma música</string>
     <string name="ActionMigrateFromGroup">Este grupo foi atualizado para um supergrupo</string>
     <string name="ActionMigrateFromGroupNotify">%1$s foi atualizado para um supergrupo</string>
     <string name="NoBlockedGroup">Usuários bloqueados são removidos do grupo e só podem voltar se convidados por um administrador. Convites por link não funcionam para eles.</string>
@@ -133,7 +133,7 @@
     <string name="ChannelJoin">ENTRAR</string>
     <string name="OpenChannelProfile">Info do Canal</string>
     <string name="ChannelBroadcast">Transmissão</string>
-    <string name="ChannelSilentBroadcast">Transmissão Silenciosa</string>
+    <string name="ChannelSilentBroadcast">Mensagem Silenciosa</string>
     <string name="ChannelComment">Comentário</string>
     <string name="ShowDiscussion">mostrar comentários</string>
     <string name="ChannelAlertTitle">O que é um Canal?</string>
@@ -255,10 +255,12 @@
     <string name="IsTyping">está escrevendo...</string>
     <string name="AreTyping">estão escrevendo...</string>
     <string name="IsRecordingAudio">%1$s está gravando uma mensagem de voz...</string>
+    <string name="IsSendingAudio">%1$s está enviando um áudio...</string>
     <string name="IsSendingPhoto">%1$s está enviando uma foto...</string>
     <string name="IsSendingVideo">%1$s está enviando um vídeo...</string>
     <string name="IsSendingFile">%1$s está enviando um arquivo...</string>
     <string name="RecordingAudio">gravando mensagem de voz...</string>
+    <string name="SendingAudio">enviando áudio...</string>
     <string name="SendingPhoto">enviando foto...</string>
     <string name="SendingVideoStatus">enviando vídeo...</string>
     <string name="SendingFile">enviando arquivo...</string>
@@ -504,6 +506,7 @@
     <string name="StickersCopy">Copiar link</string>
     <string name="StickersRemove">Remover</string>
     <string name="NoStickers">Nenhum sticker</string>
+    <string name="SendSticker">ENVIAR STICKER</string>
     <string name="TooMuchStickersets">Desculpe, você alcançou o limite máximo de pacotes de sticker.</string>
     <!--settings view-->
     <string name="ResetNotificationsText">Restaurar todas as configurações de notificação</string>
@@ -539,6 +542,7 @@
     <string name="TerminateAllSessions">Terminar todas as outras sessões</string>
     <string name="Events">Eventos</string>
     <string name="ContactJoined">Contato entrou para o Telegram</string>
+    <string name="PinnedMessages">Mensagens Fixadas</string>
     <string name="Language">Idioma</string>
     <string name="AskAQuestionInfo">Por favor entenda que o suporte do Telegram é feito por voluntários. Tentaremos responder o mais rápido possível, mas poderemos demorar um pouco.<![CDATA[<br><br>]]>Por favor verifique a <![CDATA[<a href=\"https://telegram.org/faq#general\">página de perguntas frequentes do Telegram</a>]]>: há dicas e respostas para a maioria dos <![CDATA[<a href=\"https://telegram.org/faq#troubleshooting\">problemas</a>]]>.</string>
     <string name="AskButton">Pergunte a um voluntário</string>
@@ -550,8 +554,10 @@
     <string name="IncorrectLocalization">Arquivo de localização incorreto</string>
     <string name="Enabled">Ativado</string>
     <string name="Disabled">Desativado</string>
-    <string name="NotificationsService">Serviço de Notificações</string>
-    <string name="NotificationsServiceDisableInfo">Se o serviço de notificação do  Google Play for suficiente para você, você pode desativar o \"Serviço de Notificações\". Porém, recomendamos deixá-lo ativo para manter o aplicativo executando em segundo plano e receber notificações instantaneamente.</string>
+    <string name="NotificationsService">Serviço Manter-Ativo</string>
+    <string name="NotificationsServiceInfo">Reiniciar o app quando desligado pelo usuário ou pelo sistema. Isso irá garantir que o app mostre as notificações.</string>
+    <string name="NotificationsServiceConnection">Conexão em Segundo Plano</string>
+    <string name="NotificationsServiceConnectionInfo">Manter uma conexão de baixo impacto para o Telegram receber notificações. Habilite para notificações mais confiáveis.</string>
     <string name="SortBy">Ordenar Por</string>
     <string name="ImportContacts">Importar Contatos</string>
     <string name="SortFirstName">Primeiro nome</string>
@@ -932,7 +938,15 @@
     <string name="AreYouSureSessions">Você tem certeza que deseja terminar todas as outras sessões?</string>
     <string name="AreYouSureDeleteAndExit">Você tem certeza que apagar e sair do grupo?</string>
     <string name="AreYouSureDeleteThisChat">Você tem certeza que deseja apagar esta conversa?</string>
-    <string name="AreYouSureShareMyContactInfo">Você tem certeza que deseja compartilhar suas informações de contato?</string>
+    <string name="ShareYouLocationTitle">Compartilhar sua localização?</string>
+    <string name="ShareYouLocationInfo">Isso irá enviar sua localização atual ao bot.</string>
+    <string name="ShareYouLocationUnable">O aplicativo foi impossibilitado de determinar sua localização atual.</string>
+    <string name="ShareYouLocationUnableManually">Escolher manualmente</string>
+    <string name="ShareYouLocationInline">Esse bot gostaria de saber sua localização todas as vezes que você enviá-lo uma mensagem. Isso pode ser utilizado para providenciar resultados específicos de localização.</string>
+    <string name="ShareYouPhoneNumberTitle">Compartilhar seu número de telefone?</string>
+    <string name="AreYouSureShareMyContactInfoBot">O bot saberá seu número de telefone. Isso pode ser útil para a integração com outros serviços.</string>
+    <string name="AreYouSureShareMyContactInfoUser">Tem certeza que deseja compartilhar seu número de telefone %1$s com <![CDATA[<b>]]>%2$s<![CDATA[</b>]]>?</string>
+    <string name="AreYouSureShareMyContactInfo">Tem certeza que deseja compartilhar seu número de telefone?</string>
     <string name="AreYouSureBlockContact">Você tem certeza que deseja bloquear este contato?</string>
     <string name="AreYouSureUnblockContact">Você tem certeza que deseja desbloquear este contato?</string>
     <string name="AreYouSureDeleteContact">Você tem certeza que deseja apagar este contato?</string>
@@ -955,11 +969,13 @@
     <string name="AllowReadSms">Permita o acesso às SMS ao Telegram, assim podemos automaticamente adicionar o código para você.</string>
     <string name="AllowReadCall">Permita o acesso às ligações ao Telegram, assim podemos automaticamente adicionar o código para você.</string>
     <string name="AllowReadCallAndSms">Permita o acesso às SMS e ligações ao Telegram, assim podemos automaticamente adicionar o código para você.</string>
+    <string name="UserRestricted">Você não tem permissão para isso.</string>
     <!--permissions-->
     <string name="PermissionContacts">Telegram precisa acessar seus contatos para que você possa se conectar aos seus amigos em todos os seus dispositivos.</string>
     <string name="PermissionStorage">Telegram precisa acessar seu armazenamento para que você possa enviar e salvar fotos, vídeos, músicas e outras mídias.</string>
     <string name="PermissionNoAudio">Telegram precisa acessar seu microfone para que você possa enviar mensagens de voz.</string>
     <string name="PermissionNoLocation">Telegram precisa acessar sua localização para que você possa compartilhar com seus amigos.</string>
+    <string name="PermissionNoLocationPosition">O Telegram precisa acessar sua localização</string>
     <string name="PermissionOpenSettings">CONFIGURAÇÕES</string>
     <!--Intro view-->
     <string name="Page1Title">Telegram</string>

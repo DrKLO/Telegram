@@ -17,7 +17,7 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.ui.Components.LayoutHelper;
-import org.telegram.ui.Components.SimpleTextView;
+import org.telegram.ui.ActionBar.SimpleTextView;
 
 public class SendLocationCell extends FrameLayout {
 

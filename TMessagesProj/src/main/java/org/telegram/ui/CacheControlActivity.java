@@ -472,7 +472,8 @@ public class CacheControlActivity extends BaseFragment {
                         return;
                     }
                     BottomSheet.Builder builder = new BottomSheet.Builder(getParentActivity());
-                    builder.setApplyTopPaddings(false);
+                    builder.setApplyTopPadding(false);
+                    builder.setApplyBottomPadding(false);
                     LinearLayout linearLayout = new LinearLayout(getParentActivity());
                     linearLayout.setOrientation(LinearLayout.VERTICAL);
                     for (int a = 0; a < 6; a++) {

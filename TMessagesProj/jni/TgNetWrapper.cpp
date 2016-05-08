@@ -157,6 +157,10 @@ void setNetworkAvailable(JNIEnv *env, jclass c, jboolean value) {
     ConnectionsManager::getInstance().setNetworkAvailable(value);
 }
 
+void setPushConnectionEnabled(JNIEnv *env, jclass c, jboolean value) {
+    ConnectionsManager::getInstance().setPushConnectionEnabled(value);
+}
+
 class Delegate : public ConnectiosManagerDelegate {
     
     void onUpdate() {
@@ -194,7 +198,7 @@ class Delegate : public ConnectiosManagerDelegate {
     }
 };
 
-void init(JNIEnv *env, jclass c, jint version, jint layer, jint apiId, jstring deviceModel, jstring systemVersion, jstring appVersion, jstring langCode, jstring configPath, jstring logPath, jint userId) {
+void init(JNIEnv *env, jclass c, jint version, jint layer, jint apiId, jstring deviceModel, jstring systemVersion, jstring appVersion, jstring langCode, jstring configPath, jstring logPath, jint userId, jboolean enablePushConnection) {
     const char *deviceModelStr = env->GetStringUTFChars(deviceModel, 0);
     const char *systemVersionStr = env->GetStringUTFChars(systemVersion, 0);
     const char *appVersionStr = env->GetStringUTFChars(appVersion, 0);
@@ -202,7 +206,7 @@ void init(JNIEnv *env, jclass c, jint version, jint layer, jint apiId, jstring d
     const char *configPathStr = env->GetStringUTFChars(configPath, 0);
     const char *logPathStr = env->GetStringUTFChars(logPath, 0);
 
-    ConnectionsManager::getInstance().init(version, layer, apiId, std::string(deviceModelStr), std::string(systemVersionStr), std::string(appVersionStr), std::string(langCodeStr), std::string(configPathStr), std::string(logPathStr), userId, true);
+    ConnectionsManager::getInstance().init(version, layer, apiId, std::string(deviceModelStr), std::string(systemVersionStr), std::string(appVersionStr), std::string(langCodeStr), std::string(configPathStr), std::string(logPathStr), userId, true, enablePushConnection);
 
     if (deviceModelStr != 0) {
         env->ReleaseStringUTFChars(deviceModel, deviceModelStr);
@@ -242,13 +246,14 @@ static JNINativeMethod ConnectionsManagerMethods[] = {
         {"native_applyDatacenterAddress", "(ILjava/lang/String;I)V", (void *) applyDatacenterAddress},
         {"native_getConnectionState", "()I", (void *) getConnectionState},
         {"native_setUserId", "(I)V", (void *) setUserId},
-        {"native_init", "(IIILjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;I)V", (void *) init},
+        {"native_init", "(IIILjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;IZ)V", (void *) init},
         {"native_switchBackend", "()V", (void *) switchBackend},
         {"native_pauseNetwork", "()V", (void *) pauseNetwork},
         {"native_resumeNetwork", "(Z)V", (void *) resumeNetwork},
         {"native_updateDcSettings", "()V", (void *) updateDcSettings},
         {"native_setUseIpv6", "(Z)V", (void *) setUseIpv6},
         {"native_setNetworkAvailable", "(Z)V", (void *) setNetworkAvailable},
+        {"native_setPushConnectionEnabled", "(Z)V", (void *) setPushConnectionEnabled},
         {"native_setJava", "(Z)V", (void *) setJava}
 };
 

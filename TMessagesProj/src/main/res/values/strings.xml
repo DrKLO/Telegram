@@ -192,7 +192,6 @@
     <string name="ChannelAddedBy">un1 added you to this channel</string>
     <string name="ChannelJoined">You joined this channel</string>
     <string name="ChannelMegaJoined">You joined this group</string>
-    "%@ joined the group"
     <string name="ChannelRemoveUser">Remove from channel</string>
     <string name="ChannelCantSendMessage">Sorry, you can\'t send messages to this channel.</string>
     <string name="ChannelAddedByNotification">%1$s added you to the channel %2$s</string>
@@ -256,10 +255,12 @@
     <string name="IsTyping">is typing...</string>
     <string name="AreTyping">are typing...</string>
     <string name="IsRecordingAudio">%1$s is recording voice message...</string>
+    <string name="IsSendingAudio">%1$s is sending audio...</string>
     <string name="IsSendingPhoto">%1$s is sending photo...</string>
     <string name="IsSendingVideo">%1$s is sending video...</string>
     <string name="IsSendingFile">%1$s is sending file...</string>
     <string name="RecordingAudio">recording voice message...</string>
+    <string name="SendingAudio">sending audio...</string>
     <string name="SendingPhoto">sending photo...</string>
     <string name="SendingVideoStatus">sending video...</string>
     <string name="SendingFile">sending file...</string>
@@ -300,7 +301,7 @@
     <string name="SetTimer">Set self-destruct timer</string>
     <string name="ServiceNotifications">Service notifications</string>
     <string name="GettingLinkInfo">Getting Link Info...</string>
-    <string name="OpenInBrowser">Open in Browser</string>
+    <string name="OpenInBrowser">OPEN IN...</string>
     <string name="CopyUrl">Copy URL</string>
     <string name="SendItems">Send %1$s</string>
     <string name="OpenUrlAlert">Open url %1$s?</string>
@@ -505,6 +506,7 @@
     <string name="StickersCopy">Copy link</string>
     <string name="StickersRemove">Remove</string>
     <string name="NoStickers">No stickers yet</string>
+    <string name="SendSticker">SEND STICKER</string>
     <string name="TooMuchStickersets">Sorry, you have reached the maximum number of sticker sets.</string>
     <!--settings view-->
     <string name="ResetNotificationsText">Reset all notification settings to default</string>
@@ -540,6 +542,7 @@
     <string name="TerminateAllSessions">Terminate All Other Sessions</string>
     <string name="Events">Events</string>
     <string name="ContactJoined">Contact joined Telegram</string>
+    <string name="PinnedMessages">Pinned Messages</string>
     <string name="Language">Language</string>
     <string name="AskAQuestionInfo">Please note that Telegram Support is done by volunteers. We try to respond as quickly as possible, but it may take a while.<![CDATA[<br><br>]]>Please take a look at the <![CDATA[<a href=\"https://telegram.org/faq#general\">Telegram FAQ</a>]]>: it has answers to most questions and important tips for <![CDATA[<a href=\"https://telegram.org/faq#troubleshooting\">troubleshooting</a>]]>.</string>
     <string name="AskButton">Ask a volunteer</string>
@@ -551,8 +554,10 @@
     <string name="IncorrectLocalization">Incorrect localization file</string>
     <string name="Enabled">Enabled</string>
     <string name="Disabled">Disabled</string>
-    <string name="NotificationsService">Notifications Service</string>
-    <string name="NotificationsServiceDisableInfo">If Google Play Services are enough for you to receive notifications, you can disable Notifications Service. However we recommend you to leave it enabled to keep app running in background and receive instant notifications.</string>
+    <string name="NotificationsService">Keep-Alive Service</string>
+    <string name="NotificationsServiceInfo">Relaunch app when shut down by user or system. This will ensure app can show notifications.</string>
+    <string name="NotificationsServiceConnection">Background Connection</string>
+    <string name="NotificationsServiceConnectionInfo">Keep a low impact background connection to Telegram to receive notifications. Enable for reliable notifications.</string>
     <string name="SortBy">Sort By</string>
     <string name="ImportContacts">Import Contacts</string>
     <string name="SortFirstName">First name</string>
@@ -933,7 +938,15 @@
     <string name="AreYouSureSessions">Are you sure you want to terminate all other sessions?</string>
     <string name="AreYouSureDeleteAndExit">Are you sure you want to delete and leave the group?</string>
     <string name="AreYouSureDeleteThisChat">Are you sure you want to delete this chat?</string>
-    <string name="AreYouSureShareMyContactInfo">Are you sure you want to share your contact info?</string>
+    <string name="ShareYouLocationTitle">Share your location?</string>
+    <string name="ShareYouLocationInfo">This will send your current location to the bot.</string>
+    <string name="ShareYouLocationUnable">App was unable to determine your current location</string>
+    <string name="ShareYouLocationUnableManually">Choose manually</string>
+    <string name="ShareYouLocationInline">This bot would like to know your location each time you send it a request. This can be used to provide location-specific results.</string>
+    <string name="ShareYouPhoneNumberTitle">Share your phone number?</string>
+    <string name="AreYouSureShareMyContactInfoBot">The bot will know your phone number. This can be useful for integration with other services.</string>
+    <string name="AreYouSureShareMyContactInfoUser">Are you sure you want to share your phone number %1$s with <![CDATA[<b>]]>%2$s<![CDATA[</b>]]>?</string>
+    <string name="AreYouSureShareMyContactInfo">Are you sure you want to share your phone number?</string>
     <string name="AreYouSureBlockContact">Are you sure you want to block this contact?</string>
     <string name="AreYouSureUnblockContact">Are you sure you want to unblock this contact?</string>
     <string name="AreYouSureDeleteContact">Are you sure you want to delete this contact?</string>
@@ -956,11 +969,13 @@
     <string name="AllowReadSms">Please allow Telegram to receive SMS so that we can automatically enter your code for you.</string>
     <string name="AllowReadCall">Please allow Telegram to receive calls so that we can automatically enter your code for you.</string>
     <string name="AllowReadCallAndSms">Please allow Telegram to receive calls and SMS so that we can automatically enter your code for you.</string>
+    <string name="UserRestricted">Sorry, you are not allowed to do this.</string>
     <!--permissions-->
     <string name="PermissionContacts">Telegram needs access to your contacts so that you can connect with your friends across all your devices.</string>
     <string name="PermissionStorage">Telegram needs access to your storage so that you can send and save photos, videos, music and other media.</string>
     <string name="PermissionNoAudio">Telegram needs access to your microphone so that you can send voice messages.</string>
     <string name="PermissionNoLocation">Telegram needs access to your location so that you can share it with your friends.</string>
+    <string name="PermissionNoLocationPosition">Telegram needs access to your location.</string>
     <string name="PermissionOpenSettings">SETTINGS</string>
     <!--Intro view-->
     <string name="Page1Title">Telegram</string>

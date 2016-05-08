@@ -593,7 +593,9 @@ public class FileLoader {
                     }
                 }
             } else if (message.media instanceof TLRPC.TL_messageMediaWebPage) {
-                if (message.media.webpage.photo != null) {
+                if (message.media.webpage.document != null) {
+                    return getPathToAttach(message.media.webpage.document);
+                } else if (message.media.webpage.photo != null) {
                     ArrayList<TLRPC.PhotoSize> sizes = message.media.webpage.photo.sizes;
                     if (sizes.size() > 0) {
                         TLRPC.PhotoSize sizeFull = getClosestPhotoSizeWithSize(sizes, AndroidUtilities.getPhotoSize());
@@ -601,8 +603,6 @@ public class FileLoader {
                             return getPathToAttach(sizeFull);
                         }
                     }
-                } else if (message.media.webpage.document != null) {
-                    return getPathToAttach(message.media.webpage.document);
                 }
             }
         }
@@ -667,7 +667,8 @@ public class FileLoader {
         }
         int lastSide = 0;
         TLRPC.PhotoSize closestObject = null;
-        for (TLRPC.PhotoSize obj : sizes) {
+        for (int a = 0; a < sizes.size(); a++) {
+            TLRPC.PhotoSize obj = sizes.get(a);
             if (obj == null) {
                 continue;
             }
@@ -691,7 +692,7 @@ public class FileLoader {
     public static String getFileExtension(File file) {
         String name = file.getName();
         try {
-            return name.substring(name.lastIndexOf(".") + 1);
+            return name.substring(name.lastIndexOf('.') + 1);
         } catch (Exception e) {
             return "";
         }
@@ -714,7 +715,7 @@ public class FileLoader {
 
     public static String getDocumentExtension(TLRPC.Document document) {
         String fileName = getDocumentFileName(document);
-        int idx = fileName.lastIndexOf(".");
+        int idx = fileName.lastIndexOf('.');
         String ext = null;
         if (idx != -1) {
             ext = fileName.substring(idx + 1);
@@ -740,7 +741,7 @@ public class FileLoader {
             if (docExt == null) {
                 docExt = getDocumentFileName(document);
                 int idx;
-                if (docExt == null || (idx = docExt.lastIndexOf(".")) == -1) {
+                if (docExt == null || (idx = docExt.lastIndexOf('.')) == -1) {
                     docExt = "";
                 } else {
                     docExt = docExt.substring(idx);

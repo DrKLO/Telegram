@@ -203,7 +203,7 @@ public class AudioSelectActivity extends BaseFragment implements NotificationCen
                 final ArrayList<MediaController.AudioEntry> newAudioEntries = new ArrayList<>();
                 Cursor cursor = null;
                 try {
-                    cursor = ApplicationLoader.applicationContext.getContentResolver().query(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, projection, MediaStore.Audio.Media.IS_MUSIC + " != 0", null, null);
+                    cursor = ApplicationLoader.applicationContext.getContentResolver().query(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, projection, MediaStore.Audio.Media.IS_MUSIC + " != 0", null, MediaStore.Audio.Media.TITLE);
                     int id = -2000000000;
                     while (cursor.moveToNext()) {
                         MediaController.AudioEntry audioEntry = new MediaController.AudioEntry();

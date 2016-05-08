@@ -32,6 +32,7 @@ import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.tgnet.ConnectionsManager;
+import org.telegram.ui.ActionBar.Theme;
 
 public class IntroActivity extends Activity {
 
@@ -50,6 +51,7 @@ public class IntroActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         setTheme(R.style.Theme_TMessages);
         super.onCreate(savedInstanceState);
+        Theme.loadRecources(this);
         requestWindowFeature(Window.FEATURE_NO_TITLE);
 
         if (AndroidUtilities.isTablet()) {

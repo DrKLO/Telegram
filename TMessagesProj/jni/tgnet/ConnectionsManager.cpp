@@ -170,22 +170,24 @@ void ConnectionsManager::select() {
     }
 
     Datacenter *datacenter = getDatacenterWithId(currentDatacenterId);
-    if ((sendingPushPing && abs(now - lastPushPingTime) >= 30000) || abs(now - lastPushPingTime) >= 60000 * 3 + 10000) {
-        lastPushPingTime = 0;
-        sendingPushPing = false;
-        if (datacenter != nullptr) {
-            Connection *connection = datacenter->getPushConnection(false);
-            if (connection != nullptr) {
-                connection->suspendConnection();
+    if (pushConnectionEnabled) {
+        if ((sendingPushPing && abs(now - lastPushPingTime) >= 30000) || abs(now - lastPushPingTime) >= 60000 * 3 + 10000) {
+            lastPushPingTime = 0;
+            sendingPushPing = false;
+            if (datacenter != nullptr) {
+                Connection *connection = datacenter->getPushConnection(false);
+                if (connection != nullptr) {
+                    connection->suspendConnection();
+                }
             }
+            DEBUG_D("push ping timeout");
         }
-        DEBUG_D("push ping timeout");
-    }
-    if (abs(now - lastPushPingTime) >= 60000 * 3) {
-        DEBUG_D("time for push ping");
-        lastPushPingTime = now;
-        if (datacenter != nullptr) {
-            sendPing(datacenter, true);
+        if (abs(now - lastPushPingTime) >= 60000 * 3) {
+            DEBUG_D("time for push ping");
+            lastPushPingTime = now;
+            if (datacenter != nullptr) {
+                sendPing(datacenter, true);
+            }
         }
     }
 
@@ -220,7 +222,7 @@ void ConnectionsManager::select() {
             return;
         } else {
             lastPauseTime = now;
-            DEBUG_D("don't sleep 30 seconds because of salt, upload or download request");
+            DEBUG_D("don't sleep because of salt, upload or download request");
         }
     }
     if (networkPaused) {
@@ -285,7 +287,7 @@ void *ConnectionsManager::ThreadProc(void *data) {
     javaVm->AttachCurrentThread(&jniEnv, NULL);
 #endif
     ConnectionsManager *networkManager = (ConnectionsManager *) (data);
-    if (networkManager->currentUserId != 0) {
+    if (networkManager->currentUserId != 0 && networkManager->pushConnectionEnabled) {
         Datacenter *datacenter = networkManager->getDatacenterWithId(networkManager->currentDatacenterId);
         if (datacenter != nullptr) {
             datacenter->createPushConnection()->setSessionId(networkManager->pushSessionId);
@@ -595,7 +597,6 @@ void ConnectionsManager::onConnectionConnected(Connection *connection) {
         } else {
             if (networkPaused && lastPauseTime != 0) {
                 lastPauseTime = getCurrentTimeMillis();
-                nextSleepTimeout = 30000;
             }
             processRequestQueue(connection->getConnectionType(), datacenter->getDatacenterId());
         }
@@ -1210,7 +1211,6 @@ void ConnectionsManager::processServerResponse(TLObject *message, int64_t messag
         if (connection->connectionType == ConnectionTypePush) {
             if (networkPaused) {
                 lastPauseTime = getCurrentTimeMillis();
-                nextSleepTimeout = 30000;
                 DEBUG_D("received internal push: wakeup network in background");
             } else if (lastPauseTime != 0) {
                 lastPauseTime = getCurrentTimeMillis();
@@ -1234,7 +1234,7 @@ void ConnectionsManager::processServerResponse(TLObject *message, int64_t messag
 }
 
 void ConnectionsManager::sendPing(Datacenter *datacenter, bool usePushConnection) {
-    if (usePushConnection && currentUserId == 0) {
+    if (usePushConnection && (currentUserId == 0 || !usePushConnection)) {
         return;
     }
     Connection *connection = nullptr;
@@ -1401,7 +1401,7 @@ void ConnectionsManager::sendRequest(TLObject *object, onCompleteFunc onComplete
         request->ptr1 = ptr1;
         request->ptr2 = ptr2;
         request->rpcRequest = wrapInLayer(object, getDatacenterWithId(datacenterId), request);
-        DEBUG_D("send request wrapped %p - %s", request->rpcRequest.get(), typeid(*request->rpcRequest.get()).name());
+        DEBUG_D("send request wrapped %p - %s", request->rpcRequest.get(), typeid(*(request->rpcRequest.get())).name());
         requestsQueue.push_back(std::unique_ptr<Request>(request));
         if (immediate) {
             processRequestQueue(0, 0);
@@ -1452,7 +1452,7 @@ void ConnectionsManager::setUserId(int32_t userId) {
         if (currentUserId != userId && userId != 0) {
             updateDcSettings(0);
         }
-        if (currentUserId != 0) {
+        if (currentUserId != 0 && pushConnectionEnabled) {
             Datacenter *datacenter = getDatacenterWithId(currentDatacenterId);
             if (datacenter != nullptr) {
                 datacenter->createPushConnection()->setSessionId(pushSessionId);
@@ -2121,7 +2121,7 @@ void ConnectionsManager::processRequestQueue(uint32_t connectionTypes, uint32_t 
                             request->outgoingQuery = message->outgoingBody;
                             message->outgoingBody = nullptr;
                         } else {
-                            DEBUG_D("wrap body(%p, %s) to TL_invokeAfterMsg", message->body.get(), typeid(*message->body.get()).name());
+                            DEBUG_D("wrap body(%p, %s) to TL_invokeAfterMsg", message->body.get(), typeid(*(message->body.get())).name());
                             request->query = std::move(message->body);
                         }
                         message->body = std::unique_ptr<TLObject>(request);
@@ -2390,7 +2390,23 @@ void ConnectionsManager::setDelegate(ConnectiosManagerDelegate *connectiosManage
     delegate = connectiosManagerDelegate;
 }
 
-void ConnectionsManager::init(uint32_t version, int32_t layer, int32_t apiId, std::string deviceModel, std::string systemVersion, std::string appVersion, std::string langCode, std::string configPath, std::string logPath, int32_t userId, bool isPaused) {
+void ConnectionsManager::setPushConnectionEnabled(bool value) {
+    pushConnectionEnabled = value;
+    Datacenter *datacenter = getDatacenterWithId(currentDatacenterId);
+    if (datacenter != nullptr) {
+        if (!pushConnectionEnabled) {
+            Connection *connection = datacenter->getPushConnection(false);
+            if (connection != nullptr) {
+                connection->suspendConnection();
+            }
+        } else {
+            datacenter->createPushConnection()->setSessionId(pushSessionId);
+            sendPing(datacenter, true);
+        }
+    }
+}
+
+void ConnectionsManager::init(uint32_t version, int32_t layer, int32_t apiId, std::string deviceModel, std::string systemVersion, std::string appVersion, std::string langCode, std::string configPath, std::string logPath, int32_t userId, bool isPaused, bool enablePushConnection) {
     currentVersion = version;
     currentLayer = layer;
     currentApiId = apiId;
@@ -2401,6 +2417,7 @@ void ConnectionsManager::init(uint32_t version, int32_t layer, int32_t apiId, st
     currentLangCode = langCode;
     currentUserId = userId;
     currentLogPath = logPath;
+    pushConnectionEnabled = enablePushConnection;
     if (isPaused) {
         lastPauseTime = getCurrentTimeMillis();
     }
@@ -2423,7 +2440,6 @@ void ConnectionsManager::resumeNetwork(bool partial) {
         if (partial) {
             if (networkPaused) {
                 lastPauseTime = getCurrentTimeMillis();
-                nextSleepTimeout = 30000;
                 networkPaused = false;
                 DEBUG_D("wakeup network in background");
             } else if (lastPauseTime != 0) {

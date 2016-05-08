@@ -379,10 +379,6 @@ public class SetAdminsActivity extends BaseFragment implements NotificationCente
                 return true;
             } else if (i >= usersStartRow && i < usersEndRow) {
                 TLRPC.ChatParticipant participant = participants.get(i - usersStartRow);
-                TLRPC.User user = MessagesController.getInstance().getUser(participant.user_id);
-                if (user != null && user.bot) {
-                    return false;
-                }
                 if (!(participant instanceof TLRPC.TL_chatParticipantCreator)) {
                     return true;
                 }
@@ -451,7 +447,7 @@ public class SetAdminsActivity extends BaseFragment implements NotificationCente
                 userCell.setData(user, null, null, 0);
                 chat = MessagesController.getInstance().getChat(chat_id);
                 userCell.setChecked(!(part instanceof TLRPC.TL_chatParticipant) || chat != null && !chat.admins_enabled, false);
-                userCell.setCheckDisabled(chat == null || !chat.admins_enabled || part.user_id == UserConfig.getClientUserId() || user != null && user.bot);
+                userCell.setCheckDisabled(chat == null || !chat.admins_enabled || part.user_id == UserConfig.getClientUserId());
             }
             return view;
         }
@@ -548,7 +544,7 @@ public class SetAdminsActivity extends BaseFragment implements NotificationCente
                             for (int a = 0; a < contactsCopy.size(); a++) {
                                 TLRPC.ChatParticipant participant = contactsCopy.get(a);
                                 TLRPC.User user = MessagesController.getInstance().getUser(participant.user_id);
-                                if (user.id == UserConfig.getClientUserId() || user.bot) {
+                                if (user.id == UserConfig.getClientUserId()) {
                                     continue;
                                 }
 
@@ -651,7 +647,7 @@ public class SetAdminsActivity extends BaseFragment implements NotificationCente
             userCell.setData(user, name, username, 0);
             chat = MessagesController.getInstance().getChat(chat_id);
             userCell.setChecked(!(participant instanceof TLRPC.TL_chatParticipant) || chat != null && !chat.admins_enabled, false);
-            userCell.setCheckDisabled(chat == null || !chat.admins_enabled || participant.user_id == UserConfig.getClientUserId() || user != null && user.bot);
+            userCell.setCheckDisabled(chat == null || !chat.admins_enabled || participant.user_id == UserConfig.getClientUserId());
             return view;
         }
 

@@ -28,8 +28,9 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
+import org.telegram.messenger.browser.Browser;
 import org.telegram.ui.Components.LinkPath;
-import org.telegram.ui.Components.ResourceLoader;
+import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.TypefaceSpan;
 import org.telegram.ui.Components.URLSpanNoUnderline;
 
@@ -60,10 +61,10 @@ public class BotHelpCell extends View {
         textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
         textPaint.setTextSize(AndroidUtilities.dp(16));
         textPaint.setColor(0xff000000);
-        textPaint.linkColor = 0xff316f9f;
+        textPaint.linkColor = Theme.MSG_LINK_TEXT_COLOR;
 
         urlPaint = new Paint();
-        urlPaint.setColor(0x33316f9f);
+        urlPaint.setColor(Theme.MSG_LINK_SELECT_BACKGROUND_COLOR);
     }
 
     public void setDelegate(BotHelpCellDelegate botHelpCellDelegate) {
@@ -140,7 +141,7 @@ public class BotHelpCell extends View {
                                 result = true;
                                 try {
                                     int start = buffer.getSpanStart(pressedLink);
-                                    urlPath.setCurrentLayout(textLayout, start);
+                                    urlPath.setCurrentLayout(textLayout, start, 0);
                                     textLayout.getSelectionPath(start, buffer.getSpanEnd(pressedLink), urlPath);
                                 } catch (Exception e) {
                                     FileLog.e("tmessages", e);
@@ -166,7 +167,7 @@ public class BotHelpCell extends View {
                             }
                         } else {
                             if (pressedLink instanceof URLSpan) {
-                                AndroidUtilities.openUrl(getContext(), ((URLSpan) pressedLink).getURL());
+                                Browser.openUrl(getContext(), ((URLSpan) pressedLink).getURL());
                             } else {
                                 pressedLink.onClick(this);
                             }
@@ -193,14 +194,16 @@ public class BotHelpCell extends View {
     protected void onDraw(Canvas canvas) {
         int x = (canvas.getWidth() - width) / 2;
         int y = AndroidUtilities.dp(4);
-        ResourceLoader.backgroundMediaDrawableIn.setBounds(x, y, width + x, height + y);
-        ResourceLoader.backgroundMediaDrawableIn.draw(canvas);
+        Theme.backgroundMediaDrawableIn.setBounds(x, y, width + x, height + y);
+        Theme.backgroundMediaDrawableIn.draw(canvas);
         canvas.save();
         canvas.translate(textX = AndroidUtilities.dp(2 + 9) + x, textY = AndroidUtilities.dp(2 + 9) + y);
         if (pressedLink != null) {
             canvas.drawPath(urlPath, urlPaint);
         }
-        textLayout.draw(canvas);
+        if (textLayout != null) {
+            textLayout.draw(canvas);
+        }
         canvas.restore();
     }
 }

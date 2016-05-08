@@ -14,7 +14,6 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Canvas;
 import android.os.Build;
-import android.os.Message;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.view.View;
@@ -167,18 +166,7 @@ public class StickersActivity extends BaseFragment implements NotificationCenter
                     if (stickers == null || stickers.isEmpty()) {
                         return;
                     }
-                    StickersAlert alert = new StickersAlert(getParentActivity(), stickerSet);
-                    alert.setButton(AlertDialog.BUTTON_NEGATIVE, LocaleController.getString("Close", R.string.Close), (Message) null);
-                    if (!stickerSet.set.official) {
-                        alert.setButton(AlertDialog.BUTTON_NEUTRAL, LocaleController.getString("StickersRemove", R.string.StickersRemove), new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialog, int which) {
-                                StickersQuery.removeStickersSet(getParentActivity(), stickerSet.set, 0);
-                            }
-                        });
-                    }
-                    setVisibleDialog(alert);
-                    alert.show();
+                    showDialog(new StickersAlert(getParentActivity(), null, stickerSet, null));
                 }
             }
         });

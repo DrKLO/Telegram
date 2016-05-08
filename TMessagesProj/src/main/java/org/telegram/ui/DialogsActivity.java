@@ -72,7 +72,7 @@ import org.telegram.ui.Components.PlayerView;
 import org.telegram.ui.Components.EmptyTextProgressView;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
-import org.telegram.ui.Components.ResourceLoader;
+import org.telegram.ui.ActionBar.Theme;
 
 import java.util.ArrayList;
 
@@ -111,9 +111,9 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     private String searchString;
     private long openedDialogId;
 
-    private MessagesActivityDelegate delegate;
+    private DialogsActivityDelegate delegate;
 
-    public interface MessagesActivityDelegate {
+    public interface DialogsActivityDelegate {
         void didSelectDialog(DialogsActivity fragment, long dialog_id, boolean param);
     }
 
@@ -186,7 +186,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         searching = false;
         searchWas = false;
 
-        ResourceLoader.loadRecources(context);
+        Theme.loadRecources(context);
 
         ActionBarMenu menu = actionBar.createMenu();
         if (!onlySelect && searchString == null) {
@@ -625,7 +625,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         textView = new TextView(context);
         String help = LocaleController.getString("NoChatsHelp", R.string.NoChatsHelp);
         if (AndroidUtilities.isTablet() && !AndroidUtilities.isSmallTablet()) {
-            help = help.replace("\n", " ");
+            help = help.replace('\n', ' ');
         }
         textView.setText(help);
         textView.setTextColor(0xff959595);
@@ -1011,7 +1011,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         }
     }
 
-    public void setDelegate(MessagesActivityDelegate delegate) {
+    public void setDelegate(DialogsActivityDelegate delegate) {
         this.delegate = delegate;
     }
 

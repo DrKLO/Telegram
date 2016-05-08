@@ -213,6 +213,8 @@
 
         <receiver android:name=".WearReplyReceiver" android:enabled="true"/>
 
+        <receiver android:name=".ShareBroadcastReceiver" android:enabled="true"/>
+
         <uses-library android:name="com.sec.android.app.multiwindow" android:required="false" />
         <meta-data android:name="com.sec.android.support.multiwindow" android:value="true" />
         <meta-data android:name="com.sec.android.multiwindow.DEFAULT_SIZE_W" android:value="632dp" />

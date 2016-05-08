@@ -680,8 +680,8 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
         if (text == null || text.length() < 3) {
             return false;
         }
-        int dot = text.lastIndexOf(".");
-        int dog = text.lastIndexOf("@");
+        int dot = text.lastIndexOf('.');
+        int dog = text.lastIndexOf('@');
         return !(dot < 0 || dog < 0 || dot < dog);
     }
 

@@ -5,7 +5,7 @@ repositories {
 }
 
 dependencies {
-    compile 'com.android.support:support-v4:23.2.1'
+    compile 'com.android.support:support-v4:23.3.0'
     compile "com.google.android.gms:play-services-gcm:8.4.0"
     compile "com.google.android.gms:play-services-maps:8.4.0"
     compile 'net.hockeyapp.android:HockeySDK:3.6.+'
@@ -14,7 +14,7 @@ dependencies {
 
 android {
     compileSdkVersion 23
-    buildToolsVersion '23.0.2'
+    buildToolsVersion '23.0.3'
 
     useLibrary 'org.apache.http.legacy'
     defaultConfig.applicationId = "org.telegram.messenger"
@@ -63,7 +63,7 @@ android {
         }
     }
 
-    defaultConfig.versionCode = 767
+    defaultConfig.versionCode = 787
 
     sourceSets.main {
         jniLibs.srcDir 'libs'
@@ -114,6 +114,8 @@ android {
     defaultConfig {
         minSdkVersion 9
         targetSdkVersion 23
-        versionName "3.7.0"
+        versionName "3.8.1"
     }
 }
+
+apply plugin: 'com.google.gms.google-services'

@@ -5,6 +5,7 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:1.5.0'
+        classpath 'com.android.tools.build:gradle:2.1.0-beta3'
+        classpath 'com.google.gms:google-services:2.1.0-alpha3'
     }
 }

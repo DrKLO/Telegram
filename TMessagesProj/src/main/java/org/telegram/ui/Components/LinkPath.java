@@ -16,15 +16,19 @@ public class LinkPath extends Path {
     private StaticLayout currentLayout;
     private int currentLine;
     private float lastTop = -1;
+    private float heightOffset;
 
-    public void setCurrentLayout(StaticLayout layout, int start) {
+    public void setCurrentLayout(StaticLayout layout, int start, float yOffset) {
         currentLayout = layout;
         currentLine = layout.getLineForOffset(start);
         lastTop = -1;
+        heightOffset = yOffset;
     }
 
     @Override
     public void addRect(float left, float top, float right, float bottom, Direction dir) {
+        top += heightOffset;
+        bottom += heightOffset;
         if (lastTop == -1) {
             lastTop = top;
         } else if (lastTop != top) {

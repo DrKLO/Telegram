@@ -115,7 +115,7 @@ public class FileLoadOperation {
             }
             ext = FileLoader.getDocumentFileName(documentLocation);
             int idx;
-            if (ext == null || (idx = ext.lastIndexOf(".")) == -1) {
+            if (ext == null || (idx = ext.lastIndexOf('.')) == -1) {
                 ext = "";
             } else {
                 ext = ext.substring(idx);

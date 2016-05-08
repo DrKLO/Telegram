@@ -255,10 +255,12 @@
     <string name="IsTyping">está escribiendo...</string>
     <string name="AreTyping">están escribiendo...</string>
     <string name="IsRecordingAudio">%1$s está grabando un mensaje de voz...</string>
+    <string name="IsSendingAudio">%1$s está enviando un audio...</string>
     <string name="IsSendingPhoto">%1$s está enviando una foto...</string>
     <string name="IsSendingVideo">%1$s está enviando un vídeo...</string>
     <string name="IsSendingFile">%1$s está enviando un archivo...</string>
     <string name="RecordingAudio">grabando mensaje de voz...</string>
+    <string name="SendingAudio">enviando audio...</string>
     <string name="SendingPhoto">enviando foto...</string>
     <string name="SendingVideoStatus">enviando vídeo...</string>
     <string name="SendingFile">enviando archivo...</string>
@@ -504,6 +506,7 @@
     <string name="StickersCopy">Copiar enlace</string>
     <string name="StickersRemove">Eliminar</string>
     <string name="NoStickers">Sin stickers aún</string>
+    <string name="SendSticker">ENVIAR STICKER</string>
     <string name="TooMuchStickersets">Lo sentimos, alcanzaste el número máximo de packs de stickers.</string>
     <!--settings view-->
     <string name="ResetNotificationsText">Restablecer las notificaciones</string>
@@ -539,6 +542,7 @@
     <string name="TerminateAllSessions">Cerrar todas las otras sesiones</string>
     <string name="Events">Eventos</string>
     <string name="ContactJoined">Un contacto se unió a Telegram</string>
+    <string name="PinnedMessages">Mensajes anclados</string>
     <string name="Language">Idioma</string>
     <string name="AskAQuestionInfo">Por favor, considera que el soporte de Telegram está hecho por voluntarios. Respondemos lo antes posible, pero puede tomar tiempo.<![CDATA[<br><br>]]>Por favor, mira las <![CDATA[<a href=\"https://telegram.org/faq/es\">preguntas frecuentes de Telegram</a>]]>: tienen respuestas para la mayoría de las preguntas y <![CDATA[<a href=\"https://telegram.org/faq/es#solucin-de-problemas\">soluciones a problemas</a>]]>.</string>
     <string name="AskButton">Preguntar</string>
@@ -550,8 +554,10 @@
     <string name="IncorrectLocalization">Archivo de traducción incorrecto</string>
     <string name="Enabled">Activadas</string>
     <string name="Disabled">Desactivadas</string>
-    <string name="NotificationsService">Servicio de notificaciones</string>
-    <string name="NotificationsServiceDisableInfo">Si tus notificaciones funcionan bien con los Servicios de Google Play, puedes desactivar el Servicio de notificaciones. Sin embargo, recomendamos que lo dejes activo para mantener la app en segundo plano y recibir notificaciones al instante.</string>
+    <string name="NotificationsService">Servicio keep-alive</string>
+    <string name="NotificationsServiceInfo">Vuelve a abrir la app cuando el usuario o el sistema la cierra. Esto garantiza que la app pueda mostrar notificaciones.</string>
+    <string name="NotificationsServiceConnection">Conexión en segundo plano</string>
+    <string name="NotificationsServiceConnectionInfo">Conexión de bajo impacto, en segundo plano, para recibir notificaciones. Úsala para tener notificaciones fiables.</string>
     <string name="SortBy">Ordenar por</string>
     <string name="ImportContacts">Importar contactos</string>
     <string name="SortFirstName">Nombre</string>
@@ -932,7 +938,15 @@
     <string name="AreYouSureSessions">¿Quieres terminar todas las otras sesiones?</string>
     <string name="AreYouSureDeleteAndExit">¿Quieres eliminar y dejar el grupo?</string>
     <string name="AreYouSureDeleteThisChat">¿Quieres eliminar este chat?</string>
-    <string name="AreYouSureShareMyContactInfo">¿Quieres compartir tu número?</string>
+    <string name="ShareYouLocationTitle">¿Compartir tu ubicación?</string>
+    <string name="ShareYouLocationInfo">Esto enviará tu ubicación actual al bot.</string>
+    <string name="ShareYouLocationUnable">La aplicación no pudo determinar tu ubicación actual</string>
+    <string name="ShareYouLocationUnableManually">Elegir manualmente</string>
+    <string name="ShareYouLocationInline">Este bot podría querer saber tu ubicación cada vez que le envías una solicitud. Esto puede ser usado para entregar resultados específicos para tu ubicación.</string>
+    <string name="ShareYouPhoneNumberTitle">¿Compartir tu número de teléfono?</string>
+    <string name="AreYouSureShareMyContactInfoBot">El bot sabrá tu número de teléfono. Puede ser útil para la integración con otros servicios.</string>
+    <string name="AreYouSureShareMyContactInfoUser">¿Quieres compartir tu número de teléfono %1$s con <![CDATA[<b>]]>%2$s<![CDATA[</b>]]>?</string>
+    <string name="AreYouSureShareMyContactInfo">¿Quieres compartir tu número de teléfono?</string>
     <string name="AreYouSureBlockContact">¿Quieres bloquear este contacto?</string>
     <string name="AreYouSureUnblockContact">¿Quieres desbloquear este contacto?</string>
     <string name="AreYouSureDeleteContact">¿Quieres eliminar este contacto?</string>
@@ -955,11 +969,13 @@
     <string name="AllowReadSms">Por favor, permite a Telegram recibir SMS, para ingresar el código automáticamente.</string>
     <string name="AllowReadCall">Por favor, permite a Telegram recibir llamadas, para ingresar el código automáticamente.</string>
     <string name="AllowReadCallAndSms">Por favor, permite a Telegram recibir llamadas y SMS, para ingresar el código automáticamente.</string>
+    <string name="UserRestricted">Lo sentimos, no estás autorizado para hacer esto.</string>
     <!--permissions-->
     <string name="PermissionContacts">Telegram necesita el acceso a tus contactos, para que puedas comunicarte con ellos en todos tus dispositivos.</string>
     <string name="PermissionStorage">Telegram necesita acceso a tu almacenamiento, para que puedas enviar y guardar fotos, vídeos, música y otros archivos.</string>
     <string name="PermissionNoAudio">Telegram necesita acceso a tu micrófono, para que puedas enviar mensajes de voz.</string>
     <string name="PermissionNoLocation">Telegram necesita acceso a tu ubicación, para que puedas compartirla con tus amigos.</string>
+    <string name="PermissionNoLocationPosition">Telegram necesita acceso a tu ubicación.</string>
     <string name="PermissionOpenSettings">AJUSTES</string>
     <!--Intro view-->
     <string name="Page1Title">Telegram</string>

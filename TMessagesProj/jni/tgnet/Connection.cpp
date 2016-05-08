@@ -394,7 +394,7 @@ void Connection::onDisconnected(int reason) {
     ConnectionsManager::getInstance().onConnectionClosed(this);
 
     uint32_t datacenterId = currentDatacenter->getDatacenterId();
-    if (connectionState == TcpConnectionStageIdle && connectionType == ConnectionTypeGeneric && (datacenterId == ConnectionsManager::getInstance().currentDatacenterId || datacenterId == ConnectionsManager::getInstance().movingToDatacenterId)) {
+    if (connectionState == TcpConnectionStageIdle && connectionType == ConnectionTypeGeneric && (currentDatacenter->isHandshaking() || datacenterId == ConnectionsManager::getInstance().currentDatacenterId || datacenterId == ConnectionsManager::getInstance().movingToDatacenterId)) {
         connectionState = TcpConnectionStageReconnecting;
         failedConnectionCount++;
         if (failedConnectionCount == 1) {

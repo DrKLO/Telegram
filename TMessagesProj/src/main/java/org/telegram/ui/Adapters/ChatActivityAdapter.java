@@ -202,7 +202,7 @@ public class ChatActivityAdapter {
                                         Intent intent = new Intent(Intent.ACTION_VIEW);
                                         if (message.type == 8 || message.type == 9) {
                                             MimeTypeMap myMime = MimeTypeMap.getSingleton();
-                                            int idx = fileName.lastIndexOf(".");
+                                            int idx = fileName.lastIndexOf('.');
                                             if (idx != -1) {
                                                 String ext = fileName.substring(idx + 1);
                                                 realMimeType = myMime.getMimeTypeFromExtension(ext.toLowerCase());

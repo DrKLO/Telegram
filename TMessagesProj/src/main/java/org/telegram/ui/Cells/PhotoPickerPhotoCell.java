@@ -52,7 +52,7 @@ public class PhotoPickerPhotoCell extends FrameLayout {
         super.onMeasure(MeasureSpec.makeMeasureSpec(itemWidth, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(itemWidth, MeasureSpec.EXACTLY));
     }
 
-    public void setChecked(final boolean checked, boolean animated) {
+    public void setChecked(final boolean checked, final boolean animated) {
         checkBox.setChecked(checked, animated);
         if (animator != null) {
             animator.cancel();
@@ -69,11 +69,18 @@ public class PhotoPickerPhotoCell extends FrameLayout {
             animator.addListener(new AnimatorListenerAdapterProxy() {
                 @Override
                 public void onAnimationEnd(Object animation) {
-                    if (animator.equals(animation)) {
+                    if (animator != null && animator.equals(animation)) {
                         animator = null;
                         if (!checked) {
                             setBackgroundColor(0);
                         }
+                    }
+                }
+
+                @Override
+                public void onAnimationCancel(Object animation) {
+                    if (animator != null && animator.equals(animation)) {
+                        animator = null;
                     }
                 }
             });

@@ -540,7 +540,7 @@ public class LinearLayoutManager extends RecyclerView.LayoutManager implements
 
         onAnchorReady(recycler, state, mAnchorInfo, firstLayoutDirection);
         detachAndScrapAttachedViews(recycler);
-        mLayoutState.mInfinite = mOrientationHelper.getMode() == View.MeasureSpec.UNSPECIFIED;
+        mLayoutState.mInfinite = resolveIsInfinite();
         mLayoutState.mIsPreLayout = state.isPreLayout();
         if (mAnchorInfo.mLayoutFromEnd) {
             // fill towards start
@@ -1128,7 +1128,8 @@ public class LinearLayoutManager extends RecyclerView.LayoutManager implements
 
     private void updateLayoutState(int layoutDirection, int requiredSpace,
             boolean canUseExistingSpace, RecyclerView.State state) {
-        mLayoutState.mInfinite = mOrientationHelper.getMode() == View.MeasureSpec.UNSPECIFIED;
+        // If parent provides a hint, don't measure unlimited.
+        mLayoutState.mInfinite = resolveIsInfinite();
         mLayoutState.mExtra = getExtraLayoutSpace(state);
         mLayoutState.mLayoutDirection = layoutDirection;
         int scrollingOffset;
@@ -1160,6 +1161,11 @@ public class LinearLayoutManager extends RecyclerView.LayoutManager implements
             mLayoutState.mAvailable -= scrollingOffset;
         }
         mLayoutState.mScrollingOffset = scrollingOffset;
+    }
+
+    boolean resolveIsInfinite() {
+        return mOrientationHelper.getMode() == View.MeasureSpec.UNSPECIFIED
+                && mOrientationHelper.getEnd() == 0;
     }
 
     int scrollBy(int dy, RecyclerView.Recycler recycler, RecyclerView.State state) {

@@ -849,6 +849,36 @@ public class SecretChatHelper {
         });
     }
 
+    private void applyPeerLayer(final TLRPC.EncryptedChat chat, int newPeerLayer) {
+        int currentPeerLayer = AndroidUtilities.getPeerLayerVersion(chat.layer);
+        if (newPeerLayer <= currentPeerLayer) {
+            return;
+        }
+        if (chat.key_hash.length == 16 && currentPeerLayer >= 46) {
+            try {
+                byte[] sha256 = Utilities.computeSHA256(chat.auth_key, 0, chat.auth_key.length);
+                byte[] key_hash = new byte[36];
+                System.arraycopy(chat.key_hash, 0, key_hash, 0, 16);
+                System.arraycopy(sha256, 0, key_hash, 16, 20);
+                chat.key_hash = key_hash;
+                MessagesStorage.getInstance().updateEncryptedChat(chat);
+            } catch (Throwable e) {
+                FileLog.e("tmessages", e);
+            }
+        }
+        chat.layer = AndroidUtilities.setPeerLayerVersion(chat.layer, newPeerLayer);
+        MessagesStorage.getInstance().updateEncryptedChatLayer(chat);
+        if (currentPeerLayer < CURRENT_SECRET_CHAT_LAYER) {
+            sendNotifyLayerMessage(chat, null);
+        }
+        AndroidUtilities.runOnUIThread(new Runnable() {
+            @Override
+            public void run() {
+                NotificationCenter.getInstance().postNotificationName(NotificationCenter.encryptedChatUpdated, chat);
+            }
+        });
+    }
+
     public TLRPC.Message processDecryptedObject(final TLRPC.EncryptedChat chat, final TLRPC.EncryptedFile file, int date, long random_id, TLObject object, boolean new_key_used) {
         if (object != null) {
             int from_id = chat.admin_id;
@@ -1156,30 +1186,7 @@ public class SecretChatHelper {
                         MessagesStorage.getInstance().createTaskForSecretChat(chat.id, time, time, 1, serviceMessage.action.random_ids);
                     }
                 } else if (serviceMessage.action instanceof TLRPC.TL_decryptedMessageActionNotifyLayer) {
-                    int currentPeerLayer = AndroidUtilities.getPeerLayerVersion(chat.layer);
-                    if (chat.key_hash.length == 16 && currentPeerLayer >= 46) {
-                        try {
-                            byte[] sha256 = Utilities.computeSHA256(chat.auth_key, 0, chat.auth_key.length);
-                            byte[] key_hash = new byte[36];
-                            System.arraycopy(chat.key_hash, 0, key_hash, 0, 16);
-                            System.arraycopy(sha256, 0, key_hash, 16, 20);
-                            chat.key_hash = key_hash;
-                            MessagesStorage.getInstance().updateEncryptedChat(chat);
-                        } catch (Throwable e) {
-                            FileLog.e("tmessages", e);
-                        }
-                    }
-                    chat.layer = AndroidUtilities.setPeerLayerVersion(chat.layer, serviceMessage.action.layer);
-                    MessagesStorage.getInstance().updateEncryptedChatLayer(chat);
-                    if (currentPeerLayer < CURRENT_SECRET_CHAT_LAYER) {
-                        sendNotifyLayerMessage(chat, null);
-                    }
-                    AndroidUtilities.runOnUIThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            NotificationCenter.getInstance().postNotificationName(NotificationCenter.encryptedChatUpdated, chat);
-                        }
-                    });
+                    applyPeerLayer(chat, serviceMessage.action.layer);
                 } else if (serviceMessage.action instanceof TLRPC.TL_decryptedMessageActionRequestKey) {
                     if (chat.exchange_id != 0) {
                         if (chat.exchange_id > serviceMessage.action.exchange_id) {
@@ -1374,6 +1381,7 @@ public class SecretChatHelper {
         for (int a = 0; a < holes.size(); a++) {
             TL_decryptedMessageHolder holder = holes.get(a);
             if (holder.layer.out_seq_no == chat.seq_in || chat.seq_in == holder.layer.out_seq_no - 2) {
+                applyPeerLayer(chat, holder.layer.layer);
                 chat.seq_in = holder.layer.out_seq_no;
                 holes.remove(a);
                 a--;
@@ -1493,6 +1501,7 @@ public class SecretChatHelper {
                         arr.add(holder);
                         return null;
                     }
+                    applyPeerLayer(chat, layer.layer);
                     chat.seq_in = layer.out_seq_no;
                     MessagesStorage.getInstance().updateEncryptedChatSeq(chat);
                     object = layer.message;
