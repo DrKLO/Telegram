@@ -1003,7 +1003,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         if (downloadObject != null) {
             downloadQueueKeys.remove(fileName);
             if (state == 0 || state == 2) {
-                MessagesStorage.getInstance().removeFromDownloadQueue(downloadObject.id, downloadObject.type, false /*state != 0*/);
+                MessagesStorage.getInstance().removeFromDownloadQueue(downloadObject.id, downloadObject.type, false);
             }
             if (downloadObject.type == AUTODOWNLOAD_MASK_PHOTO) {
                 photoDownloadQueue.remove(downloadObject);
@@ -1598,8 +1598,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                 }
             }
             previousAccValue = val;
-            accelerometerVertical = gravityFast[1] > 2.5f && Math.abs(gravityFast[2]) < 4.0f && /*Math.abs(gravityFast[0]) < 9.0f &&*/ Math.abs(gravityFast[0]) > 1.5f;
-            //FileLog.e("tmessages", accelerometerVertical + "    val = " + val + " acc (" + linearAcceleration[0] + ", " + linearAcceleration[1] + ", " + linearAcceleration[2] + ") grav (" + gravityFast[0] + ", " + gravityFast[1] + ", " + gravityFast[2] + ")");
+            accelerometerVertical = gravityFast[1] > 2.5f && Math.abs(gravityFast[2]) < 4.0f && Math.abs(gravityFast[0]) > 1.5f;
         }
         if (raisedToBack == minCount && accelerometerVertical && proximityTouched && !NotificationsController.getInstance().audioManager.isWiredHeadsetOn()) {
             FileLog.e("tmessages", "sensor values reached");

@@ -741,14 +741,8 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             if (uid == currentDialogId || uid == mergeDialogId) {
                 if (uid == currentDialogId) {
                     totalImagesCount = (Integer) args[1];
-                    /*if ((Boolean) args[2]) {
-                        SharedMediaQuery.getMediaCount(currentDialogId, SharedMediaQuery.MEDIA_PHOTOVIDEO, classGuid, false);
-                    }*/
                 } else if (uid == mergeDialogId) {
                     totalImagesCountMerge = (Integer) args[1];
-                    /*if ((Boolean) args[2]) {
-                        SharedMediaQuery.getMediaCount(mergeDialogId, SharedMediaQuery.MEDIA_PHOTOVIDEO, classGuid, false);
-                    }*/
                 }
                 if (needSearchImageInArr && isFirstLoading) {
                     isFirstLoading = false;
@@ -1004,38 +998,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                         ((LaunchActivity) parentActivity).presentFragment(new MediaActivity(args2), false, true);
                     }
                 } else if (id == gallery_menu_send) {
-                    /*Intent intent = new Intent(this, MessagesActivity.class);
-                    intent.putExtra("onlySelect", true);
-                    startActivityForResult(intent, 10);
-                    if (requestCode == 10) {
-                        int chatId = data.getIntExtra("chatId", 0);
-                        int userId = data.getIntExtra("userId", 0);
-                        int dialog_id = 0;
-                        if (chatId != 0) {
-                            dialog_id = -chatId;
-                        } else if (userId != 0) {
-                            dialog_id = userId;
-                        }
-                        TLRPC.FileLocation location = getCurrentFile();
-                        if (dialog_id != 0 && location != null) {
-                            Intent intent = new Intent(GalleryImageViewer.this, ChatActivity.class);
-                            if (chatId != 0) {
-                                intent.putExtra("chatId", chatId);
-                            } else {
-                                intent.putExtra("userId", userId);
-                            }
-                            startActivity(intent);
-                            NotificationCenter.getInstance().postNotificationName(MessagesController.closeChats);
-                            finish();
-                            if (withoutBottom) {
-                                MessagesController.getInstance().sendMessage(location, dialog_id);
-                            } else {
-                                int item = mViewPager.getCurrentItem();
-                                MessageObject obj = localPagerAdapter.imagesArr.get(item);
-                                MessagesController.getInstance().sendMessage(obj, dialog_id);
-                            }
-                        }
-                    }*/
+                    //TODO: real implementation of this behaviour
                 } else if (id == gallery_menu_crop) {
                     switchToEditMode(1);
                 } else if (id == gallery_menu_tune) {
@@ -1229,10 +1192,6 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
 
                     if (currentMessageObject != null) {
                         isVideo = currentMessageObject.isVideo();
-                        /*if (currentMessageObject.messageOwner.media instanceof TLRPC.TL_messageMediaWebPage) {
-                            AndroidUtilities.openUrl(parentActivity, currentMessageObject.messageOwner.media.webpage.url);
-                            return;
-                        }*/
                         f = FileLoader.getPathToMessage(currentMessageObject.messageOwner);
                     } else if (currentFileLocation != null) {
                         f = FileLoader.getPathToAttach(currentFileLocation, avatarsUserId != 0);
