@@ -411,11 +411,14 @@ public class NotificationsController {
 
                     Boolean value = settingsCache.get(dialog_id);
                     boolean isChat = (int) dialog_id < 0;
-                    popup = (int)dialog_id == 0 ? 0 : preferences.getInt(isChat ? "popupGroup" : "popupAll", 0);
+                    popup = (int) dialog_id == 0 ? 0 : preferences.getInt(isChat ? "popupGroup" : "popupAll", 0);
                     if (value == null) {
                         int notifyOverride = getNotifyOverride(preferences, dialog_id);
                         value = !(notifyOverride == 2 || (!preferences.getBoolean("EnableAll", true) || isChat && !preferences.getBoolean("EnableGroup", true)) && notifyOverride == 0);
                         settingsCache.put(dialog_id, value);
+                    }
+                    if (popup != 0 && messageObject.messageOwner.to_id.channel_id != 0 && !messageObject.isMegagroup()) {
+                        popup = 0;
                     }
                     if (value) {
                         if (popup != 0) {
