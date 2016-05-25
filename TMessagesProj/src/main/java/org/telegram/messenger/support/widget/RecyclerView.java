@@ -18,7 +18,6 @@
 package org.telegram.messenger.support.widget;
 
 import android.content.Context;
-import android.content.res.TypedArray;
 import android.database.Observable;
 import android.graphics.Canvas;
 import android.graphics.PointF;
@@ -59,7 +58,6 @@ import android.view.FocusFinder;
 import android.view.MotionEvent;
 import android.view.VelocityTracker;
 import android.view.View;
-import android.view.View.MeasureSpec;
 import android.view.ViewConfiguration;
 import android.view.ViewGroup;
 import android.view.ViewParent;
@@ -152,9 +150,6 @@ public class RecyclerView extends ViewGroup implements ScrollingView, NestedScro
     private static final String TAG = "RecyclerView";
 
     private static final boolean DEBUG = false;
-
-    private static final int[]  NESTED_SCROLLING_ATTRS
-            = {16843830 /* android.R.attr.nestedScrollingEnabled */};
 
     /**
      * On Kitkat and JB MR2, there is a bug which prevents DisplayList from being invalidated if
@@ -859,6 +854,7 @@ public class RecyclerView extends ViewGroup implements ScrollingView, NestedScro
      */
     public void setAdapter(Adapter adapter) {
         // bail out if layout is frozen
+        stopScroll();
         setLayoutFrozen(false);
         setAdapterInternal(adapter, false, true);
         requestLayout();

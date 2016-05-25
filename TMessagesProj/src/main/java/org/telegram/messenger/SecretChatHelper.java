@@ -176,7 +176,7 @@ public class SecretChatHelper {
         }
         reqSend.random_id = message.random_id;
 
-        performSendEncryptedRequest(reqSend, message, encryptedChat, null, null);
+        performSendEncryptedRequest(reqSend, message, encryptedChat, null, null, null);
     }
 
     protected void processUpdateEncryption(TLRPC.TL_updateEncryption update, ConcurrentHashMap<Integer, TLRPC.User> usersDict) {
@@ -281,7 +281,7 @@ public class SecretChatHelper {
         }
         reqSend.random_id = message.random_id;
 
-        performSendEncryptedRequest(reqSend, message, encryptedChat, null, null);
+        performSendEncryptedRequest(reqSend, message, encryptedChat, null, null, null);
     }
 
     public void sendClearHistoryMessage(TLRPC.EncryptedChat encryptedChat, TLRPC.Message resendMessage) {
@@ -308,7 +308,7 @@ public class SecretChatHelper {
         }
         reqSend.random_id = message.random_id;
 
-        performSendEncryptedRequest(reqSend, message, encryptedChat, null, null);
+        performSendEncryptedRequest(reqSend, message, encryptedChat, null, null, null);
     }
 
     public void sendNotifyLayerMessage(final TLRPC.EncryptedChat encryptedChat, TLRPC.Message resendMessage) {
@@ -340,7 +340,7 @@ public class SecretChatHelper {
         }
         reqSend.random_id = message.random_id;
 
-        performSendEncryptedRequest(reqSend, message, encryptedChat, null, null);
+        performSendEncryptedRequest(reqSend, message, encryptedChat, null, null, null);
     }
 
     public void sendRequestKeyMessage(final TLRPC.EncryptedChat encryptedChat, TLRPC.Message resendMessage) {
@@ -371,7 +371,7 @@ public class SecretChatHelper {
         }
         reqSend.random_id = message.random_id;
 
-        performSendEncryptedRequest(reqSend, message, encryptedChat, null, null);
+        performSendEncryptedRequest(reqSend, message, encryptedChat, null, null, null);
     }
 
     public void sendAcceptKeyMessage(final TLRPC.EncryptedChat encryptedChat, TLRPC.Message resendMessage) {
@@ -403,7 +403,7 @@ public class SecretChatHelper {
         }
         reqSend.random_id = message.random_id;
 
-        performSendEncryptedRequest(reqSend, message, encryptedChat, null, null);
+        performSendEncryptedRequest(reqSend, message, encryptedChat, null, null, null);
     }
 
     public void sendCommitKeyMessage(final TLRPC.EncryptedChat encryptedChat, TLRPC.Message resendMessage) {
@@ -434,7 +434,7 @@ public class SecretChatHelper {
         }
         reqSend.random_id = message.random_id;
 
-        performSendEncryptedRequest(reqSend, message, encryptedChat, null, null);
+        performSendEncryptedRequest(reqSend, message, encryptedChat, null, null, null);
     }
 
     public void sendAbortKeyMessage(final TLRPC.EncryptedChat encryptedChat, TLRPC.Message resendMessage, long excange_id) {
@@ -464,7 +464,7 @@ public class SecretChatHelper {
         }
         reqSend.random_id = message.random_id;
 
-        performSendEncryptedRequest(reqSend, message, encryptedChat, null, null);
+        performSendEncryptedRequest(reqSend, message, encryptedChat, null, null, null);
     }
 
     public void sendNoopMessage(final TLRPC.EncryptedChat encryptedChat, TLRPC.Message resendMessage) {
@@ -492,7 +492,7 @@ public class SecretChatHelper {
         }
         reqSend.random_id = message.random_id;
 
-        performSendEncryptedRequest(reqSend, message, encryptedChat, null, null);
+        performSendEncryptedRequest(reqSend, message, encryptedChat, null, null, null);
     }
 
     public void sendTTLMessage(TLRPC.EncryptedChat encryptedChat, TLRPC.Message resendMessage) {
@@ -528,7 +528,7 @@ public class SecretChatHelper {
         }
         reqSend.random_id = message.random_id;
 
-        performSendEncryptedRequest(reqSend, message, encryptedChat, null, null);
+        performSendEncryptedRequest(reqSend, message, encryptedChat, null, null, null);
     }
 
     public void sendScreenshotMessage(TLRPC.EncryptedChat encryptedChat, ArrayList<Long> random_ids, TLRPC.Message resendMessage) {
@@ -564,10 +564,11 @@ public class SecretChatHelper {
         }
         reqSend.random_id = message.random_id;
 
-        performSendEncryptedRequest(reqSend, message, encryptedChat, null, null);
+        performSendEncryptedRequest(reqSend, message, encryptedChat, null, null, null);
     }
 
-    private void processSentMessage(TLRPC.Message newMsg, TLRPC.EncryptedFile file, TLRPC.DecryptedMessage decryptedMessage, String originalPath) {
+    private void updateMediaPaths(MessageObject newMsgObj, TLRPC.EncryptedFile file, TLRPC.DecryptedMessage decryptedMessage, String originalPath) {
+        TLRPC.Message newMsg = newMsgObj.messageOwner;
         if (file != null) {
             if (newMsg.media instanceof TLRPC.TL_messageMediaPhoto && newMsg.media.photo != null) {
                 TLRPC.PhotoSize size = newMsg.media.photo.sizes.get(newMsg.media.photo.sizes.size() - 1);
@@ -608,6 +609,8 @@ public class SecretChatHelper {
                     File cacheFile = new File(newMsg.attachPath);
                     File cacheFile2 = FileLoader.getPathToAttach(newMsg.media.document);
                     if (cacheFile.renameTo(cacheFile2)) {
+                        newMsgObj.mediaExists = newMsgObj.attachPathExists;
+                        newMsgObj.attachPathExists = false;
                         newMsg.attachPath = "";
                     }
                 }
@@ -640,7 +643,7 @@ public class SecretChatHelper {
         return message.action instanceof TLRPC.TL_messageEncryptedAction && !(message.action.encryptedAction instanceof TLRPC.TL_decryptedMessageActionScreenshotMessages || message.action.encryptedAction instanceof TLRPC.TL_decryptedMessageActionSetMessageTTL);
     }
 
-    protected void performSendEncryptedRequest(final TLRPC.DecryptedMessage req, final TLRPC.Message newMsgObj, final TLRPC.EncryptedChat chat, final TLRPC.InputEncryptedFile encryptedFile, final String originalPath) {
+    protected void performSendEncryptedRequest(final TLRPC.DecryptedMessage req, final TLRPC.Message newMsgObj, final TLRPC.EncryptedChat chat, final TLRPC.InputEncryptedFile encryptedFile, final String originalPath, final MessageObject newMsg) {
         if (req == null || chat.auth_key == null || chat instanceof TLRPC.TL_encryptedChatRequested || chat instanceof TLRPC.TL_encryptedChatWaiting) {
             return;
         }
@@ -800,8 +803,8 @@ public class SecretChatHelper {
                                     if (isSecretVisibleMessage(newMsgObj)) {
                                         newMsgObj.date = res.date;
                                     }
-                                    if (res.file instanceof TLRPC.TL_encryptedFile) {
-                                        processSentMessage(newMsgObj, res.file, req, originalPath);
+                                    if (newMsg != null && res.file instanceof TLRPC.TL_encryptedFile) {
+                                        updateMediaPaths(newMsg, res.file, req, originalPath);
                                     }
                                     MessagesStorage.getInstance().getStorageQueue().postRunnable(new Runnable() {
                                         @Override
@@ -1042,7 +1045,7 @@ public class SecretChatHelper {
                         newMessage.media.document.attributes = decryptedMessage.media.attributes;
                     }
                     newMessage.media.document.mime_type = decryptedMessage.media.mime_type;
-                    newMessage.media.document.size = file.size;
+                    newMessage.media.document.size = decryptedMessage.media.size != 0 ? Math.min(decryptedMessage.media.size, file.size) : file.size;
                     newMessage.media.document.key = decryptedMessage.media.key;
                     newMessage.media.document.iv = decryptedMessage.media.iv;
                     if (newMessage.media.document.mime_type == null) {

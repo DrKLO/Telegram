@@ -55,18 +55,37 @@ CANY(ScaleARGBFilterCols_Any_NEON, ScaleARGBFilterCols_NEON,
                      dst_ptr + n * BPP, r);                                    \
     }
 
+// Fixed scale down for odd source width.  Used by I420Blend subsampling.
+// Since dst_width is (width + 1) / 2, this function scales one less pixel
+// and copies the last pixel.
+#define SDODD(NAMEANY, SCALEROWDOWN_SIMD, SCALEROWDOWN_C, FACTOR, BPP, MASK)   \
+    void NAMEANY(const uint8* src_ptr, ptrdiff_t src_stride,                   \
+                 uint8* dst_ptr, int dst_width) {                              \
+      int r = (int)((unsigned int)(dst_width - 1) % (MASK + 1));               \
+      int n = dst_width - r;                                                   \
+      if (n > 0) {                                                             \
+        SCALEROWDOWN_SIMD(src_ptr, src_stride, dst_ptr, n);                    \
+      }                                                                        \
+      SCALEROWDOWN_C(src_ptr + (n * FACTOR) * BPP, src_stride,                 \
+                     dst_ptr + n * BPP, r);                                    \
+    }
+
 #ifdef HAS_SCALEROWDOWN2_SSSE3
 SDANY(ScaleRowDown2_Any_SSSE3, ScaleRowDown2_SSSE3, ScaleRowDown2_C, 2, 1, 15)
 SDANY(ScaleRowDown2Linear_Any_SSSE3, ScaleRowDown2Linear_SSSE3,
       ScaleRowDown2Linear_C, 2, 1, 15)
 SDANY(ScaleRowDown2Box_Any_SSSE3, ScaleRowDown2Box_SSSE3, ScaleRowDown2Box_C,
       2, 1, 15)
+SDODD(ScaleRowDown2Box_Odd_SSSE3, ScaleRowDown2Box_SSSE3,
+      ScaleRowDown2Box_Odd_C, 2, 1, 15)
 #endif
 #ifdef HAS_SCALEROWDOWN2_AVX2
 SDANY(ScaleRowDown2_Any_AVX2, ScaleRowDown2_AVX2, ScaleRowDown2_C, 2, 1, 31)
 SDANY(ScaleRowDown2Linear_Any_AVX2, ScaleRowDown2Linear_AVX2,
       ScaleRowDown2Linear_C, 2, 1, 31)
 SDANY(ScaleRowDown2Box_Any_AVX2, ScaleRowDown2Box_AVX2, ScaleRowDown2Box_C,
+      2, 1, 31)
+SDODD(ScaleRowDown2Box_Odd_AVX2, ScaleRowDown2Box_AVX2, ScaleRowDown2Box_Odd_C,
       2, 1, 31)
 #endif
 #ifdef HAS_SCALEROWDOWN2_NEON
@@ -75,6 +94,8 @@ SDANY(ScaleRowDown2Linear_Any_NEON, ScaleRowDown2Linear_NEON,
       ScaleRowDown2Linear_C, 2, 1, 15)
 SDANY(ScaleRowDown2Box_Any_NEON, ScaleRowDown2Box_NEON,
       ScaleRowDown2Box_C, 2, 1, 15)
+SDODD(ScaleRowDown2Box_Odd_NEON, ScaleRowDown2Box_NEON,
+      ScaleRowDown2Box_Odd_C, 2, 1, 15)
 #endif
 #ifdef HAS_SCALEROWDOWN4_SSSE3
 SDANY(ScaleRowDown4_Any_SSSE3, ScaleRowDown4_SSSE3, ScaleRowDown4_C, 4, 1, 7)

@@ -66,6 +66,8 @@
     <string name="MuteDisable">Desativar</string>
     <string name="Hashtags">HASHTAGS</string>
     <string name="Recent">RECENTE</string>
+    <string name="ChatHints">CONVERSAS</string>
+    <string name="ChatHintsDelete">Apagar %1$s das sugestões?</string>
     <string name="LinkPreview">Prévia do link</string>
     <!--channels-->
     <string name="GroupType">Tipo de Grupo</string>
@@ -206,6 +208,7 @@
     <string name="ChannelMessageGroupAudio">%1$s enviou uma mensagem ao canal %2$s</string>
     <string name="ChannelMessageGroupMusic">%1$s enviou uma música ao canal %2$s</string>
     <string name="ChannelMessageGroupSticker">%1$s enviou um sticker ao canal %2$s</string>
+    <string name="ChannelMessageGroupStickerEmoji">%1$s enviou um %3$s sticker ao canal %2$s</string>
     <string name="ChannelMessageNoText">%1$s postou uma mensagem</string>
     <string name="ChannelMessagePhoto">%1$s postou uma foto</string>
     <string name="ChannelMessageVideo">%1$s postou um vídeo</string>
@@ -216,6 +219,7 @@
     <string name="ChannelMessageAudio">%1$s postou uma mensagem de voz</string>
     <string name="ChannelMessageMusic">%1$s postou uma música</string>
     <string name="ChannelMessageSticker">%1$s postou um sticker</string>
+    <string name="ChannelMessageStickerEmoji">%1$s postou um %2$s sticker</string>
     <string name="WhoCanAddMembers">Quem pode adicionar novos membros?</string>
     <string name="WhoCanAddMembersAllMembers">Todos os Membros</string>
     <string name="WhoCanAddMembersAdmins">Somente Administradores</string>
@@ -301,7 +305,7 @@
     <string name="SetTimer">Definir timer de autodestruição</string>
     <string name="ServiceNotifications">Notificações de serviço</string>
     <string name="GettingLinkInfo">Obtendo informações...</string>
-    <string name="OpenInBrowser">Abrir no Navegador</string>
+    <string name="OpenInBrowser">ABRIR EM...</string>
     <string name="CopyUrl">Copiar URL</string>
     <string name="SendItems">Enviar %1$s</string>
     <string name="OpenUrlAlert">Abrir URL em %1$s?</string>
@@ -333,6 +337,12 @@
     <string name="ReportChatOther">Outro</string>
     <string name="ReportChatDescription">Descrição</string>
     <string name="PinnedMessage">Mensagem Fixada</string>
+    <string name="EditedMessage">editado</string>
+    <string name="AttachBotsHelp">Desça para ver os bots</string>
+    <string name="TimeToEdit">%1$s</string>
+    <string name="TimeToEditExpired">Desculpe, o tempo para editar expirou.</string>
+    <string name="AddShortcut">Adicionar atalho</string>
+    <string name="ShortcutAdded">Atalho adicionado à tela de início</string>
     <!--notification-->
     <string name="MessageLifetimeChanged">%1$s estabeleceu o tempo de autodestruição para %2$s </string>
     <string name="MessageLifetimeChangedOutgoing">Você estabeleceu o tempo de autodestruição para %1$s</string>
@@ -350,6 +360,7 @@
     <string name="NotificationMessageAudio">%1$s enviou uma mensagem de voz</string>
     <string name="NotificationMessageMusic">%1$s enviou uma música</string>
     <string name="NotificationMessageSticker">%1$s lhe enviou um sticker</string>
+    <string name="NotificationMessageStickerEmoji">%1$s lhe enviou um %2$s sticker</string>
     <string name="NotificationMessageGroupText">%1$s @ %2$s: %3$s</string>
     <string name="NotificationMessageGroupNoText">%1$s enviou uma mensagem para o grupo %2$s</string>
     <string name="NotificationMessageGroupPhoto">%1$s enviou uma foto para o grupo %2$s</string>
@@ -361,6 +372,7 @@
     <string name="NotificationMessageGroupAudio">%1$s enviou uma mensagem para o grupo %2$s</string>
     <string name="NotificationMessageGroupMusic">%1$s enviou uma música ao grupo %2$s</string>
     <string name="NotificationMessageGroupSticker">%1$s enviou um sticker ao grupo %2$s</string>
+    <string name="NotificationMessageGroupStickerEmoji">%1$s enviou um %3$s sticker ao grupo %2$s</string>
     <string name="NotificationInvitedToGroup">%1$s convidou você para o grupo %2$s</string>
     <string name="NotificationEditedGroupName">%1$s editou o nome do grupo %2$s</string>
     <string name="NotificationEditedGroupPhoto">%1$s editou a foto do grupo %2$s</string>
@@ -384,6 +396,7 @@
     <string name="NotificationActionPinnedVideo">%1$s fixou um vídeo no grupo %2$s</string>
     <string name="NotificationActionPinnedFile">%1$s fixou um arquivo no grupo %2$s</string>
     <string name="NotificationActionPinnedSticker">%1$s fixou um sticker no grupo %2$s</string>
+    <string name="NotificationActionPinnedStickerEmoji">%1$s fixou um %3$s sticker no grupo %2$s</string>
     <string name="NotificationActionPinnedVoice">%1$s fixou uma mensagem de voz no grupo %2$s</string>
     <string name="NotificationActionPinnedContact">%1$s fixou um contato no grupo %2$s</string>
     <string name="NotificationActionPinnedGeo">%1$s fixou um mapa no grupo %2$s</string>
@@ -395,6 +408,7 @@
     <string name="NotificationActionPinnedVideoChannel">%1$s fixou um vídeo</string>
     <string name="NotificationActionPinnedFileChannel">%1$s fixou um arquivo</string>
     <string name="NotificationActionPinnedStickerChannel">%1$s fixou um sticker</string>
+    <string name="NotificationActionPinnedStickerEmojiChannel">%1$s fixou um %2$s sticker</string>
     <string name="NotificationActionPinnedVoiceChannel">%1$s fixou uma mensagem de voz</string>
     <string name="NotificationActionPinnedContactChannel">%1$s fixou um contato</string>
     <string name="NotificationActionPinnedGeoChannel">%1$s fixou um mapa</string>
@@ -1006,12 +1020,12 @@
     <string name="Members_few">%1$d membros</string>
     <string name="Members_many">%1$d membros</string>
     <string name="Members_other">%1$d membros</string>
-    <string name="AndMoreTyping_zero">e mais %1$d pessoas estão escrevendo</string>
-    <string name="AndMoreTyping_one">e mais %1$d estão digitando</string>
-    <string name="AndMoreTyping_two">e mais %1$d pessoas estão escrevendo</string>
-    <string name="AndMoreTyping_few">e mais %1$d pessoas estão escrevendo</string>
-    <string name="AndMoreTyping_many">e mais %1$d pessoas estão escrevendo</string>
-    <string name="AndMoreTyping_other">e mais %1$d pessoas estão escrevendo</string>
+    <string name="AndMoreTyping_zero">e mais %1$d estão escrevendo</string>
+    <string name="AndMoreTyping_one">e mais %1$d estão escrevendo</string>
+    <string name="AndMoreTyping_two">e mais %1$d estão escrevendo</string>
+    <string name="AndMoreTyping_few">e mais %1$d estão escrevendo</string>
+    <string name="AndMoreTyping_many">e mais %1$d estão escrevendo</string>
+    <string name="AndMoreTyping_other">e mais %1$d estão escrevendo</string>
     <string name="NewMessages_zero">sem novas mensagens</string>
     <string name="NewMessages_one">%1$d nova mensagem</string>
     <string name="NewMessages_two">%1$d novas mensagens</string>

@@ -15,6 +15,7 @@ import android.graphics.drawable.Drawable;
 import android.view.animation.DecelerateInterpolator;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.NotificationCenter;
 import org.telegram.ui.ActionBar.Theme;
 
 public class TypingDotsDrawable extends Drawable {
@@ -91,15 +92,28 @@ public class TypingDotsDrawable extends Drawable {
     public void draw(Canvas canvas) {
         int y;
         if (isChat) {
-            y = AndroidUtilities.dp(8.3f) + getBounds().top;
+            y = AndroidUtilities.dp(8.5f) + getBounds().top;
         } else {
-            y = AndroidUtilities.dp(9) + getBounds().top;
+            y = AndroidUtilities.dp(9.3f) + getBounds().top;
         }
         canvas.drawCircle(AndroidUtilities.dp(3), y, scales[0] * AndroidUtilities.density, paint);
         canvas.drawCircle(AndroidUtilities.dp(9), y, scales[1] * AndroidUtilities.density, paint);
         canvas.drawCircle(AndroidUtilities.dp(15), y, scales[2] * AndroidUtilities.density, paint);
+        checkUpdate();
+    }
+
+    private void checkUpdate() {
         if (started) {
-            update();
+            if (!NotificationCenter.getInstance().isAnimationInProgress()) {
+                update();
+            } else {
+                AndroidUtilities.runOnUIThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        checkUpdate();
+                    }
+                }, 100);
+            }
         }
     }
 

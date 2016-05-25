@@ -46,9 +46,7 @@ public class SizeNotifierFrameLayoutPhoto extends FrameLayout {
         int usableViewHeight = rootView.getHeight() - AndroidUtilities.getViewInset(rootView);
         getWindowVisibleDisplayFrame(rect);
         int top = rect.top;
-        int size = (rect.bottom - rect.top);
-
-        size = AndroidUtilities.displaySize.y - top - usableViewHeight;
+        int size = AndroidUtilities.displaySize.y - top - usableViewHeight;
         if (size <= AndroidUtilities.dp(10)) {
             size = 0;
         }

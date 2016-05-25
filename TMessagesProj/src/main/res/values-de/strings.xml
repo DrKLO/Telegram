@@ -66,6 +66,8 @@
     <string name="MuteDisable">Dauerhaft Stumm</string>
     <string name="Hashtags">HASHTAGS</string>
     <string name="Recent">LETZTE</string>
+    <string name="ChatHints">CHATS</string>
+    <string name="ChatHintsDelete">Lösche %1$s aus Vorschlägen?</string>
     <string name="LinkPreview">Linkvorschau</string>
     <!--channels-->
     <string name="GroupType">Gruppenart</string>
@@ -206,6 +208,7 @@
     <string name="ChannelMessageGroupAudio">%1$s hat eine Sprachnachricht an den Kanal %2$s gesendet</string>
     <string name="ChannelMessageGroupMusic">%1$s hat ein Musikstück an den Kanal %2$s gesendet</string>
     <string name="ChannelMessageGroupSticker">%1$s hat einen Sticker an den Kanal %2$s gesendet</string>
+    <string name="ChannelMessageGroupStickerEmoji">%1$s hat einen %3$s Sticker an den Kanal %2$s gesendet</string>
     <string name="ChannelMessageNoText">%1$s hat eine Nachricht gesendet</string>
     <string name="ChannelMessagePhoto">%1$s hat ein Bild gesendet</string>
     <string name="ChannelMessageVideo">%1$s hat ein Video gesendet</string>
@@ -216,6 +219,7 @@
     <string name="ChannelMessageAudio">%1$s hat eine Sprachnachricht gesendet</string>
     <string name="ChannelMessageMusic">%1$s hat ein Musikstück gesendet</string>
     <string name="ChannelMessageSticker">%1$s hat einen Sticker gesendet</string>
+    <string name="ChannelMessageStickerEmoji">%1$s hat einen %2$s Sticker gesendet</string>
     <string name="WhoCanAddMembers">Wer kann Mitglieder einladen?</string>
     <string name="WhoCanAddMembersAllMembers">Alle Mitglieder</string>
     <string name="WhoCanAddMembersAdmins">Nur Admins</string>
@@ -301,7 +305,7 @@
     <string name="SetTimer">Selbstzerstörungs-Timer setzen</string>
     <string name="ServiceNotifications">Servicemeldungen</string>
     <string name="GettingLinkInfo">Lade Linkvorschau...</string>
-    <string name="OpenInBrowser">Im Browser öffnen</string>
+    <string name="OpenInBrowser">ÖFFNEN MIT...</string>
     <string name="CopyUrl">URL kopieren</string>
     <string name="SendItems">%1$s senden</string>
     <string name="OpenUrlAlert">URL %1$s öffnen?</string>
@@ -333,6 +337,12 @@
     <string name="ReportChatOther">Sonstiges</string>
     <string name="ReportChatDescription">Beschreibung</string>
     <string name="PinnedMessage">Angeheftete Nachricht</string>
+    <string name="EditedMessage">bearbeitet</string>
+    <string name="AttachBotsHelp">Runterscrollen für Bots</string>
+    <string name="TimeToEdit">%1$s</string>
+    <string name="TimeToEditExpired">Bearbeitungszeit leider abgelaufen.</string>
+    <string name="AddShortcut">Verknüpfung hinzufügen</string>
+    <string name="ShortcutAdded">Zum Startbildschirm hinzugefügt</string>
     <!--notification-->
     <string name="MessageLifetimeChanged">%1$s hat den Selbstzerstörungs-Timer auf %2$s gesetzt</string>
     <string name="MessageLifetimeChangedOutgoing">Du hast den Selbstzerstörungs-Timer auf %1$s gesetzt</string>
@@ -350,6 +360,7 @@
     <string name="NotificationMessageAudio">%1$s hat dir eine Sprachnachricht gesendet</string>
     <string name="NotificationMessageMusic">%1$s hat dir ein Musikstück gesendet</string>
     <string name="NotificationMessageSticker">%1$s hat dir einen Sticker gesendet</string>
+    <string name="NotificationMessageStickerEmoji">%1$s hat dir einen %2$s Sticker gesendet</string>
     <string name="NotificationMessageGroupText">%1$s @ %2$s: %3$s</string>
     <string name="NotificationMessageGroupNoText">%1$s hat eine Nachricht an die Gruppe %2$s gesendet</string>
     <string name="NotificationMessageGroupPhoto">%1$s hat ein Bild an die Gruppe %2$s gesendet</string>
@@ -361,6 +372,7 @@
     <string name="NotificationMessageGroupAudio">%1$s hat eine Sprachnachricht an die Gruppe %2$s gesendet</string>
     <string name="NotificationMessageGroupMusic">%1$s hat ein Musikstück an die Gruppe %2$s gesendet</string>
     <string name="NotificationMessageGroupSticker">%1$s hat einen Sticker an die Gruppe %2$s gesendet</string>
+    <string name="NotificationMessageGroupStickerEmoji">%1$s hat einen %3$s Sticker an die Gruppe %2$s gesendet</string>
     <string name="NotificationInvitedToGroup">%1$s hat dich in die Gruppe %2$s eingeladen</string>
     <string name="NotificationEditedGroupName">%1$s hat den Namen der Gruppe %2$s geändert</string>
     <string name="NotificationEditedGroupPhoto">%1$s hat das Bild der Gruppe %2$s geändert</string>
@@ -384,6 +396,7 @@
     <string name="NotificationActionPinnedVideo">%1$s hat ein Video in der Gruppe %2$s angeheftet</string>
     <string name="NotificationActionPinnedFile">%1$s hat eine Datei in der Gruppe %2$s angeheftet</string>
     <string name="NotificationActionPinnedSticker">%1$s hat einen Sticker in der Gruppe %2$s angeheftet</string>
+    <string name="NotificationActionPinnedStickerEmoji">%1$s hat einen %3$s Sticker in der Gruppe %2$s angeheftet</string>
     <string name="NotificationActionPinnedVoice">%1$s hat eine Sprachnachricht in der Gruppe %2$s angeheftet</string>
     <string name="NotificationActionPinnedContact">%1$s hat einen Kontakt in der Gruppe %2$s angeheftet</string>
     <string name="NotificationActionPinnedGeo">%1$s hat einen Standort in der Gruppe %2$s angeheftet</string>
@@ -395,6 +408,7 @@
     <string name="NotificationActionPinnedVideoChannel">%1$s hat ein Video angeheftet</string>
     <string name="NotificationActionPinnedFileChannel">%1$s hat eine Datei angeheftet</string>
     <string name="NotificationActionPinnedStickerChannel">%1$s hat einen Sticker angeheftet</string>
+    <string name="NotificationActionPinnedStickerEmojiChannel">%1$s hat einen %2$s Sticker angeheftet</string>
     <string name="NotificationActionPinnedVoiceChannel">%1$s hat eine Sprachnachricht angeheftet</string>
     <string name="NotificationActionPinnedContactChannel">%1$s hat einen Kontakt angeheftet</string>
     <string name="NotificationActionPinnedGeoChannel">%1$s hat einen Stamdort angeheftet</string>

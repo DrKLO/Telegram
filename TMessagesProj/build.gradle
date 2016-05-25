@@ -8,7 +8,7 @@ dependencies {
     compile 'com.android.support:support-v4:23.3.0'
     compile "com.google.android.gms:play-services-gcm:8.4.0"
     compile "com.google.android.gms:play-services-maps:8.4.0"
-    compile 'net.hockeyapp.android:HockeySDK:3.6.+'
+    compile 'net.hockeyapp.android:HockeySDK:4.0.+'
     compile 'com.googlecode.mp4parser:isoparser:1.0.+'
 }
 
@@ -63,7 +63,7 @@ android {
         }
     }
 
-    defaultConfig.versionCode = 787
+    defaultConfig.versionCode = 803
 
     sourceSets.main {
         jniLibs.srcDir 'libs'
@@ -114,7 +114,7 @@ android {
     defaultConfig {
         minSdkVersion 9
         targetSdkVersion 23
-        versionName "3.8.1"
+        versionName "3.9.0"
     }
 }
 

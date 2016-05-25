@@ -639,7 +639,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                                 }
                                 Uri uri = (Uri) parcelable;
                                 if (uri != null) {
-                                    if (isInternalUri(uri)) {
+                                    if (AndroidUtilities.isInternalUri(uri)) {
                                         error = true;
                                     }
                                 }
@@ -673,11 +673,6 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                                             documentsMimeType = type;
                                         }
                                     }
-                                    if (sendingText != null) {
-                                        if (sendingText.contains("WhatsApp")) { //remove unnecessary caption 'sent from WhatsApp' from photos forwarded from WhatsApp
-                                            sendingText = null;
-                                        }
-                                    }
                                 }
                             } else if (sendingText == null) {
                                 error = true;
@@ -699,7 +694,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                                     }
                                     Uri uri = (Uri) parcelable;
                                     if (uri != null) {
-                                        if (isInternalUri(uri)) {
+                                        if (AndroidUtilities.isInternalUri(uri)) {
                                             uris.remove(a);
                                             a--;
                                         }
@@ -1030,21 +1025,6 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
             return pushOpened;
         }
         return false;
-    }
-
-    private boolean isInternalUri(Uri uri) {
-        String pathString = uri.getPath();
-        if (pathString == null) {
-            return false;
-        }
-        while (true) {
-            String newPath = Utilities.readlink(pathString);
-            if (newPath == null || newPath.equals(pathString)) {
-                break;
-            }
-            pathString = newPath;
-        }
-        return pathString != null && pathString.toLowerCase().contains("/data/data/" + getPackageName() + "/files");
     }
 
     private void runLinkRequest(final String username, final String group, final String sticker, final String botUser, final String botChat, final String message, final boolean hasUrl, final Integer messageId, final int state) {
@@ -1406,13 +1386,20 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
             } else {
                 actionBarLayout.presentFragment(fragment, dialogsFragment != null, dialogsFragment == null, true);
 
+                if (photoPathsArray != null) {
+                    ArrayList<String> captions = null;
+                    if (sendingText != null && photoPathsArray.size() == 1) {
+                        captions = new ArrayList<>();
+                        captions.add(sendingText);
+                        sendingText = null;
+                    }
+                    SendMessagesHelper.prepareSendingPhotos(null, photoPathsArray, dialog_id, null, captions, true);
+                }
+
                 if (sendingText != null) {
                     SendMessagesHelper.prepareSendingText(sendingText, dialog_id, true);
                 }
 
-                if (photoPathsArray != null) {
-                    SendMessagesHelper.prepareSendingPhotos(null, photoPathsArray, dialog_id, null, null, true);
-                }
                 if (documentsPathsArray != null || documentsUrisArray != null) {
                     SendMessagesHelper.prepareSendingDocuments(documentsPathsArray, documentsOriginalPathsArray, documentsUrisArray, documentsMimeType, dialog_id, null, true);
                 }
@@ -1659,6 +1646,9 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
         }
         ConnectionsManager.getInstance().setAppPaused(true, false);
         AndroidUtilities.unregisterUpdates();
+        if (PhotoViewer.getInstance().isVisible()) {
+            PhotoViewer.getInstance().onPause();
+        }
     }
 
     @Override

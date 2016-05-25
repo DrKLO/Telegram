@@ -14,9 +14,12 @@ import android.graphics.Paint;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.text.Layout;
+import android.text.SpannableStringBuilder;
+import android.text.Spanned;
 import android.text.StaticLayout;
 import android.text.TextPaint;
 import android.text.TextUtils;
+import android.text.style.ForegroundColorSpan;
 import android.view.MotionEvent;
 
 import org.telegram.messenger.AndroidUtilities;
@@ -33,6 +36,7 @@ import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.ImageReceiver;
+import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.AvatarDrawable;
 
 import java.util.ArrayList;
@@ -63,6 +67,7 @@ public class DialogCell extends BaseCell {
     private static Paint backPaint;
 
     private long currentDialogId;
+    private int currentEditDate;
     private boolean isDialogCell;
     private int lastMessageDate;
     private int unreadCount;
@@ -140,8 +145,8 @@ public class DialogCell extends BaseCell {
 
             messagePaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
             messagePaint.setTextSize(AndroidUtilities.dp(16));
-            messagePaint.setColor(0xff8f8f8f);
-            messagePaint.linkColor = 0xff8f8f8f;
+            messagePaint.setColor(Theme.DIALOGS_MESSAGE_TEXT_COLOR);
+            messagePaint.linkColor = Theme.DIALOGS_MESSAGE_TEXT_COLOR;
 
             linePaint = new Paint();
             linePaint.setColor(0xffdcdcdc);
@@ -151,7 +156,7 @@ public class DialogCell extends BaseCell {
 
             messagePrintingPaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
             messagePrintingPaint.setTextSize(AndroidUtilities.dp(16));
-            messagePrintingPaint.setColor(0xff4d83b3);
+            messagePrintingPaint.setColor(Theme.DIALOGS_PRINTING_TEXT_COLOR);
 
             timePaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
             timePaint.setTextSize(AndroidUtilities.dp(13));
@@ -196,6 +201,7 @@ public class DialogCell extends BaseCell {
         message = messageObject;
         isDialogCell = false;
         lastMessageDate = date;
+        currentEditDate = messageObject != null ? messageObject.messageOwner.edit_date : 0;
         unreadCount = 0;
         lastUnreadState = messageObject != null && messageObject.isUnread();
         if (message != null) {
@@ -383,35 +389,37 @@ public class DialogCell extends BaseCell {
                         if (message.isOutOwner()) {
                             name = LocaleController.getString("FromYou", R.string.FromYou);
                         } else if (fromUser != null) {
-                            name = UserObject.getFirstName(fromUser);
+                            name = UserObject.getFirstName(fromUser).replace("\n", "");
                         } else if (fromChat != null) {
-                            name = fromChat.title;
+                            name = fromChat.title.replace("\n", "");
                         } else {
                             name = "DELETED";
                         }
                         checkMessage = false;
+                        SpannableStringBuilder stringBuilder;
                         if (message.caption != null) {
                             String mess = message.caption.toString();
                             if (mess.length() > 150) {
                                 mess = mess.substring(0, 150);
                             }
-                            mess = mess.replace('\n', ' ');
-                            messageString = Emoji.replaceEmoji(AndroidUtilities.replaceTags(String.format("<c#ff4d83b3>%s:</c> <c#ff808080>%s</c>", name.replace("\n", ""), mess), AndroidUtilities.FLAG_TAG_COLOR), messagePaint.getFontMetricsInt(), AndroidUtilities.dp(20), false);
-                        } else {
-                            if (message.messageOwner.media != null && !message.isMediaEmpty()) {
-                                currentMessagePaint = messagePrintingPaint;
-                                messageString = Emoji.replaceEmoji(AndroidUtilities.replaceTags(String.format("<c#ff4d83b3>%s:</c> <c#ff4d83b3>%s</c>", name.replace("\n", ""), message.messageText), AndroidUtilities.FLAG_TAG_COLOR), messagePaint.getFontMetricsInt(), AndroidUtilities.dp(20), false);
-                            } else {
-                                if (message.messageOwner.message != null) {
-                                    String mess = message.messageOwner.message;
-                                    if (mess.length() > 150) {
-                                        mess = mess.substring(0, 150);
-                                    }
-                                    mess = mess.replace('\n', ' ');
-                                    messageString = Emoji.replaceEmoji(AndroidUtilities.replaceTags(String.format("<c#ff4d83b3>%s:</c> <c#ff808080>%s</c>", name.replace("\n", ""), mess), AndroidUtilities.FLAG_TAG_COLOR), messagePaint.getFontMetricsInt(), AndroidUtilities.dp(20), false);
-                                }
+                            stringBuilder = SpannableStringBuilder.valueOf(String.format("%s: %s", name, mess.replace('\n', ' ')));
+                        } else if (message.messageOwner.media != null && !message.isMediaEmpty()) {
+                            currentMessagePaint = messagePrintingPaint;
+                            stringBuilder = SpannableStringBuilder.valueOf(String.format("%s: %s", name, message.messageText));
+                            stringBuilder.setSpan(new ForegroundColorSpan(Theme.DIALOGS_ATTACH_TEXT_COLOR), name.length() + 2, stringBuilder.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                        } else if (message.messageOwner.message != null) {
+                            String mess = message.messageOwner.message;
+                            if (mess.length() > 150) {
+                                mess = mess.substring(0, 150);
                             }
+                            stringBuilder = SpannableStringBuilder.valueOf(String.format("%s: %s", name, mess.replace('\n', ' ')));
+                        } else {
+                            stringBuilder = SpannableStringBuilder.valueOf("");
                         }
+                        if (stringBuilder.length() > 0) {
+                            stringBuilder.setSpan(new ForegroundColorSpan(Theme.DIALOGS_NAME_TEXT_COLOR), 0, name.length() + 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                        }
+                        messageString = Emoji.replaceEmoji(stringBuilder, messagePaint.getFontMetricsInt(), AndroidUtilities.dp(20), false);
                     } else {
                         if (message.caption != null) {
                             messageString = message.caption;
@@ -692,7 +700,12 @@ public class DialogCell extends BaseCell {
     public void checkCurrentDialogIndex() {
         if (index < getDialogsArray().size()) {
             TLRPC.Dialog dialog = getDialogsArray().get(index);
-            if (currentDialogId != dialog.id || message != null && message.getId() != dialog.top_message || unreadCount != dialog.unread_count || message == null && MessagesController.getInstance().dialogMessage.get(dialog.id) != null) {
+            MessageObject newMessageObject = MessagesController.getInstance().dialogMessage.get(dialog.id);
+            if (currentDialogId != dialog.id ||
+                    message != null && message.getId() != dialog.top_message ||
+                    newMessageObject != null && newMessageObject.messageOwner.edit_date != currentEditDate ||
+                    unreadCount != dialog.unread_count ||
+                    message == null && newMessageObject != null) {
                 currentDialogId = dialog.id;
                 update(0);
             }
@@ -706,6 +719,7 @@ public class DialogCell extends BaseCell {
                 message = MessagesController.getInstance().dialogMessage.get(dialog.id);
                 lastUnreadState = message != null && message.isUnread();
                 unreadCount = dialog.unread_count;
+                currentEditDate = message != null ? message.messageOwner.edit_date : 0;
                 lastMessageDate = dialog.last_message_date;
                 if (message != null) {
                     lastSendState = message.messageOwner.send_state;

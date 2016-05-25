@@ -158,6 +158,10 @@ public class BaseFragment {
         }
     }
 
+    public boolean needDelayOpenAnimation() {
+        return false;
+    }
+
     public void onResume() {
 
     }

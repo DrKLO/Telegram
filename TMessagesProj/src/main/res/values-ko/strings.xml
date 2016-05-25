@@ -66,6 +66,8 @@
     <string name="MuteDisable">비활성화</string>
     <string name="Hashtags">해시태그</string>
     <string name="Recent">최신</string>
+    <string name="ChatHints">대화</string>
+    <string name="ChatHintsDelete">%1$s를 추천에서 삭제하겠습니까?</string>
     <string name="LinkPreview">링크 미리복</string>
     <!--channels-->
     <string name="GroupType">그룹 종류</string>
@@ -206,6 +208,7 @@
     <string name="ChannelMessageGroupAudio">%1$s님이 %2$s 채널에 음성메시지를 보냈습니다</string>
     <string name="ChannelMessageGroupMusic">%1$s님이 %2$s 채널에 트랙을 보냈습니다</string>
     <string name="ChannelMessageGroupSticker">%1$s님이 %2$s 채널에 스티커를 보냈습니다</string>
+    <string name="ChannelMessageGroupStickerEmoji">%1$s님이 %2$s 채널에 %3$s 스티커를 보냈습니다</string>
     <string name="ChannelMessageNoText">%1$s 님이 메시지를 보냈습니다</string>
     <string name="ChannelMessagePhoto">%1$s 님이 사진을 보냈습니다</string>
     <string name="ChannelMessageVideo">%1$s 님이 동영상을 보냈습니다</string>
@@ -216,6 +219,7 @@
     <string name="ChannelMessageAudio">%1$s님이 음성메시지를 보냈습니다</string>
     <string name="ChannelMessageMusic">%1$s님이 트랙을 보냈습니다</string>
     <string name="ChannelMessageSticker">%1$s님이 스티커를 보냈습니다</string>
+    <string name="ChannelMessageStickerEmoji">%1$s님이 %2$s스티커를 작성하였습니다</string>
     <string name="WhoCanAddMembers">초대가 가능한 구성원</string>
     <string name="WhoCanAddMembersAllMembers">모든 구성원</string>
     <string name="WhoCanAddMembersAdmins">관리자만 가능</string>
@@ -301,7 +305,7 @@
     <string name="SetTimer">자동삭제 타이머 설정</string>
     <string name="ServiceNotifications">서비스 알림</string>
     <string name="GettingLinkInfo">링크 정보를 가져오는 중...</string>
-    <string name="OpenInBrowser">브라우져에서 열기</string>
+    <string name="OpenInBrowser">다음으로 열기..</string>
     <string name="CopyUrl">URL 복사</string>
     <string name="SendItems">%1$s 전송</string>
     <string name="OpenUrlAlert">%1$s 링크를 여시겠습니까?</string>
@@ -333,6 +337,12 @@
     <string name="ReportChatOther">기타</string>
     <string name="ReportChatDescription">설명</string>
     <string name="PinnedMessage">메시지 고정</string>
+    <string name="EditedMessage">수정됨</string>
+    <string name="AttachBotsHelp">봇을 보려면 스크롤 다운하세요</string>
+    <string name="TimeToEdit">%1$s</string>
+    <string name="TimeToEditExpired">죄송합니다, 수정가능시간이 만료되었습니다.</string>
+    <string name="AddShortcut">바로 가기 추가</string>
+    <string name="ShortcutAdded">홈에 바로가기 추가</string>
     <!--notification-->
     <string name="MessageLifetimeChanged">%1$s님이 자동삭제를 %2$s 후로 설정했습니다</string>
     <string name="MessageLifetimeChangedOutgoing">자동삭제를 %1$s 후로 설정했습니다</string>
@@ -350,6 +360,7 @@
     <string name="NotificationMessageAudio">%1$s님이 음성메시지를 보냈습니다</string>
     <string name="NotificationMessageMusic">%1$s 님이 트랙을 보냈습니다</string>
     <string name="NotificationMessageSticker">%1$s님이 스티커를 보냈습니다</string>
+    <string name="NotificationMessageStickerEmoji">%1$s님이 %2$s스티커를 보냈습니다</string>
     <string name="NotificationMessageGroupText">%1$s @ %2$s: %3$s</string>
     <string name="NotificationMessageGroupNoText">%1$s님이 %2$s 그룹에 메시지를 보냈습니다</string>
     <string name="NotificationMessageGroupPhoto">%1$s님이 %2$s 그룹에 사진을 보냈습니다</string>
@@ -361,6 +372,7 @@
     <string name="NotificationMessageGroupAudio">%1$s님이 %2$s 그룹에 음성메시지를 보냈습니다</string>
     <string name="NotificationMessageGroupMusic">%1$s님이 %2$s 그룹에 트랙을 보냈습니다</string>
     <string name="NotificationMessageGroupSticker">%1$s님이 %2$s 그룹에 스티커를 보냈습니다</string>
+    <string name="NotificationMessageGroupStickerEmoji">%1$s님이 %2$s 그룹에 %3$s 스티커를 보냈습니다</string>
     <string name="NotificationInvitedToGroup">%1$s님이 %2$s 그룹에 초대했습니다</string>
     <string name="NotificationEditedGroupName">%1$s님이 그룹 이름을 %2$s 그룹으로 변경했습니다</string>
     <string name="NotificationEditedGroupPhoto">%1$s님이 %2$s 그룹 사진을 변경했습니다</string>
@@ -384,6 +396,7 @@
     <string name="NotificationActionPinnedVideo">%1$s 님이 비디오를 %2$s 그룹방에 고정함</string>
     <string name="NotificationActionPinnedFile">%1$s 님이 파일을 %2$s 그룹방에 고정함</string>
     <string name="NotificationActionPinnedSticker">%1$s 님이 스티커를 %2$s 그룹방에 고정함</string>
+    <string name="NotificationActionPinnedStickerEmoji">%1$s 님이 %3$s 스티커를 %2$s 그룹방에 고정함</string>
     <string name="NotificationActionPinnedVoice">%1$s 님이 음성메시지를 %2$s 그룹방에 고정함</string>
     <string name="NotificationActionPinnedContact">%1$s 님이 연락처를 %2$s 그룹방에 고정함</string>
     <string name="NotificationActionPinnedGeo">%1$s 님이 지도를 %2$s 그룹방에 고정함</string>
@@ -395,6 +408,7 @@
     <string name="NotificationActionPinnedVideoChannel">%1$s 님이 비디오를 고정함</string>
     <string name="NotificationActionPinnedFileChannel">%1$s 님이 파일을 고정함</string>
     <string name="NotificationActionPinnedStickerChannel">%1$s 님이 스티커를 고정함</string>
+    <string name="NotificationActionPinnedStickerEmojiChannel">%1$s 님이 %2$s 스티커를 고정함</string>
     <string name="NotificationActionPinnedVoiceChannel">%1$s 님이 음성메시지를 고정함</string>
     <string name="NotificationActionPinnedContactChannel">%1$s 님이 연락처를 고정함</string>
     <string name="NotificationActionPinnedGeoChannel">%1$s 님이 지도를 고정함</string>

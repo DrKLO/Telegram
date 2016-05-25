@@ -365,7 +365,6 @@ public class DrawerLayoutContainer extends FrameLayout {
     @Override
     protected void onLayout(boolean changed, int l, int t, int r, int b) {
         inLayout = true;
-        FileLog.w("tmessages", "onLayout");
         final int childCount = getChildCount();
         for (int i = 0; i < childCount; i++) {
             final View child = getChildAt(i);

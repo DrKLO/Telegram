@@ -20,9 +20,6 @@ import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageInfo;
 import android.content.res.Configuration;
-import android.graphics.Bitmap;
-import android.graphics.Color;
-import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
@@ -373,8 +370,14 @@ public class ApplicationLoader extends Application {
     }
 
     private boolean checkPlayServices() {
-        int resultCode = GooglePlayServicesUtil.isGooglePlayServicesAvailable(this);
-        return resultCode == ConnectionResult.SUCCESS;
+        try {
+            int resultCode = GooglePlayServicesUtil.isGooglePlayServicesAvailable(this);
+            return resultCode == ConnectionResult.SUCCESS;
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
+        return true;
+
         /*if (resultCode != ConnectionResult.SUCCESS) {
             if (GooglePlayServicesUtil.isUserRecoverableError(resultCode)) {
                 GooglePlayServicesUtil.getErrorDialog(resultCode, this, PLAY_SERVICES_RESOLUTION_REQUEST).show();

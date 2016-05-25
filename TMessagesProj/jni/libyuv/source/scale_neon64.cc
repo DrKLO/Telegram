@@ -547,7 +547,7 @@ void ScaleRowDown38_2_Box_NEON(const uint8* src_ptr,
 
 void ScaleAddRows_NEON(const uint8* src_ptr, ptrdiff_t src_stride,
                     uint16* dst_ptr, int src_width, int src_height) {
-  const uint8* src_tmp = NULL;
+  const uint8* src_tmp;
   asm volatile (
   "1:                                          \n"
     "mov       %0, %1                          \n"
@@ -567,12 +567,12 @@ void ScaleAddRows_NEON(const uint8* src_ptr, ptrdiff_t src_stride,
     "add      %1, %1, #16                      \n"
     "subs     %w4, %w4, #16                    \n"  // 16 processed per loop
     "b.gt     1b                               \n"
-  : "+r"(src_tmp),          // %0
-    "+r"(src_ptr),          // %1
-    "+r"(dst_ptr),          // %2
-    "+r"(src_stride),       // %3
-    "+r"(src_width),        // %4
-    "+r"(src_height)        // %5
+  : "=&r"(src_tmp),    // %0
+    "+r"(src_ptr),     // %1
+    "+r"(dst_ptr),     // %2
+    "+r"(src_stride),  // %3
+    "+r"(src_width),   // %4
+    "+r"(src_height)   // %5
   :
   : "memory", "cc", "w12", "v0", "v1", "v2", "v3"  // Clobber List
   );
@@ -931,7 +931,7 @@ void ScaleARGBCols_NEON(uint8* dst_argb, const uint8* src_argb,
   int64 dst_width64 = (int64) dst_width;  // Work around ios 64 bit warning.
   int64 x64 = (int64) x;
   int64 dx64 = (int64) dx;
-  int64 tmp64 = 0;
+  int64 tmp64;
   asm volatile (
   "1:                                          \n"
     LOAD1_DATA32_LANE(v0, 0)
@@ -947,13 +947,13 @@ void ScaleARGBCols_NEON(uint8* dst_argb, const uint8* src_argb,
     "st1        {v0.4s, v1.4s}, [%0], #32      \n"  // store pixels
     "subs       %w2, %w2, #8                   \n"  // 8 processed per loop
     "b.gt        1b                            \n"
-  : "+r"(dst_argb),         // %0
-    "+r"(src_argb),         // %1
-    "+r"(dst_width64),      // %2
-    "+r"(x64),              // %3
-    "+r"(dx64),             // %4
-    "+r"(tmp64),            // %5
-    "+r"(src_tmp)           // %6
+  : "+r"(dst_argb),     // %0
+    "+r"(src_argb),     // %1
+    "+r"(dst_width64),  // %2
+    "+r"(x64),          // %3
+    "+r"(dx64),         // %4
+    "=&r"(tmp64),       // %5
+    "+r"(src_tmp)       // %6
   :
   : "memory", "cc", "v0", "v1"
   );

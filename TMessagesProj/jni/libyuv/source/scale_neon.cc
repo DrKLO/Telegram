@@ -532,7 +532,7 @@ void ScaleRowDown38_2_Box_NEON(const uint8* src_ptr,
 
 void ScaleAddRows_NEON(const uint8* src_ptr, ptrdiff_t src_stride,
                     uint16* dst_ptr, int src_width, int src_height) {
-  const uint8* src_tmp = NULL;
+  const uint8* src_tmp;
   asm volatile (
   "1:                                          \n"
     "mov       %0, %1                          \n"
@@ -552,12 +552,12 @@ void ScaleAddRows_NEON(const uint8* src_ptr, ptrdiff_t src_stride,
     "add        %1, %1, #16                    \n"
     "subs       %4, %4, #16                    \n"  // 16 processed per loop
     "bgt        1b                             \n"
-  : "+r"(src_tmp),          // %0
-    "+r"(src_ptr),          // %1
-    "+r"(dst_ptr),          // %2
-    "+r"(src_stride),       // %3
-    "+r"(src_width),        // %4
-    "+r"(src_height)        // %5
+  : "=&r"(src_tmp),    // %0
+    "+r"(src_ptr),     // %1
+    "+r"(dst_ptr),     // %2
+    "+r"(src_stride),  // %3
+    "+r"(src_width),   // %4
+    "+r"(src_height)   // %5
   :
   : "memory", "cc", "r12", "q0", "q1", "q2", "q3"  // Clobber List
   );
@@ -909,7 +909,7 @@ void ScaleARGBRowDownEvenBox_NEON(const uint8* src_argb, ptrdiff_t src_stride,
 
 void ScaleARGBCols_NEON(uint8* dst_argb, const uint8* src_argb,
                         int dst_width, int x, int dx) {
-  int tmp = 0;
+  int tmp;
   const uint8* src_tmp = src_argb;
   asm volatile (
   "1:                                          \n"
@@ -926,13 +926,13 @@ void ScaleARGBCols_NEON(uint8* dst_argb, const uint8* src_argb,
     "vst1.32     {q0, q1}, [%0]!               \n"  // store pixels
     "subs       %2, %2, #8                     \n"  // 8 processed per loop
     "bgt        1b                             \n"
-  : "+r"(dst_argb),         // %0
-    "+r"(src_argb),         // %1
-    "+r"(dst_width),        // %2
-    "+r"(x),                // %3
-    "+r"(dx),               // %4
-    "+r"(tmp),              // %5
-    "+r"(src_tmp)           // %6
+  : "+r"(dst_argb),   // %0
+    "+r"(src_argb),   // %1
+    "+r"(dst_width),  // %2
+    "+r"(x),          // %3
+    "+r"(dx),         // %4
+    "=&r"(tmp),       // %5
+    "+r"(src_tmp)     // %6
   :
   : "memory", "cc", "q0", "q1"
   );

@@ -180,5 +180,4 @@ public class TgChooserTargetService extends ChooserTargetService {
         }
         return null;
     }
-
 }

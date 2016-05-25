@@ -43,6 +43,7 @@ public class FileLoadOperation {
     private volatile int state = stateIdle;
     private int downloadedBytes;
     private int totalBytesCount;
+    private int bytesCountPadding;
     private FileLoadOperationDelegate delegate;
     private byte[] key;
     private byte[] iv;
@@ -110,8 +111,13 @@ public class FileLoadOperation {
                 location.access_hash = documentLocation.access_hash;
                 datacenter_id = documentLocation.dc_id;
             }
-            if (totalBytesCount <= 0) {
-                totalBytesCount = documentLocation.size;
+            totalBytesCount = documentLocation.size;
+            if (key != null) {
+                int toAdd = 0;
+                if (totalBytesCount % 16 != 0) {
+                    bytesCountPadding = 16 - totalBytesCount % 16;
+                    totalBytesCount += bytesCountPadding;
+                }
             }
             ext = FileLoader.getDocumentFileName(documentLocation);
             int idx;
@@ -405,8 +411,15 @@ public class FileLoadOperation {
                     onFinishLoadingFile();
                     return;
                 }
+                int currentBytesSize = requestInfo.response.bytes.limit();
+                downloadedBytes += currentBytesSize;
+                boolean finishedDownloading = currentBytesSize != currentDownloadChunkSize || (totalBytesCount == downloadedBytes || downloadedBytes % currentDownloadChunkSize != 0) && (totalBytesCount <= 0 || totalBytesCount <= downloadedBytes);
+
                 if (key != null) {
                     Utilities.aesIgeEncryption(requestInfo.response.bytes.buffer, key, iv, false, true, 0, requestInfo.response.bytes.limit());
+                    if (finishedDownloading && bytesCountPadding != 0) {
+                        requestInfo.response.bytes.limit(requestInfo.response.bytes.limit() - bytesCountPadding);
+                    }
                 }
                 if (fileOutputStream != null) {
                     FileChannel channel = fileOutputStream.getChannel();
@@ -416,10 +429,8 @@ public class FileLoadOperation {
                     fiv.seek(0);
                     fiv.write(iv);
                 }
-                int currentBytesSize = requestInfo.response.bytes.limit();
-                downloadedBytes += currentBytesSize;
                 if (totalBytesCount > 0 && state == stateDownloading) {
-                    delegate.didChangedLoadProgress(FileLoadOperation.this,  Math.min(1.0f, (float)downloadedBytes / (float)totalBytesCount));
+                    delegate.didChangedLoadProgress(FileLoadOperation.this, Math.min(1.0f, (float) downloadedBytes / (float) totalBytesCount));
                 }
 
                 for (int a = 0; a < delayedRequestInfos.size(); a++) {
@@ -433,14 +444,10 @@ public class FileLoadOperation {
                     }
                 }
 
-                if (currentBytesSize != currentDownloadChunkSize) {
+                if (finishedDownloading) {
                     onFinishLoadingFile();
                 } else {
-                    if (totalBytesCount != downloadedBytes && downloadedBytes % currentDownloadChunkSize == 0 || totalBytesCount > 0 && totalBytesCount > downloadedBytes) {
-                        startDownloadRequest();
-                    } else {
-                        onFinishLoadingFile();
-                    }
+                    startDownloadRequest();
                 }
             } catch (Exception e) {
                 cleanup();

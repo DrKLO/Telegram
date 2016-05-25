@@ -382,4 +382,9 @@ public class RecyclerListView extends RecyclerView {
              */
         }
     }
+
+    @Override
+    public boolean hasOverlappingRendering() {
+        return false;
+    }
 }

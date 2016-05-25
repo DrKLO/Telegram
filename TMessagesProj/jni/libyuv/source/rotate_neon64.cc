@@ -26,7 +26,7 @@ static uvec8 kVTbl4x4Transpose =
 
 void TransposeWx8_NEON(const uint8* src, int src_stride,
                        uint8* dst, int dst_stride, int width) {
-  const uint8* src_temp = NULL;
+  const uint8* src_temp;
   int64 width64 = (int64) width;  // Work around clang 3.4 warning.
   asm volatile (
     // loops are on blocks of 8. loop will stop when
@@ -235,7 +235,7 @@ void TransposeWx8_NEON(const uint8* src, int src_stride,
 
     "4:                                          \n"
 
-    : "+r"(src_temp),                             // %0
+    : "=&r"(src_temp),                            // %0
       "+r"(src),                                  // %1
       "+r"(dst),                                  // %2
       "+r"(width64)                               // %3
@@ -255,7 +255,7 @@ void TransposeUVWx8_NEON(const uint8* src, int src_stride,
                          uint8* dst_a, int dst_stride_a,
                          uint8* dst_b, int dst_stride_b,
                          int width) {
-  const uint8* src_temp = NULL;
+  const uint8* src_temp;
   int64 width64 = (int64) width;  // Work around clang 3.4 warning.
   asm volatile (
     // loops are on blocks of 8. loop will stop when
@@ -520,7 +520,7 @@ void TransposeUVWx8_NEON(const uint8* src, int src_stride,
 
     "4:                                        \n"
 
-    : "+r"(src_temp),                             // %0
+    : "=&r"(src_temp),                            // %0
       "+r"(src),                                  // %1
       "+r"(dst_a),                                // %2
       "+r"(dst_b),                                // %3

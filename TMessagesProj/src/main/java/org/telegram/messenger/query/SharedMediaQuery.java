@@ -375,9 +375,10 @@ public class SharedMediaQuery {
                     }
 
                     while (cursor.next()) {
-                        NativeByteBuffer data = new NativeByteBuffer(cursor.byteArrayLength(0));
-                        if (data != null && cursor.byteBufferValue(0, data) != 0) {
+                        NativeByteBuffer data = cursor.byteBufferValue(0);
+                        if (data != null) {
                             TLRPC.Message message = TLRPC.Message.TLdeserialize(data, data.readInt32(false), false);
+                            data.reuse();
                             message.id = cursor.intValue(1);
                             message.dialog_id = uid;
                             if ((int) uid == 0) {
@@ -394,7 +395,6 @@ public class SharedMediaQuery {
                                 }
                             }
                         }
-                        data.reuse();
                     }
                     cursor.dispose();
 
@@ -481,16 +481,16 @@ public class SharedMediaQuery {
                     SQLiteCursor cursor = MessagesStorage.getInstance().getDatabase().queryFinalized(String.format(Locale.US, "SELECT data, mid FROM media_v2 WHERE uid = %d AND mid < %d AND type = %d ORDER BY date DESC, mid DESC LIMIT 1000", uid, max_id, MEDIA_MUSIC));
 
                     while (cursor.next()) {
-                        NativeByteBuffer data = new NativeByteBuffer(cursor.byteArrayLength(0));
-                        if (data != null && cursor.byteBufferValue(0, data) != 0) {
+                        NativeByteBuffer data = cursor.byteBufferValue(0);
+                        if (data != null) {
                             TLRPC.Message message = TLRPC.Message.TLdeserialize(data, data.readInt32(false), false);
+                            data.reuse();
                             if (MessageObject.isMusicMessage(message)) {
                                 message.id = cursor.intValue(1);
                                 message.dialog_id = uid;
                                 arrayList.add(0, new MessageObject(message, null, false));
                             }
                         }
-                        data.reuse();
                     }
                     cursor.dispose();
                 } catch (Exception e) {

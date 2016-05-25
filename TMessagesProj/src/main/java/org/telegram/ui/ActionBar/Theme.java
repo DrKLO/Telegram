@@ -55,7 +55,12 @@ public class Theme {
     public static final int ACTION_BAR_VIOLET_SELECTOR_COLOR = 0xff735fbe;
     public static final int ACTION_BAR_YELLOW_SELECTOR_COLOR = 0xffef9f09;
 
+    public static final int ATTACH_SHEET_TEXT_COLOR = 0xff757575;
 
+    public static final int DIALOGS_MESSAGE_TEXT_COLOR = 0xff8f8f8f;
+    public static final int DIALOGS_NAME_TEXT_COLOR = 0xff4d83b3;
+    public static final int DIALOGS_ATTACH_TEXT_COLOR = 0xff4d83b3;
+    public static final int DIALOGS_PRINTING_TEXT_COLOR = 0xff4d83b3;
 
     public static final int CHAT_UNREAD_TEXT_COLOR = 0xff5695cc;
     public static final int CHAT_ADD_CONTACT_TEXT_COLOR = 0xff4a82b5;
@@ -95,6 +100,7 @@ public class Theme {
 
     public static final int SECRET_CHAT_INFO_TEXT_COLOR = 0xffffffff;
 
+    public static final int MSG_SELECTED_BACKGROUND_COLOR = 0x6633b5e5;
     public static final int MSG_WEB_PREVIEW_DURATION_TEXT_COLOR = 0xffffffff;
     public static final int MSG_SECRET_TIME_TEXT_COLOR = 0xffe4e2e0;
     public static final int MSG_STICKER_NAME_TEXT_COLOR = 0xffffffff;
@@ -331,15 +337,6 @@ public class Theme {
             geoInDrawable = context.getResources().getDrawable(R.drawable.location_b);
             geoOutDrawable = context.getResources().getDrawable(R.drawable.location_g);
 
-            attachButtonDrawables[0] = context.getResources().getDrawable(R.drawable.attach_camera_states);
-            attachButtonDrawables[1] = context.getResources().getDrawable(R.drawable.attach_gallery_states);
-            attachButtonDrawables[2] = context.getResources().getDrawable(R.drawable.attach_video_states);
-            attachButtonDrawables[3] = context.getResources().getDrawable(R.drawable.attach_audio_states);
-            attachButtonDrawables[4] = context.getResources().getDrawable(R.drawable.attach_file_states);
-            attachButtonDrawables[5] = context.getResources().getDrawable(R.drawable.attach_contact_states);
-            attachButtonDrawables[6] = context.getResources().getDrawable(R.drawable.attach_location_states);
-            attachButtonDrawables[7] = context.getResources().getDrawable(R.drawable.attach_hide_states);
-
             cornerOuter[0] = context.getResources().getDrawable(R.drawable.corner_out_tl);
             cornerOuter[1] = context.getResources().getDrawable(R.drawable.corner_out_tr);
             cornerOuter[2] = context.getResources().getDrawable(R.drawable.corner_out_br);
@@ -365,6 +362,19 @@ public class Theme {
                 cornerInner[a].setColorFilter(colorFilter);
             }
             timeStickerBackgroundDrawable.setColorFilter(colorFilter);
+        }
+    }
+
+    public static void loadChatResources(Context context) {
+        if (attachButtonDrawables[0] == null) {
+            attachButtonDrawables[0] = context.getResources().getDrawable(R.drawable.attach_camera_states);
+            attachButtonDrawables[1] = context.getResources().getDrawable(R.drawable.attach_gallery_states);
+            attachButtonDrawables[2] = context.getResources().getDrawable(R.drawable.attach_video_states);
+            attachButtonDrawables[3] = context.getResources().getDrawable(R.drawable.attach_audio_states);
+            attachButtonDrawables[4] = context.getResources().getDrawable(R.drawable.attach_file_states);
+            attachButtonDrawables[5] = context.getResources().getDrawable(R.drawable.attach_contact_states);
+            attachButtonDrawables[6] = context.getResources().getDrawable(R.drawable.attach_location_states);
+            attachButtonDrawables[7] = context.getResources().getDrawable(R.drawable.attach_hide_states);
         }
     }
 

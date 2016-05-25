@@ -66,6 +66,8 @@
     <string name="MuteDisable">تعطيل</string>
     <string name="Hashtags">الأوسمة</string>
     <string name="Recent">حديث</string>
+    <string name="ChatHints">المحادثات</string>
+    <string name="ChatHintsDelete">هل ترغب في حذف %1$s من الاقتراحات؟</string>
     <string name="LinkPreview">معاينة الرابط</string>
     <!--channels-->
     <string name="GroupType">نوع المجموعة</string>
@@ -206,6 +208,7 @@
     <string name="ChannelMessageGroupAudio">%1$s أرسل رسالة صوتية للقناة %2$s</string>
     <string name="ChannelMessageGroupMusic">%1$s  قام بإرسال مقطع صوتي للقناة %2$s</string>
     <string name="ChannelMessageGroupSticker">%1$s  قام بإرسال ملصق للقناة %2$s</string>
+    <string name="ChannelMessageGroupStickerEmoji">%1$s أرسل %3$s ملصق للقناة %2$s</string>
     <string name="ChannelMessageNoText">%1$s أرسل رسالة</string>
     <string name="ChannelMessagePhoto">%1$s أرسل صورة</string>
     <string name="ChannelMessageVideo">%1$s أرسل مقطع مرئي</string>
@@ -216,6 +219,7 @@
     <string name="ChannelMessageAudio">%1$s أرسل رسالة صوتية</string>
     <string name="ChannelMessageMusic">%1$s أرسل مقطع صوتي</string>
     <string name="ChannelMessageSticker">%1$s أرسل ملصق</string>
+    <string name="ChannelMessageStickerEmoji">%1$s أرسل %2$s ملصق</string>
     <string name="WhoCanAddMembers">من يستطيع إضافة أعضاء؟</string>
     <string name="WhoCanAddMembersAllMembers">جميع الأعضاء</string>
     <string name="WhoCanAddMembersAdmins">فقط المشرفون</string>
@@ -301,7 +305,7 @@
     <string name="SetTimer">عداد التدمير الذاتي</string>
     <string name="ServiceNotifications">إشعارات الخدمة</string>
     <string name="GettingLinkInfo">جاري جلب معلومات الرابط...</string>
-    <string name="OpenInBrowser">فتح في المتصفح</string>
+    <string name="OpenInBrowser">فتح بواسطة...</string>
     <string name="CopyUrl">انسخ الرابط</string>
     <string name="SendItems">أرسل %1$s</string>
     <string name="OpenUrlAlert">هل ترغب في فتح الرابط باستخدام %1$s ؟</string>
@@ -333,6 +337,12 @@
     <string name="ReportChatOther">أخرى</string>
     <string name="ReportChatDescription">الوصف</string>
     <string name="PinnedMessage">رسالة مثبتة</string>
+    <string name="EditedMessage">معدلة</string>
+    <string name="AttachBotsHelp">انتقل إلى الأسفل للبوتات</string>
+    <string name="TimeToEdit">%1$s</string>
+    <string name="TimeToEditExpired">المعذرة، انتهت مدة التعديل على الرسائل.</string>
+    <string name="AddShortcut">إضافة اختصار</string>
+    <string name="ShortcutAdded">تمت إضافة اختصار للشاشة الرئيسية</string>
     <!--notification-->
     <string name="MessageLifetimeChanged">%1$s قام بتعيين عداد التدمير الذاتي إلى to %2$s</string>
     <string name="MessageLifetimeChangedOutgoing">لقد قمت بتعيين التدمير الذاتي إلى %1$s</string>
@@ -350,6 +360,7 @@
     <string name="NotificationMessageAudio">%1$s قام بإرسال رسالة صوتية</string>
     <string name="NotificationMessageMusic">%1$s أرسل مقطع صوتي لك</string>
     <string name="NotificationMessageSticker">%1$s قام بإرسال ملصق</string>
+    <string name="NotificationMessageStickerEmoji">%1$s قام بإرسال %2$s ملصق</string>
     <string name="NotificationMessageGroupText">%1$s @ %2$s: %3$s</string>
     <string name="NotificationMessageGroupNoText">%1$s  قام بإرسال رسالة للمجموعة %2$s</string>
     <string name="NotificationMessageGroupPhoto">%1$s قام بإرسال صورة للمجموعة %2$s</string>
@@ -361,6 +372,7 @@
     <string name="NotificationMessageGroupAudio">%1$s أرسل رسالة صوتية للمجموعة %2$s</string>
     <string name="NotificationMessageGroupMusic">%1$s أرسل مقطع صوتي للمجموعة %2$s</string>
     <string name="NotificationMessageGroupSticker">%1$s قام بإرسال ملصق للمجموعة %2$s</string>
+    <string name="NotificationMessageGroupStickerEmoji">%1$s أرسل %3$s ملصق للمجموعة %2$s</string>
     <string name="NotificationInvitedToGroup">%1$s قام بدعوتك للمجموعة %2$s</string>
     <string name="NotificationEditedGroupName">%1$s قام بتعديل اسم المجموعة %2$s</string>
     <string name="NotificationEditedGroupPhoto">%1$s قام بتغيير صورة المجموعة %2$s</string>
@@ -384,6 +396,7 @@
     <string name="NotificationActionPinnedVideo">%1$s ثبت فيديو في المجموعة %2$s</string>
     <string name="NotificationActionPinnedFile">%1$s ثبت ملف في المجموعة %2$s</string>
     <string name="NotificationActionPinnedSticker">%1$s ثبت ملصق في المجموعة %2$s</string>
+    <string name="NotificationActionPinnedStickerEmoji">%1$s قام بتثبيت %3$s ملصق في المجموعة %2$s</string>
     <string name="NotificationActionPinnedVoice">%1$s ثبت رسالة صوتية في المجموعة %2$s</string>
     <string name="NotificationActionPinnedContact">%1$s ثبت جهة اتصال في المجموعة %2$s</string>
     <string name="NotificationActionPinnedGeo">%1$s ثبت خريطة في المجموعة %2$s</string>
@@ -395,6 +408,7 @@
     <string name="NotificationActionPinnedVideoChannel">%1$s ثبت فيديو</string>
     <string name="NotificationActionPinnedFileChannel">%1$s ثبت ملف</string>
     <string name="NotificationActionPinnedStickerChannel">%1$s ثبت ملصق</string>
+    <string name="NotificationActionPinnedStickerEmojiChannel">%1$s قام بتثبيت %2$s ملصق</string>
     <string name="NotificationActionPinnedVoiceChannel">%1$s ثبت رسالة صوتية</string>
     <string name="NotificationActionPinnedContactChannel">%1$s ثبت جهة اتصال</string>
     <string name="NotificationActionPinnedGeoChannel">%1$s ثبت خريطة</string>

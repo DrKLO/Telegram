@@ -512,11 +512,6 @@ public class PhotoViewerCaptionEnterView extends FrameLayoutFixed implements Not
 
     private void openKeyboardInternal() {
         showPopup(AndroidUtilities.usingHardwareInput ? 0 : 2);
-        /*int selection = messageEditText.getSelectionStart();
-        MotionEvent event = MotionEvent.obtain(0, 0, MotionEvent.ACTION_UP, 0, 0, 0);
-        messageEditText.onTouchEvent(event);
-        event.recycle();
-        messageEditText.setSelection(selection);*/
         AndroidUtilities.showKeyboard(messageEditText);
     }
 

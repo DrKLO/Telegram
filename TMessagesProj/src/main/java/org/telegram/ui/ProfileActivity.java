@@ -123,6 +123,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
 
     private boolean openAnimationInProgress;
     private boolean playProfileAnimation;
+    private boolean allowProfileAnimation = true;
     private int extraHeight;
     private int initialAnimationExtraHeight;
     private float animationProgress;
@@ -152,6 +153,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     private final static int set_admins = 11;
     private final static int edit_channel = 12;
     private final static int convert_to_supergroup = 13;
+    private final static int add_shortcut = 14;
 
     private int emptyRow;
     private int emptyRowChat;
@@ -191,7 +193,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
 
         @Override
         protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-            setMeasuredDimension(MeasureSpec.getSize(widthMeasureSpec), ActionBar.getCurrentActionBarHeight() + (!AndroidUtilities.isTablet() ? AndroidUtilities.statusBarHeight : 0) + AndroidUtilities.dp(91));
+            setMeasuredDimension(MeasureSpec.getSize(widthMeasureSpec), ActionBar.getCurrentActionBarHeight() + (actionBar.getOccupyStatusBar() ? AndroidUtilities.statusBarHeight : 0) + AndroidUtilities.dp(91));
         }
 
         @Override
@@ -343,21 +345,21 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         ActionBar actionBar = new ActionBar(context) {
             @Override
             public boolean onTouchEvent(MotionEvent event) {
-                return super.onTouchEvent(event); //TODO
+                return super.onTouchEvent(event);
             }
         };
         actionBar.setItemsBackgroundColor(AvatarDrawable.getButtonColorForId(user_id != 0 || ChatObject.isChannel(chat_id) && !currentChat.megagroup ? 5 : chat_id));
         actionBar.setBackButtonDrawable(new BackDrawable(false));
         actionBar.setCastShadows(false);
         actionBar.setAddToContainer(false);
-        actionBar.setOccupyStatusBar(!AndroidUtilities.isTablet());
+        actionBar.setOccupyStatusBar(Build.VERSION.SDK_INT >= 21 && !AndroidUtilities.isTablet());
         return actionBar;
     }
 
     @Override
     public View createView(Context context) {
         hasOwnBackground = true;
-        extraHeight = 88;
+        extraHeight = AndroidUtilities.dp(88);
         actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
             public void onItemClick(final int id) {
@@ -505,6 +507,27 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     Bundle args = new Bundle();
                     args.putInt("chat_id", chat_id);
                     presentFragment(new ConvertGroupActivity(args));
+                } else if (id == add_shortcut) {
+                    try {
+                        long did;
+                        if (currentEncryptedChat != null) {
+                            did = ((long) currentEncryptedChat.id) << 32;
+                        } else if (user_id != 0) {
+                            did = user_id;
+                        } else if (chat_id != 0) {
+                            did = -chat_id;
+                        } else {
+                            return;
+                        }
+                        AndroidUtilities.installShortcut(did);
+                        /*try {
+                            Toast.makeText(getParentActivity(), LocaleController.getString("ShortcutAdded", R.string.ShortcutAdded), Toast.LENGTH_SHORT).show();
+                        } catch (Exception e) {
+                            FileLog.e("tmessages", e);
+                        }*/
+                    } catch (Exception e) {
+                        FileLog.e("tmessages", e);
+                    }
                 }
             }
         });
@@ -1172,6 +1195,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         if (extraHeight != newOffset) {
             extraHeight = newOffset;
             topView.invalidate();
+            if (playProfileAnimation) {
+                allowProfileAnimation = extraHeight != 0;
+            }
             needLayout();
         }
     }
@@ -1425,7 +1451,6 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 updateRowsIds();
                 if (listAdapter != null) {
                     listAdapter.notifyDataSetChanged();
-                    checkListViewScroll();
                 }
             }
         } else if (id == NotificationCenter.blockedUsersDidLoaded) {
@@ -1454,7 +1479,6 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 updateRowsIds();
                 if (listAdapter != null) {
                     listAdapter.notifyDataSetChanged();
-                    checkListViewScroll();
                 }
                 TLRPC.Chat newChat = MessagesController.getInstance().getChat(chat_id);
                 if (newChat != null) {
@@ -1474,7 +1498,6 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 updateRowsIds();
                 if (listAdapter != null) {
                     listAdapter.notifyDataSetChanged();
-                    checkListViewScroll();
                 }
             }
         } else if (id == NotificationCenter.userInfoDidLoaded) {
@@ -1495,7 +1518,6 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         TLRPC.TL_decryptedMessageActionSetMessageTTL action = (TLRPC.TL_decryptedMessageActionSetMessageTTL) obj.messageOwner.action.encryptedAction;
                         if (listAdapter != null) {
                             listAdapter.notifyDataSetChanged();
-                            checkListViewScroll();
                         }
                     }
                 }
@@ -1522,7 +1544,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
 
     @Override
     protected void onTransitionAnimationStart(boolean isOpen, boolean backward) {
-        if (!backward && playProfileAnimation) {
+        if (!backward && playProfileAnimation && allowProfileAnimation) {
             openAnimationInProgress = true;
         }
         NotificationCenter.getInstance().setAllowedNotificationsDutingAnimation(new int[]{NotificationCenter.dialogsNeedReload, NotificationCenter.closeChats, NotificationCenter.mediaCountDidLoaded});
@@ -1531,7 +1553,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
 
     @Override
     protected void onTransitionAnimationEnd(boolean isOpen, boolean backward) {
-        if (!backward && playProfileAnimation) {
+        if (!backward && playProfileAnimation && allowProfileAnimation) {
             openAnimationInProgress = false;
         }
         NotificationCenter.getInstance().setAnimationInProgress(false);
@@ -1545,7 +1567,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         animationProgress = progress;
         ViewProxy.setAlpha(listView, progress);
 
-        //ViewProxy.setTranslationY(listView, -AndroidUtilities.dp(48) + AndroidUtilities.dp(48) * progress);
+        ViewProxy.setTranslationX(listView, AndroidUtilities.dp(48) - AndroidUtilities.dp(48) * progress);
         int color = AvatarDrawable.getProfileBackColorForId(user_id != 0 || ChatObject.isChannel(chat_id) && !currentChat.megagroup ? 5 : chat_id);
 
         int r = Color.red(Theme.ACTION_BAR_COLOR);
@@ -1587,7 +1609,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
 
     @Override
     protected AnimatorSetProxy onCustomTransitionAnimation(final boolean isOpen, final Runnable callback) {
-        if (playProfileAnimation) {
+        if (playProfileAnimation && allowProfileAnimation) {
             final AnimatorSetProxy animatorSet = new AnimatorSetProxy();
             animatorSet.setDuration(180);
             if (Build.VERSION.SDK_INT > 15) {
@@ -2169,13 +2191,14 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         menu.clearItems();
         animatingItem = null;
 
+        ActionBarMenuItem item = null;
         if (user_id != 0) {
             if (ContactsController.getInstance().contactsDict.get(user_id) == null) {
                 TLRPC.User user = MessagesController.getInstance().getUser(user_id);
                 if (user == null) {
                     return;
                 }
-                ActionBarMenuItem item = menu.addItem(10, R.drawable.ic_ab_other);
+                item = menu.addItem(10, R.drawable.ic_ab_other);
                 if (user.bot) {
                     if (!user.bot_nochats) {
                         item.addSubItem(invite_to_group, LocaleController.getString("BotInvite", R.string.BotInvite), 0);
@@ -2194,7 +2217,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     }
                 }
             } else {
-                ActionBarMenuItem item = menu.addItem(10, R.drawable.ic_ab_other);
+                item = menu.addItem(10, R.drawable.ic_ab_other);
                 item.addSubItem(share_contact, LocaleController.getString("ShareContact", R.string.ShareContact), 0);
                 item.addSubItem(block_contact, !userBlocked ? LocaleController.getString("BlockContact", R.string.BlockContact) : LocaleController.getString("Unblock", R.string.Unblock), 0);
                 item.addSubItem(edit_contact, LocaleController.getString("EditContact", R.string.EditContact), 0);
@@ -2214,7 +2237,6 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     }
                 }
                 if (ChatObject.isChannel(chat)) {
-                    ActionBarMenuItem item = null;
                     if (chat.creator || chat.megagroup && chat.editor) {
                         item = menu.addItem(10, R.drawable.ic_ab_other);
                         item.addSubItem(edit_channel, LocaleController.getString("ChannelEdit", R.string.ChannelEdit), 0);
@@ -2226,7 +2248,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         item.addSubItem(leave_group, LocaleController.getString("LeaveMegaMenu", R.string.LeaveMegaMenu), 0);
                     }
                 } else {
-                    ActionBarMenuItem item = menu.addItem(10, R.drawable.ic_ab_other);
+                    item = menu.addItem(10, R.drawable.ic_ab_other);
                     if (chat.creator && chat_id > 0) {
                         item.addSubItem(set_admins, LocaleController.getString("SetAdmins", R.string.SetAdmins), 0);
                     }
@@ -2239,10 +2261,14 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     item.addSubItem(leave_group, LocaleController.getString("DeleteAndExit", R.string.DeleteAndExit), 0);
                 }
             } else {
-                ActionBarMenuItem item = menu.addItem(10, R.drawable.ic_ab_other);
+                item = menu.addItem(10, R.drawable.ic_ab_other);
                 item.addSubItem(edit_name, LocaleController.getString("EditName", R.string.EditName), 0);
             }
         }
+        if (item == null) {
+            item = menu.addItem(10, R.drawable.ic_ab_other);
+        }
+        item.addSubItem(add_shortcut, LocaleController.getString("AddShortcut", R.string.AddShortcut), 0);
     }
 
     @Override

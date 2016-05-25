@@ -481,16 +481,12 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
                             }
                         }
 
-                        if (bitmapDrawable instanceof AnimatedFileDrawable) {
-                            drawRegion.set(imageX, imageY, imageX + imageW, imageY + imageH);
+                        if (bitmapW / scaleH > imageW) {
+                            bitmapW /= scaleH;
+                            drawRegion.set(imageX - (bitmapW - imageW) / 2, imageY, imageX + (bitmapW + imageW) / 2, imageY + imageH);
                         } else {
-                            if (bitmapW / scaleH > imageW) {
-                                bitmapW /= scaleH;
-                                drawRegion.set(imageX - (bitmapW - imageW) / 2, imageY, imageX + (bitmapW + imageW) / 2, imageY + imageH);
-                            } else {
-                                bitmapH /= scaleW;
-                                drawRegion.set(imageX, imageY - (bitmapH - imageH) / 2, imageX + imageW, imageY + (bitmapH + imageH) / 2);
-                            }
+                            bitmapH /= scaleW;
+                            drawRegion.set(imageX, imageY - (bitmapH - imageH) / 2, imageX + imageW, imageY + (bitmapH + imageH) / 2);
                         }
                         if (orientation % 360 == 90 || orientation % 360 == 270) {
                             int width = (drawRegion.right - drawRegion.left) / 2;

@@ -29,8 +29,6 @@ import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.BuildVars;
-import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
 import org.telegram.messenger.AnimationCompat.AnimatorListenerAdapterProxy;
 import org.telegram.messenger.AnimationCompat.AnimatorSetProxy;
@@ -101,9 +99,6 @@ public class ActionBarLayout extends FrameLayout {
             getWindowVisibleDisplayFrame(rect);
             int usableViewHeight = rootView.getHeight() - (rect.top != 0 ? AndroidUtilities.statusBarHeight : 0) - AndroidUtilities.getViewInset(rootView);
             isKeyboardVisible = usableViewHeight - (rect.bottom - rect.top) > 0;
-            if (BuildVars.DEBUG_VERSION) {
-                FileLog.e("tmessages", "keyboard visible = " + isKeyboardVisible + " for " + this);
-            }
             if (waitingForKeyboardCloseRunnable != null && !containerView.isKeyboardVisible && !containerViewBack.isKeyboardVisible) {
                 AndroidUtilities.cancelRunOnUIThread(waitingForKeyboardCloseRunnable);
                 waitingForKeyboardCloseRunnable.run();
@@ -117,6 +112,7 @@ public class ActionBarLayout extends FrameLayout {
     private static Paint scrimPaint;
 
     private Runnable waitingForKeyboardCloseRunnable;
+    private Runnable delayedOpenAnimationRunnable;
 
     private LinearLayoutContainer containerView;
     private LinearLayoutContainer containerViewBack;
@@ -629,6 +625,15 @@ public class ActionBarLayout extends FrameLayout {
         });
     }
 
+    public void resumeDelayedFragmentAnimation() {
+        if (delayedOpenAnimationRunnable == null) {
+            return;
+        }
+        AndroidUtilities.cancelRunOnUIThread(delayedOpenAnimationRunnable);
+        delayedOpenAnimationRunnable.run();
+        delayedOpenAnimationRunnable = null;
+    }
+
     public boolean presentFragment(final BaseFragment fragment, final boolean removeLast, boolean forceWithoutAnimation, boolean check) {
         if (checkTransitionAnimation() || delegate != null && check && !delegate.needPresentFragment(fragment, removeLast, forceWithoutAnimation, this) || !fragment.onFragmentCreate()) {
             return false;
@@ -736,7 +741,6 @@ public class ActionBarLayout extends FrameLayout {
                         ViewProxy.setTranslationX(containerView, 0);
                     }
                 };
-                FileLog.e("tmessages", "onOpenAnimationsStart");
                 fragment.onTransitionAnimationStart(true, false);
                 AnimatorSetProxy animation = fragment.onCustomTransitionAnimation(true, new Runnable() {
                     @Override
@@ -751,7 +755,6 @@ public class ActionBarLayout extends FrameLayout {
                         waitingForKeyboardCloseRunnable = new Runnable() {
                             @Override
                             public void run() {
-                                FileLog.e("tmessages", "start delayed by keyboard open animation");
                                 if (waitingForKeyboardCloseRunnable != this) {
                                     return;
                                 }
@@ -759,6 +762,18 @@ public class ActionBarLayout extends FrameLayout {
                             }
                         };
                         AndroidUtilities.runOnUIThread(waitingForKeyboardCloseRunnable, 200);
+                    } else if (fragment.needDelayOpenAnimation()) {
+                        delayedOpenAnimationRunnable = new Runnable() {
+                            @Override
+                            public void run() {
+                                if (delayedOpenAnimationRunnable != this) {
+                                    return;
+                                }
+                                delayedOpenAnimationRunnable = null;
+                                startLayoutAnimation(true, true);
+                            }
+                        };
+                        AndroidUtilities.runOnUIThread(delayedOpenAnimationRunnable, 200);
                     } else {
                         startLayoutAnimation(true, true);
                     }
@@ -873,7 +888,6 @@ public class ActionBarLayout extends FrameLayout {
             layoutParams.width = LayoutHelper.MATCH_PARENT;
             layoutParams.height = LayoutHelper.MATCH_PARENT;
             fragmentView.setLayoutParams(layoutParams);
-            FileLog.e("tmessages", "onCloseAnimationStart");
             previousFragment.onTransitionAnimationStart(true, true);
             currentFragment.onTransitionAnimationStart(false, false);
             previousFragment.onResume();
@@ -918,7 +932,6 @@ public class ActionBarLayout extends FrameLayout {
                                 if (waitingForKeyboardCloseRunnable != this) {
                                     return;
                                 }
-                                FileLog.e("tmessages", "start delayed by keyboard close animation");
                                 startLayoutAnimation(false, true);
                             }
                         };
@@ -978,7 +991,6 @@ public class ActionBarLayout extends FrameLayout {
                         onAnimationEndCheck(false);
                     }
                 });
-                FileLog.e("tmessages", "onCloseAnimationsStart");
                 currentAnimation.start();
             } else {
                 removeFragmentFromStackInternal(currentFragment);
@@ -1104,13 +1116,11 @@ public class ActionBarLayout extends FrameLayout {
             if (post) {
                 new Handler().post(new Runnable() {
                     public void run() {
-                        FileLog.e("tmessages", "onCloseAnimationEnd");
                         onCloseAnimationEndRunnable.run();
                         onCloseAnimationEndRunnable = null;
                     }
                 });
             } else {
-                FileLog.e("tmessages", "onCloseAnimationEnd");
                 onCloseAnimationEndRunnable.run();
                 onCloseAnimationEndRunnable = null;
             }
@@ -1124,13 +1134,11 @@ public class ActionBarLayout extends FrameLayout {
             if (post) {
                 new Handler().post(new Runnable() {
                     public void run() {
-                        FileLog.e("tmessages", "onOpenAnimationEnd");
                         onOpenAnimationEndRunnable.run();
                         onOpenAnimationEndRunnable = null;
                     }
                 });
             } else {
-                FileLog.e("tmessages", "onOpenAnimationEnd");
                 onOpenAnimationEndRunnable.run();
                 onOpenAnimationEndRunnable = null;
             }

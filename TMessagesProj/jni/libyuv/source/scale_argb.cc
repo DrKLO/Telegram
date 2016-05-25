@@ -234,12 +234,12 @@ static void ScaleARGBBilinearDown(int src_width, int src_height,
     }
   }
 #endif
-#if defined(HAS_INTERPOLATEROW_MIPS_DSPR2)
-  if (TestCpuFlag(kCpuHasMIPS_DSPR2) &&
+#if defined(HAS_INTERPOLATEROW_DSPR2)
+  if (TestCpuFlag(kCpuHasDSPR2) &&
       IS_ALIGNED(src_argb, 4) && IS_ALIGNED(src_stride, 4)) {
-    InterpolateRow = InterpolateRow_Any_MIPS_DSPR2;
+    InterpolateRow = InterpolateRow_Any_DSPR2;
     if (IS_ALIGNED(clip_src_width, 4)) {
-      InterpolateRow = InterpolateRow_MIPS_DSPR2;
+      InterpolateRow = InterpolateRow_DSPR2;
     }
   }
 #endif
@@ -324,10 +324,10 @@ static void ScaleARGBBilinearUp(int src_width, int src_height,
     }
   }
 #endif
-#if defined(HAS_INTERPOLATEROW_MIPS_DSPR2)
-  if (TestCpuFlag(kCpuHasMIPS_DSPR2) &&
+#if defined(HAS_INTERPOLATEROW_DSPR2)
+  if (TestCpuFlag(kCpuHasDSPR2) &&
       IS_ALIGNED(dst_argb, 4) && IS_ALIGNED(dst_stride, 4)) {
-    InterpolateRow = InterpolateRow_MIPS_DSPR2;
+    InterpolateRow = InterpolateRow_DSPR2;
   }
 #endif
   if (src_width >= 32768) {
@@ -465,13 +465,13 @@ static void ScaleYUVToARGBBilinearUp(int src_width, int src_height,
     }
   }
 #endif
-#if defined(HAS_I422TOARGBROW_MIPS_DSPR2)
-  if (TestCpuFlag(kCpuHasMIPS_DSPR2) && IS_ALIGNED(src_width, 4) &&
+#if defined(HAS_I422TOARGBROW_DSPR2)
+  if (TestCpuFlag(kCpuHasDSPR2) && IS_ALIGNED(src_width, 4) &&
       IS_ALIGNED(src_y, 4) && IS_ALIGNED(src_stride_y, 4) &&
       IS_ALIGNED(src_u, 2) && IS_ALIGNED(src_stride_u, 2) &&
       IS_ALIGNED(src_v, 2) && IS_ALIGNED(src_stride_v, 2) &&
       IS_ALIGNED(dst_argb, 4) && IS_ALIGNED(dst_stride_argb, 4)) {
-    I422ToARGBRow = I422ToARGBRow_MIPS_DSPR2;
+    I422ToARGBRow = I422ToARGBRow_DSPR2;
   }
 #endif
 
@@ -502,10 +502,10 @@ static void ScaleYUVToARGBBilinearUp(int src_width, int src_height,
     }
   }
 #endif
-#if defined(HAS_INTERPOLATEROW_MIPS_DSPR2)
-  if (TestCpuFlag(kCpuHasMIPS_DSPR2) &&
+#if defined(HAS_INTERPOLATEROW_DSPR2)
+  if (TestCpuFlag(kCpuHasDSPR2) &&
       IS_ALIGNED(dst_argb, 4) && IS_ALIGNED(dst_stride_argb, 4)) {
-    InterpolateRow = InterpolateRow_MIPS_DSPR2;
+    InterpolateRow = InterpolateRow_DSPR2;
   }
 #endif
 
@@ -835,7 +835,6 @@ int YUVToARGBScaleClip(const uint8* src_y, int src_stride_y,
                        int dst_width, int dst_height,
                        int clip_x, int clip_y, int clip_width, int clip_height,
                        enum FilterMode filtering) {
-
   uint8* argb_buffer = (uint8*)malloc(src_width * src_height * 4);
   int r;
   I420ToARGB(src_y, src_stride_y,

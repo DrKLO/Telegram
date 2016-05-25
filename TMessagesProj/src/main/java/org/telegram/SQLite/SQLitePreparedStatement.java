@@ -12,16 +12,14 @@ import org.telegram.messenger.FileLog;
 import org.telegram.tgnet.NativeByteBuffer;
 
 import java.nio.ByteBuffer;
-import java.util.HashMap;
 
 public class SQLitePreparedStatement {
+
 	private boolean isFinalized = false;
 	private int sqliteStatementHandle;
-
-	private int queryArgsCount;
 	private boolean finalizeAfterQuery = false;
 
-    private static HashMap<SQLitePreparedStatement, String> hashMap;
+    //private static HashMap<SQLitePreparedStatement, String> hashMap;
 
 	public int getStatementHandle() {
 		return sqliteStatementHandle;
@@ -43,7 +41,7 @@ public class SQLitePreparedStatement {
 
 
     public SQLiteCursor query(Object[] args) throws SQLiteException {
-        if (args == null || args.length != queryArgsCount) {
+        if (args == null) {
             throw new IllegalArgumentException();
         }
 
