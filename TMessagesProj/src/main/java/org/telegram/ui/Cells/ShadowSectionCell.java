@@ -18,11 +18,20 @@ import org.telegram.messenger.R;
 
 public class ShadowSectionCell extends View {
 
+    private int size = 12;
+
     boolean bTheme;
     public ShadowSectionCell(Context context) {
         super(context);
         setBackgroundResource(R.drawable.greydivider);
         bTheme = true;
+    }
+
+    public void setSize(int value) {
+        size = value;
+
+
+
     }
 
     public ShadowSectionCell(Context context, boolean theme) {
@@ -33,7 +42,7 @@ public class ShadowSectionCell extends View {
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(12), MeasureSpec.EXACTLY));
+        super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(size), MeasureSpec.EXACTLY));
         if(bTheme)setTheme();
     }
 

@@ -29,9 +29,9 @@ import android.widget.ListView;
 import android.widget.Toast;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLog;
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.ActionBar.ActionBar;
@@ -42,7 +42,6 @@ import org.telegram.ui.Cells.ShadowSectionCell;
 import org.telegram.ui.Cells.TextColorCell;
 import org.telegram.ui.Cells.TextDetailSettingsCell;
 import org.telegram.ui.Cells.TextSettingsCell;
-import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.ColorSelectorDialog;
 
 import java.io.File;
@@ -123,7 +122,7 @@ public class ThemingActivity extends BaseFragment {
     public View createView(Context context) {
         if (fragmentView == null) {
 
-            actionBar.setItemsBackground(AvatarDrawable.getButtonColorForId(5));
+            //actionBar.setItemsBackground(AvatarDrawable.getButtonColorForId(5));
             actionBar.setBackButtonImage(R.drawable.ic_ab_back);
 
             if (AndroidUtilities.isTablet()) {
@@ -152,7 +151,9 @@ public class ThemingActivity extends BaseFragment {
             listView.setDivider(null);
             listView.setDividerHeight(0);
             listView.setVerticalScrollBarEnabled(false);
-            AndroidUtilities.setListViewEdgeEffectColor(listView, AvatarDrawable.getProfileBackColorForId(5));
+            int def = preferences.getInt("themeColor", AndroidUtilities.defColor);
+            int hColor = preferences.getInt("prefHeaderColor", def);
+            AndroidUtilities.setListViewEdgeEffectColor(listView, /*AvatarDrawable.getProfileBackColorForId(5)*/ hColor);
             frameLayout.addView(listView);
             FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) listView.getLayoutParams();
             layoutParams.width = FrameLayout.LayoutParams.MATCH_PARENT;
@@ -232,7 +233,7 @@ public class ThemingActivity extends BaseFragment {
                                                 FileLog.e("tmessages", e);
                                             }
                                             AndroidUtilities.setStringPref(getParentActivity(),"model", android.os.Build.MODEL+"/"+android.os.Build.VERSION.RELEASE);
-                                            Utilities.savePreferencesToSD(getParentActivity(), AndroidUtilities.THEME_PREFS+".xml", pName+".xml", true);
+                                            Utilities.savePreferencesToSD(getParentActivity(), "/Telegram/Themes", AndroidUtilities.THEME_PREFS+".xml", pName+".xml", true);
                                             Utilities.copyWallpaperToSD(getParentActivity(), pName, true);
                                             //Toast toast = Toast.makeText(getParentActivity(), LocaleController.getString("SaveThemeToastText", R.string.SaveThemeToastText), Toast.LENGTH_SHORT);
                                             //toast.show();
@@ -245,7 +246,7 @@ public class ThemingActivity extends BaseFragment {
                         builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
                         showDialog(builder.create());
 
-                    }  else if (i == applyThemeRow) {
+                    } else if (i == applyThemeRow) {
                         DocumentSelectActivity fragment = new DocumentSelectActivity();
                         fragment.fileFilter = ".xml";
                         fragment.setDelegate(new DocumentSelectActivity.DocumentSelectActivityDelegate() {

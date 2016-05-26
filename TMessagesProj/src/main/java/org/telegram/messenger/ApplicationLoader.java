@@ -38,16 +38,16 @@ import org.telegram.ui.Components.ForegroundDetector;
 
 import java.io.File;
 import java.io.RandomAccessFile;
-import java.util.Calendar;
 
 public class ApplicationLoader extends Application {
-    private static NetworkAlarm networkAlarm = null;
-    private static PendingIntent pendingIntent;
 
     private static Drawable cachedWallpaper;
     private static int selectedColor;
     private static boolean isCustomTheme;
     private static final Object sync = new Object();
+
+    private static int serviceMessageColor;
+    private static int serviceSelectedMessageColor;
 
     public static volatile Context applicationContext;
     public static volatile Handler applicationHandler;
@@ -60,6 +60,7 @@ public class ApplicationLoader extends Application {
     public static boolean SHOW_ANDROID_EMOJI;
     public static boolean KEEP_ORIGINAL_FILENAME;
     public static boolean USE_DEVICE_FONT;
+    public static boolean ENABLE_TAGS = true;
 
     public static boolean isCustomTheme() {
         return isCustomTheme;
@@ -71,7 +72,25 @@ public class ApplicationLoader extends Application {
 
     public static void reloadWallpaper() {
         cachedWallpaper = null;
+        serviceMessageColor = 0;
+        ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE).edit().remove("serviceMessageColor").commit();
         loadWallpaper();
+    }
+
+    private static void calcBackgroundColor() {
+        int result[] = AndroidUtilities.calcDrawableColor(cachedWallpaper);
+        serviceMessageColor = result[0];
+        serviceSelectedMessageColor = result[1];
+        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+        preferences.edit().putInt("serviceMessageColor", serviceMessageColor).putInt("serviceSelectedMessageColor", serviceSelectedMessageColor).commit();
+    }
+
+    public static int getServiceMessageColor() {
+        return serviceMessageColor;
+    }
+
+    public static int getServiceSelectedMessageColor() {
+        return serviceSelectedMessageColor;
     }
 
     public static void loadWallpaper() {
@@ -87,6 +106,8 @@ public class ApplicationLoader extends Application {
                         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
                         int selectedBackground = preferences.getInt("selectedBackground", 1000001);
                         selectedColor = preferences.getInt("selectedColor", 0);
+                        serviceMessageColor = preferences.getInt("serviceMessageColor", 0);
+                        serviceSelectedMessageColor = preferences.getInt("serviceSelectedMessageColor", 0);
                         if (selectedColor == 0) {
                             if (selectedBackground == 1000001) {
                                 cachedWallpaper = applicationContext.getResources().getDrawable(R.drawable.background_hd);
@@ -110,6 +131,9 @@ public class ApplicationLoader extends Application {
                             selectedColor = -2693905;
                         }
                         cachedWallpaper = new ColorDrawable(selectedColor);
+                    }
+                    if (serviceMessageColor == 0) {
+                        calcBackgroundColor();
                     }
                 }
             }
@@ -223,7 +247,7 @@ public class ApplicationLoader extends Application {
         String configPath = getFilesDirFixed().toString();
 
         try {
-            langCode = LocaleController.getLocaleString(LocaleController.getInstance().getSystemDefaultLocale());
+            langCode = LocaleController.getLocaleStringIso639();
             deviceModel = Build.MANUFACTURER + Build.MODEL;
             PackageInfo pInfo = ApplicationLoader.applicationContext.getPackageManager().getPackageInfo(ApplicationLoader.applicationContext.getPackageName(), 0);
             appVersion = pInfo.versionName + " (" + pInfo.versionCode + ")";
@@ -247,8 +271,11 @@ public class ApplicationLoader extends Application {
             systemVersion = "SDK Unknown";
         }
 
+        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+        boolean enablePushConnection = preferences.getBoolean("pushConnection", true);
+
         MessagesController.getInstance();
-        ConnectionsManager.getInstance().init(BuildVars.BUILD_VERSION, TLRPC.LAYER, BuildVars.APP_ID, deviceModel, systemVersion, appVersion, langCode, configPath, FileLog.getNetworkLogPath(), UserConfig.getClientUserId());
+        ConnectionsManager.getInstance().init(BuildVars.BUILD_VERSION, TLRPC.LAYER, BuildVars.APP_ID, deviceModel, systemVersion, appVersion, langCode, configPath, FileLog.getNetworkLogPath(), UserConfig.getClientUserId(), enablePushConnection);
         if (UserConfig.getCurrentUser() != null) {
             MessagesController.getInstance().putUser(UserConfig.getCurrentUser(), true);
             ConnectionsManager.getInstance().applyCountryPortNumber(UserConfig.getCurrentUser().phone);
@@ -275,11 +302,7 @@ public class ApplicationLoader extends Application {
 
         applicationContext = getApplicationContext();
         NativeLoader.initNativeLibs(ApplicationLoader.applicationContext);
-        try{
-            ConnectionsManager.native_setJava(Build.VERSION.SDK_INT == 14 || Build.VERSION.SDK_INT == 15);
-        } catch (Exception e) {
-            FileLog.e("tmessages", e);
-        }
+        ConnectionsManager.native_setJava(Build.VERSION.SDK_INT == 14 || Build.VERSION.SDK_INT == 15);
 
         if (Build.VERSION.SDK_INT >= 14) {
             new ForegroundDetector(this);
@@ -288,7 +311,6 @@ public class ApplicationLoader extends Application {
         applicationHandler = new Handler(applicationContext.getMainLooper());
         //plus
         databaseHandler = new DatabaseHandler(applicationContext);
-        //SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
         SharedPreferences plusPreferences = ApplicationLoader.applicationContext.getSharedPreferences("plusconfig", Activity.MODE_PRIVATE);
         SHOW_ANDROID_EMOJI = plusPreferences.getBoolean("showAndroidEmoji", false);
         KEEP_ORIGINAL_FILENAME = plusPreferences.getBoolean("keepOriginalFilename", false);
@@ -301,53 +323,31 @@ public class ApplicationLoader extends Application {
         SharedPreferences preferences = applicationContext.getSharedPreferences("Notifications", MODE_PRIVATE);
 
         if (preferences.getBoolean("pushService", true)) {
-            networkAlarm = new NetworkAlarm();
-        /*} else {
-            AlarmManager am = (AlarmManager) applicationContext.getSystemService(Context.ALARM_SERVICE);
-            Intent i = new Intent(applicationContext, ApplicationLoader.class);
-            pendingIntent = PendingIntent.getBroadcast(applicationContext, 0, i, 0);
-
-            am.cancel(pendingIntent);
-            am.setRepeating(AlarmManager.RTC_WAKEUP, System.currentTimeMillis(), 60000, pendingIntent);
-        }*/
             applicationContext.startService(new Intent(applicationContext, NotificationsService.class));
-            //if (android.os.Build.VERSION.SDK_INT >= 19) {
-                ///FileLog.e("ApplicationLoader", "startPushService");
-                ///Calendar cal = Calendar.getInstance();
-                ///PendingIntent pintent = PendingIntent.getService(applicationContext, 0, new Intent(applicationContext, NotificationsService.class), 0);
-                ///AlarmManager alarm = (AlarmManager) applicationContext.getSystemService(Context.ALARM_SERVICE);
-                ///alarm.setRepeating(AlarmManager.RTC_WAKEUP, cal.getTimeInMillis(), 30000, pintent);
 
-                //PendingIntent pintent = PendingIntent.getService(applicationContext, 0, new Intent(applicationContext, NotificationsService.class), 0);
-                //AlarmManager alarm = (AlarmManager)applicationContext.getSystemService(Context.ALARM_SERVICE);
-                //alarm.cancel(pintent);
-            //}
+            if (android.os.Build.VERSION.SDK_INT >= 19) {
+//                Calendar cal = Calendar.getInstance();
+//                PendingIntent pintent = PendingIntent.getService(applicationContext, 0, new Intent(applicationContext, NotificationsService.class), 0);
+//                AlarmManager alarm = (AlarmManager) applicationContext.getSystemService(Context.ALARM_SERVICE);
+//                alarm.setRepeating(AlarmManager.RTC_WAKEUP, cal.getTimeInMillis(), 30000, pintent);
+
+                PendingIntent pintent = PendingIntent.getService(applicationContext, 0, new Intent(applicationContext, NotificationsService.class), 0);
+                AlarmManager alarm = (AlarmManager)applicationContext.getSystemService(Context.ALARM_SERVICE);
+                alarm.cancel(pintent);
+            }
         } else {
             stopPushService();
         }
     }
 
     public static void stopPushService() {
-        if (networkAlarm != null) {
-            networkAlarm = null;
-        }// else {
-         //   AlarmManager am = (AlarmManager) applicationContext.getSystemService(Context.ALARM_SERVICE);
-        //    am.cancel(pendingIntent);
-        //}
         applicationContext.stopService(new Intent(applicationContext, NotificationsService.class));
 
-        ///PendingIntent pintent = PendingIntent.getService(applicationContext, 0, new Intent(applicationContext, NotificationsService.class), 0);
-        ///AlarmManager alarm = (AlarmManager)applicationContext.getSystemService(Context.ALARM_SERVICE);
-        ///alarm.cancel(pintent);
+        PendingIntent pintent = PendingIntent.getService(applicationContext, 0, new Intent(applicationContext, NotificationsService.class), 0);
+        AlarmManager alarm = (AlarmManager)applicationContext.getSystemService(Context.ALARM_SERVICE);
+        alarm.cancel(pintent);
     }
 
-    public static void setAlarm(int timeout) {
-        FileLog.d("tmessages", "setting alarm to wake us in " + String.valueOf(timeout) + "ms");
-
-        if (networkAlarm != null) {
-            networkAlarm.setAlarm(applicationContext, timeout);
-        }
-    }
     @Override
     public void onConfigurationChanged(Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
@@ -363,16 +363,23 @@ public class ApplicationLoader extends Application {
         AndroidUtilities.runOnUIThread(new Runnable() {
             @Override
             public void run() {
-        if (checkPlayServices()) {
-                    if (UserConfig.pushString == null || UserConfig.pushString.length() == 0) {
+                if (checkPlayServices()) {
+                    if (UserConfig.pushString != null && UserConfig.pushString.length() != 0) {
+                        FileLog.d("tmessages", "GCM regId = " + UserConfig.pushString);
+                    } else {
                         FileLog.d("tmessages", "GCM Registration not found.");
+                    }
+
+                    //if (UserConfig.pushString == null || UserConfig.pushString.length() == 0) {
                         Intent intent = new Intent(applicationContext, GcmRegistrationIntentService.class);
                         startService(intent);
+                    //} else {
+                    //    FileLog.d("tmessages", "GCM regId = " + UserConfig.pushString);
+                    //}
+                } else {
+                    FileLog.d("tmessages", "No valid Google Play Services APK found.");
+                }
             }
-        } else {
-            FileLog.d("tmessages", "No valid Google Play Services APK found.");
-        }
-    }
         }, 1000);
     }
 

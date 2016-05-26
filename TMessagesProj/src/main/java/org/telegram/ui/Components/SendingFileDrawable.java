@@ -18,6 +18,7 @@ import android.view.animation.DecelerateInterpolator;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
+import org.telegram.ui.ActionBar.Theme;
 
 public class SendingFileDrawable extends Drawable {
 
@@ -35,7 +36,7 @@ public class SendingFileDrawable extends Drawable {
 
     public SendingFileDrawable() {
         super();
-        //paint.setColor(0xffd7e8f7);
+        //paint.setColor(Theme.ACTION_BAR_SUBTITLE_COLOR);
         SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
         paint.setColor(themePrefs.getInt("chatTypingColor",themePrefs.getInt("chatStatusColor", AndroidUtilities.getIntDarkerColor("themeColor", -0x40))));
         paint.setStyle(Paint.Style.STROKE);

@@ -9,6 +9,7 @@
 package org.telegram.ui.ActionBar;
 
 import android.content.Context;
+import android.graphics.PorterDuff;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
@@ -86,9 +87,11 @@ public class ActionBarMenuItem extends FrameLayoutFixed {
     protected boolean overrideMenuClick;
     private boolean processedPopupClick;
 
-    public ActionBarMenuItem(Context context, ActionBarMenu menu, int background) {
+    public ActionBarMenuItem(Context context, ActionBarMenu menu, int backgroundColor) {
         super(context);
-        setBackgroundResource(background);
+        if (backgroundColor != 0) {
+            setBackgroundDrawable(Theme.createBarSelectorDrawable(backgroundColor));
+        }
         parentMenu = menu;
 
         iconView = new ImageView(context);
@@ -371,6 +374,10 @@ public class ActionBarMenuItem extends FrameLayoutFixed {
         iconView.setImageDrawable(drawable);
     }
 
+    public void setIconColor(int color){
+        iconView.setColorFilter(color, PorterDuff.Mode.SRC_IN);
+    }
+//
     public EditText getSearchField() {
         return searchField;
     }

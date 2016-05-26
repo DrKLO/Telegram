@@ -12,6 +12,7 @@ import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Build;
 import android.view.Gravity;
 import android.view.View;
@@ -105,8 +106,9 @@ public class GroupInviteActivity extends BaseFragment implements NotificationCen
 
         fragmentView = new FrameLayout(context);
         FrameLayout frameLayout = (FrameLayout) fragmentView;
-        frameLayout.setBackgroundColor(0xfff0f0f0);
-
+        //frameLayout.setBackgroundColor(0xfff0f0f0);
+        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+        frameLayout.setBackgroundColor(preferences.getInt("prefBGColor", 0xfff0f0f0));
         FrameLayout progressView = new FrameLayout(context);
         frameLayout.addView(progressView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
@@ -315,11 +317,16 @@ public class GroupInviteActivity extends BaseFragment implements NotificationCen
                     view.setBackgroundResource(R.drawable.greydivider);
                 }
             } else if (type == 2) {
+                SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+                int bgColor = preferences.getInt("prefBGColor", 0xffffffff);
+                int titleColor = preferences.getInt("prefTitleColor", 0xff212121);
                 if (view == null) {
                     view = new TextBlockCell(mContext);
-                    view.setBackgroundColor(0xffffffff);
+                    //view.setBackgroundColor(0xffffffff);
+                    view.setBackgroundColor(bgColor);
                 }
                 ((TextBlockCell) view).setText(invite != null ? invite.link : "error", false);
+                ((TextBlockCell) view).setTextColor(titleColor);
             }
             return view;
         }

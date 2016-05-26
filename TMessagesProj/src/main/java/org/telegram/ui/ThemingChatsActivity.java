@@ -25,14 +25,14 @@ import android.widget.FrameLayout;
 import android.widget.ListView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
-import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.R;
-import org.telegram.tgnet.TLRPC;
 import org.telegram.messenger.UserConfig;
+import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.Adapters.BaseFragmentAdapter;
@@ -42,7 +42,6 @@ import org.telegram.ui.Cells.TextCheckCell;
 import org.telegram.ui.Cells.TextColorCell;
 import org.telegram.ui.Cells.TextDetailSettingsCell;
 import org.telegram.ui.Cells.TextSettingsCell;
-import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.ColorSelectorDialog;
 import org.telegram.ui.Components.NumberPicker;
 
@@ -80,7 +79,6 @@ public class ThemingChatsActivity extends BaseFragment {
     private int countColorRow;
     private int countSizeRow;
     private int countBGColorRow;
-    //private int countSilentColorRow;
     private int countSilentBGColorRow;
     private int floatingPencilColorRow;
     private int floatingBGColorRow;
@@ -99,6 +97,12 @@ public class ThemingChatsActivity extends BaseFragment {
     private int highlightSearchColorRow;
 
     private int hideStatusIndicatorCheckRow;
+    private int headerTabIconColorRow;
+    private int headerTabUnselectedIconColorRow;
+    private int headerTabCounterColorRow;
+    private int headerTabCounterBGColorRow;
+    private int headerTabCounterSilentBGColorRow;
+    private int headerTabCounterSizeRow;
 
     private int rowCount;
 
@@ -116,6 +120,12 @@ public class ThemingChatsActivity extends BaseFragment {
         headerTitleColorRow = rowCount++;
         headerTitleRow = rowCount++;
         headerIconsColorRow = rowCount++;
+        headerTabIconColorRow = rowCount++;
+        headerTabUnselectedIconColorRow = rowCount++;
+        headerTabCounterColorRow = rowCount++;
+        headerTabCounterBGColorRow = rowCount++;
+        headerTabCounterSilentBGColorRow = rowCount++;
+        headerTabCounterSizeRow = rowCount++;
 
         rowsSectionRow = rowCount++;
         rowsSection2Row = rowCount++;
@@ -170,7 +180,7 @@ public class ThemingChatsActivity extends BaseFragment {
     public View createView(Context context) {
         if (fragmentView == null) {
 
-            actionBar.setItemsBackground(AvatarDrawable.getButtonColorForId(5));
+            //actionBar.setItemsBackground(AvatarDrawable.getButtonColorForId(5));
             actionBar.setBackButtonImage(R.drawable.ic_ab_back);
 
             if (AndroidUtilities.isTablet()) {
@@ -198,7 +208,9 @@ public class ThemingChatsActivity extends BaseFragment {
             listView.setDivider(null);
             listView.setDividerHeight(0);
             listView.setVerticalScrollBarEnabled(false);
-            AndroidUtilities.setListViewEdgeEffectColor(listView, AvatarDrawable.getProfileBackColorForId(5));
+            int def = preferences.getInt("themeColor", AndroidUtilities.defColor);
+            int hColor = preferences.getInt("prefHeaderColor", def);
+            AndroidUtilities.setListViewEdgeEffectColor(listView, /*AvatarDrawable.getProfileBackColorForId(5)*/ hColor);
             frameLayout.addView(listView);
             FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) listView.getLayoutParams();
             layoutParams.width = FrameLayout.LayoutParams.MATCH_PARENT;
@@ -255,7 +267,7 @@ public class ThemingChatsActivity extends BaseFragment {
                             public void colorChanged(int color) {
                                 commitInt(key, color);
                             }
-                        },themePrefs.getInt( key, 0xffffffff), CENTER, 0, true);
+                        },themePrefs.getInt(key, 0xffffffff), CENTER, 0, true);
                         colorDialog.show();
                     } else if (i == headerIconsColorRow) {
                         if (getParentActivity() == null) {
@@ -268,7 +280,72 @@ public class ThemingChatsActivity extends BaseFragment {
                             public void colorChanged(int color) {
                                 commitInt(key, color);
                             }
+                        },themePrefs.getInt(key, themePrefs.getInt("chatsHeaderIconsColor", 0xffffffff)), CENTER, 0, true);
+                        colorDialog.show();
+                    } else if (i == headerTabIconColorRow) {
+                        if (getParentActivity() == null) {
+                            return;
+                        }
+                        LayoutInflater li = (LayoutInflater)getParentActivity().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+                        li.inflate(R.layout.colordialog, null, false);
+                        ColorSelectorDialog colorDialog = new ColorSelectorDialog(getParentActivity(), new OnColorChangedListener() {
+                            @Override
+                            public void colorChanged(int color) {
+                                commitInt(key, color);
+                            }
                         },themePrefs.getInt( key, 0xffffffff), CENTER, 0, true);
+                        colorDialog.show();
+                    } else if (i == headerTabUnselectedIconColorRow) {
+                        if (getParentActivity() == null) {
+                            return;
+                        }
+                        LayoutInflater li = (LayoutInflater)getParentActivity().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+                        li.inflate(R.layout.colordialog, null, false);
+                        ColorSelectorDialog colorDialog = new ColorSelectorDialog(getParentActivity(), new OnColorChangedListener() {
+                            @Override
+                            public void colorChanged(int color) {
+                                commitInt(key, color);
+                            }
+                        },themePrefs.getInt( key, AndroidUtilities.getIntAlphaColor("chatsHeaderTabIconColor", defColor, 0.3f)), CENTER, 0, true);
+                        colorDialog.show();
+                    } else if (i == headerTabCounterColorRow) {
+                        if (getParentActivity() == null) {
+                            return;
+                        }
+                        LayoutInflater li = (LayoutInflater)getParentActivity().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+                        li.inflate(R.layout.colordialog, null, false);
+                        ColorSelectorDialog colorDialog = new ColorSelectorDialog(getParentActivity(), new OnColorChangedListener() {
+                            @Override
+                            public void colorChanged(int color) {
+                                commitInt(key, color);
+                            }
+                        },themePrefs.getInt(key, 0xffffffff), CENTER, 0, true);
+                        colorDialog.show();
+                    } else if (i == headerTabCounterBGColorRow) {
+                        if (getParentActivity() == null) {
+                            return;
+                        }
+                        LayoutInflater li = (LayoutInflater)getParentActivity().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+                        li.inflate(R.layout.colordialog, null, false);
+                        ColorSelectorDialog colorDialog = new ColorSelectorDialog(getParentActivity(), new OnColorChangedListener() {
+                            @Override
+                            public void colorChanged(int color) {
+                                commitInt(key, color);
+                            }
+                        },themePrefs.getInt(key, 0xffd32f2f), CENTER, 0, true);
+                        colorDialog.show();
+                    } else if (i == headerTabCounterSilentBGColorRow) {
+                        if (getParentActivity() == null) {
+                            return;
+                        }
+                        LayoutInflater li = (LayoutInflater)getParentActivity().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+                        li.inflate(R.layout.colordialog, null, false);
+                        ColorSelectorDialog colorDialog = new ColorSelectorDialog(getParentActivity(), new OnColorChangedListener() {
+                            @Override
+                            public void colorChanged(int color) {
+                                commitInt(key, color);
+                            }
+                        },themePrefs.getInt(key, 0xffb9b9b9), CENTER, 0, true);
                         colorDialog.show();
                     } else if (i == rowColorRow) {
                         if (getParentActivity() == null) {
@@ -614,21 +691,7 @@ public class ThemingChatsActivity extends BaseFragment {
 
                         },themePrefs.getInt( key, defColor), CENTER, 0, true);
                         colorDialog.show();
-                    } /*else if (i == countSilentColorRow) {
-                        if (getParentActivity() == null) {
-                            return;
-                        }
-                        LayoutInflater li = (LayoutInflater)getParentActivity().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-                        li.inflate(R.layout.colordialog, null, false);
-                        ColorSelectorDialog colorDialog = new ColorSelectorDialog(getParentActivity(), new OnColorChangedListener() {
-                            @Override
-                            public void colorChanged(int color) {
-                                commitInt( key, color);
-                            }
-
-                        },themePrefs.getInt( key, 0xffffffff), CENTER, 0, true);
-                        colorDialog.show();
-                    }*/ else if (i == countSilentBGColorRow) {
+                    } else if (i == countSilentBGColorRow) {
                         if (getParentActivity() == null) {
                             return;
                         }
@@ -664,6 +727,27 @@ public class ThemingChatsActivity extends BaseFragment {
                             }
                         });
 
+                        showDialog(builder.create());
+                    } else if (i == headerTabCounterSizeRow) {
+                        if (getParentActivity() == null) {
+                            return;
+                        }
+                        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                        builder.setTitle(LocaleController.getString("CountSize", R.string.CountSize));
+                        final NumberPicker numberPicker = new NumberPicker(getParentActivity());
+                        final int currentValue = themePrefs.getInt( key, 11);
+                        numberPicker.setMinValue(9);
+                        numberPicker.setMaxValue(14);
+                        numberPicker.setValue(currentValue);
+                        builder.setView(numberPicker);
+                        builder.setNegativeButton(LocaleController.getString("Done", R.string.Done), new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                if (numberPicker.getValue() != currentValue) {
+                                    commitInt( key, numberPicker.getValue());
+                                }
+                            }
+                        });
                         showDialog(builder.create());
                     } else if (i == avatarSizeRow) {
                         if (getParentActivity() == null) {
@@ -963,7 +1047,7 @@ public class ThemingChatsActivity extends BaseFragment {
         @Override
         public boolean isEnabled(int i) {
             int g = AndroidUtilities.getIntDef("chatsRowGradient",0);
-            return  i == headerColorRow || i == headerGradientRow || (AndroidUtilities.getIntDef("chatsHeaderGradient", 0) != 0 && i == headerGradientColorRow) || i == headerTitleColorRow || i == headerIconsColorRow || i == headerTitleRow ||
+            return  i == headerColorRow || i == headerGradientRow || (AndroidUtilities.getIntDef("chatsHeaderGradient", 0) != 0 && i == headerGradientColorRow) || i == headerTitleColorRow || i == headerIconsColorRow || i == headerTabIconColorRow || i == headerTabUnselectedIconColorRow || i == headerTitleRow || i == headerTabCounterColorRow || i == headerTabCounterBGColorRow || i == headerTabCounterSilentBGColorRow || i == headerTabCounterSizeRow ||
                     i == rowColorRow || i == rowGradientRow || (g != 0 &&  i == rowGradientColorRow) || (g != 0 && i == rowGradientListCheckRow) || i == dividerColorRow || i == avatarRadiusRow ||  i == avatarSizeRow ||   i == avatarMarginLeftRow || i == hideStatusIndicatorCheckRow ||
                     i == nameColorRow || i == groupNameColorRow || i == unknownNameColorRow || i == groupIconColorRow || i == muteColorRow || i == checksColorRow || i == nameSizeRow || i == groupNameSizeRow || i == messageColorRow || i == highlightSearchColorRow || i == memberColorRow || i == mediaColorRow || i == typingColorRow || i == messageSizeRow ||
                     i == timeColorRow || i == timeSizeRow || i == countColorRow || i == countSizeRow || i == countBGColorRow /*|| i == countSilentColorRow*/ || i == countSilentBGColorRow || i == floatingPencilColorRow || i == floatingBGColorRow;
@@ -1018,6 +1102,10 @@ public class ThemingChatsActivity extends BaseFragment {
                     textCell.setTag("chatsAvatarRadius");
                     int size = themePrefs.getInt("chatsAvatarRadius", AndroidUtilities.isTablet() ? 35 : 32);
                     textCell.setTextAndValue(LocaleController.getString("AvatarRadius", R.string.AvatarRadius), String.format("%d", size), true);
+                } else if (i == headerTabCounterSizeRow) {
+                    textCell.setTag("chatsHeaderTabCounterSize");
+                    int size = themePrefs.getInt("chatsHeaderTabCounterSize", AndroidUtilities.isTablet() ? 13 : 11);
+                    textCell.setTextAndValue(LocaleController.getString("CountSize", R.string.CountSize), String.format("%d", size), true);
                 } else if (i == avatarSizeRow) {
                     textCell.setTag("chatsAvatarSize");
                     int size = themePrefs.getInt("chatsAvatarSize", AndroidUtilities.isTablet() ? 55 : 52);
@@ -1066,7 +1154,22 @@ public class ThemingChatsActivity extends BaseFragment {
                     textCell.setTextAndColor(LocaleController.getString("HeaderTitleColor", R.string.HeaderTitleColor), themePrefs.getInt(textCell.getTag().toString(), 0xffffffff), true);
                 } else if (i == headerIconsColorRow) {
                     textCell.setTag("chatsHeaderIconsColor");
-                    textCell.setTextAndColor(LocaleController.getString("HeaderIconsColor", R.string.HeaderIconsColor), themePrefs.getInt(textCell.getTag().toString(), 0xffffffff), false);
+                    textCell.setTextAndColor(LocaleController.getString("HeaderIconsColor", R.string.HeaderIconsColor), themePrefs.getInt(textCell.getTag().toString(), 0xffffffff), true);
+                } else if (i == headerTabIconColorRow) {
+                    textCell.setTag("chatsHeaderTabIconColor");
+                    textCell.setTextAndColor(LocaleController.getString("HeaderTabIconColor", R.string.HeaderTabIconColor), themePrefs.getInt(textCell.getTag().toString(), themePrefs.getInt("chatsHeaderIconsColor", 0xffffffff)), true);
+                } else if (i == headerTabUnselectedIconColorRow) {
+                    textCell.setTag("chatsHeaderTabUnselectedIconColor");
+                    textCell.setTextAndColor(LocaleController.getString("HeaderTabUnselectedIconColor", R.string.HeaderTabUnselectedIconColor), themePrefs.getInt(textCell.getTag().toString(), themePrefs.getInt("chatsHeaderTabUnselectedIconColor", AndroidUtilities.getIntAlphaColor("chatsHeaderTabIconColor", defColor, 0.3f))), true);
+                } else if (i == headerTabCounterColorRow) {
+                    textCell.setTag("chatsHeaderTabCounterColor");
+                    textCell.setTextAndColor(LocaleController.getString("HeaderTabCounterColor", R.string.HeaderTabCounterColor), themePrefs.getInt(textCell.getTag().toString(), 0xffffffff), true);
+                } else if (i == headerTabCounterBGColorRow) {
+                    textCell.setTag("chatsHeaderTabCounterBGColor");
+                    textCell.setTextAndColor(LocaleController.getString("HeaderTabCounterBGColor", R.string.HeaderTabCounterBGColor), themePrefs.getInt(textCell.getTag().toString(), 0xffD32F2F), false);
+                } else if (i == headerTabCounterSilentBGColorRow) {
+                    textCell.setTag("chatsHeaderTabCounterSilentBGColor");
+                    textCell.setTextAndColor(LocaleController.getString("CountSilentBGColor", R.string.CountSilentBGColor), themePrefs.getInt(textCell.getTag().toString(), 0xffb9b9b9), false);
                 } else if (i == rowColorRow) {
                     textCell.setTag("chatsRowColor");
                     textCell.setTextAndColor(LocaleController.getString("RowColor", R.string.RowColor), themePrefs.getInt("chatsRowColor", 0xffffffff), false);
@@ -1214,9 +1317,9 @@ public class ThemingChatsActivity extends BaseFragment {
                 return 0;
             } else if ( i == headerSection2Row || i == rowsSection2Row ) {
                 return 1;
-            } else if ( i == avatarRadiusRow || i == avatarSizeRow || i == avatarMarginLeftRow || i == nameSizeRow || i == groupNameSizeRow ||  i == messageSizeRow || i == timeSizeRow || i == countSizeRow ) {
+            } else if ( i == avatarRadiusRow || i == avatarSizeRow || i == avatarMarginLeftRow || i == nameSizeRow || i == groupNameSizeRow ||  i == messageSizeRow || i == timeSizeRow || i == countSizeRow || i == headerTabCounterSizeRow) {
                 return 2;
-            } else if ( i == headerColorRow || i == headerGradientColorRow  || i == headerTitleColorRow || i == headerIconsColorRow  ||
+            } else if ( i == headerColorRow || i == headerGradientColorRow  || i == headerTitleColorRow || i == headerIconsColorRow  || i == headerTabIconColorRow || i == headerTabUnselectedIconColorRow || i == headerTabCounterColorRow  || i == headerTabCounterBGColorRow  || i == headerTabCounterSilentBGColorRow  ||
                         i == rowColorRow || i == rowGradientColorRow || i == dividerColorRow || i == nameColorRow || i == groupNameColorRow || i == unknownNameColorRow || i == groupIconColorRow || i == muteColorRow || i == checksColorRow || i == messageColorRow || i == highlightSearchColorRow || i == memberColorRow || i == mediaColorRow || i == typingColorRow || i == timeColorRow || i == countColorRow ||
                         i == countBGColorRow /*|| i == countSilentColorRow*/ || i == countSilentBGColorRow || i == floatingPencilColorRow || i == floatingBGColorRow) {
                 return 3;

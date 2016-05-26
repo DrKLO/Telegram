@@ -146,7 +146,7 @@ public class SharedDocumentCell extends FrameLayout implements MediaController.F
             }
             if (color == -1) {
                 int idx;
-                String ext = (idx = name.lastIndexOf(".")) == -1 ? "" : name.substring(idx + 1);
+                String ext = (idx = name.lastIndexOf('.')) == -1 ? "" : name.substring(idx + 1);
                 if (ext.length() != 0) {
                     color = ext.charAt(0) % icons.length;
                 } else {
@@ -198,29 +198,49 @@ public class SharedDocumentCell extends FrameLayout implements MediaController.F
         checkBox.setChecked(checked, animated);
     }
 
-    public void setDocument(MessageObject document, boolean divider) {
+    public void setDocument(MessageObject messageObject, boolean divider) {
         needDivider = divider;
-        message = document;
+        message = messageObject;
         loaded = false;
         loading = false;
 
-        if (document != null && document.messageOwner.media != null && document.messageOwner.media.document != null) {
+        if (messageObject != null && messageObject.getDocument() != null) {
             int idx;
-            String name = FileLoader.getDocumentFileName(document.messageOwner.media.document);
+            String name = null;
+            if (messageObject.isMusic()) {
+                TLRPC.Document document;
+                if (messageObject.type == 0) {
+                    document = messageObject.messageOwner.media.webpage.document;
+                } else {
+                    document = messageObject.messageOwner.media.document;
+                }
+                for (int a = 0; a < document.attributes.size(); a++) {
+                    TLRPC.DocumentAttribute attribute = document.attributes.get(a);
+                    if (attribute instanceof TLRPC.TL_documentAttributeAudio) {
+                        if (attribute.performer != null && attribute.performer.length() != 0 || attribute.title != null && attribute.title.length() != 0) {
+                            name = messageObject.getMusicAuthor() + " - " + messageObject.getMusicTitle();
+                        }
+                    }
+                }
+            }
+            String fileName = FileLoader.getDocumentFileName(messageObject.getDocument());
+            if (name == null) {
+                name = fileName;
+            }
+            nameTextView.setText(name);
             placeholderImabeView.setVisibility(VISIBLE);
             extTextView.setVisibility(VISIBLE);
-            placeholderImabeView.setImageResource(getThumbForNameOrMime(name, document.messageOwner.media.document.mime_type));
-            nameTextView.setText(name);
-            extTextView.setText((idx = name.lastIndexOf(".")) == -1 ? "" : name.substring(idx + 1).toLowerCase());
-            if (document.messageOwner.media.document.thumb instanceof TLRPC.TL_photoSizeEmpty || document.messageOwner.media.document.thumb == null) {
+            placeholderImabeView.setImageResource(getThumbForNameOrMime(fileName, messageObject.getDocument().mime_type));
+            extTextView.setText((idx = fileName.lastIndexOf('.')) == -1 ? "" : fileName.substring(idx + 1).toLowerCase());
+            if (messageObject.getDocument().thumb instanceof TLRPC.TL_photoSizeEmpty || messageObject.getDocument().thumb == null) {
                 thumbImageView.setVisibility(INVISIBLE);
                 thumbImageView.setImageBitmap(null);
             } else {
                 thumbImageView.setVisibility(VISIBLE);
-                thumbImageView.setImage(document.messageOwner.media.document.thumb.location, "40_40", (Drawable) null);
+                thumbImageView.setImage(messageObject.getDocument().thumb.location, "40_40", (Drawable) null);
             }
-            long date = (long) document.messageOwner.date * 1000;
-            dateTextView.setText(String.format("%s, %s", AndroidUtilities.formatFileSize(document.messageOwner.media.document.size), LocaleController.formatString("formatDateAtTime", R.string.formatDateAtTime, LocaleController.getInstance().formatterYear.format(new Date(date)), LocaleController.getInstance().formatterDay.format(new Date(date)))));
+            long date = (long) messageObject.messageOwner.date * 1000;
+            dateTextView.setText(String.format("%s, %s", AndroidUtilities.formatFileSize(messageObject.getDocument().size), LocaleController.formatString("formatDateAtTime", R.string.formatDateAtTime, LocaleController.getInstance().formatterYear.format(new Date(date)), LocaleController.getInstance().formatterDay.format(new Date(date)))));
         } else {
             nameTextView.setText("");
             extTextView.setText("");
@@ -243,7 +263,7 @@ public class SharedDocumentCell extends FrameLayout implements MediaController.F
             if (message.messageOwner.attachPath == null || message.messageOwner.attachPath.length() == 0 || !(new File(message.messageOwner.attachPath).exists())) {
                 cacheFile = FileLoader.getPathToMessage(message.messageOwner);
                 if (!cacheFile.exists()) {
-                    fileName = FileLoader.getAttachFileName(message.messageOwner.media.document);
+                    fileName = FileLoader.getAttachFileName(message.getDocument());
                 }
             }
             loaded = false;
@@ -281,7 +301,7 @@ public class SharedDocumentCell extends FrameLayout implements MediaController.F
         }
     }
 
-    public MessageObject getDocument() {
+    public MessageObject getMessage() {
         return message;
     }
 

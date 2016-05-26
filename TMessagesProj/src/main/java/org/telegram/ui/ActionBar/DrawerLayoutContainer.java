@@ -17,6 +17,7 @@ import android.graphics.Paint;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Build;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.VelocityTracker;
@@ -28,12 +29,12 @@ import android.widget.FrameLayout;
 import android.widget.ListView;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.FileLog;
-import org.telegram.messenger.R;
 import org.telegram.messenger.AnimationCompat.AnimatorListenerAdapterProxy;
 import org.telegram.messenger.AnimationCompat.AnimatorSetProxy;
 import org.telegram.messenger.AnimationCompat.ObjectAnimatorProxy;
+import org.telegram.messenger.ApplicationLoader;
+import org.telegram.messenger.FileLog;
+import org.telegram.messenger.R;
 
 public class DrawerLayoutContainer extends FrameLayout {
 
@@ -73,21 +74,21 @@ public class DrawerLayoutContainer extends FrameLayout {
 
         if (Build.VERSION.SDK_INT >= 21) {
             setFitsSystemWindows(true);
-            setOnApplyWindowInsetsListener(new InsetsListener());
+            setOnApplyWindowInsetsListener(new OnApplyWindowInsetsListener() {
+                @SuppressLint("NewApi")
+                @Override
+                public WindowInsets onApplyWindowInsets(View v, WindowInsets insets) {
+                    final DrawerLayoutContainer drawerLayout = (DrawerLayoutContainer) v;
+                    lastInsets = insets;
+                    drawerLayout.setWillNotDraw(insets.getSystemWindowInsetTop() <= 0 && getBackground() == null);
+                    drawerLayout.requestLayout();
+                    return insets.consumeSystemWindowInsets();
+                }
+            });
             setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
         }
 
         shadowLeft = getResources().getDrawable(R.drawable.menu_shadow);
-    }
-
-    @SuppressLint("NewApi")
-    private class InsetsListener implements View.OnApplyWindowInsetsListener {
-        @Override
-        public WindowInsets onApplyWindowInsets(View v, WindowInsets insets) {
-            final DrawerLayoutContainer drawerLayout = (DrawerLayoutContainer) v;
-            drawerLayout.setChildInsets(insets, insets.getSystemWindowInsetTop() > 0);
-            return insets.consumeSystemWindowInsets();
-        }
     }
 
     @SuppressLint("NewApi")
@@ -120,12 +121,6 @@ public class DrawerLayoutContainer extends FrameLayout {
             return insets != null ? ((WindowInsets) insets).getSystemWindowInsetTop() : 0;
         }
         return 0;
-    }
-
-    private void setChildInsets(Object insets, boolean draw) {
-        lastInsets = insets;
-        setWillNotDraw(!draw && getBackground() == null);
-        requestLayout();
     }
 
     public void setDrawerLayout(ViewGroup layout) {
@@ -168,6 +163,7 @@ public class DrawerLayoutContainer extends FrameLayout {
     }
 
     public void openDrawer(boolean fast) {
+        Log.e("DrawerLAyout","openDrawer allowOpenDrawer " + allowOpenDrawer);
         if (!allowOpenDrawer) {
             return;
         }
@@ -190,11 +186,6 @@ public class DrawerLayoutContainer extends FrameLayout {
             public void onAnimationEnd(Object animator) {
                 onDrawerAnimationEnd(true);
             }
-
-            @Override
-            public void onAnimationCancel(Object animator) {
-                onDrawerAnimationEnd(true);
-            }
         });
         animatorSet.start();
         currentAnimation = animatorSet;
@@ -215,11 +206,6 @@ public class DrawerLayoutContainer extends FrameLayout {
         animatorSet.addListener(new AnimatorListenerAdapterProxy() {
             @Override
             public void onAnimationEnd(Object animator) {
-                onDrawerAnimationEnd(false);
-            }
-
-            @Override
-            public void onAnimationCancel(Object animator) {
                 onDrawerAnimationEnd(false);
             }
         });
@@ -258,8 +244,8 @@ public class DrawerLayoutContainer extends FrameLayout {
         allowOpenDrawer = value;
         if (!allowOpenDrawer && drawerPosition != 0) {
             if (!animated) {
-            setDrawerPosition(0);
-            onDrawerAnimationEnd(false);
+                setDrawerPosition(0);
+                onDrawerAnimationEnd(false);
             } else {
                 closeDrawer(true);
             }
@@ -384,6 +370,7 @@ public class DrawerLayoutContainer extends FrameLayout {
     @Override
     protected void onLayout(boolean changed, int l, int t, int r, int b) {
         inLayout = true;
+        //FileLog.w("tmessages", "onLayout");
         final int childCount = getChildCount();
         for (int i = 0; i < childCount; i++) {
             final View child = getChildAt(i);
@@ -410,6 +397,10 @@ public class DrawerLayoutContainer extends FrameLayout {
     @Override
     public void requestLayout() {
         if (!inLayout) {
+            /*StackTraceElement[] elements = Thread.currentThread().getStackTrace();
+            for (int a = 0; a < elements.length; a++) {
+                FileLog.d("tmessages", "on " + elements[a]);
+            }*/
             super.requestLayout();
         }
     }

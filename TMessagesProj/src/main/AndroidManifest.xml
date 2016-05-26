@@ -37,16 +37,22 @@
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.USE_FINGERPRINT" />
-
+    <uses-permission android:name="com.android.launcher.permission.INSTALL_SHORTCUT" />
     <application
         android:name="org.telegram.messenger.ApplicationLoader"
         android:allowBackup="false"
         android:hardwareAccelerated="@bool/useHardwareAcceleration"
         android:icon="@drawable/ic_launcher"
-        android:label="@string/ShortAppName"
         android:largeHeap="true"
         android:theme="@style/Theme.TMessages.Start"
         android:manageSpaceActivity="org.telegram.ui.ManageSpaceActivity">
+
+        <activity android:name="org.telegram.ui.ShortcutActivity"
+            android:launchMode="singleInstance">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+            </intent-filter>
+        </activity>
 
         <activity
             android:name="org.telegram.ui.LaunchActivity"
@@ -100,6 +106,8 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:host="telegram.me" android:scheme="http" />
                 <data android:host="telegram.me" android:scheme="https" />
+                <data android:host="telegram.dog" android:scheme="http" />
+                <data android:host="telegram.dog" android:scheme="https" />
             </intent-filter>
             <intent-filter android:icon="@drawable/ic_launcher" android:priority="1">
                 <action android:name="android.intent.action.VIEW" />
@@ -130,15 +138,25 @@
             android:windowSoftInputMode="adjustResize|stateHidden">
         </activity>
 
-        <receiver android:name="org.telegram.messenger.AutoMessageHeardReceiver">
+        <receiver 
+            android:name="org.telegram.messenger.AutoMessageHeardReceiver"
+            android:exported="false">
             <intent-filter>
                 <action android:name="org.telegram.messenger.ACTION_MESSAGE_HEARD"/>
             </intent-filter>
         </receiver>
 
-        <receiver android:name="org.telegram.messenger.AutoMessageReplyReceiver">
+        <receiver 
+            android:name="org.telegram.messenger.AutoMessageReplyReceiver"
+            android:exported="false">
             <intent-filter>
                 <action android:name="org.telegram.messenger.ACTION_MESSAGE_REPLY"/>
+            </intent-filter>
+        </receiver>
+
+        <receiver android:name="org.telegram.messenger.CallReceiver" >
+            <intent-filter>
+                <action android:name="android.intent.action.PHONE_STATE" />
             </intent-filter>
         </receiver>
 
@@ -201,6 +219,7 @@
         </receiver>
 
         <receiver android:name="org.telegram.messenger.WearReplyReceiver" android:enabled="true"/>
+        <receiver android:name="org.telegram.messenger.ShareBroadcastReceiver" android:enabled="true"/>
 
         <uses-library android:name="com.sec.android.app.multiwindow" android:required="false" />
         <meta-data android:name="com.sec.android.support.multiwindow" android:value="true" />
@@ -208,8 +227,8 @@
         <meta-data android:name="com.sec.android.multiwindow.DEFAULT_SIZE_H" android:value="598dp" />
         <meta-data android:name="com.sec.android.multiwindow.MINIMUM_SIZE_W" android:value="632dp" />
         <meta-data android:name="com.sec.android.multiwindow.MINIMUM_SIZE_H" android:value="598dp" />
-<!--
-        <meta-data android:name="com.google.android.gms.car.application" android:resource="@xml/automotive_app_desc" />-->
+
+        <meta-data android:name="com.google.android.gms.car.application" android:resource="@xml/automotive_app_desc" />
 
     </application>
 

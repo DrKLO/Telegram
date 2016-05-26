@@ -333,7 +333,7 @@ public class DialogsSearchAdapter extends BaseSearchAdapterRecycler {
         recentSearchObjects.add(0, recentSearchObject);
         recentSearchObject.did = did;
         recentSearchObject.object = object;
-        recentSearchObject.date = (int) System.currentTimeMillis() / 1000;
+        recentSearchObject.date = (int) (System.currentTimeMillis() / 1000);
         notifyDataSetChanged();
         MessagesStorage.getInstance().getStorageQueue().postRunnable(new Runnable() {
             @Override
@@ -342,7 +342,7 @@ public class DialogsSearchAdapter extends BaseSearchAdapterRecycler {
                     SQLitePreparedStatement state = MessagesStorage.getInstance().getDatabase().executeFast("REPLACE INTO search_recent VALUES(?, ?)");
                     state.requery();
                     state.bindLong(1, did);
-                    state.bindInteger(2, (int) System.currentTimeMillis() / 1000);
+                    state.bindInteger(2, (int) (System.currentTimeMillis() / 1000));
                     state.step();
                     state.dispose();
                 } catch (Exception e) {
@@ -887,6 +887,7 @@ public class DialogsSearchAdapter extends BaseSearchAdapterRecycler {
                 view = new HashtagSearchCell(mContext);
                 break;
         }
+        view.setLayoutParams(new RecyclerView.LayoutParams(RecyclerView.LayoutParams.MATCH_PARENT, RecyclerView.LayoutParams.WRAP_CONTENT));
         return new Holder(view);
     }
 

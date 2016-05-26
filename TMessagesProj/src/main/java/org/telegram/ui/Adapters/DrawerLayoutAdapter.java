@@ -157,7 +157,23 @@ public class DrawerLayoutAdapter extends BaseAdapter {
             if (i == versionRow) {
                 try {
                     PackageInfo pInfo = ApplicationLoader.applicationContext.getPackageManager().getPackageInfo(ApplicationLoader.applicationContext.getPackageName(), 0);
-                    ((TextInfoCell) view).setText(String.format(Locale.US, LocaleController.getString("TelegramForAndroid", R.string.TelegramForAndroid)+" v%s (%d)", pInfo.versionName, pInfo.versionCode));
+                    int code = pInfo.versionCode / 10;
+                    String abi = "";
+                    switch (pInfo.versionCode % 10) {
+                        case 0:
+                            abi = "arm";
+                            break;
+                        case 1:
+                            abi = "arm-v7a";
+                            break;
+                        case 2:
+                            abi = "x86";
+                            break;
+                        case 3:
+                            abi = "universal";
+                            break;
+                    }
+                    ((TextInfoCell) view).setText(String.format(Locale.US, LocaleController.getString("TelegramForAndroid", R.string.TelegramForAndroid)+ "\nv%s (%d) %s", pInfo.versionName, code, abi));
                     ((TextInfoCell) view).setTextColor(themePrefs.getInt("drawerVersionColor", 0xffa3a3a3));
                     ((TextInfoCell) view).setTextSize(themePrefs.getInt("drawerVersionSize", 13));
                 } catch (Exception e) {

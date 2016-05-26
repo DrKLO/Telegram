@@ -14,6 +14,7 @@ import android.util.AttributeSet;
 import android.view.View;
 import android.widget.FrameLayout;
 
+import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLog;
 
 import java.util.ArrayList;
@@ -155,6 +156,7 @@ public class FrameLayoutFixed extends FrameLayout {
                 super.onMeasure(widthMeasureSpec, heightMeasureSpec);
             } catch (Exception e2) {
                 FileLog.e("tmessages", e2);
+                setMeasuredDimension(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(10), MeasureSpec.EXACTLY));
             }
         }
     }

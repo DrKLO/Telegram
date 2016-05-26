@@ -12,6 +12,7 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.widget.TextView;
@@ -81,6 +82,23 @@ public class TextDetailSettingsCell extends FrameLayoutFixed {
             valueTextView.setMaxLines(1);
             valueTextView.setSingleLine(true);
             valueTextView.setPadding(0, 0, 0, 0);
+        }
+    }
+
+    public void setMultilineText(boolean value) {
+        multiline = value;
+        if (value) {
+            textView.setLines(0);
+            textView.setMaxLines(0);
+            textView.setSingleLine(false);
+            textView.setPadding(0, 0, 0, AndroidUtilities.dp(35));
+            removeView(valueTextView);
+            addView(valueTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.BOTTOM, 17, 0, 17, 12));
+        } else {
+            textView.setLines(1);
+            textView.setMaxLines(1);
+            textView.setSingleLine(true);
+            textView.setPadding(0, 0, 0, 0);
         }
     }
 

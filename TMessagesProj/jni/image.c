@@ -397,13 +397,13 @@ JNIEXPORT void Java_org_telegram_messenger_Utilities_calcCDT(JNIEnv *env, jclass
 
 JNIEXPORT int Java_org_telegram_messenger_Utilities_pinBitmap(JNIEnv *env, jclass class, jobject bitmap) {
     if (bitmap == NULL) {
-        return;
+        return 0;
     }
     unsigned char *pixels;
     return AndroidBitmap_lockPixels(env, bitmap, &pixels) >= 0 ? 1 : 0;
 }
 
-JNIEXPORT int Java_org_telegram_messenger_Utilities_unpinBitmap(JNIEnv *env, jclass class, jobject bitmap) {
+JNIEXPORT void Java_org_telegram_messenger_Utilities_unpinBitmap(JNIEnv *env, jclass class, jobject bitmap) {
     if (bitmap == NULL) {
         return;
     }

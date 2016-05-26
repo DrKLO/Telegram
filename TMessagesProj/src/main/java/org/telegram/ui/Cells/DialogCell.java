@@ -21,6 +21,7 @@ import android.text.Layout;
 import android.text.StaticLayout;
 import android.text.TextPaint;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.MotionEvent;
 
 import org.telegram.PhoneFormat.PhoneFormat;
@@ -40,6 +41,7 @@ import org.telegram.messenger.UserObject;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.Components.AvatarDrawable;
+import org.telegram.ui.ImageListActivity;
 
 import java.util.ArrayList;
 
@@ -203,8 +205,9 @@ public class DialogCell extends BaseCell {
             countPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
 
             lockDrawable = getResources().getDrawable(R.drawable.list_secret);
-            checkDrawable = getResources().getDrawable(R.drawable.dialogs_check);
-            halfCheckDrawable = getResources().getDrawable(R.drawable.dialogs_halfcheck);
+            setChecks(context);
+            //checkDrawable = getResources().getDrawable(R.drawable.dialogs_check);
+            //halfCheckDrawable = getResources().getDrawable(R.drawable.dialogs_halfcheck);
             clockDrawable = getResources().getDrawable(R.drawable.msg_clock);
             errorDrawable = getResources().getDrawable(R.drawable.dialogs_warning);
             countDrawable = getResources().getDrawable(R.drawable.dialogs_badge);
@@ -227,6 +230,48 @@ public class DialogCell extends BaseCell {
         statusBG.setColor(Color.GRAY);
         statusBG.setCornerRadius(AndroidUtilities.dp(16));
         statusBG.setStroke(AndroidUtilities.dp(2), Color.WHITE);
+    }
+
+    private static void setChecks(Context context) {
+        SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
+        String check = themePrefs.getString("chatCheckStyle", ImageListActivity.getCheckName(0));
+        if (check.equals(ImageListActivity.getCheckName(1))) {
+            checkDrawable = context.getResources().getDrawable(R.drawable.dialogs_check_2);
+            halfCheckDrawable = context.getResources().getDrawable(R.drawable.dialogs_halfcheck_2);
+        } else if (check.equals(ImageListActivity.getCheckName(2))) {
+            checkDrawable = context.getResources().getDrawable(R.drawable.dialogs_check_3);
+            halfCheckDrawable = context.getResources().getDrawable(R.drawable.dialogs_halfcheck_3);
+        } else if (check.equals(ImageListActivity.getCheckName(3))) {
+            checkDrawable = context.getResources().getDrawable(R.drawable.dialogs_check_4);
+            halfCheckDrawable = context.getResources().getDrawable(R.drawable.dialogs_halfcheck_4);
+        } else if (check.equals(ImageListActivity.getCheckName(4))) {
+            checkDrawable = context.getResources().getDrawable(R.drawable.dialogs_check_5);
+            halfCheckDrawable = context.getResources().getDrawable(R.drawable.dialogs_halfcheck_5);
+        } else if (check.equals(ImageListActivity.getCheckName(5))) {
+            checkDrawable = context.getResources().getDrawable(R.drawable.dialogs_check_6);
+            halfCheckDrawable = context.getResources().getDrawable(R.drawable.dialogs_halfcheck_6);
+        } else if (check.equals(ImageListActivity.getCheckName(6))) {
+            checkDrawable = context.getResources().getDrawable(R.drawable.dialogs_check_7);
+            halfCheckDrawable = context.getResources().getDrawable(R.drawable.dialogs_halfcheck_7);
+        } else if (check.equals(ImageListActivity.getCheckName(7))) {
+            checkDrawable = context.getResources().getDrawable(R.drawable.dialogs_check_8);
+            halfCheckDrawable = context.getResources().getDrawable(R.drawable.dialogs_halfcheck_8);
+        } else if (check.equals(ImageListActivity.getCheckName(8))) {
+            checkDrawable = context.getResources().getDrawable(R.drawable.dialogs_check_9);
+            halfCheckDrawable = context.getResources().getDrawable(R.drawable.dialogs_halfcheck_9);
+        } else if (check.equals(ImageListActivity.getCheckName(9))) {
+            checkDrawable = context.getResources().getDrawable(R.drawable.dialogs_check_10);
+            halfCheckDrawable = context.getResources().getDrawable(R.drawable.dialogs_halfcheck_10);
+        } else if (check.equals(ImageListActivity.getCheckName(10))) {
+            checkDrawable = context.getResources().getDrawable(R.drawable.dialogs_check_11);
+            halfCheckDrawable = context.getResources().getDrawable(R.drawable.dialogs_halfcheck_11);
+        } else if (check.equals(ImageListActivity.getCheckName(11))) {
+            checkDrawable = context.getResources().getDrawable(R.drawable.dialogs_check_12);
+            halfCheckDrawable = context.getResources().getDrawable(R.drawable.dialogs_halfcheck_12);
+        } else {
+            checkDrawable = context.getResources().getDrawable(R.drawable.dialogs_check);
+            halfCheckDrawable = context.getResources().getDrawable(R.drawable.dialogs_halfcheck);
+        }
     }
 
     public void setDialog(TLRPC.Dialog dialog, int i, int type) {
@@ -409,10 +454,10 @@ public class DialogCell extends BaseCell {
         } else {
             TLRPC.User fromUser = null;
             TLRPC.Chat fromChat = null;
-            if (message.messageOwner.from_id > 0) {
+            if (message.isFromUser()) {
                 fromUser = MessagesController.getInstance().getUser(message.messageOwner.from_id);
-            } else if (message.messageOwner.from_id < 0) {
-                fromChat = MessagesController.getInstance().getChat(-message.messageOwner.from_id);
+            } else {
+                fromChat = MessagesController.getInstance().getChat(message.messageOwner.to_id.channel_id);
             }
 
             if (lastMessageDate != 0) {
@@ -453,7 +498,7 @@ public class DialogCell extends BaseCell {
                             if (mess.length() > 150) {
                                 mess = mess.substring(0, 150);
                             }
-                            mess = mess.replace("\n", " ");
+                            mess = mess.replace('\n', ' ');
                             //messageString = Emoji.replaceEmoji(AndroidUtilities.replaceTags(String.format("<c#ff4d83b3>%s:</c> <c#ff808080>%s</c>", name.replace("\n", ""), mess), AndroidUtilities.FLAG_TAG_COLOR), messagePaint.getFontMetricsInt(), AndroidUtilities.dp(20), false);
                             messageString = Emoji.replaceEmoji(AndroidUtilities.replaceTags(String.format("<c" + hexDarkColor + ">%s:</c> <c" + hexMsgColor + ">%s</c>", name.replace("\n", ""), mess), AndroidUtilities.FLAG_TAG_COLOR), messagePaint.getFontMetricsInt(), AndroidUtilities.dp(20), false);
                         } else {
@@ -467,7 +512,7 @@ public class DialogCell extends BaseCell {
                                     if (mess.length() > 150) {
                                         mess = mess.substring(0, 150);
                                     }
-                                    mess = mess.replace("\n", " ");
+                                    mess = mess.replace('\n', ' ');
                                     //messageString = Emoji.replaceEmoji(AndroidUtilities.replaceTags(String.format("<c#ff4d83b3>%s:</c> <c#ff808080>%s</c>", name.replace("\n", ""), mess)), AndroidUtilities.FLAG_TAG_COLOR), messagePaint.getFontMetricsInt(), AndroidUtilities.dp(20), false);
                                     messageString = Emoji.replaceEmoji(AndroidUtilities.replaceTags(String.format("<c" + hexDarkColor + ">%s:</c> <c" + hexMsgColor + ">%s</c>", name.replace("\n", ""), mess), AndroidUtilities.FLAG_TAG_COLOR), messagePaint.getFontMetricsInt(), AndroidUtilities.dp(20), false);
                                 }
@@ -625,7 +670,7 @@ public class DialogCell extends BaseCell {
         }
 
         nameWidth = Math.max(AndroidUtilities.dp(12), nameWidth);
-        CharSequence nameStringFinal = TextUtils.ellipsize(nameString.replace("\n", " "), currentNamePaint, nameWidth - AndroidUtilities.dp(12), TextUtils.TruncateAt.END);
+        CharSequence nameStringFinal = TextUtils.ellipsize(nameString.replace('\n', ' '), currentNamePaint, nameWidth - AndroidUtilities.dp(12), TextUtils.TruncateAt.END);
         try {
             nameLayout = new StaticLayout(nameStringFinal, currentNamePaint, nameWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
         } catch (Exception e) {
@@ -679,7 +724,7 @@ public class DialogCell extends BaseCell {
             if (mess.length() > 150) {
                 mess = mess.substring(0, 150);
             }
-            mess = mess.replace("\n", " ");
+            mess = mess.replace('\n', ' ');
             messageString = Emoji.replaceEmoji(mess, messagePaint.getFontMetricsInt(), AndroidUtilities.dp(17), false);
         }
         messageWidth = Math.max(AndroidUtilities.dp(12), messageWidth);
@@ -1006,6 +1051,7 @@ public class DialogCell extends BaseCell {
         avatarLeftMargin = AndroidUtilities.dp(themePrefs.getInt("chatsAvatarMarginLeft", AndroidUtilities.isTablet() ? 13 : 9));
 
         statusBG.setStroke(AndroidUtilities.dp(2), themePrefs.getInt("chatsRowColor", 0xffffffff));
+        setChecks(this.getContext());
     }
 
     @Override
@@ -1055,7 +1101,11 @@ public class DialogCell extends BaseCell {
         if (messageLayout != null) {
             canvas.save();
             canvas.translate(messageLeft, messageTop);
+            try {
             messageLayout.draw(canvas);
+            } catch (Exception e) {
+                FileLog.e("tmessages", e);
+            }
             canvas.restore();
         }
 

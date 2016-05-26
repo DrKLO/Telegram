@@ -58,7 +58,6 @@ public class DialogsAdapter extends RecyclerView.Adapter {
     }
 
     private ArrayList<TLRPC.Dialog> getDialogsArray() {
-        //SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
         SharedPreferences plusPreferences = ApplicationLoader.applicationContext.getSharedPreferences("plusconfig", Activity.MODE_PRIVATE);
         if (dialogsType == 0) {
             boolean hideTabs = plusPreferences.getBoolean("hideTabs", false);
@@ -136,6 +135,11 @@ public class DialogsAdapter extends RecyclerView.Adapter {
         return null;
     }
     //plus
+    public void sort(){
+        getDialogsArray();
+        notifyDataSetChanged();
+    }
+
     private void sortUsersByStatus(){
         Collections.sort(MessagesController.getInstance().dialogsUsers, new Comparator<TLRPC.Dialog>() {
             @Override
@@ -227,35 +231,6 @@ public class DialogsAdapter extends RecyclerView.Adapter {
         });
     }
 
-    /*private void sortAllDefault(ArrayList<TLRPC.Dialog> dialogs){
-        Collections.sort(dialogs, new Comparator<TLRPC.Dialog>() {
-            @Override
-            public int compare(TLRPC.Dialog dialog, TLRPC.Dialog dialog2) {
-                if (dialog.last_message_date == dialog2.last_message_date) {
-                    return 0;
-                } else if (dialog.last_message_date < dialog2.last_message_date) {
-                    return 1;
-                } else {
-                    return -1;
-                }
-            }
-        });
-    }
-
-    private void sortAllUnread(ArrayList<TLRPC.Dialog> dialogs){
-        Collections.sort(dialogs, new Comparator<TLRPC.Dialog>() {
-            @Override
-            public int compare(TLRPC.Dialog dialog, TLRPC.Dialog dialog2) {
-                if (dialog.unread_count == dialog2.unread_count) {
-                    return 0;
-                } else if (dialog.unread_count < dialog2.unread_count) {
-                    return 1;
-                } else {
-                    return -1;
-                }
-            }
-        });
-    }*/
     //
     @Override
     public int getItemCount() {
@@ -279,6 +254,13 @@ public class DialogsAdapter extends RecyclerView.Adapter {
     }
 
     @Override
+    public void onViewAttachedToWindow(RecyclerView.ViewHolder holder) {
+        if (holder.itemView instanceof DialogCell) {
+            ((DialogCell) holder.itemView).checkCurrentDialogIndex();
+        }
+    }
+
+    @Override
     public long getItemId(int i) {
         return i;
     }
@@ -291,6 +273,7 @@ public class DialogsAdapter extends RecyclerView.Adapter {
         } else if (viewType == 1) {
                 view = new LoadingCell(mContext);
         }
+        view.setLayoutParams(new RecyclerView.LayoutParams(RecyclerView.LayoutParams.MATCH_PARENT, RecyclerView.LayoutParams.WRAP_CONTENT));
         if(dialogsType > 2 && viewType == 1)view.setVisibility(View.GONE);
         SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
         int mainColor = themePrefs.getInt("chatsRowColor", 0xffffffff);

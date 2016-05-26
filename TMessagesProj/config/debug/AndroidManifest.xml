@@ -23,9 +23,9 @@
 
     <application
         android:allowBackup="false"
-        android:icon="@drawable/ic_launcher"
+        tools:replace="android:icon"
+        android:icon="@drawable/ic_launcher_beta"
         android:label="Plus beta"
-        tools:replace="label"
         android:theme="@style/Theme.TMessages.Start"
         android:name="org.telegram.messenger.ApplicationLoader"
         android:hardwareAccelerated="@bool/useHardwareAcceleration"
@@ -34,6 +34,8 @@
         <meta-data android:name="com.google.android.maps.v2.API_KEY" android:value="AIzaSyDFiyV4uu3lh66i_Jyn0mmhrJMNLyo2-0s" /><!--org.telegram.plus/AIzaSyCZi83oDrfsCQ3_Aokfmlv53gTBYPIGJ2Q-->
 
         <activity android:name="net.hockeyapp.android.UpdateActivity" />
+        <activity android:name="net.hockeyapp.android.LoginActivity" />
+        <meta-data android:name="net.hockeyapp.android.appIdentifier" android:value="${HOCKEYAPP_APP_ID}" />
 
         <receiver
             android:name="com.google.android.gms.gcm.GcmReceiver"

@@ -92,6 +92,10 @@ public class TextSettingsCell extends FrameLayout {
         textView.setTextColor(color);
     }
 
+    public void setTextValueColor(int color) {
+        valueTextView.setTextColor(color);
+    }
+
     public void setDividerColor(int color) {
         paint.setColor(color);
     }

@@ -17,6 +17,7 @@ import android.view.animation.DecelerateInterpolator;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
+import org.telegram.ui.ActionBar.Theme;
 
 public class TypingDotsDrawable extends Drawable {
 
@@ -31,7 +32,7 @@ public class TypingDotsDrawable extends Drawable {
 
     public TypingDotsDrawable() {
         super();
-        //paint.setColor(0xffd7e8f7);
+        //paint.setColor(Theme.ACTION_BAR_SUBTITLE_COLOR);
         SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
         paint.setColor(themePrefs.getInt("chatTypingColor",themePrefs.getInt("chatStatusColor", AndroidUtilities.getIntDarkerColor("themeColor", -0x40))));
     }
@@ -94,9 +95,9 @@ public class TypingDotsDrawable extends Drawable {
     public void draw(Canvas canvas) {
         int y;
         if (isChat) {
-            y = AndroidUtilities.dp(6);
+            y = AndroidUtilities.dp(8.3f) + getBounds().top;
         } else {
-            y = AndroidUtilities.dp(7);
+            y = AndroidUtilities.dp(9) + getBounds().top;
         }
         canvas.drawCircle(AndroidUtilities.dp(3), y, scales[0] * AndroidUtilities.density, paint);
         canvas.drawCircle(AndroidUtilities.dp(9), y, scales[1] * AndroidUtilities.density, paint);
@@ -128,6 +129,6 @@ public class TypingDotsDrawable extends Drawable {
 
     @Override
     public int getIntrinsicHeight() {
-        return AndroidUtilities.dp(10);
+        return AndroidUtilities.dp(18);
     }
 }

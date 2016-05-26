@@ -122,13 +122,19 @@ public class BaseFragment {
                 }
             }
             if (parentLayout != null && actionBar == null) {
-                actionBar = new ActionBar(parentLayout.getContext());
+                actionBar = createActionBar(parentLayout.getContext());
                 actionBar.parentFragment = this;
-                //actionBar.setBackgroundColor(0xff54759e);
-                actionBar.setBackgroundResource(R.color.header); //Plus
-                actionBar.setItemsBackground(R.drawable.bar_selector);
             }
         }
+    }
+
+    protected ActionBar createActionBar(Context context) {
+        ActionBar actionBar = new ActionBar(context);
+        actionBar.setBackgroundColor(Theme.ACTION_BAR_COLOR);
+        actionBar.setItemsBackgroundColor(Theme.ACTION_BAR_SELECTOR_COLOR);
+        actionBar.setBackgroundResource(R.color.header); //Plus
+        //actionBar.setItemsBackground(R.drawable.bar_selector);
+        return actionBar;
     }
 
     public void finishFragment() {
@@ -296,6 +302,7 @@ public class BaseFragment {
                 }
             });
             visibleDialog.show();
+            //Log.e("BaseFragment","showDialog " + allowInTransition);
             //Always after .show()
             SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
             int color = preferences.getInt("dialogColor", preferences.getInt("themeColor", AndroidUtilities.defColor));
@@ -312,6 +319,19 @@ public class BaseFragment {
             if(btn != null)btn.setTextColor(color);
             btn = (Button) visibleDialog.findViewById(android.R.id.button3);
             if(btn != null)btn.setTextColor(color);
+            int bgColor = preferences.getInt("prefBGColor", 0xffffffff);
+            //dialog.getWindow().setBackgroundDrawableResource(android.R.color.background_dark);
+            /*visibleDialog.getWindow().setBackgroundDrawable(new ColorDrawable(bgColor));
+            int tColor = preferences.getInt("prefTitleColor", 0xff212121);
+            tColor = 0xffff0000;
+            tv = (TextView) visibleDialog.findViewById(android.R.id.text1);
+            if(tv != null)tv.setTextColor(tColor);
+            tv = (TextView) visibleDialog.findViewById(android.R.id.text2);
+            if(tv != null)tv.setTextColor(tColor);
+            id = visibleDialog.getContext().getResources().getIdentifier("android:id/message", null, null);
+            tv = (TextView) visibleDialog.findViewById(id);
+            if(tv != null)tv.setTextColor(tColor);*/
+
             //
             return visibleDialog;
         } catch (Exception e) {

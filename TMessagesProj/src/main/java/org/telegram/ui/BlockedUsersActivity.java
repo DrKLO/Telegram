@@ -288,14 +288,22 @@ public class BlockedUsersActivity extends BaseFragment implements NotificationCe
             SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
             if (type == 0) {
                 if (view == null) {
-                    view = new UserCell(mContext, 1, 0);
+                    view = new UserCell(mContext, 1, 0, false);
                     view.setTag("Pref");
                 }
                 ((UserCell) view).setNameColor(preferences.getInt("prefTitleColor", 0xff212121));
                 ((UserCell) view).setStatusColor(preferences.getInt("prefSummaryColor", 0xff8a8a8a));
                 TLRPC.User user = MessagesController.getInstance().getUser(MessagesController.getInstance().blockedUsers.get(i));
                 if (user != null) {
-                    ((UserCell) view).setData(user, null, user.phone != null && user.phone.length() != 0 ? PhoneFormat.getInstance().format("+" + user.phone) : LocaleController.getString("NumberUnknown", R.string.NumberUnknown), 0);
+                    String number;
+                    if (user.bot) {
+                        number = LocaleController.getString("Bot", R.string.Bot).substring(0, 1).toUpperCase() + LocaleController.getString("Bot", R.string.Bot).substring(1);
+                    } else if (user.phone != null && user.phone.length() != 0) {
+                        number = PhoneFormat.getInstance().format("+" + user.phone);
+                    } else {
+                        number = LocaleController.getString("NumberUnknown", R.string.NumberUnknown);
+                    }
+                    ((UserCell) view).setData(user, null, number, 0);
                 }
             } else if (type == 1) {
                 if (view == null) {

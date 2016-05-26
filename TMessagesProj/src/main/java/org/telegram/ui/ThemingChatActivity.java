@@ -16,6 +16,7 @@ import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.graphics.PorterDuff;
 import android.graphics.drawable.Drawable;
+import android.os.Bundle;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -39,7 +40,6 @@ import org.telegram.ui.Cells.TextCheckCell;
 import org.telegram.ui.Cells.TextColorCell;
 import org.telegram.ui.Cells.TextDetailSettingsCell;
 import org.telegram.ui.Cells.TextSettingsCell;
-import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.ColorSelectorDialog;
 import org.telegram.ui.Components.NumberPicker;
 
@@ -126,6 +126,8 @@ public class ThemingChatActivity extends BaseFragment {
 
     private int hideStatusIndicatorCheckRow;
 
+    private int checksRow;
+
     private int rowCount;
 
     public final static int CENTER = 0;
@@ -187,6 +189,7 @@ public class ThemingChatActivity extends BaseFragment {
         dateColorRow = rowCount++;
 
         bubblesRow = rowCount++;
+        checksRow = rowCount++;
         rBubbleColorRow = rowCount++;
         lBubbleColorRow = rowCount++;
         dateBubbleColorRow = rowCount++;
@@ -231,7 +234,7 @@ public class ThemingChatActivity extends BaseFragment {
     public View createView(Context context) {
         if (fragmentView == null) {
 
-            actionBar.setItemsBackground(AvatarDrawable.getButtonColorForId(5));
+            //actionBar.setItemsBackground(AvatarDrawable.getButtonColorForId(5));
             actionBar.setBackButtonImage(R.drawable.ic_ab_back);
 
             if (AndroidUtilities.isTablet()) {
@@ -259,7 +262,9 @@ public class ThemingChatActivity extends BaseFragment {
             listView.setDivider(null);
             listView.setDividerHeight(0);
             listView.setVerticalScrollBarEnabled(false);
-            AndroidUtilities.setListViewEdgeEffectColor(listView, AvatarDrawable.getProfileBackColorForId(5));
+            int def = preferences.getInt("themeColor", AndroidUtilities.defColor);
+            int hColor = preferences.getInt("prefHeaderColor", def);
+            AndroidUtilities.setListViewEdgeEffectColor(listView, /*AvatarDrawable.getProfileBackColorForId(5)*/ hColor);
             frameLayout.addView(listView);
             FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) listView.getLayoutParams();
             layoutParams.width = FrameLayout.LayoutParams.MATCH_PARENT;
@@ -406,7 +411,7 @@ public class ThemingChatActivity extends BaseFragment {
                         boolean b = themePrefs.getBoolean( key, false);
                         SharedPreferences.Editor editor = themePrefs.edit();
                         editor.putBoolean(key, !b);
-                        editor.commit();
+                        editor.apply();
                         if (view instanceof TextCheckCell) {
                             ((TextCheckCell) view).setChecked(!b);
                         }
@@ -418,7 +423,7 @@ public class ThemingChatActivity extends BaseFragment {
                         boolean b = themePrefs.getBoolean( key, false);
                         SharedPreferences.Editor editor = themePrefs.edit();
                         editor.putBoolean(key, !b);
-                        editor.commit();
+                        editor.apply();
                         ApplicationLoader.reloadWallpaper();
                         if (view instanceof TextCheckCell) {
                             ((TextCheckCell) view).setChecked(!b);
@@ -431,7 +436,7 @@ public class ThemingChatActivity extends BaseFragment {
                         boolean b = themePrefs.getBoolean( key, false);
                         SharedPreferences.Editor editor = themePrefs.edit();
                         editor.putBoolean( key, !b);
-                        editor.commit();
+                        editor.apply();
                         if (view instanceof TextCheckCell) {
                             ((TextCheckCell) view).setChecked(!b);
                         }
@@ -443,7 +448,7 @@ public class ThemingChatActivity extends BaseFragment {
                         boolean b = themePrefs.getBoolean( key, false);
                         SharedPreferences.Editor editor = themePrefs.edit();
                         editor.putBoolean( key, !b);
-                        editor.commit();
+                        editor.apply();
                         if (view instanceof TextCheckCell) {
                             ((TextCheckCell) view).setChecked(!b);
                         }
@@ -455,7 +460,7 @@ public class ThemingChatActivity extends BaseFragment {
                         boolean b = themePrefs.getBoolean( key, false);
                         SharedPreferences.Editor editor = themePrefs.edit();
                         editor.putBoolean( key, !b);
-                        editor.commit();
+                        editor.apply();
                         if (view instanceof TextCheckCell) {
                             ((TextCheckCell) view).setChecked(!b);
                         }
@@ -464,7 +469,7 @@ public class ThemingChatActivity extends BaseFragment {
                         boolean b = themePrefs.getBoolean( key, false);
                         SharedPreferences.Editor editor = themePrefs.edit();
                         editor.putBoolean( key, !b);
-                        editor.commit();
+                        editor.apply();
                         if (view instanceof TextCheckCell) {
                             ((TextCheckCell) view).setChecked(!b);
                         }
@@ -473,7 +478,7 @@ public class ThemingChatActivity extends BaseFragment {
                         boolean b = themePrefs.getBoolean( key, false);
                         SharedPreferences.Editor editor = themePrefs.edit();
                         editor.putBoolean( key, !b);
-                        editor.commit();
+                        editor.apply();
                         if (view instanceof TextCheckCell) {
                             ((TextCheckCell) view).setChecked(!b);
                         }
@@ -482,7 +487,7 @@ public class ThemingChatActivity extends BaseFragment {
                         boolean b = themePrefs.getBoolean( key, false);
                         SharedPreferences.Editor editor = themePrefs.edit();
                         editor.putBoolean( key, !b);
-                        editor.commit();
+                        editor.apply();
                         if (view instanceof TextCheckCell) {
                             ((TextCheckCell) view).setChecked(!b);
                         }
@@ -490,7 +495,7 @@ public class ThemingChatActivity extends BaseFragment {
                         boolean b = themePrefs.getBoolean( key, false);
                         SharedPreferences.Editor editor = themePrefs.edit();
                         editor.putBoolean( key, !b);
-                        editor.commit();
+                        editor.apply();
                         if (view instanceof TextCheckCell) {
                             ((TextCheckCell) view).setChecked(!b);
                         }
@@ -498,7 +503,7 @@ public class ThemingChatActivity extends BaseFragment {
                         boolean b = themePrefs.getBoolean( key, false);
                         SharedPreferences.Editor editor = themePrefs.edit();
                         editor.putBoolean( key, !b);
-                        editor.commit();
+                        editor.apply();
                         if (view instanceof TextCheckCell) {
                             ((TextCheckCell) view).setChecked(!b);
                         }
@@ -1223,7 +1228,7 @@ public class ThemingChatActivity extends BaseFragment {
                                     SharedPreferences.Editor editor = preferences.edit();
                                     editor.putInt("fons_size", numberPicker.getValue());
                                     MessagesController.getInstance().fontSize = numberPicker.getValue();
-                                    editor.commit();
+                                    editor.apply();
                                 }
                             }
                         });
@@ -1256,7 +1261,7 @@ public class ThemingChatActivity extends BaseFragment {
                         AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                         builder.setTitle(LocaleController.getString("DateSize", R.string.DateSize));
                         final NumberPicker numberPicker = new NumberPicker(getParentActivity());
-                        final int currentValue = themePrefs.getInt("chatDateSize", 16);
+                        final int currentValue = themePrefs.getInt("chatDateSize", MessagesController.getInstance().fontSize - 2);
                         numberPicker.setMinValue(8);
                         numberPicker.setMaxValue(20);
                         numberPicker.setValue(currentValue);
@@ -1292,7 +1297,13 @@ public class ThemingChatActivity extends BaseFragment {
                         });
                         showDialog(builder.create());
                     } else if (i == bubblesRow) {
-                        presentFragment(new ImageListActivity());
+                        Bundle args = new Bundle();
+                        args.putInt("array_id", 0);
+                        presentFragment(new ImageListActivity(args));
+                    } else if (i == checksRow) {
+                        Bundle args = new Bundle();
+                        args.putInt("array_id", 1);
+                        presentFragment(new ImageListActivity(args));
                     }
                 }
             });
@@ -1409,7 +1420,7 @@ public class ThemingChatActivity extends BaseFragment {
         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
         SharedPreferences.Editor editor = preferences.edit();
         editor.remove(key);
-        editor.commit();
+        editor.apply();
         if (listView != null) {
             listView.invalidateViews();
         }
@@ -1422,7 +1433,7 @@ public class ThemingChatActivity extends BaseFragment {
             SharedPreferences.Editor editor = preferences.edit();
             editor.putInt("fons_size", value);
             MessagesController.getInstance().fontSize = value;
-            editor.commit();
+            editor.apply();
         }
     }
 
@@ -1430,7 +1441,7 @@ public class ThemingChatActivity extends BaseFragment {
         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
         SharedPreferences.Editor editor = preferences.edit();
         editor.putInt(key, value);
-        editor.commit();
+        editor.apply();
         if (listView != null) {
             listView.invalidateViews();
         }
@@ -1497,7 +1508,7 @@ public class ThemingChatActivity extends BaseFragment {
         public boolean isEnabled(int i) {
             boolean b = AndroidUtilities.getBoolPref("chatSolidBGColorCheck");
             int g = AndroidUtilities.getIntDef("chatGradientBG", 0);
-            return  i == headerColorRow || i == headerGradientRow || AndroidUtilities.getIntDef("chatHeaderGradient", 0) != 0 && i == headerGradientColorRow || i == muteColorRow || i == headerIconsColorRow || i == headerAvatarRadiusRow || i == rBubbleColorRow || i == lBubbleColorRow ||  i == bubblesRow ||
+            return  i == headerColorRow || i == headerGradientRow || AndroidUtilities.getIntDef("chatHeaderGradient", 0) != 0 && i == headerGradientColorRow || i == muteColorRow || i == headerIconsColorRow || i == headerAvatarRadiusRow || i == rBubbleColorRow || i == lBubbleColorRow ||  i == bubblesRow || i == checksRow ||
                     i == solidBGColorCheckRow || b && i == solidBGColorRow || b && i == gradientBGRow || (g != 0 &&  i == gradientBGColorRow) || i == avatarRadiusRow || i == avatarSizeRow || i == avatarMarginLeftRow || i == avatarAlignTopRow || i == ownAvatarAlignTopRow || i == showContactAvatar || i == showOwnAvatar || i == showOwnAvatarGroup || i == hideStatusIndicatorCheckRow || i == nameColorRow || i == nameSizeRow || i == statusColorRow || i == onlineColorRow || i == typingColorRow || i == statusSizeRow ||
                     i == textSizeRow || i == timeSizeRow || AndroidUtilities.getBoolPref("chatCommandColorCheck") && i == commandColorRow || i == commandColorCheckRow || i == dateColorRow || i == dateSizeRow || i == dateBubbleColorRow || i == rTextColorRow || i == rLinkColorRow || i == lTextColorRow || i == lLinkColorRow ||
                     i == rTimeColorRow|| i == lTimeColorRow || i == checksColorRow || i == memberColorCheckRow || AndroidUtilities.getBoolPref("chatMemberColorCheck") && i == memberColorRow || i == contactNameColorRow || i == forwardRightNameColorRow || i == forwardLeftNameColorRow || i == showUsernameCheckRow ||
@@ -1579,7 +1590,7 @@ public class ThemingChatActivity extends BaseFragment {
                     int size = themePrefs.getInt("chatTimeSize", AndroidUtilities.isTablet() ? 14 : 12);
                     textCell.setTextAndValue(LocaleController.getString("TimeSize", R.string.TimeSize), String.format("%d", size), true);
                 } else if (i == dateSizeRow) {
-                    int size = themePrefs.getInt("chatDateSize", AndroidUtilities.isTablet() ? 18 : 16);
+                    int size = themePrefs.getInt("chatDateSize", AndroidUtilities.isTablet() ? 18 : MessagesController.getInstance().fontSize - 2);
                     textCell.setTextAndValue(LocaleController.getString("DateSize", R.string.DateSize), String.format("%d", size), true);
                 }  else if (i == editTextSizeRow) {
                     int size = themePrefs.getInt("chatEditTextSize", AndroidUtilities.isTablet() ? 20 : 18);
@@ -1587,6 +1598,9 @@ public class ThemingChatActivity extends BaseFragment {
                 } else if (i == bubblesRow) {
                     String bStyle = themePrefs.getString("chatBubbleStyle", ImageListActivity.getBubbleName(0));
                     textCell.setTextAndValue(LocaleController.getString("BubbleStyle", R.string.BubbleStyle), bStyle, true);
+                } else if (i == checksRow) {
+                    String cStyle = themePrefs.getString("chatCheckStyle", ImageListActivity.getCheckName(0));
+                    textCell.setTextAndValue(LocaleController.getString("CheckStyle", R.string.CheckStyle), cStyle, true);
                 }
             } else if (type == 4) {
                 if (view == null) {
@@ -1810,7 +1824,7 @@ public class ThemingChatActivity extends BaseFragment {
             else if ( i == headerSection2Row || i == rowsSection2Row ) {
                 return 1;
             }
-            else if ( i == headerAvatarRadiusRow || i == avatarRadiusRow || i == avatarSizeRow || i == avatarMarginLeftRow  || i == nameSizeRow ||  i == statusSizeRow || i == textSizeRow || i == timeSizeRow || i == dateSizeRow  || i == editTextSizeRow || i == bubblesRow) {
+            else if ( i == headerAvatarRadiusRow || i == avatarRadiusRow || i == avatarSizeRow || i == avatarMarginLeftRow  || i == nameSizeRow ||  i == statusSizeRow || i == textSizeRow || i == timeSizeRow || i == dateSizeRow  || i == editTextSizeRow || i == bubblesRow || i == checksRow) {
                 return 2;
             }
 

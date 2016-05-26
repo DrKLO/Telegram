@@ -13,7 +13,6 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.PorterDuff;
 import android.graphics.drawable.Drawable;
-import android.text.InputFilter;
 import android.text.InputType;
 import android.util.Log;
 import android.util.TypedValue;
@@ -28,25 +27,20 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.FileLog;
-import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.UserObject;
-import org.telegram.messenger.query.BotQuery;
-import org.telegram.tgnet.ConnectionsManager;
-import org.telegram.tgnet.RequestDelegate;
-import org.telegram.tgnet.TLObject;
-import org.telegram.tgnet.TLRPC;
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
+import org.telegram.tgnet.ConnectionsManager;
+import org.telegram.tgnet.RequestDelegate;
+import org.telegram.tgnet.TLObject;
+import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.Components.LayoutHelper;
-
-import java.util.ArrayList;
 
 public class ChangeNameActivity extends BaseFragment {
 
@@ -195,8 +189,11 @@ public class ChangeNameActivity extends BaseFragment {
             return;
         }
         TLRPC.TL_account_updateProfile req = new TLRPC.TL_account_updateProfile();
+        req.flags = 7;//3;
         currentUser.first_name = req.first_name = newFirst;
         currentUser.last_name = req.last_name = newLast;
+        //req.about = "Esto es un test desde Plus Messenger";
+        req.about = "This is a test from Plus Messenger";
         TLRPC.User user = MessagesController.getInstance().getUser(UserConfig.getClientUserId());
         if (user != null) {
             user.first_name = req.first_name;
@@ -208,7 +205,8 @@ public class ChangeNameActivity extends BaseFragment {
         ConnectionsManager.getInstance().sendRequest(req, new RequestDelegate() {
             @Override
             public void run(TLObject response, TLRPC.TL_error error) {
-
+                if(response != null) Log.e("saveName","response " + response.toString());
+                if(error != null)Log.e("saveName","error " + error.text);
             }
         });
     }

@@ -48,6 +48,7 @@ import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SecretChatHelper;
+import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.TLRPC;
@@ -59,6 +60,7 @@ import org.telegram.ui.Adapters.BaseSectionsAdapter;
 import org.telegram.ui.Adapters.ContactsAdapter;
 import org.telegram.ui.Adapters.SearchAdapter;
 import org.telegram.ui.Cells.UserCell;
+import org.telegram.ui.Components.Glow;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.LetterSectionsListView;
 
@@ -266,6 +268,9 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
             frameLayout.setLayoutParams(layoutParams1);
 
         listView = new LetterSectionsListView(context);
+        int def = themePrefs.getInt("themeColor", AndroidUtilities.defColor);
+        int hColor = themePrefs.getInt("contactsHeaderColor", def);
+        Glow.setEdgeGlowColor(listView, hColor);
             listView.setEmptyView(emptyTextLayout);
             listView.setVerticalScrollBarEnabled(false);
             listView.setDivider(null);
@@ -304,14 +309,19 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                             didSelectResult(user, true, null);
                         } else {
                             if (createSecretChat) {
+                            if (user.id == UserConfig.getClientUserId()) {
+                                return;
+                            }
                                 creatingChat = true;
                                 SecretChatHelper.getInstance().startSecretChat(getParentActivity(), user);
                             } else {
                                 Bundle args = new Bundle();
                                 args.putInt("user_id", user.id);
+                            if (MessagesController.checkCanOpenChat(args, ContactsActivity.this)) {
                                 presentFragment(new ChatActivity(args), true);
                             }
                         }
+                    }
                     } else {
                         int section = listViewAdapter.getSectionForPosition(i);
                         int row = listViewAdapter.getPositionInSectionForPosition(i);
@@ -345,6 +355,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                                     args.putBoolean("onlyUsers", true);
                                     args.putBoolean("destroyAfterSelect", true);
                                     args.putBoolean("createSecretChat", true);
+                                args.putBoolean("allowBots", false);
                                     presentFragment(new ContactsActivity(args), false);
                                 } else if (row == 2) {
                                     if (!MessagesController.isFeatureEnabled("broadcast_create", ContactsActivity.this)) {
@@ -378,9 +389,11 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                                     } else {
                                         Bundle args = new Bundle();
                                         args.putInt("user_id", user.id);
+                                    if (MessagesController.checkCanOpenChat(args, ContactsActivity.this)) {
                                         presentFragment(new ChatActivity(args), true);
                                     }
                                 }
+                            }
                             } else if (item instanceof ContactsController.Contact) {
                                 ContactsController.Contact contact = (ContactsController.Contact) item;
                                 String usePhone = null;

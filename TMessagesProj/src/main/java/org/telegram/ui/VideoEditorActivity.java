@@ -51,6 +51,7 @@ import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.VideoSeekBarView;
 import org.telegram.ui.Components.VideoTimelineView;
@@ -231,8 +232,8 @@ public class VideoEditorActivity extends BaseFragment implements TextureView.Sur
 
     @Override
     public View createView(Context context) {
-        actionBar.setBackgroundColor(0xff333333);
-        actionBar.setItemsBackground(R.drawable.bar_selector_white);
+        actionBar.setBackgroundColor(Theme.ACTION_BAR_MEDIA_PICKER_COLOR);
+        actionBar.setItemsBackgroundColor(Theme.ACTION_BAR_PICKER_SELECTOR_COLOR);
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBar.setTitle(LocaleController.getString("EditVideo", R.string.EditVideo));
         actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
@@ -256,7 +257,6 @@ public class VideoEditorActivity extends BaseFragment implements TextureView.Sur
                         if (compressVideo.getVisibility() == View.GONE || compressVideo.getVisibility() == View.VISIBLE && !compressVideo.isChecked()) {
                             delegate.didFinishEditVideo(videoPath, startTime, endTime, originalWidth, originalHeight, rotationValue, originalWidth, originalHeight, originalBitrate, estimatedSize, esimatedDuration);
                         } else {
-                            Log.e("VideoEditor","resultWidth "+ resultWidth + " resultHeight " + resultHeight + " bitrate " + bitrate + " estimatedSize " + estimatedSize + " esimatedDuration " + esimatedDuration);
                             delegate.didFinishEditVideo(videoPath, startTime, endTime, resultWidth, resultHeight, rotationValue, originalWidth, originalHeight, bitrate, estimatedSize, esimatedDuration);
                         }
                     }
@@ -785,14 +785,12 @@ public class VideoEditorActivity extends BaseFragment implements TextureView.Sur
                     }
                     videoDuration = (float) mediaHeaderBox.getDuration() / (float) mediaHeaderBox.getTimescale();
                     trackBitrate = (int) (sampleSizes * 8 / videoDuration);
-                    //tBitrate = trackBitrate;
                 } catch (Exception e) {
                     FileLog.e("tmessages", e);
                 }
                 TrackHeaderBox headerBox = trackBox.getTrackHeaderBox();
                 if (headerBox.getWidth() != 0 && headerBox.getHeight() != 0) {
                     trackHeaderBox = headerBox;
-                    //tBitrate = trackBitrate;
                     originalBitrate = bitrate = (int)(trackBitrate / 100000 * 100000);
                     if (bitrate > 900000) {
                         bitrate = 900000;
@@ -844,16 +842,12 @@ public class VideoEditorActivity extends BaseFragment implements TextureView.Sur
     }
 
     private void calculate(){
-        //videoDuration /= 1000;
-
         resultWidth = originalWidth;
         resultHeight = originalHeight;
-        //bitrate = (int)(tBitrate / 100000 * 100000);
         bitrate = originalBitrate;
 
         bitrate /= barValue;
         int x = 2;
-        //int minSize = 640;
         if(barValue > 4) {
             if (originalWidth > 640 * x || originalHeight > 640 * x || barValue > 8) {
                 if(barValue > 14 || Math.max(originalWidth, originalHeight) <= 640*2)x = 1;
@@ -866,7 +860,6 @@ public class VideoEditorActivity extends BaseFragment implements TextureView.Sur
         if (bitrate != 0){
             videoFramesSize = (long) (bitrate / 8 * (videoDuration/1000));
         }
-        //videoDuration *= 1000;
     }
 
     private int calculateEstimatedSize(float timeDelta) {

@@ -64,12 +64,13 @@ public class Utilities {
 
     public native static void loadBitmap(String path, Bitmap bitmap, int scale, int width, int height, int stride);
     public native static int pinBitmap(Bitmap bitmap);
-    public native static int unpinBitmap(Bitmap bitmap);
+    public native static void unpinBitmap(Bitmap bitmap);
     public native static void blurBitmap(Object bitmap, int radius, int unpin, int width, int height, int stride);
     public native static void calcCDT(ByteBuffer hsvBuffer, int width, int height, ByteBuffer buffer);
     public native static boolean loadWebpImage(Bitmap bitmap, ByteBuffer buffer, int len, BitmapFactory.Options options, boolean unpin);
     public native static int convertVideoFrame(ByteBuffer src, ByteBuffer dest, int destFormat, int width, int height, int padding, int swap);
     private native static void aesIgeEncryption(ByteBuffer buffer, byte[] key, byte[] iv, boolean encrypt, int offset, int length);
+    public native static String readlink(String path);
 
     public static void aesIgeEncryption(ByteBuffer buffer, byte[] key, byte[] iv, boolean encrypt, boolean changeIv, int offset, int length) {
         aesIgeEncryption(buffer, key, changeIv ? iv : iv.clone(), encrypt, offset, length);
@@ -271,8 +272,8 @@ public class Utilities {
             java.security.MessageDigest md = java.security.MessageDigest.getInstance("MD5");
             byte[] array = md.digest(md5.getBytes());
             StringBuilder sb = new StringBuilder();
-            for (byte anArray : array) {
-                sb.append(Integer.toHexString((anArray & 0xFF) | 0x100).substring(1, 3));
+            for (int a = 0; a < array.length; a++) {
+                sb.append(Integer.toHexString((array[a] & 0xFF) | 0x100).substring(1, 3));
             }
             return sb.toString();
         } catch (java.security.NoSuchAlgorithmException e) {
@@ -292,8 +293,8 @@ public class Utilities {
         System.exit(0);
     }
 
-    public static void savePreferencesToSD(Context context, String prefName, String tName, boolean toast){
-        String folder = "/Telegram/Themes";
+    public static void savePreferencesToSD(Context context, String folder, String prefName, String tName, boolean toast){
+        //String folder = "/Telegram/Themes";
         File dataF = new File (findPrefFolder(context),prefName);
         if(checkSDStatus() > 1){
             File f = new File (Environment.getExternalStorageDirectory(), folder);
@@ -457,6 +458,18 @@ public class Utilities {
     public static int loadPrefFromSD(Context context, String prefPath){
         File dataF = new File (findPrefFolder(context), "theme.xml");
         File prefFile = new File (prefPath);
+        String s = getError(copyFile(prefFile, dataF, false));
+        if (!s.contains("4")) {
+            Toast.makeText(context, "ERROR: "+s+"\n"+ context.getString(R.string.restoreErrorMsg, prefFile.getAbsolutePath()), Toast.LENGTH_LONG).show();
+        }
+        return Integer.parseInt(s);
+    }
+
+    public static int loadPrefFromSD(Context context, String prefPath, String name){
+        File dataF = new File (findPrefFolder(context), name + ".xml");
+        Log.e("Utilities","dataF " + dataF.getAbsolutePath());
+        File prefFile = new File (prefPath);
+        Log.e("Utilities","prefFile " + prefFile.getAbsolutePath());
         String s = getError(copyFile(prefFile, dataF, false));
         if (!s.contains("4")) {
             Toast.makeText(context, "ERROR: "+s+"\n"+ context.getString(R.string.restoreErrorMsg, prefFile.getAbsolutePath()), Toast.LENGTH_LONG).show();

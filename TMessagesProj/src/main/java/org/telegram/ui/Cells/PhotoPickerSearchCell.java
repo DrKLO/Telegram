@@ -127,14 +127,14 @@ public class PhotoPickerSearchCell extends LinearLayout {
         layoutParams.width = 0;
         searchButton.setLayoutParams(layoutParams);
         if (allowGifs) {
-        searchButton.setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (delegate != null) {
-                    delegate.didPressedSearchButton(1);
+            searchButton.setOnClickListener(new OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    if (delegate != null) {
+                        delegate.didPressedSearchButton(1);
+                    }
                 }
-            }
-        });
+            });
         } else {
             ViewProxy.setAlpha(searchButton, 0.5f);
         }

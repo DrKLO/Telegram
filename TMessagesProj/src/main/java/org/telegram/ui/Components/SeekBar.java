@@ -21,37 +21,30 @@ public class SeekBar {
         void onSeekBarDrag(float progress);
     }
 
-    private static Paint innerPaint1;
-    private static Paint outerPaint1;
-    private static Paint innerPaint2;
-    private static Paint outerPaint2;
+    private static Paint innerPaint;
+    private static Paint outerPaint;
     private static int thumbWidth;
-    private static int thumbHeight;
-    public int type;
-    public int thumbX = 0;
-    public int thumbDX = 0;
+    private int thumbX = 0;
+    private int thumbDX = 0;
     private boolean pressed = false;
-    public int width;
-    public int height;
-    public SeekBarDelegate delegate;
+    private int width;
+    private int height;
+    private SeekBarDelegate delegate;
+    private int innerColor;
+    private int outerColor;
+    private int selectedColor;
+    private boolean selected;
 
     public SeekBar(Context context) {
-        if (innerPaint1 == null) {
-            innerPaint1 = new Paint(Paint.ANTI_ALIAS_FLAG);
-            innerPaint1.setColor(0xffc3e3ab);
-
-            outerPaint1 = new Paint(Paint.ANTI_ALIAS_FLAG);
-            outerPaint1.setColor(0xff87bf78);
-
-            innerPaint2 = new Paint(Paint.ANTI_ALIAS_FLAG);
-            innerPaint2.setColor(0xffe4eaf0);
-
-            outerPaint2 = new Paint(Paint.ANTI_ALIAS_FLAG);
-            outerPaint2.setColor(0xff4195e5);
-
+        if (innerPaint == null) {
+            innerPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+            outerPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
             thumbWidth = AndroidUtilities.dp(24);
-            thumbHeight = AndroidUtilities.dp(24);
         }
+    }
+
+    public void setDelegate(SeekBarDelegate seekBarDelegate) {
+        delegate = seekBarDelegate;
     }
 
     public boolean onTouch(int action, float x, float y) {
@@ -84,6 +77,12 @@ public class SeekBar {
         return false;
     }
 
+    public void setColors(int inner, int outer, int selected) {
+        innerColor = inner;
+        outerColor = outer;
+        selectedColor = selected;
+    }
+
     public void setProgress(float progress) {
         thumbX = (int)Math.ceil((width - thumbWidth) * progress);
         if (thumbX < 0) {
@@ -97,19 +96,21 @@ public class SeekBar {
         return pressed;
     }
 
+    public void setSelected(boolean value) {
+        selected = value;
+    }
+
+    public void setSize(int w, int h) {
+        width = w;
+        height = h;
+    }
+
     public void draw(Canvas canvas) {
-        Paint inner = null;
-        Paint outer = null;
-        if (type == 0) {
-            inner = innerPaint1;
-            outer = outerPaint1;
-        } else if (type == 1) {
-            inner = innerPaint2;
-            outer = outerPaint2;
-        }
-        int y = (height - thumbHeight) / 2;
-        canvas.drawRect(thumbWidth / 2, height / 2 - AndroidUtilities.dp(1), width - thumbWidth / 2, height / 2 + AndroidUtilities.dp(1), inner);
-        canvas.drawRect(thumbWidth / 2, height / 2 - AndroidUtilities.dp(1), thumbWidth / 2 + thumbX, height / 2 + AndroidUtilities.dp(1), outer);
-        canvas.drawCircle(thumbX + thumbWidth / 2, y + thumbHeight / 2, AndroidUtilities.dp(pressed ? 8 : 6), outer);
+        innerPaint.setColor(selected ? selectedColor : innerColor);
+        outerPaint.setColor(outerColor);
+
+        canvas.drawRect(thumbWidth / 2, height / 2 - AndroidUtilities.dp(1), width - thumbWidth / 2, height / 2 + AndroidUtilities.dp(1), innerPaint);
+        canvas.drawRect(thumbWidth / 2, height / 2 - AndroidUtilities.dp(1), thumbWidth / 2 + thumbX, height / 2 + AndroidUtilities.dp(1), outerPaint);
+        canvas.drawCircle(thumbX + thumbWidth / 2, height / 2, AndroidUtilities.dp(pressed ? 8 : 6), outerPaint);
     }
 }

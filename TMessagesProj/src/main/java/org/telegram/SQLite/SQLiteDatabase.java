@@ -77,7 +77,6 @@ public class SQLiteDatabase {
 		close();
 	}
 
-    private StackTraceElement[] temp;
     public void beginTransaction() throws SQLiteException {
         if (inTransaction) {
             throw new SQLiteException("database already in transaction");

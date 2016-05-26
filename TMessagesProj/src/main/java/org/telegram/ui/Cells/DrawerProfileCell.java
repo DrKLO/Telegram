@@ -14,12 +14,15 @@ import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffColorFilter;
 import android.graphics.Rect;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Build;
+import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
@@ -38,6 +41,7 @@ import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.messenger.UserConfig;
+import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.LayoutHelper;
@@ -52,10 +56,11 @@ public class DrawerProfileCell extends FrameLayout implements PhotoViewer.PhotoV
     private Rect srcRect = new Rect();
     private Rect destRect = new Rect();
     private Paint paint = new Paint();
+    private int currentColor;
 
     public DrawerProfileCell(Context context) {
         super(context);
-        setBackgroundColor(0xff4c84b5);
+        setBackgroundColor(Theme.ACTION_BAR_PROFILE_COLOR);
 
         shadowView = new ImageView(context);
         shadowView.setVisibility(INVISIBLE);
@@ -98,6 +103,7 @@ public class DrawerProfileCell extends FrameLayout implements PhotoViewer.PhotoV
         nameTextView.setSingleLine(true);
         if(!centerAvatar){
             nameTextView.setGravity(Gravity.LEFT);
+        nameTextView.setEllipsize(TextUtils.TruncateAt.END);
             addView(nameTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.BOTTOM, 16, 0, 16, 28));
         }else{
             nameTextView.setGravity(Gravity.CENTER);
@@ -165,6 +171,11 @@ public class DrawerProfileCell extends FrameLayout implements PhotoViewer.PhotoV
     @Override
     protected void onDraw(Canvas canvas) {
         Drawable backgroundDrawable = ApplicationLoader.getCachedWallpaper();
+        int color = ApplicationLoader.getServiceMessageColor();
+        if (currentColor != color) {
+            currentColor = color;
+            shadowView.getDrawable().setColorFilter(new PorterDuffColorFilter(color | 0xff000000, PorterDuff.Mode.MULTIPLY));
+        }
         SharedPreferences themePrefs = ApplicationLoader.applicationContext.getSharedPreferences(AndroidUtilities.THEME_PREFS, AndroidUtilities.THEME_PREFS_MODE);
         if (ApplicationLoader.isCustomTheme() && backgroundDrawable != null && !themePrefs.getBoolean("drawerHeaderBGCheck", false)) {
             phoneTextView.setTextColor(0xffffffff);
@@ -220,7 +231,7 @@ public class DrawerProfileCell extends FrameLayout implements PhotoViewer.PhotoV
         }
         phoneTextView.setText(value);
         AvatarDrawable avatarDrawable = new AvatarDrawable(user);
-        avatarDrawable.setColor(0xff5c98cd);
+        avatarDrawable.setColor(Theme.ACTION_BAR_MAIN_AVATAR_COLOR);
         avatarImageView.setImage(photo, "50_50", avatarDrawable);
         updateTheme();
     }

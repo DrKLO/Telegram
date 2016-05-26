@@ -176,7 +176,6 @@ public class LanguageSelectActivity extends BaseFragment {
                         localeInfo = LocaleController.getInstance().sortedLanguages.get(i);
                     }
                 }
-                Log.e("Language","localeInfo " + (localeInfo != null ? localeInfo.shortName : "NULL"));
                 if (localeInfo != null) {
                     LocaleController.getInstance().applyLanguage(localeInfo, true);
                     parentLayout.rebuildAllFragmentViews(false);
