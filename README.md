@@ -17,12 +17,14 @@ Data base with more than 3000 different themes, updated every day, with all type
 [Plus Themes](https://play.google.com/store/apps/details?id=es.rafalense.themes).
 
 # EXTRA FEATURES #
++ Option to set own info (bio) in Settings
++ Option to leave a group without deleting it
 + Option to use direct share on any chat
 + Option to use direct share without quoting sender
-+ Option to show pone emojis
++ Option to show phone emojis
 + Option to save files using original filename 
 + Option to set custom compression when sharing videos
-+ Option to use pone font
++ Option to use phone font
 + Option to show own photo or user photo in chat bubbles
 + Group admin is shown in groups profile
 + Option to discard proximity sensor changes when playing audio notes

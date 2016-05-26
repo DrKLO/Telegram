@@ -6,8 +6,6 @@ obj/
 local.properties
 *.keystore
 gradle.properties
-/TMessagesProj/google-services-beta.json.bak
-/TMessagesProj/google-services.json.bakall
-/TMessagesProj/google-services.json.bak
 
 TMessagesProj/src/main/java/org/telegram/messenger/BuildVars.java
+/TMessagesProj/google-services.json
