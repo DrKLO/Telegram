@@ -48,53 +48,51 @@ import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.Scroller;
 import android.widget.TextView;
-
-import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.Emoji;
-import org.telegram.messenger.ImageLoader;
-import org.telegram.messenger.MessagesStorage;
-import org.telegram.messenger.UserObject;
-import org.telegram.messenger.query.SharedMediaQuery;
-import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.FileLoader;
-import org.telegram.messenger.FileLog;
-import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.MediaController;
-import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.NotificationCenter;
-import org.telegram.messenger.R;
-import org.telegram.messenger.support.widget.LinearLayoutManager;
-import org.telegram.tgnet.ConnectionsManager;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.messenger.UserConfig;
-import org.telegram.messenger.MessageObject;
-import org.telegram.messenger.Utilities;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Adapters.MentionsAdapter;
-import org.telegram.messenger.AnimationCompat.AnimatorListenerAdapterProxy;
-import org.telegram.messenger.AnimationCompat.AnimatorSetProxy;
-import org.telegram.messenger.AnimationCompat.ObjectAnimatorProxy;
-import org.telegram.messenger.AnimationCompat.ViewProxy;
-import org.telegram.ui.ActionBar.ActionBar;
-import org.telegram.ui.ActionBar.ActionBarMenu;
-import org.telegram.ui.ActionBar.ActionBarMenuItem;
-import org.telegram.ui.Components.CheckBox;
-import org.telegram.ui.Components.ClippingImageView;
-import org.telegram.messenger.ImageReceiver;
-import org.telegram.ui.Components.LayoutHelper;
-import org.telegram.ui.Components.PhotoCropView;
-import org.telegram.ui.Components.PhotoFilterView;
-import org.telegram.ui.Components.PickerBottomLayout;
-import org.telegram.ui.Components.PhotoViewerCaptionEnterView;
-import org.telegram.ui.Components.RecyclerListView;
-import org.telegram.ui.Components.SizeNotifierFrameLayoutPhoto;
-
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Locale;
+import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.AnimationCompat.AnimatorListenerAdapterProxy;
+import org.telegram.messenger.AnimationCompat.AnimatorSetProxy;
+import org.telegram.messenger.AnimationCompat.ObjectAnimatorProxy;
+import org.telegram.messenger.AnimationCompat.ViewProxy;
+import org.telegram.messenger.ApplicationLoader;
+import org.telegram.messenger.Emoji;
+import org.telegram.messenger.FileLoader;
+import org.telegram.messenger.FileLog;
+import org.telegram.messenger.ImageLoader;
+import org.telegram.messenger.ImageReceiver;
+import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MediaController;
+import org.telegram.messenger.MessageObject;
+import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.MessagesStorage;
+import org.telegram.messenger.NotificationCenter;
+import org.telegram.messenger.R;
+import org.telegram.messenger.UserConfig;
+import org.telegram.messenger.UserObject;
+import org.telegram.messenger.Utilities;
+import org.telegram.messenger.query.SharedMediaQuery;
+import org.telegram.messenger.support.widget.LinearLayoutManager;
+import org.telegram.tgnet.ConnectionsManager;
+import org.telegram.tgnet.TLRPC;
+import org.telegram.ui.ActionBar.ActionBar;
+import org.telegram.ui.ActionBar.ActionBarMenu;
+import org.telegram.ui.ActionBar.ActionBarMenuItem;
+import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Adapters.MentionsAdapter;
+import org.telegram.ui.Components.CheckBox;
+import org.telegram.ui.Components.ClippingImageView;
+import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.PhotoCropView;
+import org.telegram.ui.Components.PhotoFilterView;
+import org.telegram.ui.Components.PhotoViewerCaptionEnterView;
+import org.telegram.ui.Components.PickerBottomLayout;
+import org.telegram.ui.Components.RecyclerListView;
+import org.telegram.ui.Components.SizeNotifierFrameLayoutPhoto;
 
 @SuppressWarnings("unchecked")
 public class PhotoViewer implements NotificationCenter.NotificationCenterDelegate, GestureDetector.OnGestureListener, GestureDetector.OnDoubleTapListener {
@@ -192,7 +190,6 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
     private float animateToY;
     private float animateToScale;
     private float animationValue;
-    private int currentRotation;
     private long animationStartTime;
     private AnimatorSetProxy imageMoveAnimation;
     private AnimatorSetProxy changeModeAnimation;
@@ -292,7 +289,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         private float alpha = 1.0f;
         private float scale = 1.0f;
 
-        public RadialProgressView(Context context, View parentView) {
+        public RadialProgressView(View parentView) {
             if (decelerateInterpolator == null) {
                 decelerateInterpolator = new DecelerateInterpolator(1.5f);
                 progressPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -498,7 +495,6 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
     private class FrameLayoutTouchListener extends FrameLayout {
 
         private boolean attachedToWindow;
-        private Runnable attachRunnable;
 
         public FrameLayoutTouchListener(Context context) {
             super(context);
@@ -743,14 +739,8 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             if (uid == currentDialogId || uid == mergeDialogId) {
                 if (uid == currentDialogId) {
                     totalImagesCount = (Integer) args[1];
-                    /*if ((Boolean) args[2]) {
-                        SharedMediaQuery.getMediaCount(currentDialogId, SharedMediaQuery.MEDIA_PHOTOVIDEO, classGuid, false);
-                    }*/
                 } else if (uid == mergeDialogId) {
                     totalImagesCountMerge = (Integer) args[1];
-                    /*if ((Boolean) args[2]) {
-                        SharedMediaQuery.getMediaCount(mergeDialogId, SharedMediaQuery.MEDIA_PHOTOVIDEO, classGuid, false);
-                    }*/
                 }
                 if (needSearchImageInArr && isFirstLoading) {
                     isFirstLoading = false;
@@ -1006,38 +996,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                         ((LaunchActivity) parentActivity).presentFragment(new MediaActivity(args2), false, true);
                     }
                 } else if (id == gallery_menu_send) {
-                    /*Intent intent = new Intent(this, MessagesActivity.class);
-                    intent.putExtra("onlySelect", true);
-                    startActivityForResult(intent, 10);
-                    if (requestCode == 10) {
-                        int chatId = data.getIntExtra("chatId", 0);
-                        int userId = data.getIntExtra("userId", 0);
-                        int dialog_id = 0;
-                        if (chatId != 0) {
-                            dialog_id = -chatId;
-                        } else if (userId != 0) {
-                            dialog_id = userId;
-                        }
-                        TLRPC.FileLocation location = getCurrentFile();
-                        if (dialog_id != 0 && location != null) {
-                            Intent intent = new Intent(GalleryImageViewer.this, ChatActivity.class);
-                            if (chatId != 0) {
-                                intent.putExtra("chatId", chatId);
-                            } else {
-                                intent.putExtra("userId", userId);
-                            }
-                            startActivity(intent);
-                            NotificationCenter.getInstance().postNotificationName(MessagesController.closeChats);
-                            finish();
-                            if (withoutBottom) {
-                                MessagesController.getInstance().sendMessage(location, dialog_id);
-                            } else {
-                                int item = mViewPager.getCurrentItem();
-                                MessageObject obj = localPagerAdapter.imagesArr.get(item);
-                                MessagesController.getInstance().sendMessage(obj, dialog_id);
-                            }
-                        }
-                    }*/
+                    //TODO: real implementation of this behaviour
                 } else if (id == gallery_menu_crop) {
                     switchToEditMode(1);
                 } else if (id == gallery_menu_tune) {
@@ -1207,11 +1166,11 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         captionTextViewNew.setVisibility(View.INVISIBLE);
         containerView.addView(captionTextViewNew, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM | Gravity.LEFT, 0, 0, 0, 48));
 
-        radialProgressViews[0] = new RadialProgressView(containerView.getContext(), containerView);
+        radialProgressViews[0] = new RadialProgressView(containerView);
         radialProgressViews[0].setBackgroundState(0, false);
-        radialProgressViews[1] = new RadialProgressView(containerView.getContext(), containerView);
+        radialProgressViews[1] = new RadialProgressView(containerView);
         radialProgressViews[1].setBackgroundState(0, false);
-        radialProgressViews[2] = new RadialProgressView(containerView.getContext(), containerView);
+        radialProgressViews[2] = new RadialProgressView(containerView);
         radialProgressViews[2].setBackgroundState(0, false);
 
         shareButton = new ImageView(containerView.getContext());
@@ -1231,10 +1190,6 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
 
                     if (currentMessageObject != null) {
                         isVideo = currentMessageObject.isVideo();
-                        /*if (currentMessageObject.messageOwner.media instanceof TLRPC.TL_messageMediaWebPage) {
-                            AndroidUtilities.openUrl(parentActivity, currentMessageObject.messageOwner.media.webpage.url);
-                            return;
-                        }*/
                         f = FileLoader.getPathToMessage(currentMessageObject.messageOwner);
                     } else if (currentFileLocation != null) {
                         f = FileLoader.getPathToAttach(currentFileLocation, avatarsUserId != 0);
@@ -1948,7 +1903,6 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                         }
                     }
                 });
-                //photoFilterView.setEditViewFirst();
                 ViewProxy.setTranslationY(photoFilterView.getToolsView(), AndroidUtilities.dp(126));
             }
 
@@ -3397,7 +3351,6 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
     }
 
     private int getContainerViewHeight(int mode) {
-        //int height = containerView.getHeight();
         int height = AndroidUtilities.displaySize.y - AndroidUtilities.statusBarHeight;
         if (mode == 1) {
             height -= AndroidUtilities.dp(76);
