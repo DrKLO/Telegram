@@ -293,7 +293,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
         popupContainer.addView(chatActivityEnterView, LayoutHelper.createRelative(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, RelativeLayout.ALIGN_PARENT_BOTTOM));
         chatActivityEnterView.setDelegate(new ChatActivityEnterView.ChatActivityEnterViewDelegate() {
             @Override
-            public void onMessageSend(String message) {
+            public void onMessageSend(CharSequence message) {
                 if (currentMessageObject == null) {
                     return;
                 }
@@ -311,7 +311,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
             }
 
             @Override
-            public void onMessageEditEnd() {
+            public void onMessageEditEnd(boolean loading) {
 
             }
 

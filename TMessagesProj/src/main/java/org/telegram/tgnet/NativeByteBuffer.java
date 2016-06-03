@@ -9,8 +9,9 @@ public class NativeByteBuffer extends AbstractSerializedData {
 
     protected int address;
     public ByteBuffer buffer;
-    private boolean justCalc = false;
-    private int len = 0;
+    private boolean justCalc;
+    private int len;
+    public boolean reused = true;
 
     private static final ThreadLocal<NativeByteBuffer> addressWrapper = new ThreadLocal<NativeByteBuffer>() {
         @Override
@@ -22,14 +23,16 @@ public class NativeByteBuffer extends AbstractSerializedData {
     public static NativeByteBuffer wrap(int address) {
         NativeByteBuffer result = addressWrapper.get();
         if (address != 0) {
+            if (!result.reused) {
+                FileLog.e("tmessages", "forgot to reuse?");
+            }
             result.address = address;
+            result.reused = false;
             result.buffer = native_getJavaByteBuffer(address);
             result.buffer.limit(native_limit(address));
             int position = native_position(address);
             if (position <= result.buffer.limit()) {
                 result.buffer.position(position);
-            } else {
-                FileLog.e("tmessages", "what with position " + position);
             }
             result.buffer.order(ByteOrder.LITTLE_ENDIAN);
         }
@@ -494,6 +497,7 @@ public class NativeByteBuffer extends AbstractSerializedData {
 
     public void reuse() {
         if (address != 0) {
+            reused = true;
             native_reuse(address);
         }
     }

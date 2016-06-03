@@ -71,6 +71,8 @@ public class NotificationCenter {
     public static final int locationPermissionGranted = totalEvents++;
     public static final int peerSettingsDidLoaded = totalEvents++;
     public static final int wasUnableToFindCurrentLocation = totalEvents++;
+    public static final int reloadHints = totalEvents++;
+    public static final int reloadInlineHints = totalEvents++;
 
     public static final int httpFileDidLoaded = totalEvents++;
     public static final int httpFileDidFailedLoad = totalEvents++;
@@ -160,6 +162,10 @@ public class NotificationCenter {
             }
             delayedPosts.clear();
         }
+    }
+
+    public boolean isAnimationInProgress() {
+        return animationInProgress;
     }
 
     public void postNotificationName(int id, Object... args) {

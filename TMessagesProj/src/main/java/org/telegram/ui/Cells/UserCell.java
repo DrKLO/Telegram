@@ -40,15 +40,15 @@ public class UserCell extends FrameLayout {
     private ImageView adminImage;
 
     private AvatarDrawable avatarDrawable;
-    private TLObject currentObject = null;
+    private TLObject currentObject;
 
     private CharSequence currentName;
     private CharSequence currrntStatus;
     private int currentDrawable;
 
-    private String lastName = null;
-    private int lastStatus = 0;
-    private TLRPC.FileLocation lastAvatar = null;
+    private String lastName;
+    private int lastStatus;
+    private TLRPC.FileLocation lastAvatar;
 
     private int statusColor = 0xffa8a8a8;
     private int statusOnlineColor = 0xff3b84c0;
@@ -232,7 +232,7 @@ public class UserCell extends FrameLayout {
         } else if (currentUser != null) {
             if (currentUser.bot) {
                 statusTextView.setTextColor(statusColor);
-                if (currentUser.bot_chat_history) {
+                if (currentUser.bot_chat_history || adminImage != null && adminImage.getVisibility() == VISIBLE) { //TODO fix
                     statusTextView.setText(LocaleController.getString("BotStatusRead", R.string.BotStatusRead));
                 } else {
                     statusTextView.setText(LocaleController.getString("BotStatusCantRead", R.string.BotStatusCantRead));

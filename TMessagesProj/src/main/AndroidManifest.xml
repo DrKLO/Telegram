@@ -15,6 +15,8 @@
     <uses-feature android:name="android.hardware.wifi" android:required="false" />
     <uses-feature android:name="android.hardware.screen.PORTRAIT" android:required="false" />
     <uses-feature android:name="android.hardware.microphone" android:required="false" />
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
+    <uses-feature android:name="android.hardware.camera2" android:required="false" />
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
@@ -37,6 +39,10 @@
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.USE_FINGERPRINT" />
+    <uses-permission android:name="android.permission.INSTALL_SHORTCUT" />
+    <uses-permission android:name="com.android.launcher.permission.INSTALL_SHORTCUT" />
+    <uses-permission android:name="com.android.launcher.permission.UNINSTALL_SHORTCUT"/>
+    <!--<uses-permission android:name="android.permission.CAMERA" />-->
 
     <application
         android:name=".ApplicationLoader"
@@ -122,6 +128,11 @@
             android:configChanges="keyboard|keyboardHidden|orientation|screenSize">
         </activity>
         <activity
+            android:name="org.telegram.messenger.OpenChatReceiver"
+            android:configChanges="keyboard|keyboardHidden|orientation|screenSize"
+            android:exported="true">
+        </activity>
+        <activity
             android:name="org.telegram.ui.PopupNotificationActivity"
             android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenLayout|uiMode|screenSize|smallestScreenSize"
             android:excludeFromRecents="true"
@@ -191,6 +202,11 @@
         <service android:name=".ClearCacheService" android:exported="false"/>
         <service android:name=".VideoEncodingService" android:enabled="true"/>
         <service android:name=".MusicPlayerService" android:exported="true" android:enabled="true"/>
+        <service android:name=".MusicBrowserService" android:exported="true">
+            <intent-filter>
+                <action android:name="android.media.browse.MediaBrowserService"/>
+            </intent-filter>
+        </service>
 
         <receiver android:name=".MusicPlayerReceiver" >
             <intent-filter>
@@ -222,6 +238,7 @@
         <meta-data android:name="com.sec.android.multiwindow.MINIMUM_SIZE_W" android:value="632dp" />
         <meta-data android:name="com.sec.android.multiwindow.MINIMUM_SIZE_H" android:value="598dp" />
 
+        <meta-data android:name="com.google.android.gms.car.notification.SmallIcon" android:resource="@drawable/ic_player" />
         <meta-data android:name="com.google.android.gms.car.application" android:resource="@xml/automotive_app_desc" />
 
     </application>

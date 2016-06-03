@@ -74,11 +74,10 @@ public class ShareDialogCell extends FrameLayout {
         return super.onTouchEvent(event);
     }
 
-    public void setDialog(TLRPC.Dialog dialog, boolean checked, CharSequence name) {
-        int lower_id = (int) dialog.id;
+    public void setDialog(int uid, boolean checked, CharSequence name) {
         TLRPC.FileLocation photo = null;
-        if (lower_id > 0) {
-            TLRPC.User user = MessagesController.getInstance().getUser(lower_id);
+        if (uid > 0) {
+            TLRPC.User user = MessagesController.getInstance().getUser(uid);
             if (name != null) {
                 nameTextView.setText(name);
             } else if (user != null) {
@@ -91,7 +90,7 @@ public class ShareDialogCell extends FrameLayout {
                 photo = user.photo.photo_small;
             }
         } else {
-            TLRPC.Chat chat = MessagesController.getInstance().getChat(-lower_id);
+            TLRPC.Chat chat = MessagesController.getInstance().getChat(-uid);
             if (name != null) {
                 nameTextView.setText(name);
             } else if (chat != null) {

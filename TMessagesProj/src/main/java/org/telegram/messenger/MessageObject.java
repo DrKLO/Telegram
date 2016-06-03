@@ -29,6 +29,7 @@ import org.telegram.ui.Components.URLSpanBotCommand;
 import org.telegram.ui.Components.URLSpanNoUnderline;
 import org.telegram.ui.Components.URLSpanNoUnderlineBold;
 import org.telegram.ui.Components.URLSpanReplacement;
+import org.telegram.ui.Components.URLSpanUserMention;
 
 import java.io.File;
 import java.util.AbstractMap;
@@ -461,6 +462,7 @@ public class MessageObject {
     }
 
     public void setType() {
+        int oldType = type;
         if (messageOwner instanceof TLRPC.TL_message || messageOwner instanceof TLRPC.TL_messageForwarded_old2) {
             if (isMediaEmpty()) {
                 type = 0;
@@ -512,6 +514,9 @@ public class MessageObject {
                 contentType = 1;
                 type = 10;
             }
+        }
+        if (oldType != 1000 && oldType != type) {
+            generateThumbs(false);
         }
     }
 
@@ -879,7 +884,20 @@ public class MessageObject {
         generateLinkDescription();
         textLayoutBlocks = new ArrayList<>();
 
-        boolean useManualParse = messageOwner.entities.isEmpty() && (
+        boolean hasEntities;
+        if (messageOwner.send_state != MESSAGE_SEND_STATE_SENT) {
+            hasEntities = false;
+            for (int a = 0; a < messageOwner.entities.size(); a++) {
+                if (!(messageOwner.entities.get(a) instanceof TLRPC.TL_inputMessageEntityMentionName)) {
+                    hasEntities = true;
+                    break;
+                }
+            }
+        } else {
+            hasEntities = !messageOwner.entities.isEmpty();
+        }
+
+        boolean useManualParse = !hasEntities && (
                 messageOwner instanceof TLRPC.TL_message_old ||
                 messageOwner instanceof TLRPC.TL_message_old2 ||
                 messageOwner instanceof TLRPC.TL_message_old3 ||
@@ -932,6 +950,10 @@ public class MessageObject {
                     spannable.setSpan(new TypefaceSpan(AndroidUtilities.getTypeface("fonts/ritalic.ttf")), entity.offset, entity.offset + entity.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                 } else if (entity instanceof TLRPC.TL_messageEntityCode || entity instanceof TLRPC.TL_messageEntityPre) {
                     spannable.setSpan(new TypefaceSpan(Typeface.MONOSPACE, AndroidUtilities.dp(MessagesController.getInstance().fontSize - 1)), entity.offset, entity.offset + entity.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                } else if (entity instanceof TLRPC.TL_messageEntityMentionName) {
+                    spannable.setSpan(new URLSpanUserMention("" + ((TLRPC.TL_messageEntityMentionName) entity).user_id), entity.offset, entity.offset + entity.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                } else if (entity instanceof TLRPC.TL_inputMessageEntityMentionName) {
+                    spannable.setSpan(new URLSpanUserMention("" + ((TLRPC.TL_inputMessageEntityMentionName) entity).user_id.user_id), entity.offset, entity.offset + entity.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                 } else if (!useManualParse) {
                     String url = messageOwner.message.substring(entity.offset, entity.offset + entity.length);
                     if (entity instanceof TLRPC.TL_messageEntityBotCommand) {
@@ -967,7 +989,7 @@ public class MessageObject {
                 maxWidth = Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y) - AndroidUtilities.dp(80);
             }
         }
-        if (fromUser != null && fromUser.bot) {
+        if (fromUser != null && fromUser.bot || (isMegagroup() || messageOwner.fwd_from != null && messageOwner.fwd_from.channel_id != 0) && !isOut()) {
             maxWidth -= AndroidUtilities.dp(20);
         }
 
@@ -1467,6 +1489,16 @@ public class MessageObject {
         }
     }
 
+    public String getStickerEmoji() {
+        for (int a = 0; a < messageOwner.media.document.attributes.size(); a++) {
+            TLRPC.DocumentAttribute attribute = messageOwner.media.document.attributes.get(a);
+            if (attribute instanceof TLRPC.TL_documentAttributeSticker) {
+                return attribute.alt != null && attribute.alt.length() > 0 ? attribute.alt : null;
+            }
+        }
+        return null;
+    }
+
     public boolean isSticker() {
         if (type != 1000) {
             return type == 13;
@@ -1522,6 +1554,22 @@ public class MessageObject {
             }
         }
         return "";
+    }
+
+    public int getDuration() {
+        TLRPC.Document document;
+        if (type == 0) {
+            document = messageOwner.media.webpage.document;
+        } else {
+            document = messageOwner.media.document;
+        }
+        for (int a = 0; a < document.attributes.size(); a++) {
+            TLRPC.DocumentAttribute attribute = document.attributes.get(a);
+            if (attribute instanceof TLRPC.TL_documentAttributeAudio) {
+                return attribute.duration;
+            }
+        }
+        return 0;
     }
 
     public String getMusicAuthor() {
@@ -1599,7 +1647,7 @@ public class MessageObject {
         }
         if (message.to_id.channel_id == 0) {
             return message.out && (message.media instanceof TLRPC.TL_messageMediaPhoto ||
-                    message.media instanceof TLRPC.TL_messageMediaDocument && (isVideoMessage(message) || isGifDocument(message.media.document)) ||
+                    message.media instanceof TLRPC.TL_messageMediaDocument && !isStickerMessage(message) ||
                     message.media instanceof TLRPC.TL_messageMediaEmpty ||
                     message.media instanceof TLRPC.TL_messageMediaWebPage ||
                     message.media == null);
@@ -1612,7 +1660,7 @@ public class MessageObject {
         }
         if (chat.megagroup && message.out || !chat.megagroup && (chat.creator || chat.editor && isOut(message)) && isImportant(message)) {
             if (message.media instanceof TLRPC.TL_messageMediaPhoto ||
-                    message.media instanceof TLRPC.TL_messageMediaDocument && (isVideoMessage(message) || isGifDocument(message.media.document)) ||
+                    message.media instanceof TLRPC.TL_messageMediaDocument && !isStickerMessage(message) ||
                     message.media instanceof TLRPC.TL_messageMediaEmpty ||
                     message.media instanceof TLRPC.TL_messageMediaWebPage ||
                     message.media == null) {

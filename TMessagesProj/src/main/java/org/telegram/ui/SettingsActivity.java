@@ -583,7 +583,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                             }
                         });
                     }
-                    BottomSheet.BottomSheetCell cell = new BottomSheet.BottomSheetCell(getParentActivity(), 2);
+                    BottomSheet.BottomSheetCell cell = new BottomSheet.BottomSheetCell(getParentActivity(), 1);
                     cell.setBackgroundResource(R.drawable.list_selector);
                     cell.setTextAndIcon(LocaleController.getString("Save", R.string.Save).toUpperCase(), 0);
                     cell.setTextColor(Theme.AUTODOWNLOAD_SHEET_SAVE_TEXT_COLOR);

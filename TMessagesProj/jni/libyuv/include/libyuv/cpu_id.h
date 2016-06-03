@@ -41,7 +41,7 @@ static const int kCpuHasAVX3 = 0x2000;
 
 // These flags are only valid on MIPS processors.
 static const int kCpuHasMIPS = 0x10000;
-static const int kCpuHasMIPS_DSPR2 = 0x20000;
+static const int kCpuHasDSPR2 = 0x20000;
 
 // Internal function used to auto-init.
 LIBYUV_API

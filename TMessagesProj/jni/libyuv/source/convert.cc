@@ -303,14 +303,14 @@ static int X420ToI420(const uint8* src_y,
     }
   }
 #endif
-#if defined(HAS_SPLITUVROW_MIPS_DSPR2)
-  if (TestCpuFlag(kCpuHasMIPS_DSPR2) &&
+#if defined(HAS_SPLITUVROW_DSPR2)
+  if (TestCpuFlag(kCpuHasDSPR2) &&
       IS_ALIGNED(src_uv, 4) && IS_ALIGNED(src_stride_uv, 4) &&
       IS_ALIGNED(dst_u, 4) && IS_ALIGNED(dst_stride_u, 4) &&
       IS_ALIGNED(dst_v, 4) && IS_ALIGNED(dst_stride_v, 4)) {
-    SplitUVRow = SplitUVRow_Any_MIPS_DSPR2;
+    SplitUVRow = SplitUVRow_Any_DSPR2;
     if (IS_ALIGNED(halfwidth, 16)) {
-      SplitUVRow = SplitUVRow_MIPS_DSPR2;
+      SplitUVRow = SplitUVRow_DSPR2;
     }
   }
 #endif

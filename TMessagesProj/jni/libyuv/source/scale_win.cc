@@ -289,7 +289,7 @@ void ScaleRowDown2Box_AVX2(const uint8* src_ptr, ptrdiff_t src_stride,
     vpmaddubsw  ymm3, ymm3, ymm4
     vpaddw      ymm0, ymm0, ymm2      // vertical add
     vpaddw      ymm1, ymm1, ymm3
-    vpsrlw      ymm0, ymm0, 1
+    vpsrlw      ymm0, ymm0, 1         // (x + 2) / 4 = (x / 2 + 1) / 2
     vpsrlw      ymm1, ymm1, 1
     vpavgw      ymm0, ymm0, ymm5      // (x + 1) / 2
     vpavgw      ymm1, ymm1, ymm5

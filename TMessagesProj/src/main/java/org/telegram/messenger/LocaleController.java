@@ -374,7 +374,7 @@ public class LocaleController {
                 if (languageNameInEnglish.contains("&") || languageNameInEnglish.contains("|")) {
                     return false;
                 }
-                if (languageCode.contains("&") || languageCode.contains("|")) {
+                if (languageCode.contains("&") || languageCode.contains("|") || languageCode.contains("/") || languageCode.contains("\\")) {
                     return false;
                 }
 

@@ -325,6 +325,9 @@ public class WallpapersActivity extends BaseFragment implements NotificationCent
                 height = temp;
             }
             TLRPC.PhotoSize size = FileLoader.getClosestPhotoSizeWithSize(wallPaper.sizes, Math.min(width, height));
+            if (size == null) {
+                return;
+            }
             String fileName = size.location.volume_id + "_" + size.location.local_id + ".jpg";
             File f = new File(FileLoader.getInstance().getDirectory(FileLoader.MEDIA_DIR_CACHE), fileName);
             if (!f.exists()) {

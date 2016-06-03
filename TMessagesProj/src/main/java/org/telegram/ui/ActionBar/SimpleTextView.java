@@ -123,7 +123,7 @@ public class SimpleTextView extends View implements Drawable.Callback {
                     } else if (layout.getLineLeft(0) == 0) {
                         offsetX = width - textWidth;
                     } else {
-                        offsetX = 0;
+                        offsetX = -AndroidUtilities.dp(8);
                     }
                 }
             } catch (Exception e) {
@@ -134,6 +134,7 @@ public class SimpleTextView extends View implements Drawable.Callback {
             textWidth = 0;
             textHeight = 0;
         }
+        invalidate();
     }
 
     @Override
@@ -153,9 +154,7 @@ public class SimpleTextView extends View implements Drawable.Callback {
 
     @Override
     protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
-        if (changed) {
-            wasLayout = true;
-        }
+        wasLayout = true;
     }
 
     public int getTextWidth() {
@@ -229,7 +228,6 @@ public class SimpleTextView extends View implements Drawable.Callback {
     private void recreateLayoutMaybe() {
         if (wasLayout) {
             createLayout(getMeasuredWidth());
-            invalidate();
         } else {
             requestLayout();
         }
@@ -276,6 +274,15 @@ public class SimpleTextView extends View implements Drawable.Callback {
 
     @Override
     public void invalidateDrawable(Drawable who) {
-        invalidate();
+        if (who == leftDrawable) {
+            invalidate(leftDrawable.getBounds());
+        } else if (who == rightDrawable) {
+            invalidate(rightDrawable.getBounds());
+        }
+    }
+
+    @Override
+    public boolean hasOverlappingRendering() {
+        return false;
     }
 }

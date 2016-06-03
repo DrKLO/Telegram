@@ -286,7 +286,7 @@ public class ContextLinkCell extends View implements MediaController.FileDownloa
                 }
             } else {
                 if (currentPhotoObject != null) {
-                    linkImageView.setImage(currentPhotoObject.location, currentPhotoFilter, currentPhotoObjectThumb != null ? currentPhotoObjectThumb.location : null, currentPhotoFilterThumb, 0, ext, false);
+                    linkImageView.setImage(currentPhotoObject.location, currentPhotoFilter, currentPhotoObjectThumb != null ? currentPhotoObjectThumb.location : null, currentPhotoFilterThumb, currentPhotoObject.size, ext, false);
                 } else {
                     linkImageView.setImage(null, url, currentPhotoFilter, null, currentPhotoObjectThumb != null ? currentPhotoObjectThumb.location : null, currentPhotoFilterThumb, -1, ext, true);
                 }
@@ -296,24 +296,24 @@ public class ContextLinkCell extends View implements MediaController.FileDownloa
 
         if (mediaWebpage) {
             setBackgroundDrawable(null);
-            if (inlineResult == null) {
+            //if (inlineResult == null) {
                 width = viewWidth;
                 int height = MeasureSpec.getSize(heightMeasureSpec);
-                setMeasuredDimension(width, height);
-                if (needDivider) {
-                    height -= AndroidUtilities.dp(2);
+                if (height == 0) {
+                    height = AndroidUtilities.dp(100);
                 }
+                setMeasuredDimension(width, height);
                 int x = (width - AndroidUtilities.dp(24)) / 2;
                 int y = (height - AndroidUtilities.dp(24)) / 2;
                 radialProgress.setProgressRect(x, y, x + AndroidUtilities.dp(24), y + AndroidUtilities.dp(24));
                 linkImageView.setImageCoords(0, 0, width, height);
-            } else {
+            /*} else {
                 setMeasuredDimension(width + AndroidUtilities.dp(5), AndroidUtilities.dp(90));
                 int x = AndroidUtilities.dp(5) + (width - AndroidUtilities.dp(24)) / 2;
                 int y = (AndroidUtilities.dp(90) - AndroidUtilities.dp(24)) / 2;
                 radialProgress.setProgressRect(x, y, x + AndroidUtilities.dp(24), y + AndroidUtilities.dp(24));
                 linkImageView.setImageCoords(AndroidUtilities.dp(5), AndroidUtilities.dp(5), width, AndroidUtilities.dp(80));
-            }
+            }*/
         } else {
             setBackgroundResource(R.drawable.list_selector);
             int height = 0;

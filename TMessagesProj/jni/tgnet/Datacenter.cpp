@@ -1378,7 +1378,7 @@ NativeByteBuffer *Datacenter::createRequestsData(std::vector<std::unique_ptr<Net
         DEBUG_D("connection(%p, dc%u, type %d) send message (session: 0x%llx, seqno: %d, messageid: 0x%llx): %s(%p)", connection, datacenterId, connection->getConnectionType(), (uint64_t) connection->getSissionId(), networkMessage->message->seqno, (uint64_t) networkMessage->message->msg_id, typeid(*messageBody).name(), messageBody);
 
         int64_t messageTime = (int64_t) (networkMessage->message->msg_id / 4294967296.0 * 1000);
-        int64_t currentTime = ConnectionsManager::getInstance().getCurrentTimeMillis() + (int64_t) timeDifference * 1000;
+        int64_t currentTime = ConnectionsManager::getInstance().getCurrentTimeMillis() + (int64_t) ConnectionsManager::getInstance().getTimeDifference() * 1000;
 
         if (messageTime < currentTime - 30000 || messageTime > currentTime + 25000) {
             DEBUG_D("wrap message in container");

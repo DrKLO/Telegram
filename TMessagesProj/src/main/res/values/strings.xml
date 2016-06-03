@@ -66,6 +66,8 @@
     <string name="MuteDisable">Disable</string>
     <string name="Hashtags">HASHTAGS</string>
     <string name="Recent">RECENT</string>
+    <string name="ChatHints">CHATS</string>
+    <string name="ChatHintsDelete">Delete %1$s from suggestions?</string>
     <string name="LinkPreview">Link preview</string>
     <!--channels-->
     <string name="GroupType">Group Type</string>
@@ -206,6 +208,7 @@
     <string name="ChannelMessageGroupAudio">%1$s sent a voice message to the channel %2$s</string>
     <string name="ChannelMessageGroupMusic">%1$s sent a track to the channel %2$s</string>
     <string name="ChannelMessageGroupSticker">%1$s sent a sticker to the channel %2$s</string>
+    <string name="ChannelMessageGroupStickerEmoji">%1$s sent a %3$s sticker to the channel %2$s</string>
     <string name="ChannelMessageNoText">%1$s posted a message</string>
     <string name="ChannelMessagePhoto">%1$s posted a photo</string>
     <string name="ChannelMessageVideo">%1$s posted a video</string>
@@ -216,6 +219,7 @@
     <string name="ChannelMessageAudio">%1$s posted a voice message</string>
     <string name="ChannelMessageMusic">%1$s posted a track</string>
     <string name="ChannelMessageSticker">%1$s posted a sticker</string>
+    <string name="ChannelMessageStickerEmoji">%1$s posted a %2$s sticker</string>
     <string name="WhoCanAddMembers">Who can add new members?</string>
     <string name="WhoCanAddMembersAllMembers">All Members</string>
     <string name="WhoCanAddMembersAdmins">Only Admins</string>
@@ -333,6 +337,12 @@
     <string name="ReportChatOther">Other</string>
     <string name="ReportChatDescription">Description</string>
     <string name="PinnedMessage">Pinned Message</string>
+    <string name="EditedMessage">edited</string>
+    <string name="AttachBotsHelp">Scroll down for bots</string>
+    <string name="TimeToEdit">%1$s</string>
+    <string name="TimeToEditExpired">Sorry, editing time expired.</string>
+    <string name="AddShortcut">Add shortcut</string>
+    <string name="ShortcutAdded">Shortcut added to home screen</string>
     <!--notification-->
     <string name="MessageLifetimeChanged">%1$s set the self-destruct timer to %2$s</string>
     <string name="MessageLifetimeChangedOutgoing">You set the self-destruct timer to %1$s</string>
@@ -350,6 +360,7 @@
     <string name="NotificationMessageAudio">%1$s sent you a voice message</string>
     <string name="NotificationMessageMusic">%1$s sent you a track</string>
     <string name="NotificationMessageSticker">%1$s sent you a sticker</string>
+    <string name="NotificationMessageStickerEmoji">%1$s sent you a %2$s sticker</string>
     <string name="NotificationMessageGroupText">%1$s @ %2$s: %3$s</string>
     <string name="NotificationMessageGroupNoText">%1$s sent a message to the group %2$s</string>
     <string name="NotificationMessageGroupPhoto">%1$s sent a photo to the group %2$s</string>
@@ -361,6 +372,7 @@
     <string name="NotificationMessageGroupAudio">%1$s sent a voice message to the group %2$s</string>
     <string name="NotificationMessageGroupMusic">%1$s sent a track to the group %2$s</string>
     <string name="NotificationMessageGroupSticker">%1$s sent a sticker to the group %2$s</string>
+    <string name="NotificationMessageGroupStickerEmoji">%1$s sent a %3$s sticker to the group %2$s</string>
     <string name="NotificationInvitedToGroup">%1$s invited you to the group %2$s</string>
     <string name="NotificationEditedGroupName">%1$s edited the group\'s %2$s name</string>
     <string name="NotificationEditedGroupPhoto">%1$s edited the group\'s %2$s photo</string>
@@ -384,6 +396,7 @@
     <string name="NotificationActionPinnedVideo">%1$s pinned a video in the group %2$s</string>
     <string name="NotificationActionPinnedFile">%1$s pinned a file in the group %2$s</string>
     <string name="NotificationActionPinnedSticker">%1$s pinned a sticker in the group %2$s</string>
+    <string name="NotificationActionPinnedStickerEmoji">%1$s pinned a %3$s sticker in the group %2$s</string>
     <string name="NotificationActionPinnedVoice">%1$s pinned a voice message in the group %2$s</string>
     <string name="NotificationActionPinnedContact">%1$s pinned a contact in the group %2$s</string>
     <string name="NotificationActionPinnedGeo">%1$s pinned a map in the group %2$s</string>
@@ -395,6 +408,7 @@
     <string name="NotificationActionPinnedVideoChannel">%1$s pinned a video</string>
     <string name="NotificationActionPinnedFileChannel">%1$s pinned a file</string>
     <string name="NotificationActionPinnedStickerChannel">%1$s pinned a sticker</string>
+    <string name="NotificationActionPinnedStickerEmojiChannel">%1$s pinned a %2$s sticker</string>
     <string name="NotificationActionPinnedVoiceChannel">%1$s pinned a voice message</string>
     <string name="NotificationActionPinnedContactChannel">%1$s pinned a contact</string>
     <string name="NotificationActionPinnedGeoChannel">%1$s pinned a map</string>
@@ -1006,12 +1020,12 @@
     <string name="Members_few">%1$d members</string>
     <string name="Members_many">%1$d members</string>
     <string name="Members_other">%1$d members</string>
-    <string name="AndMoreTyping_zero">and %1$d more people are typing</string>
-    <string name="AndMoreTyping_one">and %1$d more person are typing</string>
-    <string name="AndMoreTyping_two">and %1$d more people are typing</string>
-    <string name="AndMoreTyping_few">and %1$d more people are typing</string>
-    <string name="AndMoreTyping_many">and %1$d more people are typing</string>
-    <string name="AndMoreTyping_other">and %1$d more people are typing</string>
+    <string name="AndMoreTyping_zero">and %1$d more are typing</string>
+    <string name="AndMoreTyping_one">and %1$d more are typing</string>
+    <string name="AndMoreTyping_two">and %1$d more are typing</string>
+    <string name="AndMoreTyping_few">and %1$d more are typing</string>
+    <string name="AndMoreTyping_many">and %1$d more are typing</string>
+    <string name="AndMoreTyping_other">and %1$d more are typing</string>
     <string name="NewMessages_zero">no new messages</string>
     <string name="NewMessages_one">%1$d new message</string>
     <string name="NewMessages_two">%1$d new messages</string>

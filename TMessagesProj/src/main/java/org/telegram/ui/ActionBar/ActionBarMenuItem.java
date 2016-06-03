@@ -368,6 +368,10 @@ public class ActionBarMenuItem extends FrameLayoutFixed {
         iconView.setImageResource(resId);
     }
 
+    public ImageView getImageView() {
+        return iconView;
+    }
+
     public EditText getSearchField() {
         return searchField;
     }

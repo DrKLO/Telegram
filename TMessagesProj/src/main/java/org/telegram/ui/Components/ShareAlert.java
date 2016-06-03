@@ -63,7 +63,6 @@ import java.util.TimerTask;
 public class ShareAlert extends BottomSheet {
 
     private FrameLayout frameLayout;
-    private FrameLayout container;
     private TextView doneButtonBadgeTextView;
     private TextView doneButtonTextView;
     private LinearLayout doneButton;
@@ -89,11 +88,6 @@ public class ShareAlert extends BottomSheet {
 
     public ShareAlert(final Context context, final MessageObject messageObject, boolean publicChannel) {
         super(context, true);
-        setApplyTopPadding(false);
-        setApplyBottomPadding(false);
-        if (Build.VERSION.SDK_INT >= 11) {
-            setDisableBackground(true);
-        }
 
         shadowDrawable = context.getResources().getDrawable(R.drawable.sheet_shadow);
 
@@ -121,18 +115,26 @@ public class ShareAlert extends BottomSheet {
                             loadingLink = false;
                         }
                     });
-
                 }
             });
         }
 
-        container = new FrameLayout(context) {
+        containerView = new FrameLayout(context) {
 
             private boolean ignoreLayout = false;
 
             @Override
             public boolean onInterceptTouchEvent(MotionEvent ev) {
-                return scrollOffsetY != 0 && ev.getY() < scrollOffsetY || super.onInterceptTouchEvent(ev);
+                if (ev.getAction() == MotionEvent.ACTION_DOWN && scrollOffsetY != 0 && ev.getY() < scrollOffsetY) {
+                    dismiss();
+                    return true;
+                }
+                return super.onInterceptTouchEvent(ev);
+            }
+
+            @Override
+            public boolean onTouchEvent(MotionEvent e) {
+                return !isDismissed() && super.onTouchEvent(e);
             }
 
             @Override
@@ -180,11 +182,12 @@ public class ShareAlert extends BottomSheet {
                 }
             }
         };
-        if (Build.VERSION.SDK_INT >= 11) {
-            container.setWillNotDraw(false);
+        if (Build.VERSION.SDK_INT < 11) {
+            containerView.setBackgroundDrawable(shadowDrawable);
+        } else {
+            containerView.setWillNotDraw(false);
         }
-        container.setPadding(backgroundPaddingLeft, 0, backgroundPaddingLeft, 0);
-        setCustomView(container);
+        containerView.setPadding(backgroundPaddingLeft, Build.VERSION.SDK_INT < 11 ? backgroundPaddingTop : 0, backgroundPaddingLeft, 0);
 
         frameLayout = new FrameLayout(context);
         frameLayout.setBackgroundColor(0xffffffff);
@@ -327,7 +330,7 @@ public class ShareAlert extends BottomSheet {
                 }
             }
         });
-        container.addView(gridView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT, 0, 48, 0, 0));
+        containerView.addView(gridView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT, 0, 48, 0, 0));
         gridView.setAdapter(listAdapter = new ShareDialogsAdapter(context));
         gridView.setGlowColor(0xfff5f6f7);
         gridView.setOnItemClickListener(new RecyclerListView.OnItemClickListener() {
@@ -338,6 +341,9 @@ public class ShareAlert extends BottomSheet {
                     dialog = listAdapter.getItem(position);
                 } else {
                     dialog = searchAdapter.getItem(position);
+                }
+                if (dialog == null) {
+                    return;
                 }
                 ShareDialogCell cell = (ShareDialogCell) view;
                 if (selectedDialogs.containsKey(dialog.id)) {
@@ -365,13 +371,13 @@ public class ShareAlert extends BottomSheet {
         searchEmptyView.showTextView();
         searchEmptyView.setText(LocaleController.getString("NoChats", R.string.NoChats));
         gridView.setEmptyView(searchEmptyView);
-        container.addView(searchEmptyView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT, 0, 48, 0, 0));
+        containerView.addView(searchEmptyView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT, 0, 48, 0, 0));
 
-        container.addView(frameLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.LEFT | Gravity.TOP));
+        containerView.addView(frameLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.LEFT | Gravity.TOP));
 
         shadow = new View(context);
         shadow.setBackgroundResource(R.drawable.header_shadow);
-        container.addView(shadow, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 3, Gravity.TOP | Gravity.LEFT, 0, 48, 0, 0));
+        containerView.addView(shadow, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 3, Gravity.TOP | Gravity.LEFT, 0, 48, 0, 0));
 
         updateSelectedCount();
     }
@@ -385,6 +391,11 @@ public class ShareAlert extends BottomSheet {
             }
         }
         return -1000;
+    }
+
+    @Override
+    protected boolean canDismissWithSwipe() {
+        return false;
     }
 
     @SuppressLint("NewApi")
@@ -401,7 +412,7 @@ public class ShareAlert extends BottomSheet {
             frameLayout.setTranslationY(scrollOffsetY);
             shadow.setTranslationY(scrollOffsetY);
             searchEmptyView.setTranslationY(scrollOffsetY);
-            container.invalidate();
+            containerView.invalidate();
         }
     }
 
@@ -506,7 +517,7 @@ public class ShareAlert extends BottomSheet {
         public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
             ShareDialogCell cell = (ShareDialogCell) holder.itemView;
             TLRPC.Dialog dialog = getItem(position);
-            cell.setDialog(dialog, selectedDialogs.containsKey(dialog.id), null);
+            cell.setDialog((int) dialog.id, selectedDialogs.containsKey(dialog.id), null);
         }
 
         @Override
@@ -606,9 +617,10 @@ public class ShareAlert extends BottomSheet {
                                         found = 2;
                                     }
                                     if (found != 0) {
-                                        NativeByteBuffer data = new NativeByteBuffer(cursor.byteArrayLength(0));
-                                        if (data != null && cursor.byteBufferValue(0, data) != 0) {
+                                        NativeByteBuffer data = cursor.byteBufferValue(0);
+                                        if (data != null) {
                                             TLRPC.User user = TLRPC.User.TLdeserialize(data, data.readInt32(false), false);
+                                            data.reuse();
                                             DialogSearchResult dialogSearchResult = dialogsResult.get((long) user.id);
                                             if (user.status != null) {
                                                 user.status.expires = cursor.intValue(1);
@@ -622,7 +634,6 @@ public class ShareAlert extends BottomSheet {
                                             dialogSearchResult.dialog.id = user.id;
                                             resultCount++;
                                         }
-                                        data.reuse();
                                         break;
                                     }
                                 }
@@ -641,9 +652,10 @@ public class ShareAlert extends BottomSheet {
                                 for (int a = 0; a < search.length; a++) {
                                     String q = search[a];
                                     if (name.startsWith(q) || name.contains(" " + q) || tName != null && (tName.startsWith(q) || tName.contains(" " + q))) {
-                                        NativeByteBuffer data = new NativeByteBuffer(cursor.byteArrayLength(0));
-                                        if (data != null && cursor.byteBufferValue(0, data) != 0) {
+                                        NativeByteBuffer data = cursor.byteBufferValue(0);
+                                        if (data != null) {
                                             TLRPC.Chat chat = TLRPC.Chat.TLdeserialize(data, data.readInt32(false), false);
+                                            data.reuse();
                                             if (!(chat == null || ChatObject.isNotInChat(chat) || ChatObject.isChannel(chat) && !chat.creator && !chat.editor && !chat.megagroup)) {
                                                 DialogSearchResult dialogSearchResult = dialogsResult.get(-(long) chat.id);
                                                 dialogSearchResult.name = AndroidUtilities.generateSearchName(chat.title, null, q);
@@ -652,7 +664,6 @@ public class ShareAlert extends BottomSheet {
                                                 resultCount++;
                                             }
                                         }
-                                        data.reuse();
                                         break;
                                     }
                                 }
@@ -691,9 +702,10 @@ public class ShareAlert extends BottomSheet {
                                     found = 2;
                                 }
                                 if (found != 0) {
-                                    NativeByteBuffer data = new NativeByteBuffer(cursor.byteArrayLength(0));
-                                    if (data != null && cursor.byteBufferValue(0, data) != 0) {
+                                    NativeByteBuffer data = cursor.byteBufferValue(0);
+                                    if (data != null) {
                                         TLRPC.User user = TLRPC.User.TLdeserialize(data, data.readInt32(false), false);
+                                        data.reuse();
                                         DialogSearchResult dialogSearchResult = new DialogSearchResult();
                                         if (user.status != null) {
                                             user.status.expires = cursor.intValue(1);
@@ -707,7 +719,6 @@ public class ShareAlert extends BottomSheet {
                                         }
                                         searchResults.add(dialogSearchResult);
                                     }
-                                    data.reuse();
                                     break;
                                 }
                             }
@@ -827,7 +838,7 @@ public class ShareAlert extends BottomSheet {
         public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
             ShareDialogCell cell = (ShareDialogCell) holder.itemView;
             DialogSearchResult result = searchResult.get(position);
-            cell.setDialog(result.dialog, selectedDialogs.containsKey(result.dialog.id), result.name);
+            cell.setDialog((int) result.dialog.id, selectedDialogs.containsKey(result.dialog.id), result.name);
         }
 
         @Override

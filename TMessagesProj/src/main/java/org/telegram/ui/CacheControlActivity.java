@@ -410,14 +410,14 @@ public class CacheControlActivity extends BaseFragment {
                                                 SQLiteCursor cursor2 = database.queryFinalized("SELECT data FROM messages WHERE uid = " + did + " AND mid IN (" + last_mid_i + "," + last_mid + ")");
                                                 try {
                                                     while (cursor2.next()) {
-                                                        NativeByteBuffer data = new NativeByteBuffer(cursor2.byteArrayLength(0));
-                                                        if (data != null && cursor2.byteBufferValue(0, data) != 0) {
+                                                        NativeByteBuffer data = cursor2.byteBufferValue(0);
+                                                        if (data != null) {
                                                             TLRPC.Message message = TLRPC.Message.TLdeserialize(data, data.readInt32(false), false);
+                                                            data.reuse();
                                                             if (message != null) {
                                                                 arrayList.add(message);
                                                             }
                                                         }
-                                                        data.reuse();
                                                     }
                                                 } catch (Exception e) {
                                                     FileLog.e("tmessages", e);
@@ -518,7 +518,7 @@ public class CacheControlActivity extends BaseFragment {
                             clear[a] = false;
                         }
                     }
-                    BottomSheet.BottomSheetCell cell = new BottomSheet.BottomSheetCell(getParentActivity(), 2);
+                    BottomSheet.BottomSheetCell cell = new BottomSheet.BottomSheetCell(getParentActivity(), 1);
                     cell.setBackgroundResource(R.drawable.list_selector);
                     cell.setTextAndIcon(LocaleController.getString("ClearMediaCache", R.string.ClearMediaCache).toUpperCase(), 0);
                     cell.setTextColor(0xffcd5a5a);

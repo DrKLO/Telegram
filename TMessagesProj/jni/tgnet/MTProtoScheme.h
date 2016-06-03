@@ -657,7 +657,7 @@ public:
 class TL_config : public TLObject {
 
 public:
-    static const uint32_t constructor = 0x317ceef4;
+    static const uint32_t constructor = 0xc9411388;
 
     int32_t date;
     int32_t expires;
@@ -678,6 +678,7 @@ public:
     int32_t push_chat_limit;
     int32_t saved_gifs_limit;
     int32_t edit_time_limit;
+    int32_t rating_e_decay;
     std::vector<std::unique_ptr<TL_disabledFeature>> disabled_features;
 
     static TL_config *TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, bool &error);

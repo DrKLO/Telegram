@@ -54,7 +54,6 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
         void onStickerSelected(TLRPC.Document sticker);
     }
 
-    private FrameLayout container;
     private RecyclerListView gridView;
     private GridLayoutManager layoutManager;
     private GridAdapter adapter;
@@ -79,25 +78,29 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
 
     private int scrollOffsetY;
     private int reqId;
-    private boolean ignoreLayout = false;
+    private boolean ignoreLayout;
 
     public StickersAlert(Context context, TLRPC.InputStickerSet set, TLRPC.TL_messages_stickerSet loadedSet, StickersAlertDelegate stickersAlertDelegate) {
         super(context, false);
-        setApplyTopPadding(false);
-        setApplyBottomPadding(false);
-        if (Build.VERSION.SDK_INT >= 11) {
-            setDisableBackground(true);
-        }
 
         delegate = stickersAlertDelegate;
         inputStickerSet = set;
         stickerSet = loadedSet;
         shadowDrawable = context.getResources().getDrawable(R.drawable.sheet_shadow);
 
-        container = new FrameLayout(context) {
+        containerView = new FrameLayout(context) {
             @Override
             public boolean onInterceptTouchEvent(MotionEvent ev) {
-                return scrollOffsetY != 0 && ev.getY() < scrollOffsetY || super.onInterceptTouchEvent(ev);
+                if (ev.getAction() == MotionEvent.ACTION_DOWN && scrollOffsetY != 0 && ev.getY() < scrollOffsetY) {
+                    dismiss();
+                    return true;
+                }
+                return super.onInterceptTouchEvent(ev);
+            }
+
+            @Override
+            public boolean onTouchEvent(MotionEvent e) {
+                return !isDismissed() && super.onTouchEvent(e);
             }
 
             @Override
@@ -151,15 +154,14 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
                 }
             }
         };
-        if (Build.VERSION.SDK_INT >= 11) {
-            container.setWillNotDraw(false);
+        if (Build.VERSION.SDK_INT < 11) {
+            containerView.setBackgroundDrawable(shadowDrawable);
+        } else {
+            containerView.setWillNotDraw(false);
         }
-        container.setPadding(backgroundPaddingLeft, 0, backgroundPaddingLeft, 0);
-        setCustomView(container);
+        containerView.setPadding(backgroundPaddingLeft, Build.VERSION.SDK_INT < 11 ? backgroundPaddingTop : 0, backgroundPaddingLeft, 0);
 
         titleTextView = new TextView(context);
-
-        titleTextView = new TextView(getContext());
         titleTextView.setLines(1);
         titleTextView.setSingleLine(true);
         titleTextView.setTextColor(Theme.STICKERS_SHEET_TITLE_TEXT_COLOR);
@@ -168,7 +170,7 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
         titleTextView.setPadding(AndroidUtilities.dp(18), 0, AndroidUtilities.dp(18), 0);
         titleTextView.setGravity(Gravity.CENTER_VERTICAL);
         titleTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
-        container.addView(titleTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48));
+        containerView.addView(titleTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48));
         titleTextView.setOnTouchListener(new View.OnTouchListener() {
             @Override
             public boolean onTouch(View v, MotionEvent event) {
@@ -182,7 +184,7 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
         shadow[0].clearAnimation();
         shadow[0].setVisibility(View.INVISIBLE);
         shadow[0].setTag(1);
-        container.addView(shadow[0], LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 3, Gravity.TOP | Gravity.LEFT, 0, 48, 0, 0));
+        containerView.addView(shadow[0], LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 3, Gravity.TOP | Gravity.LEFT, 0, 48, 0, 0));
 
         gridView = new RecyclerListView(context) {
             @Override
@@ -265,7 +267,7 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
             }
         };
         gridView.setOnItemClickListener(stickersOnItemClickListener);
-        container.addView(gridView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT, 0, 48, 0, 48));
+        containerView.addView(gridView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT, 0, 48, 0, 48));
 
         emptyView = new FrameLayout(context) {
             @Override
@@ -276,7 +278,7 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
                 super.requestLayout();
             }
         };
-        container.addView(emptyView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT, 0, 0, 0, 48));
+        containerView.addView(emptyView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT, 0, 0, 0, 48));
         gridView.setEmptyView(emptyView);
         emptyView.setOnTouchListener(new View.OnTouchListener() {
             @Override
@@ -290,10 +292,10 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
 
         shadow[1] = new View(context);
         shadow[1].setBackgroundResource(R.drawable.header_shadow_reverse);
-        container.addView(shadow[1], LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 3, Gravity.BOTTOM | Gravity.LEFT, 0, 0, 0, 48));
+        containerView.addView(shadow[1], LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 3, Gravity.BOTTOM | Gravity.LEFT, 0, 0, 0, 48));
 
         pickerBottomLayout = new PickerBottomLayout(context, false);
-        container.addView(pickerBottomLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.BOTTOM));
+        containerView.addView(pickerBottomLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.LEFT | Gravity.BOTTOM));
         pickerBottomLayout.cancelButton.setPadding(AndroidUtilities.dp(18), 0, AndroidUtilities.dp(18), 0);
         pickerBottomLayout.cancelButton.setTextColor(Theme.STICKERS_SHEET_CLOSE_TEXT_COLOR);
         pickerBottomLayout.cancelButton.setText(LocaleController.getString("Close", R.string.Close).toUpperCase());
@@ -310,7 +312,7 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
         stickerPreviewLayout.setBackgroundColor(0xdfffffff);
         stickerPreviewLayout.setVisibility(View.GONE);
         stickerPreviewLayout.setSoundEffectsEnabled(false);
-        container.addView(stickerPreviewLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+        containerView.addView(stickerPreviewLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
         stickerPreviewLayout.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -465,13 +467,18 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
         }
     }
 
+    @Override
+    protected boolean canDismissWithSwipe() {
+        return false;
+    }
+
     @SuppressLint("NewApi")
     private void updateLayout() {
         if (gridView.getChildCount() <= 0) {
             gridView.setTopGlowOffset(scrollOffsetY = gridView.getPaddingTop());
             titleTextView.setTranslationY(scrollOffsetY);
             shadow[0].setTranslationY(scrollOffsetY);
-            container.invalidate();
+            containerView.invalidate();
             return;
         }
         View child = gridView.getChildAt(0);
@@ -488,7 +495,7 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
             gridView.setTopGlowOffset(scrollOffsetY = newOffset);
             titleTextView.setTranslationY(scrollOffsetY);
             shadow[0].setTranslationY(scrollOffsetY);
-            container.invalidate();
+            containerView.invalidate();
         }
     }
 

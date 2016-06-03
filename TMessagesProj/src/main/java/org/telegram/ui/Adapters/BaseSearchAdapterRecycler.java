@@ -127,7 +127,7 @@ public abstract class BaseSearchAdapterRecycler extends RecyclerView.Adapter {
         });
     }
 
-    public void addHashtagsFromMessage(String message) {
+    public void addHashtagsFromMessage(CharSequence message) {
         if (message == null) {
             return;
         }
@@ -140,7 +140,7 @@ public abstract class BaseSearchAdapterRecycler extends RecyclerView.Adapter {
             if (message.charAt(start) != '@' && message.charAt(start) != '#') {
                 start++;
             }
-            String hashtag = message.substring(start, end);
+            String hashtag = message.subSequence(start, end).toString();
             if (hashtagsByText == null) {
                 hashtagsByText = new HashMap<>();
                 hashtags = new ArrayList<>();

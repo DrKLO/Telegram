@@ -41,6 +41,7 @@ public class UserConfig {
     public static boolean useFingerprint = true;
     public static String lastUpdateVersion;
     public static int lastContactsSyncTime;
+    public static int lastHintsSyncTime;
 
     public static int migrateOffsetId = -1;
     public static int migrateOffsetDate = -1;
@@ -86,6 +87,7 @@ public class UserConfig {
                 editor.putString("lastUpdateVersion2", lastUpdateVersion);
                 editor.putInt("lastContactsSyncTime", lastContactsSyncTime);
                 editor.putBoolean("useFingerprint", useFingerprint);
+                editor.putInt("lastHintsSyncTime", lastHintsSyncTime);
 
                 editor.putInt("migrateOffsetId", migrateOffsetId);
                 if (migrateOffsetId != -1) {
@@ -226,6 +228,7 @@ public class UserConfig {
                 useFingerprint = preferences.getBoolean("useFingerprint", true);
                 lastUpdateVersion = preferences.getString("lastUpdateVersion2", "3.5");
                 lastContactsSyncTime = preferences.getInt("lastContactsSyncTime", (int) (System.currentTimeMillis() / 1000) - 23 * 60 * 60);
+                lastHintsSyncTime = preferences.getInt("lastHintsSyncTime", (int) (System.currentTimeMillis() / 1000) - 25 * 60 * 60);
 
                 migrateOffsetId = preferences.getInt("migrateOffsetId", 0);
                 if (migrateOffsetId != -1) {
@@ -316,6 +319,7 @@ public class UserConfig {
         isWaitingForPasscodeEnter = false;
         lastUpdateVersion = BuildVars.BUILD_VERSION_STRING;
         lastContactsSyncTime = (int) (System.currentTimeMillis() / 1000) - 23 * 60 * 60;
+        lastHintsSyncTime = (int) (System.currentTimeMillis() / 1000) - 25 * 60 * 60;
         saveConfig(true);
     }
 }

@@ -698,14 +698,16 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 imagesArrLocations.clear();
                 imagesArrLocationsSizes.clear();
                 avatarsArr.clear();
-                for (TLRPC.Photo photo : photos) {
+                for (int a = 0; a < photos.size(); a++) {
+                    TLRPC.Photo photo = photos.get(a);
                     if (photo == null || photo instanceof TLRPC.TL_photoEmpty || photo.sizes == null) {
                         continue;
                     }
                     TLRPC.PhotoSize sizeFull = FileLoader.getClosestPhotoSizeWithSize(photo.sizes, 640);
                     if (sizeFull != null) {
-                        if (currentFileLocation != null) {
-                            for (TLRPC.PhotoSize size : photo.sizes) {
+                        if (setToImage == -1 && currentFileLocation != null) {
+                            for (int b = 0; b < photo.sizes.size(); b++) {
+                                TLRPC.PhotoSize size = photo.sizes.get(b);
                                 if (size.location.local_id == currentFileLocation.local_id && size.location.volume_id == currentFileLocation.volume_id) {
                                     setToImage = imagesArrLocations.size();
                                     break;
@@ -1513,6 +1515,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
 
             }
         }));
+        mentionsAdapter.setAllowNewMentions(false);
 
         mentionListView.setOnItemClickListener(new RecyclerListView.OnItemClickListener() {
             @Override
@@ -3328,6 +3331,12 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
 
     public void onResume() {
         redraw(0); //workaround for camera bug
+    }
+
+    public void onPause() {
+        if (captionDoneItem.getVisibility() != View.GONE) {
+            closeCaptionEnter(true);
+        }
     }
 
     public boolean isVisible() {

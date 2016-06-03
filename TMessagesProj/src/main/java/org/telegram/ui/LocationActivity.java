@@ -143,8 +143,12 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.updateInterfaces);
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.locationPermissionGranted);
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.closeChats);
-        if (mapView != null) {
-            mapView.onDestroy();
+        try {
+            if (mapView != null) {
+                mapView.onDestroy();
+            }
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
         }
         if (adapter != null) {
             adapter.destroy();

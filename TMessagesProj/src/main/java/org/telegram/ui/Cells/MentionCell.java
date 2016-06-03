@@ -18,6 +18,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.Emoji;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserObject;
 import org.telegram.tgnet.TLRPC;
@@ -92,7 +93,11 @@ public class MentionCell extends LinearLayout {
             imageView.setImageDrawable(avatarDrawable);
         }
         nameTextView.setText(UserObject.getUserName(user));
-        usernameTextView.setText("@" + user.username);
+        if (user.username != null) {
+            usernameTextView.setText("@" + user.username);
+        } else {
+            usernameTextView.setText("");
+        }
         imageView.setVisibility(VISIBLE);
         usernameTextView.setVisibility(VISIBLE);
     }
@@ -117,7 +122,7 @@ public class MentionCell extends LinearLayout {
         }
         usernameTextView.setVisibility(VISIBLE);
         nameTextView.setText(command);
-        usernameTextView.setText(help);
+        usernameTextView.setText(Emoji.replaceEmoji(help, usernameTextView.getPaint().getFontMetricsInt(), AndroidUtilities.dp(20), false));
     }
 
     public void setIsDarkTheme(boolean isDarkTheme) {

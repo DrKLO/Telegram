@@ -7,7 +7,6 @@
 #include <openssl/aes.h>
 #include <unistd.h>
 #include "utils.h"
-#include "sqlite.h"
 #include "image.h"
 
 int registerNativeTgNetFunctions(JavaVM *vm, JNIEnv *env);
@@ -20,10 +19,6 @@ jint JNI_OnLoad(JavaVM *vm, void *reserved) {
 	if ((*vm)->GetEnv(vm, (void **) &env, JNI_VERSION_1_6) != JNI_OK) {
 		return -1;
 	}
-    
-    if (sqliteOnJNILoad(vm, reserved, env) == -1) {
-        return -1;
-    }
     
     if (imageOnJNILoad(vm, reserved, env) == -1) {
         return -1;

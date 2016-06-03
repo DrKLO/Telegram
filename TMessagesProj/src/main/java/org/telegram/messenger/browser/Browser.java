@@ -89,7 +89,11 @@ public class Browser {
                 public void onServiceConnected(CustomTabsClient client) {
                     customTabsClient = client;
                     if (customTabsClient != null) {
-                        customTabsClient.warmup(0);
+                        try {
+                            customTabsClient.warmup(0);
+                        } catch (Exception e) {
+                            FileLog.e("tmessages", e);
+                        }
                     }
                 }
 

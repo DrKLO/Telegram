@@ -21,8 +21,8 @@ extern "C" {
     defined(__mips_dsp) && (__mips_dsp_rev >= 2) && \
     (_MIPS_SIM == _MIPS_SIM_ABI32)
 
-void ScaleRowDown2_MIPS_DSPR2(const uint8* src_ptr, ptrdiff_t src_stride,
-                              uint8* dst, int dst_width) {
+void ScaleRowDown2_DSPR2(const uint8* src_ptr, ptrdiff_t src_stride,
+                         uint8* dst, int dst_width) {
   __asm__ __volatile__(
     ".set push                                     \n"
     ".set noreorder                                \n"
@@ -77,8 +77,8 @@ void ScaleRowDown2_MIPS_DSPR2(const uint8* src_ptr, ptrdiff_t src_stride,
   );
 }
 
-void ScaleRowDown2Box_MIPS_DSPR2(const uint8* src_ptr, ptrdiff_t src_stride,
-                                 uint8* dst, int dst_width) {
+void ScaleRowDown2Box_DSPR2(const uint8* src_ptr, ptrdiff_t src_stride,
+                            uint8* dst, int dst_width) {
   const uint8* t = src_ptr + src_stride;
 
   __asm__ __volatile__ (
@@ -176,8 +176,8 @@ void ScaleRowDown2Box_MIPS_DSPR2(const uint8* src_ptr, ptrdiff_t src_stride,
   );
 }
 
-void ScaleRowDown4_MIPS_DSPR2(const uint8* src_ptr, ptrdiff_t src_stride,
-                              uint8* dst, int dst_width) {
+void ScaleRowDown4_DSPR2(const uint8* src_ptr, ptrdiff_t src_stride,
+                         uint8* dst, int dst_width) {
   __asm__ __volatile__ (
       ".set push                                    \n"
       ".set noreorder                               \n"
@@ -231,8 +231,8 @@ void ScaleRowDown4_MIPS_DSPR2(const uint8* src_ptr, ptrdiff_t src_stride,
   );
 }
 
-void ScaleRowDown4Box_MIPS_DSPR2(const uint8* src_ptr, ptrdiff_t src_stride,
-                                 uint8* dst, int dst_width) {
+void ScaleRowDown4Box_DSPR2(const uint8* src_ptr, ptrdiff_t src_stride,
+                            uint8* dst, int dst_width) {
   intptr_t stride = src_stride;
   const uint8* s1 = src_ptr + stride;
   const uint8* s2 = s1 + stride;
@@ -310,8 +310,8 @@ void ScaleRowDown4Box_MIPS_DSPR2(const uint8* src_ptr, ptrdiff_t src_stride,
   );
 }
 
-void ScaleRowDown34_MIPS_DSPR2(const uint8* src_ptr, ptrdiff_t src_stride,
-                               uint8* dst, int dst_width) {
+void ScaleRowDown34_DSPR2(const uint8* src_ptr, ptrdiff_t src_stride,
+                          uint8* dst, int dst_width) {
   __asm__ __volatile__ (
       ".set push                                          \n"
       ".set noreorder                                     \n"
@@ -356,8 +356,8 @@ void ScaleRowDown34_MIPS_DSPR2(const uint8* src_ptr, ptrdiff_t src_stride,
   );
 }
 
-void ScaleRowDown34_0_Box_MIPS_DSPR2(const uint8* src_ptr, ptrdiff_t src_stride,
-                                     uint8* d, int dst_width) {
+void ScaleRowDown34_0_Box_DSPR2(const uint8* src_ptr, ptrdiff_t src_stride,
+                                uint8* d, int dst_width) {
   __asm__ __volatile__ (
       ".set push                                         \n"
       ".set noreorder                                    \n"
@@ -412,8 +412,8 @@ void ScaleRowDown34_0_Box_MIPS_DSPR2(const uint8* src_ptr, ptrdiff_t src_stride,
   );
 }
 
-void ScaleRowDown34_1_Box_MIPS_DSPR2(const uint8* src_ptr, ptrdiff_t src_stride,
-                                     uint8* d, int dst_width) {
+void ScaleRowDown34_1_Box_DSPR2(const uint8* src_ptr, ptrdiff_t src_stride,
+                                uint8* d, int dst_width) {
   __asm__ __volatile__ (
       ".set push                                           \n"
       ".set noreorder                                      \n"
@@ -464,8 +464,8 @@ void ScaleRowDown34_1_Box_MIPS_DSPR2(const uint8* src_ptr, ptrdiff_t src_stride,
   );
 }
 
-void ScaleRowDown38_MIPS_DSPR2(const uint8* src_ptr, ptrdiff_t src_stride,
-                               uint8* dst, int dst_width) {
+void ScaleRowDown38_DSPR2(const uint8* src_ptr, ptrdiff_t src_stride,
+                          uint8* dst, int dst_width) {
   __asm__ __volatile__ (
       ".set push                                     \n"
       ".set noreorder                                \n"
@@ -510,8 +510,8 @@ void ScaleRowDown38_MIPS_DSPR2(const uint8* src_ptr, ptrdiff_t src_stride,
   );
 }
 
-void ScaleRowDown38_2_Box_MIPS_DSPR2(const uint8* src_ptr, ptrdiff_t src_stride,
-                                     uint8* dst_ptr, int dst_width) {
+void ScaleRowDown38_2_Box_DSPR2(const uint8* src_ptr, ptrdiff_t src_stride,
+                                uint8* dst_ptr, int dst_width) {
   intptr_t stride = src_stride;
   const uint8* t = src_ptr + stride;
   const int c = 0x2AAA;
@@ -563,9 +563,9 @@ void ScaleRowDown38_2_Box_MIPS_DSPR2(const uint8* src_ptr, ptrdiff_t src_stride,
   );
 }
 
-void ScaleRowDown38_3_Box_MIPS_DSPR2(const uint8* src_ptr,
-                                     ptrdiff_t src_stride,
-                                     uint8* dst_ptr, int dst_width) {
+void ScaleRowDown38_3_Box_DSPR2(const uint8* src_ptr,
+                                ptrdiff_t src_stride,
+                                uint8* dst_ptr, int dst_width) {
   intptr_t stride = src_stride;
   const uint8* s1 = src_ptr + stride;
   stride += stride;

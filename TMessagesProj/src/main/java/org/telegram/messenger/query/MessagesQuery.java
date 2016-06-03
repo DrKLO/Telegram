@@ -57,24 +57,25 @@ public class MessagesQuery {
 
             SQLiteCursor cursor = MessagesStorage.getInstance().getDatabase().queryFinalized(String.format(Locale.US, "SELECT data, mid, date FROM messages WHERE mid = %d", messageId));
             if (cursor.next()) {
-                NativeByteBuffer data = new NativeByteBuffer(cursor.byteArrayLength(0));
-                if (data != null && cursor.byteBufferValue(0, data) != 0) {
+                NativeByteBuffer data = cursor.byteBufferValue(0);
+                if (data != null) {
                     result = TLRPC.Message.TLdeserialize(data, data.readInt32(false), false);
+                    data.reuse();
                     result.id = cursor.intValue(1);
                     result.date = cursor.intValue(2);
                     result.dialog_id = -channelId;
                     MessagesStorage.addUsersAndChatsFromMessage(result, usersToLoad, chatsToLoad);
                 }
-                data.reuse();
             }
             cursor.dispose();
 
             if (result == null) {
                 cursor = MessagesStorage.getInstance().getDatabase().queryFinalized(String.format(Locale.US, "SELECT data FROM chat_pinned WHERE uid = %d", channelId));
                 if (cursor.next()) {
-                    NativeByteBuffer data = new NativeByteBuffer(cursor.byteArrayLength(0));
-                    if (data != null && cursor.byteBufferValue(0, data) != 0) {
+                    NativeByteBuffer data = cursor.byteBufferValue(0);
+                    if (data != null) {
                         result = TLRPC.Message.TLdeserialize(data, data.readInt32(false), false);
+                        data.reuse();
                         if (result.id != mid) {
                             result = null;
                         } else {
@@ -82,7 +83,6 @@ public class MessagesQuery {
                             MessagesStorage.addUsersAndChatsFromMessage(result, usersToLoad, chatsToLoad);
                         }
                     }
-                    data.reuse();
                 }
                 cursor.dispose();
             }
@@ -213,13 +213,13 @@ public class MessagesQuery {
                     try {
                         SQLiteCursor cursor = MessagesStorage.getInstance().getDatabase().queryFinalized(String.format(Locale.US, "SELECT m.data, m.mid, m.date, r.random_id FROM randoms as r INNER JOIN messages as m ON r.mid = m.mid WHERE r.random_id IN(%s)", TextUtils.join(",", replyMessages)));
                         while (cursor.next()) {
-                            NativeByteBuffer data = new NativeByteBuffer(cursor.byteArrayLength(0));
-                            if (data != null && cursor.byteBufferValue(0, data) != 0) {
+                            NativeByteBuffer data = cursor.byteBufferValue(0);
+                            if (data != null) {
                                 TLRPC.Message message = TLRPC.Message.TLdeserialize(data, data.readInt32(false), false);
+                                data.reuse();
                                 message.id = cursor.intValue(1);
                                 message.date = cursor.intValue(2);
                                 message.dialog_id = dialogId;
-
 
                                 ArrayList<MessageObject> arrayList = replyMessageRandomOwners.remove(cursor.longValue(3));
                                 if (arrayList != null) {
@@ -231,7 +231,6 @@ public class MessagesQuery {
                                     }
                                 }
                             }
-                            data.reuse();
                         }
                         cursor.dispose();
                         if (!replyMessageRandomOwners.isEmpty()) {
@@ -299,9 +298,10 @@ public class MessagesQuery {
 
                         SQLiteCursor cursor = MessagesStorage.getInstance().getDatabase().queryFinalized(String.format(Locale.US, "SELECT data, mid, date FROM messages WHERE mid IN(%s)", stringBuilder.toString()));
                         while (cursor.next()) {
-                            NativeByteBuffer data = new NativeByteBuffer(cursor.byteArrayLength(0));
-                            if (data != null && cursor.byteBufferValue(0, data) != 0) {
+                            NativeByteBuffer data = cursor.byteBufferValue(0);
+                            if (data != null) {
                                 TLRPC.Message message = TLRPC.Message.TLdeserialize(data, data.readInt32(false), false);
+                                data.reuse();
                                 message.id = cursor.intValue(1);
                                 message.date = cursor.intValue(2);
                                 message.dialog_id = dialogId;
@@ -309,7 +309,6 @@ public class MessagesQuery {
                                 result.add(message);
                                 replyMessages.remove((Integer) message.id);
                             }
-                            data.reuse();
                         }
                         cursor.dispose();
 

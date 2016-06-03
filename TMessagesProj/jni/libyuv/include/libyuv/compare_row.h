@@ -22,6 +22,12 @@ extern "C" {
     (defined(__i386__) && !defined(__SSE2__))
 #define LIBYUV_DISABLE_X86
 #endif
+// MemorySanitizer does not support assembly code yet. http://crbug.com/344505
+#if defined(__has_feature)
+#if __has_feature(memory_sanitizer)
+#define LIBYUV_DISABLE_X86
+#endif
+#endif
 
 // Visual C 2012 required for AVX2.
 #if defined(_M_IX86) && !defined(__clang__) && \
@@ -36,7 +42,8 @@ extern "C" {
 #endif  // clang >= 3.4
 #endif  // __clang__
 
-#if defined(_M_IX86) && (defined(VISUALC_HAS_AVX2) || defined(CLANG_HAS_AVX2))
+#if !defined(LIBYUV_DISABLE_X86) && \
+    defined(_M_IX86) && (defined(VISUALC_HAS_AVX2) || defined(CLANG_HAS_AVX2))
 #define HAS_HASHDJB2_AVX2
 #endif
 

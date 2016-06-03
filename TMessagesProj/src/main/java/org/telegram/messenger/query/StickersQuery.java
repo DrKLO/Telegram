@@ -179,18 +179,18 @@ public class StickersQuery {
                     try {
                         cursor = MessagesStorage.getInstance().getDatabase().queryFinalized("SELECT data, date, hash FROM stickers_v2 WHERE 1");
                         if (cursor.next()) {
-                            NativeByteBuffer data = new NativeByteBuffer(cursor.byteArrayLength(0));
-                            if (data != null && cursor.byteBufferValue(0, data) != 0) {
+                            NativeByteBuffer data = cursor.byteBufferValue(0);
+                            if (data != null) {
                                 newStickerArray = new ArrayList<>();
                                 int count = data.readInt32(false);
                                 for (int a = 0; a < count; a++) {
                                     TLRPC.TL_messages_stickerSet stickerSet = TLRPC.TL_messages_stickerSet.TLdeserialize(data, data.readInt32(false), false);
                                     newStickerArray.add(stickerSet);
                                 }
+                                data.reuse();
                             }
                             date = cursor.intValue(1);
                             hash = calcStickersHash(newStickerArray);
-                            data.reuse();
                         }
                     } catch (Throwable e) {
                         FileLog.e("tmessages", e);

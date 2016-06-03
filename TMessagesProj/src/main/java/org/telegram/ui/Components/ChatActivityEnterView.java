@@ -27,7 +27,9 @@ import android.os.SystemClock;
 import android.text.Editable;
 import android.text.InputFilter;
 import android.text.Layout;
+import android.text.Spannable;
 import android.text.SpannableStringBuilder;
+import android.text.Spanned;
 import android.text.StaticLayout;
 import android.text.TextPaint;
 import android.text.TextUtils;
@@ -62,6 +64,7 @@ import org.telegram.messenger.SendMessagesHelper;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
+import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.messenger.UserConfig;
@@ -84,14 +87,14 @@ import java.util.Locale;
 public class ChatActivityEnterView extends FrameLayoutFixed implements NotificationCenter.NotificationCenterDelegate, SizeNotifierFrameLayout.SizeNotifierFrameLayoutDelegate, StickersAlert.StickersAlertDelegate {
 
     public interface ChatActivityEnterViewDelegate {
-        void onMessageSend(String message);
+        void onMessageSend(CharSequence message);
         void needSendTyping();
         void onTextChanged(CharSequence text, boolean bigChange);
         void onAttachButtonHidden();
         void onAttachButtonShow();
         void onWindowSizeChanged(int size);
         void onStickersTab(boolean opened);
-        void onMessageEditEnd();
+        void onMessageEditEnd(boolean loading);
     }
 
     private class SeekBarWaveformView extends View {
@@ -105,8 +108,10 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
             seekBarWaveform.setDelegate(new SeekBar.SeekBarDelegate() {
                 @Override
                 public void onSeekBarDrag(float progress) {
-                    audioToSendMessageObject.audioProgress = progress;
-                    MediaController.getInstance().seekToProgress(audioToSendMessageObject, progress);
+                    if (audioToSendMessageObject != null) {
+                        audioToSendMessageObject.audioProgress = progress;
+                        MediaController.getInstance().seekToProgress(audioToSendMessageObject, progress);
+                    }
                 }
             });
         }
@@ -177,7 +182,7 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
                 mCursorDrawableField.setAccessible(true);
                 mCursorDrawable = (Drawable[]) mCursorDrawableField.get(editor);
             } catch (Throwable e) {
-                FileLog.e("tmessages", e);
+                //
             }
         }
 
@@ -293,10 +298,10 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
     private ImageView asAdminButton;
     private ImageView notifyButton;
     private RecordCircle recordCircle;
-    private ContextProgressView contextProgressView;
     private CloseProgressDrawable2 progressDrawable;
 
     private MessageObject editingMessageObject;
+    private int editingMessageReqId;
     private boolean editingCaption;
 
     private int currentPopupContentType = -1;
@@ -619,7 +624,7 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
                     return;
                 }
                 checkSendButton(true);
-                String message = getTrimmedString(charSequence.toString());
+                CharSequence message = getTrimmedString(charSequence.toString());
                 if (delegate != null) {
                     if (count > 2 || charSequence == null || charSequence.length() == 0) {
                         messageWebPageSearch = true;
@@ -674,10 +679,6 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
         }
 
         if (isChat) {
-            contextProgressView = new ContextProgressView(context);
-            contextProgressView.setVisibility(INVISIBLE);
-            frameLayout.addView(contextProgressView, LayoutHelper.createFrame(38, 48, Gravity.BOTTOM | Gravity.RIGHT));
-
             attachButton = new LinearLayout(context);
             attachButton.setOrientation(LinearLayout.HORIZONTAL);
             attachButton.setEnabled(false);
@@ -997,15 +998,6 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
     }
 
     public void showContextProgress(boolean show) {
-        /*if (contextProgressView == null) {
-            return;
-        }
-        contextProgressView.setVisibility(show ? VISIBLE : INVISIBLE);
-        try {
-            messageEditText.setPadding(0, AndroidUtilities.dp(11), show ? AndroidUtilities.dp(38) : 0, AndroidUtilities.dp(12));
-        } catch (Exception e) {
-            FileLog.e("tmessages", e);
-        }*/
         if (progressDrawable == null) {
             return;
         }
@@ -1268,6 +1260,9 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
                 notifyButton.setImageResource(silent ? R.drawable.notify_members_off : R.drawable.notify_members_on);
                 ViewProxy.setPivotX(attachButton, AndroidUtilities.dp((botButton == null || botButton.getVisibility() == GONE) && (notifyButton == null || notifyButton.getVisibility() == GONE) ? 48 : 96));
             }
+            if (attachButton != null) {
+                updateFieldRight(attachButton.getVisibility() == VISIBLE ? 1 : 0);
+            }
         }
     }
 
@@ -1372,7 +1367,7 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
             checkSendButton(true);
             return;
         }
-        String message = messageEditText.getText().toString();
+        CharSequence message = messageEditText.getText();
         if (processSendingText(message)) {
             messageEditText.setText("");
             lastTypingTimeSend = 0;
@@ -1386,36 +1381,65 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
         }
     }
 
+    private ArrayList<TLRPC.MessageEntity> getEntities(CharSequence message) {
+        ArrayList<TLRPC.MessageEntity> entities = null;
+        if (message instanceof Spannable) {
+            Spannable spannable = (Spannable) message;
+            URLSpanUserMention spans[] = spannable.getSpans(0, message.length(), URLSpanUserMention.class);
+            if (spans != null && spans.length > 0) {
+                entities = new ArrayList<>();
+                for (int b = 0; b < spans.length; b++) {
+                    TLRPC.TL_inputMessageEntityMentionName entity = new TLRPC.TL_inputMessageEntityMentionName();
+                    entity.user_id = MessagesController.getInputUser(Utilities.parseInt(spans[b].getURL()));
+                    if (entity.user_id != null) {
+                        entity.offset = spannable.getSpanStart(spans[b]);
+                        entity.length = Math.min(spannable.getSpanEnd(spans[b]), message.length()) - entity.offset;
+                        if (message.charAt(entity.offset + entity.length - 1) == ' ') {
+                            entity.length--;
+                        }
+                        entities.add(entity);
+                    }
+                }
+            }
+        }
+        return entities;
+    }
+
     public void doneEditingMessage() {
         if (editingMessageObject != null) {
-            SendMessagesHelper.getInstance().editMessage(editingMessageObject, messageEditText.getText().toString(), messageWebPageSearch, parentFragment);
-            setEditinigMessageObject(null, false);
+            delegate.onMessageEditEnd(true);
+            editingMessageReqId = SendMessagesHelper.getInstance().editMessage(editingMessageObject, messageEditText.getText().toString(), messageWebPageSearch, parentFragment, getEntities(messageEditText.getText()), new Runnable() {
+                @Override
+                public void run() {
+                    editingMessageReqId = 0;
+                    setEditingMessageObject(null, false);
+                }
+            });
         }
     }
 
-    public boolean processSendingText(String text) {
+    public boolean processSendingText(CharSequence text) {
         text = getTrimmedString(text);
         if (text.length() != 0) {
             int count = (int) Math.ceil(text.length() / 4096.0f);
             for (int a = 0; a < count; a++) {
-                String mess = text.substring(a * 4096, Math.min((a + 1) * 4096, text.length()));
-                SendMessagesHelper.getInstance().sendMessage(mess, dialog_id, replyingMessageObject, messageWebPage, messageWebPageSearch, asAdmin(), null, null, null);
+                CharSequence mess = text.subSequence(a * 4096, Math.min((a + 1) * 4096, text.length()));
+                SendMessagesHelper.getInstance().sendMessage(mess.toString(), dialog_id, replyingMessageObject, messageWebPage, messageWebPageSearch, asAdmin(), getEntities(mess), null, null);
             }
             return true;
         }
         return false;
     }
 
-    private String getTrimmedString(String src) {
-        src = src.trim();
+    private CharSequence getTrimmedString(CharSequence src) {
         if (src.length() == 0) {
             return src;
         }
-        while (src.startsWith("\n")) {
-            src = src.substring(1);
+        while (src.length() > 0 && (src.charAt(0) == '\n' || src.charAt(0) == ' ')) {
+            src = src.subSequence(1, src.length());
         }
-        while (src.endsWith("\n")) {
-            src = src.substring(0, src.length() - 1);
+        while (src.length() > 0 && (src.charAt(src.length() - 1) == '\n' || src.charAt(src.length() - 1) == ' ')) {
+            src = src.subSequence(0, src.length() - 1);
         }
         return src;
     }
@@ -1424,7 +1448,7 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
         if (editingMessageObject != null) {
             return;
         }
-        String message = getTrimmedString(messageEditText.getText().toString());
+        CharSequence message = getTrimmedString(messageEditText.getText());
         if (message.length() > 0 || forceShowSendButton || audioToSend != null) {
             boolean showBotButton = messageEditText.caption != null && sendButton.getVisibility() == VISIBLE;
             boolean showSendButton = messageEditText.caption == null && cancelBotButton.getVisibility() == VISIBLE;
@@ -1816,9 +1840,13 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
         }
     }
 
-    public void setEditinigMessageObject(MessageObject messageObject, boolean caption) {
+    public void setEditingMessageObject(MessageObject messageObject, boolean caption) {
         if (audioToSend != null || editingMessageObject == messageObject) {
             return;
+        }
+        if (editingMessageReqId != 0) {
+            ConnectionsManager.getInstance().cancelRequest(editingMessageReqId, true);
+            editingMessageReqId = 0;
         }
         editingMessageObject = messageObject;
         editingCaption = caption;
@@ -1834,7 +1862,18 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
             } else {
                 inputFilters[0] = new InputFilter.LengthFilter(4096);
                 if (editingMessageObject.messageText != null) {
-                    setFieldText(Emoji.replaceEmoji(new SpannableStringBuilder(editingMessageObject.messageText.toString()), messageEditText.getPaint().getFontMetricsInt(), AndroidUtilities.dp(20), false));
+                    SpannableStringBuilder stringBuilder = new SpannableStringBuilder(editingMessageObject.messageText.toString());
+                    ArrayList<TLRPC.MessageEntity> entities = getEntities(editingMessageObject.messageText);
+                    if (entities != null) {
+                        for (int a = 0; a < entities.size(); a++) {
+                            TLRPC.TL_inputMessageEntityMentionName entity = (TLRPC.TL_inputMessageEntityMentionName) entities.get(a);
+                            if (entity.offset + entity.length < editingMessageObject.messageText.length() && editingMessageObject.messageText.charAt(entity.offset + entity.length) == ' ') {
+                                entity.length++;
+                            }
+                            stringBuilder.setSpan(new URLSpanUserMention("" + entity.user_id.user_id), entity.offset, entity.offset + entity.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                        }
+                    }
+                    setFieldText(Emoji.replaceEmoji(stringBuilder, messageEditText.getPaint().getFontMetricsInt(), AndroidUtilities.dp(20), false));
                 } else {
                     setFieldText("");
                 }
@@ -1856,7 +1895,7 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
             sendButtonContainer.setVisibility(GONE);
         } else {
             messageEditText.setFilters(new InputFilter[0]);
-            delegate.onMessageEditEnd();
+            delegate.onMessageEditEnd(false);
             audioSendButton.setVisibility(VISIBLE);
             attachButton.setVisibility(VISIBLE);
             sendButtonContainer.setVisibility(VISIBLE);
@@ -1909,9 +1948,9 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
         return messageEditText.getSelectionStart();
     }
 
-    public void replaceWithText(int start, int len, String text) {
+    public void replaceWithText(int start, int len, CharSequence text) {
         try {
-            StringBuilder builder = new StringBuilder(messageEditText.getText());
+            SpannableStringBuilder builder = new SpannableStringBuilder(messageEditText.getText());
             builder.replace(start, start + len, text);
             messageEditText.setText(builder);
             messageEditText.setSelection(start + text.length());
@@ -2265,6 +2304,11 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
         }
     }
 
+    public void addStickerToRecent(TLRPC.Document sticker) {
+        createEmojiView();
+        emojiView.addRecentSticker(sticker);
+    }
+
     private void showPopup(int show, int contentType) {
         if (show == 1) {
             if (contentType == 0 && emojiView == null) {
@@ -2376,6 +2420,10 @@ public class ChatActivityEnterView extends FrameLayoutFixed implements Notificat
 
     public boolean isEditingMessage() {
         return editingMessageObject != null;
+    }
+
+    public MessageObject getEditingMessageObject() {
+        return editingMessageObject;
     }
 
     public boolean isEditingCaption() {

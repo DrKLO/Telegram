@@ -133,6 +133,7 @@ public class ConnectionsManager {
                                 TLRPC.TL_error error = null;
                                 if (response != 0) {
                                     NativeByteBuffer buff = NativeByteBuffer.wrap(response);
+                                    buff.reused = true;
                                     resp = object.deserializeResponse(buff, buff.readInt32(true), true);
                                 } else if (errorText != null) {
                                     error = new TLRPC.TL_error();
@@ -260,6 +261,7 @@ public class ConnectionsManager {
     public static void onUnparsedMessageReceived(int address) {
         try {
             NativeByteBuffer buff = NativeByteBuffer.wrap(address);
+            buff.reused = true;
             final TLObject message = TLClassStore.Instance().TLdeserialize(buff, buff.readInt32(true), true);
             if (message instanceof TLRPC.Updates) {
                 FileLog.d("tmessages", "java received " + message);
@@ -327,6 +329,7 @@ public class ConnectionsManager {
     public static void onUpdateConfig(int address) {
         try {
             NativeByteBuffer buff = NativeByteBuffer.wrap(address);
+            buff.reused = true;
             final TLRPC.TL_config message = TLRPC.TL_config.TLdeserialize(buff, buff.readInt32(true), true);
             if (message != null) {
                 Utilities.stageQueue.postRunnable(new Runnable() {

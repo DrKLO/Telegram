@@ -66,6 +66,8 @@
     <string name="MuteDisable">Uitschakelen</string>
     <string name="Hashtags">HASHTAGS</string>
     <string name="Recent">RECENT</string>
+    <string name="ChatHints">CHATS</string>
+    <string name="ChatHintsDelete">%1$s uit suggesties verwijderen?</string>
     <string name="LinkPreview">Link-voorvertoning</string>
     <!--channels-->
     <string name="GroupType">Groepsvorm</string>
@@ -206,6 +208,7 @@
     <string name="ChannelMessageGroupAudio">%1$s heeft een spraakbericht gestuurd naar het kanaal %2$s</string>
     <string name="ChannelMessageGroupMusic">%1$s heeft een muziekbestand gestuurd naar het kanaal %2$s</string>
     <string name="ChannelMessageGroupSticker">%1$s heeft een sticker gestuurd naar het kanaal %2$s</string>
+    <string name="ChannelMessageGroupStickerEmoji">%1$s heeft een %3$s sticker gestuurd naar kanaal %2$s</string>
     <string name="ChannelMessageNoText">%1$s plaatste een bericht</string>
     <string name="ChannelMessagePhoto">%1$s plaatste een foto</string>
     <string name="ChannelMessageVideo">%1$s plaatste een video</string>
@@ -216,6 +219,7 @@
     <string name="ChannelMessageAudio">%1$s plaatste een spraakbericht</string>
     <string name="ChannelMessageMusic">%1$s plaatste een muziekbestand</string>
     <string name="ChannelMessageSticker">%1$s plaatste een sticker</string>
+    <string name="ChannelMessageStickerEmoji">%1$s plaatste een %2$s sticker</string>
     <string name="WhoCanAddMembers">Wie kan leden toevoegen?</string>
     <string name="WhoCanAddMembersAllMembers">Alle leden</string>
     <string name="WhoCanAddMembersAdmins">Alleen beheerders</string>
@@ -301,7 +305,7 @@
     <string name="SetTimer">Zelfvernietigingstimer instellen</string>
     <string name="ServiceNotifications">Servicemeldingen</string>
     <string name="GettingLinkInfo">Link-preview ophalen...</string>
-    <string name="OpenInBrowser">Openen in browser</string>
+    <string name="OpenInBrowser">OPENEN IN...</string>
     <string name="CopyUrl">Link kopiëren</string>
     <string name="SendItems">%1$s versturen</string>
     <string name="OpenUrlAlert">URL %1$s openen?</string>
@@ -333,6 +337,12 @@
     <string name="ReportChatOther">Overig</string>
     <string name="ReportChatDescription">Beschrijving</string>
     <string name="PinnedMessage">Vastgezet bericht</string>
+    <string name="EditedMessage">bewerkt</string>
+    <string name="AttachBotsHelp">Scrollen voor bots</string>
+    <string name="TimeToEdit">%1$s</string>
+    <string name="TimeToEditExpired">Bewerken kan niet meer.</string>
+    <string name="AddShortcut">Snelkoppeling toevoegen</string>
+    <string name="ShortcutAdded">Snelkoppeling aan startscherm toegevoegd</string>
     <!--notification-->
     <string name="MessageLifetimeChanged">%1$s heeft de zelfvernietigingstimer ingesteld op %2$s</string>
     <string name="MessageLifetimeChangedOutgoing">Je hebt de zelfvernietigingstimer ingesteld op %1$s</string>
@@ -350,6 +360,7 @@
     <string name="NotificationMessageAudio">%1$s heeft je een spraakbericht gestuurd</string>
     <string name="NotificationMessageMusic">%1$s heeft je een muziekbestand gestuurd</string>
     <string name="NotificationMessageSticker">%1$s heeft je een sticker gestuurd</string>
+    <string name="NotificationMessageStickerEmoji">%1$s heeft je een %2$s sticker gestuurd</string>
     <string name="NotificationMessageGroupText">%1$s @ %2$s: %3$s</string>
     <string name="NotificationMessageGroupNoText">%1$s heeft een bericht gestuurd naar de groep %2$s</string>
     <string name="NotificationMessageGroupPhoto">%1$s heeft een foto gestuurd naar de groep %2$s</string>
@@ -361,6 +372,7 @@
     <string name="NotificationMessageGroupAudio">%1$s heeft een spraakbericht gestuurd naar de groep %2$s</string>
     <string name="NotificationMessageGroupMusic">%1$s heeft een muziekbestand gestuurd naar de groep %2$s</string>
     <string name="NotificationMessageGroupSticker">%1$s heeft een sticker gestuurd naar de groep %2$s</string>
+    <string name="NotificationMessageGroupStickerEmoji">%1$s heeft een %3$s sticker gestuurd naar de groep %2$s</string>
     <string name="NotificationInvitedToGroup">%1$s heeft je uitgenodigd voor de groep %2$s</string>
     <string name="NotificationEditedGroupName">%1$s heeft de naam van de groep %2$s gewijzigd</string>
     <string name="NotificationEditedGroupPhoto">%1$s heeft de afbeelding van de groep %2$s gewijzigd</string>
@@ -384,6 +396,7 @@
     <string name="NotificationActionPinnedVideo">%1$s heeft video vastgezet in de groep %2$s</string>
     <string name="NotificationActionPinnedFile">%1$s heeft bestand vastgezet in de groep %2$s</string>
     <string name="NotificationActionPinnedSticker">%1$s heeft sticker vastgezet in de groep %2$s</string>
+    <string name="NotificationActionPinnedStickerEmoji">%1$s heeft een %3$s sticker vastgezet in de groep %2$s</string>
     <string name="NotificationActionPinnedVoice">%1$s heeft spraakbericht vastgezet in de groep %2$s</string>
     <string name="NotificationActionPinnedContact">%1$s heeft contact vastgezet in de groep %2$s</string>
     <string name="NotificationActionPinnedGeo">%1$s heeft locatie vastgezet in de groep %2$s</string>
@@ -395,6 +408,7 @@
     <string name="NotificationActionPinnedVideoChannel">%1$s heeft video vastgezet</string>
     <string name="NotificationActionPinnedFileChannel">%1$s heeft bestand vastgezet</string>
     <string name="NotificationActionPinnedStickerChannel">%1$s heeft sticker vastgezet</string>
+    <string name="NotificationActionPinnedStickerEmojiChannel">%1$s heeft een %2$s sticker vastgezet</string>
     <string name="NotificationActionPinnedVoiceChannel">%1$s heeft spraakbericht vastgezet</string>
     <string name="NotificationActionPinnedContactChannel">%1$s heeft contact vastgezet</string>
     <string name="NotificationActionPinnedGeoChannel">%1$s heeft locatie vastgezet</string>
@@ -1006,12 +1020,12 @@
     <string name="Members_few">%1$d leden</string>
     <string name="Members_many">%1$d leden</string>
     <string name="Members_other">%1$d leden</string>
-    <string name="AndMoreTyping_zero">en nog %1$d personen zijn aan het typen</string>
-    <string name="AndMoreTyping_one">en nog %1$d persoon is aan het typen</string>
-    <string name="AndMoreTyping_two">en nog %1$d personen zijn aan het typen</string>
-    <string name="AndMoreTyping_few">en nog %1$d personen zijn aan het typen</string>
-    <string name="AndMoreTyping_many">en nog %1$d personen zijn aan het typen</string>
-    <string name="AndMoreTyping_other">en nog %1$d personen zijn aan het typen</string>
+    <string name="AndMoreTyping_zero">en %1$d meer zijn aan het typen</string>
+    <string name="AndMoreTyping_one">en %1$d meer is aan het typen</string>
+    <string name="AndMoreTyping_two">en %1$d meer zijn aan het typen</string>
+    <string name="AndMoreTyping_few">en %1$d meer zijn aan het typen</string>
+    <string name="AndMoreTyping_many">en %1$d meer zijn aan het typen</string>
+    <string name="AndMoreTyping_other">en %1$d meer zijn aan het typen</string>
     <string name="NewMessages_zero">geen nieuwe berichten</string>
     <string name="NewMessages_one">%1$d nieuw bericht</string>
     <string name="NewMessages_two">%1$d nieuwe berichten</string>

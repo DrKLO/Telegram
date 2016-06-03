@@ -947,6 +947,7 @@ void TL_config::readParams(NativeByteBuffer *stream, bool &error) {
     push_chat_limit = stream->readInt32(&error);
     saved_gifs_limit = stream->readInt32(&error);
     edit_time_limit = stream->readInt32(&error);
+    rating_e_decay = stream->readInt32(&error);
     magic = stream->readUint32(&error);
     if (magic != 0x1cb5c415) {
         error = true;
@@ -989,6 +990,7 @@ void TL_config::serializeToStream(NativeByteBuffer *stream) {
     stream->writeInt32(push_chat_limit);
     stream->writeInt32(saved_gifs_limit);
     stream->writeInt32(edit_time_limit);
+    stream->writeInt32(rating_e_decay);
     stream->writeInt32(0x1cb5c415);
     count = (uint32_t) disabled_features.size();
     stream->writeInt32(count);

@@ -239,6 +239,14 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
 
     private int hasAudioFocus;
     private boolean callInProgress;
+    private int audioFocus = AUDIO_NO_FOCUS_NO_DUCK;
+    private boolean resumeAudioOnFocusGain;
+
+    private static final float VOLUME_DUCK = 0.2f;
+    private static final float VOLUME_NORMAL = 1.0f;
+    private static final int AUDIO_NO_FOCUS_NO_DUCK = 0;
+    private static final int AUDIO_NO_FOCUS_CAN_DUCK = 1;
+    private static final int AUDIO_FOCUSED  = 2;
 
     private ArrayList<MessageObject> videoConvertQueue = new ArrayList<>();
     private final Object videoQueueSync = new Object();
@@ -303,6 +311,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
     private ArrayList<MessageObject> playlist = new ArrayList<>();
     private ArrayList<MessageObject> shuffledPlaylist = new ArrayList<>();
     private int currentPlaylistNum;
+    private boolean forceLoopCurrentPlaylist;
     private boolean downloadingCurrentMessage;
     private boolean playMusicAgain;
     private AudioInfo audioInfo;
@@ -369,7 +378,9 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                         sampleStep = (float) len / 2 / (float) newPart;
                         for (int i = 0; i < len / 2; i++) {
                             short peak = buffer.getShort();
-                            sum += peak * peak;
+                            if (peak > 2500) {
+                                sum += peak * peak;
+                            }
                             if (i == (int) nextNum && currentNum < recordSamples.length) {
                                 recordSamples[currentNum] = peak;
                                 nextNum += sampleStep;
@@ -668,8 +679,8 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                 @Override
                 public void onCallStateChanged(int state, String incomingNumber) {
                     if (state == TelephonyManager.CALL_STATE_RINGING) {
-                        if (MediaController.getInstance().isPlayingAudio(MediaController.getInstance().getPlayingMessageObject()) && !MediaController.getInstance().isAudioPaused()) {
-                            MediaController.getInstance().pauseAudio(MediaController.getInstance().getPlayingMessageObject());
+                        if (isPlayingAudio(getPlayingMessageObject()) && !isAudioPaused()) {
+                            pauseAudio(getPlayingMessageObject());
                         } else if (recordStartRunnable != null || recordingAudio != null) {
                             stopRecording(2);
                         }
@@ -693,12 +704,46 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
     @Override
     public void onAudioFocusChange(int focusChange) {
         if (focusChange == AudioManager.AUDIOFOCUS_LOSS) {
-            if (MediaController.getInstance().isPlayingAudio(MediaController.getInstance().getPlayingMessageObject()) && !MediaController.getInstance().isAudioPaused()) {
-                MediaController.getInstance().pauseAudio(MediaController.getInstance().getPlayingMessageObject());
+            if (isPlayingAudio(getPlayingMessageObject()) && !isAudioPaused()) {
+                pauseAudio(getPlayingMessageObject());
             }
             hasAudioFocus = 0;
+            audioFocus = AUDIO_NO_FOCUS_NO_DUCK;
         } else if (focusChange == AudioManager.AUDIOFOCUS_GAIN) {
-            //MediaController.getInstance().playAudio(MediaController.getInstance().getPlayingMessageObject());
+            audioFocus = AUDIO_FOCUSED;
+            if (resumeAudioOnFocusGain) {
+                resumeAudioOnFocusGain = false;
+                if (isPlayingAudio(getPlayingMessageObject()) && isAudioPaused()) {
+                    playAudio(getPlayingMessageObject());
+                }
+            }
+        } else if (focusChange == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK) {
+            audioFocus = AUDIO_NO_FOCUS_CAN_DUCK;
+        } else if (focusChange == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT) {
+            audioFocus = AUDIO_NO_FOCUS_NO_DUCK;
+            if (isPlayingAudio(getPlayingMessageObject()) && !isAudioPaused()) {
+                pauseAudio(getPlayingMessageObject());
+                resumeAudioOnFocusGain = true;
+            }
+        }
+        setPlayerVolume();
+    }
+
+    private void setPlayerVolume() {
+        try {
+            float volume;
+            if (audioFocus != AUDIO_NO_FOCUS_CAN_DUCK) {
+                volume = VOLUME_NORMAL;
+            } else {
+                volume = VOLUME_DUCK;
+            }
+            if (audioPlayer != null) {
+                audioPlayer.setVolume(volume, volume);
+            } else if (audioTrackPlayer != null) {
+                audioTrackPlayer.setStereoVolume(volume, volume);
+            }
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
         }
     }
 
@@ -1936,6 +1981,10 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         return playingMessageObject;
     }
 
+    public int getPlayingMessageObjectNum() {
+        return currentPlaylistNum;
+    }
+
     private void buildShuffledPlayList() {
         if (playlist.isEmpty()) {
             return;
@@ -1956,9 +2005,14 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
     }
 
     public boolean setPlaylist(ArrayList<MessageObject> messageObjects, MessageObject current) {
+        return setPlaylist(messageObjects, current, true);
+    }
+
+    public boolean setPlaylist(ArrayList<MessageObject> messageObjects, MessageObject current, boolean loadMusic) {
         if (playingMessageObject == current) {
             return playAudio(current);
         }
+        forceLoopCurrentPlaylist = !loadMusic;
         playMusicAgain = !playlist.isEmpty();
         playlist.clear();
         for (int a = messageObjects.size() - 1; a >= 0; a--) {
@@ -1978,7 +2032,9 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                 buildShuffledPlayList();
                 currentPlaylistNum = 0;
             }
-            SharedMediaQuery.loadMusic(current.getDialogId(), playlist.get(0).getId());
+            if (loadMusic) {
+                SharedMediaQuery.loadMusic(current.getDialogId(), playlist.get(0).getId());
+            }
         }
         return playAudio(current);
     }
@@ -1987,10 +2043,19 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         playNextMessage(false);
     }
 
+    public void playMessageAtIndex(int index) {
+        if (currentPlaylistNum < 0 || currentPlaylistNum >= playlist.size()) {
+            return;
+        }
+        currentPlaylistNum = index;
+        playMusicAgain = true;
+        playAudio(playlist.get(currentPlaylistNum));
+    }
+
     private void playNextMessage(boolean byStop) {
         ArrayList<MessageObject> currentPlayList = shuffleMusic ? shuffledPlaylist : playlist;
 
-        if (byStop && repeatMode == 2) {
+        if (byStop && repeatMode == 2 && !forceLoopCurrentPlaylist) {
             cleanupPlayer(false, false);
             playAudio(currentPlayList.get(currentPlaylistNum));
             return;
@@ -1998,7 +2063,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         currentPlaylistNum++;
         if (currentPlaylistNum >= currentPlayList.size()) {
             currentPlaylistNum = 0;
-            if (byStop && repeatMode == 0) {
+            if (byStop && repeatMode == 0 && !forceLoopCurrentPlaylist) {
                 if (audioPlayer != null || audioTrackPlayer != null) {
                     if (audioPlayer != null) {
                         try {
@@ -2118,10 +2183,14 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         }
         if (hasAudioFocus != neededAudioFocus) {
             hasAudioFocus = neededAudioFocus;
+            int result;
             if (neededAudioFocus == 3) {
-                NotificationsController.getInstance().audioManager.requestAudioFocus(this, AudioManager.STREAM_VOICE_CALL, AudioManager.AUDIOFOCUS_GAIN);
+                result = NotificationsController.getInstance().audioManager.requestAudioFocus(this, AudioManager.STREAM_VOICE_CALL, AudioManager.AUDIOFOCUS_GAIN);
             } else {
-                NotificationsController.getInstance().audioManager.requestAudioFocus(this, AudioManager.STREAM_MUSIC, neededAudioFocus == 2 ? AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK : AudioManager.AUDIOFOCUS_GAIN);
+                result = NotificationsController.getInstance().audioManager.requestAudioFocus(this, AudioManager.STREAM_MUSIC, neededAudioFocus == 2 ? AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK : AudioManager.AUDIOFOCUS_GAIN);
+            }
+            if (result == AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
+                audioFocus = AUDIO_FOCUSED;
             }
         }
     }
@@ -2270,6 +2339,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
             }
         }
         checkAudioFocus(messageObject);
+        setPlayerVolume();
 
         isPaused = false;
         lastProgress = 0;
@@ -2880,8 +2950,9 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
     public static String getFileName(Uri uri) {
         String result = null;
         if (uri.getScheme().equals("content")) {
-            Cursor cursor = ApplicationLoader.applicationContext.getContentResolver().query(uri, null, null, null, null);
+            Cursor cursor = null;
             try {
+                cursor = ApplicationLoader.applicationContext.getContentResolver().query(uri, new String[]{OpenableColumns.DISPLAY_NAME}, null, null, null);
                 if (cursor.moveToFirst()) {
                     result = cursor.getString(cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME));
                 }

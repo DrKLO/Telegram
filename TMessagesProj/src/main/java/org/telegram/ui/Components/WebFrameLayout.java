@@ -113,9 +113,6 @@ public class WebFrameLayout extends FrameLayout {
     public WebFrameLayout(Context context, final BottomSheet parentDialog, String title, String descripton, String originalUrl, final String url, int w, int h) {
         super(context);
         embedUrl = url;
-        if (embedUrl.toLowerCase().contains("youtube")) {
-            //embedUrl += "&enablejsapi=1";
-        }
         hasDescription = descripton != null && descripton.length() > 0;
         openUrl = originalUrl;
         width = w;
@@ -135,14 +132,6 @@ public class WebFrameLayout extends FrameLayout {
         parentDialog.setApplyBottomPadding(false);
         dialog.getContainer().addView(fullscreenVideoContainer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
         fullscreenVideoContainer.setVisibility(INVISIBLE);
-
-        /*LinearLayout linearLayout = new LinearLayout(context);
-        linearLayout.setOrientation(LinearLayout.HORIZONTAL);
-        addView(linearLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 32, Gravity.LEFT | Gravity.TOP));
-
-
-
-        */
 
         webView = new WebView(context);
         webView.getSettings().setJavaScriptEnabled(true);

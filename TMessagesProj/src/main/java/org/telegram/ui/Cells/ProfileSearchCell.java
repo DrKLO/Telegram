@@ -350,7 +350,7 @@ public class ProfileSearchCell extends BaseCell {
             CharSequence onlineStringFinal = TextUtils.ellipsize(onlineString, currentOnlinePaint, onlineWidth - AndroidUtilities.dp(12), TextUtils.TruncateAt.END);
             onlineLayout = new StaticLayout(onlineStringFinal, currentOnlinePaint, onlineWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
             nameTop = AndroidUtilities.dp(13);
-            if (subLabel != null && !drawNameBot) {
+            if (subLabel != null && chat != null) {
                 nameLockTop -= AndroidUtilities.dp(12);
             }
         } else {
