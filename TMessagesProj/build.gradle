@@ -1,42 +1,34 @@
 apply plugin: 'com.android.application'
 
-repositories {
-    mavenCentral()
-}
-
-dependencies {
-    compile 'com.android.support:support-v4:23.3.0'
-    compile "com.google.android.gms:play-services-gcm:8.4.0"
-    compile "com.google.android.gms:play-services-maps:8.4.0"
-    compile 'net.hockeyapp.android:HockeySDK:4.0.+'
-    compile 'com.googlecode.mp4parser:isoparser:1.0.+'
-}
-
 android {
     compileSdkVersion 23
     buildToolsVersion '23.0.3'
 
+    defaultConfig {
+        applicationId "org.telegram.messenger"
+        minSdkVersion 9
+        targetSdkVersion 23
+        versionCode 803
+        versionName "3.9.0"
+    }
+
     useLibrary 'org.apache.http.legacy'
-    defaultConfig.applicationId = "org.telegram.messenger"
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_7
         targetCompatibility JavaVersion.VERSION_1_7
     }
 
-    signingConfigs {
-        debug {
-            storeFile file("config/release.keystore")
-            storePassword RELEASE_STORE_PASSWORD
-            keyAlias RELEASE_KEY_ALIAS
-            keyPassword RELEASE_KEY_PASSWORD
-        }
+    def keystoreExists = file("config/release.keystore").exists()
 
-        release {
-            storeFile file("config/release.keystore")
-            storePassword RELEASE_STORE_PASSWORD
-            keyAlias RELEASE_KEY_ALIAS
-            keyPassword RELEASE_KEY_PASSWORD
+    signingConfigs {
+        if (keystoreExists) {
+            release {
+                storeFile file("config/release.keystore")
+                storePassword RELEASE_STORE_PASSWORD
+                keyAlias RELEASE_KEY_ALIAS
+                keyPassword RELEASE_KEY_PASSWORD
+            }
         }
     }
 
@@ -44,14 +36,13 @@ android {
         debug {
             debuggable true
             jniDebuggable true
-            signingConfig signingConfigs.debug
             applicationIdSuffix ".beta"
         }
 
         release {
             debuggable false
             jniDebuggable false
-            signingConfig signingConfigs.release
+            signingConfig keystoreExists ? signingConfigs.release : null
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
@@ -59,11 +50,9 @@ android {
         foss {
             debuggable false
             jniDebuggable false
-            signingConfig signingConfigs.release
+            signingConfig keystoreExists ? signingConfigs.release : null
         }
     }
-
-    defaultConfig.versionCode = 803
 
     sourceSets.main {
         jniLibs.srcDir 'libs'
@@ -111,11 +100,17 @@ android {
         variant.mergedFlavor.versionCode = defaultConfig.versionCode * 10 + abiVersion;
     }
 
-    defaultConfig {
-        minSdkVersion 9
-        targetSdkVersion 23
-        versionName "3.9.0"
+    lintOptions {
+        abortOnError false
     }
+}
+
+dependencies {
+    compile 'com.android.support:support-v4:23.4.0'
+    compile "com.google.android.gms:play-services-gcm:8.4.0"
+    compile "com.google.android.gms:play-services-maps:8.4.0"
+    compile 'net.hockeyapp.android:HockeySDK:4.0.1'
+    compile 'com.googlecode.mp4parser:isoparser:1.0.6'
 }
 
 apply plugin: 'com.google.gms.google-services'
