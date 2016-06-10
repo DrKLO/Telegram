@@ -5787,7 +5787,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                         }
                     }
 
-                    long dialog_id = -message.to_id.channel_id;
+                    long dialog_id = -update.channel_id;
                     Integer value = dialogs_read_inbox_max.get(dialog_id);
                     if (value == null) {
                         value = MessagesStorage.getInstance().getDialogReadInboxMax(dialog_id);
