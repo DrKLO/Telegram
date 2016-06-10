@@ -166,15 +166,15 @@ public class Emoji {
 
     public static String fixEmoji(String emoji) {
         char ch;
-        int lenght = emoji.length();
-        for (int a = 0; a < lenght; a++) {
+        int length = emoji.length();
+        for (int a = 0; a < length; a++) {
             ch = emoji.charAt(a);
             if (ch >= 0xD83C && ch <= 0xD83E) {
-                if (ch == 0xD83C && a < lenght - 1) {
+                if (ch == 0xD83C && a < length - 1) {
                     ch = emoji.charAt(a + 1);
                     if (ch == 0xDE2F || ch == 0xDC04 || ch == 0xDE1A || ch == 0xDD7F) {
                         emoji = emoji.substring(0, a + 2) + "\uFE0F" + emoji.substring(a + 2);
-                        lenght++;
+                        length++;
                         a += 2;
                     } else {
                         a++;
@@ -187,7 +187,7 @@ public class Emoji {
             } else if (ch >= 0x203C && ch <= 0x3299) {
                 if (EmojiData.emojiToFE0FMap.containsKey(ch)) {
                     emoji = emoji.substring(0, a + 1) + "\uFE0F" + emoji.substring(a + 1);
-                    lenght++;
+                    length++;
                     a++;
                 }
             }
