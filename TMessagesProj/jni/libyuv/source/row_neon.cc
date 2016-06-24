@@ -1298,6 +1298,24 @@ void ARGBToYRow_NEON(const uint8* src_argb, uint8* dst_y, int width) {
   );
 }
 
+void ARGBExtractAlphaRow_NEON(const uint8* src_argb, uint8* dst_a, int width) {
+  asm volatile (
+  "1:                                          \n"
+    MEMACCESS(0)
+    "vld4.8     {d0, d2, d4, d6}, [%0]!        \n"  // load 8 ARGB pixels
+    "vld4.8     {d1, d3, d5, d7}, [%0]!        \n"  // load next 8 ARGB pixels
+    "subs       %2, %2, #16                    \n"  // 16 processed per loop
+    MEMACCESS(1)
+    "vst1.8     {q3}, [%1]!                    \n"  // store 16 A's.
+    "bgt       1b                              \n"
+  : "+r"(src_argb),   // %0
+    "+r"(dst_a),      // %1
+    "+r"(width)       // %2
+  :
+  : "cc", "memory", "q0", "q1", "q2", "q3"  // Clobber List
+  );
+}
+
 void ARGBToYJRow_NEON(const uint8* src_argb, uint8* dst_y, int width) {
   asm volatile (
     "vmov.u8    d24, #15                       \n"  // B * 0.11400 coefficient
@@ -2565,8 +2583,6 @@ void ARGBColorMatrixRow_NEON(const uint8* src_argb, uint8* dst_argb,
   );
 }
 
-// TODO(fbarchard): fix vqshrun in ARGBMultiplyRow_NEON and reenable.
-#ifdef HAS_ARGBMULTIPLYROW_NEON
 // Multiply 2 rows of ARGB pixels together, 8 pixels at a time.
 void ARGBMultiplyRow_NEON(const uint8* src_argb0, const uint8* src_argb1,
                           uint8* dst_argb, int width) {
@@ -2598,7 +2614,6 @@ void ARGBMultiplyRow_NEON(const uint8* src_argb0, const uint8* src_argb1,
   : "cc", "memory", "q0", "q1", "q2", "q3"
   );
 }
-#endif  // HAS_ARGBMULTIPLYROW_NEON
 
 // Add 2 rows of ARGB pixels together, 8 pixels at a time.
 void ARGBAddRow_NEON(const uint8* src_argb0, const uint8* src_argb1,

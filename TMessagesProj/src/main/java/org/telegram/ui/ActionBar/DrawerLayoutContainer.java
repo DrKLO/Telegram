@@ -8,6 +8,9 @@
 
 package org.telegram.ui.ActionBar;
 
+import android.animation.Animator;
+import android.animation.AnimatorSet;
+import android.animation.ObjectAnimator;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
@@ -28,9 +31,7 @@ import android.widget.ListView;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
-import org.telegram.messenger.AnimationCompat.AnimatorListenerAdapterProxy;
-import org.telegram.messenger.AnimationCompat.AnimatorSetProxy;
-import org.telegram.messenger.AnimationCompat.ObjectAnimatorProxy;
+import org.telegram.messenger.AnimatorListenerAdapterProxy;
 
 public class DrawerLayoutContainer extends FrameLayout {
 
@@ -39,14 +40,14 @@ public class DrawerLayoutContainer extends FrameLayout {
     private ViewGroup drawerLayout;
     private ActionBarLayout parentActionBarLayout;
 
-    private boolean maybeStartTracking = false;
-    private boolean startedTracking = false;
+    private boolean maybeStartTracking;
+    private boolean startedTracking;
     private int startedTrackingX;
     private int startedTrackingY;
     private int startedTrackingPointerId;
-    private VelocityTracker velocityTracker = null;
+    private VelocityTracker velocityTracker;
     private boolean beginTrackingSent;
-    private AnimatorSetProxy currentAnimation = null;
+    private AnimatorSet currentAnimation;
 
     private Paint scrimPaint = new Paint();
 
@@ -57,8 +58,8 @@ public class DrawerLayoutContainer extends FrameLayout {
     private Drawable shadowLeft;
     private boolean allowOpenDrawer;
 
-    private float drawerPosition = 0;
-    private boolean drawerOpened = false;
+    private float drawerPosition;
+    private boolean drawerOpened;
     private boolean allowDrawContent = true;
 
     public DrawerLayoutContainer(Context context) {
@@ -138,7 +139,7 @@ public class DrawerLayoutContainer extends FrameLayout {
         } else if (drawerPosition < 0) {
             drawerPosition = 0;
         }
-        requestLayout();
+        drawerLayout.setTranslationX(drawerPosition);
 
         final int newVisibility = drawerPosition > 0 ? VISIBLE : GONE;
         if (drawerLayout.getVisibility() != newVisibility) {
@@ -166,10 +167,8 @@ public class DrawerLayoutContainer extends FrameLayout {
             AndroidUtilities.hideKeyboard(parentActionBarLayout.parentActivity.getCurrentFocus());
         }
         cancelCurrentAnimation();
-        AnimatorSetProxy animatorSet = new AnimatorSetProxy();
-        animatorSet.playTogether(
-                ObjectAnimatorProxy.ofFloat(this, "drawerPosition", drawerLayout.getMeasuredWidth())
-        );
+        AnimatorSet animatorSet = new AnimatorSet();
+        animatorSet.playTogether(ObjectAnimator.ofFloat(this, "drawerPosition", drawerLayout.getMeasuredWidth()));
         animatorSet.setInterpolator(new DecelerateInterpolator());
         if (fast) {
             animatorSet.setDuration(Math.max((int) (200.0f / drawerLayout.getMeasuredWidth() * (drawerLayout.getMeasuredWidth() - drawerPosition)), 50));
@@ -178,7 +177,7 @@ public class DrawerLayoutContainer extends FrameLayout {
         }
         animatorSet.addListener(new AnimatorListenerAdapterProxy() {
             @Override
-            public void onAnimationEnd(Object animator) {
+            public void onAnimationEnd(Animator animator) {
                 onDrawerAnimationEnd(true);
             }
         });
@@ -188,9 +187,9 @@ public class DrawerLayoutContainer extends FrameLayout {
 
     public void closeDrawer(boolean fast) {
         cancelCurrentAnimation();
-        AnimatorSetProxy animatorSet = new AnimatorSetProxy();
+        AnimatorSet animatorSet = new AnimatorSet();
         animatorSet.playTogether(
-                ObjectAnimatorProxy.ofFloat(this, "drawerPosition", 0)
+                ObjectAnimator.ofFloat(this, "drawerPosition", 0)
         );
         animatorSet.setInterpolator(new DecelerateInterpolator());
         if (fast) {
@@ -200,7 +199,7 @@ public class DrawerLayoutContainer extends FrameLayout {
         }
         animatorSet.addListener(new AnimatorListenerAdapterProxy() {
             @Override
-            public void onAnimationEnd(Object animator) {
+            public void onAnimationEnd(Animator animator) {
                 onDrawerAnimationEnd(false);
             }
         });
@@ -213,7 +212,7 @@ public class DrawerLayoutContainer extends FrameLayout {
         drawerOpened = opened;
         if (!opened) {
             if (drawerLayout instanceof ListView) {
-                ((ListView)drawerLayout).setSelectionFromTop(0, 0);
+                ((ListView) drawerLayout).setSelectionFromTop(0, 0);
             }
         }
     }
@@ -298,8 +297,8 @@ public class DrawerLayoutContainer extends FrameLayout {
                         requestDisallowInterceptTouchEvent(true);
                     } else if (startedTracking) {
                         if (!beginTrackingSent) {
-                            if (((Activity)getContext()).getCurrentFocus() != null) {
-                                AndroidUtilities.hideKeyboard(((Activity)getContext()).getCurrentFocus());
+                            if (((Activity) getContext()).getCurrentFocus() != null) {
+                                AndroidUtilities.hideKeyboard(((Activity) getContext()).getCurrentFocus());
                             }
                             beginTrackingSent = true;
                         }
@@ -379,7 +378,7 @@ public class DrawerLayoutContainer extends FrameLayout {
                 if (drawerLayout != child) {
                     child.layout(lp.leftMargin, lp.topMargin, lp.leftMargin + child.getMeasuredWidth(), lp.topMargin + child.getMeasuredHeight());
                 } else {
-                    child.layout(-child.getMeasuredWidth() + (int)drawerPosition, lp.topMargin, (int)drawerPosition, lp.topMargin + child.getMeasuredHeight());
+                    child.layout(-child.getMeasuredWidth(), lp.topMargin, 0, lp.topMargin + child.getMeasuredHeight());
                 }
             } catch (Exception e) {
                 FileLog.e("tmessages", e);
@@ -482,7 +481,7 @@ public class DrawerLayoutContainer extends FrameLayout {
         } else if (shadowLeft != null) {
             final float alpha = Math.max(0, Math.min(drawerPosition / AndroidUtilities.dp(20), 1.0f));
             if (alpha != 0) {
-                shadowLeft.setBounds((int)drawerPosition, child.getTop(), (int)drawerPosition + shadowLeft.getIntrinsicWidth(), child.getBottom());
+                shadowLeft.setBounds((int) drawerPosition, child.getTop(), (int) drawerPosition + shadowLeft.getIntrinsicWidth(), child.getBottom());
                 shadowLeft.setAlpha((int) (0xff * alpha));
                 shadowLeft.draw(canvas);
             }

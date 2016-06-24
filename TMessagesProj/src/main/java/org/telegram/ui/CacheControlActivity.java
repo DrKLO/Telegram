@@ -386,8 +386,6 @@ public class CacheControlActivity extends BaseFragment {
 
                                         SQLitePreparedStatement state5 = database.executeFast("REPLACE INTO messages_holes VALUES(?, ?, ?)");
                                         SQLitePreparedStatement state6 = database.executeFast("REPLACE INTO media_holes_v2 VALUES(?, ?, ?, ?)");
-                                        SQLitePreparedStatement state7 = database.executeFast("REPLACE INTO messages_imp_holes VALUES(?, ?, ?)");
-                                        SQLitePreparedStatement state8 = database.executeFast("REPLACE INTO channel_group VALUES(?, ?, ?, ?)");
 
                                         database.beginTransaction();
                                         for (int a = 0; a < dialogsToCleanup.size(); a++) {
@@ -403,7 +401,7 @@ public class CacheControlActivity extends BaseFragment {
                                             }
 
                                             cursor = database.queryFinalized("SELECT last_mid_i, last_mid FROM dialogs WHERE did = " + did);
-                                            ArrayList<TLRPC.Message> arrayList = new ArrayList<>();
+                                            int messageId = -1;
                                             if (cursor.next()) {
                                                 long last_mid_i = cursor.longValue(0);
                                                 long last_mid = cursor.longValue(1);
@@ -415,7 +413,7 @@ public class CacheControlActivity extends BaseFragment {
                                                             TLRPC.Message message = TLRPC.Message.TLdeserialize(data, data.readInt32(false), false);
                                                             data.reuse();
                                                             if (message != null) {
-                                                                arrayList.add(message);
+                                                                messageId = message.id;
                                                             }
                                                         }
                                                     }
@@ -425,22 +423,20 @@ public class CacheControlActivity extends BaseFragment {
                                                 cursor2.dispose();
 
                                                 database.executeFast("DELETE FROM messages WHERE uid = " + did + " AND mid != " + last_mid_i + " AND mid != " + last_mid).stepThis().dispose();
-                                                database.executeFast("DELETE FROM channel_group WHERE uid = " + did).stepThis().dispose();
                                                 database.executeFast("DELETE FROM messages_holes WHERE uid = " + did).stepThis().dispose();
-                                                database.executeFast("DELETE FROM messages_imp_holes WHERE uid = " + did).stepThis().dispose();
                                                 database.executeFast("DELETE FROM bot_keyboard WHERE uid = " + did).stepThis().dispose();
                                                 database.executeFast("DELETE FROM media_counts_v2 WHERE uid = " + did).stepThis().dispose();
                                                 database.executeFast("DELETE FROM media_v2 WHERE uid = " + did).stepThis().dispose();
                                                 database.executeFast("DELETE FROM media_holes_v2 WHERE uid = " + did).stepThis().dispose();
                                                 BotQuery.clearBotKeyboard(did, null);
-                                                MessagesStorage.createFirstHoles(did, state5, state6, state7, state8, arrayList);
+                                                if (messageId != -1) {
+                                                    MessagesStorage.createFirstHoles(did, state5, state6, messageId);
+                                                }
                                             }
                                             cursor.dispose();
                                         }
                                         state5.dispose();
                                         state6.dispose();
-                                        state7.dispose();
-                                        state8.dispose();
                                         database.commitTransaction();
                                         database.executeFast("VACUUM").stepThis().dispose();
                                     } catch (Exception e) {

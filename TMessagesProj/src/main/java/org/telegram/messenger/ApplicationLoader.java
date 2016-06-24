@@ -287,40 +287,40 @@ public class ApplicationLoader extends Application {
     public void onCreate() {
         super.onCreate();
 
-        if (Build.VERSION.SDK_INT < 11) {
-            java.lang.System.setProperty("java.net.preferIPv4Stack", "true");
-            java.lang.System.setProperty("java.net.preferIPv6Addresses", "false");
-        }
-
         applicationContext = getApplicationContext();
         NativeLoader.initNativeLibs(ApplicationLoader.applicationContext);
         ConnectionsManager.native_setJava(Build.VERSION.SDK_INT == 14 || Build.VERSION.SDK_INT == 15);
-
-        if (Build.VERSION.SDK_INT >= 14) {
-            new ForegroundDetector(this);
-        }
+        new ForegroundDetector(this);
 
         applicationHandler = new Handler(applicationContext.getMainLooper());
 
         startPushService();
     }
 
+    /*public static void sendRegIdToBackend(final String token) {
+        Utilities.stageQueue.postRunnable(new Runnable() {
+            @Override
+            public void run() {
+                UserConfig.pushString = token;
+                UserConfig.registeredForPush = false;
+                UserConfig.saveConfig(false);
+                if (UserConfig.getClientUserId() != 0) {
+                    AndroidUtilities.runOnUIThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            MessagesController.getInstance().registerForPush(token);
+                        }
+                    });
+                }
+            }
+        });
+    }*/
+
     public static void startPushService() {
         SharedPreferences preferences = applicationContext.getSharedPreferences("Notifications", MODE_PRIVATE);
 
         if (preferences.getBoolean("pushService", true)) {
             applicationContext.startService(new Intent(applicationContext, NotificationsService.class));
-
-            if (android.os.Build.VERSION.SDK_INT >= 19) {
-//                Calendar cal = Calendar.getInstance();
-//                PendingIntent pintent = PendingIntent.getService(applicationContext, 0, new Intent(applicationContext, NotificationsService.class), 0);
-//                AlarmManager alarm = (AlarmManager) applicationContext.getSystemService(Context.ALARM_SERVICE);
-//                alarm.setRepeating(AlarmManager.RTC_WAKEUP, cal.getTimeInMillis(), 30000, pintent);
-
-                PendingIntent pintent = PendingIntent.getService(applicationContext, 0, new Intent(applicationContext, NotificationsService.class), 0);
-                AlarmManager alarm = (AlarmManager)applicationContext.getSystemService(Context.ALARM_SERVICE);
-                alarm.cancel(pintent);
-            }
         } else {
             stopPushService();
         }
@@ -357,8 +357,8 @@ public class ApplicationLoader extends Application {
                     }
 
                     //if (UserConfig.pushString == null || UserConfig.pushString.length() == 0) {
-                        Intent intent = new Intent(applicationContext, GcmRegistrationIntentService.class);
-                        startService(intent);
+                    Intent intent = new Intent(applicationContext, GcmRegistrationIntentService.class);
+                    startService(intent);
                     //} else {
                     //    FileLog.d("tmessages", "GCM regId = " + UserConfig.pushString);
                     //}
@@ -368,6 +368,33 @@ public class ApplicationLoader extends Application {
             }
         }, 1000);
     }
+
+    /*private void initPlayServices() {
+        AndroidUtilities.runOnUIThread(new Runnable() {
+            @Override
+            public void run() {
+                if (checkPlayServices()) {
+                    if (UserConfig.pushString != null && UserConfig.pushString.length() != 0) {
+                        FileLog.d("tmessages", "GCM regId = " + UserConfig.pushString);
+                    } else {
+                        FileLog.d("tmessages", "GCM Registration not found.");
+                    }
+                    try {
+                        if (!FirebaseApp.getApps(ApplicationLoader.applicationContext).isEmpty()) {
+                            String token = FirebaseInstanceId.getInstance().getToken();
+                            if (token != null) {
+                                sendRegIdToBackend(token);
+                            }
+                        }
+                    } catch (Throwable e) {
+                        FileLog.e("tmessages", e);
+                    }
+                } else {
+                    FileLog.d("tmessages", "No valid Google Play Services APK found.");
+                }
+            }
+        }, 2000);
+    }*/
 
     private boolean checkPlayServices() {
         try {

@@ -277,14 +277,9 @@ public class WebFrameLayout extends FrameLayout {
             @Override
             public void onClick(View v) {
                 try {
-                    if (Build.VERSION.SDK_INT < 11) {
-                        android.text.ClipboardManager clipboard = (android.text.ClipboardManager) ApplicationLoader.applicationContext.getSystemService(Context.CLIPBOARD_SERVICE);
-                        clipboard.setText(openUrl);
-                    } else {
-                        android.content.ClipboardManager clipboard = (android.content.ClipboardManager) ApplicationLoader.applicationContext.getSystemService(Context.CLIPBOARD_SERVICE);
-                        android.content.ClipData clip = android.content.ClipData.newPlainText("label", openUrl);
-                        clipboard.setPrimaryClip(clip);
-                    }
+                    android.content.ClipboardManager clipboard = (android.content.ClipboardManager) ApplicationLoader.applicationContext.getSystemService(Context.CLIPBOARD_SERVICE);
+                    android.content.ClipData clip = android.content.ClipData.newPlainText("label", openUrl);
+                    clipboard.setPrimaryClip(clip);
                 } catch (Exception e) {
                     FileLog.e("tmessages", e);
                 }

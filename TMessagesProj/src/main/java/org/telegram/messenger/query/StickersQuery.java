@@ -155,7 +155,10 @@ public class StickersQuery {
                 if (!stickersByEmoji.containsKey(id)) {
                     stickersByEmoji.put(id, stickerPack.emoticon);
                 }
-                arrayList.add(stickersById.get(id));
+                TLRPC.Document sticker = stickersById.get(id);
+                if (sticker != null) {
+                    arrayList.add(sticker);
+                }
             }
         }
         loadHash = calcStickersHash(stickerSets);
@@ -404,7 +407,10 @@ public class StickersQuery {
                                         if (!stickersByEmojiNew.containsKey(id)) {
                                             stickersByEmojiNew.put(id, stickerPack.emoticon);
                                         }
-                                        arrayList.add(stickersByIdNew.get(id));
+                                        TLRPC.Document sticker = stickersByIdNew.get(id);
+                                        if (sticker != null) {
+                                            arrayList.add(sticker);
+                                        }
                                     }
                                 }
                             }

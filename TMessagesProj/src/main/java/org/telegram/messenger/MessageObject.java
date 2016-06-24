@@ -314,6 +314,8 @@ public class MessageObject {
                     messageText = LocaleController.getString("ActionMigrateFromGroup", R.string.ActionMigrateFromGroup);
                 } else if (message.action instanceof TLRPC.TL_messageActionPinMessage) {
                     generatePinMessageText(fromUser, fromUser == null ? chats.get(message.to_id.channel_id) : null);
+                } else if (message.action instanceof TLRPC.TL_messageActionHistoryClear) {
+                    messageText = LocaleController.getString("HistoryCleared", R.string.HistoryCleared);
                 }
             }
         } else if (!isMediaEmpty()) {
@@ -370,7 +372,9 @@ public class MessageObject {
 
         if (messageOwner.message != null && messageOwner.id < 0 && messageOwner.message.length() > 6 && isVideo()) {
             videoEditedInfo = new VideoEditedInfo();
-            videoEditedInfo.parseString(messageOwner.message);
+            if (!videoEditedInfo.parseString(messageOwner.message)) {
+                videoEditedInfo = null;
+            }
         }
 
         generateCaption();
@@ -510,6 +514,9 @@ public class MessageObject {
                     contentType = -1;
                     type = -1;
                 }
+            } else if (messageOwner.action instanceof TLRPC.TL_messageActionHistoryClear) {
+                contentType = -1;
+                type = -1;
             } else {
                 contentType = 1;
                 type = 10;
@@ -1199,25 +1206,8 @@ public class MessageObject {
         return message.media_unread;
     }
 
-    public boolean isImportant() {
-        return isImportant(messageOwner);
-    }
-
     public boolean isMegagroup() {
         return isMegagroup(messageOwner);
-    }
-
-    public static boolean isImportant(TLRPC.Message message) {
-        if (isMegagroup(message)) {
-            return message.post;
-        }
-        if (message.to_id.channel_id != 0) {
-            if (message instanceof TLRPC.TL_message_layer47 || message instanceof TLRPC.TL_message_old7) {
-                return message.to_id.channel_id != 0 && (message.from_id <= 0 || message.mentioned || message.out || (message.flags & TLRPC.MESSAGE_FLAG_HAS_FROM_ID) == 0);
-            }
-            return message.post;
-        }
-        return false;
     }
 
     public static boolean isMegagroup(TLRPC.Message message) {
@@ -1658,7 +1648,7 @@ public class MessageObject {
                 return false;
             }
         }
-        if (chat.megagroup && message.out || !chat.megagroup && (chat.creator || chat.editor && isOut(message)) && isImportant(message)) {
+        if (chat.megagroup && message.out || !chat.megagroup && (chat.creator || chat.editor && isOut(message)) && message.post) {
             if (message.media instanceof TLRPC.TL_messageMediaPhoto ||
                     message.media instanceof TLRPC.TL_messageMediaDocument && !isStickerMessage(message) ||
                     message.media instanceof TLRPC.TL_messageMediaEmpty ||

@@ -14,15 +14,15 @@ import android.graphics.Paint;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
+import android.widget.FrameLayout;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
-import org.telegram.ui.Components.FrameLayoutFixed;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RadioButton;
 
-public class RadioButtonCell extends FrameLayoutFixed {
+public class RadioButtonCell extends FrameLayout {
 
     private TextView textView;
     private TextView valueTextView;

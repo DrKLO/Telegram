@@ -3532,6 +3532,33 @@ void ARGBCopyAlphaRow_AVX2(const uint8* src, uint8* dst, int width) {
 }
 #endif  // HAS_ARGBCOPYALPHAROW_AVX2
 
+#ifdef HAS_ARGBEXTRACTALPHAROW_SSE2
+// width in pixels
+__declspec(naked)
+void ARGBExtractAlphaRow_SSE2(const uint8* src_argb, uint8* dst_a, int width) {
+  __asm {
+    mov        eax, [esp + 4]   // src_argb
+    mov        edx, [esp + 8]   // dst_a
+    mov        ecx, [esp + 12]  // width
+
+  extractloop:
+    movdqu     xmm0, [eax]
+    movdqu     xmm1, [eax + 16]
+    lea        eax, [eax + 32]
+    psrld      xmm0, 24
+    psrld      xmm1, 24
+    packssdw   xmm0, xmm1
+    packuswb   xmm0, xmm0
+    movq       qword ptr [edx], xmm0
+    lea        edx, [edx + 8]
+    sub        ecx, 8
+    jg         extractloop
+
+    ret
+  }
+}
+#endif  // HAS_ARGBEXTRACTALPHAROW_SSE2
+
 #ifdef HAS_ARGBCOPYYTOALPHAROW_SSE2
 // width in pixels
 __declspec(naked)
@@ -5248,6 +5275,7 @@ void SobelXYRow_SSE2(const uint8* src_sobelx, const uint8* src_sobely,
 // dst points to pixel to store result to.
 // count is number of averaged pixels to produce.
 // Does 4 pixels at a time.
+// This function requires alignment on accumulation buffer pointers.
 void CumulativeSumToAverageRow_SSE2(const int32* topleft, const int32* botleft,
                                     int width, int area, uint8* dst,
                                     int count) {

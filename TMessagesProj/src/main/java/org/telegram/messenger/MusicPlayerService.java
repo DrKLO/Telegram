@@ -190,7 +190,11 @@ public class MusicPlayerService extends Service implements NotificationCenter.No
             metadataEditor.putString(MediaMetadataRetriever.METADATA_KEY_ARTIST, authorName);
             metadataEditor.putString(MediaMetadataRetriever.METADATA_KEY_TITLE, songName);
             if (audioInfo != null && audioInfo.getCover() != null) {
-                metadataEditor.putBitmap(RemoteControlClient.MetadataEditor.BITMAP_KEY_ARTWORK, audioInfo.getCover());
+                try {
+                    metadataEditor.putBitmap(RemoteControlClient.MetadataEditor.BITMAP_KEY_ARTWORK, audioInfo.getCover());
+                } catch (Throwable e) {
+                    FileLog.e("tmessages", e);
+                }
             }
             metadataEditor.apply();
         }

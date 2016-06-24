@@ -8,6 +8,7 @@
 
 package org.telegram.ui.Components;
 
+import android.animation.ObjectAnimator;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
@@ -19,7 +20,6 @@ import android.graphics.RectF;
 import android.view.View;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.AnimationCompat.ObjectAnimatorProxy;
 
 public class CheckBoxSquare extends View {
 
@@ -32,7 +32,7 @@ public class CheckBoxSquare extends View {
     private Canvas drawCanvas;
 
     private float progress;
-    private ObjectAnimatorProxy checkAnimator;
+    private ObjectAnimator checkAnimator;
 
     private boolean attachedToWindow;
     private boolean isChecked;
@@ -91,7 +91,7 @@ public class CheckBoxSquare extends View {
     }
 
     private void animateToCheckedState(boolean newCheckedState) {
-        checkAnimator = ObjectAnimatorProxy.ofFloatProxy(this, "progress", newCheckedState ? 1 : 0);
+        checkAnimator = ObjectAnimator.ofFloat(this, "progress", newCheckedState ? 1 : 0);
         checkAnimator.setDuration(300);
         checkAnimator.start();
     }

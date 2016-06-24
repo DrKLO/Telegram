@@ -18,6 +18,8 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Point;
 import android.graphics.drawable.BitmapDrawable;
 import android.media.AudioManager;
@@ -956,7 +958,7 @@ public class NotificationsController {
                         }
                     } else {
                         if (ChatObject.isChannel(chat) && !chat.megagroup) {
-                            if (messageObject.isImportant()) {
+                            if (messageObject.messageOwner.post) {
                                 if (messageObject.isMediaEmpty()) {
                                     if (!shortMessage && messageObject.messageOwner.message != null && messageObject.messageOwner.message.length() != 0) {
                                         msg = LocaleController.formatString("NotificationMessageGroupText", R.string.NotificationMessageGroupText, name, chat.title, messageObject.messageOwner.message);
@@ -1271,6 +1273,12 @@ public class NotificationsController {
             ConnectionsManager.getInstance().resumeNetworkMaybe();
 
             MessageObject lastMessageObject = pushMessages.get(0);
+            SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Context.MODE_PRIVATE);
+            int dismissDate = preferences.getInt("dismissDate", 0);
+            if (lastMessageObject.messageOwner.date <= dismissDate) {
+                dismissNotification();
+                return;
+            }
 
             long dialog_id = lastMessageObject.getDialogId();
             long override_dialog_id = dialog_id;
@@ -1305,7 +1313,6 @@ public class NotificationsController {
             int priorityOverride;
             int vibrateOverride;
 
-            SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Context.MODE_PRIVATE);
             int notifyOverride = getNotifyOverride(preferences, override_dialog_id);
             if (!notifyAboutLast || notifyOverride == 2 || (!preferences.getBoolean("EnableAll", true) || chat_id != 0 && !preferences.getBoolean("EnableGroup", true)) && notifyOverride == 0) {
                 notifyDisabled = true;
@@ -1475,6 +1482,7 @@ public class NotificationsController {
 
             int silent = 2;
             String lastMessage = null;
+            boolean hasNewMessages = false;
             if (pushMessages.size() == 1) {
                 MessageObject messageObject = pushMessages.get(0);
                 String message = lastMessage = getStringForMessage(messageObject, false);
@@ -1499,7 +1507,7 @@ public class NotificationsController {
                 for (int i = 0; i < count; i++) {
                     MessageObject messageObject = pushMessages.get(i);
                     String message = getStringForMessage(messageObject, false);
-                    if (message == null) {
+                    if (message == null || messageObject.messageOwner.date <= dismissDate) {
                         continue;
                     }
                     if (silent == 2) {
@@ -1521,10 +1529,26 @@ public class NotificationsController {
                 mBuilder.setStyle(inboxStyle);
             }
 
+            Intent dismissIntent = new Intent(ApplicationLoader.applicationContext, NotificationDismissReceiver.class);
+            dismissIntent.putExtra("messageDate", lastMessageObject.messageOwner.date);
+            mBuilder.setDeleteIntent(PendingIntent.getBroadcast(ApplicationLoader.applicationContext, 1, dismissIntent, PendingIntent.FLAG_UPDATE_CURRENT));
+
             if (photoPath != null) {
                 BitmapDrawable img = ImageLoader.getInstance().getImageFromMemory(photoPath, null, "50_50");
                 if (img != null) {
                     mBuilder.setLargeIcon(img.getBitmap());
+                } else {
+                    try {
+                        float scaleFactor = 160.0f / AndroidUtilities.dp(50);
+                        BitmapFactory.Options options = new BitmapFactory.Options();
+                        options.inSampleSize = scaleFactor < 1 ? 1 : (int) scaleFactor;
+                        Bitmap bitmap = BitmapFactory.decodeFile(FileLoader.getPathToAttach(photoPath, true).toString(), options);
+                        if (bitmap != null) {
+                            mBuilder.setLargeIcon(bitmap);
+                        }
+                    } catch (Throwable e) {
+                        //ignore
+                    }
                 }
             }
 
@@ -1742,6 +1766,7 @@ public class NotificationsController {
                     .setSmallIcon(R.drawable.notification)
                     .setGroup("messages")
                     .setContentText(text)
+                    .setAutoCancel(true)
                     .setColor(0xff2ca5e0)
                     .setGroupSummary(false)
                     .setContentIntent(contentIntent)

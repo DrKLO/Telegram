@@ -41,6 +41,7 @@ import android.widget.TextView;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ChatObject;
+import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.ImageLoader;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
@@ -59,8 +60,6 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.Adapters.DialogsAdapter;
 import org.telegram.ui.Adapters.DialogsSearchAdapter;
-import org.telegram.messenger.AnimationCompat.ObjectAnimatorProxy;
-import org.telegram.messenger.AnimationCompat.ViewProxy;
 import org.telegram.ui.Cells.HintDialogCell;
 import org.telegram.ui.Cells.ProfileSearchCell;
 import org.telegram.ui.Cells.UserCell;
@@ -244,7 +243,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     if (!onlySelect) {
                         floatingButton.setVisibility(View.VISIBLE);
                         floatingHidden = true;
-                        ViewProxy.setTranslationY(floatingButton, AndroidUtilities.dp(100));
+                        floatingButton.setTranslationY(AndroidUtilities.dp(100));
                         hideFloatingButton(false);
                     }
                     if (listView.getAdapter() != dialogsAdapter) {
@@ -323,6 +322,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         listView.setItemAnimator(null);
         listView.setInstantClick(true);
         listView.setLayoutAnimation(null);
+        listView.setTag(4);
         layoutManager = new LinearLayoutManager(context) {
             @Override
             public boolean supportsPredictiveItemAnimations() {
@@ -331,9 +331,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         };
         layoutManager.setOrientation(LinearLayoutManager.VERTICAL);
         listView.setLayoutManager(layoutManager);
-        if (Build.VERSION.SDK_INT >= 11) {
-            listView.setVerticalScrollbarPosition(LocaleController.isRTL ? ListView.SCROLLBAR_POSITION_LEFT : ListView.SCROLLBAR_POSITION_RIGHT);
-        }
+        listView.setVerticalScrollbarPosition(LocaleController.isRTL ? ListView.SCROLLBAR_POSITION_LEFT : ListView.SCROLLBAR_POSITION_RIGHT);
         frameLayout.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
         listView.setOnItemClickListener(new RecyclerListView.OnItemClickListener() {
             @Override
@@ -345,7 +343,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 int message_id = 0;
                 RecyclerView.Adapter adapter = listView.getAdapter();
                 if (adapter == dialogsAdapter) {
-                    TLRPC.Dialog dialog = dialogsAdapter.getItem(position);
+                    TLRPC.TL_dialog dialog = dialogsAdapter.getItem(position);
                     if (dialog == null) {
                         return;
                     }
@@ -482,8 +480,8 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     }
                     return false;
                 }
-                TLRPC.Dialog dialog;
-                ArrayList<TLRPC.Dialog> dialogs = getDialogsArray();
+                TLRPC.TL_dialog dialog;
+                ArrayList<TLRPC.TL_dialog> dialogs = getDialogsArray();
                 if (position < 0 || position >= dialogs.size()) {
                     return false;
                 }
@@ -494,7 +492,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 int lower_id = (int) selectedDialog;
                 int high_id = (int) (selectedDialog >> 32);
 
-                if (dialog instanceof TLRPC.TL_dialogChannel) {
+                if (DialogObject.isChannel(dialog)) {
                     final TLRPC.Chat chat = MessagesController.getInstance().getChat(-lower_id);
                     CharSequence items[];
                     if (chat != null && chat.megagroup) {
@@ -898,7 +896,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             floatingButton.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
                 @Override
                 public void onGlobalLayout() {
-                    ViewProxy.setTranslationY(floatingButton, floatingHidden ? AndroidUtilities.dp(100) : 0);
+                    floatingButton.setTranslationY(floatingHidden ? AndroidUtilities.dp(100) : 0);
                     floatingButton.setClickable(!floatingHidden);
                     if (floatingButton != null) {
                         if (Build.VERSION.SDK_INT < 16) {
@@ -1010,7 +1008,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         }
     }
 
-    private ArrayList<TLRPC.Dialog> getDialogsArray() {
+    private ArrayList<TLRPC.TL_dialog> getDialogsArray() {
         if (dialogsType == 0) {
             return MessagesController.getInstance().dialogs;
         } else if (dialogsType == 1) {
@@ -1042,7 +1040,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             return;
         }
         floatingHidden = hide;
-        ObjectAnimatorProxy animator = ObjectAnimatorProxy.ofFloatProxy(floatingButton, "translationY", floatingHidden ? AndroidUtilities.dp(100) : 0).setDuration(300);
+        ObjectAnimator animator = ObjectAnimator.ofFloat(floatingButton, "translationY", floatingHidden ? AndroidUtilities.dp(100) : 0).setDuration(300);
         animator.setInterpolator(floatingInterpolator);
         floatingButton.setClickable(!hide);
         animator.start();

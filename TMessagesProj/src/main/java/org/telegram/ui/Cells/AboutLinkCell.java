@@ -195,7 +195,13 @@ public class AboutLinkCell extends FrameLayout {
         if (pressedLink != null) {
             canvas.drawPath(urlPath, urlPaint);
         }
-        textLayout.draw(canvas);
+        try {
+            if (textLayout != null) {
+                textLayout.draw(canvas);
+            }
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
         canvas.restore();
     }
 }

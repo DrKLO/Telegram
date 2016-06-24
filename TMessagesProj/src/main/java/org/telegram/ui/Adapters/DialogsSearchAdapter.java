@@ -48,6 +48,7 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class DialogsSearchAdapter extends BaseSearchAdapterRecycler {
 
@@ -113,7 +114,7 @@ public class DialogsSearchAdapter extends BaseSearchAdapterRecycler {
             HintDialogCell cell = (HintDialogCell) holder.itemView;
 
             TLRPC.TL_topPeer peer = SearchQuery.hints.get(position);
-            TLRPC.Dialog dialog = new TLRPC.Dialog();
+            TLRPC.TL_dialog dialog = new TLRPC.TL_dialog();
             TLRPC.Chat chat = null;
             TLRPC.User user = null;
             int did = 0;
@@ -227,8 +228,17 @@ public class DialogsSearchAdapter extends BaseSearchAdapterRecycler {
                                 if (req.offset_id == 0) {
                                     searchResultMessages.clear();
                                 }
-                                for (TLRPC.Message message : res.messages) {
+                                for (int a = 0; a < res.messages.size(); a++) {
+                                    TLRPC.Message message = res.messages.get(a);
                                     searchResultMessages.add(new MessageObject(message, null, false));
+                                    long dialog_id = MessageObject.getDialogId(message);
+                                    ConcurrentHashMap<Long, Integer> read_max = message.out ? MessagesController.getInstance().dialogs_read_outbox_max : MessagesController.getInstance().dialogs_read_inbox_max;
+                                    Integer value = read_max.get(dialog_id);
+                                    if (value == null) {
+                                        value = MessagesStorage.getInstance().getDialogReadMax(message.out, dialog_id);
+                                        read_max.put(dialog_id, value);
+                                    }
+                                    message.unread = value < message.id;
                                 }
                                 messagesSearchEndReached = res.messages.size() != 20;
                                 notifyDataSetChanged();
@@ -958,6 +968,7 @@ public class DialogsSearchAdapter extends BaseSearchAdapterRecycler {
                         return super.onInterceptTouchEvent(e);
                     }
                 };
+                horizontalListView.setTag(9);
                 horizontalListView.setItemAnimator(null);
                 horizontalListView.setLayoutAnimation(null);
                 LinearLayoutManager layoutManager = new LinearLayoutManager(mContext) {

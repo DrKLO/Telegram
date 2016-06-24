@@ -19,7 +19,6 @@ import android.graphics.Shader;
 import android.view.View;
 
 import org.telegram.messenger.FileLog;
-import org.telegram.messenger.AnimationCompat.ViewProxy;
 
 public class ClippingImageView extends View {
 
@@ -67,10 +66,10 @@ public class ClippingImageView extends View {
     public void setAnimationProgress(float progress) {
         animationProgress = progress;
 
-        ViewProxy.setScaleX(this, animationValues[0][0] + (animationValues[1][0] - animationValues[0][0]) * animationProgress);
-        ViewProxy.setScaleY(this, animationValues[0][1] + (animationValues[1][1] - animationValues[0][1]) * animationProgress);
-        ViewProxy.setTranslationX(this, animationValues[0][2] + (animationValues[1][2] - animationValues[0][2]) * animationProgress);
-        ViewProxy.setTranslationY(this, animationValues[0][3] + (animationValues[1][3] - animationValues[0][3]) * animationProgress);
+        setScaleX(animationValues[0][0] + (animationValues[1][0] - animationValues[0][0]) * animationProgress);
+        setScaleY(animationValues[0][1] + (animationValues[1][1] - animationValues[0][1]) * animationProgress);
+        setTranslationX(animationValues[0][2] + (animationValues[1][2] - animationValues[0][2]) * animationProgress);
+        setTranslationY(animationValues[0][3] + (animationValues[1][3] - animationValues[0][3]) * animationProgress);
         setClipHorizontal((int) (animationValues[0][4] + (animationValues[1][4] - animationValues[0][4]) * animationProgress));
         setClipTop((int) (animationValues[0][5] + (animationValues[1][5] - animationValues[0][5]) * animationProgress));
         setClipBottom((int) (animationValues[0][6] + (animationValues[1][6] - animationValues[0][6]) * animationProgress));
@@ -108,7 +107,7 @@ public class ClippingImageView extends View {
             return;
         }
         if (bmp != null) {
-            float scaleY = ViewProxy.getScaleY(this);
+            float scaleY = getScaleY();
             canvas.save();
 
             if (needRadius) {

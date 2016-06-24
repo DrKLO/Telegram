@@ -12,7 +12,6 @@ import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.os.Build;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
@@ -132,14 +131,9 @@ public class GroupInviteActivity extends BaseFragment implements NotificationCen
                         return;
                     }
                     try {
-                        if (Build.VERSION.SDK_INT < 11) {
-                            android.text.ClipboardManager clipboard = (android.text.ClipboardManager) ApplicationLoader.applicationContext.getSystemService(Context.CLIPBOARD_SERVICE);
-                            clipboard.setText(invite.link);
-                        } else {
-                            android.content.ClipboardManager clipboard = (android.content.ClipboardManager) ApplicationLoader.applicationContext.getSystemService(Context.CLIPBOARD_SERVICE);
-                            android.content.ClipData clip = android.content.ClipData.newPlainText("label", invite.link);
-                            clipboard.setPrimaryClip(clip);
-                        }
+                        android.content.ClipboardManager clipboard = (android.content.ClipboardManager) ApplicationLoader.applicationContext.getSystemService(Context.CLIPBOARD_SERVICE);
+                        android.content.ClipData clip = android.content.ClipData.newPlainText("label", invite.link);
+                        clipboard.setPrimaryClip(clip);
                         Toast.makeText(getParentActivity(), LocaleController.getString("LinkCopied", R.string.LinkCopied), Toast.LENGTH_SHORT).show();
                     } catch (Exception e) {
                         FileLog.e("tmessages", e);

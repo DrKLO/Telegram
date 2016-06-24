@@ -12,14 +12,14 @@ import android.content.Context;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.ui.Components.FrameLayoutFixed;
 import org.telegram.ui.Components.LayoutHelper;
 
-public class PhotoEditToolCell extends FrameLayoutFixed {
+public class PhotoEditToolCell extends FrameLayout {
 
     private ImageView iconImage;
     private TextView nameTextView;

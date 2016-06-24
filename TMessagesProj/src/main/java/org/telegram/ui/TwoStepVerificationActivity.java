@@ -19,7 +19,6 @@ import android.text.InputType;
 import android.text.method.PasswordTransformationMethod;
 import android.util.TypedValue;
 import android.view.ActionMode;
-import android.view.ContextMenu;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.Menu;
@@ -219,30 +218,22 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
                 return false;
             }
         });
-        if (android.os.Build.VERSION.SDK_INT < 11) {
-            passwordEditText.setOnCreateContextMenuListener(new View.OnCreateContextMenuListener() {
-                public void onCreateContextMenu(ContextMenu menu, View v, ContextMenu.ContextMenuInfo menuInfo) {
-                    menu.clear();
-                }
-            });
-        } else {
-            passwordEditText.setCustomSelectionActionModeCallback(new ActionMode.Callback() {
-                public boolean onPrepareActionMode(ActionMode mode, Menu menu) {
-                    return false;
-                }
+        passwordEditText.setCustomSelectionActionModeCallback(new ActionMode.Callback() {
+            public boolean onPrepareActionMode(ActionMode mode, Menu menu) {
+                return false;
+            }
 
-                public void onDestroyActionMode(ActionMode mode) {
-                }
+            public void onDestroyActionMode(ActionMode mode) {
+            }
 
-                public boolean onCreateActionMode(ActionMode mode, Menu menu) {
-                    return false;
-                }
+            public boolean onCreateActionMode(ActionMode mode, Menu menu) {
+                return false;
+            }
 
-                public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
-                    return false;
-                }
-            });
-        }
+            public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
+                return false;
+            }
+        });
 
         bottomTextView = new TextView(context);
         bottomTextView.setTextColor(0xff757575);

@@ -400,6 +400,9 @@ public class StickerPreviewViewer {
     }
 
     private void onDraw(Canvas canvas) {
+        if (containerView == null || backgroundDrawable == null) {
+            return;
+        }
         backgroundDrawable.setAlpha((int) (180 * showProgress));
         backgroundDrawable.setBounds(0, 0, containerView.getWidth(), containerView.getHeight());
         backgroundDrawable.draw(canvas);

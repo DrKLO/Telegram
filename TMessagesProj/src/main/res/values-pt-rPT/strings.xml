@@ -69,6 +69,8 @@
     <string name="ChatHints">CONVERSAS</string>
     <string name="ChatHintsDelete">Apagar %1$s das sugestões?</string>
     <string name="LinkPreview">Prévia do link</string>
+    <string name="Draft">Rascunho</string>
+    <string name="HistoryCleared">O histórico foi apagado</string>
     <!--channels-->
     <string name="GroupType">Tipo de Grupo</string>
     <string name="ChannelType">Tipo de canal</string>
@@ -102,13 +104,11 @@
     <string name="ActionPinnedGeo">un1 fixou um mapa</string>
     <string name="ActionPinnedGif">un1 fixou um GIF</string>
     <string name="ActionPinnedMusic">un1 fixou uma música</string>
-    <string name="ActionMigrateFromGroup">Este grupo foi atualizado para um supergrupo</string>
-    <string name="ActionMigrateFromGroupNotify">%1$s foi atualizado para um supergrupo</string>
+    <string name="ActionMigrateFromGroup">Esse grupo foi convertido para um supergrupo</string>
+    <string name="ActionMigrateFromGroupNotify">%1$s foi convertido a um supergrupo</string>
     <string name="NoBlockedGroup">Usuários bloqueados são removidos do grupo e só podem voltar se convidados por um administrador. Convites por link não funcionam para eles.</string>
     <string name="NewChannel">Novo Canal</string>
     <string name="EnterChannelName">Nome do canal</string>
-    <string name="Comments">Comentários</string>
-    <string name="CommentsInfo">Se você habilitar comentários, pessoas poderão discutir seu post no canal.</string>
     <string name="AddMutual">Adicionar contatos no canal</string>
     <string name="ChannelUsernameHelp">Pessoas podem compartilhar esse link com outros e encontrar seu canal usando a busca do Telegram.</string>
     <string name="MegaUsernameHelp">Pessoas podem compartilhar esse link com outros e encontrar o seu grupo usando a busca do Telegram.</string>
@@ -133,11 +133,8 @@
     <string name="LeaveChannelMenu">Sair do Canal</string>
     <string name="ChannelSettings">Configurações</string>
     <string name="ChannelJoin">ENTRAR</string>
-    <string name="OpenChannelProfile">Info do Canal</string>
     <string name="ChannelBroadcast">Transmissão</string>
     <string name="ChannelSilentBroadcast">Mensagem Silenciosa</string>
-    <string name="ChannelComment">Comentário</string>
-    <string name="ShowDiscussion">mostrar comentários</string>
     <string name="ChannelAlertTitle">O que é um Canal?</string>
     <string name="ChannelAlertText">Canais são uma nova ferramenta para transmissão de suas mensagens para grandes audiências.</string>
     <string name="ChannelAlertCreate">CRIAR CANAL</string>
@@ -463,13 +460,13 @@
     <string name="DeleteAndExit">Apagar e sair do grupo</string>
     <string name="Notifications">Notificações</string>
     <string name="KickFromGroup">Remover do grupo</string>
-    <string name="UpgradeGroup">Atualizar para Supergrupo</string>
+    <string name="UpgradeGroup">Converter a Supergrupo</string>
     <string name="ConvertGroup">Converter a Supergrupo</string>
     <string name="ConvertGroupMenu">Converter a supergrupo</string>
     <string name="ConvertGroupAlertWarning">Atenção</string>
     <string name="ConvertGroupAlert">Essa ação é irreversível. Não é possível voltar de um supergrupo para um grupo normal.</string>
-    <string name="ConvertGroupInfo"><![CDATA[<b>]]>Limite de membros alcançado.<![CDATA[</b>]]>\n\nPara ir além do limite e ter funções adicionais, atualize para um supergrupo:\n\n• Supergrupos podem ter até %1$s\n• Novos membros podem visualizar todo o histórico\n• Mensagens apagadas desaparecerão para todos\n• Membros podem editar as próprias mensagens\n• Criador pode definir um link público para o grupo</string>
-    <string name="ConvertGroupInfo2"><![CDATA[<b>]]>Em supergroupos:<![CDATA[</b>]]>\n\n• Novos membros podem visualizar todo o histórico\n• Mensagens apagadas desaparecerão para todos\n• Membros podem editar as próprias mensagens\n• Criador pode definir um link público para o grupo</string>
+    <string name="ConvertGroupInfo"><![CDATA[<b>]]>Limite de membros atingido.<![CDATA[</b>]]>\n\nPara ir além do limite e ter funções adcionais, converta para um supergrupo:\n\n• Supergrupos podem ter até %1$s\n• Novos membros veêm todo o histórico de conversas\n• Administradores deletam mensagens para todos\n• O criador pode definir um link público para o grupo</string>
+    <string name="ConvertGroupInfo2"><![CDATA[<b>]]>Em supergrupos:<![CDATA[</b>]]>\n\n• Novos membros podem visualizar todo o histórico\n• Mensagens apagadas desaparecerão para todos\n• Criador pode definir um link público para o grupo</string>
     <string name="ConvertGroupInfo3"><![CDATA[<b>]]>Nota:<![CDATA[</b>]]> essa ação não pode ser desfeita.</string>
     <!--contact info view-->
     <string name="ShareContact">Compartilhar</string>
@@ -1038,12 +1035,6 @@
     <string name="messages_few">%1$d mensagens</string>
     <string name="messages_many">%1$d mensagens</string>
     <string name="messages_other">%1$d mensagens</string>
-    <string name="comments_zero">%1$d comentários</string>
-    <string name="comments_one">%1$d comentário</string>
-    <string name="comments_two">%1$d comentários</string>
-    <string name="comments_few">%1$d comentários</string>
-    <string name="comments_many">%1$d comentários</string>
-    <string name="comments_other">%1$d comentários</string>
     <string name="items_zero">nenhum item</string>
     <string name="items_one">%1$d item</string>
     <string name="items_two">%1$d itens</string>

@@ -69,6 +69,8 @@
     <string name="ChatHints">CHATS</string>
     <string name="ChatHintsDelete">Delete %1$s from suggestions?</string>
     <string name="LinkPreview">Link preview</string>
+    <string name="Draft">Draft</string>
+    <string name="HistoryCleared">History was cleared</string>
     <!--channels-->
     <string name="GroupType">Group Type</string>
     <string name="ChannelType">Channel Type</string>
@@ -107,8 +109,6 @@
     <string name="NoBlockedGroup">Blocked users are removed from the group and can only come back if invited by an admin. Invite links don\'t work for them.</string>
     <string name="NewChannel">New Channel</string>
     <string name="EnterChannelName">Channel name</string>
-    <string name="Comments">Comments</string>
-    <string name="CommentsInfo">If you enable comments, people will be able to discuss your posts in the channel.</string>
     <string name="AddMutual">Add contacts to your channel</string>
     <string name="ChannelUsernameHelp">People can share this link with others and find your channel using Telegram search.</string>
     <string name="MegaUsernameHelp">People can share this link with others and find your group using Telegram search.</string>
@@ -133,11 +133,8 @@
     <string name="LeaveChannelMenu">Leave channel</string>
     <string name="ChannelSettings">Settings</string>
     <string name="ChannelJoin">JOIN</string>
-    <string name="OpenChannelProfile">Channel info</string>
     <string name="ChannelBroadcast">Broadcast</string>
     <string name="ChannelSilentBroadcast">Silent Broadcast</string>
-    <string name="ChannelComment">Comment</string>
-    <string name="ShowDiscussion">show comments</string>
     <string name="ChannelAlertTitle">What is a Channel?</string>
     <string name="ChannelAlertText">Channels are a new tool for broadcasting your messages to large audiences.</string>
     <string name="ChannelAlertCreate">CREATE CHANNEL</string>
@@ -468,8 +465,8 @@
     <string name="ConvertGroupMenu">Convert to supergroup</string>
     <string name="ConvertGroupAlertWarning">Warning</string>
     <string name="ConvertGroupAlert">This action is irreversible. It is not possible to downgrade a supergroup to a regular group.</string>
-    <string name="ConvertGroupInfo"><![CDATA[<b>]]>Members limit reached.<![CDATA[</b>]]>\n\nTo go over the limit and get additional features, upgrade to a supergroup:\n\n• Supergroups can get up to %1$s\n• New members can see the full message history\n• Deleted messages will disappear for all members\n• Members can edit their own messages\n• Creator can set a public link for the group</string>
-    <string name="ConvertGroupInfo2"><![CDATA[<b>]]>In supergroups:<![CDATA[</b>]]>\n\n• New members can see the full message history\n• Deleted messages will disappear for all members\n• Members can edit their own messages\n• Creator can set a public link for the group</string>
+    <string name="ConvertGroupInfo"><![CDATA[<b>]]>Members limit reached.<![CDATA[</b>]]>\n\nTo go over the limit and get additional features, upgrade to a supergroup:\n\n• Supergroups can get up to %1$s\n• New members can see the full message history\n• Deleted messages will disappear for all members\n• Admins can pin important messages\n• Creator can set a public link for the group</string>
+    <string name="ConvertGroupInfo2"><![CDATA[<b>]]>In supergroups:<![CDATA[</b>]]>\n\n• New members can see the full message history\n• Deleted messages will disappear for all members\n• Admins can pin important messages\n• Creator can set a public link for the group</string>
     <string name="ConvertGroupInfo3"><![CDATA[<b>]]>Note:<![CDATA[</b>]]> this action can\'t be undone.</string>
     <!--contact info view-->
     <string name="ShareContact">Share</string>
@@ -1038,12 +1035,6 @@
     <string name="messages_few">%1$d messages</string>
     <string name="messages_many">%1$d messages</string>
     <string name="messages_other">%1$d messages</string>
-    <string name="comments_zero">%1$d comments</string>
-    <string name="comments_one">%1$d comment</string>
-    <string name="comments_two">%1$d comments</string>
-    <string name="comments_few">%1$d comments</string>
-    <string name="comments_many">%1$d comments</string>
-    <string name="comments_other">%1$d comments</string>
     <string name="items_zero">no items</string>
     <string name="items_one">%1$d item</string>
     <string name="items_two">%1$d items</string>

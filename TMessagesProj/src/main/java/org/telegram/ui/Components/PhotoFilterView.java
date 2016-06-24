@@ -8,6 +8,9 @@
 
 package org.telegram.ui.Components;
 
+import android.animation.Animator;
+import android.animation.AnimatorSet;
+import android.animation.ObjectAnimator;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Bitmap;
@@ -36,10 +39,7 @@ import org.telegram.messenger.DispatchQueue;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
-import org.telegram.messenger.AnimationCompat.AnimatorListenerAdapterProxy;
-import org.telegram.messenger.AnimationCompat.AnimatorSetProxy;
-import org.telegram.messenger.AnimationCompat.ObjectAnimatorProxy;
-import org.telegram.messenger.AnimationCompat.ViewProxy;
+import org.telegram.messenger.AnimatorListenerAdapterProxy;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.PhotoEditToolCell;
 
@@ -2090,9 +2090,8 @@ public class PhotoFilterView extends FrameLayout {
         layoutManager.setOrientation(LinearLayoutManager.HORIZONTAL);
         recyclerListView.setLayoutManager(layoutManager);
         recyclerListView.setClipToPadding(false);
-        if (Build.VERSION.SDK_INT >= 9) {
-            recyclerListView.setOverScrollMode(RecyclerListView.OVER_SCROLL_NEVER);
-        }
+        recyclerListView.setTag(12);
+        recyclerListView.setOverScrollMode(RecyclerListView.OVER_SCROLL_NEVER);
         recyclerListView.setAdapter(toolsAdapter = new ToolsAdapter(context));
         toolsView.addView(recyclerListView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 60, Gravity.LEFT | Gravity.TOP));
         recyclerListView.setOnItemClickListener(new RecyclerListView.OnItemClickListener() {
@@ -2595,26 +2594,24 @@ public class PhotoFilterView extends FrameLayout {
             curvesControl.setVisibility(INVISIBLE);
         }
 
-        AnimatorSetProxy animatorSet = new AnimatorSetProxy();
+        AnimatorSet animatorSet = new AnimatorSet();
         animatorSet.playTogether(
-                ObjectAnimatorProxy.ofFloat(viewFrom, "translationY", 0, AndroidUtilities.dp(126))
+                ObjectAnimator.ofFloat(viewFrom, "translationY", 0, AndroidUtilities.dp(126))
         );
         animatorSet.addListener(new AnimatorListenerAdapterProxy() {
             @Override
-            public void onAnimationEnd(Object animation) {
-                viewFrom.clearAnimation();
+            public void onAnimationEnd(Animator animation) {
                 viewFrom.setVisibility(GONE);
                 viewTo.setVisibility(VISIBLE);
-                ViewProxy.setTranslationY(viewTo, AndroidUtilities.dp(126));
+                viewTo.setTranslationY(AndroidUtilities.dp(126));
 
-                AnimatorSetProxy animatorSet = new AnimatorSetProxy();
+                AnimatorSet animatorSet = new AnimatorSet();
                 animatorSet.playTogether(
-                        ObjectAnimatorProxy.ofFloat(viewTo, "translationY", 0)
+                        ObjectAnimator.ofFloat(viewTo, "translationY", 0)
                 );
                 animatorSet.addListener(new AnimatorListenerAdapterProxy() {
                     @Override
-                    public void onAnimationEnd(Object animation) {
-                        viewTo.clearAnimation();
+                    public void onAnimationEnd(Animator animation) {
                         if (selectedTool == enhanceTool) {
                             checkEnhance();
                         }
@@ -2799,10 +2796,10 @@ public class PhotoFilterView extends FrameLayout {
 
     private void checkEnhance() {
         if (enhanceValue == 0) {
-            AnimatorSetProxy animatorSetProxy = new AnimatorSetProxy();
-            animatorSetProxy.setDuration(200);
-            animatorSetProxy.playTogether(ObjectAnimatorProxy.ofInt(valueSeekBar, "progress", 50));
-            animatorSetProxy.start();
+            AnimatorSet AnimatorSet = new AnimatorSet();
+            AnimatorSet.setDuration(200);
+            AnimatorSet.playTogether(ObjectAnimator.ofInt(valueSeekBar, "progress", 50));
+            AnimatorSet.start();
         }
     }
 

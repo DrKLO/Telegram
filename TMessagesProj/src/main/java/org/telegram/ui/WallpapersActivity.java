@@ -20,7 +20,6 @@ import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
 import android.provider.MediaStore;
 import android.view.Gravity;
@@ -192,14 +191,13 @@ public class WallpapersActivity extends BaseFragment implements NotificationCent
 
         RecyclerListView listView = new RecyclerListView(context);
         listView.setClipToPadding(false);
+        listView.setTag(8);
         listView.setPadding(AndroidUtilities.dp(40), 0, AndroidUtilities.dp(40), 0);
         LinearLayoutManager layoutManager = new LinearLayoutManager(context);
         layoutManager.setOrientation(LinearLayoutManager.HORIZONTAL);
         listView.setLayoutManager(layoutManager);
         listView.setDisallowInterceptTouchEvents(true);
-        if (Build.VERSION.SDK_INT >= 9) {
-            listView.setOverScrollMode(RecyclerListView.OVER_SCROLL_NEVER);
-        }
+        listView.setOverScrollMode(RecyclerListView.OVER_SCROLL_NEVER);
         listView.setAdapter(listAdapter = new ListAdapter(context));
         frameLayout.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 102, Gravity.LEFT | Gravity.BOTTOM));
         listView.setOnItemClickListener(new RecyclerListView.OnItemClickListener() {

@@ -39,7 +39,7 @@
     <string name="Yesterday">ayer</string>
     <string name="NoResult">Sin resultados</string>
     <string name="NoChats">Aún sin chats...</string>
-    <string name="NoChatsHelp">Envía mensajes pulsando el botón para\nredactar, en la parte inferior derecha,\no pulsa el botón menú para más opciones.</string>
+    <string name="NoChatsHelp">Envía mensajes tocando el botón para\nredactar, en la parte inferior derecha,\no pulsa el botón menú para más opciones.</string>
     <string name="WaitingForNetwork">Esperando red...</string>
     <string name="Connecting">Conectando...</string>
     <string name="Updating">Actualizando...</string>
@@ -56,7 +56,7 @@
     <string name="HiddenName">Cuenta eliminada</string>
     <string name="SelectChat">Elige el chat</string>
     <string name="PhotoTip">Mantén pulsado para ver</string>
-    <string name="CompatibilityChat">%1$s usa una versión antigua de Telegram, así que las fotos secretas serán mostradas en un modo de compatibilidad.\n\nCuando %2$s actualice Telegram, las fotos con autodestrucción de 1 minuto o menos funcionarán con el modo \'Mantén pulsado para ver\', y te notificaremos siempre que la otra parte haga una captura de pantalla.</string>
+    <string name="CompatibilityChat">%1$s usa una versión antigua de Telegram, así que las fotos secretas serán mostradas en un modo de compatibilidad.\n\nCuando %2$s actualice Telegram, las fotos con autodestrucción de 1 minuto o menos funcionarán con el modo “Mantén pulsado para ver”, y te notificaremos siempre que la otra parte haga una captura de pantalla.</string>
     <string name="SearchMessages">MENSAJES</string>
     <string name="Search">Buscar</string>
     <string name="MuteNotifications">Silenciar notificaciones</string>
@@ -69,6 +69,8 @@
     <string name="ChatHints">CHATS</string>
     <string name="ChatHintsDelete">¿Eliminar a %1$s de las sugerencias?</string>
     <string name="LinkPreview">Vista previa del enlace</string>
+    <string name="Draft">Borrador</string>
+    <string name="HistoryCleared">Historial borrado</string>
     <!--channels-->
     <string name="GroupType">Tipo de grupo</string>
     <string name="ChannelType">Tipo de canal</string>
@@ -107,8 +109,6 @@
     <string name="NoBlockedGroup">Los usuarios bloqueados son eliminados del grupo y sólo pueden volver si son invitados por un administrador. Los enlaces de invitación no funcionan para ellos.</string>
     <string name="NewChannel">Nuevo canal</string>
     <string name="EnterChannelName">Nombre del canal</string>
-    <string name="Comments">Comentarios</string>
-    <string name="CommentsInfo">Si activas los comentarios, las personas podrán hablar de tus mensajes en el canal.</string>
     <string name="AddMutual">Añadir contactos a tu canal</string>
     <string name="ChannelUsernameHelp">Las personas pueden compartir este enlace con los demás y encontrar tu canal usando la búsqueda de Telegram.</string>
     <string name="MegaUsernameHelp">Las personas pueden compartir este enlace con los demás y encontrar tu grupo usando la búsqueda de Telegram.</string>
@@ -132,12 +132,9 @@
     <string name="LeaveChannel">Dejar canal</string>
     <string name="LeaveChannelMenu">Dejar el canal</string>
     <string name="ChannelSettings">Ajustes</string>
-    <string name="ChannelJoin">UNIRSE</string>
-    <string name="OpenChannelProfile">Información</string>
+    <string name="ChannelJoin">UNIRME</string>
     <string name="ChannelBroadcast">Difundir</string>
     <string name="ChannelSilentBroadcast">Difusión en silencio</string>
-    <string name="ChannelComment">Comentario</string>
-    <string name="ShowDiscussion">mostrar comentarios</string>
     <string name="ChannelAlertTitle">¿Qué es un canal?</string>
     <string name="ChannelAlertText">Los canales son una nueva herramienta para difundir tus mensajes a grandes audiencias.</string>
     <string name="ChannelAlertCreate">CREAR CANAL</string>
@@ -181,7 +178,7 @@
     <string name="ChannelAdminNotParticipant">Este usuario aún no se ha unido al canal. ¿Quieres invitarlo?</string>
     <string name="ChannelLinkInfo">Cualquiera que tenga Telegram instalada podrá unirse a tu canal siguiendo este enlace.</string>
     <string name="ChannelAdminsInfo">Puedes añadir administradores para que te ayuden en el canal. Mantén pulsado para eliminarlos.</string>
-    <string name="ChannelJoinTo">¿Quieres unirte al canal \'%1$s\'?</string>
+    <string name="ChannelJoinTo">¿Quieres unirte al canal “%1$s”?</string>
     <string name="ChannelCantOpenPrivate">Lo sentimos, este chat ya no es accesible.</string>
     <string name="ChannelCantOpenBanned">Lamentablemente, fuiste suspendido de participar en grupos públicos.</string>
     <string name="ChannelCantOpenNa">Lo sentimos, este chat ya no es accesible.</string>
@@ -320,7 +317,7 @@
     <string name="NobodyLikesSpamUrl">https://telegram.org/faq/es#no-puedo-enviar-mensajes-a-quienes-no-son-mis-contactos</string>
     <string name="MoreInfo">Más información</string>
     <string name="ShareSendTo">Enviar a...</string>
-    <string name="TapHereGifs">Pulsa y ve los GIF guardados</string>
+    <string name="TapHereGifs">Toca y ve los GIF guardados</string>
     <string name="PinMessage">Anclar</string>
     <string name="PinNotify">Notificar a los miembros</string>
     <string name="UnpinMessage">Desanclar</string>
@@ -383,7 +380,7 @@
     <string name="NotificationGroupKickYou">%1$s te eliminó del grupo %2$s</string>
     <string name="NotificationGroupLeftMember">%1$s dejó el grupo %2$s</string>
     <string name="NotificationContactJoined">¡%1$s se unió a Telegram!</string>
-    <string name="NotificationUnrecognizedDevice">%1$s,\nDetectamos un inicio de sesión en tu cuenta desde un nuevo dispositivo, el %2$s\n\nDispositivo: %3$s\nUbicación: %4$s\n\nSi no eras tú, puedes ir a Ajustes - Privacidad y seguridad - Sesiones activas y cerrar esa sesión.\n\nSi crees que alguien ha iniciado la sesión sin tu consentimiento, puedes activar la verificación en dos pasos, en los ajustes de privacidad y seguridad.\n\nAtentamente,\nEl equipo de Telegram</string>
+    <string name="NotificationUnrecognizedDevice">%1$s,\nDetectamos un inicio de sesión en tu cuenta desde un nuevo dispositivo, el %2$s\n\nDispositivo: %3$s\nUbicación: %4$s\n\nSi no eras tú, puedes ir a Ajustes &gt; Privacidad y seguridad &gt; Sesiones activas y cerrar esa sesión.\n\nSi crees que alguien ha iniciado la sesión sin tu consentimiento, puedes activar la verificación en dos pasos, en los ajustes de privacidad y seguridad.\n\nAtentamente,\nEl equipo de Telegram</string>
     <string name="NotificationContactNewPhoto">%1$s actualizó su foto de perfil</string>
     <string name="NotificationInvitedToGroupByLink">%1$s se unió al grupo %2$s con un enlace de invitación</string>
     <string name="Reply">Responder</string>
@@ -437,7 +434,7 @@
     <string name="EnterGroupNamePlaceholder">Nombre del grupo</string>
     <string name="GroupName">Nombre del grupo</string>
     <string name="MembersCount">%1$d/%2$d miembros</string>
-    <string name="JoinToGroup">¿Quieres unirte al chat \'%1$s\'?</string>
+    <string name="JoinToGroup">¿Quieres unirte al chat “%1$s”?</string>
     <string name="JoinToGroupErrorFull">Lo sentimos. Este grupo está lleno.</string>
     <string name="JoinToGroupErrorNotExist">Lo sentimos, este chat no existe.</string>
     <string name="LinkCopied">Enlace copiado al portapapeles</string>
@@ -468,8 +465,8 @@
     <string name="ConvertGroupMenu">Convertir en supergrupo</string>
     <string name="ConvertGroupAlertWarning">Advertencia</string>
     <string name="ConvertGroupAlert">Esta acción es irreversible. No puedes convertir un supergrupo en un grupo normal.</string>
-    <string name="ConvertGroupInfo"><![CDATA[<b>]]>Límite de miembros alcanzado.<![CDATA[</b>]]>\n\nPara superar el límite y tener características adicionales, conviértelo en un supergrupo:\n\n• Permiten hasta %1$s\n• Nuevos miembros ven todo el historial\n• Un mensaje eliminado se borra para todos\n• Un miembro puede editar sus mensajes\n• El creador puede generar un enlace público</string>
-    <string name="ConvertGroupInfo2"><![CDATA[<b>]]>En los supergrupos:<![CDATA[</b>]]>\n\n• Los nuevos miembros ven todo el historial\n• Un mensaje eliminado se borra para todos\n• Un miembro puede editar sus mensajes\n• El creador puede generar un enlace público</string>
+    <string name="ConvertGroupInfo"><![CDATA[<b>]]>Límite de miembros alcanzado.<![CDATA[</b>]]>\n\nPara superar el límite y tener características adicionales, conviértelo en un supergrupo:\n\n Permiten hasta %1$s\n• Nuevos miembros ven todo el historial\n• Un mensaje eliminado se borra para todos\n• El creador puede generar un enlace público</string>
+    <string name="ConvertGroupInfo2"><![CDATA[<b>]]>En los supergrupos:<![CDATA[</b>]]>\n\n• Los nuevos miembros ven todo el historial\n• Un mensaje eliminado se borra para todos\n• El creador puede generar un enlace público</string>
     <string name="ConvertGroupInfo3"><![CDATA[<b>]]>Importante:<![CDATA[</b>]]> Esta acción no se puede deshacer.</string>
     <!--contact info view-->
     <string name="ShareContact">Compartir</string>
@@ -508,7 +505,7 @@
     <string name="ErrorOccurred">Ocurrió un error.</string>
     <!--stickers view-->
     <string name="Stickers">Stickers</string>
-    <string name="StickersInfo">Los artistas pueden añadir sus propios packs de stickers usando el bot @stickers.\n\nLos usuarios pueden añadir stickers pulsando y eligiendo \"Añadir stickers\".</string>
+    <string name="StickersInfo">Los artistas pueden añadir sus propios packs de stickers usando el bot @stickers.\n\nLos usuarios pueden añadir stickers tocando y eligiendo “Añadir stickers”.</string>
     <string name="AddStickers">Añadir stickers</string>
     <string name="AddToStickers">Añadir a stickers</string>
     <string name="AddStickersNotFound">Stickers no encontrados</string>
@@ -552,7 +549,7 @@
     <string name="OnlyIfSilent">Sólo si está silenciado</string>
     <string name="ChatBackground">Fondo de chat</string>
     <string name="MessagesSettings">Mensajes</string>
-    <string name="SendByEnter">Enviar con \'Intro\'</string>
+    <string name="SendByEnter">Enviar con “Intro”</string>
     <string name="TerminateAllSessions">Cerrar todas las otras sesiones</string>
     <string name="Events">Eventos</string>
     <string name="ContactJoined">Un contacto se unió a Telegram</string>
@@ -603,7 +600,7 @@
     <string name="NotificationsPriorityMax">Máxima</string>
     <string name="RepeatNotificationsNever">Nunca</string>
     <string name="RepeatNotifications">Repetir notificaciones</string>
-    <string name="PhoneNumberHelp">Puedes cambiar tu número de Telegram aquí. Tu cuenta y todos tus datos de la nube — mensajes, archivos, grupos, contactos, etc., se moverán al nuevo número.\n\n<![CDATA[<b>Importante:</b>]]> Todos tus contactos de Telegram tendrán tu <![CDATA[<b>nuevo número</b>]]> añadido a sus agendas de contactos, siempre que hayan tenido tu número viejo y no los hayas bloqueado en Telegram.</string>
+    <string name="PhoneNumberHelp">Puedes cambiar tu número de Telegram aquí. Tu cuenta y todos tus datos de la nube, mensajes, archivos, grupos, contactos, etc., se moverán al nuevo número.\n\n<![CDATA[<b>Importante:</b>]]> Todos tus contactos de Telegram tendrán tu <![CDATA[<b>nuevo número</b>]]> añadido a sus agendas de contactos, siempre que hayan tenido tu número viejo y no los hayas bloqueado en Telegram.</string>
     <string name="PhoneNumberAlert">Todos tus contactos de Telegram tendrán tu número nuevo añadido a sus agendas de contactos, siempre que hayan tenido tu número viejo y no los hayas bloqueado en Telegram.</string>
     <string name="PhoneNumberChange">CAMBIAR NÚMERO</string>
     <string name="ChangePhoneNewNumber">Nuevo número</string>
@@ -655,7 +652,7 @@
     <string name="NoOtherSessionsInfo">Puedes iniciar sesión en Telegram desde otro móvil, tablet o computador, usando el mismo número de teléfono. Todos tus datos se sincronizarán al instante.</string>
     <string name="OtherSessions">Sesiones activas</string>
     <string name="SessionsInfo">Controla tus sesiones en otros dispositivos.</string>
-    <string name="TerminateSessionInfo">Pulsa una sesión para cerrarla.</string>
+    <string name="TerminateSessionInfo">Toca una sesión para cerrarla.</string>
     <string name="TerminateSessionQuestion">¿Cerrar esta sesión?</string>
     <string name="UnofficialApp">aplicación no oficial</string>
     <!--passcode view-->
@@ -938,7 +935,7 @@
     <string name="Loading">Cargando...</string>
     <string name="NoPlayerInstalled">No tienes reproductor de vídeo. Por favor, instala uno para continuar.</string>
     <string name="NoMailInstalled">Por favor, envía un correo electrónico a sms@stel.com y cuéntanos tu problema.</string>
-    <string name="NoHandleAppInstalled">No tienes aplicaciones que puedan manejar el tipo de archivo \'%1$s\'. Por favor, instala una para continuar.</string>
+    <string name="NoHandleAppInstalled">No tienes aplicaciones que puedan manejar el tipo de archivo “%1$s”. Por favor, instala una para continuar.</string>
     <string name="InviteUser">Este usuario aún no tiene Telegram. ¿Enviarle una invitación?</string>
     <string name="AreYouSure">¿Quieres hacerlo?</string>
     <string name="AddToTheGroupTitle">¿Añadir a %1$s al chat %2$s?</string>
@@ -978,7 +975,7 @@
     <string name="BotCantJoinGroups">Este bot no puede unirse a grupos.</string>
     <string name="SecretLinkPreviewAlert">¿Quieres permitir las vistas previas ampliadas en chats secretos? Ten en cuenta que son generadas en los servidores de Telegram.</string>
     <string name="SecretChatContextBotAlert">Ten en cuenta que los bots integrados son hechos por terceros. Para que funcione, los símbolos escritos después del alias del bot, son enviados al desarrollador respectivo.</string>
-    <string name="RaiseToSpeakAlert">¿Quieres habilitar \"Elevar para hablar\" para mensajes de voz?</string>
+    <string name="RaiseToSpeakAlert">¿Quieres habilitar “Elevar para hablar” para mensajes de voz?</string>
     <string name="EditMessageError">No puedes editar este mensaje.</string>
     <string name="AllowReadSms">Por favor, permite a Telegram recibir SMS, para ingresar el código automáticamente.</string>
     <string name="AllowReadCall">Por favor, permite a Telegram recibir llamadas, para ingresar el código automáticamente.</string>
@@ -1038,12 +1035,6 @@
     <string name="messages_few">%1$d mensajes</string>
     <string name="messages_many">%1$d mensajes</string>
     <string name="messages_other">%1$d mensajes</string>
-    <string name="comments_zero">%1$d comentarios</string>
-    <string name="comments_one">%1$d comentario</string>
-    <string name="comments_two">%1$d comentarios</string>
-    <string name="comments_few">%1$d comentarios</string>
-    <string name="comments_many">%1$d comentarios</string>
-    <string name="comments_other">%1$d comentarios</string>
     <string name="items_zero">Sin ítems</string>
     <string name="items_one">%1$d ítem</string>
     <string name="items_two">%1$d ítems</string>

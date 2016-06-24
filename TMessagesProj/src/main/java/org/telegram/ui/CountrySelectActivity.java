@@ -9,7 +9,6 @@
 package org.telegram.ui;
 
 import android.content.Context;
-import android.os.Build;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
@@ -88,9 +87,7 @@ public class CountrySelectActivity extends BaseFragment {
                 searching = false;
                 searchWas = false;
                 listView.setAdapter(listViewAdapter);
-                if (android.os.Build.VERSION.SDK_INT >= 11) {
-                    listView.setFastScrollAlwaysVisible(true);
-                }
+                listView.setFastScrollAlwaysVisible(true);
                 listView.setFastScrollEnabled(true);
                 listView.setVerticalScrollBarEnabled(false);
 
@@ -105,9 +102,7 @@ public class CountrySelectActivity extends BaseFragment {
                     searchWas = true;
                     if (listView != null) {
                         listView.setAdapter(searchListViewAdapter);
-                        if (android.os.Build.VERSION.SDK_INT >= 11) {
-                            listView.setFastScrollAlwaysVisible(false);
-                        }
+                        listView.setFastScrollAlwaysVisible(false);
                         listView.setFastScrollEnabled(false);
                         listView.setVerticalScrollBarEnabled(true);
                     }
@@ -171,10 +166,8 @@ public class CountrySelectActivity extends BaseFragment {
         listView.setFastScrollEnabled(true);
         listView.setScrollBarStyle(View.SCROLLBARS_OUTSIDE_OVERLAY);
         listView.setAdapter(listViewAdapter);
-        if (Build.VERSION.SDK_INT >= 11) {
-            listView.setFastScrollAlwaysVisible(true);
-            listView.setVerticalScrollbarPosition(LocaleController.isRTL ? ListView.SCROLLBAR_POSITION_LEFT : ListView.SCROLLBAR_POSITION_RIGHT);
-        }
+        listView.setFastScrollAlwaysVisible(true);
+        listView.setVerticalScrollbarPosition(LocaleController.isRTL ? ListView.SCROLLBAR_POSITION_LEFT : ListView.SCROLLBAR_POSITION_RIGHT);
         ((FrameLayout) fragmentView).addView(listView);
         layoutParams = (FrameLayout.LayoutParams) listView.getLayoutParams();
         layoutParams.width = LayoutHelper.MATCH_PARENT;

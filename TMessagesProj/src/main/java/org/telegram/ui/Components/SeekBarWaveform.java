@@ -103,7 +103,7 @@ public class SeekBarWaveform {
                     }
                 }
                 if (startX != -1 && Math.abs(x - startX) > AndroidUtilities.getPixelsInCM(0.2f, true)) {
-                    if (parentView != null) {
+                    if (parentView != null && parentView.getParent() != null) {
                         parentView.getParent().requestDisallowInterceptTouchEvent(true);
                     }
                     startDraging = true;

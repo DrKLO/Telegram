@@ -119,11 +119,6 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
             @Override
             public void onItemClick(int id) {
                 if (id == -1) {
-                    if (Build.VERSION.SDK_INT < 11) {
-                        listView.setAdapter(null);
-                        listView = null;
-                        listAdapter = null;
-                    }
                     finishFragment();
                 } else if (id == 1) {
                     if (delegate != null) {

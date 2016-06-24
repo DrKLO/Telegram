@@ -11,7 +11,6 @@ package org.telegram.ui;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
-import android.os.Build;
 import android.os.Bundle;
 import android.view.Gravity;
 import android.view.MotionEvent;
@@ -155,9 +154,7 @@ public class PrivacyUsersActivity extends BaseFragment implements NotificationCe
         listView.setDivider(null);
         listView.setDividerHeight(0);
         listView.setAdapter(listViewAdapter = new ListAdapter(context));
-        if (Build.VERSION.SDK_INT >= 11) {
-            listView.setVerticalScrollbarPosition(LocaleController.isRTL ? ListView.SCROLLBAR_POSITION_LEFT : ListView.SCROLLBAR_POSITION_RIGHT);
-        }
+        listView.setVerticalScrollbarPosition(LocaleController.isRTL ? ListView.SCROLLBAR_POSITION_LEFT : ListView.SCROLLBAR_POSITION_RIGHT);
         frameLayout.addView(listView);
         layoutParams = (FrameLayout.LayoutParams) listView.getLayoutParams();
         layoutParams.width = LayoutHelper.MATCH_PARENT;

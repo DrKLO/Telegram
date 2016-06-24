@@ -22,7 +22,7 @@ import java.util.regex.Pattern;
 
 public class Utilities {
 
-    public static Pattern pattern = Pattern.compile("[0-9]+");
+    public static Pattern pattern = Pattern.compile("[\\-0-9]+");
     public static SecureRandom random = new SecureRandom();
 
     public static volatile DispatchQueue stageQueue = new DispatchQueue("stageQueue");

@@ -38,8 +38,9 @@ public class ExtendedGridLayoutManager extends GridLayoutManager {
         int preferredRowSize = AndroidUtilities.dp(100);
 
         float totalItemSize = 0;
-        int[] weights = new int[getFlowItemCount()];
-        for (int a = 0; a < getFlowItemCount(); a++) {
+        int itemsCount = getFlowItemCount();
+        int[] weights = new int[itemsCount];
+        for (int a = 0; a < itemsCount; a++) {
             Size size = sizeForItem(a);
             totalItemSize += (size.width / size.height) * preferredRowSize;
             weights[a] = Math.round(size.width / size.height * 100);
@@ -75,7 +76,7 @@ public class ExtendedGridLayoutManager extends GridLayoutManager {
                 Size preferredSize = sizeForItem(j);
                 int width = Math.round(rowSize / summedRatios * (preferredSize.width / preferredSize.height));
                 int itemSpan;
-                if (j != n - 1) {
+                if (itemsCount < 3 || j != n - 1) {
                     itemSpan = (int) (width / viewPortAvailableSize * getSpanCount());
                     spanLeft -= itemSpan;
                 } else {

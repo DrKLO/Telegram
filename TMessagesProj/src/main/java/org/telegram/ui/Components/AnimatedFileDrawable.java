@@ -47,6 +47,7 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable {
     private boolean destroyWhenDone;
     private boolean decoderCreated;
     private File path;
+    private boolean recycleWithSecond;
 
     private BitmapShader renderingShader;
     private BitmapShader nextRenderingShader;
@@ -68,11 +69,14 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable {
     private static ScheduledThreadPoolExecutor executor = new ScheduledThreadPoolExecutor(2, new ThreadPoolExecutor.DiscardPolicy());
 
     private View parentView = null;
+    private View secondParentView = null;
 
     protected final Runnable mInvalidateTask = new Runnable() {
         @Override
         public void run() {
-            if (parentView != null) {
+            if (secondParentView != null) {
+                secondParentView.invalidate();
+            } else if (parentView != null) {
                 parentView.invalidate();
             }
         }
@@ -102,7 +106,9 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable {
                 invalidateAfter = metaData[2] - lastTimeStamp;
             }
             lastTimeStamp = metaData[2];
-            if (parentView != null) {
+            if (secondParentView != null) {
+                secondParentView.invalidate();
+            } else if (parentView != null) {
                 parentView.invalidate();
             }
         }
@@ -141,7 +147,9 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable {
     private final Runnable mStartTask = new Runnable() {
         @Override
         public void run() {
-            if (parentView != null) {
+            if (secondParentView != null) {
+                secondParentView.invalidate();
+            } else if (parentView != null) {
                 parentView.invalidate();
             }
         }
@@ -163,7 +171,18 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable {
         parentView = view;
     }
 
+    public void setSecondParentView(View view) {
+        secondParentView = view;
+        if (view == null && recycleWithSecond) {
+            recycle();
+        }
+    }
+
     public void recycle() {
+        if (secondParentView != null) {
+            recycleWithSecond = true;
+            return;
+        }
         isRunning = false;
         isRecycled = true;
         if (loadFrameTask == null) {

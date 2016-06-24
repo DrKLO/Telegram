@@ -22,7 +22,6 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.AnimationCompat.ViewProxy;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.tgnet.TLRPC;
@@ -94,13 +93,13 @@ public class StickerSetCell extends FrameLayout {
 
         textView.setText(stickersSet.set.title);
         if (stickersSet.set.disabled) {
-            ViewProxy.setAlpha(textView, 0.5f);
-            ViewProxy.setAlpha(valueTextView, 0.5f);
-            ViewProxy.setAlpha(imageView, 0.5f);
+            textView.setAlpha(0.5f);
+            valueTextView.setAlpha(0.5f);
+            imageView.setAlpha(0.5f);
         } else {
-            ViewProxy.setAlpha(textView, 1.0f);
-            ViewProxy.setAlpha(valueTextView, 1.0f);
-            ViewProxy.setAlpha(imageView, 1.0f);
+            textView.setAlpha(1.0f);
+            valueTextView.setAlpha(1.0f);
+            imageView.setAlpha(1.0f);
         }
         ArrayList<TLRPC.Document> documents = set.documents;
         if (documents != null && !documents.isEmpty()) {

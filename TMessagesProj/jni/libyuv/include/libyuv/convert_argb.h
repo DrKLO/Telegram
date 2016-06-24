@@ -12,10 +12,8 @@
 #define INCLUDE_LIBYUV_CONVERT_ARGB_H_
 
 #include "libyuv/basic_types.h"
-// TODO(fbarchard): Remove the following headers includes
-#include "libyuv/convert_from.h"
-#include "libyuv/planar_functions.h"
-#include "libyuv/rotate.h"
+
+#include "libyuv/rotate.h"  // For enum RotationMode.
 
 // TODO(fbarchard): This set of functions should exactly match convert.h
 // TODO(fbarchard): Add tests. Create random content of right size and convert

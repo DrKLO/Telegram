@@ -181,7 +181,7 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
                             }
                             MessagesStorage.getInstance().setDialogFlags(dialog_id, which == 2 ? 1 : 0);
                             editor.commit();
-                            TLRPC.Dialog dialog = MessagesController.getInstance().dialogs_dict.get(dialog_id);
+                            TLRPC.TL_dialog dialog = MessagesController.getInstance().dialogs_dict.get(dialog_id);
                             if (dialog != null) {
                                 dialog.notify_settings = new TLRPC.TL_peerNotifySettings();
                                 if (which == 2) {

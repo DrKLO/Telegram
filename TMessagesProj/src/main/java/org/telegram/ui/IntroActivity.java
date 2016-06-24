@@ -167,7 +167,6 @@ public class IntroActivity extends Activity {
                         fadeinImage.clearAnimation();
                         fadeoutImage.clearAnimation();
 
-
                         Animation outAnimation = AnimationUtils.loadAnimation(IntroActivity.this, R.anim.icon_anim_fade_out);
                         outAnimation.setAnimationListener(new Animation.AnimationListener() {
                             @Override

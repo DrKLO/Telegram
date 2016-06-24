@@ -37,7 +37,7 @@ public class SearchQuery {
     private static boolean loaded;
     private static boolean loading;
 
-    public static void cleanUp() {
+    public static void cleanup() {
         loading = false;
         loaded = false;
         hints.clear();

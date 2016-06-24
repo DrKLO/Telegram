@@ -315,7 +315,7 @@ public class LoginActivity extends BaseFragment {
         return false;
     }
 
-    public void needShowAlert(String title, String text) {
+    private void needShowAlert(String title, String text) {
         if (text == null || getParentActivity() == null) {
             return;
         }
@@ -326,7 +326,36 @@ public class LoginActivity extends BaseFragment {
         showDialog(builder.create());
     }
 
-    public void needShowProgress() {
+    private void needShowInvalidAlert(final String phoneNumber) {
+        if (getParentActivity() == null) {
+            return;
+        }
+        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+        builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
+        builder.setMessage(LocaleController.getString("InvalidPhoneNumber", R.string.InvalidPhoneNumber));
+        builder.setNeutralButton(LocaleController.getString("BotHelp", R.string.BotHelp), new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                try {
+                    PackageInfo pInfo = ApplicationLoader.applicationContext.getPackageManager().getPackageInfo(ApplicationLoader.applicationContext.getPackageName(), 0);
+                    String version = String.format(Locale.US, "%s (%d)", pInfo.versionName, pInfo.versionCode);
+
+                    Intent mailer = new Intent(Intent.ACTION_SEND);
+                    mailer.setType("message/rfc822");
+                    mailer.putExtra(Intent.EXTRA_EMAIL, new String[]{"login@stel.com"});
+                    mailer.putExtra(Intent.EXTRA_SUBJECT, "Invalid phone number: " + phoneNumber);
+                    mailer.putExtra(Intent.EXTRA_TEXT, "I'm trying to use my mobile phone number: " + phoneNumber + "\nBut Telegram says it's invalid. Please help.\n\nApp version: " + version + "\nOS version: SDK " + Build.VERSION.SDK_INT + "\nDevice Name: " + Build.MANUFACTURER + Build.MODEL + "\nLocale: " + Locale.getDefault());
+                    getParentActivity().startActivity(Intent.createChooser(mailer, "Send email..."));
+                } catch (Exception e) {
+                    needShowAlert(LocaleController.getString("AppName", R.string.AppName), LocaleController.getString("NoMailInstalled", R.string.NoMailInstalled));
+                }
+            }
+        });
+        builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), null);
+        showDialog(builder.create());
+    }
+
+    private void needShowProgress() {
         if (getParentActivity() == null || getParentActivity().isFinishing() || progressDialog != null) {
             return;
         }
@@ -358,7 +387,7 @@ public class LoginActivity extends BaseFragment {
             }
             doneButton.setVisibility(View.VISIBLE);
         }
-        if (android.os.Build.VERSION.SDK_INT > 13 && animated) {
+        if (animated) {
             final SlideView outView = views[currentViewNum];
             final SlideView newView = views[page];
             currentViewNum = page;
@@ -899,17 +928,13 @@ public class LoginActivity extends BaseFragment {
                 return;
             }
 
-            ConnectionsManager.getInstance().cleanUp();
-            TLRPC.TL_auth_sendCode req = new TLRPC.TL_auth_sendCode();
+            ConnectionsManager.getInstance().cleanup();
+            final TLRPC.TL_auth_sendCode req = new TLRPC.TL_auth_sendCode();
             String phone = PhoneFormat.stripExceptNumbers("" + codeField.getText() + phoneField.getText());
             ConnectionsManager.getInstance().applyCountryPortNumber(phone);
             req.api_hash = BuildVars.APP_HASH;
             req.api_id = BuildVars.APP_ID;
             req.phone_number = phone;
-            req.lang_code = LocaleController.getLocaleStringIso639();
-            if (req.lang_code.length() == 0) {
-                req.lang_code = "en";
-            }
             req.allow_flashcall = simcardAvailable && allowCall;
             if (req.allow_flashcall) {
                 String number = tm.getLine1Number();
@@ -939,7 +964,7 @@ public class LoginActivity extends BaseFragment {
                             } else {
                                 if (error.text != null) {
                                     if (error.text.contains("PHONE_NUMBER_INVALID")) {
-                                        needShowAlert(LocaleController.getString("AppName", R.string.AppName), LocaleController.getString("InvalidPhoneNumber", R.string.InvalidPhoneNumber));
+                                        needShowInvalidAlert(req.phone_number);
                                     } else if (error.text.contains("PHONE_CODE_EMPTY") || error.text.contains("PHONE_CODE_INVALID")) {
                                         needShowAlert(LocaleController.getString("AppName", R.string.AppName), LocaleController.getString("InvalidCode", R.string.InvalidCode));
                                     } else if (error.text.contains("PHONE_CODE_EXPIRED")) {
@@ -1513,10 +1538,10 @@ public class LoginActivity extends BaseFragment {
                                 destroyTimer();
                                 destroyCodeTimer();
                                 UserConfig.clearConfig();
-                                MessagesController.getInstance().cleanUp();
+                                MessagesController.getInstance().cleanup();
                                 UserConfig.setCurrentUser(res.user);
                                 UserConfig.saveConfig(true);
-                                MessagesStorage.getInstance().cleanUp(true);
+                                MessagesStorage.getInstance().cleanup(true);
                                 ArrayList<TLRPC.User> users = new ArrayList<>();
                                 users.add(res.user);
                                 MessagesStorage.getInstance().putUsersAndChats(users, null, true, true);
@@ -1975,10 +2000,10 @@ public class LoginActivity extends BaseFragment {
                                 TLRPC.TL_auth_authorization res = (TLRPC.TL_auth_authorization) response;
                                 ConnectionsManager.getInstance().setUserId(res.user.id);
                                 UserConfig.clearConfig();
-                                MessagesController.getInstance().cleanUp();
+                                MessagesController.getInstance().cleanup();
                                 UserConfig.setCurrentUser(res.user);
                                 UserConfig.saveConfig(true);
-                                MessagesStorage.getInstance().cleanUp(true);
+                                MessagesStorage.getInstance().cleanup(true);
                                 ArrayList<TLRPC.User> users = new ArrayList<>();
                                 users.add(res.user);
                                 MessagesStorage.getInstance().putUsersAndChats(users, null, true, true);
@@ -2198,10 +2223,10 @@ public class LoginActivity extends BaseFragment {
                                 TLRPC.TL_auth_authorization res = (TLRPC.TL_auth_authorization) response;
                                 ConnectionsManager.getInstance().setUserId(res.user.id);
                                 UserConfig.clearConfig();
-                                MessagesController.getInstance().cleanUp();
+                                MessagesController.getInstance().cleanup();
                                 UserConfig.setCurrentUser(res.user);
                                 UserConfig.saveConfig(true);
-                                MessagesStorage.getInstance().cleanUp(true);
+                                MessagesStorage.getInstance().cleanup(true);
                                 ArrayList<TLRPC.User> users = new ArrayList<>();
                                 users.add(res.user);
                                 MessagesStorage.getInstance().putUsersAndChats(users, null, true, true);
@@ -2411,10 +2436,10 @@ public class LoginActivity extends BaseFragment {
                                 final TLRPC.TL_auth_authorization res = (TLRPC.TL_auth_authorization) response;
                                 ConnectionsManager.getInstance().setUserId(res.user.id);
                                 UserConfig.clearConfig();
-                                MessagesController.getInstance().cleanUp();
+                                MessagesController.getInstance().cleanup();
                                 UserConfig.setCurrentUser(res.user);
                                 UserConfig.saveConfig(true);
-                                MessagesStorage.getInstance().cleanUp(true);
+                                MessagesStorage.getInstance().cleanup(true);
                                 ArrayList<TLRPC.User> users = new ArrayList<>();
                                 users.add(res.user);
                                 MessagesStorage.getInstance().putUsersAndChats(users, null, true, true);

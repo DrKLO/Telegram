@@ -74,7 +74,7 @@ public class AlertsCreator {
                         NotificationsController.getInstance().removeNotificationsForDialog(dialog_id);
                         MessagesStorage.getInstance().setDialogFlags(dialog_id, flags);
                         editor.commit();
-                        TLRPC.Dialog dialog = MessagesController.getInstance().dialogs_dict.get(dialog_id);
+                        TLRPC.TL_dialog dialog = MessagesController.getInstance().dialogs_dict.get(dialog_id);
                         if (dialog != null) {
                             dialog.notify_settings = new TLRPC.TL_peerNotifySettings();
                             dialog.notify_settings.mute_until = untilTime;

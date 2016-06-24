@@ -21,7 +21,6 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.AnimationCompat.ViewProxy;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.ui.Components.LayoutHelper;
@@ -136,7 +135,7 @@ public class PhotoPickerSearchCell extends LinearLayout {
                 }
             });
         } else {
-            ViewProxy.setAlpha(searchButton, 0.5f);
+            searchButton.setAlpha(0.5f);
         }
     }
 

@@ -8,6 +8,7 @@
 
 package org.telegram.messenger.query;
 
+import android.text.Spannable;
 import android.text.TextUtils;
 
 import org.telegram.SQLite.SQLiteCursor;
@@ -19,11 +20,13 @@ import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.FileLog;
+import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.NativeByteBuffer;
 import org.telegram.tgnet.RequestDelegate;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.ui.Components.URLSpanUserMention;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -435,5 +438,32 @@ public class MessagesQuery {
                 }
             }
         });
+    }
+
+    public static ArrayList<TLRPC.MessageEntity> getEntities(CharSequence message) {
+        if (message == null) {
+            return null;
+        }
+        ArrayList<TLRPC.MessageEntity> entities = null;
+        if (message instanceof Spannable) {
+            Spannable spannable = (Spannable) message;
+            URLSpanUserMention spans[] = spannable.getSpans(0, message.length(), URLSpanUserMention.class);
+            if (spans != null && spans.length > 0) {
+                entities = new ArrayList<>();
+                for (int b = 0; b < spans.length; b++) {
+                    TLRPC.TL_inputMessageEntityMentionName entity = new TLRPC.TL_inputMessageEntityMentionName();
+                    entity.user_id = MessagesController.getInputUser(Utilities.parseInt(spans[b].getURL()));
+                    if (entity.user_id != null) {
+                        entity.offset = spannable.getSpanStart(spans[b]);
+                        entity.length = Math.min(spannable.getSpanEnd(spans[b]), message.length()) - entity.offset;
+                        if (message.charAt(entity.offset + entity.length - 1) == ' ') {
+                            entity.length--;
+                        }
+                        entities.add(entity);
+                    }
+                }
+            }
+        }
+        return entities;
     }
 }

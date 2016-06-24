@@ -265,6 +265,8 @@ else
 
     else
         ifeq ($(TARGET_ARCH_ABI),x86)
+	    LOCAL_CPPFLAGS += -Dx86fix
+	    LOCAL_CFLAGS += -Dx86fix
 	    LOCAL_ARM_MODE  := arm
 	    LOCAL_SRC_FILE += \
 	    ./libyuv/source/row_x86.asm
