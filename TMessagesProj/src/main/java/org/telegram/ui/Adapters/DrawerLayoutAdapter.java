@@ -27,6 +27,16 @@ public class DrawerLayoutAdapter extends BaseAdapter {
 
     private Context mContext;
 
+    // View Types for Drawer
+    public static final int PROFILE_CELL_TYPE = 0;
+    public static final int EMPTY_CELL_TYPE = 1;
+    public static final int DIVIDER_CELL_TYPE = 2;
+    public static final int ACTION_CELL_TYPE = 3;
+    private static final int VIEW_TYPE_COUNT = 4;
+
+    // Number of list items for the view when client is activated
+    private static final int LIST_COUNT = 10;
+
     public DrawerLayoutAdapter(Context context) {
         mContext = context;
     }
@@ -38,12 +48,13 @@ public class DrawerLayoutAdapter extends BaseAdapter {
 
     @Override
     public boolean isEnabled(int i) {
-        return !(i == 0 || i == 1 || i == 5);
+        int type = getItemViewType(i);
+        return !(type == PROFILE_CELL_TYPE || type == EMPTY_CELL_TYPE || type == DIVIDER_CELL_TYPE);
     }
 
     @Override
     public int getCount() {
-        return UserConfig.isClientActivated() ? 10 : 0;
+        return UserConfig.isClientActivated() ? LIST_COUNT : 0;
     }
 
     @Override
@@ -62,40 +73,50 @@ public class DrawerLayoutAdapter extends BaseAdapter {
     }
 
     @Override
-    public View getView(int i, View view, ViewGroup viewGroup) {
-        int type = getItemViewType(i);
-        if (type == 0) {
+    public View getView(int row, View view, ViewGroup viewGroup) {
+        int type = getItemViewType(row);
+        if (type == PROFILE_CELL_TYPE) {
             if (view == null) {
                 view = new DrawerProfileCell(mContext);
             }
             ((DrawerProfileCell) view).setUser(MessagesController.getInstance().getUser(UserConfig.getClientUserId()));
-        } else if (type == 1) {
+        } else if (type == EMPTY_CELL_TYPE) {
             if (view == null) {
                 view = new EmptyCell(mContext, AndroidUtilities.dp(8));
             }
-        } else if (type == 2) {
+        } else if (type == DIVIDER_CELL_TYPE) {
             if (view == null) {
                 view = new DividerCell(mContext);
             }
-        } else if (type == 3) {
+        } else if (type == ACTION_CELL_TYPE) {
             if (view == null) {
                 view = new DrawerActionCell(mContext);
             }
             DrawerActionCell actionCell = (DrawerActionCell) view;
-            if (i == 2) {
-                actionCell.setTextAndIcon(LocaleController.getString("NewGroup", R.string.NewGroup), R.drawable.menu_newgroup);
-            } else if (i == 3) {
-                actionCell.setTextAndIcon(LocaleController.getString("NewSecretChat", R.string.NewSecretChat), R.drawable.menu_secret);
-            } else if (i == 4) {
-                actionCell.setTextAndIcon(LocaleController.getString("NewChannel", R.string.NewChannel), R.drawable.menu_broadcast);
-            } else if (i == 6) {
-                actionCell.setTextAndIcon(LocaleController.getString("Contacts", R.string.Contacts), R.drawable.menu_contacts);
-            } else if (i == 7) {
-                actionCell.setTextAndIcon(LocaleController.getString("InviteFriends", R.string.InviteFriends), R.drawable.menu_invite);
-            } else if (i == 8) {
-                actionCell.setTextAndIcon(LocaleController.getString("Settings", R.string.Settings), R.drawable.menu_settings);
-            } else if (i == 9) {
-                actionCell.setTextAndIcon(LocaleController.getString("TelegramFaq", R.string.TelegramFaq), R.drawable.menu_help);
+            switch (row) {
+                case 2:
+                    actionCell.setTextAndIcon(LocaleController.getString("NewGroup", R.string.NewGroup), R.drawable.menu_newgroup);
+                    break;
+                case 3:
+                    actionCell.setTextAndIcon(LocaleController.getString("NewSecretChat", R.string.NewSecretChat), R.drawable.menu_secret);
+                    break;
+                case 4:
+                    actionCell.setTextAndIcon(LocaleController.getString("NewChannel", R.string.NewChannel), R.drawable.menu_broadcast);
+                    break;
+                case 6:
+                    actionCell.setTextAndIcon(LocaleController.getString("Contacts", R.string.Contacts), R.drawable.menu_contacts);
+                    break;
+                case 7:
+                    actionCell.setTextAndIcon(LocaleController.getString("InviteFriends", R.string.InviteFriends), R.drawable.menu_invite);
+                    break;
+                case 8:
+                    actionCell.setTextAndIcon(LocaleController.getString("Settings", R.string.Settings), R.drawable.menu_settings);
+                    break;
+                case 9:
+                    actionCell.setTextAndIcon(LocaleController.getString("TelegramFaq", R.string.TelegramFaq), R.drawable.menu_help);
+                    break;
+                default:
+                    break;
             }
         }
 
@@ -105,18 +126,18 @@ public class DrawerLayoutAdapter extends BaseAdapter {
     @Override
     public int getItemViewType(int i) {
         if (i == 0) {
-            return 0;
+            return PROFILE_CELL_TYPE;
         } else if (i == 1) {
-            return 1;
+            return EMPTY_CELL_TYPE;
         } else if (i == 5) {
-            return 2;
+            return DIVIDER_CELL_TYPE;
         }
-        return 3;
+        return ACTION_CELL_TYPE;
     }
 
     @Override
     public int getViewTypeCount() {
-        return 4;
+        return VIEW_TYPE_COUNT;
     }
 
     @Override
