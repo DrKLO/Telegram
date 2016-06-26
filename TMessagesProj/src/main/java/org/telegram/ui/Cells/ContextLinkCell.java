@@ -233,7 +233,7 @@ public class ContextLinkCell extends View implements MediaController.FileDownloa
             }
         }
 
-        int width = 1;
+        int width;
         int w = 0;
         int h = 0;
 
@@ -268,7 +268,7 @@ public class ContextLinkCell extends View implements MediaController.FileDownloa
 
             if (mediaWebpage) {
                 width = (int) (w / (h / (float) AndroidUtilities.dp(80)));
-                if (Build.VERSION.SDK_INT >= 11 && documentAttachType == DOCUMENT_ATTACH_TYPE_GIF) {
+                if (documentAttachType == DOCUMENT_ATTACH_TYPE_GIF) {
                     currentPhotoFilterThumb = currentPhotoFilter = String.format(Locale.US, "%d_%d_b", (int) (width / AndroidUtilities.density), 80);
                 } else {
                     currentPhotoFilter = String.format(Locale.US, "%d_%d", (int) (width / AndroidUtilities.density), 80);
@@ -277,9 +277,10 @@ public class ContextLinkCell extends View implements MediaController.FileDownloa
             } else {
                 currentPhotoFilter = "52_52";
             }
+            linkImageView.setAspectFit(documentAttachType == DOCUMENT_ATTACH_TYPE_STICKER);
 
             if (documentAttachType == DOCUMENT_ATTACH_TYPE_GIF) {
-                if (documentAttach != null && Build.VERSION.SDK_INT >= 11) {
+                if (documentAttach != null) {
                     linkImageView.setImage(documentAttach, null, currentPhotoObject != null ? currentPhotoObject.location : null, currentPhotoFilter, documentAttach.size, ext, false);
                 } else {
                     linkImageView.setImage(null, url, null, null, currentPhotoObject != null ? currentPhotoObject.location : null, currentPhotoFilter, -1, ext, true);
@@ -554,7 +555,7 @@ public class ContextLinkCell extends View implements MediaController.FileDownloa
     }
 
     public void updateButtonState(boolean animated) {
-        if (!mediaWebpage || Build.VERSION.SDK_INT < 11) {
+        if (!mediaWebpage) {
             return;
         }
         String fileName = null;

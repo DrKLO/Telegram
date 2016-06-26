@@ -58,7 +58,6 @@ import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.ChatActivityEnterView;
-import org.telegram.ui.Components.FrameLayoutFixed;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.PopupAudioView;
 import org.telegram.ui.Components.RecordStatusDrawable;
@@ -105,7 +104,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
     private boolean startedMoving = false;
     private Runnable onAnimationEndRunnable = null;
 
-    private class FrameLayoutTouch extends FrameLayoutFixed {
+    private class FrameLayoutTouch extends FrameLayout {
         public FrameLayoutTouch(Context context) {
             super(context);
         }
@@ -135,7 +134,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
         }
     }
 
-    public class FrameLayoutAnimationListener extends FrameLayoutFixed {
+    public class FrameLayoutAnimationListener extends FrameLayout {
         public FrameLayoutAnimationListener(Context context) {
             super(context);
         }
@@ -360,7 +359,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
         View view = menu.addItemResource(2, R.layout.popup_count_layout);
         countText = (TextView) view.findViewById(R.id.count_text);
 
-        avatarContainer = new FrameLayoutFixed(this);
+        avatarContainer = new FrameLayout(this);
         avatarContainer.setPadding(AndroidUtilities.dp(4), 0, AndroidUtilities.dp(4), 0);
         actionBar.addView(avatarContainer);
         FrameLayout.LayoutParams layoutParams2 = (FrameLayout.LayoutParams) avatarContainer.getLayoutParams();
@@ -844,29 +843,31 @@ public class PopupNotificationActivity extends Activity implements NotificationC
             if (rightView != null) {
                 int offset = ((FrameLayout.LayoutParams) rightView.getLayoutParams()).leftMargin;
                 reuseView(rightView);
-                rightView = getViewForMessage(currentMessageNum + 1, false);
-                int widht = AndroidUtilities.displaySize.x - AndroidUtilities.dp(24);
-                FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) rightView.getLayoutParams();
-                layoutParams.gravity = Gravity.TOP | Gravity.LEFT;
-                layoutParams.height = ViewGroup.LayoutParams.MATCH_PARENT;
-                layoutParams.width = widht;
-                layoutParams.leftMargin = offset;
-                rightView.setLayoutParams(layoutParams);
-                rightView.invalidate();
+                if ((rightView = getViewForMessage(currentMessageNum + 1, false)) != null) {
+                    int widht = AndroidUtilities.displaySize.x - AndroidUtilities.dp(24);
+                    FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) rightView.getLayoutParams();
+                    layoutParams.gravity = Gravity.TOP | Gravity.LEFT;
+                    layoutParams.height = ViewGroup.LayoutParams.MATCH_PARENT;
+                    layoutParams.width = widht;
+                    layoutParams.leftMargin = offset;
+                    rightView.setLayoutParams(layoutParams);
+                    rightView.invalidate();
+                }
             }
         } else if (move == 4) {
             if (leftView != null) {
                 int offset = ((FrameLayout.LayoutParams) leftView.getLayoutParams()).leftMargin;
                 reuseView(leftView);
-                leftView = getViewForMessage(0, false);
-                int widht = AndroidUtilities.displaySize.x - AndroidUtilities.dp(24);
-                FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) leftView.getLayoutParams();
-                layoutParams.gravity = Gravity.TOP | Gravity.LEFT;
-                layoutParams.height = ViewGroup.LayoutParams.MATCH_PARENT;
-                layoutParams.width = widht;
-                layoutParams.leftMargin = offset;
-                leftView.setLayoutParams(layoutParams);
-                leftView.invalidate();
+                if ((leftView = getViewForMessage(0, false)) != null) {
+                    int widht = AndroidUtilities.displaySize.x - AndroidUtilities.dp(24);
+                    FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) leftView.getLayoutParams();
+                    layoutParams.gravity = Gravity.TOP | Gravity.LEFT;
+                    layoutParams.height = ViewGroup.LayoutParams.MATCH_PARENT;
+                    layoutParams.width = widht;
+                    layoutParams.leftMargin = offset;
+                    leftView.setLayoutParams(layoutParams);
+                    leftView.invalidate();
+                }
             }
         }
     }

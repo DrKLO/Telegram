@@ -12,7 +12,6 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
-import android.graphics.RectF;
 import android.text.Layout;
 import android.text.Spannable;
 import android.text.StaticLayout;
@@ -44,7 +43,6 @@ public class ChatActionCell extends BaseCell {
 
     private static TextPaint textPaint;
     private static Paint backPaint;
-    private static RectF rect;
 
     private URLSpan pressedLink;
 
@@ -74,7 +72,6 @@ public class ChatActionCell extends BaseCell {
             textPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
 
             backPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-            rect = new RectF();
         }
         backPaint.setColor(ApplicationLoader.getServiceMessageColor());
 

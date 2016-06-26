@@ -318,8 +318,7 @@ public class AudioPlayerActivity extends BaseFragment implements NotificationCen
             updateTitle(id == NotificationCenter.audioDidReset && (Boolean) args[1]);
         } else if (id == NotificationCenter.audioProgressDidChanged) {
             MessageObject messageObject = MediaController.getInstance().getPlayingMessageObject();
-
-            if (messageObject.isMusic()) {
+            if (messageObject != null && messageObject.isMusic()) {
                 updateProgress(messageObject);
             }
         }

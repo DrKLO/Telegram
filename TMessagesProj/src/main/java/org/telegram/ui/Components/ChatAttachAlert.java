@@ -40,10 +40,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.AnimationCompat.AnimatorListenerAdapterProxy;
-import org.telegram.messenger.AnimationCompat.AnimatorSetProxy;
-import org.telegram.messenger.AnimationCompat.ObjectAnimatorProxy;
-import org.telegram.messenger.AnimationCompat.ViewProxy;
+import org.telegram.messenger.AnimatorListenerAdapterProxy;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.ContactsController;
@@ -99,7 +96,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
     private TextView hintTextView;
     private ArrayList<InnerAnimator> innerAnimators = new ArrayList<>();
 
-    private AnimatorSetProxy currentHintAnimation;
+    private AnimatorSet currentHintAnimation;
     private boolean hintShowed;
     private Runnable hideHintRunnable;
 
@@ -351,58 +348,48 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
                     height -= AndroidUtilities.statusBarHeight;
                 }
                 int contentSize = backgroundPaddingTop + AndroidUtilities.dp(294) + (SearchQuery.inlineBots.isEmpty() ? 0 : ((int) Math.ceil(SearchQuery.inlineBots.size() / 4.0f) * AndroidUtilities.dp(100) + AndroidUtilities.dp(12)));
-                if (Build.VERSION.SDK_INT < 11) {
-                    super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(294) + backgroundPaddingTop, MeasureSpec.EXACTLY));
-                } else {
-                    int padding = contentSize == AndroidUtilities.dp(294) ? 0 : (height - AndroidUtilities.dp(294));
-                    if (padding != 0 && contentSize < height) {
-                        padding -= (height - contentSize);
-                    }
-                    if (padding == 0) {
-                        padding = backgroundPaddingTop;
-                    }
-                    if (getPaddingTop() != padding) {
-                        ignoreLayout = true;
-                        setPadding(backgroundPaddingLeft, padding, backgroundPaddingLeft, 0);
-                        ignoreLayout = false;
-                    }
-                    super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(Math.min(contentSize, height), MeasureSpec.EXACTLY));
+                int padding = contentSize == AndroidUtilities.dp(294) ? 0 : (height - AndroidUtilities.dp(294));
+                if (padding != 0 && contentSize < height) {
+                    padding -= (height - contentSize);
                 }
+                if (padding == 0) {
+                    padding = backgroundPaddingTop;
+                }
+                if (getPaddingTop() != padding) {
+                    ignoreLayout = true;
+                    setPadding(backgroundPaddingLeft, padding, backgroundPaddingLeft, 0);
+                    ignoreLayout = false;
+                }
+                super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(Math.min(contentSize, height), MeasureSpec.EXACTLY));
             }
 
             @Override
             protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
                 super.onLayout(changed, left, top, right, bottom);
-                if (Build.VERSION.SDK_INT >= 11) {
-                    updateLayout();
-                }
+                updateLayout();
             }
 
             @Override
             public void onDraw(Canvas canvas) {
-                if (Build.VERSION.SDK_INT >= 11) {
-                    if (useRevealAnimation && Build.VERSION.SDK_INT <= 19) {
-                        canvas.save();
-                        canvas.clipRect(backgroundPaddingLeft, scrollOffsetY, getMeasuredWidth() - backgroundPaddingLeft, getMeasuredHeight());
-                        if (revealAnimationInProgress) {
-                            canvas.drawCircle(revealX, revealY, revealRadius, ciclePaint);
-                        } else {
-                            canvas.drawRect(backgroundPaddingLeft, scrollOffsetY, getMeasuredWidth() - backgroundPaddingLeft, getMeasuredHeight(), ciclePaint);
-                        }
-                        canvas.restore();
+                if (useRevealAnimation && Build.VERSION.SDK_INT <= 19) {
+                    canvas.save();
+                    canvas.clipRect(backgroundPaddingLeft, scrollOffsetY, getMeasuredWidth() - backgroundPaddingLeft, getMeasuredHeight());
+                    if (revealAnimationInProgress) {
+                        canvas.drawCircle(revealX, revealY, revealRadius, ciclePaint);
                     } else {
-                        shadowDrawable.setBounds(0, scrollOffsetY - backgroundPaddingTop, getMeasuredWidth(), getMeasuredHeight());
-                        shadowDrawable.draw(canvas);
+                        canvas.drawRect(backgroundPaddingLeft, scrollOffsetY, getMeasuredWidth() - backgroundPaddingLeft, getMeasuredHeight(), ciclePaint);
                     }
+                    canvas.restore();
+                } else {
+                    shadowDrawable.setBounds(0, scrollOffsetY - backgroundPaddingTop, getMeasuredWidth(), getMeasuredHeight());
+                    shadowDrawable.draw(canvas);
                 }
             }
         };
-        if (Build.VERSION.SDK_INT < 11) {
-            containerView.setBackgroundDrawable(shadowDrawable);
-        } else {
-            containerView.setWillNotDraw(false);
-            listView.setClipToPadding(false);
-        }
+
+        listView.setTag(10);
+        containerView.setWillNotDraw(false);
+        listView.setClipToPadding(false);
         listView.setLayoutManager(layoutManager = new LinearLayoutManager(getContext()));
         layoutManager.setOrientation(LinearLayoutManager.VERTICAL);
         listView.setAdapter(adapter = new ListAdapter(context));
@@ -432,12 +419,10 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
                         ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE).edit().putBoolean("bothint", true).commit();
                     }
                 }
-                if (Build.VERSION.SDK_INT >= 11) {
-                    updateLayout();
-                }
+                updateLayout();
             }
         });
-        containerView.setPadding(backgroundPaddingLeft, Build.VERSION.SDK_INT < 11 ? backgroundPaddingTop : 0, backgroundPaddingLeft, 0);
+        containerView.setPadding(backgroundPaddingLeft, 0, backgroundPaddingLeft, 0);
 
         attachView = new FrameLayout(context) {
             @Override
@@ -471,9 +456,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
         attachPhotoRecyclerView.setPadding(AndroidUtilities.dp(8), 0, AndroidUtilities.dp(8), 0);
         attachPhotoRecyclerView.setItemAnimator(null);
         attachPhotoRecyclerView.setLayoutAnimation(null);
-        if (Build.VERSION.SDK_INT >= 9) {
-            attachPhotoRecyclerView.setOverScrollMode(RecyclerListView.OVER_SCROLL_NEVER);
-        }
+        attachPhotoRecyclerView.setOverScrollMode(RecyclerListView.OVER_SCROLL_NEVER);
         attachView.addView(attachPhotoRecyclerView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 80));
         attachPhotoLayoutManager = new LinearLayoutManager(context) {
             @Override
@@ -625,26 +608,25 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
         if (hintTextView == null) {
             return;
         }
-        currentHintAnimation = new AnimatorSetProxy();
+        currentHintAnimation = new AnimatorSet();
         currentHintAnimation.playTogether(
-                ObjectAnimatorProxy.ofFloat(hintTextView, "alpha", 0.0f)
+                ObjectAnimator.ofFloat(hintTextView, "alpha", 0.0f)
         );
         currentHintAnimation.setInterpolator(decelerateInterpolator);
         currentHintAnimation.addListener(new AnimatorListenerAdapterProxy() {
             @Override
-            public void onAnimationEnd(Object animation) {
+            public void onAnimationEnd(Animator animation) {
                 if (currentHintAnimation == null || !currentHintAnimation.equals(animation)) {
                     return;
                 }
                 currentHintAnimation = null;
                 if (hintTextView != null) {
-                    hintTextView.clearAnimation();
                     hintTextView.setVisibility(View.INVISIBLE);
                 }
             }
 
             @Override
-            public void onAnimationCancel(Object animation) {
+            public void onAnimationCancel(Animator animation) {
                 if (currentHintAnimation != null && currentHintAnimation.equals(animation)) {
                     currentHintAnimation = null;
                 }
@@ -665,14 +647,14 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
         hintShowed = true;
 
         hintTextView.setVisibility(View.VISIBLE);
-        currentHintAnimation = new AnimatorSetProxy();
+        currentHintAnimation = new AnimatorSet();
         currentHintAnimation.playTogether(
-                ObjectAnimatorProxy.ofFloat(hintTextView, "alpha", 0.0f, 1.0f)
+                ObjectAnimator.ofFloat(hintTextView, "alpha", 0.0f, 1.0f)
         );
         currentHintAnimation.setInterpolator(decelerateInterpolator);
         currentHintAnimation.addListener(new AnimatorListenerAdapterProxy() {
             @Override
-            public void onAnimationEnd(Object animation) {
+            public void onAnimationEnd(Animator animation) {
                 if (currentHintAnimation == null || !currentHintAnimation.equals(animation)) {
                     return;
                 }
@@ -690,7 +672,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
             }
 
             @Override
-            public void onAnimationCancel(Object animation) {
+            public void onAnimationCancel(Animator animation) {
                 if (currentHintAnimation != null && currentHintAnimation.equals(animation)) {
                     currentHintAnimation = null;
                 }
@@ -786,9 +768,8 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
             currentHintAnimation.cancel();
             currentHintAnimation = null;
         }
-        ViewProxy.setAlpha(hintTextView, 0.0f);
+        hintTextView.setAlpha(0.0f);
         hintTextView.setVisibility(View.INVISIBLE);
-        hintTextView.clearAnimation();
         attachPhotoLayoutManager.scrollToPositionWithOffset(0, 1000000);
         photoAttachAdapter.clearSelectedPhotos();
         baseFragment = parentFragment;
@@ -807,6 +788,9 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
     }
 
     private PhotoAttachPhotoCell getCellForIndex(int index) {
+        if (MediaController.allPhotosAlbumEntry == null) {
+            return null;
+        }
         int count = attachPhotoRecyclerView.getChildCount();
         for (int a = 0; a < count; a++) {
             View view = attachPhotoRecyclerView.getChildAt(a);
@@ -836,7 +820,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
             object.parentView = attachPhotoRecyclerView;
             object.imageReceiver = cell.getImageView().getImageReceiver();
             object.thumb = object.imageReceiver.getBitmap();
-            object.scale = ViewProxy.getScaleX(cell.getImageView());
+            object.scale = cell.getImageView().getScaleX();
             object.clipBottomAddition = (Build.VERSION.SDK_INT >= 21 ? 0 : -AndroidUtilities.statusBarHeight);
             cell.getCheckBox().setVisibility(View.GONE);
             return object;
@@ -1185,7 +1169,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
 
     @SuppressLint("NewApi")
     private void startRevealAnimation(final boolean open) {
-        ViewProxy.setTranslationY(containerView, 0);
+        containerView.setTranslationY(0);
 
         final AnimatorSet animatorSet = new AnimatorSet();
 
@@ -1258,9 +1242,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
                     currentSheetAnimation = null;
                     onRevealAnimationEnd(open);
                     containerView.invalidate();
-                    if (Build.VERSION.SDK_INT >= 11) {
-                        containerView.setLayerType(View.LAYER_TYPE_NONE, null);
-                    }
+                    containerView.setLayerType(View.LAYER_TYPE_NONE, null);
                     if (!open) {
                         containerView.setVisibility(View.INVISIBLE);
                         try {

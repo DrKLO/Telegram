@@ -20,28 +20,27 @@ import java.io.File;
 public class UserConfig {
 
     private static TLRPC.User currentUser;
-    public static boolean registeredForPush = false;
+    public static boolean registeredForPush;
     public static String pushString = "";
     public static int lastSendMessageId = -210000;
     public static int lastLocalId = -210000;
     public static int lastBroadcastId = -1;
     public static String contactsHash = "";
-    public static String importHash = "";
-    public static boolean blockedUsersLoaded = false;
+    public static boolean blockedUsersLoaded;
     private final static Object sync = new Object();
-    public static boolean saveIncomingPhotos = false;
-    public static int contactsVersion = 1;
+    public static boolean saveIncomingPhotos;
     public static String passcodeHash = "";
     public static byte[] passcodeSalt = new byte[0];
-    public static boolean appLocked = false;
-    public static int passcodeType = 0;
+    public static boolean appLocked;
+    public static int passcodeType;
     public static int autoLockIn = 60 * 60;
-    public static int lastPauseTime = 0;
-    public static boolean isWaitingForPasscodeEnter = false;
+    public static int lastPauseTime;
+    public static boolean isWaitingForPasscodeEnter;
     public static boolean useFingerprint = true;
     public static String lastUpdateVersion;
     public static int lastContactsSyncTime;
     public static int lastHintsSyncTime;
+    public static boolean draftsLoaded;
 
     public static int migrateOffsetId = -1;
     public static int migrateOffsetDate = -1;
@@ -73,9 +72,7 @@ public class UserConfig {
                 editor.putInt("lastSendMessageId", lastSendMessageId);
                 editor.putInt("lastLocalId", lastLocalId);
                 editor.putString("contactsHash", contactsHash);
-                editor.putString("importHash", importHash);
                 editor.putBoolean("saveIncomingPhotos", saveIncomingPhotos);
-                editor.putInt("contactsVersion", contactsVersion);
                 editor.putInt("lastBroadcastId", lastBroadcastId);
                 editor.putBoolean("blockedUsersLoaded", blockedUsersLoaded);
                 editor.putString("passcodeHash1", passcodeHash);
@@ -88,6 +85,7 @@ public class UserConfig {
                 editor.putInt("lastContactsSyncTime", lastContactsSyncTime);
                 editor.putBoolean("useFingerprint", useFingerprint);
                 editor.putInt("lastHintsSyncTime", lastHintsSyncTime);
+                editor.putBoolean("draftsLoaded", draftsLoaded);
 
                 editor.putInt("migrateOffsetId", migrateOffsetId);
                 if (migrateOffsetId != -1) {
@@ -162,9 +160,8 @@ public class UserConfig {
                         lastSendMessageId = data.readInt32(false);
                         lastLocalId = data.readInt32(false);
                         contactsHash = data.readString(false);
-                        importHash = data.readString(false);
+                        data.readString(false);
                         saveIncomingPhotos = data.readBool(false);
-                        contactsVersion = 0;
                         MessagesStorage.lastQtsValue = data.readInt32(false);
                         MessagesStorage.lastSecretVersion = data.readInt32(false);
                         int val = data.readInt32(false);
@@ -188,9 +185,7 @@ public class UserConfig {
                         lastSendMessageId = preferences.getInt("lastSendMessageId", -210000);
                         lastLocalId = preferences.getInt("lastLocalId", -210000);
                         contactsHash = preferences.getString("contactsHash", "");
-                        importHash = preferences.getString("importHash", "");
                         saveIncomingPhotos = preferences.getBoolean("saveIncomingPhotos", false);
-                        contactsVersion = preferences.getInt("contactsVersion", 0);
                     }
                     if (lastLocalId > -210000) {
                         lastLocalId = -210000;
@@ -215,9 +210,7 @@ public class UserConfig {
                 lastSendMessageId = preferences.getInt("lastSendMessageId", -210000);
                 lastLocalId = preferences.getInt("lastLocalId", -210000);
                 contactsHash = preferences.getString("contactsHash", "");
-                importHash = preferences.getString("importHash", "");
                 saveIncomingPhotos = preferences.getBoolean("saveIncomingPhotos", false);
-                contactsVersion = preferences.getInt("contactsVersion", 0);
                 lastBroadcastId = preferences.getInt("lastBroadcastId", -1);
                 blockedUsersLoaded = preferences.getBoolean("blockedUsersLoaded", false);
                 passcodeHash = preferences.getString("passcodeHash1", "");
@@ -229,6 +222,7 @@ public class UserConfig {
                 lastUpdateVersion = preferences.getString("lastUpdateVersion2", "3.5");
                 lastContactsSyncTime = preferences.getInt("lastContactsSyncTime", (int) (System.currentTimeMillis() / 1000) - 23 * 60 * 60);
                 lastHintsSyncTime = preferences.getInt("lastHintsSyncTime", (int) (System.currentTimeMillis() / 1000) - 25 * 60 * 60);
+                draftsLoaded = preferences.getBoolean("draftsLoaded", false);
 
                 migrateOffsetId = preferences.getInt("migrateOffsetId", 0);
                 if (migrateOffsetId != -1) {
@@ -297,9 +291,7 @@ public class UserConfig {
         currentUser = null;
         registeredForPush = false;
         contactsHash = "";
-        importHash = "";
         lastSendMessageId = -210000;
-        contactsVersion = 1;
         lastBroadcastId = -1;
         saveIncomingPhotos = false;
         blockedUsersLoaded = false;
@@ -316,6 +308,7 @@ public class UserConfig {
         autoLockIn = 60 * 60;
         lastPauseTime = 0;
         useFingerprint = true;
+        draftsLoaded = true;
         isWaitingForPasscodeEnter = false;
         lastUpdateVersion = BuildVars.BUILD_VERSION_STRING;
         lastContactsSyncTime = (int) (System.currentTimeMillis() / 1000) - 23 * 60 * 60;

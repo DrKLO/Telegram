@@ -69,6 +69,8 @@
     <string name="ChatHints">CHAT</string>
     <string name="ChatHintsDelete">Eliminare %1$s dai suggerimenti?</string>
     <string name="LinkPreview">Anteprima link</string>
+    <string name="Draft">Bozza</string>
+    <string name="HistoryCleared">Cronologia eliminata</string>
     <!--channels-->
     <string name="GroupType">Tipo di gruppo</string>
     <string name="ChannelType">Tipo di canale</string>
@@ -107,8 +109,6 @@
     <string name="NoBlockedGroup">Gli utenti in lista nera sono rimossi dal gruppo e possono tornare solo se invitati da un amministratore. I link di invito non funzionano per loro.</string>
     <string name="NewChannel">Nuovo canale</string>
     <string name="EnterChannelName">Nome canale</string>
-    <string name="Comments">Commenti</string>
-    <string name="CommentsInfo">Se attivi i commenti, i membri potranno discutere quello che pubblichi nel canale.</string>
     <string name="AddMutual">Aggiungi contatti al tuo canale</string>
     <string name="ChannelUsernameHelp">Le persone possono condividere questo link con gli altri e trovare il tuo canale usando la ricerca di Telegram.</string>
     <string name="MegaUsernameHelp">Le persone possono condividere questo link con gli altri e trovare il tuo gruppo usando la ricerca di Telegram.</string>
@@ -133,11 +133,8 @@
     <string name="LeaveChannelMenu">Lascia il canale</string>
     <string name="ChannelSettings">Impostazioni</string>
     <string name="ChannelJoin">UNISCITI</string>
-    <string name="OpenChannelProfile">Info canale</string>
     <string name="ChannelBroadcast">Post</string>
     <string name="ChannelSilentBroadcast">Post silenzioso</string>
-    <string name="ChannelComment">Commento</string>
-    <string name="ShowDiscussion">mostra commenti</string>
     <string name="ChannelAlertTitle">Cos\'è un canale?</string>
     <string name="ChannelAlertText">I canali sono un nuovo strumento per diffondere i tuoi messaggi a un grande pubblico.</string>
     <string name="ChannelAlertCreate">CREA CANALE</string>
@@ -159,8 +156,8 @@
     <string name="ChannelLeaveAlert">Sei sicuro di voler lasciare il canale?</string>
     <string name="ChannelDeleteInfo">Perderai tutti i messaggi in questo canale.</string>
     <string name="ChannelEdit">Modifica</string>
-    <string name="MegaWasPrivateAlert">Per favore ricorda che se scegli un link pubblico per il tuo gruppo, chiunque sarà in grado di trovarlo nella ricerca e unirsi.\n\nNon creare questo link se vuoi che il tuo supergruppo rimanga privato.</string>
-    <string name="ChannelWasPrivateAlert">Per favore ricorda che se scegli un link pubblico per il tuo canale, chiunque sarà in grado di trovarlo nella ricerca e unirsi.\n\nNon creare questo link se vuoi che il tuo canale rimanga privato.</string>
+    <string name="MegaWasPrivateAlert">Per favore nota che se scegli un link pubblico per il tuo gruppo, chiunque sarà in grado di trovarlo nella ricerca e unirsi.\n\nNon creare questo link se vuoi che il tuo supergruppo rimanga privato.</string>
+    <string name="ChannelWasPrivateAlert">Per favore nota che se scegli un link pubblico per il tuo canale, chiunque sarà in grado di trovarlo nella ricerca e unirsi.\n\nNon creare questo link se vuoi che il tuo canale rimanga privato.</string>
     <string name="ChannelPublicEmptyUsername">Per favore scegli un link per il tuo canale pubblico, in modo che possa essere trovato nella ricerca e condiviso con altri.\n\nSe non sei interessato, ti consigliamo di creare un canale privato.</string>
     <string name="ActionCreateChannel">Canale creato</string>
     <string name="ActionChannelChangedPhoto">Foto del canale cambiata</string>
@@ -258,16 +255,16 @@
     <string name="Typing">sta scrivendo…</string>
     <string name="IsTyping">sta scrivendo…</string>
     <string name="AreTyping">stanno scrivendo…</string>
-    <string name="IsRecordingAudio">%1$s sta registrando un messaggio vocale...</string>
+    <string name="IsRecordingAudio">%1$s sta registrando un audio...</string>
     <string name="IsSendingAudio">%1$s sta inviando un audio...</string>
     <string name="IsSendingPhoto">%1$s sta inviando una foto...</string>
     <string name="IsSendingVideo">%1$s sta inviando un video...</string>
     <string name="IsSendingFile">%1$s sta inviando un file...</string>
-    <string name="RecordingAudio">registrando un messaggio vocale...</string>
-    <string name="SendingAudio">inviando un audio...</string>
-    <string name="SendingPhoto">inviando una foto...</string>
-    <string name="SendingVideoStatus">inviando un video...</string>
-    <string name="SendingFile">inviando un file...</string>
+    <string name="RecordingAudio">sta registrando un audio...</string>
+    <string name="SendingAudio">sta inviando un audio...</string>
+    <string name="SendingPhoto">sta inviando una foto...</string>
+    <string name="SendingVideoStatus">sta inviando un video...</string>
+    <string name="SendingFile">sta inviando un file...</string>
     <string name="GotAQuestion">Hai una domanda\nsu Telegram?</string>
     <string name="ChatTakePhoto">Scatta foto</string>
     <string name="ChatGallery">Galleria</string>
@@ -468,8 +465,8 @@
     <string name="ConvertGroupMenu">Converti in supergruppo</string>
     <string name="ConvertGroupAlertWarning">Attenzione</string>
     <string name="ConvertGroupAlert">Questa azione è irreversibile. Non è possibile trasformare un supergruppo in un gruppo normale.</string>
-    <string name="ConvertGroupInfo"><![CDATA[<b>]]>Limite membri raggiunto.<![CDATA[</b>]]>\n\nPer superare il limite e sbloccare nuove funzioni, aggiorna a supergruppo:\n\n• Il supergruppi hanno massimo %1$s\n• I nuovi membri vedono tutta la cronologia\n• I messaggi eliminati scompaiono per tutti\n• I membri possono modificare i loro messaggi\n• Il creatore può creare un link pubblico per il gruppo</string>
-    <string name="ConvertGroupInfo2"><![CDATA[<b>]]>Nei supergruppi:<![CDATA[</b>]]>\n\n• I nuovi membri vedono tutta la cronologia\n• I messaggi eliminati scompaiono per tutti\n• I membri possono modificare i loro messaggi\n• Il creatore può creare un link pubblico per il gruppo</string>
+    <string name="ConvertGroupInfo"><![CDATA[<b>]]>Limite membri raggiunto.<![CDATA[</b>]]>\n\nPer superare il limite e sbloccare nuove funzioni, aggiorna a supergruppo:\n\n• Il supergruppi hanno massimo %1$s\n• I nuovi membri vedono tutta la cronologia\n• I messaggi eliminati scompaiono per tutti\n• Il creatore può creare un link pubblico per il gruppo</string>
+    <string name="ConvertGroupInfo2"><![CDATA[<b>]]>Nei supergruppi:<![CDATA[</b>]]>\n\n• I nuovi membri vedono tutta la cronologia\n• I messaggi eliminati scompaiono per tutti\n• Il creatore può creare un link pubblico per il gruppo</string>
     <string name="ConvertGroupInfo3"><![CDATA[<b>]]>Nota:<![CDATA[</b>]]> questa azione non può essere annullata.</string>
     <!--contact info view-->
     <string name="ShareContact">Condividi</string>
@@ -545,7 +542,7 @@
     <string name="UndoAllCustom">Annulla tutte le impostazioni di notifica personalizzate per tutti i tuoi contatti e gruppi</string>
     <string name="NotificationsAndSounds">Notifiche e suoni</string>
     <string name="BlockedUsers">Utenti bloccati</string>
-    <string name="LogOut">Disconnetti</string>
+    <string name="LogOut">Esci</string>
     <string name="NoSound">Nessun suono</string>
     <string name="Default">Predefinite</string>
     <string name="Support">Supporto</string>
@@ -635,8 +632,8 @@
     <string name="LocalDatabase">Database locale</string>
     <string name="LocalDatabaseClear">Eliminare i messaggi salvati nella cache?</string>
     <string name="LocalDatabaseInfo">Eliminando il database locale, verranno cancellati i messaggi nella cache e il database verrà compresso per risparmiare spazio. Telegram ha bisogno di alcuni dati per funzionare, quindi il database non sarà azzerato.\n\nQuesta operazione può richiedere alcuni minuti.</string>
-    <string name="ClearMediaCache">Pulisci cache</string>
-    <string name="CacheClear">Pulisci</string>
+    <string name="ClearMediaCache">Svuota cache</string>
+    <string name="CacheClear">Svuota</string>
     <string name="CalculatingSize">Calcolando...</string>
     <string name="LocalDocumentCache">Documenti</string>
     <string name="LocalPhotoCache">Foto</string>
@@ -750,7 +747,7 @@
     <string name="AreYouSureDeleteVideo">Sei sicuro di voler eliminare questo video?</string>
     <string name="DiscardChanges">Annullare le modifiche?</string>
     <string name="ClearSearch">Cancellare la cronologia di ricerca?</string>
-    <string name="ClearButton">Pulisci</string>
+    <string name="ClearButton">Cancella</string>
     <string name="PickerPhotos">Foto</string>
     <string name="PickerVideo">Video</string>
     <string name="AddCaption">Aggiungi una didascalia...</string>
@@ -837,7 +834,7 @@
     <string name="NeverShareWithPlaceholder">Non condividere con gli utenti...</string>
     <string name="EmpryUsersPlaceholder">Aggiungi utenti</string>
     <string name="PrivacyFloodControlError">Spiacenti, troppe richieste. Impossibile cambiare le impostazioni di privacy ora, attendi.</string>
-    <string name="ClearOtherSessionsHelp">Disconnette tutti i dispositivi tranne questo.</string>
+    <string name="ClearOtherSessionsHelp">Esce da tutti i dispositivi tranne questo.</string>
     <string name="RemoveFromListText">Tieni premuto sull\'utente per eliminarlo.</string>
     <string name="GroupsAndChannels">Gruppi</string>
     <string name="WhoCanAddMe">Chi può aggiungermi ai gruppi?</string>
@@ -855,7 +852,7 @@
     <string name="EditVideo">Modifica video</string>
     <string name="OriginalVideo">Video originale</string>
     <string name="EditedVideo">Video modificato</string>
-    <string name="SendingVideo">Inviando un video...</string>
+    <string name="SendingVideo">Invio video...</string>
     <string name="CompressVideo">Comprimi video</string>
     <!--bot-->
     <string name="Bot">bot</string>
@@ -948,7 +945,7 @@
     <string name="ForwardMessagesTo">Vuoi inoltrare i messaggi a %1$s?</string>
     <string name="SendMessagesTo">Inviare i messaggi a %1$s?</string>
     <string name="SendContactTo">Inviare contatto a %1$s?</string>
-    <string name="AreYouSureLogout">Sei sicuro di volerti disconnettere?\n\nRicorda che puoi usare Telegram su tutti i tuoi dispositivi contemporaneamente.\n\nRicorda, quando ti disconnetti, elimini tutte le Chat Segrete.</string>
+    <string name="AreYouSureLogout">Sei sicuro di voler uscire?\n\nNota che puoi usare Telegram su tutti i tuoi dispositivi contemporaneamente.\n\nRicorda, uscendo eliminerai tutte le Chat Segrete.</string>
     <string name="AreYouSureSessions">Terminare tutte le altre sessioni?</string>
     <string name="AreYouSureDeleteAndExit">Sei sicuro di voler uscire ed eliminare il gruppo?</string>
     <string name="AreYouSureDeleteThisChat">Sei sicuro di voler eliminare questa chat?</string>
@@ -976,8 +973,8 @@
     <string name="FeatureUnavailable">Spiacenti, questa funzione non è disponibile nel tuo paese.</string>
     <string name="NoUsernameFound">Non esiste alcun account Telegram con questo username.</string>
     <string name="BotCantJoinGroups">Questo bot non può unirsi ai gruppi.</string>
-    <string name="SecretLinkPreviewAlert">Vuoi attivare le anteprime estese per i link nelle Chat Segrete? Ricorda che le anteprime dei link sono generate sui server di Telegram.</string>
-    <string name="SecretChatContextBotAlert">Per favore ricorda che i bot inline sono forniti da sviluppatori di terze parti. Per far funzionare il bot, i simboli che digiti dopo l\'username del bot sono inviati al rispettivo sviluppatore.</string>
+    <string name="SecretLinkPreviewAlert">Vuoi attivare le anteprime estese per i link nelle Chat Segrete? Nota che le anteprime dei link sono generate sui server di Telegram.</string>
+    <string name="SecretChatContextBotAlert">Per favore nota che i bot inline sono forniti da sviluppatori di terze parti. Per far funzionare il bot, i simboli che digiti dopo l\'username del bot sono inviati al rispettivo sviluppatore.</string>
     <string name="RaiseToSpeakAlert">Vuoi attivare \"Alza per parlare\" per i messaggi vocali?</string>
     <string name="EditMessageError">Spiacenti, non puoi modificare questo messaggio.</string>
     <string name="AllowReadSms">Per favore consenti a Telegram di ricevere SMS così potremo inserire in automatico il codice per te.</string>
@@ -1038,12 +1035,6 @@
     <string name="messages_few">%1$d messaggi</string>
     <string name="messages_many">%1$d messaggi</string>
     <string name="messages_other">%1$d messaggi</string>
-    <string name="comments_zero">%1$d commenti</string>
-    <string name="comments_one">%1$d commento</string>
-    <string name="comments_two">%1$d commenti</string>
-    <string name="comments_few">%1$d commenti</string>
-    <string name="comments_many">%1$d commenti</string>
-    <string name="comments_other">%1$d commenti</string>
     <string name="items_zero">nessun oggetto</string>
     <string name="items_one">%1$d oggetto</string>
     <string name="items_two">%1$d oggetti</string>

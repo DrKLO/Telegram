@@ -50,7 +50,6 @@ import org.telegram.ui.Cells.TextSettingsCell;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.AvatarUpdater;
 import org.telegram.ui.Components.BackupImageView;
-import org.telegram.ui.Components.FrameLayoutFixed;
 import org.telegram.ui.Components.LayoutHelper;
 
 import java.util.concurrent.Semaphore;
@@ -71,7 +70,6 @@ public class ChannelEditActivity extends BaseFragment implements AvatarUpdater.A
     private TLRPC.Chat currentChat;
     private TLRPC.ChatFull info;
     private int chatId;
-    private boolean allowComments = true;
     private TLRPC.InputFile uploadedAvatar;
     private boolean signMessages;
 
@@ -124,7 +122,6 @@ public class ChannelEditActivity extends BaseFragment implements AvatarUpdater.A
         }
         avatarUpdater.parentFragment = this;
         avatarUpdater.delegate = this;
-        allowComments = !currentChat.broadcast;
         signMessages = currentChat.signatures;
         NotificationCenter.getInstance().addObserver(this, NotificationCenter.chatInfoDidLoaded);
         NotificationCenter.getInstance().addObserver(this, NotificationCenter.updateInterfaces);
@@ -194,10 +191,6 @@ public class ChannelEditActivity extends BaseFragment implements AvatarUpdater.A
                         progressDialog.show();
                         return;
                     }
-                    boolean currentAllowComments = !currentChat.broadcast;
-                    if (allowComments != currentAllowComments) {
-                        MessagesController.getInstance().toogleChannelComments(chatId, allowComments);
-                    }
                     if (!currentChat.title.equals(nameTextView.getText().toString())) {
                         MessagesController.getInstance().changeChatTitle(chatId, nameTextView.getText().toString());
                     }
@@ -239,7 +232,7 @@ public class ChannelEditActivity extends BaseFragment implements AvatarUpdater.A
         linearLayout2.setBackgroundColor(0xffffffff);
         linearLayout.addView(linearLayout2, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
-        FrameLayout frameLayout = new FrameLayoutFixed(context);
+        FrameLayout frameLayout = new FrameLayout(context);
         linearLayout2.addView(frameLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
         avatarImage = new BackupImageView(context);
@@ -374,7 +367,7 @@ public class ChannelEditActivity extends BaseFragment implements AvatarUpdater.A
         linearLayout.addView(sectionCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
         if (currentChat.megagroup || !currentChat.megagroup) {
-            frameLayout = new FrameLayoutFixed(context);
+            frameLayout = new FrameLayout(context);
             frameLayout.setBackgroundColor(0xffffffff);
             linearLayout.addView(frameLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
@@ -382,13 +375,12 @@ public class ChannelEditActivity extends BaseFragment implements AvatarUpdater.A
             updateTypeCell();
             typeCell.setBackgroundResource(R.drawable.list_selector);
             frameLayout.addView(typeCell, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
-            //TODO
 
             lineView = new View(context);
             lineView.setBackgroundColor(0xffcfcfcf);
             linearLayout.addView(lineView, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 1));
 
-            frameLayout = new FrameLayoutFixed(context);
+            frameLayout = new FrameLayout(context);
             frameLayout.setBackgroundColor(0xffffffff);
             linearLayout.addView(frameLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
@@ -434,7 +426,7 @@ public class ChannelEditActivity extends BaseFragment implements AvatarUpdater.A
         }
 
         if (currentChat.creator) {
-            frameLayout = new FrameLayoutFixed(context);
+            frameLayout = new FrameLayout(context);
             frameLayout.setBackgroundColor(0xffffffff);
             linearLayout.addView(frameLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
@@ -484,27 +476,6 @@ public class ChannelEditActivity extends BaseFragment implements AvatarUpdater.A
             }
             linearLayout.addView(infoCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
         }
-
-        /*frameLayout = new FrameLayoutFixed(context);
-        frameLayout.setBackgroundColor(0xffffffff);
-        linearLayout.addView(frameLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
-
-        TextCheckCell commentsCell = new TextCheckCell(context);
-        commentsCell.setTextAndCheck(LocaleController.getString("Comments", R.string.Comments), allowComments, false);
-        commentsCell.setBackgroundResource(R.drawable.list_selector);
-        frameLayout.addView(commentsCell, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
-        commentsCell.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                allowComments = !allowComments;
-                ((TextCheckCell) v).setChecked(allowComments);
-            }
-        });
-
-        infoCell = new TextInfoPrivacyCell(context);
-        infoCell.setText(LocaleController.getString("CommentsInfo", R.string.CommentsInfo));
-        infoCell.setBackgroundResource(R.drawable.greydivider);
-        linearLayout.addView(infoCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));*/
 
         nameTextView.setText(currentChat.title);
         nameTextView.setSelection(nameTextView.length());

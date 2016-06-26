@@ -176,7 +176,6 @@ int ConvertToARGB(const uint8* sample, size_t sample_size,
       break;
     // Triplanar formats
     case FOURCC_I420:
-    case FOURCC_YU12:
     case FOURCC_YV12: {
       const uint8* src_y = sample + (src_width * crop_y + crop_x);
       const uint8* src_u;

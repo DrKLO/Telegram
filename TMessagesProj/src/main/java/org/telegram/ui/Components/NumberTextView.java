@@ -8,6 +8,8 @@
 
 package org.telegram.ui.Components;
 
+import android.animation.Animator;
+import android.animation.ObjectAnimator;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
@@ -18,8 +20,7 @@ import android.text.TextPaint;
 import android.view.View;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.AnimationCompat.AnimatorListenerAdapterProxy;
-import org.telegram.messenger.AnimationCompat.ObjectAnimatorProxy;
+import org.telegram.messenger.AnimatorListenerAdapterProxy;
 
 import java.util.ArrayList;
 import java.util.Locale;
@@ -29,7 +30,7 @@ public class NumberTextView extends View {
     private ArrayList<StaticLayout> letters = new ArrayList<>();
     private ArrayList<StaticLayout> oldLetters = new ArrayList<>();
     private TextPaint textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
-    private ObjectAnimatorProxy animator;
+    private ObjectAnimator animator;
     private float progress = 0.0f;
     private int currentNumber = 1;
 
@@ -77,11 +78,11 @@ public class NumberTextView extends View {
             }
         }
         if (animated && !oldLetters.isEmpty()) {
-            animator = ObjectAnimatorProxy.ofFloatProxy(this, "progress", forwardAnimation ? -1 : 1, 0);
+            animator = ObjectAnimator.ofFloat(this, "progress", forwardAnimation ? -1 : 1, 0);
             animator.setDuration(150);
             animator.addListener(new AnimatorListenerAdapterProxy() {
                 @Override
-                public void onAnimationEnd(Object animation) {
+                public void onAnimationEnd(Animator animation) {
                     animator = null;
                     oldLetters.clear();
                 }

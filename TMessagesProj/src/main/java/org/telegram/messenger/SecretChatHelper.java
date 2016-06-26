@@ -88,7 +88,7 @@ public class SecretChatHelper {
         return localInstance;
     }
 
-    public void cleanUp() {
+    public void cleanup() {
         sendingNotifyLayer.clear();
         acceptingChats.clear();
         secretHolesQueue.clear();
@@ -194,7 +194,7 @@ public class SecretChatHelper {
                 user = usersDict.get(user_id);
             }
             newChat.user_id = user_id;
-            final TLRPC.Dialog dialog = new TLRPC.TL_dialog();
+            final TLRPC.TL_dialog dialog = new TLRPC.TL_dialog();
             dialog.id = dialog_id;
             dialog.unread_count = 0;
             dialog.top_message = 0;
@@ -206,18 +206,7 @@ public class SecretChatHelper {
                     MessagesController.getInstance().dialogs_dict.put(dialog.id, dialog);
                     MessagesController.getInstance().dialogs.add(dialog);
                     MessagesController.getInstance().putEncryptedChat(newChat, false);
-                    Collections.sort(MessagesController.getInstance().dialogs, new Comparator<TLRPC.Dialog>() {
-                        @Override
-                        public int compare(TLRPC.Dialog tl_dialog, TLRPC.Dialog tl_dialog2) {
-                            if (tl_dialog.last_message_date == tl_dialog2.last_message_date) {
-                                return 0;
-                            } else if (tl_dialog.last_message_date < tl_dialog2.last_message_date) {
-                                return 1;
-                            } else {
-                                return -1;
-                            }
-                        }
-                    });
+                    MessagesController.getInstance().sortDialogs(null);
                     NotificationCenter.getInstance().postNotificationName(NotificationCenter.dialogsNeedReload);
                 }
             });
@@ -1153,7 +1142,7 @@ public class SecretChatHelper {
                     AndroidUtilities.runOnUIThread(new Runnable() {
                         @Override
                         public void run() {
-                            TLRPC.Dialog dialog = MessagesController.getInstance().dialogs_dict.get(did);
+                            TLRPC.TL_dialog dialog = MessagesController.getInstance().dialogs_dict.get(did);
                             if (dialog != null) {
                                 dialog.unread_count = 0;
                                 MessagesController.getInstance().dialogMessage.remove(dialog.id);
@@ -1813,25 +1802,14 @@ public class SecretChatHelper {
                                         chat.seq_out = 1;
                                         chat.a_or_b = salt;
                                         MessagesController.getInstance().putEncryptedChat(chat, false);
-                                        TLRPC.Dialog dialog = new TLRPC.TL_dialog();
+                                        TLRPC.TL_dialog dialog = new TLRPC.TL_dialog();
                                         dialog.id = ((long) chat.id) << 32;
                                         dialog.unread_count = 0;
                                         dialog.top_message = 0;
                                         dialog.last_message_date = ConnectionsManager.getInstance().getCurrentTime();
                                         MessagesController.getInstance().dialogs_dict.put(dialog.id, dialog);
                                         MessagesController.getInstance().dialogs.add(dialog);
-                                        Collections.sort(MessagesController.getInstance().dialogs, new Comparator<TLRPC.Dialog>() {
-                                            @Override
-                                            public int compare(TLRPC.Dialog tl_dialog, TLRPC.Dialog tl_dialog2) {
-                                                if (tl_dialog.last_message_date == tl_dialog2.last_message_date) {
-                                                    return 0;
-                                                } else if (tl_dialog.last_message_date < tl_dialog2.last_message_date) {
-                                                    return 1;
-                                                } else {
-                                                    return -1;
-                                                }
-                                            }
-                                        });
+                                        MessagesController.getInstance().sortDialogs(null);
                                         MessagesStorage.getInstance().putEncryptedChat(chat, user, dialog);
                                         NotificationCenter.getInstance().postNotificationName(NotificationCenter.dialogsNeedReload);
                                         NotificationCenter.getInstance().postNotificationName(NotificationCenter.encryptedChatCreated, chat);
@@ -1839,7 +1817,7 @@ public class SecretChatHelper {
                                             @Override
                                             public void run() {
                                                 if (!delayedEncryptedChatUpdates.isEmpty()) {
-                                                    MessagesController.getInstance().processUpdateArray(delayedEncryptedChatUpdates, null, null);
+                                                    MessagesController.getInstance().processUpdateArray(delayedEncryptedChatUpdates, null, null, false);
                                                     delayedEncryptedChatUpdates.clear();
                                                 }
                                             }

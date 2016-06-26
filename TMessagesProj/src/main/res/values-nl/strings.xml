@@ -69,6 +69,8 @@
     <string name="ChatHints">CHATS</string>
     <string name="ChatHintsDelete">%1$s uit suggesties verwijderen?</string>
     <string name="LinkPreview">Link-voorvertoning</string>
+    <string name="Draft">Concept</string>
+    <string name="HistoryCleared">Geschiedenis gewist</string>
     <!--channels-->
     <string name="GroupType">Groepsvorm</string>
     <string name="ChannelType">Kanaaltype</string>
@@ -107,8 +109,6 @@
     <string name="NoBlockedGroup">Geblokkeerde gebruikers kunnen alleen worden uitgenodigd door beheerders, uitnodigingslinks werken niet voor hen.</string>
     <string name="NewChannel">Nieuw kanaal</string>
     <string name="EnterChannelName">Kanaalnaam</string>
-    <string name="Comments">Reacties</string>
-    <string name="CommentsInfo">Als je reacties inschakelt kunnen leden reageren op je bericht in het kanaal.</string>
     <string name="AddMutual">Contacten aan je kanaal toevoegen</string>
     <string name="ChannelUsernameHelp">Deze link kan gedeeld worden met anderen en je kanaal kan worden gevonden via de zoekfunctie.</string>
     <string name="MegaUsernameHelp">Deze link kan gedeeld worden met anderen en je groep kan worden gevonden via de zoekfunctie.</string>
@@ -133,11 +133,8 @@
     <string name="LeaveChannelMenu">Kanaal verlaten</string>
     <string name="ChannelSettings">Instellingen</string>
     <string name="ChannelJoin">LID WORDEN</string>
-    <string name="OpenChannelProfile">Kanaalinformatie</string>
     <string name="ChannelBroadcast">Massabericht</string>
     <string name="ChannelSilentBroadcast">Stil massabericht</string>
-    <string name="ChannelComment">Reactie</string>
-    <string name="ShowDiscussion">reacties weergeven</string>
     <string name="ChannelAlertTitle">Wat is een kanaal?</string>
     <string name="ChannelAlertText">Kanalen zijn een nieuwe functie om berichten naar een groot publiek te sturen.</string>
     <string name="ChannelAlertCreate">MAAK KANAAL</string>
@@ -468,8 +465,8 @@
     <string name="ConvertGroupMenu">Opwaarderen naar supergroep</string>
     <string name="ConvertGroupAlertWarning">Waarschuwing</string>
     <string name="ConvertGroupAlert">Groep echt omzetten naar supergroep? Je kunt dit niet ongedaan maken.</string>
-    <string name="ConvertGroupInfo"><![CDATA[<b>]]>Ledenlimiet bereikt.<![CDATA[</b>]]>\n\nWil je extra functies en een hogere limiet? Waardeer op naar een supergroep:\n\n• Supergroepen hebben tot %1$s\n• Nieuwe leden zien de hele geschiedenis\n•Gewiste berichten gelden voor iedereen\n• Leden kunnen eigen berichten bewerken\n• Maker kan een publieke groepslink instellen</string>
-    <string name="ConvertGroupInfo2"><![CDATA[<b>]]>Supergroepen:<![CDATA[</b>]]>\n\n• Nieuwe leden zien de hele geschiedenis\n• Gewiste berichten gelden voor iedereen\n• Leden kunnen eigen berichten bewerken\n• Maker kan een publieke groepslink instellen</string>
+    <string name="ConvertGroupInfo"><![CDATA[<b>]]>Ledenlimiet bereikt.<![CDATA[</b>]]>\n\nWil je extra functies en een hogere limiet? Waardeer op naar een supergroep:\n\n• Supergroepen hebben tot %1$s\n• Nieuwe leden zien de hele geschiedenis\n•Gewiste berichten gelden voor iedereen\n• Maker kan een publieke groepslink instellen</string>
+    <string name="ConvertGroupInfo2"><![CDATA[<b>]]>Supergroepen:<![CDATA[</b>]]>\n\n• Nieuwe leden zien de hele geschiedenis\n• Gewiste berichten gelden voor iedereen\n• Maker kan een publieke groepslink instellen</string>
     <string name="ConvertGroupInfo3"><![CDATA[<b>]]>Let op:<![CDATA[</b>]]> Je kunt dit niet ongedaan maken.</string>
     <!--contact info view-->
     <string name="ShareContact">Delen</string>
@@ -556,7 +553,7 @@
     <string name="TerminateAllSessions">Beëindig alle andere sessies</string>
     <string name="Events">Gebeurtenissen</string>
     <string name="ContactJoined">Contact lid van Telegram</string>
-    <string name="PinnedMessages">Vastgezet berichten</string>
+    <string name="PinnedMessages">Vastgezette berichten</string>
     <string name="Language">Taal</string>
     <string name="AskAQuestionInfo">De ondersteuning van Telegram wordt gedaan door vrijwilligers. We doen ons best om zo snel mogelijk te antwoorden.<![CDATA[<br><br>]]>Bekijk ook de <![CDATA[<a href=\"https://telegram.org/faq#general\">veelgestelde vragen</a>]]>: Hier staan de antwoorden op de meeste vragen en belangrijke tips voor <![CDATA[<a href=\"https://telegram.org/faq#troubleshooting\">het oplossen van problemen</a>]]>.</string>
     <string name="AskButton">Vraag een vrijwilliger</string>
@@ -1038,12 +1035,6 @@
     <string name="messages_few">%1$d berichten</string>
     <string name="messages_many">%1$d berichten</string>
     <string name="messages_other">%1$d berichten</string>
-    <string name="comments_zero">%1$d reacties</string>
-    <string name="comments_one">%1$d reactie</string>
-    <string name="comments_two">%1$d reacties</string>
-    <string name="comments_few">%1$d reacties</string>
-    <string name="comments_many">%1$d reacties</string>
-    <string name="comments_other">%1$d reacties</string>
     <string name="items_zero">geen items</string>
     <string name="items_one">%1$d item</string>
     <string name="items_two">%1$d items</string>

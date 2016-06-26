@@ -223,12 +223,7 @@ public class VideoTimelineView extends View {
                 }
             }
         };
-
-        if (android.os.Build.VERSION.SDK_INT >= 11) {
-            currentTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, frameNum, null, null);
-        } else {
-            currentTask.execute(frameNum, null, null);
-        }
+        currentTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, frameNum, null, null);
     }
 
     public void destroy() {

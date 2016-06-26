@@ -8,6 +8,9 @@
 
 package org.telegram.ui.Components;
 
+import android.animation.Animator;
+import android.animation.AnimatorSet;
+import android.animation.ObjectAnimator;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.*;
@@ -27,10 +30,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.AnimationCompat.AnimatorListenerAdapterProxy;
-import org.telegram.messenger.AnimationCompat.AnimatorSetProxy;
-import org.telegram.messenger.AnimationCompat.ObjectAnimatorProxy;
-import org.telegram.messenger.AnimationCompat.ViewProxy;
+import org.telegram.messenger.AnimatorListenerAdapterProxy;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
@@ -66,7 +66,7 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
     private TextView stickerEmojiTextView;
     private RecyclerListView.OnItemClickListener stickersOnItemClickListener;
     private Drawable shadowDrawable;
-    private AnimatorSetProxy shadowAnimation[] = new AnimatorSetProxy[2];
+    private AnimatorSet shadowAnimation[] = new AnimatorSet[2];
     private View shadow[] = new View[2];
     private FrameLayout emptyView;
 
@@ -110,32 +110,26 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
                     height -= AndroidUtilities.statusBarHeight;
                 }
                 int contentSize = AndroidUtilities.dp(48 + 48) + Math.max(3, (stickerSet != null ? (int) Math.ceil(stickerSet.documents.size() / 5.0f) : 0)) * AndroidUtilities.dp(82) + backgroundPaddingTop;
-                if (Build.VERSION.SDK_INT < 11) {
-                    super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(Math.min(contentSize, AndroidUtilities.displaySize.y / 5 * 3), MeasureSpec.EXACTLY));
-                } else {
-                    int padding = contentSize < (height / 5 * 3.2) ? 0 : (height / 5 * 2);
-                    if (padding != 0 && contentSize < height) {
-                        padding -= (height - contentSize);
-                    }
-                    if (padding == 0) {
-                        padding = backgroundPaddingTop;
-                    }
-                    if (gridView.getPaddingTop() != padding) {
-                        ignoreLayout = true;
-                        gridView.setPadding(AndroidUtilities.dp(10), padding, AndroidUtilities.dp(10), 0);
-                        emptyView.setPadding(0, padding, 0, 0);
-                        ignoreLayout = false;
-                    }
-                    super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(Math.min(contentSize, height), MeasureSpec.EXACTLY));
+                int padding = contentSize < (height / 5 * 3.2) ? 0 : (height / 5 * 2);
+                if (padding != 0 && contentSize < height) {
+                    padding -= (height - contentSize);
                 }
+                if (padding == 0) {
+                    padding = backgroundPaddingTop;
+                }
+                if (gridView.getPaddingTop() != padding) {
+                    ignoreLayout = true;
+                    gridView.setPadding(AndroidUtilities.dp(10), padding, AndroidUtilities.dp(10), 0);
+                    emptyView.setPadding(0, padding, 0, 0);
+                    ignoreLayout = false;
+                }
+                super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(Math.min(contentSize, height), MeasureSpec.EXACTLY));
             }
 
             @Override
             protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
                 super.onLayout(changed, left, top, right, bottom);
-                if (Build.VERSION.SDK_INT >= 11) {
-                    updateLayout();
-                }
+                updateLayout();
             }
 
             @Override
@@ -148,18 +142,12 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
 
             @Override
             protected void onDraw(Canvas canvas) {
-                if (Build.VERSION.SDK_INT >= 11) {
-                    shadowDrawable.setBounds(0, scrollOffsetY - backgroundPaddingTop, getMeasuredWidth(), getMeasuredHeight());
-                    shadowDrawable.draw(canvas);
-                }
+                shadowDrawable.setBounds(0, scrollOffsetY - backgroundPaddingTop, getMeasuredWidth(), getMeasuredHeight());
+                shadowDrawable.draw(canvas);
             }
         };
-        if (Build.VERSION.SDK_INT < 11) {
-            containerView.setBackgroundDrawable(shadowDrawable);
-        } else {
-            containerView.setWillNotDraw(false);
-        }
-        containerView.setPadding(backgroundPaddingLeft, Build.VERSION.SDK_INT < 11 ? backgroundPaddingTop : 0, backgroundPaddingLeft, 0);
+        containerView.setWillNotDraw(false);
+        containerView.setPadding(backgroundPaddingLeft, 0, backgroundPaddingLeft, 0);
 
         titleTextView = new TextView(context);
         titleTextView.setLines(1);
@@ -180,8 +168,7 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
 
         shadow[0] = new View(context);
         shadow[0].setBackgroundResource(R.drawable.header_shadow);
-        ViewProxy.setAlpha(shadow[0], 0.0f);
-        shadow[0].clearAnimation();
+        shadow[0].setAlpha(0.0f);
         shadow[0].setVisibility(View.INVISIBLE);
         shadow[0].setTag(1);
         containerView.addView(shadow[0], LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 3, Gravity.TOP | Gravity.LEFT, 0, 48, 0, 0));
@@ -201,6 +188,7 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
                 super.requestLayout();
             }
         };
+        gridView.setTag(14);
         gridView.setLayoutManager(layoutManager = new GridLayoutManager(getContext(), 5));
         gridView.setAdapter(adapter = new GridAdapter(context));
         gridView.setVerticalScrollBarEnabled(false);
@@ -223,15 +211,12 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
                 return StickerPreviewViewer.getInstance().onTouch(event, gridView, 0, stickersOnItemClickListener);
             }
         });
-        if (Build.VERSION.SDK_INT >= 11) {
-            gridView.setOnScrollListener(new RecyclerView.OnScrollListener() {
-                @SuppressLint("NewApi")
-                @Override
-                public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
-                    updateLayout();
-                }
-            });
-        }
+        gridView.setOnScrollListener(new RecyclerView.OnScrollListener() {
+            @Override
+            public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
+                updateLayout();
+            }
+        });
         stickersOnItemClickListener = new RecyclerListView.OnItemClickListener() {
             @Override
             public void onItemClick(View view, int position) {
@@ -260,8 +245,8 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
                 layoutParams.topMargin = scrollOffsetY;
                 stickerPreviewLayout.setLayoutParams(layoutParams);
                 stickerPreviewLayout.setVisibility(View.VISIBLE);
-                AnimatorSetProxy animatorSet = new AnimatorSetProxy();
-                animatorSet.playTogether(ObjectAnimatorProxy.ofFloat(stickerPreviewLayout, "alpha", 0.0f, 1.0f));
+                AnimatorSet animatorSet = new AnimatorSet();
+                animatorSet.playTogether(ObjectAnimator.ofFloat(stickerPreviewLayout, "alpha", 0.0f, 1.0f));
                 animatorSet.setDuration(200);
                 animatorSet.start();
             }
@@ -500,12 +485,12 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
     }
 
     private void hidePreview() {
-        AnimatorSetProxy animatorSet = new AnimatorSetProxy();
-        animatorSet.playTogether(ObjectAnimatorProxy.ofFloat(stickerPreviewLayout, "alpha", 0.0f));
+        AnimatorSet animatorSet = new AnimatorSet();
+        animatorSet.playTogether(ObjectAnimator.ofFloat(stickerPreviewLayout, "alpha", 0.0f));
         animatorSet.setDuration(200);
         animatorSet.addListener(new AnimatorListenerAdapterProxy() {
             @Override
-            public void onAnimationEnd(Object animation) {
+            public void onAnimationEnd(Animator animation) {
                 stickerPreviewLayout.setVisibility(View.GONE);
             }
         });
@@ -521,14 +506,13 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
             if (shadowAnimation[num] != null) {
                 shadowAnimation[num].cancel();
             }
-            shadowAnimation[num] = new AnimatorSetProxy();
-            shadowAnimation[num].playTogether(ObjectAnimatorProxy.ofFloat(shadow[num], "alpha", show ? 1.0f : 0.0f));
+            shadowAnimation[num] = new AnimatorSet();
+            shadowAnimation[num].playTogether(ObjectAnimator.ofFloat(shadow[num], "alpha", show ? 1.0f : 0.0f));
             shadowAnimation[num].setDuration(150);
             shadowAnimation[num].addListener(new AnimatorListenerAdapterProxy() {
                 @Override
-                public void onAnimationEnd(Object animation) {
+                public void onAnimationEnd(Animator animation) {
                     if (shadowAnimation[num] != null && shadowAnimation[num].equals(animation)) {
-                        shadow[num].clearAnimation();
                         if (!show) {
                             shadow[num].setVisibility(View.INVISIBLE);
                         }
@@ -537,7 +521,7 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
                 }
 
                 @Override
-                public void onAnimationCancel(Object animation) {
+                public void onAnimationCancel(Animator animation) {
                     if (shadowAnimation[num] != null && shadowAnimation[num].equals(animation)) {
                         shadowAnimation[num] = null;
                     }

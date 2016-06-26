@@ -4667,7 +4667,7 @@ public class RecyclerView extends ViewGroup implements ScrollingView, NestedScro
                 if (offsetPosition < 0 || offsetPosition >= mAdapter.getItemCount()) {
                     throw new IndexOutOfBoundsException("Inconsistency detected. Invalid item "
                             + "position " + position + "(offset:" + offsetPosition + ")."
-                            + "state:" + mState.getItemCount());
+                            + "state:" + mState.getItemCount() + " tag " + getTag() + " adapter " + getAdapter());
                 }
 
                 final int type = mAdapter.getItemViewType(offsetPosition);

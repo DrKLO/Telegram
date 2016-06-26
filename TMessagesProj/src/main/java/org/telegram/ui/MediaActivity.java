@@ -8,6 +8,9 @@
 
 package org.telegram.ui;
 
+import android.animation.Animator;
+import android.animation.AnimatorSet;
+import android.animation.ObjectAnimator;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
@@ -64,8 +67,6 @@ import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Adapters.BaseFragmentAdapter;
 import org.telegram.ui.Adapters.BaseSectionsAdapter;
-import org.telegram.messenger.AnimationCompat.AnimatorSetProxy;
-import org.telegram.messenger.AnimationCompat.ObjectAnimatorProxy;
 import org.telegram.ui.Cells.GreySectionCell;
 import org.telegram.ui.Cells.LoadingCell;
 import org.telegram.ui.Cells.SharedDocumentCell;
@@ -256,14 +257,6 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                         actionBar.hideActionMode();
                         listView.invalidateViews();
                     } else {
-                        if (Build.VERSION.SDK_INT < 11 && listView != null) {
-                            listView.setAdapter(null);
-                            listView = null;
-                            photoVideoAdapter = null;
-                            documentsAdapter = null;
-                            audioAdapter = null;
-                            linksAdapter = null;
-                        }
                         finishFragment();
                     }
                 } else if (id == shared_media_item) {
@@ -997,18 +990,16 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
         }
         actionBar.createActionMode().getItem(delete).setVisibility(cantDeleteMessagesCount == 0 ? View.VISIBLE : View.GONE);
         selectedMessagesCountTextView.setNumber(1, false);
-        if (Build.VERSION.SDK_INT >= 11) {
-            AnimatorSetProxy animatorSet = new AnimatorSetProxy();
-            ArrayList<Object> animators = new ArrayList<>();
-            for (int i = 0; i < actionModeViews.size(); i++) {
-                View view2 = actionModeViews.get(i);
-                AndroidUtilities.clearDrawableAnimation(view2);
-                animators.add(ObjectAnimatorProxy.ofFloat(view2, "scaleY", 0.1f, 1.0f));
-            }
-            animatorSet.playTogether(animators);
-            animatorSet.setDuration(250);
-            animatorSet.start();
+        AnimatorSet animatorSet = new AnimatorSet();
+        ArrayList<Animator> animators = new ArrayList<>();
+        for (int i = 0; i < actionModeViews.size(); i++) {
+            View view2 = actionModeViews.get(i);
+            AndroidUtilities.clearDrawableAnimation(view2);
+            animators.add(ObjectAnimator.ofFloat(view2, "scaleY", 0.1f, 1.0f));
         }
+        animatorSet.playTogether(animators);
+        animatorSet.setDuration(250);
+        animatorSet.start();
         scrolling = false;
         if (view instanceof SharedDocumentCell) {
             ((SharedDocumentCell) view).setChecked(true, true);

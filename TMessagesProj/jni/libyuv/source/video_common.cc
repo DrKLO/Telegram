@@ -25,6 +25,7 @@ struct FourCCAliasEntry {
 
 static const struct FourCCAliasEntry kFourCCAliases[] = {
   {FOURCC_IYUV, FOURCC_I420},
+  {FOURCC_YU12, FOURCC_I420},
   {FOURCC_YU16, FOURCC_I422},
   {FOURCC_YU24, FOURCC_I444},
   {FOURCC_YUYV, FOURCC_YUY2},

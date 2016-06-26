@@ -8,6 +8,9 @@
 
 package org.telegram.messenger;
 
+import android.animation.Animator;
+import android.animation.AnimatorSet;
+import android.animation.ObjectAnimator;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -48,6 +51,7 @@ import android.view.Surface;
 import android.view.View;
 import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
+import android.webkit.MimeTypeMap;
 import android.widget.AbsListView;
 import android.widget.EdgeEffect;
 import android.widget.EditText;
@@ -61,10 +65,6 @@ import net.hockeyapp.android.UpdateManager;
 
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
-import org.telegram.messenger.AnimationCompat.AnimatorListenerAdapterProxy;
-import org.telegram.messenger.AnimationCompat.AnimatorSetProxy;
-import org.telegram.messenger.AnimationCompat.ObjectAnimatorProxy;
-import org.telegram.messenger.AnimationCompat.ViewProxy;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.Components.ForegroundDetector;
 import org.telegram.ui.Components.NumberPicker;
@@ -156,11 +156,7 @@ public class AndroidUtilities {
                     }
                 }
             } else if (drawable instanceof ColorDrawable) {
-                if (Build.VERSION.SDK_INT >= 11) {
-                    bitmapColor = ((ColorDrawable) drawable).getColor();
-                } else {
-                    bitmapColor = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE).getInt("selectedColor", 0xff000000);
-                }
+                bitmapColor = ((ColorDrawable) drawable).getColor();
             }
         } catch (Exception e) {
             FileLog.e("tmessages", e);
@@ -500,11 +496,7 @@ public class AndroidUtilities {
                 Display display = manager.getDefaultDisplay();
                 if (display != null) {
                     display.getMetrics(displayMetrics);
-                    if (android.os.Build.VERSION.SDK_INT < 13) {
-                        displaySize.set(display.getWidth(), display.getHeight());
-                    } else {
-                        display.getSize(displaySize);
-                    }
+                    display.getSize(displaySize);
                     FileLog.e("tmessages", "display size = " + displaySize.x + " " + displaySize.y + " " + displayMetrics.xdpi + "x" + displayMetrics.ydpi);
                 }
             }
@@ -685,7 +677,7 @@ public class AndroidUtilities {
     }
 
     public static void clearCursorDrawable(EditText editText) {
-        if (editText == null || Build.VERSION.SDK_INT < 12) {
+        if (editText == null) {
             return;
         }
         try {
@@ -883,6 +875,19 @@ public class AndroidUtilities {
         return size;
     }
 
+    public static CharSequence getTrimmedString(CharSequence src) {
+        if (src == null || src.length() == 0) {
+            return src;
+        }
+        while (src.length() > 0 && (src.charAt(0) == '\n' || src.charAt(0) == ' ')) {
+            src = src.subSequence(1, src.length());
+        }
+        while (src.length() > 0 && (src.charAt(src.length() - 1) == '\n' || src.charAt(src.length() - 1) == ' ')) {
+            src = src.subSequence(0, src.length() - 1);
+        }
+        return src;
+    }
+
     public static void setListViewEdgeEffectColor(AbsListView listView, int color) {
         if (Build.VERSION.SDK_INT >= 21) {
             try {
@@ -989,14 +994,9 @@ public class AndroidUtilities {
     }
 
     public static boolean needShowPasscode(boolean reset) {
-        boolean wasInBackground;
-        if (Build.VERSION.SDK_INT >= 14) {
-            wasInBackground = ForegroundDetector.getInstance().isWasInBackground(reset);
-            if (reset) {
-                ForegroundDetector.getInstance().resetBackgroundVar();
-            }
-        } else {
-            wasInBackground = UserConfig.lastPauseTime != 0;
+        boolean wasInBackground = ForegroundDetector.getInstance().isWasInBackground(reset);
+        if (reset) {
+            ForegroundDetector.getInstance().resetBackgroundVar();
         }
         return UserConfig.passcodeHash.length() > 0 && wasInBackground &&
                 (UserConfig.appLocked || UserConfig.autoLockIn != 0 && UserConfig.lastPauseTime != 0 && !UserConfig.appLocked && (UserConfig.lastPauseTime + UserConfig.autoLockIn) <= ConnectionsManager.getInstance().getCurrentTime());
@@ -1004,23 +1004,20 @@ public class AndroidUtilities {
 
     public static void shakeView(final View view, final float x, final int num) {
         if (num == 6) {
-            ViewProxy.setTranslationX(view, 0);
-            view.clearAnimation();
+            view.setTranslationX(0);
             return;
         }
-        AnimatorSetProxy animatorSetProxy = new AnimatorSetProxy();
-        animatorSetProxy.playTogether(ObjectAnimatorProxy.ofFloat(view, "translationX", AndroidUtilities.dp(x)));
-        animatorSetProxy.setDuration(50);
-        animatorSetProxy.addListener(new AnimatorListenerAdapterProxy() {
+        AnimatorSet animatorSet = new AnimatorSet();
+        animatorSet.playTogether(ObjectAnimator.ofFloat(view, "translationX", AndroidUtilities.dp(x)));
+        animatorSet.setDuration(50);
+        animatorSet.addListener(new AnimatorListenerAdapterProxy() {
             @Override
-            public void onAnimationEnd(Object animation) {
+            public void onAnimationEnd(Animator animation) {
                 shakeView(view, num == 5 ? 0 : -x, num + 1);
             }
         });
-        animatorSetProxy.start();
+        animatorSet.start();
     }
-
-
 
     /*public static String ellipsize(String text, int maxLines, int maxWidth, TextPaint paint) {
         if (text == null || paint == null) {
@@ -1058,7 +1055,7 @@ public class AndroidUtilities {
     }*/
 
     /*public static void turnOffHardwareAcceleration(Window window) {
-        if (window == null || Build.MODEL == null || Build.VERSION.SDK_INT < 11) {
+        if (window == null || Build.MODEL == null) {
             return;
         }
         if (Build.MODEL.contains("GT-S5301") ||
@@ -1094,14 +1091,9 @@ public class AndroidUtilities {
 
     public static void addToClipboard(CharSequence str) {
         try {
-            if (Build.VERSION.SDK_INT < 11) {
-                android.text.ClipboardManager clipboard = (android.text.ClipboardManager) ApplicationLoader.applicationContext.getSystemService(Context.CLIPBOARD_SERVICE);
-                clipboard.setText(str);
-            } else {
-                android.content.ClipboardManager clipboard = (android.content.ClipboardManager) ApplicationLoader.applicationContext.getSystemService(Context.CLIPBOARD_SERVICE);
-                android.content.ClipData clip = android.content.ClipData.newPlainText("label", str);
-                clipboard.setPrimaryClip(clip);
-            }
+            android.content.ClipboardManager clipboard = (android.content.ClipboardManager) ApplicationLoader.applicationContext.getSystemService(Context.CLIPBOARD_SERVICE);
+            android.content.ClipData clip = android.content.ClipData.newPlainText("label", str);
+            clipboard.setPrimaryClip(clip);
         } catch (Exception e) {
             FileLog.e("tmessages", e);
         }
@@ -1388,5 +1380,51 @@ public class AndroidUtilities {
         byte[] key_hash = new byte[16];
         System.arraycopy(sha1, 0, key_hash, 0, 16);
         return key_hash;
+    }
+
+    public static void openForView(MessageObject message, Activity activity) throws Exception {
+        File f = null;
+        String fileName = message.getFileName();
+        if (message.messageOwner.attachPath != null && message.messageOwner.attachPath.length() != 0) {
+            f = new File(message.messageOwner.attachPath);
+        }
+        if (f == null || !f.exists()) {
+            f = FileLoader.getPathToMessage(message.messageOwner);
+        }
+        if (f != null && f.exists()) {
+            String realMimeType = null;
+            Intent intent = new Intent(Intent.ACTION_VIEW);
+            MimeTypeMap myMime = MimeTypeMap.getSingleton();
+            int idx = fileName.lastIndexOf('.');
+            if (idx != -1) {
+                String ext = fileName.substring(idx + 1);
+                realMimeType = myMime.getMimeTypeFromExtension(ext.toLowerCase());
+                if (realMimeType == null) {
+                    if (message.type == 9 || message.type == 0) {
+                        realMimeType = message.getDocument().mime_type;
+                    }
+                    if (realMimeType == null || realMimeType.length() == 0) {
+                        realMimeType = null;
+                    }
+                }
+                if (realMimeType != null) {
+                    intent.setDataAndType(Uri.fromFile(f), realMimeType);
+                } else {
+                    intent.setDataAndType(Uri.fromFile(f), "text/plain");
+                }
+            } else {
+                intent.setDataAndType(Uri.fromFile(f), "text/plain");
+            }
+            if (realMimeType != null) {
+                try {
+                    activity.startActivityForResult(intent, 500);
+                } catch (Exception e) {
+                    intent.setDataAndType(Uri.fromFile(f), "text/plain");
+                    activity.startActivityForResult(intent, 500);
+                }
+            } else {
+                activity.startActivityForResult(intent, 500);
+            }
+        }
     }
 }

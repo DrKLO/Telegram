@@ -8,6 +8,7 @@
 
 package org.telegram.ui.ActionBar;
 
+import android.animation.AnimatorSet;
 import android.app.Activity;
 import android.app.Dialog;
 import android.content.Context;
@@ -17,7 +18,6 @@ import android.os.Bundle;
 import android.view.View;
 import android.view.ViewGroup;
 
-import org.telegram.messenger.AnimationCompat.AnimatorSetProxy;
 import org.telegram.messenger.FileLog;
 import org.telegram.tgnet.ConnectionsManager;
 
@@ -259,7 +259,7 @@ public class BaseFragment {
 
     }
 
-    protected AnimatorSetProxy onCustomTransitionAnimation(boolean isOpen, final Runnable callback) {
+    protected AnimatorSet onCustomTransitionAnimation(boolean isOpen, final Runnable callback) {
         return null;
     }
 

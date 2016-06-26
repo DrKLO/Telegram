@@ -88,11 +88,13 @@ public class Browser {
                 @Override
                 public void onServiceConnected(CustomTabsClient client) {
                     customTabsClient = client;
-                    if (customTabsClient != null) {
-                        try {
-                            customTabsClient.warmup(0);
-                        } catch (Exception e) {
-                            FileLog.e("tmessages", e);
+                    if (MediaController.getInstance().canCustomTabs()) {
+                        if (customTabsClient != null) {
+                            try {
+                                customTabsClient.warmup(0);
+                            } catch (Exception e) {
+                                FileLog.e("tmessages", e);
+                            }
                         }
                     }
                 }

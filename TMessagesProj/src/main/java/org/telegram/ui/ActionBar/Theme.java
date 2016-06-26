@@ -61,6 +61,7 @@ public class Theme {
     public static final int DIALOGS_NAME_TEXT_COLOR = 0xff4d83b3;
     public static final int DIALOGS_ATTACH_TEXT_COLOR = 0xff4d83b3;
     public static final int DIALOGS_PRINTING_TEXT_COLOR = 0xff4d83b3;
+    public static final int DIALOGS_DRAFT_TEXT_COLOR = 0xffdd4b39;
 
     public static final int CHAT_UNREAD_TEXT_COLOR = 0xff5695cc;
     public static final int CHAT_ADD_CONTACT_TEXT_COLOR = 0xff4a82b5;
@@ -69,6 +70,7 @@ public class Theme {
     public static final int CHAT_BOTTOM_CHAT_OVERLAY_TEXT_COLOR = 0xff3a8ccf;
     public static final int CHAT_GIF_HINT_TEXT_COLOR = 0xffffffff;
     public static final int CHAT_EMPTY_VIEW_TEXT_COLOR = 0xffffffff;
+    public static final int CHAT_SEARCH_COUNT_TEXT_COLOR = 0xff4e9ad4;
 
     public static final int INAPP_PLAYER_PERFORMER_TEXT_COLOR = 0xff2f3438;
     public static final int INAPP_PLAYER_TITLE_TEXT_COLOR = 0xff2f3438;
@@ -186,6 +188,7 @@ public class Theme {
     public static final int MSG_TEXT_COLOR = 0xff000000;
     public static final int MSG_LINK_TEXT_COLOR = 0xff2678b6;
     public static final int MSG_LINK_SELECT_BACKGROUND_COLOR = 0x3362a9e3;
+    public static final int MSG_TEXT_SELECT_BACKGROUND_COLOR = 0x6662a9e3;
 
 
     public static Drawable backgroundDrawableIn;
@@ -421,9 +424,7 @@ public class Theme {
             stateListDrawable.addState(new int[]{android.R.attr.state_pressed}, new ColorDrawable(color));
             stateListDrawable.addState(new int[]{android.R.attr.state_focused}, new ColorDrawable(color));
             stateListDrawable.addState(new int[]{android.R.attr.state_selected}, new ColorDrawable(color));
-            if (Build.VERSION.SDK_INT >= 11) {
-                stateListDrawable.addState(new int[]{android.R.attr.state_activated}, new ColorDrawable(color));
-            }
+            stateListDrawable.addState(new int[]{android.R.attr.state_activated}, new ColorDrawable(color));
             stateListDrawable.addState(new int[]{}, new ColorDrawable(0x00000000));
             return stateListDrawable;
         }

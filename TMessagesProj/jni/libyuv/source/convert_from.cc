@@ -1077,7 +1077,6 @@ int ConvertFromI420(const uint8* y, int y_stride,
     // Triplanar formats
     // TODO(fbarchard): halfstride instead of halfwidth
     case FOURCC_I420:
-    case FOURCC_YU12:
     case FOURCC_YV12: {
       int halfwidth = (width + 1) / 2;
       int halfheight = (height + 1) / 2;

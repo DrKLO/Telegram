@@ -15,6 +15,7 @@ import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
+import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -22,10 +23,9 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.MediaController;
 import org.telegram.messenger.R;
 import org.telegram.ui.Components.BackupImageView;
-import org.telegram.ui.Components.FrameLayoutFixed;
 import org.telegram.ui.Components.LayoutHelper;
 
-public class PhotoPickerAlbumsCell extends FrameLayoutFixed {
+public class PhotoPickerAlbumsCell extends FrameLayout {
 
     public interface PhotoPickerAlbumsCellDelegate {
         void didSelectAlbum(MediaController.AlbumEntry albumEntry);
@@ -36,7 +36,7 @@ public class PhotoPickerAlbumsCell extends FrameLayoutFixed {
     private int albumsCount;
     private PhotoPickerAlbumsCellDelegate delegate;
 
-    private class AlbumView extends FrameLayoutFixed {
+    private class AlbumView extends FrameLayout {
 
         private BackupImageView imageView;
         private TextView nameTextView;

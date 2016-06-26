@@ -288,6 +288,12 @@ int ARGBCopyAlpha(const uint8* src_argb, int src_stride_argb,
                   uint8* dst_argb, int dst_stride_argb,
                   int width, int height);
 
+// Extract the alpha channel from ARGB.
+LIBYUV_API
+int ARGBExtractAlpha(const uint8* src_argb, int src_stride_argb,
+                     uint8* dst_a, int dst_stride_a,
+                     int width, int height);
+
 // Copy Y channel to Alpha of ARGB.
 LIBYUV_API
 int ARGBCopyYToAlpha(const uint8* src_y, int src_stride_y,

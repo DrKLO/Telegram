@@ -69,6 +69,8 @@
     <string name="ChatHints">المحادثات</string>
     <string name="ChatHintsDelete">هل ترغب في حذف %1$s من الاقتراحات؟</string>
     <string name="LinkPreview">معاينة الرابط</string>
+    <string name="Draft">مسودة</string>
+    <string name="HistoryCleared">تم مسح السجل</string>
     <!--channels-->
     <string name="GroupType">نوع المجموعة</string>
     <string name="ChannelType">نوع القناة</string>
@@ -107,8 +109,6 @@
     <string name="NoBlockedGroup">أعضاء القائمة السوداء هم أعضاء تم حذفهم من المجموعة ولا يمكنهم العودة لها إلى بدعوة من المشرف. روابط الدعوة لن تمكنهم من العودة للمجموعة.</string>
     <string name="NewChannel">قناة جديدة</string>
     <string name="EnterChannelName">اسم القناة</string>
-    <string name="Comments">التعليقات</string>
-    <string name="CommentsInfo">إذا قمت بتفعيل التعليقات، الأعضاء سيتمكنون من مناقشة ما تنشره في قناتك.</string>
     <string name="AddMutual">إضافة جهات اتصال لقناتك</string>
     <string name="ChannelUsernameHelp">يستطيع الناس مشاركة هذا الرابط مع غيرهم ويمكنهم إيجاد قناتك من خلال البحث في تيليجرام.</string>
     <string name="MegaUsernameHelp">يستطيع الناس مشاركة هذا الرابط مع غيرهم ويمكنهم إيجاد مجموعتك من خلال البحث في تيليجرام.</string>
@@ -133,11 +133,8 @@
     <string name="LeaveChannelMenu">غادر القناة</string>
     <string name="ChannelSettings">الإعدادات</string>
     <string name="ChannelJoin">اشترك</string>
-    <string name="OpenChannelProfile">معلومات القناة</string>
     <string name="ChannelBroadcast">رسالة جماعية</string>
     <string name="ChannelSilentBroadcast">رسالة جماعية صامتة</string>
-    <string name="ChannelComment">تعليق</string>
-    <string name="ShowDiscussion">إظهار التعليقات</string>
     <string name="ChannelAlertTitle">ما هي القنوات؟</string>
     <string name="ChannelAlertText">القنوات هي أداة جديدة للرسائل الجماعية لمجموعة كبيرة من المستقبلين.</string>
     <string name="ChannelAlertCreate">أنشاء قناة</string>
@@ -469,7 +466,7 @@
     <string name="ConvertGroupAlertWarning">تحذير</string>
     <string name="ConvertGroupAlert">هذا القرار لا يمكن الرجوع عنه. لن تتمكن من إرجاع المجموعات الخارقة لتصبح مجموعات عادية.</string>
     <string name="ConvertGroupInfo"><![CDATA[<b>]]>تم الوصول للحد القصى.<![CDATA[</b>]]>\n\nلتتمكن من تخطي هذا الحد والحصول على مميزات إضافية، يمكنك الترقية لمجموعة خارقة:\n\n• المجموعات الخارقة يمكن أن تصل إلى %1$s عضو\n• الأعضاء الجدد يمكنهم رؤية سجل المحادثات بالكامل \n• الرسائل المحذوفة ستختفي عن كل الأعضاء\n• يستطيع الأعضاء التعديل على رسائلهم\n• يمكن لمنشئ المجموعة إنشاء رابط دعوة لها</string>
-    <string name="ConvertGroupInfo2"><![CDATA[<b>]]>في المجموعات الخارقة<![CDATA[</b>]]>\n\n• الأعضاء الجدد يمكنهم رؤية سجل المحادثات بالكامل \n• الرسائل المحذوفة ستختفي عن كل الأعضاء\n• يستطيع الأعضاء التعديل على رسائلهم\n• يمكن لمنشئ المجموعة إنشاء رابط دعوة لها</string>
+    <string name="ConvertGroupInfo2"><![CDATA[<b>]]>في المجموعات الخارقة:<![CDATA[</b>]]>\n\n• الأعضاء الجدد يمكنهم رؤية سجل المحادثات بالكامل \n• الرسائل المحذوفة ستختفي عن كل الأعضاء\n• يستطيع الأعضاء التعديل على رسائلهم\n• يمكن لمنشئ المجموعة إنشاء رابط دعوة لها</string>
     <string name="ConvertGroupInfo3"><![CDATA[<b>]]>ملاحظة:<![CDATA[</b>]]> لا يمكنك الرجوع عن هذا القرار.</string>
     <!--contact info view-->
     <string name="ShareContact">مشاركة</string>
@@ -1038,12 +1035,6 @@
     <string name="messages_few">%1$d رسائل</string>
     <string name="messages_many">%1$d رسالة</string>
     <string name="messages_other">%1$d رسالة</string>
-    <string name="comments_zero">%1$d تعليقات</string>
-    <string name="comments_one">%1$d تعليق</string>
-    <string name="comments_two">%1$d تعليقان</string>
-    <string name="comments_few">%1$d تعليقات</string>
-    <string name="comments_many">%1$d تعليق</string>
-    <string name="comments_other">%1$d تعليق</string>
     <string name="items_zero">لا يوجد ملفات</string>
     <string name="items_one">%1$d ملف</string>
     <string name="items_two">%1$d ملف</string>

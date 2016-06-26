@@ -203,7 +203,7 @@ public class SecretPhotoViewer implements NotificationCenter.NotificationCenterD
         windowView.setFocusable(true);
         windowView.setFocusableInTouchMode(true);
         if (Build.VERSION.SDK_INT >= 23) {
-            windowView.setFitsSystemWindows(true); //TODO ?
+            windowView.setFitsSystemWindows(true);
         }
 
         containerView = new FrameLayoutDrawer(activity);
@@ -263,7 +263,7 @@ public class SecretPhotoViewer implements NotificationCenter.NotificationCenterD
             File file = FileLoader.getPathToAttach(sizeFull);
             Bitmap bitmap = null;
             BitmapFactory.Options options = null;
-            if (Build.VERSION.SDK_INT >= 14 && Build.VERSION.SDK_INT < 21) {
+            if (Build.VERSION.SDK_INT < 21) {
                 options = new BitmapFactory.Options();
                 options.inDither = true;
                 options.inPreferredConfig = Bitmap.Config.ARGB_8888;

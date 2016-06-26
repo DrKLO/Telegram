@@ -142,10 +142,12 @@ public class NativeLoader {
                 folder = "x86";
             }
 
-            if (Build.VERSION.SDK_INT == 8) {
-                File destFile = new File(context.getApplicationInfo().dataDir + "/lib", LIB_SO_NAME);
+
+            File destFile = getNativeLibraryDir(context);
+            if (destFile != null) {
+                destFile = new File(destFile, LIB_SO_NAME);
                 if (destFile.exists()) {
-                    FileLog.d("tmessages", "Load normal lib");
+                    FileLog.d("tmessages", "load normal lib");
                     try {
                         System.loadLibrary(LIB_NAME);
                         init(Constants.FILES_PATH, BuildVars.DEBUG_VERSION);
@@ -153,31 +155,6 @@ public class NativeLoader {
                         return;
                     } catch (Error e) {
                         FileLog.e("tmessages", e);
-                    }
-                } else {
-                    try {
-                        System.loadLibrary(LIB_NAME);
-                        init(Constants.FILES_PATH, BuildVars.DEBUG_VERSION);
-                        nativeLoaded = true;
-                        return;
-                    } catch (Error e) {
-                        FileLog.e("tmessages", e);
-                    }
-                }
-            } else {
-                File destFile = getNativeLibraryDir(context);
-                if (destFile != null) {
-                    destFile = new File(destFile, LIB_SO_NAME);
-                    if (destFile.exists()) {
-                        FileLog.d("tmessages", "load normal lib");
-                        try {
-                            System.loadLibrary(LIB_NAME);
-                            init(Constants.FILES_PATH, BuildVars.DEBUG_VERSION);
-                            nativeLoaded = true;
-                            return;
-                        } catch (Error e) {
-                            FileLog.e("tmessages", e);
-                        }
                     }
                 }
             }

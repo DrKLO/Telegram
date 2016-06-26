@@ -13,14 +13,14 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.util.TypedValue;
 import android.view.Gravity;
+import android.widget.FrameLayout;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
-import org.telegram.ui.Components.FrameLayoutFixed;
 import org.telegram.ui.Components.LayoutHelper;
 
-public class TextDetailSettingsCell extends FrameLayoutFixed {
+public class TextDetailSettingsCell extends FrameLayout {
 
     private TextView textView;
     private TextView valueTextView;

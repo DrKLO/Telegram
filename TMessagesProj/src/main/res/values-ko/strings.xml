@@ -69,6 +69,8 @@
     <string name="ChatHints">대화</string>
     <string name="ChatHintsDelete">%1$s를 추천에서 삭제하겠습니까?</string>
     <string name="LinkPreview">링크 미리복</string>
+    <string name="Draft">임시</string>
+    <string name="HistoryCleared">내역이 초기화 됨</string>
     <!--channels-->
     <string name="GroupType">그룹 종류</string>
     <string name="ChannelType">채널 종류</string>
@@ -107,8 +109,6 @@
     <string name="NoBlockedGroup">그룹방에서 차단되어 퇴장당한 사용자는 관리자가 초대해야지만 그룹방에 입장이 가능합니다. 초대링크로는 초대가 되지 않습니다.</string>
     <string name="NewChannel">새 채널</string>
     <string name="EnterChannelName">채널명</string>
-    <string name="Comments">코멘트들</string>
-    <string name="CommentsInfo">코멘트를 허용할 경우, 유저들이 회원님 글에 대하여 코멘트 등록이 가능합니다.</string>
     <string name="AddMutual">채널에 친구 추가</string>
     <string name="ChannelUsernameHelp">텔레그램 검색을 통하여 다른 유저들이 채널을 찾을 수 있습니다.</string>
     <string name="MegaUsernameHelp">텔레그램 검색을 통하여 다른 유저들이 그룹을 찾을 수 있습니다.</string>
@@ -133,11 +133,8 @@
     <string name="LeaveChannelMenu">채널 나가기</string>
     <string name="ChannelSettings">설정</string>
     <string name="ChannelJoin">입장</string>
-    <string name="OpenChannelProfile">채널 정보</string>
     <string name="ChannelBroadcast">모두에게 메시지 전달</string>
     <string name="ChannelSilentBroadcast">조용한 공지</string>
-    <string name="ChannelComment">코멘트 </string>
-    <string name="ShowDiscussion">코멘트 보기</string>
     <string name="ChannelAlertTitle">채널이 무엇인가요?</string>
     <string name="ChannelAlertText">채널은 많은 유저들에게 메시지를 한번에 전송 할 수 있는 새로운 기능입니다.</string>
     <string name="ChannelAlertCreate">채널 생성</string>
@@ -469,7 +466,7 @@
     <string name="ConvertGroupAlertWarning">경고</string>
     <string name="ConvertGroupAlert">이 작업은 되돌릴 수 없습니다. 슈퍼그룹에서 일반그룹방으로 다운 그레이드는 불가능 합니다.</string>
     <string name="ConvertGroupInfo"><![CDATA[<b>]]>구성원이 최대치입니다.<![CDATA[</b>]]>\n\n추가 기능 및 더 많은 구성원을 추가하려면 슈퍼그룹방으로 업그레이드하세요:\n\n• 슈퍼그룹방은 %1$s명까지 초대가능합니다.\n• 새로운 구성원은 모든 대화내역을 볼 수 있습니다.\n• 메시지 삭제시 모두에게 삭제가 됩니다.\n• 방 생성자는 그룹방 공개링크 생성이 가능합니다.</string>
-    <string name="ConvertGroupInfo2"><![CDATA[<b>]]>슈퍼그룹:<![CDATA[</b>]]>\n\n• 새로운 구성원은 모든 대화내역을 볼 수 있습니다.\n• 메시지 삭제시 모두에게 삭제가 됩니다.\n• 메시지를 작성자가 수정 가능합니다.\n• 방 생성자는 그룹방 공개링크 생성이 가능합니다.</string>
+    <string name="ConvertGroupInfo2"><![CDATA[<b>]]>슈퍼그룹:<![CDATA[</b>]]>\n\n• 새로운 구성원은 모든 대화내역을 볼 수 있습니다.\n• 메시지 삭제시 모두에게 삭제가 됩니다.\n• 방 생성자는 그룹방 공개링크 생성이 가능합니다.</string>
     <string name="ConvertGroupInfo3"><![CDATA[<b>]]>주위:<![CDATA[</b>]]> 이 작업은 되돌릴 수 없습니다.</string>
     <!--contact info view-->
     <string name="ShareContact">공유</string>
@@ -1038,12 +1035,6 @@
     <string name="messages_few">메시지 %1$d건</string>
     <string name="messages_many">메시지 %1$d건</string>
     <string name="messages_other">메시지 %1$d건</string>
-    <string name="comments_zero">%1$d 코멘트</string>
-    <string name="comments_one">%1$d 코멘트</string>
-    <string name="comments_two">%1$d 코멘트</string>
-    <string name="comments_few">%1$d 코멘트</string>
-    <string name="comments_many">%1$d 코멘트</string>
-    <string name="comments_other">%1$d 코멘트</string>
     <string name="items_zero">아이템이 없습니다.</string>
     <string name="items_one">%1$d개 아이템</string>
     <string name="items_two">%1$d개 아이템</string>

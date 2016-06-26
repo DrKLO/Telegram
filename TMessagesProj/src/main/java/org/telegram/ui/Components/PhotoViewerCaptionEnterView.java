@@ -8,6 +8,8 @@
 
 package org.telegram.ui.Components;
 
+import android.animation.AnimatorSet;
+import android.animation.ObjectAnimator;
 import android.content.Context;
 import android.os.Build;
 import android.text.Editable;
@@ -35,13 +37,11 @@ import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
 import org.telegram.tgnet.TLRPC;
-import org.telegram.messenger.AnimationCompat.AnimatorSetProxy;
-import org.telegram.messenger.AnimationCompat.ObjectAnimatorProxy;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
-public class PhotoViewerCaptionEnterView extends FrameLayoutFixed implements NotificationCenter.NotificationCenterDelegate, SizeNotifierFrameLayoutPhoto.SizeNotifierFrameLayoutPhotoDelegate {
+public class PhotoViewerCaptionEnterView extends FrameLayout implements NotificationCenter.NotificationCenterDelegate, SizeNotifierFrameLayoutPhoto.SizeNotifierFrameLayoutPhotoDelegate {
 
     public interface PhotoViewerCaptionEnterViewDelegate {
         void onCaptionEnter();
@@ -56,9 +56,9 @@ public class PhotoViewerCaptionEnterView extends FrameLayoutFixed implements Not
 
     private ActionMode currentActionMode;
 
-    private AnimatorSetProxy runningAnimation;
-    private AnimatorSetProxy runningAnimation2;
-    private ObjectAnimatorProxy runningAnimationAudio;
+    private AnimatorSet runningAnimation;
+    private AnimatorSet runningAnimation2;
+    private ObjectAnimator runningAnimationAudio;
     private int runningAnimationType;
     private int audioInterfaceState;
 
@@ -89,7 +89,7 @@ public class PhotoViewerCaptionEnterView extends FrameLayoutFixed implements Not
         textFieldContainer.setOrientation(LinearLayout.HORIZONTAL);
         addView(textFieldContainer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 2, 0, 0, 0));
 
-        FrameLayoutFixed frameLayout = new FrameLayoutFixed(context);
+        FrameLayout frameLayout = new FrameLayout(context);
         textFieldContainer.addView(frameLayout, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1.0f));
 
         emojiButton = new ImageView(context);
@@ -108,7 +108,17 @@ public class PhotoViewerCaptionEnterView extends FrameLayoutFixed implements Not
             }
         });
 
-        messageEditText = new EditText(context);
+        messageEditText = new EditText(context) {
+            @Override
+            protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+                try {
+                    super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+                } catch (Exception e) {
+                    setMeasuredDimension(MeasureSpec.getSize(widthMeasureSpec), AndroidUtilities.dp(51));
+                    FileLog.e("tmessages", e);
+                }
+            }
+        };
         if (Build.VERSION.SDK_INT >= 23) {
             messageEditText.setCustomSelectionActionModeCallback(new ActionMode.Callback() {
                 @Override

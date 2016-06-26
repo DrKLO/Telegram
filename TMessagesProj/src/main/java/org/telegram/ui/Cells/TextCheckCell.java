@@ -11,19 +11,18 @@ package org.telegram.ui.Cells;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
-import android.os.Build;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
+import android.widget.FrameLayout;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
-import org.telegram.ui.Components.FrameLayoutFixed;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.Switch;
 
-public class TextCheckCell extends FrameLayoutFixed {
+public class TextCheckCell extends FrameLayout {
 
     private TextView textView;
     private TextView valueTextView;
@@ -81,10 +80,6 @@ public class TextCheckCell extends FrameLayoutFixed {
 
     public void setTextAndCheck(String text, boolean checked, boolean divider) {
         textView.setText(text);
-        if (Build.VERSION.SDK_INT < 11) {
-            checkBox.resetLayout();
-            checkBox.requestLayout();
-        }
         isMultiline = false;
         checkBox.setChecked(checked);
         needDivider = divider;
@@ -99,10 +94,6 @@ public class TextCheckCell extends FrameLayoutFixed {
     public void setTextAndValueAndCheck(String text, String value, boolean checked, boolean multiline, boolean divider) {
         textView.setText(text);
         valueTextView.setText(value);
-        if (Build.VERSION.SDK_INT < 11) {
-            checkBox.resetLayout();
-            checkBox.requestLayout();
-        }
         checkBox.setChecked(checked);
         needDivider = divider;
         valueTextView.setVisibility(VISIBLE);

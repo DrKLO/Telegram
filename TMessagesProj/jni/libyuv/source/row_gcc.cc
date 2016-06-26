@@ -2936,6 +2936,33 @@ void ARGBCopyAlphaRow_AVX2(const uint8* src, uint8* dst, int width) {
 }
 #endif  // HAS_ARGBCOPYALPHAROW_AVX2
 
+#ifdef HAS_ARGBEXTRACTALPHAROW_SSE2
+// width in pixels
+void ARGBExtractAlphaRow_SSE2(const uint8* src_argb, uint8* dst_a, int width) {
+ asm volatile (
+    LABELALIGN
+  "1:                                          \n"
+    "movdqu    " MEMACCESS(0) ", %%xmm0        \n"
+    "movdqu    " MEMACCESS2(0x10, 0) ", %%xmm1 \n"
+    "lea       " MEMLEA(0x20, 0) ", %0         \n"
+    "psrld     $0x18, %%xmm0                   \n"
+    "psrld     $0x18, %%xmm1                   \n"
+    "packssdw  %%xmm1, %%xmm0                  \n"
+    "packuswb  %%xmm0, %%xmm0                  \n"
+    "movq      %%xmm0," MEMACCESS(1) "         \n"
+    "lea       " MEMLEA(0x8, 1) ", %1          \n"
+    "sub       $0x8, %2                        \n"
+    "jg        1b                              \n"
+  : "+r"(src_argb),  // %0
+    "+r"(dst_a),     // %1
+    "+rm"(width)     // %2
+  :
+  : "memory", "cc"
+    , "xmm0", "xmm1"
+  );
+}
+#endif  // HAS_ARGBEXTRACTALPHAROW_SSE2
+
 #ifdef HAS_ARGBCOPYYTOALPHAROW_SSE2
 // width in pixels
 void ARGBCopyYToAlphaRow_SSE2(const uint8* src, uint8* dst, int width) {
@@ -3569,7 +3596,7 @@ void BlendPlaneRow_SSSE3(const uint8* src0, const uint8* src1,
     "+r"(src1),       // %1
     "+r"(alpha),      // %2
     "+r"(dst),        // %3
-    "+r"(width)       // %4
+    "+rm"(width)      // %4
   :: "memory", "cc", "eax", "xmm0", "xmm1", "xmm2", "xmm5", "xmm6", "xmm7"
   );
 }
@@ -3626,7 +3653,7 @@ void BlendPlaneRow_AVX2(const uint8* src0, const uint8* src1,
     "+r"(src1),       // %1
     "+r"(alpha),      // %2
     "+r"(dst),        // %3
-    "+r"(width)       // %4
+    "+rm"(width)      // %4
   :: "memory", "cc", "eax",
      "xmm0", "xmm1", "xmm2", "xmm3", "xmm4", "xmm5", "xmm6", "xmm7"
   );
@@ -4909,9 +4936,9 @@ void InterpolateRow_SSSE3(uint8* dst_ptr, const uint8* src_ptr,
     "jg        100b                            \n"
 
   "99:                                         \n"
-  : "+r"(dst_ptr),    // %0
-    "+r"(src_ptr),    // %1
-    "+r"(dst_width),  // %2
+  : "+r"(dst_ptr),     // %0
+    "+r"(src_ptr),     // %1
+    "+rm"(dst_width),  // %2
     "+r"(source_y_fraction)  // %3
   : "r"((intptr_t)(src_stride))  // %4
   : "memory", "cc", "eax", NACL_R14
@@ -4987,7 +5014,7 @@ void InterpolateRow_AVX2(uint8* dst_ptr, const uint8* src_ptr,
   "999:                                        \n"
   : "+D"(dst_ptr),    // %0
     "+S"(src_ptr),    // %1
-    "+c"(dst_width),  // %2
+    "+cm"(dst_width),  // %2
     "+r"(source_y_fraction)  // %3
   : "r"((intptr_t)(src_stride))  // %4
   : "memory", "cc", "eax", NACL_R14

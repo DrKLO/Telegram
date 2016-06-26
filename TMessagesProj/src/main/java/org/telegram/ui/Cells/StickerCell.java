@@ -10,19 +10,18 @@ package org.telegram.ui.Cells;
 
 import android.content.Context;
 import android.graphics.Canvas;
-import android.os.Build;
 import android.view.Gravity;
 import android.view.View;
 import android.view.animation.AccelerateInterpolator;
+import android.widget.FrameLayout;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.R;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.Components.BackupImageView;
-import org.telegram.ui.Components.FrameLayoutFixed;
 import org.telegram.ui.Components.LayoutHelper;
 
-public class StickerCell extends FrameLayoutFixed {
+public class StickerCell extends FrameLayout {
 
     private BackupImageView imageView;
     private TLRPC.Document sticker;
@@ -109,10 +108,8 @@ public class StickerCell extends FrameLayoutFixed {
                     scale = 1.0f;
                 }
             }
-            if (Build.VERSION.SDK_INT >= 11) {
-                imageView.setScaleX(scale);
-                imageView.setScaleY(scale);
-            }
+            imageView.setScaleX(scale);
+            imageView.setScaleY(scale);
             imageView.invalidate();
             invalidate();
         }
