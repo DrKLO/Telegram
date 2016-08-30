@@ -3266,6 +3266,27 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         }
     }
 
+    public void processDialogsUpdateRead(final HashMap<Long, Integer> dialogsUpdateUnreadCount, final HashMap<Long, Boolean> dialogsUpdateRequestMe) {
+        AndroidUtilities.runOnUIThread(new Runnable() {
+            @Override
+            public void run() {
+                for (HashMap.Entry<Long, Integer> entry : dialogsUpdateUnreadCount.entrySet()) {
+                    TLRPC.TL_dialog currentDialog = dialogs_dict.get(entry.getKey());
+                    if (currentDialog != null) {
+                        currentDialog.unread_count = entry.getValue();
+                    }
+                }
+                for (HashMap.Entry<Long, Boolean> entry : dialogsUpdateRequestMe.entrySet()) {
+                    TLRPC.TL_dialog currentDialog = dialogs_dict.get(entry.getKey());
+                    if (currentDialog != null) {
+                        currentDialog.request_me = entry.getValue();
+                    }
+                }
+                NotificationCenter.getInstance().postNotificationName(NotificationCenter.updateInterfaces, UPDATE_MASK_READ_DIALOG_MESSAGE);
+                NotificationsController.getInstance().processDialogsUpdateRead(dialogsUpdateUnreadCount);
+            }
+        });
+    }
     public void processDialogsUpdateRead(final HashMap<Long, Integer> dialogsToUpdate) {
         AndroidUtilities.runOnUIThread(new Runnable() {
             @Override
@@ -3274,6 +3295,10 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     TLRPC.TL_dialog currentDialog = dialogs_dict.get(entry.getKey());
                     if (currentDialog != null) {
                         currentDialog.unread_count = entry.getValue();
+                        if(entry.getValue() == 0)
+                        {
+                            currentDialog.request_me = false;
+                        }
                     }
                 }
                 NotificationCenter.getInstance().postNotificationName(NotificationCenter.updateInterfaces, UPDATE_MASK_READ_DIALOG_MESSAGE);
@@ -3642,6 +3667,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                             TLRPC.TL_dialog dialog = dialogs_dict.get(dialog_id);
                             if (dialog != null) {
                                 dialog.unread_count = 0;
+                                dialog.request_me = false;
                                 NotificationCenter.getInstance().postNotificationName(NotificationCenter.updateInterfaces, UPDATE_MASK_READ_DIALOG_MESSAGE);
                             }
                             if (!popup) {
@@ -3704,6 +3730,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                             TLRPC.TL_dialog dialog = dialogs_dict.get(dialog_id);
                             if (dialog != null) {
                                 dialog.unread_count = 0;
+                                dialog.request_me = false;
                                 NotificationCenter.getInstance().postNotificationName(NotificationCenter.updateInterfaces, UPDATE_MASK_READ_DIALOG_MESSAGE);
                             }
                             HashMap<Long, Integer> dialogsToUpdate = new HashMap<>();
