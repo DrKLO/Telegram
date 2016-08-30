@@ -1445,6 +1445,7 @@ public class NotificationsController {
             }
             PendingIntent contentIntent = PendingIntent.getActivity(ApplicationLoader.applicationContext, 0, intent, PendingIntent.FLAG_ONE_SHOT);
 
+            boolean requestMeExist = MessagesStorage.getInstance().requestMeExist(pushDialogs);
             String name;
             boolean replace = true;
             if ((int) dialog_id == 0 || pushDialogs.size() > 1 || AndroidUtilities.needShowPasscode(false) || UserConfig.isWaitingForPasscodeEnter) {
@@ -1497,9 +1498,17 @@ public class NotificationsController {
                         message = message.replace(name + ": ", "").replace(name + " ", "");
                     }
                 }
+                if(requestMeExist)
+                {
+                    message = "@" + message;
+                }
                 mBuilder.setContentText(message);
                 mBuilder.setStyle(new NotificationCompat.BigTextStyle().bigText(message));
             } else {
+                if(requestMeExist)
+                {
+                    detailText = "@" + detailText;
+                }
                 mBuilder.setContentText(detailText);
                 NotificationCompat.InboxStyle inboxStyle = new NotificationCompat.InboxStyle();
                 inboxStyle.setBigContentTitle(name);

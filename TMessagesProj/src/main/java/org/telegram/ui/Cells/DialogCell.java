@@ -57,6 +57,7 @@ public class DialogCell extends BaseCell {
     private static Drawable errorDrawable;
     private static Drawable lockDrawable;
     private static Drawable countDrawable;
+    private static Drawable countDrawableYellow;
     private static Drawable countDrawableGrey;
     private static Drawable groupDrawable;
     private static Drawable broadcastDrawable;
@@ -72,6 +73,7 @@ public class DialogCell extends BaseCell {
     private boolean isDialogCell;
     private int lastMessageDate;
     private int unreadCount;
+    private boolean request_me;
     private boolean lastUnreadState;
     private int lastSendState;
     private boolean dialogMuted;
@@ -175,6 +177,7 @@ public class DialogCell extends BaseCell {
             clockDrawable = getResources().getDrawable(R.drawable.msg_clock);
             errorDrawable = getResources().getDrawable(R.drawable.dialogs_warning);
             countDrawable = getResources().getDrawable(R.drawable.dialogs_badge);
+            countDrawableYellow = getResources().getDrawable(R.drawable.dialogs_badge_yellow);
             countDrawableGrey = getResources().getDrawable(R.drawable.dialogs_badge2);
             groupDrawable = getResources().getDrawable(R.drawable.list_group);
             broadcastDrawable = getResources().getDrawable(R.drawable.list_broadcast);
@@ -750,6 +753,7 @@ public class DialogCell extends BaseCell {
                 message = MessagesController.getInstance().dialogMessage.get(dialog.id);
                 lastUnreadState = message != null && message.isUnread();
                 unreadCount = dialog.unread_count;
+                request_me = dialog.request_me;
                 currentEditDate = message != null ? message.messageOwner.edit_date : 0;
                 lastMessageDate = dialog.last_message_date;
                 if (message != null) {
@@ -796,6 +800,7 @@ public class DialogCell extends BaseCell {
                     TLRPC.TL_dialog dialog = MessagesController.getInstance().dialogs_dict.get(currentDialogId);
                     if (dialog != null && unreadCount != dialog.unread_count) {
                         unreadCount = dialog.unread_count;
+                        request_me = dialog.request_me;
                         continueUpdate = true;
                     }
                 }
@@ -943,8 +948,16 @@ public class DialogCell extends BaseCell {
                 setDrawableBounds(countDrawableGrey, countLeft - AndroidUtilities.dp(5.5f), countTop, countWidth + AndroidUtilities.dp(11), countDrawable.getIntrinsicHeight());
                 countDrawableGrey.draw(canvas);
             } else {
-                setDrawableBounds(countDrawable, countLeft - AndroidUtilities.dp(5.5f), countTop, countWidth + AndroidUtilities.dp(11), countDrawable.getIntrinsicHeight());
-                countDrawable.draw(canvas);
+                if(request_me)
+                {
+                    setDrawableBounds(countDrawableYellow, countLeft - AndroidUtilities.dp(5.5f), countTop, countWidth + AndroidUtilities.dp(11), countDrawableYellow.getIntrinsicHeight());
+                    countDrawableYellow.draw(canvas);
+                }
+                else
+                {
+                    setDrawableBounds(countDrawable, countLeft - AndroidUtilities.dp(5.5f), countTop, countWidth + AndroidUtilities.dp(11), countDrawable.getIntrinsicHeight());
+                    countDrawable.draw(canvas);
+                }
             }
             canvas.save();
             canvas.translate(countLeft, countTop + AndroidUtilities.dp(4));

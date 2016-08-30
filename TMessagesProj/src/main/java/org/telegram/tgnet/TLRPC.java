@@ -21321,6 +21321,7 @@ public class TLRPC {
 		public int read_inbox_max_id;
 		public int read_outbox_max_id;
 		public int unread_count;
+		public boolean request_me;
 		public PeerNotifySettings notify_settings;
 		public int pts;
 		public DraftMessage draft;
