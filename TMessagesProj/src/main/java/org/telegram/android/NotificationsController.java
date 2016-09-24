@@ -543,6 +543,7 @@ public class NotificationsController {
             NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(ApplicationLoader.applicationContext)
                     .setContentTitle(name)
                     .setSmallIcon(R.drawable.notification)
+                    .setNumber(pushMessages.size())
                     .setAutoCancel(true)
                     .setNumber(total_unread_count)
                     .setContentIntent(contentIntent)
