@@ -1,5 +1,22 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 buildscript {
+
+    ext.setup = [compileSdkVersion : 23,
+                 buildToolsVersion: '23.0.3',
+                 minSdkVersion: 23,
+                 targetSdkVersion: 23]
+
+    ext.versions = [supportLibrary: "23.4.0",
+                    playServices: "8.4.0"]
+
+    ext.deps = [
+        supportV4       : "com.android.support:support-v4:$versions.supportLibrary",
+        playServicesGcm : "com.google.android.gms:play-services-gcm:$versions.playServices",
+        playServicesMaps: "com.google.android.gms:play-services-maps:$versions.playServices",
+        hockeySdk       : 'net.hockeyapp.android:HockeySDK:4.0.1',
+        isoParser       : 'com.googlecode.mp4parser:isoparser:1.0.6'
+    ]
+
     repositories {
         jcenter()
         mavenCentral()
