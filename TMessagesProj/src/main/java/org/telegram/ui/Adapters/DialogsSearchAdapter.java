@@ -135,7 +135,7 @@ public class DialogsSearchAdapter extends BaseSearchAdapterRecycler {
             } else if (chat != null) {
                 name = chat.title;
             }
-            cell.setDialog(did, false, name);
+            cell.setDialog(did, true, name);
         }
 
         @Override
@@ -593,7 +593,7 @@ public class DialogsSearchAdapter extends BaseSearchAdapterRecycler {
                     }
 
                     if (!encryptedToLoad.isEmpty()) {
-                        cursor = MessagesStorage.getInstance().getDatabase().queryFinalized(String.format(Locale.US, "SELECT q.data, u.name, q.user, q.g, q.authkey, q.ttl, u.data, u.status, q.layer, q.seq_in, q.seq_out, q.use_count, q.exchange_id, q.key_date, q.fprint, q.fauthkey, q.khash FROM enc_chats as q INNER JOIN users as u ON q.user = u.uid WHERE q.uid IN(%s)", TextUtils.join(",", encryptedToLoad)));
+                        cursor = MessagesStorage.getInstance().getDatabase().queryFinalized(String.format(Locale.US, "SELECT q.data, u.name, q.user, q.g, q.authkey, q.ttl, u.data, u.status, q.layer, q.seq_in, q.seq_out, q.use_count, q.exchange_id, q.key_date, q.fprint, q.fauthkey, q.khash, q.in_seq_no FROM enc_chats as q INNER JOIN users as u ON q.user = u.uid WHERE q.uid IN(%s)", TextUtils.join(",", encryptedToLoad)));
                         while (cursor.next()) {
                             String name = cursor.stringValue(1);
                             String tName = LocaleController.getInstance().getTranslitString(name);
@@ -645,6 +645,7 @@ public class DialogsSearchAdapter extends BaseSearchAdapterRecycler {
                                         chat.future_key_fingerprint = cursor.longValue(14);
                                         chat.future_auth_key = cursor.byteArrayValue(15);
                                         chat.key_hash = cursor.byteArrayValue(16);
+                                        chat.in_seq_no = cursor.intValue(17);
 
                                         if (user.status != null) {
                                             user.status.expires = cursor.intValue(7);
@@ -789,8 +790,8 @@ public class DialogsSearchAdapter extends BaseSearchAdapterRecycler {
     @Override
     protected void setHashtags(ArrayList<HashtagObject> arrayList, HashMap<String, HashtagObject> hashMap) {
         super.setHashtags(arrayList, hashMap);
-        for (HashtagObject hashtagObject : arrayList) {
-            searchResultHashtags.add(hashtagObject.hashtag);
+        for (int a = 0; a < arrayList.size(); a++) {
+            searchResultHashtags.add(arrayList.get(a).hashtag);
         }
         if (delegate != null) {
             delegate.searchStateChanged(false);
@@ -834,8 +835,9 @@ public class DialogsSearchAdapter extends BaseSearchAdapterRecycler {
                 }
                 searchResultMessages.clear();
                 searchResultHashtags.clear();
-                for (HashtagObject hashtagObject : hashtags) {
-                    searchResultHashtags.add(hashtagObject.hashtag);
+
+                for (int a = 0; a < hashtags.size(); a++) {
+                    searchResultHashtags.add(hashtags.get(a).hashtag);
                 }
                 if (delegate != null) {
                     delegate.searchStateChanged(false);
@@ -844,6 +846,7 @@ public class DialogsSearchAdapter extends BaseSearchAdapterRecycler {
                 return;
             } else {
                 searchResultHashtags.clear();
+                notifyDataSetChanged();
             }
             final int searchId = ++lastSearchId;
             searchTimer = new Timer();

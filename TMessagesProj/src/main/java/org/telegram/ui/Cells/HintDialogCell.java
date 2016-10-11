@@ -70,10 +70,10 @@ public class HintDialogCell extends FrameLayout {
             countDrawableGrey = getResources().getDrawable(R.drawable.dialogs_badge2);
 
             countPaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
-            countPaint.setTextSize(AndroidUtilities.dp(13));
             countPaint.setColor(0xffffffff);
             countPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         }
+        countPaint.setTextSize(AndroidUtilities.dp(13));
     }
 
     @Override
@@ -115,7 +115,7 @@ public class HintDialogCell extends FrameLayout {
         }
     }
 
-    public void setDialog(int uid, boolean checked, CharSequence name) {
+    public void setDialog(int uid, boolean counter, CharSequence name) {
         dialog_id = uid;
         TLRPC.FileLocation photo = null;
         if (uid > 0) {
@@ -146,7 +146,11 @@ public class HintDialogCell extends FrameLayout {
             }
         }
         imageView.setImage(photo, "50_50", avatarDrawable);
-        checkUnreadCounter(0);
+        if (counter) {
+            checkUnreadCounter(0);
+        } else {
+            countLayout = null;
+        }
     }
 
     @Override

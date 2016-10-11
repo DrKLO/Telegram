@@ -29,10 +29,24 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.Components.URLSpanUserMention;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Locale;
 
 public class MessagesQuery {
+
+    private static Comparator<TLRPC.MessageEntity> entityComparator = new Comparator<TLRPC.MessageEntity>() {
+        @Override
+        public int compare(TLRPC.MessageEntity entity1, TLRPC.MessageEntity entity2) {
+            if (entity1.offset > entity2.offset) {
+                return 1;
+            } else if (entity1.offset < entity2.offset) {
+                return -1;
+            }
+            return 0;
+        }
+    };
 
     public static MessageObject loadPinnedMessage(final int channelId, final int mid, boolean useQueue) {
         if (useQueue) {
@@ -428,6 +442,8 @@ public class MessagesQuery {
                             m.replyMessageObject = messageObject;
                             if (m.messageOwner.action instanceof TLRPC.TL_messageActionPinMessage) {
                                 m.generatePinMessageText(null, null);
+                            } else if (m.messageOwner.action instanceof TLRPC.TL_messageActionGameScore) {
+                                m.generateGameMessageText(null);
                             }
                         }
                         changed = true;
@@ -440,14 +456,85 @@ public class MessagesQuery {
         });
     }
 
-    public static ArrayList<TLRPC.MessageEntity> getEntities(CharSequence message) {
-        if (message == null) {
+    public static void sortEntities(ArrayList<TLRPC.MessageEntity> entities) {
+        Collections.sort(entities, entityComparator);
+    }
+
+    public static ArrayList<TLRPC.MessageEntity> getEntities(CharSequence[] message) {
+        if (message == null || message[0] == null) {
             return null;
         }
         ArrayList<TLRPC.MessageEntity> entities = null;
-        if (message instanceof Spannable) {
-            Spannable spannable = (Spannable) message;
-            URLSpanUserMention spans[] = spannable.getSpans(0, message.length(), URLSpanUserMention.class);
+        int index;
+        int start = -1;
+        int lastIndex = 0;
+        boolean isPre = false;
+        final String mono = "`";
+        final String pre = "```";
+        while ((index = TextUtils.indexOf(message[0], !isPre ? mono : pre, lastIndex)) != -1) {
+            if (start == -1) {
+                isPre = message[0].length() - index > 2 && message[0].charAt(index + 1) == '`' && message[0].charAt(index + 2) == '`';
+                start = index;
+                lastIndex = index + (isPre ? 3 : 1);
+            } else {
+                if (entities == null) {
+                    entities = new ArrayList<>();
+                }
+                for (int a = index + (isPre ? 3 : 1); a < message[0].length(); a++) {
+                    if (message[0].charAt(a) == '`') {
+                        index++;
+                    } else {
+                        break;
+                    }
+                }
+                lastIndex = index + (isPre ? 3 : 1);
+                if (isPre) {
+                    int firstChar = start > 0 ? message[0].charAt(start - 1) : 0;
+                    boolean replacedFirst = firstChar == ' ' || firstChar == '\n';
+                    CharSequence startMessage = TextUtils.substring(message[0], 0, start - (replacedFirst ? 1 : 0));
+                    CharSequence content = TextUtils.substring(message[0], start + 3, index);
+                    firstChar = index + 3 < message[0].length() ? message[0].charAt(index + 3) : 0;
+                    CharSequence endMessage = TextUtils.substring(message[0], index + 3 + (firstChar == ' ' || firstChar == '\n' ? 1 : 0), message[0].length());
+                    if (startMessage.length() != 0) {
+                        startMessage = TextUtils.concat(startMessage, "\n");
+                    } else {
+                        replacedFirst = true;
+                    }
+                    if (endMessage.length() != 0) {
+                        endMessage = TextUtils.concat("\n", endMessage);
+                    }
+                    message[0] = TextUtils.concat(startMessage, content, endMessage);
+                    TLRPC.TL_messageEntityPre entity = new TLRPC.TL_messageEntityPre();
+                    entity.offset = start + (replacedFirst ? 0 : 1);
+                    entity.length = index - start - 3 + (replacedFirst ? 0 : 1);
+                    entity.language = "";
+                    entities.add(entity);
+                    lastIndex -= 6;
+                } else {
+                    message[0] = TextUtils.concat(TextUtils.substring(message[0], 0, start), TextUtils.substring(message[0], start + 1, index), TextUtils.substring(message[0], index + 1, message[0].length()));
+                    TLRPC.TL_messageEntityCode entity = new TLRPC.TL_messageEntityCode();
+                    entity.offset = start;
+                    entity.length = index - start - 1;
+                    entities.add(entity);
+                    lastIndex -= 2;
+                }
+                start = -1;
+                isPre = false;
+            }
+        }
+        if (start != -1 && isPre) {
+            message[0] = TextUtils.concat(TextUtils.substring(message[0], 0, start), TextUtils.substring(message[0], start + 2, message[0].length()));
+            if (entities == null) {
+                entities = new ArrayList<>();
+            }
+            TLRPC.TL_messageEntityCode entity = new TLRPC.TL_messageEntityCode();
+            entity.offset = start;
+            entity.length = 1;
+            entities.add(entity);
+        }
+        if (message[0] instanceof Spannable) {
+            Spannable spannable = (Spannable) message[0];
+            URLSpanUserMention spans[] = spannable.getSpans(0, message[0].length(), URLSpanUserMention.class);
             if (spans != null && spans.length > 0) {
                 entities = new ArrayList<>();
                 for (int b = 0; b < spans.length; b++) {
@@ -455,8 +542,8 @@ public class MessagesQuery {
                     entity.user_id = MessagesController.getInputUser(Utilities.parseInt(spans[b].getURL()));
                     if (entity.user_id != null) {
                         entity.offset = spannable.getSpanStart(spans[b]);
-                        entity.length = Math.min(spannable.getSpanEnd(spans[b]), message.length()) - entity.offset;
-                        if (message.charAt(entity.offset + entity.length - 1) == ' ') {
+                        entity.length = Math.min(spannable.getSpanEnd(spans[b]), message[0].length()) - entity.offset;
+                        if (message[0].charAt(entity.offset + entity.length - 1) == ' ') {
                             entity.length--;
                         }
                         entities.add(entity);

@@ -20,8 +20,10 @@ import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.provider.MediaStore;
+import android.support.v4.content.FileProvider;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
@@ -31,6 +33,7 @@ import android.widget.ImageView;
 import android.widget.ProgressBar;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.BuildConfig;
 import org.telegram.messenger.ImageLoader;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.support.widget.LinearLayoutManager;
@@ -219,7 +222,13 @@ public class WallpapersActivity extends BaseFragment implements NotificationCent
                                     Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
                                     File image = AndroidUtilities.generatePicturePath();
                                     if (image != null) {
-                                        takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(image));
+                                        if (Build.VERSION.SDK_INT >= 24) {
+                                            takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, FileProvider.getUriForFile(getParentActivity(), BuildConfig.APPLICATION_ID + ".provider", image));
+                                            takePictureIntent.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+                                            takePictureIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                                        } else {
+                                            takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(image));
+                                        }
                                         currentPicturePath = image.getAbsolutePath();
                                     }
                                     startActivityForResult(takePictureIntent, 10);

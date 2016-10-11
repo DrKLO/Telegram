@@ -38,9 +38,10 @@ import java.util.HashMap;
 public class ActionBarPopupWindow extends PopupWindow {
 
     private static final Field superListenerField;
-    private static final boolean animationEnabled = Build.VERSION.SDK_INT >= 18;
+    private static final boolean allowAnimation = Build.VERSION.SDK_INT >= 18;
     private static DecelerateInterpolator decelerateInterpolator = new DecelerateInterpolator();
     private AnimatorSet windowAnimatorSet;
+    private boolean animationEnabled = allowAnimation;
     static {
         Field f = null;
         try {
@@ -75,6 +76,7 @@ public class ActionBarPopupWindow extends PopupWindow {
         private int backAlpha = 255;
         private int lastStartedChild = 0;
         private boolean showedFromBotton;
+        private boolean animationEnabled = allowAnimation;
         private HashMap<View, Integer> positions = new HashMap<>();
 
         private ScrollView scrollView;
@@ -181,9 +183,17 @@ public class ActionBarPopupWindow extends PopupWindow {
             }
         }
 
+        public void setAnimationEnabled(boolean value) {
+            animationEnabled = value;
+        }
+
         @Override
         public void addView(View child) {
             linearLayout.addView(child);
+        }
+
+        public void removeInnerViews() {
+            linearLayout.removeAllViews();
         }
 
         public float getBackScaleX() {
@@ -258,6 +268,10 @@ public class ActionBarPopupWindow extends PopupWindow {
     public ActionBarPopupWindow(View contentView, int width, int height) {
         super(contentView, width, height);
         init();
+    }
+
+    public void setAnimationEnabled(boolean value) {
+        animationEnabled = value;
     }
 
     private void init() {

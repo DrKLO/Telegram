@@ -25,6 +25,15 @@
     <string name="Code">코드</string>
     <string name="WrongNumber">전화번호가 틀렸나요?</string>
     <string name="DidNotGetTheCode">코드를 받지 못하셨나요?</string>
+    <string name="CancelAccountReset">계정 초기화 취소</string>
+    <string name="CancelAccountResetInfo"><![CDATA[<b>]]>%1$s<![CDATA[</b>]]> 번호에 접근이 가능한 누군가가 해당 계정 및 2단계 비밀번호 초기화를 요청하였습니다.\n\n 만약 본인이 아니실 경우 방금 보내드린 코드를 본인 번호에 SMS로 전송해주세요.</string>
+    <string name="ResetAccount">계정 초기화</string>
+    <string name="ResetAccountInfo">보안목적으로, 계정  <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>이 비밀번호 설정이 되어져 있어, 약 1주일 후에 삭제를 할 예정입니다.\n\n 삭제는 언제든지 쥐소가 가능합니다.</string>
+    <string name="ResetAccountStatus">다음 이후 계정 초기화 가능 :</string>
+    <string name="ResetAccountCancelledAlert">활성화된 사용자가 계정취소를 취소하였습니다. 7일후에 다시 시도해주세요.</string>
+    <string name="ResetAccountButton">재설정</string>
+    <string name="CancelLinkExpired">링크가 유효기간이 만료되었거나 폐기됨</string>
+    <string name="CancelLinkSuccess"> %1$s 계정에 대한 삭제가 취소 되었습니다. 이창을 닫아도 됩니다.</string>
     <!--signup view-->
     <string name="YourName">이름 입력</string>
     <string name="RegisterText">이름을 입력하세요</string>
@@ -69,7 +78,7 @@
     <string name="ChatHints">대화</string>
     <string name="ChatHintsDelete">%1$s를 추천에서 삭제하겠습니까?</string>
     <string name="LinkPreview">링크 미리복</string>
-    <string name="Draft">임시</string>
+    <string name="Draft">임시저장</string>
     <string name="HistoryCleared">내역이 초기화 됨</string>
     <!--channels-->
     <string name="GroupType">그룹 종류</string>
@@ -101,6 +110,7 @@
     <string name="ActionPinnedSticker">un1 님이 스티커를 고정함</string>
     <string name="ActionPinnedVoice">un1 님이 음성메시지를 고정함</string>
     <string name="ActionPinnedContact">un1 님이 연락처를 고정함</string>
+    <string name="ActionPinnedGame">un1 님이  %1$s 고정함</string>
     <string name="ActionPinnedGeo">un1 님이 위치를 고정함</string>
     <string name="ActionPinnedGif">un1 님이 GIF를 고정함</string>
     <string name="ActionPinnedMusic">un1 님이 트랙을 고정함</string>
@@ -163,8 +173,7 @@
     <string name="ActionChannelChangedPhoto">채널 사진 업데이트됨</string>
     <string name="ActionChannelRemovedPhoto">채널 사진 삭제됨</string>
     <string name="ActionChannelChangedTitle">채널명이 un2로 변경됨</string>
-    <string name="ChannelPublicLimitReached">죄송하지만, 너무 많은 공개 채널을 생성하였습니다. 기존 공개 채널을 삭제하시거나 비공개 채널을 생성할 수 있습니다.</string>
-    <string name="ChangePublicLimitReached">죄송하지만, 너무 많은 공개링크를 생성하였습니다. 기존 공개 채널 혹은 그룹방을 비공개로 전환하거나 삭제해주세요.</string>
+    <string name="ChangePublicLimitReached">죄송하지만, 너무 많은 공개아이디를 생성하였습니다. 기존 공개 채널 혹은 그룹방을 비공개로 전환하거나 삭제해주세요.</string>
     <string name="ChannelModerator">관리자</string>
     <string name="ChannelCreator">생성자</string>
     <string name="ChannelEditor">관리자</string>
@@ -303,9 +312,11 @@
     <string name="ServiceNotifications">서비스 알림</string>
     <string name="GettingLinkInfo">링크 정보를 가져오는 중...</string>
     <string name="OpenInBrowser">다음으로 열기..</string>
+    <string name="OpenInExternalApp">다음으로 파일열기..</string>
     <string name="CopyUrl">URL 복사</string>
     <string name="SendItems">%1$s 전송</string>
     <string name="OpenUrlAlert">%1$s 링크를 여시겠습니까?</string>
+    <string name="BotPermissionGameAlert">이 bot을 통하여 %1$s이 텔레그램 이름과 아이디를(전화번호 아님) 웹페이지로 전달하시기를 허락하시나요?</string>
     <string name="ReportSpam">스팸 신고</string>
     <string name="ReportSpamAndLeave">스팸 신고 및 나가기</string>
     <string name="AddContactChat">주소록에 추가</string>
@@ -340,6 +351,13 @@
     <string name="TimeToEditExpired">죄송합니다, 수정가능시간이 만료되었습니다.</string>
     <string name="AddShortcut">바로 가기 추가</string>
     <string name="ShortcutAdded">홈에 바로가기 추가</string>
+    <string name="ChatYourSelf">나와의 대화</string>
+    <string name="ChatYourSelfName">나</string>
+    <string name="ChatYourSelfDescription1">여기로 메시지를 전달하여 저장</string>
+    <string name="ChatYourSelfDescription2">미디어와 파일을 전송하여 저장</string>
+    <string name="ChatYourSelfDescription3">모든 기기에서 이 대화를 공유</string>
+    <string name="ChatYourSelfDescription4">빠른검색을 위하여 검색사용</string>
+    <string name="ChatYourSelfTitle">클라우드 저장소</string>
     <!--notification-->
     <string name="MessageLifetimeChanged">%1$s님이 자동삭제를 %2$s 후로 설정했습니다</string>
     <string name="MessageLifetimeChangedOutgoing">자동삭제를 %1$s 후로 설정했습니다</string>
@@ -352,6 +370,7 @@
     <string name="NotificationMessageVideo">%1$s님이 동영상을 보냈습니다</string>
     <string name="NotificationMessageContact">%1$s님이 연락처를 공유했습니다</string>
     <string name="NotificationMessageMap">%1$s님이 위치를 보냈습니다</string>
+    <string name="NotificationMessageGame">%1$s님이 %2$s 게임으로 초대했습니다</string>
     <string name="NotificationMessageDocument">%1$s님이 파일을 보냈습니다</string>
     <string name="NotificationMessageGif">%1$s 님께서 GIF파일을 보내셨습니다</string>
     <string name="NotificationMessageAudio">%1$s님이 음성메시지를 보냈습니다</string>
@@ -364,6 +383,7 @@
     <string name="NotificationMessageGroupVideo">%1$s님이 %2$s 그룹에 동영상을 보냈습니다</string>
     <string name="NotificationMessageGroupContact">%1$s님이 %2$s 그룹에 연락처를 공유했습니다</string>
     <string name="NotificationMessageGroupMap">%1$s님이 %2$s 그룹에 위치를 보냈습니다</string>
+    <string name="NotificationMessageGroupGame">%1$s 님이 %2$s 그룹에 %3$s 게임으로 초대했습니다</string>
     <string name="NotificationMessageGroupDocument">%1$s님이 %2$s 그룹에 파일을 보냈습니다</string>
     <string name="NotificationMessageGroupGif">%1$s 님께서 %2$s 그룹에 GIF파일을 보냈습니다</string>
     <string name="NotificationMessageGroupAudio">%1$s님이 %2$s 그룹에 음성메시지를 보냈습니다</string>
@@ -390,6 +410,7 @@
     <string name="NotificationActionPinnedText">%1$s 님이 \"%2$s\" 메시지를  %3$s 그룹방에 고정함</string>
     <string name="NotificationActionPinnedNoText">%1$s 님이 메시지를 %2$s 그룹방에 고정함</string>
     <string name="NotificationActionPinnedPhoto">%1$s 님이 사진을 %2$s 그룹방에 고정함</string>
+    <string name="NotificationActionPinnedGame">%1$s 님이 게임을 %2$s 그룹방에 고정함</string>
     <string name="NotificationActionPinnedVideo">%1$s 님이 비디오를 %2$s 그룹방에 고정함</string>
     <string name="NotificationActionPinnedFile">%1$s 님이 파일을 %2$s 그룹방에 고정함</string>
     <string name="NotificationActionPinnedSticker">%1$s 님이 스티커를 %2$s 그룹방에 고정함</string>
@@ -411,6 +432,7 @@
     <string name="NotificationActionPinnedGeoChannel">%1$s 님이 지도를 고정함</string>
     <string name="NotificationActionPinnedGifChannel">%1$s 님이 GIF를 고정함</string>
     <string name="NotificationActionPinnedMusicChannel">%1$s 님이 트랙을 고정함</string>
+    <string name="NotificationActionPinnedGameChannel">%1$s님이 게임을 고정함</string>
     <!--contacts view-->
     <string name="SelectContact">대화상대 선택</string>
     <string name="NoContacts">대화상대가 없습니다</string>
@@ -444,6 +466,8 @@
     <string name="RevokeAlertNewLink">기존 초대링크는 비활성화 되었습니다. 새로운 링크가 생성되었습니다.</string>
     <string name="RevokeButton">폐지하기</string>
     <string name="RevokeLink">링크 폐지</string>
+    <string name="RevokeLinkAlert">초링크 <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>를 폐기하시겠습니까?\n\n \"<![CDATA[<b>]]>%2$s<![CDATA[</b>]]>\" 그룹은 비공개로 전환됩니다.</string>
+    <string name="RevokeLinkAlertChannel">링크 <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>를 폐기하시겠습니까?\n\n \"<![CDATA[<b>]]>%2$s<![CDATA[</b>]]>\" 채널은 비공개로 전환됩니다.</string>
     <string name="CopyLink">링크 복사</string>
     <string name="ShareLink">링크 공유</string>
     <string name="LinkInfo">텔레그램이 설치된 분들은 링크를 타고 그룹방에 참여가 가능합니다.</string>
@@ -467,11 +491,13 @@
     <string name="ConvertGroupAlert">이 작업은 되돌릴 수 없습니다. 슈퍼그룹에서 일반그룹방으로 다운 그레이드는 불가능 합니다.</string>
     <string name="ConvertGroupInfo"><![CDATA[<b>]]>구성원이 최대치입니다.<![CDATA[</b>]]>\n\n추가 기능 및 더 많은 구성원을 추가하려면 슈퍼그룹방으로 업그레이드하세요:\n\n• 슈퍼그룹방은 %1$s명까지 초대가능합니다.\n• 새로운 구성원은 모든 대화내역을 볼 수 있습니다.\n• 메시지 삭제시 모두에게 삭제가 됩니다.\n• 방 생성자는 그룹방 공개링크 생성이 가능합니다.</string>
     <string name="ConvertGroupInfo2"><![CDATA[<b>]]>슈퍼그룹:<![CDATA[</b>]]>\n\n• 새로운 구성원은 모든 대화내역을 볼 수 있습니다.\n• 메시지 삭제시 모두에게 삭제가 됩니다.\n• 방 생성자는 그룹방 공개링크 생성이 가능합니다.</string>
-    <string name="ConvertGroupInfo3"><![CDATA[<b>]]>주위:<![CDATA[</b>]]> 이 작업은 되돌릴 수 없습니다.</string>
+    <string name="ConvertGroupInfo3"><![CDATA[<b>]]>주의:<![CDATA[</b>]]> 이 작업은 되돌릴 수 없습니다.</string>
     <!--contact info view-->
     <string name="ShareContact">공유</string>
     <string name="AddContact">추가</string>
     <string name="AddContactTitle">대화상대 추가</string>
+    <string name="ContactNotRegistered">아직 %1$s님이 텔레그램에 가입하시지 않았습니다. 초대하시겠습니까?</string>
+    <string name="Invite">초대</string>
     <string name="BlockContact">차단</string>
     <string name="EditContact">편집</string>
     <string name="DeleteContact">삭제</string>
@@ -505,20 +531,36 @@
     <string name="ErrorOccurred">오류가 발생했습니다.</string>
     <!--stickers view-->
     <string name="Stickers">스티커</string>
-    <string name="StickersInfo">/@stickers 봇을 통하여 누구든지 스스로 제작한 스티커를 등록 할 수 있습니다.\n\n스티커는  더블탭하여 \"스티커 추가\" 를 통하여 추가할 수 있습니다.</string>
     <string name="AddStickers">스티커 추가</string>
+    <string name="AddMasks">마스크 추가</string>
     <string name="AddToStickers">스티커 추가</string>
+    <string name="AddToMasks">마스크에 추가</string>
     <string name="AddStickersNotFound">스티커를 찾을 수 없음</string>
     <string name="StickersRemoved">스티커 제거됨</string>
+    <string name="MasksRemoved">마스크가 삭제됨</string>
     <string name="AddStickersInstalled">새로운 스티커가 추가되었습니다.</string>
-    <string name="StickersHide">숨김</string>
-    <string name="StickersShow">보기</string>
+    <string name="AddMasksInstalled">새로운 마스크 추가</string>
+    <string name="StickersHide">보관</string>
     <string name="StickersShare">공유</string>
     <string name="StickersCopy">링크 복사</string>
     <string name="StickersRemove">삭제</string>
     <string name="NoStickers">스티커가 아직 없음</string>
+    <string name="NoMasks">마스크가 아직 없음</string>
+    <string name="Masks">마스크</string>
+    <string name="MasksInfo">전송하시려는 사진에 마스크를 추가 할 수 있습니다. 사진 에디터를 전송하시기 전에 실행해주시면 됩니다.</string>
+    <string name="FeaturedStickers">인기 스티커</string>
+    <string name="FeaturedStickersInfo">현재 텔레그램에서 인기있는 스티커입니다. @stickers 봇을 통하여 커스텀 스티커 추가가 가능합니다.</string>
+    <string name="ArchivedStickers">보관된 스티커</string>
+    <string name="ArchivedMasks">보관된 마스크</string>
+    <string name="ArchivedStickersEmpty">보관된 스티커 없음</string>
+    <string name="ArchivedMasksEmpty">보관된 마스크가 없음</string>
+    <string name="ArchivedStickersInfo">최대 200개의 스티커를 설치 할 수 있습니다. 사용하지 않는 스티커는 새로추가시 보관됩니다.</string>
+    <string name="ArchivedMasksInfo">최대 200개의 마스크를 설치 할 수 있습니다. 사용하지 않는 마스크는 새로추가시 보관됩니다.</string>
     <string name="SendSticker">스티커 전송</string>
-    <string name="TooMuchStickersets">죄송합니다, 스티커 세트수가 최대치입니다.</string>
+    <string name="ArchivedStickersAlertTitle">보관된 스티커</string>
+    <string name="ArchivedStickersAlertInfo">오래된 스티커중 일부가 보관되어집니다. 스티커 설정에서 다시 재설정이 가능합니다.</string>
+    <string name="ArchivedMasksAlertTitle">보관된 마스크</string>
+    <string name="ArchivedMasksAlertInfo">오래된 마스크중 일부가 보관되어집니다. 마스크 설정에서 다시 재설정이 가능합니다.</string>
     <!--settings view-->
     <string name="ResetNotificationsText">모든 알림 설정이 초기화되었습니다</string>
     <string name="TextSize">채팅 글자 크기</string>
@@ -627,6 +669,9 @@
     <string name="ChromeCustomTabsInfo">앱내에서 외부 링크 열기</string>
     <string name="DirectShare">직접 공유</string>
     <string name="DirectShareInfo">공유 메뉴에서 최근 대화 보기</string>
+    <string name="Emoji">Emoji</string>
+    <string name="EmojiBigSize">Draw single big emoji</string>
+    <string name="EmojiUseDefault">Use system default emoji</string>
     <!--cache view-->
     <string name="CacheSettings">캐시 설정</string>
     <string name="LocalDatabase">로컬 데이터베이스</string>
@@ -754,6 +799,14 @@
     <string name="PhotoCaption">사진 설명</string>
     <string name="VideoCaption">동영상 설명</string>
     <string name="Caption">설명</string>
+    <string name="PaintDraw">그리기</string>
+    <string name="PaintStickers">스티커</string>
+    <string name="PaintText">텍스트</string>
+    <string name="PaintDelete">삭제</string>
+    <string name="PaintEdit">수정</string>
+    <string name="PaintDuplicate">복제</string>
+    <string name="PaintOutlined">아웃라인</string>
+    <string name="PaintRegular">레귤러</string>
     <!--password view-->
     <string name="TwoStepVerification">2단계 인증</string>
     <string name="SetAdditionalPassword">개별 비밀번호 설정</string>
@@ -850,10 +903,8 @@
     <string name="CreateGroupError">죄송합니다,  이 이용자들의 개인 설정으로 인하여 그룹을 생성 할 수 없습니다.</string>
     <!--edit video view-->
     <string name="EditVideo">동영상 편집</string>
-    <string name="OriginalVideo">동영상 원본</string>
-    <string name="EditedVideo">편집한 동영상</string>
     <string name="SendingVideo">동영상 보내는 중...</string>
-    <string name="CompressVideo">동영상 크기 줄이기</string>
+    <string name="SendingGif">gif 전송 중...</string>
     <!--bot-->
     <string name="Bot">봇</string>
     <string name="BotShare">공유</string>
@@ -903,11 +954,15 @@
     <string name="ActionYouKickUser">un2님을 퇴장시켰습니다.</string>
     <string name="ActionYouLeftUser">그룹에서 나갔습니다.</string>
     <string name="ActionYouAddUser">un2님을 초대했습니다</string>
+    <string name="ActionYouScored">%1$s 점 획득</string>
+    <string name="ActionUserScored">un1님이 %1$s 점 획득</string>
+    <string name="ActionYouScoredInGame">회원님이 un2에서 %1$s점 획득</string>
+    <string name="ActionUserScoredInGame">un1님이 un2에서 %1$s점 획득</string>
     <string name="ActionYouRemovedPhoto">그룹 사진을 삭제했습니다</string>
     <string name="ActionYouChangedPhoto">그룹 사진을 변경했습니다</string>
     <string name="ActionYouChangedTitle">그룹 이름을 un2 그룹으로 변경했습니다</string>
     <string name="ActionYouCreateGroup">그룹을 만들었습니다</string>
-    <string name="ActionKickUserYou">un1님이 퇴장당했습니다.</string>
+    <string name="ActionKickUserYou">un1님에 의해 퇴장당하셨습니다.</string>
     <string name="ActionAddUserYou">un1님이 그룹에 초대했습니다</string>
     <string name="ActionAddUserSelf">un1 님께서 그룹에 돌아오셨습니다</string>
     <string name="ActionAddUserSelfMega">un1 님이 그룹에 참여했습니다</string>
@@ -921,11 +976,13 @@
     <string name="AttachDocument">파일</string>
     <string name="AttachSticker">스티커</string>
     <string name="AttachAudio">음성 메시지</string>
+    <string name="AttachGame">게임</string>
     <string name="FromYou">나</string>
     <string name="ActionTakeScreenshootYou">화면을 캡처했습니다!</string>
     <string name="ActionTakeScreenshoot">un1님이 화면을 캡처했습니다!</string>
     <!--Alert messages-->
     <string name="InvalidPhoneNumber">올바른 전화번호를 입력해 주세요</string>
+    <string name="BannedPhoneNumber">차단된 전화번호</string>
     <string name="CodeExpired">코드가 만료되었습니다. 다시 로그인하세요</string>
     <string name="FloodWait">너무 많이 시도하셨습니다. 나중에 다시 시도하세요</string>
     <string name="FloodWaitTime">너무 많이 시도하셨습니다. %1$s 초 후에 다시 시도하세요.</string>
@@ -944,6 +1001,7 @@
     <string name="UserAlreadyInGroup">이 사용자는 이미 그룹에 추가되었습니다.</string>
     <string name="ForwardMessagesTo">%1$s님에게 메시지를 전달할까요?</string>
     <string name="SendMessagesTo">%1$s님에게 메시지를 보낼까요?</string>
+    <string name="SendGameTo">%1$s에게 게임을 공유하겠습니까?</string>
     <string name="SendContactTo">%1$s에게 연락처를 보내시겠습니까?</string>
     <string name="AreYouSureLogout">정말로 로그아웃하시겠습니까?\n\n텔레그램은 여러 기기에서 동시에 사용이 가능합니다.\n\n로그아웃하시면 비밀대화가 삭제되는 점 유의해주세요.</string>
     <string name="AreYouSureSessions">현재 기기를 제외하고 다른 기기에 로그인된 세션을 모두 종료시킬까요?</string>
@@ -956,7 +1014,7 @@
     <string name="ShareYouLocationInline">요청시마다 봇이 위치를 확인합니다. 이 요청으로 인하여 특정 위치에 대한 결과 확인이 가능합니다.</string>
     <string name="ShareYouPhoneNumberTitle">전화번호를 공유하겠습니까?</string>
     <string name="AreYouSureShareMyContactInfoBot">봇이 전화번호를 인지를 하며, 다른 서비스와의 통합에 활용이 됩니다.</string>
-    <string name="AreYouSureShareMyContactInfoUser">%1$s 님에게 <![CDATA[<b>]]>%2$s<![CDATA[</b>]]> 번호를 공유하겠습니까?</string>
+    <string name="AreYouSureShareMyContactInfoUser"> <![CDATA[<b>]]>%2$s<![CDATA[</b>]]>님에게 %1$s번호를 공유하겠습니까?</string>
     <string name="AreYouSureShareMyContactInfo">정말로 전화번호를 공유하겠습니까?</string>
     <string name="AreYouSureBlockContact">대화상대를 차단할까요?</string>
     <string name="AreYouSureUnblockContact">차단을 해제할까요?</string>
@@ -968,6 +1026,7 @@
     <string name="AreYouSureClearHistorySuper">그룹에서 캐시된 모든 텍스트 및 미디어를 삭제하시겠습니까?</string>
     <string name="AreYouSureDeleteMessages">%1$s: 정말로 삭제하시겠습니까?</string>
     <string name="SendMessagesToGroup">%1$s 그룹에 메시지를 보낼까요?</string>
+    <string name="SendGameToGroup">%1$s에게 게임을 공유하겠습니까?</string>
     <string name="SendContactToGroup">%1$s에게 연락처를 보내시겠습니까?</string>
     <string name="ForwardMessagesToGroup">%1$s 그룹에 메시지를 전달할까요?</string>
     <string name="FeatureUnavailable">이 기능은 회원님의 국가에서는 사용할 수 없습니다.</string>
@@ -981,10 +1040,12 @@
     <string name="AllowReadCall">텔레그램이 전화를 수신 할 수 있도록 설정해주셔야 자동으로 코드 입력이 가능합니다.</string>
     <string name="AllowReadCallAndSms">텔레그램이 SMS 및 전화를 수신 할 수 있도록 설정해주셔야 자동으로 코드 입력이 가능합니다.</string>
     <string name="UserRestricted">죄송합니다, 이 작업이 제한되었습니다.</string>
+    <string name="JoinGroup">그룹방 입장</string>
     <!--permissions-->
     <string name="PermissionContacts">Telegram은 여러 기기에서 친구와 메시지를 주고받을 수 있도록 회원님의 연락처 접근이 필요합니다.</string>
     <string name="PermissionStorage">Telegram은 사진, 비디오, 음악 및 다양한 미디어를 공유 및 저장하기 위하여 스토리지 접근이 필요합니다.</string>
     <string name="PermissionNoAudio">Telegram이 음성 메시지를 보내기 위하여 마이크에 대한 접근이 필요합니다.</string>
+    <string name="PermissionNoCamera">Telegram이 사진 및 비디오 촬영을 하기 위하여 카메라 접근 권한을 필요로 합니다.</string>
     <string name="PermissionNoLocation">Telegram이 위치를 친구분들과 공유하기 위해 위치에 대한 접근 권한을 필요로 합니다.</string>
     <string name="PermissionNoLocationPosition">텔레그램이 위치에 대한 권한이 필요합니다.</string>
     <string name="PermissionOpenSettings">설정</string>
@@ -1119,6 +1180,12 @@
     <string name="Photos_few">%1$d 개의 사진</string>
     <string name="Photos_many">%1$d 개의 사진</string>
     <string name="Photos_other">%1$d 개의 사진</string>
+    <string name="Points_zero">%1$d</string>
+    <string name="Points_one">%1$d</string>
+    <string name="Points_two">%1$d</string>
+    <string name="Points_few">%1$d</string>
+    <string name="Points_many">%1$d</string>
+    <string name="Points_other">%1$d</string>
     <string name="LastSeenMinutes_zero">%1$d 분 전에 확인</string>
     <string name="LastSeenMinutes_one">%1$d 분 전에 확인</string>
     <string name="LastSeenMinutes_two">%1$d 분 전에 확인</string>
@@ -1131,6 +1198,30 @@
     <string name="LastSeenHours_few">%1$d 시간 전에 확인</string>
     <string name="LastSeenHours_many">%1$d 시간 전에 확인</string>
     <string name="LastSeenHours_other">%1$d 시간 전에 확인</string>
+    <string name="SecondsBold_zero"><![CDATA[<b>%1$d</b>]]> 초</string>
+    <string name="SecondsBold_one"><![CDATA[<b>%1$d</b>]]> 초</string>
+    <string name="SecondsBold_two"><![CDATA[<b>%1$d</b>]]> 초</string>
+    <string name="SecondsBold_few"><![CDATA[<b>%1$d</b>]]> 초</string>
+    <string name="SecondsBold_many"><![CDATA[<b>%1$d</b>]]> 초</string>
+    <string name="SecondsBold_other"><![CDATA[<b>%1$d</b>]]> 초</string>
+    <string name="MinutesBold_zero"><![CDATA[<b>%1$d</b>]]> 분</string>
+    <string name="MinutesBold_one"><![CDATA[<b>%1$d</b>]]> 분</string>
+    <string name="MinutesBold_two"><![CDATA[<b>%1$d</b>]]> 분</string>
+    <string name="MinutesBold_few"><![CDATA[<b>%1$d</b>]]> 분</string>
+    <string name="MinutesBold_many"><![CDATA[<b>%1$d</b>]]> 분</string>
+    <string name="MinutesBold_other"><![CDATA[<b>%1$d</b>]]> 분</string>
+    <string name="HoursBold_zero"><![CDATA[<b>%1$d</b>]]> 시간</string>
+    <string name="HoursBold_one"><![CDATA[<b>%1$d</b>]]> 시간</string>
+    <string name="HoursBold_two"><![CDATA[<b>%1$d</b>]]> 시간</string>
+    <string name="HoursBold_few"><![CDATA[<b>%1$d</b>]]> 시간</string>
+    <string name="HoursBold_many"><![CDATA[<b>%1$d</b>]]> 시간</string>
+    <string name="HoursBold_other"><![CDATA[<b>%1$d</b>]]> 시간</string>
+    <string name="DaysBold_zero"><![CDATA[<b>%1$d</b>]]> 일</string>
+    <string name="DaysBold_one"><![CDATA[<b>%1$d</b>]]> 일</string>
+    <string name="DaysBold_two"><![CDATA[<b>%1$d</b>]]> 일</string>
+    <string name="DaysBold_few"><![CDATA[<b>%1$d</b>]]> 일</string>
+    <string name="DaysBold_many"><![CDATA[<b>%1$d</b>]]> 일</string>
+    <string name="DaysBold_other"><![CDATA[<b>%1$d</b>]]> 일</string>
     <!--forwarded messages-->
     <string name="ForwardedMessage_zero">%1$d 개의 전달된 메시지</string>
     <string name="ForwardedMessage_one">전달된 메시지</string>

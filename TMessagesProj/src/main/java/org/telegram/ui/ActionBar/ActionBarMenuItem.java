@@ -91,11 +91,7 @@ public class ActionBarMenuItem extends FrameLayout {
 
         iconView = new ImageView(context);
         iconView.setScaleType(ImageView.ScaleType.CENTER);
-        addView(iconView);
-        LayoutParams layoutParams = (LayoutParams) iconView.getLayoutParams();
-        layoutParams.width = LayoutHelper.MATCH_PARENT;
-        layoutParams.height = LayoutHelper.MATCH_PARENT;
-        iconView.setLayoutParams(layoutParams);
+        addView(iconView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
     }
 
     @Override

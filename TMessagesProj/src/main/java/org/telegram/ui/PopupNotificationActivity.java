@@ -103,6 +103,8 @@ public class PopupNotificationActivity extends Activity implements NotificationC
     private float moveStartX = -1;
     private boolean startedMoving = false;
     private Runnable onAnimationEndRunnable = null;
+    private boolean isReply;
+    private ArrayList<MessageObject> popupMessages = new ArrayList<>();
 
     private class FrameLayoutTouch extends FrameLayout {
         public FrameLayoutTouch(Context context) {
@@ -296,8 +298,8 @@ public class PopupNotificationActivity extends Activity implements NotificationC
                 if (currentMessageObject == null) {
                     return;
                 }
-                if (currentMessageNum >= 0 && currentMessageNum < NotificationsController.getInstance().popupMessages.size()) {
-                    NotificationsController.getInstance().popupMessages.remove(currentMessageNum);
+                if (currentMessageNum >= 0 && currentMessageNum < popupMessages.size()) {
+                    popupMessages.remove(currentMessageNum);
                 }
                 MessagesController.getInstance().markDialogAsRead(currentMessageObject.getDialogId(), currentMessageObject.getId(), Math.max(0, currentMessageObject.getId()), currentMessageObject.messageOwner.date, true, true);
                 currentMessageObject = null;
@@ -438,7 +440,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
     @Override
     public void onConfigurationChanged(Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
-        AndroidUtilities.checkDisplaySize();
+        AndroidUtilities.checkDisplaySize(this, newConfig);
         fixLayout();
     }
 
@@ -477,28 +479,28 @@ public class PopupNotificationActivity extends Activity implements NotificationC
     }
 
     private void switchToNextMessage() {
-        if (NotificationsController.getInstance().popupMessages.size() > 1) {
-            if (currentMessageNum < NotificationsController.getInstance().popupMessages.size() - 1) {
+        if (popupMessages.size() > 1) {
+            if (currentMessageNum < popupMessages.size() - 1) {
                 currentMessageNum++;
             } else {
                 currentMessageNum = 0;
             }
-            currentMessageObject = NotificationsController.getInstance().popupMessages.get(currentMessageNum);
+            currentMessageObject = popupMessages.get(currentMessageNum);
             updateInterfaceForCurrentMessage(2);
-            countText.setText(String.format("%d/%d", currentMessageNum + 1, NotificationsController.getInstance().popupMessages.size()));
+            countText.setText(String.format("%d/%d", currentMessageNum + 1, popupMessages.size()));
         }
     }
 
     private void switchToPreviousMessage() {
-        if (NotificationsController.getInstance().popupMessages.size() > 1) {
+        if (popupMessages.size() > 1) {
             if (currentMessageNum > 0) {
                 currentMessageNum--;
             } else {
-                currentMessageNum = NotificationsController.getInstance().popupMessages.size() - 1;
+                currentMessageNum = popupMessages.size() - 1;
             }
-            currentMessageObject = NotificationsController.getInstance().popupMessages.get(currentMessageNum);
+            currentMessageObject = popupMessages.get(currentMessageNum);
             updateInterfaceForCurrentMessage(1);
-            countText.setText(String.format("%d/%d", currentMessageNum + 1, NotificationsController.getInstance().popupMessages.size()));
+            countText.setText(String.format("%d/%d", currentMessageNum + 1, popupMessages.size()));
         }
     }
 
@@ -654,16 +656,16 @@ public class PopupNotificationActivity extends Activity implements NotificationC
     }
 
     private ViewGroup getViewForMessage(int num, boolean applyOffset) {
-        if (NotificationsController.getInstance().popupMessages.size() == 1 && (num < 0 || num >= NotificationsController.getInstance().popupMessages.size())) {
+        if (popupMessages.size() == 1 && (num < 0 || num >= popupMessages.size())) {
             return null;
         }
         if (num == -1) {
-            num = NotificationsController.getInstance().popupMessages.size() - 1;
-        } else if (num == NotificationsController.getInstance().popupMessages.size()) {
+            num = popupMessages.size() - 1;
+        } else if (num == popupMessages.size()) {
             num = 0;
         }
         ViewGroup view;
-        MessageObject messageObject = NotificationsController.getInstance().popupMessages.get(num);
+        MessageObject messageObject = popupMessages.get(num);
         if (messageObject.type == 1 || messageObject.type == 4) {
             if (imageViews.size() > 0) {
                 view = imageViews.get(0);
@@ -907,6 +909,12 @@ public class PopupNotificationActivity extends Activity implements NotificationC
     }
 
     private void handleIntent(Intent intent) {
+        isReply = intent != null && intent.getBooleanExtra("force", false);
+        if (isReply) {
+            popupMessages = NotificationsController.getInstance().popupReplyMessages;
+        } else {
+            popupMessages = NotificationsController.getInstance().popupMessages;
+        }
         KeyguardManager km = (KeyguardManager) getSystemService(KEYGUARD_SERVICE);
         if (km.inKeyguardRestrictedInputMode() || !ApplicationLoader.isScreenOn) {
             getWindow().addFlags(
@@ -929,7 +937,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
     }
 
     private void getNewMessage() {
-        if (NotificationsController.getInstance().popupMessages.isEmpty()) {
+        if (popupMessages.isEmpty()) {
             onFinish();
             finish();
             return;
@@ -937,8 +945,8 @@ public class PopupNotificationActivity extends Activity implements NotificationC
 
         boolean found = false;
         if ((currentMessageNum != 0 || chatActivityEnterView.hasText() || startedMoving) && currentMessageObject != null) {
-            for (int a = 0; a < NotificationsController.getInstance().popupMessages.size(); a++) {
-                if (NotificationsController.getInstance().popupMessages.get(a).getId() == currentMessageObject.getId()) {
+            for (int a = 0; a < popupMessages.size(); a++) {
+                if (popupMessages.get(a).getId() == currentMessageObject.getId()) {
                     currentMessageNum = a;
                     found = true;
                     break;
@@ -947,16 +955,16 @@ public class PopupNotificationActivity extends Activity implements NotificationC
         }
         if (!found) {
             currentMessageNum = 0;
-            currentMessageObject = NotificationsController.getInstance().popupMessages.get(0);
+            currentMessageObject = popupMessages.get(0);
             updateInterfaceForCurrentMessage(0);
         } else if (startedMoving) {
-            if (currentMessageNum == NotificationsController.getInstance().popupMessages.size() - 1) {
+            if (currentMessageNum == popupMessages.size() - 1) {
                 prepareLayouts(3);
             } else if (currentMessageNum == 1) {
                 prepareLayouts(4);
             }
         }
-        countText.setText(String.format("%d/%d", currentMessageNum + 1, NotificationsController.getInstance().popupMessages.size()));
+        countText.setText(String.format("%d/%d", currentMessageNum + 1, popupMessages.size()));
     }
 
     private void openCurrentMessage() {
@@ -1236,6 +1244,9 @@ public class PopupNotificationActivity extends Activity implements NotificationC
             return;
         }
         finished = true;
+        if (isReply) {
+            popupMessages.clear();
+        }
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.appDidLogout);
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.pushMessagesUpdated);
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.updateInterfaces);

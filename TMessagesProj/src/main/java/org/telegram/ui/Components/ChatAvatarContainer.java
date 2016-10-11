@@ -260,7 +260,9 @@ public class ChatAvatarContainer extends FrameLayout {
             } else if (user != null) {
                 user = MessagesController.getInstance().getUser(user.id);
                 String newStatus;
-                if (user.id == 333000 || user.id == 777000) {
+                if (user.id == UserConfig.getClientUserId()) {
+                    newStatus = LocaleController.getString("ChatYourSelf", R.string.ChatYourSelf);
+                } else if (user.id == 333000 || user.id == 777000) {
                     newStatus = LocaleController.getString("ServiceNotifications", R.string.ServiceNotifications);
                 } else if (user.bot) {
                     newStatus = LocaleController.getString("Bot", R.string.Bot);

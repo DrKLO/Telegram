@@ -15,11 +15,9 @@
  */
 package org.telegram.messenger.exoplayer;
 
+import android.os.Handler;
 import org.telegram.messenger.exoplayer.upstream.Allocator;
 import org.telegram.messenger.exoplayer.upstream.NetworkLock;
-
-import android.os.Handler;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;

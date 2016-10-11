@@ -188,7 +188,11 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
             } else {
                 TLRPC.Document location = (TLRPC.Document) fileLocation;
                 if (location.dc_id != 0) {
-                    key = location.dc_id + "_" + location.id;
+                    if (location.version == 0) {
+                        key = location.dc_id + "_" + location.id;
+                    } else {
+                        key = location.dc_id + "_" + location.id + "_" + location.version;
+                    }
                 } else {
                     fileLocation = null;
                 }
@@ -280,6 +284,15 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
 
     public void setInvalidateAll(boolean value) {
         invalidateAll = value;
+    }
+
+    public int getAnimatedOrientation() {
+        if (currentImage instanceof AnimatedFileDrawable) {
+            return ((AnimatedFileDrawable) currentImage).getOrientation();
+        } else if (staticThumb instanceof AnimatedFileDrawable) {
+            return ((AnimatedFileDrawable) staticThumb).getOrientation();
+        }
+        return 0;
     }
 
     public int getOrientation() {

@@ -15,6 +15,8 @@
  */
 package org.telegram.messenger.exoplayer.smoothstreaming;
 
+import android.util.Base64;
+import android.util.Pair;
 import org.telegram.messenger.exoplayer.ParserException;
 import org.telegram.messenger.exoplayer.extractor.mp4.PsshAtomUtil;
 import org.telegram.messenger.exoplayer.smoothstreaming.SmoothStreamingManifest.ProtectionElement;
@@ -25,20 +27,15 @@ import org.telegram.messenger.exoplayer.util.Assertions;
 import org.telegram.messenger.exoplayer.util.CodecSpecificDataUtil;
 import org.telegram.messenger.exoplayer.util.MimeTypes;
 import org.telegram.messenger.exoplayer.util.Util;
-
-import android.util.Base64;
-import android.util.Pair;
-
-import org.xmlpull.v1.XmlPullParser;
-import org.xmlpull.v1.XmlPullParserException;
-import org.xmlpull.v1.XmlPullParserFactory;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.UUID;
+import org.xmlpull.v1.XmlPullParser;
+import org.xmlpull.v1.XmlPullParserException;
+import org.xmlpull.v1.XmlPullParserFactory;
 
 /**
  * Parses SmoothStreaming client manifests.

@@ -52,7 +52,7 @@ import android.os.Looper;
  * <h3>Threading model</h3>
  *
  * <p>The figure below shows the {@link ExoPlayer} threading model.</p>
- * <p align="center"><img src="../../../../../images/exoplayer_threading_model.png"
+ * <p align="center"><img src="doc-files/exoplayer-threading-model.png"
  *     alt="MediaPlayer state diagram"
  *     border="0"/></p>
  *
@@ -79,14 +79,14 @@ import android.os.Looper;
  * have been performed asynchronously by the playback thread. In contrast, the playback state
  * accessed by {@link #getPlaybackState()} is only ever changed as a result of operations
  * completing on the playback thread, as illustrated below.</p>
- * <p align="center"><img src="../../../../../images/exoplayer_state.png"
+ * <p align="center"><img src="doc-files/exoplayer-state.png"
  *     alt="ExoPlayer state"
  *     border="0"/></p>
  *
  * <p>The possible playback state transitions are shown below. Transitions can be triggered either
  * by changes in the state of the {@link TrackRenderer}s being used, or as a result of
  * {@link #prepare(TrackRenderer[])}, {@link #stop()} or {@link #release()} being invoked.</p>
- * <p align="center"><img src="../../../../../images/exoplayer_playbackstate.png"
+ * <p align="center"><img src="doc-files/exoplayer-playbackstate.png"
  *     alt="ExoPlayer playback state transitions"
  *     border="0"/></p>
  */

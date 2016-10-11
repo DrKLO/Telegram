@@ -15,6 +15,7 @@
  */
 package org.telegram.messenger.exoplayer.extractor.ts;
 
+import android.util.Log;
 import org.telegram.messenger.exoplayer.C;
 import org.telegram.messenger.exoplayer.MediaFormat;
 import org.telegram.messenger.exoplayer.extractor.TrackOutput;
@@ -22,9 +23,6 @@ import org.telegram.messenger.exoplayer.util.MimeTypes;
 import org.telegram.messenger.exoplayer.util.NalUnitUtil;
 import org.telegram.messenger.exoplayer.util.ParsableBitArray;
 import org.telegram.messenger.exoplayer.util.ParsableByteArray;
-
-import android.util.Log;
-
 import java.util.Collections;
 
 /**
@@ -269,7 +267,8 @@ import java.util.Collections;
     bitArray.readUnsignedExpGolombCodedInt(); // max_transform_hierarchy_depth_inter
     bitArray.readUnsignedExpGolombCodedInt(); // max_transform_hierarchy_depth_intra
     // if (scaling_list_enabled_flag) { if (sps_scaling_list_data_present_flag) {...}}
-    if (bitArray.readBit() && bitArray.readBit()) {
+    boolean scalingListEnabled = bitArray.readBit();
+    if (scalingListEnabled && bitArray.readBit()) {
       skipScalingList(bitArray);
     }
     bitArray.skipBits(2); // amp_enabled_flag (1), sample_adaptive_offset_enabled_flag (1)

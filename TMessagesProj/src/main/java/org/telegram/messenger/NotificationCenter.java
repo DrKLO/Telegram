@@ -58,6 +58,7 @@ public class NotificationCenter {
     public static final int didReceivedWebpages = totalEvents++;
     public static final int didReceivedWebpagesInUpdates = totalEvents++;
     public static final int stickersDidLoaded = totalEvents++;
+    public static final int featuredStickersDidLoaded = totalEvents++;
     public static final int didReplacedPhotoInMemCache = totalEvents++;
     public static final int messagesReadContent = totalEvents++;
     public static final int botInfoDidLoaded = totalEvents++;
@@ -74,6 +75,10 @@ public class NotificationCenter {
     public static final int reloadHints = totalEvents++;
     public static final int reloadInlineHints = totalEvents++;
     public static final int newDraftReceived = totalEvents++;
+    public static final int recentDocumentsDidLoaded = totalEvents++;
+    public static final int cameraInitied = totalEvents++;
+    public static final int needReloadArchivedStickers = totalEvents++;
+    public static final int didSetNewWallpapper = totalEvents++;
 
     public static final int httpFileDidLoaded = totalEvents++;
     public static final int httpFileDidFailedLoad = totalEvents++;

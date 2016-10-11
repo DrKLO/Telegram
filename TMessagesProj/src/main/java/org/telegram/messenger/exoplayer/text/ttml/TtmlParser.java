@@ -1,4 +1,4 @@
-/*arse
+/*
  * Copyright (C) 2014 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,6 +15,9 @@
  */
 package org.telegram.messenger.exoplayer.text.ttml;
 
+import android.text.Layout;
+import android.util.Log;
+import android.util.Pair;
 import org.telegram.messenger.exoplayer.C;
 import org.telegram.messenger.exoplayer.ParserException;
 import org.telegram.messenger.exoplayer.text.Cue;
@@ -22,15 +25,6 @@ import org.telegram.messenger.exoplayer.text.SubtitleParser;
 import org.telegram.messenger.exoplayer.util.MimeTypes;
 import org.telegram.messenger.exoplayer.util.ParserUtil;
 import org.telegram.messenger.exoplayer.util.Util;
-
-import android.text.Layout;
-import android.util.Log;
-import android.util.Pair;
-
-import org.xmlpull.v1.XmlPullParser;
-import org.xmlpull.v1.XmlPullParserException;
-import org.xmlpull.v1.XmlPullParserFactory;
-
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.HashMap;
@@ -38,6 +32,9 @@ import java.util.LinkedList;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.xmlpull.v1.XmlPullParser;
+import org.xmlpull.v1.XmlPullParserException;
+import org.xmlpull.v1.XmlPullParserFactory;
 
 /**
  * A simple TTML parser that supports DFXP presentation profile.
@@ -57,12 +54,13 @@ import java.util.regex.Pattern;
  *   <li>time-offset-with-frames
  *   <li>time-offset-with-ticks
  * </ul>
- * </p>
  * @see <a href="http://www.w3.org/TR/ttaf1-dfxp/">TTML specification</a>
  */
 public final class TtmlParser implements SubtitleParser {
 
   private static final String TAG = "TtmlParser";
+
+  private static final String TTP = "http://www.w3.org/ns/ttml#parameter";
 
   private static final String ATTR_BEGIN = "begin";
   private static final String ATTR_DURATION = "dur";
@@ -79,10 +77,10 @@ public final class TtmlParser implements SubtitleParser {
   private static final Pattern PERCENTAGE_COORDINATES =
       Pattern.compile("^(\\d+\\.?\\d*?)% (\\d+\\.?\\d*?)%$");
 
-  // TODO: read and apply the following attributes if specified.
-  private static final int DEFAULT_FRAMERATE = 30;
-  private static final int DEFAULT_SUBFRAMERATE = 1;
-  private static final int DEFAULT_TICKRATE = 1;
+  private static final int DEFAULT_FRAME_RATE = 30;
+
+  private static final FrameAndTickRate DEFAULT_FRAME_AND_TICK_RATE =
+      new FrameAndTickRate(DEFAULT_FRAME_RATE, 1, 1);
 
   private final XmlPullParserFactory xmlParserFactory;
 
@@ -113,11 +111,15 @@ public final class TtmlParser implements SubtitleParser {
       LinkedList<TtmlNode> nodeStack = new LinkedList<>();
       int unsupportedNodeDepth = 0;
       int eventType = xmlParser.getEventType();
+      FrameAndTickRate frameAndTickRate = DEFAULT_FRAME_AND_TICK_RATE;
       while (eventType != XmlPullParser.END_DOCUMENT) {
         TtmlNode parent = nodeStack.peekLast();
         if (unsupportedNodeDepth == 0) {
           String name = xmlParser.getName();
           if (eventType == XmlPullParser.START_TAG) {
+            if (TtmlNode.TAG_TT.equals(name)) {
+              frameAndTickRate = parseFrameAndTickRates(xmlParser);
+            }
             if (!isSupportedTag(name)) {
               Log.i(TAG, "Ignoring unsupported tag: " + xmlParser.getName());
               unsupportedNodeDepth++;
@@ -125,7 +127,7 @@ public final class TtmlParser implements SubtitleParser {
               parseHeader(xmlParser, globalStyles, regionMap);
             } else {
               try {
-                TtmlNode node = parseNode(xmlParser, parent, regionMap);
+                TtmlNode node = parseNode(xmlParser, parent, regionMap, frameAndTickRate);
                 nodeStack.addLast(node);
                 if (parent != null) {
                   parent.addChild(node);
@@ -160,6 +162,39 @@ public final class TtmlParser implements SubtitleParser {
     } catch (IOException e) {
       throw new IllegalStateException("Unexpected error when reading input.", e);
     }
+  }
+
+  private FrameAndTickRate parseFrameAndTickRates(XmlPullParser xmlParser) throws ParserException {
+    int frameRate = DEFAULT_FRAME_RATE;
+    String frameRateStr = xmlParser.getAttributeValue(TTP, "frameRate");
+    if (frameRateStr != null) {
+      frameRate = Integer.parseInt(frameRateStr);
+    }
+
+    float frameRateMultiplier = 1;
+    String frameRateMultiplierStr = xmlParser.getAttributeValue(TTP, "frameRateMultiplier");
+    if (frameRateMultiplierStr != null) {
+      String[] parts = frameRateMultiplierStr.split(" ");
+      if (parts.length != 2) {
+        throw new ParserException("frameRateMultiplier doesn't have 2 parts");
+      }
+      float numerator = Integer.parseInt(parts[0]);
+      float denominator = Integer.parseInt(parts[1]);
+      frameRateMultiplier = numerator / denominator;
+    }
+
+    int subFrameRate = DEFAULT_FRAME_AND_TICK_RATE.subFrameRate;
+    String subFrameRateStr = xmlParser.getAttributeValue(TTP, "subFrameRate");
+    if (subFrameRateStr != null) {
+      subFrameRate = Integer.parseInt(subFrameRateStr);
+    }
+
+    int tickRate = DEFAULT_FRAME_AND_TICK_RATE.tickRate;
+    String tickRateStr = xmlParser.getAttributeValue(TTP, "tickRate");
+    if (tickRateStr != null) {
+      tickRate = Integer.parseInt(tickRateStr);
+    }
+    return new FrameAndTickRate(frameRate * frameRateMultiplier, subFrameRate, tickRate);
   }
 
   private Map<String, TtmlStyle> parseHeader(XmlPullParser xmlParser,
@@ -223,8 +258,8 @@ public final class TtmlParser implements SubtitleParser {
         }
       }
     }
-    return position != Cue.DIMEN_UNSET ? new Pair<>(regionId, new TtmlRegion(position, line, width))
-        : null;
+    return position != Cue.DIMEN_UNSET ? new Pair<>(regionId, new TtmlRegion(position, line,
+        Cue.LINE_TYPE_FRACTION, width)) : null;
   }
 
   private String[] parseStyleIds(String parentStyleIds) {
@@ -324,7 +359,7 @@ public final class TtmlParser implements SubtitleParser {
   }
 
   private TtmlNode parseNode(XmlPullParser parser, TtmlNode parent,
-      Map<String, TtmlRegion> regionMap) throws ParserException {
+      Map<String, TtmlRegion> regionMap, FrameAndTickRate frameAndTickRate) throws ParserException {
     long duration = 0;
     long startTime = TtmlNode.UNDEFINED_TIME;
     long endTime = TtmlNode.UNDEFINED_TIME;
@@ -336,14 +371,11 @@ public final class TtmlParser implements SubtitleParser {
       String attr = parser.getAttributeName(i);
       String value = parser.getAttributeValue(i);
       if (ATTR_BEGIN.equals(attr)) {
-        startTime = parseTimeExpression(value,
-            DEFAULT_FRAMERATE, DEFAULT_SUBFRAMERATE, DEFAULT_TICKRATE);
+        startTime = parseTimeExpression(value, frameAndTickRate);
       } else if (ATTR_END.equals(attr)) {
-        endTime = parseTimeExpression(value,
-            DEFAULT_FRAMERATE, DEFAULT_SUBFRAMERATE, DEFAULT_TICKRATE);
+        endTime = parseTimeExpression(value, frameAndTickRate);
       } else if (ATTR_DURATION.equals(attr)) {
-        duration = parseTimeExpression(value,
-            DEFAULT_FRAMERATE, DEFAULT_SUBFRAMERATE, DEFAULT_TICKRATE);
+        duration = parseTimeExpression(value, frameAndTickRate);
       } else if (ATTR_STYLE.equals(attr)) {
         // IDREFS: potentially multiple space delimited ids
         String[] ids = parseStyleIds(value);
@@ -441,14 +473,12 @@ public final class TtmlParser implements SubtitleParser {
    * <a href="http://www.w3.org/TR/ttaf1-dfxp/#timing-value-timeExpression">timeExpression</a>
    *
    * @param time A string that includes the time expression.
-   * @param frameRate The frame rate of the stream.
-   * @param subframeRate The sub-frame rate of the stream
-   * @param tickRate The tick rate of the stream.
+   * @param frameAndTickRate The effective frame and tick rates of the stream.
    * @return The parsed timestamp in microseconds.
    * @throws ParserException If the given string does not contain a valid time expression.
    */
-  private static long parseTimeExpression(String time, int frameRate, int subframeRate,
-      int tickRate) throws ParserException {
+  private static long parseTimeExpression(String time, FrameAndTickRate frameAndTickRate)
+      throws ParserException {
     Matcher matcher = CLOCK_TIME.matcher(time);
     if (matcher.matches()) {
       String hours = matcher.group(1);
@@ -460,10 +490,13 @@ public final class TtmlParser implements SubtitleParser {
       String fraction = matcher.group(4);
       durationSeconds += (fraction != null) ? Double.parseDouble(fraction) : 0;
       String frames = matcher.group(5);
-      durationSeconds += (frames != null) ? ((double) Long.parseLong(frames)) / frameRate : 0;
+      durationSeconds += (frames != null)
+          ? Long.parseLong(frames) / frameAndTickRate.effectiveFrameRate : 0;
       String subframes = matcher.group(6);
-      durationSeconds += (subframes != null) ?
-          ((double) Long.parseLong(subframes)) / subframeRate / frameRate : 0;
+      durationSeconds += (subframes != null)
+          ? ((double) Long.parseLong(subframes)) / frameAndTickRate.subFrameRate
+              / frameAndTickRate.effectiveFrameRate
+          : 0;
       return (long) (durationSeconds * C.MICROS_PER_SECOND);
     }
     matcher = OFFSET_TIME.matcher(time);
@@ -480,13 +513,24 @@ public final class TtmlParser implements SubtitleParser {
       } else if (unit.equals("ms")) {
         offsetSeconds /= 1000;
       } else if (unit.equals("f")) {
-        offsetSeconds /= frameRate;
+        offsetSeconds /= frameAndTickRate.effectiveFrameRate;
       } else if (unit.equals("t")) {
-        offsetSeconds /= tickRate;
+        offsetSeconds /= frameAndTickRate.tickRate;
       }
       return (long) (offsetSeconds * C.MICROS_PER_SECOND);
     }
     throw new ParserException("Malformed time expression: " + time);
   }
 
+  private static final class FrameAndTickRate {
+    final float effectiveFrameRate;
+    final int subFrameRate;
+    final int tickRate;
+
+    FrameAndTickRate(float effectiveFrameRate, int subFrameRate, int tickRate) {
+      this.effectiveFrameRate = effectiveFrameRate;
+      this.subFrameRate = subFrameRate;
+      this.tickRate = tickRate;
+    }
+  }
 }

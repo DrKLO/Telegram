@@ -92,7 +92,7 @@ public class StickerSetCell extends FrameLayout {
         stickersSet = set;
 
         textView.setText(stickersSet.set.title);
-        if (stickersSet.set.disabled) {
+        if (stickersSet.set.archived) {
             textView.setAlpha(0.5f);
             valueTextView.setAlpha(0.5f);
             imageView.setAlpha(0.5f);

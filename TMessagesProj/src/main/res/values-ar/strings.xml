@@ -25,6 +25,15 @@
     <string name="Code">رمز التفعيل</string>
     <string name="WrongNumber">الرقم خاطئ؟</string>
     <string name="DidNotGetTheCode">هل استقبلت الرمز؟</string>
+    <string name="CancelAccountReset">إلغاء إعادة تعيين الحساب</string>
+    <string name="CancelAccountResetInfo">شخص ما لديه صلاحية الوصول لهاتفك <![CDATA[<b>]]>%1$s<![CDATA[</b>]]> طلب حذف حسابك وتعطيل التحقق من حسابك بخطوتين.\n\nإذا لم يكن أنت، فضلًا قم بإدخال الرمز الذي أرسلناه للتو برسالة قصيرة.</string>
+    <string name="ResetAccount">إعادة تعيين الحساب</string>
+    <string name="ResetAccountInfo">بما أن الحساب <![CDATA[<b>]]>%1$s<![CDATA[</b>]]> فعّال ومحمي بكلمة مرور، سنقوم بحذفه خلال أسبوع لأسباب أمنية.\n\nيمكنك إلغاء هذه العملية في أي وقت.</string>
+    <string name="ResetAccountStatus">ستتمكن من إعادة تعيين حسابك خلال:</string>
+    <string name="ResetAccountCancelledAlert">تم إلغاء محاولاتك السابقة لإعادة تعيين هذا الحساب. فضلًا أعد المحاولة بعد ٧ أيام.</string>
+    <string name="ResetAccountButton">إعادة تعيين</string>
+    <string name="CancelLinkExpired">رابط غير صحيح أو منتهي.</string>
+    <string name="CancelLinkSuccess">تم إلغاء عملية حذف حسابك %1$s؟ يمكنك إغلاق هذه النافذة الآن.</string>
     <!--signup view-->
     <string name="YourName">اسمك</string>
     <string name="RegisterText">اختر الاسم الأول واسم العائلة</string>
@@ -101,6 +110,7 @@
     <string name="ActionPinnedSticker">un1 ثبت ملصق</string>
     <string name="ActionPinnedVoice">un1 ثبت رسالة صوتية</string>
     <string name="ActionPinnedContact">un1 ثبت جهة اتصال</string>
+    <string name="ActionPinnedGame">un1 ثبت a %1$s</string>
     <string name="ActionPinnedGeo">un1 ثبت خريطة</string>
     <string name="ActionPinnedGif">un1 ثبت صورة متحركة</string>
     <string name="ActionPinnedMusic">un1 ثبت مقطع صوتي</string>
@@ -163,8 +173,7 @@
     <string name="ActionChannelChangedPhoto">تم تغيير صورة القناة</string>
     <string name="ActionChannelRemovedPhoto">تم حذف صورة القناة</string>
     <string name="ActionChannelChangedTitle">تم تغيير اسم القناة إلى un2</string>
-    <string name="ChannelPublicLimitReached">المعذرة، قمت بإنشاء قنوات عامة كثيرة. يمكنك إنشاء قناة خاصة أو حذف أحد القنوات العامة أولًا.</string>
-    <string name="ChangePublicLimitReached">المعذرة، قمت بإنشاء روابط عامة كثيرة. يمكنك حذف بعض مجموعاتك أو قنواتك العامة أو جعلها خاصة.</string>
+    <string name="ChangePublicLimitReached">المعذرة، قمت بحجز معرفات عامة كثيرة .يمكنك إلغاء بعض روابط مجموعاتك وقنواتك القديمة، أو قم بجعلها خاصة.</string>
     <string name="ChannelModerator">المراقب</string>
     <string name="ChannelCreator">المنشئ</string>
     <string name="ChannelEditor">إداري</string>
@@ -303,9 +312,11 @@
     <string name="ServiceNotifications">إشعارات الخدمة</string>
     <string name="GettingLinkInfo">جاري جلب معلومات الرابط...</string>
     <string name="OpenInBrowser">فتح بواسطة...</string>
+    <string name="OpenInExternalApp">افتح باستخدام...</string>
     <string name="CopyUrl">انسخ الرابط</string>
     <string name="SendItems">أرسل %1$s</string>
     <string name="OpenUrlAlert">هل ترغب في فتح الرابط باستخدام %1$s ؟</string>
+    <string name="BotPermissionGameAlert">هل ترغب في السماح لـ %1$s ليرسل معرفك (ليس رقم هاتفك) الخاص بتيليجرام واسمك للصفحات التي تفتحها من خلال هذا البوت؟</string>
     <string name="ReportSpam">الإبلاغ عن الرسائل المزعجة</string>
     <string name="ReportSpamAndLeave">أبلغ عن الإزعاج وغادر</string>
     <string name="AddContactChat">إضافة جهة اتصال</string>
@@ -340,6 +351,13 @@
     <string name="TimeToEditExpired">المعذرة، انتهت مدة التعديل على الرسائل.</string>
     <string name="AddShortcut">إضافة اختصار</string>
     <string name="ShortcutAdded">تمت إضافة اختصار للشاشة الرئيسية</string>
+    <string name="ChatYourSelf">تحدث مع نفسك</string>
+    <string name="ChatYourSelfName">أنت</string>
+    <string name="ChatYourSelfDescription1">حوّل الرسائل إلى هنا لحفظهم</string>
+    <string name="ChatYourSelfDescription2">أرسل الوسائط والملفات لحفظهم</string>
+    <string name="ChatYourSelfDescription3">افتح هذه المحادثة من أي جهاز من أجهزتك</string>
+    <string name="ChatYourSelfDescription4">استخدم البحث لتجد الأشياء بسرعة</string>
+    <string name="ChatYourSelfTitle">مساحتك السحابية</string>
     <!--notification-->
     <string name="MessageLifetimeChanged">%1$s قام بتعيين عداد التدمير الذاتي إلى to %2$s</string>
     <string name="MessageLifetimeChangedOutgoing">لقد قمت بتعيين التدمير الذاتي إلى %1$s</string>
@@ -352,6 +370,7 @@
     <string name="NotificationMessageVideo">%1$s قام بإرسال مقطع مرئي لك</string>
     <string name="NotificationMessageContact">%1$s قام بإرسال جهة اتصال لك</string>
     <string name="NotificationMessageMap">%1$s قام بإرسال موقع لك</string>
+    <string name="NotificationMessageGame">%1$s قام بدعوتك للعب %2$s</string>
     <string name="NotificationMessageDocument">%1$s قام بإرسال ملف لك</string>
     <string name="NotificationMessageGif">%1$s أرسل لك صورة متحركة</string>
     <string name="NotificationMessageAudio">%1$s قام بإرسال رسالة صوتية</string>
@@ -364,6 +383,7 @@
     <string name="NotificationMessageGroupVideo">%1$s قام بإرسال مقطع مرئي للمجموعة %2$s</string>
     <string name="NotificationMessageGroupContact">%1$s قام بإرسال جهة اتصال للمجموعة %2$s</string>
     <string name="NotificationMessageGroupMap">%1$s قام بإرسال موقع للمجموعة %2$s</string>
+    <string name="NotificationMessageGroupGame">%1$s قام بدعوة المجموعة %2$s للعب %3$s</string>
     <string name="NotificationMessageGroupDocument">%1$s قام بإرسال ملف للمجموعة %2$s</string>
     <string name="NotificationMessageGroupGif">%1$s أرسل صورة متحركة للمجموعة %2$s</string>
     <string name="NotificationMessageGroupAudio">%1$s أرسل رسالة صوتية للمجموعة %2$s</string>
@@ -390,6 +410,7 @@
     <string name="NotificationActionPinnedText">%1$s ثبت \"%2$s\" في المجموعة %3$s</string>
     <string name="NotificationActionPinnedNoText">%1$s ثبت رسالة في المجموعة %2$s</string>
     <string name="NotificationActionPinnedPhoto">%1$s ثبت صورة في المجموعة %2$s</string>
+    <string name="NotificationActionPinnedGame">%1$s ثبت لعبة في المجموعة %2$s</string>
     <string name="NotificationActionPinnedVideo">%1$s ثبت فيديو في المجموعة %2$s</string>
     <string name="NotificationActionPinnedFile">%1$s ثبت ملف في المجموعة %2$s</string>
     <string name="NotificationActionPinnedSticker">%1$s ثبت ملصق في المجموعة %2$s</string>
@@ -411,6 +432,7 @@
     <string name="NotificationActionPinnedGeoChannel">%1$s ثبت خريطة</string>
     <string name="NotificationActionPinnedGifChannel">%1$s ثبت صورة متحركة</string>
     <string name="NotificationActionPinnedMusicChannel">%1$s ثبت مقطع صوتي</string>
+    <string name="NotificationActionPinnedGameChannel">%1$s ثبت لعبة</string>
     <!--contacts view-->
     <string name="SelectContact">اختر جهة اتصال</string>
     <string name="NoContacts">لا توجد جهات اتصال بعد</string>
@@ -444,6 +466,8 @@
     <string name="RevokeAlertNewLink">رابط الدعوة السابق لا يعمل الآن. سيتم إنشاء رابط جديد.</string>
     <string name="RevokeButton">إلغاء الرابط</string>
     <string name="RevokeLink">إلغاء الرابط</string>
+    <string name="RevokeLinkAlert">هل أنت متأكد من رغبتك في تعطيل الرابط <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>?\n\nالمجموعة \"<![CDATA[<b>]]>%2$s<![CDATA[</b>]]>\" ستصبح خاصة.</string>
+    <string name="RevokeLinkAlertChannel">هل أنت متأكد من رغبتك في تعطيل الرابط <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>?\n\القناة \"<![CDATA[<b>]]>%2$s<![CDATA[</b>]]>\" ستصبح خاصة.</string>
     <string name="CopyLink">نسخ الرابط</string>
     <string name="ShareLink">شارك الرابط</string>
     <string name="LinkInfo">أي شخص يمتلك تيليجرام على جهازه سيسطيع الدخول لمجموعتك باستخدام الرابط التالي.</string>
@@ -465,13 +489,15 @@
     <string name="ConvertGroupMenu">التحويل إلى مجموعة خارقة</string>
     <string name="ConvertGroupAlertWarning">تحذير</string>
     <string name="ConvertGroupAlert">هذا القرار لا يمكن الرجوع عنه. لن تتمكن من إرجاع المجموعات الخارقة لتصبح مجموعات عادية.</string>
-    <string name="ConvertGroupInfo"><![CDATA[<b>]]>تم الوصول للحد القصى.<![CDATA[</b>]]>\n\nلتتمكن من تخطي هذا الحد والحصول على مميزات إضافية، يمكنك الترقية لمجموعة خارقة:\n\n• المجموعات الخارقة يمكن أن تصل إلى %1$s عضو\n• الأعضاء الجدد يمكنهم رؤية سجل المحادثات بالكامل \n• الرسائل المحذوفة ستختفي عن كل الأعضاء\n• يستطيع الأعضاء التعديل على رسائلهم\n• يمكن لمنشئ المجموعة إنشاء رابط دعوة لها</string>
-    <string name="ConvertGroupInfo2"><![CDATA[<b>]]>في المجموعات الخارقة:<![CDATA[</b>]]>\n\n• الأعضاء الجدد يمكنهم رؤية سجل المحادثات بالكامل \n• الرسائل المحذوفة ستختفي عن كل الأعضاء\n• يستطيع الأعضاء التعديل على رسائلهم\n• يمكن لمنشئ المجموعة إنشاء رابط دعوة لها</string>
+    <string name="ConvertGroupInfo"><![CDATA[<b>]]>تم الوصول للحد الأعلى للأعضاء<![CDATA[</b>]]>\n\nلتخطي هذا الحد والحصول على خصائص جديدة، يمكنك الترقية لمجموعة خارقة:\n\n• المجموعات الخارقة يمكن أن تصل إلى %1$s عضوs\n• الأعضاء الجدد يمكنهم مشاهدة سجل المحادثات كاملًا\n• الرسائل المحذوفة ستختفي من أجهزة جميع الأعضاء\n• يمكن للمشرفين تثبيت الرسائل\n• يمكن لمنشئ المجموعة تعيين رابط للمجموعة</string>
+    <string name="ConvertGroupInfo2"><![CDATA[<b>]]> في المجموعات الخارقة:<![CDATA[</b>]]>\n\n• الأعضاء الجدد يمكنهم مشاهدة سجل المحادثات كاملًا\n• الرسائل المحذوفة ستختفي من أجهزة جميع الأعضاء\n• يمكن للمشرفين تثبيت الرسائل\n• يمكن لمنشئ المجموعة تعيين رابط للمجموعة</string>
     <string name="ConvertGroupInfo3"><![CDATA[<b>]]>ملاحظة:<![CDATA[</b>]]> لا يمكنك الرجوع عن هذا القرار.</string>
     <!--contact info view-->
     <string name="ShareContact">مشاركة</string>
     <string name="AddContact">إضافة</string>
     <string name="AddContactTitle">قم بإضافة جهة اتصال</string>
+    <string name="ContactNotRegistered">%1$s لم يقم بالتسجيل في تيليجرام بعد. فضلًا، هل ترغب في دعوتهم؟</string>
+    <string name="Invite">أرسل دعوة</string>
     <string name="BlockContact">حظر</string>
     <string name="EditContact">تعديل</string>
     <string name="DeleteContact">حذف</string>
@@ -505,20 +531,36 @@
     <string name="ErrorOccurred">حدث خطأ.</string>
     <!--stickers view-->
     <string name="Stickers">ملصقات</string>
-    <string name="StickersInfo">الرسامون مرحب بهم ليصنعوا حزم ملصقات عن طريق مراسلة @stickers .\n\nيمكن إضافة هذه الحزم بالضغط مرتين على الملصق واختيار \"معلومات\" — \"إضافة الملصقات\".</string>
     <string name="AddStickers">إضافة ملصق</string>
+    <string name="AddMasks">إضافة أقنعة</string>
     <string name="AddToStickers">إضافة إلى الملصقات</string>
+    <string name="AddToMasks">إضافة إلى الأقنعة</string>
     <string name="AddStickersNotFound">لا يوجد ملصقات</string>
     <string name="StickersRemoved">تم حذف الملصقات</string>
+    <string name="MasksRemoved">الأقنعة المحذوفة</string>
     <string name="AddStickersInstalled">تم إضافة ملصقات جديدة</string>
-    <string name="StickersHide">إخفاء</string>
-    <string name="StickersShow">إظهار</string>
+    <string name="AddMasksInstalled">تم إضافة أقنعة جديدة</string>
+    <string name="StickersHide">أرشف</string>
     <string name="StickersShare">مشاركة</string>
     <string name="StickersCopy">نسخ الرابط</string>
     <string name="StickersRemove">حذف</string>
     <string name="NoStickers">لا يوجد ملصقات بعد</string>
+    <string name="NoMasks">لا يوجد أقنعة بعد</string>
+    <string name="Masks">أقنعة</string>
+    <string name="MasksInfo">يمكنك إضافة أقنعة للصور التي ترسلها. لعمل ذلك، قم بفتح محرر الصور قبل إرسال الصورة.</string>
+    <string name="FeaturedStickers">الملصقات الشائعة</string>
+    <string name="FeaturedStickersInfo">هذه الملصقات منتشرة الآن على تيليجرام. يمكنك إضافة ملصقات مخصصة من خلال بوت @stickers .</string>
+    <string name="ArchivedStickers">الملصقات المؤرشفة</string>
+    <string name="ArchivedMasks">الأقنعة المؤرشفة</string>
+    <string name="ArchivedStickersEmpty">لا توجد ملصقات مؤرشفة</string>
+    <string name="ArchivedMasksEmpty">لا توجد أقنعة مؤرشفة</string>
+    <string name="ArchivedStickersInfo">يمكنك تنصيب ٢٠٠ حزمة ملصقات هنا. سنقوم بأرشفة الحزم الغير مستخدمة عند تنزيل حزم جديدة.</string>
+    <string name="ArchivedMasksInfo">يمكنك تنصيب ٢٠٠ حزمة أقنعة هنا. سنقوم بأرشفة الحزم الغير مستخدمة عند تنزيل حزم جديدة.</string>
     <string name="SendSticker">أرسل ملصق</string>
-    <string name="TooMuchStickersets">المعذرة، لقد وصلت الحد الأعلى لحزم الملصقات.</string>
+    <string name="ArchivedStickersAlertTitle">الملصقات المؤرشفة</string>
+    <string name="ArchivedStickersAlertInfo">تمت أرشفة بعض من حزم الملصقات الخاصة بك. يمكنك تفعيل هذه الحزم ان طريق إعدادات الملصقات.</string>
+    <string name="ArchivedMasksAlertTitle">الأقنعة المؤرشفة</string>
+    <string name="ArchivedMasksAlertInfo">تمت أرشفة بعض من حزم الأقنعة الخاصة بك. يمكنك تفعيل هذه الحزم ان طريق إعدادات الأقنعة.</string>
     <!--settings view-->
     <string name="ResetNotificationsText">تم تعيين كافة الإشعارات افتراضيا</string>
     <string name="TextSize">حجم نص الرسائل</string>
@@ -627,6 +669,9 @@
     <string name="ChromeCustomTabsInfo">فتح الروابط الخارجية داخل التطبيق</string>
     <string name="DirectShare">مشاركة مباشرة</string>
     <string name="DirectShareInfo">اظهار المحادثات الأخيرة في قائمة المشاركة</string>
+    <string name="Emoji">Emoji</string>
+    <string name="EmojiBigSize">Draw single big emoji</string>
+    <string name="EmojiUseDefault">Use system default emoji</string>
     <!--cache view-->
     <string name="CacheSettings">إعدادات الذاكرة المخبئية</string>
     <string name="LocalDatabase">قاعدة البيانات على الجهاز</string>
@@ -754,6 +799,14 @@
     <string name="PhotoCaption">تعليق الصورة</string>
     <string name="VideoCaption">تعليق المقطع المرئي</string>
     <string name="Caption">تعليق</string>
+    <string name="PaintDraw">ارسم</string>
+    <string name="PaintStickers">ملصقات</string>
+    <string name="PaintText">نص</string>
+    <string name="PaintDelete">حذف</string>
+    <string name="PaintEdit">تعديل</string>
+    <string name="PaintDuplicate">تكرار</string>
+    <string name="PaintOutlined">مرسوم</string>
+    <string name="PaintRegular">طبيعي</string>
     <!--password view-->
     <string name="TwoStepVerification">التحقق بخطوتين</string>
     <string name="SetAdditionalPassword">تعيين كلمة مرور إضافية</string>
@@ -850,10 +903,8 @@
     <string name="CreateGroupError">المعذرة، لا يمكنك إنشاء مجموعة مع هؤلاء المستخدمين نظرًا لإعدادات الخصوصية المتعلقة بهم.</string>
     <!--edit video view-->
     <string name="EditVideo">تحرير الفيديو</string>
-    <string name="OriginalVideo">الفيديو الأصلي</string>
-    <string name="EditedVideo">تم تحرير الفيديو</string>
     <string name="SendingVideo">جارٍ إرسال المقطع المرئي...</string>
-    <string name="CompressVideo">اضغط المقطع المرئي</string>
+    <string name="SendingGif">جاري إرسال الصورة المتحركة...</string>
     <!--bot-->
     <string name="Bot">بوت</string>
     <string name="BotShare">مشاركة</string>
@@ -903,6 +954,10 @@
     <string name="ActionYouKickUser">لقد قمت بإخراج un2</string>
     <string name="ActionYouLeftUser">أنت غادرت المجموعة</string>
     <string name="ActionYouAddUser">لقد قمت بإضافة un2</string>
+    <string name="ActionYouScored">لقد أحرزت %1$s</string>
+    <string name="ActionUserScored">un1 أحرز %1$s</string>
+    <string name="ActionYouScoredInGame">لقد أحرزت %1$s في un2</string>
+    <string name="ActionUserScoredInGame">un1 أحرز %1$s في un2</string>
     <string name="ActionYouRemovedPhoto">لقد قمت بإزالة صورة المجموعة</string>
     <string name="ActionYouChangedPhoto">لقد قمت بتغيير صورة المجموعة</string>
     <string name="ActionYouChangedTitle">لقد قمت بتغيير اسم المجموعة إلى un2</string>
@@ -921,11 +976,13 @@
     <string name="AttachDocument">ملف</string>
     <string name="AttachSticker">ملصق</string>
     <string name="AttachAudio">رسالة صوتية</string>
+    <string name="AttachGame">لعبة</string>
     <string name="FromYou">أنت</string>
     <string name="ActionTakeScreenshootYou">أنت أخذت لقطة للشاشة !</string>
     <string name="ActionTakeScreenshoot">un1 أخذ لقطة للشاشة !</string>
     <!--Alert messages-->
     <string name="InvalidPhoneNumber">رقم الهاتف غير صحيح</string>
+    <string name="BannedPhoneNumber">رقم هاتف محظور</string>
     <string name="CodeExpired">انتهت صلاحية الرمز الخاص بك، يرجى تسجيل الدخول مرة أخرى</string>
     <string name="FloodWait">محاولات كثيرة خاطئة، نرجو المحاولة لاحقًا</string>
     <string name="FloodWaitTime">محاولات كثيرة خاطئة، يرجى المحاولة خلال %1$s</string>
@@ -944,6 +1001,7 @@
     <string name="UserAlreadyInGroup">هذا المستخدم عضو مسبق في هذه المجموعة</string>
     <string name="ForwardMessagesTo">؟%1$s هل تريد إعادة توجيه الرسائل إلى</string>
     <string name="SendMessagesTo">هل ترغب في إرسال رسالة إلى %1$s؟</string>
+    <string name="SendGameTo">هل ترغب في مشاركة اللعبة مع %1$s؟</string>
     <string name="SendContactTo">أرسل جهة الاتصال إلى %1$s؟</string>
     <string name="AreYouSureLogout">نرجو الأخذ بالعلم أنه يمكنك استخدام تيليجرام على أجهزتك المتعددة بسهولة تامة وفي وقت واحد.\n\nوتذكر، تسجيل الخروج يحذف كافة محادثاتك السرية.</string>
     <string name="AreYouSureSessions">هل أنت متأكد من تسجيل الخروج من جميع الأجهزة الأخرى باستثناء هذا الجهاز؟</string>
@@ -968,6 +1026,7 @@
     <string name="AreYouSureClearHistorySuper">حذف كافة المحادثات والوسائط المتعلقة بهذه المجموعة من الذاكرة المخبئية؟</string>
     <string name="AreYouSureDeleteMessages">هل أنت متأكد من رغبتك في حذف %1$s؟</string>
     <string name="SendMessagesToGroup">هل ترغب في إرسال رسالة إلى %1$s؟</string>
+    <string name="SendGameToGroup">هل ترغب في مشاركة اللعبة مع %1$s؟</string>
     <string name="SendContactToGroup">أرسل جهة الاتصال إلى %1$s؟</string>
     <string name="ForwardMessagesToGroup">؟%1$s هل تريد إعادة توجيه الرسائل إلى</string>
     <string name="FeatureUnavailable">.Sorry, this feature is currently not available in your country</string>
@@ -981,10 +1040,12 @@
     <string name="AllowReadCall">فصلًا قم بالسماح لتيليجرام باستقبال اتصالات ليتمكن من إدخال الرمز لك تلقائيًا.</string>
     <string name="AllowReadCallAndSms">فصلًا قم بالسماح لتيليجرام باستقبال اتصالات ورسائل قصيرة ليتمكن من إدخال الرمز لك تلقائيًا.</string>
     <string name="UserRestricted">المعذرة، لا يمكنك القيام بذلك.</string>
+    <string name="JoinGroup">انضم للمجموعة</string>
     <!--permissions-->
     <string name="PermissionContacts">تيليجرام يحتاج للسماح له بالوصول لجهات الاتصال الخاصة بك لتتمكن من محادثة أصدقائك من كافة أجهزتك.</string>
     <string name="PermissionStorage">تيليجرام يحتاج للسماح له بالوصول للذاكرة الخاصة بك لتتمكن من إرسال وحفظ الصور، المقاطع المرئية، الموسيقى وغيرها من الوسائط.</string>
     <string name="PermissionNoAudio">تيليجرام يحتاج للسماح له بالوصول للمايكروفون الخاص بك لتتمكن من إرسال رسائل صوتية.</string>
+    <string name="PermissionNoCamera">تيليجرام يحتاج للسماح له بالوصول للكاميرا لتتمكن من التقاط صور ومقاطع مرئية.</string>
     <string name="PermissionNoLocation">تيليجرام يحتاج للسماح له بالوصول لمكانك لتتمكن من مشاركته مع أصدقائك من خلاله.</string>
     <string name="PermissionNoLocationPosition">تيليجرام يحتاج صلاحية الحصول على موقعك.</string>
     <string name="PermissionOpenSettings">الإعدادات</string>
@@ -1119,6 +1180,12 @@
     <string name="Photos_few">%1$d صور</string>
     <string name="Photos_many">%1$d صور</string>
     <string name="Photos_other">%1$d صور</string>
+    <string name="Points_zero">%1$d</string>
+    <string name="Points_one">%1$d</string>
+    <string name="Points_two">%1$d</string>
+    <string name="Points_few">%1$d</string>
+    <string name="Points_many">%1$d</string>
+    <string name="Points_other">%1$d</string>
     <string name="LastSeenMinutes_zero">آخر ظهور قبل %1$d دقيقة</string>
     <string name="LastSeenMinutes_one">آخر ظهور قبل %1$d دقيقة</string>
     <string name="LastSeenMinutes_two">آخر ظهور قبل %1$d دقيقة</string>
@@ -1131,6 +1198,30 @@
     <string name="LastSeenHours_few">آخر ظهور قبل %1$d ساعة</string>
     <string name="LastSeenHours_many">آخر ظهور قبل %1$d ساعة</string>
     <string name="LastSeenHours_other">آخر ظهور قبل %1$d ساعة</string>
+    <string name="SecondsBold_zero"><![CDATA[<b>%1$d</b>]]> ثواني</string>
+    <string name="SecondsBold_one"><![CDATA[<b>%1$d</b>]]> ثانية</string>
+    <string name="SecondsBold_two"><![CDATA[<b>%1$d</b>]]> ثانية</string>
+    <string name="SecondsBold_few"><![CDATA[<b>%1$d</b>]]> ثانية</string>
+    <string name="SecondsBold_many"><![CDATA[<b>%1$d</b>]]> ثانية</string>
+    <string name="SecondsBold_other"><![CDATA[<b>%1$d</b>]]> ثانية</string>
+    <string name="MinutesBold_zero"><![CDATA[<b>%1$d</b>]]> دقائق</string>
+    <string name="MinutesBold_one"><![CDATA[<b>%1$d</b>]]> دقيقة</string>
+    <string name="MinutesBold_two"><![CDATA[<b>%1$d</b>]]> دقيقة</string>
+    <string name="MinutesBold_few"><![CDATA[<b>%1$d</b>]]> دقيقة</string>
+    <string name="MinutesBold_many"><![CDATA[<b>%1$d</b>]]> دقيقة</string>
+    <string name="MinutesBold_other"><![CDATA[<b>%1$d</b>]]> دقيقة</string>
+    <string name="HoursBold_zero"><![CDATA[<b>%1$d</b>]]> ساعات</string>
+    <string name="HoursBold_one"><![CDATA[<b>%1$d</b>]]> ساعة</string>
+    <string name="HoursBold_two"><![CDATA[<b>%1$d</b>]]> ساعة</string>
+    <string name="HoursBold_few"><![CDATA[<b>%1$d</b>]]> ساعة</string>
+    <string name="HoursBold_many"><![CDATA[<b>%1$d</b>]]> ساعة</string>
+    <string name="HoursBold_other"><![CDATA[<b>%1$d</b>]]> ساعة</string>
+    <string name="DaysBold_zero"><![CDATA[<b>%1$d</b>]]> أيام</string>
+    <string name="DaysBold_one"><![CDATA[<b>%1$d</b>]]> يوم</string>
+    <string name="DaysBold_two"><![CDATA[<b>%1$d</b>]]> يوم</string>
+    <string name="DaysBold_few"><![CDATA[<b>%1$d</b>]]> يوم</string>
+    <string name="DaysBold_many"><![CDATA[<b>%1$d</b>]]> يوم</string>
+    <string name="DaysBold_other"><![CDATA[<b>%1$d</b>]]> يوم</string>
     <!--forwarded messages-->
     <string name="ForwardedMessage_zero">%1$d رسالة معاد توجيهها</string>
     <string name="ForwardedMessage_one">الرسالة المعاد توجيهها</string>

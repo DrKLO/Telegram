@@ -5,8 +5,10 @@
 #include <cstdint>
 #include <limits>
 #include <string>
+
 extern "C" {
 #include <libavformat/avformat.h>
+#include <libavutil/eval.h>
     
 static const std::string av_make_error_str(int errnum) {
     char errbuf[AV_ERROR_MAX_STRING_SIZE];
@@ -163,6 +165,16 @@ jint Java_org_telegram_ui_Components_AnimatedFileDrawable_createDecoder(JNIEnv *
     if (dataArr != nullptr) {
         dataArr[0] = info->video_dec_ctx->width;
         dataArr[1] = info->video_dec_ctx->height;
+        AVDictionaryEntry *rotate_tag = av_dict_get(info->video_stream->metadata, "rotate", NULL, 0);
+        if (rotate_tag && *rotate_tag->value && strcmp(rotate_tag->value, "0")) {
+            char *tail;
+            dataArr[2] = (int) av_strtod(rotate_tag->value, &tail);
+            if (*tail) {
+                dataArr[2] = 0;
+            }
+        } else {
+            dataArr[2] = 0;
+        }
         env->ReleaseIntArrayElements(data, dataArr, 0);
     }
     
@@ -238,16 +250,16 @@ jint Java_org_telegram_ui_Components_AnimatedFileDrawable_getVideoFrame(JNIEnv *
         }
         if (got_frame) {
             //LOGD("decoded frame with w = %d, h = %d, format = %d", info->frame->width, info->frame->height, info->frame->format);
-            if (info->frame->format == AV_PIX_FMT_YUV420P || info->frame->format == AV_PIX_FMT_BGRA) {
+            if (info->frame->format == AV_PIX_FMT_YUV420P || info->frame->format == AV_PIX_FMT_BGRA || info->frame->format == AV_PIX_FMT_YUVJ420P) {
                 jint *dataArr = env->GetIntArrayElements(data, 0);
                 if (dataArr != nullptr) {
-                    dataArr[2] = (int) (1000 * info->frame->pkt_pts * av_q2d(info->video_stream->time_base));
+                    dataArr[3] = (int) (1000 * info->frame->pkt_pts * av_q2d(info->video_stream->time_base));
                     env->ReleaseIntArrayElements(data, dataArr, 0);
                 }
                 
                 void *pixels;
                 if (AndroidBitmap_lockPixels(env, bitmap, &pixels) >= 0) {
-                    if (info->frame->format == AV_PIX_FMT_YUV420P) {
+                    if (info->frame->format == AV_PIX_FMT_YUV420P || info->frame->format == AV_PIX_FMT_YUVJ420P) {
                         //LOGD("y %d, u %d, v %d, width %d, height %d", info->frame->linesize[0], info->frame->linesize[2], info->frame->linesize[1], info->frame->width, info->frame->height);
                         libyuv::I420ToARGB(info->frame->data[0], info->frame->linesize[0], info->frame->data[2], info->frame->linesize[2], info->frame->data[1], info->frame->linesize[1], (uint8_t *) pixels, info->frame->width * 4, info->frame->width, info->frame->height);
                     } else if (info->frame->format == AV_PIX_FMT_BGRA) {

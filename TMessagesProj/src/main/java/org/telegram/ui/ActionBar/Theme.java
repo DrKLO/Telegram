@@ -30,6 +30,7 @@ public class Theme {
     public static final int ACTION_BAR_COLOR = 0xff527da3;
     public static final int ACTION_BAR_PHOTO_VIEWER_COLOR = 0x7f000000;
     public static final int ACTION_BAR_MEDIA_PICKER_COLOR = 0xff333333;
+    public static final int ACTION_BAR_VIDEO_EDIT_COLOR = 0xff000000;
     public static final int ACTION_BAR_CHANNEL_INTRO_COLOR = 0xffffffff;
     public static final int ACTION_BAR_PLAYER_COLOR = 0xffffffff;
     public static final int ACTION_BAR_TITLE_COLOR = 0xffffffff;
@@ -84,6 +85,9 @@ public class Theme {
 
     public static final int AUTODOWNLOAD_SHEET_SAVE_TEXT_COLOR = 0xff3a8ccf;
 
+    public static final int JOIN_SHEET_NAME_TEXT_COLOR = 0xff212121;
+    public static final int JOIN_SHEET_COUNT_TEXT_COLOR = 0xff999999;
+
     public static final int SHARE_SHEET_COPY_TEXT_COLOR = 0xff3a8ccf;
     public static final int SHARE_SHEET_SEND_TEXT_COLOR = 0xff3ec1f9;
     public static final int SHARE_SHEET_SEND_DISABLED_TEXT_COLOR = 0xffb3b3b3;
@@ -104,6 +108,7 @@ public class Theme {
 
     public static final int MSG_SELECTED_BACKGROUND_COLOR = 0x6633b5e5;
     public static final int MSG_WEB_PREVIEW_DURATION_TEXT_COLOR = 0xffffffff;
+    public static final int MSG_WEB_PREVIEW_GAME_TEXT_COLOR = 0xffffffff;
     public static final int MSG_SECRET_TIME_TEXT_COLOR = 0xffe4e2e0;
     public static final int MSG_STICKER_NAME_TEXT_COLOR = 0xffffffff;
     public static final int MSG_BOT_BUTTON_TEXT_COLOR = 0xffffffff;

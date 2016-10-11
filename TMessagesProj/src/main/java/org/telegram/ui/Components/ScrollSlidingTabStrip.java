@@ -13,14 +13,17 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Paint.Style;
 import android.os.Build;
+import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.HorizontalScrollView;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.R;
 import org.telegram.tgnet.TLRPC;
 
 public class ScrollSlidingTabStrip extends HorizontalScrollView {
@@ -35,12 +38,13 @@ public class ScrollSlidingTabStrip extends HorizontalScrollView {
 
     private int tabCount;
 
-    private int currentPosition = 0;
+    private int currentPosition;
 
     private Paint rectPaint;
 
     private int indicatorColor = 0xff666666;
     private int underlineColor = 0x1a000000;
+    private int indicatorHeight;
 
     private int scrollOffset = AndroidUtilities.dp(52);
     private int underlineHeight = AndroidUtilities.dp(2);
@@ -88,6 +92,38 @@ public class ScrollSlidingTabStrip extends HorizontalScrollView {
         } else {
             tab.performClick();
         }
+    }
+
+    public TextView addIconTabWithCounter(int resId) {
+        final int position = tabCount++;
+        FrameLayout tab = new FrameLayout(getContext());
+        tab.setFocusable(true);
+        tabsContainer.addView(tab);
+
+        ImageView imageView = new ImageView(getContext());
+        imageView.setImageResource(resId);
+        imageView.setScaleType(ImageView.ScaleType.CENTER);
+        tab.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                delegate.onPageSelected(position);
+            }
+        });
+        tab.addView(imageView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+
+        tab.setSelected(position == currentPosition);
+
+        TextView textView = new TextView(getContext());
+        textView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
+        textView.setTextColor(0xffffffff);
+        textView.setGravity(Gravity.CENTER);
+        textView.setBackgroundResource(R.drawable.sticker_badge);
+        textView.setMinWidth(AndroidUtilities.dp(18));
+        textView.setPadding(AndroidUtilities.dp(5), 0, AndroidUtilities.dp(5), AndroidUtilities.dp(1));
+        tab.addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 18, Gravity.TOP | Gravity.LEFT, 26, 6, 0, 0));
+
+        return textView;
     }
 
     public void addIconTab(int resId) {
@@ -180,7 +216,11 @@ public class ScrollSlidingTabStrip extends HorizontalScrollView {
         }
 
         rectPaint.setColor(indicatorColor);
-        canvas.drawRect(lineLeft, 0, lineRight, height, rectPaint);
+        if (indicatorHeight == 0) {
+            canvas.drawRect(lineLeft, 0, lineRight, height, rectPaint);
+        } else {
+            canvas.drawRect(lineLeft, height - indicatorHeight, lineRight, height, rectPaint);
+        }
     }
 
     public int getCurrentPosition() {
@@ -206,23 +246,28 @@ public class ScrollSlidingTabStrip extends HorizontalScrollView {
         invalidate();
     }
 
-    public void setIndicatorColor(int indicatorColor) {
-        this.indicatorColor = indicatorColor;
+    public void setIndicatorHeight(int value) {
+        indicatorHeight = value;
         invalidate();
     }
 
-    public void setUnderlineColor(int underlineColor) {
-        this.underlineColor = underlineColor;
+    public void setIndicatorColor(int value) {
+        indicatorColor = value;
+        invalidate();
+    }
+
+    public void setUnderlineColor(int value) {
+        underlineColor = value;
         invalidate();
     }
 
     public void setUnderlineColorResource(int resId) {
-        this.underlineColor = getResources().getColor(resId);
+        underlineColor = getResources().getColor(resId);
         invalidate();
     }
 
-    public void setUnderlineHeight(int underlineHeightPx) {
-        this.underlineHeight = underlineHeightPx;
+    public void setUnderlineHeight(int value) {
+        underlineHeight = value;
         invalidate();
     }
 }

@@ -52,20 +52,20 @@ public class SeekBar {
             int additionWidth = (height - thumbWidth) / 2;
             if (thumbX - additionWidth <= x && x <= thumbX + thumbWidth + additionWidth && y >= 0 && y <= height) {
                 pressed = true;
-                thumbDX = (int)(x - thumbX);
+                thumbDX = (int) (x - thumbX);
                 return true;
             }
         } else if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) {
             if (pressed) {
                 if (action == MotionEvent.ACTION_UP && delegate != null) {
-                    delegate.onSeekBarDrag((float)thumbX / (float)(width - thumbWidth));
+                    delegate.onSeekBarDrag((float) thumbX / (float) (width - thumbWidth));
                 }
                 pressed = false;
                 return true;
             }
         } else if (action == MotionEvent.ACTION_MOVE) {
             if (pressed) {
-                thumbX = (int)(x - thumbDX);
+                thumbX = (int) (x - thumbDX);
                 if (thumbX < 0) {
                     thumbX = 0;
                 } else if (thumbX > width - thumbWidth) {
@@ -84,7 +84,7 @@ public class SeekBar {
     }
 
     public void setProgress(float progress) {
-        thumbX = (int)Math.ceil((width - thumbWidth) * progress);
+        thumbX = (int) Math.ceil((width - thumbWidth) * progress);
         if (thumbX < 0) {
             thumbX = 0;
         } else if (thumbX > width - thumbWidth) {

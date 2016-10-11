@@ -15,13 +15,11 @@
  */
 package org.telegram.messenger.exoplayer.smoothstreaming;
 
+import android.content.Context;
 import org.telegram.messenger.exoplayer.chunk.VideoFormatSelectorUtil;
 import org.telegram.messenger.exoplayer.smoothstreaming.SmoothStreamingManifest.StreamElement;
 import org.telegram.messenger.exoplayer.smoothstreaming.SmoothStreamingManifest.TrackElement;
 import org.telegram.messenger.exoplayer.util.Util;
-
-import android.content.Context;
-
 import java.io.IOException;
 import java.util.Arrays;
 

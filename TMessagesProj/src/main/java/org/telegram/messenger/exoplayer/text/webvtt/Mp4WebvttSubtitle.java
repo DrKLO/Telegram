@@ -18,7 +18,6 @@ package org.telegram.messenger.exoplayer.text.webvtt;
 import org.telegram.messenger.exoplayer.text.Cue;
 import org.telegram.messenger.exoplayer.text.Subtitle;
 import org.telegram.messenger.exoplayer.util.Assertions;
-
 import java.util.Collections;
 import java.util.List;
 

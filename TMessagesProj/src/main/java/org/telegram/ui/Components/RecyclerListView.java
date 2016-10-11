@@ -102,9 +102,10 @@ public class RecyclerListView extends RecyclerView {
                 @Override
                 public void onLongPress(MotionEvent event) {
                     if (currentChildView != null) {
+                        View child = currentChildView;
                         if (onItemLongClickListener != null) {
                             if (onItemLongClickListener.onItemClick(currentChildView, currentChildPosition)) {
-                                currentChildView.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
+                                child.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
                             }
                         }
                     }

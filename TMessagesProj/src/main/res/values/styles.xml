@@ -32,6 +32,19 @@
         <item name="android:windowNoTitle">true</item>
     </style>
 
+    <style name="Theme.TMessages.Transparent" parent="Theme.TMessages">
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowContentOverlay">@null</item>
+        <item name="android:windowCloseOnTouchOutside">false</item>
+        <item name="android:colorBackgroundCacheHint">@null</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowIsFloating">true</item>
+        <item name="android:backgroundDimEnabled">false</item>
+        <item name="android:windowAnimationStyle">@null</item>
+        <item name="android:windowActionBar">false</item>
+    </style>
+
     <!-- POPUP -->
 
     <style name="PopupAnimation" parent="android:Animation" mce_bogus="1">

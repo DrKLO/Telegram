@@ -90,10 +90,8 @@ public class SharedLinkCell extends FrameLayout {
             titleTextPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
             titleTextPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
             titleTextPaint.setColor(0xff212121);
-            titleTextPaint.setTextSize(AndroidUtilities.dp(16));
 
             descriptionTextPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
-            descriptionTextPaint.setTextSize(AndroidUtilities.dp(16));
 
             paint = new Paint();
             paint.setColor(0xffd9d9d9);
@@ -102,6 +100,9 @@ public class SharedLinkCell extends FrameLayout {
             urlPaint = new Paint();
             urlPaint.setColor(Theme.MSG_LINK_SELECT_BACKGROUND_COLOR);
         }
+
+        titleTextPaint.setTextSize(AndroidUtilities.dp(16));
+        descriptionTextPaint.setTextSize(AndroidUtilities.dp(16));
 
         setWillNotDraw(false);
         linkImageView = new ImageReceiver(this);

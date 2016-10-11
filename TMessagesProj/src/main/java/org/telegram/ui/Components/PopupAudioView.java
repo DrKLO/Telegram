@@ -80,8 +80,9 @@ public class PopupAudioView extends BaseCell implements SeekBar.SeekBarDelegate,
             statesDrawable[7][1] = getResources().getDrawable(R.drawable.file_b_cancel_s);
 
             timePaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
-            timePaint.setTextSize(AndroidUtilities.dp(16));
         }
+
+        timePaint.setTextSize(AndroidUtilities.dp(16));
 
         TAG = MediaController.getInstance().generateObserverTag();
 

@@ -26,6 +26,7 @@ public class PhotoAttachCameraCell extends FrameLayout {
         ImageView imageView = new ImageView(context);
         imageView.setScaleType(ImageView.ScaleType.CENTER);
         imageView.setImageResource(R.drawable.instant_camera);
+        imageView.setBackgroundColor(0xff000000);
         addView(imageView, LayoutHelper.createFrame(80, 80));
     }
 

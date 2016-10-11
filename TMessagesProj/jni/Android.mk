@@ -78,8 +78,8 @@ LOCAL_MODULE := breakpad
 LOCAL_CPPFLAGS := -Wall -std=c++11 -DANDROID -finline-functions -ffast-math -Os -fno-strict-aliasing
 
 LOCAL_C_INCLUDES := \
-./breakpad/common/android/include \
-./breakpad
+./jni/breakpad/common/android/include \
+./jni/breakpad
 
 LOCAL_SRC_FILES := \
 ./breakpad/client/linux/crash_generation/crash_generation_client.cc \
@@ -108,13 +108,14 @@ include $(BUILD_STATIC_LIBRARY)
 
 include $(CLEAR_VARS)
 
-LOCAL_CPPFLAGS := -Wall -std=c++11 -DANDROID -frtti -DHAVE_PTHREAD -finline-functions -ffast-math -Os
-LOCAL_C_INCLUDES += ./boringssl/include/
+LOCAL_CPPFLAGS := -Wall -std=c++11 -DANDROID -frtti -DHAVE_PTHREAD -finline-functions -ffast-math -O0
+LOCAL_C_INCLUDES += ./jni/boringssl/include/
 LOCAL_ARM_MODE := arm
 LOCAL_MODULE := tgnet
 LOCAL_STATIC_LIBRARIES := crypto
 
 LOCAL_SRC_FILES := \
+./tgnet/ApiScheme.cpp \
 ./tgnet/BuffersStorage.cpp \
 ./tgnet/ByteArray.cpp \
 ./tgnet/ByteStream.cpp \
@@ -130,14 +131,15 @@ LOCAL_SRC_FILES := \
 ./tgnet/Request.cpp \
 ./tgnet/Timer.cpp \
 ./tgnet/TLObject.cpp \
+./tgnet/FileLoadOperation.cpp \
 ./tgnet/Config.cpp
 
 include $(BUILD_STATIC_LIBRARY)
 
 include $(CLEAR_VARS)
 
-LOCAL_CFLAGS := -Wall -DANDROID -DHAVE_MALLOC_H -DHAVE_PTHREAD -DWEBP_USE_THREAD -finline-functions -ffast-math -ffunction-sections -fdata-sections -Os
-LOCAL_C_INCLUDES += ./libwebp/src
+LOCAL_CFLAGS := -Wall -DANDROID -DHAVE_MALLOC_H -DHAVE_PTHREAD -DWEBP_USE_THREAD -finline-functions -ffast-math -ffunction-sections -fdata-sections -O0
+LOCAL_C_INCLUDES += ./jni/libwebp/src
 LOCAL_ARM_MODE := arm
 LOCAL_STATIC_LIBRARIES := cpufeatures
 LOCAL_MODULE := webp
@@ -235,7 +237,7 @@ include $(BUILD_STATIC_LIBRARY)
 include $(CLEAR_VARS)
 LOCAL_PRELINK_MODULE := false
 
-LOCAL_MODULE 	:= tmessages.22
+LOCAL_MODULE 	:= tmessages.24
 LOCAL_CFLAGS 	:= -w -std=c11 -Os -DNULL=0 -DSOCKLEN_T=socklen_t -DLOCALE_NOT_USED -D_LARGEFILE_SOURCE=1 -D_FILE_OFFSET_BITS=64
 LOCAL_CFLAGS 	+= -Drestrict='' -D__EMX__ -DOPUS_BUILD -DFIXED_POINT -DUSE_ALLOCA -DHAVE_LRINT -DHAVE_LRINTF -fno-math-errno
 LOCAL_CFLAGS 	+= -DANDROID_NDK -DDISABLE_IMPORTGL -fno-strict-aliasing -fprefetch-loop-arrays -DAVOID_TABLES -DANDROID_TILE_BASED_DECODE -DANDROID_ARMV6_IDCT -ffast-math -D__STDC_CONSTANT_MACROS
@@ -265,8 +267,8 @@ else
 
     else
         ifeq ($(TARGET_ARCH_ABI),x86)
-	    LOCAL_CPPFLAGS += -Dx86fix
 	    LOCAL_CFLAGS += -Dx86fix
+ 	    LOCAL_CPPFLAGS += -Dx86fix
 	    LOCAL_ARM_MODE  := arm
 	    LOCAL_SRC_FILE += \
 	    ./libyuv/source/row_x86.asm
@@ -410,66 +412,17 @@ LOCAL_SRC_FILES     += \
 ./opus/opusfile/stream.c
 
 LOCAL_C_INCLUDES    := \
-./opus/include \
-./opus/silk \
-./opus/silk/fixed \
-./opus/celt \
-./opus/ \
-./opus/opusfile \
-./libyuv/include \
-./boringssl/include \
-./breakpad/common/android/include \
-./breakpad \
-./ffmpeg/include
-
-LOCAL_SRC_FILES     += \
-./libjpeg/jcapimin.c \
-./libjpeg/jcapistd.c \
-./libjpeg/armv6_idct.S \
-./libjpeg/jccoefct.c \
-./libjpeg/jccolor.c \
-./libjpeg/jcdctmgr.c \
-./libjpeg/jchuff.c \
-./libjpeg/jcinit.c \
-./libjpeg/jcmainct.c \
-./libjpeg/jcmarker.c \
-./libjpeg/jcmaster.c \
-./libjpeg/jcomapi.c \
-./libjpeg/jcparam.c \
-./libjpeg/jcphuff.c \
-./libjpeg/jcprepct.c \
-./libjpeg/jcsample.c \
-./libjpeg/jctrans.c \
-./libjpeg/jdapimin.c \
-./libjpeg/jdapistd.c \
-./libjpeg/jdatadst.c \
-./libjpeg/jdatasrc.c \
-./libjpeg/jdcoefct.c \
-./libjpeg/jdcolor.c \
-./libjpeg/jddctmgr.c \
-./libjpeg/jdhuff.c \
-./libjpeg/jdinput.c \
-./libjpeg/jdmainct.c \
-./libjpeg/jdmarker.c \
-./libjpeg/jdmaster.c \
-./libjpeg/jdmerge.c \
-./libjpeg/jdphuff.c \
-./libjpeg/jdpostct.c \
-./libjpeg/jdsample.c \
-./libjpeg/jdtrans.c \
-./libjpeg/jerror.c \
-./libjpeg/jfdctflt.c \
-./libjpeg/jfdctfst.c \
-./libjpeg/jfdctint.c \
-./libjpeg/jidctflt.c \
-./libjpeg/jidctfst.c \
-./libjpeg/jidctint.c \
-./libjpeg/jidctred.c \
-./libjpeg/jmemmgr.c \
-./libjpeg/jmemnobs.c \
-./libjpeg/jquant1.c \
-./libjpeg/jquant2.c \
-./libjpeg/jutils.c
+./jni/opus/include \
+./jni/opus/silk \
+./jni/opus/silk/fixed \
+./jni/opus/celt \
+./jni/opus/ \
+./jni/opus/opusfile \
+./jni/libyuv/include \
+./jni/boringssl/include \
+./jni/breakpad/common/android/include \
+./jni/breakpad \
+./jni/ffmpeg/include
 
 LOCAL_SRC_FILES     += \
 ./libyuv/source/compare_common.cc \

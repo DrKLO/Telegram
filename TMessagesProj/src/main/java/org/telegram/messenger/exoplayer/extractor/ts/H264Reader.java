@@ -15,6 +15,7 @@
  */
 package org.telegram.messenger.exoplayer.extractor.ts;
 
+import android.util.SparseArray;
 import org.telegram.messenger.exoplayer.C;
 import org.telegram.messenger.exoplayer.MediaFormat;
 import org.telegram.messenger.exoplayer.extractor.TrackOutput;
@@ -23,9 +24,6 @@ import org.telegram.messenger.exoplayer.util.NalUnitUtil;
 import org.telegram.messenger.exoplayer.util.NalUnitUtil.SpsData;
 import org.telegram.messenger.exoplayer.util.ParsableBitArray;
 import org.telegram.messenger.exoplayer.util.ParsableByteArray;
-
-import android.util.SparseArray;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;

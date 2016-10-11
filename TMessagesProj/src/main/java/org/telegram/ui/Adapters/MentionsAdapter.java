@@ -17,6 +17,7 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.os.Build;
+import android.text.TextUtils;
 import android.view.View;
 import android.view.ViewGroup;
 
@@ -213,6 +214,9 @@ public class MentionsAdapter extends BaseSearchAdapterRecycler {
     }
 
     private void searchForContextBot(final String username, final String query) {
+        if (foundContextBot != null && foundContextBot.username != null && foundContextBot.username.equals(username) && searchingContextQuery != null && searchingContextQuery.equals(query)) {
+            return;
+        }
         searchResultBotContext = null;
         searchResultBotContextById = null;
         searchResultBotContextSwitch = null;
@@ -224,7 +228,7 @@ public class MentionsAdapter extends BaseSearchAdapterRecycler {
             AndroidUtilities.cancelRunOnUIThread(contextQueryRunnable);
             contextQueryRunnable = null;
         }
-        if (username == null || username.length() == 0 || searchingContextUsername != null && !searchingContextUsername.equals(username)) {
+        if (TextUtils.isEmpty(username) || searchingContextUsername != null && !searchingContextUsername.equals(username)) {
             if (contextUsernameReqid != 0) {
                 ConnectionsManager.getInstance().cancelRequest(contextUsernameReqid, true);
                 contextUsernameReqid = 0;
@@ -495,30 +499,35 @@ public class MentionsAdapter extends BaseSearchAdapterRecycler {
         boolean hasIllegalUsernameCharacters = false;
         if (needBotContext && text.charAt(0) == '@') {
             int index = text.indexOf(' ');
+            int len = text.length();
+            String username = null;
+            String query = null;
             if (index > 0) {
-                String username = text.substring(1, index);
-                if (username.length() >= 1) {
-                    for (int a = 1; a < username.length(); a++) {
-                        char ch = username.charAt(a);
-                        if (!(ch >= '0' && ch <= '9' || ch >= 'a' && ch <= 'z' || ch >= 'A' && ch <= 'Z' || ch == '_')) {
-                            username = "";
-                            break;
-                        }
-                    }
-                } else {
-                    username = "";
-                }
-                String query = text.substring(index + 1);
-                if (username.length() > 0 && query.length() >= 0) {
-                    searchForContextBot(username, query);
-                } else {
-                    searchForContextBot(username, null);
-                }
+                username = text.substring(1, index);
+                query = text.substring(index + 1);
+            } else if (text.charAt(len - 1) == 't' && text.charAt(len - 2) == 'o' && text.charAt(len - 3) == 'b') {
+                username = text.substring(1);
+                query = "";
             } else {
                 searchForContextBot(null, null);
             }
+            if (username != null && username.length() >= 1) {
+                for (int a = 1; a < username.length(); a++) {
+                    char ch = username.charAt(a);
+                    if (!(ch >= '0' && ch <= '9' || ch >= 'a' && ch <= 'z' || ch >= 'A' && ch <= 'Z' || ch == '_')) {
+                        username = "";
+                        break;
+                    }
+                }
+            } else {
+                username = "";
+            }
+            searchForContextBot(username, query);
         } else {
             searchForContextBot(null, null);
+        }
+        if (foundContextBot != null) {
+            return;
         }
         int dogPostion = -1;
         for (int a = searchPostion; a >= 0; a--) {
@@ -710,6 +719,10 @@ public class MentionsAdapter extends BaseSearchAdapterRecycler {
         return resultLength;
     }
 
+    public ArrayList<TLRPC.BotInlineResult> getSearchResultBotContext() {
+        return searchResultBotContext;
+    }
+
     @Override
     public int getItemCount() {
         if (searchResultBotContext != null) {
@@ -734,6 +747,13 @@ public class MentionsAdapter extends BaseSearchAdapterRecycler {
         } else {
             return 0;
         }
+    }
+
+    public int getItemPosition(int i) {
+        if (searchResultBotContext != null && searchResultBotContextSwitch != null) {
+            i--;
+        }
+        return i;
     }
 
     public Object getItem(int i) {

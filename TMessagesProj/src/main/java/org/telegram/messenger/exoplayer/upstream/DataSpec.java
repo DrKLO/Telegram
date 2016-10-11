@@ -15,11 +15,9 @@
  */
 package org.telegram.messenger.exoplayer.upstream;
 
+import android.net.Uri;
 import org.telegram.messenger.exoplayer.C;
 import org.telegram.messenger.exoplayer.util.Assertions;
-
-import android.net.Uri;
-
 import java.util.Arrays;
 
 /**

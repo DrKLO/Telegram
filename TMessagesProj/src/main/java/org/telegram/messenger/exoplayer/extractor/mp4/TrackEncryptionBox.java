@@ -16,7 +16,8 @@
 package org.telegram.messenger.exoplayer.extractor.mp4;
 
 /**
- * Encapsulates information parsed from a track encryption (tenc) box in an MP4 stream.
+ * Encapsulates information parsed from a track encryption (tenc) box or sample group description 
+ * (sgpd) box in an MP4 stream.
  */
 public final class TrackEncryptionBox {
 

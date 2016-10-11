@@ -39,8 +39,8 @@ public class LetterDrawable extends Drawable {
             paint.setColor(0xfff0f0f0);
             namePaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
             namePaint.setColor(0xffffffff);
-            namePaint.setTextSize(AndroidUtilities.dp(28));
         }
+        namePaint.setTextSize(AndroidUtilities.dp(28));
     }
 
     public void setTitle(String title) {

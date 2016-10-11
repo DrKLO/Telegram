@@ -10,14 +10,16 @@ package org.telegram.ui.Components;
 
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.Matrix;
 import android.graphics.Rect;
+import android.graphics.Shader;
+import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.view.View;
 import android.widget.FrameLayout;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.FileLog;
 
 public class SizeNotifierFrameLayout extends FrameLayout {
 
@@ -34,14 +36,6 @@ public class SizeNotifierFrameLayout extends FrameLayout {
     public SizeNotifierFrameLayout(Context context) {
         super(context);
         setWillNotDraw(false);
-    }
-
-    public void setBackgroundImage(int resourceId) {
-        try {
-            backgroundDrawable = getResources().getDrawable(resourceId);
-        } catch (Throwable e) {
-            FileLog.e("tmessages", e);
-        }
     }
 
     public void setBackgroundImage(Drawable bitmap) {
@@ -101,22 +95,32 @@ public class SizeNotifierFrameLayout extends FrameLayout {
                 if (bottomClip != 0) {
                     canvas.restore();
                 }
-            } else {
-                float scaleX = (float) getMeasuredWidth() / (float) backgroundDrawable.getIntrinsicWidth();
-                float scaleY = (float) (getMeasuredHeight() + keyboardHeight) / (float) backgroundDrawable.getIntrinsicHeight();
-                float scale = scaleX < scaleY ? scaleY : scaleX;
-                int width = (int) Math.ceil(backgroundDrawable.getIntrinsicWidth() * scale);
-                int height = (int) Math.ceil(backgroundDrawable.getIntrinsicHeight() * scale);
-                int x = (getMeasuredWidth() - width) / 2;
-                int y = (getMeasuredHeight() - height + keyboardHeight) / 2;
-                if (bottomClip != 0) {
+            } else if (backgroundDrawable instanceof BitmapDrawable) {
+                BitmapDrawable bitmapDrawable = (BitmapDrawable) backgroundDrawable;
+                if (bitmapDrawable.getTileModeX() == Shader.TileMode.REPEAT) {
                     canvas.save();
-                    canvas.clipRect(0, 0, width, getMeasuredHeight() - bottomClip);
-                }
-                backgroundDrawable.setBounds(x, y, x + width, y + height);
-                backgroundDrawable.draw(canvas);
-                if (bottomClip != 0) {
+                    float scale = 2.0f / AndroidUtilities.density;
+                    canvas.scale(scale, scale);
+                    backgroundDrawable.setBounds(0, 0, (int) Math.ceil(getMeasuredWidth() / scale), (int) Math.ceil(getMeasuredHeight() / scale));
+                    backgroundDrawable.draw(canvas);
                     canvas.restore();
+                } else {
+                    float scaleX = (float) getMeasuredWidth() / (float) backgroundDrawable.getIntrinsicWidth();
+                    float scaleY = (float) (getMeasuredHeight() + keyboardHeight) / (float) backgroundDrawable.getIntrinsicHeight();
+                    float scale = scaleX < scaleY ? scaleY : scaleX;
+                    int width = (int) Math.ceil(backgroundDrawable.getIntrinsicWidth() * scale);
+                    int height = (int) Math.ceil(backgroundDrawable.getIntrinsicHeight() * scale);
+                    int x = (getMeasuredWidth() - width) / 2;
+                    int y = (getMeasuredHeight() - height + keyboardHeight) / 2;
+                    if (bottomClip != 0) {
+                        canvas.save();
+                        canvas.clipRect(0, 0, width, getMeasuredHeight() - bottomClip);
+                    }
+                    backgroundDrawable.setBounds(x, y, x + width, y + height);
+                    backgroundDrawable.draw(canvas);
+                    if (bottomClip != 0) {
+                        canvas.restore();
+                    }
                 }
             }
         } else {

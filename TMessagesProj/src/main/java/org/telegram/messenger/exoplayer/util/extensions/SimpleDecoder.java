@@ -16,7 +16,6 @@
 package org.telegram.messenger.exoplayer.util.extensions;
 
 import org.telegram.messenger.exoplayer.util.Assertions;
-
 import java.util.LinkedList;
 
 /**

@@ -59,14 +59,15 @@ public class AvatarDrawable extends Drawable {
         if (namePaint == null) {
             namePaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
             namePaint.setColor(0xffffffff);
-            namePaint.setTextSize(AndroidUtilities.dp(20));
 
             namePaintSmall = new TextPaint(Paint.ANTI_ALIAS_FLAG);
             namePaintSmall.setColor(0xffffffff);
-            namePaintSmall.setTextSize(AndroidUtilities.dp(14));
 
             broadcastDrawable = ApplicationLoader.applicationContext.getResources().getDrawable(R.drawable.broadcast_w);
         }
+
+        namePaint.setTextSize(AndroidUtilities.dp(20));
+        namePaintSmall.setTextSize(AndroidUtilities.dp(14));
     }
 
     public AvatarDrawable(TLRPC.User user) {
@@ -81,7 +82,7 @@ public class AvatarDrawable extends Drawable {
         this();
         isProfile = profile;
         if (user != null) {
-            setInfo(user.id, user.first_name, user.last_name, false);
+            setInfo(user.id, user.first_name, user.last_name, false, null);
         }
     }
 
@@ -89,7 +90,7 @@ public class AvatarDrawable extends Drawable {
         this();
         isProfile = profile;
         if (chat != null) {
-            setInfo(chat.id, chat.title, null, chat.id < 0);
+            setInfo(chat.id, chat.title, null, chat.id < 0, null);
         }
     }
 
@@ -154,13 +155,13 @@ public class AvatarDrawable extends Drawable {
 
     public void setInfo(TLRPC.User user) {
         if (user != null) {
-            setInfo(user.id, user.first_name, user.last_name, false);
+            setInfo(user.id, user.first_name, user.last_name, false, null);
         }
     }
 
     public void setInfo(TLRPC.Chat chat) {
         if (chat != null) {
-            setInfo(chat.id, chat.title, null, chat.id < 0);
+            setInfo(chat.id, chat.title, null, chat.id < 0, null);
         }
     }
 
@@ -169,6 +170,10 @@ public class AvatarDrawable extends Drawable {
     }
 
     public void setInfo(int id, String firstName, String lastName, boolean isBroadcast) {
+        setInfo(id, firstName, lastName, isBroadcast, null);
+    }
+
+    public void setInfo(int id, String firstName, String lastName, boolean isBroadcast, String custom) {
         if (isProfile) {
             color = arrColorsProfiles[getColorIndex(id)];
         } else {
@@ -183,30 +188,34 @@ public class AvatarDrawable extends Drawable {
         }
 
         stringBuilder.setLength(0);
-        if (firstName != null && firstName.length() > 0) {
-            stringBuilder.append(firstName.substring(0, 1));
-        }
-        if (lastName != null && lastName.length() > 0) {
-            String lastch = null;
-            for (int a = lastName.length() - 1; a >= 0; a--) {
-                if (lastch != null && lastName.charAt(a) == ' ') {
-                    break;
-                }
-                lastch = lastName.substring(a, a + 1);
+        if (custom != null) {
+            stringBuilder.append(custom);
+        } else {
+            if (firstName != null && firstName.length() > 0) {
+                stringBuilder.append(firstName.substring(0, 1));
             }
-            if (Build.VERSION.SDK_INT >= 16) {
-                stringBuilder.append("\u200C");
-            }
-            stringBuilder.append(lastch);
-        } else if (firstName != null && firstName.length() > 0) {
-            for (int a = firstName.length() - 1; a >= 0; a--) {
-                if (firstName.charAt(a) == ' ') {
-                    if (a != firstName.length() - 1 && firstName.charAt(a + 1) != ' ') {
-                        if (Build.VERSION.SDK_INT >= 16) {
-                            stringBuilder.append("\u200C");
-                        }
-                        stringBuilder.append(firstName.substring(a + 1, a + 2));
+            if (lastName != null && lastName.length() > 0) {
+                String lastch = null;
+                for (int a = lastName.length() - 1; a >= 0; a--) {
+                    if (lastch != null && lastName.charAt(a) == ' ') {
                         break;
+                    }
+                    lastch = lastName.substring(a, a + 1);
+                }
+                if (Build.VERSION.SDK_INT >= 16) {
+                    stringBuilder.append("\u200C");
+                }
+                stringBuilder.append(lastch);
+            } else if (firstName != null && firstName.length() > 0) {
+                for (int a = firstName.length() - 1; a >= 0; a--) {
+                    if (firstName.charAt(a) == ' ') {
+                        if (a != firstName.length() - 1 && firstName.charAt(a + 1) != ' ') {
+                            if (Build.VERSION.SDK_INT >= 16) {
+                                stringBuilder.append("\u200C");
+                            }
+                            stringBuilder.append(firstName.substring(a + 1, a + 2));
+                            break;
+                        }
                     }
                 }
             }

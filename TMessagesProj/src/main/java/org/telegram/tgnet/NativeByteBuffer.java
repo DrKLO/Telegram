@@ -423,7 +423,7 @@ public class NativeByteBuffer extends AbstractSerializedData {
                 FileLog.e("tmessages", "read string error");
             }
         }
-        return null;
+        return "";
     }
 
     public byte[] readByteArray(boolean exception) {
@@ -449,7 +449,7 @@ public class NativeByteBuffer extends AbstractSerializedData {
                 FileLog.e("tmessages", "read byte array error");
             }
         }
-        return null;
+        return new byte[0];
     }
 
     public NativeByteBuffer readByteBuffer(boolean exception) {

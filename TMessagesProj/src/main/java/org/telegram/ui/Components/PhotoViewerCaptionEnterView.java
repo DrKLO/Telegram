@@ -72,6 +72,8 @@ public class PhotoViewerCaptionEnterView extends FrameLayout implements Notifica
 
     private boolean innerTextChange;
 
+    private final int captionMaxLength = 200;
+
     private PhotoViewerCaptionEnterViewDelegate delegate;
 
     private View windowView;
@@ -119,7 +121,7 @@ public class PhotoViewerCaptionEnterView extends FrameLayout implements Notifica
                 }
             }
         };
-        if (Build.VERSION.SDK_INT >= 23) {
+        if (Build.VERSION.SDK_INT >= 23 && windowView != null) {
             messageEditText.setCustomSelectionActionModeCallback(new ActionMode.Callback() {
                 @Override
                 public boolean onCreateActionMode(ActionMode mode, Menu menu) {
@@ -189,14 +191,14 @@ public class PhotoViewerCaptionEnterView extends FrameLayout implements Notifica
         messageEditText.setTextColor(0xffffffff);
         messageEditText.setHintTextColor(0xb2ffffff);
         InputFilter[] inputFilters = new InputFilter[1];
-        inputFilters[0] = new InputFilter.LengthFilter(200);
+        inputFilters[0] = new InputFilter.LengthFilter(captionMaxLength);
         messageEditText.setFilters(inputFilters);
         frameLayout.addView(messageEditText, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.BOTTOM, 52, 0, 6, 0));
         messageEditText.setOnKeyListener(new OnKeyListener() {
             @Override
             public boolean onKey(View view, int i, KeyEvent keyEvent) {
                 if (i == KeyEvent.KEYCODE_BACK) {
-                    if (hideActionMode()) {
+                    if (windowView != null && hideActionMode()) {
                         return true;
                     } else if (!keyboardVisible && isPopupShowing()) {
                         if (keyEvent.getAction() == 1) {
@@ -216,20 +218,6 @@ public class PhotoViewerCaptionEnterView extends FrameLayout implements Notifica
                 }
             }
         });
-        /*messageEditText.setOnEditorActionListener(new TextView.OnEditorActionListener() {
-            @Override
-            public boolean onEditorAction(TextView textView, int i, KeyEvent keyEvent) {
-                if (i == EditorInfo.IME_ACTION_DONE || i == EditorInfo.IME_ACTION_NEXT) {
-                    delegate.onCaptionEnter();
-                    return true;
-                } else
-                if (keyEvent != null && i == EditorInfo.IME_NULL && keyEvent.getAction() == KeyEvent.ACTION_DOWN) {
-                    delegate.onCaptionEnter();
-                    return true;
-                }
-                return false;
-            }
-        });*/
         messageEditText.addTextChangedListener(new TextWatcher() {
             boolean processChange = false;
 
@@ -272,7 +260,11 @@ public class PhotoViewerCaptionEnterView extends FrameLayout implements Notifica
 
     public boolean hideActionMode() {
         if (Build.VERSION.SDK_INT >= 23 && currentActionMode != null) {
-            currentActionMode.finish();
+            try {
+                currentActionMode.finish();
+            } catch (Exception e) {
+                FileLog.e("tmessages", e);
+            }
             currentActionMode = null;
             return true;
         }
@@ -427,13 +419,16 @@ public class PhotoViewerCaptionEnterView extends FrameLayout implements Notifica
                     }
 
                     public void onEmojiSelected(String symbol) {
+                        if (messageEditText.length() + symbol.length() > captionMaxLength) {
+                            return;
+                        }
                         int i = messageEditText.getSelectionEnd();
                         if (i < 0) {
                             i = 0;
                         }
                         try {
                             innerTextChange = true;
-                            CharSequence localCharSequence = Emoji.replaceEmoji(symbol/* + "\uFE0F"*/, messageEditText.getPaint().getFontMetricsInt(), AndroidUtilities.dp(20), false);
+                            CharSequence localCharSequence = Emoji.replaceEmoji(symbol, messageEditText.getPaint().getFontMetricsInt(), AndroidUtilities.dp(20), false);
                             messageEditText.setText(messageEditText.getText().insert(i, localCharSequence));
                             int j = i + localCharSequence.length();
                             messageEditText.setSelection(j, j);
@@ -472,6 +467,21 @@ public class PhotoViewerCaptionEnterView extends FrameLayout implements Notifica
                     public void onClearEmojiRecent() {
 
                     }
+
+                    @Override
+                    public void onShowStickerSet(TLRPC.StickerSetCovered stickerSet) {
+
+                    }
+
+                    @Override
+                    public void onStickerSetAdd(TLRPC.StickerSetCovered stickerSet) {
+
+                    }
+
+                    @Override
+                    public void onStickerSetRemove(TLRPC.StickerSetCovered stickerSet) {
+
+                    }
                 });
                 sizeNotifierLayout.addView(emojiView);
             }
@@ -490,7 +500,9 @@ public class PhotoViewerCaptionEnterView extends FrameLayout implements Notifica
             layoutParams.width = AndroidUtilities.displaySize.x;
             layoutParams.height = currentHeight;
             emojiView.setLayoutParams(layoutParams);
-            AndroidUtilities.hideKeyboard(messageEditText);
+            if (!AndroidUtilities.isInMultiwindow) {
+                AndroidUtilities.hideKeyboard(messageEditText);
+            }
             if (sizeNotifierLayout != null) {
                 emojiPadding = currentHeight;
                 sizeNotifierLayout.requestLayout();
@@ -544,7 +556,7 @@ public class PhotoViewerCaptionEnterView extends FrameLayout implements Notifica
 
     @Override
     public void onSizeChanged(int height, boolean isWidthGreater) {
-        if (height > AndroidUtilities.dp(50) && keyboardVisible) {
+        if (height > AndroidUtilities.dp(50) && keyboardVisible && !AndroidUtilities.isInMultiwindow) {
             if (isWidthGreater) {
                 keyboardHeightLand = height;
                 ApplicationLoader.applicationContext.getSharedPreferences("emoji", 0).edit().putInt("kbd_height_land3", keyboardHeightLand).commit();

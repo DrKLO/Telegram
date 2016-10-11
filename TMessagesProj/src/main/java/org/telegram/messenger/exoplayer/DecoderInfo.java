@@ -15,10 +15,9 @@
  */
 package org.telegram.messenger.exoplayer;
 
-import org.telegram.messenger.exoplayer.util.Util;
-
 import android.annotation.TargetApi;
 import android.media.MediaCodecInfo.CodecCapabilities;
+import org.telegram.messenger.exoplayer.util.Util;
 
 /**
  * Contains information about a media decoder.

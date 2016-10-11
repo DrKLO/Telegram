@@ -25,6 +25,15 @@
     <string name="Code">Código</string>
     <string name="WrongNumber">¿Número incorrecto?</string>
     <string name="DidNotGetTheCode">¿No recibiste el código?</string>
+    <string name="CancelAccountReset">No restablecer la cuenta</string>
+    <string name="CancelAccountResetInfo">Alguien, con acceso a tu número de teléfono <![CDATA[<b>]]>%1$s<![CDATA[</b>]]> , solicitó eliminar tu cuenta de Telegram y restablecer tu contraseña de la verificación en dos pasos.\n\nSi no eras tú, por favor, inserta el código que enviamos por SMS a tu número.</string>
+    <string name="ResetAccount">Restablecer la cuenta</string>
+    <string name="ResetAccountInfo">Como la cuenta <![CDATA[<b>]]>%1$s<![CDATA[</b>]]> está activa y protegida con una contraseña, la eliminaremos en 1 semana, por motivos de seguridad.\n\nPuedes cancelar el proceso en cualquier momento.</string>
+    <string name="ResetAccountStatus">Podrás restablecer tu cuenta en:</string>
+    <string name="ResetAccountCancelledAlert">Tus intentos para restablecer la cuenta fueron cancelados por su usuario activo. Por favor, reinténtalo en 7 días.</string>
+    <string name="ResetAccountButton">RESTABLECER</string>
+    <string name="CancelLinkExpired">El enlace es inválido o expiró.</string>
+    <string name="CancelLinkSuccess">El proceso de eliminación de la cuenta %1$s fue cancelado. Puedes cerrar esta ventana.</string>
     <!--signup view-->
     <string name="YourName">Tu nombre</string>
     <string name="RegisterText">Ingresa tu nombre y apellidos</string>
@@ -101,6 +110,7 @@
     <string name="ActionPinnedSticker">un1 ancló un sticker</string>
     <string name="ActionPinnedVoice">un1 ancló un mensaje de voz</string>
     <string name="ActionPinnedContact">un1 ancló un contacto</string>
+    <string name="ActionPinnedGame">un1 ancló el %1$s</string>
     <string name="ActionPinnedGeo">un1 ancló un mapa</string>
     <string name="ActionPinnedGif">un1 ancló un GIF</string>
     <string name="ActionPinnedMusic">un1 ancló una pista</string>
@@ -163,8 +173,7 @@
     <string name="ActionChannelChangedPhoto">Foto del canal cambiada</string>
     <string name="ActionChannelRemovedPhoto">Foto del canal eliminada</string>
     <string name="ActionChannelChangedTitle">Nombre del canal cambiado a un2</string>
-    <string name="ChannelPublicLimitReached">Lo sentimos, has creado demasiados canales públicos. Puedes crear un canal privado o eliminar uno de tus canales existentes primero.</string>
-    <string name="ChangePublicLimitReached">Has creado demasiados canales públicos. Prueba eliminando o haciendo privado uno de tus grupos o canales.</string>
+    <string name="ChangePublicLimitReached">Lo sentimos, tienes demasiados alias públicos. Puedes anular el enlace de uno de tus grupos o canales anteriores, o crear uno privado.</string>
     <string name="ChannelModerator">Moderador</string>
     <string name="ChannelCreator">Creador</string>
     <string name="ChannelEditor">Administrador</string>
@@ -303,9 +312,11 @@
     <string name="ServiceNotifications">Servicio de notificaciones</string>
     <string name="GettingLinkInfo">Obteniendo información...</string>
     <string name="OpenInBrowser">ABRIR EN...</string>
+    <string name="OpenInExternalApp">Abrir en...</string>
     <string name="CopyUrl">Copiar URL</string>
     <string name="SendItems">Enviar %1$s</string>
     <string name="OpenUrlAlert">¿Abrir %1$s?</string>
+    <string name="BotPermissionGameAlert">¿Permites a %1$s entregar tu nombre e id de Telegram (no tu número de teléfono) a los sitios web que abres a través de este bot?</string>
     <string name="ReportSpam">REPORTAR SPAM</string>
     <string name="ReportSpamAndLeave">REPORTAR SPAM Y SALIR</string>
     <string name="AddContactChat">AÑADIR CONTACTO</string>
@@ -340,6 +351,13 @@
     <string name="TimeToEditExpired">Terminó el tiempo de edición.</string>
     <string name="AddShortcut">Añadir acceso directo</string>
     <string name="ShortcutAdded">Acceso directo añadido al escritorio</string>
+    <string name="ChatYourSelf">chat contigo</string>
+    <string name="ChatYourSelfName">Tú</string>
+    <string name="ChatYourSelfDescription1">Guarda mensajes reenviándolos aquí</string>
+    <string name="ChatYourSelfDescription2">Envía archivos para almacenarlos</string>
+    <string name="ChatYourSelfDescription3">Accede desde cualquier dispositivo</string>
+    <string name="ChatYourSelfDescription4">Encuentra tus cosas con la búsqueda</string>
+    <string name="ChatYourSelfTitle">Almacenamiento en la nube</string>
     <!--notification-->
     <string name="MessageLifetimeChanged">%1$s activó la autodestrucción en %2$s</string>
     <string name="MessageLifetimeChangedOutgoing">Activaste la autodestrucción en %1$s</string>
@@ -352,6 +370,7 @@
     <string name="NotificationMessageVideo">%1$s te envió un vídeo</string>
     <string name="NotificationMessageContact">%1$s compartió un contacto contigo</string>
     <string name="NotificationMessageMap">%1$s te envió una ubicación</string>
+    <string name="NotificationMessageGame">%1$s te invitó a jugar a %2$s</string>
     <string name="NotificationMessageDocument">%1$s te envió un archivo</string>
     <string name="NotificationMessageGif">%1$s te envió un GIF</string>
     <string name="NotificationMessageAudio">%1$s te envió un mensaje de voz</string>
@@ -364,6 +383,7 @@
     <string name="NotificationMessageGroupVideo">%1$s envió un vídeo al grupo %2$s</string>
     <string name="NotificationMessageGroupContact">%1$s compartió un contacto en el grupo %2$s</string>
     <string name="NotificationMessageGroupMap">%1$s envió una ubicación al grupo %2$s</string>
+    <string name="NotificationMessageGroupGame">%1$s invitó al grupo %2$s a jugar a %3$s</string>
     <string name="NotificationMessageGroupDocument">%1$s envió un archivo al grupo %2$s</string>
     <string name="NotificationMessageGroupGif">%1$s envió un GIF al grupo %2$s</string>
     <string name="NotificationMessageGroupAudio">%1$s envió un mensaje de voz al grupo %2$s</string>
@@ -390,6 +410,7 @@
     <string name="NotificationActionPinnedText">%1$s ancló \"%2$s\" en el grupo %3$s</string>
     <string name="NotificationActionPinnedNoText">%1$s ancló un mensaje en el grupo %2$s</string>
     <string name="NotificationActionPinnedPhoto">%1$s ancló una foto en el grupo %2$s</string>
+    <string name="NotificationActionPinnedGame">%1$s ancló un juego en el grupo %2$s</string>
     <string name="NotificationActionPinnedVideo">%1$s ancló un vídeo en el grupo %2$s</string>
     <string name="NotificationActionPinnedFile">%1$s ancló un archivo en el grupo %2$s</string>
     <string name="NotificationActionPinnedSticker">%1$s ancló un sticker en el grupo %2$s</string>
@@ -411,6 +432,7 @@
     <string name="NotificationActionPinnedGeoChannel">%1$s ancló un mapa</string>
     <string name="NotificationActionPinnedGifChannel">%1$s ancló un GIF</string>
     <string name="NotificationActionPinnedMusicChannel">%1$s ancló una pista</string>
+    <string name="NotificationActionPinnedGameChannel">%1$s ancló un juego</string>
     <!--contacts view-->
     <string name="SelectContact">Elegir contacto</string>
     <string name="NoContacts">Aún sin contactos</string>
@@ -444,6 +466,8 @@
     <string name="RevokeAlertNewLink">El enlace de invitación anterior está inactivo. Ha sido creado uno nuevo.</string>
     <string name="RevokeButton">Anular</string>
     <string name="RevokeLink">Anular enlace</string>
+    <string name="RevokeLinkAlert">¿Quieres anular el enlace <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>?\n\nEl grupo \"<![CDATA[<b>]]>%2$s<![CDATA[</b>]]>\" pasará a ser privado.</string>
+    <string name="RevokeLinkAlertChannel">¿Quieres anular el enlace <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>?\n\nEl canal \"<![CDATA[<b>]]>%2$s<![CDATA[</b>]]>\" pasará a ser privado.</string>
     <string name="CopyLink">Copiar enlace</string>
     <string name="ShareLink">Compartir enlace</string>
     <string name="LinkInfo">Cualquiera que tenga Telegram instalada podrá unirse a tu grupo siguiendo este enlace.</string>
@@ -465,13 +489,15 @@
     <string name="ConvertGroupMenu">Convertir en supergrupo</string>
     <string name="ConvertGroupAlertWarning">Advertencia</string>
     <string name="ConvertGroupAlert">Esta acción es irreversible. No puedes convertir un supergrupo en un grupo normal.</string>
-    <string name="ConvertGroupInfo"><![CDATA[<b>]]>Límite de miembros alcanzado.<![CDATA[</b>]]>\n\nPara superar el límite y tener características adicionales, conviértelo en un supergrupo:\n\n Permiten hasta %1$s\n• Nuevos miembros ven todo el historial\n• Un mensaje eliminado se borra para todos\n• El creador puede generar un enlace público</string>
-    <string name="ConvertGroupInfo2"><![CDATA[<b>]]>En los supergrupos:<![CDATA[</b>]]>\n\n• Los nuevos miembros ven todo el historial\n• Un mensaje eliminado se borra para todos\n• El creador puede generar un enlace público</string>
+    <string name="ConvertGroupInfo"><![CDATA[<b>]]>Límite de miembros alcanzado.<![CDATA[</b>]]>\n\nPara superar el límite y tener características adicionales, conviértelo en un supergrupo:\n\n• Permiten hasta %1$s\n• Los nuevos miembros ven todo el historial\n• Un mensaje eliminado desaparece para todos\n• Los administradores pueden anclar mensajes\n• El creador puede generar un enlace público</string>
+    <string name="ConvertGroupInfo2"><![CDATA[<b>]]>En los supergrupos:<![CDATA[</b>]]>\n\n• Los nuevos miembros ven todo el historial\n• Un mensaje eliminado desaparece para todos\n• Los administradores pueden anclar mensajes\n• El creador puede generar un enlace público</string>
     <string name="ConvertGroupInfo3"><![CDATA[<b>]]>Importante:<![CDATA[</b>]]> Esta acción no se puede deshacer.</string>
     <!--contact info view-->
     <string name="ShareContact">Compartir</string>
     <string name="AddContact">Añadir</string>
     <string name="AddContactTitle">Añadir contacto</string>
+    <string name="ContactNotRegistered">%1$s aún no está en Telegram. ¿Quieres enviarle una invitación?</string>
+    <string name="Invite">Invitar</string>
     <string name="BlockContact">Bloquear</string>
     <string name="EditContact">Editar</string>
     <string name="DeleteContact">Eliminar</string>
@@ -505,20 +531,36 @@
     <string name="ErrorOccurred">Ocurrió un error.</string>
     <!--stickers view-->
     <string name="Stickers">Stickers</string>
-    <string name="StickersInfo">Los artistas pueden añadir sus propios packs de stickers usando el bot @stickers.\n\nLos usuarios pueden añadir stickers tocando y eligiendo “Añadir stickers”.</string>
     <string name="AddStickers">Añadir stickers</string>
+    <string name="AddMasks">Añadir máscaras</string>
     <string name="AddToStickers">Añadir a stickers</string>
+    <string name="AddToMasks">Añadir a máscaras</string>
     <string name="AddStickersNotFound">Stickers no encontrados</string>
     <string name="StickersRemoved">Stickers eliminados</string>
+    <string name="MasksRemoved">Máscaras eliminadas</string>
     <string name="AddStickersInstalled">Nuevos stickers añadidos</string>
-    <string name="StickersHide">Ocultar</string>
-    <string name="StickersShow">Mostrar</string>
+    <string name="AddMasksInstalled">Nuevas máscaras añadidas</string>
+    <string name="StickersHide">Archivar</string>
     <string name="StickersShare">Compartir</string>
     <string name="StickersCopy">Copiar enlace</string>
     <string name="StickersRemove">Eliminar</string>
-    <string name="NoStickers">Sin stickers aún</string>
+    <string name="NoStickers">Aún sin stickers</string>
+    <string name="NoMasks">Aún sin máscaras</string>
+    <string name="Masks">Máscaras</string>
+    <string name="MasksInfo">Puedes añadir máscaras a las fotos que envías. Para hacerlo, abre el editor de fotos antes de enviar una foto.</string>
+    <string name="FeaturedStickers">Stickers destacados</string>
+    <string name="FeaturedStickersInfo">Estos stickers son tendencia en Telegram. Puedes añadir stickers personalizados con el bot @stickers.</string>
+    <string name="ArchivedStickers">Stickers archivados</string>
+    <string name="ArchivedMasks">Máscaras archivadas</string>
+    <string name="ArchivedStickersEmpty">Stickers no archivados</string>
+    <string name="ArchivedMasksEmpty">Máscaras no archivadas</string>
+    <string name="ArchivedStickersInfo">Puedes instalar hasta 200 packs de stickers. Cuando instales más, se archivarán los que no usas.</string>
+    <string name="ArchivedMasksInfo">Puedes instalar hasta 200 packs de máscaras. Cuando instales más, se archivarán los que no usas.</string>
     <string name="SendSticker">ENVIAR STICKER</string>
-    <string name="TooMuchStickersets">Lo sentimos, alcanzaste el número máximo de packs de stickers.</string>
+    <string name="ArchivedStickersAlertTitle">Stickers archivados</string>
+    <string name="ArchivedStickersAlertInfo">Algunos de tus packs de stickers más viejos fueron archivados. Puedes reactivarlos desde los ajustes de Stickers.</string>
+    <string name="ArchivedMasksAlertTitle">Máscaras archivadas</string>
+    <string name="ArchivedMasksAlertInfo">Algunos de tus packs de máscaras más viejos fueron archivados. Puedes reactivarlos desde los ajustes de máscaras.</string>
     <!--settings view-->
     <string name="ResetNotificationsText">Restablecer las notificaciones</string>
     <string name="TextSize">Tamaño del texto</string>
@@ -627,6 +669,9 @@
     <string name="ChromeCustomTabsInfo">Abrir enlaces externos en la aplicación</string>
     <string name="DirectShare">Direct Share</string>
     <string name="DirectShareInfo">Mostrar los chats recientes al compartir</string>
+    <string name="Emoji">Emoji</string>
+    <string name="EmojiBigSize">Draw single big emoji</string>
+    <string name="EmojiUseDefault">Use system default emoji</string>
     <!--cache view-->
     <string name="CacheSettings">Ajustes de caché</string>
     <string name="LocalDatabase">Base de datos local</string>
@@ -709,7 +754,7 @@
     <string name="AllPhotos">Todas las fotos</string>
     <string name="AllVideo">Todos los vídeos</string>
     <string name="NoPhotos">Aún sin fotos</string>
-    <string name="NoVideo">Sin vídeos aún</string>
+    <string name="NoVideo">Aún sin vídeos</string>
     <string name="PleaseDownload">Por favor, primero descarga la multimedia</string>
     <string name="NoRecentPhotos">No hay fotos recientes</string>
     <string name="NoRecentGIFs">No hay GIF recientes</string>
@@ -754,6 +799,14 @@
     <string name="PhotoCaption">Comentario de foto</string>
     <string name="VideoCaption">Comentario de vídeo</string>
     <string name="Caption">Comentario</string>
+    <string name="PaintDraw">Dibujar</string>
+    <string name="PaintStickers">Stickers</string>
+    <string name="PaintText">Texto</string>
+    <string name="PaintDelete">Eliminar</string>
+    <string name="PaintEdit">Editar</string>
+    <string name="PaintDuplicate">Duplicar</string>
+    <string name="PaintOutlined">Contorno</string>
+    <string name="PaintRegular">Normal</string>
     <!--password view-->
     <string name="TwoStepVerification">Verificación en dos pasos</string>
     <string name="SetAdditionalPassword">Poner contraseña adicional</string>
@@ -850,10 +903,8 @@
     <string name="CreateGroupError">No puedes crear un grupo con estos usuarios debido a sus ajustes de privacidad.</string>
     <!--edit video view-->
     <string name="EditVideo">Editar vídeo</string>
-    <string name="OriginalVideo">Vídeo original</string>
-    <string name="EditedVideo">Vídeo editado</string>
     <string name="SendingVideo">Enviando vídeo...</string>
-    <string name="CompressVideo">Comprimir Vídeo</string>
+    <string name="SendingGif">Enviando GIF...</string>
     <!--bot-->
     <string name="Bot">bot</string>
     <string name="BotShare">Compartir</string>
@@ -903,6 +954,10 @@
     <string name="ActionYouKickUser">Eliminaste a un2</string>
     <string name="ActionYouLeftUser">Dejaste el grupo</string>
     <string name="ActionYouAddUser">Añadiste a un2</string>
+    <string name="ActionYouScored">Conseguiste %1$s</string>
+    <string name="ActionUserScored">un1 consiguió %1$s</string>
+    <string name="ActionYouScoredInGame">Conseguiste %1$s en un2</string>
+    <string name="ActionUserScoredInGame">un1 consiguió %1$s en un2</string>
     <string name="ActionYouRemovedPhoto">Eliminaste la foto del grupo</string>
     <string name="ActionYouChangedPhoto">Cambiaste la foto del grupo</string>
     <string name="ActionYouChangedTitle">Cambiaste el nombre del grupo a un2</string>
@@ -921,11 +976,13 @@
     <string name="AttachDocument">Archivo</string>
     <string name="AttachSticker">Sticker</string>
     <string name="AttachAudio">Mensaje de voz</string>
+    <string name="AttachGame">Juego</string>
     <string name="FromYou">Tú</string>
     <string name="ActionTakeScreenshootYou">¡Hiciste una captura de pantalla!</string>
     <string name="ActionTakeScreenshoot">¡un1 hizo una captura de pantalla!</string>
     <!--Alert messages-->
     <string name="InvalidPhoneNumber">Número de teléfono inválido</string>
+    <string name="BannedPhoneNumber">Número de teléfono suspendido</string>
     <string name="CodeExpired">Código expirado. Por favor, vuelve a iniciar sesión.</string>
     <string name="FloodWait">Muchos intentos. Por favor, prueba de nuevo más tarde.</string>
     <string name="FloodWaitTime">Demasiados intentos. Por favor, reinténtalo en %1$s</string>
@@ -944,6 +1001,7 @@
     <string name="UserAlreadyInGroup">Este usuario ya está en el grupo</string>
     <string name="ForwardMessagesTo">¿Reenviar mensajes a %1$s?</string>
     <string name="SendMessagesTo">¿Enviar mensajes a %1$s?</string>
+    <string name="SendGameTo">¿Compartir el juego con %1$s?</string>
     <string name="SendContactTo">¿Enviar contacto a %1$s?</string>
     <string name="AreYouSureLogout">¿Quieres cerrar sesión?\n\nConsidera que puedes usar Telegram en todos tus dispositivos a la vez.\n\nRecuerda que, al cerrar sesión, eliminas todos tus chats secretos.</string>
     <string name="AreYouSureSessions">¿Quieres terminar todas las otras sesiones?</string>
@@ -968,6 +1026,7 @@
     <string name="AreYouSureClearHistorySuper">¿Eliminar de la caché los mensajes y multimedia de este grupo?</string>
     <string name="AreYouSureDeleteMessages">¿Quieres eliminar %1$s?</string>
     <string name="SendMessagesToGroup">¿Enviar mensajes a %1$s?</string>
+    <string name="SendGameToGroup">¿Compartir el juego en %1$s?</string>
     <string name="SendContactToGroup">¿Enviar contacto a %1$s?</string>
     <string name="ForwardMessagesToGroup">¿Reenviar mensajes a %1$s?</string>
     <string name="FeatureUnavailable">Lo sentimos, esta característica no está disponible en tu país actualmente.</string>
@@ -981,10 +1040,12 @@
     <string name="AllowReadCall">Por favor, permite a Telegram recibir llamadas, para ingresar el código automáticamente.</string>
     <string name="AllowReadCallAndSms">Por favor, permite a Telegram recibir llamadas y SMS, para ingresar el código automáticamente.</string>
     <string name="UserRestricted">Lo sentimos, no estás autorizado para hacer esto.</string>
+    <string name="JoinGroup">UNIRME AL GRUPO</string>
     <!--permissions-->
     <string name="PermissionContacts">Telegram necesita el acceso a tus contactos, para que puedas comunicarte con ellos en todos tus dispositivos.</string>
     <string name="PermissionStorage">Telegram necesita acceso a tu almacenamiento, para que puedas enviar y guardar fotos, vídeos, música y otros archivos.</string>
     <string name="PermissionNoAudio">Telegram necesita acceso a tu micrófono, para que puedas enviar mensajes de voz.</string>
+    <string name="PermissionNoCamera">Telegram necesita acceso a tu cámara, para que puedas hacer fotos y vídeos.</string>
     <string name="PermissionNoLocation">Telegram necesita acceso a tu ubicación, para que puedas compartirla con tus amigos.</string>
     <string name="PermissionNoLocationPosition">Telegram necesita acceso a tu ubicación.</string>
     <string name="PermissionOpenSettings">AJUSTES</string>
@@ -1119,6 +1180,12 @@
     <string name="Photos_few">%1$d fotos</string>
     <string name="Photos_many">%1$d fotos</string>
     <string name="Photos_other">%1$d fotos</string>
+    <string name="Points_zero">%1$d puntos</string>
+    <string name="Points_one">%1$d punto</string>
+    <string name="Points_two">%1$d puntos</string>
+    <string name="Points_few">%1$d puntos</string>
+    <string name="Points_many">%1$d puntos</string>
+    <string name="Points_other">%1$d puntos</string>
     <string name="LastSeenMinutes_zero">últ. vez hace %1$d minutos</string>
     <string name="LastSeenMinutes_one">últ. vez hace %1$d minuto</string>
     <string name="LastSeenMinutes_two">últ. vez hace %1$d minutos</string>
@@ -1131,6 +1198,30 @@
     <string name="LastSeenHours_few">últ. vez hace %1$d horas</string>
     <string name="LastSeenHours_many">últ. vez hace %1$d horas</string>
     <string name="LastSeenHours_other">últ. vez hace %1$d horas</string>
+    <string name="SecondsBold_zero"><![CDATA[<b>%1$d</b>]]> segundos</string>
+    <string name="SecondsBold_one"><![CDATA[<b>%1$d</b>]]> segundo</string>
+    <string name="SecondsBold_two"><![CDATA[<b>%1$d</b>]]> segundos</string>
+    <string name="SecondsBold_few"><![CDATA[<b>%1$d</b>]]> segundos</string>
+    <string name="SecondsBold_many"><![CDATA[<b>%1$d</b>]]> segundos</string>
+    <string name="SecondsBold_other"><![CDATA[<b>%1$d</b>]]> segundos</string>
+    <string name="MinutesBold_zero"><![CDATA[<b>%1$d</b>]]> minutos</string>
+    <string name="MinutesBold_one"><![CDATA[<b>%1$d</b>]]> minuto</string>
+    <string name="MinutesBold_two"><![CDATA[<b>%1$d</b>]]> minutos</string>
+    <string name="MinutesBold_few"><![CDATA[<b>%1$d</b>]]> minutos</string>
+    <string name="MinutesBold_many"><![CDATA[<b>%1$d</b>]]> minutos</string>
+    <string name="MinutesBold_other"><![CDATA[<b>%1$d</b>]]> minutos</string>
+    <string name="HoursBold_zero"><![CDATA[<b>%1$d</b>]]> horas</string>
+    <string name="HoursBold_one"><![CDATA[<b>%1$d</b>]]> hora</string>
+    <string name="HoursBold_two"><![CDATA[<b>%1$d</b>]]> horas</string>
+    <string name="HoursBold_few"><![CDATA[<b>%1$d</b>]]> horas</string>
+    <string name="HoursBold_many"><![CDATA[<b>%1$d</b>]]> horas</string>
+    <string name="HoursBold_other"><![CDATA[<b>%1$d</b>]]> horas</string>
+    <string name="DaysBold_zero"><![CDATA[<b>%1$d</b>]]> días</string>
+    <string name="DaysBold_one"><![CDATA[<b>%1$d</b>]]> día</string>
+    <string name="DaysBold_two"><![CDATA[<b>%1$d</b>]]> días</string>
+    <string name="DaysBold_few"><![CDATA[<b>%1$d</b>]]> días</string>
+    <string name="DaysBold_many"><![CDATA[<b>%1$d</b>]]> días</string>
+    <string name="DaysBold_other"><![CDATA[<b>%1$d</b>]]> días</string>
     <!--forwarded messages-->
     <string name="ForwardedMessage_zero">%1$d mensajes adjuntos</string>
     <string name="ForwardedMessage_one">Mensaje adjunto</string>

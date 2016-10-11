@@ -15,9 +15,8 @@
  */
 package org.telegram.messenger.exoplayer;
 
-import org.telegram.messenger.exoplayer.MediaCodecUtil.DecoderQueryException;
-
 import android.media.MediaCodec;
+import org.telegram.messenger.exoplayer.MediaCodecUtil.DecoderQueryException;
 
 /**
  * Selector of {@link MediaCodec} instances.

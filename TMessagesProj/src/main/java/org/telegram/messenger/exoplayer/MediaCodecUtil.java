@@ -15,10 +15,6 @@
  */
 package org.telegram.messenger.exoplayer;
 
-import org.telegram.messenger.exoplayer.util.Assertions;
-import org.telegram.messenger.exoplayer.util.MimeTypes;
-import org.telegram.messenger.exoplayer.util.Util;
-
 import android.annotation.TargetApi;
 import android.media.MediaCodecInfo;
 import android.media.MediaCodecInfo.CodecCapabilities;
@@ -26,7 +22,9 @@ import android.media.MediaCodecInfo.CodecProfileLevel;
 import android.media.MediaCodecList;
 import android.text.TextUtils;
 import android.util.Log;
-
+import org.telegram.messenger.exoplayer.util.Assertions;
+import org.telegram.messenger.exoplayer.util.MimeTypes;
+import org.telegram.messenger.exoplayer.util.Util;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -172,6 +170,9 @@ public final class MediaCodecUtil {
                   // Suppress error querying secondary codec capabilities up to API level 23.
                   Log.e(TAG, "Skipping codec " + codecName + " (failed to query capabilities)");
                 } else {
+                  // Rethrow error querying primary codec capabilities, or secondary codec
+                  // capabilities if API level is greater than 23.
+                  Log.e(TAG, "Failed to query codec " + codecName + " (" + supportedType + ")");
                   throw e;
                 }
               }
@@ -198,11 +199,11 @@ public final class MediaCodecUtil {
 
     // Work around broken audio decoders.
     if (Util.SDK_INT < 21
-        && ("CIPAACDecoder".equals(name))
+        && ("CIPAACDecoder".equals(name)
             || "CIPMP3Decoder".equals(name)
             || "CIPVorbisDecoder".equals(name)
             || "AACDecoder".equals(name)
-            || "MP3Decoder".equals(name)) {
+            || "MP3Decoder".equals(name))) {
       return false;
     }
     // Work around https://github.com/google/ExoPlayer/issues/398
@@ -215,12 +216,16 @@ public final class MediaCodecUtil {
       return false;
     }
 
-    // Work around an issue where creating a particular MP3 decoder on some devices on platform API
-    // version 16 crashes mediaserver.
-    if (Util.SDK_INT == 16
+    // Work around an issue where querying/creating a particular MP3 decoder on some devices on
+    // platform API version 16 fails.
+    if (Util.SDK_INT == 16 && Util.DEVICE != null
         && "OMX.qcom.audio.decoder.mp3".equals(name)
         && ("dlxu".equals(Util.DEVICE) // HTC Butterfly
             || "protou".equals(Util.DEVICE) // HTC Desire X
+            || "ville".equals(Util.DEVICE) // HTC One S
+            || "villeplus".equals(Util.DEVICE)
+            || "villec2".equals(Util.DEVICE)
+            || Util.DEVICE.startsWith("gee") // LGE Optimus G
             || "C6602".equals(Util.DEVICE) // Sony Xperia Z
             || "C6603".equals(Util.DEVICE)
             || "C6606".equals(Util.DEVICE)
@@ -240,11 +245,17 @@ public final class MediaCodecUtil {
       return false;
     }
 
-    // Work around an issue where the VP8 decoder on Samsung Galaxy S3/S4 Mini does not render
-    // video.
+    // Work around https://github.com/google/ExoPlayer/issues/548
+    // VP8 decoder on Samsung Galaxy S3/S4/S4 Mini/Tab 3 does not render video.
     if (Util.SDK_INT <= 19 && Util.DEVICE != null
-        && (Util.DEVICE.startsWith("d2") || Util.DEVICE.startsWith("serrano"))
+        && (Util.DEVICE.startsWith("d2") || Util.DEVICE.startsWith("serrano")
+            || Util.DEVICE.startsWith("jflte") || Util.DEVICE.startsWith("santos"))
         && "samsung".equals(Util.MANUFACTURER) && name.equals("OMX.SEC.vp8.dec")) {
+      return false;
+    }
+    // VP8 decoder on Samsung Galaxy S4 cannot be queried.
+    if (Util.SDK_INT <= 19 && Util.DEVICE != null && Util.DEVICE.startsWith("jflte")
+        && "OMX.qcom.video.decoder.vp8".equals(name)) {
       return false;
     }
 

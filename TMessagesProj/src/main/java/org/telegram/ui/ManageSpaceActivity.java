@@ -11,6 +11,8 @@ package org.telegram.ui;
 import android.app.Activity;
 import android.content.Intent;
 import android.content.res.Configuration;
+import android.graphics.Shader;
+import android.graphics.drawable.BitmapDrawable;
 import android.os.Build;
 import android.os.Bundle;
 import android.view.MotionEvent;
@@ -20,7 +22,6 @@ import android.view.ViewTreeObserver;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.FrameLayout;
-import android.widget.ImageView;
 import android.widget.RelativeLayout;
 
 import org.telegram.messenger.AndroidUtilities;
@@ -80,28 +81,17 @@ public class ManageSpaceActivity extends Activity implements ActionBarLayout.Act
             layoutParams1.height = LayoutHelper.MATCH_PARENT;
             launchLayout.setLayoutParams(layoutParams1);
 
-            ImageView backgroundTablet = new ImageView(this);
-            backgroundTablet.setScaleType(ImageView.ScaleType.CENTER_CROP);
-            backgroundTablet.setImageResource(R.drawable.cats);
-            launchLayout.addView(backgroundTablet);
-            RelativeLayout.LayoutParams relativeLayoutParams = (RelativeLayout.LayoutParams) backgroundTablet.getLayoutParams();
-            relativeLayoutParams.width = LayoutHelper.MATCH_PARENT;
-            relativeLayoutParams.height = LayoutHelper.MATCH_PARENT;
-            backgroundTablet.setLayoutParams(relativeLayoutParams);
+            View backgroundTablet = new View(this);
+            BitmapDrawable drawable = (BitmapDrawable) getResources().getDrawable(R.drawable.catstile);
+            drawable.setTileModeXY(Shader.TileMode.REPEAT, Shader.TileMode.REPEAT);
+            backgroundTablet.setBackgroundDrawable(drawable);
+            launchLayout.addView(backgroundTablet, LayoutHelper.createRelative(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
-            launchLayout.addView(actionBarLayout);
-            relativeLayoutParams = (RelativeLayout.LayoutParams) actionBarLayout.getLayoutParams();
-            relativeLayoutParams.width = LayoutHelper.MATCH_PARENT;
-            relativeLayoutParams.height = LayoutHelper.MATCH_PARENT;
-            actionBarLayout.setLayoutParams(relativeLayoutParams);
+            launchLayout.addView(actionBarLayout, LayoutHelper.createRelative(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
             FrameLayout shadowTablet = new FrameLayout(this);
             shadowTablet.setBackgroundColor(0x7F000000);
-            launchLayout.addView(shadowTablet);
-            relativeLayoutParams = (RelativeLayout.LayoutParams) shadowTablet.getLayoutParams();
-            relativeLayoutParams.width = LayoutHelper.MATCH_PARENT;
-            relativeLayoutParams.height = LayoutHelper.MATCH_PARENT;
-            shadowTablet.setLayoutParams(relativeLayoutParams);
+            launchLayout.addView(shadowTablet, LayoutHelper.createRelative(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
             shadowTablet.setOnTouchListener(new View.OnTouchListener() {
                 @Override
                 public boolean onTouch(View v, MotionEvent event) {
@@ -142,11 +132,7 @@ public class ManageSpaceActivity extends Activity implements ActionBarLayout.Act
             layersActionBarLayout.setBackgroundView(shadowTablet);
             layersActionBarLayout.setUseAlphaAnimations(true);
             layersActionBarLayout.setBackgroundResource(R.drawable.boxshadow);
-            launchLayout.addView(layersActionBarLayout);
-            relativeLayoutParams = (RelativeLayout.LayoutParams)layersActionBarLayout.getLayoutParams();
-            relativeLayoutParams.width = AndroidUtilities.dp(530);
-            relativeLayoutParams.height = AndroidUtilities.dp(528);
-            layersActionBarLayout.setLayoutParams(relativeLayoutParams);
+            launchLayout.addView(layersActionBarLayout, LayoutHelper.createRelative(530, 528));
             layersActionBarLayout.init(layerFragmentsStack);
             layersActionBarLayout.setDelegate(this);
             layersActionBarLayout.setDrawerLayoutContainer(drawerLayoutContainer);
@@ -295,7 +281,7 @@ public class ManageSpaceActivity extends Activity implements ActionBarLayout.Act
 
     @Override
     public void onConfigurationChanged(android.content.res.Configuration newConfig) {
-        AndroidUtilities.checkDisplaySize();
+        AndroidUtilities.checkDisplaySize(this, newConfig);
         super.onConfigurationChanged(newConfig);
         fixLayout();
     }

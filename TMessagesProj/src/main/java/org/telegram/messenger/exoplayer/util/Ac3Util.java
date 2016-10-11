@@ -16,7 +16,6 @@
 package org.telegram.messenger.exoplayer.util;
 
 import org.telegram.messenger.exoplayer.MediaFormat;
-
 import java.nio.ByteBuffer;
 
 /**

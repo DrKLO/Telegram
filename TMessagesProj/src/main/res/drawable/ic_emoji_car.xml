@@ -6,11 +6,11 @@
 	>
 	<item
 		android:state_selected="true"
-		android:drawable="@drawable/ic_smiles_car_active"
+		android:drawable="@drawable/ic_smiles2_car_active"
 		>
 	</item>
 	<item
-		android:drawable="@drawable/ic_smiles_car"
+		android:drawable="@drawable/ic_smiles2_car"
 		>
 	</item>
 </selector>

@@ -85,6 +85,9 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
     private boolean allowUsernameSearch = true;
     private ContactsActivityDelegate delegate;
 
+    private final static int search_button = 0;
+    private final static int add_button = 1;
+
     public interface ContactsActivityDelegate {
         void didSelectContact(TLRPC.User user, String param);
     }
@@ -157,12 +160,14 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
             public void onItemClick(int id) {
                 if (id == -1) {
                     finishFragment();
+                } else if (id == add_button) {
+                    presentFragment(new NewContactActivity());
                 }
             }
         });
 
         ActionBarMenu menu = actionBar.createMenu();
-        ActionBarMenuItem item = menu.addItem(0, R.drawable.ic_ab_search).setIsSearchField(true).setActionBarMenuItemSearchListener(new ActionBarMenuItem.ActionBarMenuItemSearchListener() {
+        ActionBarMenuItem item = menu.addItem(search_button, R.drawable.ic_ab_search).setIsSearchField(true).setActionBarMenuItemSearchListener(new ActionBarMenuItem.ActionBarMenuItemSearchListener() {
             @Override
             public void onSearchExpand() {
                 searching = true;
@@ -204,6 +209,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
             }
         });
         item.getSearchField().setHint(LocaleController.getString("Search", R.string.Search));
+        menu.addItem(add_button, R.drawable.add);
 
         searchListViewAdapter = new SearchAdapter(context, ignoreUsers, allowUsernameSearch, false, false, allowBots);
         listViewAdapter = new ContactsAdapter(context, onlyUsers ? 1 : 0, needPhonebook, ignoreUsers, chat_id != 0);

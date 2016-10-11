@@ -15,11 +15,9 @@
  */
 package org.telegram.messenger.exoplayer.extractor.ogg;
 
+import android.util.Log;
 import org.telegram.messenger.exoplayer.ParserException;
 import org.telegram.messenger.exoplayer.util.ParsableByteArray;
-
-import android.util.Log;
-
 import java.util.Arrays;
 
 /**

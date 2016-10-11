@@ -15,6 +15,10 @@
  */
 package org.telegram.messenger.exoplayer.text.eia608;
 
+import android.os.Handler;
+import android.os.Handler.Callback;
+import android.os.Looper;
+import android.os.Message;
 import org.telegram.messenger.exoplayer.C;
 import org.telegram.messenger.exoplayer.ExoPlaybackException;
 import org.telegram.messenger.exoplayer.MediaFormat;
@@ -27,12 +31,6 @@ import org.telegram.messenger.exoplayer.text.Cue;
 import org.telegram.messenger.exoplayer.text.TextRenderer;
 import org.telegram.messenger.exoplayer.util.Assertions;
 import org.telegram.messenger.exoplayer.util.Util;
-
-import android.os.Handler;
-import android.os.Handler.Callback;
-import android.os.Looper;
-import android.os.Message;
-
 import java.util.Collections;
 import java.util.TreeSet;
 

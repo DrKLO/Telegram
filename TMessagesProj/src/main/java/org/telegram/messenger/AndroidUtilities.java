@@ -27,6 +27,7 @@ import android.graphics.BitmapFactory;
 import android.graphics.BitmapShader;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Point;
 import android.graphics.Rect;
@@ -41,6 +42,7 @@ import android.os.Build;
 import android.os.Environment;
 import android.provider.DocumentsContract;
 import android.provider.MediaStore;
+import android.support.v4.content.FileProvider;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.style.ForegroundColorSpan;
@@ -98,10 +100,12 @@ public class AndroidUtilities {
     public static int statusBarHeight = 0;
     public static float density = 1;
     public static Point displaySize = new Point();
+    public static boolean incorrectDisplaySizeFix;
     public static Integer photoSize = null;
     public static DisplayMetrics displayMetrics = new DisplayMetrics();
     public static int leftBaseline;
     public static boolean usingHardwareInput;
+    public static boolean isInMultiwindow;
     private static Boolean isTablet = null;
     private static int adjustOwnerClassGuid = 0;
 
@@ -137,9 +141,8 @@ public class AndroidUtilities {
     }
 
     static {
-        density = ApplicationLoader.applicationContext.getResources().getDisplayMetrics().density;
         leftBaseline = isTablet() ? 80 : 72;
-        checkDisplaySize();
+        checkDisplaySize(ApplicationLoader.applicationContext, null);
     }
 
     public static int[] calcDrawableColor(Drawable drawable) {
@@ -293,6 +296,17 @@ public class AndroidUtilities {
                 break;
             }
             pathString = newPath;
+        }
+        if (pathString != null) {
+            try {
+                String path = new File(pathString).getCanonicalPath();
+                if (path != null) {
+                    pathString = path;
+                }
+            } catch (Exception e) {
+                pathString.replace("/./", "/");
+                //igonre
+            }
         }
         return pathString != null && pathString.toLowerCase().contains("/data/data/" + ApplicationLoader.applicationContext.getPackageName() + "/files");
     }
@@ -487,19 +501,35 @@ public class AndroidUtilities {
         return density * value;
     }
 
-    public static void checkDisplaySize() {
+    public static void checkDisplaySize(Context context, Configuration newConfiguration) {
         try {
-            Configuration configuration = ApplicationLoader.applicationContext.getResources().getConfiguration();
+            density = context.getResources().getDisplayMetrics().density;
+            Configuration configuration = newConfiguration;
+            if (configuration == null) {
+                configuration = context.getResources().getConfiguration();
+            }
             usingHardwareInput = configuration.keyboard != Configuration.KEYBOARD_NOKEYS && configuration.hardKeyboardHidden == Configuration.HARDKEYBOARDHIDDEN_NO;
-            WindowManager manager = (WindowManager) ApplicationLoader.applicationContext.getSystemService(Context.WINDOW_SERVICE);
+            WindowManager manager = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
             if (manager != null) {
                 Display display = manager.getDefaultDisplay();
                 if (display != null) {
                     display.getMetrics(displayMetrics);
                     display.getSize(displaySize);
-                    FileLog.e("tmessages", "display size = " + displaySize.x + " " + displaySize.y + " " + displayMetrics.xdpi + "x" + displayMetrics.ydpi);
                 }
             }
+            if (configuration.screenWidthDp != Configuration.SCREEN_WIDTH_DP_UNDEFINED) {
+                int newSize = (int) Math.ceil(configuration.screenWidthDp * density);
+                if (Math.abs(displaySize.x - newSize) > 3) {
+                    displaySize.x = newSize;
+                }
+            }
+            if (configuration.screenHeightDp != Configuration.SCREEN_HEIGHT_DP_UNDEFINED) {
+                int newSize = (int) Math.ceil(configuration.screenHeightDp * density);
+                if (Math.abs(displaySize.y - newSize) > 3) {
+                    displaySize.y = newSize;
+                }
+            }
+            FileLog.e("tmessages", "display size = " + displaySize.x + " " + displaySize.y + " " + displayMetrics.xdpi + "x" + displayMetrics.ydpi);
         } catch (Exception e) {
             FileLog.e("tmessages", e);
         }
@@ -833,18 +863,24 @@ public class AndroidUtilities {
         }
     }
 
+    private static Field mAttachInfoField;
+    private static Field mStableInsetsField;
     public static int getViewInset(View view) {
         if (view == null || Build.VERSION.SDK_INT < 21 || view.getHeight() == AndroidUtilities.displaySize.y || view.getHeight() == AndroidUtilities.displaySize.y - statusBarHeight) {
             return 0;
         }
         try {
-            Field mAttachInfoField = View.class.getDeclaredField("mAttachInfo");
-            mAttachInfoField.setAccessible(true);
+            if (mAttachInfoField == null) {
+                mAttachInfoField = View.class.getDeclaredField("mAttachInfo");
+                mAttachInfoField.setAccessible(true);
+            }
             Object mAttachInfo = mAttachInfoField.get(view);
             if (mAttachInfo != null) {
-                Field mStableInsetsField = mAttachInfo.getClass().getDeclaredField("mStableInsets");
-                mStableInsetsField.setAccessible(true);
-                Rect insets = (Rect)mStableInsetsField.get(mAttachInfo);
+                if (mStableInsetsField == null) {
+                    mStableInsetsField = mAttachInfo.getClass().getDeclaredField("mStableInsets");
+                    mStableInsetsField.setAccessible(true);
+                }
+                Rect insets = (Rect) mStableInsetsField.get(mAttachInfo);
                 return insets.bottom;
             }
         } catch (Exception e) {
@@ -1394,6 +1430,7 @@ public class AndroidUtilities {
         if (f != null && f.exists()) {
             String realMimeType = null;
             Intent intent = new Intent(Intent.ACTION_VIEW);
+            intent.setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
             MimeTypeMap myMime = MimeTypeMap.getSingleton();
             int idx = fileName.lastIndexOf('.');
             if (idx != -1) {
@@ -1407,24 +1444,62 @@ public class AndroidUtilities {
                         realMimeType = null;
                     }
                 }
-                if (realMimeType != null) {
-                    intent.setDataAndType(Uri.fromFile(f), realMimeType);
-                } else {
-                    intent.setDataAndType(Uri.fromFile(f), "text/plain");
-                }
+            }
+            if (Build.VERSION.SDK_INT >= 24) {
+                intent.setDataAndType(FileProvider.getUriForFile(activity, BuildConfig.APPLICATION_ID + ".provider", f), realMimeType != null ? realMimeType : "text/plain");
             } else {
-                intent.setDataAndType(Uri.fromFile(f), "text/plain");
+                intent.setDataAndType(Uri.fromFile(f), realMimeType != null ? realMimeType : "text/plain");
             }
             if (realMimeType != null) {
                 try {
                     activity.startActivityForResult(intent, 500);
                 } catch (Exception e) {
-                    intent.setDataAndType(Uri.fromFile(f), "text/plain");
+                    if (Build.VERSION.SDK_INT >= 24) {
+                        intent.setDataAndType(FileProvider.getUriForFile(activity, BuildConfig.APPLICATION_ID + ".provider", f), "text/plain");
+                    } else {
+                        intent.setDataAndType(Uri.fromFile(f), "text/plain");
+                    }
                     activity.startActivityForResult(intent, 500);
                 }
             } else {
                 activity.startActivityForResult(intent, 500);
             }
         }
+    }
+
+    public static void setRectToRect(Matrix matrix, RectF src, RectF dst, int rotation, Matrix.ScaleToFit align) {
+        float tx, sx;
+        float ty, sy;
+        if (rotation == 90 || rotation == 270) {
+            sx = dst.height() / src.width();
+            sy = dst.width() / src.height();
+        } else {
+            sx = dst.width() / src.width();
+            sy = dst.height() / src.height();
+        }
+        if (align != Matrix.ScaleToFit.FILL) {
+            if (sx > sy) {
+                sx = sy;
+            } else {
+                sy = sx;
+            }
+        }
+        tx = -src.left * sx;
+        ty = -src.top * sy;
+
+        matrix.setTranslate(dst.left, dst.top);
+        if (rotation == 90) {
+            matrix.preRotate(90);
+            matrix.preTranslate(0, -dst.width());
+        } else if (rotation == 180) {
+            matrix.preRotate(180);
+            matrix.preTranslate(-dst.width(), -dst.height());
+        } else if (rotation == 270) {
+            matrix.preRotate(270);
+            matrix.preTranslate(-dst.height(), 0);
+        }
+
+        matrix.preScale(sx, sy);
+        matrix.preTranslate(tx, ty);
     }
 }

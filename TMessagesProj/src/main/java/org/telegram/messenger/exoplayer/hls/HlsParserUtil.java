@@ -16,7 +16,6 @@
 package org.telegram.messenger.exoplayer.hls;
 
 import org.telegram.messenger.exoplayer.ParserException;
-
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 

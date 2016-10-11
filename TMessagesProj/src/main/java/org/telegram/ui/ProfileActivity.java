@@ -1675,6 +1675,16 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     }
 
     @Override
+    public boolean allowCaption() {
+        return true;
+    }
+
+    @Override
+    public boolean scaleToFill() {
+        return false;
+    }
+
+    @Override
     public PhotoViewer.PlaceProviderObject getPlaceForPhoto(MessageObject messageObject, TLRPC.FileLocation fileLocation, int index) {
         if (fileLocation == null) {
             return null;
@@ -1699,7 +1709,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             avatarImage.getLocationInWindow(coords);
             PhotoViewer.PlaceProviderObject object = new PhotoViewer.PlaceProviderObject();
             object.viewX = coords[0];
-            object.viewY = coords[1] - AndroidUtilities.statusBarHeight;
+            object.viewY = coords[1] - (Build.VERSION.SDK_INT >= 21 ? 0 : AndroidUtilities.statusBarHeight);
             object.parentView = avatarImage;
             object.imageReceiver = avatarImage.getImageReceiver();
             if (user_id != 0) {
@@ -1924,7 +1934,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 userInfoRow = -1;
             }
             sectionRow = rowCount++;
-            settingsNotificationsRow = rowCount++;
+            if (user_id != UserConfig.getClientUserId()) {
+                settingsNotificationsRow = rowCount++;
+            }
             sharedMediaRow = rowCount++;
             if (currentEncryptedChat instanceof TLRPC.TL_encryptedChat) {
                 settingsTimerRow = rowCount++;
@@ -2027,7 +2039,10 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
 
             String newString = UserObject.getUserName(user);
             String newString2;
-            if (user.id == 333000 || user.id == 777000) {
+            if (user.id == UserConfig.getClientUserId()) {
+                newString2 = LocaleController.getString("ChatYourSelf", R.string.ChatYourSelf);
+                newString = LocaleController.getString("ChatYourSelfName", R.string.ChatYourSelfName);
+            } else if (user.id == 333000 || user.id == 777000) {
                 newString2 = LocaleController.getString("ServiceNotifications", R.string.ServiceNotifications);
             } else if (user.bot) {
                 newString2 = LocaleController.getString("Bot", R.string.Bot);
@@ -2038,7 +2053,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 if (nameTextView[a] == null) {
                     continue;
                 }
-                if (a == 0 && user.phone != null && user.phone.length() != 0 && user.id / 1000 != 777 && user.id / 1000 != 333 && ContactsController.getInstance().contactsDict.get(user.id) == null &&
+                if (a == 0 && user.id != UserConfig.getClientUserId() && user.id / 1000 != 777 && user.id / 1000 != 333 && user.phone != null && user.phone.length() != 0 && ContactsController.getInstance().contactsDict.get(user.id) == null &&
                         (ContactsController.getInstance().contactsDict.size() != 0 || !ContactsController.getInstance().isLoadingContacts())) {
                     String phoneString = PhoneFormat.getInstance().format("+" + user.phone);
                     if (!nameTextView[a].getText().equals(phoneString)) {
@@ -2160,35 +2175,41 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
 
         ActionBarMenuItem item = null;
         if (user_id != 0) {
-            if (ContactsController.getInstance().contactsDict.get(user_id) == null) {
-                TLRPC.User user = MessagesController.getInstance().getUser(user_id);
-                if (user == null) {
-                    return;
-                }
-                item = menu.addItem(10, R.drawable.ic_ab_other);
-                if (user.bot) {
-                    if (!user.bot_nochats) {
-                        item.addSubItem(invite_to_group, LocaleController.getString("BotInvite", R.string.BotInvite), 0);
+            if (UserConfig.getClientUserId() != user_id) {
+                if (ContactsController.getInstance().contactsDict.get(user_id) == null) {
+                    TLRPC.User user = MessagesController.getInstance().getUser(user_id);
+                    if (user == null) {
+                        return;
                     }
-                    item.addSubItem(share, LocaleController.getString("BotShare", R.string.BotShare), 0);
-                }
-                if (user.phone != null && user.phone.length() != 0) {
-                    item.addSubItem(add_contact, LocaleController.getString("AddContact", R.string.AddContact), 0);
+                    item = menu.addItem(10, R.drawable.ic_ab_other);
+                    if (user.bot) {
+                        if (!user.bot_nochats) {
+                            item.addSubItem(invite_to_group, LocaleController.getString("BotInvite", R.string.BotInvite), 0);
+                        }
+                        item.addSubItem(share, LocaleController.getString("BotShare", R.string.BotShare), 0);
+                    }
+
+                    if (user.phone != null && user.phone.length() != 0) {
+                        item.addSubItem(add_contact, LocaleController.getString("AddContact", R.string.AddContact), 0);
+                        item.addSubItem(share_contact, LocaleController.getString("ShareContact", R.string.ShareContact), 0);
+                        item.addSubItem(block_contact, !userBlocked ? LocaleController.getString("BlockContact", R.string.BlockContact) : LocaleController.getString("Unblock", R.string.Unblock), 0);
+                    } else {
+                        if (user.bot) {
+                            item.addSubItem(block_contact, !userBlocked ? LocaleController.getString("BotStop", R.string.BotStop) : LocaleController.getString("BotRestart", R.string.BotRestart), 0);
+                        } else {
+                            item.addSubItem(block_contact, !userBlocked ? LocaleController.getString("BlockContact", R.string.BlockContact) : LocaleController.getString("Unblock", R.string.Unblock), 0);
+                        }
+                    }
+                } else {
+                    item = menu.addItem(10, R.drawable.ic_ab_other);
                     item.addSubItem(share_contact, LocaleController.getString("ShareContact", R.string.ShareContact), 0);
                     item.addSubItem(block_contact, !userBlocked ? LocaleController.getString("BlockContact", R.string.BlockContact) : LocaleController.getString("Unblock", R.string.Unblock), 0);
-                } else {
-                    if (user.bot) {
-                        item.addSubItem(block_contact, !userBlocked ? LocaleController.getString("BotStop", R.string.BotStop) : LocaleController.getString("BotRestart", R.string.BotRestart), 0);
-                    } else {
-                        item.addSubItem(block_contact, !userBlocked ? LocaleController.getString("BlockContact", R.string.BlockContact) : LocaleController.getString("Unblock", R.string.Unblock), 0);
-                    }
+                    item.addSubItem(edit_contact, LocaleController.getString("EditContact", R.string.EditContact), 0);
+                    item.addSubItem(delete_contact, LocaleController.getString("DeleteContact", R.string.DeleteContact), 0);
                 }
             } else {
                 item = menu.addItem(10, R.drawable.ic_ab_other);
                 item.addSubItem(share_contact, LocaleController.getString("ShareContact", R.string.ShareContact), 0);
-                item.addSubItem(block_contact, !userBlocked ? LocaleController.getString("BlockContact", R.string.BlockContact) : LocaleController.getString("Unblock", R.string.Unblock), 0);
-                item.addSubItem(edit_contact, LocaleController.getString("EditContact", R.string.EditContact), 0);
-                item.addSubItem(delete_contact, LocaleController.getString("DeleteContact", R.string.DeleteContact), 0);
             }
         } else if (chat_id != 0) {
             if (chat_id > 0) {
@@ -2429,7 +2450,11 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         } else {
                             value = String.format("%d", totalMediaCount + (totalMediaCountMerge != -1 ? totalMediaCountMerge : 0));
                         }
-                        textCell.setTextAndValue(LocaleController.getString("SharedMedia", R.string.SharedMedia), value);
+                        if (user_id != 0 && UserConfig.getClientUserId() == user_id) {
+                            textCell.setTextAndValueAndIcon(LocaleController.getString("SharedMedia", R.string.SharedMedia), value, R.drawable.profile_list);
+                        } else {
+                            textCell.setTextAndValue(LocaleController.getString("SharedMedia", R.string.SharedMedia), value);
+                        }
                     } else if (i == settingsTimerRow) {
                         TLRPC.EncryptedChat encryptedChat = MessagesController.getInstance().getEncryptedChat((int)(dialog_id >> 32));
                         String value;

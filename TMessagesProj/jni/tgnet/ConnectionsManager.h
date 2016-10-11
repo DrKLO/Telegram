@@ -91,8 +91,9 @@ private:
     Datacenter *getDatacenterWithId(uint32_t datacenterId);
     std::unique_ptr<TLObject> wrapInLayer(TLObject *object, Datacenter *datacenter, Request *baseRequest);
     void removeRequestFromGuid(int32_t requestToken);
-    void cancelRequestInternal(int32_t token, bool notifyServer, bool removeFromClass);
+    bool cancelRequestInternal(int32_t token, bool notifyServer, bool removeFromClass);
     int callEvents(int64_t now);
+    int32_t sendRequestInternal(TLObject *object, onCompleteFunc onComplete, onQuickAckFunc onQuickAck, uint32_t flags, uint32_t datacenterId, ConnectionType connetionType, bool immediate);
 
     void checkPendingTasks();
     void scheduleTask(std::function<void()> task);
@@ -154,6 +155,7 @@ private:
     bool ipv6Enabled = false;
     std::vector<ConnectionSocket *> activeConnections;
     int epolFd;
+    int eventFd;
     int *pipeFd;
     NativeByteBuffer *networkBuffer;
 
@@ -185,6 +187,7 @@ private:
     friend class TL_message;
     friend class TL_rpc_result;
     friend class Config;
+    friend class FileLoadOperation;
 };
 
 #ifdef ANDROID

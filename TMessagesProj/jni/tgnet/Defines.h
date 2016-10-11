@@ -23,12 +23,19 @@
 #define DOWNLOAD_CONNECTIONS_COUNT 2
 #define CONNECTION_BACKGROUND_KEEP_TIME 10000
 
+#define DOWNLOAD_CHUNK_SIZE 1024 * 32
+#define DOWNLOAD_CHUNK_BIG_SIZE 1024 * 128
+#define DOWNLOAD_MAX_REQUESTS 4
+#define DOWNLOAD_MAX_BIG_REQUESTS 4
+#define DOWNLOAD_BIG_FILE_MIN_SIZE 1024 * 1024
+
 class TLObject;
 class TL_error;
 class Request;
 class TL_message;
 class TL_config;
 class NativeByteBuffer;
+class FileLoadOperation;
 
 typedef std::function<void(TLObject *response, TL_error *error)> onCompleteFunc;
 typedef std::function<void()> onQuickAckFunc;
@@ -58,8 +65,26 @@ enum ConnectionState {
 enum EventObjectType {
     EventObjectTypeConnection,
     EventObjectTypeTimer,
-    EventObjectPipe
+    EventObjectTypePipe,
+    EventObjectTypeEvent
 };
+
+enum FileLoadState {
+    FileLoadStateIdle,
+    FileLoadStateDownloading,
+    FileLoadStateFailed,
+    FileLoadStateFinished
+};
+
+enum FileLoadFailReason {
+    FileLoadFailReasonError,
+    FileLoadFailReasonCanceled,
+    FileLoadFailReasonRetryLimit
+};
+
+typedef std::function<void(std::string path)> onFinishedFunc;
+typedef std::function<void(FileLoadFailReason reason)> onFailedFunc;
+typedef std::function<void(float progress)> onProgressChangedFunc;
 
 typedef struct ConnectiosManagerDelegate {
     virtual void onUpdate() = 0;

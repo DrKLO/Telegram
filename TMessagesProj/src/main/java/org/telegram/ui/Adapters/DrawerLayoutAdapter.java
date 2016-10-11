@@ -38,7 +38,7 @@ public class DrawerLayoutAdapter extends BaseAdapter {
 
     @Override
     public boolean isEnabled(int i) {
-        return !(i == 0 || i == 1 || i == 5);
+        return !(i == 1 || i == 5);
     }
 
     @Override
@@ -65,10 +65,13 @@ public class DrawerLayoutAdapter extends BaseAdapter {
     public View getView(int i, View view, ViewGroup viewGroup) {
         int type = getItemViewType(i);
         if (type == 0) {
+            DrawerProfileCell drawerProfileCell;
             if (view == null) {
-                view = new DrawerProfileCell(mContext);
+                view = drawerProfileCell = new DrawerProfileCell(mContext);
+            } else {
+                drawerProfileCell = (DrawerProfileCell) view;
             }
-            ((DrawerProfileCell) view).setUser(MessagesController.getInstance().getUser(UserConfig.getClientUserId()));
+            drawerProfileCell.setUser(MessagesController.getInstance().getUser(UserConfig.getClientUserId()));
         } else if (type == 1) {
             if (view == null) {
                 view = new EmptyCell(mContext, AndroidUtilities.dp(8));

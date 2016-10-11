@@ -15,13 +15,11 @@
  */
 package org.telegram.messenger.exoplayer.text.webvtt;
 
+import android.text.TextUtils;
 import org.telegram.messenger.exoplayer.ParserException;
 import org.telegram.messenger.exoplayer.text.SubtitleParser;
 import org.telegram.messenger.exoplayer.util.MimeTypes;
 import org.telegram.messenger.exoplayer.util.ParsableByteArray;
-
-import android.text.TextUtils;
-
 import java.util.ArrayList;
 
 /**

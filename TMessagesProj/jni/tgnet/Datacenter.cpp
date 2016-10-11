@@ -17,6 +17,7 @@
 #include "Datacenter.h"
 #include "Connection.h"
 #include "MTProtoScheme.h"
+#include "ApiScheme.h"
 #include "FileLog.h"
 #include "NativeByteBuffer.h"
 #include "ByteArray.h"

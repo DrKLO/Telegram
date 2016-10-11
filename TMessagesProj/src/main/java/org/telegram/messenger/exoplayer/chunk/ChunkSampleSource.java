@@ -15,6 +15,8 @@
  */
 package org.telegram.messenger.exoplayer.chunk;
 
+import android.os.Handler;
+import android.os.SystemClock;
 import org.telegram.messenger.exoplayer.C;
 import org.telegram.messenger.exoplayer.LoadControl;
 import org.telegram.messenger.exoplayer.MediaFormat;
@@ -27,10 +29,6 @@ import org.telegram.messenger.exoplayer.extractor.DefaultTrackOutput;
 import org.telegram.messenger.exoplayer.upstream.Loader;
 import org.telegram.messenger.exoplayer.upstream.Loader.Loadable;
 import org.telegram.messenger.exoplayer.util.Assertions;
-
-import android.os.Handler;
-import android.os.SystemClock;
-
 import java.io.IOException;
 import java.util.Collections;
 import java.util.LinkedList;

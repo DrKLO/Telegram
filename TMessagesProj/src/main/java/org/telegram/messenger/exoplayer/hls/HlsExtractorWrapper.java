@@ -15,6 +15,7 @@
  */
 package org.telegram.messenger.exoplayer.hls;
 
+import android.util.SparseArray;
 import org.telegram.messenger.exoplayer.MediaFormat;
 import org.telegram.messenger.exoplayer.SampleHolder;
 import org.telegram.messenger.exoplayer.chunk.Format;
@@ -28,9 +29,6 @@ import org.telegram.messenger.exoplayer.extractor.TrackOutput;
 import org.telegram.messenger.exoplayer.upstream.Allocator;
 import org.telegram.messenger.exoplayer.util.Assertions;
 import org.telegram.messenger.exoplayer.util.MimeTypes;
-
-import android.util.SparseArray;
-
 import java.io.IOException;
 
 /**
@@ -240,6 +238,15 @@ public final class HlsExtractorWrapper implements ExtractorOutput {
     int result = extractor.read(input, null);
     Assertions.checkState(result != Extractor.RESULT_SEEK);
     return result;
+  }
+
+  public long getAdjustedEndTimeUs() {
+    long largestAdjustedPtsParsed = Long.MIN_VALUE;
+    for (int i = 0; i < sampleQueues.size(); i++) {
+      largestAdjustedPtsParsed = Math.max(largestAdjustedPtsParsed,
+          sampleQueues.valueAt(i).getLargestParsedTimestampUs());
+    }
+    return largestAdjustedPtsParsed;
   }
 
   // ExtractorOutput implementation.

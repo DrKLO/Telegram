@@ -15,11 +15,9 @@
  */
 package org.telegram.messenger.exoplayer.hls;
 
-import org.telegram.messenger.exoplayer.chunk.VideoFormatSelectorUtil;
-
 import android.content.Context;
 import android.text.TextUtils;
-
+import org.telegram.messenger.exoplayer.chunk.VideoFormatSelectorUtil;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;

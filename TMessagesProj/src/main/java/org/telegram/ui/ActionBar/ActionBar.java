@@ -23,7 +23,6 @@ import android.widget.ImageView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.AnimatorListenerAdapterProxy;
-import org.telegram.messenger.ApplicationLoader;
 import org.telegram.ui.Components.LayoutHelper;
 
 import java.util.ArrayList;
@@ -110,7 +109,7 @@ public class ActionBar extends FrameLayout {
         backButtonImageView.setImageResource(resource);
     }
 
-    private void createsubtitleTextView() {
+    private void createSubtitleTextView() {
         if (subtitleTextView != null) {
             return;
         }
@@ -130,10 +129,10 @@ public class ActionBar extends FrameLayout {
 
     public void setSubtitle(CharSequence value) {
         if (value != null && subtitleTextView == null) {
-            createsubtitleTextView();
+            createSubtitleTextView();
         }
         if (subtitleTextView != null) {
-            subtitleTextView.setVisibility(value != null && !isSearchFieldVisible ? VISIBLE : INVISIBLE);
+            subtitleTextView.setVisibility(value != null && !isSearchFieldVisible ? VISIBLE : GONE);
             subtitleTextView.setText(value);
         }
     }
@@ -160,6 +159,13 @@ public class ActionBar extends FrameLayout {
         }
     }
 
+    public void setSubtitleColor(int color) {
+        if (subtitleTextView == null) {
+            createSubtitleTextView();
+        }
+        subtitleTextView.setTextColor(color);
+    }
+
     public SimpleTextView getSubtitleTextView() {
         return subtitleTextView;
     }
@@ -173,6 +179,13 @@ public class ActionBar extends FrameLayout {
             return null;
         }
         return titleTextView.getText().toString();
+    }
+
+    public String getSubtitle() {
+        if (subtitleTextView == null) {
+            return null;
+        }
+        return subtitleTextView.getText().toString();
     }
 
     public ActionBarMenu createMenu() {
@@ -584,7 +597,7 @@ public class ActionBar extends FrameLayout {
     public static int getCurrentActionBarHeight() {
         if (AndroidUtilities.isTablet()) {
             return AndroidUtilities.dp(64);
-        } else if (ApplicationLoader.applicationContext.getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
+        } else if (AndroidUtilities.displaySize.x > AndroidUtilities.displaySize.y) {
             return AndroidUtilities.dp(48);
         } else {
             return AndroidUtilities.dp(56);

@@ -15,13 +15,6 @@
  */
 package org.telegram.messenger.exoplayer.audio;
 
-import org.telegram.messenger.exoplayer.C;
-import org.telegram.messenger.exoplayer.util.Ac3Util;
-import org.telegram.messenger.exoplayer.util.Assertions;
-import org.telegram.messenger.exoplayer.util.DtsUtil;
-import org.telegram.messenger.exoplayer.util.MimeTypes;
-import org.telegram.messenger.exoplayer.util.Util;
-
 import android.annotation.TargetApi;
 import android.media.AudioFormat;
 import android.media.AudioManager;
@@ -30,7 +23,12 @@ import android.media.PlaybackParams;
 import android.os.ConditionVariable;
 import android.os.SystemClock;
 import android.util.Log;
-
+import org.telegram.messenger.exoplayer.C;
+import org.telegram.messenger.exoplayer.util.Ac3Util;
+import org.telegram.messenger.exoplayer.util.Assertions;
+import org.telegram.messenger.exoplayer.util.DtsUtil;
+import org.telegram.messenger.exoplayer.util.MimeTypes;
+import org.telegram.messenger.exoplayer.util.Util;
 import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 
@@ -170,7 +168,7 @@ public final class AudioTrack {
 
   /**
    * Whether to enable a workaround for an issue where an audio effect does not keep its session
-   * active across releasing/initializing a new audio track, on platform API version < 21.
+   * active across releasing/initializing a new audio track, on platform API version before 21.
    * <p>
    * The flag must be set before creating a player.
    */
@@ -569,10 +567,6 @@ public final class AudioTrack {
    */
   public int handleBuffer(ByteBuffer buffer, int offset, int size, long presentationTimeUs)
       throws WriteException {
-    if (size == 0) {
-      return RESULT_BUFFER_CONSUMED;
-    }
-
     if (needsPassthroughWorkarounds()) {
       // An AC-3 audio track continues to play data written while it is paused. Stop writing so its
       // buffer empties. See [Internal: b/18899620].
@@ -593,6 +587,9 @@ public final class AudioTrack {
     if (bufferBytesRemaining == 0) {
       // The previous buffer (if there was one) was fully written to the audio track. We're now
       // seeing a new buffer for the first time.
+      if (size == 0) {
+        return RESULT_BUFFER_CONSUMED;
+      }
 
       useResampledBuffer = targetEncoding != sourceEncoding;
       if (useResampledBuffer) {

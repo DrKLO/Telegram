@@ -15,14 +15,12 @@
  */
 package org.telegram.messenger.exoplayer.upstream;
 
+import android.text.TextUtils;
+import android.util.Log;
 import org.telegram.messenger.exoplayer.C;
 import org.telegram.messenger.exoplayer.util.Assertions;
 import org.telegram.messenger.exoplayer.util.Predicate;
 import org.telegram.messenger.exoplayer.util.Util;
-
-import android.text.TextUtils;
-import android.util.Log;
-
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;

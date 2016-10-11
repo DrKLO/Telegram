@@ -19,6 +19,7 @@
 #include "FileLog.h"
 #include "EventObject.h"
 #include "MTProtoScheme.h"
+#include "ApiScheme.h"
 #include "NativeByteBuffer.h"
 #include "Connection.h"
 #include "Datacenter.h"
@@ -57,40 +58,52 @@ ConnectionsManager::ConnectionsManager() {
         exit(1);
     }
 
-    pipeFd = new int[2];
-    if (pipe(pipeFd) != 0) {
-        DEBUG_E("unable to create pipe");
-        exit(1);
+    eventFd = eventfd(0, EFD_NONBLOCK);
+    if (eventFd != -1) {
+        struct epoll_event event = {0};
+        event.data.ptr = new EventObject(&eventFd, EventObjectTypeEvent);
+        event.events = EPOLLIN | EPOLLET;
+        if (epoll_ctl(epolFd, EPOLL_CTL_ADD, eventFd, &event) == -1) {
+            eventFd = -1;
+            FileLog::e("unable to add eventfd");
+        }
     }
 
-    flags = fcntl(pipeFd[0], F_GETFL);
-    if (flags == -1) {
-        DEBUG_E("fcntl get pipefds[0] failed");
-        exit(1);
-    }
-    if (fcntl(pipeFd[0], F_SETFL, flags | O_NONBLOCK) == -1) {
-        DEBUG_E("fcntl set pipefds[0] failed");
-        exit(1);
-    }
+    if (eventFd == -1) {
+        pipeFd = new int[2];
+        if (pipe(pipeFd) != 0) {
+            DEBUG_E("unable to create pipe");
+            exit(1);
+        }
+        flags = fcntl(pipeFd[0], F_GETFL);
+        if (flags == -1) {
+            DEBUG_E("fcntl get pipefds[0] failed");
+            exit(1);
+        }
+        if (fcntl(pipeFd[0], F_SETFL, flags | O_NONBLOCK) == -1) {
+            DEBUG_E("fcntl set pipefds[0] failed");
+            exit(1);
+        }
 
-    flags = fcntl(pipeFd[1], F_GETFL);
-    if (flags == -1) {
-        DEBUG_E("fcntl get pipefds[1] failed");
-        exit(1);
-    }
-    if (fcntl(pipeFd[1], F_SETFL, flags | O_NONBLOCK) == -1) {
-        DEBUG_E("fcntl set pipefds[1] failed");
-        exit(1);
-    }
+        flags = fcntl(pipeFd[1], F_GETFL);
+        if (flags == -1) {
+            DEBUG_E("fcntl get pipefds[1] failed");
+            exit(1);
+        }
+        if (fcntl(pipeFd[1], F_SETFL, flags | O_NONBLOCK) == -1) {
+            DEBUG_E("fcntl set pipefds[1] failed");
+            exit(1);
+        }
 
-    EventObject *eventObject = new EventObject(pipeFd, EventObjectPipe);
+        EventObject *eventObject = new EventObject(pipeFd, EventObjectTypePipe);
 
-    epoll_event eventMask = {};
-    eventMask.events = EPOLLIN;
-    eventMask.data.ptr = eventObject;
-    if (epoll_ctl(epolFd, EPOLL_CTL_ADD, pipeFd[0], &eventMask) != 0) {
-        DEBUG_E("can't add pipe to epoll");
-        exit(1);
+        epoll_event eventMask = {};
+        eventMask.events = EPOLLIN;
+        eventMask.data.ptr = eventObject;
+        if (epoll_ctl(epolFd, EPOLL_CTL_ADD, pipeFd[0], &eventMask) != 0) {
+            DEBUG_E("can't add pipe to epoll");
+            exit(1);
+        }
     }
 
     networkBuffer = new NativeByteBuffer((uint32_t) READ_BUFFER_SIZE);
@@ -277,8 +290,12 @@ void ConnectionsManager::removeEvent(EventObject *eventObject) {
 }
 
 void ConnectionsManager::wakeup() {
-    char ch = 'x';
-    write(pipeFd[1], &ch, 1);
+    if (pipeFd == nullptr) {
+        eventfd_write(eventFd, 1);
+    } else {
+        char ch = 'x';
+        write(pipeFd[1], &ch, 1);
+    }
 }
 
 void *ConnectionsManager::ThreadProc(void *data) {
@@ -1316,7 +1333,7 @@ void ConnectionsManager::initDatacenters() {
     } else {
         if (datacenters.find(1) == datacenters.end()) {
             datacenter = new Datacenter(1);
-            datacenter->addAddressAndPort("149.154.175.10", 443, 0);
+            datacenter->addAddressAndPort("149.154.175.40", 443, 0);
             datacenter->addAddressAndPort("2001:b28:f23d:f001:0000:0000:0000:000e", 443, 1);
             datacenters[1] = datacenter;
         }
@@ -1349,6 +1366,22 @@ void ConnectionsManager::detachConnection(ConnectionSocket *connection) {
     if (iter != activeConnections.end()) {
         activeConnections.erase(iter);
     }
+}
+
+int32_t ConnectionsManager::sendRequestInternal(TLObject *object, onCompleteFunc onComplete, onQuickAckFunc onQuickAck, uint32_t flags, uint32_t datacenterId, ConnectionType connetionType, bool immediate) {
+    if (!currentUserId && !(flags & RequestFlagWithoutLogin)) {
+        DEBUG_D("can't do request without login %s", typeid(*object).name());
+        delete object;
+        return 0;
+    }
+    Request *request = new Request(lastRequestToken++, connetionType, flags, datacenterId, onComplete, onQuickAck);
+    request->rawRequest = object;
+    request->rpcRequest = wrapInLayer(object, getDatacenterWithId(datacenterId), request);
+    requestsQueue.push_back(std::unique_ptr<Request>(request));
+    if (immediate) {
+        processRequestQueue(0, 0);
+    }
+    return request->requestToken;
 }
 
 int32_t ConnectionsManager::sendRequest(TLObject *object, onCompleteFunc onComplete, onQuickAckFunc onQuickAck, uint32_t flags, uint32_t datacenterId, ConnectionType connetionType, bool immediate) {
@@ -1489,7 +1522,7 @@ void ConnectionsManager::removeRequestFromGuid(int32_t requestToken) {
     }
 }
 
-void ConnectionsManager::cancelRequestInternal(int32_t token, bool notifyServer, bool removeFromClass) {
+bool ConnectionsManager::cancelRequestInternal(int32_t token, bool notifyServer, bool removeFromClass) {
     for (requestsIter iter = requestsQueue.begin(); iter != requestsQueue.end(); iter++) {
         Request *request = iter->get();
         if (request->requestToken == token) {
@@ -1499,7 +1532,7 @@ void ConnectionsManager::cancelRequestInternal(int32_t token, bool notifyServer,
             if (removeFromClass) {
                 removeRequestFromGuid(token);
             }
-            return;
+            return true;
         }
     }
 
@@ -1517,9 +1550,10 @@ void ConnectionsManager::cancelRequestInternal(int32_t token, bool notifyServer,
             if (removeFromClass) {
                 removeRequestFromGuid(token);
             }
-            return;
+            return true;
         }
     }
+    return false;
 }
 
 void ConnectionsManager::cancelRequest(int32_t token, bool notifyServer) {
@@ -1646,24 +1680,6 @@ void ConnectionsManager::registerForInternalPushUpdates() {
     TL_account_registerDevice *request = new TL_account_registerDevice();
     request->token_type = 7;
     request->token = to_string_uint64(pushSessionId);
-    request->app_sandbox = false;
-
-    request->app_version = currentAppVersion;
-    request->device_model = currentDeviceModel;
-    request->lang_code = currentLangCode;
-    request->system_version = currentSystemVersion;
-    if (request->lang_code.empty()) {
-        request->lang_code = "en";
-    }
-    if (request->device_model.empty()) {
-        request->device_model = "device model unknown";
-    }
-    if (request->app_version.empty()) {
-        request->app_version = "app version unknown";
-    }
-    if (request->system_version.empty()) {
-        request->system_version = "system version unknown";
-    }
 
     sendRequest(request, [&](TLObject *response, TL_error *error) {
         if (error == nullptr) {

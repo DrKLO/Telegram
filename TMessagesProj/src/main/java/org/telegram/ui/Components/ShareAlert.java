@@ -34,11 +34,13 @@ import org.telegram.SQLite.SQLiteCursor;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.ChatObject;
+import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.MessagesStorage;
+import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SendMessagesHelper;
 import org.telegram.messenger.support.widget.GridLayoutManager;
@@ -51,6 +53,7 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.ShareDialogCell;
+import org.telegram.ui.DialogsActivity;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -60,7 +63,7 @@ import java.util.Locale;
 import java.util.Timer;
 import java.util.TimerTask;
 
-public class ShareAlert extends BottomSheet {
+public class ShareAlert extends BottomSheet implements NotificationCenter.NotificationCenterDelegate {
 
     private FrameLayout frameLayout;
     private TextView doneButtonBadgeTextView;
@@ -73,6 +76,7 @@ public class ShareAlert extends BottomSheet {
     private ShareDialogsAdapter listAdapter;
     private ShareSearchAdapter searchAdapter;
     private MessageObject sendingMessageObject;
+    private String sendingText;
     private EmptyTextProgressView searchEmptyView;
     private Drawable shadowDrawable;
     private HashMap<Long, TLRPC.TL_dialog> selectedDialogs = new HashMap<>();
@@ -82,18 +86,21 @@ public class ShareAlert extends BottomSheet {
     private boolean copyLinkOnEnd;
 
     private boolean isPublicChannel;
+    private String linkToCopy;
 
     private int scrollOffsetY;
     private int topBeforeSwitch;
 
-    public ShareAlert(final Context context, final MessageObject messageObject, boolean publicChannel) {
+    public ShareAlert(final Context context, MessageObject messageObject, final String text, boolean publicChannel, final String copyLink) {
         super(context, true);
 
         shadowDrawable = context.getResources().getDrawable(R.drawable.sheet_shadow);
 
+        linkToCopy = copyLink;
         sendingMessageObject = messageObject;
         searchAdapter = new ShareSearchAdapter(context);
         isPublicChannel = publicChannel;
+        sendingText = text;
 
         if (publicChannel) {
             loadingLink = true;
@@ -194,8 +201,8 @@ public class ShareAlert extends BottomSheet {
         doneButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (selectedDialogs.isEmpty() && isPublicChannel) {
-                    if (loadingLink) {
+                if (selectedDialogs.isEmpty() && (isPublicChannel || linkToCopy != null)) {
+                    if (linkToCopy == null && loadingLink) {
                         copyLinkOnEnd = true;
                         Toast.makeText(ShareAlert.this.getContext(), LocaleController.getString("Loading", R.string.Loading), Toast.LENGTH_SHORT).show();
                     } else {
@@ -203,10 +210,16 @@ public class ShareAlert extends BottomSheet {
                     }
                     dismiss();
                 } else {
-                    ArrayList<MessageObject> arrayList = new ArrayList<>();
-                    arrayList.add(sendingMessageObject);
-                    for (HashMap.Entry<Long, TLRPC.TL_dialog> entry : selectedDialogs.entrySet()) {
-                        SendMessagesHelper.getInstance().sendMessage(arrayList, entry.getKey());
+                    if (sendingMessageObject != null) {
+                        ArrayList<MessageObject> arrayList = new ArrayList<>();
+                        arrayList.add(sendingMessageObject);
+                        for (HashMap.Entry<Long, TLRPC.TL_dialog> entry : selectedDialogs.entrySet()) {
+                            SendMessagesHelper.getInstance().sendMessage(arrayList, entry.getKey());
+                        }
+                    } else if (sendingText != null) {
+                        for (HashMap.Entry<Long, TLRPC.TL_dialog> entry : selectedDialogs.entrySet()) {
+                            SendMessagesHelper.getInstance().sendMessage(sendingText, entry.getKey(), null, null, true, null, null, null);
+                        }
                     }
                     dismiss();
                 }
@@ -316,6 +329,9 @@ public class ShareAlert extends BottomSheet {
         gridView.setOnItemClickListener(new RecyclerListView.OnItemClickListener() {
             @Override
             public void onItemClick(View view, int position) {
+                if (position < 0) {
+                    return;
+                }
                 TLRPC.TL_dialog dialog;
                 if (gridView.getAdapter() == listAdapter) {
                     dialog = listAdapter.getItem(position);
@@ -357,6 +373,15 @@ public class ShareAlert extends BottomSheet {
         containerView.addView(shadow, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 3, Gravity.TOP | Gravity.LEFT, 0, 48, 0, 0));
 
         updateSelectedCount();
+
+        if (!DialogsActivity.dialogsLoaded) {
+            MessagesController.getInstance().loadDialogs(0, 100, true);
+            ContactsController.getInstance().checkInviteText();
+            DialogsActivity.dialogsLoaded = true;
+        }
+        if (listAdapter.dialogs.isEmpty()) {
+            NotificationCenter.getInstance().addObserver(this, NotificationCenter.dialogsNeedReload);
+        }
     }
 
     private int getCurrentTop() {
@@ -368,6 +393,17 @@ public class ShareAlert extends BottomSheet {
             }
         }
         return -1000;
+    }
+
+
+    @Override
+    public void didReceivedNotification(int id, Object... args) {
+        if (id == NotificationCenter.dialogsNeedReload) {
+            if (listAdapter != null) {
+                listAdapter.fetchDialogs();
+            }
+            NotificationCenter.getInstance().removeObserver(this, NotificationCenter.dialogsNeedReload);
+        }
     }
 
     @Override
@@ -394,12 +430,12 @@ public class ShareAlert extends BottomSheet {
     }
 
     private void copyLink(Context context) {
-        if (exportedMessageLink == null) {
+        if (exportedMessageLink == null && linkToCopy == null) {
             return;
         }
         try {
             android.content.ClipboardManager clipboard = (android.content.ClipboardManager) ApplicationLoader.applicationContext.getSystemService(Context.CLIPBOARD_SERVICE);
-            android.content.ClipData clip = android.content.ClipData.newPlainText("label", exportedMessageLink.link);
+            android.content.ClipData clip = android.content.ClipData.newPlainText("label", linkToCopy != null ? linkToCopy : exportedMessageLink.link);
             clipboard.setPrimaryClip(clip);
             Toast.makeText(context, LocaleController.getString("LinkCopied", R.string.LinkCopied), Toast.LENGTH_SHORT).show();
         } catch (Exception e) {
@@ -410,7 +446,7 @@ public class ShareAlert extends BottomSheet {
     public void updateSelectedCount() {
         if (selectedDialogs.isEmpty()) {
             doneButtonBadgeTextView.setVisibility(View.GONE);
-            if (!isPublicChannel) {
+            if (!isPublicChannel && linkToCopy == null) {
                 doneButtonTextView.setTextColor(Theme.SHARE_SHEET_SEND_DISABLED_TEXT_COLOR);
                 doneButton.setEnabled(false);
                 doneButtonTextView.setText(LocaleController.getString("Send", R.string.Send).toUpperCase());
@@ -429,6 +465,12 @@ public class ShareAlert extends BottomSheet {
         }
     }
 
+    @Override
+    public void dismiss() {
+        super.dismiss();
+        NotificationCenter.getInstance().removeObserver(this, NotificationCenter.dialogsNeedReload);
+    }
+
     private class Holder extends RecyclerView.ViewHolder {
 
         public Holder(View itemView) {
@@ -444,6 +486,11 @@ public class ShareAlert extends BottomSheet {
 
         public ShareDialogsAdapter(Context context) {
             this.context = context;
+            fetchDialogs();
+        }
+
+        public void fetchDialogs() {
+            dialogs.clear();
             for (int a = 0; a < MessagesController.getInstance().dialogsServerOnly.size(); a++) {
                 TLRPC.TL_dialog dialog = MessagesController.getInstance().dialogsServerOnly.get(a);
                 int lower_id = (int) dialog.id;
@@ -459,6 +506,7 @@ public class ShareAlert extends BottomSheet {
                     }
                 }
             }
+            notifyDataSetChanged();
         }
 
         @Override

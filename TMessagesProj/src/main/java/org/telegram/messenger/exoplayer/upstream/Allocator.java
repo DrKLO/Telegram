@@ -38,6 +38,13 @@ public interface Allocator {
   void release(Allocation allocation);
 
   /**
+   * Return an array of {@link Allocation}s.
+   *
+   * @param allocations The array of {@link Allocation}s being returned.
+   */
+  void release(Allocation[] allocations);
+
+  /**
    * Hints to the {@link Allocator} that it should make a best effort to release any memory that it
    * has allocated, beyond the specified target number of bytes.
    *

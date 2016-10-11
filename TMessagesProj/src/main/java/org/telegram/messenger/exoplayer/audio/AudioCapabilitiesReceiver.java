@@ -15,14 +15,13 @@
  */
 package org.telegram.messenger.exoplayer.audio;
 
-import org.telegram.messenger.exoplayer.util.Assertions;
-import org.telegram.messenger.exoplayer.util.Util;
-
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.media.AudioManager;
+import org.telegram.messenger.exoplayer.util.Assertions;
+import org.telegram.messenger.exoplayer.util.Util;
 
 /**
  * Notifies a listener when the audio playback capabilities change. Call {@link #register} to start

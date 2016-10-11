@@ -38,6 +38,7 @@ public class FileLoadOperation {
     private final static int maxDownloadRequestsBig = 2;
     private final static int bigFileSizeFrom = 1024 * 1024;
 
+    private boolean started;
     private int datacenter_id;
     private TLRPC.InputFileLocation location;
     private volatile int state = stateIdle;
@@ -145,14 +146,7 @@ public class FileLoadOperation {
             }
         } catch (Exception e) {
             FileLog.e("tmessages", e);
-            state = stateFailed;
-            cleanup();
-            Utilities.stageQueue.postRunnable(new Runnable() {
-                @Override
-                public void run() {
-                    delegate.didFailedLoadingFile(FileLoadOperation.this, 0);
-                }
-            });
+            onFail(true, 0);
         }
     }
 
@@ -169,61 +163,54 @@ public class FileLoadOperation {
         tempPath = temp;
     }
 
-    public void start() {
+    public boolean wasStarted() {
+        return started;
+    }
+
+    public String getFileName() {
+        return location.volume_id + "_" + location.local_id + "." + ext;
+    }
+
+    public boolean start() {
         if (state != stateIdle) {
-            return;
+            return false;
+        }
+        if (location == null) {
+            onFail(true, 0);
+            return false;
+        }
+
+        String fileNameFinal;
+        String fileNameTemp;
+        String fileNameIv = null;
+        if (location.volume_id != 0 && location.local_id != 0) {
+            if (datacenter_id == Integer.MIN_VALUE || location.volume_id == Integer.MIN_VALUE || datacenter_id == 0) {
+                onFail(true, 0);
+                return false;
+            }
+
+            fileNameTemp = location.volume_id + "_" + location.local_id + ".temp";
+            fileNameFinal = location.volume_id + "_" + location.local_id + "." + ext;
+            if (key != null) {
+                fileNameIv = location.volume_id + "_" + location.local_id + ".iv";
+            }
+        } else {
+            if (datacenter_id == 0 || location.id == 0) {
+                onFail(true, 0);
+                return false;
+            }
+
+            fileNameTemp = datacenter_id + "_" + location.id + ".temp";
+            fileNameFinal = datacenter_id + "_" + location.id + ext;
+            if (key != null) {
+                fileNameIv = datacenter_id + "_" + location.id + ".iv";
+            }
         }
         currentDownloadChunkSize = totalBytesCount >= bigFileSizeFrom ? downloadChunkSizeBig : downloadChunkSize;
         currentMaxDownloadRequests = totalBytesCount >= bigFileSizeFrom ? maxDownloadRequestsBig : maxDownloadRequests;
         requestInfos = new ArrayList<>(currentMaxDownloadRequests);
         delayedRequestInfos = new ArrayList<>(currentMaxDownloadRequests - 1);
         state = stateDownloading;
-        if (location == null) {
-            cleanup();
-            Utilities.stageQueue.postRunnable(new Runnable() {
-                @Override
-                public void run() {
-                    delegate.didFailedLoadingFile(FileLoadOperation.this, 0);
-                }
-            });
-            return;
-        }
-        String fileNameFinal;
-        String fileNameTemp;
-        String fileNameIv = null;
-        if (location.volume_id != 0 && location.local_id != 0) {
-            fileNameTemp = location.volume_id + "_" + location.local_id + ".temp";
-            fileNameFinal = location.volume_id + "_" + location.local_id + "." + ext;
-            if (key != null) {
-                fileNameIv = location.volume_id + "_" + location.local_id + ".iv";
-            }
-            if (datacenter_id == Integer.MIN_VALUE || location.volume_id == Integer.MIN_VALUE || datacenter_id == 0) {
-                cleanup();
-                Utilities.stageQueue.postRunnable(new Runnable() {
-                    @Override
-                    public void run() {
-                        delegate.didFailedLoadingFile(FileLoadOperation.this, 0);
-                    }
-                });
-                return;
-            }
-        } else {
-            fileNameTemp = datacenter_id + "_" + location.id + ".temp";
-            fileNameFinal = datacenter_id + "_" + location.id + ext;
-            if (key != null) {
-                fileNameIv = datacenter_id + "_" + location.id + ".iv";
-            }
-            if (datacenter_id == 0 || location.id == 0) {
-                cleanup();
-                Utilities.stageQueue.postRunnable(new Runnable() {
-                    @Override
-                    public void run() {
-                        delegate.didFailedLoadingFile(FileLoadOperation.this, 0);
-                    }
-                });
-                return;
-            }
-        }
 
         cacheFileFinal = new File(storePath, fileNameFinal);
         boolean exist = cacheFileFinal.exists();
@@ -266,15 +253,10 @@ public class FileLoadOperation {
                 FileLog.e("tmessages", e);
             }
             if (fileOutputStream == null) {
-                cleanup();
-                Utilities.stageQueue.postRunnable(new Runnable() {
-                    @Override
-                    public void run() {
-                        delegate.didFailedLoadingFile(FileLoadOperation.this, 0);
-                    }
-                });
-                return;
+                onFail(true, 0);
+                return false;
             }
+            started = true;
             Utilities.stageQueue.postRunnable(new Runnable() {
                 @Override
                 public void run() {
@@ -282,7 +264,7 @@ public class FileLoadOperation {
                         try {
                             onFinishLoadingFile();
                         } catch (Exception e) {
-                            delegate.didFailedLoadingFile(FileLoadOperation.this, 0);
+                            onFail(true, 0);
                         }
                     } else {
                         startDownloadRequest();
@@ -290,12 +272,14 @@ public class FileLoadOperation {
                 }
             });
         } else {
+            started = true;
             try {
                 onFinishLoadingFile();
             } catch (Exception e) {
-                delegate.didFailedLoadingFile(FileLoadOperation.this, 0);
+                onFail(true, 0);
             }
         }
+        return true;
     }
 
     public void cancel() {
@@ -305,8 +289,6 @@ public class FileLoadOperation {
                 if (state == stateFinished || state == stateFailed) {
                     return;
                 }
-                state = stateFailed;
-                cleanup();
                 if (requestInfos != null) {
                     for (int a = 0; a < requestInfos.size(); a++) {
                         RequestInfo requestInfo = requestInfos.get(a);
@@ -315,7 +297,7 @@ public class FileLoadOperation {
                         }
                     }
                 }
-                delegate.didFailedLoadingFile(FileLoadOperation.this, 1);
+                onFail(false, 1);
             }
         });
     }
@@ -380,7 +362,7 @@ public class FileLoadOperation {
                             try {
                                 onFinishLoadingFile();
                             } catch (Exception e) {
-                                delegate.didFailedLoadingFile(FileLoadOperation.this, 0);
+                                onFail(false, 0);
                             }
                         }
                     }, 200);
@@ -450,8 +432,7 @@ public class FileLoadOperation {
                     startDownloadRequest();
                 }
             } catch (Exception e) {
-                cleanup();
-                delegate.didFailedLoadingFile(FileLoadOperation.this, 0);
+                onFail(false, 0);
                 FileLog.e("tmessages", e);
             }
         } else {
@@ -466,8 +447,7 @@ public class FileLoadOperation {
                     val = null;
                 }
                 if (val == null) {
-                    cleanup();
-                    delegate.didFailedLoadingFile(FileLoadOperation.this, 0);
+                    onFail(false, 0);
                 } else {
                     datacenter_id = val;
                     nextDownloadOffset = 0;
@@ -479,23 +459,34 @@ public class FileLoadOperation {
                         onFinishLoadingFile();
                     } catch (Exception e) {
                         FileLog.e("tmessages", e);
-                        cleanup();
-                        delegate.didFailedLoadingFile(FileLoadOperation.this, 0);
+                        onFail(false, 0);
                     }
                 } else {
-                    cleanup();
-                    delegate.didFailedLoadingFile(FileLoadOperation.this, 0);
+                    onFail(false, 0);
                 }
             } else if (error.text.contains("RETRY_LIMIT")) {
-                cleanup();
-                delegate.didFailedLoadingFile(FileLoadOperation.this, 2);
+                onFail(false, 2);
             } else {
                 if (location != null) {
                     FileLog.e("tmessages", "" + location + " id = " + location.id + " local_id = " + location.local_id + " access_hash = " + location.access_hash + " volume_id = " + location.volume_id + " secret = " + location.secret);
                 }
-                cleanup();
-                delegate.didFailedLoadingFile(FileLoadOperation.this, 0);
+                onFail(false, 0);
             }
+        }
+    }
+
+    private void onFail(boolean thread, final int reason) {
+        cleanup();
+        state = stateFailed;
+        if (thread) {
+            Utilities.stageQueue.postRunnable(new Runnable() {
+                @Override
+                public void run() {
+                    delegate.didFailedLoadingFile(FileLoadOperation.this, reason);
+                }
+            });
+        } else {
+            delegate.didFailedLoadingFile(FileLoadOperation.this, reason);
         }
     }
 
@@ -505,7 +496,7 @@ public class FileLoadOperation {
         }
         int count = 1;
         if (totalBytesCount > 0) {
-            count = Math.max(0, currentMaxDownloadRequests - requestInfos.size() - delayedRequestInfos.size());
+            count = Math.max(0, currentMaxDownloadRequests - requestInfos.size()/* - delayedRequestInfos.size()*/);
         }
 
         for (int a = 0; a < count; a++) {

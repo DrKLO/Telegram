@@ -15,10 +15,9 @@
  */
 package org.telegram.messenger.exoplayer.text.webvtt;
 
-import org.telegram.messenger.exoplayer.text.Cue;
-
 import android.text.Layout.Alignment;
 import android.util.Log;
+import org.telegram.messenger.exoplayer.text.Cue;
 
 /**
  * A representation of a WebVTT cue.

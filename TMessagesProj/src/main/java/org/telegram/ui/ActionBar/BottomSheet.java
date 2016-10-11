@@ -53,7 +53,7 @@ import java.util.ArrayList;
 public class BottomSheet extends Dialog {
 
     protected ViewGroup containerView;
-    private ContainerView container;
+    protected ContainerView container;
     private WindowInsets lastInsets;
 
     private Runnable startAnimationRunnable;
@@ -68,7 +68,7 @@ public class BottomSheet extends Dialog {
     private int[] itemIcons;
     private View customView;
     private CharSequence title;
-    private boolean fullWidth;
+    protected boolean fullWidth;
     protected ColorDrawable backDrawable = new ColorDrawable(0xff000000);
 
     private boolean allowCustomAnimation = true;
@@ -96,12 +96,12 @@ public class BottomSheet extends Dialog {
 
     protected AnimatorSet currentSheetAnimation;
 
-    private class ContainerView extends FrameLayout implements NestedScrollingParent {
+    protected class ContainerView extends FrameLayout implements NestedScrollingParent {
 
         private VelocityTracker velocityTracker = null;
         private int startedTrackingX;
         private int startedTrackingY;
-        private int startedTrackingPointerId;
+        private int startedTrackingPointerId = -1;
         private boolean maybeStartTracking = false;
         private boolean startedTracking = false;
         private AnimatorSet currentAnimation = null;
@@ -223,7 +223,10 @@ public class BottomSheet extends Dialog {
             if (dismissed) {
                 return false;
             }
-            if (ev != null && (ev.getAction() == MotionEvent.ACTION_DOWN || ev.getAction() == MotionEvent.ACTION_MOVE) && !startedTracking && !maybeStartTracking) {
+            if (onContainerTouchEvent(ev)) {
+                return true;
+            }
+            if (canDismissWithTouchOutside() && ev != null && (ev.getAction() == MotionEvent.ACTION_DOWN || ev.getAction() == MotionEvent.ACTION_MOVE) && !startedTracking && !maybeStartTracking) {
                 startedTrackingX = (int) ev.getX();
                 startedTrackingY = (int) ev.getY();
                 if (startedTrackingY < containerView.getTop() || startedTrackingX < containerView.getLeft() || startedTrackingX > containerView.getRight()) {
@@ -274,8 +277,9 @@ public class BottomSheet extends Dialog {
                     velocityTracker.recycle();
                     velocityTracker = null;
                 }
+                startedTrackingPointerId = -1;
             }
-            return startedTracking;
+            return startedTracking || !canDismissWithSwipe();
         }
 
         @Override
@@ -309,7 +313,9 @@ public class BottomSheet extends Dialog {
                 if (child.getVisibility() == GONE || child == containerView) {
                     continue;
                 }
-                measureChildWithMargins(child, MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY), 0, MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY), 0);
+                if (!onCustomMeasure(child, width, height)) {
+                    measureChildWithMargins(child, MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY), 0, MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY), 0);
+                }
             }
         }
 
@@ -332,48 +338,50 @@ public class BottomSheet extends Dialog {
                 if (child.getVisibility() == GONE || child == containerView) {
                     continue;
                 }
-                final FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) child.getLayoutParams();
+                if (!onCustomLayout(child, left, top, right, bottom)) {
+                    final FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) child.getLayoutParams();
 
-                final int width = child.getMeasuredWidth();
-                final int height = child.getMeasuredHeight();
+                    final int width = child.getMeasuredWidth();
+                    final int height = child.getMeasuredHeight();
 
-                int childLeft;
-                int childTop;
+                    int childLeft;
+                    int childTop;
 
-                int gravity = lp.gravity;
-                if (gravity == -1) {
-                    gravity = Gravity.TOP | Gravity.LEFT;
+                    int gravity = lp.gravity;
+                    if (gravity == -1) {
+                        gravity = Gravity.TOP | Gravity.LEFT;
+                    }
+
+                    final int absoluteGravity = gravity & Gravity.HORIZONTAL_GRAVITY_MASK;
+                    final int verticalGravity = gravity & Gravity.VERTICAL_GRAVITY_MASK;
+
+                    switch (absoluteGravity & Gravity.HORIZONTAL_GRAVITY_MASK) {
+                        case Gravity.CENTER_HORIZONTAL:
+                            childLeft = (right - left - width) / 2 + lp.leftMargin - lp.rightMargin;
+                            break;
+                        case Gravity.RIGHT:
+                            childLeft = right - width - lp.rightMargin;
+                            break;
+                        case Gravity.LEFT:
+                        default:
+                            childLeft = lp.leftMargin;
+                    }
+
+                    switch (verticalGravity) {
+                        case Gravity.TOP:
+                            childTop = lp.topMargin;
+                            break;
+                        case Gravity.CENTER_VERTICAL:
+                            childTop = (bottom - top - height) / 2 + lp.topMargin - lp.bottomMargin;
+                            break;
+                        case Gravity.BOTTOM:
+                            childTop = (bottom - top) - height - lp.bottomMargin;
+                            break;
+                        default:
+                            childTop = lp.topMargin;
+                    }
+                    child.layout(childLeft, childTop, childLeft + width, childTop + height);
                 }
-
-                final int absoluteGravity = gravity & Gravity.HORIZONTAL_GRAVITY_MASK;
-                final int verticalGravity = gravity & Gravity.VERTICAL_GRAVITY_MASK;
-
-                switch (absoluteGravity & Gravity.HORIZONTAL_GRAVITY_MASK) {
-                    case Gravity.CENTER_HORIZONTAL:
-                        childLeft = (right - left - width) / 2 + lp.leftMargin - lp.rightMargin;
-                        break;
-                    case Gravity.RIGHT:
-                        childLeft = right - width - lp.rightMargin;
-                        break;
-                    case Gravity.LEFT:
-                    default:
-                        childLeft = lp.leftMargin;
-                }
-
-                switch (verticalGravity) {
-                    case Gravity.TOP:
-                        childTop = lp.topMargin;
-                        break;
-                    case Gravity.CENTER_VERTICAL:
-                        childTop = (bottom - top - height) / 2 + lp.topMargin - lp.bottomMargin;
-                        break;
-                    case Gravity.BOTTOM:
-                        childTop = (bottom - top) - height - lp.bottomMargin;
-                        break;
-                    default:
-                        childTop = lp.topMargin;
-                }
-                child.layout(childLeft, childTop, childLeft + width, childTop + height);
             }
             if (layoutCount == 0 && startAnimationRunnable != null) {
                 AndroidUtilities.cancelRunOnUIThread(startAnimationRunnable);
@@ -621,7 +629,7 @@ public class BottomSheet extends Dialog {
             AndroidUtilities.runOnUIThread(startAnimationRunnable = new Runnable() {
                 @Override
                 public void run() {
-                    if (startAnimationRunnable != this) {
+                    if (startAnimationRunnable != this || dismissed) {
                         return;
                     }
                     startAnimationRunnable = null;
@@ -635,6 +643,10 @@ public class BottomSheet extends Dialog {
 
     protected boolean canDismissWithSwipe() {
         return true;
+    }
+
+    protected boolean onContainerTouchEvent(MotionEvent event) {
+        return false;
     }
 
     public void setCustomView(View view) {
@@ -653,6 +665,18 @@ public class BottomSheet extends Dialog {
         applyBottomPadding = value;
     }
 
+    protected boolean onCustomMeasure(View view, int width, int height) {
+        return false;
+    }
+
+    protected boolean onCustomLayout(View view, int left, int top, int right, int bottom) {
+        return false;
+    }
+
+    protected boolean canDismissWithTouchOutside() {
+        return true;
+    }
+
     private void cancelSheetAnimation() {
         if (currentSheetAnimation != null) {
             currentSheetAnimation.cancel();
@@ -661,6 +685,9 @@ public class BottomSheet extends Dialog {
     }
 
     private void startOpenAnimation() {
+        if (dismissed) {
+            return;
+        }
         containerView.setVisibility(View.VISIBLE);
 
         if (!onCustomOpenAnimation()) {
@@ -823,8 +850,12 @@ public class BottomSheet extends Dialog {
         }
     }
 
-    protected void dismissInternal() {
-        super.dismiss();
+    public void dismissInternal() {
+        try {
+            super.dismiss();
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
     }
 
     protected boolean onCustomCloseAnimation() {

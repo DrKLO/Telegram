@@ -24,15 +24,21 @@ public class ContextProgressView extends View {
     private int radOffset = 0;
     private long lastUpdateTime;
 
-    public ContextProgressView(Context context) {
+    public ContextProgressView(Context context, int colorType) {
         super(context);
-        innerPaint.setColor(0xffbfdff6);
         innerPaint.setStyle(Paint.Style.STROKE);
         innerPaint.setStrokeWidth(AndroidUtilities.dp(2));
-        outerPaint.setColor(0xff2b96e2);
         outerPaint.setStyle(Paint.Style.STROKE);
         outerPaint.setStrokeWidth(AndroidUtilities.dp(2));
         outerPaint.setStrokeCap(Paint.Cap.ROUND);
+
+        if (colorType == 0) {
+            innerPaint.setColor(0xffbfdff6);
+            outerPaint.setColor(0xff2b96e2);
+        } else {
+            innerPaint.setColor(0xffbfdff6);
+            outerPaint.setColor(0xffffffff);
+        }
     }
 
     @Override

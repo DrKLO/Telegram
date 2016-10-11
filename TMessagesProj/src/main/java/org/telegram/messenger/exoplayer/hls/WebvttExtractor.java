@@ -15,6 +15,7 @@
  */
 package org.telegram.messenger.exoplayer.hls;
 
+import android.text.TextUtils;
 import org.telegram.messenger.exoplayer.C;
 import org.telegram.messenger.exoplayer.MediaFormat;
 import org.telegram.messenger.exoplayer.ParserException;
@@ -29,9 +30,6 @@ import org.telegram.messenger.exoplayer.text.webvtt.WebvttCueParser;
 import org.telegram.messenger.exoplayer.text.webvtt.WebvttParserUtil;
 import org.telegram.messenger.exoplayer.util.MimeTypes;
 import org.telegram.messenger.exoplayer.util.ParsableByteArray;
-
-import android.text.TextUtils;
-
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.regex.Matcher;

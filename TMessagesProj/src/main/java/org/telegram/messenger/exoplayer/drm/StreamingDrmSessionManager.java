@@ -15,18 +15,10 @@
  */
 package org.telegram.messenger.exoplayer.drm;
 
-import org.telegram.messenger.exoplayer.drm.DrmInitData.SchemeInitData;
-import org.telegram.messenger.exoplayer.extractor.mp4.PsshAtomUtil;
-import org.telegram.messenger.exoplayer.util.Util;
-
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.media.DeniedByServerException;
-import android.media.MediaCrypto;
 import android.media.MediaDrm;
-import android.media.MediaDrm.KeyRequest;
-import android.media.MediaDrm.OnEventListener;
-import android.media.MediaDrm.ProvisionRequest;
 import android.media.NotProvisionedException;
 import android.media.UnsupportedSchemeException;
 import android.os.Handler;
@@ -34,16 +26,21 @@ import android.os.HandlerThread;
 import android.os.Looper;
 import android.os.Message;
 import android.text.TextUtils;
-
+import org.telegram.messenger.exoplayer.drm.DrmInitData.SchemeInitData;
+import org.telegram.messenger.exoplayer.drm.ExoMediaDrm.KeyRequest;
+import org.telegram.messenger.exoplayer.drm.ExoMediaDrm.OnEventListener;
+import org.telegram.messenger.exoplayer.drm.ExoMediaDrm.ProvisionRequest;
+import org.telegram.messenger.exoplayer.extractor.mp4.PsshAtomUtil;
+import org.telegram.messenger.exoplayer.util.Util;
 import java.util.HashMap;
 import java.util.UUID;
 
 /**
  * A base class for {@link DrmSessionManager} implementations that support streaming playbacks
- * using {@link MediaDrm}.
+ * using {@link ExoMediaDrm}.
  */
 @TargetApi(18)
-public class StreamingDrmSessionManager implements DrmSessionManager {
+public class StreamingDrmSessionManager<T extends ExoMediaCrypto> implements DrmSessionManager<T> {
 
   /**
    * Interface definition for a callback to be notified of {@link StreamingDrmSessionManager}
@@ -88,7 +85,7 @@ public class StreamingDrmSessionManager implements DrmSessionManager {
 
   private final Handler eventHandler;
   private final EventListener eventListener;
-  private final MediaDrm mediaDrm;
+  private final ExoMediaDrm<T> mediaDrm;
   private final HashMap<String, String> optionalKeyRequestParameters;
 
   /* package */ final MediaDrmHandler mediaDrmHandler;
@@ -102,10 +99,20 @@ public class StreamingDrmSessionManager implements DrmSessionManager {
   private int openCount;
   private boolean provisioningInProgress;
   private int state;
-  private MediaCrypto mediaCrypto;
+  private T mediaCrypto;
   private Exception lastException;
   private SchemeInitData schemeInitData;
   private byte[] sessionId;
+
+  private static FrameworkMediaDrm createFrameworkDrm(UUID uuid) throws UnsupportedDrmException {
+    try {
+      return new FrameworkMediaDrm(uuid);
+    } catch (UnsupportedSchemeException e) {
+      throw new UnsupportedDrmException(UnsupportedDrmException.REASON_UNSUPPORTED_SCHEME, e);
+    } catch (Exception e) {
+      throw new UnsupportedDrmException(UnsupportedDrmException.REASON_INSTANTIATION_ERROR, e);
+    }
+  }
 
   /**
    * Instantiates a new instance using the Widevine scheme.
@@ -120,10 +127,11 @@ public class StreamingDrmSessionManager implements DrmSessionManager {
    * @param eventListener A listener of events. May be null if delivery of events is not required.
    * @throws UnsupportedDrmException If the specified DRM scheme is not supported.
    */
-  public static StreamingDrmSessionManager newWidevineInstance(Looper playbackLooper,
-      MediaDrmCallback callback, HashMap<String, String> optionalKeyRequestParameters,
+  public static StreamingDrmSessionManager<FrameworkMediaCrypto> newWidevineInstance(
+      Looper playbackLooper, MediaDrmCallback callback,
+      HashMap<String, String> optionalKeyRequestParameters,
       Handler eventHandler, EventListener eventListener) throws UnsupportedDrmException {
-    return new StreamingDrmSessionManager(WIDEVINE_UUID, playbackLooper, callback,
+    return StreamingDrmSessionManager.newFrameworkInstance(WIDEVINE_UUID, playbackLooper, callback,
         optionalKeyRequestParameters, eventHandler, eventListener);
   }
 
@@ -142,8 +150,8 @@ public class StreamingDrmSessionManager implements DrmSessionManager {
    * @param eventListener A listener of events. May be null if delivery of events is not required.
    * @throws UnsupportedDrmException If the specified DRM scheme is not supported.
    */
-  public static StreamingDrmSessionManager newPlayReadyInstance(Looper playbackLooper,
-      MediaDrmCallback callback, String customData, Handler eventHandler,
+  public static StreamingDrmSessionManager<FrameworkMediaCrypto> newPlayReadyInstance(
+      Looper playbackLooper, MediaDrmCallback callback, String customData, Handler eventHandler,
       EventListener eventListener) throws UnsupportedDrmException {
     HashMap<String, String> optionalKeyRequestParameters;
     if (!TextUtils.isEmpty(customData)) {
@@ -152,7 +160,7 @@ public class StreamingDrmSessionManager implements DrmSessionManager {
     } else {
       optionalKeyRequestParameters = null;
     }
-    return new StreamingDrmSessionManager(PLAYREADY_UUID, playbackLooper, callback,
+    return StreamingDrmSessionManager.newFrameworkInstance(PLAYREADY_UUID, playbackLooper, callback,
         optionalKeyRequestParameters, eventHandler, eventListener);
   }
 
@@ -168,21 +176,57 @@ public class StreamingDrmSessionManager implements DrmSessionManager {
    * @param eventListener A listener of events. May be null if delivery of events is not required.
    * @throws UnsupportedDrmException If the specified DRM scheme is not supported.
    */
-  public StreamingDrmSessionManager(UUID uuid, Looper playbackLooper, MediaDrmCallback callback,
+  public static StreamingDrmSessionManager<FrameworkMediaCrypto> newFrameworkInstance(
+      UUID uuid, Looper playbackLooper, MediaDrmCallback callback,
       HashMap<String, String> optionalKeyRequestParameters, Handler eventHandler,
       EventListener eventListener) throws UnsupportedDrmException {
+    return StreamingDrmSessionManager.newInstance(uuid, playbackLooper, callback,
+        optionalKeyRequestParameters, eventHandler, eventListener, createFrameworkDrm(uuid));
+  }
+
+  /**
+   * @param uuid The UUID of the drm scheme.
+   * @param playbackLooper The looper associated with the media playback thread. Should usually be
+   *     obtained using {@link org.telegram.messenger.exoplayer.ExoPlayer#getPlaybackLooper()}.
+   * @param callback Performs key and provisioning requests.
+   * @param optionalKeyRequestParameters An optional map of parameters to pass as the last argument
+   *     to {@link MediaDrm#getKeyRequest(byte[], byte[], String, int, HashMap)}. May be null.
+   * @param eventHandler A handler to use when delivering events to {@code eventListener}. May be
+   *     null if delivery of events is not required.
+   * @param eventListener A listener of events. May be null if delivery of events is not required.
+   * @param mediaDrm An underlying {@link ExoMediaDrm} for use by the manager.
+   * @throws UnsupportedDrmException If the specified DRM scheme is not supported.
+   */
+  public static<T extends ExoMediaCrypto> StreamingDrmSessionManager<T> newInstance(
+      UUID uuid, Looper playbackLooper, MediaDrmCallback callback,
+      HashMap<String, String> optionalKeyRequestParameters, Handler eventHandler,
+      EventListener eventListener, ExoMediaDrm<T> mediaDrm) throws UnsupportedDrmException {
+    return new StreamingDrmSessionManager<>(uuid, playbackLooper, callback,
+        optionalKeyRequestParameters, eventHandler, eventListener, mediaDrm);
+  }
+
+  /**
+   * @param uuid The UUID of the drm scheme.
+   * @param playbackLooper The looper associated with the media playback thread. Should usually be
+   *     obtained using {@link org.telegram.messenger.exoplayer.ExoPlayer#getPlaybackLooper()}.
+   * @param callback Performs key and provisioning requests.
+   * @param optionalKeyRequestParameters An optional map of parameters to pass as the last argument
+   *     to {@link MediaDrm#getKeyRequest(byte[], byte[], String, int, HashMap)}. May be null.
+   * @param eventHandler A handler to use when delivering events to {@code eventListener}. May be
+   *     null if delivery of events is not required.
+   * @param eventListener A listener of events. May be null if delivery of events is not required.
+   * @param mediaDrm An underlying {@link ExoMediaDrm} for use by the manager.
+   * @throws UnsupportedDrmException If the specified DRM scheme is not supported.
+   */
+  private StreamingDrmSessionManager(UUID uuid, Looper playbackLooper, MediaDrmCallback callback,
+      HashMap<String, String> optionalKeyRequestParameters, Handler eventHandler,
+      EventListener eventListener, ExoMediaDrm<T> mediaDrm) throws UnsupportedDrmException {
     this.uuid = uuid;
     this.callback = callback;
     this.optionalKeyRequestParameters = optionalKeyRequestParameters;
     this.eventHandler = eventHandler;
     this.eventListener = eventListener;
-    try {
-      mediaDrm = new MediaDrm(uuid);
-    } catch (UnsupportedSchemeException e) {
-      throw new UnsupportedDrmException(UnsupportedDrmException.REASON_UNSUPPORTED_SCHEME, e);
-    } catch (Exception e) {
-      throw new UnsupportedDrmException(UnsupportedDrmException.REASON_INSTANTIATION_ERROR, e);
-    }
+    this.mediaDrm = mediaDrm;
     mediaDrm.setOnEventListener(new MediaDrmEventListener());
     mediaDrmHandler = new MediaDrmHandler(playbackLooper);
     postResponseHandler = new PostResponseHandler(playbackLooper);
@@ -195,7 +239,7 @@ public class StreamingDrmSessionManager implements DrmSessionManager {
   }
 
   @Override
-  public final MediaCrypto getMediaCrypto() {
+  public final T getMediaCrypto() {
     if (state != STATE_OPENED && state != STATE_OPENED_WITH_KEYS) {
       throw new IllegalStateException();
     }
@@ -318,7 +362,7 @@ public class StreamingDrmSessionManager implements DrmSessionManager {
   private void openInternal(boolean allowProvisioning) {
     try {
       sessionId = mediaDrm.openSession();
-      mediaCrypto = new MediaCrypto(uuid, sessionId);
+      mediaCrypto = mediaDrm.createMediaCrypto(uuid, sessionId);
       state = STATE_OPENED;
       postKeyRequest();
     } catch (NotProvisionedException e) {
@@ -456,13 +500,13 @@ public class StreamingDrmSessionManager implements DrmSessionManager {
 
   }
 
-  private class MediaDrmEventListener implements OnEventListener {
+  private class MediaDrmEventListener implements OnEventListener<T> {
 
     @Override
-    public void onEvent(MediaDrm md, byte[] sessionId, int event, int extra, byte[] data) {
+    public void onEvent(ExoMediaDrm<? extends T> mediaDrm, byte[] sessionId, int event,
+        int extra, byte[] data) {
       mediaDrmHandler.sendEmptyMessage(event);
     }
-
   }
 
   @SuppressLint("HandlerLeak")

@@ -731,8 +731,13 @@ public class ChangePhoneActivity extends BaseFragment {
             req.phone_number = phone;
             req.allow_flashcall = simcardAvailable && allowCall;
             if (req.allow_flashcall) {
-                String number = tm.getLine1Number();
-                req.current_number = number != null && number.length() != 0 && (phone.contains(number) || number.contains(phone));
+                try {
+                    String number = tm.getLine1Number();
+                    req.current_number = number != null && number.length() != 0 && (phone.contains(number) || number.contains(phone));
+                } catch (Exception e) {
+                    req.allow_flashcall = false;
+                    FileLog.e("tmessages", e);
+                }
             }
 
             final Bundle params = new Bundle();
@@ -1315,6 +1320,7 @@ public class ChangePhoneActivity extends BaseFragment {
                                 MessagesStorage.getInstance().putUsersAndChats(users, null, true, true);
                                 MessagesController.getInstance().putUser(user, false);
                                 finishFragment();
+                                NotificationCenter.getInstance().postNotificationName(NotificationCenter.mainUserInfoChanged);
                             } else {
                                 lastError = error.text;
                                 if (currentType == 3 && (nextType == 4 || nextType == 2) || currentType == 2 && (nextType == 4 || nextType == 3)) {

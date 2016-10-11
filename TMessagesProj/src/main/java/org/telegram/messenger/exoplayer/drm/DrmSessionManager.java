@@ -22,7 +22,7 @@ import android.media.MediaCrypto;
  * Manages a DRM session.
  */
 @TargetApi(16)
-public interface DrmSessionManager {
+public interface DrmSessionManager<T extends ExoMediaCrypto> {
 
   /**
    * The error state. {@link #getError()} can be used to retrieve the cause.
@@ -67,15 +67,15 @@ public interface DrmSessionManager {
   int getState();
 
   /**
-   * Gets a {@link MediaCrypto} for the open session.
+   * Gets an {@link ExoMediaCrypto} for the open session.
    * <p>
    * This method may be called when the manager is in the following states:
    * {@link #STATE_OPENED}, {@link #STATE_OPENED_WITH_KEYS}
    *
-   * @return A {@link MediaCrypto} for the open session.
+   * @return An {@link ExoMediaCrypto} for the open session.
    * @throws IllegalStateException If called when a session isn't opened.
    */
-  MediaCrypto getMediaCrypto();
+  T getMediaCrypto();
 
   /**
    * Whether the session requires a secure decoder for the specified mime type.

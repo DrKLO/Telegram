@@ -7,6 +7,7 @@
  */
 
 #include <unistd.h>
+#include <sys/eventfd.h>
 #include "EventObject.h"
 #include "Connection.h"
 #include "Timer.h"
@@ -28,13 +29,19 @@ void EventObject::onEvent(uint32_t events) {
             timer->onEvent();
             break;
         }
-        case EventObjectPipe: {
+        case EventObjectTypePipe: {
             int *pipe = (int *) eventObject;
             char ch;
             ssize_t size = 1;
             while (size > 0) {
                 size = read(pipe[0], &ch, 1);
             }
+            break;
+        }
+        case EventObjectTypeEvent: {
+            int *eventFd = (int *) eventObject;
+            uint64_t count;
+            eventfd_read(eventFd[0], &count);
             break;
         }
         default:

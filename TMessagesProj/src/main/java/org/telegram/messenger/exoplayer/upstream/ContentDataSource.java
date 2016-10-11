@@ -15,12 +15,10 @@
  */
 package org.telegram.messenger.exoplayer.upstream;
 
-import org.telegram.messenger.exoplayer.C;
-
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.res.AssetFileDescriptor;
-
+import org.telegram.messenger.exoplayer.C;
 import java.io.EOFException;
 import java.io.FileInputStream;
 import java.io.IOException;

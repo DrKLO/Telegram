@@ -15,6 +15,9 @@
  */
 package org.telegram.messenger.exoplayer.extractor.ts;
 
+import android.util.Log;
+import android.util.SparseArray;
+import android.util.SparseBooleanArray;
 import org.telegram.messenger.exoplayer.C;
 import org.telegram.messenger.exoplayer.extractor.DummyTrackOutput;
 import org.telegram.messenger.exoplayer.extractor.Extractor;
@@ -25,11 +28,6 @@ import org.telegram.messenger.exoplayer.extractor.SeekMap;
 import org.telegram.messenger.exoplayer.util.ParsableBitArray;
 import org.telegram.messenger.exoplayer.util.ParsableByteArray;
 import org.telegram.messenger.exoplayer.util.Util;
-
-import android.util.Log;
-import android.util.SparseArray;
-import android.util.SparseBooleanArray;
-
 import java.io.IOException;
 
 /**

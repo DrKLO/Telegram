@@ -15,11 +15,9 @@
  */
 package org.telegram.messenger.exoplayer.extractor.mp4;
 
-import org.telegram.messenger.exoplayer.util.ParsableByteArray;
-
 import android.util.Log;
 import android.util.Pair;
-
+import org.telegram.messenger.exoplayer.util.ParsableByteArray;
 import java.nio.ByteBuffer;
 import java.util.UUID;
 

@@ -15,10 +15,9 @@
  */
 package org.telegram.messenger.exoplayer;
 
-import org.telegram.messenger.exoplayer.util.Util;
-
 import android.annotation.TargetApi;
 import android.media.MediaExtractor;
+import org.telegram.messenger.exoplayer.util.Util;
 
 /**
  * Compatibility wrapper around {@link android.media.MediaCodec.CryptoInfo}.

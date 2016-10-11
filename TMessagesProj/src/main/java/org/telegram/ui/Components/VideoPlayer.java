@@ -117,6 +117,7 @@ public class VideoPlayer implements ExoPlayer.Listener, MediaCodecVideoTrackRend
 
     private Surface surface;
     private TrackRenderer videoRenderer;
+    private TrackRenderer audioRenderer;
     private int videoTrackToRestore;
 
     private boolean backgrounded;
@@ -198,6 +199,7 @@ public class VideoPlayer implements ExoPlayer.Listener, MediaCodecVideoTrackRend
         }
         rendererBuilder.cancel();
         videoRenderer = null;
+        audioRenderer = null;
         rendererBuildingState = RENDERER_BUILDING_STATE_BUILDING;
         maybeReportPlayerState();
         rendererBuilder.buildRenderers(this);
@@ -210,6 +212,7 @@ public class VideoPlayer implements ExoPlayer.Listener, MediaCodecVideoTrackRend
             }
         }
         videoRenderer = renderers[TYPE_VIDEO];
+        audioRenderer = renderers[TYPE_AUDIO];
         pushSurface(false);
         player.prepare(renderers);
         rendererBuildingState = RENDERER_BUILDING_STATE_BUILT;
@@ -324,6 +327,17 @@ public class VideoPlayer implements ExoPlayer.Listener, MediaCodecVideoTrackRend
     public void onCryptoError(MediaCodec.CryptoException e) {
         for (Listener listener : listeners) {
             listener.onError(e);
+        }
+    }
+
+    public void setMute(boolean value) {
+        if (audioRenderer == null) {
+            return;
+        }
+        if (value) {
+            player.sendMessage(audioRenderer, MediaCodecAudioTrackRenderer.MSG_SET_VOLUME, 0.0f);
+        } else {
+            player.sendMessage(audioRenderer, MediaCodecAudioTrackRenderer.MSG_SET_VOLUME, 1.0f);
         }
     }
 

@@ -212,6 +212,13 @@ public class ActionBarLayout extends FrameLayout {
         return innerTranslationX;
     }
 
+    public void dismissDialogs() {
+        if (!fragmentsStack.isEmpty()) {
+            BaseFragment lastFragment = fragmentsStack.get(fragmentsStack.size() - 1);
+            lastFragment.dismissCurrentDialig();
+        }
+    }
+
     public void onResume() {
         if (transitionAnimationInProgress) {
             if (currentAnimation != null) {
@@ -811,7 +818,7 @@ public class ActionBarLayout extends FrameLayout {
             if (!fragmentsStack.isEmpty()) {
                 BaseFragment previousFragment = fragmentsStack.get(fragmentsStack.size() - 1);
                 previousFragment.onPause();
-                if (previousFragment.actionBar != null) {
+                if (previousFragment.actionBar != null && previousFragment.actionBar.getAddToContainer()) {
                     ViewGroup parent = (ViewGroup) previousFragment.actionBar.getParent();
                     if (parent != null) {
                         parent.removeView(previousFragment.actionBar);
@@ -1007,7 +1014,7 @@ public class ActionBarLayout extends FrameLayout {
         }
         for (int a = 0; a < fragmentsStack.size() - 1; a++) {
             BaseFragment previousFragment = fragmentsStack.get(a);
-            if (previousFragment.actionBar != null) {
+            if (previousFragment.actionBar != null && previousFragment.actionBar.getAddToContainer()) {
                 ViewGroup parent = (ViewGroup) previousFragment.actionBar.getParent();
                 if (parent != null) {
                     parent.removeView(previousFragment.actionBar);

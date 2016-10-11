@@ -3,6 +3,6 @@
 	xmlns:android="http://schemas.android.com/apk/res/android"
 	android:enterFadeDuration="1"
 	android:exitFadeDuration="200">
-	<item android:state_selected="true" android:drawable="@drawable/ic_smiles_grid_active"/>
-	<item android:drawable="@drawable/ic_smiles_grid"/>
+	<item android:state_selected="true" android:drawable="@drawable/ic_smiles2_objects_active"/>
+	<item android:drawable="@drawable/ic_smiles2_objects"/>
 </selector>

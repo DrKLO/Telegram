@@ -76,6 +76,7 @@ public class DrawerLayoutContainer extends FrameLayout {
                 @Override
                 public WindowInsets onApplyWindowInsets(View v, WindowInsets insets) {
                     final DrawerLayoutContainer drawerLayout = (DrawerLayoutContainer) v;
+                    AndroidUtilities.statusBarHeight = insets.getSystemWindowInsetTop();
                     lastInsets = insets;
                     drawerLayout.setWillNotDraw(insets.getSystemWindowInsetTop() <= 0 && getBackground() == null);
                     drawerLayout.requestLayout();

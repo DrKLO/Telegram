@@ -91,6 +91,20 @@ public class SimpleTextView extends View implements Drawable.Callback {
         return textPaint;
     }
 
+    private void calcOffset(int width) {
+        if (layout.getLineCount() > 0) {
+            textWidth = (int) Math.ceil(layout.getLineWidth(0));
+            textHeight = layout.getLineBottom(0);
+            if ((gravity & Gravity.HORIZONTAL_GRAVITY_MASK) == Gravity.LEFT) {
+                offsetX = -(int) layout.getLineLeft(0);
+            } else if (layout.getLineLeft(0) == 0) {
+                offsetX = width - textWidth;
+            } else {
+                offsetX = -AndroidUtilities.dp(8);
+            }
+        }
+    }
+
     private boolean createLayout(int width) {
         if (text != null) {
             try {
@@ -105,21 +119,11 @@ public class SimpleTextView extends View implements Drawable.Callback {
                 width -= getPaddingLeft() + getPaddingRight();
                 CharSequence string = TextUtils.ellipsize(text, textPaint, width, TextUtils.TruncateAt.END);
                 if (layout != null && TextUtils.equals(layout.getText(), string)) {
+                    calcOffset(width);
                     return false;
                 }
                 layout = new StaticLayout(string, 0, string.length(), textPaint, width + AndroidUtilities.dp(8), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
-
-                if (layout.getLineCount() > 0) {
-                    textWidth = (int) Math.ceil(layout.getLineWidth(0));
-                    textHeight = layout.getLineBottom(0);
-                    if ((gravity & Gravity.HORIZONTAL_GRAVITY_MASK) == Gravity.LEFT) {
-                        offsetX = -(int) layout.getLineLeft(0);
-                    } else if (layout.getLineLeft(0) == 0) {
-                        offsetX = width - textWidth;
-                    } else {
-                        offsetX = -AndroidUtilities.dp(8);
-                    }
-                }
+                calcOffset(width);
             } catch (Exception e) {
                 //ignore
             }

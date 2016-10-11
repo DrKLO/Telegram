@@ -15,17 +15,15 @@
  */
 package org.telegram.messenger.exoplayer;
 
+import android.net.Uri;
+import android.os.Handler;
+import android.os.SystemClock;
 import org.telegram.messenger.exoplayer.SampleSource.SampleSourceReader;
 import org.telegram.messenger.exoplayer.upstream.DataSource;
 import org.telegram.messenger.exoplayer.upstream.DataSpec;
 import org.telegram.messenger.exoplayer.upstream.Loader;
 import org.telegram.messenger.exoplayer.upstream.Loader.Loadable;
 import org.telegram.messenger.exoplayer.util.Assertions;
-
-import android.net.Uri;
-import android.os.Handler;
-import android.os.SystemClock;
-
 import java.io.IOException;
 import java.util.Arrays;
 

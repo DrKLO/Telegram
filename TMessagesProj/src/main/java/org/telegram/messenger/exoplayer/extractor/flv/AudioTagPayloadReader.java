@@ -15,15 +15,13 @@
  */
 package org.telegram.messenger.exoplayer.extractor.flv;
 
+import android.util.Pair;
 import org.telegram.messenger.exoplayer.C;
 import org.telegram.messenger.exoplayer.MediaFormat;
 import org.telegram.messenger.exoplayer.extractor.TrackOutput;
 import org.telegram.messenger.exoplayer.util.CodecSpecificDataUtil;
 import org.telegram.messenger.exoplayer.util.MimeTypes;
 import org.telegram.messenger.exoplayer.util.ParsableByteArray;
-
-import android.util.Pair;
-
 import java.util.Collections;
 
 /**

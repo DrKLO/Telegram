@@ -15,12 +15,6 @@
  */
 package org.telegram.messenger.exoplayer;
 
-import org.telegram.messenger.exoplayer.ExoPlayer.ExoPlayerComponent;
-import org.telegram.messenger.exoplayer.util.Assertions;
-import org.telegram.messenger.exoplayer.util.PriorityHandlerThread;
-import org.telegram.messenger.exoplayer.util.TraceUtil;
-import org.telegram.messenger.exoplayer.util.Util;
-
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Looper;
@@ -29,7 +23,11 @@ import android.os.Process;
 import android.os.SystemClock;
 import android.util.Log;
 import android.util.Pair;
-
+import org.telegram.messenger.exoplayer.ExoPlayer.ExoPlayerComponent;
+import org.telegram.messenger.exoplayer.util.Assertions;
+import org.telegram.messenger.exoplayer.util.PriorityHandlerThread;
+import org.telegram.messenger.exoplayer.util.TraceUtil;
+import org.telegram.messenger.exoplayer.util.Util;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;

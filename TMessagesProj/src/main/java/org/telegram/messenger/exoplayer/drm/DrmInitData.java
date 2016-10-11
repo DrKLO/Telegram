@@ -15,10 +15,8 @@
  */
 package org.telegram.messenger.exoplayer.drm;
 
-import org.telegram.messenger.exoplayer.util.Assertions;
-
 import android.media.MediaDrm;
-
+import org.telegram.messenger.exoplayer.util.Assertions;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;

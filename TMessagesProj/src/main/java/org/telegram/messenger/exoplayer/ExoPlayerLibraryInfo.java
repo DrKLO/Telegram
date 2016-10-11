@@ -23,7 +23,7 @@ public final class ExoPlayerLibraryInfo {
   /**
    * The version of the library, expressed as a string.
    */
-  public static final String VERSION = "1.5.8";
+  public static final String VERSION = "1.5.10";
 
   /**
    * The version of the library, expressed as an integer.
@@ -32,7 +32,7 @@ public final class ExoPlayerLibraryInfo {
    * corresponding integer version 1002003 (001-002-003), and "123.45.6" has the corresponding
    * integer version 123045006 (123-045-006).
    */
-  public static final int VERSION_INT = 1005008;
+  public static final int VERSION_INT = 1005010;
 
   /**
    * Whether the library was compiled with {@link org.telegram.messenger.exoplayer.util.Assertions}

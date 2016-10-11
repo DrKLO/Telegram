@@ -15,9 +15,8 @@
  */
 package org.telegram.messenger.exoplayer.util;
 
-import org.telegram.messenger.exoplayer.ExoPlayer;
-
 import android.widget.MediaController.MediaPlayerControl;
+import org.telegram.messenger.exoplayer.ExoPlayer;
 
 /**
  * An implementation of {@link MediaPlayerControl} for controlling an {@link ExoPlayer} instance.

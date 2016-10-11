@@ -15,11 +15,9 @@
  */
 package org.telegram.messenger.exoplayer.upstream;
 
+import android.content.Context;
 import org.telegram.messenger.exoplayer.util.Assertions;
 import org.telegram.messenger.exoplayer.util.Util;
-
-import android.content.Context;
-
 import java.io.IOException;
 
 /**

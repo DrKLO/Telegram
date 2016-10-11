@@ -15,6 +15,8 @@
  */
 package org.telegram.messenger.exoplayer.extractor.ts;
 
+import android.util.Log;
+import android.util.Pair;
 import org.telegram.messenger.exoplayer.C;
 import org.telegram.messenger.exoplayer.MediaFormat;
 import org.telegram.messenger.exoplayer.extractor.TrackOutput;
@@ -22,10 +24,6 @@ import org.telegram.messenger.exoplayer.util.CodecSpecificDataUtil;
 import org.telegram.messenger.exoplayer.util.MimeTypes;
 import org.telegram.messenger.exoplayer.util.ParsableBitArray;
 import org.telegram.messenger.exoplayer.util.ParsableByteArray;
-
-import android.util.Log;
-import android.util.Pair;
-
 import java.util.Arrays;
 import java.util.Collections;
 
@@ -254,13 +252,17 @@ import java.util.Collections;
 
     if (!hasOutputFormat) {
       int audioObjectType = adtsScratch.readBits(2) + 1;
-      if (audioObjectType == 1) {
-        // The stream indicates AAC Main but it's more likely that the stream contains HE-AAC.
-        // HE-AAC cannot be represented correctly in the ADTS header because it has an
-        // audioObjectType value of 5 whereas an ADTS header can only represent values up to 4.
-        // Since most Android devices don't support AAC Main anyway, we pretend that we're dealing
-        // with AAC LC and hope for the best. In practice this often works.
-        Log.w(TAG, "Detected AAC Main audio, but assuming AAC LC.");
+      if (audioObjectType != 2) {
+        // The stream indicates AAC-Main (1), AAC-SSR (3) or AAC-LTP (4). When the stream indicates
+        // AAC-Main it's more likely that the stream contains HE-AAC (5), which cannot be
+        // represented correctly in the 2 bit audio_object_type field in the ADTS header. In
+        // practice when the stream indicates AAC-SSR or AAC-LTP it more commonly contains AAC-LC or
+        // HE-AAC. Since most Android devices don't support AAC-Main, AAC-SSR or AAC-LTP, and since
+        // indicating AAC-LC works for HE-AAC streams, we pretend that we're dealing with AAC-LC and
+        // hope for the best. In practice this often works.
+        // See: https://github.com/google/ExoPlayer/issues/774
+        // See: https://github.com/google/ExoPlayer/issues/1383
+        Log.w(TAG, "Detected audio object type: " + audioObjectType + ", but assuming AAC LC.");
         audioObjectType = 2;
       }
 

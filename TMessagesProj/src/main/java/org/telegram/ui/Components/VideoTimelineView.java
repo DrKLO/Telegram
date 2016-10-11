@@ -14,67 +14,48 @@ import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Rect;
-import android.graphics.drawable.Drawable;
 import android.media.MediaMetadataRetriever;
 import android.os.AsyncTask;
-import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLog;
-import org.telegram.messenger.R;
 
 import java.util.ArrayList;
 
 @TargetApi(10)
 public class VideoTimelineView extends View {
 
-    private long videoLength = 0;
-    private float progressLeft = 0;
+    private long videoLength;
+    private float progressLeft;
     private float progressRight = 1;
     private Paint paint;
     private Paint paint2;
-    private boolean pressedLeft = false;
-    private boolean pressedRight = false;
-    private float pressDx = 0;
-    private MediaMetadataRetriever mediaMetadataRetriever = null;
-    private VideoTimelineViewDelegate delegate = null;
+    private boolean pressedLeft;
+    private boolean pressedRight;
+    private float pressDx;
+    private MediaMetadataRetriever mediaMetadataRetriever;
+    private VideoTimelineViewDelegate delegate;
     private ArrayList<Bitmap> frames = new ArrayList<>();
-    private AsyncTask<Integer, Integer, Bitmap> currentTask = null;
+    private AsyncTask<Integer, Integer, Bitmap> currentTask;
     private static final Object sync = new Object();
-    private long frameTimeOffset = 0;
-    private int frameWidth = 0;
-    private int frameHeight = 0;
-    private int framesToLoad = 0;
-    private Drawable pickDrawable = null;
+    private long frameTimeOffset;
+    private int frameWidth;
+    private int frameHeight;
+    private int framesToLoad;
 
     public interface VideoTimelineViewDelegate {
         void onLeftProgressChanged(float progress);
         void onRifhtProgressChanged(float progress);
     }
 
-    private void init(Context context) {
-        paint = new Paint();
-        paint.setColor(0xff66d1ee);
-        paint2 = new Paint();
-        paint2.setColor(0x7f000000);
-        pickDrawable = getResources().getDrawable(R.drawable.videotrimmer);
-    }
-
     public VideoTimelineView(Context context) {
         super(context);
-        init(context);
-    }
-
-    public VideoTimelineView(Context context, AttributeSet attrs) {
-        super(context, attrs);
-        init(context);
-    }
-
-    public VideoTimelineView(Context context, AttributeSet attrs, int defStyleAttr) {
-        super(context, attrs, defStyleAttr);
-        init(context);
+        paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        paint.setColor(0xffffffff);
+        paint2 = new Paint();
+        paint2.setColor(0x7f000000);
     }
 
     public float getLeftProgress() {
@@ -275,7 +256,8 @@ public class VideoTimelineView extends View {
             reloadFrames(0);
         } else {
             int offset = 0;
-            for (Bitmap bitmap : frames) {
+            for (int a = 0; a < frames.size(); a++) {
+                Bitmap bitmap = frames.get(a);
                 if (bitmap != null) {
                     canvas.drawBitmap(bitmap, AndroidUtilities.dp(16) + offset * frameWidth, AndroidUtilities.dp(2), null);
                 }
@@ -292,12 +274,7 @@ public class VideoTimelineView extends View {
         canvas.drawRect(startX + AndroidUtilities.dp(2), AndroidUtilities.dp(42), endX + AndroidUtilities.dp(4), AndroidUtilities.dp(44), paint);
         canvas.restore();
 
-        int drawableWidth = pickDrawable.getIntrinsicWidth();
-        int drawableHeight = pickDrawable.getIntrinsicHeight();
-        pickDrawable.setBounds(startX - drawableWidth / 2, getMeasuredHeight() - drawableHeight, startX + drawableWidth / 2, getMeasuredHeight());
-        pickDrawable.draw(canvas);
-
-        pickDrawable.setBounds(endX - drawableWidth / 2 + AndroidUtilities.dp(4), getMeasuredHeight() - drawableHeight, endX + drawableWidth / 2 + AndroidUtilities.dp(4), getMeasuredHeight());
-        pickDrawable.draw(canvas);
+        canvas.drawCircle(startX, getMeasuredHeight() / 2, AndroidUtilities.dp(7), paint);
+        canvas.drawCircle(endX + AndroidUtilities.dp(4), getMeasuredHeight() / 2, AndroidUtilities.dp(7), paint);
     }
 }

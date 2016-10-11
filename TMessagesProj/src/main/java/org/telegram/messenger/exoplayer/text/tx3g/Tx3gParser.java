@@ -19,6 +19,7 @@ import org.telegram.messenger.exoplayer.text.Cue;
 import org.telegram.messenger.exoplayer.text.Subtitle;
 import org.telegram.messenger.exoplayer.text.SubtitleParser;
 import org.telegram.messenger.exoplayer.util.MimeTypes;
+import org.telegram.messenger.exoplayer.util.ParsableByteArray;
 
 /**
  * A {@link SubtitleParser} for tx3g.
@@ -27,6 +28,12 @@ import org.telegram.messenger.exoplayer.util.MimeTypes;
  */
 public final class Tx3gParser implements SubtitleParser {
 
+  private final ParsableByteArray parsableByteArray;
+
+  public Tx3gParser() {
+    parsableByteArray = new ParsableByteArray();
+  }
+
   @Override
   public boolean canParse(String mimeType) {
     return MimeTypes.APPLICATION_TX3G.equals(mimeType);
@@ -34,7 +41,12 @@ public final class Tx3gParser implements SubtitleParser {
 
   @Override
   public Subtitle parse(byte[] bytes, int offset, int length) {
-    String cueText = new String(bytes, offset, length);
+    parsableByteArray.reset(bytes, length);
+    int textLength = parsableByteArray.readUnsignedShort();
+    if (textLength == 0) {
+      return Tx3gSubtitle.EMPTY;
+    }
+    String cueText = parsableByteArray.readString(textLength);
     return new Tx3gSubtitle(new Cue(cueText));
   }
 

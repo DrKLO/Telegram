@@ -18,7 +18,7 @@ package org.telegram.messenger.exoplayer.metadata;
 import org.telegram.messenger.exoplayer.ParserException;
 
 /**
- * Parses objects of type <T> from binary data.
+ * Parses metadata from binary data.
  *
  * @param <T> The type of the metadata.
  */

@@ -15,6 +15,8 @@
  */
 package org.telegram.messenger.exoplayer.extractor.webm;
 
+import android.util.Pair;
+import android.util.SparseArray;
 import org.telegram.messenger.exoplayer.C;
 import org.telegram.messenger.exoplayer.MediaFormat;
 import org.telegram.messenger.exoplayer.ParserException;
@@ -32,10 +34,6 @@ import org.telegram.messenger.exoplayer.util.MimeTypes;
 import org.telegram.messenger.exoplayer.util.NalUnitUtil;
 import org.telegram.messenger.exoplayer.util.ParsableByteArray;
 import org.telegram.messenger.exoplayer.util.Util;
-
-import android.util.Pair;
-import android.util.SparseArray;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;

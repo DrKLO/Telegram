@@ -36,10 +36,11 @@ public class TimerDrawable extends Drawable {
             emptyTimerDrawable = context.getResources().getDrawable(R.drawable.header_timer);
             timerDrawable = context.getResources().getDrawable(R.drawable.header_timer2);
             timePaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
-            timePaint.setTextSize(AndroidUtilities.dp(11));
             timePaint.setColor(0xffffffff);
             timePaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         }
+
+        timePaint.setTextSize(AndroidUtilities.dp(11));
     }
 
     public void setTime(int value) {

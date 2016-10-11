@@ -16,9 +16,9 @@ import android.support.v4.app.NotificationManagerCompat;
 
 public class VideoEncodingService extends Service implements NotificationCenter.NotificationCenterDelegate {
 
-    private NotificationCompat.Builder builder = null;
-    private String path = null;
-    private int currentProgress = 0;
+    private NotificationCompat.Builder builder;
+    private String path;
+    private int currentProgress;
 
     public VideoEncodingService() {
         super();
@@ -58,6 +58,7 @@ public class VideoEncodingService extends Service implements NotificationCenter.
 
     public int onStartCommand(Intent intent, int flags, int startId) {
         path = intent.getStringExtra("path");
+        boolean isGif = intent.getBooleanExtra("gif", false);
         if (path == null) {
             stopSelf();
             return Service.START_NOT_STICKY;
@@ -68,8 +69,13 @@ public class VideoEncodingService extends Service implements NotificationCenter.
             builder.setSmallIcon(android.R.drawable.stat_sys_upload);
             builder.setWhen(System.currentTimeMillis());
             builder.setContentTitle(LocaleController.getString("AppName", R.string.AppName));
-            builder.setTicker(LocaleController.getString("SendingVideo", R.string.SendingVideo));
-            builder.setContentText(LocaleController.getString("SendingVideo", R.string.SendingVideo));
+            if (isGif) {
+                builder.setTicker(LocaleController.getString("SendingGif", R.string.SendingGif));
+                builder.setContentText(LocaleController.getString("SendingGif", R.string.SendingGif));
+            } else {
+                builder.setTicker(LocaleController.getString("SendingVideo", R.string.SendingVideo));
+                builder.setContentText(LocaleController.getString("SendingVideo", R.string.SendingVideo));
+            }
         }
         currentProgress = 0;
         builder.setProgress(100, currentProgress, currentProgress == 0);

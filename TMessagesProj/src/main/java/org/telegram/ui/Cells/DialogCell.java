@@ -136,17 +136,15 @@ public class DialogCell extends BaseCell {
 
         if (namePaint == null) {
             namePaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
-            namePaint.setTextSize(AndroidUtilities.dp(17));
+
             namePaint.setColor(0xff212121);
             namePaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
 
             nameEncryptedPaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
-            nameEncryptedPaint.setTextSize(AndroidUtilities.dp(17));
             nameEncryptedPaint.setColor(0xff00a60e);
             nameEncryptedPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
 
             messagePaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
-            messagePaint.setTextSize(AndroidUtilities.dp(16));
             messagePaint.setColor(Theme.DIALOGS_MESSAGE_TEXT_COLOR);
             messagePaint.linkColor = Theme.DIALOGS_MESSAGE_TEXT_COLOR;
 
@@ -157,15 +155,12 @@ public class DialogCell extends BaseCell {
             backPaint.setColor(0x0f000000);
 
             messagePrintingPaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
-            messagePrintingPaint.setTextSize(AndroidUtilities.dp(16));
             messagePrintingPaint.setColor(Theme.DIALOGS_PRINTING_TEXT_COLOR);
 
             timePaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
-            timePaint.setTextSize(AndroidUtilities.dp(13));
             timePaint.setColor(0xff999999);
 
             countPaint = new TextPaint(TextPaint.ANTI_ALIAS_FLAG);
-            countPaint.setTextSize(AndroidUtilities.dp(13));
             countPaint.setColor(0xffffffff);
             countPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
 
@@ -182,6 +177,13 @@ public class DialogCell extends BaseCell {
             verifiedDrawable = getResources().getDrawable(R.drawable.check_list);
             botDrawable = getResources().getDrawable(R.drawable.bot_list);
         }
+
+        namePaint.setTextSize(AndroidUtilities.dp(17));
+        nameEncryptedPaint.setTextSize(AndroidUtilities.dp(17));
+        messagePaint.setTextSize(AndroidUtilities.dp(16));
+        messagePrintingPaint.setTextSize(AndroidUtilities.dp(16));
+        timePaint.setTextSize(AndroidUtilities.dp(13));
+        countPaint.setTextSize(AndroidUtilities.dp(13));
 
         setBackgroundResource(R.drawable.list_selector);
 
@@ -422,7 +424,11 @@ public class DialogCell extends BaseCell {
                                 stringBuilder = SpannableStringBuilder.valueOf(String.format("%s: %s", name, mess.replace('\n', ' ')));
                             } else if (message.messageOwner.media != null && !message.isMediaEmpty()) {
                                 currentMessagePaint = messagePrintingPaint;
-                                stringBuilder = SpannableStringBuilder.valueOf(String.format("%s: %s", name, message.messageText));
+                                if (message.messageOwner.media instanceof TLRPC.TL_messageMediaGame) {
+                                    stringBuilder = SpannableStringBuilder.valueOf(String.format("%s: %s", name, "\uD83C\uDFAE " + message.messageOwner.media.game.title));
+                                } else {
+                                    stringBuilder = SpannableStringBuilder.valueOf(String.format("%s: %s", name, message.messageText));
+                                }
                                 stringBuilder.setSpan(new ForegroundColorSpan(Theme.DIALOGS_ATTACH_TEXT_COLOR), name.length() + 2, stringBuilder.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                             } else if (message.messageOwner.message != null) {
                                 String mess = message.messageOwner.message;
@@ -441,7 +447,11 @@ public class DialogCell extends BaseCell {
                             if (message.caption != null) {
                                 messageString = message.caption;
                             } else {
-                                messageString = message.messageText;
+                                if (message.messageOwner.media instanceof TLRPC.TL_messageMediaGame) {
+                                    messageString = "\uD83C\uDFAE " + message.messageOwner.media.game.title;
+                                } else {
+                                    messageString = message.messageText;
+                                }
                                 if (message.messageOwner.media != null && !message.isMediaEmpty()) {
                                     currentMessagePaint = messagePrintingPaint;
                                 }
@@ -511,7 +521,9 @@ public class DialogCell extends BaseCell {
         if (chat != null) {
             nameString = chat.title;
         } else if (user != null) {
-            if (user.id / 1000 != 777 && user.id / 1000 != 333 && ContactsController.getInstance().contactsDict.get(user.id) == null) {
+            if (user.id == UserConfig.getClientUserId()) {
+                nameString = LocaleController.getString("ChatYourSelfName", R.string.ChatYourSelfName);
+            } else if (user.id / 1000 != 777 && user.id / 1000 != 333 && ContactsController.getInstance().contactsDict.get(user.id) == null) {
                 if (ContactsController.getInstance().contactsDict.size() == 0 && (!ContactsController.getInstance().contactsLoaded || ContactsController.getInstance().isLoadingContacts())) {
                     nameString = UserObject.getUserName(user);
                 } else {
@@ -596,8 +608,8 @@ public class DialogCell extends BaseCell {
         }
 
         nameWidth = Math.max(AndroidUtilities.dp(12), nameWidth);
-        CharSequence nameStringFinal = TextUtils.ellipsize(nameString.replace('\n', ' '), currentNamePaint, nameWidth - AndroidUtilities.dp(12), TextUtils.TruncateAt.END);
         try {
+            CharSequence nameStringFinal = TextUtils.ellipsize(nameString.replace('\n', ' '), currentNamePaint, nameWidth - AndroidUtilities.dp(12), TextUtils.TruncateAt.END);
             nameLayout = new StaticLayout(nameStringFinal, currentNamePaint, nameWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
         } catch (Exception e) {
             FileLog.e("tmessages", e);
@@ -948,7 +960,9 @@ public class DialogCell extends BaseCell {
             }
             canvas.save();
             canvas.translate(countLeft, countTop + AndroidUtilities.dp(4));
-            countLayout.draw(canvas);
+            if (countLayout != null) {
+                countLayout.draw(canvas);
+            }
             canvas.restore();
         }
 

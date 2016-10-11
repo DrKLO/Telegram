@@ -5,9 +5,9 @@
 	android:exitFadeDuration="200">
 	<item
 		android:state_selected="true"
-		android:drawable="@drawable/ic_smiles_bell_active">
+		android:drawable="@drawable/ic_smiles2_food_active">
 	</item>
 	<item
-		android:drawable="@drawable/ic_smiles_bell">
+		android:drawable="@drawable/ic_smiles2_food">
 	</item>
 </selector>

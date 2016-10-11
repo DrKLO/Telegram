@@ -333,6 +333,9 @@ public class CacheControlActivity extends BaseFragment {
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(final AdapterView<?> adapterView, View view, final int i, long l) {
+                if (getParentActivity() == null) {
+                    return;
+                }
                 if (i == keepMediaRow) {
                     BottomSheet.Builder builder = new BottomSheet.Builder(getParentActivity());
                     builder.setItems(new CharSequence[]{LocaleController.formatPluralString("Weeks", 1), LocaleController.formatPluralString("Months", 1), LocaleController.getString("KeepMediaForever", R.string.KeepMediaForever)}, new DialogInterface.OnClickListener() {

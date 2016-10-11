@@ -15,6 +15,10 @@
  */
 package org.telegram.messenger.exoplayer.extractor;
 
+import android.net.Uri;
+import android.os.Handler;
+import android.os.SystemClock;
+import android.util.SparseArray;
 import org.telegram.messenger.exoplayer.C;
 import org.telegram.messenger.exoplayer.MediaFormat;
 import org.telegram.messenger.exoplayer.MediaFormatHolder;
@@ -31,12 +35,6 @@ import org.telegram.messenger.exoplayer.upstream.Loader;
 import org.telegram.messenger.exoplayer.upstream.Loader.Loadable;
 import org.telegram.messenger.exoplayer.util.Assertions;
 import org.telegram.messenger.exoplayer.util.Util;
-
-import android.net.Uri;
-import android.os.Handler;
-import android.os.SystemClock;
-import android.util.SparseArray;
-
 import java.io.EOFException;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -556,12 +554,13 @@ public final class ExtractorSampleSource implements SampleSource, SampleSourceRe
     Assertions.checkState(remainingReleaseCount > 0);
     if (--remainingReleaseCount == 0) {
       if (loader != null) {
-        loader.release();
+        loader.release(new Runnable() {
+          @Override
+          public void run() {
+            extractorHolder.release();
+          }
+        });
         loader = null;
-      }
-      if (extractorHolder.extractor != null) {
-        extractorHolder.extractor.release();
-        extractorHolder.extractor = null;
       }
     }
   }
@@ -900,6 +899,13 @@ public final class ExtractorSampleSource implements SampleSource, SampleSourceRe
       }
       extractor.init(extractorOutput);
       return extractor;
+    }
+
+    public void release() {
+      if (extractor != null) {
+        extractor.release();
+        extractor = null;
+      }
     }
 
   }

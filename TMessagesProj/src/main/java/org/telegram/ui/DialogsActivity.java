@@ -47,6 +47,7 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.UserObject;
 import org.telegram.messenger.query.SearchQuery;
+import org.telegram.messenger.query.StickersQuery;
 import org.telegram.messenger.support.widget.LinearLayoutManager;
 import org.telegram.messenger.support.widget.RecyclerView;
 import org.telegram.messenger.FileLog;
@@ -104,13 +105,14 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     private String addToGroupAlertString;
     private int dialogsType;
 
-    private static boolean dialogsLoaded;
+    public static boolean dialogsLoaded;
     private boolean searching;
     private boolean searchWas;
     private boolean onlySelect;
     private long selectedDialog;
     private String searchString;
     private long openedDialogId;
+    private boolean cantSendToChannels;
 
     private DialogsActivityDelegate delegate;
 
@@ -128,6 +130,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
         if (getArguments() != null) {
             onlySelect = arguments.getBoolean("onlySelect", false);
+            cantSendToChannels = arguments.getBoolean("cantSendToChannels", false);
             dialogsType = arguments.getInt("dialogsType", 0);
             selectAlertString = arguments.getString("selectAlertString");
             selectAlertStringGroup = arguments.getString("selectAlertStringGroup");
@@ -156,6 +159,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         if (!dialogsLoaded) {
             MessagesController.getInstance().loadDialogs(0, 100, true);
             ContactsController.getInstance().checkInviteText();
+            StickersQuery.checkFeaturedStickers();
             dialogsLoaded = true;
         }
         return true;
@@ -1100,7 +1104,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
     private void didSelectResult(final long dialog_id, boolean useAlert, final boolean param) {
         if (addToGroupAlertString == null) {
-            if ((int) dialog_id < 0 && ChatObject.isChannel(-(int) dialog_id) && !ChatObject.isCanWriteToChannel(-(int) dialog_id)) {
+            if ((int) dialog_id < 0 && ChatObject.isChannel(-(int) dialog_id) && (cantSendToChannels || !ChatObject.isCanWriteToChannel(-(int) dialog_id))) {
                 AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                 builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
                 builder.setMessage(LocaleController.getString("ChannelCantSendMessage", R.string.ChannelCantSendMessage));

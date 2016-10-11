@@ -15,6 +15,12 @@
  */
 package org.telegram.messenger.exoplayer.text;
 
+import android.annotation.TargetApi;
+import android.os.Handler;
+import android.os.Handler.Callback;
+import android.os.HandlerThread;
+import android.os.Looper;
+import android.os.Message;
 import org.telegram.messenger.exoplayer.ExoPlaybackException;
 import org.telegram.messenger.exoplayer.MediaFormat;
 import org.telegram.messenger.exoplayer.MediaFormatHolder;
@@ -23,14 +29,6 @@ import org.telegram.messenger.exoplayer.SampleSource;
 import org.telegram.messenger.exoplayer.SampleSourceTrackRenderer;
 import org.telegram.messenger.exoplayer.TrackRenderer;
 import org.telegram.messenger.exoplayer.util.Assertions;
-
-import android.annotation.TargetApi;
-import android.os.Handler;
-import android.os.Handler.Callback;
-import android.os.HandlerThread;
-import android.os.Looper;
-import android.os.Message;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;

@@ -87,7 +87,6 @@ public class PickerBottomLayout extends FrameLayout {
                 doneButtonTextView.setTextColor(isDarkTheme ? 0xffffffff : 0xff19a7e8);
             }
         } else {
-            doneButtonTextView.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0);
             doneButtonBadgeTextView.setVisibility(View.VISIBLE);
             doneButtonBadgeTextView.setText(String.format("%d", count));
 

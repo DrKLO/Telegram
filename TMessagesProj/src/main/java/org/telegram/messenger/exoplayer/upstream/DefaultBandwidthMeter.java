@@ -15,12 +15,11 @@
  */
 package org.telegram.messenger.exoplayer.upstream;
 
+import android.os.Handler;
 import org.telegram.messenger.exoplayer.util.Assertions;
 import org.telegram.messenger.exoplayer.util.Clock;
 import org.telegram.messenger.exoplayer.util.SlidingPercentile;
 import org.telegram.messenger.exoplayer.util.SystemClock;
-
-import android.os.Handler;
 
 /**
  * Counts transferred bytes while transfers are open and creates a bandwidth sample and updated

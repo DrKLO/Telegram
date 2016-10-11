@@ -17,7 +17,6 @@ package org.telegram.messenger.exoplayer.text.webvtt;
 
 import org.telegram.messenger.exoplayer.ParserException;
 import org.telegram.messenger.exoplayer.util.ParsableByteArray;
-
 import java.util.regex.Pattern;
 
 /**

@@ -15,11 +15,6 @@
  */
 package org.telegram.messenger.exoplayer.util;
 
-import org.telegram.messenger.exoplayer.C;
-import org.telegram.messenger.exoplayer.ExoPlayerLibraryInfo;
-import org.telegram.messenger.exoplayer.upstream.DataSource;
-import org.telegram.messenger.exoplayer.upstream.DataSpec;
-
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.pm.PackageInfo;
@@ -28,7 +23,10 @@ import android.content.pm.PackageManager.NameNotFoundException;
 import android.net.Uri;
 import android.os.Build;
 import android.text.TextUtils;
-
+import org.telegram.messenger.exoplayer.C;
+import org.telegram.messenger.exoplayer.ExoPlayerLibraryInfo;
+import org.telegram.messenger.exoplayer.upstream.DataSource;
+import org.telegram.messenger.exoplayer.upstream.DataSpec;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -818,8 +816,8 @@ public final class Util {
    * filesystems. FAT32 is the most restrictive of all filesystems still commonly used today.
    *
    * <p>For simplicity, this only handles common characters known to be illegal on FAT32:
-   * <, >, :, ", /, \, |, ?, and *. % is also escaped since it is used as the escape character.
-   * Escaping is performed in a consistent way so that no collisions occur and
+   * &lt;, &gt;, :, ", /, \, |, ?, and *. % is also escaped since it is used as the escape
+   * character. Escaping is performed in a consistent way so that no collisions occur and
    * {@link #unescapeFileName(String)} can be used to retrieve the original file name.
    *
    * @param fileName File name to be escaped.

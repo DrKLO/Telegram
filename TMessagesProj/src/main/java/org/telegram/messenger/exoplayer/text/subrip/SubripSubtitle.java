@@ -19,7 +19,6 @@ import org.telegram.messenger.exoplayer.text.Cue;
 import org.telegram.messenger.exoplayer.text.Subtitle;
 import org.telegram.messenger.exoplayer.util.Assertions;
 import org.telegram.messenger.exoplayer.util.Util;
-
 import java.util.Collections;
 import java.util.List;
 

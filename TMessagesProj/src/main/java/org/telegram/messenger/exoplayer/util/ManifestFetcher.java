@@ -15,17 +15,15 @@
  */
 package org.telegram.messenger.exoplayer.util;
 
-import org.telegram.messenger.exoplayer.upstream.Loader;
-import org.telegram.messenger.exoplayer.upstream.Loader.Loadable;
-import org.telegram.messenger.exoplayer.upstream.UriDataSource;
-import org.telegram.messenger.exoplayer.upstream.UriLoadable;
-
 import android.os.Handler;
 import android.os.Looper;
 import android.os.SystemClock;
 import android.text.TextUtils;
 import android.util.Pair;
-
+import org.telegram.messenger.exoplayer.upstream.Loader;
+import org.telegram.messenger.exoplayer.upstream.Loader.Loadable;
+import org.telegram.messenger.exoplayer.upstream.UriDataSource;
+import org.telegram.messenger.exoplayer.upstream.UriLoadable;
 import java.io.IOException;
 import java.util.concurrent.CancellationException;
 

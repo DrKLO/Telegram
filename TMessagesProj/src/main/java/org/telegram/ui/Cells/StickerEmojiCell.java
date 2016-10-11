@@ -107,6 +107,12 @@ public class StickerEmojiCell extends FrameLayout {
     }
 
     @Override
+    public void invalidate() {
+        emojiTextView.invalidate();
+        super.invalidate();
+    }
+
+    @Override
     protected boolean drawChild(Canvas canvas, View child, long drawingTime) {
         boolean result = super.drawChild(canvas, child, drawingTime);
         if (child == imageView && (changingAlpha || scaled && scale != 0.8f || !scaled && scale != 1.0f)) {

@@ -397,6 +397,29 @@ public final class ParsableByteArray {
   }
 
   /**
+   * Reads a null-terminated string using the default character set.
+   * @return A String, not including any null characters, or null if the end of the stream has
+   *     been reached.
+   */
+  public String readNullTerminatedString() {
+    if (bytesLeft() == 0) {
+      return null;
+    }
+    int stringLimit = position;
+    while (stringLimit < limit && data[stringLimit] != 0) {
+      stringLimit++;
+    }
+    final int length = stringLimit - position;
+    String result = new String(data, position, length, Charset.defaultCharset());
+    position = stringLimit;
+    if (position == limit) {
+      return result;
+    }
+    position++;
+    return result;
+  }
+
+  /**
    * Reads a long value encoded by UTF-8 encoding
    * @throws NumberFormatException if there is a problem with decoding
    * @return Decoded long value

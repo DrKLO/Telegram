@@ -22,7 +22,6 @@ import org.telegram.messenger.exoplayer.upstream.Allocator;
 import org.telegram.messenger.exoplayer.upstream.DataSource;
 import org.telegram.messenger.exoplayer.util.Assertions;
 import org.telegram.messenger.exoplayer.util.ParsableByteArray;
-
 import java.io.EOFException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -71,9 +70,10 @@ import java.util.concurrent.LinkedBlockingDeque;
    */
   public void clear() {
     infoQueue.clear();
-    while (!dataQueue.isEmpty()) {
-      allocator.release(dataQueue.remove());
-    }
+
+    allocator.release(dataQueue.toArray(new Allocation[dataQueue.size()]));
+    dataQueue.clear();
+
     totalBytesDropped = 0;
     totalBytesWritten = 0;
     lastAllocation = null;

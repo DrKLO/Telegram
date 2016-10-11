@@ -15,12 +15,6 @@
  */
 package org.telegram.messenger.exoplayer;
 
-import org.telegram.messenger.exoplayer.MediaCodecUtil.DecoderQueryException;
-import org.telegram.messenger.exoplayer.audio.AudioCapabilities;
-import org.telegram.messenger.exoplayer.audio.AudioTrack;
-import org.telegram.messenger.exoplayer.drm.DrmSessionManager;
-import org.telegram.messenger.exoplayer.util.MimeTypes;
-
 import android.annotation.TargetApi;
 import android.media.AudioManager;
 import android.media.MediaCodec;
@@ -28,7 +22,11 @@ import android.media.PlaybackParams;
 import android.media.audiofx.Virtualizer;
 import android.os.Handler;
 import android.os.SystemClock;
-
+import org.telegram.messenger.exoplayer.MediaCodecUtil.DecoderQueryException;
+import org.telegram.messenger.exoplayer.audio.AudioCapabilities;
+import org.telegram.messenger.exoplayer.audio.AudioTrack;
+import org.telegram.messenger.exoplayer.drm.DrmSessionManager;
+import org.telegram.messenger.exoplayer.util.MimeTypes;
 import java.nio.ByteBuffer;
 
 /**

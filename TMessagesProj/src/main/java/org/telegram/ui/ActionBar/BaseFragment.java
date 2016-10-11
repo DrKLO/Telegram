@@ -102,15 +102,18 @@ public class BaseFragment {
                 }
             }
             if (actionBar != null) {
-                ViewGroup parent = (ViewGroup) actionBar.getParent();
-                if (parent != null) {
-                    try {
-                        parent.removeView(actionBar);
-                    } catch (Exception e) {
-                        FileLog.e("tmessages", e);
+                boolean differentParent = parentLayout != null && parentLayout.getContext() != actionBar.getContext();
+                if (actionBar.getAddToContainer() || differentParent) {
+                    ViewGroup parent = (ViewGroup) actionBar.getParent();
+                    if (parent != null) {
+                        try {
+                            parent.removeView(actionBar);
+                        } catch (Exception e) {
+                            FileLog.e("tmessages", e);
+                        }
                     }
                 }
-                if (parentLayout != null && parentLayout.getContext() != actionBar.getContext()) {
+                if (differentParent) {
                     actionBar = null;
                 }
             }
@@ -226,6 +229,18 @@ public class BaseFragment {
     public void startActivityForResult(final Intent intent, final int requestCode) {
         if (parentLayout != null) {
             parentLayout.startActivityForResult(intent, requestCode);
+        }
+    }
+
+    public void dismissCurrentDialig() {
+        if (visibleDialog == null) {
+            return;
+        }
+        try {
+            visibleDialog.dismiss();
+            visibleDialog = null;
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
         }
     }
 

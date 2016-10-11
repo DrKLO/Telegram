@@ -28,6 +28,7 @@ public class PagerSlidingTabStrip extends HorizontalScrollView {
 
     public interface IconTabProvider {
         int getPageIconResId(int position);
+        void customOnDraw(Canvas canvas, int position);
     }
 
     private LinearLayout.LayoutParams defaultTabLayoutParams;
@@ -113,7 +114,15 @@ public class PagerSlidingTabStrip extends HorizontalScrollView {
     }
 
     private void addIconTab(final int position, int resId) {
-        ImageView tab = new ImageView(getContext());
+        ImageView tab = new ImageView(getContext()) {
+            @Override
+            protected void onDraw(Canvas canvas) {
+                super.onDraw(canvas);
+                if (pager.getAdapter() instanceof IconTabProvider) {
+                    ((IconTabProvider) pager.getAdapter()).customOnDraw(canvas, position);
+                }
+            }
+        };
         tab.setFocusable(true);
         tab.setImageResource(resId);
         tab.setScaleType(ImageView.ScaleType.CENTER);

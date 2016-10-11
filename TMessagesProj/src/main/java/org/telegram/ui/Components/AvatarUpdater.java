@@ -18,8 +18,10 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.MediaStore;
+import android.support.v4.content.FileProvider;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.BuildConfig;
 import org.telegram.messenger.ImageLoader;
 import org.telegram.messenger.MediaController;
 import org.telegram.tgnet.TLRPC;
@@ -66,7 +68,13 @@ public class AvatarUpdater implements NotificationCenter.NotificationCenterDeleg
             Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
             File image = AndroidUtilities.generatePicturePath();
             if (image != null) {
-                takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(image));
+                if (Build.VERSION.SDK_INT >= 24) {
+                    takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, FileProvider.getUriForFile(parentFragment.getParentActivity(), BuildConfig.APPLICATION_ID + ".provider", image));
+                    takePictureIntent.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+                    takePictureIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                } else {
+                    takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(image));
+                }
                 currentPicturePath = image.getAbsolutePath();
             }
             parentFragment.startActivityForResult(takePictureIntent, 13);
@@ -82,10 +90,10 @@ public class AvatarUpdater implements NotificationCenter.NotificationCenterDeleg
                 return;
             }
         }
-        PhotoAlbumPickerActivity fragment = new PhotoAlbumPickerActivity(true, false, null);
+        PhotoAlbumPickerActivity fragment = new PhotoAlbumPickerActivity(true, false, false, null);
         fragment.setDelegate(new PhotoAlbumPickerActivity.PhotoAlbumPickerActivityDelegate() {
             @Override
-            public void didSelectPhotos(ArrayList<String> photos, ArrayList<String> captions, ArrayList<MediaController.SearchImage> webPhotos) {
+            public void didSelectPhotos(ArrayList<String> photos, ArrayList<String> captions, ArrayList<ArrayList<TLRPC.InputDocument>> masks, ArrayList<MediaController.SearchImage> webPhotos) {
                 if (!photos.isEmpty()) {
                     Bitmap bitmap = ImageLoader.loadBitmap(photos.get(0), null, 800, 800, true);
                     processBitmap(bitmap);
@@ -169,6 +177,11 @@ public class AvatarUpdater implements NotificationCenter.NotificationCenterDeleg
                         }
                         Bitmap bitmap = ImageLoader.loadBitmap(path, null, 800, 800, true);
                         processBitmap(bitmap);
+                    }
+
+                    @Override
+                    public boolean allowCaption() {
+                        return false;
                     }
                 }, null);
                 AndroidUtilities.addMediaToGallery(currentPicturePath);

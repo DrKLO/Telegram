@@ -6,11 +6,11 @@
 	>
 	<item
 		android:state_selected="true"
-		android:drawable="@drawable/ic_smiles_recent_active"
+		android:drawable="@drawable/ic_smiles2_recent_active"
 		>
 	</item>
 	<item
-		android:drawable="@drawable/ic_smiles_recent"
+		android:drawable="@drawable/ic_smiles2_recent"
 		>
 	</item>
 </selector>
