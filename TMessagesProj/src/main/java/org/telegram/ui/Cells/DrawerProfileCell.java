@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 1.7.x.
+ * This is the source code of Telegram for Android v. 3.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2014.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.ui.Cells;
@@ -12,13 +12,17 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffColorFilter;
 import android.graphics.Rect;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
+import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
+import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -33,6 +37,7 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.ActionBar.Theme;
 
 public class DrawerProfileCell extends FrameLayout {
 
@@ -40,13 +45,41 @@ public class DrawerProfileCell extends FrameLayout {
     private TextView nameTextView;
     private TextView phoneTextView;
     private ImageView shadowView;
+    private CloudView cloudView;
     private Rect srcRect = new Rect();
     private Rect destRect = new Rect();
     private Paint paint = new Paint();
+    private int currentColor;
+
+    private class CloudView extends View {
+
+        private Drawable cloudDrawable;
+        private Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+
+        public CloudView(Context context) {
+            super(context);
+
+            cloudDrawable = getResources().getDrawable(R.drawable.cloud);
+        }
+
+        @Override
+        protected void onDraw(Canvas canvas) {
+            if (ApplicationLoader.isCustomTheme() && ApplicationLoader.getCachedWallpaper() != null) {
+                paint.setColor(ApplicationLoader.getServiceMessageColor());
+            } else {
+                paint.setColor(0xff427ba9);
+            }
+            canvas.drawCircle(getMeasuredWidth() / 2.0f, getMeasuredHeight() / 2.0f, AndroidUtilities.dp(34) / 2.0f, paint);
+            int l = (getMeasuredWidth() - AndroidUtilities.dp(33)) / 2;
+            int t = (getMeasuredHeight() - AndroidUtilities.dp(33)) / 2;
+            cloudDrawable.setBounds(l, t, l + AndroidUtilities.dp(33), t + AndroidUtilities.dp(33));
+            cloudDrawable.draw(canvas);
+        }
+    }
 
     public DrawerProfileCell(Context context) {
         super(context);
-        setBackgroundColor(0xff4c84b5);
+        setBackgroundColor(Theme.ACTION_BAR_PROFILE_COLOR);
 
         shadowView = new ImageView(context);
         shadowView.setVisibility(INVISIBLE);
@@ -66,7 +99,8 @@ public class DrawerProfileCell extends FrameLayout {
         nameTextView.setMaxLines(1);
         nameTextView.setSingleLine(true);
         nameTextView.setGravity(Gravity.LEFT);
-        addView(nameTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.BOTTOM, 16, 0, 16, 28));
+        nameTextView.setEllipsize(TextUtils.TruncateAt.END);
+        addView(nameTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.BOTTOM, 16, 0, 76, 28));
 
         phoneTextView = new TextView(context);
         phoneTextView.setTextColor(0xffc2e5ff);
@@ -75,7 +109,10 @@ public class DrawerProfileCell extends FrameLayout {
         phoneTextView.setMaxLines(1);
         phoneTextView.setSingleLine(true);
         phoneTextView.setGravity(Gravity.LEFT);
-        addView(phoneTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.BOTTOM, 16, 0, 16, 9));
+        addView(phoneTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.BOTTOM, 16, 0, 76, 9));
+
+        cloudView = new CloudView(context);
+        addView(cloudView, LayoutHelper.createFrame(61, 61, Gravity.RIGHT | Gravity.BOTTOM));
     }
 
     @Override
@@ -86,6 +123,7 @@ public class DrawerProfileCell extends FrameLayout {
             try {
                 super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(148), MeasureSpec.EXACTLY));
             } catch (Exception e) {
+                setMeasuredDimension(MeasureSpec.getSize(widthMeasureSpec), AndroidUtilities.dp(148));
                 FileLog.e("tmessages", e);
             }
         }
@@ -94,6 +132,12 @@ public class DrawerProfileCell extends FrameLayout {
     @Override
     protected void onDraw(Canvas canvas) {
         Drawable backgroundDrawable = ApplicationLoader.getCachedWallpaper();
+        int color = ApplicationLoader.getServiceMessageColor();
+        if (currentColor != color) {
+            currentColor = color;
+            shadowView.getDrawable().setColorFilter(new PorterDuffColorFilter(color | 0xff000000, PorterDuff.Mode.MULTIPLY));
+        }
+
         if (ApplicationLoader.isCustomTheme() && backgroundDrawable != null) {
             phoneTextView.setTextColor(0xffffffff);
             shadowView.setVisibility(VISIBLE);
@@ -131,7 +175,13 @@ public class DrawerProfileCell extends FrameLayout {
         nameTextView.setText(UserObject.getUserName(user));
         phoneTextView.setText(PhoneFormat.getInstance().format("+" + user.phone));
         AvatarDrawable avatarDrawable = new AvatarDrawable(user);
-        avatarDrawable.setColor(0xff5c98cd);
+        avatarDrawable.setColor(Theme.ACTION_BAR_MAIN_AVATAR_COLOR);
         avatarImageView.setImage(photo, "50_50", avatarDrawable);
+    }
+
+    @Override
+    public void invalidate() {
+        super.invalidate();
+        cloudView.invalidate();
     }
 }

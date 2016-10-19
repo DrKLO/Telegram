@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2014.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.ui;
@@ -33,10 +33,12 @@ import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.R;
+import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Adapters.BaseFragmentAdapter;
 import org.telegram.ui.Cells.PhotoPickerAlbumsCell;
 import org.telegram.ui.Cells.PhotoPickerSearchCell;
@@ -49,7 +51,7 @@ import java.util.HashMap;
 public class PhotoAlbumPickerActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
 
     public interface PhotoAlbumPickerActivityDelegate {
-        void didSelectPhotos(ArrayList<String> photos, ArrayList<String> captions, ArrayList<MediaController.SearchImage> webPhotos);
+        void didSelectPhotos(ArrayList<String> photos, ArrayList<String> captions, ArrayList<ArrayList<TLRPC.InputDocument>> masks, ArrayList<MediaController.SearchImage> webPhotos);
         boolean didSelectVideo(String path);
         void startPhotoSelectActivity();
     }
@@ -72,8 +74,10 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
     private TextView dropDown;
     private ActionBarMenuItem dropDownContainer;
     private PickerBottomLayout pickerBottomLayout;
-    private boolean sendPressed = false;
-    private boolean singlePhoto = false;
+    private boolean sendPressed;
+    private boolean singlePhoto;
+    private boolean allowGifs;
+    private boolean allowCaption;
     private int selectedMode;
     private ChatActivity chatActivity;
 
@@ -82,10 +86,12 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
     private final static int item_photos = 2;
     private final static int item_video = 3;
 
-    public PhotoAlbumPickerActivity(boolean singlePhoto, ChatActivity chatActivity) {
+    public PhotoAlbumPickerActivity(boolean singlePhoto, boolean allowGifs, boolean allowCaption, ChatActivity chatActivity) {
         super();
         this.chatActivity = chatActivity;
         this.singlePhoto = singlePhoto;
+        this.allowGifs = allowGifs;
+        this.allowCaption = allowCaption;
     }
 
     @Override
@@ -109,18 +115,13 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
     @SuppressWarnings("unchecked")
     @Override
     public View createView(Context context) {
-        actionBar.setBackgroundColor(0xff333333);
-        actionBar.setItemsBackground(R.drawable.bar_selector_picker);
+        actionBar.setBackgroundColor(Theme.ACTION_BAR_MEDIA_PICKER_COLOR);
+        actionBar.setItemsBackgroundColor(Theme.ACTION_BAR_PICKER_SELECTOR_COLOR);
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
             public void onItemClick(int id) {
                 if (id == -1) {
-                    if (Build.VERSION.SDK_INT < 11) {
-                        listView.setAdapter(null);
-                        listView = null;
-                        listAdapter = null;
-                    }
                     finishFragment();
                 } else if (id == 1) {
                     if (delegate != null) {
@@ -158,7 +159,7 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
         if (!singlePhoto) {
             selectedMode = 0;
 
-            dropDownContainer = new ActionBarMenuItem(context, menu, R.drawable.bar_selector_picker);
+            dropDownContainer = new ActionBarMenuItem(context, menu, 0);
             dropDownContainer.setSubMenuOpenSide(1);
             dropDownContainer.addSubItem(item_photos, LocaleController.getString("PickerPhotos", R.string.PickerPhotos), 0);
             dropDownContainer.addSubItem(item_video, LocaleController.getString("PickerVideo", R.string.PickerVideo), 0);
@@ -361,14 +362,17 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
         sendPressed = true;
         ArrayList<String> photos = new ArrayList<>();
         ArrayList<String> captions = new ArrayList<>();
+        ArrayList<ArrayList<TLRPC.InputDocument>> masks = new ArrayList<>();
         for (HashMap.Entry<Integer, MediaController.PhotoEntry> entry : selectedPhotos.entrySet()) {
             MediaController.PhotoEntry photoEntry = entry.getValue();
             if (photoEntry.imagePath != null) {
                 photos.add(photoEntry.imagePath);
                 captions.add(photoEntry.caption != null ? photoEntry.caption.toString() : null);
+                masks.add(!photoEntry.stickers.isEmpty() ? new ArrayList<>(photoEntry.stickers) : null);
             } else if (photoEntry.path != null) {
                 photos.add(photoEntry.path);
                 captions.add(photoEntry.caption != null ? photoEntry.caption.toString() : null);
+                masks.add(!photoEntry.stickers.isEmpty() ? new ArrayList<>(photoEntry.stickers) : null);
             }
         }
         ArrayList<MediaController.SearchImage> webPhotos = new ArrayList<>();
@@ -379,6 +383,7 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
             if (searchImage.imagePath != null) {
                 photos.add(searchImage.imagePath);
                 captions.add(searchImage.caption != null ? searchImage.caption.toString() : null);
+                masks.add(!searchImage.stickers.isEmpty() ? new ArrayList<>(searchImage.stickers) : null);
             } else {
                 webPhotos.add(searchImage);
             }
@@ -411,7 +416,7 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
             MessagesStorage.getInstance().putWebRecent(recentGifImages);
         }
 
-        delegate.didSelectPhotos(photos, captions, webPhotos);
+        delegate.didSelectPhotos(photos, captions, masks, webPhotos);
     }
 
     private void fixLayout() {
@@ -467,7 +472,7 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
                 recentImages = recentGifImages;
             }
         }
-        PhotoPickerActivity fragment = new PhotoPickerActivity(type, albumEntry, selectedPhotos, selectedWebPhotos, recentImages, singlePhoto, chatActivity);
+        PhotoPickerActivity fragment = new PhotoPickerActivity(type, albumEntry, selectedPhotos, selectedWebPhotos, recentImages, singlePhoto, allowCaption, chatActivity);
         fragment.setDelegate(new PhotoPickerActivity.PhotoPickerActivityDelegate() {
             @Override
             public void selectedPhotosChanged() {
@@ -581,7 +586,7 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
                 photoPickerAlbumsCell.requestLayout();
             } else if (type == 1) {
                 if (view == null) {
-                    view = new PhotoPickerSearchCell(mContext);
+                    view = new PhotoPickerSearchCell(mContext, allowGifs);
                     ((PhotoPickerSearchCell) view).setDelegate(new PhotoPickerSearchCell.PhotoPickerSearchCellDelegate() {
                         @Override
                         public void didPressedSearchButton(int index) {

@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 2.x.x.
+ * This is the source code of Telegram for Android v. 3.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2015.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.ui.Adapters;
@@ -127,7 +127,7 @@ public abstract class BaseSearchAdapterRecycler extends RecyclerView.Adapter {
         });
     }
 
-    public void addHashtagsFromMessage(String message) {
+    public void addHashtagsFromMessage(CharSequence message) {
         if (message == null) {
             return;
         }
@@ -140,7 +140,7 @@ public abstract class BaseSearchAdapterRecycler extends RecyclerView.Adapter {
             if (message.charAt(start) != '@' && message.charAt(start) != '#') {
                 start++;
             }
-            String hashtag = message.substring(start, end);
+            String hashtag = message.subSequence(start, end).toString();
             if (hashtagsByText == null) {
                 hashtagsByText = new HashMap<>();
                 hashtags = new ArrayList<>();

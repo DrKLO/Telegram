@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 2.x.x.
+ * This is the source code of Telegram for Android v. 3.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2015.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.ui;
@@ -23,6 +23,7 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.ui.ActionBar.Theme;
 
 public class ChannelIntroActivity extends BaseFragment {
 
@@ -33,10 +34,9 @@ public class ChannelIntroActivity extends BaseFragment {
 
     @Override
     public View createView(Context context) {
-
-        actionBar.setBackgroundColor(0xffffffff);
+        actionBar.setBackgroundColor(Theme.ACTION_BAR_CHANNEL_INTRO_COLOR);
         actionBar.setBackButtonImage(R.drawable.pl_back);
-        actionBar.setItemsBackground(R.drawable.bar_selector_audio);
+        actionBar.setItemsBackgroundColor(Theme.ACTION_BAR_CHANNEL_INTRO_SELECTOR_COLOR);
         actionBar.setCastShadows(false);
         if (!AndroidUtilities.isTablet()) {
             actionBar.showActionModeTop();

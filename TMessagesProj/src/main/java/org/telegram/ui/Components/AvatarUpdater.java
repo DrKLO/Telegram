@@ -1,22 +1,27 @@
 /*
- * This is the source code of Telegram for Android v. 1.3.2.
+ * This is the source code of Telegram for Android v. 3.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.ui.Components;
 
+import android.Manifest;
 import android.app.Activity;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.media.ExifInterface;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.provider.MediaStore;
+import android.support.v4.content.FileProvider;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.BuildConfig;
 import org.telegram.messenger.ImageLoader;
 import org.telegram.messenger.MediaController;
 import org.telegram.tgnet.TLRPC;
@@ -63,7 +68,13 @@ public class AvatarUpdater implements NotificationCenter.NotificationCenterDeleg
             Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
             File image = AndroidUtilities.generatePicturePath();
             if (image != null) {
-                takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(image));
+                if (Build.VERSION.SDK_INT >= 24) {
+                    takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, FileProvider.getUriForFile(parentFragment.getParentActivity(), BuildConfig.APPLICATION_ID + ".provider", image));
+                    takePictureIntent.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+                    takePictureIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                } else {
+                    takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(image));
+                }
                 currentPicturePath = image.getAbsolutePath();
             }
             parentFragment.startActivityForResult(takePictureIntent, 13);
@@ -73,10 +84,16 @@ public class AvatarUpdater implements NotificationCenter.NotificationCenterDeleg
     }
 
     public void openGallery() {
-        PhotoAlbumPickerActivity fragment = new PhotoAlbumPickerActivity(true, null);
+        if (Build.VERSION.SDK_INT >= 23 && parentFragment != null && parentFragment.getParentActivity() != null) {
+            if (parentFragment.getParentActivity().checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+                parentFragment.getParentActivity().requestPermissions(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, 4);
+                return;
+            }
+        }
+        PhotoAlbumPickerActivity fragment = new PhotoAlbumPickerActivity(true, false, false, null);
         fragment.setDelegate(new PhotoAlbumPickerActivity.PhotoAlbumPickerActivityDelegate() {
             @Override
-            public void didSelectPhotos(ArrayList<String> photos, ArrayList<String> captions, ArrayList<MediaController.SearchImage> webPhotos) {
+            public void didSelectPhotos(ArrayList<String> photos, ArrayList<String> captions, ArrayList<ArrayList<TLRPC.InputDocument>> masks, ArrayList<MediaController.SearchImage> webPhotos) {
                 if (!photos.isEmpty()) {
                     Bitmap bitmap = ImageLoader.loadBitmap(photos.get(0), null, 800, 800, true);
                     processBitmap(bitmap);
@@ -161,6 +178,11 @@ public class AvatarUpdater implements NotificationCenter.NotificationCenterDeleg
                         Bitmap bitmap = ImageLoader.loadBitmap(path, null, 800, 800, true);
                         processBitmap(bitmap);
                     }
+
+                    @Override
+                    public boolean allowCaption() {
+                        return false;
+                    }
                 }, null);
                 AndroidUtilities.addMediaToGallery(currentPicturePath);
                 currentPicturePath = null;
@@ -179,6 +201,7 @@ public class AvatarUpdater implements NotificationCenter.NotificationCenterDeleg
         }
         smallPhoto = ImageLoader.scaleAndSaveImage(bitmap, 100, 100, 80, false);
         bigPhoto = ImageLoader.scaleAndSaveImage(bitmap, 800, 800, 80, false, 320, 320);
+        bitmap.recycle();
         if (bigPhoto != null && smallPhoto != null) {
             if (returnOnly) {
                 if (delegate != null) {
@@ -195,7 +218,7 @@ public class AvatarUpdater implements NotificationCenter.NotificationCenterDeleg
     }
 
     @Override
-    public void didFinishEdit(Bitmap bitmap, Bundle args) {
+    public void didFinishEdit(Bitmap bitmap) {
         processBitmap(bitmap);
     }
 

@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 2.x.x.
+ * This is the source code of Telegram for Android v. 3.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2015.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.messenger.query;
@@ -29,6 +29,8 @@ public class BotQuery {
 
     public static void cleanup() {
         botInfos.clear();
+        botKeyboards.clear();
+        botKeyboardsByMids.clear();
     }
 
     public static void clearBotKeyboard(final long did, final ArrayList<Integer> messages) {
@@ -68,11 +70,11 @@ public class BotQuery {
                         NativeByteBuffer data;
 
                         if (!cursor.isNull(0)) {
-                            data = new NativeByteBuffer(cursor.byteArrayLength(0));
-                            if (data != null && cursor.byteBufferValue(0, data) != 0) {
+                            data = cursor.byteBufferValue(0);
+                            if (data != null) {
                                 botKeyboard = TLRPC.Message.TLdeserialize(data, data.readInt32(false), false);
+                                data.reuse();
                             }
-                            data.reuse();
                         }
                     }
                     cursor.dispose();
@@ -111,11 +113,11 @@ public class BotQuery {
                         NativeByteBuffer data;
 
                         if (!cursor.isNull(0)) {
-                            data = new NativeByteBuffer(cursor.byteArrayLength(0));
-                            if (data != null && cursor.byteBufferValue(0, data) != 0) {
+                            data = cursor.byteBufferValue(0);
+                            if (data != null) {
                                 botInfo = TLRPC.BotInfo.TLdeserialize(data, data.readInt32(false), false);
+                                data.reuse();
                             }
-                            data.reuse();
                         }
                     }
                     cursor.dispose();
@@ -179,7 +181,7 @@ public class BotQuery {
     }
 
     public static void putBotInfo(final TLRPC.BotInfo botInfo) {
-        if (botInfo == null || botInfo instanceof TLRPC.TL_botInfoEmpty) {
+        if (botInfo == null) {
             return;
         }
         botInfos.put(botInfo.user_id, botInfo);

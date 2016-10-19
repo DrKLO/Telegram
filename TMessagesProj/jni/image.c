@@ -1,7 +1,6 @@
 #include <jni.h>
 #include <stdio.h>
 #include <setjmp.h>
-#include <libjpeg/jpeglib.h>
 #include <android/bitmap.h>
 #include <libwebp/webp/decode.h>
 #include <libwebp/webp/encode.h>
@@ -15,11 +14,6 @@ jclass jclass_Options;
 jfieldID jclass_Options_inJustDecodeBounds;
 jfieldID jclass_Options_outHeight;
 jfieldID jclass_Options_outWidth;
-
-jclass jclass_Bitmap;
-jmethodID jclass_Bitmap_createBitmap;
-jclass jclass_Config;
-jfieldID jclass_Config_ARGB_8888;
 
 const uint32_t PGPhotoEnhanceHistogramBins = 256;
 const uint32_t PGPhotoEnhanceSegments = 4;
@@ -58,24 +52,6 @@ jint imageOnJNILoad(JavaVM *vm, void *reserved, JNIEnv *env) {
         return -1;
     }
     
-    jclass_Bitmap = createGlobarRef(env, (*env)->FindClass(env, "android/graphics/Bitmap"));
-    if (jclass_Bitmap == 0) {
-        return -1;
-    }
-    jclass_Bitmap_createBitmap = (*env)->GetStaticMethodID(env, jclass_Bitmap, "createBitmap", "(IILandroid/graphics/Bitmap$Config;)Landroid/graphics/Bitmap;");
-    if (jclass_Bitmap_createBitmap == 0) {
-        return -1;
-    }
-    
-    jclass_Config = createGlobarRef(env, (*env)->FindClass(env, "android/graphics/Bitmap$Config"));
-    if (jclass_Config == 0) {
-        return -1;
-    }
-    jclass_Config_ARGB_8888 = (*env)->GetStaticFieldID(env, jclass_Config, "ARGB_8888", "Landroid/graphics/Bitmap$Config;");
-    if (jclass_Config_ARGB_8888 == 0) {
-        return -1;
-    }
-    
     return JNI_VERSION_1_6;
 }
 
@@ -91,7 +67,7 @@ static void fastBlurMore(int imageWidth, int imageHeight, int imageStride, void 
     const int r1 = radius + 1;
     const int div = radius * 2 + 1;
     
-    if (radius > 15 || div >= w || div >= h || w * h > 128 * 128 || imageStride > imageWidth * 4) {
+    if (radius > 15 || div >= w || div >= h || w * h > 150 * 150 || imageStride > imageWidth * 4) {
         return;
     }
     
@@ -174,6 +150,9 @@ static void fastBlurMore(int imageWidth, int imageHeight, int imageStride, void 
 
 static void fastBlur(int imageWidth, int imageHeight, int imageStride, void *pixels, int radius) {
     uint8_t *pix = (uint8_t *)pixels;
+    if (pix == NULL) {
+        return;
+    }
     const int w = imageWidth;
     const int h = imageHeight;
     const int stride = imageStride;
@@ -192,7 +171,7 @@ static void fastBlur(int imageWidth, int imageHeight, int imageStride, void *pix
         return;
     }
     
-    if (radius > 15 || div >= w || div >= h || w * h > 128 * 128 || imageStride > imageWidth * 4) {
+    if (radius > 15 || div >= w || div >= h || w * h > 150 * 150 || imageStride > imageWidth * 4) {
         return;
     }
     
@@ -276,30 +255,12 @@ static void fastBlur(int imageWidth, int imageHeight, int imageStride, void *pix
     free(rgb);
 }
 
-typedef struct my_error_mgr {
-    struct jpeg_error_mgr pub;
-    jmp_buf setjmp_buffer;
-} *my_error_ptr;
-
-
-METHODDEF(void) my_error_exit(j_common_ptr cinfo) {
-    my_error_ptr myerr = (my_error_ptr) cinfo->err;
-    (*cinfo->err->output_message) (cinfo);
-    longjmp(myerr->setjmp_buffer, 1);
-}
-
-JNIEXPORT void Java_org_telegram_messenger_Utilities_blurBitmap(JNIEnv *env, jclass class, jobject bitmap, int radius, int unpin) {
+JNIEXPORT void Java_org_telegram_messenger_Utilities_blurBitmap(JNIEnv *env, jclass class, jobject bitmap, int radius, int unpin, int width, int height, int stride) {
     if (!bitmap) {
         return;
     }
     
-    AndroidBitmapInfo info;
-    
-    if (AndroidBitmap_getInfo(env, bitmap, &info) < 0) {
-        return;
-    }
-    
-    if (info.format != ANDROID_BITMAP_FORMAT_RGBA_8888 || !info.width || !info.height || !info.stride) {
+    if (!width || !height || !stride) {
         return;
     }
     
@@ -308,9 +269,9 @@ JNIEXPORT void Java_org_telegram_messenger_Utilities_blurBitmap(JNIEnv *env, jcl
         return;
     }
     if (radius <= 3) {
-        fastBlur(info.width, info.height, info.stride, pixels, radius);
+        fastBlur(width, height, stride, pixels, radius);
     } else {
-        fastBlurMore(info.width, info.height, info.stride, pixels, radius);
+        fastBlurMore(width, height, stride, pixels, radius);
     }
     if (unpin) {
         AndroidBitmap_unlockPixels(env, bitmap);
@@ -422,96 +383,21 @@ JNIEXPORT void Java_org_telegram_messenger_Utilities_calcCDT(JNIEnv *env, jclass
 }
 
 JNIEXPORT int Java_org_telegram_messenger_Utilities_pinBitmap(JNIEnv *env, jclass class, jobject bitmap) {
+    if (bitmap == NULL) {
+        return 0;
+    }
     unsigned char *pixels;
     return AndroidBitmap_lockPixels(env, bitmap, &pixels) >= 0 ? 1 : 0;
 }
 
-JNIEXPORT void Java_org_telegram_messenger_Utilities_loadBitmap(JNIEnv *env, jclass class, jstring path, jobject bitmap, int scale, int width, int height, int stride) {
-    
-    AndroidBitmapInfo info;
-    int i;
-
-    if ((i = AndroidBitmap_getInfo(env, bitmap, &info)) >= 0) {
-        char *fileName = (*env)->GetStringUTFChars(env, path, NULL);
-        FILE *infile;
-        
-        if ((infile = fopen(fileName, "rb"))) {
-            struct my_error_mgr jerr;
-            struct jpeg_decompress_struct cinfo;
-
-            cinfo.err = jpeg_std_error(&jerr.pub);
-            jerr.pub.error_exit = my_error_exit;
-            
-            if (!setjmp(jerr.setjmp_buffer)) {
-                jpeg_create_decompress(&cinfo);
-                jpeg_stdio_src(&cinfo, infile);
-                
-                jpeg_read_header(&cinfo, TRUE);
-                
-                cinfo.scale_denom = scale;
-                cinfo.scale_num = 1;
-                
-                jpeg_start_decompress(&cinfo);
-                int row_stride = cinfo.output_width * cinfo.output_components;
-                JSAMPARRAY buffer = (*cinfo.mem->alloc_sarray) ((j_common_ptr) &cinfo, JPOOL_IMAGE, row_stride, 1);
-
-                unsigned char *pixels;
-                if ((i = AndroidBitmap_lockPixels(env, bitmap, &pixels)) >= 0) {
-                    int rowCount = min(cinfo.output_height, height);
-                    int colCount = min(cinfo.output_width, width);
-                    
-                    while (cinfo.output_scanline < rowCount) {
-                        jpeg_read_scanlines(&cinfo, buffer, 1);
-                        
-                        //if (info.format == ANDROID_BITMAP_FORMAT_RGBA_8888) {
-                            if (cinfo.out_color_space == JCS_GRAYSCALE) {
-                                for (i = 0; i < colCount; i++) {
-                                    float alpha = buffer[0][i] / 255.0f;
-                                    pixels[i * 4] *= alpha;
-                                    pixels[i * 4 + 1] *= alpha;
-                                    pixels[i * 4 + 2] *= alpha;
-                                    pixels[i * 4 + 3] = buffer[0][i];
-                                }
-                            } else {
-                                int c = 0;
-                                for (i = 0; i < colCount; i++) {
-                                    pixels[i * 4] = buffer[0][i * 3];
-                                    pixels[i * 4 + 1] = buffer[0][i * 3 + 1];
-                                    pixels[i * 4 + 2] = buffer[0][i * 3 + 2];
-                                    pixels[i * 4 + 3] = 255;
-                                    c += 4;
-                                }
-                            }
-                        //} else if (info.format == ANDROID_BITMAP_FORMAT_RGB_565) {
-                            
-                        //}
-                        
-                        pixels += stride;
-                    }
-                    
-                    AndroidBitmap_unlockPixels(env, bitmap);
-                } else {
-                    throwException(env, "AndroidBitmap_lockPixels() failed ! error=%d", i);
-                }
-                
-                jpeg_finish_decompress(&cinfo);
-            } else {
-                throwException(env, "the JPEG code has signaled an error");
-            }
-            
-            jpeg_destroy_decompress(&cinfo);
-            fclose(infile);
-        } else {
-            throwException(env, "can't open %s", fileName);
-        }
-        
-        (*env)->ReleaseStringUTFChars(env, path, fileName);
-    } else {
-        throwException(env, "AndroidBitmap_getInfo() failed ! error=%d", i);
+JNIEXPORT void Java_org_telegram_messenger_Utilities_unpinBitmap(JNIEnv *env, jclass class, jobject bitmap) {
+    if (bitmap == NULL) {
+        return;
     }
+    AndroidBitmap_unlockPixels(env, bitmap);
 }
 
-JNIEXPORT jobject Java_org_telegram_messenger_Utilities_loadWebpImage(JNIEnv *env, jclass class, jobject buffer, int len, jobject options) {
+JNIEXPORT jboolean Java_org_telegram_messenger_Utilities_loadWebpImage(JNIEnv *env, jclass class, jobject outputBitmap, jobject buffer, jint len, jobject options, jboolean unpin) {
     if (!buffer) {
         (*env)->ThrowNew(env, jclass_NullPointerException, "Input buffer can not be null");
         return 0;
@@ -529,43 +415,36 @@ JNIEXPORT jobject Java_org_telegram_messenger_Utilities_loadWebpImage(JNIEnv *en
     if (options && (*env)->GetBooleanField(env, options, jclass_Options_inJustDecodeBounds) == JNI_TRUE) {
         (*env)->SetIntField(env, options, jclass_Options_outWidth, bitmapWidth);
         (*env)->SetIntField(env, options, jclass_Options_outHeight, bitmapHeight);
-        return 0;
+        return 1;
     }
-
-    jobject value__ARGB_8888 = (*env)->GetStaticObjectField(env, jclass_Config, jclass_Config_ARGB_8888);
-    jobject outputBitmap = (*env)->CallStaticObjectMethod(env, jclass_Bitmap, jclass_Bitmap_createBitmap, (jint)bitmapWidth, (jint)bitmapHeight, value__ARGB_8888);
+    
     if (!outputBitmap) {
-        (*env)->ThrowNew(env, jclass_RuntimeException, "Failed to allocate Bitmap");
+        (*env)->ThrowNew(env, jclass_NullPointerException, "output bitmap can not be null");
         return 0;
     }
-    outputBitmap = (*env)->NewLocalRef(env, outputBitmap);
     
     AndroidBitmapInfo bitmapInfo;
     if (AndroidBitmap_getInfo(env, outputBitmap, &bitmapInfo) != ANDROID_BITMAP_RESUT_SUCCESS) {
-        (*env)->DeleteLocalRef(env, outputBitmap);
         (*env)->ThrowNew(env, jclass_RuntimeException, "Failed to get Bitmap information");
         return 0;
     }
     
     void *bitmapPixels = 0;
     if (AndroidBitmap_lockPixels(env, outputBitmap, &bitmapPixels) != ANDROID_BITMAP_RESUT_SUCCESS) {
-        (*env)->DeleteLocalRef(env, outputBitmap);
         (*env)->ThrowNew(env, jclass_RuntimeException, "Failed to lock Bitmap pixels");
         return 0;
     }
     
     if (!WebPDecodeRGBAInto((uint8_t*)inputBuffer, len, (uint8_t*)bitmapPixels, bitmapInfo.height * bitmapInfo.stride, bitmapInfo.stride)) {
         AndroidBitmap_unlockPixels(env, outputBitmap);
-        (*env)->DeleteLocalRef(env, outputBitmap);
         (*env)->ThrowNew(env, jclass_RuntimeException, "Failed to decode webp image");
         return 0;
     }
     
-    if (AndroidBitmap_unlockPixels(env, outputBitmap) != ANDROID_BITMAP_RESUT_SUCCESS) {
-        (*env)->DeleteLocalRef(env, outputBitmap);
+    if (unpin && AndroidBitmap_unlockPixels(env, outputBitmap) != ANDROID_BITMAP_RESUT_SUCCESS) {
         (*env)->ThrowNew(env, jclass_RuntimeException, "Failed to unlock Bitmap pixels");
         return 0;
     }
     
-    return outputBitmap;
+    return 1;
 }

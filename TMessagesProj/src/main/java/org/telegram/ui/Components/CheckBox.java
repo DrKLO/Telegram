@@ -1,13 +1,14 @@
 /*
- * This is the source code of Telegram for Android v. 1.7.x.
+ * This is the source code of Telegram for Android v. 3.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2014.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.ui.Components;
 
+import android.animation.ObjectAnimator;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
@@ -18,7 +19,6 @@ import android.graphics.drawable.Drawable;
 import android.view.View;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.AnimationCompat.ObjectAnimatorProxy;
 
 public class CheckBox extends View {
 
@@ -37,7 +37,7 @@ public class CheckBox extends View {
     private boolean drawBackground;
 
     private float progress;
-    private ObjectAnimatorProxy checkAnimator;
+    private ObjectAnimator checkAnimator;
     private boolean isCheckAnimation = true;
 
     private boolean attachedToWindow;
@@ -117,7 +117,7 @@ public class CheckBox extends View {
 
     private void animateToCheckedState(boolean newCheckedState) {
         isCheckAnimation = newCheckedState;
-        checkAnimator = ObjectAnimatorProxy.ofFloatProxy(this, "progress", newCheckedState ? 1 : 0);
+        checkAnimator = ObjectAnimator.ofFloat(this, "progress", newCheckedState ? 1 : 0);
         checkAnimator.setDuration(300);
         checkAnimator.start();
     }

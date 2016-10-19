@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 1.4.x.
+ * This is the source code of Telegram for Android v. 3.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2014.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.ui.ActionBar;
@@ -15,7 +15,6 @@ import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.TypedValue;
 import android.view.ActionMode;
-import android.view.ContextMenu;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.Menu;
@@ -33,13 +32,11 @@ import android.widget.TextView;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
-import org.telegram.messenger.AnimationCompat.ViewProxy;
-import org.telegram.ui.Components.FrameLayoutFixed;
 import org.telegram.ui.Components.LayoutHelper;
 
 import java.lang.reflect.Field;
 
-public class ActionBarMenuItem extends FrameLayoutFixed {
+public class ActionBarMenuItem extends FrameLayout {
 
     public static class ActionBarMenuItemSearchListener {
         public void onSearchExpand() {
@@ -85,18 +82,16 @@ public class ActionBarMenuItem extends FrameLayoutFixed {
     protected boolean overrideMenuClick;
     private boolean processedPopupClick;
 
-    public ActionBarMenuItem(Context context, ActionBarMenu menu, int background) {
+    public ActionBarMenuItem(Context context, ActionBarMenu menu, int backgroundColor) {
         super(context);
-        setBackgroundResource(background);
+        if (backgroundColor != 0) {
+            setBackgroundDrawable(Theme.createBarSelectorDrawable(backgroundColor));
+        }
         parentMenu = menu;
 
         iconView = new ImageView(context);
         iconView.setScaleType(ImageView.ScaleType.CENTER);
-        addView(iconView);
-        LayoutParams layoutParams = (LayoutParams) iconView.getLayoutParams();
-        layoutParams.width = LayoutHelper.MATCH_PARENT;
-        layoutParams.height = LayoutHelper.MATCH_PARENT;
-        iconView.setLayoutParams(layoutParams);
+        addView(iconView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
     }
 
     @Override
@@ -228,7 +223,7 @@ public class ActionBarMenuItem extends FrameLayoutFixed {
             textView.setGravity(Gravity.CENTER_VERTICAL | Gravity.RIGHT);
         }
         textView.setPadding(AndroidUtilities.dp(16), 0, AndroidUtilities.dp(16), 0);
-        textView.setTextSize(18);
+        textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
         textView.setMinWidth(AndroidUtilities.dp(196));
         textView.setTag(id);
         textView.setText(text);
@@ -288,7 +283,6 @@ public class ActionBarMenuItem extends FrameLayoutFixed {
         }
         if (popupWindow == null) {
             popupWindow = new ActionBarPopupWindow(popupLayout, LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT);
-            //popupWindow.setBackgroundDrawable(new BitmapDrawable());
             if (Build.VERSION.SDK_INT >= 19) {
                 popupWindow.setAnimationStyle(0);
             } else {
@@ -335,6 +329,7 @@ public class ActionBarMenuItem extends FrameLayoutFixed {
         if (searchContainer.getVisibility() == VISIBLE) {
             if (listener == null || listener != null && listener.canCollapseSearch()) {
                 searchContainer.setVisibility(GONE);
+                searchField.clearFocus();
                 setVisibility(VISIBLE);
                 AndroidUtilities.hideKeyboard(searchField);
                 if (listener != null) {
@@ -367,12 +362,12 @@ public class ActionBarMenuItem extends FrameLayoutFixed {
         iconView.setImageResource(resId);
     }
 
-    public EditText getSearchField() {
-        return searchField;
+    public ImageView getImageView() {
+        return iconView;
     }
 
-    public ActionBarMenuItem setIsSearchField(boolean value) {
-        return setIsSearchField(value, true);
+    public EditText getSearchField() {
+        return searchField;
     }
 
     public ActionBarMenuItem setOverrideMenuClick(boolean value) {
@@ -380,7 +375,7 @@ public class ActionBarMenuItem extends FrameLayoutFixed {
         return this;
     }
 
-    public ActionBarMenuItem setIsSearchField(boolean value, boolean needClearButton) {
+    public ActionBarMenuItem setIsSearchField(boolean value) {
         if (parentMenu == null) {
             return this;
         }
@@ -404,35 +399,27 @@ public class ActionBarMenuItem extends FrameLayoutFixed {
             searchField.setPadding(0, 0, 0, 0);
             int inputType = searchField.getInputType() | EditorInfo.TYPE_TEXT_FLAG_NO_SUGGESTIONS;
             searchField.setInputType(inputType);
-            if (android.os.Build.VERSION.SDK_INT < 11) {
-                searchField.setOnCreateContextMenuListener(new OnCreateContextMenuListener() {
-                    public void onCreateContextMenu(ContextMenu menu, View v, ContextMenu.ContextMenuInfo menuInfo) {
-                        menu.clear();
-                    }
-                });
-            } else {
-                searchField.setCustomSelectionActionModeCallback(new ActionMode.Callback() {
-                    public boolean onPrepareActionMode(ActionMode mode, Menu menu) {
-                        return false;
-                    }
+            searchField.setCustomSelectionActionModeCallback(new ActionMode.Callback() {
+                public boolean onPrepareActionMode(ActionMode mode, Menu menu) {
+                    return false;
+                }
 
-                    public void onDestroyActionMode(ActionMode mode) {
+                public void onDestroyActionMode(ActionMode mode) {
 
-                    }
+                }
 
-                    public boolean onCreateActionMode(ActionMode mode, Menu menu) {
-                        return false;
-                    }
+                public boolean onCreateActionMode(ActionMode mode, Menu menu) {
+                    return false;
+                }
 
-                    public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
-                        return false;
-                    }
-                });
-            }
+                public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
+                    return false;
+                }
+            });
             searchField.setOnEditorActionListener(new TextView.OnEditorActionListener() {
                 @Override
                 public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
-                    if (actionId == EditorInfo.IME_ACTION_SEARCH || event != null && (event.getAction() == KeyEvent.ACTION_UP && event.getKeyCode() == KeyEvent.KEYCODE_SEARCH || event.getAction() == KeyEvent.ACTION_DOWN && event.getKeyCode() == KeyEvent.KEYCODE_ENTER)) {
+                    if (/*actionId == EditorInfo.IME_ACTION_SEARCH || */event != null && (event.getAction() == KeyEvent.ACTION_UP && event.getKeyCode() == KeyEvent.KEYCODE_SEARCH || event.getAction() == KeyEvent.ACTION_DOWN && event.getKeyCode() == KeyEvent.KEYCODE_ENTER)) {
                         AndroidUtilities.hideKeyboard(searchField);
                         if (listener != null) {
                             listener.onSearchPressed(searchField);
@@ -453,7 +440,7 @@ public class ActionBarMenuItem extends FrameLayoutFixed {
                         listener.onTextChanged(searchField);
                     }
                     if (clearButton != null) {
-                        ViewProxy.setAlpha(clearButton, s == null || s.length() == 0 ? 0.6f : 1.0f);
+                        clearButton.setAlpha(s == null || s.length() == 0 ? 0.6f : 1.0f);
                     }
                 }
 
@@ -470,38 +457,33 @@ public class ActionBarMenuItem extends FrameLayoutFixed {
             } catch (Exception e) {
                 //nothing to do
             }
-            if (Build.VERSION.SDK_INT >= 11) {
-                searchField.setImeOptions(EditorInfo.IME_FLAG_NO_FULLSCREEN | EditorInfo.IME_ACTION_SEARCH);
-                searchField.setTextIsSelectable(false);
-            } else {
-                searchField.setImeOptions(EditorInfo.IME_ACTION_SEARCH);
-            }
+            searchField.setImeOptions(EditorInfo.IME_FLAG_NO_FULLSCREEN | EditorInfo.IME_ACTION_SEARCH);
+            searchField.setTextIsSelectable(false);
             searchContainer.addView(searchField);
             FrameLayout.LayoutParams layoutParams2 = (FrameLayout.LayoutParams) searchField.getLayoutParams();
             layoutParams2.width = LayoutHelper.MATCH_PARENT;
             layoutParams2.gravity = Gravity.CENTER_VERTICAL;
             layoutParams2.height = AndroidUtilities.dp(36);
-            layoutParams2.rightMargin = needClearButton ? AndroidUtilities.dp(48) : 0;
+            layoutParams2.rightMargin = AndroidUtilities.dp(48);
             searchField.setLayoutParams(layoutParams2);
 
-            if (needClearButton) {
-                clearButton = new ImageView(getContext());
-                clearButton.setImageResource(R.drawable.ic_close_white);
-                clearButton.setScaleType(ImageView.ScaleType.CENTER);
-                clearButton.setOnClickListener(new OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        searchField.setText("");
-                        AndroidUtilities.showKeyboard(searchField);
-                    }
-                });
-                searchContainer.addView(clearButton);
-                layoutParams2 = (FrameLayout.LayoutParams) clearButton.getLayoutParams();
-                layoutParams2.width = AndroidUtilities.dp(48);
-                layoutParams2.gravity = Gravity.CENTER_VERTICAL | Gravity.RIGHT;
-                layoutParams2.height = LayoutHelper.MATCH_PARENT;
-                clearButton.setLayoutParams(layoutParams2);
-            }
+            clearButton = new ImageView(getContext());
+            clearButton.setImageResource(R.drawable.ic_close_white);
+            clearButton.setScaleType(ImageView.ScaleType.CENTER);
+            clearButton.setOnClickListener(new OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    searchField.setText("");
+                    searchField.requestFocus();
+                    AndroidUtilities.showKeyboard(searchField);
+                }
+            });
+            searchContainer.addView(clearButton);
+            layoutParams2 = (FrameLayout.LayoutParams) clearButton.getLayoutParams();
+            layoutParams2.width = AndroidUtilities.dp(48);
+            layoutParams2.gravity = Gravity.CENTER_VERTICAL | Gravity.RIGHT;
+            layoutParams2.height = LayoutHelper.MATCH_PARENT;
+            clearButton.setLayoutParams(layoutParams2);
         }
         isSearchField = value;
         return this;

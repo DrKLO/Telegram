@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 2.x.x.
+ * This is the source code of Telegram for Android v. 3.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2015.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.ui.Cells;
@@ -14,9 +14,9 @@ import android.widget.FrameLayout;
 import android.widget.ProgressBar;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.R;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.ActionBar.Theme;
 
 public class ChatLoadingCell extends FrameLayout {
 
@@ -26,7 +26,8 @@ public class ChatLoadingCell extends FrameLayout {
         super(context);
 
         frameLayout = new FrameLayout(context);
-        frameLayout.setBackgroundResource(ApplicationLoader.isCustomTheme() ? R.drawable.system_loader2 : R.drawable.system_loader1);
+        frameLayout.setBackgroundResource(R.drawable.system_loader);
+        frameLayout.getBackground().setColorFilter(Theme.colorFilter);
         addView(frameLayout, LayoutHelper.createFrame(36, 36, Gravity.CENTER));
 
         ProgressBar progressBar = new ProgressBar(context);

@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 2.x.x.
+ * This is the source code of Telegram for Android v. 3.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2015.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.messenger;
@@ -20,27 +20,34 @@ import java.io.File;
 public class UserConfig {
 
     private static TLRPC.User currentUser;
-    public static boolean registeredForPush = false;
+    public static boolean registeredForPush;
     public static String pushString = "";
     public static int lastSendMessageId = -210000;
     public static int lastLocalId = -210000;
     public static int lastBroadcastId = -1;
     public static String contactsHash = "";
-    public static String importHash = "";
-    public static boolean blockedUsersLoaded = false;
+    public static boolean blockedUsersLoaded;
     private final static Object sync = new Object();
-    public static boolean saveIncomingPhotos = false;
-    public static int contactsVersion = 1;
+    public static boolean saveIncomingPhotos;
     public static String passcodeHash = "";
     public static byte[] passcodeSalt = new byte[0];
-    public static boolean appLocked = false;
-    public static int passcodeType = 0;
+    public static boolean appLocked;
+    public static int passcodeType;
     public static int autoLockIn = 60 * 60;
-    public static int lastPauseTime = 0;
-    public static boolean isWaitingForPasscodeEnter = false;
-    public static int lastUpdateVersion;
+    public static int lastPauseTime;
+    public static boolean isWaitingForPasscodeEnter;
+    public static boolean useFingerprint = true;
+    public static String lastUpdateVersion;
     public static int lastContactsSyncTime;
-    public static boolean channelsLoaded = false;
+    public static int lastHintsSyncTime;
+    public static boolean draftsLoaded;
+
+    public static int migrateOffsetId = -1;
+    public static int migrateOffsetDate = -1;
+    public static int migrateOffsetUserId = -1;
+    public static int migrateOffsetChatId = -1;
+    public static int migrateOffsetChannelId = -1;
+    public static long migrateOffsetAccess = -1;
 
     public static int getNewMessageId() {
         int id;
@@ -61,13 +68,11 @@ public class UserConfig {
                 SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("userconfing", Context.MODE_PRIVATE);
                 SharedPreferences.Editor editor = preferences.edit();
                 editor.putBoolean("registeredForPush", registeredForPush);
-                editor.putString("pushString", pushString);
+                editor.putString("pushString2", pushString);
                 editor.putInt("lastSendMessageId", lastSendMessageId);
                 editor.putInt("lastLocalId", lastLocalId);
                 editor.putString("contactsHash", contactsHash);
-                editor.putString("importHash", importHash);
                 editor.putBoolean("saveIncomingPhotos", saveIncomingPhotos);
-                editor.putInt("contactsVersion", contactsVersion);
                 editor.putInt("lastBroadcastId", lastBroadcastId);
                 editor.putBoolean("blockedUsersLoaded", blockedUsersLoaded);
                 editor.putString("passcodeHash1", passcodeHash);
@@ -76,9 +81,20 @@ public class UserConfig {
                 editor.putInt("passcodeType", passcodeType);
                 editor.putInt("autoLockIn", autoLockIn);
                 editor.putInt("lastPauseTime", lastPauseTime);
-                editor.putInt("lastUpdateVersion", lastUpdateVersion);
+                editor.putString("lastUpdateVersion2", lastUpdateVersion);
                 editor.putInt("lastContactsSyncTime", lastContactsSyncTime);
-                editor.putBoolean("channelsLoaded", channelsLoaded);
+                editor.putBoolean("useFingerprint", useFingerprint);
+                editor.putInt("lastHintsSyncTime", lastHintsSyncTime);
+                editor.putBoolean("draftsLoaded", draftsLoaded);
+
+                editor.putInt("migrateOffsetId", migrateOffsetId);
+                if (migrateOffsetId != -1) {
+                    editor.putInt("migrateOffsetDate", migrateOffsetDate);
+                    editor.putInt("migrateOffsetUserId", migrateOffsetUserId);
+                    editor.putInt("migrateOffsetChatId", migrateOffsetChatId);
+                    editor.putInt("migrateOffsetChannelId", migrateOffsetChannelId);
+                    editor.putLong("migrateOffsetAccess", migrateOffsetAccess);
+                }
 
                 if (currentUser != null) {
                     if (withFile) {
@@ -128,7 +144,7 @@ public class UserConfig {
 
     public static void loadConfig() {
         synchronized (sync) {
-            final File configFile = new File(ApplicationLoader.applicationContext.getFilesDir(), "user.dat");
+            final File configFile = new File(ApplicationLoader.getFilesDirFixed(), "user.dat");
             if (configFile.exists()) {
                 try {
                     SerializedData data = new SerializedData(configFile);
@@ -144,9 +160,8 @@ public class UserConfig {
                         lastSendMessageId = data.readInt32(false);
                         lastLocalId = data.readInt32(false);
                         contactsHash = data.readString(false);
-                        importHash = data.readString(false);
+                        data.readString(false);
                         saveIncomingPhotos = data.readBool(false);
-                        contactsVersion = 0;
                         MessagesStorage.lastQtsValue = data.readInt32(false);
                         MessagesStorage.lastSecretVersion = data.readInt32(false);
                         int val = data.readInt32(false);
@@ -166,13 +181,11 @@ public class UserConfig {
 
                         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("userconfing", Context.MODE_PRIVATE);
                         registeredForPush = preferences.getBoolean("registeredForPush", false);
-                        pushString = preferences.getString("pushString", "");
+                        pushString = preferences.getString("pushString2", "");
                         lastSendMessageId = preferences.getInt("lastSendMessageId", -210000);
                         lastLocalId = preferences.getInt("lastLocalId", -210000);
                         contactsHash = preferences.getString("contactsHash", "");
-                        importHash = preferences.getString("importHash", "");
                         saveIncomingPhotos = preferences.getBoolean("saveIncomingPhotos", false);
-                        contactsVersion = preferences.getInt("contactsVersion", 0);
                     }
                     if (lastLocalId > -210000) {
                         lastLocalId = -210000;
@@ -193,13 +206,11 @@ public class UserConfig {
             } else {
                 SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("userconfing", Context.MODE_PRIVATE);
                 registeredForPush = preferences.getBoolean("registeredForPush", false);
-                pushString = preferences.getString("pushString", "");
+                pushString = preferences.getString("pushString2", "");
                 lastSendMessageId = preferences.getInt("lastSendMessageId", -210000);
                 lastLocalId = preferences.getInt("lastLocalId", -210000);
                 contactsHash = preferences.getString("contactsHash", "");
-                importHash = preferences.getString("importHash", "");
                 saveIncomingPhotos = preferences.getBoolean("saveIncomingPhotos", false);
-                contactsVersion = preferences.getInt("contactsVersion", 0);
                 lastBroadcastId = preferences.getInt("lastBroadcastId", -1);
                 blockedUsersLoaded = preferences.getBoolean("blockedUsersLoaded", false);
                 passcodeHash = preferences.getString("passcodeHash1", "");
@@ -207,9 +218,21 @@ public class UserConfig {
                 passcodeType = preferences.getInt("passcodeType", 0);
                 autoLockIn = preferences.getInt("autoLockIn", 60 * 60);
                 lastPauseTime = preferences.getInt("lastPauseTime", 0);
-                lastUpdateVersion = preferences.getInt("lastUpdateVersion", 511);
+                useFingerprint = preferences.getBoolean("useFingerprint", true);
+                lastUpdateVersion = preferences.getString("lastUpdateVersion2", "3.5");
                 lastContactsSyncTime = preferences.getInt("lastContactsSyncTime", (int) (System.currentTimeMillis() / 1000) - 23 * 60 * 60);
-                channelsLoaded = preferences.getBoolean("channelsLoaded", false);
+                lastHintsSyncTime = preferences.getInt("lastHintsSyncTime", (int) (System.currentTimeMillis() / 1000) - 25 * 60 * 60);
+                draftsLoaded = preferences.getBoolean("draftsLoaded", false);
+
+                migrateOffsetId = preferences.getInt("migrateOffsetId", 0);
+                if (migrateOffsetId != -1) {
+                    migrateOffsetDate = preferences.getInt("migrateOffsetDate", 0);
+                    migrateOffsetUserId = preferences.getInt("migrateOffsetUserId", 0);
+                    migrateOffsetChatId = preferences.getInt("migrateOffsetChatId", 0);
+                    migrateOffsetChannelId = preferences.getInt("migrateOffsetChannelId", 0);
+                    migrateOffsetAccess = preferences.getLong("migrateOffsetAccess", 0);
+                }
+
                 String user = preferences.getString("user", null);
                 if (user != null) {
                     byte[] userBytes = Base64.decode(user, Base64.DEFAULT);
@@ -268,22 +291,28 @@ public class UserConfig {
         currentUser = null;
         registeredForPush = false;
         contactsHash = "";
-        importHash = "";
         lastSendMessageId = -210000;
-        contactsVersion = 1;
         lastBroadcastId = -1;
         saveIncomingPhotos = false;
         blockedUsersLoaded = false;
-        channelsLoaded = false;
+        migrateOffsetId = -1;
+        migrateOffsetDate = -1;
+        migrateOffsetUserId = -1;
+        migrateOffsetChatId = -1;
+        migrateOffsetChannelId = -1;
+        migrateOffsetAccess = -1;
         appLocked = false;
         passcodeType = 0;
         passcodeHash = "";
         passcodeSalt = new byte[0];
         autoLockIn = 60 * 60;
         lastPauseTime = 0;
+        useFingerprint = true;
+        draftsLoaded = true;
         isWaitingForPasscodeEnter = false;
-        lastUpdateVersion = BuildVars.BUILD_VERSION;
+        lastUpdateVersion = BuildVars.BUILD_VERSION_STRING;
         lastContactsSyncTime = (int) (System.currentTimeMillis() / 1000) - 23 * 60 * 60;
+        lastHintsSyncTime = (int) (System.currentTimeMillis() / 1000) - 25 * 60 * 60;
         saveConfig(true);
     }
 }

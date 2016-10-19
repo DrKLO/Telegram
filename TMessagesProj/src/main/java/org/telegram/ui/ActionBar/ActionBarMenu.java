@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 1.4.x.
+ * This is the source code of Telegram for Android v. 3.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2014.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.ui.ActionBar;
@@ -38,7 +38,7 @@ public class ActionBarMenu extends LinearLayout {
         addView(view);
         LinearLayout.LayoutParams layoutParams = (LinearLayout.LayoutParams) view.getLayoutParams();
         layoutParams.height = LayoutHelper.MATCH_PARENT;
-        view.setBackgroundResource(parentActionBar.itemsBackgroundResourceId);
+        view.setBackgroundDrawable(Theme.createBarSelectorDrawable(parentActionBar.itemsBackgroundColor));
         view.setLayoutParams(layoutParams);
         view.setOnClickListener(new OnClickListener() {
             @Override
@@ -50,23 +50,23 @@ public class ActionBarMenu extends LinearLayout {
     }
 
     public ActionBarMenuItem addItem(int id, Drawable drawable) {
-        return addItem(id, 0, parentActionBar.itemsBackgroundResourceId, drawable, AndroidUtilities.dp(48));
+        return addItem(id, 0, parentActionBar.itemsBackgroundColor, drawable, AndroidUtilities.dp(48));
     }
 
     public ActionBarMenuItem addItem(int id, int icon) {
-        return addItem(id, icon, parentActionBar.itemsBackgroundResourceId);
+        return addItem(id, icon, parentActionBar.itemsBackgroundColor);
     }
 
-    public ActionBarMenuItem addItem(int id, int icon, int backgroundResource) {
-        return addItem(id, icon, backgroundResource, null, AndroidUtilities.dp(48));
+    public ActionBarMenuItem addItem(int id, int icon, int backgroundColor) {
+        return addItem(id, icon, backgroundColor, null, AndroidUtilities.dp(48));
     }
 
     public ActionBarMenuItem addItemWithWidth(int id, int icon, int width) {
-        return addItem(id, icon, parentActionBar.itemsBackgroundResourceId, null, width);
+        return addItem(id, icon, parentActionBar.itemsBackgroundColor, null, width);
     }
 
-    public ActionBarMenuItem addItem(int id, int icon, int backgroundResource, Drawable drawable, int width) {
-        ActionBarMenuItem menuItem = new ActionBarMenuItem(getContext(), this, backgroundResource);
+    public ActionBarMenuItem addItem(int id, int icon, int backgroundColor, Drawable drawable, int width) {
+        ActionBarMenuItem menuItem = new ActionBarMenuItem(getContext(), this, backgroundColor);
         menuItem.setTag(id);
         if (drawable != null) {
             menuItem.iconView.setImageDrawable(drawable);
@@ -97,7 +97,8 @@ public class ActionBarMenu extends LinearLayout {
     }
 
     public void hideAllPopupMenus() {
-        for (int a = 0; a < getChildCount(); a++) {
+        int count = getChildCount();
+        for (int a = 0; a < count; a++) {
             View view = getChildAt(a);
             if (view instanceof ActionBarMenuItem) {
                 ((ActionBarMenuItem) view).closeSubMenu();
@@ -112,14 +113,12 @@ public class ActionBarMenu extends LinearLayout {
     }
 
     public void clearItems() {
-        for (int a = 0; a < getChildCount(); a++) {
-            View view = getChildAt(a);
-            removeView(view);
-        }
+        removeAllViews();
     }
 
     public void onMenuButtonPressed() {
-        for (int a = 0; a < getChildCount(); a++) {
+        int count = getChildCount();
+        for (int a = 0; a < count; a++) {
             View view = getChildAt(a);
             if (view instanceof ActionBarMenuItem) {
                 ActionBarMenuItem item = (ActionBarMenuItem) view;
@@ -138,7 +137,8 @@ public class ActionBarMenu extends LinearLayout {
     }
 
     public void closeSearchField() {
-        for (int a = 0; a < getChildCount(); a++) {
+        int count = getChildCount();
+        for (int a = 0; a < count; a++) {
             View view = getChildAt(a);
             if (view instanceof ActionBarMenuItem) {
                 ActionBarMenuItem item = (ActionBarMenuItem) view;
@@ -151,7 +151,8 @@ public class ActionBarMenu extends LinearLayout {
     }
 
     public void openSearchField(boolean toggle, String text) {
-        for (int a = 0; a < getChildCount(); a++) {
+        int count = getChildCount();
+        for (int a = 0; a < count; a++) {
             View view = getChildAt(a);
             if (view instanceof ActionBarMenuItem) {
                 ActionBarMenuItem item = (ActionBarMenuItem) view;

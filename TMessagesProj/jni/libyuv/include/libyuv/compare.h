@@ -22,6 +22,11 @@ extern "C" {
 LIBYUV_API
 uint32 HashDjb2(const uint8* src, uint64 count, uint32 seed);
 
+// Scan an opaque argb image and return fourcc based on alpha offset.
+// Returns FOURCC_ARGB, FOURCC_BGRA, or 0 if unknown.
+LIBYUV_API
+uint32 ARGBDetect(const uint8* argb, int stride_argb, int width, int height);
+
 // Sum Square Error - used to compute Mean Square Error or PSNR.
 LIBYUV_API
 uint64 ComputeSumSquareError(const uint8* src_a,

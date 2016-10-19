@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2014.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.messenger.query;
@@ -37,7 +37,8 @@ public class SharedMediaQuery {
     public final static int MEDIA_FILE = 1;
     public final static int MEDIA_AUDIO = 2;
     public final static int MEDIA_URL = 3;
-    public final static int MEDIA_TYPES_COUNT = 4;
+    public final static int MEDIA_MUSIC = 4;
+    public final static int MEDIA_TYPES_COUNT = 5;
 
     public static void loadMedia(final long uid, final int offset, final int count, final int max_id, final int type, final boolean fromCache, final int classGuid) {
         final boolean isChannel = (int) uid < 0 && ChatObject.isChannel(-(int) uid);
@@ -55,9 +56,11 @@ public class SharedMediaQuery {
             } else if (type == MEDIA_FILE) {
                 req.filter = new TLRPC.TL_inputMessagesFilterDocument();
             } else if (type == MEDIA_AUDIO) {
-                req.filter = new TLRPC.TL_inputMessagesFilterAudio();
+                req.filter = new TLRPC.TL_inputMessagesFilterVoice();
             } else if (type == MEDIA_URL) {
                 req.filter = new TLRPC.TL_inputMessagesFilterUrl();
+            } else if (type == MEDIA_MUSIC) {
+                req.filter = new TLRPC.TL_inputMessagesFilterMusic();
             }
             req.q = "";
             req.peer = MessagesController.getInputPeer(lower_part);
@@ -98,9 +101,11 @@ public class SharedMediaQuery {
             } else if (type == MEDIA_FILE) {
                 req.filter = new TLRPC.TL_inputMessagesFilterDocument();
             } else if (type == MEDIA_AUDIO) {
-                req.filter = new TLRPC.TL_inputMessagesFilterAudio();
+                req.filter = new TLRPC.TL_inputMessagesFilterVoice();
             } else if (type == MEDIA_URL) {
                 req.filter = new TLRPC.TL_inputMessagesFilterUrl();
+            } else if (type == MEDIA_MUSIC) {
+                req.filter = new TLRPC.TL_inputMessagesFilterMusic();
             }
             req.q = "";
             req.peer = MessagesController.getInputPeer(lower_part);
@@ -139,16 +144,20 @@ public class SharedMediaQuery {
         if (message == null) {
             return -1;
         }
-        if (message.media instanceof TLRPC.TL_messageMediaPhoto || message.media instanceof TLRPC.TL_messageMediaVideo) {
+        if (message.media instanceof TLRPC.TL_messageMediaPhoto) {
             return MEDIA_PHOTOVIDEO;
         } else if (message.media instanceof TLRPC.TL_messageMediaDocument) {
-            if (MessageObject.isStickerMessage(message)) {
+            if (MessageObject.isVoiceMessage(message)) {
+                return MEDIA_AUDIO;
+            } else if (MessageObject.isVideoMessage(message)) {
+                return MEDIA_PHOTOVIDEO;
+            } else if (MessageObject.isStickerMessage(message)) {
                 return -1;
+            } else if (MessageObject.isMusicMessage(message)) {
+                return MEDIA_MUSIC;
             } else {
                 return MEDIA_FILE;
             }
-        } else if (message.media instanceof TLRPC.TL_messageMediaAudio) {
-            return MEDIA_AUDIO;
         } else if (!message.entities.isEmpty()) {
             for (int a = 0; a < message.entities.size(); a++) {
                 TLRPC.MessageEntity entity = message.entities.get(a);
@@ -164,9 +173,7 @@ public class SharedMediaQuery {
         if (message instanceof TLRPC.TL_message_secret && message.media instanceof TLRPC.TL_messageMediaPhoto && message.ttl != 0 && message.ttl <= 60) {
             return false;
         } else if (message.media instanceof TLRPC.TL_messageMediaPhoto ||
-                message.media instanceof TLRPC.TL_messageMediaVideo ||
-                message.media instanceof TLRPC.TL_messageMediaDocument ||
-                message.media instanceof TLRPC.TL_messageMediaAudio) {
+                message.media instanceof TLRPC.TL_messageMediaDocument && !MessageObject.isGifDocument(message.media.document)) {
             return true;
         } else if (!message.entities.isEmpty()) {
             for (int a = 0; a < message.entities.size(); a++) {
@@ -190,13 +197,15 @@ public class SharedMediaQuery {
                 putMediaDatabase(uid, type, res.messages, max_id, topReached);
             }
 
-            final HashMap<Integer, TLRPC.User> usersLocal = new HashMap<>();
-            for (TLRPC.User u : res.users) {
-                usersLocal.put(u.id, u);
+            final HashMap<Integer, TLRPC.User> usersDict = new HashMap<>();
+            for (int a = 0; a < res.users.size(); a++) {
+                TLRPC.User u = res.users.get(a);
+                usersDict.put(u.id, u);
             }
             final ArrayList<MessageObject> objects = new ArrayList<>();
-            for (TLRPC.Message message : res.messages) {
-                objects.add(new MessageObject(message, usersLocal, true));
+            for (int a = 0; a < res.messages.size(); a++) {
+                TLRPC.Message message = res.messages.get(a);
+                objects.add(new MessageObject(message, usersDict, true));
             }
 
             AndroidUtilities.runOnUIThread(new Runnable() {
@@ -265,37 +274,6 @@ public class SharedMediaQuery {
                             count = cursor.intValue(0);
                         }
                         cursor.dispose();
-
-                        /*cursor = MessagesStorage.getInstance().getDatabase().queryFinalized(String.format(Locale.US, "SELECT data, send_state, date FROM messages WHERE uid = %d ORDER BY mid ASC LIMIT %d", uid, 1000));
-                        ArrayList<TLRPC.Message> photos = new ArrayList<>();
-                        ArrayList<TLRPC.Message> docs = new ArrayList<>();
-                        while (cursor.next()) {
-                            NativeByteBuffer data = new NativeByteBuffer(cursor.byteArrayLength(1));
-                            if (data != null && cursor.byteBufferValue(1, data) != 0) {
-                                TLRPC.Message message = (TLRPC.Message) TLClassStore.Instance().TLdeserialize(data, data.readInt32());
-                                MessageObject.setIsUnread(message, cursor.intValue(0) != 1);
-                                message.date = cursor.intValue(2);
-                                message.send_state = cursor.intValue(1);
-                                message.dialog_id = uid;
-                                if (message.ttl > 60 && message.media instanceof TLRPC.TL_messageMediaPhoto || message.media instanceof TLRPC.TL_messageMediaVideo) {
-                                    photos.add(message);
-                                } else if (message.media instanceof TLRPC.TL_messageMediaDocument) {
-                                    docs.add(message);
-                                }
-                            }
-                            data.reuse();
-                        }
-                        cursor.dispose();
-                        if (!photos.isEmpty() || !docs.isEmpty()) {
-                            MessagesStorage.getInstance().getDatabase().beginTransaction();
-                            if (!photos.isEmpty()) {
-                                putMediaDatabaseInternal(uid, MEDIA_PHOTOVIDEO, photos);
-                            }
-                            if (docs.isEmpty()) {
-                                putMediaDatabaseInternal(uid, MEDIA_FILE, docs);
-                            }
-                            MessagesStorage.getInstance().getDatabase().commitTransaction();
-                        }*/
 
                         if (count != -1) {
                             putMediaCountDatabase(uid, type, count);
@@ -367,9 +345,9 @@ public class SharedMediaQuery {
                             }
                             cursor.dispose();
                             if (holeMessageId > 1) {
-                                cursor = database.queryFinalized(String.format(Locale.US, "SELECT data, mid FROM media_v2 WHERE uid = %d AND mid < %d AND mid >= %d AND type = %d ORDER BY date DESC, mid DESC LIMIT %d", uid, messageMaxId, holeMessageId, type, countToLoad));
+                                cursor = database.queryFinalized(String.format(Locale.US, "SELECT data, mid FROM media_v2 WHERE uid = %d AND mid > 0 AND mid < %d AND mid >= %d AND type = %d ORDER BY date DESC, mid DESC LIMIT %d", uid, messageMaxId, holeMessageId, type, countToLoad));
                             } else {
-                                cursor = database.queryFinalized(String.format(Locale.US, "SELECT data, mid FROM media_v2 WHERE uid = %d AND mid < %d AND type = %d ORDER BY date DESC, mid DESC LIMIT %d", uid, messageMaxId, type, countToLoad));
+                                cursor = database.queryFinalized(String.format(Locale.US, "SELECT data, mid FROM media_v2 WHERE uid = %d AND mid > 0 AND mid < %d AND type = %d ORDER BY date DESC, mid DESC LIMIT %d", uid, messageMaxId, type, countToLoad));
                             }
                         } else {
                             long holeMessageId = 0;
@@ -382,9 +360,9 @@ public class SharedMediaQuery {
                             }
                             cursor.dispose();
                             if (holeMessageId > 1) {
-                                cursor = database.queryFinalized(String.format(Locale.US, "SELECT data, mid FROM media_v2 WHERE uid = %d AND type = %d AND mid >= %d ORDER BY date DESC, mid DESC LIMIT %d,%d", uid, type, holeMessageId, offset, countToLoad));
+                                cursor = database.queryFinalized(String.format(Locale.US, "SELECT data, mid FROM media_v2 WHERE uid = %d AND mid >= %d AND type = %d ORDER BY date DESC, mid DESC LIMIT %d,%d", uid, holeMessageId, type, offset, countToLoad));
                             } else {
-                                cursor = database.queryFinalized(String.format(Locale.US, "SELECT data, mid FROM media_v2 WHERE uid = %d AND type = %d ORDER BY date DESC, mid DESC LIMIT %d,%d", uid, type, offset, countToLoad));
+                                cursor = database.queryFinalized(String.format(Locale.US, "SELECT data, mid FROM media_v2 WHERE uid = %d AND mid > 0 AND type = %d ORDER BY date DESC, mid DESC LIMIT %d,%d", uid, type, offset, countToLoad));
                             }
                         }
                     } else {
@@ -397,9 +375,10 @@ public class SharedMediaQuery {
                     }
 
                     while (cursor.next()) {
-                        NativeByteBuffer data = new NativeByteBuffer(cursor.byteArrayLength(0));
-                        if (data != null && cursor.byteBufferValue(0, data) != 0) {
+                        NativeByteBuffer data = cursor.byteBufferValue(0);
+                        if (data != null) {
                             TLRPC.Message message = TLRPC.Message.TLdeserialize(data, data.readInt32(false), false);
+                            data.reuse();
                             message.id = cursor.intValue(1);
                             message.dialog_id = uid;
                             if ((int) uid == 0) {
@@ -416,7 +395,6 @@ public class SharedMediaQuery {
                                 }
                             }
                         }
-                        data.reuse();
                     }
                     cursor.dispose();
 
@@ -500,19 +478,19 @@ public class SharedMediaQuery {
             public void run() {
                 final ArrayList<MessageObject> arrayList = new ArrayList<>();
                 try {
-                    SQLiteCursor cursor = MessagesStorage.getInstance().getDatabase().queryFinalized(String.format(Locale.US, "SELECT data, mid FROM media_v2 WHERE uid = %d AND mid < %d AND type = %d ORDER BY date DESC, mid DESC LIMIT 1000", uid, max_id, MEDIA_FILE));
+                    SQLiteCursor cursor = MessagesStorage.getInstance().getDatabase().queryFinalized(String.format(Locale.US, "SELECT data, mid FROM media_v2 WHERE uid = %d AND mid < %d AND type = %d ORDER BY date DESC, mid DESC LIMIT 1000", uid, max_id, MEDIA_MUSIC));
 
                     while (cursor.next()) {
-                        NativeByteBuffer data = new NativeByteBuffer(cursor.byteArrayLength(0));
-                        if (data != null && cursor.byteBufferValue(0, data) != 0) {
+                        NativeByteBuffer data = cursor.byteBufferValue(0);
+                        if (data != null) {
                             TLRPC.Message message = TLRPC.Message.TLdeserialize(data, data.readInt32(false), false);
+                            data.reuse();
                             if (MessageObject.isMusicMessage(message)) {
                                 message.id = cursor.intValue(1);
                                 message.dialog_id = uid;
                                 arrayList.add(0, new MessageObject(message, null, false));
                             }
                         }
-                        data.reuse();
                     }
                     cursor.dispose();
                 } catch (Exception e) {

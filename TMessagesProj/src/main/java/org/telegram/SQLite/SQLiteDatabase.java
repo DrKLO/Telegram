@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 1.3.2.
+ * This is the source code of Telegram for Android v. 3.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.SQLite;
@@ -22,7 +22,7 @@ public class SQLiteDatabase {
 	}
 
 	public SQLiteDatabase(String fileName) throws SQLiteException {
-		sqliteHandle = opendb(fileName, ApplicationLoader.applicationContext.getFilesDir().getPath());
+		sqliteHandle = opendb(fileName, ApplicationLoader.getFilesDirFixed().getPath());
 		isOpen = true;
 	}
 
@@ -77,7 +77,6 @@ public class SQLiteDatabase {
 		close();
 	}
 
-    private StackTraceElement[] temp;
     public void beginTransaction() throws SQLiteException {
         if (inTransaction) {
             throw new SQLiteException("database already in transaction");

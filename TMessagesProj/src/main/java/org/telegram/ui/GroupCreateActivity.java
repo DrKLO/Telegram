@@ -1,19 +1,19 @@
 /*
- * This is the source code of Telegram for Android v. 1.3.2.
+ * This is the source code of Telegram for Android v. 3.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.ui;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.drawable.BitmapDrawable;
-import android.os.Build;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.InputType;
@@ -77,12 +77,13 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
     private int beforeChangeIndex;
     private boolean ignoreChange;
     private CharSequence changeString;
-    private int maxCount = 199;
+    private int maxCount = 5000;
     private int chatType = ChatObject.CHAT_TYPE_CHAT;
     private boolean isAlwaysShare;
     private boolean isNeverShare;
     private boolean searchWas;
     private boolean searching;
+    private boolean isGroup;
     private HashMap<Integer, ChipSpan> selectedContacts = new HashMap<>();
     private ArrayList<ChipSpan> allSpans = new ArrayList<>();
 
@@ -97,7 +98,8 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
         chatType = args.getInt("chatType", ChatObject.CHAT_TYPE_CHAT);
         isAlwaysShare = args.getBoolean("isAlwaysShare", false);
         isNeverShare = args.getBoolean("isNeverShare", false);
-        maxCount = chatType == ChatObject.CHAT_TYPE_CHAT ? (MessagesController.getInstance().maxGroupCount - 1) : MessagesController.getInstance().maxBroadcastCount;
+        isGroup = args.getBoolean("isGroup", false);
+        maxCount = chatType == ChatObject.CHAT_TYPE_CHAT ? MessagesController.getInstance().maxMegagroupCount : MessagesController.getInstance().maxBroadcastCount;
     }
 
     @Override
@@ -124,9 +126,17 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBar.setAllowOverlayTitle(true);
         if (isAlwaysShare) {
-            actionBar.setTitle(LocaleController.getString("AlwaysShareWithTitle", R.string.AlwaysShareWithTitle));
+            if (isGroup) {
+                actionBar.setTitle(LocaleController.getString("AlwaysAllow", R.string.AlwaysAllow));
+            } else {
+                actionBar.setTitle(LocaleController.getString("AlwaysShareWithTitle", R.string.AlwaysShareWithTitle));
+            }
         } else if (isNeverShare) {
-            actionBar.setTitle(LocaleController.getString("NeverShareWithTitle", R.string.NeverShareWithTitle));
+            if (isGroup) {
+                actionBar.setTitle(LocaleController.getString("NeverAllow", R.string.NeverAllow));
+            } else {
+                actionBar.setTitle(LocaleController.getString("NeverShareWithTitle", R.string.NeverShareWithTitle));
+            }
         } else {
             actionBar.setTitle(chatType == ChatObject.CHAT_TYPE_CHAT ? LocaleController.getString("NewGroup", R.string.NewGroup) : LocaleController.getString("NewBroadcastList", R.string.NewBroadcastList));
             actionBar.setSubtitle(LocaleController.formatString("MembersCount", R.string.MembersCount, selectedContacts.size(), maxCount));
@@ -160,7 +170,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
         ActionBarMenu menu = actionBar.createMenu();
         menu.addItemWithWidth(done_button, R.drawable.ic_done, AndroidUtilities.dp(56));
 
-        searchListViewAdapter = new SearchAdapter(context, null, false, false, false);
+        searchListViewAdapter = new SearchAdapter(context, null, false, false, false, false);
         searchListViewAdapter.setCheckedMap(selectedContacts);
         searchListViewAdapter.setUseUserCell(true);
         listViewAdapter = new ContactsAdapter(context, 1, false, null, false);
@@ -191,15 +201,21 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
         frameLayout.addView(userSelectEditText, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.LEFT, 10, 0, 10, 0));
 
         if (isAlwaysShare) {
-            userSelectEditText.setHint(LocaleController.getString("AlwaysShareWithPlaceholder", R.string.AlwaysShareWithPlaceholder));
+            if (isGroup) {
+                userSelectEditText.setHint(LocaleController.getString("AlwaysAllowPlaceholder", R.string.AlwaysAllowPlaceholder));
+            } else {
+                userSelectEditText.setHint(LocaleController.getString("AlwaysShareWithPlaceholder", R.string.AlwaysShareWithPlaceholder));
+            }
         } else if (isNeverShare) {
-            userSelectEditText.setHint(LocaleController.getString("NeverShareWithPlaceholder", R.string.NeverShareWithPlaceholder));
+            if (isGroup) {
+                userSelectEditText.setHint(LocaleController.getString("NeverAllowPlaceholder", R.string.NeverAllowPlaceholder));
+            } else {
+                userSelectEditText.setHint(LocaleController.getString("NeverShareWithPlaceholder", R.string.NeverShareWithPlaceholder));
+            }
         } else {
             userSelectEditText.setHint(LocaleController.getString("SendMessageTo", R.string.SendMessageTo));
         }
-        if (Build.VERSION.SDK_INT >= 11) {
-            userSelectEditText.setTextIsSelectable(false);
-        }
+        userSelectEditText.setTextIsSelectable(false);
         userSelectEditText.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence charSequence, int start, int count, int after) {
@@ -256,9 +272,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                             if (listView != null) {
                                 listView.setAdapter(searchListViewAdapter);
                                 searchListViewAdapter.notifyDataSetChanged();
-                                if (android.os.Build.VERSION.SDK_INT >= 11) {
-                                    listView.setFastScrollAlwaysVisible(false);
-                                }
+                                listView.setFastScrollAlwaysVisible(false);
                                 listView.setFastScrollEnabled(false);
                                 listView.setVerticalScrollBarEnabled(true);
                             }
@@ -272,9 +286,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                             searchWas = false;
                             listView.setAdapter(listViewAdapter);
                             listViewAdapter.notifyDataSetChanged();
-                            if (android.os.Build.VERSION.SDK_INT >= 11) {
-                                listView.setFastScrollAlwaysVisible(true);
-                            }
+                            listView.setFastScrollAlwaysVisible(true);
                             listView.setFastScrollEnabled(true);
                             listView.setVerticalScrollBarEnabled(false);
                             emptyTextView.setText(LocaleController.getString("NoContacts", R.string.NoContacts));
@@ -313,10 +325,8 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
         listView.setFastScrollEnabled(true);
         listView.setScrollBarStyle(View.SCROLLBARS_OUTSIDE_OVERLAY);
         listView.setAdapter(listViewAdapter);
-        if (Build.VERSION.SDK_INT >= 11) {
-            listView.setFastScrollAlwaysVisible(true);
-            listView.setVerticalScrollbarPosition(LocaleController.isRTL ? ListView.SCROLLBAR_POSITION_LEFT : ListView.SCROLLBAR_POSITION_RIGHT);
-        }
+        listView.setFastScrollAlwaysVisible(true);
+        listView.setVerticalScrollbarPosition(LocaleController.isRTL ? ListView.SCROLLBAR_POSITION_LEFT : ListView.SCROLLBAR_POSITION_RIGHT);
         linearLayout.addView(listView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
@@ -356,6 +366,14 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                     if (maxCount != 0 && selectedContacts.size() == maxCount) {
                         return;
                     }
+                    if (chatType == ChatObject.CHAT_TYPE_CHAT && selectedContacts.size() == MessagesController.getInstance().maxGroupCount) {
+                        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                        builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
+                        builder.setMessage(LocaleController.getString("SoftUserLimitAlert", R.string.SoftUserLimitAlert));
+                        builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), null);
+                        showDialog(builder.create());
+                        return;
+                    }
                     ignoreChange = true;
                     ChipSpan span = createAndPutChipForUser(user);
                     span.uid = user.id;
@@ -380,9 +398,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                     searchWas = false;
                     listView.setAdapter(listViewAdapter);
                     listViewAdapter.notifyDataSetChanged();
-                    if (android.os.Build.VERSION.SDK_INT >= 11) {
-                        listView.setFastScrollAlwaysVisible(true);
-                    }
+                    listView.setFastScrollAlwaysVisible(true);
                     listView.setFastScrollEnabled(true);
                     listView.setVerticalScrollBarEnabled(false);
                     emptyTextView.setText(LocaleController.getString("NoContacts", R.string.NoContacts));

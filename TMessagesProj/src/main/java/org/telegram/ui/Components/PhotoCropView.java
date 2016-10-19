@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 2.x
+ * This is the source code of Telegram for Android v. 3.x.x
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2015.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.ui.Components;
@@ -14,6 +14,7 @@ import android.graphics.Canvas;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.RectF;
+import android.os.Build;
 import android.view.MotionEvent;
 import android.widget.FrameLayout;
 
@@ -24,6 +25,7 @@ public class PhotoCropView extends FrameLayout {
 
     public interface PhotoCropViewDelegate {
         void needMoveImageTo(float x, float y, float s, boolean animated);
+        Bitmap getBitmap();
     }
 
     private boolean freeformCrop = true;
@@ -38,11 +40,11 @@ public class PhotoCropView extends FrameLayout {
     private float oldX = 0, oldY = 0;
     private int bitmapWidth = 1, bitmapHeight = 1, bitmapX, bitmapY;
     private float rectX = -1, rectY = -1;
-    private Bitmap bitmapToEdit;
     private float bitmapGlobalScale = 1;
     private float bitmapGlobalX = 0;
     private float bitmapGlobalY = 0;
     private PhotoCropViewDelegate delegate;
+    private Bitmap bitmapToEdit;
 
     private RectF animationStartValues;
     private RectF animationEndValues;
@@ -77,6 +79,16 @@ public class PhotoCropView extends FrameLayout {
         rectY = -1;
         freeformCrop = freeform;
         orientation = rotation;
+        requestLayout();
+    }
+
+    public void setOrientation(int rotation) {
+        orientation = rotation;
+        rectX = -1;
+        rectY = -1;
+        rectSizeX = 600;
+        rectSizeY = 600;
+        delegate.needMoveImageTo(0, 0, 1, false);
         requestLayout();
     }
 
@@ -129,8 +141,9 @@ public class PhotoCropView extends FrameLayout {
             float diffY = y - oldY;
             float bitmapScaledWidth = bitmapWidth * bitmapGlobalScale;
             float bitmapScaledHeight = bitmapHeight * bitmapGlobalScale;
-            float bitmapStartX = (getWidth() - AndroidUtilities.dp(28) - bitmapScaledWidth) / 2 + bitmapGlobalX + AndroidUtilities.dp(14);
-            float bitmapStartY = (getHeight() - AndroidUtilities.dp(28) - bitmapScaledHeight) / 2 + bitmapGlobalY + AndroidUtilities.dp(14);
+            float additionalY = (Build.VERSION.SDK_INT >= 21 ? AndroidUtilities.statusBarHeight : 0);
+            float bitmapStartX = (getWidth() - bitmapScaledWidth) / 2 + bitmapGlobalX;
+            float bitmapStartY = (getHeight() - bitmapScaledHeight + additionalY) / 2 + bitmapGlobalY;
             float bitmapEndX = bitmapStartX + bitmapScaledWidth;
             float bitmapEndY = bitmapStartY + bitmapScaledHeight;
 
@@ -310,7 +323,8 @@ public class PhotoCropView extends FrameLayout {
     }
 
     public float getRectY() {
-        return rectY - AndroidUtilities.dp(14);
+        float additionalY = (Build.VERSION.SDK_INT >= 21 ? AndroidUtilities.statusBarHeight : 0);
+        return rectY - AndroidUtilities.dp(14) - additionalY;
     }
 
     public float getRectSizeX() {
@@ -326,15 +340,17 @@ public class PhotoCropView extends FrameLayout {
     }
 
     public float getBitmapY() {
-        return bitmapY - AndroidUtilities.dp(14);
+        float additionalY = (Build.VERSION.SDK_INT >= 21 ? AndroidUtilities.statusBarHeight : 0);
+        return bitmapY - AndroidUtilities.dp(14) - additionalY;
     }
 
     public float getLimitX() {
-        return rectX - ((int) Math.max(0, Math.ceil((getWidth() - AndroidUtilities.dp(28) - bitmapWidth * bitmapGlobalScale) / 2)) + AndroidUtilities.dp(14));
+        return rectX - Math.max(0, (float) Math.ceil((getWidth() - bitmapWidth * bitmapGlobalScale) / 2));
     }
 
     public float getLimitY() {
-        return rectY - ((int) Math.max(0, Math.ceil((getHeight() - AndroidUtilities.dp(28) - bitmapHeight * bitmapGlobalScale) / 2)) + AndroidUtilities.dp(14));
+        float additionalY = (Build.VERSION.SDK_INT >= 21 ? AndroidUtilities.statusBarHeight : 0);
+        return rectY - Math.max(0, (float) Math.ceil((getHeight() - bitmapHeight * bitmapGlobalScale + additionalY) / 2));
     }
 
     public float getLimitWidth() {
@@ -342,19 +358,24 @@ public class PhotoCropView extends FrameLayout {
     }
 
     public float getLimitHeight() {
-        return getHeight() - AndroidUtilities.dp(14) - rectY - (int) Math.max(0, Math.ceil((getHeight() - AndroidUtilities.dp(28) - bitmapHeight * bitmapGlobalScale) / 2)) - rectSizeY;
+        float additionalY = (Build.VERSION.SDK_INT >= 21 ? AndroidUtilities.statusBarHeight : 0);
+        return getHeight() - AndroidUtilities.dp(14) - additionalY - rectY - (int) Math.max(0, Math.ceil((getHeight() - AndroidUtilities.dp(28) - bitmapHeight * bitmapGlobalScale - additionalY) / 2)) - rectSizeY;
     }
 
     private Bitmap createBitmap(int x, int y, int w, int h) {
+        Bitmap newBimap = delegate.getBitmap();
+        if (newBimap != null) {
+            bitmapToEdit = newBimap;
+        }
+
         Bitmap bitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
         Canvas canvas = new Canvas(bitmap);
-        Paint paint = new Paint();
-        paint.setFilterBitmap(true);
+        Paint paint = new Paint(Paint.FILTER_BITMAP_FLAG | Paint.DITHER_FLAG);
 
         Matrix matrix = new Matrix();
         matrix.setTranslate(-bitmapToEdit.getWidth() / 2, -bitmapToEdit.getHeight() / 2);
         matrix.postRotate(orientation);
-        if (orientation == 90 || orientation == 270) {
+        if (orientation % 360 == 90 || orientation % 360 == 270) {
             matrix.postTranslate(bitmapToEdit.getHeight() / 2 - x, bitmapToEdit.getWidth() / 2 - y);
         } else {
             matrix.postTranslate(bitmapToEdit.getWidth() / 2 - x, bitmapToEdit.getHeight() / 2 - y);
@@ -370,10 +391,16 @@ public class PhotoCropView extends FrameLayout {
     }
 
     public Bitmap getBitmap() {
+        Bitmap newBimap = delegate.getBitmap();
+        if (newBimap != null) {
+            bitmapToEdit = newBimap;
+        }
+
         float bitmapScaledWidth = bitmapWidth * bitmapGlobalScale;
         float bitmapScaledHeight = bitmapHeight * bitmapGlobalScale;
-        float bitmapStartX = (getWidth() - AndroidUtilities.dp(28) - bitmapScaledWidth) / 2 + bitmapGlobalX + AndroidUtilities.dp(14);
-        float bitmapStartY = (getHeight() - AndroidUtilities.dp(28) - bitmapScaledHeight) / 2 + bitmapGlobalY + AndroidUtilities.dp(14);
+        float additionalY = (Build.VERSION.SDK_INT >= 21 ? AndroidUtilities.statusBarHeight : 0);
+        float bitmapStartX = (getWidth() - bitmapScaledWidth) / 2 + bitmapGlobalX;
+        float bitmapStartY = (getHeight() - bitmapScaledHeight + additionalY) / 2 + bitmapGlobalY;
 
         float percX = (rectX - bitmapStartX) / bitmapScaledWidth;
         float percY = (rectY - bitmapStartY) / bitmapScaledHeight;
@@ -382,7 +409,7 @@ public class PhotoCropView extends FrameLayout {
 
         int width;
         int height;
-        if (orientation == 90 || orientation == 270) {
+        if (orientation % 360 == 90 || orientation % 360 == 270) {
             width = bitmapToEdit.getHeight();
             height = bitmapToEdit.getWidth();
         } else {
@@ -468,7 +495,7 @@ public class PhotoCropView extends FrameLayout {
             public void run() {
                 if (animationRunnable == this) {
                     animationRunnable = null;
-                    animateToFill();
+                    moveToFill(true);
                 }
             }
         };
@@ -503,7 +530,7 @@ public class PhotoCropView extends FrameLayout {
         }
     }
 
-    public void animateToFill() {
+    public void moveToFill(boolean animated) {
         float scaleToX = bitmapWidth / rectSizeX;
         float scaleToY = bitmapHeight / rectSizeY;
         float scaleTo = scaleToX > scaleToY ? scaleToY : scaleToX;
@@ -514,15 +541,16 @@ public class PhotoCropView extends FrameLayout {
         }
         float newSizeX = rectSizeX * scaleTo;
         float newSizeY = rectSizeY * scaleTo;
-        float newX = (getWidth() - AndroidUtilities.dp(28) - newSizeX) / 2 + AndroidUtilities.dp(14);
-        float newY = (getHeight() - AndroidUtilities.dp(28) - newSizeY) / 2 + AndroidUtilities.dp(14);
+        float additionalY = (Build.VERSION.SDK_INT >= 21 ? AndroidUtilities.statusBarHeight : 0);
+        float newX = (getWidth() - newSizeX) / 2;
+        float newY = (getHeight() - newSizeY + additionalY) / 2;
         animationStartValues = new RectF(rectX, rectY, rectSizeX, rectSizeY);
         animationEndValues = new RectF(newX, newY, newSizeX, newSizeY);
 
         float newBitmapGlobalX = newX + getWidth() / 2 * (scaleTo - 1) + (bitmapGlobalX - rectX) * scaleTo;
-        float newBitmapGlobalY = newY + getHeight() / 2 * (scaleTo - 1) + (bitmapGlobalY - rectY) * scaleTo;
+        float newBitmapGlobalY = newY + (getHeight() + additionalY) / 2 * (scaleTo - 1) + (bitmapGlobalY - rectY) * scaleTo;
 
-        delegate.needMoveImageTo(newBitmapGlobalX, newBitmapGlobalY, bitmapGlobalScale * scaleTo, true);
+        delegate.needMoveImageTo(newBitmapGlobalX, newBitmapGlobalY, bitmapGlobalScale * scaleTo, animated);
     }
 
     public void setDelegate(PhotoCropViewDelegate delegate) {
@@ -533,16 +561,21 @@ public class PhotoCropView extends FrameLayout {
     protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
         super.onLayout(changed, left, top, right, bottom);
 
+        Bitmap newBimap = delegate.getBitmap();
+        if (newBimap != null) {
+            bitmapToEdit = newBimap;
+        }
+
         if (bitmapToEdit == null) {
             return;
         }
 
         int viewWidth = getWidth() - AndroidUtilities.dp(28);
-        int viewHeight = getHeight() - AndroidUtilities.dp(28);
+        int viewHeight = getHeight() - AndroidUtilities.dp(28) - (Build.VERSION.SDK_INT >= 21 ? AndroidUtilities.statusBarHeight : 0);
 
         float bitmapW;
         float bitmapH;
-        if (orientation == 90 || orientation == 270) {
+        if (orientation % 360 == 90 || orientation % 360 == 270) {
             bitmapW = bitmapToEdit.getHeight();
             bitmapH = bitmapToEdit.getWidth();
         } else {
@@ -567,7 +600,7 @@ public class PhotoCropView extends FrameLayout {
         bitmapHeight = (int) bitmapH;
 
         bitmapX = (int) Math.ceil((viewWidth - bitmapWidth) / 2 + AndroidUtilities.dp(14));
-        bitmapY = (int) Math.ceil((viewHeight - bitmapHeight) / 2 + AndroidUtilities.dp(14));
+        bitmapY = (int) Math.ceil((viewHeight - bitmapHeight) / 2 + AndroidUtilities.dp(14) + (Build.VERSION.SDK_INT >= 21 ? AndroidUtilities.statusBarHeight : 0));
 
         if (rectX == -1 && rectY == -1) {
             if (freeformCrop) {
@@ -583,7 +616,7 @@ public class PhotoCropView extends FrameLayout {
                     rectSizeY = bitmapHeight;
                 } else {
                     rectX = bitmapX;
-                    rectY = (viewHeight - bitmapWidth) / 2 + AndroidUtilities.dp(14);
+                    rectY = (viewHeight - bitmapWidth) / 2 + AndroidUtilities.dp(14) + (Build.VERSION.SDK_INT >= 21 ? AndroidUtilities.statusBarHeight : 0);
                     rectSizeX = bitmapWidth;
                     rectSizeY = bitmapWidth;
                 }

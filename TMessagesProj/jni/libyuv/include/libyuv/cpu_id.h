@@ -18,9 +18,8 @@ namespace libyuv {
 extern "C" {
 #endif
 
-// TODO(fbarchard): Consider overlapping bits for different architectures.
 // Internal flag to indicate cpuid requires initialization.
-#define kCpuInit 0x1
+static const int kCpuInitialized = 0x1;
 
 // These flags are only valid on ARM processors.
 static const int kCpuHasARM = 0x2;
@@ -37,12 +36,12 @@ static const int kCpuHasAVX = 0x200;
 static const int kCpuHasAVX2 = 0x400;
 static const int kCpuHasERMS = 0x800;
 static const int kCpuHasFMA3 = 0x1000;
+static const int kCpuHasAVX3 = 0x2000;
 // 0x2000, 0x4000, 0x8000 reserved for future X86 flags.
 
 // These flags are only valid on MIPS processors.
 static const int kCpuHasMIPS = 0x10000;
-static const int kCpuHasMIPS_DSP = 0x20000;
-static const int kCpuHasMIPS_DSPR2 = 0x40000;
+static const int kCpuHasDSPR2 = 0x20000;
 
 // Internal function used to auto-init.
 LIBYUV_API
@@ -57,13 +56,13 @@ int ArmCpuCaps(const char* cpuinfo_name);
 // returns non-zero if instruction set is detected
 static __inline int TestCpuFlag(int test_flag) {
   LIBYUV_API extern int cpu_info_;
-  return (cpu_info_ == kCpuInit ? InitCpuFlags() : cpu_info_) & test_flag;
+  return (!cpu_info_ ? InitCpuFlags() : cpu_info_) & test_flag;
 }
 
 // For testing, allow CPU flags to be disabled.
 // ie MaskCpuFlags(~kCpuHasSSSE3) to disable SSSE3.
 // MaskCpuFlags(-1) to enable all cpu specific optimizations.
-// MaskCpuFlags(0) to disable all cpu specific optimizations.
+// MaskCpuFlags(1) to disable all cpu specific optimizations.
 LIBYUV_API
 void MaskCpuFlags(int enable_flags);
 

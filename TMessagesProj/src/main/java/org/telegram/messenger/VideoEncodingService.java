@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 1.7.x.
+ * This is the source code of Telegram for Android v. 3.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2014.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.messenger;
@@ -16,9 +16,9 @@ import android.support.v4.app.NotificationManagerCompat;
 
 public class VideoEncodingService extends Service implements NotificationCenter.NotificationCenterDelegate {
 
-    private NotificationCompat.Builder builder = null;
-    private String path = null;
-    private int currentProgress = 0;
+    private NotificationCompat.Builder builder;
+    private String path;
+    private int currentProgress;
 
     public VideoEncodingService() {
         super();
@@ -58,6 +58,7 @@ public class VideoEncodingService extends Service implements NotificationCenter.
 
     public int onStartCommand(Intent intent, int flags, int startId) {
         path = intent.getStringExtra("path");
+        boolean isGif = intent.getBooleanExtra("gif", false);
         if (path == null) {
             stopSelf();
             return Service.START_NOT_STICKY;
@@ -68,8 +69,13 @@ public class VideoEncodingService extends Service implements NotificationCenter.
             builder.setSmallIcon(android.R.drawable.stat_sys_upload);
             builder.setWhen(System.currentTimeMillis());
             builder.setContentTitle(LocaleController.getString("AppName", R.string.AppName));
-            builder.setTicker(LocaleController.getString("SendingVideo", R.string.SendingVideo));
-            builder.setContentText(LocaleController.getString("SendingVideo", R.string.SendingVideo));
+            if (isGif) {
+                builder.setTicker(LocaleController.getString("SendingGif", R.string.SendingGif));
+                builder.setContentText(LocaleController.getString("SendingGif", R.string.SendingGif));
+            } else {
+                builder.setTicker(LocaleController.getString("SendingVideo", R.string.SendingVideo));
+                builder.setContentText(LocaleController.getString("SendingVideo", R.string.SendingVideo));
+            }
         }
         currentProgress = 0;
         builder.setProgress(100, currentProgress, currentProgress == 0);

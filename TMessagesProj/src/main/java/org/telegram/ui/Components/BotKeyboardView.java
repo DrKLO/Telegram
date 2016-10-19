@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 2.x.x.
+ * This is the source code of Telegram for Android v. 3.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2015.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.ui.Components;
@@ -34,7 +34,7 @@ public class BotKeyboardView extends LinearLayout {
     private ArrayList<TextView> buttonViews = new ArrayList<>();
 
     public interface BotKeyboardViewDelegate {
-        void didPressedButton(CharSequence text);
+        void didPressedButton(TLRPC.KeyboardButton button);
     }
 
     public BotKeyboardView(Context context) {
@@ -88,7 +88,7 @@ public class BotKeyboardView extends LinearLayout {
         buttonViews.clear();
 
         if (buttons != null && botButtons.rows.size() != 0) {
-            isFullSize = (buttons.flags & 1) == 0;
+            isFullSize = !buttons.resize;
             buttonHeight = !isFullSize ? 42 : (int) Math.max(42, (panelHeight - AndroidUtilities.dp(30) - (botButtons.rows.size() - 1) * AndroidUtilities.dp(10)) / botButtons.rows.size() / AndroidUtilities.density);
             for (int a = 0; a < buttons.rows.size(); a++) {
                 TLRPC.TL_keyboardButtonRow row = buttons.rows.get(a);
@@ -99,8 +99,9 @@ public class BotKeyboardView extends LinearLayout {
 
                 float weight = 1.0f / row.buttons.size();
                 for (int b = 0; b < row.buttons.size(); b++) {
-                    TLRPC.TL_keyboardButton button = row.buttons.get(b);
+                    TLRPC.KeyboardButton button = row.buttons.get(b);
                     TextView textView = new TextView(getContext());
+                    textView.setTag(button);
                     textView.setTextColor(0xff36474f);
                     textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
                     textView.setGravity(Gravity.CENTER);
@@ -111,7 +112,7 @@ public class BotKeyboardView extends LinearLayout {
                     textView.setOnClickListener(new OnClickListener() {
                         @Override
                         public void onClick(View v) {
-                            delegate.didPressedButton(((TextView) v).getText());
+                            delegate.didPressedButton((TLRPC.KeyboardButton) v.getTag());
                         }
                     });
                     buttonViews.add(textView);

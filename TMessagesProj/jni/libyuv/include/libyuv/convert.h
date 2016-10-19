@@ -12,10 +12,8 @@
 #define INCLUDE_LIBYUV_CONVERT_H_
 
 #include "libyuv/basic_types.h"
-// TODO(fbarchard): Remove the following headers includes.
-#include "libyuv/convert_from.h"
-#include "libyuv/planar_functions.h"
-#include "libyuv/rotate.h"
+
+#include "libyuv/rotate.h"  // For enum RotationMode.
 
 #ifdef __cplusplus
 namespace libyuv {
@@ -71,6 +69,8 @@ int I400ToI420(const uint8* src_y, int src_stride_y,
                uint8* dst_v, int dst_stride_v,
                int width, int height);
 
+#define J400ToJ420 I400ToI420
+
 // Convert NV12 to I420.
 LIBYUV_API
 int NV12ToI420(const uint8* src_y, int src_stride_y,
@@ -108,15 +108,6 @@ int UYVYToI420(const uint8* src_uyvy, int src_stride_uyvy,
 // Convert M420 to I420.
 LIBYUV_API
 int M420ToI420(const uint8* src_m420, int src_stride_m420,
-               uint8* dst_y, int dst_stride_y,
-               uint8* dst_u, int dst_stride_u,
-               uint8* dst_v, int dst_stride_v,
-               int width, int height);
-
-// Convert Q420 to I420.
-LIBYUV_API
-int Q420ToI420(const uint8* src_y, int src_stride_y,
-               const uint8* src_yuy2, int src_stride_yuy2,
                uint8* dst_y, int dst_stride_y,
                uint8* dst_u, int dst_stride_u,
                uint8* dst_v, int dst_stride_v,
@@ -210,8 +201,6 @@ LIBYUV_API
 int MJPGSize(const uint8* sample, size_t sample_size,
              int* width, int* height);
 #endif
-
-// Note Bayer formats (BGGR) To I420 are in format_conversion.h
 
 // Convert camera sample to I420 with cropping, rotation and vertical flip.
 // "src_size" is needed to parse MJPG.

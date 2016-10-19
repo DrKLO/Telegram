@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 1.3.2.
+ * This is the source code of Telegram for Android v. 3.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.ui;
@@ -118,9 +118,7 @@ public class BlockedUsersActivity extends BaseFragment implements NotificationCe
         listView.setDivider(null);
         listView.setDividerHeight(0);
         listView.setAdapter(listViewAdapter = new ListAdapter(context));
-        if (Build.VERSION.SDK_INT >= 11) {
-            listView.setVerticalScrollbarPosition(LocaleController.isRTL ? ListView.SCROLLBAR_POSITION_LEFT : ListView.SCROLLBAR_POSITION_RIGHT);
-        }
+        listView.setVerticalScrollbarPosition(LocaleController.isRTL ? ListView.SCROLLBAR_POSITION_LEFT : ListView.SCROLLBAR_POSITION_RIGHT);
         frameLayout.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
@@ -263,11 +261,19 @@ public class BlockedUsersActivity extends BaseFragment implements NotificationCe
             int type = getItemViewType(i);
             if (type == 0) {
                 if (view == null) {
-                    view = new UserCell(mContext, 1);
+                    view = new UserCell(mContext, 1, 0, false);
                 }
                 TLRPC.User user = MessagesController.getInstance().getUser(MessagesController.getInstance().blockedUsers.get(i));
                 if (user != null) {
-                    ((UserCell) view).setData(user, null, user.phone != null && user.phone.length() != 0 ? PhoneFormat.getInstance().format("+" + user.phone) : LocaleController.getString("NumberUnknown", R.string.NumberUnknown), 0);
+                    String number;
+                    if (user.bot) {
+                        number = LocaleController.getString("Bot", R.string.Bot).substring(0, 1).toUpperCase() + LocaleController.getString("Bot", R.string.Bot).substring(1);
+                    } else if (user.phone != null && user.phone.length() != 0) {
+                        number = PhoneFormat.getInstance().format("+" + user.phone);
+                    } else {
+                        number = LocaleController.getString("NumberUnknown", R.string.NumberUnknown);
+                    }
+                    ((UserCell) view).setData(user, null, number, 0);
                 }
             } else if (type == 1) {
                 if (view == null) {

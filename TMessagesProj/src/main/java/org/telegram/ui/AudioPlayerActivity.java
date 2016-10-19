@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 2.x.x.
+ * This is the source code of Telegram for Android v. 3.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2015.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.ui;
@@ -30,6 +30,7 @@ import org.telegram.messenger.R;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.LineProgressView;
 
@@ -179,9 +180,9 @@ public class AudioPlayerActivity extends BaseFragment implements NotificationCen
         });
         fragmentView = frameLayout;
 
-        actionBar.setBackgroundColor(0xffffffff);
+        actionBar.setBackgroundColor(Theme.ACTION_BAR_PLAYER_COLOR);
         actionBar.setBackButtonImage(R.drawable.pl_back);
-        actionBar.setItemsBackground(R.drawable.bar_selector_audio);
+        actionBar.setItemsBackgroundColor(Theme.ACTION_BAR_AUDIO_SELECTOR_COLOR);
         if (!AndroidUtilities.isTablet()) {
             actionBar.showActionModeTop();
         }
@@ -317,8 +318,7 @@ public class AudioPlayerActivity extends BaseFragment implements NotificationCen
             updateTitle(id == NotificationCenter.audioDidReset && (Boolean) args[1]);
         } else if (id == NotificationCenter.audioProgressDidChanged) {
             MessageObject messageObject = MediaController.getInstance().getPlayingMessageObject();
-
-            if (messageObject.isMusic()) {
+            if (messageObject != null && messageObject.isMusic()) {
                 updateProgress(messageObject);
             }
         }
@@ -415,7 +415,7 @@ public class AudioPlayerActivity extends BaseFragment implements NotificationCen
     private void updateTitle(boolean shutdown) {
         MessageObject messageObject = MediaController.getInstance().getPlayingMessageObject();
         if (messageObject == null && shutdown || messageObject != null && !messageObject.isMusic()) {
-            if (!parentLayout.fragmentsStack.isEmpty() && parentLayout.fragmentsStack.get(parentLayout.fragmentsStack.size() - 1) == this) {
+            if (parentLayout != null && !parentLayout.fragmentsStack.isEmpty() && parentLayout.fragmentsStack.get(parentLayout.fragmentsStack.size() - 1) == this) {
                 finishFragment();
             } else {
                 removeSelfFromStack();
@@ -436,7 +436,7 @@ public class AudioPlayerActivity extends BaseFragment implements NotificationCen
                 actionBar.setTitle(messageObject.getMusicTitle());
                 actionBar.getTitleTextView().setTextColor(0xff212121);
                 actionBar.setSubtitle(messageObject.getMusicAuthor());
-                actionBar.getSubTitleTextView().setTextColor(0xff8a8a8a);
+                actionBar.getSubtitleTextView().setTextColor(0xff8a8a8a);
             }
             AudioInfo audioInfo = MediaController.getInstance().getAudioInfo();
             if (audioInfo != null && audioInfo.getCover() != null) {
@@ -451,10 +451,14 @@ public class AudioPlayerActivity extends BaseFragment implements NotificationCen
 
             if (durationTextView != null) {
                 int duration = 0;
-                for (TLRPC.DocumentAttribute attribute : messageObject.messageOwner.media.document.attributes) {
-                    if (attribute instanceof TLRPC.TL_documentAttributeAudio) {
-                        duration = attribute.duration;
-                        break;
+                TLRPC.Document document = messageObject.getDocument();
+                if (document != null) {
+                    for (int a = 0; a < document.attributes.size(); a++) {
+                        TLRPC.DocumentAttribute attribute = document.attributes.get(a);
+                        if (attribute instanceof TLRPC.TL_documentAttributeAudio) {
+                            duration = attribute.duration;
+                            break;
+                        }
                     }
                 }
                 durationTextView.setText(duration != 0 ? String.format("%d:%02d", duration / 60, duration % 60) : "-:--");

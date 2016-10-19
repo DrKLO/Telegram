@@ -1,20 +1,23 @@
 /*
- * This is the source code of Telegram for Android v. 2.x.x.
+ * This is the source code of Telegram for Android v. 3.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2015.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.ui.Cells;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.R;
 import org.telegram.ui.Components.LayoutHelper;
 
+@SuppressLint("NewApi")
 public class PhotoAttachCameraCell extends FrameLayout {
 
     public PhotoAttachCameraCell(Context context) {
@@ -22,8 +25,8 @@ public class PhotoAttachCameraCell extends FrameLayout {
 
         ImageView imageView = new ImageView(context);
         imageView.setScaleType(ImageView.ScaleType.CENTER);
-        //imageView.setImageResource(R.drawable.ic_attach_photobig);
-        imageView.setBackgroundColor(0xff777777);
+        imageView.setImageResource(R.drawable.instant_camera);
+        imageView.setBackgroundColor(0xff000000);
         addView(imageView, LayoutHelper.createFrame(80, 80));
     }
 

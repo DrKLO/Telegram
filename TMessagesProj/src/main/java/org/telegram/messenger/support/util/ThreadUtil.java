@@ -16,8 +16,6 @@
 
 package org.telegram.messenger.support.util;
 
-import org.telegram.messenger.support.util.TileList;
-
 interface ThreadUtil<T> {
 
     interface MainThreadCallback<T> {

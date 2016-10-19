@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 2.x
+ * This is the source code of Telegram for Android v. 3.x.x
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2015.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.ui.Components;
@@ -16,6 +16,7 @@ import android.graphics.drawable.Drawable;
 import android.view.animation.DecelerateInterpolator;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.ui.ActionBar.Theme;
 
 public class SendingFileDrawable extends Drawable {
 
@@ -33,7 +34,7 @@ public class SendingFileDrawable extends Drawable {
 
     public SendingFileDrawable() {
         super();
-        paint.setColor(0xffd7e8f7);
+        paint.setColor(Theme.ACTION_BAR_SUBTITLE_COLOR);
         paint.setStyle(Paint.Style.STROKE);
         paint.setStrokeWidth(AndroidUtilities.dp(2));
         paint.setStrokeCap(Paint.Cap.ROUND);

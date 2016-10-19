@@ -22,8 +22,6 @@ import android.support.v4.view.accessibility.AccessibilityNodeInfoCompat;
 import android.view.View;
 import android.view.accessibility.AccessibilityEvent;
 
-import org.telegram.messenger.support.widget.RecyclerView;
-
 /**
  * The AccessibilityDelegate used by RecyclerView.
  * <p>

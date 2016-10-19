@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 2.x.x.
+ * This is the source code of Telegram for Android v. 3.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2015.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.messenger;
@@ -21,15 +21,13 @@ import android.media.RemoteControlClient;
 import android.os.Build;
 import android.os.IBinder;
 import android.support.v4.app.NotificationCompat;
-import android.telephony.PhoneStateListener;
-import android.telephony.TelephonyManager;
 import android.view.View;
 import android.widget.RemoteViews;
 
 import org.telegram.messenger.audioinfo.AudioInfo;
 import org.telegram.ui.LaunchActivity;
 
-public class MusicPlayerService extends Service implements AudioManager.OnAudioFocusChangeListener, NotificationCenter.NotificationCenterDelegate {
+public class MusicPlayerService extends Service implements NotificationCenter.NotificationCenterDelegate {
 
     public static final String NOTIFY_PREVIOUS = "org.telegram.android.musicplayer.previous";
     public static final String NOTIFY_CLOSE = "org.telegram.android.musicplayer.close";
@@ -39,8 +37,6 @@ public class MusicPlayerService extends Service implements AudioManager.OnAudioF
 
     private RemoteControlClient remoteControlClient;
     private AudioManager audioManager;
-    private static boolean ignoreAudioFocus = false;
-    private PhoneStateListener phoneStateListener;
 
     private static boolean supportBigNotifications = Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN;
     private static boolean supportLockScreenControls = Build.VERSION.SDK_INT >= Build.VERSION_CODES.ICE_CREAM_SANDWICH;
@@ -55,29 +51,6 @@ public class MusicPlayerService extends Service implements AudioManager.OnAudioF
         audioManager = (AudioManager) getSystemService(AUDIO_SERVICE);
         NotificationCenter.getInstance().addObserver(this, NotificationCenter.audioProgressDidChanged);
         NotificationCenter.getInstance().addObserver(this, NotificationCenter.audioPlayStateChanged);
-        try {
-            phoneStateListener = new PhoneStateListener() {
-                @Override
-                public void onCallStateChanged(int state, String incomingNumber) {
-                    if (state == TelephonyManager.CALL_STATE_RINGING) {
-                        if (MediaController.getInstance().isPlayingAudio(MediaController.getInstance().getPlayingMessageObject()) && !MediaController.getInstance().isAudioPaused()) {
-                            MediaController.getInstance().pauseAudio(MediaController.getInstance().getPlayingMessageObject());
-                        }
-                    } else if (state == TelephonyManager.CALL_STATE_IDLE) {
-
-                    } else if (state == TelephonyManager.CALL_STATE_OFFHOOK) {
-
-                    }
-                    super.onCallStateChanged(state, incomingNumber);
-                }
-            };
-            TelephonyManager mgr = (TelephonyManager) getSystemService(TELEPHONY_SERVICE);
-            if (mgr != null) {
-                mgr.listen(phoneStateListener, PhoneStateListener.LISTEN_CALL_STATE);
-            }
-        } catch (Exception e) {
-            FileLog.e("tmessages", e);
-        }
         super.onCreate();
     }
 
@@ -217,10 +190,13 @@ public class MusicPlayerService extends Service implements AudioManager.OnAudioF
             metadataEditor.putString(MediaMetadataRetriever.METADATA_KEY_ARTIST, authorName);
             metadataEditor.putString(MediaMetadataRetriever.METADATA_KEY_TITLE, songName);
             if (audioInfo != null && audioInfo.getCover() != null) {
-                metadataEditor.putBitmap(RemoteControlClient.MetadataEditor.BITMAP_KEY_ARTWORK, audioInfo.getCover());
+                try {
+                    metadataEditor.putBitmap(RemoteControlClient.MetadataEditor.BITMAP_KEY_ARTWORK, audioInfo.getCover());
+                } catch (Throwable e) {
+                    FileLog.e("tmessages", e);
+                }
             }
             metadataEditor.apply();
-            audioManager.requestAudioFocus(this, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN);
         }
     }
 
@@ -247,31 +223,8 @@ public class MusicPlayerService extends Service implements AudioManager.OnAudioF
             metadataEditor.apply();
             audioManager.unregisterRemoteControlClient(remoteControlClient);
         }
-        try {
-            TelephonyManager mgr = (TelephonyManager) getSystemService(TELEPHONY_SERVICE);
-            if (mgr != null) {
-                mgr.listen(phoneStateListener, PhoneStateListener.LISTEN_NONE);
-            }
-        } catch (Exception e) {
-            FileLog.e("tmessages", e);
-        }
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.audioProgressDidChanged);
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.audioPlayStateChanged);
-    }
-
-    @Override
-    public void onAudioFocusChange(int focusChange) {
-        if (ignoreAudioFocus) {
-            ignoreAudioFocus = false;
-            return;
-        }
-        if (focusChange == AudioManager.AUDIOFOCUS_LOSS) {
-            if (MediaController.getInstance().isPlayingAudio(MediaController.getInstance().getPlayingMessageObject()) && !MediaController.getInstance().isAudioPaused()) {
-                MediaController.getInstance().pauseAudio(MediaController.getInstance().getPlayingMessageObject());
-            }
-        } else if (focusChange == AudioManager.AUDIOFOCUS_GAIN) {
-            //MediaController.getInstance().playAudio(MediaController.getInstance().getPlayingMessageObject());
-        }
     }
 
     @Override
@@ -284,9 +237,5 @@ public class MusicPlayerService extends Service implements AudioManager.OnAudioF
                 stopSelf();
             }
         }
-    }
-
-    public static void setIgnoreAudioFocus() {
-        ignoreAudioFocus = true;
     }
 }

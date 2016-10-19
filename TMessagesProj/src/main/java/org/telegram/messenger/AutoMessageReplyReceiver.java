@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 2.x.x.
+ * This is the source code of Telegram for Android v. 3.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2014.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.messenger;
@@ -18,6 +18,7 @@ public class AutoMessageReplyReceiver extends BroadcastReceiver {
 
     @Override
     public void onReceive(Context context, Intent intent) {
+        ApplicationLoader.postInitApplication();
         Bundle remoteInput = RemoteInput.getResultsFromIntent(intent);
         if (remoteInput == null) {
             return;
@@ -31,7 +32,7 @@ public class AutoMessageReplyReceiver extends BroadcastReceiver {
         if (dialog_id == 0 || max_id == 0) {
             return;
         }
-        SendMessagesHelper.getInstance().sendMessage(text.toString(), dialog_id, null, null, true, false);
-        MessagesController.getInstance().markDialogAsRead(dialog_id, max_id, max_id, 0, 0, true, false);
+        SendMessagesHelper.getInstance().sendMessage(text.toString(), dialog_id, null, null, true, null, null, null);
+        MessagesController.getInstance().markDialogAsRead(dialog_id, max_id, max_id, 0, true, false);
     }
 }

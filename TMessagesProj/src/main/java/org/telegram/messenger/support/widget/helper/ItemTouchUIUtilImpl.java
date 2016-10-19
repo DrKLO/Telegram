@@ -21,23 +21,23 @@ import android.support.v4.view.ViewCompat;
 import org.telegram.messenger.support.widget.RecyclerView;
 import android.view.View;
 
+
 /**
  * Package private class to keep implementations. Putting them inside ItemTouchUIUtil makes them
  * public API, which is not desired in this case.
  */
 class ItemTouchUIUtilImpl {
-    final static int item_touch_helper_previous_elevation = 123;
     static class Lollipop extends Honeycomb {
         @Override
         public void onDraw(Canvas c, RecyclerView recyclerView, View view,
                 float dX, float dY, int actionState, boolean isCurrentlyActive) {
             if (isCurrentlyActive) {
-                Object originalElevation = view.getTag(item_touch_helper_previous_elevation);
+                Object originalElevation = view.getTag();
                 if (originalElevation == null) {
                     originalElevation = ViewCompat.getElevation(view);
                     float newElevation = 1f + findMaxElevation(recyclerView, view);
                     ViewCompat.setElevation(view, newElevation);
-                    view.setTag(item_touch_helper_previous_elevation, originalElevation);
+                    view.setTag(originalElevation);
                 }
             }
             super.onDraw(c, recyclerView, view, dX, dY, actionState, isCurrentlyActive);
@@ -61,11 +61,11 @@ class ItemTouchUIUtilImpl {
 
         @Override
         public void clearView(View view) {
-            final Object tag = view.getTag(item_touch_helper_previous_elevation);
+            final Object tag = view.getTag();
             if (tag != null && tag instanceof Float) {
                 ViewCompat.setElevation(view, (Float) tag);
             }
-            view.setTag(item_touch_helper_previous_elevation, null);
+            view.setTag(null);
             super.clearView(view);
         }
     }

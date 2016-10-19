@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2014.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.ui.Components;
@@ -36,10 +36,11 @@ public class TimerDrawable extends Drawable {
             emptyTimerDrawable = context.getResources().getDrawable(R.drawable.header_timer);
             timerDrawable = context.getResources().getDrawable(R.drawable.header_timer2);
             timePaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
-            timePaint.setTextSize(AndroidUtilities.dp(11));
             timePaint.setColor(0xffffffff);
             timePaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         }
+
+        timePaint.setTextSize(AndroidUtilities.dp(11));
     }
 
     public void setTime(int value) {

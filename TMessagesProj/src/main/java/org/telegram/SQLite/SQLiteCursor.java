@@ -1,17 +1,15 @@
 /*
- * This is the source code of Telegram for Android v. 1.3.2.
+ * This is the source code of Telegram for Android v. 3.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.SQLite;
 
 import org.telegram.messenger.FileLog;
 import org.telegram.tgnet.NativeByteBuffer;
-
-import java.nio.ByteBuffer;
 
 public class SQLiteCursor {
 
@@ -58,19 +56,13 @@ public class SQLiteCursor {
 		return columnByteArrayValue(preparedStatement.getStatementHandle(), columnIndex);
 	}
 
-    public int byteArrayLength(int columnIndex) throws SQLiteException {
-        checkRow();
-        return columnByteArrayLength(preparedStatement.getStatementHandle(), columnIndex);
-    }
-
-    public int byteBufferValue(int columnIndex, ByteBuffer buffer) throws SQLiteException {
-        checkRow();
-        return columnByteBufferValue(preparedStatement.getStatementHandle(), columnIndex, buffer);
-    }
-
-	public int byteBufferValue(int columnIndex, NativeByteBuffer buffer) throws SQLiteException {
+	public NativeByteBuffer byteBufferValue(int columnIndex) throws SQLiteException {
 		checkRow();
-		return columnByteBufferValue(preparedStatement.getStatementHandle(), columnIndex, buffer.buffer);
+		int ptr = columnByteBufferValue(preparedStatement.getStatementHandle(), columnIndex);
+		if (ptr != 0) {
+			return NativeByteBuffer.wrap(ptr);
+		}
+		return null;
 	}
 
 	public int getTypeOf(int columnIndex) throws SQLiteException {
@@ -123,6 +115,5 @@ public class SQLiteCursor {
 	native double columnDoubleValue(int statementHandle, int columnIndex);
 	native String columnStringValue(int statementHandle, int columnIndex);
 	native byte[] columnByteArrayValue(int statementHandle, int columnIndex);
-    native int columnByteArrayLength(int statementHandle, int columnIndex);
-    native int columnByteBufferValue(int statementHandle, int columnIndex, ByteBuffer buffer);
+    native int columnByteBufferValue(int statementHandle, int columnIndex);
 }

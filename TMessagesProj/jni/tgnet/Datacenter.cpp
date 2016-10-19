@@ -17,6 +17,7 @@
 #include "Datacenter.h"
 #include "Connection.h"
 #include "MTProtoScheme.h"
+#include "ApiScheme.h"
 #include "FileLog.h"
 #include "NativeByteBuffer.h"
 #include "ByteArray.h"
@@ -37,7 +38,7 @@ Datacenter::Datacenter(uint32_t id) {
 
 Datacenter::Datacenter(NativeByteBuffer *data) {
     for (uint32_t a = 0; a < DOWNLOAD_CONNECTIONS_COUNT; a++) {
-        downloadConnections[a] = nullptr;
+        downloadConnections[a] = nullptr; 
     }
     uint32_t currentVersion = data->readUint32(nullptr);
     if (currentVersion >= 2 && currentVersion <= 5) {
@@ -668,9 +669,7 @@ void Datacenter::onHandshakeConnectionConnected(Connection *connection) {
     if (handshakeState == 0 || !needResendData) {
         return;
     }
-    if (handshakeRequest != nullptr) {
-        sendRequestData(handshakeRequest, true);
-    }
+    beginHandshake(false);
 }
 
 inline uint64_t gcd(uint64_t a, uint64_t b) {
@@ -1377,12 +1376,13 @@ NativeByteBuffer *Datacenter::createRequestsData(std::vector<std::unique_ptr<Net
         } else {
             messageBody = networkMessage->message->body.get();
         }
-        DEBUG_D("connection(%p, dc%u, type %d) send message (session: 0x%llx, seqno: %d, messageid: 0x%llx): %s", connection, datacenterId, connection->getConnectionType(), (uint64_t) connection->getSissionId(), networkMessage->message->seqno, (uint64_t) networkMessage->message->msg_id, typeid(*messageBody).name());
+        DEBUG_D("connection(%p, dc%u, type %d) send message (session: 0x%llx, seqno: %d, messageid: 0x%llx): %s(%p)", connection, datacenterId, connection->getConnectionType(), (uint64_t) connection->getSissionId(), networkMessage->message->seqno, (uint64_t) networkMessage->message->msg_id, typeid(*messageBody).name(), messageBody);
 
         int64_t messageTime = (int64_t) (networkMessage->message->msg_id / 4294967296.0 * 1000);
-        int64_t currentTime = ConnectionsManager::getInstance().getCurrentTimeMillis() + (int64_t) timeDifference * 1000;
+        int64_t currentTime = ConnectionsManager::getInstance().getCurrentTimeMillis() + (int64_t) ConnectionsManager::getInstance().getTimeDifference() * 1000;
 
         if (messageTime < currentTime - 30000 || messageTime > currentTime + 25000) {
+            DEBUG_D("wrap message in container");
             TL_msg_container *messageContainer = new TL_msg_container();
             messageContainer->messages.push_back(std::move(networkMessage->message));
 
@@ -1395,6 +1395,7 @@ NativeByteBuffer *Datacenter::createRequestsData(std::vector<std::unique_ptr<Net
             messageSeqNo = networkMessage->message->seqno;
         }
     } else {
+        DEBUG_D("start write messages to container");
         TL_msg_container *messageContainer = new TL_msg_container();
         size_t count = requests.size();
         for (uint32_t a = 0; a < count; a++) {
@@ -1404,7 +1405,7 @@ NativeByteBuffer *Datacenter::createRequestsData(std::vector<std::unique_ptr<Net
             } else {
                 messageBody = networkMessage->message->body.get();
             }
-            DEBUG_D("connection(%p, dc%u, type %d) send message (session: 0x%llx, seqno: %d, messageid: 0x%llx): %s", connection, datacenterId, connection->getConnectionType(), (uint64_t) connection->getSissionId(), networkMessage->message->seqno, (uint64_t) networkMessage->message->msg_id, typeid(*messageBody).name());
+            DEBUG_D("connection(%p, dc%u, type %d) send message (session: 0x%llx, seqno: %d, messageid: 0x%llx): %s(%p)", connection, datacenterId, connection->getConnectionType(), (uint64_t) connection->getSissionId(), networkMessage->message->seqno, (uint64_t) networkMessage->message->msg_id, typeid(*messageBody).name(), messageBody);
             messageContainer->messages.push_back(std::unique_ptr<TL_message>(std::move(networkMessage->message)));
         }
         messageId = ConnectionsManager::getInstance().generateMessageId();

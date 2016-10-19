@@ -1,16 +1,15 @@
 /*
- * This is the source code of Telegram for Android v. 2.x.x.
+ * This is the source code of Telegram for Android v. 3.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2015.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.ui;
 
 import android.content.Context;
 import android.database.Cursor;
-import android.os.Build;
 import android.provider.MediaStore;
 import android.view.Gravity;
 import android.view.View;
@@ -77,7 +76,7 @@ public class AudioSelectActivity extends BaseFragment implements NotificationCen
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.closeChats);
         NotificationCenter.getInstance().removeObserver(this, NotificationCenter.audioDidReset);
         if (playingAudio != null && MediaController.getInstance().isPlayingAudio(playingAudio)) {
-            MediaController.getInstance().clenupPlayer(true, true);
+            MediaController.getInstance().cleanupPlayer(true, true);
         }
     }
 
@@ -85,7 +84,7 @@ public class AudioSelectActivity extends BaseFragment implements NotificationCen
     public View createView(Context context) {
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBar.setAllowOverlayTitle(true);
-        actionBar.setTitle(LocaleController.getString("AttachAudio", R.string.AttachAudio));
+        actionBar.setTitle(LocaleController.getString("AttachMusic", R.string.AttachMusic));
         actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
             public void onItemClick(int id) {
@@ -108,9 +107,7 @@ public class AudioSelectActivity extends BaseFragment implements NotificationCen
         listView.setDivider(null);
         listView.setDividerHeight(0);
         listView.setAdapter(listViewAdapter = new ListAdapter(context));
-        if (Build.VERSION.SDK_INT >= 11) {
-            listView.setVerticalScrollbarPosition(LocaleController.isRTL ? ListView.SCROLLBAR_POSITION_LEFT : ListView.SCROLLBAR_POSITION_RIGHT);
-        }
+        listView.setVerticalScrollbarPosition(LocaleController.isRTL ? ListView.SCROLLBAR_POSITION_LEFT : ListView.SCROLLBAR_POSITION_RIGHT);
         frameLayout.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.TOP, 0, 0, 0, 48));
 
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
@@ -203,7 +200,7 @@ public class AudioSelectActivity extends BaseFragment implements NotificationCen
                 final ArrayList<MediaController.AudioEntry> newAudioEntries = new ArrayList<>();
                 Cursor cursor = null;
                 try {
-                    cursor = ApplicationLoader.applicationContext.getContentResolver().query(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, projection, MediaStore.Audio.Media.IS_MUSIC + " != 0", null, null);
+                    cursor = ApplicationLoader.applicationContext.getContentResolver().query(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, projection, MediaStore.Audio.Media.IS_MUSIC + " != 0", null, MediaStore.Audio.Media.TITLE);
                     int id = -2000000000;
                     while (cursor.moveToNext()) {
                         MediaController.AudioEntry audioEntry = new MediaController.AudioEntry();
@@ -217,7 +214,7 @@ public class AudioSelectActivity extends BaseFragment implements NotificationCen
                         File file = new File(audioEntry.path);
 
                         TLRPC.TL_message message = new TLRPC.TL_message();
-                        message.flags = TLRPC.MESSAGE_FLAG_OUT;
+                        message.out = true;
                         message.id = id;
                         message.to_id = new TLRPC.TL_peerUser();
                         message.to_id.user_id = message.from_id = UserConfig.getClientUserId();
@@ -243,6 +240,7 @@ public class AudioSelectActivity extends BaseFragment implements NotificationCen
                         attributeAudio.duration = audioEntry.duration;
                         attributeAudio.title = audioEntry.title;
                         attributeAudio.performer = audioEntry.author;
+                        attributeAudio.flags |= 3;
                         message.media.document.attributes.add(attributeAudio);
 
                         TLRPC.TL_documentAttributeFilename fileName = new TLRPC.TL_documentAttributeFilename();

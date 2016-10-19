@@ -1,9 +1,10 @@
 #include <jni.h>
+#include "tgnet/ApiScheme.h"
 #include "tgnet/BuffersStorage.h"
 #include "tgnet/NativeByteBuffer.h"
 #include "tgnet/ConnectionsManager.h"
 #include "tgnet/MTProtoScheme.h"
-#include "tgnet/FileLog.h"
+#include "tgnet/FileLoadOperation.h"
 
 JavaVM *java;
 jclass jclass_RequestDelegateInternal;
@@ -11,6 +12,11 @@ jmethodID jclass_RequestDelegateInternal_run;
 
 jclass jclass_QuickAckDelegate;
 jmethodID jclass_QuickAckDelegate_run;
+
+jclass jclass_FileLoadOperationDelegate;
+jmethodID jclass_FileLoadOperationDelegate_onFinished;
+jmethodID jclass_FileLoadOperationDelegate_onFailed;
+jmethodID jclass_FileLoadOperationDelegate_onProgressChanged;
 
 jclass jclass_ConnectionsManager;
 jmethodID jclass_ConnectionsManager_onUnparsedMessageReceived;
@@ -20,6 +26,93 @@ jmethodID jclass_ConnectionsManager_onLogout;
 jmethodID jclass_ConnectionsManager_onConnectionStateChanged;
 jmethodID jclass_ConnectionsManager_onInternalPushReceived;
 jmethodID jclass_ConnectionsManager_onUpdateConfig;
+
+jint createLoadOpetation(JNIEnv *env, jclass c, jint dc_id, jlong id, jlong volume_id, jlong access_hash, jint local_id, jbyteArray encKey, jbyteArray encIv, jstring extension, jint version, jint size, jstring dest, jstring temp, jobject delegate) {
+    if (encKey != nullptr && encIv == nullptr || encKey == nullptr && encIv != nullptr || extension == nullptr || dest == nullptr || temp == nullptr) {
+        return 0;
+    }
+    FileLoadOperation *loadOperation = nullptr;
+    bool error = false;
+
+    const char *extensionStr = env->GetStringUTFChars(extension, NULL);
+    const char *destStr = env->GetStringUTFChars(dest, NULL);
+    const char *tempStr = env->GetStringUTFChars(temp, NULL);
+
+    if (extensionStr == nullptr || destStr == nullptr || tempStr == nullptr) {
+        error = true;
+    }
+
+    jbyte *keyBuff = nullptr;
+    jbyte *ivBuff = nullptr;
+
+    if (!error && encKey != nullptr) {
+        keyBuff = env->GetByteArrayElements(encKey, NULL);
+        ivBuff = env->GetByteArrayElements(encIv, NULL);
+        if (keyBuff == nullptr || ivBuff == nullptr) {
+            error = true;
+        }
+    }
+    if (!error) {
+        if (delegate != nullptr) {
+            delegate = env->NewGlobalRef(delegate);
+        }
+        loadOperation = new FileLoadOperation(dc_id, id, volume_id, access_hash, local_id, (uint8_t *) keyBuff, (uint8_t *) ivBuff, extensionStr, version, size, destStr, tempStr);
+        loadOperation->setDelegate([delegate](std::string path) {
+            jstring pathText = jniEnv->NewStringUTF(path.c_str());
+            if (delegate != nullptr) {
+                jniEnv->CallVoidMethod(delegate, jclass_FileLoadOperationDelegate_onFinished, pathText);
+            }
+            if (pathText != nullptr) {
+                jniEnv->DeleteLocalRef(pathText);
+            }
+        }, [delegate](FileLoadFailReason reason) {
+            if (delegate != nullptr) {
+                jniEnv->CallVoidMethod(delegate, jclass_FileLoadOperationDelegate_onFailed, reason);
+            }
+        }, [delegate](float progress) {
+            if (delegate != nullptr) {
+                jniEnv->CallVoidMethod(delegate, jclass_FileLoadOperationDelegate_onProgressChanged, progress);
+            }
+        });
+        loadOperation->ptr1 = delegate;
+    }
+    if (keyBuff != nullptr) {
+        env->ReleaseByteArrayElements(encKey, keyBuff, JNI_ABORT);
+    }
+    if (ivBuff != nullptr) {
+        env->ReleaseByteArrayElements(encIv, ivBuff, JNI_ABORT);
+    }
+    if (extensionStr != nullptr) {
+        env->ReleaseStringUTFChars(extension, extensionStr);
+    }
+    if (destStr != nullptr) {
+        env->ReleaseStringUTFChars(dest, destStr);
+    }
+    if (tempStr != nullptr) {
+        env->ReleaseStringUTFChars(temp, tempStr);
+    }
+
+    return (jint) loadOperation;
+}
+
+void startLoadOperation(JNIEnv *env, jclass c, jint address) {
+    if (address != 0) {
+        ((FileLoadOperation *) address)->start();
+    }
+}
+
+void cancelLoadOperation(JNIEnv *env, jclass c, jint address) {
+    if (address != 0) {
+        ((FileLoadOperation *) address)->cancel();
+    }
+}
+
+static const char *FileLoadOperationClassPathName = "org/telegram/tgnet/FileLoadOperation";
+static JNINativeMethod FileLoadOperationMethods[] = {
+        {"native_createLoadOpetation", "(IJJJI[B[BLjava/lang/String;IILjava/lang/String;Ljava/lang/String;Ljava/lang/Object;)I", (void *) createLoadOpetation},
+        {"native_startLoadOperation", "(I)V", (void *) startLoadOperation},
+        {"native_cancelLoadOperation", "(I)V", (void *) cancelLoadOperation}
+};
 
 jint getFreeBuffer(JNIEnv *env, jclass c, jint length) {
     return (jint) BuffersStorage::getInstance().getFreeBuffer(length);
@@ -96,7 +189,7 @@ void sendRequest(JNIEnv *env, jclass c, jint object, jobject onComplete, jobject
         if (onQuickAck != nullptr) {
             jniEnv->CallVoidMethod(onQuickAck, jclass_QuickAckDelegate_run);
         }
-    }), flags, datacenterId, (ConnectionType) connetionType, immediate, onComplete, onQuickAck);
+    }), flags, datacenterId, (ConnectionType) connetionType, immediate, token, onComplete, onQuickAck);
 }
 
 void cancelRequest(JNIEnv *env, jclass c, jint token, jboolean notifyServer) {
@@ -157,6 +250,10 @@ void setNetworkAvailable(JNIEnv *env, jclass c, jboolean value) {
     ConnectionsManager::getInstance().setNetworkAvailable(value);
 }
 
+void setPushConnectionEnabled(JNIEnv *env, jclass c, jboolean value) {
+    ConnectionsManager::getInstance().setPushConnectionEnabled(value);
+}
+
 class Delegate : public ConnectiosManagerDelegate {
     
     void onUpdate() {
@@ -194,17 +291,15 @@ class Delegate : public ConnectiosManagerDelegate {
     }
 };
 
-void init(JNIEnv *env, jclass c, jint version, jint layer, jint apiId, jstring deviceModel, jstring systemVersion, jstring appVersion, jstring langCode, jstring configPath, jint userId) {
-
-
-    
+void init(JNIEnv *env, jclass c, jint version, jint layer, jint apiId, jstring deviceModel, jstring systemVersion, jstring appVersion, jstring langCode, jstring configPath, jstring logPath, jint userId, jboolean enablePushConnection) {
     const char *deviceModelStr = env->GetStringUTFChars(deviceModel, 0);
     const char *systemVersionStr = env->GetStringUTFChars(systemVersion, 0);
     const char *appVersionStr = env->GetStringUTFChars(appVersion, 0);
     const char *langCodeStr = env->GetStringUTFChars(langCode, 0);
     const char *configPathStr = env->GetStringUTFChars(configPath, 0);
+    const char *logPathStr = env->GetStringUTFChars(logPath, 0);
 
-    ConnectionsManager::getInstance().init(version, layer, apiId, std::string(deviceModelStr), std::string(systemVersionStr), std::string(appVersionStr), std::string(langCodeStr), std::string(configPathStr), userId, true);
+    ConnectionsManager::getInstance().init(version, layer, apiId, std::string(deviceModelStr), std::string(systemVersionStr), std::string(appVersionStr), std::string(langCodeStr), std::string(configPathStr), std::string(logPathStr), userId, true, enablePushConnection);
 
     if (deviceModelStr != 0) {
         env->ReleaseStringUTFChars(deviceModel, deviceModelStr);
@@ -220,6 +315,9 @@ void init(JNIEnv *env, jclass c, jint version, jint layer, jint apiId, jstring d
     }
     if (configPathStr != 0) {
         env->ReleaseStringUTFChars(configPath, configPathStr);
+    }
+    if (logPathStr != 0) {
+        env->ReleaseStringUTFChars(logPath, logPathStr);
     }
 }
 
@@ -241,13 +339,14 @@ static JNINativeMethod ConnectionsManagerMethods[] = {
         {"native_applyDatacenterAddress", "(ILjava/lang/String;I)V", (void *) applyDatacenterAddress},
         {"native_getConnectionState", "()I", (void *) getConnectionState},
         {"native_setUserId", "(I)V", (void *) setUserId},
-        {"native_init", "(IIILjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;I)V", (void *) init},
+        {"native_init", "(IIILjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;IZ)V", (void *) init},
         {"native_switchBackend", "()V", (void *) switchBackend},
         {"native_pauseNetwork", "()V", (void *) pauseNetwork},
         {"native_resumeNetwork", "(Z)V", (void *) resumeNetwork},
         {"native_updateDcSettings", "()V", (void *) updateDcSettings},
         {"native_setUseIpv6", "(Z)V", (void *) setUseIpv6},
         {"native_setNetworkAvailable", "(Z)V", (void *) setNetworkAvailable},
+        {"native_setPushConnectionEnabled", "(Z)V", (void *) setPushConnectionEnabled},
         {"native_setJava", "(Z)V", (void *) setJava}
 };
 
@@ -267,6 +366,10 @@ extern "C" int registerNativeTgNetFunctions(JavaVM *vm, JNIEnv *env) {
     java = vm;
     
     if (!registerNativeMethods(env, NativeByteBufferClassPathName, NativeByteBufferMethods, sizeof(NativeByteBufferMethods) / sizeof(NativeByteBufferMethods[0]))) {
+        return JNI_FALSE;
+    }
+
+    if (!registerNativeMethods(env, FileLoadOperationClassPathName, FileLoadOperationMethods, sizeof(FileLoadOperationMethods) / sizeof(FileLoadOperationMethods[0]))) {
         return JNI_FALSE;
     }
     
@@ -289,6 +392,26 @@ extern "C" int registerNativeTgNetFunctions(JavaVM *vm, JNIEnv *env) {
     }
     jclass_QuickAckDelegate_run = env->GetMethodID(jclass_QuickAckDelegate, "run", "()V");
     if (jclass_QuickAckDelegate_run == 0) {
+        return JNI_FALSE;
+    }
+
+    jclass_FileLoadOperationDelegate = (jclass) env->NewGlobalRef(env->FindClass("org/telegram/tgnet/FileLoadOperationDelegate"));
+    if (jclass_FileLoadOperationDelegate == 0) {
+        return JNI_FALSE;
+    }
+
+    jclass_FileLoadOperationDelegate_onFinished = env->GetMethodID(jclass_FileLoadOperationDelegate, "onFinished", "(Ljava/lang/String;)V");
+    if (jclass_FileLoadOperationDelegate_onFinished == 0) {
+        return JNI_FALSE;
+    }
+
+    jclass_FileLoadOperationDelegate_onFailed = env->GetMethodID(jclass_FileLoadOperationDelegate, "onFailed", "(I)V");
+    if (jclass_FileLoadOperationDelegate_onFailed == 0) {
+        return JNI_FALSE;
+    }
+
+    jclass_FileLoadOperationDelegate_onProgressChanged = env->GetMethodID(jclass_FileLoadOperationDelegate, "onProgressChanged", "(F)V");
+    if (jclass_FileLoadOperationDelegate_onProgressChanged == 0) {
         return JNI_FALSE;
     }
 

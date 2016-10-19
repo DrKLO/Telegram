@@ -22,9 +22,6 @@ import android.util.Log;
 import android.util.SparseBooleanArray;
 import android.util.SparseIntArray;
 
-import org.telegram.messenger.support.util.ThreadUtil;
-import org.telegram.messenger.support.util.TileList;
-
 /**
  * A utility class that supports asynchronous content loading.
  * <p>
@@ -42,7 +39,7 @@ import org.telegram.messenger.support.util.TileList;
  * Note that this class uses a single thread to load the data, so it suitable to load data from
  * secondary storage such as disk, but not from network.
  * <p>
- * This class is designed to work with {@link org.telegram.messenger.support.widget.RecyclerView}, but it does
+ * This class is designed to work with {@link android.support.v7.widget.RecyclerView}, but it does
  * not depend on it and can be used with other list views.
  *
  */
@@ -113,7 +110,7 @@ public class AsyncListUtil<T> {
      * <p>
      * Identifies the data items that have not been loaded yet and initiates loading them in the
      * background. Should be called from the view's scroll listener (such as
-     * {@link org.telegram.messenger.support.widget.RecyclerView.OnScrollListener#onScrolled}).
+     * {@link android.support.v7.widget.RecyclerView.OnScrollListener#onScrolled}).
      */
     public void onRangeChanged() {
         if (isRefreshPending()) {

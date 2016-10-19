@@ -55,12 +55,13 @@ public:
     Connection *getGenericConnection(bool create);
     Connection *getPushConnection(bool create);
     Connection *getConnectionByType(uint32_t connectionType, bool create);
+    
+    static void aesIgeEncryption(uint8_t *buffer, uint8_t *key, uint8_t *iv, bool encrypt, bool changeIv, uint32_t length);
 
 private:
     void onHandshakeConnectionClosed(Connection *connection);
     void onHandshakeConnectionConnected(Connection *connection);
     void processHandshakeResponse(TLObject *message, int64_t messageId);
-    void aesIgeEncryption(uint8_t *buffer, uint8_t *key, uint8_t *iv, bool encrypt, bool changeIv, uint32_t length);
     NativeByteBuffer *createRequestsData(std::vector<std::unique_ptr<NetworkMessage>> &requests, int32_t *quickAckId, Connection *connection);
     bool decryptServerResponse(int64_t keyId, uint8_t *key, uint8_t *data, uint32_t length);
     TLObject *getCurrentHandshakeRequest();

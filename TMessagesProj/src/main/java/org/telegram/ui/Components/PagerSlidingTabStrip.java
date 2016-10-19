@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 1.3.2.
+ * This is the source code of Telegram for Android v. 3.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.ui.Components;
@@ -28,6 +28,7 @@ public class PagerSlidingTabStrip extends HorizontalScrollView {
 
     public interface IconTabProvider {
         int getPageIconResId(int position);
+        void customOnDraw(Canvas canvas, int position);
     }
 
     private LinearLayout.LayoutParams defaultTabLayoutParams;
@@ -113,7 +114,15 @@ public class PagerSlidingTabStrip extends HorizontalScrollView {
     }
 
     private void addIconTab(final int position, int resId) {
-        ImageView tab = new ImageView(getContext());
+        ImageView tab = new ImageView(getContext()) {
+            @Override
+            protected void onDraw(Canvas canvas) {
+                super.onDraw(canvas);
+                if (pager.getAdapter() instanceof IconTabProvider) {
+                    ((IconTabProvider) pager.getAdapter()).customOnDraw(canvas, position);
+                }
+            }
+        };
         tab.setFocusable(true);
         tab.setImageResource(resId);
         tab.setScaleType(ImageView.ScaleType.CENTER);

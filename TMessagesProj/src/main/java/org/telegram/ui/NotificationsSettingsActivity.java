@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 1.3.2.
+ * This is the source code of Telegram for Android v. 3.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.ui;
@@ -52,11 +52,12 @@ import org.telegram.ui.Components.ColorPickerView;
 import org.telegram.ui.Components.LayoutHelper;
 
 public class NotificationsSettingsActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
+
     private ListView listView;
     private boolean reseting = false;
 
     private int notificationsServiceRow;
-    private int messageSectionRow2;
+    private int notificationsServiceConnectionRow;
     private int messageSectionRow;
     private int messageAlertRow;
     private int messagePreviewRow;
@@ -84,6 +85,7 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
     private int eventsSectionRow2;
     private int eventsSectionRow;
     private int contactJoinedRow;
+    private int pinnedMessageRow;
     private int otherSectionRow2;
     private int otherSectionRow;
     private int badgeNumberRow;
@@ -96,8 +98,6 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
 
     @Override
     public boolean onFragmentCreate() {
-        notificationsServiceRow = rowCount++;
-        messageSectionRow2 = rowCount++;
         messageSectionRow = rowCount++;
         messageAlertRow = rowCount++;
         messagePreviewRow = rowCount++;
@@ -137,8 +137,11 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
         eventsSectionRow2 = rowCount++;
         eventsSectionRow = rowCount++;
         contactJoinedRow = rowCount++;
+        pinnedMessageRow = rowCount++;
         otherSectionRow2 = rowCount++;
         otherSectionRow = rowCount++;
+        notificationsServiceRow = rowCount++;
+        notificationsServiceConnectionRow = rowCount++;
         badgeNumberRow = rowCount++;
         androidAutoAlertRow = -1;
         repeatRow = rowCount++;
@@ -186,7 +189,7 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
         listView.setAdapter(new ListAdapter(context));
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
-            public void onItemClick(AdapterView<?> adapterView, View view, final int i, long l) {
+            public void onItemClick(AdapterView<?> adapterView, final View view, final int i, long l) {
                 boolean enabled = false;
                 if (i == messageAlertRow || i == groupAlertRow) {
                     SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
@@ -318,6 +321,12 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
                     MessagesController.getInstance().enableJoined = !enabled;
                     editor.putBoolean("EnableContactJoined", !enabled);
                     editor.commit();
+                } else if (i == pinnedMessageRow) {
+                    SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+                    SharedPreferences.Editor editor = preferences.edit();
+                    enabled = preferences.getBoolean("PinnedMessages", true);
+                    editor.putBoolean("PinnedMessages", !enabled);
+                    editor.commit();
                 } else if (i == androidAutoAlertRow) {
                     SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
                     SharedPreferences.Editor editor = preferences.edit();
@@ -331,14 +340,30 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
                     editor.putBoolean("badgeNumber", !enabled);
                     editor.commit();
                     NotificationsController.getInstance().setBadgeEnabled(!enabled);
+                } else if (i == notificationsServiceConnectionRow) {
+                    SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+                    enabled = preferences.getBoolean("pushConnection", true);
+                    SharedPreferences.Editor editor = preferences.edit();
+                    editor.putBoolean("pushConnection", !enabled);
+                    editor.commit();
+                    if (!enabled) {
+                        ConnectionsManager.getInstance().setPushConnectionEnabled(true);
+                    } else {
+                        ConnectionsManager.getInstance().setPushConnectionEnabled(false);
+                    }
                 } else if (i == notificationsServiceRow) {
                     final SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
                     enabled = preferences.getBoolean("pushService", true);
+                    SharedPreferences.Editor editor = preferences.edit();
+                    editor.putBoolean("pushService", !enabled);
+                    editor.commit();
                     if (!enabled) {
-                        final SharedPreferences.Editor editor = preferences.edit();
-                        editor.putBoolean("pushService", !enabled);
-                        editor.commit();
                         ApplicationLoader.startPushService();
+                    } else {
+                        ApplicationLoader.stopPushService();
+                    }
+                    /*if (!enabled) {
+
                     } else {
                         if (getParentActivity() == null) {
                             return;
@@ -349,16 +374,21 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
                         builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), new DialogInterface.OnClickListener() {
                             @Override
                             public void onClick(DialogInterface dialogInterface, int i) {
-                                ApplicationLoader.stopPushService();
+
                                 final SharedPreferences.Editor editor = preferences.edit();
                                 editor.putBoolean("pushService", false);
                                 editor.commit();
                                 listView.invalidateViews();
                             }
                         });
-                        builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+                        builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                ((TextCheckCell) view).setChecked(true);
+                            }
+                        });
                         showDialog(builder.create());
-                    }
+                    }*/
                 } else if (i == messageLedRow || i == groupLedRow) {
                     if (getParentActivity() == null) {
                         return;
@@ -384,13 +414,15 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
                         public void onClick(DialogInterface dialogInterface, int which) {
                             final SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
                             SharedPreferences.Editor editor = preferences.edit();
+                            TextColorCell textCell = (TextColorCell) view;
                             if (i == messageLedRow) {
                                 editor.putInt("MessagesLed", colorPickerView.getColor());
+                                textCell.setTextAndColor(LocaleController.getString("LedColor", R.string.LedColor), colorPickerView.getColor(), true);
                             } else if (i == groupLedRow) {
                                 editor.putInt("GroupLed", colorPickerView.getColor());
+                                textCell.setTextAndColor(LocaleController.getString("LedColor", R.string.LedColor), colorPickerView.getColor(), true);
                             }
                             editor.commit();
-                            listView.invalidateViews();
                         }
                     });
                     builder.setNeutralButton(LocaleController.getString("LedDisabled", R.string.LedDisabled), new DialogInterface.OnClickListener() {
@@ -398,10 +430,13 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
                         public void onClick(DialogInterface dialog, int which) {
                             final SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
                             SharedPreferences.Editor editor = preferences.edit();
+                            TextColorCell textCell = (TextColorCell) view;
                             if (i == messageLedRow) {
                                 editor.putInt("MessagesLed", 0);
+                                textCell.setTextAndColor(LocaleController.getString("LedColor", R.string.LedColor), 0, true);
                             } else if (i == groupLedRow) {
                                 editor.putInt("GroupLed", 0);
+                                textCell.setTextAndColor(LocaleController.getString("LedColor", R.string.LedColor), 0, true);
                             }
                             editor.commit();
                             listView.invalidateViews();
@@ -630,7 +665,7 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
         public boolean isEnabled(int i) {
             return !(i == messageSectionRow || i == groupSectionRow || i == inappSectionRow ||
                     i == eventsSectionRow || i == otherSectionRow || i == resetSectionRow ||
-                    i == messageSectionRow2 || i == eventsSectionRow2 || i == groupSectionRow2 ||
+                    i == eventsSectionRow2 || i == groupSectionRow2 ||
                     i == inappSectionRow2 || i == otherSectionRow2 || i == resetSectionRow2);
         }
 
@@ -698,11 +733,15 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
                 } else if (i == inappPriorityRow) {
                     checkCell.setTextAndCheck(LocaleController.getString("NotificationsPriority", R.string.NotificationsPriority), preferences.getBoolean("EnableInAppPriority", false), false);
                 } else if (i == contactJoinedRow) {
-                    checkCell.setTextAndCheck(LocaleController.getString("ContactJoined", R.string.ContactJoined), preferences.getBoolean("EnableContactJoined", true), false);
+                    checkCell.setTextAndCheck(LocaleController.getString("ContactJoined", R.string.ContactJoined), preferences.getBoolean("EnableContactJoined", true), true);
+                } else if (i == pinnedMessageRow) {
+                    checkCell.setTextAndCheck(LocaleController.getString("PinnedMessages", R.string.PinnedMessages), preferences.getBoolean("PinnedMessages", true), false);
                 } else if (i == androidAutoAlertRow) {
                     checkCell.setTextAndCheck("Android Auto", preferences.getBoolean("EnableAutoNotifications", false), true);
                 } else if (i == notificationsServiceRow) {
-                    checkCell.setTextAndCheck(LocaleController.getString("NotificationsService", R.string.NotificationsService), preferences.getBoolean("pushService", true), false);
+                    checkCell.setTextAndValueAndCheck(LocaleController.getString("NotificationsService", R.string.NotificationsService), LocaleController.getString("NotificationsServiceInfo", R.string.NotificationsServiceInfo), preferences.getBoolean("pushService", true), true, true);
+                } else if (i == notificationsServiceConnectionRow) {
+                    checkCell.setTextAndValueAndCheck(LocaleController.getString("NotificationsServiceConnection", R.string.NotificationsServiceConnection), LocaleController.getString("NotificationsServiceConnectionInfo", R.string.NotificationsServiceConnectionInfo), preferences.getBoolean("pushConnection", true), true, true);
                 } else if (i == badgeNumberRow) {
                     checkCell.setTextAndCheck(LocaleController.getString("BadgeNumber", R.string.BadgeNumber), preferences.getBoolean("badgeNumber", true), true);
                 } else if (i == inchatSoundRow) {
@@ -826,13 +865,13 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
                 return 0;
             } else if (i == messageAlertRow || i == messagePreviewRow || i == groupAlertRow ||
                     i == groupPreviewRow || i == inappSoundRow || i == inappVibrateRow ||
-                    i == inappPreviewRow || i == contactJoinedRow ||
+                    i == inappPreviewRow || i == contactJoinedRow || i == pinnedMessageRow ||
                     i == notificationsServiceRow || i == badgeNumberRow || i == inappPriorityRow ||
-                    i == inchatSoundRow || i == androidAutoAlertRow) {
+                    i == inchatSoundRow || i == androidAutoAlertRow || i == notificationsServiceConnectionRow) {
                 return 1;
             } else if (i == messageLedRow || i == groupLedRow) {
                 return 3;
-            } else if (i == messageSectionRow2 || i == eventsSectionRow2 || i == groupSectionRow2 ||
+            } else if (i == eventsSectionRow2 || i == groupSectionRow2 ||
                     i == inappSectionRow2 || i == otherSectionRow2 || i == resetSectionRow2) {
                 return 4;
             } else {

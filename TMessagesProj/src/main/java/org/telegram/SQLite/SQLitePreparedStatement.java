@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 1.3.2.
+ * This is the source code of Telegram for Android v. 3.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.SQLite;
@@ -12,16 +12,14 @@ import org.telegram.messenger.FileLog;
 import org.telegram.tgnet.NativeByteBuffer;
 
 import java.nio.ByteBuffer;
-import java.util.HashMap;
 
 public class SQLitePreparedStatement {
+
 	private boolean isFinalized = false;
 	private int sqliteStatementHandle;
-
-	private int queryArgsCount;
 	private boolean finalizeAfterQuery = false;
 
-    private static HashMap<SQLitePreparedStatement, String> hashMap;
+    //private static HashMap<SQLitePreparedStatement, String> hashMap;
 
 	public int getStatementHandle() {
 		return sqliteStatementHandle;
@@ -43,7 +41,7 @@ public class SQLitePreparedStatement {
 
 
     public SQLiteCursor query(Object[] args) throws SQLiteException {
-        if (args == null || args.length != queryArgsCount) {
+        if (args == null) {
             throw new IllegalArgumentException();
         }
 
@@ -133,6 +131,10 @@ public class SQLitePreparedStatement {
 
     public void bindLong(int index, long value) throws SQLiteException {
         bindLong(sqliteStatementHandle, index, value);
+    }
+
+    public void bindNull(int index) throws SQLiteException {
+        bindNull(sqliteStatementHandle, index);
     }
 
 	native void bindByteBuffer(int statementHandle, int index, ByteBuffer value, int length) throws SQLiteException;

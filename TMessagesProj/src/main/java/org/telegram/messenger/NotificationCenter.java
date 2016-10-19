@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 1.3.2.
+ * This is the source code of Telegram for Android v. 3.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.messenger;
@@ -36,7 +36,7 @@ public class NotificationCenter {
     public static final int encryptedChatUpdated = totalEvents++;
     public static final int messagesReadEncrypted = totalEvents++;
     public static final int encryptedChatCreated = totalEvents++;
-    public static final int userPhotosLoaded = totalEvents++;
+    public static final int dialogPhotosLoaded = totalEvents++;
     public static final int removeAllMessagesFromDialog = totalEvents++;
     public static final int notificationsSettingsUpdated = totalEvents++;
     public static final int pushMessagesUpdated = totalEvents++;
@@ -53,19 +53,32 @@ public class NotificationCenter {
     public static final int didSetTwoStepPassword = totalEvents++;
     public static final int screenStateChanged = totalEvents++;
     public static final int didLoadedReplyMessages = totalEvents++;
+    public static final int didLoadedPinnedMessage = totalEvents++;
     public static final int newSessionReceived = totalEvents++;
     public static final int didReceivedWebpages = totalEvents++;
     public static final int didReceivedWebpagesInUpdates = totalEvents++;
     public static final int stickersDidLoaded = totalEvents++;
+    public static final int featuredStickersDidLoaded = totalEvents++;
     public static final int didReplacedPhotoInMemCache = totalEvents++;
     public static final int messagesReadContent = totalEvents++;
     public static final int botInfoDidLoaded = totalEvents++;
+    public static final int userInfoDidLoaded = totalEvents++;
     public static final int botKeyboardDidLoaded = totalEvents++;
     public static final int chatSearchResultsAvailable = totalEvents++;
     public static final int musicDidLoaded = totalEvents++;
-    public static final int spamErrorReceived = totalEvents++;
+    public static final int needShowAlert = totalEvents++;
     public static final int didUpdatedMessagesViews = totalEvents++;
     public static final int needReloadRecentDialogsSearch = totalEvents++;
+    public static final int locationPermissionGranted = totalEvents++;
+    public static final int peerSettingsDidLoaded = totalEvents++;
+    public static final int wasUnableToFindCurrentLocation = totalEvents++;
+    public static final int reloadHints = totalEvents++;
+    public static final int reloadInlineHints = totalEvents++;
+    public static final int newDraftReceived = totalEvents++;
+    public static final int recentDocumentsDidLoaded = totalEvents++;
+    public static final int cameraInitied = totalEvents++;
+    public static final int needReloadArchivedStickers = totalEvents++;
+    public static final int didSetNewWallpapper = totalEvents++;
 
     public static final int httpFileDidLoaded = totalEvents++;
     public static final int httpFileDidFailedLoad = totalEvents++;
@@ -76,6 +89,7 @@ public class NotificationCenter {
     public static final int closeOtherAppActivities = totalEvents++;
     public static final int didUpdatedConnectionState = totalEvents++;
     public static final int didReceiveSmsCode = totalEvents++;
+    public static final int didReceiveCall = totalEvents++;
     public static final int emojiDidLoaded = totalEvents++;
     public static final int appDidLogout = totalEvents++;
 
@@ -110,6 +124,8 @@ public class NotificationCenter {
     private int broadcasting = 0;
     private boolean animationInProgress;
 
+    private int[] allowedNotifications;
+
     public interface NotificationCenterDelegate {
         void didReceivedNotification(int id, Object... args);
     }
@@ -140,6 +156,10 @@ public class NotificationCenter {
         return localInstance;
     }
 
+    public void setAllowedNotificationsDutingAnimation(int notifications[]) {
+        allowedNotifications = notifications;
+    }
+
     public void setAnimationInProgress(boolean value) {
         animationInProgress = value;
         if (!animationInProgress && !delayedPosts.isEmpty()) {
@@ -150,10 +170,19 @@ public class NotificationCenter {
         }
     }
 
+    public boolean isAnimationInProgress() {
+        return animationInProgress;
+    }
+
     public void postNotificationName(int id, Object... args) {
         boolean allowDuringAnimation = false;
-        if (id == chatInfoDidLoaded || id == dialogsNeedReload || id == closeChats || id == messagesDidLoaded || id == mediaCountDidLoaded || id == mediaDidLoaded || id == botInfoDidLoaded || id == botKeyboardDidLoaded) {
-            allowDuringAnimation = true;
+        if (allowedNotifications != null) {
+            for (int a = 0; a < allowedNotifications.length; a++) {
+                if (allowedNotifications[a] == id) {
+                    allowDuringAnimation = true;
+                    break;
+                }
+            }
         }
         postNotificationNameInternal(id, allowDuringAnimation, args);
     }

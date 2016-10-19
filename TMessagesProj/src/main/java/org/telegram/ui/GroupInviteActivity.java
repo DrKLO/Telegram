@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 2.x
+ * This is the source code of Telegram for Android v. 3.x.x
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2015.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.ui;
@@ -12,7 +12,6 @@ import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.os.Build;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
@@ -132,14 +131,9 @@ public class GroupInviteActivity extends BaseFragment implements NotificationCen
                         return;
                     }
                     try {
-                        if (Build.VERSION.SDK_INT < 11) {
-                            android.text.ClipboardManager clipboard = (android.text.ClipboardManager) ApplicationLoader.applicationContext.getSystemService(Context.CLIPBOARD_SERVICE);
-                            clipboard.setText(invite.link);
-                        } else {
-                            android.content.ClipboardManager clipboard = (android.content.ClipboardManager) ApplicationLoader.applicationContext.getSystemService(Context.CLIPBOARD_SERVICE);
-                            android.content.ClipData clip = android.content.ClipData.newPlainText("label", invite.link);
-                            clipboard.setPrimaryClip(clip);
-                        }
+                        android.content.ClipboardManager clipboard = (android.content.ClipboardManager) ApplicationLoader.applicationContext.getSystemService(Context.CLIPBOARD_SERVICE);
+                        android.content.ClipData clip = android.content.ClipData.newPlainText("label", invite.link);
+                        clipboard.setPrimaryClip(clip);
                         Toast.makeText(getParentActivity(), LocaleController.getString("LinkCopied", R.string.LinkCopied), Toast.LENGTH_SHORT).show();
                     } catch (Exception e) {
                         FileLog.e("tmessages", e);
@@ -178,9 +172,6 @@ public class GroupInviteActivity extends BaseFragment implements NotificationCen
     @Override
     public void didReceivedNotification(int id, Object... args) {
         if (id == NotificationCenter.chatInfoDidLoaded) {
-            if (args.length != 2) {
-                return;
-            }
             TLRPC.ChatFull info = (TLRPC.ChatFull) args[0];
             int guid = (int) args[1];
             if (info.id == chat_id && guid == classGuid) {
@@ -309,7 +300,8 @@ public class GroupInviteActivity extends BaseFragment implements NotificationCen
                     ((TextInfoPrivacyCell) view).setText("");
                     view.setBackgroundResource(R.drawable.greydivider_bottom);
                 } else if (i == linkInfoRow) {
-                    if (ChatObject.isChannel(chat_id)) {
+                    TLRPC.Chat chat = MessagesController.getInstance().getChat(chat_id);
+                    if (ChatObject.isChannel(chat) && !chat.megagroup) {
                         ((TextInfoPrivacyCell) view).setText(LocaleController.getString("ChannelLinkInfo", R.string.ChannelLinkInfo));
                     } else {
                         ((TextInfoPrivacyCell) view).setText(LocaleController.getString("LinkInfo", R.string.LinkInfo));

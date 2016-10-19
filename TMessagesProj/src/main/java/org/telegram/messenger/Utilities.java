@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 2.x.x.
+ * This is the source code of Telegram for Android v. 3.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2015.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.messenger;
@@ -22,7 +22,7 @@ import java.util.regex.Pattern;
 
 public class Utilities {
 
-    public static Pattern pattern = Pattern.compile("[0-9]+");
+    public static Pattern pattern = Pattern.compile("[\\-0-9]+");
     public static SecureRandom random = new SecureRandom();
 
     public static volatile DispatchQueue stageQueue = new DispatchQueue("stageQueue");
@@ -45,19 +45,14 @@ public class Utilities {
         }
     }
 
-    public native static void loadBitmap(String path, Bitmap bitmap, int scale, int width, int height, int stride);
-
     public native static int pinBitmap(Bitmap bitmap);
-
-    public native static void blurBitmap(Object bitmap, int radius, int unpin);
-
+    public native static void unpinBitmap(Bitmap bitmap);
+    public native static void blurBitmap(Object bitmap, int radius, int unpin, int width, int height, int stride);
     public native static void calcCDT(ByteBuffer hsvBuffer, int width, int height, ByteBuffer buffer);
-
-    public native static Bitmap loadWebpImage(ByteBuffer buffer, int len, BitmapFactory.Options options);
-
+    public native static boolean loadWebpImage(Bitmap bitmap, ByteBuffer buffer, int len, BitmapFactory.Options options, boolean unpin);
     public native static int convertVideoFrame(ByteBuffer src, ByteBuffer dest, int destFormat, int width, int height, int padding, int swap);
-
     private native static void aesIgeEncryption(ByteBuffer buffer, byte[] key, byte[] iv, boolean encrypt, int offset, int length);
+    public native static String readlink(String path);
 
     public static void aesIgeEncryption(ByteBuffer buffer, byte[] key, byte[] iv, boolean encrypt, boolean changeIv, int offset, int length) {
         aesIgeEncryption(buffer, key, changeIv ? iv : iv.clone(), encrypt, offset, length);
@@ -73,6 +68,23 @@ public class Utilities {
             if (matcher.find()) {
                 String num = matcher.group(0);
                 val = Integer.parseInt(num);
+            }
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
+        }
+        return val;
+    }
+
+    public static Long parseLong(String value) {
+        if (value == null) {
+            return 0L;
+        }
+        Long val = 0L;
+        try {
+            Matcher matcher = pattern.matcher(value);
+            if (matcher.find()) {
+                String num = matcher.group(0);
+                val = Long.parseLong(num);
             }
         } catch (Exception e) {
             FileLog.e("tmessages", e);
@@ -153,6 +165,11 @@ public class Utilities {
             if (val != 3 && val != 5 && val != 6) {
                 return false;
             }
+        }
+
+        String hex = bytesToHex(prime);
+        if (hex.equals("C71CAEB9C6B1C9048E6C522F70F13F73980D40238E3E21C14934D037563D930F48198A0AA7C14058229493D22530F4DBFA336F6E0AC925139543AED44CCE7C3720FD51F69458705AC68CD4FE6B6B13ABDC9746512969328454F18FAF8C595F642477FE96BB2A941D5BCD1D4AC8CC49880708FA9B378E3C4F3A9060BEE67CF9A4A4A695811051907E162753B56B0F6B410DBA74D8A84B2A14B3144E0EF1284754FD17ED950D5965B4B9DD46582DB1178D169C6BC465B0D6FF9CA3928FEF5B9AE4E418FC15E83EBEA0F87FA9FF5EED70050DED2849F47BF959D956850CE929851F0D8115F635B105EE2E4E15D04B2454BF6F4FADF034B10403119CD8E3B92FCC5B")) {
+            return true;
         }
 
         BigInteger dhBI2 = dhBI.subtract(BigInteger.valueOf(1)).divide(BigInteger.valueOf(2));
@@ -237,8 +254,8 @@ public class Utilities {
             java.security.MessageDigest md = java.security.MessageDigest.getInstance("MD5");
             byte[] array = md.digest(md5.getBytes());
             StringBuilder sb = new StringBuilder();
-            for (byte anArray : array) {
-                sb.append(Integer.toHexString((anArray & 0xFF) | 0x100).substring(1, 3));
+            for (int a = 0; a < array.length; a++) {
+                sb.append(Integer.toHexString((array[a] & 0xFF) | 0x100).substring(1, 3));
             }
             return sb.toString();
         } catch (java.security.NoSuchAlgorithmException e) {

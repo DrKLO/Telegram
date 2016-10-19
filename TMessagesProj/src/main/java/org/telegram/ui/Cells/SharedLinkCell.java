@@ -1,22 +1,20 @@
 /*
- * This is the source code of Telegram for Android v. 2.x.x.
+ * This is the source code of Telegram for Android v. 3.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2015.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.ui.Cells;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
-import android.content.Intent;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Build;
-import android.provider.Browser;
 import android.text.Layout;
 import android.text.StaticLayout;
 import android.text.TextPaint;
@@ -33,11 +31,13 @@ import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
+import org.telegram.messenger.browser.Browser;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.Components.CheckBox;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.LetterDrawable;
 import org.telegram.ui.Components.LinkPath;
+import org.telegram.ui.ActionBar.Theme;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -90,18 +90,19 @@ public class SharedLinkCell extends FrameLayout {
             titleTextPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
             titleTextPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
             titleTextPaint.setColor(0xff212121);
-            titleTextPaint.setTextSize(AndroidUtilities.dp(16));
 
             descriptionTextPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
-            descriptionTextPaint.setTextSize(AndroidUtilities.dp(16));
 
             paint = new Paint();
             paint.setColor(0xffd9d9d9);
             paint.setStrokeWidth(1);
 
             urlPaint = new Paint();
-            urlPaint.setColor(0x33316f9f);
+            urlPaint.setColor(Theme.MSG_LINK_SELECT_BACKGROUND_COLOR);
         }
+
+        titleTextPaint.setTextSize(AndroidUtilities.dp(16));
+        descriptionTextPaint.setTextSize(AndroidUtilities.dp(16));
 
         setWillNotDraw(false);
         linkImageView = new ImageReceiver(this);
@@ -132,7 +133,7 @@ public class SharedLinkCell extends FrameLayout {
         boolean hasPhoto = false;
 
         if (message.messageOwner.media instanceof TLRPC.TL_messageMediaWebPage && message.messageOwner.media.webpage instanceof TLRPC.TL_webPage) {
-            TLRPC.TL_webPage webPage = (TLRPC.TL_webPage) message.messageOwner.media.webpage;
+            TLRPC.WebPage webPage = message.messageOwner.media.webpage;
             if (message.photoThumbs == null && webPage.photo != null) {
                 message.generateThumbs(true);
             }
@@ -144,7 +145,7 @@ public class SharedLinkCell extends FrameLayout {
             description = webPage.description;
             webPageLink = webPage.url;
         }
-        if (!message.messageOwner.entities.isEmpty()) {
+        if (message != null && !message.messageOwner.entities.isEmpty()) {
             for (int a = 0; a < message.messageOwner.entities.size(); a++) {
                 TLRPC.MessageEntity entity = message.messageOwner.entities.get(a);
                 if (entity.length <= 0 || entity.offset < 0 || entity.offset >= message.messageOwner.message.length()) {
@@ -216,7 +217,7 @@ public class SharedLinkCell extends FrameLayout {
         if (title != null) {
             try {
                 int width = (int) Math.ceil(titleTextPaint.measureText(title));
-                CharSequence titleFinal = TextUtils.ellipsize(title.replace("\n", " "), titleTextPaint, Math.min(width, maxWidth), TextUtils.TruncateAt.END);
+                CharSequence titleFinal = TextUtils.ellipsize(title.replace('\n', ' '), titleTextPaint, Math.min(width, maxWidth), TextUtils.TruncateAt.END);
                 titleLayout = new StaticLayout(titleFinal, titleTextPaint, maxWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
             } catch (Exception e) {
                 FileLog.e("tmessages", e);
@@ -227,7 +228,6 @@ public class SharedLinkCell extends FrameLayout {
         if (description != null) {
             try {
                 descriptionLayout = ChatMessageCell.generateStaticLayout(description, descriptionTextPaint, maxWidth, maxWidth, 0, 3);
-                int height = descriptionLayout.getLineBottom(descriptionLayout.getLineCount() - 1);
                 if (descriptionLayout.getLineCount() > 0) {
                     description2Y = descriptionY + descriptionLayout.getLineBottom(descriptionLayout.getLineCount() - 1) + AndroidUtilities.dp(1);
                 }
@@ -253,7 +253,7 @@ public class SharedLinkCell extends FrameLayout {
                 try {
                     String link = links.get(a);
                     int width = (int) Math.ceil(descriptionTextPaint.measureText(link));
-                    CharSequence linkFinal = TextUtils.ellipsize(link.replace("\n", " "), descriptionTextPaint, Math.min(width, maxWidth), TextUtils.TruncateAt.MIDDLE);
+                    CharSequence linkFinal = TextUtils.ellipsize(link.replace('\n', ' '), descriptionTextPaint, Math.min(width, maxWidth), TextUtils.TruncateAt.MIDDLE);
                     StaticLayout layout = new StaticLayout(linkFinal, descriptionTextPaint, maxWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
                     linkY = description2Y;
                     if (descriptionLayout2 != null && descriptionLayout2.getLineCount() != 0) {
@@ -361,7 +361,7 @@ public class SharedLinkCell extends FrameLayout {
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         boolean result = false;
-        if (message != null && !linkLayout.isEmpty() && delegate.canPerformActions()) {
+        if (message != null && !linkLayout.isEmpty() && delegate != null && delegate.canPerformActions()) {
             if (event.getAction() == MotionEvent.ACTION_DOWN || linkPreviewPressed && event.getAction() == MotionEvent.ACTION_UP) {
                 int x = (int) event.getX();
                 int y = (int) event.getY();
@@ -379,7 +379,7 @@ public class SharedLinkCell extends FrameLayout {
                                 pressedLink = a;
                                 linkPreviewPressed = true;
                                 try {
-                                    urlPath.setCurrentLayout(layout, 0);
+                                    urlPath.setCurrentLayout(layout, 0, 0);
                                     layout.getSelectionPath(0, layout.getText().length(), urlPath);
                                 } catch (Exception e) {
                                     FileLog.e("tmessages", e);
@@ -391,10 +391,7 @@ public class SharedLinkCell extends FrameLayout {
                                     if (webPage != null && Build.VERSION.SDK_INT >= 16 && webPage.embed_url != null && webPage.embed_url.length() != 0) {
                                         delegate.needOpenWebView(webPage);
                                     } else {
-                                        Uri uri = Uri.parse(links.get(pressedLink));
-                                        Intent intent = new Intent(Intent.ACTION_VIEW, uri);
-                                        intent.putExtra(Browser.EXTRA_APPLICATION_ID, getContext().getPackageName());
-                                        getContext().startActivity(intent);
+                                        Browser.openUrl(getContext(), links.get(pressedLink));
                                     }
                                 } catch (Exception e) {
                                     FileLog.e("tmessages", e);
@@ -465,7 +462,7 @@ public class SharedLinkCell extends FrameLayout {
         }
 
         if (!linkLayout.isEmpty()) {
-            descriptionTextPaint.setColor(0xff316f9f);
+            descriptionTextPaint.setColor(Theme.MSG_LINK_TEXT_COLOR);
             int offset = 0;
             for (int a = 0; a < linkLayout.size(); a++) {
                 StaticLayout layout = linkLayout.get(a);

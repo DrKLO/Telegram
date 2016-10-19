@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.ui.Cells;
@@ -33,11 +33,11 @@ public class BaseCell extends View {
         public void run() {
             if (checkingForLongPress && getParent() != null && currentPressCount == pressCount) {
                 checkingForLongPress = false;
+                performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
+                onLongPress();
                 MotionEvent event = MotionEvent.obtain(0, 0, MotionEvent.ACTION_CANCEL, 0, 0, 0);
                 onTouchEvent(event);
                 event.recycle();
-                performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
-                onLongPress();
             }
         }
     }
@@ -53,6 +53,10 @@ public class BaseCell extends View {
 
     protected void setDrawableBounds(Drawable drawable, int x, int y) {
         setDrawableBounds(drawable, x, y, drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight());
+    }
+
+    protected void setDrawableBounds(Drawable drawable, float x, float y) {
+        setDrawableBounds(drawable, (int) x, (int) y, drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight());
     }
 
     protected void setDrawableBounds(Drawable drawable, int x, int y, int w, int h) {

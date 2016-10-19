@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 1.7.x.
+ * This is the source code of Telegram for Android v. 3.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2014.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.messenger.video;
@@ -35,7 +35,7 @@ import java.util.Map;
 @TargetApi(16)
 public class Track {
     private long trackId = 0;
-    private ArrayList<Sample> samples = new ArrayList<Sample>();
+    private ArrayList<Sample> samples = new ArrayList<>();
     private long duration = 0;
     private String handler;
     private AbstractMediaHeaderBox headerBox = null;
@@ -46,9 +46,9 @@ public class Track {
     private int height;
     private int width;
     private float volume = 0;
-    private ArrayList<Long> sampleDurations = new ArrayList<Long>();
+    private ArrayList<Long> sampleDurations = new ArrayList<>();
     private boolean isAudio = false;
-    private static Map<Integer, Integer> samplingFrequencyIndexMap = new HashMap<Integer, Integer>();
+    private static Map<Integer, Integer> samplingFrequencyIndexMap = new HashMap<>();
     private long lastPresentationTimeUs = 0;
     private boolean first = true;
 
@@ -67,15 +67,16 @@ public class Track {
         samplingFrequencyIndexMap.put(8000, 0xb);
     }
 
-    public Track(int id, MediaFormat format, boolean isAudio) throws Exception {
+    public Track(int id, MediaFormat format, boolean audio) throws Exception {
         trackId = id;
+        isAudio = audio;
         if (!isAudio) {
-            sampleDurations.add((long)3015);
+            sampleDurations.add((long) 3015);
             duration = 3015;
             width = format.getInteger(MediaFormat.KEY_WIDTH);
             height = format.getInteger(MediaFormat.KEY_HEIGHT);
             timeScale = 90000;
-            syncSamples = new LinkedList<Integer>();
+            syncSamples = new LinkedList<>();
             handler = "vide";
             headerBox = new VideoMediaHeaderBox();
             sampleDescriptionBox = new SampleDescriptionBox();
@@ -93,14 +94,14 @@ public class Track {
                 AvcConfigurationBox avcConfigurationBox = new AvcConfigurationBox();
 
                 if (format.getByteBuffer("csd-0") != null) {
-                    ArrayList<byte[]> spsArray = new ArrayList<byte[]>();
+                    ArrayList<byte[]> spsArray = new ArrayList<>();
                     ByteBuffer spsBuff = format.getByteBuffer("csd-0");
                     spsBuff.position(4);
                     byte[] spsBytes = new byte[spsBuff.remaining()];
                     spsBuff.get(spsBytes);
                     spsArray.add(spsBytes);
 
-                    ArrayList<byte[]> ppsArray = new ArrayList<byte[]>();
+                    ArrayList<byte[]> ppsArray = new ArrayList<>();
                     ByteBuffer ppsBuff = format.getByteBuffer("csd-1");
                     ppsBuff.position(4);
                     byte[] ppsBytes = new byte[ppsBuff.remaining()];
@@ -109,8 +110,6 @@ public class Track {
                     avcConfigurationBox.setSequenceParameterSets(spsArray);
                     avcConfigurationBox.setPictureParameterSets(ppsArray);
                 }
-                //ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(spsBytes);
-                //SeqParameterSet seqParameterSet = SeqParameterSet.read(byteArrayInputStream);
 
                 avcConfigurationBox.setAvcLevelIndication(13);
                 avcConfigurationBox.setAvcProfileIndication(100);
@@ -136,9 +135,8 @@ public class Track {
                 sampleDescriptionBox.addBox(visualSampleEntry);
             }
         } else {
-            sampleDurations.add((long)1024);
+            sampleDurations.add((long) 1024);
             duration = 1024;
-            isAudio = true;
             volume = 1;
             timeScale = format.getInteger(MediaFormat.KEY_SAMPLE_RATE);
             handler = "soun";
@@ -167,7 +165,7 @@ public class Track {
 
             AudioSpecificConfig audioSpecificConfig = new AudioSpecificConfig();
             audioSpecificConfig.setAudioObjectType(2);
-            audioSpecificConfig.setSamplingFrequencyIndex(samplingFrequencyIndexMap.get((int)audioSampleEntry.getSampleRate()));
+            audioSpecificConfig.setSamplingFrequencyIndex(samplingFrequencyIndexMap.get((int) audioSampleEntry.getSampleRate()));
             audioSpecificConfig.setChannelConfiguration(audioSampleEntry.getChannelCount());
             decoderConfigDescriptor.setAudioSpecificInfo(audioSpecificConfig);
 
@@ -186,15 +184,18 @@ public class Track {
     }
 
     public void addSample(long offset, MediaCodec.BufferInfo bufferInfo) {
+        long delta = bufferInfo.presentationTimeUs - lastPresentationTimeUs;
+        if (delta < 0) {
+            return;
+        }
         boolean isSyncFrame = !isAudio && (bufferInfo.flags & MediaCodec.BUFFER_FLAG_SYNC_FRAME) != 0;
         samples.add(new Sample(offset, bufferInfo.size));
         if (syncSamples != null && isSyncFrame) {
             syncSamples.add(samples.size());
         }
 
-        long delta = bufferInfo.presentationTimeUs - lastPresentationTimeUs;
-        lastPresentationTimeUs = bufferInfo.presentationTimeUs;
         delta = (delta * timeScale + 500000L) / 1000000L;
+        lastPresentationTimeUs = bufferInfo.presentationTimeUs;
         if (!first) {
             sampleDurations.add(sampleDurations.size() - 1, delta);
             duration += delta;

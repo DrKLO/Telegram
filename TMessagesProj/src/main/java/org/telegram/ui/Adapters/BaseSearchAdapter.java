@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 1.7.x.
+ * This is the source code of Telegram for Android v. 3.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2014.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.ui.Adapters;
@@ -41,7 +41,7 @@ public class BaseSearchAdapter extends BaseFragmentAdapter {
     protected HashMap<String, HashtagObject> hashtagsByText;
     protected boolean hashtagsLoadedFromDb = false;
 
-    public void queryServerSearch(final String query, final boolean allowChats) {
+    public void queryServerSearch(final String query, final boolean allowChats, final boolean allowBots) {
         if (reqId != 0) {
             ConnectionsManager.getInstance().cancelRequest(reqId, true);
             reqId = 0;
@@ -72,6 +72,9 @@ public class BaseSearchAdapter extends BaseFragmentAdapter {
                                     }
                                 }
                                 for (int a = 0; a < res.users.size(); a++) {
+                                    if (!allowBots && res.users.get(a).bot) {
+                                        continue;
+                                    }
                                     globalSearch.add(res.users.get(a));
                                 }
                                 lastFoundUsername = query;

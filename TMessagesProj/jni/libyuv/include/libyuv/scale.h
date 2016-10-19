@@ -34,6 +34,7 @@ void ScalePlane(const uint8* src, int src_stride,
                 int dst_width, int dst_height,
                 enum FilterMode filtering);
 
+LIBYUV_API
 void ScalePlane_16(const uint16* src, int src_stride,
                    int src_width, int src_height,
                    uint16* dst, int dst_stride,

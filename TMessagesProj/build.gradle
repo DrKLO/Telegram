@@ -4,21 +4,34 @@ repositories {
     mavenCentral()
 }
 
+configurations {
+    compile.exclude module: 'support-v4'
+}
+
 dependencies {
-    compile 'com.android.support:support-v4:23.0.+'
-    compile 'com.google.android.gms:play-services:3.2.+'
-    compile 'net.hockeyapp.android:HockeySDK:3.5.+'
-    compile 'com.googlecode.mp4parser:isoparser:1.0.+'
-    compile 'org.apache.httpcomponents:httpmime:4.2.1'
+    compile 'com.google.android.gms:play-services-gcm:9.6.1'
+    compile 'com.google.android.gms:play-services-maps:9.6.1'
+    compile 'com.google.android.gms:play-services-vision:9.6.1'
+    compile 'com.android.support:support-core-ui:24.2.1'
+    compile 'com.android.support:support-compat:24.2.1'
+    compile 'com.android.support:support-core-utils:24.2.1'
+    compile 'net.hockeyapp.android:HockeySDK:4.0.1'
+    compile 'com.googlecode.mp4parser:isoparser:1.0.6'
 }
 
 android {
-    compileSdkVersion 22
-    buildToolsVersion '23.0.1'
+    compileSdkVersion 24
+    buildToolsVersion '24.0.2'
 
-    packagingOptions {
-        exclude 'META-INF/NOTICE.txt'
-        exclude 'META-INF/LICENSE.txt'
+    useLibrary 'org.apache.http.legacy'
+    defaultConfig.applicationId = "org.telegram.messenger"
+
+    sourceSets.main.jniLibs.srcDirs = ['./jni/']
+
+    externalNativeBuild {
+        ndkBuild {
+            path "jni/Android.mk"
+        }
     }
 
     compileOptions {
@@ -28,7 +41,11 @@ android {
 
     signingConfigs {
         debug {
-            storeFile file("config/debug.keystore")
+            storeFile file("config/release.keystore")
+            storePassword RELEASE_STORE_PASSWORD
+            keyAlias RELEASE_KEY_ALIAS
+            keyPassword RELEASE_KEY_PASSWORD
+            v2SigningEnabled false
         }
 
         release {
@@ -36,6 +53,7 @@ android {
             storePassword RELEASE_STORE_PASSWORD
             keyAlias RELEASE_KEY_ALIAS
             keyPassword RELEASE_KEY_PASSWORD
+            v2SigningEnabled false
         }
     }
 
@@ -44,12 +62,15 @@ android {
             debuggable true
             jniDebuggable true
             signingConfig signingConfigs.debug
+            applicationIdSuffix ".beta"
         }
 
         release {
             debuggable false
             jniDebuggable false
             signingConfig signingConfigs.release
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
 
         foss {
@@ -59,10 +80,7 @@ android {
         }
     }
 
-    sourceSets.main {
-        jniLibs.srcDir 'libs'
-        jni.srcDirs = [] //disable automatic ndk-build call
-    }
+    defaultConfig.versionCode = 851
 
     sourceSets.debug {
         manifest.srcFile 'config/debug/AndroidManifest.xml'
@@ -76,10 +94,41 @@ android {
         manifest.srcFile 'config/foss/AndroidManifest.xml'
     }
 
+    productFlavors {
+        x86 {
+            ndk {
+                abiFilter "x86"
+            }
+            versionCode = 2
+        }
+        armv7 {
+            ndk {
+                abiFilter "armeabi-v7a"
+            }
+            versionCode = 1
+        }
+        fat {
+            versionCode = 3
+        }
+    }
+
+    applicationVariants.all { variant ->
+        def abiVersion = variant.productFlavors.get(0).versionCode
+        variant.mergedFlavor.versionCode = defaultConfig.versionCode * 10 + abiVersion;
+    }
+
     defaultConfig {
-        minSdkVersion 8
-        targetSdkVersion 22
-        versionCode 627
-        versionName "3.2.2"
+        minSdkVersion 14
+        targetSdkVersion 24
+        versionName "3.13.1"
+
+        externalNativeBuild {
+            ndkBuild {
+                arguments "NDK_APPLICATION_MK:=jni/Application.mk", "APP_PLATFORM:=android-14"
+                abiFilters "armeabi-v7a", "x86"
+            }
+        }
     }
 }
+
+apply plugin: 'com.google.gms.google-services'
