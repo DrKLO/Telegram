@@ -473,7 +473,10 @@ public class CameraController implements MediaRecorder.OnInfoListener {
             AndroidUtilities.runOnUIThread(new Runnable() {
                 @Override
                 public void run() {
-                    onVideoTakeCallback.onFinishVideoRecording(bitmap);
+                    if(onVideoTakeCallback != null) {
+                        onVideoTakeCallback.onFinishVideoRecording(bitmap);
+                        onVideoTakeCallback = null;
+                    }
                 }
             });
         }
@@ -497,7 +500,10 @@ public class CameraController implements MediaRecorder.OnInfoListener {
                 AndroidUtilities.runOnUIThread(new Runnable() {
                     @Override
                     public void run() {
-                        onVideoTakeCallback.onFinishVideoRecording(bitmap);
+                        if(onVideoTakeCallback != null) {
+                            onVideoTakeCallback.onFinishVideoRecording(bitmap);
+                            onVideoTakeCallback = null;
+                        }
                     }
                 });
             }
