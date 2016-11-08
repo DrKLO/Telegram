@@ -1821,6 +1821,9 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
         } catch (Exception e) {
             FileLog.e("tmessages", e);
         }
+
+        clearFragmentStack();
+
         super.onDestroy();
         onFinish();
     }
@@ -1873,20 +1876,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
             if (drawerLayoutAdapter != null) {
                 drawerLayoutAdapter.notifyDataSetChanged();
             }
-            for (BaseFragment fragment : actionBarLayout.fragmentsStack) {
-                fragment.onFragmentDestroy();
-            }
-            actionBarLayout.fragmentsStack.clear();
-            if (AndroidUtilities.isTablet()) {
-                for (BaseFragment fragment : layersActionBarLayout.fragmentsStack) {
-                    fragment.onFragmentDestroy();
-                }
-                layersActionBarLayout.fragmentsStack.clear();
-                for (BaseFragment fragment : rightActionBarLayout.fragmentsStack) {
-                    fragment.onFragmentDestroy();
-                }
-                rightActionBarLayout.fragmentsStack.clear();
-            }
+            clearFragmentStack();
             Intent intent2 = new Intent(this, IntroActivity.class);
             startActivity(intent2);
             onFinish();
@@ -1968,6 +1958,29 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                 if (child != null) {
                     child.invalidate();
                 }
+            }
+        }
+    }
+
+    protected void clearFragmentStack() {
+        if (actionBarLayout != null) {
+            for (BaseFragment fragment : actionBarLayout.fragmentsStack) {
+                fragment.onFragmentDestroy();
+            }
+            actionBarLayout.fragmentsStack.clear();
+        }
+        if (AndroidUtilities.isTablet()) {
+            if (layersActionBarLayout != null) {
+                for (BaseFragment fragment : layersActionBarLayout.fragmentsStack) {
+                    fragment.onFragmentDestroy();
+                }
+                layersActionBarLayout.fragmentsStack.clear();
+            }
+            if (rightActionBarLayout != null) {
+                for (BaseFragment fragment : rightActionBarLayout.fragmentsStack) {
+                    fragment.onFragmentDestroy();
+                }
+                rightActionBarLayout.fragmentsStack.clear();
             }
         }
     }
