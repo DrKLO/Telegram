@@ -65,7 +65,7 @@ public class UserConfig {
     public static void saveConfig(boolean withFile, File oldFile) {
         synchronized (sync) {
             try {
-                SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("userconfing", Context.MODE_PRIVATE);
+                SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("userconfig", Context.MODE_PRIVATE);
                 SharedPreferences.Editor editor = preferences.edit();
                 editor.putBoolean("registeredForPush", registeredForPush);
                 editor.putString("pushString2", pushString);
@@ -204,7 +204,11 @@ public class UserConfig {
                     FileLog.e("tmessages", e);
                 }
             } else {
-                SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("userconfing", Context.MODE_PRIVATE);
+		// this first reads the configuration of userconfing (with typo), if exists
+		// and overwrites it with the settings correct file userconfig 
+
+		// typo config
+		SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("userconfing", Context.MODE_PRIVATE);
                 registeredForPush = preferences.getBoolean("registeredForPush", false);
                 pushString = preferences.getString("pushString2", "");
                 lastSendMessageId = preferences.getInt("lastSendMessageId", -210000);
@@ -234,7 +238,20 @@ public class UserConfig {
                 }
 
                 String user = preferences.getString("user", null);
-                if (user != null) {
+                
+		// correct config
+		preferences = ApplicationLoader.applicationContext.getSharedPreferences("userconfig", Context.MODE_PRIVATE);
+                registeredForPush = preferences.getBoolean("registeredForPush", registeredForPush);
+                pushString = preferences.getString("pushString", pushString);
+                lastSendMessageId = preferences.getInt("lastSendMessageId", lastSendMessageId);
+                lastLocalId = preferences.getInt("lastLocalId", lastLocalId);
+                contactsHash = preferences.getString("contactsHash", contactsHash);
+                importHash = preferences.getString("importHash", importHash);
+                saveIncomingPhotos = preferences.getBoolean("saveIncomingPhotos", saveIncomingPhotos);
+                contactsVersion = preferences.getInt("contactsVersion", contactsVersion);
+                user = preferences.getString("user", user);
+
+		if (user != null) {
                     byte[] userBytes = Base64.decode(user, Base64.DEFAULT);
                     if (userBytes != null) {
                         SerializedData data = new SerializedData(userBytes);
