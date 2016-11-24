@@ -581,7 +581,7 @@ public class ChangePhoneActivity extends BaseFragment {
 
             HashMap<String, String> languageMap = new HashMap<>();
             try {
-                BufferedReader reader = new BufferedReader(new InputStreamReader(getResources().getAssets().open("countries.txt")));
+                BufferedReader reader = new BufferedReader(new InputStreamReader(getResources().openRawResource(R.raw.countries)));
                 String line;
                 while ((line = reader.readLine()) != null) {
                     String[] args = line.split(";");
