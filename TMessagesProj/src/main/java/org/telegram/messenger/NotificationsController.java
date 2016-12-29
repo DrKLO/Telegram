@@ -90,7 +90,7 @@ public class NotificationsController {
     public static NotificationsController getInstance() {
         NotificationsController localInstance = Instance;
         if (localInstance == null) {
-            synchronized (MessagesController.class) {
+            synchronized (NotificationsController.class) {
                 localInstance = Instance;
                 if (localInstance == null) {
                     Instance = localInstance = new NotificationsController();
