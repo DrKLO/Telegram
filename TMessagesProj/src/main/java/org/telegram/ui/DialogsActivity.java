@@ -45,6 +45,7 @@ import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.ImageLoader;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
+import org.telegram.messenger.PermissionsUtilities;
 import org.telegram.messenger.UserObject;
 import org.telegram.messenger.query.SearchQuery;
 import org.telegram.messenger.query.StickersQuery;
@@ -844,44 +845,46 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             Activity activity = getParentActivity();
             if (activity != null) {
                 checkPermission = false;
-                if (activity.checkSelfPermission(Manifest.permission.READ_CONTACTS) != PackageManager.PERMISSION_GRANTED || activity.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-                    if (activity.shouldShowRequestPermissionRationale(Manifest.permission.READ_CONTACTS)) {
-                        AlertDialog.Builder builder = new AlertDialog.Builder(activity);
-                        builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
-                        builder.setMessage(LocaleController.getString("PermissionContacts", R.string.PermissionContacts));
-                        builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), null);
-                        showDialog(permissionDialog = builder.create());
-                    } else if (activity.shouldShowRequestPermissionRationale(Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
-                        AlertDialog.Builder builder = new AlertDialog.Builder(activity);
-                        builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
-                        builder.setMessage(LocaleController.getString("PermissionStorage", R.string.PermissionStorage));
-                        builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), null);
-                        showDialog(permissionDialog = builder.create());
-                    } else {
-                        askForPermissons();
-                    }
+                String dialogMessage = null;
+                if (PermissionsUtilities.isNeedToRequest(activity, Manifest.permission.READ_CONTACTS) &&
+                    PermissionsUtilities.isNeedToRequest(activity, Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
+                    dialogMessage = LocaleController.getString("PermissionContactsAndWriteStrorage", R.string.PermissionContactsAndWriteStrorage);
+                    //you need to have message for dialog to allow READ_CONTACTS and WRITE_EXTERNAL_STORAGE (both). Because you ask to user
+                    //only about one permission (READ_CONTACTS), but after dialog you request 2 permissions (READ_CONTACTS and WRITE_EXTERNAL_STORAGE).
+                    //Its not cool. Or you describe both permissions in a dialog, or request permissions one by one.
+                } else if (PermissionsUtilities.isNeedToRequest(activity, Manifest.permission.READ_CONTACTS)) {
+                    dialogMessage = LocaleController.getString("PermissionContacts", R.string.PermissionContacts);
+                } else if (PermissionsUtilities.isNeedToRequest(activity, Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
+                    dialogMessage = LocaleController.getString("PermissionStorage", R.string.PermissionStorage);
+                }
+                if (dialogMessage != null) {
+                    AlertDialog.Builder builder = new AlertDialog.Builder(activity);
+                    builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
+                    builder.setMessage(dialogMessage);
+                    builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), null);
+                    showDialog(permissionDialog = builder.create());
                 }
             }
         }
     }
-
+    
     @TargetApi(Build.VERSION_CODES.M)
-    private void askForPermissons() {
+    private void askForPermissions() {
         Activity activity = getParentActivity();
         if (activity == null) {
             return;
         }
-        ArrayList<String> permissons = new ArrayList<>();
-        if (activity.checkSelfPermission(Manifest.permission.READ_CONTACTS) != PackageManager.PERMISSION_GRANTED) {
-            permissons.add(Manifest.permission.READ_CONTACTS);
-            permissons.add(Manifest.permission.WRITE_CONTACTS);
-            permissons.add(Manifest.permission.GET_ACCOUNTS);
+        ArrayList<String> permissionsList = new ArrayList<>();
+        if (PermissionsUtilities.isNeedToRequest(activity, Manifest.permission.READ_CONTACTS)) {
+            permissionsList.add(Manifest.permission.READ_CONTACTS);
+            permissionsList.add(Manifest.permission.WRITE_CONTACTS);
+            permissionsList.add(Manifest.permission.GET_ACCOUNTS);
         }
-        if (activity.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-            permissons.add(Manifest.permission.READ_EXTERNAL_STORAGE);
-            permissons.add(Manifest.permission.WRITE_EXTERNAL_STORAGE);
+        if (PermissionsUtilities.isNeedToRequest(activity, Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
+            permissionsList.add(Manifest.permission.READ_EXTERNAL_STORAGE);
+            permissionsList.add(Manifest.permission.WRITE_EXTERNAL_STORAGE);
         }
-        String[] items = permissons.toArray(new String[permissons.size()]);
+        String[] items = permissionsList.toArray(new String[permissionsList.size()]);
         activity.requestPermissions(items, 1);
     }
 
@@ -889,7 +892,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     protected void onDialogDismiss(Dialog dialog) {
         super.onDialogDismiss(dialog);
         if (permissionDialog != null && dialog == permissionDialog && getParentActivity() != null) {
-            askForPermissons();
+            askForPermissions();
         }
     }
 
