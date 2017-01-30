@@ -1115,8 +1115,8 @@ public class VideoEditorActivity extends BaseFragment implements NotificationCen
 
             if (resultWidth > 640 || resultHeight > 640) {
                 float scale = resultWidth > resultHeight ? 640.0f / resultWidth : 640.0f / resultHeight;
-                resultWidth *= scale;
-                resultHeight *= scale;
+                resultWidth = Math.round(resultWidth * scale / 2) * 2;
+                resultHeight = Math.round(resultHeight * scale / 2) * 2;
                 if (bitrate != 0) {
                     bitrate *= Math.max(0.5f, scale);
                     videoFramesSize = (long) (bitrate / 8 * videoDuration);
