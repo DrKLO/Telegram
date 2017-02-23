@@ -26,11 +26,13 @@ import org.xmlpull.v1.XmlPullParser;
 import java.io.File;
 import java.io.FileInputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.TimeZone;
 
@@ -815,7 +817,9 @@ public class LocaleController {
             lang = "en";
         }
         isRTL = lang.toLowerCase().equals("ar");
-        nameDisplayOrder = lang.toLowerCase().equals("ko") ? 2 : 1;
+
+        List<String> nameSecondLocale = Arrays.asList("ko", "zh", "ja", "hu");
+        nameDisplayOrder = nameSecondLocale.contains(lang.toLowerCase()) ? 2 : 1;
 
         formatterMonth = createFormatter(locale, getStringInternal("formatterMonth", R.string.formatterMonth), "dd MMM");
         formatterYear = createFormatter(locale, getStringInternal("formatterYear", R.string.formatterYear), "dd.MM.yy");
