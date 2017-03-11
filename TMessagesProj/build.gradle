@@ -24,7 +24,7 @@ android {
     buildToolsVersion '24.0.2'
 
     useLibrary 'org.apache.http.legacy'
-    defaultConfig.applicationId = "org.telegram.messenger"
+    defaultConfig.applicationId = "org.cloudveil.messenger"
 
     sourceSets.main.jniLibs.srcDirs = ['./jni/']
 
