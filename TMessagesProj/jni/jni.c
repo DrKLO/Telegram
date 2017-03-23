@@ -4,11 +4,14 @@
 #include <sys/types.h>
 #include <inttypes.h>
 #include <stdlib.h>
-#include "aes/aes.h"
+#include <openssl/aes.h>
+#include <unistd.h>
 #include "utils.h"
 #include "sqlite.h"
-#include "gif.h"
 #include "image.h"
+
+int registerNativeTgNetFunctions(JavaVM *vm, JNIEnv *env);
+int gifvideoOnJNILoad(JavaVM *vm, JNIEnv *env);
 
 jint JNI_OnLoad(JavaVM *vm, void *reserved) {
 	JNIEnv *env = 0;
@@ -26,13 +29,19 @@ jint JNI_OnLoad(JavaVM *vm, void *reserved) {
         return -1;
     }
     
-    gifOnJNILoad(vm, reserved, env);
+    if (gifvideoOnJNILoad(vm, env) == -1) {
+        return -1;
+    }
+
+    if (registerNativeTgNetFunctions(vm, env) != JNI_TRUE) {
+        return -1;
+    }
     
 	return JNI_VERSION_1_6;
 }
 
 void JNI_OnUnload(JavaVM *vm, void *reserved) {
-    gifOnJNIUnload(vm, reserved);
+
 }
 
 JNIEXPORT void Java_org_telegram_messenger_Utilities_aesIgeEncryption(JNIEnv *env, jclass class, jobject buffer, jbyteArray key, jbyteArray iv, jboolean encrypt, int offset, int length) {
@@ -52,42 +61,15 @@ JNIEXPORT void Java_org_telegram_messenger_Utilities_aesIgeEncryption(JNIEnv *en
     (*env)->ReleaseByteArrayElements(env, iv, ivBuff, 0);
 }
 
-uint64_t gcd(uint64_t a, uint64_t b){
-    while(a != 0 && b != 0) {
-        while((b & 1) == 0) b >>= 1;
-        while((a & 1) == 0) a >>= 1;
-        if(a > b) a -= b; else b -= a;
+JNIEXPORT jstring Java_org_telegram_messenger_Utilities_readlink(JNIEnv *env, jclass class, jstring path) {
+    static char buf[1000];
+    char *fileName = (*env)->GetStringUTFChars(env, path, NULL);
+    int result = readlink(fileName, buf, 999);
+    jstring value = 0;
+    if (result != -1) {
+        buf[result] = '\0';
+        value = (*env)->NewStringUTF(env, buf);
     }
-    return b == 0 ? a : b;
-}
-
-JNIEXPORT jlong Java_org_telegram_messenger_Utilities_doPQNative(JNIEnv* env, jclass class, jlong _what) {
-    uint64_t what = _what;
-    int it = 0, i, j;
-    uint64_t g = 0;
-    for (i = 0; i < 3 || it < 1000; i++){
-        int q = ((lrand48() & 15) + 17) % what;
-        uint64_t x = (long long)lrand48() % (what - 1) + 1, y = x;
-        int lim = 1 << (i + 18), j;
-        for(j = 1; j < lim; j++){
-            ++it;
-            uint64_t a = x, b = x, c = q;
-            while(b){
-                if(b & 1){
-                    c += a;
-                    if(c >= what) c -= what;
-                }
-                a += a;
-                if(a >= what) a -= what;
-                b >>= 1;
-            }
-            x = c;
-            uint64_t z = x < y ? what + x - y : x - y;
-            g = gcd(z, what);
-            if(g != 1) break;
-            if(!(j & (j - 1))) y = x;
-        }
-        if(g > 1 && g < what) break;
-    }
-    return g;
+    (*env)->ReleaseStringUTFChars(env, path, fileName);
+    return value;
 }

@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 1.3.2.
+ * This is the source code of Telegram for Android v. 3.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.ui;
@@ -14,33 +14,34 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.res.Configuration;
 import android.os.Build;
 import android.os.Environment;
 import android.os.StatFs;
-import android.text.TextUtils;
-import android.view.Gravity;
-import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewTreeObserver;
 import android.widget.AbsListView;
 import android.widget.AdapterView;
-import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
 
-import org.telegram.android.AndroidUtilities;
+import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLog;
-import org.telegram.android.LocaleController;
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
+import org.telegram.ui.ActionBar.BackDrawable;
 import org.telegram.ui.Adapters.BaseFragmentAdapter;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
-import org.telegram.android.AnimationCompat.AnimatorSetProxy;
-import org.telegram.android.AnimationCompat.ObjectAnimatorProxy;
+import org.telegram.messenger.AnimationCompat.AnimatorSetProxy;
+import org.telegram.messenger.AnimationCompat.ObjectAnimatorProxy;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.Cells.SharedDocumentCell;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.NumberTextView;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -49,6 +50,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.StringTokenizer;
 
 public class DocumentSelectActivity extends BaseFragment {
 
@@ -59,7 +62,7 @@ public class DocumentSelectActivity extends BaseFragment {
 
     private ListView listView;
     private ListAdapter listAdapter;
-    private TextView selectedMessagesCountTextView;
+    private NumberTextView selectedMessagesCountTextView;
     private TextView emptyView;
 
     private File currentDir;
@@ -117,7 +120,7 @@ public class DocumentSelectActivity extends BaseFragment {
     public void onFragmentDestroy() {
         try {
             if (receiverRegistered) {
-                getParentActivity().unregisterReceiver(receiver);
+                ApplicationLoader.applicationContext.unregisterReceiver(receiver);
             }
         } catch (Exception e) {
             FileLog.e("tmessages", e);
@@ -126,7 +129,7 @@ public class DocumentSelectActivity extends BaseFragment {
     }
 
     @Override
-    public View createView(Context context, LayoutInflater inflater) {
+    public View createView(Context context) {
         if (!receiverRegistered) {
             receiverRegistered = true;
             IntentFilter filter = new IntentFilter();
@@ -140,21 +143,23 @@ public class DocumentSelectActivity extends BaseFragment {
             filter.addAction(Intent.ACTION_MEDIA_UNMOUNTABLE);
             filter.addAction(Intent.ACTION_MEDIA_UNMOUNTED);
             filter.addDataScheme("file");
-            getParentActivity().registerReceiver(receiver, filter);
+            ApplicationLoader.applicationContext.registerReceiver(receiver, filter);
         }
 
-        actionBar.setBackButtonImage(R.drawable.ic_ab_back);
+        actionBar.setBackButtonDrawable(new BackDrawable(false));
         actionBar.setAllowOverlayTitle(true);
         actionBar.setTitle(LocaleController.getString("SelectFile", R.string.SelectFile));
         actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
             public void onItemClick(int id) {
                 if (id == -1) {
-                    finishFragment();
-                } else if (id == -2) {
-                    selectedFiles.clear();
-                    actionBar.hideActionMode();
-                    listView.invalidateViews();
+                    if (actionBar.isActionModeShowed()) {
+                        selectedFiles.clear();
+                        actionBar.hideActionMode();
+                        listView.invalidateViews();
+                    } else {
+                        finishFragment();
+                    }
                 } else if (id == done) {
                     if (delegate != null) {
                         ArrayList<String> files = new ArrayList<>();
@@ -168,33 +173,22 @@ public class DocumentSelectActivity extends BaseFragment {
         actionModeViews.clear();
 
         final ActionBarMenu actionMode = actionBar.createActionMode();
-        actionModeViews.add(actionMode.addItem(-2, R.drawable.ic_ab_back_grey, R.drawable.bar_selector_mode, null, AndroidUtilities.dp(54)));
 
-        selectedMessagesCountTextView = new TextView(actionMode.getContext());
+        selectedMessagesCountTextView = new NumberTextView(actionMode.getContext());
         selectedMessagesCountTextView.setTextSize(18);
         selectedMessagesCountTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         selectedMessagesCountTextView.setTextColor(0xff737373);
-        selectedMessagesCountTextView.setSingleLine(true);
-        selectedMessagesCountTextView.setLines(1);
-        selectedMessagesCountTextView.setEllipsize(TextUtils.TruncateAt.END);
-        selectedMessagesCountTextView.setPadding(AndroidUtilities.dp(11), 0, 0, AndroidUtilities.dp(2));
-        selectedMessagesCountTextView.setGravity(Gravity.CENTER_VERTICAL);
         selectedMessagesCountTextView.setOnTouchListener(new View.OnTouchListener() {
             @Override
             public boolean onTouch(View v, MotionEvent event) {
                 return true;
             }
         });
-        actionMode.addView(selectedMessagesCountTextView);
-        LinearLayout.LayoutParams layoutParams = (LinearLayout.LayoutParams) selectedMessagesCountTextView.getLayoutParams();
-        layoutParams.weight = 1;
-        layoutParams.width = 0;
-        layoutParams.height = LayoutHelper.MATCH_PARENT;
-        selectedMessagesCountTextView.setLayoutParams(layoutParams);
+        actionMode.addView(selectedMessagesCountTextView, LayoutHelper.createLinear(0, LayoutHelper.MATCH_PARENT, 1.0f, 65, 0, 0, 0));
 
         actionModeViews.add(actionMode.addItem(done, R.drawable.ic_ab_done_gray, R.drawable.bar_selector_mode, null, AndroidUtilities.dp(54)));
 
-        fragmentView = inflater.inflate(R.layout.document_select_layout, null, false);
+        fragmentView = getParentActivity().getLayoutInflater().inflate(R.layout.document_select_layout, null, false);
         listAdapter = new ListAdapter(context);
         emptyView = (TextView) fragmentView.findViewById(R.id.searchEmptyView);
         emptyView.setOnTouchListener(new View.OnTouchListener() {
@@ -242,18 +236,14 @@ public class DocumentSelectActivity extends BaseFragment {
                         return false;
                     }
                     selectedFiles.put(file.toString(), item);
-                    selectedMessagesCountTextView.setText(String.format("%d", selectedFiles.size()));
+                    selectedMessagesCountTextView.setNumber(1, false);
                     if (Build.VERSION.SDK_INT >= 11) {
                         AnimatorSetProxy animatorSet = new AnimatorSetProxy();
                         ArrayList<Object> animators = new ArrayList<>();
                         for (int a = 0; a < actionModeViews.size(); a++) {
                             View view2 = actionModeViews.get(a);
                             AndroidUtilities.clearDrawableAnimation(view2);
-                            if (a < 1) {
-                                animators.add(ObjectAnimatorProxy.ofFloat(view2, "translationX", -AndroidUtilities.dp(56), 0));
-                            } else {
-                                animators.add(ObjectAnimatorProxy.ofFloat(view2, "scaleY", 0.1f, 1.0f));
-                            }
+                            animators.add(ObjectAnimatorProxy.ofFloat(view2, "scaleY", 0.1f, 1.0f));
                         }
                         animatorSet.playTogether(animators);
                         animatorSet.setDuration(250);
@@ -309,7 +299,7 @@ public class DocumentSelectActivity extends BaseFragment {
                 } else {
                     if (!file.canRead()) {
                         showErrorBox(LocaleController.getString("AccessError", R.string.AccessError));
-                        return;
+                        file = new File("/mnt/sdcard");
                     }
                     if (sizeLimit != 0) {
                         if (file.length() > sizeLimit) {
@@ -329,7 +319,7 @@ public class DocumentSelectActivity extends BaseFragment {
                         if (selectedFiles.isEmpty()) {
                             actionBar.hideActionMode();
                         } else {
-                            selectedMessagesCountTextView.setText(String.format("%d", selectedFiles.size()));
+                            selectedMessagesCountTextView.setNumber(selectedFiles.size(), true);
                         }
                         scrolling = false;
                         if (view instanceof SharedDocumentCell) {
@@ -356,6 +346,34 @@ public class DocumentSelectActivity extends BaseFragment {
         super.onResume();
         if (listAdapter != null) {
             listAdapter.notifyDataSetChanged();
+        }
+        fixLayoutInternal();
+    }
+
+    @Override
+    public void onConfigurationChanged(android.content.res.Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        if (listView != null) {
+            ViewTreeObserver obs = listView.getViewTreeObserver();
+            obs.addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
+                @Override
+                public boolean onPreDraw() {
+                    listView.getViewTreeObserver().removeOnPreDrawListener(this);
+                    fixLayoutInternal();
+                    return true;
+                }
+            });
+        }
+    }
+
+    private void fixLayoutInternal() {
+        if (selectedMessagesCountTextView == null) {
+            return;
+        }
+        if (!AndroidUtilities.isTablet() && ApplicationLoader.applicationContext.getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
+            selectedMessagesCountTextView.setTextSize(18);
+        } else {
+            selectedMessagesCountTextView.setTextSize(20);
         }
     }
 
@@ -489,59 +507,79 @@ public class DocumentSelectActivity extends BaseFragment {
     private void listRoots() {
         currentDir = null;
         items.clear();
-        String extStorage = Environment.getExternalStorageDirectory().getAbsolutePath();
-        ListItem ext = new ListItem();
-        if (Build.VERSION.SDK_INT < 9 || Environment.isExternalStorageRemovable()) {
-            ext.title = LocaleController.getString("SdCard", R.string.SdCard);
-        } else {
-            ext.title = LocaleController.getString("InternalStorage", R.string.InternalStorage);
-        }
-        ext.icon = Build.VERSION.SDK_INT < 9 || Environment.isExternalStorageRemovable() ? R.drawable.ic_external_storage : R.drawable.ic_storage;
-        ext.subtitle = getRootSubtitle(extStorage);
-        ext.file = Environment.getExternalStorageDirectory();
-        items.add(ext);
-        try {
-            BufferedReader reader = new BufferedReader(new FileReader("/proc/mounts"));
-            String line;
-            HashMap<String, ArrayList<String>> aliases = new HashMap<>();
-            ArrayList<String> result = new ArrayList<>();
-            String extDevice = null;
-            while ((line = reader.readLine()) != null) {
-                if ((!line.contains("/mnt") && !line.contains("/storage") && !line.contains("/sdcard")) || line.contains("asec") || line.contains("tmpfs") || line.contains("none")) {
-                    continue;
-                }
-                String[] info = line.split(" ");
-                if (!aliases.containsKey(info[0])) {
-                    aliases.put(info[0], new ArrayList<String>());
-                }
-                aliases.get(info[0]).add(info[1]);
-                if (info[1].equals(extStorage)) {
-                    extDevice=info[0];
-                }
-                result.add(info[1]);
+
+        HashSet<String> paths = new HashSet<>();
+        String defaultPath = Environment.getExternalStorageDirectory().getPath();
+        boolean isDefaultPathRemovable = Build.VERSION.SDK_INT >= 9 && Environment.isExternalStorageRemovable();
+        String defaultPathState = Environment.getExternalStorageState();
+        if (defaultPathState.equals(Environment.MEDIA_MOUNTED) || defaultPathState.equals(Environment.MEDIA_MOUNTED_READ_ONLY)) {
+            ListItem ext = new ListItem();
+            if (Build.VERSION.SDK_INT < 9 || Environment.isExternalStorageRemovable()) {
+                ext.title = LocaleController.getString("SdCard", R.string.SdCard);
+                ext.icon = R.drawable.ic_external_storage;
+            } else {
+                ext.title = LocaleController.getString("InternalStorage", R.string.InternalStorage);
+                ext.icon = R.drawable.ic_storage;
             }
-            reader.close();
-            if (extDevice != null) {
-                result.removeAll(aliases.get(extDevice));
-                for (String path : result) {
-                    try {
-                        ListItem item = new ListItem();
-                        if (path.toLowerCase().contains("sd")) {
-                            ext.title = LocaleController.getString("SdCard", R.string.SdCard);
-                        } else {
-                            ext.title = LocaleController.getString("ExternalStorage", R.string.ExternalStorage);
+            ext.subtitle = getRootSubtitle(defaultPath);
+            ext.file = Environment.getExternalStorageDirectory();
+            items.add(ext);
+            paths.add(defaultPath);
+        }
+
+        BufferedReader bufferedReader = null;
+        try {
+            bufferedReader = new BufferedReader(new FileReader("/proc/mounts"));
+            String line;
+            while ((line = bufferedReader.readLine()) != null) {
+                if (line.contains("vfat") || line.contains("/mnt")) {
+                    FileLog.e("tmessages", line);
+                    StringTokenizer tokens = new StringTokenizer(line, " ");
+                    String unused = tokens.nextToken();
+                    String path = tokens.nextToken();
+                    if (paths.contains(path)) {
+                        continue;
+                    }
+                    if (line.contains("/dev/block/vold")) {
+                        if (!line.contains("/mnt/secure") && !line.contains("/mnt/asec") && !line.contains("/mnt/obb") && !line.contains("/dev/mapper") && !line.contains("tmpfs")) {
+                            if (!new File(path).isDirectory()) {
+                                int index = path.lastIndexOf('/');
+                                if (index != -1) {
+                                    String newPath = "/storage/" + path.substring(index + 1);
+                                    if (new File(newPath).isDirectory()) {
+                                        path = newPath;
+                                    }
+                                }
+                            }
+                            paths.add(path);
+                            try {
+                                ListItem item = new ListItem();
+                                if (path.toLowerCase().contains("sd")) {
+                                    item.title = LocaleController.getString("SdCard", R.string.SdCard);
+                                } else {
+                                    item.title = LocaleController.getString("ExternalStorage", R.string.ExternalStorage);
+                                }
+                                item.icon = R.drawable.ic_external_storage;
+                                item.subtitle = getRootSubtitle(path);
+                                item.file = new File(path);
+                                items.add(item);
+                            } catch (Exception e) {
+                                FileLog.e("tmessages", e);
+                            }
                         }
-                        item.icon = R.drawable.ic_external_storage;
-                        item.subtitle = getRootSubtitle(path);
-                        item.file = new File(path);
-                        items.add(item);
-                    } catch (Exception e) {
-                        FileLog.e("tmessages", e);
                     }
                 }
             }
         } catch (Exception e) {
             FileLog.e("tmessages", e);
+        } finally {
+            if (bufferedReader != null) {
+                try {
+                    bufferedReader.close();
+                } catch (Exception e) {
+                    FileLog.e("tmessages", e);
+                }
+            }
         }
         ListItem fs = new ListItem();
         fs.title = "/";
@@ -577,13 +615,18 @@ public class DocumentSelectActivity extends BaseFragment {
     }
 
     private String getRootSubtitle(String path) {
-        StatFs stat = new StatFs(path);
-        long total = (long)stat.getBlockCount() * (long)stat.getBlockSize();
-        long free = (long)stat.getAvailableBlocks() * (long)stat.getBlockSize();
-        if (total == 0) {
-            return "";
+        try {
+            StatFs stat = new StatFs(path);
+            long total = (long)stat.getBlockCount() * (long)stat.getBlockSize();
+            long free = (long)stat.getAvailableBlocks() * (long)stat.getBlockSize();
+            if (total == 0) {
+                return "";
+            }
+            return LocaleController.formatString("FreeOfTotal", R.string.FreeOfTotal, AndroidUtilities.formatFileSize(free), AndroidUtilities.formatFileSize(total));
+        } catch (Exception e) {
+            FileLog.e("tmessages", e);
         }
-        return LocaleController.formatString("FreeOfTotal", R.string.FreeOfTotal, AndroidUtilities.formatFileSize(free), AndroidUtilities.formatFileSize(total));
+        return path;
     }
 
     private class ListAdapter extends BaseFragmentAdapter {

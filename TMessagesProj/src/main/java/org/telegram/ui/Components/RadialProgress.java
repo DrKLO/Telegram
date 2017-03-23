@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2014.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.ui.Components;
@@ -15,7 +15,7 @@ import android.graphics.drawable.Drawable;
 import android.view.View;
 import android.view.animation.DecelerateInterpolator;
 
-import org.telegram.android.AndroidUtilities;
+import org.telegram.messenger.AndroidUtilities;
 
 public class RadialProgress {
 
@@ -35,6 +35,7 @@ public class RadialProgress {
     private Drawable currentDrawable;
     private Drawable previousDrawable;
     private boolean hideCurrentDrawable;
+    private int progressColor = 0xffffffff;
 
     private static DecelerateInterpolator decelerateInterpolator = null;
     private static Paint progressPaint = null;
@@ -46,7 +47,6 @@ public class RadialProgress {
             progressPaint.setStyle(Paint.Style.STROKE);
             progressPaint.setStrokeCap(Paint.Cap.ROUND);
             progressPaint.setStrokeWidth(AndroidUtilities.dp(2));
-            progressPaint.setColor(0xffffffff);
         }
         parent = parentView;
     }
@@ -55,38 +55,49 @@ public class RadialProgress {
         progressRect.set(left, top, right, bottom);
     }
 
-    private void updateAnimation() {
+    private void updateAnimation(boolean progress) {
         long newTime = System.currentTimeMillis();
         long dt = newTime - lastUpdateTime;
         lastUpdateTime = newTime;
 
-        if (animatedProgressValue != 1) {
-            radOffset += 360 * dt / 3000.0f;
-            float progressDiff = currentProgress - animationProgressStart;
-            if (progressDiff > 0) {
-                currentProgressTime += dt;
-                if (currentProgressTime >= 300) {
-                    animatedProgressValue = currentProgress;
-                    animationProgressStart = currentProgress;
-                    currentProgressTime = 0;
-                } else {
-                    animatedProgressValue = animationProgressStart + progressDiff * decelerateInterpolator.getInterpolation(currentProgressTime / 300.0f);
+        if (progress) {
+            if (animatedProgressValue != 1) {
+                radOffset += 360 * dt / 3000.0f;
+                float progressDiff = currentProgress - animationProgressStart;
+                if (progressDiff > 0) {
+                    currentProgressTime += dt;
+                    if (currentProgressTime >= 300) {
+                        animatedProgressValue = currentProgress;
+                        animationProgressStart = currentProgress;
+                        currentProgressTime = 0;
+                    } else {
+                        animatedProgressValue = animationProgressStart + progressDiff * decelerateInterpolator.getInterpolation(currentProgressTime / 300.0f);
+                    }
                 }
+                invalidateParent();
             }
-            invalidateParent();
-        }
-        if (animatedProgressValue >= 1 && previousDrawable != null) {
-            animatedAlphaValue -= dt / 200.0f;
-            if (animatedAlphaValue <= 0) {
-                animatedAlphaValue = 0.0f;
-                previousDrawable = null;
+            if (animatedProgressValue >= 1 && previousDrawable != null) {
+                animatedAlphaValue -= dt / 200.0f;
+                if (animatedAlphaValue <= 0) {
+                    animatedAlphaValue = 0.0f;
+                    previousDrawable = null;
+                }
+                invalidateParent();
             }
-            invalidateParent();
+        } else {
+            if (previousDrawable != null) {
+                animatedAlphaValue -= dt / 200.0f;
+                if (animatedAlphaValue <= 0) {
+                    animatedAlphaValue = 0.0f;
+                    previousDrawable = null;
+                }
+                invalidateParent();
+            }
         }
     }
 
     public void setProgressColor(int color) {
-        progressPaint.setColor(color);
+        progressColor = color;
     }
 
     public void setHideCurrentDrawable(boolean value) {
@@ -124,18 +135,26 @@ public class RadialProgress {
         }
         currentWithRound = withRound;
         currentDrawable = drawable;
-        invalidateParent();
+        if (!animated) {
+            parent.invalidate();
+        } else {
+            invalidateParent();
+        }
     }
 
-    public void swapBackground(Drawable drawable) {
-        currentDrawable = drawable;
+    public boolean swapBackground(Drawable drawable) {
+        if (currentDrawable != drawable) {
+            currentDrawable = drawable;
+            return true;
+        }
+        return false;
     }
 
     public float getAlpha() {
         return previousDrawable != null || currentDrawable != null ? animatedAlphaValue : 0.0f;
     }
 
-    public void onDraw(Canvas canvas) {
+    public void draw(Canvas canvas) {
         if (previousDrawable != null) {
             previousDrawable.setAlpha((int)(255 * animatedAlphaValue));
             previousDrawable.setBounds((int)progressRect.left, (int)progressRect.top, (int)progressRect.right, (int)progressRect.bottom);
@@ -154,6 +173,7 @@ public class RadialProgress {
 
         if (currentWithRound || previousWithRound) {
             int diff = AndroidUtilities.dp(1);
+            progressPaint.setColor(progressColor);
             if (previousWithRound) {
                 progressPaint.setAlpha((int)(255 * animatedAlphaValue));
             } else {
@@ -161,7 +181,9 @@ public class RadialProgress {
             }
             cicleRect.set(progressRect.left + diff, progressRect.top + diff, progressRect.right - diff, progressRect.bottom - diff);
             canvas.drawArc(cicleRect, -90 + radOffset, Math.max(4, 360 * animatedProgressValue), false, progressPaint);
-            updateAnimation();
+            updateAnimation(true);
+        } else {
+            updateAnimation(false);
         }
     }
 }

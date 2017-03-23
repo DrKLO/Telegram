@@ -1,24 +1,27 @@
 /*
- * This is the source code of Telegram for Android v. 1.3.2.
+ * This is the source code of Telegram for Android v. 3.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.ui;
 
+import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.text.Editable;
 import android.text.InputType;
+import android.text.TextWatcher;
 import android.util.TypedValue;
 import android.view.Gravity;
-import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
@@ -30,17 +33,22 @@ import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.Toast;
 
-import org.telegram.android.AndroidUtilities;
-import org.telegram.android.LocaleController;
-import org.telegram.android.MessagesStorage;
-import org.telegram.android.SecretChatHelper;
-import org.telegram.messenger.TLRPC;
-import org.telegram.android.ContactsController;
+import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ApplicationLoader;
+import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MessagesStorage;
+import org.telegram.messenger.SecretChatHelper;
+import org.telegram.messenger.UserConfig;
+import org.telegram.messenger.UserObject;
+import org.telegram.tgnet.TLRPC;
+import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.FileLog;
-import org.telegram.android.MessagesController;
-import org.telegram.android.NotificationCenter;
+import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
+import org.telegram.messenger.Utilities;
 import org.telegram.ui.Adapters.BaseSectionsAdapter;
 import org.telegram.ui.Adapters.ContactsAdapter;
 import org.telegram.ui.Adapters.SearchAdapter;
@@ -70,6 +78,8 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
     private boolean returnAsResult;
     private boolean createSecretChat;
     private boolean creatingChat = false;
+    private boolean allowBots = true;
+    private boolean needForwardCount = true;
     private int chat_id;
     private String selectAlertString = null;
     private HashMap<Integer, TLRPC.User> ignoreUsers;
@@ -99,6 +109,8 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
             createSecretChat = arguments.getBoolean("createSecretChat", false);
             selectAlertString = arguments.getString("selectAlertString");
             allowUsernameSearch = arguments.getBoolean("allowUsernameSearch", true);
+            needForwardCount = arguments.getBoolean("needForwardCount", true);
+            allowBots = arguments.getBoolean("allowBots", true);
             chat_id = arguments.getInt("chat_id", 0);
         } else {
             needPhonebook = true;
@@ -120,7 +132,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
     }
 
     @Override
-    public View createView(Context context, LayoutInflater inflater) {
+    public View createView(Context context) {
 
         searching = false;
         searchWas = false;
@@ -158,7 +170,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
             }
 
             @Override
-            public boolean onSearchCollapse() {
+            public void onSearchCollapse() {
                 searchListViewAdapter.searchDialogs(null);
                 searching = false;
                 searchWas = false;
@@ -170,7 +182,6 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                 listView.setFastScrollEnabled(true);
                 listView.setVerticalScrollBarEnabled(false);
                 emptyTextView.setText(LocaleController.getString("NoContacts", R.string.NoContacts));
-                return true;
             }
 
             @Override
@@ -199,8 +210,8 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
         });
         item.getSearchField().setHint(LocaleController.getString("Search", R.string.Search));
 
-        searchListViewAdapter = new SearchAdapter(context, ignoreUsers, allowUsernameSearch);
-        listViewAdapter = new ContactsAdapter(context, onlyUsers, needPhonebook, ignoreUsers, chat_id != 0);
+        searchListViewAdapter = new SearchAdapter(context, ignoreUsers, allowUsernameSearch, false, false, allowBots);
+        listViewAdapter = new ContactsAdapter(context, onlyUsers ? 1 : 0, needPhonebook, ignoreUsers, chat_id != 0);
 
         fragmentView = new FrameLayout(context);
 
@@ -262,7 +273,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
                 if (searching && searchWas) {
-                    TLRPC.User user = searchListViewAdapter.getItem(i);
+                    TLRPC.User user = (TLRPC.User) searchListViewAdapter.getItem(i);
                     if (user == null) {
                         return;
                     }
@@ -279,12 +290,17 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                         didSelectResult(user, true, null);
                     } else {
                         if (createSecretChat) {
+                            if (user.id == UserConfig.getClientUserId()) {
+                                return;
+                            }
                             creatingChat = true;
                             SecretChatHelper.getInstance().startSecretChat(getParentActivity(), user);
                         } else {
                             Bundle args = new Bundle();
                             args.putInt("user_id", user.id);
-                            presentFragment(new ChatActivity(args), true);
+                            if (MessagesController.checkCanOpenChat(args, ContactsActivity.this)) {
+                                presentFragment(new ChatActivity(args), true);
+                            }
                         }
                     }
                 } else {
@@ -320,14 +336,21 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                                 args.putBoolean("onlyUsers", true);
                                 args.putBoolean("destroyAfterSelect", true);
                                 args.putBoolean("createSecretChat", true);
+                                args.putBoolean("allowBots", false);
                                 presentFragment(new ContactsActivity(args), false);
                             } else if (row == 2) {
                                 if (!MessagesController.isFeatureEnabled("broadcast_create", ContactsActivity.this)) {
                                     return;
                                 }
-                                Bundle args = new Bundle();
-                                args.putBoolean("broadcast", true);
-                                presentFragment(new GroupCreateActivity(args), false);
+                                SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+                                if (preferences.getBoolean("channel_intro", false)) {
+                                    Bundle args = new Bundle();
+                                    args.putInt("step", 0);
+                                    presentFragment(new ChannelCreateActivity(args));
+                                } else {
+                                    presentFragment(new ChannelIntroActivity());
+                                    preferences.edit().putBoolean("channel_intro", true).commit();
+                                }
                             }
                         }
                     } else {
@@ -347,7 +370,9 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                                 } else {
                                     Bundle args = new Bundle();
                                     args.putInt("user_id", user.id);
-                                    presentFragment(new ChatActivity(args), true);
+                                    if (MessagesController.checkCanOpenChat(args, ContactsActivity.this)) {
+                                        presentFragment(new ChatActivity(args), true);
+                                    }
                                 }
                             }
                         } else if (item instanceof ContactsController.Contact) {
@@ -407,36 +432,87 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
             if (getParentActivity() == null) {
                 return;
             }
+            if (user.bot && user.bot_nochats) {
+                try {
+                    Toast.makeText(getParentActivity(), LocaleController.getString("BotCantJoinGroups", R.string.BotCantJoinGroups), Toast.LENGTH_SHORT).show();
+                } catch (Exception e) {
+                    FileLog.e("tmessages", e);
+                }
+                return;
+            }
             AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
             builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
-            builder.setMessage(LocaleController.formatStringSimple(selectAlertString, ContactsController.formatName(user.first_name, user.last_name)));
-            final EditText editText = new EditText(getParentActivity());
-            if (android.os.Build.VERSION.SDK_INT < 11) {
-                editText.setBackgroundResource(android.R.drawable.editbox_background_normal);
+            String message = LocaleController.formatStringSimple(selectAlertString, UserObject.getUserName(user));
+            EditText editText = null;
+            if (!user.bot && needForwardCount) {
+                message = String.format("%s\n\n%s", message, LocaleController.getString("AddToTheGroupForwardCount", R.string.AddToTheGroupForwardCount));
+                editText = new EditText(getParentActivity());
+                if (android.os.Build.VERSION.SDK_INT < 11) {
+                    editText.setBackgroundResource(android.R.drawable.editbox_background_normal);
+                }
+                editText.setTextSize(18);
+                editText.setText("50");
+                editText.setGravity(Gravity.CENTER);
+                editText.setInputType(InputType.TYPE_CLASS_NUMBER);
+                editText.setImeOptions(EditorInfo.IME_ACTION_DONE);
+                final EditText editTextFinal = editText;
+                editText.addTextChangedListener(new TextWatcher() {
+                    @Override
+                    public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+
+                    }
+
+                    @Override
+                    public void onTextChanged(CharSequence s, int start, int before, int count) {
+
+                    }
+
+                    @Override
+                    public void afterTextChanged(Editable s) {
+                        try {
+                            String str = s.toString();
+                            if (str.length() != 0) {
+                                int value = Utilities.parseInt(str);
+                                if (value < 0) {
+                                    editTextFinal.setText("0");
+                                    editTextFinal.setSelection(editTextFinal.length());
+                                } else if (value > 300) {
+                                    editTextFinal.setText("300");
+                                    editTextFinal.setSelection(editTextFinal.length());
+                                } else if (!str.equals("" + value)) {
+                                    editTextFinal.setText("" + value);
+                                    editTextFinal.setSelection(editTextFinal.length());
+                                }
+                            }
+                        } catch (Exception e) {
+                            FileLog.e("tmessages", e);
+                        }
+                    }
+
+                });
+                builder.setView(editText);
             }
-            editText.setTextSize(18);
-            editText.setText("50");
-            editText.setGravity(Gravity.CENTER);
-            editText.setInputType(InputType.TYPE_CLASS_NUMBER);
-            editText.setImeOptions(EditorInfo.IME_ACTION_DONE);
-            builder.setView(editText);
+            builder.setMessage(message);
+            final EditText finalEditText = editText;
             builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), new DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(DialogInterface dialogInterface, int i) {
-                    didSelectResult(user, false, editText.getText().toString());
+                    didSelectResult(user, false, finalEditText != null ? finalEditText.getText().toString() : "0");
                 }
             });
             builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
             showDialog(builder.create());
-            ViewGroup.MarginLayoutParams layoutParams = (ViewGroup.MarginLayoutParams)editText.getLayoutParams();
-            if (layoutParams != null) {
-                if (layoutParams instanceof FrameLayout.LayoutParams) {
-                    ((FrameLayout.LayoutParams)layoutParams).gravity = Gravity.CENTER_HORIZONTAL;
+            if (editText != null) {
+                ViewGroup.MarginLayoutParams layoutParams = (ViewGroup.MarginLayoutParams) editText.getLayoutParams();
+                if (layoutParams != null) {
+                    if (layoutParams instanceof FrameLayout.LayoutParams) {
+                        ((FrameLayout.LayoutParams) layoutParams).gravity = Gravity.CENTER_HORIZONTAL;
+                    }
+                    layoutParams.rightMargin = layoutParams.leftMargin = AndroidUtilities.dp(10);
+                    editText.setLayoutParams(layoutParams);
                 }
-                layoutParams.rightMargin = layoutParams.leftMargin = AndroidUtilities.dp(10);
-                editText.setLayoutParams(layoutParams);
+                editText.setSelection(editText.getText().length());
             }
-            editText.setSelection(editText.getText().length());
         } else {
             if (delegate != null) {
                 delegate.didSelectContact(user, param);

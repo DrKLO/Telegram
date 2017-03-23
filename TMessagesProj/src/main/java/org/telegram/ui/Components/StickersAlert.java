@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 2.x.x.
+ * This is the source code of Telegram for Android v. 3.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2015.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.ui.Components;
@@ -12,18 +12,18 @@ import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.database.DataSetObserver;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 import android.widget.FrameLayout;
 import android.widget.GridView;
 
-import org.telegram.android.AndroidUtilities;
-import org.telegram.android.LocaleController;
-import org.telegram.android.NotificationCenter;
-import org.telegram.messenger.R;
-import org.telegram.messenger.TLRPC;
+import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.NotificationCenter;
+import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.Cells.StickerEmojiCell;
+import org.telegram.ui.StickerPreviewViewer;
 
 import java.util.ArrayList;
 
@@ -32,9 +32,9 @@ public class StickersAlert extends AlertDialog implements NotificationCenter.Not
     private ArrayList<TLRPC.Document> stickers;
     private GridView gridView;
 
-    public StickersAlert(Context context, TLRPC.TL_stickerSet set, ArrayList<TLRPC.Document> arrayList) {
+    public StickersAlert(Context context, TLRPC.TL_messages_stickerSet set) {
         super(context);
-        stickers = arrayList;
+        stickers = set.documents;
 
         FrameLayout container = new FrameLayout(context) {
             @Override
@@ -44,17 +44,25 @@ public class StickersAlert extends AlertDialog implements NotificationCenter.Not
         };
         setView(container, AndroidUtilities.dp(16), 0, AndroidUtilities.dp(16), 0);
 
-        gridView = new GridView(context);
+        gridView = new GridView(context) {
+            @Override
+            public boolean onInterceptTouchEvent(MotionEvent event) {
+                boolean result = StickerPreviewViewer.getInstance().onInterceptTouchEvent(event, gridView, 0);
+                return super.onInterceptTouchEvent(event) || result;
+            }
+        };
         gridView.setNumColumns(4);
         gridView.setAdapter(new GridAdapter(context));
         gridView.setVerticalScrollBarEnabled(false);
+        gridView.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                return StickerPreviewViewer.getInstance().onTouch(event, gridView, 0, null);
+            }
+        });
         container.addView(gridView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
-        if (set.id == -1) {
-            setTitle(LocaleController.getString("GeniusStickerPackName", R.string.GeniusStickerPackName));
-        } else {
-            setTitle(set.title);
-        }
+        setTitle(set.set.title);
 
         NotificationCenter.getInstance().addObserver(this, NotificationCenter.emojiDidLoaded);
 
@@ -83,6 +91,10 @@ public class StickersAlert extends AlertDialog implements NotificationCenter.Not
             if (gridView != null) {
                 gridView.invalidateViews();
             }
+            if (StickerPreviewViewer.getInstance().isVisible()) {
+                StickerPreviewViewer.getInstance().close();
+            }
+            StickerPreviewViewer.getInstance().reset();
         }
     }
 

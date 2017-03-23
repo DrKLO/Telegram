@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 2.x
+ * This is the source code of Telegram for Android v. 3.x.x
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2015.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.ui;
@@ -14,7 +14,6 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Build;
 import android.view.Gravity;
-import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
@@ -23,17 +22,18 @@ import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
-import org.telegram.android.AndroidUtilities;
-import org.telegram.android.LocaleController;
-import org.telegram.android.MessagesController;
-import org.telegram.android.NotificationCenter;
+import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ChatObject;
+import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
-import org.telegram.messenger.RPCRequest;
-import org.telegram.messenger.TLObject;
-import org.telegram.messenger.TLRPC;
+import org.telegram.tgnet.ConnectionsManager;
+import org.telegram.tgnet.RequestDelegate;
+import org.telegram.tgnet.TLObject;
+import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.Adapters.BaseFragmentAdapter;
@@ -88,7 +88,7 @@ public class GroupInviteActivity extends BaseFragment implements NotificationCen
     }
 
     @Override
-    public View createView(Context context, LayoutInflater inflater) {
+    public View createView(Context context) {
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBar.setAllowOverlayTitle(true);
         actionBar.setTitle(LocaleController.getString("InviteLink", R.string.InviteLink));
@@ -178,12 +178,9 @@ public class GroupInviteActivity extends BaseFragment implements NotificationCen
     @Override
     public void didReceivedNotification(int id, Object... args) {
         if (id == NotificationCenter.chatInfoDidLoaded) {
-            if (args.length != 3) {
-                return;
-            }
-            int cid = (int) args[0];
-            int guid = (int) args[2];
-            if (cid == chat_id && guid == classGuid) {
+            TLRPC.ChatFull info = (TLRPC.ChatFull) args[0];
+            int guid = (int) args[1];
+            if (info.id == chat_id && guid == classGuid) {
                 invite = MessagesController.getInstance().getExportedInvite(chat_id);
                 if (!(invite instanceof TLRPC.TL_chatInviteExported)) {
                     generateLink(false);
@@ -205,11 +202,19 @@ public class GroupInviteActivity extends BaseFragment implements NotificationCen
         }
     }
 
-    private void generateLink(final boolean request) {
+    private void generateLink(final boolean newRequest) {
         loading = true;
-        TLRPC.TL_messages_exportChatInvite req = new TLRPC.TL_messages_exportChatInvite();
-        req.chat_id = chat_id;
-        final long reqId = ConnectionsManager.getInstance().performRpc(req, new RPCRequest.RPCRequestDelegate() {
+        TLObject request;
+        if (ChatObject.isChannel(chat_id)) {
+            TLRPC.TL_channels_exportInvite req = new TLRPC.TL_channels_exportInvite();
+            req.channel = MessagesController.getInputChannel(chat_id);
+            request = req;
+        } else {
+            TLRPC.TL_messages_exportChatInvite req = new TLRPC.TL_messages_exportChatInvite();
+            req.chat_id = chat_id;
+            request = req;
+        }
+        final int reqId = ConnectionsManager.getInstance().sendRequest(request, new RequestDelegate() {
             @Override
             public void run(final TLObject response, final TLRPC.TL_error error) {
                 AndroidUtilities.runOnUIThread(new Runnable() {
@@ -217,7 +222,7 @@ public class GroupInviteActivity extends BaseFragment implements NotificationCen
                     public void run() {
                         if (error == null) {
                             invite = (TLRPC.ExportedChatInvite) response;
-                            if (request) {
+                            if (newRequest) {
                                 if (getParentActivity() == null) {
                                     return;
                                 }
@@ -301,7 +306,12 @@ public class GroupInviteActivity extends BaseFragment implements NotificationCen
                     ((TextInfoPrivacyCell) view).setText("");
                     view.setBackgroundResource(R.drawable.greydivider_bottom);
                 } else if (i == linkInfoRow) {
-                    ((TextInfoPrivacyCell) view).setText(LocaleController.getString("LinkInfo", R.string.LinkInfo));
+                    TLRPC.Chat chat = MessagesController.getInstance().getChat(chat_id);
+                    if (ChatObject.isChannel(chat) && !chat.megagroup) {
+                        ((TextInfoPrivacyCell) view).setText(LocaleController.getString("ChannelLinkInfo", R.string.ChannelLinkInfo));
+                    } else {
+                        ((TextInfoPrivacyCell) view).setText(LocaleController.getString("LinkInfo", R.string.LinkInfo));
+                    }
                     view.setBackgroundResource(R.drawable.greydivider);
                 }
             } else if (type == 2) {

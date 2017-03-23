@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 1.7.x.
+ * This is the source code of Telegram for Android v. 3.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2014.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.ui.Cells;
@@ -21,14 +21,14 @@ import android.text.style.URLSpan;
 import android.view.MotionEvent;
 import android.view.SoundEffectConstants;
 
-import org.telegram.android.AndroidUtilities;
-import org.telegram.android.ImageReceiver;
-import org.telegram.android.MessageObject;
-import org.telegram.android.MessagesController;
+import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ImageReceiver;
+import org.telegram.messenger.MessageObject;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
-import org.telegram.messenger.TLRPC;
+import org.telegram.tgnet.TLRPC;
 import org.telegram.messenger.UserConfig;
 import org.telegram.ui.Components.ResourceLoader;
 import org.telegram.ui.PhotoViewer;
@@ -57,6 +57,8 @@ public class ChatActionCell extends BaseCell {
     private int previousWidth = 0;
     private boolean imagePressed = false;
 
+    private boolean hasReplyMessage;
+
     private MessageObject currentMessageObject;
 
     private ChatActionCellDelegate delegate;
@@ -79,16 +81,19 @@ public class ChatActionCell extends BaseCell {
     }
 
     public void setMessageObject(MessageObject messageObject) {
-        if (currentMessageObject == messageObject) {
+        if (currentMessageObject == messageObject && (hasReplyMessage || messageObject.replyMessageObject == null)) {
             return;
         }
         currentMessageObject = messageObject;
+        hasReplyMessage = messageObject.replyMessageObject != null;
         previousWidth = 0;
         if (currentMessageObject.type == 11) {
             int id = 0;
             if (messageObject.messageOwner.to_id != null) {
                 if (messageObject.messageOwner.to_id.chat_id != 0) {
                     id = messageObject.messageOwner.to_id.chat_id;
+                } else if (messageObject.messageOwner.to_id.channel_id != 0) {
+                    id = messageObject.messageOwner.to_id.channel_id;
                 } else {
                     id = messageObject.messageOwner.to_id.user_id;
                     if (id == UserConfig.getClientUserId()) {
@@ -174,8 +179,8 @@ public class ChatActionCell extends BaseCell {
                     final int line = textLayout.getLineForVertical((int)y);
                     final int off = textLayout.getOffsetForHorizontal(line, x);
                     final float left = textLayout.getLineLeft(line);
-                    if (left <= x && left + textLayout.getLineWidth(line) >= x) {
-                        Spannable buffer = (Spannable)currentMessageObject.messageText;
+                    if (left <= x && left + textLayout.getLineWidth(line) >= x && currentMessageObject.messageText instanceof Spannable) {
+                        Spannable buffer = (Spannable) currentMessageObject.messageText;
                         URLSpan[] link = buffer.getSpans(off, off, URLSpan.class);
 
                         if (link.length != 0) {
@@ -218,17 +223,19 @@ public class ChatActionCell extends BaseCell {
         int width = Math.max(AndroidUtilities.dp(30), MeasureSpec.getSize(widthMeasureSpec));
         if (width != previousWidth) {
             previousWidth = width;
-
-            textLayout = new StaticLayout(currentMessageObject.messageText, textPaint, width - AndroidUtilities.dp(30), Layout.Alignment.ALIGN_CENTER, 1.0f, 0.0f, false);
+            int maxWidth = width - AndroidUtilities.dp(30);
+            textLayout = new StaticLayout(currentMessageObject.messageText, textPaint, maxWidth, Layout.Alignment.ALIGN_CENTER, 1.0f, 0.0f, false);
             textHeight = 0;
             textWidth = 0;
             try {
                 int linesCount = textLayout.getLineCount();
                 for (int a = 0; a < linesCount; a++) {
                     float lineWidth;
-                    float lineLeft = 0;
                     try {
                         lineWidth = textLayout.getLineWidth(a);
+                        if (lineWidth > maxWidth) {
+                            lineWidth = maxWidth;
+                        }
                         textHeight = (int)Math.max(textHeight, Math.ceil(textLayout.getLineBottom(a)));
                     } catch (Exception e) {
                         FileLog.e("tmessages", e);

@@ -1,16 +1,18 @@
 /*
- * This is the source code of Telegram for Android v. 1.3.2.
+ * This is the source code of Telegram for Android v. 3.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.SQLite;
 
 import org.telegram.messenger.FileLog;
+import org.telegram.tgnet.NativeByteBuffer;
 
 import java.nio.ByteBuffer;
+import java.util.HashMap;
 
 public class SQLitePreparedStatement {
 	private boolean isFinalized = false;
@@ -19,6 +21,8 @@ public class SQLitePreparedStatement {
 	private int queryArgsCount;
 	private boolean finalizeAfterQuery = false;
 
+    private static HashMap<SQLitePreparedStatement, String> hashMap;
+
 	public int getStatementHandle() {
 		return sqliteStatementHandle;
 	}
@@ -26,6 +30,15 @@ public class SQLitePreparedStatement {
 	public SQLitePreparedStatement(SQLiteDatabase db, String sql, boolean finalize) throws SQLiteException {
 		finalizeAfterQuery = finalize;
 		sqliteStatementHandle = prepare(db.getSQLiteHandle(), sql);
+        /*if (BuildVars.DEBUG_VERSION) {
+            if (hashMap == null) {
+                hashMap = new HashMap<>();
+            }
+            hashMap.put(this, sql);
+            for (HashMap.Entry<SQLitePreparedStatement, String> entry : hashMap.entrySet()) {
+                FileLog.d("tmessages", "exist entry = " + entry.getValue());
+            }
+        }*/
 	}
 
 
@@ -88,6 +101,9 @@ public class SQLitePreparedStatement {
             return;
         }
 		try {
+            /*if (BuildVars.DEBUG_VERSION) {
+                hashMap.remove(this);
+            }*/
 			isFinalized = true;
 			finalize(sqliteStatementHandle);
 		} catch (SQLiteException e) {
@@ -107,12 +123,20 @@ public class SQLitePreparedStatement {
         bindByteBuffer(sqliteStatementHandle, index, value, value.limit());
     }
 
+    public void bindByteBuffer(int index, NativeByteBuffer value) throws SQLiteException {
+        bindByteBuffer(sqliteStatementHandle, index, value.buffer, value.limit());
+    }
+
     public void bindString(int index, String value) throws SQLiteException {
         bindString(sqliteStatementHandle, index, value);
     }
 
     public void bindLong(int index, long value) throws SQLiteException {
         bindLong(sqliteStatementHandle, index, value);
+    }
+
+    public void bindNull(int index) throws SQLiteException {
+        bindNull(sqliteStatementHandle, index);
     }
 
 	native void bindByteBuffer(int statementHandle, int index, ByteBuffer value, int length) throws SQLiteException;

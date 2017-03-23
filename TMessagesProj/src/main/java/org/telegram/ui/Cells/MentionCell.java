@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 2.x
+ * This is the source code of Telegram for Android v. 3.x.x
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2015.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.ui.Cells;
@@ -15,9 +15,10 @@ import android.view.Gravity;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-import org.telegram.android.AndroidUtilities;
-import org.telegram.android.ContactsController;
-import org.telegram.messenger.TLRPC;
+import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.R;
+import org.telegram.messenger.UserObject;
+import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.LayoutHelper;
@@ -33,6 +34,8 @@ public class MentionCell extends LinearLayout {
         super(context);
 
         setOrientation(HORIZONTAL);
+
+        setBackgroundResource(R.drawable.list_selector);
 
         avatarDrawable = new AvatarDrawable();
         avatarDrawable.setSmallStyle(true);
@@ -55,12 +58,12 @@ public class MentionCell extends LinearLayout {
         usernameTextView.setSingleLine(true);
         usernameTextView.setGravity(Gravity.LEFT);
         usernameTextView.setEllipsize(TextUtils.TruncateAt.END);
-        addView(usernameTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL, 12, 0, 0, 0));
+        addView(usernameTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL, 12, 0, 8, 0));
     }
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(36), MeasureSpec.EXACTLY));
+        super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(36), MeasureSpec.EXACTLY));
     }
 
     public void setUser(TLRPC.User user) {
@@ -76,7 +79,7 @@ public class MentionCell extends LinearLayout {
         } else {
             imageView.setImageDrawable(avatarDrawable);
         }
-        nameTextView.setText(ContactsController.formatName(user.first_name, user.last_name));
+        nameTextView.setText(UserObject.getUserName(user));
         usernameTextView.setText("@" + user.username);
         imageView.setVisibility(VISIBLE);
         usernameTextView.setVisibility(VISIBLE);
@@ -86,6 +89,23 @@ public class MentionCell extends LinearLayout {
         imageView.setVisibility(INVISIBLE);
         usernameTextView.setVisibility(INVISIBLE);
         nameTextView.setText(text);
+    }
+
+    public void setBotCommand(String command, String help, TLRPC.User user) {
+        if (user != null) {
+            imageView.setVisibility(VISIBLE);
+            avatarDrawable.setInfo(user);
+            if (user.photo != null && user.photo.photo_small != null) {
+                imageView.setImage(user.photo.photo_small, "50_50", avatarDrawable);
+            } else {
+                imageView.setImageDrawable(avatarDrawable);
+            }
+        } else {
+            imageView.setVisibility(INVISIBLE);
+        }
+        usernameTextView.setVisibility(VISIBLE);
+        nameTextView.setText(command);
+        usernameTextView.setText(help);
     }
 
     public void setIsDarkTheme(boolean isDarkTheme) {

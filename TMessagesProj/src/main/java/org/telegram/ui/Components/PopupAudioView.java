@@ -1,9 +1,9 @@
 /*
- * This is the source code of Telegram for Android v. 1.4.x.
+ * This is the source code of Telegram for Android v. 3.x.x.
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2014.
+ * Copyright Nikolai Kudashov, 2013-2016.
  */
 
 package org.telegram.ui.Components;
@@ -17,13 +17,14 @@ import android.text.TextPaint;
 import android.view.MotionEvent;
 import android.view.SoundEffectConstants;
 
-import org.telegram.android.AndroidUtilities;
-import org.telegram.android.ImageLoader;
-import org.telegram.android.MediaController;
-import org.telegram.android.MessagesController;
+import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ImageLoader;
+import org.telegram.messenger.MediaController;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.R;
-import org.telegram.android.MessageObject;
+import org.telegram.messenger.MessageObject;
+import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.Cells.BaseCell;
 
 import java.io.File;
@@ -84,17 +85,12 @@ public class PopupAudioView extends BaseCell implements SeekBar.SeekBarDelegate,
         TAG = MediaController.getInstance().generateObserverTag();
 
         seekBar = new SeekBar(getContext());
-        seekBar.delegate = this;
+        seekBar.setDelegate(this);
         progressView = new ProgressView();
     }
 
     public void setMessageObject(MessageObject messageObject) {
         if (currentMessageObject != messageObject) {
-            int uid = messageObject.messageOwner.media.audio.user_id;
-            if (uid == 0) {
-                uid = messageObject.messageOwner.from_id;
-            }
-
             seekBar.type = 1;
             progressView.setProgressColors(0xffd9e2eb, 0xff86c5f8);
 
@@ -236,8 +232,10 @@ public class PopupAudioView extends BaseCell implements SeekBar.SeekBarDelegate,
         if (buttonState == 0) {
             boolean result = MediaController.getInstance().playAudio(currentMessageObject);
             if (!currentMessageObject.isOut() && currentMessageObject.isContentUnread()) {
-                MessagesController.getInstance().markMessageContentAsRead(currentMessageObject.getId());
-                currentMessageObject.setContentIsRead();
+                if (currentMessageObject.messageOwner.to_id.channel_id == 0) {
+                    MessagesController.getInstance().markMessageContentAsRead(currentMessageObject);
+                    currentMessageObject.setContentIsRead();
+                }
             }
             if (result) {
                 buttonState = 1;
@@ -250,11 +248,11 @@ public class PopupAudioView extends BaseCell implements SeekBar.SeekBarDelegate,
                 invalidate();
             }
         } else if (buttonState == 2) {
-            FileLoader.getInstance().loadFile(currentMessageObject.messageOwner.media.audio, true);
+            FileLoader.getInstance().loadFile(currentMessageObject.messageOwner.media.document, true, false);
             buttonState = 3;
             invalidate();
         } else if (buttonState == 3) {
-            FileLoader.getInstance().cancelLoadFile(currentMessageObject.messageOwner.media.audio);
+            FileLoader.getInstance().cancelLoadFile(currentMessageObject.messageOwner.media.document);
             buttonState = 2;
             invalidate();
         }
@@ -271,7 +269,13 @@ public class PopupAudioView extends BaseCell implements SeekBar.SeekBarDelegate,
 
         int duration = 0;
         if (!MediaController.getInstance().isPlayingAudio(currentMessageObject)) {
-            duration = currentMessageObject.messageOwner.media.audio.duration;
+            for (int a = 0; a < currentMessageObject.messageOwner.media.document.attributes.size(); a++) {
+                TLRPC.DocumentAttribute attribute = currentMessageObject.messageOwner.media.document.attributes.get(a);
+                if (attribute instanceof TLRPC.TL_documentAttributeAudio) {
+                    duration = attribute.duration;
+                    break;
+                }
+            }
         } else {
             duration = currentMessageObject.audioProgressSec;
         }
@@ -285,7 +289,7 @@ public class PopupAudioView extends BaseCell implements SeekBar.SeekBarDelegate,
 
     public void downloadAudioIfNeed() {
         if (buttonState == 2) {
-            FileLoader.getInstance().loadFile(currentMessageObject.messageOwner.media.audio, true);
+            FileLoader.getInstance().loadFile(currentMessageObject.messageOwner.media.document, true, false);
             buttonState = 3;
             invalidate();
         }
