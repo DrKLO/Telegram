@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2016.
+ * Copyright Nikolai Kudashov, 2013-2017.
  */
 
 package org.telegram.messenger;
@@ -55,11 +55,11 @@ public class SmsListener extends BroadcastReceiver {
                             }
                         }
                     } catch (Throwable e) {
-                        FileLog.e("tmessages", e);
+                        FileLog.e(e);
                     }
 
                 } catch(Throwable e) {
-                    FileLog.e("tmessages", e);
+                    FileLog.e(e);
                 }
             }
         }

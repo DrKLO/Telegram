@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2016.
+ * Copyright Nikolai Kudashov, 2013-2017.
  */
 
 package org.telegram.messenger;
@@ -25,7 +25,7 @@ public class GcmRegistrationIntentService extends IntentService {
         try {
             InstanceID instanceID = InstanceID.getInstance(this);
             final String token = instanceID.getToken(getString(R.string.gcm_defaultSenderId), GoogleCloudMessaging.INSTANCE_ID_SCOPE, null);
-            FileLog.d("tmessages", "GCM Registration Token: " + token);
+            FileLog.d("GCM Registration Token: " + token);
             AndroidUtilities.runOnUIThread(new Runnable() {
                 @Override
                 public void run() {
@@ -34,21 +34,23 @@ public class GcmRegistrationIntentService extends IntentService {
                 }
             });
         } catch (Exception e) {
-            FileLog.e("tmessages", e);
-            final int failCount = intent.getIntExtra("failCount", 0);
-            if (failCount < 60) {
-                AndroidUtilities.runOnUIThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        try {
-                            Intent intent = new Intent(ApplicationLoader.applicationContext, GcmRegistrationIntentService.class);
-                            intent.putExtra("failCount", failCount + 1);
-                            startService(intent);
-                        } catch (Exception e) {
-                            FileLog.e("tmessages", e);
+            FileLog.e(e);
+            if (intent != null) {
+                final int failCount = intent.getIntExtra("failCount", 0);
+                if (failCount < 60) {
+                    AndroidUtilities.runOnUIThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            try {
+                                Intent intent = new Intent(ApplicationLoader.applicationContext, GcmRegistrationIntentService.class);
+                                intent.putExtra("failCount", failCount + 1);
+                                startService(intent);
+                            } catch (Exception e) {
+                                FileLog.e(e);
+                            }
                         }
-                    }
-                }, failCount < 20 ? 10000 : 60000 * 30);
+                    }, failCount < 20 ? 10000 : 60000 * 30);
+                }
             }
         }
     }

@@ -30,10 +30,15 @@
 #endif
 
 #include "pitch.h"
+#include "kiss_fft.h"
+#include "mdct.h"
 
 #if defined(OPUS_HAVE_RTCD)
 
 # if defined(FIXED_POINT)
+#  if ((defined(OPUS_ARM_MAY_HAVE_NEON) && !defined(OPUS_ARM_PRESUME_NEON)) || \
+    (defined(OPUS_ARM_MAY_HAVE_MEDIA) && !defined(OPUS_ARM_PRESUME_MEDIA)) || \
+    (defined(OPUS_ARM_MAY_HAVE_EDSP) && !defined(OPUS_ARM_PRESUME_EDSP)))
 opus_val32 (*const CELT_PITCH_XCORR_IMPL[OPUS_ARCHMASK+1])(const opus_val16 *,
     const opus_val16 *, opus_val32 *, int , int) = {
   celt_pitch_xcorr_c,               /* ARMv4 */
@@ -41,9 +46,98 @@ opus_val32 (*const CELT_PITCH_XCORR_IMPL[OPUS_ARCHMASK+1])(const opus_val16 *,
   MAY_HAVE_MEDIA(celt_pitch_xcorr), /* Media */
   MAY_HAVE_NEON(celt_pitch_xcorr)   /* NEON */
 };
-# else
-#  error "Floating-point implementation is not supported by ARM asm yet." \
- "Reconfigure with --disable-rtcd or send patches."
-# endif
+
+#  endif
+# else /* !FIXED_POINT */
+#  if defined(OPUS_ARM_MAY_HAVE_NEON_INTR) && !defined(OPUS_ARM_PRESUME_NEON_INTR)
+void (*const CELT_PITCH_XCORR_IMPL[OPUS_ARCHMASK+1])(const opus_val16 *,
+    const opus_val16 *, opus_val32 *, int, int) = {
+  celt_pitch_xcorr_c,              /* ARMv4 */
+  celt_pitch_xcorr_c,              /* EDSP */
+  celt_pitch_xcorr_c,              /* Media */
+  celt_pitch_xcorr_float_neon      /* Neon */
+};
+#  endif
+# endif /* FIXED_POINT */
+
+#if defined(FIXED_POINT) && defined(OPUS_HAVE_RTCD) && \
+ defined(OPUS_ARM_MAY_HAVE_NEON_INTR) && !defined(OPUS_ARM_PRESUME_NEON_INTR)
+
+void (*const XCORR_KERNEL_IMPL[OPUS_ARCHMASK + 1])(
+         const opus_val16 *x,
+         const opus_val16 *y,
+         opus_val32       sum[4],
+         int              len
+) = {
+  xcorr_kernel_c,                /* ARMv4 */
+  xcorr_kernel_c,                /* EDSP */
+  xcorr_kernel_c,                /* Media */
+  xcorr_kernel_neon_fixed,       /* Neon */
+};
 
 #endif
+
+# if defined(OPUS_ARM_MAY_HAVE_NEON_INTR)
+#  if defined(HAVE_ARM_NE10)
+#   if defined(CUSTOM_MODES)
+int (*const OPUS_FFT_ALLOC_ARCH_IMPL[OPUS_ARCHMASK+1])(kiss_fft_state *st) = {
+   opus_fft_alloc_arch_c,        /* ARMv4 */
+   opus_fft_alloc_arch_c,        /* EDSP */
+   opus_fft_alloc_arch_c,        /* Media */
+   opus_fft_alloc_arm_neon       /* Neon with NE10 library support */
+};
+
+void (*const OPUS_FFT_FREE_ARCH_IMPL[OPUS_ARCHMASK+1])(kiss_fft_state *st) = {
+   opus_fft_free_arch_c,         /* ARMv4 */
+   opus_fft_free_arch_c,         /* EDSP */
+   opus_fft_free_arch_c,         /* Media */
+   opus_fft_free_arm_neon        /* Neon with NE10 */
+};
+#   endif /* CUSTOM_MODES */
+
+void (*const OPUS_FFT[OPUS_ARCHMASK+1])(const kiss_fft_state *cfg,
+                                        const kiss_fft_cpx *fin,
+                                        kiss_fft_cpx *fout) = {
+   opus_fft_c,                   /* ARMv4 */
+   opus_fft_c,                   /* EDSP */
+   opus_fft_c,                   /* Media */
+   opus_fft_neon                 /* Neon with NE10 */
+};
+
+void (*const OPUS_IFFT[OPUS_ARCHMASK+1])(const kiss_fft_state *cfg,
+                                         const kiss_fft_cpx *fin,
+                                         kiss_fft_cpx *fout) = {
+   opus_ifft_c,                   /* ARMv4 */
+   opus_ifft_c,                   /* EDSP */
+   opus_ifft_c,                   /* Media */
+   opus_ifft_neon                 /* Neon with NE10 */
+};
+
+void (*const CLT_MDCT_FORWARD_IMPL[OPUS_ARCHMASK+1])(const mdct_lookup *l,
+                                                     kiss_fft_scalar *in,
+                                                     kiss_fft_scalar * OPUS_RESTRICT out,
+                                                     const opus_val16 *window,
+                                                     int overlap, int shift,
+                                                     int stride, int arch) = {
+   clt_mdct_forward_c,           /* ARMv4 */
+   clt_mdct_forward_c,           /* EDSP */
+   clt_mdct_forward_c,           /* Media */
+   clt_mdct_forward_neon         /* Neon with NE10 */
+};
+
+void (*const CLT_MDCT_BACKWARD_IMPL[OPUS_ARCHMASK+1])(const mdct_lookup *l,
+                                                      kiss_fft_scalar *in,
+                                                      kiss_fft_scalar * OPUS_RESTRICT out,
+                                                      const opus_val16 *window,
+                                                      int overlap, int shift,
+                                                      int stride, int arch) = {
+   clt_mdct_backward_c,           /* ARMv4 */
+   clt_mdct_backward_c,           /* EDSP */
+   clt_mdct_backward_c,           /* Media */
+   clt_mdct_backward_neon         /* Neon with NE10 */
+};
+
+#  endif /* HAVE_ARM_NE10 */
+# endif /* OPUS_ARM_MAY_HAVE_NEON_INTR */
+
+#endif /* OPUS_HAVE_RTCD */

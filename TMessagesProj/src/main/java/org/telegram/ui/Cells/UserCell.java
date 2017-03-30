@@ -3,12 +3,14 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2016.
+ * Copyright Nikolai Kudashov, 2013-2017.
  */
 
 package org.telegram.ui.Cells;
 
 import android.content.Context;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffColorFilter;
 import android.view.Gravity;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
@@ -22,6 +24,7 @@ import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.messenger.UserConfig;
+import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.CheckBox;
@@ -50,11 +53,14 @@ public class UserCell extends FrameLayout {
     private int lastStatus;
     private TLRPC.FileLocation lastAvatar;
 
-    private int statusColor = 0xffa8a8a8;
-    private int statusOnlineColor = 0xff3b84c0;
+    private int statusColor;
+    private int statusOnlineColor;
 
     public UserCell(Context context, int padding, int checkbox, boolean admin) {
         super(context);
+
+        statusColor = Theme.getColor(Theme.key_windowBackgroundWhiteGrayText);
+        statusOnlineColor = Theme.getColor(Theme.key_windowBackgroundWhiteBlueText);
 
         avatarDrawable = new AvatarDrawable();
 
@@ -63,7 +69,7 @@ public class UserCell extends FrameLayout {
         addView(avatarImageView, LayoutHelper.createFrame(48, 48, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 0 : 7 + padding, 8, LocaleController.isRTL ? 7 + padding : 0, 0));
 
         nameTextView = new SimpleTextView(context);
-        nameTextView.setTextColor(0xff212121);
+        nameTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
         nameTextView.setTextSize(17);
         nameTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
         addView(nameTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 20, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 28 + (checkbox == 2 ? 18 : 0) : (68 + padding), 11.5f, LocaleController.isRTL ? (68 + padding) : 28 + (checkbox == 2 ? 18 : 0), 0));
@@ -79,16 +85,18 @@ public class UserCell extends FrameLayout {
         addView(imageView, LayoutHelper.createFrame(LayoutParams.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL, LocaleController.isRTL ? 0 : 16, 0, LocaleController.isRTL ? 16 : 0, 0));
 
         if (checkbox == 2) {
-            checkBoxBig = new CheckBoxSquare(context);
+            checkBoxBig = new CheckBoxSquare(context, false);
             addView(checkBoxBig, LayoutHelper.createFrame(18, 18, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.CENTER_VERTICAL, LocaleController.isRTL ? 19 : 0, 0, LocaleController.isRTL ? 0 : 19, 0));
         } else if (checkbox == 1) {
             checkBox = new CheckBox(context, R.drawable.round_check2);
             checkBox.setVisibility(INVISIBLE);
+            checkBox.setColor(Theme.getColor(Theme.key_checkbox), Theme.getColor(Theme.key_checkboxCheck));
             addView(checkBox, LayoutHelper.createFrame(22, 22, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 0 : 37 + padding, 38, LocaleController.isRTL ? 37 + padding : 0, 0));
         }
 
         if (admin) {
             adminImage = new ImageView(context);
+            adminImage.setImageResource(R.drawable.admin_star);
             addView(adminImage, LayoutHelper.createFrame(16, 16, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.TOP, LocaleController.isRTL ? 24 : 0, 13.5f, LocaleController.isRTL ? 0 : 24, 0));
         }
     }
@@ -100,9 +108,11 @@ public class UserCell extends FrameLayout {
         adminImage.setVisibility(value != 0 ? VISIBLE : GONE);
         nameTextView.setPadding(LocaleController.isRTL && value != 0 ? AndroidUtilities.dp(16) : 0, 0, !LocaleController.isRTL && value != 0 ? AndroidUtilities.dp(16) : 0, 0);
         if (value == 1) {
-            adminImage.setImageResource(R.drawable.admin_star);
+            setTag(Theme.key_profile_creatorIcon);
+            adminImage.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_profile_creatorIcon), PorterDuff.Mode.MULTIPLY));
         } else if (value == 2) {
-            adminImage.setImageResource(R.drawable.admin_star2);
+            setTag(Theme.key_profile_adminIcon);
+            adminImage.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_profile_adminIcon), PorterDuff.Mode.MULTIPLY));
         }
     }
 
@@ -151,6 +161,14 @@ public class UserCell extends FrameLayout {
     public void setStatusColors(int color, int onlineColor) {
         statusColor = color;
         statusOnlineColor = onlineColor;
+    }
+
+    @Override
+    public void invalidate() {
+        super.invalidate();
+        if (checkBoxBig != null) {
+            checkBoxBig.invalidate();
+        }
     }
 
     public void update(int mask) {
@@ -232,7 +250,7 @@ public class UserCell extends FrameLayout {
         } else if (currentUser != null) {
             if (currentUser.bot) {
                 statusTextView.setTextColor(statusColor);
-                if (currentUser.bot_chat_history || adminImage != null && adminImage.getVisibility() == VISIBLE) { //TODO fix
+                if (currentUser.bot_chat_history || adminImage != null && adminImage.getVisibility() == VISIBLE) {
                     statusTextView.setText(LocaleController.getString("BotStatusRead", R.string.BotStatusRead));
                 } else {
                     statusTextView.setText(LocaleController.getString("BotStatusCantRead", R.string.BotStatusCantRead));

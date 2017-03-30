@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2016.
+ * Copyright Nikolai Kudashov, 2013-2017.
  */
 
 package org.telegram.ui;
@@ -11,6 +11,8 @@ package org.telegram.ui;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffColorFilter;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.MotionEvent;
@@ -31,6 +33,7 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.LineProgressView;
 
@@ -41,8 +44,6 @@ public class AudioPlayerActivity extends BaseFragment implements NotificationCen
     private MessageObject lastMessageObject;
     private ImageView placeholder;
     private ImageView playButton;
-    private ImageView nextButton;
-    private ImageView prevButton;
     private ImageView shuffleButton;
     private LineProgressView progressView;
     private ImageView repeatButton;
@@ -50,6 +51,10 @@ public class AudioPlayerActivity extends BaseFragment implements NotificationCen
     private TextView durationTextView;
     private TextView timeTextView;
     private SeekBarView seekBarView;
+    private FrameLayout seekBarContainer;
+    private FrameLayout bottomView;
+    private ImageView prevButton;
+    private ImageView nextButton;
 
     private int TAG;
 
@@ -69,10 +74,10 @@ public class AudioPlayerActivity extends BaseFragment implements NotificationCen
             super(context);
             setWillNotDraw(false);
             innerPaint1 = new Paint(Paint.ANTI_ALIAS_FLAG);
-            innerPaint1.setColor(0x19000000);
+            innerPaint1.setColor(Theme.getColor(Theme.key_player_progressBackground));
 
             outerPaint1 = new Paint(Paint.ANTI_ALIAS_FLAG);
-            outerPaint1.setColor(0xff23afef);
+            outerPaint1.setColor(Theme.getColor(Theme.key_player_progress));
 
             thumbWidth = AndroidUtilities.dp(24);
             thumbHeight = AndroidUtilities.dp(24);
@@ -94,7 +99,7 @@ public class AudioPlayerActivity extends BaseFragment implements NotificationCen
                 int additionWidth = (getMeasuredHeight() - thumbWidth) / 2;
                 if (thumbX - additionWidth <= ev.getX() && ev.getX() <= thumbX + thumbWidth + additionWidth && ev.getY() >= 0 && ev.getY() <= getMeasuredHeight()) {
                     pressed = true;
-                    thumbDX = (int)(ev.getX() - thumbX);
+                    thumbDX = (int) (ev.getX() - thumbX);
                     invalidate();
                     return true;
                 }
@@ -109,7 +114,7 @@ public class AudioPlayerActivity extends BaseFragment implements NotificationCen
                 }
             } else if (ev.getAction() == MotionEvent.ACTION_MOVE) {
                 if (pressed) {
-                    thumbX = (int)(ev.getX() - thumbDX);
+                    thumbX = (int) (ev.getX() - thumbDX);
                     if (thumbX < 0) {
                         thumbX = 0;
                     } else if (thumbX > getMeasuredWidth() - thumbWidth) {
@@ -123,7 +128,7 @@ public class AudioPlayerActivity extends BaseFragment implements NotificationCen
         }
 
         public void setProgress(float progress) {
-            int newThumbX = (int)Math.ceil((getMeasuredWidth() - thumbWidth) * progress);
+            int newThumbX = (int) Math.ceil((getMeasuredWidth() - thumbWidth) * progress);
             if (thumbX != newThumbX) {
                 thumbX = newThumbX;
                 if (thumbX < 0) {
@@ -171,7 +176,7 @@ public class AudioPlayerActivity extends BaseFragment implements NotificationCen
     @Override
     public View createView(Context context) {
         FrameLayout frameLayout = new FrameLayout(context);
-        frameLayout.setBackgroundColor(0xfff0f0f0);
+        frameLayout.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray));
         frameLayout.setOnTouchListener(new View.OnTouchListener() {
             @Override
             public boolean onTouch(View v, MotionEvent event) {
@@ -180,11 +185,16 @@ public class AudioPlayerActivity extends BaseFragment implements NotificationCen
         });
         fragmentView = frameLayout;
 
-        actionBar.setBackgroundColor(Theme.ACTION_BAR_PLAYER_COLOR);
-        actionBar.setBackButtonImage(R.drawable.pl_back);
-        actionBar.setItemsBackgroundColor(Theme.ACTION_BAR_AUDIO_SELECTOR_COLOR);
+        actionBar.setBackgroundColor(Theme.getColor(Theme.key_player_actionBar));
+        actionBar.setBackButtonImage(R.drawable.ic_ab_back);
+        actionBar.setItemsColor(Theme.getColor(Theme.key_player_actionBarItems), false);
+        actionBar.setItemsBackgroundColor(Theme.getColor(Theme.key_player_actionBarSelector), false);
+        actionBar.setTitleColor(Theme.getColor(Theme.key_player_actionBarTitle));
+        actionBar.setSubtitleColor(Theme.getColor(Theme.key_player_actionBarSubtitle));
+
         if (!AndroidUtilities.isTablet()) {
             actionBar.showActionModeTop();
+            actionBar.setActionModeTopColor(Theme.getColor(Theme.key_player_actionBarTop));
         }
         actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
@@ -202,20 +212,20 @@ public class AudioPlayerActivity extends BaseFragment implements NotificationCen
         shadow.setBackgroundResource(R.drawable.header_shadow_reverse);
         frameLayout.addView(shadow, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 3, Gravity.BOTTOM | Gravity.LEFT, 0, 0, 0, 96));
 
-        FrameLayout seekBarContainer = new FrameLayout(context);
-        seekBarContainer.setBackgroundColor(0xe5ffffff);
+        seekBarContainer = new FrameLayout(context);
+        seekBarContainer.setBackgroundColor(Theme.getColor(Theme.key_player_seekBarBackground));
         frameLayout.addView(seekBarContainer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 30, Gravity.BOTTOM | Gravity.LEFT, 0, 0, 0, 66));
 
         timeTextView = new TextView(context);
         timeTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
-        timeTextView.setTextColor(0xff19a7e8);
+        timeTextView.setTextColor(Theme.getColor(Theme.key_player_time));
         timeTextView.setGravity(Gravity.CENTER);
         timeTextView.setText("0:00");
         seekBarContainer.addView(timeTextView, LayoutHelper.createFrame(44, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT));
 
         durationTextView = new TextView(context);
         durationTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
-        durationTextView.setTextColor(0xff8a8a8a);
+        durationTextView.setTextColor(Theme.getColor(Theme.key_player_duration));
         durationTextView.setGravity(Gravity.CENTER);
         durationTextView.setText("3:00");
         seekBarContainer.addView(durationTextView, LayoutHelper.createFrame(44, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.RIGHT));
@@ -225,11 +235,11 @@ public class AudioPlayerActivity extends BaseFragment implements NotificationCen
 
         progressView = new LineProgressView(context);
         progressView.setVisibility(View.INVISIBLE);
-        progressView.setBackgroundColor(0x19000000);
-        progressView.setProgressColor(0xff23afef);
+        progressView.setBackgroundColor(Theme.getColor(Theme.key_player_progressBackground));
+        progressView.setProgressColor(Theme.getColor(Theme.key_player_progress));
         seekBarContainer.addView(progressView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 2, Gravity.CENTER_VERTICAL | Gravity.LEFT, 44, 0, 44, 0));
 
-        FrameLayout bottomView = new FrameLayout(context) {
+        bottomView = new FrameLayout(context) {
             @Override
             protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
                 int dist = ((right - left) - AndroidUtilities.dp(30 + 48 * 5)) / 4;
@@ -240,7 +250,7 @@ public class AudioPlayerActivity extends BaseFragment implements NotificationCen
                 }
             }
         };
-        bottomView.setBackgroundColor(0xffffffff);
+        bottomView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
         frameLayout.addView(bottomView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 66, Gravity.BOTTOM | Gravity.LEFT));
 
         buttons[0] = repeatButton = new ImageView(context);
@@ -256,7 +266,7 @@ public class AudioPlayerActivity extends BaseFragment implements NotificationCen
 
         buttons[1] = prevButton = new ImageView(context);
         prevButton.setScaleType(ImageView.ScaleType.CENTER);
-        prevButton.setImageResource(R.drawable.player_prev_states);
+        prevButton.setImageDrawable(Theme.createSimpleSelectorDrawable(context, R.drawable.pl_previous, Theme.getColor(Theme.key_player_button), Theme.getColor(Theme.key_player_buttonActive)));
         bottomView.addView(prevButton, LayoutHelper.createFrame(48, 48, Gravity.LEFT | Gravity.TOP));
         prevButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -267,7 +277,7 @@ public class AudioPlayerActivity extends BaseFragment implements NotificationCen
 
         buttons[2] = playButton = new ImageView(context);
         playButton.setScaleType(ImageView.ScaleType.CENTER);
-        playButton.setImageResource(R.drawable.player_play_states);
+        playButton.setImageDrawable(Theme.createSimpleSelectorDrawable(context, R.drawable.pl_play, Theme.getColor(Theme.key_player_button), Theme.getColor(Theme.key_player_buttonActive)));
         bottomView.addView(playButton, LayoutHelper.createFrame(48, 48, Gravity.LEFT | Gravity.TOP));
         playButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -285,7 +295,7 @@ public class AudioPlayerActivity extends BaseFragment implements NotificationCen
 
         buttons[3] = nextButton = new ImageView(context);
         nextButton.setScaleType(ImageView.ScaleType.CENTER);
-        nextButton.setImageResource(R.drawable.player_next_states);
+        nextButton.setImageDrawable(Theme.createSimpleSelectorDrawable(context, R.drawable.pl_next, Theme.getColor(Theme.key_player_button), Theme.getColor(Theme.key_player_buttonActive)));
         bottomView.addView(nextButton, LayoutHelper.createFrame(48, 48, Gravity.LEFT | Gravity.TOP));
         nextButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -295,6 +305,7 @@ public class AudioPlayerActivity extends BaseFragment implements NotificationCen
         });
 
         buttons[4] = shuffleButton = new ImageView(context);
+        shuffleButton.setImageResource(R.drawable.pl_shuffle);
         shuffleButton.setScaleType(ImageView.ScaleType.CENTER);
         bottomView.addView(shuffleButton, LayoutHelper.createFrame(48, 48, Gravity.LEFT | Gravity.TOP));
         shuffleButton.setOnClickListener(new View.OnClickListener() {
@@ -355,9 +366,11 @@ public class AudioPlayerActivity extends BaseFragment implements NotificationCen
 
     private void updateShuffleButton() {
         if (MediaController.getInstance().isShuffleMusic()) {
-            shuffleButton.setImageResource(R.drawable.pl_shuffle_active);
+            shuffleButton.setTag(Theme.key_player_buttonActive);
+            shuffleButton.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_player_buttonActive), PorterDuff.Mode.MULTIPLY));
         } else {
-            shuffleButton.setImageResource(R.drawable.pl_shuffle);
+            shuffleButton.setTag(Theme.key_player_button);
+            shuffleButton.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_player_button), PorterDuff.Mode.MULTIPLY));
         }
     }
 
@@ -365,10 +378,16 @@ public class AudioPlayerActivity extends BaseFragment implements NotificationCen
         int mode = MediaController.getInstance().getRepeatMode();
         if (mode == 0) {
             repeatButton.setImageResource(R.drawable.pl_repeat);
+            repeatButton.setTag(Theme.key_player_button);
+            repeatButton.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_player_button), PorterDuff.Mode.MULTIPLY));
         } else if (mode == 1) {
-            repeatButton.setImageResource(R.drawable.pl_repeat_active);
+            repeatButton.setImageResource(R.drawable.pl_repeat);
+            repeatButton.setTag(Theme.key_player_buttonActive);
+            repeatButton.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_player_buttonActive), PorterDuff.Mode.MULTIPLY));
         } else if (mode == 2) {
-            repeatButton.setImageResource(R.drawable.pl_repeat1_active);
+            repeatButton.setImageResource(R.drawable.pl_repeat1);
+            repeatButton.setTag(Theme.key_player_buttonActive);
+            repeatButton.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_player_buttonActive), PorterDuff.Mode.MULTIPLY));
         }
     }
 
@@ -389,7 +408,7 @@ public class AudioPlayerActivity extends BaseFragment implements NotificationCen
         File cacheFile = null;
         if (messageObject.messageOwner.attachPath != null && messageObject.messageOwner.attachPath.length() > 0) {
             cacheFile = new File(messageObject.messageOwner.attachPath);
-            if(!cacheFile.exists()) {
+            if (!cacheFile.exists()) {
                 cacheFile = null;
             }
         }
@@ -428,25 +447,27 @@ public class AudioPlayerActivity extends BaseFragment implements NotificationCen
             updateProgress(messageObject);
 
             if (MediaController.getInstance().isAudioPaused()) {
-                playButton.setImageResource(R.drawable.player_play_states);
+                playButton.setImageDrawable(Theme.createSimpleSelectorDrawable(playButton.getContext(), R.drawable.pl_play, Theme.getColor(Theme.key_player_button), Theme.getColor(Theme.key_player_buttonActive)));
             } else {
-                playButton.setImageResource(R.drawable.player_pause_states);
+                playButton.setImageDrawable(Theme.createSimpleSelectorDrawable(playButton.getContext(), R.drawable.pl_pause, Theme.getColor(Theme.key_player_button), Theme.getColor(Theme.key_player_buttonActive)));
             }
             if (actionBar != null) {
                 actionBar.setTitle(messageObject.getMusicTitle());
-                actionBar.getTitleTextView().setTextColor(0xff212121);
                 actionBar.setSubtitle(messageObject.getMusicAuthor());
-                actionBar.getSubtitleTextView().setTextColor(0xff8a8a8a);
             }
             AudioInfo audioInfo = MediaController.getInstance().getAudioInfo();
             if (audioInfo != null && audioInfo.getCover() != null) {
                 placeholder.setImageBitmap(audioInfo.getCover());
                 placeholder.setPadding(0, 0, 0, 0);
                 placeholder.setScaleType(ImageView.ScaleType.CENTER_CROP);
+                placeholder.setTag(null);
+                placeholder.setColorFilter(null);
             } else {
                 placeholder.setImageResource(R.drawable.nocover);
                 placeholder.setPadding(0, 0, 0, AndroidUtilities.dp(30));
                 placeholder.setScaleType(ImageView.ScaleType.CENTER);
+                placeholder.setTag(Theme.key_player_placeholder);
+                placeholder.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_player_placeholder), PorterDuff.Mode.MULTIPLY));
             }
 
             if (durationTextView != null) {
@@ -464,5 +485,46 @@ public class AudioPlayerActivity extends BaseFragment implements NotificationCen
                 durationTextView.setText(duration != 0 ? String.format("%d:%02d", duration / 60, duration % 60) : "-:--");
             }
         }
+    }
+
+    @Override
+    public ThemeDescription[] getThemeDescriptions() {
+        return new ThemeDescription[]{
+                new ThemeDescription(fragmentView, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundGray),
+                new ThemeDescription(bottomView, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundWhite),
+
+                new ThemeDescription(actionBar, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_player_actionBar),
+                new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_ITEMSCOLOR, null, null, null, null, Theme.key_player_actionBarItems),
+                new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_TITLECOLOR, null, null, null, null, Theme.key_player_actionBarTitle),
+                new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SUBTITLECOLOR, null, null, null, null, Theme.key_player_actionBarSubtitle),
+                new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SELECTORCOLOR, null, null, null, null, Theme.key_player_actionBarSelector),
+                new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_AM_TOPBACKGROUND, null, null, null, null, Theme.key_player_actionBarTop),
+
+                new ThemeDescription(seekBarContainer, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_player_seekBarBackground),
+
+                new ThemeDescription(timeTextView, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_player_time),
+                new ThemeDescription(durationTextView, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_player_time),
+
+                new ThemeDescription(progressView, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_player_progressBackground),
+                new ThemeDescription(progressView, ThemeDescription.FLAG_PROGRESSBAR, null, null, null, null, Theme.key_player_progress),
+
+                new ThemeDescription(seekBarView, 0, null, seekBarView.innerPaint1, null, null, Theme.key_player_progressBackground),
+                new ThemeDescription(seekBarView, 0, null, seekBarView.outerPaint1, null, null, Theme.key_player_progress),
+
+                new ThemeDescription(repeatButton, ThemeDescription.FLAG_CHECKTAG | ThemeDescription.FLAG_IMAGECOLOR, null, null, null, null, Theme.key_player_buttonActive),
+                new ThemeDescription(repeatButton, ThemeDescription.FLAG_CHECKTAG | ThemeDescription.FLAG_IMAGECOLOR, null, null, null, null, Theme.key_player_button),
+
+                new ThemeDescription(shuffleButton, ThemeDescription.FLAG_CHECKTAG | ThemeDescription.FLAG_IMAGECOLOR, null, null, null, null, Theme.key_player_buttonActive),
+                new ThemeDescription(shuffleButton, ThemeDescription.FLAG_CHECKTAG | ThemeDescription.FLAG_IMAGECOLOR, null, null, null, null, Theme.key_player_button),
+
+                new ThemeDescription(placeholder, ThemeDescription.FLAG_CHECKTAG | ThemeDescription.FLAG_IMAGECOLOR, null, null, null, null, Theme.key_player_placeholder),
+
+                new ThemeDescription(prevButton, ThemeDescription.FLAG_IMAGECOLOR | ThemeDescription.FLAG_USEBACKGROUNDDRAWABLE, null, null, null, null, Theme.key_player_button),
+                new ThemeDescription(prevButton, ThemeDescription.FLAG_IMAGECOLOR | ThemeDescription.FLAG_USEBACKGROUNDDRAWABLE | ThemeDescription.FLAG_DRAWABLESELECTEDSTATE, null, null, null, null, Theme.key_player_buttonActive),
+                new ThemeDescription(playButton, ThemeDescription.FLAG_IMAGECOLOR | ThemeDescription.FLAG_USEBACKGROUNDDRAWABLE, null, null, null, null, Theme.key_player_button),
+                new ThemeDescription(playButton, ThemeDescription.FLAG_IMAGECOLOR | ThemeDescription.FLAG_USEBACKGROUNDDRAWABLE | ThemeDescription.FLAG_DRAWABLESELECTEDSTATE, null, null, null, null, Theme.key_player_buttonActive),
+                new ThemeDescription(nextButton, ThemeDescription.FLAG_IMAGECOLOR | ThemeDescription.FLAG_USEBACKGROUNDDRAWABLE, null, null, null, null, Theme.key_player_button),
+                new ThemeDescription(nextButton, ThemeDescription.FLAG_IMAGECOLOR | ThemeDescription.FLAG_USEBACKGROUNDDRAWABLE | ThemeDescription.FLAG_DRAWABLESELECTEDSTATE, null, null, null, null, Theme.key_player_buttonActive),
+        };
     }
 }

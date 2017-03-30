@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2016.
+ * Copyright Nikolai Kudashov, 2013-2017.
  */
 
 package org.telegram.ui;
@@ -24,6 +24,7 @@ import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeDescription;
 
 public class ChannelIntroActivity extends BaseFragment {
 
@@ -34,9 +35,10 @@ public class ChannelIntroActivity extends BaseFragment {
 
     @Override
     public View createView(Context context) {
-        actionBar.setBackgroundColor(Theme.ACTION_BAR_CHANNEL_INTRO_COLOR);
-        actionBar.setBackButtonImage(R.drawable.pl_back);
-        actionBar.setItemsBackgroundColor(Theme.ACTION_BAR_CHANNEL_INTRO_SELECTOR_COLOR);
+        actionBar.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+        actionBar.setBackButtonImage(R.drawable.ic_ab_back);
+        actionBar.setItemsColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2), false);
+        actionBar.setItemsBackgroundColor(Theme.getColor(Theme.key_actionBarWhiteSelector), false);
         actionBar.setCastShadows(false);
         if (!AndroidUtilities.isTablet()) {
             actionBar.showActionModeTop();
@@ -101,7 +103,7 @@ public class ChannelIntroActivity extends BaseFragment {
                 }
             }
         };
-        fragmentView.setBackgroundColor(0xffffffff);
+        fragmentView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
         ViewGroup viewGroup = (ViewGroup) fragmentView;
         viewGroup.setOnTouchListener(new View.OnTouchListener() {
             @Override
@@ -116,21 +118,21 @@ public class ChannelIntroActivity extends BaseFragment {
         viewGroup.addView(imageView);
 
         whatIsChannelText = new TextView(context);
-        whatIsChannelText.setTextColor(0xff212121);
+        whatIsChannelText.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
         whatIsChannelText.setGravity(Gravity.CENTER_HORIZONTAL);
         whatIsChannelText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 24);
         whatIsChannelText.setText(LocaleController.getString("ChannelAlertTitle", R.string.ChannelAlertTitle));
         viewGroup.addView(whatIsChannelText);
 
         descriptionText = new TextView(context);
-        descriptionText.setTextColor(0xff787878);
+        descriptionText.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText6));
         descriptionText.setGravity(Gravity.CENTER_HORIZONTAL);
         descriptionText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         descriptionText.setText(LocaleController.getString("ChannelAlertText", R.string.ChannelAlertText));
         viewGroup.addView(descriptionText);
 
         createChannelText = new TextView(context);
-        createChannelText.setTextColor(0xff4c8eca);
+        createChannelText.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText5));
         createChannelText.setGravity(Gravity.CENTER);
         createChannelText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         createChannelText.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
@@ -146,5 +148,20 @@ public class ChannelIntroActivity extends BaseFragment {
         });
 
         return fragmentView;
+    }
+
+    @Override
+    public ThemeDescription[] getThemeDescriptions() {
+        return new ThemeDescription[]{
+                new ThemeDescription(fragmentView, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundWhite),
+
+                new ThemeDescription(actionBar, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundWhite),
+                new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_ITEMSCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteGrayText2),
+                new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SELECTORCOLOR, null, null, null, null, Theme.key_actionBarWhiteSelector),
+
+                new ThemeDescription(whatIsChannelText, ThemeDescription.FLAG_AB_SELECTORCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteBlackText),
+                new ThemeDescription(descriptionText, ThemeDescription.FLAG_AB_SELECTORCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteGrayText6),
+                new ThemeDescription(createChannelText, ThemeDescription.FLAG_AB_SELECTORCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteBlueText5),
+        };
     }
 }

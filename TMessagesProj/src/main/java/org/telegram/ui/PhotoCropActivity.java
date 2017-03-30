@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2016.
+ * Copyright Nikolai Kudashov, 2013-2017.
  */
 
 package org.telegram.ui;
@@ -313,7 +313,7 @@ public class PhotoCropActivity extends BaseFragment {
                 try {
                     return Bitmaps.createBitmap(imageToCrop, x, y, sizeX, sizeY);
                 } catch (Throwable e2) {
-                    FileLog.e("tmessages", e2);
+                    FileLog.e(e2);
                 }
             }
             return null;
@@ -326,7 +326,7 @@ public class PhotoCropActivity extends BaseFragment {
                     drawable.setBounds(bitmapX, bitmapY, bitmapX + bitmapWidth, bitmapY + bitmapHeight);
                     drawable.draw(canvas);
                 } catch (Throwable e) {
-                    FileLog.e("tmessages", e);
+                    FileLog.e(e);
                 }
             }
             canvas.drawRect(bitmapX, bitmapY, bitmapX + bitmapWidth, rectY, halfPaint);
@@ -419,7 +419,8 @@ public class PhotoCropActivity extends BaseFragment {
     @Override
     public View createView(Context context) {
         actionBar.setBackgroundColor(Theme.ACTION_BAR_MEDIA_PICKER_COLOR);
-        actionBar.setItemsBackgroundColor(Theme.ACTION_BAR_PICKER_SELECTOR_COLOR);
+        actionBar.setItemsBackgroundColor(Theme.ACTION_BAR_PICKER_SELECTOR_COLOR, false);
+        actionBar.setTitleColor(0xffffffff);
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBar.setAllowOverlayTitle(true);
         actionBar.setTitle(LocaleController.getString("CropImage", R.string.CropImage));

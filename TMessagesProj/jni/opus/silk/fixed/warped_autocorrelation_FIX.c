@@ -32,8 +32,14 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "main_FIX.h"
 
 #define QC  10
-#define QS  14
+#define QS  13
 
+#if defined(MIPSr1_ASM)
+#include "mips/warped_autocorrelation_FIX_mipsr1.h"
+#endif
+
+
+#ifndef OVERRIDE_silk_warped_autocorrelation_FIX
 /* Autocorrelations for a warped frequency axis */
 void silk_warped_autocorrelation_FIX(
           opus_int32                *corr,                                  /* O    Result [order + 1]                                                          */
@@ -86,3 +92,4 @@ void silk_warped_autocorrelation_FIX(
     }
     silk_assert( corr_QC[ 0 ] >= 0 ); /* If breaking, decrease QC*/
 }
+#endif /* OVERRIDE_silk_warped_autocorrelation_FIX */

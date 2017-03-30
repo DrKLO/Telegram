@@ -3,22 +3,18 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2016.
+ * Copyright Nikolai Kudashov, 2013-2017.
  */
 
 package org.telegram.ui;
 
-import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.AdapterView;
 import android.widget.FrameLayout;
-import android.widget.ListView;
-import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import org.telegram.messenger.AndroidUtilities;
@@ -29,21 +25,29 @@ import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
+import org.telegram.messenger.support.widget.LinearLayoutManager;
+import org.telegram.messenger.support.widget.RecyclerView;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.RequestDelegate;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
+import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
-import org.telegram.ui.Adapters.BaseFragmentAdapter;
+import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Cells.TextBlockCell;
 import org.telegram.ui.Cells.TextInfoPrivacyCell;
 import org.telegram.ui.Cells.TextSettingsCell;
+import org.telegram.ui.Components.EmptyTextProgressView;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.RecyclerListView;
 
 public class GroupInviteActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
 
     private ListAdapter listAdapter;
+    private RecyclerListView listView;
+    private EmptyTextProgressView emptyView;
 
     private int chat_id;
     private boolean loading;
@@ -104,29 +108,24 @@ public class GroupInviteActivity extends BaseFragment implements NotificationCen
 
         fragmentView = new FrameLayout(context);
         FrameLayout frameLayout = (FrameLayout) fragmentView;
-        frameLayout.setBackgroundColor(0xfff0f0f0);
+        frameLayout.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray));
 
-        FrameLayout progressView = new FrameLayout(context);
-        frameLayout.addView(progressView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+        emptyView = new EmptyTextProgressView(context);
+        emptyView.showProgress();
 
-        ProgressBar progressBar = new ProgressBar(context);
-        progressView.addView(progressBar, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
-
-        ListView listView = new ListView(context);
-        listView.setDivider(null);
-        listView.setDividerHeight(0);
-        listView.setEmptyView(progressView);
+        listView = new RecyclerListView(context);
+        listView.setLayoutManager(new LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false));
+        listView.setEmptyView(emptyView);
         listView.setVerticalScrollBarEnabled(false);
-        listView.setDrawSelectorOnTop(true);
         frameLayout.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT));
         listView.setAdapter(listAdapter);
-        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+        listView.setOnItemClickListener(new RecyclerListView.OnItemClickListener() {
             @Override
-            public void onItemClick(AdapterView<?> adapterView, View view, final int i, long l) {
+            public void onItemClick(View view, int position) {
                 if (getParentActivity() == null) {
                     return;
                 }
-                if (i == copyLinkRow || i == linkRow) {
+                if (position == copyLinkRow || position == linkRow) {
                     if (invite == null) {
                         return;
                     }
@@ -136,9 +135,9 @@ public class GroupInviteActivity extends BaseFragment implements NotificationCen
                         clipboard.setPrimaryClip(clip);
                         Toast.makeText(getParentActivity(), LocaleController.getString("LinkCopied", R.string.LinkCopied), Toast.LENGTH_SHORT).show();
                     } catch (Exception e) {
-                        FileLog.e("tmessages", e);
+                        FileLog.e(e);
                     }
-                } else if (i == shareLinkRow) {
+                } else if (position == shareLinkRow) {
                     if (invite == null) {
                         return;
                     }
@@ -148,9 +147,9 @@ public class GroupInviteActivity extends BaseFragment implements NotificationCen
                         intent.putExtra(Intent.EXTRA_TEXT, invite.link);
                         getParentActivity().startActivityForResult(Intent.createChooser(intent, LocaleController.getString("InviteToGroupByLink", R.string.InviteToGroupByLink)), 500);
                     } catch (Exception e) {
-                        FileLog.e("tmessages", e);
+                        FileLog.e(e);
                     }
-                } else if (i == revokeLinkRow) {
+                } else if (position == revokeLinkRow) {
                     AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                     builder.setMessage(LocaleController.getString("RevokeAlert", R.string.RevokeAlert));
                     builder.setTitle(LocaleController.getString("RevokeLink", R.string.RevokeLink));
@@ -239,7 +238,8 @@ public class GroupInviteActivity extends BaseFragment implements NotificationCen
         }
     }
 
-    private class ListAdapter extends BaseFragmentAdapter {
+    private class ListAdapter extends RecyclerListView.SelectionAdapter {
+        
         private Context mContext;
 
         public ListAdapter(Context context) {
@@ -247,97 +247,108 @@ public class GroupInviteActivity extends BaseFragment implements NotificationCen
         }
 
         @Override
-        public boolean areAllItemsEnabled() {
-            return false;
+        public boolean isEnabled(RecyclerView.ViewHolder holder) {
+            int position = holder.getAdapterPosition();
+            return position == revokeLinkRow || position == copyLinkRow || position == shareLinkRow || position == linkRow;
         }
 
         @Override
-        public boolean isEnabled(int i) {
-            return i == revokeLinkRow || i == copyLinkRow || i == shareLinkRow || i == linkRow;
-        }
-
-        @Override
-        public int getCount() {
+        public int getItemCount() {
             return loading ? 0 : rowCount;
         }
 
         @Override
-        public Object getItem(int i) {
-            return null;
-        }
-
-        @Override
-        public long getItemId(int i) {
-            return i;
-        }
-
-        @Override
-        public boolean hasStableIds() {
-            return false;
-        }
-
-        @Override
-        public View getView(int i, View view, ViewGroup viewGroup) {
-            int type = getItemViewType(i);
-            if (type == 0) {
-                if (view == null) {
+        public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+            View view;
+            switch (viewType) {
+                case 0:
                     view = new TextSettingsCell(mContext);
-                    view.setBackgroundColor(0xffffffff);
-                }
-                TextSettingsCell textCell = (TextSettingsCell) view;
-                if (i == copyLinkRow) {
-                    textCell.setText(LocaleController.getString("CopyLink", R.string.CopyLink), true);
-                } else if (i == shareLinkRow) {
-                    textCell.setText(LocaleController.getString("ShareLink", R.string.ShareLink), false);
-                } else if (i == revokeLinkRow) {
-                    textCell.setText(LocaleController.getString("RevokeLink", R.string.RevokeLink), true);
-                }
-            } else if (type == 1) {
-                if (view == null) {
+                    view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+                    break;
+                case 1:
                     view = new TextInfoPrivacyCell(mContext);
-                }
-                if (i == shadowRow) {
-                    ((TextInfoPrivacyCell) view).setText("");
-                    view.setBackgroundResource(R.drawable.greydivider_bottom);
-                } else if (i == linkInfoRow) {
-                    TLRPC.Chat chat = MessagesController.getInstance().getChat(chat_id);
-                    if (ChatObject.isChannel(chat) && !chat.megagroup) {
-                        ((TextInfoPrivacyCell) view).setText(LocaleController.getString("ChannelLinkInfo", R.string.ChannelLinkInfo));
-                    } else {
-                        ((TextInfoPrivacyCell) view).setText(LocaleController.getString("LinkInfo", R.string.LinkInfo));
-                    }
-                    view.setBackgroundResource(R.drawable.greydivider);
-                }
-            } else if (type == 2) {
-                if (view == null) {
+                    break;
+                case 2:
+                default:
                     view = new TextBlockCell(mContext);
-                    view.setBackgroundColor(0xffffffff);
-                }
-                ((TextBlockCell) view).setText(invite != null ? invite.link : "error", false);
+                    view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+                    break;
             }
-            return view;
+            return new RecyclerListView.Holder(view);
         }
 
         @Override
-        public int getItemViewType(int i) {
-            if (i == copyLinkRow || i == shareLinkRow || i == revokeLinkRow) {
+        public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
+            switch (holder.getItemViewType()) {
+                case 0:
+                    TextSettingsCell textCell = (TextSettingsCell) holder.itemView;
+                    if (position == copyLinkRow) {
+                        textCell.setText(LocaleController.getString("CopyLink", R.string.CopyLink), true);
+                    } else if (position == shareLinkRow) {
+                        textCell.setText(LocaleController.getString("ShareLink", R.string.ShareLink), false);
+                    } else if (position == revokeLinkRow) {
+                        textCell.setText(LocaleController.getString("RevokeLink", R.string.RevokeLink), true);
+                    }
+                    break;
+                case 1:
+                    TextInfoPrivacyCell privacyCell = (TextInfoPrivacyCell) holder.itemView;
+                    if (position == shadowRow) {
+                        privacyCell.setText("");
+                        privacyCell.setBackgroundDrawable(Theme.getThemedDrawable(mContext, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
+                    } else if (position == linkInfoRow) {
+                        TLRPC.Chat chat = MessagesController.getInstance().getChat(chat_id);
+                        if (ChatObject.isChannel(chat) && !chat.megagroup) {
+                            privacyCell.setText(LocaleController.getString("ChannelLinkInfo", R.string.ChannelLinkInfo));
+                        } else {
+                            privacyCell.setText(LocaleController.getString("LinkInfo", R.string.LinkInfo));
+                        }
+                        privacyCell.setBackgroundDrawable(Theme.getThemedDrawable(mContext, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
+                    }
+                    break;
+                case 2:
+                    TextBlockCell textBlockCell = (TextBlockCell) holder.itemView;
+                    textBlockCell.setText(invite != null ? invite.link : "error", false);
+                    break;
+            }
+        }
+
+        @Override
+        public int getItemViewType(int position) {
+            if (position == copyLinkRow || position == shareLinkRow || position == revokeLinkRow) {
                 return 0;
-            } else if (i == shadowRow || i == linkInfoRow) {
+            } else if (position == shadowRow || position == linkInfoRow) {
                 return 1;
-            } else if (i == linkRow) {
+            } else if (position == linkRow) {
                 return 2;
             }
             return 0;
         }
+    }
 
-        @Override
-        public int getViewTypeCount() {
-            return 3;
-        }
+    @Override
+    public ThemeDescription[] getThemeDescriptions() {
+        return new ThemeDescription[]{
+                new ThemeDescription(listView, ThemeDescription.FLAG_CELLBACKGROUNDCOLOR, new Class[]{TextSettingsCell.class, TextBlockCell.class}, null, null, null, Theme.key_windowBackgroundWhite),
+                new ThemeDescription(fragmentView, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundGray),
 
-        @Override
-        public boolean isEmpty() {
-            return loading;
-        }
+                new ThemeDescription(actionBar, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_actionBarDefault),
+                new ThemeDescription(listView, ThemeDescription.FLAG_LISTGLOWCOLOR, null, null, null, null, Theme.key_actionBarDefault),
+                new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_ITEMSCOLOR, null, null, null, null, Theme.key_actionBarDefaultIcon),
+                new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_TITLECOLOR, null, null, null, null, Theme.key_actionBarDefaultTitle),
+                new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SELECTORCOLOR, null, null, null, null, Theme.key_actionBarDefaultSelector),
+
+                new ThemeDescription(listView, ThemeDescription.FLAG_SELECTOR, null, null, null, null, Theme.key_listSelector),
+
+                new ThemeDescription(listView, 0, new Class[]{View.class}, Theme.dividerPaint, null, null, Theme.key_divider),
+
+                new ThemeDescription(emptyView, ThemeDescription.FLAG_PROGRESSBAR, null, null, null, null, Theme.key_progressCircle),
+
+                new ThemeDescription(listView, 0, new Class[]{TextSettingsCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText),
+
+                new ThemeDescription(listView, ThemeDescription.FLAG_BACKGROUNDFILTER, new Class[]{TextInfoPrivacyCell.class}, null, null, null, Theme.key_windowBackgroundGrayShadow),
+                new ThemeDescription(listView, 0, new Class[]{TextInfoPrivacyCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText4),
+
+                new ThemeDescription(listView, 0, new Class[]{TextBlockCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText),
+        };
     }
 }

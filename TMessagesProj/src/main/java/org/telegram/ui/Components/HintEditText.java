@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2016.
+ * Copyright Nikolai Kudashov, 2013-2017.
  */
 
 package org.telegram.ui.Components;
@@ -15,6 +15,7 @@ import android.graphics.Rect;
 import android.widget.EditText;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.ui.ActionBar.Theme;
 
 public class HintEditText extends EditText {
 
@@ -27,7 +28,7 @@ public class HintEditText extends EditText {
 
     public HintEditText(Context context) {
         super(context);
-        paint.setColor(0xff979797);
+        paint.setColor(Theme.getColor(Theme.key_windowBackgroundWhiteHintText));
     }
 
     public String getHintText() {

@@ -48,6 +48,7 @@ typedef struct {
     opus_int32                  sLPC_Q14[ MAX_SUB_FRAME_LENGTH + NSQ_LPC_BUF_LENGTH ];
     opus_int32                  sAR2_Q14[ MAX_SHAPE_LPC_ORDER ];
     opus_int32                  sLF_AR_shp_Q14;
+    opus_int32                  sDiff_shp_Q14;
     opus_int                    lagPrev;
     opus_int                    sLTP_buf_idx;
     opus_int                    sLTP_shp_buf_idx;
@@ -86,6 +87,7 @@ typedef struct {
     const opus_int16             quantStepSize_Q16;
     const opus_int16             invQuantStepSize_Q6;
     const opus_uint8             *CB1_NLSF_Q8;
+    const opus_int16             *CB1_Wght_Q9;
     const opus_uint8             *CB1_iCDF;
     const opus_uint8             *pred_Q8;
     const opus_uint8             *ec_sel;
@@ -169,9 +171,7 @@ typedef struct {
     opus_int                     pitchEstimationComplexity;         /* Complexity level for pitch estimator                             */
     opus_int                     pitchEstimationLPCOrder;           /* Whitening filter order for pitch estimator                       */
     opus_int32                   pitchEstimationThreshold_Q16;      /* Threshold for pitch estimator                                    */
-    opus_int                     LTPQuantLowComplexity;             /* Flag for low complexity LTP quantization                         */
-    opus_int                     mu_LTP_Q9;                         /* Rate-distortion tradeoff in LTP quantization                     */
-    opus_int32                   sum_log_gain_Q7;					/* Cumulative max prediction gain									*/
+    opus_int32                   sum_log_gain_Q7;                   /* Cumulative max prediction gain                                   */
     opus_int                     NLSF_MSVQ_Survivors;               /* Number of survivors in NLSF MSVQ                                 */
     opus_int                     first_frame_after_reset;           /* Flag for deactivating NLSF interpolation, pitch prediction       */
     opus_int                     controlled_since_last_payload;     /* Flag for ensuring codec_control only runs once per packet        */

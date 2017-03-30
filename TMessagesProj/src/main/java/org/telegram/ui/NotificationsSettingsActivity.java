@@ -3,13 +3,12 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2016.
+ * Copyright Nikolai Kudashov, 2013-2017.
  */
 
 package org.telegram.ui;
 
 import android.app.Activity;
-import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -19,13 +18,9 @@ import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.Build;
 import android.provider.Settings;
-import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.AdapterView;
 import android.widget.FrameLayout;
-import android.widget.LinearLayout;
-import android.widget.ListView;
 import android.widget.Toast;
 
 import org.telegram.messenger.AndroidUtilities;
@@ -33,6 +28,8 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.NotificationsController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.ApplicationLoader;
+import org.telegram.messenger.support.widget.LinearLayoutManager;
+import org.telegram.messenger.support.widget.RecyclerView;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.RequestDelegate;
 import org.telegram.tgnet.TLObject;
@@ -40,7 +37,9 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
-import org.telegram.ui.Adapters.BaseFragmentAdapter;
+import org.telegram.ui.ActionBar.AlertDialog;
+import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Cells.HeaderCell;
 import org.telegram.ui.Cells.ShadowSectionCell;
 import org.telegram.ui.Cells.TextCheckCell;
@@ -48,13 +47,16 @@ import org.telegram.ui.Cells.TextColorCell;
 import org.telegram.ui.Cells.TextDetailSettingsCell;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.BaseFragment;
-import org.telegram.ui.Components.ColorPickerView;
+import org.telegram.ui.Cells.TextSettingsCell;
+import org.telegram.ui.Components.AlertsCreator;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.RecyclerListView;
 
 public class NotificationsSettingsActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
 
-    private ListView listView;
+    private RecyclerListView listView;
     private boolean reseting = false;
+    private ListAdapter adapter;
 
     private int notificationsServiceRow;
     private int notificationsServiceConnectionRow;
@@ -82,6 +84,10 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
     private int inappPreviewRow;
     private int inchatSoundRow;
     private int inappPriorityRow;
+    private int callsSectionRow2;
+    private int callsSectionRow;
+    private int callsVibrateRow;
+    private int callsRingtoneRow;
     private int eventsSectionRow2;
     private int eventsSectionRow;
     private int contactJoinedRow;
@@ -134,6 +140,14 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
         } else {
             inappPriorityRow = -1;
         }
+        if (MessagesController.getInstance().callsEnabled) {
+            callsSectionRow2 = rowCount++;
+            callsSectionRow = rowCount++;
+            callsVibrateRow = rowCount++;
+            callsRingtoneRow = rowCount++;
+        } else {
+            callsSectionRow2 = callsSectionRow = callsVibrateRow = callsRingtoneRow = -1;
+        }
         eventsSectionRow2 = rowCount++;
         eventsSectionRow = rowCount++;
         contactJoinedRow = rowCount++;
@@ -176,61 +190,64 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
 
         fragmentView = new FrameLayout(context);
         FrameLayout frameLayout = (FrameLayout) fragmentView;
+        frameLayout.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray));
 
-        listView = new ListView(context);
-        listView.setDivider(null);
-        listView.setDividerHeight(0);
-        listView.setVerticalScrollBarEnabled(false);
-        frameLayout.addView(listView);
-        FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) listView.getLayoutParams();
-        layoutParams.width = LayoutHelper.MATCH_PARENT;
-        layoutParams.height = LayoutHelper.MATCH_PARENT;
-        listView.setLayoutParams(layoutParams);
-        listView.setAdapter(new ListAdapter(context));
-        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+        listView = new RecyclerListView(context);
+        listView.setItemAnimator(null);
+        listView.setLayoutAnimation(null);
+        listView.setLayoutManager(new LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false) {
             @Override
-            public void onItemClick(AdapterView<?> adapterView, final View view, final int i, long l) {
+            public boolean supportsPredictiveItemAnimations() {
+                return false;
+            }
+        });
+        listView.setVerticalScrollBarEnabled(false);
+        frameLayout.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+        listView.setAdapter(adapter = new ListAdapter(context));
+        listView.setOnItemClickListener(new RecyclerListView.OnItemClickListener() {
+            @Override
+            public void onItemClick(View view, final int position) {
                 boolean enabled = false;
-                if (i == messageAlertRow || i == groupAlertRow) {
+                if (position == messageAlertRow || position == groupAlertRow) {
                     SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
                     SharedPreferences.Editor editor = preferences.edit();
-                    if (i == messageAlertRow) {
+                    if (position == messageAlertRow) {
                         enabled = preferences.getBoolean("EnableAll", true);
                         editor.putBoolean("EnableAll", !enabled);
-                    } else if (i == groupAlertRow) {
+                    } else if (position == groupAlertRow) {
                         enabled = preferences.getBoolean("EnableGroup", true);
                         editor.putBoolean("EnableGroup", !enabled);
                     }
                     editor.commit();
-                    updateServerNotificationsSettings(i == groupAlertRow);
-                } else if (i == messagePreviewRow || i == groupPreviewRow) {
+                    updateServerNotificationsSettings(position == groupAlertRow);
+                } else if (position == messagePreviewRow || position == groupPreviewRow) {
                     SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
                     SharedPreferences.Editor editor = preferences.edit();
-                    if (i == messagePreviewRow) {
+                    if (position == messagePreviewRow) {
                         enabled = preferences.getBoolean("EnablePreviewAll", true);
                         editor.putBoolean("EnablePreviewAll", !enabled);
-                    } else if (i == groupPreviewRow) {
+                    } else if (position == groupPreviewRow) {
                         enabled = preferences.getBoolean("EnablePreviewGroup", true);
                         editor.putBoolean("EnablePreviewGroup", !enabled);
                     }
                     editor.commit();
-                    updateServerNotificationsSettings(i == groupPreviewRow);
-                } else if (i == messageSoundRow || i == groupSoundRow) {
+                    updateServerNotificationsSettings(position == groupPreviewRow);
+                } else if (position == messageSoundRow || position == groupSoundRow || position == callsRingtoneRow) {
                     try {
                         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
                         Intent tmpIntent = new Intent(RingtoneManager.ACTION_RINGTONE_PICKER);
-                        tmpIntent.putExtra(RingtoneManager.EXTRA_RINGTONE_TYPE, RingtoneManager.TYPE_NOTIFICATION);
+                        tmpIntent.putExtra(RingtoneManager.EXTRA_RINGTONE_TYPE, position == callsRingtoneRow ? RingtoneManager.TYPE_RINGTONE : RingtoneManager.TYPE_NOTIFICATION);
                         tmpIntent.putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_DEFAULT, true);
-                        tmpIntent.putExtra(RingtoneManager.EXTRA_RINGTONE_DEFAULT_URI, RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION));
+                        tmpIntent.putExtra(RingtoneManager.EXTRA_RINGTONE_DEFAULT_URI, RingtoneManager.getDefaultUri(position == callsRingtoneRow ? RingtoneManager.TYPE_RINGTONE : RingtoneManager.TYPE_NOTIFICATION));
                         Uri currentSound = null;
 
                         String defaultPath = null;
-                        Uri defaultUri = Settings.System.DEFAULT_NOTIFICATION_URI;
+                        Uri defaultUri = position == callsRingtoneRow ? Settings.System.DEFAULT_RINGTONE_URI : Settings.System.DEFAULT_NOTIFICATION_URI;
                         if (defaultUri != null) {
                             defaultPath = defaultUri.getPath();
                         }
 
-                        if (i == messageSoundRow) {
+                        if (position == messageSoundRow) {
                             String path = preferences.getString("GlobalSoundPath", defaultPath);
                             if (path != null && !path.equals("NoSound")) {
                                 if (path.equals(defaultPath)) {
@@ -239,8 +256,17 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
                                     currentSound = Uri.parse(path);
                                 }
                             }
-                        } else if (i == groupSoundRow) {
+                        } else if (position == groupSoundRow) {
                             String path = preferences.getString("GroupSoundPath", defaultPath);
+                            if (path != null && !path.equals("NoSound")) {
+                                if (path.equals(defaultPath)) {
+                                    currentSound = defaultUri;
+                                } else {
+                                    currentSound = Uri.parse(path);
+                                }
+                            }
+                        } else if (position == callsRingtoneRow) {
+                            String path = preferences.getString("CallsRingtonfePath", defaultPath);
                             if (path != null && !path.equals("NoSound")) {
                                 if (path.equals(defaultPath)) {
                                     currentSound = defaultUri;
@@ -250,11 +276,11 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
                             }
                         }
                         tmpIntent.putExtra(RingtoneManager.EXTRA_RINGTONE_EXISTING_URI, currentSound);
-                        startActivityForResult(tmpIntent, i);
+                        startActivityForResult(tmpIntent, position);
                     } catch (Exception e) {
-                        FileLog.e("tmessages", e);
+                        FileLog.e(e);
                     }
-                } else if (i == resetNotificationsRow) {
+                } else if (position == resetNotificationsRow) {
                     if (reseting) {
                         return;
                     }
@@ -272,9 +298,7 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
                                     SharedPreferences.Editor editor = preferences.edit();
                                     editor.clear();
                                     editor.commit();
-                                    if (listView != null) {
-                                        listView.invalidateViews();
-                                    }
+                                    adapter.notifyDataSetChanged();
                                     if (getParentActivity() != null) {
                                         Toast toast = Toast.makeText(getParentActivity(), LocaleController.getString("ResetNotificationsText", R.string.ResetNotificationsText), Toast.LENGTH_SHORT);
                                         toast.show();
@@ -283,64 +307,64 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
                             });
                         }
                     });
-                } else if (i == inappSoundRow) {
+                } else if (position == inappSoundRow) {
                     SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
                     SharedPreferences.Editor editor = preferences.edit();
                     enabled = preferences.getBoolean("EnableInAppSounds", true);
                     editor.putBoolean("EnableInAppSounds", !enabled);
                     editor.commit();
-                } else if (i == inappVibrateRow) {
+                } else if (position == inappVibrateRow) {
                     SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
                     SharedPreferences.Editor editor = preferences.edit();
                     enabled = preferences.getBoolean("EnableInAppVibrate", true);
                     editor.putBoolean("EnableInAppVibrate", !enabled);
                     editor.commit();
-                } else if (i == inappPreviewRow) {
+                } else if (position == inappPreviewRow) {
                     SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
                     SharedPreferences.Editor editor = preferences.edit();
                     enabled = preferences.getBoolean("EnableInAppPreview", true);
                     editor.putBoolean("EnableInAppPreview", !enabled);
                     editor.commit();
-                } else if (i == inchatSoundRow) {
+                } else if (position == inchatSoundRow) {
                     SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
                     SharedPreferences.Editor editor = preferences.edit();
                     enabled = preferences.getBoolean("EnableInChatSound", true);
                     editor.putBoolean("EnableInChatSound", !enabled);
                     editor.commit();
                     NotificationsController.getInstance().setInChatSoundEnabled(!enabled);
-                } else if (i == inappPriorityRow) {
+                } else if (position == inappPriorityRow) {
                     SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
                     SharedPreferences.Editor editor = preferences.edit();
                     enabled = preferences.getBoolean("EnableInAppPriority", false);
                     editor.putBoolean("EnableInAppPriority", !enabled);
                     editor.commit();
-                } else if (i == contactJoinedRow) {
+                } else if (position == contactJoinedRow) {
                     SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
                     SharedPreferences.Editor editor = preferences.edit();
                     enabled = preferences.getBoolean("EnableContactJoined", true);
                     MessagesController.getInstance().enableJoined = !enabled;
                     editor.putBoolean("EnableContactJoined", !enabled);
                     editor.commit();
-                } else if (i == pinnedMessageRow) {
+                } else if (position == pinnedMessageRow) {
                     SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
                     SharedPreferences.Editor editor = preferences.edit();
                     enabled = preferences.getBoolean("PinnedMessages", true);
                     editor.putBoolean("PinnedMessages", !enabled);
                     editor.commit();
-                } else if (i == androidAutoAlertRow) {
+                } else if (position == androidAutoAlertRow) {
                     SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
                     SharedPreferences.Editor editor = preferences.edit();
                     enabled = preferences.getBoolean("EnableAutoNotifications", false);
                     editor.putBoolean("EnableAutoNotifications", !enabled);
                     editor.commit();
-                } else if (i == badgeNumberRow) {
+                } else if (position == badgeNumberRow) {
                     SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
                     SharedPreferences.Editor editor = preferences.edit();
                     enabled = preferences.getBoolean("badgeNumber", true);
                     editor.putBoolean("badgeNumber", !enabled);
                     editor.commit();
                     NotificationsController.getInstance().setBadgeEnabled(!enabled);
-                } else if (i == notificationsServiceConnectionRow) {
+                } else if (position == notificationsServiceConnectionRow) {
                     SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
                     enabled = preferences.getBoolean("pushConnection", true);
                     SharedPreferences.Editor editor = preferences.edit();
@@ -351,7 +375,7 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
                     } else {
                         ConnectionsManager.getInstance().setPushConnectionEnabled(false);
                     }
-                } else if (i == notificationsServiceRow) {
+                } else if (position == notificationsServiceRow) {
                     final SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
                     enabled = preferences.getBoolean("pushService", true);
                     SharedPreferences.Editor editor = preferences.edit();
@@ -362,174 +386,52 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
                     } else {
                         ApplicationLoader.stopPushService();
                     }
-                    /*if (!enabled) {
-
-                    } else {
-                        if (getParentActivity() == null) {
-                            return;
-                        }
-                        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-                        builder.setMessage(LocaleController.getString("NotificationsServiceDisableInfo", R.string.NotificationsServiceDisableInfo));
-                        builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
-                        builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialogInterface, int i) {
-
-                                final SharedPreferences.Editor editor = preferences.edit();
-                                editor.putBoolean("pushService", false);
-                                editor.commit();
-                                listView.invalidateViews();
-                            }
-                        });
-                        builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialog, int which) {
-                                ((TextCheckCell) view).setChecked(true);
-                            }
-                        });
-                        showDialog(builder.create());
-                    }*/
-                } else if (i == messageLedRow || i == groupLedRow) {
+                } else if (position == messageLedRow || position == groupLedRow) {
                     if (getParentActivity() == null) {
                         return;
                     }
-
-                    LinearLayout linearLayout = new LinearLayout(getParentActivity());
-                    linearLayout.setOrientation(LinearLayout.VERTICAL);
-                    final ColorPickerView colorPickerView = new ColorPickerView(getParentActivity());
-                    linearLayout.addView(colorPickerView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
-
-                    SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
-                    if (i == messageLedRow) {
-                        colorPickerView.setOldCenterColor(preferences.getInt("MessagesLed", 0xff00ff00));
-                    } else if (i == groupLedRow) {
-                        colorPickerView.setOldCenterColor(preferences.getInt("GroupLed", 0xff00ff00));
+                    showDialog(AlertsCreator.createColorSelectDialog(getParentActivity(), 0, position == groupLedRow, position == messageLedRow, new Runnable() {
+                        @Override
+                        public void run() {
+                            adapter.notifyItemChanged(position);
+                        }
+                    }));
+                } else if (position == messagePopupNotificationRow || position == groupPopupNotificationRow) {
+                    if (getParentActivity() == null) {
+                        return;
                     }
-
-                    AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-                    builder.setTitle(LocaleController.getString("LedColor", R.string.LedColor));
-                    builder.setView(linearLayout);
-                    builder.setPositiveButton(LocaleController.getString("Set", R.string.Set), new DialogInterface.OnClickListener() {
+                    showDialog(AlertsCreator.createPopupSelectDialog(getParentActivity(), NotificationsSettingsActivity.this, position == groupPopupNotificationRow, position == messagePopupNotificationRow, new Runnable() {
                         @Override
-                        public void onClick(DialogInterface dialogInterface, int which) {
-                            final SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
-                            SharedPreferences.Editor editor = preferences.edit();
-                            TextColorCell textCell = (TextColorCell) view;
-                            if (i == messageLedRow) {
-                                editor.putInt("MessagesLed", colorPickerView.getColor());
-                                textCell.setTextAndColor(LocaleController.getString("LedColor", R.string.LedColor), colorPickerView.getColor(), true);
-                            } else if (i == groupLedRow) {
-                                editor.putInt("GroupLed", colorPickerView.getColor());
-                                textCell.setTextAndColor(LocaleController.getString("LedColor", R.string.LedColor), colorPickerView.getColor(), true);
-                            }
-                            editor.commit();
+                        public void run() {
+                            adapter.notifyItemChanged(position);
                         }
-                    });
-                    builder.setNeutralButton(LocaleController.getString("LedDisabled", R.string.LedDisabled), new DialogInterface.OnClickListener() {
+                    }));
+                } else if (position == messageVibrateRow || position == groupVibrateRow || position == callsVibrateRow) {
+                    if (getParentActivity() == null) {
+                        return;
+                    }
+                    String key = null;
+                    if (position == messageVibrateRow) {
+                        key = "vibrate_messages";
+                    } else if (position == groupVibrateRow) {
+                        key = "vibrate_group";
+                    } else if (position == callsVibrateRow) {
+                        key = "vibrate_calls";
+                    }
+                    showDialog(AlertsCreator.createVibrationSelectDialog(getParentActivity(), NotificationsSettingsActivity.this, 0, key, new Runnable() {
                         @Override
-                        public void onClick(DialogInterface dialog, int which) {
-                            final SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
-                            SharedPreferences.Editor editor = preferences.edit();
-                            TextColorCell textCell = (TextColorCell) view;
-                            if (i == messageLedRow) {
-                                editor.putInt("MessagesLed", 0);
-                                textCell.setTextAndColor(LocaleController.getString("LedColor", R.string.LedColor), 0, true);
-                            } else if (i == groupLedRow) {
-                                editor.putInt("GroupLed", 0);
-                                textCell.setTextAndColor(LocaleController.getString("LedColor", R.string.LedColor), 0, true);
-                            }
-                            editor.commit();
-                            listView.invalidateViews();
+                        public void run() {
+                            adapter.notifyItemChanged(position);
                         }
-                    });
-                    showDialog(builder.create());
-                } else if (i == messagePopupNotificationRow || i == groupPopupNotificationRow) {
-                    AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-                    builder.setTitle(LocaleController.getString("PopupNotification", R.string.PopupNotification));
-                    builder.setItems(new CharSequence[]{
-                            LocaleController.getString("NoPopup", R.string.NoPopup),
-                            LocaleController.getString("OnlyWhenScreenOn", R.string.OnlyWhenScreenOn),
-                            LocaleController.getString("OnlyWhenScreenOff", R.string.OnlyWhenScreenOff),
-                            LocaleController.getString("AlwaysShowPopup", R.string.AlwaysShowPopup)
-                    }, new DialogInterface.OnClickListener() {
+                    }));
+                } else if (position == messagePriorityRow || position == groupPriorityRow) {
+                    showDialog(AlertsCreator.createPrioritySelectDialog(getParentActivity(), NotificationsSettingsActivity.this, 0, position == groupPriorityRow, position == messagePriorityRow, new Runnable() {
                         @Override
-                        public void onClick(DialogInterface dialog, int which) {
-                            SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
-                            SharedPreferences.Editor editor = preferences.edit();
-                            if (i == messagePopupNotificationRow) {
-                                editor.putInt("popupAll", which);
-                            } else if (i == groupPopupNotificationRow) {
-                                editor.putInt("popupGroup", which);
-                            }
-                            editor.commit();
-                            if (listView != null) {
-                                listView.invalidateViews();
-                            }
+                        public void run() {
+                            adapter.notifyItemChanged(position);
                         }
-                    });
-                    builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-                    showDialog(builder.create());
-                } else if (i == messageVibrateRow || i == groupVibrateRow) {
-                    AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-                    builder.setTitle(LocaleController.getString("Vibrate", R.string.Vibrate));
-                    builder.setItems(new CharSequence[]{
-                            LocaleController.getString("VibrationDisabled", R.string.VibrationDisabled),
-                            LocaleController.getString("VibrationDefault", R.string.VibrationDefault),
-                            LocaleController.getString("Short", R.string.Short),
-                            LocaleController.getString("Long", R.string.Long),
-                            LocaleController.getString("OnlyIfSilent", R.string.OnlyIfSilent)
-                    }, new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialog, int which) {
-                            SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
-                            SharedPreferences.Editor editor = preferences.edit();
-                            String param = "vibrate_messages";
-                            if (i == groupVibrateRow) {
-                                param = "vibrate_group";
-                            }
-                            if (which == 0) {
-                                editor.putInt(param, 2);
-                            } else if (which == 1) {
-                                editor.putInt(param, 0);
-                            } else if (which == 2) {
-                                editor.putInt(param, 1);
-                            } else if (which == 3) {
-                                editor.putInt(param, 3);
-                            } else if (which == 4) {
-                                editor.putInt(param, 4);
-                            }
-                            editor.commit();
-                            if (listView != null) {
-                                listView.invalidateViews();
-                            }
-                        }
-                    });
-                    builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-                    showDialog(builder.create());
-                } else if (i == messagePriorityRow || i == groupPriorityRow) {
-                    AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-                    builder.setTitle(LocaleController.getString("NotificationsPriority", R.string.NotificationsPriority));
-                    builder.setItems(new CharSequence[]{
-                            LocaleController.getString("NotificationsPriorityDefault", R.string.NotificationsPriorityDefault),
-                            LocaleController.getString("NotificationsPriorityHigh", R.string.NotificationsPriorityHigh),
-                            LocaleController.getString("NotificationsPriorityMax", R.string.NotificationsPriorityMax)
-                    }, new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialog, int which) {
-                            SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
-                            if (i == messagePriorityRow) {
-                                preferences.edit().putInt("priority_messages", which).commit();
-                            } else if (i == groupPriorityRow) {
-                                preferences.edit().putInt("priority_group", which).commit();
-                            }
-                            if (listView != null) {
-                                listView.invalidateViews();
-                            }
-                        }
-                    });
-                    builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-                    showDialog(builder.create());
-                } else if (i == repeatRow) {
+                    }));
+                } else if (position == repeatRow) {
                     AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                     builder.setTitle(LocaleController.getString("RepeatNotifications", R.string.RepeatNotifications));
                     builder.setItems(new CharSequence[]{
@@ -559,9 +461,7 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
                             }
                             SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
                             preferences.edit().putInt("repeat_messages", minutes).commit();
-                            if (listView != null) {
-                                listView.invalidateViews();
-                            }
+                            adapter.notifyItemChanged(position);
                         }
                     });
                     builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
@@ -608,10 +508,18 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
             if (ringtone != null) {
                 Ringtone rng = RingtoneManager.getRingtone(getParentActivity(), ringtone);
                 if (rng != null) {
-                    if(ringtone.equals(Settings.System.DEFAULT_NOTIFICATION_URI)) {
-                        name = LocaleController.getString("SoundDefault", R.string.SoundDefault);
+                    if (requestCode == callsRingtoneRow) {
+                        if (ringtone.equals(Settings.System.DEFAULT_RINGTONE_URI)) {
+                            name = LocaleController.getString("DefaultRingtone", R.string.DefaultRingtone);
+                        } else {
+                            name = rng.getTitle(getParentActivity());
+                        }
                     } else {
-                        name = rng.getTitle(getParentActivity());
+                        if (ringtone.equals(Settings.System.DEFAULT_NOTIFICATION_URI)) {
+                            name = LocaleController.getString("SoundDefault", R.string.SoundDefault);
+                        } else {
+                            name = rng.getTitle(getParentActivity());
+                        }
                     }
                     rng.stop();
                 }
@@ -636,20 +544,29 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
                     editor.putString("GroupSound", "NoSound");
                     editor.putString("GroupSoundPath", "NoSound");
                 }
+            } else if (requestCode == callsRingtoneRow) {
+                if (name != null && ringtone != null) {
+                    editor.putString("CallsRingtone", name);
+                    editor.putString("CallsRingtonePath", ringtone.toString());
+                } else {
+                    editor.putString("CallsRingtone", "NoSound");
+                    editor.putString("CallsRingtonePath", "NoSound");
+                }
             }
             editor.commit();
-            listView.invalidateViews();
+            adapter.notifyItemChanged(requestCode);
         }
     }
 
     @Override
     public void didReceivedNotification(int id, Object... args) {
         if (id == NotificationCenter.notificationsSettingsUpdated) {
-            listView.invalidateViews();
+            adapter.notifyDataSetChanged();
         }
     }
 
-    private class ListAdapter extends BaseFragmentAdapter {
+    private class ListAdapter extends RecyclerListView.SelectionAdapter {
+
         private Context mContext;
 
         public ListAdapter(Context context) {
@@ -657,236 +574,284 @@ public class NotificationsSettingsActivity extends BaseFragment implements Notif
         }
 
         @Override
-        public boolean areAllItemsEnabled() {
-            return false;
+        public boolean isEnabled(RecyclerView.ViewHolder holder) {
+            int position = holder.getAdapterPosition();
+            return !(position == messageSectionRow || position == groupSectionRow || position == inappSectionRow ||
+                    position == eventsSectionRow || position == otherSectionRow || position == resetSectionRow ||
+                    position == eventsSectionRow2 || position == groupSectionRow2 ||
+                    position == inappSectionRow2 || position == otherSectionRow2 || position == resetSectionRow2 ||
+                    position == callsSectionRow2 || position == callsSectionRow);
         }
 
         @Override
-        public boolean isEnabled(int i) {
-            return !(i == messageSectionRow || i == groupSectionRow || i == inappSectionRow ||
-                    i == eventsSectionRow || i == otherSectionRow || i == resetSectionRow ||
-                    i == eventsSectionRow2 || i == groupSectionRow2 ||
-                    i == inappSectionRow2 || i == otherSectionRow2 || i == resetSectionRow2);
-        }
-
-        @Override
-        public int getCount() {
+        public int getItemCount() {
             return rowCount;
         }
 
         @Override
-        public Object getItem(int i) {
-            return null;
-        }
-
-        @Override
-        public long getItemId(int i) {
-            return i;
-        }
-
-        @Override
-        public boolean hasStableIds() {
-            return false;
-        }
-
-        @Override
-        public View getView(int i, View view, ViewGroup viewGroup) {
-            int type = getItemViewType(i);
-            if (type == 0) {
-                if (view == null) {
+        public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+            View view;
+            switch (viewType) {
+                case 0:
                     view = new HeaderCell(mContext);
-                }
-                if (i == messageSectionRow) {
-                    ((HeaderCell) view).setText(LocaleController.getString("MessageNotifications", R.string.MessageNotifications));
-                } else if (i == groupSectionRow) {
-                    ((HeaderCell) view).setText(LocaleController.getString("GroupNotifications", R.string.GroupNotifications));
-                } else if (i == inappSectionRow) {
-                    ((HeaderCell) view).setText(LocaleController.getString("InAppNotifications", R.string.InAppNotifications));
-                } else if (i == eventsSectionRow) {
-                    ((HeaderCell) view).setText(LocaleController.getString("Events", R.string.Events));
-                } else if (i == otherSectionRow) {
-                    ((HeaderCell) view).setText(LocaleController.getString("NotificationsOther", R.string.NotificationsOther));
-                } else if (i == resetSectionRow) {
-                    ((HeaderCell) view).setText(LocaleController.getString("Reset", R.string.Reset));
-                }
-            } if (type == 1) {
-                if (view == null) {
+                    view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+                    break;
+                case 1:
                     view = new TextCheckCell(mContext);
-                }
-                TextCheckCell checkCell = (TextCheckCell) view;
-
-                SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
-                if (i == messageAlertRow) {
-                    checkCell.setTextAndCheck(LocaleController.getString("Alert", R.string.Alert), preferences.getBoolean("EnableAll", true), true);
-                } else if (i == groupAlertRow) {
-                    checkCell.setTextAndCheck(LocaleController.getString("Alert", R.string.Alert), preferences.getBoolean("EnableGroup", true), true);
-                } else if (i == messagePreviewRow) {
-                    checkCell.setTextAndCheck(LocaleController.getString("MessagePreview", R.string.MessagePreview), preferences.getBoolean("EnablePreviewAll", true), true);
-                } else if (i == groupPreviewRow) {
-                    checkCell.setTextAndCheck(LocaleController.getString("MessagePreview", R.string.MessagePreview), preferences.getBoolean("EnablePreviewGroup", true), true);
-                } else if (i == inappSoundRow) {
-                    checkCell.setTextAndCheck(LocaleController.getString("InAppSounds", R.string.InAppSounds), preferences.getBoolean("EnableInAppSounds", true), true);
-                } else if (i == inappVibrateRow) {
-                    checkCell.setTextAndCheck(LocaleController.getString("InAppVibrate", R.string.InAppVibrate), preferences.getBoolean("EnableInAppVibrate", true), true);
-                } else if (i == inappPreviewRow) {
-                    checkCell.setTextAndCheck(LocaleController.getString("InAppPreview", R.string.InAppPreview), preferences.getBoolean("EnableInAppPreview", true), true);
-                } else if (i == inappPriorityRow) {
-                    checkCell.setTextAndCheck(LocaleController.getString("NotificationsPriority", R.string.NotificationsPriority), preferences.getBoolean("EnableInAppPriority", false), false);
-                } else if (i == contactJoinedRow) {
-                    checkCell.setTextAndCheck(LocaleController.getString("ContactJoined", R.string.ContactJoined), preferences.getBoolean("EnableContactJoined", true), true);
-                } else if (i == pinnedMessageRow) {
-                    checkCell.setTextAndCheck(LocaleController.getString("PinnedMessages", R.string.PinnedMessages), preferences.getBoolean("PinnedMessages", true), false);
-                } else if (i == androidAutoAlertRow) {
-                    checkCell.setTextAndCheck("Android Auto", preferences.getBoolean("EnableAutoNotifications", false), true);
-                } else if (i == notificationsServiceRow) {
-                    checkCell.setTextAndValueAndCheck(LocaleController.getString("NotificationsService", R.string.NotificationsService), LocaleController.getString("NotificationsServiceInfo", R.string.NotificationsServiceInfo), preferences.getBoolean("pushService", true), true, true);
-                } else if (i == notificationsServiceConnectionRow) {
-                    checkCell.setTextAndValueAndCheck(LocaleController.getString("NotificationsServiceConnection", R.string.NotificationsServiceConnection), LocaleController.getString("NotificationsServiceConnectionInfo", R.string.NotificationsServiceConnectionInfo), preferences.getBoolean("pushConnection", true), true, true);
-                } else if (i == badgeNumberRow) {
-                    checkCell.setTextAndCheck(LocaleController.getString("BadgeNumber", R.string.BadgeNumber), preferences.getBoolean("badgeNumber", true), true);
-                } else if (i == inchatSoundRow) {
-                    checkCell.setTextAndCheck(LocaleController.getString("InChatSound", R.string.InChatSound), preferences.getBoolean("EnableInChatSound", true), true);
-                }
-            } else if (type == 2) {
-                if (view == null) {
+                    view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+                    break;
+                case 2:
                     view = new TextDetailSettingsCell(mContext);
-                }
-
-                TextDetailSettingsCell textCell = (TextDetailSettingsCell) view;
-
-                SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
-
-                if (i == messageSoundRow || i == groupSoundRow) {
-                    textCell.setMultilineDetail(false);
-                    String value = null;
-                    if (i == messageSoundRow) {
-                        value = preferences.getString("GlobalSound", LocaleController.getString("SoundDefault", R.string.SoundDefault));
-                    } else if (i == groupSoundRow) {
-                        value = preferences.getString("GroupSound", LocaleController.getString("SoundDefault", R.string.SoundDefault));
-                    }
-                    if (value.equals("NoSound")) {
-                        value = LocaleController.getString("NoSound", R.string.NoSound);
-                    }
-                    textCell.setTextAndValue(LocaleController.getString("Sound", R.string.Sound), value, true);
-                } else if (i == resetNotificationsRow) {
-                    textCell.setMultilineDetail(true);
-                    textCell.setTextAndValue(LocaleController.getString("ResetAllNotifications", R.string.ResetAllNotifications), LocaleController.getString("UndoAllCustom", R.string.UndoAllCustom), false);
-                } else if (i == messagePopupNotificationRow || i == groupPopupNotificationRow) {
-                    textCell.setMultilineDetail(false);
-                    int option = 0;
-                    if (i == messagePopupNotificationRow) {
-                        option = preferences.getInt("popupAll", 0);
-                    } else if (i == groupPopupNotificationRow) {
-                        option = preferences.getInt("popupGroup", 0);
-                    }
-                    String value;
-                    if (option == 0) {
-                        value = LocaleController.getString("NoPopup", R.string.NoPopup);
-                    } else if (option == 1) {
-                        value = LocaleController.getString("OnlyWhenScreenOn", R.string.OnlyWhenScreenOn);
-                    } else if (option == 2) {
-                        value = LocaleController.getString("OnlyWhenScreenOff", R.string.OnlyWhenScreenOff);
-                    } else {
-                        value = LocaleController.getString("AlwaysShowPopup", R.string.AlwaysShowPopup);
-                    }
-                    textCell.setTextAndValue(LocaleController.getString("PopupNotification", R.string.PopupNotification), value, true);
-                } else if (i == messageVibrateRow || i == groupVibrateRow) {
-                    textCell.setMultilineDetail(false);
-                    int value = 0;
-                    if (i == messageVibrateRow) {
-                        value = preferences.getInt("vibrate_messages", 0);
-                    } else if (i == groupVibrateRow) {
-                        value = preferences.getInt("vibrate_group", 0);
-                    }
-                    if (value == 0) {
-                        textCell.setTextAndValue(LocaleController.getString("Vibrate", R.string.Vibrate), LocaleController.getString("VibrationDefault", R.string.VibrationDefault), true);
-                    } else if (value == 1) {
-                        textCell.setTextAndValue(LocaleController.getString("Vibrate", R.string.Vibrate), LocaleController.getString("Short", R.string.Short), true);
-                    } else if (value == 2) {
-                        textCell.setTextAndValue(LocaleController.getString("Vibrate", R.string.Vibrate), LocaleController.getString("VibrationDisabled", R.string.VibrationDisabled), true);
-                    } else if (value == 3) {
-                        textCell.setTextAndValue(LocaleController.getString("Vibrate", R.string.Vibrate), LocaleController.getString("Long", R.string.Long), true);
-                    } else if (value == 4) {
-                        textCell.setTextAndValue(LocaleController.getString("Vibrate", R.string.Vibrate), LocaleController.getString("OnlyIfSilent", R.string.OnlyIfSilent), true);
-                    }
-                } else if (i == repeatRow) {
-                    textCell.setMultilineDetail(false);
-                    int minutes = preferences.getInt("repeat_messages", 60);
-                    String value;
-                    if (minutes == 0) {
-                        value = LocaleController.getString("RepeatNotificationsNever", R.string.RepeatNotificationsNever);
-                    } else if (minutes < 60) {
-                        value = LocaleController.formatPluralString("Minutes", minutes);
-                    } else {
-                        value = LocaleController.formatPluralString("Hours", minutes / 60);
-                    }
-                    textCell.setTextAndValue(LocaleController.getString("RepeatNotifications", R.string.RepeatNotifications), value, false);
-                } else if (i == messagePriorityRow || i == groupPriorityRow) {
-                    textCell.setMultilineDetail(false);
-                    int value = 0;
-                    if (i == messagePriorityRow) {
-                        value = preferences.getInt("priority_messages", 1);
-                    } else if (i == groupPriorityRow) {
-                        value = preferences.getInt("priority_group", 1);
-                    }
-                    if (value == 0) {
-                        textCell.setTextAndValue(LocaleController.getString("NotificationsPriority", R.string.NotificationsPriority), LocaleController.getString("NotificationsPriorityDefault", R.string.NotificationsPriorityDefault), false);
-                    } else if (value == 1) {
-                        textCell.setTextAndValue(LocaleController.getString("NotificationsPriority", R.string.NotificationsPriority), LocaleController.getString("NotificationsPriorityHigh", R.string.NotificationsPriorityHigh), false);
-                    } else if (value == 2) {
-                        textCell.setTextAndValue(LocaleController.getString("NotificationsPriority", R.string.NotificationsPriority), LocaleController.getString("NotificationsPriorityMax", R.string.NotificationsPriorityMax), false);
-                    }
-                }
-            } else if (type == 3) {
-                if (view == null) {
+                    view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+                    break;
+                case 3:
                     view = new TextColorCell(mContext);
-                }
-
-                TextColorCell textCell = (TextColorCell) view;
-
-                SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
-                if (i == messageLedRow) {
-                    textCell.setTextAndColor(LocaleController.getString("LedColor", R.string.LedColor), preferences.getInt("MessagesLed", 0xff00ff00), true);
-                } else if (i == groupLedRow) {
-                    textCell.setTextAndColor(LocaleController.getString("LedColor", R.string.LedColor), preferences.getInt("GroupLed", 0xff00ff00), true);
-                }
-            } else if (type == 4) {
-                if (view == null) {
+                    view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+                    break;
+                case 4:
                     view = new ShadowSectionCell(mContext);
+                    break;
+                case 5:
+                default:
+                    view = new TextSettingsCell(mContext);
+                    view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+                    break;
+            }
+            return new RecyclerListView.Holder(view);
+        }
+
+        @Override
+        public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
+            switch (holder.getItemViewType()) {
+                case 0: {
+                    HeaderCell headerCell = (HeaderCell) holder.itemView;
+                    if (position == messageSectionRow) {
+                        headerCell.setText(LocaleController.getString("MessageNotifications", R.string.MessageNotifications));
+                    } else if (position == groupSectionRow) {
+                        headerCell.setText(LocaleController.getString("GroupNotifications", R.string.GroupNotifications));
+                    } else if (position == inappSectionRow) {
+                        headerCell.setText(LocaleController.getString("InAppNotifications", R.string.InAppNotifications));
+                    } else if (position == eventsSectionRow) {
+                        headerCell.setText(LocaleController.getString("Events", R.string.Events));
+                    } else if (position == otherSectionRow) {
+                        headerCell.setText(LocaleController.getString("NotificationsOther", R.string.NotificationsOther));
+                    } else if (position == resetSectionRow) {
+                        headerCell.setText(LocaleController.getString("Reset", R.string.Reset));
+                    } else if (position == callsSectionRow) {
+                        headerCell.setText(LocaleController.getString("VoipNotificationSettings", R.string.VoipNotificationSettings));
+                    }
+                    break;
                 }
+                case 1: {
+                    TextCheckCell checkCell = (TextCheckCell) holder.itemView;
+                    SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+                    if (position == messageAlertRow) {
+                        checkCell.setTextAndCheck(LocaleController.getString("Alert", R.string.Alert), preferences.getBoolean("EnableAll", true), true);
+                    } else if (position == groupAlertRow) {
+                        checkCell.setTextAndCheck(LocaleController.getString("Alert", R.string.Alert), preferences.getBoolean("EnableGroup", true), true);
+                    } else if (position == messagePreviewRow) {
+                        checkCell.setTextAndCheck(LocaleController.getString("MessagePreview", R.string.MessagePreview), preferences.getBoolean("EnablePreviewAll", true), true);
+                    } else if (position == groupPreviewRow) {
+                        checkCell.setTextAndCheck(LocaleController.getString("MessagePreview", R.string.MessagePreview), preferences.getBoolean("EnablePreviewGroup", true), true);
+                    } else if (position == inappSoundRow) {
+                        checkCell.setTextAndCheck(LocaleController.getString("InAppSounds", R.string.InAppSounds), preferences.getBoolean("EnableInAppSounds", true), true);
+                    } else if (position == inappVibrateRow) {
+                        checkCell.setTextAndCheck(LocaleController.getString("InAppVibrate", R.string.InAppVibrate), preferences.getBoolean("EnableInAppVibrate", true), true);
+                    } else if (position == inappPreviewRow) {
+                        checkCell.setTextAndCheck(LocaleController.getString("InAppPreview", R.string.InAppPreview), preferences.getBoolean("EnableInAppPreview", true), true);
+                    } else if (position == inappPriorityRow) {
+                        checkCell.setTextAndCheck(LocaleController.getString("NotificationsPriority", R.string.NotificationsPriority), preferences.getBoolean("EnableInAppPriority", false), false);
+                    } else if (position == contactJoinedRow) {
+                        checkCell.setTextAndCheck(LocaleController.getString("ContactJoined", R.string.ContactJoined), preferences.getBoolean("EnableContactJoined", true), true);
+                    } else if (position == pinnedMessageRow) {
+                        checkCell.setTextAndCheck(LocaleController.getString("PinnedMessages", R.string.PinnedMessages), preferences.getBoolean("PinnedMessages", true), false);
+                    } else if (position == androidAutoAlertRow) {
+                        checkCell.setTextAndCheck("Android Auto", preferences.getBoolean("EnableAutoNotifications", false), true);
+                    } else if (position == notificationsServiceRow) {
+                        checkCell.setTextAndValueAndCheck(LocaleController.getString("NotificationsService", R.string.NotificationsService), LocaleController.getString("NotificationsServiceInfo", R.string.NotificationsServiceInfo), preferences.getBoolean("pushService", true), true, true);
+                    } else if (position == notificationsServiceConnectionRow) {
+                        checkCell.setTextAndValueAndCheck(LocaleController.getString("NotificationsServiceConnection", R.string.NotificationsServiceConnection), LocaleController.getString("NotificationsServiceConnectionInfo", R.string.NotificationsServiceConnectionInfo), preferences.getBoolean("pushConnection", true), true, true);
+                    } else if (position == badgeNumberRow) {
+                        checkCell.setTextAndCheck(LocaleController.getString("BadgeNumber", R.string.BadgeNumber), preferences.getBoolean("badgeNumber", true), true);
+                    } else if (position == inchatSoundRow) {
+                        checkCell.setTextAndCheck(LocaleController.getString("InChatSound", R.string.InChatSound), preferences.getBoolean("EnableInChatSound", true), true);
+                    } else if (position == callsVibrateRow) {
+                        checkCell.setTextAndCheck(LocaleController.getString("Vibrate", R.string.Vibrate), preferences.getBoolean("EnableCallVibrate", true), true);
+                    }
+                    break;
+                }
+                case 2: {
+                    TextDetailSettingsCell settingsCell = (TextDetailSettingsCell) holder.itemView;
+                    settingsCell.setMultilineDetail(true);
+                    settingsCell.setTextAndValue(LocaleController.getString("ResetAllNotifications", R.string.ResetAllNotifications), LocaleController.getString("UndoAllCustom", R.string.UndoAllCustom), false);
+                    break;
+                }
+                case 3: {
+                    TextColorCell textColorCell = (TextColorCell) holder.itemView;
+                    SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+                    int color;
+                    if (position == messageLedRow) {
+                        color = preferences.getInt("MessagesLed", 0xff0000ff);
+                    } else {
+                        color = preferences.getInt("GroupLed", 0xff0000ff);
+                    }
+                    for (int a = 0; a < 9; a++) {
+                        if (TextColorCell.colorsToSave[a] == color) {
+                            color = TextColorCell.colors[a];
+                            break;
+                        }
+                    }
+                    textColorCell.setTextAndColor(LocaleController.getString("LedColor", R.string.LedColor), color, true);
+                    break;
+                }
+                case 5:
+                    TextSettingsCell textCell = (TextSettingsCell) holder.itemView;
+                    SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
+                    if (position == messageSoundRow || position == groupSoundRow || position == callsRingtoneRow) {
+                        String value = null;
+                        if (position == messageSoundRow) {
+                            value = preferences.getString("GlobalSound", LocaleController.getString("SoundDefault", R.string.SoundDefault));
+                        } else if (position == groupSoundRow) {
+                            value = preferences.getString("GroupSound", LocaleController.getString("SoundDefault", R.string.SoundDefault));
+                        } else if (position == callsRingtoneRow) {
+                            value = preferences.getString("CallsRingtone", LocaleController.getString("DefaultRingtone", R.string.DefaultRingtone));
+                        }
+                        if (value.equals("NoSound")) {
+                            value = LocaleController.getString("NoSound", R.string.NoSound);
+                        }
+                        if (position == callsRingtoneRow) {
+                            textCell.setTextAndValue(LocaleController.getString("VoipSettingsRingtone", R.string.VoipSettingsRingtone), value, true);
+                        } else {
+                            textCell.setTextAndValue(LocaleController.getString("Sound", R.string.Sound), value, true);
+                        }
+                    } else if (position == messageVibrateRow || position == groupVibrateRow || position == callsVibrateRow) {
+                        int value = 0;
+                        if (position == messageVibrateRow) {
+                            value = preferences.getInt("vibrate_messages", 0);
+                        } else if (position == groupVibrateRow) {
+                            value = preferences.getInt("vibrate_group", 0);
+                        } else if (position == callsVibrateRow) {
+                            value = preferences.getInt("vibrate_calls", 0);
+                        }
+                        if (value == 0) {
+                            textCell.setTextAndValue(LocaleController.getString("Vibrate", R.string.Vibrate), LocaleController.getString("VibrationDefault", R.string.VibrationDefault), true);
+                        } else if (value == 1) {
+                            textCell.setTextAndValue(LocaleController.getString("Vibrate", R.string.Vibrate), LocaleController.getString("Short", R.string.Short), true);
+                        } else if (value == 2) {
+                            textCell.setTextAndValue(LocaleController.getString("Vibrate", R.string.Vibrate), LocaleController.getString("VibrationDisabled", R.string.VibrationDisabled), true);
+                        } else if (value == 3) {
+                            textCell.setTextAndValue(LocaleController.getString("Vibrate", R.string.Vibrate), LocaleController.getString("Long", R.string.Long), true);
+                        } else if (value == 4) {
+                            textCell.setTextAndValue(LocaleController.getString("Vibrate", R.string.Vibrate), LocaleController.getString("OnlyIfSilent", R.string.OnlyIfSilent), true);
+                        }
+                    } else if (position == repeatRow) {
+                        int minutes = preferences.getInt("repeat_messages", 60);
+                        String value;
+                        if (minutes == 0) {
+                            value = LocaleController.getString("RepeatNotificationsNever", R.string.RepeatNotificationsNever);
+                        } else if (minutes < 60) {
+                            value = LocaleController.formatPluralString("Minutes", minutes);
+                        } else {
+                            value = LocaleController.formatPluralString("Hours", minutes / 60);
+                        }
+                        textCell.setTextAndValue(LocaleController.getString("RepeatNotifications", R.string.RepeatNotifications), value, false);
+                    } else if (position == messagePriorityRow || position == groupPriorityRow) {
+                        int value = 0;
+                        if (position == messagePriorityRow) {
+                            value = preferences.getInt("priority_messages", 1);
+                        } else if (position == groupPriorityRow) {
+                            value = preferences.getInt("priority_group", 1);
+                        }
+                        if (value == 0) {
+                            textCell.setTextAndValue(LocaleController.getString("NotificationsPriority", R.string.NotificationsPriority), LocaleController.getString("NotificationsPriorityDefault", R.string.NotificationsPriorityDefault), false);
+                        } else if (value == 1) {
+                            textCell.setTextAndValue(LocaleController.getString("NotificationsPriority", R.string.NotificationsPriority), LocaleController.getString("NotificationsPriorityHigh", R.string.NotificationsPriorityHigh), false);
+                        } else if (value == 2) {
+                            textCell.setTextAndValue(LocaleController.getString("NotificationsPriority", R.string.NotificationsPriority), LocaleController.getString("NotificationsPriorityMax", R.string.NotificationsPriorityMax), false);
+                        }
+                    } else if (position == messagePopupNotificationRow || position == groupPopupNotificationRow) {
+                        int option = 0;
+                        if (position == messagePopupNotificationRow) {
+                            option = preferences.getInt("popupAll", 0);
+                        } else if (position == groupPopupNotificationRow) {
+                            option = preferences.getInt("popupGroup", 0);
+                        }
+                        String value;
+                        if (option == 0) {
+                            value = LocaleController.getString("NoPopup", R.string.NoPopup);
+                        } else if (option == 1) {
+                            value = LocaleController.getString("OnlyWhenScreenOn", R.string.OnlyWhenScreenOn);
+                        } else if (option == 2) {
+                            value = LocaleController.getString("OnlyWhenScreenOff", R.string.OnlyWhenScreenOff);
+                        } else {
+                            value = LocaleController.getString("AlwaysShowPopup", R.string.AlwaysShowPopup);
+                        }
+                        textCell.setTextAndValue(LocaleController.getString("PopupNotification", R.string.PopupNotification), value, true);
+                    }
+                    break;
             }
-            return view;
         }
 
         @Override
-        public int getItemViewType(int i) {
-            if (i == messageSectionRow || i == groupSectionRow || i == inappSectionRow ||
-                    i == eventsSectionRow || i == otherSectionRow || i == resetSectionRow) {
+        public int getItemViewType(int position) {
+            if (position == messageSectionRow || position == groupSectionRow || position == inappSectionRow ||
+                    position == eventsSectionRow || position == otherSectionRow || position == resetSectionRow ||
+                    position == callsSectionRow) {
                 return 0;
-            } else if (i == messageAlertRow || i == messagePreviewRow || i == groupAlertRow ||
-                    i == groupPreviewRow || i == inappSoundRow || i == inappVibrateRow ||
-                    i == inappPreviewRow || i == contactJoinedRow || i == pinnedMessageRow ||
-                    i == notificationsServiceRow || i == badgeNumberRow || i == inappPriorityRow ||
-                    i == inchatSoundRow || i == androidAutoAlertRow || i == notificationsServiceConnectionRow) {
+            } else if (position == messageAlertRow || position == messagePreviewRow || position == groupAlertRow ||
+                    position == groupPreviewRow || position == inappSoundRow || position == inappVibrateRow ||
+                    position == inappPreviewRow || position == contactJoinedRow || position == pinnedMessageRow ||
+                    position == notificationsServiceRow || position == badgeNumberRow || position == inappPriorityRow ||
+                    position == inchatSoundRow || position == androidAutoAlertRow || position == notificationsServiceConnectionRow) {
                 return 1;
-            } else if (i == messageLedRow || i == groupLedRow) {
+            } else if (position == messageLedRow || position == groupLedRow) {
                 return 3;
-            } else if (i == eventsSectionRow2 || i == groupSectionRow2 ||
-                    i == inappSectionRow2 || i == otherSectionRow2 || i == resetSectionRow2) {
+            } else if (position == eventsSectionRow2 || position == groupSectionRow2 ||
+                    position == inappSectionRow2 || position == otherSectionRow2 || position == resetSectionRow2 ||
+                    position == callsSectionRow2) {
                 return 4;
-            } else {
+            } else if (position == resetNotificationsRow) {
                 return 2;
+            } else {
+                return 5;
             }
         }
+    }
 
-        @Override
-        public int getViewTypeCount() {
-            return 5;
-        }
+    @Override
+    public ThemeDescription[] getThemeDescriptions() {
+        return new ThemeDescription[]{
+                new ThemeDescription(listView, ThemeDescription.FLAG_CELLBACKGROUNDCOLOR, new Class[]{HeaderCell.class, TextCheckCell.class, TextDetailSettingsCell.class, TextColorCell.class, TextSettingsCell.class}, null, null, null, Theme.key_windowBackgroundWhite),
+                new ThemeDescription(fragmentView, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundGray),
 
-        @Override
-        public boolean isEmpty() {
-            return false;
-        }
+                new ThemeDescription(actionBar, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_actionBarDefault),
+                new ThemeDescription(listView, ThemeDescription.FLAG_LISTGLOWCOLOR, null, null, null, null, Theme.key_actionBarDefault),
+                new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_ITEMSCOLOR, null, null, null, null, Theme.key_actionBarDefaultIcon),
+                new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_TITLECOLOR, null, null, null, null, Theme.key_actionBarDefaultTitle),
+                new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SELECTORCOLOR, null, null, null, null, Theme.key_actionBarDefaultSelector),
+
+                new ThemeDescription(listView, ThemeDescription.FLAG_SELECTOR, null, null, null, null, Theme.key_listSelector),
+
+                new ThemeDescription(listView, 0, new Class[]{View.class}, Theme.dividerPaint, null, null, Theme.key_divider),
+
+                new ThemeDescription(listView, 0, new Class[]{HeaderCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlueHeader),
+
+                new ThemeDescription(listView, 0, new Class[]{TextCheckCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText),
+                new ThemeDescription(listView, 0, new Class[]{TextCheckCell.class}, new String[]{"valueTextView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText2),
+                new ThemeDescription(listView, 0, new Class[]{TextCheckCell.class}, new String[]{"checkBox"}, null, null, null, Theme.key_switchThumb),
+                new ThemeDescription(listView, 0, new Class[]{TextCheckCell.class}, new String[]{"checkBox"}, null, null, null, Theme.key_switchTrack),
+                new ThemeDescription(listView, 0, new Class[]{TextCheckCell.class}, new String[]{"checkBox"}, null, null, null, Theme.key_switchThumbChecked),
+                new ThemeDescription(listView, 0, new Class[]{TextCheckCell.class}, new String[]{"checkBox"}, null, null, null, Theme.key_switchTrackChecked),
+
+                new ThemeDescription(listView, 0, new Class[]{TextColorCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText),
+
+                new ThemeDescription(listView, 0, new Class[]{TextSettingsCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText),
+                new ThemeDescription(listView, 0, new Class[]{TextSettingsCell.class}, new String[]{"valueTextView"}, null, null, null, Theme.key_windowBackgroundWhiteValueText),
+
+                new ThemeDescription(listView, ThemeDescription.FLAG_BACKGROUNDFILTER, new Class[]{ShadowSectionCell.class}, null, null, null, Theme.key_windowBackgroundGrayShadow),
+
+                new ThemeDescription(listView, 0, new Class[]{TextDetailSettingsCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText),
+                new ThemeDescription(listView, 0, new Class[]{TextDetailSettingsCell.class}, new String[]{"valueTextView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText2),
+        };
     }
 }

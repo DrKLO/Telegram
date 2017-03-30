@@ -3,39 +3,39 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2016.
+ * Copyright Nikolai Kudashov, 2013-2017.
  */
 
 package org.telegram.ui.Cells;
 
 import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.ColorFilter;
 import android.graphics.Paint;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffColorFilter;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
-import android.os.Build;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
-import android.view.MotionEvent;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.AnimatorListenerAdapterProxy;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.query.StickersQuery;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.LayoutHelper;
-import org.telegram.ui.Components.Switch;
 
 public class FeaturedStickerSetCell extends FrameLayout {
 
@@ -45,7 +45,6 @@ public class FeaturedStickerSetCell extends FrameLayout {
     private TextView addButton;
     private ImageView checkImage;
     private boolean needDivider;
-    private Switch checkBox;
     private TLRPC.StickerSetCovered stickersSet;
     private Rect rect = new Rect();
     private AnimatorSet currentAnimation;
@@ -57,28 +56,20 @@ public class FeaturedStickerSetCell extends FrameLayout {
     private float progressAlpha;
     private RectF progressRect = new RectF();
     private long lastUpdateTime;
-    private static Paint botProgressPaint;
+    private Paint progressPaint;
     private int angle;
-
-    private static Paint paint;
 
     public FeaturedStickerSetCell(Context context) {
         super(context);
 
-        if (paint == null) {
-            paint = new Paint();
-            paint.setColor(0xffd9d9d9);
-        }
-        if (botProgressPaint == null) {
-            botProgressPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-            botProgressPaint.setColor(0xffffffff);
-            botProgressPaint.setStrokeCap(Paint.Cap.ROUND);
-            botProgressPaint.setStyle(Paint.Style.STROKE);
-        }
-        botProgressPaint.setStrokeWidth(AndroidUtilities.dp(2));
+        progressPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        progressPaint.setColor(Theme.getColor(Theme.key_featuredStickers_buttonProgress));
+        progressPaint.setStrokeCap(Paint.Cap.ROUND);
+        progressPaint.setStyle(Paint.Style.STROKE);
+        progressPaint.setStrokeWidth(AndroidUtilities.dp(2));
 
         textView = new TextView(context);
-        textView.setTextColor(0xff212121);
+        textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         textView.setLines(1);
         textView.setMaxLines(1);
@@ -88,7 +79,7 @@ public class FeaturedStickerSetCell extends FrameLayout {
         addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT, LocaleController.isRTL ? 100 : 71, 10, LocaleController.isRTL ? 71 : 100, 0));
 
         valueTextView = new TextView(context);
-        valueTextView.setTextColor(0xff8a8a8a);
+        valueTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2));
         valueTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
         valueTextView.setLines(1);
         valueTextView.setMaxLines(1);
@@ -106,10 +97,10 @@ public class FeaturedStickerSetCell extends FrameLayout {
             protected void onDraw(Canvas canvas) {
                 super.onDraw(canvas);
                 if (drawProgress || !drawProgress && progressAlpha != 0) {
-                    botProgressPaint.setAlpha(Math.min(255, (int) (progressAlpha * 255)));
+                    progressPaint.setAlpha(Math.min(255, (int) (progressAlpha * 255)));
                     int x = getMeasuredWidth() - AndroidUtilities.dp(11);
                     progressRect.set(x, AndroidUtilities.dp(3), x + AndroidUtilities.dp(8), AndroidUtilities.dp(8 + 3));
-                    canvas.drawArc(progressRect, angle, 220, false, botProgressPaint);
+                    canvas.drawArc(progressRect, angle, 220, false, progressPaint);
                     invalidate((int) progressRect.left - AndroidUtilities.dp(2), (int) progressRect.top - AndroidUtilities.dp(2), (int) progressRect.right + AndroidUtilities.dp(2), (int) progressRect.bottom + AndroidUtilities.dp(2));
                     long newTime = System.currentTimeMillis();
                     if (Math.abs(lastUpdateTime - System.currentTimeMillis()) < 1000) {
@@ -140,14 +131,15 @@ public class FeaturedStickerSetCell extends FrameLayout {
         };
         addButton.setPadding(AndroidUtilities.dp(17), 0, AndroidUtilities.dp(17), 0);
         addButton.setGravity(Gravity.CENTER);
-        addButton.setTextColor(0xffffffff);
+        addButton.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText));
         addButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         addButton.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
-        addButton.setBackgroundResource(R.drawable.add_states);
+        addButton.setBackgroundDrawable(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(4), Theme.getColor(Theme.key_featuredStickers_addButton), Theme.getColor(Theme.key_featuredStickers_addButtonPressed)));
         addButton.setText(LocaleController.getString("Add", R.string.Add).toUpperCase());
         addView(addButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 28, Gravity.TOP | (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT), LocaleController.isRTL ? 14 : 0, 18, LocaleController.isRTL ? 0 : 14, 0));
 
         checkImage = new ImageView(context);
+        checkImage.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_featuredStickers_addedIcon), PorterDuff.Mode.MULTIPLY));
         checkImage.setImageResource(R.drawable.sticker_added);
         addView(checkImage, LayoutHelper.createFrame(19, 14));
     }
@@ -246,7 +238,7 @@ public class FeaturedStickerSetCell extends FrameLayout {
                             ObjectAnimator.ofFloat(checkImage, "alpha", 0.0f, 1.0f),
                             ObjectAnimator.ofFloat(checkImage, "scaleX", 0.01f, 1.0f),
                             ObjectAnimator.ofFloat(checkImage, "scaleY", 0.01f, 1.0f));
-                    currentAnimation.addListener(new AnimatorListenerAdapterProxy() {
+                    currentAnimation.addListener(new AnimatorListenerAdapter() {
                         @Override
                         public void onAnimationEnd(Animator animator) {
                             if (currentAnimation != null && currentAnimation.equals(animator)) {
@@ -275,7 +267,7 @@ public class FeaturedStickerSetCell extends FrameLayout {
                             ObjectAnimator.ofFloat(addButton, "alpha", 0.0f, 1.0f),
                             ObjectAnimator.ofFloat(addButton, "scaleX", 0.01f, 1.0f),
                             ObjectAnimator.ofFloat(addButton, "scaleY", 0.01f, 1.0f));
-                    currentAnimation.addListener(new AnimatorListenerAdapterProxy() {
+                    currentAnimation.addListener(new AnimatorListenerAdapter() {
                         @Override
                         public void onAnimationEnd(Animator animator) {
                             if (currentAnimation != null && currentAnimation.equals(animator)) {
@@ -331,19 +323,9 @@ public class FeaturedStickerSetCell extends FrameLayout {
     }
 
     @Override
-    public boolean onTouchEvent(MotionEvent event) {
-        if (Build.VERSION.SDK_INT >= 21 && getBackground() != null) {
-            if (event.getAction() == MotionEvent.ACTION_DOWN || event.getAction() == MotionEvent.ACTION_MOVE) {
-                getBackground().setHotspot(event.getX(), event.getY());
-            }
-        }
-        return super.onTouchEvent(event);
-    }
-
-    @Override
     protected void onDraw(Canvas canvas) {
         if (needDivider) {
-            canvas.drawLine(0, getHeight() - 1, getWidth() - getPaddingRight(), getHeight() - 1, paint);
+            canvas.drawLine(0, getHeight() - 1, getWidth() - getPaddingRight(), getHeight() - 1, Theme.dividerPaint);
         }
     }
 }

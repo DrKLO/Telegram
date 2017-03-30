@@ -37,19 +37,23 @@
 #include "os_support.h"
 #include "bands.h"
 #include "rate.h"
+#include "pitch.h"
 
+#ifndef OVERRIDE_vq_exp_rotation1
 static void exp_rotation1(celt_norm *X, int len, int stride, opus_val16 c, opus_val16 s)
 {
    int i;
+   opus_val16 ms;
    celt_norm *Xptr;
    Xptr = X;
+   ms = NEG16(s);
    for (i=0;i<len-stride;i++)
    {
       celt_norm x1, x2;
       x1 = Xptr[0];
       x2 = Xptr[stride];
-      Xptr[stride] = EXTRACT16(SHR32(MULT16_16(c,x2) + MULT16_16(s,x1), 15));
-      *Xptr++      = EXTRACT16(SHR32(MULT16_16(c,x1) - MULT16_16(s,x2), 15));
+      Xptr[stride] = EXTRACT16(PSHR32(MAC16_16(MULT16_16(c, x2),  s, x1), 15));
+      *Xptr++      = EXTRACT16(PSHR32(MAC16_16(MULT16_16(c, x1), ms, x2), 15));
    }
    Xptr = &X[len-2*stride-1];
    for (i=len-2*stride-1;i>=0;i--)
@@ -57,10 +61,11 @@ static void exp_rotation1(celt_norm *X, int len, int stride, opus_val16 c, opus_
       celt_norm x1, x2;
       x1 = Xptr[0];
       x2 = Xptr[stride];
-      Xptr[stride] = EXTRACT16(SHR32(MULT16_16(c,x2) + MULT16_16(s,x1), 15));
-      *Xptr--      = EXTRACT16(SHR32(MULT16_16(c,x1) - MULT16_16(s,x2), 15));
+      Xptr[stride] = EXTRACT16(PSHR32(MAC16_16(MULT16_16(c, x2),  s, x1), 15));
+      *Xptr--      = EXTRACT16(PSHR32(MAC16_16(MULT16_16(c, x1), ms, x2), 15));
    }
 }
+#endif /* OVERRIDE_vq_exp_rotation1 */
 
 static void exp_rotation(celt_norm *X, int len, int dir, int stride, int K, int spread)
 {
@@ -91,7 +96,7 @@ static void exp_rotation(celt_norm *X, int len, int dir, int stride, int K, int 
    }
    /*NOTE: As a minor optimization, we could be passing around log2(B), not B, for both this and for
       extract_collapse_mask().*/
-   len /= stride;
+   len = celt_udiv(len, stride);
    for (i=0;i<stride;i++)
    {
       if (dir < 0)
@@ -140,53 +145,40 @@ static unsigned extract_collapse_mask(int *iy, int N, int B)
       return 1;
    /*NOTE: As a minor optimization, we could be passing around log2(B), not B, for both this and for
       exp_rotation().*/
-   N0 = N/B;
+   N0 = celt_udiv(N, B);
    collapse_mask = 0;
    i=0; do {
       int j;
+      unsigned tmp=0;
       j=0; do {
-         collapse_mask |= (iy[i*N0+j]!=0)<<i;
+         tmp |= iy[i*N0+j];
       } while (++j<N0);
+      collapse_mask |= (tmp!=0)<<i;
    } while (++i<B);
    return collapse_mask;
 }
 
-unsigned alg_quant(celt_norm *X, int N, int K, int spread, int B, ec_enc *enc
-#ifdef RESYNTH
-   , opus_val16 gain
-#endif
-   )
+opus_val16 op_pvq_search_c(celt_norm *X, int *iy, int K, int N, int arch)
 {
    VARDECL(celt_norm, y);
-   VARDECL(int, iy);
-   VARDECL(opus_val16, signx);
+   VARDECL(int, signx);
    int i, j;
-   opus_val16 s;
    int pulsesLeft;
    opus_val32 sum;
    opus_val32 xy;
    opus_val16 yy;
-   unsigned collapse_mask;
    SAVE_STACK;
 
-   celt_assert2(K>0, "alg_quant() needs at least one pulse");
-   celt_assert2(N>1, "alg_quant() needs at least two dimensions");
-
+   (void)arch;
    ALLOC(y, N, celt_norm);
-   ALLOC(iy, N, int);
-   ALLOC(signx, N, opus_val16);
-
-   exp_rotation(X, N, 1, B, K, spread);
+   ALLOC(signx, N, int);
 
    /* Get rid of the sign */
    sum = 0;
    j=0; do {
-      if (X[j]>0)
-         signx[j]=1;
-      else {
-         signx[j]=-1;
-         X[j]=-X[j];
-      }
+      signx[j] = X[j]<0;
+      /* OPT: Make sure the compiler doesn't use a branch on ABS16(). */
+      X[j] = ABS16(X[j]);
       iy[j] = 0;
       y[j] = 0;
    } while (++j<N);
@@ -218,7 +210,12 @@ unsigned alg_quant(celt_norm *X, int N, int K, int spread, int B, ec_enc *enc
          while (++j<N);
          sum = QCONST16(1.f,14);
       }
-      rcp = EXTRACT16(MULT16_32_Q16(K-1, celt_rcp(sum)));
+#ifdef FIXED_POINT
+      rcp = EXTRACT16(MULT16_32_Q16(K, celt_rcp(sum)));
+#else
+      /* Using K+e with e < 1 guarantees we cannot get more than K pulses. */
+      rcp = EXTRACT16(MULT16_32_Q16(K+0.8, celt_rcp(sum)));
+#endif
       j=0; do {
 #ifdef FIXED_POINT
          /* It's really important to round *towards zero* here */
@@ -233,7 +230,7 @@ unsigned alg_quant(celt_norm *X, int N, int K, int spread, int B, ec_enc *enc
          pulsesLeft -= iy[j];
       }  while (++j<N);
    }
-   celt_assert2(pulsesLeft>=1, "Allocated too many pulses in the quick pass");
+   celt_assert2(pulsesLeft>=0, "Allocated too many pulses in the quick pass");
 
    /* This should never happen, but just in case it does (e.g. on silence)
       we fill the first bin with pulses. */
@@ -249,12 +246,12 @@ unsigned alg_quant(celt_norm *X, int N, int K, int spread, int B, ec_enc *enc
       pulsesLeft=0;
    }
 
-   s = 1;
    for (i=0;i<pulsesLeft;i++)
    {
+      opus_val16 Rxy, Ryy;
       int best_id;
-      opus_val32 best_num = -VERY_LARGE16;
-      opus_val16 best_den = 0;
+      opus_val32 best_num;
+      opus_val16 best_den;
 #ifdef FIXED_POINT
       int rshift;
 #endif
@@ -264,10 +261,23 @@ unsigned alg_quant(celt_norm *X, int N, int K, int spread, int B, ec_enc *enc
       best_id = 0;
       /* The squared magnitude term gets added anyway, so we might as well
          add it outside the loop */
-      yy = ADD32(yy, 1);
-      j=0;
+      yy = ADD16(yy, 1);
+
+      /* Calculations for position 0 are out of the loop, in part to reduce
+         mispredicted branches (since the if condition is usually false)
+         in the loop. */
+      /* Temporary sums of the new pulse(s) */
+      Rxy = EXTRACT16(SHR32(ADD32(xy, EXTEND32(X[0])),rshift));
+      /* We're multiplying y[j] by two so we don't have to do it here */
+      Ryy = ADD16(yy, y[0]);
+
+      /* Approximate score: we maximise Rxy/sqrt(Ryy) (we're guaranteed that
+         Rxy is positive because the sign is pre-computed) */
+      Rxy = MULT16_16_Q15(Rxy,Rxy);
+      best_den = Ryy;
+      best_num = Rxy;
+      j=1;
       do {
-         opus_val16 Rxy, Ryy;
          /* Temporary sums of the new pulse(s) */
          Rxy = EXTRACT16(SHR32(ADD32(xy, EXTEND32(X[j])),rshift));
          /* We're multiplying y[j] by two so we don't have to do it here */
@@ -278,8 +288,11 @@ unsigned alg_quant(celt_norm *X, int N, int K, int spread, int B, ec_enc *enc
          Rxy = MULT16_16_Q15(Rxy,Rxy);
          /* The idea is to check for num/den >= best_num/best_den, but that way
             we can do it without any division */
-         /* OPT: Make sure to use conditional moves here */
-         if (MULT16_16(best_den, Rxy) > MULT16_16(Ryy, best_num))
+         /* OPT: It's not clear whether a cmov is faster than a branch here
+            since the condition is more often false than true and using
+            a cmov introduces data dependencies across iterations. The optimal
+            choice may be architecture-dependent. */
+         if (opus_unlikely(MULT16_16(best_den, Rxy) > MULT16_16(Ryy, best_num)))
          {
             best_den = Ryy;
             best_num = Rxy;
@@ -294,23 +307,47 @@ unsigned alg_quant(celt_norm *X, int N, int K, int spread, int B, ec_enc *enc
 
       /* Only now that we've made the final choice, update y/iy */
       /* Multiplying y[j] by 2 so we don't have to do it everywhere else */
-      y[best_id] += 2*s;
+      y[best_id] += 2;
       iy[best_id]++;
    }
 
    /* Put the original sign back */
    j=0;
    do {
-      X[j] = MULT16_16(signx[j],X[j]);
-      if (signx[j] < 0)
-         iy[j] = -iy[j];
+      /*iy[j] = signx[j] ? -iy[j] : iy[j];*/
+      /* OPT: The is more likely to be compiled without a branch than the code above
+         but has the same performance otherwise. */
+      iy[j] = (iy[j]^-signx[j]) + signx[j];
    } while (++j<N);
+   RESTORE_STACK;
+   return yy;
+}
+
+unsigned alg_quant(celt_norm *X, int N, int K, int spread, int B, ec_enc *enc,
+      opus_val16 gain, int resynth, int arch)
+{
+   VARDECL(int, iy);
+   opus_val16 yy;
+   unsigned collapse_mask;
+   SAVE_STACK;
+
+   celt_assert2(K>0, "alg_quant() needs at least one pulse");
+   celt_assert2(N>1, "alg_quant() needs at least two dimensions");
+
+   /* Covers vectorization by up to 4. */
+   ALLOC(iy, N+3, int);
+
+   exp_rotation(X, N, 1, B, K, spread);
+
+   yy = op_pvq_search(X, iy, K, N, arch);
+
    encode_pulses(iy, N, K, enc);
 
-#ifdef RESYNTH
-   normalise_residual(iy, X, N, yy, gain);
-   exp_rotation(X, N, -1, B, K, spread);
-#endif
+   if (resynth)
+   {
+      normalise_residual(iy, X, N, yy, gain);
+      exp_rotation(X, N, -1, B, K, spread);
+   }
 
    collapse_mask = extract_collapse_mask(iy, N, B);
    RESTORE_STACK;
@@ -322,7 +359,6 @@ unsigned alg_quant(celt_norm *X, int N, int K, int spread, int B, ec_enc *enc
 unsigned alg_unquant(celt_norm *X, int N, int K, int spread, int B,
       ec_dec *dec, opus_val16 gain)
 {
-   int i;
    opus_val32 Ryy;
    unsigned collapse_mask;
    VARDECL(int, iy);
@@ -331,12 +367,7 @@ unsigned alg_unquant(celt_norm *X, int N, int K, int spread, int B,
    celt_assert2(K>0, "alg_unquant() needs at least one pulse");
    celt_assert2(N>1, "alg_unquant() needs at least two dimensions");
    ALLOC(iy, N, int);
-   decode_pulses(iy, N, K, dec);
-   Ryy = 0;
-   i=0;
-   do {
-      Ryy = MAC16_16(Ryy, iy[i], iy[i]);
-   } while (++i < N);
+   Ryy = decode_pulses(iy, N, K, dec);
    normalise_residual(iy, X, N, Ryy, gain);
    exp_rotation(X, N, -1, B, K, spread);
    collapse_mask = extract_collapse_mask(iy, N, B);
@@ -344,21 +375,18 @@ unsigned alg_unquant(celt_norm *X, int N, int K, int spread, int B,
    return collapse_mask;
 }
 
-void renormalise_vector(celt_norm *X, int N, opus_val16 gain)
+#ifndef OVERRIDE_renormalise_vector
+void renormalise_vector(celt_norm *X, int N, opus_val16 gain, int arch)
 {
    int i;
 #ifdef FIXED_POINT
    int k;
 #endif
-   opus_val32 E = EPSILON;
+   opus_val32 E;
    opus_val16 g;
    opus_val32 t;
-   celt_norm *xptr = X;
-   for (i=0;i<N;i++)
-   {
-      E = MAC16_16(E, *xptr, *xptr);
-      xptr++;
-   }
+   celt_norm *xptr;
+   E = EPSILON + celt_inner_prod(X, X, N, arch);
 #ifdef FIXED_POINT
    k = celt_ilog2(E)>>1;
 #endif
@@ -373,8 +401,9 @@ void renormalise_vector(celt_norm *X, int N, opus_val16 gain)
    }
    /*return celt_sqrt(E);*/
 }
+#endif /* OVERRIDE_renormalise_vector */
 
-int stereo_itheta(celt_norm *X, celt_norm *Y, int stereo, int N)
+int stereo_itheta(const celt_norm *X, const celt_norm *Y, int stereo, int N, int arch)
 {
    int i;
    int itheta;
@@ -393,14 +422,8 @@ int stereo_itheta(celt_norm *X, celt_norm *Y, int stereo, int N)
          Eside = MAC16_16(Eside, s, s);
       }
    } else {
-      for (i=0;i<N;i++)
-      {
-         celt_norm m, s;
-         m = X[i];
-         s = Y[i];
-         Emid = MAC16_16(Emid, m, m);
-         Eside = MAC16_16(Eside, s, s);
-      }
+      Emid += celt_inner_prod(X, X, N, arch);
+      Eside += celt_inner_prod(Y, Y, N, arch);
    }
    mid = celt_sqrt(Emid);
    side = celt_sqrt(Eside);
@@ -408,7 +431,7 @@ int stereo_itheta(celt_norm *X, celt_norm *Y, int stereo, int N)
    /* 0.63662 = 2/pi */
    itheta = MULT16_16_Q15(QCONST16(0.63662f,15),celt_atan2p(side, mid));
 #else
-   itheta = (int)floor(.5f+16384*0.63662f*atan2(side,mid));
+   itheta = (int)floor(.5f+16384*0.63662f*fast_atan2f(side,mid));
 #endif
 
    return itheta;

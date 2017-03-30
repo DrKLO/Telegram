@@ -21,6 +21,7 @@ import android.support.annotation.VisibleForTesting;
 import android.support.v4.util.ArrayMap;
 import android.support.v4.util.LongSparseArray;
 import android.support.v4.util.Pools;
+import android.view.View;
 
 import static org.telegram.messenger.support.widget.RecyclerView.ViewHolder;
 import static org.telegram.messenger.support.widget.RecyclerView.ItemAnimator.ItemHolderInfo;
@@ -33,9 +34,7 @@ import static org.telegram.messenger.support.widget.ViewInfoStore.InfoRecord.FLA
 import static org.telegram.messenger.support.widget.ViewInfoStore.InfoRecord.FLAG_PRE;
 import static org.telegram.messenger.support.widget.ViewInfoStore.InfoRecord.FLAG_POST;
 /**
- * This class abstracts all tracking for Views to run animations
- *
- * @hide
+ * This class abstracts all tracking for Views to run animations.
  */
 class ViewInfoStore {
 
@@ -136,7 +135,7 @@ class ViewInfoStore {
     }
 
     /**
-     * Adds the given ViewHolder to the appeared in pre layout list. These are Views added by the
+     * Adds the given ViewHolder to the onAppeared in pre layout list. These are Views added by the
      * LayoutManager during a pre-layout pass. We distinguish them from other views that were
      * already in the pre-layout so that ItemAnimator can choose to run a different animation for
      * them.

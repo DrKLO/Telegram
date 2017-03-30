@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2016.
+ * Copyright Nikolai Kudashov, 2013-2017.
  */
 
 package org.telegram.ui.Adapters;
@@ -11,98 +11,82 @@ package org.telegram.ui.Adapters;
 import android.content.Context;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.BaseAdapter;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
+import org.telegram.messenger.support.widget.RecyclerView;
+import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.DrawerActionCell;
 import org.telegram.ui.Cells.DividerCell;
 import org.telegram.ui.Cells.EmptyCell;
 import org.telegram.ui.Cells.DrawerProfileCell;
+import org.telegram.ui.Components.RecyclerListView;
 
-public class DrawerLayoutAdapter extends BaseAdapter {
+import java.util.ArrayList;
+
+public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter {
 
     private Context mContext;
+    private ArrayList<Item> items = new ArrayList<>(11);
 
     public DrawerLayoutAdapter(Context context) {
         mContext = context;
+        Theme.createDialogsResources(context);
+        resetItems();
     }
 
     @Override
-    public boolean areAllItemsEnabled() {
-        return false;
+    public int getItemCount() {
+        return items.size();
     }
 
     @Override
-    public boolean isEnabled(int i) {
-        return !(i == 1 || i == 5);
+    public void notifyDataSetChanged() {
+        resetItems();
+        super.notifyDataSetChanged();
     }
 
     @Override
-    public int getCount() {
-        return UserConfig.isClientActivated() ? 10 : 0;
+    public boolean isEnabled(RecyclerView.ViewHolder holder) {
+        return holder.getItemViewType() == 3;
     }
 
     @Override
-    public Object getItem(int i) {
-        return null;
-    }
-
-    @Override
-    public long getItemId(int i) {
-        return i;
-    }
-
-    @Override
-    public boolean hasStableIds() {
-        return true;
-    }
-
-    @Override
-    public View getView(int i, View view, ViewGroup viewGroup) {
-        int type = getItemViewType(i);
-        if (type == 0) {
-            DrawerProfileCell drawerProfileCell;
-            if (view == null) {
-                view = drawerProfileCell = new DrawerProfileCell(mContext);
-            } else {
-                drawerProfileCell = (DrawerProfileCell) view;
-            }
-            drawerProfileCell.setUser(MessagesController.getInstance().getUser(UserConfig.getClientUserId()));
-        } else if (type == 1) {
-            if (view == null) {
+    public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+        View view;
+        switch (viewType) {
+            case 0:
+                view = new DrawerProfileCell(mContext);
+                break;
+            case 1:
+            default:
                 view = new EmptyCell(mContext, AndroidUtilities.dp(8));
-            }
-        } else if (type == 2) {
-            if (view == null) {
+                break;
+            case 2:
                 view = new DividerCell(mContext);
-            }
-        } else if (type == 3) {
-            if (view == null) {
+                break;
+            case 3:
                 view = new DrawerActionCell(mContext);
-            }
-            DrawerActionCell actionCell = (DrawerActionCell) view;
-            if (i == 2) {
-                actionCell.setTextAndIcon(LocaleController.getString("NewGroup", R.string.NewGroup), R.drawable.menu_newgroup);
-            } else if (i == 3) {
-                actionCell.setTextAndIcon(LocaleController.getString("NewSecretChat", R.string.NewSecretChat), R.drawable.menu_secret);
-            } else if (i == 4) {
-                actionCell.setTextAndIcon(LocaleController.getString("NewChannel", R.string.NewChannel), R.drawable.menu_broadcast);
-            } else if (i == 6) {
-                actionCell.setTextAndIcon(LocaleController.getString("Contacts", R.string.Contacts), R.drawable.menu_contacts);
-            } else if (i == 7) {
-                actionCell.setTextAndIcon(LocaleController.getString("InviteFriends", R.string.InviteFriends), R.drawable.menu_invite);
-            } else if (i == 8) {
-                actionCell.setTextAndIcon(LocaleController.getString("Settings", R.string.Settings), R.drawable.menu_settings);
-            } else if (i == 9) {
-                actionCell.setTextAndIcon(LocaleController.getString("TelegramFaq", R.string.TelegramFaq), R.drawable.menu_help);
-            }
+                break;
         }
+        view.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        return new RecyclerListView.Holder(view);
+    }
 
-        return view;
+    @Override
+    public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
+        switch (holder.getItemViewType()) {
+            case 0:
+                ((DrawerProfileCell) holder.itemView).setUser(MessagesController.getInstance().getUser(UserConfig.getClientUserId()));
+                holder.itemView.setBackgroundColor(Theme.getColor(Theme.key_avatar_backgroundActionBarBlue));
+                break;
+            case 3:
+                items.get(position).bind((DrawerActionCell) holder.itemView);
+                break;
+        }
     }
 
     @Override
@@ -117,13 +101,47 @@ public class DrawerLayoutAdapter extends BaseAdapter {
         return 3;
     }
 
-    @Override
-    public int getViewTypeCount() {
-        return 4;
+    private void resetItems() {
+        items.clear();
+        if (!UserConfig.isClientActivated()) {
+            return;
+        }
+        items.add(null); // profile
+        items.add(null); // padding
+        items.add(new Item(2, LocaleController.getString("NewGroup", R.string.NewGroup), R.drawable.menu_newgroup));
+        items.add(new Item(3, LocaleController.getString("NewSecretChat", R.string.NewSecretChat), R.drawable.menu_secret));
+        items.add(new Item(4, LocaleController.getString("NewChannel", R.string.NewChannel), R.drawable.menu_broadcast));
+        items.add(null); // divider
+        items.add(new Item(6, LocaleController.getString("Contacts", R.string.Contacts), R.drawable.menu_contacts));
+        if (MessagesController.getInstance().callsEnabled) {
+            items.add(new Item(10, LocaleController.getString("Calls", R.string.Calls), R.drawable.menu_calls));
+        }
+        items.add(new Item(7, LocaleController.getString("InviteFriends", R.string.InviteFriends), R.drawable.menu_invite));
+        items.add(new Item(8, LocaleController.getString("Settings", R.string.Settings), R.drawable.menu_settings));
+        items.add(new Item(9, LocaleController.getString("TelegramFaq", R.string.TelegramFaq), R.drawable.menu_help));
     }
 
-    @Override
-    public boolean isEmpty() {
-        return !UserConfig.isClientActivated();
+    public int getId(int position) {
+        if (position < 0 || position >= items.size()) {
+            return -1;
+        }
+        Item item = items.get(position);
+        return item != null ? item.id : -1;
+    }
+
+    private class Item {
+        public int icon;
+        public String text;
+        public int id;
+
+        public Item(int id, String text, int icon) {
+            this.icon = icon;
+            this.id = id;
+            this.text = text;
+        }
+
+        public void bind(DrawerActionCell actionCell) {
+            actionCell.setTextAndIcon(text, icon);
+        }
     }
 }

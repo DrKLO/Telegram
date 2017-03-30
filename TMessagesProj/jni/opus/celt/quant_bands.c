@@ -292,7 +292,7 @@ void quant_coarse_energy(const CELTMode *m, int start, int end, int effEnd,
 #endif
    }
    if (lfe)
-      max_decay=3;
+      max_decay = QCONST16(3.f,DB_SHIFT);
    enc_start_state = *enc;
 
    ALLOC(oldEBands_intra, C*m->nbEBands, opus_val16);
@@ -418,6 +418,7 @@ void quant_energy_finalise(const CELTMode *m, int start, int end, opus_val16 *ol
             offset = (q2-.5f)*(1<<(14-fine_quant[i]-1))*(1.f/16384);
 #endif
             oldEBands[i+c*m->nbEBands] += offset;
+            error[i+c*m->nbEBands] -= offset;
             bits_left--;
          } while (++c < C);
       }
@@ -547,9 +548,15 @@ void amp2Log2(const CELTMode *m, int effEnd, int end,
    c=0;
    do {
       for (i=0;i<effEnd;i++)
+      {
          bandLogE[i+c*m->nbEBands] =
-               celt_log2(SHL32(bandE[i+c*m->nbEBands],2))
+               celt_log2(bandE[i+c*m->nbEBands])
                - SHL16((opus_val16)eMeans[i],6);
+#ifdef FIXED_POINT
+         /* Compensate for bandE[] being Q12 but celt_log2() taking a Q14 input. */
+         bandLogE[i+c*m->nbEBands] += QCONST16(2.f, DB_SHIFT);
+#endif
+      }
       for (i=effEnd;i<end;i++)
          bandLogE[c*m->nbEBands+i] = -QCONST16(14.f,DB_SHIFT);
    } while (++c < C);

@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2016.
+ * Copyright Nikolai Kudashov, 2013-2017.
  */
 
 package org.telegram.messenger;
@@ -33,7 +33,7 @@ public class DispatchQueue extends Thread {
                 handler.sendMessageDelayed(msg, delay);
             }
         } catch (Exception e) {
-            FileLog.e("tmessages", e);
+            FileLog.e(e);
         }
     }
 
@@ -42,7 +42,7 @@ public class DispatchQueue extends Thread {
             syncLatch.await();
             handler.removeCallbacks(runnable);
         } catch (Exception e) {
-            FileLog.e("tmessages", e);
+            FileLog.e(e);
         }
     }
 
@@ -59,7 +59,7 @@ public class DispatchQueue extends Thread {
                 handler.postDelayed(runnable, delay);
             }
         } catch (Exception e) {
-            FileLog.e("tmessages", e);
+            FileLog.e(e);
         }
     }
 
@@ -68,7 +68,7 @@ public class DispatchQueue extends Thread {
             syncLatch.await();
             handler.removeCallbacksAndMessages(null);
         } catch (Exception e) {
-            FileLog.e("tmessages", e);
+            FileLog.e(e);
         }
     }
 

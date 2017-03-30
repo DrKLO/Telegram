@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2016.
+ * Copyright Nikolai Kudashov, 2013-2017.
  */
 
 package org.telegram.SQLite;
@@ -34,7 +34,7 @@ public class SQLitePreparedStatement {
             }
             hashMap.put(this, sql);
             for (HashMap.Entry<SQLitePreparedStatement, String> entry : hashMap.entrySet()) {
-                FileLog.d("tmessages", "exist entry = " + entry.getValue());
+                FileLog.d("exist entry = " + entry.getValue());
             }
         }*/
 	}
@@ -105,7 +105,7 @@ public class SQLitePreparedStatement {
 			isFinalized = true;
 			finalize(sqliteStatementHandle);
 		} catch (SQLiteException e) {
-            FileLog.e("tmessages", e.getMessage(), e);
+            FileLog.e(e.getMessage(), e);
 		}
 	}
 

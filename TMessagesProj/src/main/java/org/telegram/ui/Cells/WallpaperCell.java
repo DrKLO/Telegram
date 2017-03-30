@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2016.
+ * Copyright Nikolai Kudashov, 2013-2017.
  */
 
 package org.telegram.ui.Cells;
@@ -48,12 +48,19 @@ public class WallpaperCell extends FrameLayout {
         super.onMeasure(MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(100), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(102), MeasureSpec.EXACTLY));
     }
 
-    public void setWallpaper(TLRPC.WallPaper wallpaper, int selectedBackground) {
+    public void setWallpaper(TLRPC.WallPaper wallpaper, int selectedBackground, Drawable themedWallpaper, boolean themed) {
         if (wallpaper == null) {
             imageView.setVisibility(INVISIBLE);
             imageView2.setVisibility(VISIBLE);
-            selectionView.setVisibility(selectedBackground == -1 ? View.VISIBLE : INVISIBLE);
-            imageView2.setBackgroundColor(selectedBackground == -1 || selectedBackground == 1000001 ? 0x5a475866 : 0x5a000000);
+            if (themed) {
+                selectionView.setVisibility(selectedBackground == -2 ? View.VISIBLE : INVISIBLE);
+                imageView2.setImageDrawable(themedWallpaper);
+                imageView2.setScaleType(ImageView.ScaleType.CENTER_CROP);
+            } else {
+                selectionView.setVisibility(selectedBackground == -1 ? View.VISIBLE : INVISIBLE);
+                imageView2.setBackgroundColor(selectedBackground == -1 || selectedBackground == 1000001 ? 0x5a475866 : 0x5a000000);
+                imageView2.setScaleType(ImageView.ScaleType.CENTER);
+            }
         } else {
             imageView.setVisibility(VISIBLE);
             imageView2.setVisibility(INVISIBLE);

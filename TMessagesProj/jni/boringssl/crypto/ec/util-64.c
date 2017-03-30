@@ -127,7 +127,7 @@ void ec_GFp_nistp_points_make_affine_internal(
  *
  *     A left-shift followed by subtraction of the original value yields a new
  *     representation of the same value, using signed bits s_i = b_(i+1) - b_i.
- *     This representation from Booth's paper has since appeared in the
+ *     This representation from Booth's paper has since onAppeared in the
  *     literature under a variety of different names including "reversed binary
  *     form", "alternating greedy expansion", "mutual opposite form", and
  *     "sign-alternating {+-1}-representation".

@@ -49,12 +49,14 @@ uint32_t ConnectionSession::generateMessageSeqNo(bool increment) {
 }
 
 bool ConnectionSession::isMessageIdProcessed(int64_t messageId) {
-    return std::find(processedMessageIds.begin(), processedMessageIds.end(), messageId) != processedMessageIds.end();
+    return !(messageId & 1) || minProcessedMessageId != 0 && messageId < minProcessedMessageId || std::find(processedMessageIds.begin(), processedMessageIds.end(), messageId) != processedMessageIds.end();
 }
 
 void ConnectionSession::addProcessedMessageId(int64_t messageId) {
     if (processedMessageIds.size() > 300) {
+        std::sort(processedMessageIds.begin(), processedMessageIds.end());
         processedMessageIds.erase(processedMessageIds.begin(), processedMessageIds.begin() + 100);
+        minProcessedMessageId = *(processedMessageIds.begin());
     }
     processedMessageIds.push_back(messageId);
 }

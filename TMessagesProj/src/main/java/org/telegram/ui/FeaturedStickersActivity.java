@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2016.
+ * Copyright Nikolai Kudashov, 2013-2017.
  */
 
 package org.telegram.ui;
@@ -22,6 +22,8 @@ import org.telegram.messenger.support.widget.RecyclerView;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Cells.FeaturedStickerSetCell;
 import org.telegram.ui.Cells.TextInfoPrivacyCell;
 import org.telegram.ui.Components.LayoutHelper;
@@ -34,6 +36,7 @@ import java.util.HashMap;
 public class FeaturedStickersActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
 
     private ListAdapter listAdapter;
+    private RecyclerListView listView;
     private LinearLayoutManager layoutManager;
 
     private ArrayList<Long> unreadStickers = null;
@@ -83,9 +86,9 @@ public class FeaturedStickersActivity extends BaseFragment implements Notificati
 
         fragmentView = new FrameLayout(context);
         FrameLayout frameLayout = (FrameLayout) fragmentView;
-        frameLayout.setBackgroundColor(0xfff0f0f0);
+        frameLayout.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray));
 
-        RecyclerListView listView = new RecyclerListView(context);
+        listView = new RecyclerListView(context);
         listView.setItemAnimator(null);
         listView.setLayoutAnimation(null);
         listView.setFocusable(true);
@@ -190,15 +193,9 @@ public class FeaturedStickersActivity extends BaseFragment implements Notificati
         }
     }
 
-    private class ListAdapter extends RecyclerListView.Adapter {
+    private class ListAdapter extends RecyclerListView.SelectionAdapter {
+
         private Context mContext;
-
-        private class Holder extends RecyclerView.ViewHolder {
-
-            public Holder(View itemView) {
-                super(itemView);
-            }
-        }
 
         public ListAdapter(Context context) {
             mContext = context;
@@ -228,12 +225,17 @@ public class FeaturedStickersActivity extends BaseFragment implements Notificati
         }
 
         @Override
+        public boolean isEnabled(RecyclerView.ViewHolder holder) {
+            return holder.getItemViewType() == 0;
+        }
+
+        @Override
         public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
             View view = null;
             switch (viewType) {
                 case 0:
                     view = new FeaturedStickerSetCell(mContext);
-                    view.setBackgroundResource(R.drawable.list_selector_white);
+                    view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
                     ((FeaturedStickerSetCell) view).setAddOnClickListener(new View.OnClickListener() {
                         @Override
                         public void onClick(View v) {
@@ -250,11 +252,11 @@ public class FeaturedStickersActivity extends BaseFragment implements Notificati
                     break;
                 case 1:
                     view = new TextInfoPrivacyCell(mContext);
-                    view.setBackgroundResource(R.drawable.greydivider_bottom);
+                    view.setBackgroundDrawable(Theme.getThemedDrawable(mContext, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
                     break;
             }
             view.setLayoutParams(new RecyclerView.LayoutParams(RecyclerView.LayoutParams.MATCH_PARENT, RecyclerView.LayoutParams.WRAP_CONTENT));
-            return new Holder(view);
+            return new RecyclerListView.Holder(view);
         }
 
         @Override
@@ -266,5 +268,33 @@ public class FeaturedStickersActivity extends BaseFragment implements Notificati
             }
             return 0;
         }
+    }
+
+    @Override
+    public ThemeDescription[] getThemeDescriptions() {
+        return new ThemeDescription[]{
+                new ThemeDescription(listView, ThemeDescription.FLAG_CELLBACKGROUNDCOLOR, new Class[]{FeaturedStickerSetCell.class}, null, null, null, Theme.key_windowBackgroundWhite),
+                new ThemeDescription(fragmentView, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundGray),
+
+                new ThemeDescription(actionBar, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_actionBarDefault),
+                new ThemeDescription(listView, ThemeDescription.FLAG_LISTGLOWCOLOR, null, null, null, null, Theme.key_actionBarDefault),
+                new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_ITEMSCOLOR, null, null, null, null, Theme.key_actionBarDefaultIcon),
+                new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_TITLECOLOR, null, null, null, null, Theme.key_actionBarDefaultTitle),
+                new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SELECTORCOLOR, null, null, null, null, Theme.key_actionBarDefaultSelector),
+
+                new ThemeDescription(listView, ThemeDescription.FLAG_SELECTOR, null, null, null, null, Theme.key_listSelector),
+
+                new ThemeDescription(listView, 0, new Class[]{View.class}, Theme.dividerPaint, null, null, Theme.key_divider),
+
+                new ThemeDescription(listView, ThemeDescription.FLAG_BACKGROUNDFILTER, new Class[]{TextInfoPrivacyCell.class}, null, null, null, Theme.key_windowBackgroundGrayShadow),
+
+                new ThemeDescription(listView, 0, new Class[]{FeaturedStickerSetCell.class}, new String[]{"progressPaint"}, null, null, null, Theme.key_featuredStickers_buttonProgress),
+                new ThemeDescription(listView, 0, new Class[]{FeaturedStickerSetCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText),
+                new ThemeDescription(listView, 0, new Class[]{FeaturedStickerSetCell.class}, new String[]{"valueTextView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText2),
+                new ThemeDescription(listView, 0, new Class[]{FeaturedStickerSetCell.class}, new String[]{"addButton"}, null, null, null, Theme.key_featuredStickers_buttonText),
+                new ThemeDescription(listView, 0, new Class[]{FeaturedStickerSetCell.class}, new String[]{"checkImage"}, null, null, null, Theme.key_featuredStickers_addedIcon),
+                new ThemeDescription(listView, ThemeDescription.FLAG_USEBACKGROUNDDRAWABLE, new Class[]{FeaturedStickerSetCell.class}, new String[]{"addButton"}, null, null, null, Theme.key_featuredStickers_addButton),
+                new ThemeDescription(listView, ThemeDescription.FLAG_USEBACKGROUNDDRAWABLE | ThemeDescription.FLAG_DRAWABLESELECTEDSTATE, new Class[]{FeaturedStickerSetCell.class}, new String[]{"addButton"}, null, null, null, Theme.key_featuredStickers_addButtonPressed),
+        };
     }
 }

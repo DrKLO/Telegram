@@ -22,7 +22,6 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Paint.Align;
-import android.graphics.drawable.Drawable;
 import android.text.TextUtils;
 import android.util.AttributeSet;
 import android.util.SparseArray;
@@ -38,7 +37,7 @@ import android.view.animation.DecelerateInterpolator;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-import org.telegram.messenger.R;
+import org.telegram.ui.ActionBar.Theme;
 
 import java.util.Locale;
 
@@ -76,7 +75,6 @@ public class NumberPicker extends LinearLayout {
     private final SparseArray<String> mSelectorIndexToStringCache = new SparseArray<>();
     private final int[] mSelectorIndices = new int[SELECTOR_WHEEL_ITEM_COUNT];
     private Paint mSelectorWheelPaint;
-    private Drawable mVirtualButtonPressedDrawable;
     private int mSelectorElementHeight;
     private int mInitialScrollOffset = Integer.MIN_VALUE;
     private int mCurrentScrollOffset;
@@ -93,7 +91,7 @@ public class NumberPicker extends LinearLayout {
     private int mMaximumFlingVelocity;
     private boolean mWrapSelectorWheel;
     private int mSolidColor;
-    private Drawable mSelectionDivider;
+    private Paint mSelectionDivider;
     private int mSelectionDividerHeight;
     private int mScrollState = OnScrollListener.SCROLL_STATE_IDLE;
     private boolean mIngonreMoveEvents;
@@ -123,7 +121,8 @@ public class NumberPicker extends LinearLayout {
 
     private void init() {
         mSolidColor = 0;
-        mSelectionDivider = getResources().getDrawable(R.drawable.numberpicker_selection_divider);
+        mSelectionDivider = new Paint();
+        mSelectionDivider.setColor(Theme.getColor(Theme.key_dialogButton));
 
         mSelectionDividerHeight = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, UNSCALED_DEFAULT_SELECTION_DIVIDER_HEIGHT, getResources().getDisplayMetrics());
         mSelectionDividersDistance = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, UNSCALED_DEFAULT_SELECTION_DIVIDERS_DISTANCE, getResources().getDisplayMetrics());
@@ -144,19 +143,17 @@ public class NumberPicker extends LinearLayout {
 
         mComputeMaxWidth = (mMaxWidth == SIZE_UNSPECIFIED);
 
-        mVirtualButtonPressedDrawable = getResources().getDrawable(R.drawable.item_background_holo_light);
-
         mPressedStateHelper = new PressedStateHelper();
 
         setWillNotDraw(false);
 
         mInputText = new TextView(getContext());
-        addView(mInputText);
-        mInputText.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         mInputText.setGravity(Gravity.CENTER);
         mInputText.setSingleLine(true);
+        mInputText.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
         mInputText.setBackgroundResource(0);
-        mInputText.setTextSize(TypedValue.COMPLEX_UNIT_SP, 18);
+        mInputText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
+        addView(mInputText, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
         ViewConfiguration configuration = ViewConfiguration.get(getContext());
         mTouchSlop = configuration.getScaledTouchSlop();
@@ -651,19 +648,6 @@ public class NumberPicker extends LinearLayout {
         float x = (getRight() - getLeft()) / 2;
         float y = mCurrentScrollOffset;
 
-        if (mVirtualButtonPressedDrawable != null && mScrollState == OnScrollListener.SCROLL_STATE_IDLE) {
-            if (mDecrementVirtualButtonPressed) {
-                mVirtualButtonPressedDrawable.setState(PRESSED_STATE_SET);
-                mVirtualButtonPressedDrawable.setBounds(0, 0, getRight(), mTopSelectionDividerTop);
-                mVirtualButtonPressedDrawable.draw(canvas);
-            }
-            if (mIncrementVirtualButtonPressed) {
-                mVirtualButtonPressedDrawable.setState(PRESSED_STATE_SET);
-                mVirtualButtonPressedDrawable.setBounds(0, mBottomSelectionDividerBottom, getRight(), getBottom());
-                mVirtualButtonPressedDrawable.draw(canvas);
-            }
-        }
-
         // draw the selector wheel
         int[] selectorIndices = mSelectorIndices;
         for (int i = 0; i < selectorIndices.length; i++) {
@@ -680,20 +664,13 @@ public class NumberPicker extends LinearLayout {
             y += mSelectorElementHeight;
         }
 
-        // draw the selection dividers
-        if (mSelectionDivider != null) {
-            // draw the top divider
-            int topOfTopDivider = mTopSelectionDividerTop;
-            int bottomOfTopDivider = topOfTopDivider + mSelectionDividerHeight;
-            mSelectionDivider.setBounds(0, topOfTopDivider, getRight(), bottomOfTopDivider);
-            mSelectionDivider.draw(canvas);
+        int topOfTopDivider = mTopSelectionDividerTop;
+        int bottomOfTopDivider = topOfTopDivider + mSelectionDividerHeight;
+        canvas.drawRect(0, topOfTopDivider, getRight(), bottomOfTopDivider, mSelectionDivider);
 
-            // draw the bottom divider
-            int bottomOfBottomDivider = mBottomSelectionDividerBottom;
-            int topOfBottomDivider = bottomOfBottomDivider - mSelectionDividerHeight;
-            mSelectionDivider.setBounds(0, topOfBottomDivider, getRight(), bottomOfBottomDivider);
-            mSelectionDivider.draw(canvas);
-        }
+        int bottomOfBottomDivider = mBottomSelectionDividerBottom;
+        int topOfBottomDivider = bottomOfBottomDivider - mSelectionDividerHeight;
+        canvas.drawRect(0, topOfBottomDivider, getRight(), bottomOfBottomDivider, mSelectionDivider);
     }
 
     private int makeMeasureSpec(int measureSpec, int maxSize) {

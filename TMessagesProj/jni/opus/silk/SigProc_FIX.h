@@ -35,13 +35,17 @@ extern "C"
 
 /*#define silk_MACRO_COUNT */          /* Used to enable WMOPS counting */
 
-#define SILK_MAX_ORDER_LPC            16            /* max order of the LPC analysis in schur() and k2a() */
+#define SILK_MAX_ORDER_LPC            24            /* max order of the LPC analysis in schur() and k2a() */
 
 #include <string.h>                                 /* for memset(), memcpy(), memmove() */
 #include "typedef.h"
 #include "resampler_structs.h"
 #include "macros.h"
+#include "cpu_support.h"
 
+#if defined(OPUS_X86_MAY_HAVE_SSE4_1)
+#include "x86/SigProc_FIX_sse.h"
+#endif
 
 /********************************************************************/
 /*                    SIGNAL PROCESSING FUNCTIONS                   */
@@ -108,7 +112,8 @@ void silk_LPC_analysis_filter(
     const opus_int16            *in,                /* I    Input signal                                                */
     const opus_int16            *B,                 /* I    MA prediction coefficients, Q12 [order]                     */
     const opus_int32            len,                /* I    Signal length                                               */
-    const opus_int32            d                   /* I    Filter order                                                */
+    const opus_int32            d,                  /* I    Filter order                                                */
+    int                         arch                /* I    Run-time architecture                                       */
 );
 
 /* Chirp (bandwidth expand) LP AR filter */
@@ -269,6 +274,15 @@ void silk_NLSF2A(
     const opus_int              d                   /* I    filter order (should be even)                               */
 );
 
+/* Convert int32 coefficients to int16 coefs and make sure there's no wrap-around */
+void silk_LPC_fit(
+    opus_int16                  *a_QOUT,            /* O    Output signal                                               */
+    opus_int32                  *a_QIN,             /* I/O  Input signal                                                */
+    const opus_int              QOUT,               /* I    Input Q domain                                              */
+    const opus_int              QIN,                /* I    Input Q domain                                              */
+    const opus_int              d                   /* I    Filter order                                                */
+);
+
 void silk_insertion_sort_increasing(
     opus_int32                  *a,                 /* I/O   Unsorted / Sorted vector                                   */
     opus_int                    *idx,               /* O     Index vector for the sorted elements                       */
@@ -303,7 +317,7 @@ void silk_NLSF_VQ_weights_laroia(
 );
 
 /* Compute reflection coefficients from input signal */
-void silk_burg_modified(
+void silk_burg_modified_c(
     opus_int32                  *res_nrg,           /* O    Residual energy                                             */
     opus_int                    *res_nrg_Q,         /* O    Residual energy Q value                                     */
     opus_int32                  A_Q16[],            /* O    Prediction coefficients (length order)                      */
@@ -335,11 +349,14 @@ void silk_scale_vector32_Q26_lshift_18(
 /********************************************************************/
 
 /*    return sum( inVec1[i] * inVec2[i] ) */
+
 opus_int32 silk_inner_prod_aligned(
     const opus_int16 *const     inVec1,             /*    I input vector 1                                              */
     const opus_int16 *const     inVec2,             /*    I input vector 2                                              */
-    const opus_int              len                 /*    I vector lengths                                              */
+    const opus_int              len,                /*    I vector lengths                                              */
+    int                         arch                /*    I Run-time architecture                                       */
 );
+
 
 opus_int32 silk_inner_prod_aligned_scale(
     const opus_int16 *const     inVec1,             /*    I input vector 1                                              */
@@ -348,7 +365,7 @@ opus_int32 silk_inner_prod_aligned_scale(
     const opus_int              len                 /*    I vector lengths                                              */
 );
 
-opus_int64 silk_inner_prod16_aligned_64(
+opus_int64 silk_inner_prod16_aligned_64_c(
     const opus_int16            *inVec1,            /*    I input vector 1                                              */
     const opus_int16            *inVec2,            /*    I input vector 2                                              */
     const opus_int              len                 /*    I vector lengths                                              */
@@ -463,8 +480,7 @@ static OPUS_INLINE opus_int32 silk_ROR32( opus_int32 a32, opus_int rot )
 /* Add with saturation for positive input values */
 #define silk_ADD_POS_SAT8(a, b)             ((((a)+(b)) & 0x80)                 ? silk_int8_MAX  : ((a)+(b)))
 #define silk_ADD_POS_SAT16(a, b)            ((((a)+(b)) & 0x8000)               ? silk_int16_MAX : ((a)+(b)))
-#define silk_ADD_POS_SAT32(a, b)            ((((a)+(b)) & 0x80000000)           ? silk_int32_MAX : ((a)+(b)))
-#define silk_ADD_POS_SAT64(a, b)            ((((a)+(b)) & 0x8000000000000000LL) ? silk_int64_MAX : ((a)+(b)))
+#define silk_ADD_POS_SAT32(a, b)            ((((opus_uint32)(a)+(opus_uint32)(b)) & 0x80000000) ? silk_int32_MAX : ((a)+(b)))
 
 #define silk_LSHIFT8(a, shift)              ((opus_int8)((opus_uint8)(a)<<(shift)))         /* shift >= 0, shift < 8  */
 #define silk_LSHIFT16(a, shift)             ((opus_int16)((opus_uint16)(a)<<(shift)))       /* shift >= 0, shift < 16 */
@@ -575,6 +591,14 @@ static OPUS_INLINE opus_int64 silk_max_64(opus_int64 a, opus_int64 b)
 /* the following seems faster on x86 */
 #define silk_SMMUL(a32, b32)                (opus_int32)silk_RSHIFT64(silk_SMULL((a32), (b32)), 32)
 
+#if !defined(OPUS_X86_MAY_HAVE_SSE4_1)
+#define silk_burg_modified(res_nrg, res_nrg_Q, A_Q16, x, minInvGain_Q30, subfr_length, nb_subfr, D, arch) \
+    ((void)(arch), silk_burg_modified_c(res_nrg, res_nrg_Q, A_Q16, x, minInvGain_Q30, subfr_length, nb_subfr, D, arch))
+
+#define silk_inner_prod16_aligned_64(inVec1, inVec2, len, arch) \
+    ((void)(arch),silk_inner_prod16_aligned_64_c(inVec1, inVec2, len))
+#endif
+
 #include "Inlines.h"
 #include "MacroCount.h"
 #include "MacroDebug.h"
@@ -586,6 +610,11 @@ static OPUS_INLINE opus_int64 silk_max_64(opus_int64 a, opus_int64 b)
 #ifdef OPUS_ARM_INLINE_EDSP
 #include "arm/SigProc_FIX_armv5e.h"
 #endif
+
+#if defined(MIPSr1_ASM)
+#include "mips/sigproc_fix_mipsr1.h"
+#endif
+
 
 #ifdef  __cplusplus
 }

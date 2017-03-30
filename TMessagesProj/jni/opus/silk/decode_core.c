@@ -39,7 +39,8 @@ void silk_decode_core(
     silk_decoder_state          *psDec,                         /* I/O  Decoder state                               */
     silk_decoder_control        *psDecCtrl,                     /* I    Decoder control                             */
     opus_int16                  xq[],                           /* O    Decoded speech                              */
-    const opus_int              pulses[ MAX_FRAME_LENGTH ]      /* I    Pulse signal                                */
+    const opus_int16            pulses[ MAX_FRAME_LENGTH ],     /* I    Pulse signal                                */
+    int                         arch                            /* I    Run-time architecture                       */
 )
 {
     opus_int   i, k, lag = 0, start_idx, sLTP_buf_idx, NLSF_interpolation_flag, signalType;
@@ -147,7 +148,7 @@ void silk_decode_core(
                 }
 
                 silk_LPC_analysis_filter( &sLTP[ start_idx ], &psDec->outBuf[ start_idx + k * psDec->subfr_length ],
-                    A_Q12, psDec->ltp_mem_length - start_idx, psDec->LPC_order );
+                    A_Q12, psDec->ltp_mem_length - start_idx, psDec->LPC_order, arch );
 
                 /* After rewhitening the LTP state is unscaled */
                 if( k == 0 ) {
@@ -218,7 +219,7 @@ void silk_decode_core(
             }
 
             /* Add prediction to LPC excitation */
-            sLPC_Q14[ MAX_LPC_ORDER + i ] = silk_ADD_LSHIFT32( pres_Q14[ i ], LPC_pred_Q10, 4 );
+            sLPC_Q14[ MAX_LPC_ORDER + i ] = silk_ADD_SAT32( pres_Q14[ i ], silk_LSHIFT_SAT32( LPC_pred_Q10, 4 ) );
 
             /* Scale with gain */
             pxq[ i ] = (opus_int16)silk_SAT16( silk_RSHIFT_ROUND( silk_SMULWW( sLPC_Q14[ MAX_LPC_ORDER + i ], Gain_Q10 ), 8 ) );

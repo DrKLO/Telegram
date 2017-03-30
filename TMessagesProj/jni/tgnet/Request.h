@@ -40,6 +40,7 @@ public:
     bool completed = false;
     bool cancelled = false;
     bool isInitRequest = false;
+    uint8_t dataType = 0;
     int32_t serializedLength = 0;
     int32_t startTime = 0;
     int32_t minStartTime = 0;
@@ -53,7 +54,7 @@ public:
     void addRespondMessageId(int64_t id);
     bool respondsToMessageId(int64_t id);
     void clear(bool time);
-    void onComplete(TLObject *result, TL_error *error);
+    void onComplete(TLObject *result, TL_error *error, int32_t networkType);
     void onQuickAck();
     TLObject *getRpcRequest();
 

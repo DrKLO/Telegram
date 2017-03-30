@@ -43,7 +43,7 @@ opus_int32 silk_schur64(                            /* O    returns residual ene
     opus_int32 C[ SILK_MAX_ORDER_LPC + 1 ][ 2 ];
     opus_int32 Ctmp1_Q30, Ctmp2_Q30, rc_tmp_Q31;
 
-    silk_assert( order==6||order==8||order==10||order==12||order==14||order==16 );
+    silk_assert( order <= SILK_MAX_ORDER_LPC );
 
     /* Check for invalid input */
     if( c[ 0 ] <= 0 ) {

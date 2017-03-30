@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2016.
+ * Copyright Nikolai Kudashov, 2013-2017.
  */
 
 package org.telegram.ui.Components;
@@ -28,7 +28,7 @@ public class ShutterButton extends View {
         RECORDING
     }
 
-    private final static int LONG_PRESS_TIME = 220;
+    private final static int LONG_PRESS_TIME = 800;
 
     private Drawable shadowDrawable;
 
@@ -41,17 +41,20 @@ public class ShutterButton extends View {
     private float redProgress;
     private long lastUpdateTime;
     private long totalTime;
+    private boolean processRelease;
 
     private Runnable longPressed = new Runnable() {
         public void run() {
             if (delegate != null) {
-                delegate.shutterLongPressed();
+                if (!delegate.shutterLongPressed()) {
+                    processRelease = false;
+                }
             }
         }
     };
 
     public interface ShutterButtonDelegate {
-        void shutterLongPressed();
+        boolean shutterLongPressed();
         void shutterReleased();
         void shutterCancel();
     }
@@ -150,12 +153,13 @@ public class ShutterButton extends View {
             case MotionEvent.ACTION_DOWN:
                 AndroidUtilities.runOnUIThread(longPressed, LONG_PRESS_TIME);
                 pressed = true;
+                processRelease = true;
                 setHighlighted(true);
                 break;
             case MotionEvent.ACTION_UP:
                 setHighlighted(false);
                 AndroidUtilities.cancelRunOnUIThread(longPressed);
-                if (x >= 0 && y >= 0 && x <= getMeasuredWidth() && y <= getMeasuredHeight()) {
+                if (processRelease && x >= 0 && y >= 0 && x <= getMeasuredWidth() && y <= getMeasuredHeight()) {
                     delegate.shutterReleased();
                 }
                 break;

@@ -9,19 +9,22 @@ configurations {
 }
 
 dependencies {
-    compile 'com.google.android.gms:play-services-gcm:9.6.1'
-    compile 'com.google.android.gms:play-services-maps:9.6.1'
-    compile 'com.google.android.gms:play-services-vision:9.6.1'
-    compile 'com.android.support:support-core-ui:24.2.1'
-    compile 'com.android.support:support-compat:24.2.1'
-    compile 'com.android.support:support-core-utils:24.2.1'
-    compile 'net.hockeyapp.android:HockeySDK:4.0.1'
+    compile 'com.google.android.gms:play-services-gcm:10.2.0'
+    compile 'com.google.android.gms:play-services-maps:10.2.0'
+    compile 'com.google.android.gms:play-services-vision:10.2.0'
+    compile 'com.android.support:support-core-ui:25.3.0'
+    compile 'com.android.support:support-compat:25.3.0'
+    compile 'com.android.support:support-core-utils:25.3.0'
+    compile 'com.android.support:support-v13:25.3.0'
+    compile 'com.android.support:palette-v7:25.3.0'
+    compile 'net.hockeyapp.android:HockeySDK:4.1.2'
     compile 'com.googlecode.mp4parser:isoparser:1.0.6'
+    compile 'com.stripe:stripe-android:2.0.2'
 }
 
 android {
-    compileSdkVersion 24
-    buildToolsVersion '24.0.2'
+    compileSdkVersion 25
+    buildToolsVersion '25.0.2'
 
     useLibrary 'org.apache.http.legacy'
     defaultConfig.applicationId = "org.telegram.messenger"
@@ -32,6 +35,10 @@ android {
         ndkBuild {
             path "jni/Android.mk"
         }
+    }
+
+    dexOptions {
+        jumboMode = true
     }
 
     compileOptions {
@@ -70,6 +77,7 @@ android {
             jniDebuggable false
             signingConfig signingConfigs.release
             minifyEnabled false
+            shrinkResources false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
 
@@ -80,7 +88,7 @@ android {
         }
     }
 
-    defaultConfig.versionCode = 851
+    defaultConfig.versionCode = 957
 
     sourceSets.debug {
         manifest.srcFile 'config/debug/AndroidManifest.xml'
@@ -107,20 +115,52 @@ android {
             }
             versionCode = 1
         }
-        fat {
+        x86_SDK23 {
+            ndk {
+                abiFilter "x86"
+            }
+            sourceSets.debug {
+                manifest.srcFile 'config/debug/AndroidManifest_SDK23.xml'
+            }
+            sourceSets.release {
+                manifest.srcFile 'config/release/AndroidManifest_SDK23.xml'
+            }
+            minSdkVersion 23
+            versionCode = 4
+        }
+        armv7_SDK23 {
+            ndk {
+                abiFilter "armeabi-v7a"
+            }
+            sourceSets.debug {
+                manifest.srcFile 'config/debug/AndroidManifest_SDK23.xml'
+            }
+            sourceSets.release {
+                manifest.srcFile 'config/release/AndroidManifest_SDK23.xml'
+            }
+            minSdkVersion 23
             versionCode = 3
+        }
+        fat {
+            sourceSets.debug {
+                manifest.srcFile 'config/debug/AndroidManifest_SDK23.xml'
+            }
+            sourceSets.release {
+                manifest.srcFile 'config/release/AndroidManifest_SDK23.xml'
+            }
+            versionCode = 5
         }
     }
 
     applicationVariants.all { variant ->
         def abiVersion = variant.productFlavors.get(0).versionCode
-        variant.mergedFlavor.versionCode = defaultConfig.versionCode * 10 + abiVersion;
+        variant.mergedFlavor.versionCode = defaultConfig.versionCode * 10 + abiVersion
     }
 
     defaultConfig {
         minSdkVersion 14
-        targetSdkVersion 24
-        versionName "3.13.1"
+        targetSdkVersion 25
+        versionName "3.18.0"
 
         externalNativeBuild {
             ndkBuild {

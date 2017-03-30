@@ -3,18 +3,22 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2016.
+ * Copyright Nikolai Kudashov, 2013-2017.
  */
 
 package org.telegram.ui.Adapters;
 
 import android.content.Context;
+import android.text.SpannableStringBuilder;
+import android.text.Spanned;
+import android.text.style.ForegroundColorSpan;
 import android.view.View;
 import android.view.ViewGroup;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
+import org.telegram.messenger.support.widget.RecyclerView;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.messenger.ContactsController;
@@ -22,21 +26,24 @@ import org.telegram.messenger.FileLog;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
-import org.telegram.ui.Cells.GreySectionCell;
+import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Cells.GraySectionCell;
 import org.telegram.ui.Cells.ProfileSearchCell;
 import org.telegram.ui.Cells.UserCell;
+import org.telegram.ui.Components.RecyclerListView;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Timer;
 import java.util.TimerTask;
 
-public class SearchAdapter extends BaseSearchAdapter {
+public class SearchAdapter extends RecyclerListView.SelectionAdapter {
 
     private Context mContext;
     private HashMap<Integer, TLRPC.User> ignoreUsers;
     private ArrayList<TLRPC.User> searchResult = new ArrayList<>();
     private ArrayList<CharSequence> searchResultNames = new ArrayList<>();
+    private SearchAdapterHelper searchAdapterHelper;
     private HashMap<Integer, ?> checkedMap;
     private Timer searchTimer;
     private boolean allowUsernameSearch;
@@ -52,6 +59,18 @@ public class SearchAdapter extends BaseSearchAdapter {
         allowUsernameSearch = usernameSearch;
         allowChats = chats;
         allowBots = bots;
+        searchAdapterHelper = new SearchAdapterHelper();
+        searchAdapterHelper.setDelegate(new SearchAdapterHelper.SearchAdapterHelperDelegate() {
+            @Override
+            public void onDataSetChanged() {
+                notifyDataSetChanged();
+            }
+
+            @Override
+            public void onSetHashtags(ArrayList<SearchAdapterHelper.HashtagObject> arrayList, HashMap<String, SearchAdapterHelper.HashtagObject> hashMap) {
+
+            }
+        });
     }
 
     public void setCheckedMap(HashMap<Integer, ?> map) {
@@ -68,13 +87,13 @@ public class SearchAdapter extends BaseSearchAdapter {
                 searchTimer.cancel();
             }
         } catch (Exception e) {
-            FileLog.e("tmessages", e);
+            FileLog.e(e);
         }
         if (query == null) {
             searchResult.clear();
             searchResultNames.clear();
             if (allowUsernameSearch) {
-                queryServerSearch(null, allowChats, allowBots);
+                searchAdapterHelper.queryServerSearch(null, allowChats, allowBots, true);
             }
             notifyDataSetChanged();
         } else {
@@ -86,7 +105,7 @@ public class SearchAdapter extends BaseSearchAdapter {
                         searchTimer.cancel();
                         searchTimer = null;
                     } catch (Exception e) {
-                        FileLog.e("tmessages", e);
+                        FileLog.e(e);
                     }
                     processSearch(query);
                 }
@@ -99,7 +118,7 @@ public class SearchAdapter extends BaseSearchAdapter {
             @Override
             public void run() {
                 if (allowUsernameSearch) {
-                    queryServerSearch(query, allowChats, allowBots);
+                    searchAdapterHelper.queryServerSearch(query, allowChats, allowBots, true);
                 }
                 final ArrayList<TLRPC.TL_contact> contactsCopy = new ArrayList<>();
                 contactsCopy.addAll(ContactsController.getInstance().contacts);
@@ -176,19 +195,14 @@ public class SearchAdapter extends BaseSearchAdapter {
     }
 
     @Override
-    public boolean areAllItemsEnabled() {
-        return false;
+    public boolean isEnabled(RecyclerView.ViewHolder holder) {
+        return holder.getAdapterPosition() != searchResult.size();
     }
 
     @Override
-    public boolean isEnabled(int i) {
-        return i != searchResult.size();
-    }
-
-    @Override
-    public int getCount() {
+    public int getItemCount() {
         int count = searchResult.size();
-        int globalCount = globalSearch.size();
+        int globalCount = searchAdapterHelper.getGlobalSearch().size();
         if (globalCount != 0) {
             count += globalCount + 1;
         }
@@ -197,7 +211,7 @@ public class SearchAdapter extends BaseSearchAdapter {
 
     public boolean isGlobalSearch(int i) {
         int localCount = searchResult.size();
-        int globalCount = globalSearch.size();
+        int globalCount = searchAdapterHelper.getGlobalSearch().size();
         if (i >= 0 && i < localCount) {
             return false;
         } else if (i > localCount && i <= globalCount + localCount) {
@@ -206,37 +220,22 @@ public class SearchAdapter extends BaseSearchAdapter {
         return false;
     }
 
-    @Override
     public TLObject getItem(int i) {
         int localCount = searchResult.size();
-        int globalCount = globalSearch.size();
+        int globalCount = searchAdapterHelper.getGlobalSearch().size();
         if (i >= 0 && i < localCount) {
             return searchResult.get(i);
         } else if (i > localCount && i <= globalCount + localCount) {
-            return globalSearch.get(i - localCount - 1);
+            return searchAdapterHelper.getGlobalSearch().get(i - localCount - 1);
         }
         return null;
     }
 
     @Override
-    public long getItemId(int i) {
-        return i;
-    }
-
-    @Override
-    public boolean hasStableIds() {
-        return true;
-    }
-
-    @Override
-    public View getView(int i, View view, ViewGroup viewGroup) {
-        if (i == searchResult.size()) {
-            if (view == null) {
-                view = new GreySectionCell(mContext);
-                ((GreySectionCell) view).setText(LocaleController.getString("GlobalSearch", R.string.GlobalSearch));
-            }
-        } else {
-            if (view == null) {
+    public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+        View view;
+        switch (viewType) {
+            case 0:
                 if (useUserCell) {
                     view = new UserCell(mContext, 1, 1, false);
                     if (checkedMap != null) {
@@ -245,9 +244,20 @@ public class SearchAdapter extends BaseSearchAdapter {
                 } else {
                     view = new ProfileSearchCell(mContext);
                 }
-            }
+                break;
+            case 1:
+            default:
+                view = new GraySectionCell(mContext);
+                ((GraySectionCell) view).setText(LocaleController.getString("GlobalSearch", R.string.GlobalSearch));
+                break;
+        }
+        return new RecyclerListView.Holder(view);
+    }
 
-            TLObject object = getItem(i);
+    @Override
+    public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
+        if (holder.getItemViewType() == 0) {
+            TLObject object = getItem(position);
             if (object != null) {
                 int id = 0;
                 String un = null;
@@ -261,46 +271,48 @@ public class SearchAdapter extends BaseSearchAdapter {
 
                 CharSequence username = null;
                 CharSequence name = null;
-                if (i < searchResult.size()) {
-                    name = searchResultNames.get(i);
+                if (position < searchResult.size()) {
+                    name = searchResultNames.get(position);
                     if (name != null && un != null && un.length() > 0) {
                         if (name.toString().startsWith("@" + un)) {
                             username = name;
                             name = null;
                         }
                     }
-                } else if (i > searchResult.size() && un != null) {
-                    String foundUserName = lastFoundUsername;
+                } else if (position > searchResult.size() && un != null) {
+                    String foundUserName = searchAdapterHelper.getLastFoundUsername();
                     if (foundUserName.startsWith("@")) {
                         foundUserName = foundUserName.substring(1);
                     }
                     try {
-                        username = AndroidUtilities.replaceTags(String.format("<c#ff4d83b3>@%s</c>%s", un.substring(0, foundUserName.length()), un.substring(foundUserName.length())));
+                        username = new SpannableStringBuilder(un);
+                        ((SpannableStringBuilder) username).setSpan(new ForegroundColorSpan(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText4)), 0, foundUserName.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                     } catch (Exception e) {
                         username = un;
-                        FileLog.e("tmessages", e);
+                        FileLog.e(e);
                     }
                 }
 
                 if (useUserCell) {
-                    ((UserCell) view).setData(object, name, username, 0);
+                    UserCell userCell = (UserCell) holder.itemView;
+                    userCell.setData(object, name, username, 0);
                     if (checkedMap != null) {
-                        ((UserCell) view).setChecked(checkedMap.containsKey(id), false);
+                        userCell.setChecked(checkedMap.containsKey(id), false);
                     }
                 } else {
-                    ((ProfileSearchCell) view).setData(object, null, name, username, false);
-                    ((ProfileSearchCell) view).useSeparator = (i != getCount() - 1 && i != searchResult.size() - 1);
-                    if (ignoreUsers != null) {
+                    ProfileSearchCell profileSearchCell = (ProfileSearchCell) holder.itemView;
+                    profileSearchCell.setData(object, null, name, username, false);
+                    profileSearchCell.useSeparator = (position != getItemCount() - 1 && position != searchResult.size() - 1);
+                    /*if (ignoreUsers != null) {
                         if (ignoreUsers.containsKey(id)) {
-                            ((ProfileSearchCell) view).drawAlpha = 0.5f;
+                            profileSearchCell.drawAlpha = 0.5f;
                         } else {
-                            ((ProfileSearchCell) view).drawAlpha = 1.0f;
+                            profileSearchCell.drawAlpha = 1.0f;
                         }
-                    }
+                    }*/
                 }
             }
         }
-        return view;
     }
 
     @Override
@@ -309,15 +321,5 @@ public class SearchAdapter extends BaseSearchAdapter {
             return 1;
         }
         return 0;
-    }
-
-    @Override
-    public int getViewTypeCount() {
-        return 2;
-    }
-
-    @Override
-    public boolean isEmpty() {
-        return searchResult.isEmpty() && globalSearch.isEmpty();
     }
 }
