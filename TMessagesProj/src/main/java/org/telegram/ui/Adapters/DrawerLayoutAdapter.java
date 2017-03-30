@@ -14,6 +14,7 @@ import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.Constants;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
@@ -89,6 +90,12 @@ public class DrawerLayoutAdapter extends BaseAdapter {
                 actionCell.setTextAndIcon(LocaleController.getString("NewGroup", R.string.NewGroup), R.drawable.menu_newgroup);
             } else if (i == 3) {
                 actionCell.setTextAndIcon(LocaleController.getString("NewSecretChat", R.string.NewSecretChat), R.drawable.menu_secret);
+                /* CloudVeil Start */
+                if (Constants.LOCK_DISABLE_SECRET_CHAT) {
+                    actionCell.setEnabled(false);
+                    actionCell.setVisibility(View.GONE);
+                }
+                /* CloudVeil End */
             } else if (i == 4) {
                 actionCell.setTextAndIcon(LocaleController.getString("NewChannel", R.string.NewChannel), R.drawable.menu_broadcast);
             } else if (i == 6) {

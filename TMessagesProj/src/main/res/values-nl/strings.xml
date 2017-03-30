@@ -3,8 +3,8 @@
 <!--https://www.transifex.com/projects/p/telegram/language/nl/members/-->
 
 <resources>
-    <string name="AppName">Telegram</string>
-    <string name="AppNameBeta">Telegram-bèta</string>
+    <string name="AppName">CloudVeil Messenger</string>
+    <string name="AppNameBeta">CloudVeil Messenger-bèta</string>
     <string name="LanguageName">Nederlands</string>
     <string name="LanguageNameInEnglish">Dutch</string>
     <string name="LanguageCode">nl</string>
@@ -16,8 +16,8 @@
     <!--code enter view-->
     <string name="YourCode">Telefoonverificatie</string>
     <string name="SentSmsCode">We hebben een sms-bericht met activatiecode verzonden naar <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>.</string>
-    <string name="SentAppCode">We hebben de code naar je andere  <![CDATA[<b>]]>Telegram<![CDATA[</b>]]>-app gestuurd.</string>
-    <string name="SentCallCode">We doen een activatie-oproep naar <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>.\n\nNeem niet op, Telegram verwerkt de oproep automatisch.</string>
+    <string name="SentAppCode">We hebben de code naar je andere  <![CDATA[<b>]]>CloudVeil Messenger<![CDATA[</b>]]>-app gestuurd.</string>
+    <string name="SentCallCode">We doen een activatie-oproep naar <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>.\n\nNeem niet op, CloudVeil Messenger verwerkt de oproep automatisch.</string>
     <string name="SentCallOnly">We bellen je op <![CDATA[<b>]]>%1$s<![CDATA[</b>]]> om een code te dicteren.</string>
     <string name="CallText">We bellen je over %1$d:%2$02d</string>
     <string name="SmsText">We sturen je een SMS over %1$d:%2$02d</string>
@@ -26,7 +26,7 @@
     <string name="WrongNumber">Verkeerd nummer?</string>
     <string name="DidNotGetTheCode">Geen code ontvangen?</string>
     <string name="CancelAccountReset">Account reset annuleren</string>
-    <string name="CancelAccountResetInfo">Iemand met toegang tot nummer <![CDATA[<b>]]>%1$s<![CDATA[</b>]]> heeft geprobeerd om je Telegram account te verwijderen en je twee-staps-verificatie wachtwoord te resetten.\n\nAls jij dit niet was, geef dan de code in die we zojuist per SMS hebben gestuurd.</string>
+    <string name="CancelAccountResetInfo">Iemand met toegang tot nummer <![CDATA[<b>]]>%1$s<![CDATA[</b>]]> heeft geprobeerd om je CloudVeil Messenger account te verwijderen en je twee-staps-verificatie wachtwoord te resetten.\n\nAls jij dit niet was, geef dan de code in die we zojuist per SMS hebben gestuurd.</string>
     <string name="ResetAccount">Account resetten</string>
     <string name="ResetAccountInfo">Account <![CDATA[<b>]]>%1$s<![CDATA[</b>]]> is actief en beveiligd met een wachtwoord, het verwijderen stellen we daarom 1 week uit.\n\nJe kunt dit proces ieder moment annuleren.</string>
     <string name="ResetAccountStatus">Je account kan gereset worden over:</string>
@@ -65,7 +65,7 @@
     <string name="HiddenName">Verwijderd account</string>
     <string name="SelectChat">Kies een chat</string>
     <string name="PhotoTip">Druk en houd ingedrukt</string>
-    <string name="CompatibilityChat">%1$s gebruikt een oudere versie van Telegram, dus worden geheime foto\'s weergegeven in de compatibiliteitsmodus.\n\nZodra %2$s Telegram updatet werken foto\'s met timers voor 1 minuut of minder in de \'Druk en houd ingedrukt\'-modus en krijg je een bericht wanneer de andere partij een schermafdruk maakt.</string>
+    <string name="CompatibilityChat">%1$s gebruikt een oudere versie van CloudVeil Messenger, dus worden geheime foto\'s weergegeven in de compatibiliteitsmodus.\n\nZodra %2$s CloudVeil Messenger updatet werken foto\'s met timers voor 1 minuut of minder in de \'Druk en houd ingedrukt\'-modus en krijg je een bericht wanneer de andere partij een schermafdruk maakt.</string>
     <string name="SearchMessages">BERICHTEN</string>
     <string name="Search">Zoeken</string>
     <string name="MuteNotifications">Meldingen stil</string>
@@ -185,7 +185,7 @@
     <string name="ChannelRemoveUserAdmin">Verwijder</string>
     <string name="ChannelMembersInfo">Alleen kanaal-beheerders zien deze lijst.</string>
     <string name="ChannelAdminNotParticipant">Deze gebruiker is nog geen lid, uitnodigen?</string>
-    <string name="ChannelLinkInfo">Andere Telegram-gebruikers kunnen lid worden van je groep door deze link te openen.</string>
+    <string name="ChannelLinkInfo">Andere CloudVeil Messenger-gebruikers kunnen lid worden van je groep door deze link te openen.</string>
     <string name="ChannelAdminsInfo">Je kunt beheerders toevoegen om je te helpen je kanaal te beheren. Druk en houd ingedrukt om beheerders te verwijderen.</string>
     <string name="ChannelJoinTo">Lid worden van kanaal \'%1$s\'?</string>
     <string name="ChannelCantOpenPrivate">Sorry, deze chat is niet beschikbaar.</string>
@@ -274,7 +274,7 @@
     <string name="SendingPhoto">foto versturen</string>
     <string name="SendingVideoStatus">video versturen</string>
     <string name="SendingFile">bestand versturen</string>
-    <string name="GotAQuestion">Heb je een vraag\nover Telegram?</string>
+    <string name="GotAQuestion">Heb je een vraag\nover CloudVeil Messenger?</string>
     <string name="ChatTakePhoto">Foto maken</string>
     <string name="ChatGallery">Galerij</string>
     <string name="ChatLocation">Locatie</string>
@@ -399,8 +399,8 @@
     <string name="NotificationGroupKickMember">%1$s heeft %3$s verwijderd uit de groep %2$s</string>
     <string name="NotificationGroupKickYou">%1$s heeft je verwijderd uit de groep %2$s</string>
     <string name="NotificationGroupLeftMember">%1$s heeft de groep %2$s verlaten</string>
-    <string name="NotificationContactJoined">%1$s heeft nu Telegram!</string>
-    <string name="NotificationUnrecognizedDevice">%1$s,\nEr is op je account ingelogd vanaf een nieuw apparaat op %2$s\n\nApparaat: %3$s\nLocatie: %4$s\n\nAls jij dit niet was, kun je die sessie beëindigen via Instellingen - Privacy en veiligheid - Sessies.\n\nAls je dat denkt dat iemand anders zonder jouw toestemming is ingelogd kun je twee-staps-verificatie activeren via instellingen - privacy en veiligheid.\n\nBedankt,\nHet Telegram-team</string>
+    <string name="NotificationContactJoined">%1$s heeft nu CloudVeil Messenger!</string>
+    <string name="NotificationUnrecognizedDevice">%1$s,\nEr is op je account ingelogd vanaf een nieuw apparaat op %2$s\n\nApparaat: %3$s\nLocatie: %4$s\n\nAls jij dit niet was, kun je die sessie beëindigen via Instellingen - Privacy en veiligheid - Sessies.\n\nAls je dat denkt dat iemand anders zonder jouw toestemming is ingelogd kun je twee-staps-verificatie activeren via instellingen - privacy en veiligheid.\n\nBedankt,\nHet CloudVeil Messenger-team</string>
     <string name="NotificationContactNewPhoto">%1$s heeft zijn/haar profielfoto gewijzigd</string>
     <string name="NotificationInvitedToGroupByLink">%1$s is nu lid van de groep %2$s via uitnodigingslink</string>
     <string name="Reply">Antwoord</string>
@@ -436,7 +436,7 @@
     <!--contacts view-->
     <string name="SelectContact">Contact kiezen</string>
     <string name="NoContacts">Nog geen contacten</string>
-    <string name="InviteText">Hey, zullen we overstappen op Telegram: https://telegram.org/dl</string>
+    <string name="InviteText">Hey, zullen we overstappen op CloudVeil Messenger: https://telegram.org/dl</string>
     <string name="TodayAt">om</string>
     <string name="YesterdayAt">gisteren om</string>
     <string name="Online">online</string>
@@ -470,7 +470,7 @@
     <string name="RevokeLinkAlertChannel">Link <![CDATA[<b>]]>%1$s<![CDATA[</b>]]> echt intrekken?\n\nHet kanaal \"<![CDATA[<b>]]>%2$s<![CDATA[</b>]]>\" zal privé worden.</string>
     <string name="CopyLink">Link kopiëren</string>
     <string name="ShareLink">Link delen</string>
-    <string name="LinkInfo">Andere Telegram-gebruikers kunnen lid worden van je groep door deze link te openen.</string>
+    <string name="LinkInfo">Andere CloudVeil Messenger-gebruikers kunnen lid worden van je groep door deze link te openen.</string>
     <!--set admins view-->
     <string name="SetAdminsTitle">Beheerders</string>
     <string name="SetAdminsAll">Iedereen is beheerder</string>
@@ -524,7 +524,7 @@
     <string name="UsernameInvalidShort">Je naam moet minimaal 5 tekens hebben.</string>
     <string name="UsernameInvalidLong">Je naam mag niet langer zijn dan 32 tekens.</string>
     <string name="UsernameInvalidStartNumber">Sorry, begincijfers zijn niet toegestaan.</string>
-    <string name="UsernameHelp">Je kan een gebruikersnaam kiezen voor <![CDATA[<b>]]>Telegram<![CDATA[</b>]]>. Hiermee kunnen anderen je vinden en contact met je opnemen zonder je telefoonnummer te weten.<![CDATA[<br><br>]]>Je mag <![CDATA[<b>]]>a–z<![CDATA[</b>]]>, <![CDATA[<b>]]>0–9<![CDATA[</b>]]> en liggend streepje gebruiken. De minimale lengte is <![CDATA[<b>]]>5<![CDATA[</b>]]> tekens.</string>
+    <string name="UsernameHelp">Je kan een gebruikersnaam kiezen voor <![CDATA[<b>]]>CloudVeil Messenger<![CDATA[</b>]]>. Hiermee kunnen anderen je vinden en contact met je opnemen zonder je telefoonnummer te weten.<![CDATA[<br><br>]]>Je mag <![CDATA[<b>]]>a–z<![CDATA[</b>]]>, <![CDATA[<b>]]>0–9<![CDATA[</b>]]> en liggend streepje gebruiken. De minimale lengte is <![CDATA[<b>]]>5<![CDATA[</b>]]> tekens.</string>
     <string name="UsernameChecking">Gebruikersnaam controleren.</string>
     <string name="UsernameAvailable">%1$s is beschikbaar.</string>
     <string name="UsernameEmpty">Geen</string>
@@ -549,7 +549,7 @@
     <string name="Masks">Maskers</string>
     <string name="MasksInfo">Je kunt maskers toevoegen aan foto\'s , gebruik de fotobewerkingsoptie en verstuur ze.</string>
     <string name="FeaturedStickers">Populaire stickers</string>
-    <string name="FeaturedStickersInfo">Deze stickers zijn momenteel populair op Telegram. Just kunt persoonlijke stickers toevoegen via de @stickers bot.</string>
+    <string name="FeaturedStickersInfo">Deze stickers zijn momenteel populair op CloudVeil Messenger. Just kunt persoonlijke stickers toevoegen via de @stickers bot.</string>
     <string name="ArchivedStickers">Gearchiveerde stickers</string>
     <string name="ArchivedMasks">Gearchiveerde maskers</string>
     <string name="ArchivedStickersEmpty">Geen gearchiveerde stickers</string>
@@ -594,10 +594,10 @@
     <string name="SendByEnter">Versturen met Enter</string>
     <string name="TerminateAllSessions">Beëindig alle andere sessies</string>
     <string name="Events">Gebeurtenissen</string>
-    <string name="ContactJoined">Contact lid van Telegram</string>
+    <string name="ContactJoined">Contact lid van CloudVeil Messenger</string>
     <string name="PinnedMessages">Vastgezette berichten</string>
     <string name="Language">Taal</string>
-    <string name="AskAQuestionInfo">De ondersteuning van Telegram wordt gedaan door vrijwilligers. We doen ons best om zo snel mogelijk te antwoorden.<![CDATA[<br><br>]]>Bekijk ook de <![CDATA[<a href=\"https://telegram.org/faq#general\">veelgestelde vragen</a>]]>: Hier staan de antwoorden op de meeste vragen en belangrijke tips voor <![CDATA[<a href=\"https://telegram.org/faq#troubleshooting\">het oplossen van problemen</a>]]>.</string>
+    <string name="AskAQuestionInfo">De ondersteuning van CloudVeil Messenger wordt gedaan door vrijwilligers. We doen ons best om zo snel mogelijk te antwoorden.<![CDATA[<br><br>]]>Bekijk ook de <![CDATA[<a href=\"https://telegram.org/faq#general\">veelgestelde vragen</a>]]>: Hier staan de antwoorden op de meeste vragen en belangrijke tips voor <![CDATA[<a href=\"https://telegram.org/faq#troubleshooting\">het oplossen van problemen</a>]]>.</string>
     <string name="AskButton">Vraag een vrijwilliger</string>
     <string name="TelegramFaq">Veelgestelde vragen</string>
     <string name="TelegramFaqUrl">https://telegram.org/faq</string>
@@ -642,12 +642,12 @@
     <string name="NotificationsPriorityMax">Max</string>
     <string name="RepeatNotificationsNever">Nooit</string>
     <string name="RepeatNotifications">Meldingen herhalen</string>
-    <string name="PhoneNumberHelp">Je kan je telefoonnummer hier wijzigen. Al je clouddata — berichten, bestanden, groepen, contacten, etc. zullen worden gekopieërd naar je nieuwe nummer.\n\n<![CDATA[<b>Let op:</b>]]> al je Telegram-contacten krijgen je  <![CDATA[<b>nieuwe nummer</b>]]> in hun adresboek, ervan uitgaande dat ze je oude nummer hadden en je hen niet had geblokkeerd in Telegram.</string>
-    <string name="PhoneNumberAlert">Al je Telegram-contacten krijgen je nieuwe nummer in hun adresboek, ervan uitgaande dat ze je oude nummer hadden en je hen niet had geblokkeerd in Telegram.</string>
+    <string name="PhoneNumberHelp">Je kan je telefoonnummer hier wijzigen. Al je clouddata — berichten, bestanden, groepen, contacten, etc. zullen worden gekopieërd naar je nieuwe nummer.\n\n<![CDATA[<b>Let op:</b>]]> al je CloudVeil Messenger-contacten krijgen je  <![CDATA[<b>nieuwe nummer</b>]]> in hun adresboek, ervan uitgaande dat ze je oude nummer hadden en je hen niet had geblokkeerd in CloudVeil Messenger.</string>
+    <string name="PhoneNumberAlert">Al je CloudVeil Messenger-contacten krijgen je nieuwe nummer in hun adresboek, ervan uitgaande dat ze je oude nummer hadden en je hen niet had geblokkeerd in CloudVeil Messenger.</string>
     <string name="PhoneNumberChange">NUMMER WIJZIGEN</string>
     <string name="ChangePhoneNewNumber">Nieuw nummer</string>
     <string name="ChangePhoneHelp">We sturen een sms-bericht met verificatiecode naar je nieuwe nummer.</string>
-    <string name="ChangePhoneNumberOccupied">Aan telefoonnummer %1$s is al een Telegram-account gekoppeld. Verwijder het account om te kunnen migreren naar het nieuwe nummer.</string>
+    <string name="ChangePhoneNumberOccupied">Aan telefoonnummer %1$s is al een CloudVeil Messenger-account gekoppeld. Verwijder het account om te kunnen migreren naar het nieuwe nummer.</string>
     <string name="NotificationsOther">Overig</string>
     <string name="NotificationsDisabled">Uitgeschakeld</string>
     <string name="VibrationDisabled">Uitgeschakeld</string>
@@ -676,7 +676,7 @@
     <string name="CacheSettings">Cache-instellingen</string>
     <string name="LocalDatabase">Lokale database</string>
     <string name="LocalDatabaseClear">Gecachet tekstberichten wissen?</string>
-    <string name="LocalDatabaseInfo">Het opschonen van de lokale database zal de tekst van gecachet berichten verwijderen en de database comprimeren om ruimte te besparen. Telegram heeft wat ruimte nodig om te kunnen functioneren, dus de databasegrootte zal nooit nul worden.\n\nDit kan enkele minuten duren.</string>
+    <string name="LocalDatabaseInfo">Het opschonen van de lokale database zal de tekst van gecachet berichten verwijderen en de database comprimeren om ruimte te besparen. CloudVeil Messenger heeft wat ruimte nodig om te kunnen functioneren, dus de databasegrootte zal nooit nul worden.\n\nDit kan enkele minuten duren.</string>
     <string name="ClearMediaCache">Cache opschonen</string>
     <string name="CacheClear">Opschonen</string>
     <string name="CalculatingSize">Berekenen...</string>
@@ -688,13 +688,13 @@
     <string name="LocalCache">Overige bestanden</string>
     <string name="CacheEmpty">Leeg</string>
     <string name="KeepMedia">Media bewaren</string>
-    <string name="KeepMediaInfo">Foto\'s, video\'s en andere bestanden uit cloudchats die je gedurende deze periode niet hebt  <![CDATA[<b>geopend</b>]]> zullen worden verwijderd van dit apparaat om ruimte te besparen.\n\nAlle media zal in de Telegram-cloud bewaard blijven en kan opnieuw worden gedownload als je het weer nodig hebt.</string>
+    <string name="KeepMediaInfo">Foto\'s, video\'s en andere bestanden uit cloudchats die je gedurende deze periode niet hebt  <![CDATA[<b>geopend</b>]]> zullen worden verwijderd van dit apparaat om ruimte te besparen.\n\nAlle media zal in de CloudVeil Messenger-cloud bewaard blijven en kan opnieuw worden gedownload als je het weer nodig hebt.</string>
     <string name="KeepMediaForever">Voor altijd</string>
     <!--sessions view-->
     <string name="SessionsTitle">Actieve sessies</string>
     <string name="CurrentSession">Huidige sessie</string>
     <string name="NoOtherSessions">Geen andere actieve sessies</string>
-    <string name="NoOtherSessionsInfo">Je kunt in Telegram inloggen vanaf andere apparaten (mobiel, tablet, desktop) met hetzelfde telefoonnummer. Al je data zal direct worden gesynchroniseerd.</string>
+    <string name="NoOtherSessionsInfo">Je kunt in CloudVeil Messenger inloggen vanaf andere apparaten (mobiel, tablet, desktop) met hetzelfde telefoonnummer. Al je data zal direct worden gesynchroniseerd.</string>
     <string name="OtherSessions">Actieve sessies</string>
     <string name="SessionsInfo">Beheer je sessies van andere apparaten.</string>
     <string name="TerminateSessionInfo">Tik op een sessie om deze te beëindigen.</string>
@@ -703,8 +703,8 @@
     <!--passcode view-->
     <string name="Passcode">Toegangscode-vergrendeling</string>
     <string name="ChangePasscode">Toegangscode wijzigen</string>
-    <string name="ChangePasscodeInfo">Als je een toegangscode instelt verschijnt er een slotje op de chatspagina. Tik erop om Telegram te vergrendelen of te ontgrendelen.\n\nLet op: vergeet je de toegangscode dan zul je de app moeten verwijderen en herinstalleren. Alle geheime chats gaan daarbij verloren.</string>
-    <string name="ChangePasscodeAlert">Je zult nu een slotje op de chatspagina zien. Tik erop om Telegram te vergrendelen met je nieuwe toegangscode.</string>
+    <string name="ChangePasscodeInfo">Als je een toegangscode instelt verschijnt er een slotje op de chatspagina. Tik erop om CloudVeil Messenger te vergrendelen of te ontgrendelen.\n\nLet op: vergeet je de toegangscode dan zul je de app moeten verwijderen en herinstalleren. Alle geheime chats gaan daarbij verloren.</string>
+    <string name="ChangePasscodeAlert">Je zult nu een slotje op de chatspagina zien. Tik erop om CloudVeil Messenger te vergrendelen met je nieuwe toegangscode.</string>
     <string name="PasscodePIN">PIN</string>
     <string name="PasscodePassword">Wachtwoord</string>
     <string name="EnterCurrentPasscode">Huidige toegangscode invoeren</string>
@@ -821,7 +821,7 @@
     <string name="YourEmailInfo">Voeg je geldige e-mailadres toe. Het is de enige manier om je wachtwoord te herstellen.</string>
     <string name="YourEmailSkip">Overslaan</string>
     <string name="YourEmailSkipWarning">Waarschuwing</string>
-    <string name="YourEmailSkipWarningText">Let op:\n\nAls je je wachtwoord vergeet verlies je toegang tot je Telegram-account. Er is geen optie om dit te herstellen.</string>
+    <string name="YourEmailSkipWarningText">Let op:\n\nAls je je wachtwoord vergeet verlies je toegang tot je CloudVeil Messenger-account. Er is geen optie om dit te herstellen.</string>
     <string name="YourEmailAlmostThere">Bijna klaar!</string>
     <string name="YourEmailAlmostThereText">Controleer je e-mail en klik op de bevestigingslink om de twee-staps-verificatie in te schakelen. Kijk voor de zekerheid ook in de ongewenste post.</string>
     <string name="YourPasswordSuccess">Gelukt!</string>
@@ -855,7 +855,7 @@
     <string name="PasswordRecovery">Wachtwoordherstel</string>
     <string name="PasswordCode">Code</string>
     <string name="PasswordReset">Wachtwoord uitgeschakeld</string>
-    <string name="EnabledPasswordText">Je hebt twee-staps-verificatie ingeschakeld.\nAls je inlogt op je Telegram-account heb je het ingestelde wachtwoord nodig.</string>
+    <string name="EnabledPasswordText">Je hebt twee-staps-verificatie ingeschakeld.\nAls je inlogt op je CloudVeil Messenger-account heb je het ingestelde wachtwoord nodig.</string>
     <string name="PendingEmailText">Je herstel-e-mailadres %1$s is nog niet actief en in afwachting van bevestiging.</string>
     <!--privacy settings-->
     <string name="PrivacySettings">Privacy en veiligheid</string>
@@ -967,7 +967,7 @@
     <string name="ActionAddUserSelf">un1 is terug in de groep</string>
     <string name="ActionAddUserSelfMega">un1 is lid van de groep</string>
     <string name="ActionAddUserSelfYou">Je keerde terug naar de groep</string>
-    <string name="UnsupportedMedia">Dit bericht wordt niet ondersteund door jouw versie van Telegram. Werk Telegram bij om dit bericht te bekijken: https://telegram.org/update</string>
+    <string name="UnsupportedMedia">Dit bericht wordt niet ondersteund door jouw versie van CloudVeil Messenger. Werk CloudVeil Messenger bij om dit bericht te bekijken: https://telegram.org/update</string>
     <string name="AttachPhoto">Foto</string>
     <string name="AttachVideo">Video</string>
     <string name="AttachGif">GIF</string>
@@ -993,7 +993,7 @@
     <string name="NoPlayerInstalled">Je hebt geen mediaspeler. Installeer een mediaspeler om door te gaan.</string>
     <string name="NoMailInstalled">E-mail ons op sms@stel.com en vertel ons over je probleem.</string>
     <string name="NoHandleAppInstalled">Je hebt geen apps die bestandstype \'%1$s\' kunnen verwerken, gelieve een compatibele app te installeren</string>
-    <string name="InviteUser">Deze gebruiker heeft nog geen Telegram. Wil je een uitnodiging sturen?</string>
+    <string name="InviteUser">Deze gebruiker heeft nog geen CloudVeil Messenger. Wil je een uitnodiging sturen?</string>
     <string name="AreYouSure">Weet je het zeker?</string>
     <string name="AddToTheGroupTitle">%1$s toevoegen aan de groep %2$s?</string>
     <string name="AddToTheGroupForwardCount">Aantal recente berichten om door te sturen:</string>
@@ -1003,7 +1003,7 @@
     <string name="SendMessagesTo">Berichten naar %1$s versturen?</string>
     <string name="SendGameTo">Spel delen met %1$s?</string>
     <string name="SendContactTo">Contact delen met %1$s?</string>
-    <string name="AreYouSureLogout">Weet je zeker dat je wilt uitloggen?\n\nTelegram kun je naadloos op al je apparaten tegelijkertijd gebruiken.\n\nLet op! Als je uitlogt worden al je geheime chats verwijderd.</string>
+    <string name="AreYouSureLogout">Weet je zeker dat je wilt uitloggen?\n\nCloudVeil Messenger kun je naadloos op al je apparaten tegelijkertijd gebruiken.\n\nLet op! Als je uitlogt worden al je geheime chats verwijderd.</string>
     <string name="AreYouSureSessions">Alle apparaten behalve het huidige apparaat uitloggen?</string>
     <string name="AreYouSureDeleteAndExit">Verwijderen en de groep verlaten?</string>
     <string name="AreYouSureDeleteThisChat">Chat echt verwijderen?</string>
@@ -1030,7 +1030,7 @@
     <string name="SendContactToGroup">Contact delen met %1$s?</string>
     <string name="ForwardMessagesToGroup">Berichten doorsturen naar %1$s?</string>
     <string name="FeatureUnavailable">Sorry, deze functie is momenteel niet beschikbaar in jouw land.</string>
-    <string name="NoUsernameFound">Er is geen Telegram-account met deze gebruikersnaam.</string>
+    <string name="NoUsernameFound">Er is geen CloudVeil Messenger-account met deze gebruikersnaam.</string>
     <string name="BotCantJoinGroups">Deze bot kan geen groepslid worden.</string>
     <string name="SecretLinkPreviewAlert">Wil je uitgebreide link-voorvertoning inschakelen voor geheime chats? Let op: deze worden gegenereerd op onze servers.</string>
     <string name="SecretChatContextBotAlert">Let op: inline-bots worden aangeboden door externe ontwikkelaars. Voor de werking van de bot worden de karakters die je na de botnaam typt naar deze ontwikkelaar verstuurd.</string>
@@ -1042,15 +1042,15 @@
     <string name="UserRestricted">Je mag deze actie niet uitvoeren.</string>
     <string name="JoinGroup">LID WORDEN</string>
     <!--permissions-->
-    <string name="PermissionContacts">Telegram heeft toegang tot je contacten nodig zodat je kan chatten met je vrienden vanaf al je apparaten.</string>
-    <string name="PermissionStorage">Telegram heeft toegang tot je opslaggeheugen nodig zodat je foto\'s, video\'s, muziek en andere media kunt opslaan en versturen.</string>
-    <string name="PermissionNoAudio">Telegram heeft toegang tot je microfoon nodig om spraakberichten te kunnen verzenden.</string>
-    <string name="PermissionNoCamera">Telegram heeft toegang tot je camera nodig zodat je foto\'s en video\'s kunt maken.</string>
-    <string name="PermissionNoLocation">Telegram heeft toegang tot je locatie nodig om deze te kunnen delen met je vrienden.</string>
-    <string name="PermissionNoLocationPosition">Telegram heeft toegang tot je locatie nodig.</string>
+    <string name="PermissionContacts">CloudVeil Messenger heeft toegang tot je contacten nodig zodat je kan chatten met je vrienden vanaf al je apparaten.</string>
+    <string name="PermissionStorage">CloudVeil Messenger heeft toegang tot je opslaggeheugen nodig zodat je foto\'s, video\'s, muziek en andere media kunt opslaan en versturen.</string>
+    <string name="PermissionNoAudio">CloudVeil Messenger heeft toegang tot je microfoon nodig om spraakberichten te kunnen verzenden.</string>
+    <string name="PermissionNoCamera">CloudVeil Messenger heeft toegang tot je camera nodig zodat je foto\'s en video\'s kunt maken.</string>
+    <string name="PermissionNoLocation">CloudVeil Messenger heeft toegang tot je locatie nodig om deze te kunnen delen met je vrienden.</string>
+    <string name="PermissionNoLocationPosition">CloudVeil Messenger heeft toegang tot je locatie nodig.</string>
     <string name="PermissionOpenSettings">INSTELLINGEN</string>
     <!--Intro view-->
-    <string name="Page1Title">Telegram</string>
+    <string name="Page1Title">CloudVeil Messenger</string>
     <string name="Page2Title">Snel</string>
     <string name="Page3Title">Gratis</string>
     <string name="Page4Title">Veilig</string>
@@ -1058,12 +1058,12 @@
     <string name="Page6Title">In de cloud</string>
     <string name="Page7Title">Privé</string>
     <string name="Page1Message">\'s Werelds <![CDATA[<b>snelste</b>]]> berichtendienst.<![CDATA[<br/>]]>Het is <![CDATA[<b>gratis</b>]]> en <![CDATA[<b>veilig</b>]]>.</string>
-    <string name="Page2Message"><![CDATA[<b>Telegram</b>]]> bezorgt berichten sneller dan<![CDATA[<br/>]]>elke andere applicatie.</string>
-    <string name="Page3Message"><![CDATA[<b>Telegram</b>]]> is altijd gratis. Geen advertenties.<![CDATA[<br/>]]>Geen abonnementskosten.</string>
-    <string name="Page4Message"><![CDATA[<b>Telegram</b>]]> beveiligd je berichten<![CDATA[<br/>]]>tegen aanvallen van hackers.</string>
-    <string name="Page5Message"><![CDATA[<b>Telegram</b>]]> beperkt je niet in de grootte van<![CDATA[<br/>]]>je media of chats.</string>
-    <string name="Page6Message"><![CDATA[<b>Telegram</b>]]> biedt toegang tot je berichten<![CDATA[<br/>]]>vanaf meerdere apparaten.</string>
-    <string name="Page7Message"><![CDATA[<b>Telegram</b>]]> berichten zijn sterk versleuteld<![CDATA[<br/>]]>en kunnen zichzelf vernietigen.</string>
+    <string name="Page2Message"><![CDATA[<b>CloudVeil Messenger</b>]]> bezorgt berichten sneller dan<![CDATA[<br/>]]>elke andere applicatie.</string>
+    <string name="Page3Message"><![CDATA[<b>CloudVeil Messenger</b>]]> is altijd gratis. Geen advertenties.<![CDATA[<br/>]]>Geen abonnementskosten.</string>
+    <string name="Page4Message"><![CDATA[<b>CloudVeil Messenger</b>]]> beveiligd je berichten<![CDATA[<br/>]]>tegen aanvallen van hackers.</string>
+    <string name="Page5Message"><![CDATA[<b>CloudVeil Messenger</b>]]> beperkt je niet in de grootte van<![CDATA[<br/>]]>je media of chats.</string>
+    <string name="Page6Message"><![CDATA[<b>CloudVeil Messenger</b>]]> biedt toegang tot je berichten<![CDATA[<br/>]]>vanaf meerdere apparaten.</string>
+    <string name="Page7Message"><![CDATA[<b>CloudVeil Messenger</b>]]> berichten zijn sterk versleuteld<![CDATA[<br/>]]>en kunnen zichzelf vernietigen.</string>
     <string name="StartMessaging">Begin met chatten</string>
     <!--plural-->
     <string name="Online_zero">%1$d online</string>

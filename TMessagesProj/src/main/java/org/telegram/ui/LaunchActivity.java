@@ -47,6 +47,7 @@ import android.widget.Toast;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.ChatObject;
+import org.telegram.messenger.Constants;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.ImageLoader;
 import org.telegram.messenger.MessageObject;
@@ -85,6 +86,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import com.crashlytics.android.Crashlytics;
+import io.fabric.sdk.android.Fabric;
 
 public class LaunchActivity extends Activity implements ActionBarLayout.ActionBarLayoutDelegate, NotificationCenter.NotificationCenterDelegate, DialogsActivity.DialogsActivityDelegate {
 
@@ -125,6 +129,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        Fabric.with(this, new Crashlytics());
         ApplicationLoader.postInitApplication();
         NativeCrashManager.handleDumpFiles(this);
         AndroidUtilities.checkDisplaySize(this, getResources().getConfiguration());
@@ -344,13 +349,17 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                     presentFragment(new GroupCreateActivity());
                     drawerLayoutContainer.closeDrawer(false);
                 } else if (position == 3) {
-                    Bundle args = new Bundle();
-                    args.putBoolean("onlyUsers", true);
-                    args.putBoolean("destroyAfterSelect", true);
-                    args.putBoolean("createSecretChat", true);
-                    args.putBoolean("allowBots", false);
-                    presentFragment(new ContactsActivity(args));
-                    drawerLayoutContainer.closeDrawer(false);
+                    //CloudVeil Start
+                    if (!Constants.LOCK_DISABLE_SECRET_CHAT) {
+                        Bundle args = new Bundle();
+                        args.putBoolean("onlyUsers", true);
+                        args.putBoolean("destroyAfterSelect", true);
+                        args.putBoolean("createSecretChat", true);
+                        args.putBoolean("allowBots", false);
+                        presentFragment(new ContactsActivity(args));
+                        drawerLayoutContainer.closeDrawer(false);
+                    }
+                    //CloudVeil End
                 } else if (position == 4) {
                     if (!MessagesController.isFeatureEnabled("broadcast_create", actionBarLayout.fragmentsStack.get(actionBarLayout.fragmentsStack.size() - 1))) {
                         return;

@@ -44,6 +44,7 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.AnimatorListenerAdapterProxy;
 import org.telegram.messenger.ChatObject;
+import org.telegram.messenger.Constants;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.SecretChatHelper;
@@ -2467,8 +2468,12 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     } else if (i == settingsNotificationsRow) {
                         textCell.setTextAndIcon(LocaleController.getString("NotificationsAndSounds", R.string.NotificationsAndSounds), R.drawable.profile_list);
                     } else if (i == startSecretChatRow) {
-                        textCell.setText(LocaleController.getString("StartEncryptedChat", R.string.StartEncryptedChat));
-                        textCell.setTextColor(0xff37a919);
+                        //CloudVeil Start
+                        if (!Constants.LOCK_DISABLE_SECRET_CHAT) {
+                            textCell.setText(LocaleController.getString("StartEncryptedChat", R.string.StartEncryptedChat));
+                            textCell.setTextColor(0xff37a919);
+                        }
+                        //CloudVeil. End
                     } else if (i == settingsKeyRow) {
                         IdenticonDrawable identiconDrawable = new IdenticonDrawable();
                         TLRPC.EncryptedChat encryptedChat = MessagesController.getInstance().getEncryptedChat((int)(dialog_id >> 32));

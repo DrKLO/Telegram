@@ -1,7 +1,18 @@
+buildscript {
+    repositories {
+        maven { url 'https://maven.fabric.io/public' }
+    }
+
+    dependencies {
+        classpath 'io.fabric.tools:gradle:1.+'
+    }
+}
 apply plugin: 'com.android.application'
+apply plugin: 'io.fabric'
 
 repositories {
     mavenCentral()
+    maven { url 'https://maven.fabric.io/public' }
 }
 
 configurations {
@@ -17,11 +28,14 @@ dependencies {
     compile 'com.android.support:support-core-utils:24.2.1'
     compile 'net.hockeyapp.android:HockeySDK:4.0.1'
     compile 'com.googlecode.mp4parser:isoparser:1.0.6'
+    compile('com.crashlytics.sdk.android:crashlytics:2.6.7@aar') {
+        transitive = true;
+    }
 }
 
 android {
     compileSdkVersion 24
-    buildToolsVersion '24.0.2'
+    buildToolsVersion '24.0.3'
 
     useLibrary 'org.apache.http.legacy'
     defaultConfig.applicationId = "org.cloudveil.messenger"
@@ -80,7 +94,7 @@ android {
         }
     }
 
-    defaultConfig.versionCode = 851
+    defaultConfig.versionCode = 853
 
     sourceSets.debug {
         manifest.srcFile 'config/debug/AndroidManifest.xml'

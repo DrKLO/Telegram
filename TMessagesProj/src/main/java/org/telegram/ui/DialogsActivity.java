@@ -41,6 +41,7 @@ import android.widget.TextView;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ChatObject;
+import org.telegram.messenger.Constants;
 import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.ImageLoader;
 import org.telegram.messenger.LocaleController;
@@ -367,10 +368,14 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                         }
                     } else if (obj instanceof TLRPC.Chat) {
                         if (dialogsSearchAdapter.isGlobalSearch(position)) {
-                            ArrayList<TLRPC.Chat> chats = new ArrayList<>();
-                            chats.add((TLRPC.Chat) obj);
-                            MessagesController.getInstance().putChats(chats, false);
-                            MessagesStorage.getInstance().putUsersAndChats(null, chats, false, true);
+                            //CloudVeil Start
+                            if (Constants.LOCK_DISABLE_GLOBAL_SEARCH) {
+                                ArrayList<TLRPC.Chat> chats = new ArrayList<>();
+                                chats.add((TLRPC.Chat) obj);
+                                MessagesController.getInstance().putChats(chats, false);
+                                MessagesStorage.getInstance().putUsersAndChats(null, chats, false, true);
+                            }
+                            //CloudVeil End
                         }
                         if (((TLRPC.Chat) obj).id > 0) {
                             dialog_id = -((TLRPC.Chat) obj).id;

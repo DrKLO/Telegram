@@ -11,6 +11,7 @@ package org.telegram.ui.Adapters;
 import org.telegram.SQLite.SQLiteCursor;
 import org.telegram.SQLite.SQLitePreparedStatement;
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.Constants;
 import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.support.widget.RecyclerView;
 import org.telegram.messenger.FileLog;
@@ -69,11 +70,19 @@ public abstract class BaseSearchAdapterRecycler extends RecyclerView.Adapter {
                                 globalSearch.clear();
                                 if (allowChats) {
                                     for (int a = 0; a < res.chats.size(); a++) {
-                                        globalSearch.add(res.chats.get(a));
+                                        //CloudVeil Start
+                                        if (!Constants.LOCK_DISABLE_GLOBAL_SEARCH) {
+                                            globalSearch.add(res.chats.get(a));
+                                        }
+                                        //CloudVeil End
                                     }
                                 }
                                 for (int a = 0; a < res.users.size(); a++) {
-                                    globalSearch.add(res.users.get(a));
+                                    //CloudVeil Start
+                                    if (!Constants.LOCK_DISABLE_GLOBAL_SEARCH) {
+                                        globalSearch.add(res.users.get(a));
+                                    }
+                                    //CloudVeil End
                                 }
                                 lastFoundUsername = query;
                                 notifyDataSetChanged();

@@ -53,6 +53,7 @@ import android.widget.Toast;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.AnimatorListenerAdapterProxy;
 import org.telegram.PhoneFormat.PhoneFormat;
+import org.telegram.messenger.Constants;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.MediaController;
 import org.telegram.messenger.UserObject;
@@ -456,20 +457,28 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                         ((TextCheckCell) view).setChecked(MediaController.getInstance().canRaiseToSpeak());
                     }
                 } else if (position == autoplayGifsRow) {
-                    MediaController.getInstance().toggleAutoplayGifs();
-                    if (view instanceof TextCheckCell) {
-                        ((TextCheckCell) view).setChecked(MediaController.getInstance().canAutoplayGifs());
+                    //CloudVeil Start
+                    if (!Constants.LOCK_DISABLE_AUTOPLAY_GIFS) {
+                        MediaController.getInstance().toggleAutoplayGifs();
+                        if (view instanceof TextCheckCell) {
+                            ((TextCheckCell) view).setChecked(MediaController.getInstance().canAutoplayGifs());
+                        }
                     }
+                    //CloudVeil End
                 } else if (position == saveToGalleryRow) {
                     MediaController.getInstance().toggleSaveToGallery();
                     if (view instanceof TextCheckCell) {
                         ((TextCheckCell) view).setChecked(MediaController.getInstance().canSaveToGallery());
                     }
                 } else if (position == customTabsRow) {
-                    MediaController.getInstance().toggleCustomTabs();
-                    if (view instanceof TextCheckCell) {
-                        ((TextCheckCell) view).setChecked(MediaController.getInstance().canCustomTabs());
+                    //CloudVeil Start
+                    if (!Constants.LOCK_DISABLE_IN_APP_BROWSER) {
+                        MediaController.getInstance().toggleCustomTabs();
+                        if (view instanceof TextCheckCell) {
+                            ((TextCheckCell) view).setChecked(MediaController.getInstance().canCustomTabs());
+                        }
                     }
+                    //CloudVeil End
                 } else if(position == directShareRow) {
                     MediaController.getInstance().toggleDirectShare();
                     if (view instanceof TextCheckCell) {
@@ -1330,10 +1339,20 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                         textCell.setTextAndCheck(LocaleController.getString("SaveToGallerySettings", R.string.SaveToGallerySettings), MediaController.getInstance().canSaveToGallery(), false);
                     } else if (position == autoplayGifsRow) {
                         textCell.setTextAndCheck(LocaleController.getString("AutoplayGifs", R.string.AutoplayGifs), MediaController.getInstance().canAutoplayGifs(), true);
+                        /*CloudVeil Change Start */
+                        if (Constants.LOCK_DISABLE_AUTOPLAY_GIFS) {
+                            textCell.setEnabled(false);
+                        }
+                        /*CloudVeil Change End */
                     } else if (position == raiseToSpeakRow) {
                         textCell.setTextAndCheck(LocaleController.getString("RaiseToSpeak", R.string.RaiseToSpeak), MediaController.getInstance().canRaiseToSpeak(), true);
                     } else if (position == customTabsRow) {
                         textCell.setTextAndValueAndCheck(LocaleController.getString("ChromeCustomTabs", R.string.ChromeCustomTabs), LocaleController.getString("ChromeCustomTabsInfo", R.string.ChromeCustomTabsInfo), MediaController.getInstance().canCustomTabs(), false, true);
+                        /*CloudVeil Change Start */
+                        if (Constants.LOCK_DISABLE_IN_APP_BROWSER) {
+                            textCell.setEnabled(false);
+                        }
+                        /*CloudVeil Change End */
                     } else if (position == directShareRow) {
                         textCell.setTextAndValueAndCheck(LocaleController.getString("DirectShare", R.string.DirectShare), LocaleController.getString("DirectShareInfo", R.string.DirectShareInfo), MediaController.getInstance().canDirectShare(), false, true);
                     }

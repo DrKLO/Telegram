@@ -16,7 +16,7 @@
     <!--code enter view-->
     <string name="YourCode">휴대폰 인증</string>
     <string name="SentSmsCode">인증코드 문자를 전송하였습니다.<![CDATA[<b>]]>%1$s<![CDATA[</b>]]>.</string>
-    <string name="SentAppCode">회원님 기기에 설치된 <![CDATA[<b>]]>Telegram<![CDATA[</b>]]>앱으로 코드를 전송했습니다.</string>
+    <string name="SentAppCode">회원님 기기에 설치된 <![CDATA[<b>]]>CloudVeil Messenger<![CDATA[</b>]]>앱으로 코드를 전송했습니다.</string>
     <string name="SentCallCode"><![CDATA[<b>]]>%1$s<![CDATA[</b>]]> 번호로 인증 전화를 걸었습니다. \n\n텔레그램이 자동으로 인증을 처리하기에 전화를 안 받으셔도 됩니다.</string>
     <string name="SentCallOnly"><![CDATA[<b>]]>%1$s<![CDATA[</b>]]> 번호로 인증코드 안내 전화를 걸고 있습니다.</string>
     <string name="CallText">텔레그램이 %1$d:%2$02d 후에는 전화를 겁니다.</string>
@@ -436,7 +436,7 @@
     <!--contacts view-->
     <string name="SelectContact">대화상대 선택</string>
     <string name="NoContacts">대화상대가 없습니다</string>
-    <string name="InviteText">Telegram을 사용해 보세요!: https://telegram.org/dl</string>
+    <string name="InviteText">CloudVeil Messenger을 사용해 보세요!: https://telegram.org/dl</string>
     <string name="TodayAt">오늘</string>
     <string name="YesterdayAt">어제</string>
     <string name="Online">온라인</string>
@@ -676,7 +676,7 @@
     <string name="CacheSettings">캐시 설정</string>
     <string name="LocalDatabase">로컬 데이터베이스</string>
     <string name="LocalDatabaseClear">캐시된 텍스트 메시지를 삭제하시겠습니까?</string>
-    <string name="LocalDatabaseInfo">압축된 데이터베이스 및 캐시에 저장된 메시지를 로컬 데이터베이스에서 삭제하면 내부 저장공간이 증가합니다. 데이터베이스는 Telegram이 작동하는데 어느정도 필요함으로 완전히 삭제가 되지는 않습니다.\n\n이 작업은 완료되기까지 몇분정도 소요가 될 수 있습니다.</string>
+    <string name="LocalDatabaseInfo">압축된 데이터베이스 및 캐시에 저장된 메시지를 로컬 데이터베이스에서 삭제하면 내부 저장공간이 증가합니다. 데이터베이스는 CloudVeil Messenger이 작동하는데 어느정도 필요함으로 완전히 삭제가 되지는 않습니다.\n\n이 작업은 완료되기까지 몇분정도 소요가 될 수 있습니다.</string>
     <string name="ClearMediaCache">캐시 삭제</string>
     <string name="CacheClear">삭제</string>
     <string name="CalculatingSize">계산중...</string>
@@ -688,7 +688,7 @@
     <string name="LocalCache">다른 파일</string>
     <string name="CacheEmpty">없음</string>
     <string name="KeepMedia">미디어 저장</string>
-    <string name="KeepMediaInfo">이 기간 동안 클라우드 채팅방에서  <![CDATA[<b>접근하지 않은</b>]]> 사진이나 동영상, 기타 파일 등은 공간 절약을 위해 이 기기에서 삭제됩니다.\n\n모든 파일은 Telegram 클라우드에 여전히 남으며 필요하시면 언제든 다시 다운로드하실 수 있습니다.</string>
+    <string name="KeepMediaInfo">이 기간 동안 클라우드 채팅방에서  <![CDATA[<b>접근하지 않은</b>]]> 사진이나 동영상, 기타 파일 등은 공간 절약을 위해 이 기기에서 삭제됩니다.\n\n모든 파일은 CloudVeil Messenger 클라우드에 여전히 남으며 필요하시면 언제든 다시 다운로드하실 수 있습니다.</string>
     <string name="KeepMediaForever">영원히</string>
     <!--sessions view-->
     <string name="SessionsTitle">활성화된 세션</string>
@@ -967,7 +967,7 @@
     <string name="ActionAddUserSelf">un1 님께서 그룹에 돌아오셨습니다</string>
     <string name="ActionAddUserSelfMega">un1 님이 그룹에 참여했습니다</string>
     <string name="ActionAddUserSelfYou">그룹에 돌아오셨습니다.</string>
-    <string name="UnsupportedMedia">이 메시지는 현재 사용 중인 버전의 Telegram에서 지원되지 않습니다. 메시지를 보려면 http://telegram.org/update에서 앱을 업데이트하세요.</string>
+    <string name="UnsupportedMedia">이 메시지는 현재 사용 중인 버전의 CloudVeil Messenger에서 지원되지 않습니다. 메시지를 보려면 http://telegram.org/update에서 앱을 업데이트하세요.</string>
     <string name="AttachPhoto">사진</string>
     <string name="AttachVideo">동영상</string>
     <string name="AttachGif">GIF파일</string>
@@ -1042,11 +1042,11 @@
     <string name="UserRestricted">죄송합니다, 이 작업이 제한되었습니다.</string>
     <string name="JoinGroup">그룹방 입장</string>
     <!--permissions-->
-    <string name="PermissionContacts">Telegram은 여러 기기에서 친구와 메시지를 주고받을 수 있도록 회원님의 연락처 접근이 필요합니다.</string>
-    <string name="PermissionStorage">Telegram은 사진, 비디오, 음악 및 다양한 미디어를 공유 및 저장하기 위하여 스토리지 접근이 필요합니다.</string>
-    <string name="PermissionNoAudio">Telegram이 음성 메시지를 보내기 위하여 마이크에 대한 접근이 필요합니다.</string>
-    <string name="PermissionNoCamera">Telegram이 사진 및 비디오 촬영을 하기 위하여 카메라 접근 권한을 필요로 합니다.</string>
-    <string name="PermissionNoLocation">Telegram이 위치를 친구분들과 공유하기 위해 위치에 대한 접근 권한을 필요로 합니다.</string>
+    <string name="PermissionContacts">CloudVeil Messenger은 여러 기기에서 친구와 메시지를 주고받을 수 있도록 회원님의 연락처 접근이 필요합니다.</string>
+    <string name="PermissionStorage">CloudVeil Messenger은 사진, 비디오, 음악 및 다양한 미디어를 공유 및 저장하기 위하여 스토리지 접근이 필요합니다.</string>
+    <string name="PermissionNoAudio">CloudVeil Messenger이 음성 메시지를 보내기 위하여 마이크에 대한 접근이 필요합니다.</string>
+    <string name="PermissionNoCamera">CloudVeil Messenger이 사진 및 비디오 촬영을 하기 위하여 카메라 접근 권한을 필요로 합니다.</string>
+    <string name="PermissionNoLocation">CloudVeil Messenger이 위치를 친구분들과 공유하기 위해 위치에 대한 접근 권한을 필요로 합니다.</string>
     <string name="PermissionNoLocationPosition">텔레그램이 위치에 대한 권한이 필요합니다.</string>
     <string name="PermissionOpenSettings">설정</string>
     <!--Intro view-->

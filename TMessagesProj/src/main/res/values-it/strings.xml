@@ -3,8 +3,8 @@
 <!--https://www.transifex.com/projects/p/telegram/language/it/members/-->
 
 <resources>
-    <string name="AppName">Telegram</string>
-    <string name="AppNameBeta">Telegram Beta</string>
+    <string name="AppName">CloudVeil Messenger</string>
+    <string name="AppNameBeta">CloudVeil Messenger Beta</string>
     <string name="LanguageName">Italiano</string>
     <string name="LanguageNameInEnglish">Italian</string>
     <string name="LanguageCode">it</string>
@@ -16,8 +16,8 @@
     <!--code enter view-->
     <string name="YourCode">Verifica numero</string>
     <string name="SentSmsCode">Abbiamo inviato un SMS con un codice di attivazione al tuo numero <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>.</string>
-    <string name="SentAppCode">Abbiamo inviato il codice su <![CDATA[<b>]]>Telegram<![CDATA[</b>]]> nell\'altro tuo dispositivo.</string>
-    <string name="SentCallCode">Abbiamo inviato una chiamata di attivazione al tuo numero <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>.\n\nNon rispondere, Telegram farà tutto in automatico.</string>
+    <string name="SentAppCode">Abbiamo inviato il codice su <![CDATA[<b>]]>CloudVeil Messenger<![CDATA[</b>]]> nell\'altro tuo dispositivo.</string>
+    <string name="SentCallCode">Abbiamo inviato una chiamata di attivazione al tuo numero <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>.\n\nNon rispondere, CloudVeil Messenger farà tutto in automatico.</string>
     <string name="SentCallOnly">Stiamo chiamando il tuo numero <![CDATA[<b>]]>%1$s<![CDATA[</b>]]> per dettarti un codice.</string>
     <string name="CallText">Ti telefoneremo tra %1$d:%2$02d</string>
     <string name="SmsText">Ti invieremo un SMS tra %1$d:%2$02d</string>
@@ -26,7 +26,7 @@
     <string name="WrongNumber">Numero errato?</string>
     <string name="DidNotGetTheCode">Non hai ricevuto il codice?</string>
     <string name="CancelAccountReset">Annulla ripristino account</string>
-    <string name="CancelAccountResetInfo">Qualcuno con accesso al tuo numero di telefono <![CDATA[<b>]]>%1$s<![CDATA[</b]]> ha richiesto l\'eliminazione del tuo account Telegram e il ripristino della password della verifica in due passaggi.\n\nSe non sei stato tu, per favore inserisci il codice che abbiamo appena inviato tramite SMS al tuo numero.</string>
+    <string name="CancelAccountResetInfo">Qualcuno con accesso al tuo numero di telefono <![CDATA[<b>]]>%1$s<![CDATA[</b]]> ha richiesto l\'eliminazione del tuo account CloudVeil Messenger e il ripristino della password della verifica in due passaggi.\n\nSe non sei stato tu, per favore inserisci il codice che abbiamo appena inviato tramite SMS al tuo numero.</string>
     <string name="ResetAccount">Ripristino account</string>
     <string name="ResetAccountInfo">Dato che l\'account <![CDATA[<b>]]>%1$s<![CDATA[</b]]> è attivo e protetto da una password, lo elimineremo tra 1 settimana per motivi di sicurezza.\n\nPuoi annullare questo processo in qualsiasi momento.</string>
     <string name="ResetAccountStatus">Sarai in grado di ripristinare il tuo account tra:</string>
@@ -65,7 +65,7 @@
     <string name="HiddenName">Account eliminato</string>
     <string name="SelectChat">Seleziona chat</string>
     <string name="PhotoTip">Tieni premuto per vedere</string>
-    <string name="CompatibilityChat">%1$s sta usando una versione vecchia di Telegram, quindi le foto segrete verranno visualizzate in modalità di compatibilità.\n\nUna volta che %2$s avrà aggiornato Telegram, le foto con il timer minore di 1 minuto funzioneranno in modalità \'Tieni premuto per vedere\' , e verrai notificato ogni volta che l\'altro esegue uno screenshot.</string>
+    <string name="CompatibilityChat">%1$s sta usando una versione vecchia di CloudVeil Messenger, quindi le foto segrete verranno visualizzate in modalità di compatibilità.\n\nUna volta che %2$s avrà aggiornato CloudVeil Messenger, le foto con il timer minore di 1 minuto funzioneranno in modalità \'Tieni premuto per vedere\' , e verrai notificato ogni volta che l\'altro esegue uno screenshot.</string>
     <string name="SearchMessages">MESSAGGI</string>
     <string name="Search">Cerca</string>
     <string name="MuteNotifications">Silenzia notifiche</string>
@@ -120,8 +120,8 @@
     <string name="NewChannel">Nuovo canale</string>
     <string name="EnterChannelName">Nome canale</string>
     <string name="AddMutual">Aggiungi contatti al tuo canale</string>
-    <string name="ChannelUsernameHelp">Le persone possono condividere questo link con gli altri e trovare il tuo canale usando la ricerca di Telegram.</string>
-    <string name="MegaUsernameHelp">Le persone possono condividere questo link con gli altri e trovare il tuo gruppo usando la ricerca di Telegram.</string>
+    <string name="ChannelUsernameHelp">Le persone possono condividere questo link con gli altri e trovare il tuo canale usando la ricerca di CloudVeil Messenger.</string>
+    <string name="MegaUsernameHelp">Le persone possono condividere questo link con gli altri e trovare il tuo gruppo usando la ricerca di CloudVeil Messenger.</string>
     <string name="ChannelUsernamePlaceholder">link</string>
     <string name="ChannelPrivateLinkHelp">Le persone possono unirsi al tuo canale seguendo questo link. Puoi revocare il link in ogni momento.</string>
     <string name="MegaPrivateLinkHelp">Le persone possono unirsi al tuo gruppo seguendo questo link. Puoi revocare il link in ogni momento.</string>
@@ -185,7 +185,7 @@
     <string name="ChannelRemoveUserAdmin">Rimuovi</string>
     <string name="ChannelMembersInfo">Solo gli amministratori del canale possono vedere questa lista.</string>
     <string name="ChannelAdminNotParticipant">Questo utente non si è ancora unito al canale. Vuoi invitarlo?</string>
-    <string name="ChannelLinkInfo">Chiunque abbia Telegram installato sarà in grado di aggiungersi al tuo canale seguendo questo link.</string>
+    <string name="ChannelLinkInfo">Chiunque abbia CloudVeil Messenger installato sarà in grado di aggiungersi al tuo canale seguendo questo link.</string>
     <string name="ChannelAdminsInfo">Puoi aggiungere amministratori per farti aiutare a gestire il tuo canale. Tieni premuto per rimuovere gli amministratori.</string>
     <string name="ChannelJoinTo">Vuoi unirti al canale \'%1$s\'?</string>
     <string name="ChannelCantOpenPrivate">Spiacenti, questa chat non è più accessibile.</string>
@@ -274,7 +274,7 @@
     <string name="SendingPhoto">sta inviando una foto...</string>
     <string name="SendingVideoStatus">sta inviando un video...</string>
     <string name="SendingFile">sta inviando un file...</string>
-    <string name="GotAQuestion">Hai una domanda\nsu Telegram?</string>
+    <string name="GotAQuestion">Hai una domanda\nsu CloudVeil Messenger?</string>
     <string name="ChatTakePhoto">Scatta foto</string>
     <string name="ChatGallery">Galleria</string>
     <string name="ChatLocation">Posizione</string>
@@ -316,7 +316,7 @@
     <string name="CopyUrl">Copia URL</string>
     <string name="SendItems">Invia %1$s</string>
     <string name="OpenUrlAlert">Aprire url %1$s?</string>
-    <string name="BotPermissionGameAlert">Consentire a %1$s di trasmettere il tuo nome e id Telegram (non il tuo numero di telefono) alle pagine che apri tramite questo bot?</string>
+    <string name="BotPermissionGameAlert">Consentire a %1$s di trasmettere il tuo nome e id CloudVeil Messenger (non il tuo numero di telefono) alle pagine che apri tramite questo bot?</string>
     <string name="ReportSpam">SEGNALA SPAM</string>
     <string name="ReportSpamAndLeave">SEGNALA SPAM E LASCIA</string>
     <string name="AddContactChat">AGGIUNGI CONTATTO</string>
@@ -399,8 +399,8 @@
     <string name="NotificationGroupKickMember">%1$s ha rimosso %3$s dal gruppo %2$s</string>
     <string name="NotificationGroupKickYou">%1$s ti ha rimosso dal gruppo %2$s</string>
     <string name="NotificationGroupLeftMember">%1$s ha lasciato il gruppo %2$s</string>
-    <string name="NotificationContactJoined">%1$s si è unito a Telegram!</string>
-    <string name="NotificationUnrecognizedDevice">%1$s,\nAbbiamo rilevato un accesso al tuo account da un nuovo dispositivo il %2$s\n\nDispositivo: %3$s\nPosizione: %4$s\n\nSe non sei stato tu, puoi andare su Impostazioni - Privacy e sicurezza - Sessioni - Termina tutte le sessioni.\n\nSe pensi che qualcuno si sia collegato al tuo account contro il tuo volere, ti raccomandiamo di attivare la verifica in due passaggi nelle impostazioni di Privacy e Sicurezza.\n\nGrazie,\nil team di Telegram</string>
+    <string name="NotificationContactJoined">%1$s si è unito a CloudVeil Messenger!</string>
+    <string name="NotificationUnrecognizedDevice">%1$s,\nAbbiamo rilevato un accesso al tuo account da un nuovo dispositivo il %2$s\n\nDispositivo: %3$s\nPosizione: %4$s\n\nSe non sei stato tu, puoi andare su Impostazioni - Privacy e sicurezza - Sessioni - Termina tutte le sessioni.\n\nSe pensi che qualcuno si sia collegato al tuo account contro il tuo volere, ti raccomandiamo di attivare la verifica in due passaggi nelle impostazioni di Privacy e Sicurezza.\n\nGrazie,\nil team di CloudVeil Messenger</string>
     <string name="NotificationContactNewPhoto">%1$s ha aggiornato la foto del profilo</string>
     <string name="NotificationInvitedToGroupByLink">%1$s si è unito al gruppo %2$s tramite link di invito</string>
     <string name="Reply">Rispondi</string>
@@ -436,7 +436,7 @@
     <!--contacts view-->
     <string name="SelectContact">Seleziona contatto</string>
     <string name="NoContacts">Ancora nessun contatto</string>
-    <string name="InviteText">Ehi, è il momento di passare a Telegram: https://telegram.org/dl</string>
+    <string name="InviteText">Ehi, è il momento di passare a CloudVeil Messenger: https://telegram.org/dl</string>
     <string name="TodayAt">alle</string>
     <string name="YesterdayAt">ieri alle</string>
     <string name="Online">in linea</string>
@@ -470,7 +470,7 @@
     <string name="RevokeLinkAlertChannel">Sei sicuro di voler revocare il link <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>?\n\nIl canale \"<![CDATA[<b>]]>%2$s<![CDATA[</b>]]>\" diventerà privato.</string>
     <string name="CopyLink">Copia link</string>
     <string name="ShareLink">Condividi link</string>
-    <string name="LinkInfo">Chiunque abbia Telegram installato, sarà in grado di aggiungersi al tuo gruppo aprendo il link.</string>
+    <string name="LinkInfo">Chiunque abbia CloudVeil Messenger installato, sarà in grado di aggiungersi al tuo gruppo aprendo il link.</string>
     <!--set admins view-->
     <string name="SetAdminsTitle">Amministratori</string>
     <string name="SetAdminsAll">Tutti sono amministratori</string>
@@ -496,7 +496,7 @@
     <string name="ShareContact">Condividi</string>
     <string name="AddContact">Aggiungi</string>
     <string name="AddContactTitle">Aggiungi contatto</string>
-    <string name="ContactNotRegistered">%1$s non si è ancora unito a Telegram, vuoi invitarlo a unirsi?</string>
+    <string name="ContactNotRegistered">%1$s non si è ancora unito a CloudVeil Messenger, vuoi invitarlo a unirsi?</string>
     <string name="Invite">Invita</string>
     <string name="BlockContact">Blocca</string>
     <string name="EditContact">Modifica</string>
@@ -524,7 +524,7 @@
     <string name="UsernameInvalidShort">Un username deve avere almeno 5 caratteri.</string>
     <string name="UsernameInvalidLong">Il massimo per un username è 32 caratteri.</string>
     <string name="UsernameInvalidStartNumber">Spiacenti, un username non può iniziare con un numero.</string>
-    <string name="UsernameHelp">Puoi scegliere un username su <![CDATA[<b>]]>Telegram<![CDATA[</b>]]>. Se lo fai, le altre persone potranno trovarti tramite questo username e contattarti senza conoscere il tuo numero di telefono.<![CDATA[<br><br>]]>Puoi usare <![CDATA[<b>]]>a–z<![CDATA[</b>]]>, <![CDATA[<b>]]>0–9<![CDATA[</b>]]> e underscore. La lunghezza minima è di <![CDATA[<b>]]>5<![CDATA[</b>]]> caratteri.</string>
+    <string name="UsernameHelp">Puoi scegliere un username su <![CDATA[<b>]]>CloudVeil Messenger<![CDATA[</b>]]>. Se lo fai, le altre persone potranno trovarti tramite questo username e contattarti senza conoscere il tuo numero di telefono.<![CDATA[<br><br>]]>Puoi usare <![CDATA[<b>]]>a–z<![CDATA[</b>]]>, <![CDATA[<b>]]>0–9<![CDATA[</b>]]> e underscore. La lunghezza minima è di <![CDATA[<b>]]>5<![CDATA[</b>]]> caratteri.</string>
     <string name="UsernameChecking">Controllo l\'username...</string>
     <string name="UsernameAvailable">%1$s è disponibile.</string>
     <string name="UsernameEmpty">Nessuno</string>
@@ -549,7 +549,7 @@
     <string name="Masks">Maschere</string>
     <string name="MasksInfo">Puoi aggiungere maschere alle foto che invii. Per farlo, apri l\'editor fotografico prima di inviare una foto.</string>
     <string name="FeaturedStickers">Sticker in primo piano</string>
-    <string name="FeaturedStickersInfo">Questi sticker sono attualmente in primo piano su Telegram. Puoi aggiungere sticker personalizzati tramite il bot @stickers.</string>
+    <string name="FeaturedStickersInfo">Questi sticker sono attualmente in primo piano su CloudVeil Messenger. Puoi aggiungere sticker personalizzati tramite il bot @stickers.</string>
     <string name="ArchivedStickers">Sticker archiviati</string>
     <string name="ArchivedMasks">Maschere archiviate</string>
     <string name="ArchivedStickersEmpty">Nessuno sticker archiviato</string>
@@ -594,10 +594,10 @@
     <string name="SendByEnter">Invia con tasto invio</string>
     <string name="TerminateAllSessions">Termina le altre sessioni</string>
     <string name="Events">Eventi</string>
-    <string name="ContactJoined">Un contatto si è unito a Telegram</string>
+    <string name="ContactJoined">Un contatto si è unito a CloudVeil Messenger</string>
     <string name="PinnedMessages">Messaggi fissati</string>
     <string name="Language">Lingua</string>
-    <string name="AskAQuestionInfo">Nota che il supporto di Telegram è fornito da volontari. Proviamo a rispondere quanto prima, ma potrebbe volerci del tempo.<![CDATA[<br><br>]]>Dai un\'occhiata alle <![CDATA[<a href=\"https://telegram.org/faq/it#domande-generali\">Domande frequenti di Telegram</a>]]>: contengono suggerimenti importanti per <![CDATA[<a href=\"https://telegram.org/faq/it#risoluzione-dei-problemi\">risolvere i  problemi</a>]]> e risposte a quasi tutte le domande.</string>
+    <string name="AskAQuestionInfo">Nota che il supporto di CloudVeil Messenger è fornito da volontari. Proviamo a rispondere quanto prima, ma potrebbe volerci del tempo.<![CDATA[<br><br>]]>Dai un\'occhiata alle <![CDATA[<a href=\"https://telegram.org/faq/it#domande-generali\">Domande frequenti di CloudVeil Messenger</a>]]>: contengono suggerimenti importanti per <![CDATA[<a href=\"https://telegram.org/faq/it#risoluzione-dei-problemi\">risolvere i  problemi</a>]]> e risposte a quasi tutte le domande.</string>
     <string name="AskButton">Chiedi a un volontario</string>
     <string name="TelegramFaq">Domande frequenti</string>
     <string name="TelegramFaqUrl">https://telegram.org/faq/it</string>
@@ -610,7 +610,7 @@
     <string name="NotificationsService">Servizio keep-alive</string>
     <string name="NotificationsServiceInfo">Riavvia l\'app quando terminata dall\'utente o dal sistema. Questo assicura che l\'app possa mostrare le notifiche.</string>
     <string name="NotificationsServiceConnection">Connessione in background</string>
-    <string name="NotificationsServiceConnectionInfo">Mantiene una connessione a basso impatto con Telegram per ricevere le notifiche. Attivala per notifiche affidabili.</string>
+    <string name="NotificationsServiceConnectionInfo">Mantiene una connessione a basso impatto con CloudVeil Messenger per ricevere le notifiche. Attivala per notifiche affidabili.</string>
     <string name="SortBy">Ordina per</string>
     <string name="ImportContacts">Importa contatti</string>
     <string name="SortFirstName">Nome</string>
@@ -642,12 +642,12 @@
     <string name="NotificationsPriorityMax">Massima</string>
     <string name="RepeatNotificationsNever">Mai</string>
     <string name="RepeatNotifications">Ripeti notifiche</string>
-    <string name="PhoneNumberHelp">Puoi cambiare il tuo numero di telefono qui. Il tuo account e tutti i tuoi dati cloud — messaggi, file, contatti, etc. saranno trasferiti sul nuovo numero.\n\n<![CDATA[<b>Importante:</b>]]> a tutti i tuoi contatti di Telegram verrà aggiunto il tuo <![CDATA[<b>nuovo numero</b>]]> ai contatti, purché abbiano il tuo vecchio numero e tu non li abbia bloccati su Telegram.</string>
-    <string name="PhoneNumberAlert">Tutti i tuoi contatti Telegram avranno il tuo nuovo numero tra i loro contatti, purché abbiano il tuo vecchio numero e tu non li abbia bloccati su Telegram.</string>
+    <string name="PhoneNumberHelp">Puoi cambiare il tuo numero di telefono qui. Il tuo account e tutti i tuoi dati cloud — messaggi, file, contatti, etc. saranno trasferiti sul nuovo numero.\n\n<![CDATA[<b>Importante:</b>]]> a tutti i tuoi contatti di CloudVeil Messenger verrà aggiunto il tuo <![CDATA[<b>nuovo numero</b>]]> ai contatti, purché abbiano il tuo vecchio numero e tu non li abbia bloccati su CloudVeil Messenger.</string>
+    <string name="PhoneNumberAlert">Tutti i tuoi contatti CloudVeil Messenger avranno il tuo nuovo numero tra i loro contatti, purché abbiano il tuo vecchio numero e tu non li abbia bloccati su CloudVeil Messenger.</string>
     <string name="PhoneNumberChange">CAMBIA NUMERO</string>
     <string name="ChangePhoneNewNumber">Nuovo numero</string>
     <string name="ChangePhoneHelp">Invieremo un SMS con un codice di conferma al tuo nuovo numero.</string>
-    <string name="ChangePhoneNumberOccupied">Il numero %1$s è già connesso a un account Telegram. Per favore elimina quell\'account prima di migrare ad un nuovo numero.</string>
+    <string name="ChangePhoneNumberOccupied">Il numero %1$s è già connesso a un account CloudVeil Messenger. Per favore elimina quell\'account prima di migrare ad un nuovo numero.</string>
     <string name="NotificationsOther">Altro</string>
     <string name="NotificationsDisabled">Disabilitate</string>
     <string name="VibrationDisabled">Disabilitata</string>
@@ -676,7 +676,7 @@
     <string name="CacheSettings">Impostazioni cache</string>
     <string name="LocalDatabase">Database locale</string>
     <string name="LocalDatabaseClear">Cancellare i messaggi salvati nella cache?</string>
-    <string name="LocalDatabaseInfo">Svuotando il database locale, verranno cancellati i messaggi nella cache e il database verrà compresso per risparmiare spazio. Telegram ha bisogno di alcuni dati per funzionare, quindi il database non sarà azzerato.\n\nQuesta operazione può richiedere alcuni minuti.</string>
+    <string name="LocalDatabaseInfo">Svuotando il database locale, verranno cancellati i messaggi nella cache e il database verrà compresso per risparmiare spazio. CloudVeil Messenger ha bisogno di alcuni dati per funzionare, quindi il database non sarà azzerato.\n\nQuesta operazione può richiedere alcuni minuti.</string>
     <string name="ClearMediaCache">Vuota la cache</string>
     <string name="CacheClear">Svuota</string>
     <string name="CalculatingSize">Calcolando...</string>
@@ -688,13 +688,13 @@
     <string name="LocalCache">Altri file</string>
     <string name="CacheEmpty">Vuota</string>
     <string name="KeepMedia">Mantieni media</string>
-    <string name="KeepMediaInfo">Foto, video e altri file dalle chat nel cloud che non hai <![CDATA[<b>aperto</b>]]> in questo periodo verranno eliminati dal dispositivo per preservare lo spazio sul disco.\n\nTutti i media rimarranno nel cloud di Telegram e potranno essere riscaricati ogni volta che ne avrai bisogno.</string>
+    <string name="KeepMediaInfo">Foto, video e altri file dalle chat nel cloud che non hai <![CDATA[<b>aperto</b>]]> in questo periodo verranno eliminati dal dispositivo per preservare lo spazio sul disco.\n\nTutti i media rimarranno nel cloud di CloudVeil Messenger e potranno essere riscaricati ogni volta che ne avrai bisogno.</string>
     <string name="KeepMediaForever">Per sempre</string>
     <!--sessions view-->
     <string name="SessionsTitle">Sessioni attive</string>
     <string name="CurrentSession">Sessione corrente</string>
     <string name="NoOtherSessions">Nessun\'altra sessione attiva</string>
-    <string name="NoOtherSessionsInfo">Ti puoi connettere a Telegram da altri dispositivi mobili, tablet e desktop usando lo stesso numero. Tutti i tuoi dati saranno sincronizzati istantaneamente.</string>
+    <string name="NoOtherSessionsInfo">Ti puoi connettere a CloudVeil Messenger da altri dispositivi mobili, tablet e desktop usando lo stesso numero. Tutti i tuoi dati saranno sincronizzati istantaneamente.</string>
     <string name="OtherSessions">Sessioni attive</string>
     <string name="SessionsInfo">Controlla le tue sessioni sugli altri dispositivi.</string>
     <string name="TerminateSessionInfo">Premi su una sessione per terminarla.</string>
@@ -704,7 +704,7 @@
     <string name="Passcode">Blocco con codice</string>
     <string name="ChangePasscode">Cambia codice</string>
     <string name="ChangePasscodeInfo">Quando imposti un codice, un\'icona col lucchetto apparirà nella pagina delle chat. Premi su di essa per bloccare e sbloccare l\'app.\n\nNota: se ti dimentichi il codice, dovrai disinstallare e reinstallare l\'app. Tutte le chat segrete verranno perse.</string>
-    <string name="ChangePasscodeAlert">Ora visualizzerai un\'icona col lucchetto nella pagina delle chat. Premi su di essa per bloccare la tua app Telegram con il codice.</string>
+    <string name="ChangePasscodeAlert">Ora visualizzerai un\'icona col lucchetto nella pagina delle chat. Premi su di essa per bloccare la tua app CloudVeil Messenger con il codice.</string>
     <string name="PasscodePIN">PIN</string>
     <string name="PasscodePassword">Password</string>
     <string name="EnterCurrentPasscode">Inserisci il tuo codice corrente</string>
@@ -821,7 +821,7 @@
     <string name="YourEmailInfo">Inserisci un\'e-mail valida. È l\'unico modo per recuperare una password dimenticata.</string>
     <string name="YourEmailSkip">Salta</string>
     <string name="YourEmailSkipWarning">Attenzione</string>
-    <string name="YourEmailSkipWarningText">No, seriamente.\n\nSe dimentichi la tua password, perderai l\'accesso al tuo account Telegram. Non ci sarà modo di ripristinarlo.</string>
+    <string name="YourEmailSkipWarningText">No, seriamente.\n\nSe dimentichi la tua password, perderai l\'accesso al tuo account CloudVeil Messenger. Non ci sarà modo di ripristinarlo.</string>
     <string name="YourEmailAlmostThere">Ci siamo quasi!</string>
     <string name="YourEmailAlmostThereText">Controlla la tua e-mail (anche lo spam) per completare la configurazione della verifica in due passaggi.</string>
     <string name="YourPasswordSuccess">Fatto!</string>
@@ -855,7 +855,7 @@
     <string name="PasswordRecovery">Recupero password</string>
     <string name="PasswordCode">Codice</string>
     <string name="PasswordReset">Password disattivata</string>
-    <string name="EnabledPasswordText">Hai attivato la verifica in due passaggi.\nAvrai bisogno della password che hai impostato per accedere al tuo account Telegram.</string>
+    <string name="EnabledPasswordText">Hai attivato la verifica in due passaggi.\nAvrai bisogno della password che hai impostato per accedere al tuo account CloudVeil Messenger.</string>
     <string name="PendingEmailText">La tua e-mail di recupero %1$s non è ancora attiva e attende la conferma.</string>
     <!--privacy settings-->
     <string name="PrivacySettings">Privacy e sicurezza</string>
@@ -967,7 +967,7 @@
     <string name="ActionAddUserSelf">un1 è tornato nel gruppo</string>
     <string name="ActionAddUserSelfMega">un1 si è unito al gruppo</string>
     <string name="ActionAddUserSelfYou">Sei tornato nel gruppo</string>
-    <string name="UnsupportedMedia">Questo messaggio non è supportato dalla tua versione di Telegram. Aggiorna l\'app per visualizzarlo: https://telegram.org/update</string>
+    <string name="UnsupportedMedia">Questo messaggio non è supportato dalla tua versione di CloudVeil Messenger. Aggiorna l\'app per visualizzarlo: https://telegram.org/update</string>
     <string name="AttachPhoto">Foto</string>
     <string name="AttachVideo">Video</string>
     <string name="AttachGif">GIF</string>
@@ -993,7 +993,7 @@
     <string name="NoPlayerInstalled">Non hai un lettore video, per favore installane uno per continuare</string>
     <string name="NoMailInstalled">Invia un’email a sms@stel.com spiegandoci il problema.</string>
     <string name="NoHandleAppInstalled">Non hai applicazioni che possono gestire il tipo di file \'%1$s\': installane una per proseguire</string>
-    <string name="InviteUser">Questo utente non ha ancora Telegram, vuoi invitarlo?</string>
+    <string name="InviteUser">Questo utente non ha ancora CloudVeil Messenger, vuoi invitarlo?</string>
     <string name="AreYouSure">Sei sicuro?</string>
     <string name="AddToTheGroupTitle">Aggiungere %1$s alla chat %2$s?</string>
     <string name="AddToTheGroupForwardCount">Numero di ultimi messaggi da inoltrare:</string>
@@ -1003,7 +1003,7 @@
     <string name="SendMessagesTo">Inviare i messaggi a %1$s?</string>
     <string name="SendGameTo">Condividere il gioco con %1$s?</string>
     <string name="SendContactTo">Inviare contatto a %1$s?</string>
-    <string name="AreYouSureLogout">Sei sicuro di voler uscire?\n\nNota che puoi usare Telegram su tutti i tuoi dispositivi contemporaneamente.\n\nRicorda, uscendo eliminerai tutte le Chat Segrete.</string>
+    <string name="AreYouSureLogout">Sei sicuro di voler uscire?\n\nNota che puoi usare CloudVeil Messenger su tutti i tuoi dispositivi contemporaneamente.\n\nRicorda, uscendo eliminerai tutte le Chat Segrete.</string>
     <string name="AreYouSureSessions">Terminare tutte le altre sessioni?</string>
     <string name="AreYouSureDeleteAndExit">Sei sicuro di voler uscire ed eliminare il gruppo?</string>
     <string name="AreYouSureDeleteThisChat">Sei sicuro di voler eliminare questa chat?</string>
@@ -1030,27 +1030,27 @@
     <string name="SendContactToGroup">Inviare contatto a %1$s?</string>
     <string name="ForwardMessagesToGroup">Inoltra messaggi a %1$s?</string>
     <string name="FeatureUnavailable">Spiacenti, questa funzione non è disponibile nel tuo paese.</string>
-    <string name="NoUsernameFound">Non esiste alcun account Telegram con questo username.</string>
+    <string name="NoUsernameFound">Non esiste alcun account CloudVeil Messenger con questo username.</string>
     <string name="BotCantJoinGroups">Questo bot non può unirsi ai gruppi.</string>
-    <string name="SecretLinkPreviewAlert">Vuoi attivare le anteprime estese per i link nelle Chat Segrete? Nota che le anteprime dei link sono generate sui server di Telegram.</string>
+    <string name="SecretLinkPreviewAlert">Vuoi attivare le anteprime estese per i link nelle Chat Segrete? Nota che le anteprime dei link sono generate sui server di CloudVeil Messenger.</string>
     <string name="SecretChatContextBotAlert">Per favore nota che i bot inline sono forniti da sviluppatori di terze parti. Per far funzionare il bot, i simboli che digiti dopo l\'username del bot sono inviati al rispettivo sviluppatore.</string>
     <string name="RaiseToSpeakAlert">Vuoi attivare \"Alza per parlare\" per i messaggi vocali?</string>
     <string name="EditMessageError">Spiacenti, non puoi modificare questo messaggio.</string>
-    <string name="AllowReadSms">Per favore consenti a Telegram di ricevere SMS così potremo inserire in automatico il codice per te.</string>
-    <string name="AllowReadCall">Per favore consenti a Telegram di ricevere chiamate così potremo inserire in automatico il codice per te.</string>
-    <string name="AllowReadCallAndSms">Per favore consenti a Telegram di ricevere chiamate ed SMS così potremo inserire in automatico il codice per te.</string>
+    <string name="AllowReadSms">Per favore consenti a CloudVeil Messenger di ricevere SMS così potremo inserire in automatico il codice per te.</string>
+    <string name="AllowReadCall">Per favore consenti a CloudVeil Messenger di ricevere chiamate così potremo inserire in automatico il codice per te.</string>
+    <string name="AllowReadCallAndSms">Per favore consenti a CloudVeil Messenger di ricevere chiamate ed SMS così potremo inserire in automatico il codice per te.</string>
     <string name="UserRestricted">Spiacenti, questa azione non ti è permessa.</string>
     <string name="JoinGroup">UNISCITI AL GRUPPO</string>
     <!--permissions-->
-    <string name="PermissionContacts">Telegram deve accedere ai tuoi contatti per poterti connettere con i tuoi amici su tutti i tuoi dispositivi.</string>
-    <string name="PermissionStorage">Telegram deve accedere alla tua memoria per poter inviare e salvare foto,video, musica e altri media.</string>
-    <string name="PermissionNoAudio">Telegram deve accedere al microfono per poter inviare messaggi vocali.</string>
-    <string name="PermissionNoCamera">Telegram deve accedere alla tua fotocamera per scattare foto e registrare video.</string>
-    <string name="PermissionNoLocation">Telegram deve accedere alla tua posizione per poterla condividere con i tuoi amici.</string>
-    <string name="PermissionNoLocationPosition">Telegram deve accedere alla tua posizione.</string>
+    <string name="PermissionContacts">CloudVeil Messenger deve accedere ai tuoi contatti per poterti connettere con i tuoi amici su tutti i tuoi dispositivi.</string>
+    <string name="PermissionStorage">CloudVeil Messenger deve accedere alla tua memoria per poter inviare e salvare foto,video, musica e altri media.</string>
+    <string name="PermissionNoAudio">CloudVeil Messenger deve accedere al microfono per poter inviare messaggi vocali.</string>
+    <string name="PermissionNoCamera">CloudVeil Messenger deve accedere alla tua fotocamera per scattare foto e registrare video.</string>
+    <string name="PermissionNoLocation">CloudVeil Messenger deve accedere alla tua posizione per poterla condividere con i tuoi amici.</string>
+    <string name="PermissionNoLocationPosition">CloudVeil Messenger deve accedere alla tua posizione.</string>
     <string name="PermissionOpenSettings">IMPOSTAZIONI</string>
     <!--Intro view-->
-    <string name="Page1Title">Telegram</string>
+    <string name="Page1Title">CloudVeil Messenger</string>
     <string name="Page2Title">Veloce</string>
     <string name="Page3Title">Gratuito</string>
     <string name="Page4Title">Sicuro</string>
@@ -1058,12 +1058,12 @@
     <string name="Page6Title">Basato sul cloud</string>
     <string name="Page7Title">Privato</string>
     <string name="Page1Message">L\'app di messaggi <![CDATA[<b>più veloce</b>]]> al mondo.<![CDATA[<br/>]]>È <![CDATA[<b>gratuita</b>]]> e <![CDATA[<b>sicura</b>]]>.</string>
-    <string name="Page2Message"><![CDATA[<b>Telegram</b>]]> consegna i messaggi più<![CDATA[<br/>]]>velocemente di qualsiasi altra app.</string>
-    <string name="Page3Message"><![CDATA[<b>Telegram</b>]]> sarà sempre gratuito.<![CDATA[<br/>]]>Nessuna pubblicità. Nessun abbonamento.</string>
-    <string name="Page4Message"><![CDATA[<b>Telegram</b>]]> protegge i tuoi messaggi<![CDATA[<br/>]]>dagli attacchi degli hacker.</string>
-    <string name="Page5Message"><![CDATA[<b>Telegram</b>]]> non ha limiti di dimensione<![CDATA[<br/>]]>per le tue chat e i file multimediali.</string>
-    <string name="Page6Message"><![CDATA[<b>Telegram</b>]]> ti consente di accedere<![CDATA[<br/>]]>ai tuoi messaggi da più dispositivi.</string>
-    <string name="Page7Message">I messaggi di <![CDATA[<b>Telegram</b>]]> sono fortemente<![CDATA[<br/>]]>criptati e possono autodistruggersi.</string>
+    <string name="Page2Message"><![CDATA[<b>CloudVeil Messenger</b>]]> consegna i messaggi più<![CDATA[<br/>]]>velocemente di qualsiasi altra app.</string>
+    <string name="Page3Message"><![CDATA[<b>CloudVeil Messenger</b>]]> sarà sempre gratuito.<![CDATA[<br/>]]>Nessuna pubblicità. Nessun abbonamento.</string>
+    <string name="Page4Message"><![CDATA[<b>CloudVeil Messenger</b>]]> protegge i tuoi messaggi<![CDATA[<br/>]]>dagli attacchi degli hacker.</string>
+    <string name="Page5Message"><![CDATA[<b>CloudVeil Messenger</b>]]> non ha limiti di dimensione<![CDATA[<br/>]]>per le tue chat e i file multimediali.</string>
+    <string name="Page6Message"><![CDATA[<b>CloudVeil Messenger</b>]]> ti consente di accedere<![CDATA[<br/>]]>ai tuoi messaggi da più dispositivi.</string>
+    <string name="Page7Message">I messaggi di <![CDATA[<b>CloudVeil Messenger</b>]]> sono fortemente<![CDATA[<br/>]]>criptati e possono autodistruggersi.</string>
     <string name="StartMessaging">Inizia a chattare</string>
     <!--plural-->
     <string name="Online_zero">%1$d in linea</string>

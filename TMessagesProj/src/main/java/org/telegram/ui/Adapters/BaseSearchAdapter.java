@@ -68,14 +68,14 @@ public class BaseSearchAdapter extends BaseFragmentAdapter {
                                 globalSearch.clear();
                                 if (allowChats) {
                                     for (int a = 0; a < res.chats.size(); a++) {
-                                        globalSearch.add(res.chats.get(a));
+                                        //globalSearch.add(res.chats.get(a));
                                     }
                                 }
                                 for (int a = 0; a < res.users.size(); a++) {
                                     if (!allowBots && res.users.get(a).bot) {
                                         continue;
                                     }
-                                    globalSearch.add(res.users.get(a));
+                                    //globalSearch.add(res.users.get(a));
                                 }
                                 lastFoundUsername = query;
                                 notifyDataSetChanged();

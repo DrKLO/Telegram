@@ -621,8 +621,18 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         roamingDownloadMask = preferences.getInt("roamingDownloadMask", 0);
         saveToGallery = preferences.getBoolean("save_gallery", false);
         autoplayGifs = preferences.getBoolean("autoplay_gif", true);
+        //CloudVeil Start
+        if (Constants.LOCK_DISABLE_AUTOPLAY_GIFS) {
+            autoplayGifs = false;
+        }
+        //CloudVeil End
         raiseToSpeak = preferences.getBoolean("raise_to_speak", true);
         customTabs = preferences.getBoolean("custom_tabs", true);
+        //CloudVeil Start
+        if (Constants.LOCK_DISABLE_IN_APP_BROWSER) {
+            customTabs = false;
+        }
+        //CloudVeil End
         directShare = preferences.getBoolean("direct_share", true);
         shuffleMusic = preferences.getBoolean("shuffleMusic", false);
         repeatMode = preferences.getInt("repeatMode", 0);

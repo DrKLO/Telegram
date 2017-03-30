@@ -13,6 +13,7 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.Constants;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.tgnet.TLObject;
@@ -52,6 +53,9 @@ public class SearchAdapter extends BaseSearchAdapter {
         allowUsernameSearch = usernameSearch;
         allowChats = chats;
         allowBots = bots;
+        if (Constants.LOCK_DISABLE_BOTS) {
+            allowBots = false;
+        }
     }
 
     public void setCheckedMap(HashMap<Integer, ?> map) {
