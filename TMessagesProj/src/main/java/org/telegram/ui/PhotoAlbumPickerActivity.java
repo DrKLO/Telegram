@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2016.
+ * Copyright Nikolai Kudashov, 2013-2017.
  */
 
 package org.telegram.ui;
@@ -11,7 +11,6 @@ package org.telegram.ui;
 import android.app.Activity;
 import android.content.Context;
 import android.content.res.Configuration;
-import android.graphics.drawable.ColorDrawable;
 import android.os.Build;
 import android.text.TextUtils;
 import android.view.Gravity;
@@ -22,8 +21,6 @@ import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
 import android.view.WindowManager;
 import android.widget.FrameLayout;
-import android.widget.ListView;
-import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
@@ -33,17 +30,21 @@ import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.R;
+import org.telegram.messenger.VideoEditedInfo;
+import org.telegram.messenger.support.widget.LinearLayoutManager;
+import org.telegram.messenger.support.widget.RecyclerView;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Adapters.BaseFragmentAdapter;
 import org.telegram.ui.Cells.PhotoPickerAlbumsCell;
 import org.telegram.ui.Cells.PhotoPickerSearchCell;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.PickerBottomLayout;
+import org.telegram.ui.Components.RadialProgressView;
+import org.telegram.ui.Components.RecyclerListView;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -52,7 +53,7 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
 
     public interface PhotoAlbumPickerActivityDelegate {
         void didSelectPhotos(ArrayList<String> photos, ArrayList<String> captions, ArrayList<ArrayList<TLRPC.InputDocument>> masks, ArrayList<MediaController.SearchImage> webPhotos);
-        boolean didSelectVideo(String path);
+        void didSelectVideo(String path, VideoEditedInfo info, long estimatedSize, long estimatedDuration, String caption);
         void startPhotoSelectActivity();
     }
 
@@ -67,7 +68,7 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
     private boolean loading = false;
 
     private int columnsCount = 2;
-    private ListView listView;
+    private RecyclerListView listView;
     private ListAdapter listAdapter;
     private FrameLayout progressView;
     private TextView emptyView;
@@ -116,7 +117,8 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
     @Override
     public View createView(Context context) {
         actionBar.setBackgroundColor(Theme.ACTION_BAR_MEDIA_PICKER_COLOR);
-        actionBar.setItemsBackgroundColor(Theme.ACTION_BAR_PICKER_SELECTOR_COLOR);
+        actionBar.setTitleColor(0xffffffff);
+        actionBar.setItemsBackgroundColor(Theme.ACTION_BAR_PICKER_SELECTOR_COLOR, false);
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
@@ -159,10 +161,10 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
         if (!singlePhoto) {
             selectedMode = 0;
 
-            dropDownContainer = new ActionBarMenuItem(context, menu, 0);
+            dropDownContainer = new ActionBarMenuItem(context, menu, 0, 0);
             dropDownContainer.setSubMenuOpenSide(1);
-            dropDownContainer.addSubItem(item_photos, LocaleController.getString("PickerPhotos", R.string.PickerPhotos), 0);
-            dropDownContainer.addSubItem(item_video, LocaleController.getString("PickerVideo", R.string.PickerVideo), 0);
+            dropDownContainer.addSubItem(item_photos, LocaleController.getString("PickerPhotos", R.string.PickerPhotos));
+            dropDownContainer.addSubItem(item_video, LocaleController.getString("PickerVideo", R.string.PickerVideo));
             actionBar.addView(dropDownContainer);
             FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) dropDownContainer.getLayoutParams();
             layoutParams.height = LayoutHelper.MATCH_PARENT;
@@ -201,16 +203,13 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
             actionBar.setTitle(LocaleController.getString("Gallery", R.string.Gallery));
         }
 
-        listView = new ListView(context);
+        listView = new RecyclerListView(context);
         listView.setPadding(AndroidUtilities.dp(4), 0, AndroidUtilities.dp(4), AndroidUtilities.dp(4));
         listView.setClipToPadding(false);
         listView.setHorizontalScrollBarEnabled(false);
         listView.setVerticalScrollBarEnabled(false);
-        listView.setSelector(new ColorDrawable(0));
-        listView.setDividerHeight(0);
-        listView.setDivider(null);
+        listView.setLayoutManager(new LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false));
         listView.setDrawingCacheEnabled(false);
-        listView.setScrollingCacheEnabled(false);
         frameLayout.addView(listView);
         FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) listView.getLayoutParams();
         layoutParams.width = LayoutHelper.MATCH_PARENT;
@@ -218,7 +217,7 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
         layoutParams.bottomMargin = AndroidUtilities.dp(48);
         listView.setLayoutParams(layoutParams);
         listView.setAdapter(listAdapter = new ListAdapter(context));
-        AndroidUtilities.setListViewEdgeEffectColor(listView, 0xff333333);
+        listView.setGlowColor(0xff333333);
 
         emptyView = new TextView(context);
         emptyView.setTextColor(0xff808080);
@@ -248,7 +247,7 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
         layoutParams.bottomMargin = AndroidUtilities.dp(48);
         progressView.setLayoutParams(layoutParams);
 
-        ProgressBar progressBar = new ProgressBar(context);
+        RadialProgressView progressBar = new RadialProgressView(context);
         progressView.addView(progressBar);
         layoutParams = (FrameLayout.LayoutParams) progressView.getLayoutParams();
         layoutParams.width = LayoutHelper.WRAP_CONTENT;
@@ -490,15 +489,16 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
             }
 
             @Override
-            public boolean didSelectVideo(String path) {
+            public void didSelectVideo(String path, VideoEditedInfo info, long estimatedSize, long estimatedDuration, String caption) {
                 removeSelfFromStack();
-                return delegate.didSelectVideo(path);
+                delegate.didSelectVideo(path, info, estimatedSize, estimatedDuration, caption);
             }
         });
         presentFragment(fragment);
     }
 
-    private class ListAdapter extends BaseFragmentAdapter {
+    private class ListAdapter extends RecyclerListView.SelectionAdapter {
+
         private Context mContext;
 
         public ListAdapter(Context context) {
@@ -506,17 +506,12 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
         }
 
         @Override
-        public boolean areAllItemsEnabled() {
+        public boolean isEnabled(RecyclerView.ViewHolder holder) {
             return true;
         }
 
         @Override
-        public boolean isEnabled(int i) {
-            return true;
-        }
-
-        @Override
-        public int getCount() {
+        public int getItemCount() {
             if (singlePhoto || selectedMode == 0) {
                 if (singlePhoto) {
                     return albumsSorted != null ? (int) Math.ceil(albumsSorted.size() / (float) columnsCount) : 0;
@@ -528,44 +523,47 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
         }
 
         @Override
-        public Object getItem(int i) {
-            return null;
-        }
-
-        @Override
-        public long getItemId(int i) {
-            return i;
-        }
-
-        @Override
-        public boolean hasStableIds() {
-            return true;
-        }
-
-        @Override
-        public View getView(int i, View view, ViewGroup viewGroup) {
-            int type = getItemViewType(i);
-            if (type == 0) {
-                PhotoPickerAlbumsCell photoPickerAlbumsCell;
-                if (view == null) {
-                    view = new PhotoPickerAlbumsCell(mContext);
-                    photoPickerAlbumsCell = (PhotoPickerAlbumsCell) view;
-                    photoPickerAlbumsCell.setDelegate(new PhotoPickerAlbumsCell.PhotoPickerAlbumsCellDelegate() {
+        public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+            View view;
+            switch (viewType) {
+                case 0: {
+                    PhotoPickerAlbumsCell cell = new PhotoPickerAlbumsCell(mContext);
+                    cell.setDelegate(new PhotoPickerAlbumsCell.PhotoPickerAlbumsCellDelegate() {
                         @Override
                         public void didSelectAlbum(MediaController.AlbumEntry albumEntry) {
                             openPhotoPicker(albumEntry, 0);
                         }
                     });
-                } else {
-                    photoPickerAlbumsCell = (PhotoPickerAlbumsCell) view;
+                    view = cell;
+                    break;
                 }
+                case 1:
+                default: {
+                    PhotoPickerSearchCell cell = new PhotoPickerSearchCell(mContext, allowGifs);
+                    cell.setDelegate(new PhotoPickerSearchCell.PhotoPickerSearchCellDelegate() {
+                        @Override
+                        public void didPressedSearchButton(int index) {
+                            openPhotoPicker(null, index);
+                        }
+                    });
+                    view = cell;
+                    break;
+                }
+            }
+            return new RecyclerListView.Holder(view);
+        }
+
+        @Override
+        public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
+            if (holder.getItemViewType() == 0) {
+                PhotoPickerAlbumsCell photoPickerAlbumsCell = (PhotoPickerAlbumsCell) holder.itemView;
                 photoPickerAlbumsCell.setAlbumsCount(columnsCount);
                 for (int a = 0; a < columnsCount; a++) {
                     int index;
                     if (singlePhoto || selectedMode == 1) {
-                        index = i * columnsCount + a;
+                        index = position * columnsCount + a;
                     } else {
-                        index = (i - 1) * columnsCount + a;
+                        index = (position - 1) * columnsCount + a;
                     }
                     if (singlePhoto || selectedMode == 0) {
                         if (index < albumsSorted.size()) {
@@ -584,18 +582,7 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
                     }
                 }
                 photoPickerAlbumsCell.requestLayout();
-            } else if (type == 1) {
-                if (view == null) {
-                    view = new PhotoPickerSearchCell(mContext, allowGifs);
-                    ((PhotoPickerSearchCell) view).setDelegate(new PhotoPickerSearchCell.PhotoPickerSearchCellDelegate() {
-                        @Override
-                        public void didPressedSearchButton(int index) {
-                            openPhotoPicker(null, index);
-                        }
-                    });
-                }
             }
-            return view;
         }
 
         @Override
@@ -607,19 +594,6 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
                 return 1;
             }
             return 0;
-        }
-
-        @Override
-        public int getViewTypeCount() {
-            if (singlePhoto || selectedMode == 1) {
-                return 1;
-            }
-            return 2;
-        }
-
-        @Override
-        public boolean isEmpty() {
-            return getCount() == 0;
         }
     }
 }

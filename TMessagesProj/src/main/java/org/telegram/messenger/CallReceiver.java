@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2016.
+ * Copyright Nikolai Kudashov, 2013-2017.
  */
 
 package org.telegram.messenger;
@@ -20,15 +20,21 @@ public class CallReceiver extends BroadcastReceiver {
 
     @Override
     public void onReceive(final Context context, Intent intent) {
-        TelephonyManager telephony = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
+        if (intent.getAction().equals("android.intent.action.PHONE_STATE")) {
+            String phoneState = intent.getStringExtra(TelephonyManager.EXTRA_STATE);
+            if (phoneState.equals(TelephonyManager.EXTRA_STATE_RINGING)) {
+                String phoneNumber = intent.getStringExtra(TelephonyManager.EXTRA_INCOMING_NUMBER);
+                NotificationCenter.getInstance().postNotificationName(NotificationCenter.didReceiveCall, PhoneFormat.stripExceptNumbers(phoneNumber));
+            }
+        }
+        /*TelephonyManager telephony = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
         telephony.listen(new PhoneStateListener() {
             @Override
             public void onCallStateChanged(int state, String incomingNumber) {
-                super.onCallStateChanged(state, incomingNumber);
                 if (state == 1 && incomingNumber != null && incomingNumber.length() > 0) {
                     NotificationCenter.getInstance().postNotificationName(NotificationCenter.didReceiveCall, PhoneFormat.stripExceptNumbers(incomingNumber));
                 }
             }
-        }, PhoneStateListener.LISTEN_CALL_STATE);
+        }, PhoneStateListener.LISTEN_CALL_STATE);*/
     }
 }

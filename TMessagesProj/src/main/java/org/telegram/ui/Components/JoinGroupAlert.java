@@ -3,12 +3,11 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2016.
+ * Copyright Nikolai Kudashov, 2013-2017.
  */
 
 package org.telegram.ui.Components;
 
-import android.app.AlertDialog;
 import android.content.Context;
 import android.os.Bundle;
 import android.text.TextUtils;
@@ -85,7 +84,7 @@ public class JoinGroupAlert extends BottomSheet {
         TextView textView = new TextView(context);
         textView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 17);
-        textView.setTextColor(Theme.JOIN_SHEET_NAME_TEXT_COLOR);
+        textView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
         textView.setText(title);
         textView.setSingleLine(true);
         textView.setEllipsize(TextUtils.TruncateAt.END);
@@ -94,7 +93,7 @@ public class JoinGroupAlert extends BottomSheet {
         if (participants_count > 0) {
             textView = new TextView(context);
             textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-            textView.setTextColor(Theme.JOIN_SHEET_COUNT_TEXT_COLOR);
+            textView.setTextColor(Theme.getColor(Theme.key_dialogTextGray3));
             textView.setSingleLine(true);
             textView.setEllipsize(TextUtils.TruncateAt.END);
             textView.setText(LocaleController.formatPluralString("Members", participants_count));
@@ -110,7 +109,7 @@ public class JoinGroupAlert extends BottomSheet {
             listView.setHorizontalScrollBarEnabled(false);
             listView.setVerticalScrollBarEnabled(false);
             listView.setAdapter(new UsersAdapter(context));
-            listView.setGlowColor(0x01ffffff);
+            listView.setGlowColor(Theme.getColor(Theme.key_dialogScrollGlow));
             linearLayout.addView(listView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, 90, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 0, 0, 0, 0));
         }
 
@@ -121,7 +120,7 @@ public class JoinGroupAlert extends BottomSheet {
         PickerBottomLayout pickerBottomLayout = new PickerBottomLayout(context, false);
         linearLayout.addView(pickerBottomLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.LEFT | Gravity.BOTTOM));
         pickerBottomLayout.cancelButton.setPadding(AndroidUtilities.dp(18), 0, AndroidUtilities.dp(18), 0);
-        pickerBottomLayout.cancelButton.setTextColor(Theme.STICKERS_SHEET_CLOSE_TEXT_COLOR);
+        pickerBottomLayout.cancelButton.setTextColor(Theme.getColor(Theme.key_dialogTextBlue2));
         pickerBottomLayout.cancelButton.setText(LocaleController.getString("Cancel", R.string.Cancel).toUpperCase());
         pickerBottomLayout.cancelButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -132,13 +131,13 @@ public class JoinGroupAlert extends BottomSheet {
         pickerBottomLayout.doneButton.setPadding(AndroidUtilities.dp(18), 0, AndroidUtilities.dp(18), 0);
         pickerBottomLayout.doneButton.setVisibility(View.VISIBLE);
         pickerBottomLayout.doneButtonBadgeTextView.setVisibility(View.GONE);
-        pickerBottomLayout.doneButtonTextView.setTextColor(Theme.STICKERS_SHEET_CLOSE_TEXT_COLOR);
+        pickerBottomLayout.doneButtonTextView.setTextColor(Theme.getColor(Theme.key_dialogTextBlue2));
         pickerBottomLayout.doneButtonTextView.setText(LocaleController.getString("JoinGroup", R.string.JoinGroup));
         pickerBottomLayout.doneButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 dismiss();
-                TLRPC.TL_messages_importChatInvite req = new TLRPC.TL_messages_importChatInvite();
+                final TLRPC.TL_messages_importChatInvite req = new TLRPC.TL_messages_importChatInvite();
                 req.hash = hash;
                 ConnectionsManager.getInstance().sendRequest(req, new RequestDelegate() {
                     @Override
@@ -169,17 +168,7 @@ public class JoinGroupAlert extends BottomSheet {
                                         }
                                     }
                                 } else {
-                                    AlertDialog.Builder builder = new AlertDialog.Builder(fragment.getParentActivity());
-                                    builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
-                                    if (error.text.startsWith("FLOOD_WAIT")) {
-                                        builder.setMessage(LocaleController.getString("FloodWait", R.string.FloodWait));
-                                    } else if (error.text.equals("USERS_TOO_MUCH")) {
-                                        builder.setMessage(LocaleController.getString("JoinToGroupErrorFull", R.string.JoinToGroupErrorFull));
-                                    } else {
-                                        builder.setMessage(LocaleController.getString("JoinToGroupErrorNotExist", R.string.JoinToGroupErrorNotExist));
-                                    }
-                                    builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), null);
-                                    fragment.showDialog(builder.create());
+                                    AlertsCreator.processError(error, fragment, req);
                                 }
                             }
                         });
@@ -189,14 +178,7 @@ public class JoinGroupAlert extends BottomSheet {
         });
     }
 
-    private class Holder extends RecyclerView.ViewHolder {
-
-        public Holder(View itemView) {
-            super(itemView);
-        }
-    }
-
-    private class UsersAdapter extends RecyclerView.Adapter {
+    private class UsersAdapter extends RecyclerListView.SelectionAdapter {
 
         private Context context;
 
@@ -225,10 +207,15 @@ public class JoinGroupAlert extends BottomSheet {
         }
 
         @Override
+        public boolean isEnabled(RecyclerView.ViewHolder holder) {
+            return false;
+        }
+
+        @Override
         public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
             View view = new JoinSheetUserCell(context);
             view.setLayoutParams(new RecyclerView.LayoutParams(AndroidUtilities.dp(100), AndroidUtilities.dp(90)));
-            return new Holder(view);
+            return new RecyclerListView.Holder(view);
         }
 
         @Override

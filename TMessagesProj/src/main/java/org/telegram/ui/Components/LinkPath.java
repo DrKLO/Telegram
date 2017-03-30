@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2016.
+ * Copyright Nikolai Kudashov, 2013-2017.
  */
 
 package org.telegram.ui.Components;
@@ -46,6 +46,6 @@ public class LinkPath extends Path {
         if (left < lineLeft) {
             left = lineLeft;
         }
-        super.addRect(left, top, right, bottom, dir);
+        super.addRect(left, top, right, bottom - (bottom != currentLayout.getHeight() ? currentLayout.getSpacingAdd() : 0), dir);
     }
 }

@@ -3,20 +3,18 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2016.
+ * Copyright Nikolai Kudashov, 2013-2017.
  */
 
 package org.telegram.ui.Cells;
 
 import android.content.Context;
 import android.graphics.Canvas;
-import android.graphics.Paint;
 import android.text.Layout;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.StaticLayout;
-import android.text.TextPaint;
 import android.text.style.ClickableSpan;
 import android.text.style.URLSpan;
 import android.view.MotionEvent;
@@ -37,8 +35,6 @@ import org.telegram.ui.Components.URLSpanNoUnderline;
 public class BotHelpCell extends View {
 
     private StaticLayout textLayout;
-    private TextPaint textPaint;
-    private Paint urlPaint;
     private String oldText;
 
     private int width;
@@ -57,14 +53,6 @@ public class BotHelpCell extends View {
 
     public BotHelpCell(Context context) {
         super(context);
-
-        textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
-        textPaint.setTextSize(AndroidUtilities.dp(16));
-        textPaint.setColor(0xff000000);
-        textPaint.linkColor = Theme.MSG_LINK_TEXT_COLOR;
-
-        urlPaint = new Paint();
-        urlPaint.setColor(Theme.MSG_LINK_SELECT_BACKGROUND_COLOR);
     }
 
     public void setDelegate(BotHelpCellDelegate botHelpCellDelegate) {
@@ -88,26 +76,36 @@ public class BotHelpCell extends View {
         }
         oldText = text;
         setVisibility(VISIBLE);
+        int maxWidth;
         if (AndroidUtilities.isTablet()) {
-            width = (int) (AndroidUtilities.getMinTabletSide() * 0.7f);
+            maxWidth = (int) (AndroidUtilities.getMinTabletSide() * 0.7f);
         } else {
-            width = (int) (Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y) * 0.7f);
+            maxWidth = (int) (Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y) * 0.7f);
         }
+        String lines[] = text.split("\n");
         SpannableStringBuilder stringBuilder = new SpannableStringBuilder();
         String help = LocaleController.getString("BotInfoTitle", R.string.BotInfoTitle);
         stringBuilder.append(help);
         stringBuilder.append("\n\n");
-        stringBuilder.append(text);
-        MessageObject.addLinks(stringBuilder);
+        for (int a = 0; a < lines.length; a++) {
+            stringBuilder.append(lines[a].trim());
+            if (a != lines.length - 1) {
+                stringBuilder.append("\n");
+            }
+        }
+        MessageObject.addLinks(false, stringBuilder);
         stringBuilder.setSpan(new TypefaceSpan(AndroidUtilities.getTypeface("fonts/rmedium.ttf")), 0, help.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-        Emoji.replaceEmoji(stringBuilder, textPaint.getFontMetricsInt(), AndroidUtilities.dp(20), false);
+        Emoji.replaceEmoji(stringBuilder, Theme.chat_msgTextPaint.getFontMetricsInt(), AndroidUtilities.dp(20), false);
         try {
-            textLayout = new StaticLayout(stringBuilder, textPaint, width, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+            textLayout = new StaticLayout(stringBuilder, Theme.chat_msgTextPaint, maxWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
             width = 0;
             height = textLayout.getHeight() + AndroidUtilities.dp(4 + 18);
             int count = textLayout.getLineCount();
             for (int a = 0; a < count; a++) {
                 width = (int) Math.ceil(Math.max(width, textLayout.getLineWidth(a) + textLayout.getLineLeft(a)));
+            }
+            if (width > maxWidth) {
+                width = maxWidth;
             }
         } catch (Exception e) {
             FileLog.e("tmessage", e);
@@ -144,7 +142,7 @@ public class BotHelpCell extends View {
                                     urlPath.setCurrentLayout(textLayout, start, 0);
                                     textLayout.getSelectionPath(start, buffer.getSpanEnd(pressedLink), urlPath);
                                 } catch (Exception e) {
-                                    FileLog.e("tmessages", e);
+                                    FileLog.e(e);
                                 }
                             } else {
                                 resetPressedLink();
@@ -154,7 +152,7 @@ public class BotHelpCell extends View {
                         }
                     } catch (Exception e) {
                         resetPressedLink();
-                        FileLog.e("tmessages", e);
+                        FileLog.e(e);
                     }
                 } else if (pressedLink != null) {
                     try {
@@ -173,7 +171,7 @@ public class BotHelpCell extends View {
                             }
                         }
                     } catch (Exception e) {
-                        FileLog.e("tmessages", e);
+                        FileLog.e(e);
                     }
                     resetPressedLink();
                     result = true;
@@ -194,12 +192,16 @@ public class BotHelpCell extends View {
     protected void onDraw(Canvas canvas) {
         int x = (canvas.getWidth() - width) / 2;
         int y = AndroidUtilities.dp(4);
-        Theme.backgroundMediaDrawableIn.setBounds(x, y, width + x, height + y);
-        Theme.backgroundMediaDrawableIn.draw(canvas);
+        Theme.chat_msgInMediaShadowDrawable.setBounds(x, y, width + x, height + y);
+        Theme.chat_msgInMediaShadowDrawable.draw(canvas);
+        Theme.chat_msgInMediaDrawable.setBounds(x, y, width + x, height + y);
+        Theme.chat_msgInMediaDrawable.draw(canvas);
+        Theme.chat_msgTextPaint.setColor(Theme.getColor(Theme.key_chat_messageTextIn));
+        Theme.chat_msgTextPaint.linkColor = Theme.getColor(Theme.key_chat_messageLinkIn);
         canvas.save();
         canvas.translate(textX = AndroidUtilities.dp(2 + 9) + x, textY = AndroidUtilities.dp(2 + 9) + y);
         if (pressedLink != null) {
-            canvas.drawPath(urlPath, urlPaint);
+            canvas.drawPath(urlPath, Theme.chat_urlPaint);
         }
         if (textLayout != null) {
             textLayout.draw(canvas);

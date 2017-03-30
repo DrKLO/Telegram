@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2016.
+ * Copyright Nikolai Kudashov, 2013-2017.
  */
 
 package org.telegram.ui.Components;
@@ -14,6 +14,7 @@ import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.PorterDuff;
+import android.graphics.PorterDuffColorFilter;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.drawable.Drawable;
 import android.view.View;
@@ -45,7 +46,7 @@ public class CheckBox extends View {
 
     private int size = 22;
     private int checkOffset;
-    private int color = 0xff5ec245;
+    private int color; //default 0xff5ec245
 
     private final static float progressBounceDiff = 0.2f;
 
@@ -67,7 +68,7 @@ public class CheckBox extends View {
             backgroundPaint.setStrokeWidth(AndroidUtilities.dp(2));
         }
 
-        checkDrawable = context.getResources().getDrawable(resId);
+        checkDrawable = context.getResources().getDrawable(resId).mutate();
     }
 
     @Override
@@ -105,8 +106,20 @@ public class CheckBox extends View {
         return progress;
     }
 
-    public void setColor(int value) {
-        color = value;
+    public void setColor(int backgroundColor, int checkColor) {
+        color = backgroundColor;
+        checkDrawable.setColorFilter(new PorterDuffColorFilter(checkColor, PorterDuff.Mode.MULTIPLY));
+        invalidate();
+    }
+
+    public void setBackgroundColor(int backgroundColor) {
+        color = backgroundColor;
+        invalidate();
+    }
+
+    public void setCheckColor(int checkColor) {
+        checkDrawable.setColorFilter(new PorterDuffColorFilter(checkColor, PorterDuff.Mode.MULTIPLY));
+        invalidate();
     }
 
     private void cancelCheckAnimator() {

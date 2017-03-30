@@ -3,14 +3,15 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2016.
+ * Copyright Nikolai Kudashov, 2013-2017.
  */
 
 package org.telegram.ui;
 
-import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffColorFilter;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.MotionEvent;
@@ -29,10 +30,17 @@ import org.telegram.messenger.R;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.messenger.UserConfig;
 import org.telegram.ui.ActionBar.ActionBar;
+import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Components.LayoutHelper;
 
 public class ChangePhoneHelpActivity extends BaseFragment {
+
+    private TextView textView1;
+    private TextView textView2;
+    private ImageView imageView;
 
     @Override
     public View createView(Context context) {
@@ -84,54 +92,34 @@ public class ChangePhoneHelpActivity extends BaseFragment {
         layoutParams.height = ScrollView.LayoutParams.WRAP_CONTENT;
         linearLayout.setLayoutParams(layoutParams);
 
-        ImageView imageView = new ImageView(context);
+        imageView = new ImageView(context);
         imageView.setImageResource(R.drawable.phone_change);
-        linearLayout.addView(imageView);
-        LinearLayout.LayoutParams layoutParams2 = (LinearLayout.LayoutParams) imageView.getLayoutParams();
-        layoutParams2.width = LayoutHelper.WRAP_CONTENT;
-        layoutParams2.height = LayoutHelper.WRAP_CONTENT;
-        layoutParams2.gravity = Gravity.CENTER_HORIZONTAL;
-        imageView.setLayoutParams(layoutParams2);
+        imageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_changephoneinfo_image), PorterDuff.Mode.MULTIPLY));
+        linearLayout.addView(imageView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL));
 
-        TextView textView = new TextView(context);
-        textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
-        textView.setGravity(Gravity.CENTER_HORIZONTAL);
-        textView.setTextColor(0xff212121);
+        textView1 = new TextView(context);
+        textView1.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+        textView1.setGravity(Gravity.CENTER_HORIZONTAL);
+        textView1.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
 
         try {
-            textView.setText(AndroidUtilities.replaceTags(LocaleController.getString("PhoneNumberHelp", R.string.PhoneNumberHelp)));
+            textView1.setText(AndroidUtilities.replaceTags(LocaleController.getString("PhoneNumberHelp", R.string.PhoneNumberHelp)));
         } catch (Exception e) {
-            FileLog.e("tmessages", e);
-            textView.setText(LocaleController.getString("PhoneNumberHelp", R.string.PhoneNumberHelp));
+            FileLog.e(e);
+            textView1.setText(LocaleController.getString("PhoneNumberHelp", R.string.PhoneNumberHelp));
         }
-        linearLayout.addView(textView);
-        layoutParams2 = (LinearLayout.LayoutParams) textView.getLayoutParams();
-        layoutParams2.width = LayoutHelper.WRAP_CONTENT;
-        layoutParams2.height = LayoutHelper.WRAP_CONTENT;
-        layoutParams2.gravity = Gravity.CENTER_HORIZONTAL;
-        layoutParams2.leftMargin = AndroidUtilities.dp(20);
-        layoutParams2.rightMargin = AndroidUtilities.dp(20);
-        layoutParams2.topMargin = AndroidUtilities.dp(56);
-        textView.setLayoutParams(layoutParams2);
+        linearLayout.addView(textView1, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 20, 56, 20, 0));
 
-        textView = new TextView(context);
-        textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
-        textView.setGravity(Gravity.CENTER_HORIZONTAL);
-        textView.setTextColor(0xff4d83b3);
-        textView.setText(LocaleController.getString("PhoneNumberChange", R.string.PhoneNumberChange));
-        textView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
-        textView.setPadding(0, AndroidUtilities.dp(10), 0, AndroidUtilities.dp(10));
-        linearLayout.addView(textView);
-        layoutParams2 = (LinearLayout.LayoutParams) textView.getLayoutParams();
-        layoutParams2.width = LayoutHelper.WRAP_CONTENT;
-        layoutParams2.height = LayoutHelper.WRAP_CONTENT;
-        layoutParams2.gravity = Gravity.CENTER_HORIZONTAL;
-        layoutParams2.leftMargin = AndroidUtilities.dp(20);
-        layoutParams2.rightMargin = AndroidUtilities.dp(20);
-        layoutParams2.topMargin = AndroidUtilities.dp(46);
-        textView.setLayoutParams(layoutParams2);
+        textView2 = new TextView(context);
+        textView2.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
+        textView2.setGravity(Gravity.CENTER_HORIZONTAL);
+        textView2.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText4));
+        textView2.setText(LocaleController.getString("PhoneNumberChange", R.string.PhoneNumberChange));
+        textView2.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        textView2.setPadding(0, AndroidUtilities.dp(10), 0, AndroidUtilities.dp(10));
+        linearLayout.addView(textView2, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 20, 46, 20, 0));
 
-        textView.setOnClickListener(new View.OnClickListener() {
+        textView2.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 if (getParentActivity() == null) {
@@ -152,5 +140,21 @@ public class ChangePhoneHelpActivity extends BaseFragment {
         });
 
         return fragmentView;
+    }
+
+    @Override
+    public ThemeDescription[] getThemeDescriptions() {
+        return new ThemeDescription[]{
+                new ThemeDescription(fragmentView, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundWhite),
+
+                new ThemeDescription(actionBar, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_actionBarDefault),
+                new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_ITEMSCOLOR, null, null, null, null, Theme.key_actionBarDefaultIcon),
+                new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_TITLECOLOR, null, null, null, null, Theme.key_actionBarDefaultTitle),
+                new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SELECTORCOLOR, null, null, null, null, Theme.key_actionBarDefaultSelector),
+
+                new ThemeDescription(textView1, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteBlackText),
+                new ThemeDescription(textView2, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteBlueText4),
+                new ThemeDescription(imageView, ThemeDescription.FLAG_IMAGECOLOR, null, null, null, null, Theme.key_changephoneinfo_image),
+        };
     }
 }

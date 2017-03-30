@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2016.
+ * Copyright Nikolai Kudashov, 2013-2017.
  */
 
 package org.telegram.ui.Components;
@@ -26,7 +26,7 @@ public class LineProgressView extends View {
     private float animatedAlphaValue = 1.0f;
 
     private int backColor;
-    private int progressColor = 0xff36a2ee;
+    private int progressColor;
 
     private static DecelerateInterpolator decelerateInterpolator = null;
     private static Paint progressPaint = null;
@@ -37,7 +37,6 @@ public class LineProgressView extends View {
         if (decelerateInterpolator == null) {
             decelerateInterpolator = new DecelerateInterpolator();
             progressPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-            progressPaint.setStyle(Paint.Style.STROKE);
             progressPaint.setStrokeCap(Paint.Cap.ROUND);
             progressPaint.setStrokeWidth(AndroidUtilities.dp(2));
         }

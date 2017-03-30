@@ -3,12 +3,13 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2016.
+ * Copyright Nikolai Kudashov, 2013-2017.
  */
 
 package org.telegram.ui.Components;
 
 import android.content.Context;
+import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
 import android.text.TextUtils;
@@ -42,7 +43,8 @@ public class ChatAvatarContainer extends FrameLayout {
     private ChatActivity parentFragment;
     private TypingDotsDrawable typingDotsDrawable;
     private RecordStatusDrawable recordStatusDrawable;
-    private SendingFileExDrawable sendingFileDrawable;
+    private SendingFileDrawable sendingFileDrawable;
+    private PlayingGameDrawable playingGameDrawable;
     private AvatarDrawable avatarDrawable = new AvatarDrawable();
 
     private int onlineCount = -1;
@@ -56,16 +58,15 @@ public class ChatAvatarContainer extends FrameLayout {
         addView(avatarImageView);
 
         titleTextView = new SimpleTextView(context);
-        titleTextView.setTextColor(Theme.ACTION_BAR_TITLE_COLOR);
+        titleTextView.setTextColor(Theme.getColor(Theme.key_actionBarDefaultTitle));
         titleTextView.setTextSize(18);
         titleTextView.setGravity(Gravity.LEFT);
         titleTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         titleTextView.setLeftDrawableTopPadding(-AndroidUtilities.dp(1.3f));
-        titleTextView.setRightDrawableTopPadding(-AndroidUtilities.dp(1.3f));
         addView(titleTextView);
 
         subtitleTextView = new SimpleTextView(context);
-        subtitleTextView.setTextColor(Theme.ACTION_BAR_SUBTITLE_COLOR);
+        subtitleTextView.setTextColor(Theme.getColor(Theme.key_actionBarDefaultSubtitle));
         subtitleTextView.setTextSize(14);
         subtitleTextView.setGravity(Gravity.LEFT);
         addView(subtitleTextView);
@@ -79,7 +80,7 @@ public class ChatAvatarContainer extends FrameLayout {
             timeItem.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    parentFragment.showDialog(AndroidUtilities.buildTTLAlert(getContext(), parentFragment.getCurrentEncryptedChat()).create());
+                    parentFragment.showDialog(AlertsCreator.createTTLAlert(getContext(), parentFragment.getCurrentEncryptedChat()).create());
                 }
             });
         }
@@ -114,8 +115,10 @@ public class ChatAvatarContainer extends FrameLayout {
         typingDotsDrawable.setIsChat(chat != null);
         recordStatusDrawable = new RecordStatusDrawable();
         recordStatusDrawable.setIsChat(chat != null);
-        sendingFileDrawable = new SendingFileExDrawable();
+        sendingFileDrawable = new SendingFileDrawable();
         sendingFileDrawable.setIsChat(chat != null);
+        playingGameDrawable = new PlayingGameDrawable();
+        playingGameDrawable.setIsChat(chat != null);
     }
 
     @Override
@@ -169,8 +172,25 @@ public class ChatAvatarContainer extends FrameLayout {
         titleTextView.setRightDrawable(rightIcon);
     }
 
+    public void setTitleIcons(Drawable leftIcon, Drawable rightIcon) {
+        titleTextView.setLeftDrawable(leftIcon);
+        titleTextView.setRightDrawable(rightIcon);
+    }
+
     public void setTitle(CharSequence value) {
         titleTextView.setText(value);
+    }
+
+    public ImageView getTimeItem() {
+        return timeItem;
+    }
+
+    public SimpleTextView getTitleTextView() {
+        return titleTextView;
+    }
+
+    public SimpleTextView getSubtitleTextView() {
+        return subtitleTextView;
     }
 
     private void setTypingAnimation(boolean start) {
@@ -182,25 +202,35 @@ public class ChatAvatarContainer extends FrameLayout {
                     typingDotsDrawable.start();
                     recordStatusDrawable.stop();
                     sendingFileDrawable.stop();
+                    playingGameDrawable.stop();
                 } else if (type == 1) {
                     subtitleTextView.setLeftDrawable(recordStatusDrawable);
                     recordStatusDrawable.start();
                     typingDotsDrawable.stop();
                     sendingFileDrawable.stop();
+                    playingGameDrawable.stop();
                 } else if (type == 2) {
                     subtitleTextView.setLeftDrawable(sendingFileDrawable);
                     sendingFileDrawable.start();
                     typingDotsDrawable.stop();
                     recordStatusDrawable.stop();
+                    playingGameDrawable.stop();
+                } else if (type == 3) {
+                    subtitleTextView.setLeftDrawable(playingGameDrawable);
+                    playingGameDrawable.start();
+                    typingDotsDrawable.stop();
+                    recordStatusDrawable.stop();
+                    sendingFileDrawable.stop();
                 }
             } catch (Exception e) {
-                FileLog.e("tmessages", e);
+                FileLog.e(e);
             }
         } else {
             subtitleTextView.setLeftDrawable(null);
             typingDotsDrawable.stop();
             recordStatusDrawable.stop();
             sendingFileDrawable.stop();
+            playingGameDrawable.stop();
         }
     }
 
@@ -258,7 +288,10 @@ public class ChatAvatarContainer extends FrameLayout {
                     }
                 }
             } else if (user != null) {
-                user = MessagesController.getInstance().getUser(user.id);
+                TLRPC.User newUser = MessagesController.getInstance().getUser(user.id);
+                if (newUser != null) {
+                    user = newUser;
+                }
                 String newStatus;
                 if (user.id == UserConfig.getClientUserId()) {
                     newStatus = LocaleController.getString("ChatYourSelf", R.string.ChatYourSelf);

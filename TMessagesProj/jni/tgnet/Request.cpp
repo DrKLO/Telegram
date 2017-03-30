@@ -19,6 +19,7 @@ Request::Request(int32_t token, ConnectionType type, uint32_t flags, uint32_t da
     datacenterId = datacenter;
     onCompleteRequestCallback = completeFunc;
     onQuickAckCallback = quickAckFunc;
+    dataType = (uint8_t) (requestFlags >> 24);
 }
 
 Request::~Request() {
@@ -52,9 +53,9 @@ void Request::clear(bool time) {
     }
 }
 
-void Request::onComplete(TLObject *result, TL_error *error) {
+void Request::onComplete(TLObject *result, TL_error *error, int32_t networkType) {
     if (onCompleteRequestCallback != nullptr && (result != nullptr || error != nullptr)) {
-        onCompleteRequestCallback(result, error);
+        onCompleteRequestCallback(result, error, networkType);
     }
 }
 

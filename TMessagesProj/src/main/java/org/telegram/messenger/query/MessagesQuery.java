@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2016.
+ * Copyright Nikolai Kudashov, 2013-2017.
  */
 
 package org.telegram.messenger.query;
@@ -26,6 +26,7 @@ import org.telegram.tgnet.NativeByteBuffer;
 import org.telegram.tgnet.RequestDelegate;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.ui.Components.TypefaceSpan;
 import org.telegram.ui.Components.URLSpanUserMention;
 
 import java.util.ArrayList;
@@ -141,7 +142,7 @@ public class MessagesQuery {
                 }
             }
         } catch (Exception e) {
-            FileLog.e("tmessages", e);
+            FileLog.e(e);
         }
         return null;
     }
@@ -164,7 +165,7 @@ public class MessagesQuery {
                     state.dispose();
                     MessagesStorage.getInstance().getDatabase().commitTransaction();
                 } catch (Exception e) {
-                    FileLog.e("tmessages", e);
+                    FileLog.e(e);
                 }
             }
         });
@@ -265,7 +266,7 @@ public class MessagesQuery {
                             }
                         });
                     } catch (Exception e) {
-                        FileLog.e("tmessages", e);
+                        FileLog.e(e);
                     }
                 }
             });
@@ -372,7 +373,7 @@ public class MessagesQuery {
                             }
                         }
                     } catch (Exception e) {
-                        FileLog.e("tmessages", e);
+                        FileLog.e(e);
                     }
                 }
             });
@@ -409,7 +410,7 @@ public class MessagesQuery {
                     state.dispose();
                     MessagesStorage.getInstance().getDatabase().commitTransaction();
                 } catch (Exception e) {
-                    FileLog.e("tmessages", e);
+                    FileLog.e(e);
                 }
             }
         });
@@ -444,6 +445,8 @@ public class MessagesQuery {
                                 m.generatePinMessageText(null, null);
                             } else if (m.messageOwner.action instanceof TLRPC.TL_messageActionGameScore) {
                                 m.generateGameMessageText(null);
+                            } else if (m.messageOwner.action instanceof TLRPC.TL_messageActionPaymentSent) {
+                                m.generatePaymentSentMessageText(null);
                             }
                         }
                         changed = true;
@@ -460,6 +463,44 @@ public class MessagesQuery {
         Collections.sort(entities, entityComparator);
     }
 
+    private static boolean checkInclusion(int index, ArrayList<TLRPC.MessageEntity> entities) {
+        if (entities == null || entities.isEmpty()) {
+            return false;
+        }
+        int count = entities.size();
+        for (int a = 0; a < count; a++) {
+            TLRPC.MessageEntity entity = entities.get(a);
+            if (entity.offset <= index && entity.offset + entity.length > index) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean checkIntersection(int start, int end, ArrayList<TLRPC.MessageEntity> entities) {
+        if (entities == null || entities.isEmpty()) {
+            return false;
+        }
+        int count = entities.size();
+        for (int a = 0; a < count; a++) {
+            TLRPC.MessageEntity entity = entities.get(a);
+            if (entity.offset > start && entity.offset + entity.length <= end) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static void removeOffsetAfter(int start, int countToRemove, ArrayList<TLRPC.MessageEntity> entities) {
+        int count = entities.size();
+        for (int a = 0; a < count; a++) {
+            TLRPC.MessageEntity entity = entities.get(a);
+            if (entity.offset > start) {
+                entity.offset -= countToRemove;
+            }
+        }
+    }
+
     public static ArrayList<TLRPC.MessageEntity> getEntities(CharSequence[] message) {
         if (message == null || message[0] == null) {
             return null;
@@ -471,6 +512,8 @@ public class MessagesQuery {
         boolean isPre = false;
         final String mono = "`";
         final String pre = "```";
+        final String bold = "**";
+        final String italic = "__";
         while ((index = TextUtils.indexOf(message[0], !isPre ? mono : pre, lastIndex)) != -1) {
             if (start == -1) {
                 isPre = message[0].length() - index > 2 && message[0].charAt(index + 1) == '`' && message[0].charAt(index + 2) == '`';
@@ -503,20 +546,24 @@ public class MessagesQuery {
                     if (endMessage.length() != 0) {
                         endMessage = TextUtils.concat("\n", endMessage);
                     }
-                    message[0] = TextUtils.concat(startMessage, content, endMessage);
-                    TLRPC.TL_messageEntityPre entity = new TLRPC.TL_messageEntityPre();
-                    entity.offset = start + (replacedFirst ? 0 : 1);
-                    entity.length = index - start - 3 + (replacedFirst ? 0 : 1);
-                    entity.language = "";
-                    entities.add(entity);
-                    lastIndex -= 6;
+                    if (!TextUtils.isEmpty(content)) {
+                        message[0] = TextUtils.concat(startMessage, content, endMessage);
+                        TLRPC.TL_messageEntityPre entity = new TLRPC.TL_messageEntityPre();
+                        entity.offset = start + (replacedFirst ? 0 : 1);
+                        entity.length = index - start - 3 + (replacedFirst ? 0 : 1);
+                        entity.language = "";
+                        entities.add(entity);
+                        lastIndex -= 6;
+                    }
                 } else {
-                    message[0] = TextUtils.concat(TextUtils.substring(message[0], 0, start), TextUtils.substring(message[0], start + 1, index), TextUtils.substring(message[0], index + 1, message[0].length()));
-                    TLRPC.TL_messageEntityCode entity = new TLRPC.TL_messageEntityCode();
-                    entity.offset = start;
-                    entity.length = index - start - 1;
-                    entities.add(entity);
-                    lastIndex -= 2;
+                    if (start + 1 != index) {
+                        message[0] = TextUtils.concat(TextUtils.substring(message[0], 0, start), TextUtils.substring(message[0], start + 1, index), TextUtils.substring(message[0], index + 1, message[0].length()));
+                        TLRPC.TL_messageEntityCode entity = new TLRPC.TL_messageEntityCode();
+                        entity.offset = start;
+                        entity.length = index - start - 1;
+                        entities.add(entity);
+                        lastIndex -= 2;
+                    }
                 }
                 start = -1;
                 isPre = false;
@@ -532,17 +579,44 @@ public class MessagesQuery {
             entity.length = 1;
             entities.add(entity);
         }
+
         if (message[0] instanceof Spannable) {
             Spannable spannable = (Spannable) message[0];
-            URLSpanUserMention spans[] = spannable.getSpans(0, message[0].length(), URLSpanUserMention.class);
+            TypefaceSpan spans[] = spannable.getSpans(0, message[0].length(), TypefaceSpan.class);
             if (spans != null && spans.length > 0) {
-                entities = new ArrayList<>();
-                for (int b = 0; b < spans.length; b++) {
+                for (int a = 0; a < spans.length; a++) {
+                    TypefaceSpan span = spans[a];
+                    int spanStart = spannable.getSpanStart(span);
+                    int spanEnd = spannable.getSpanEnd(span);
+                    if (checkInclusion(spanStart, entities) || checkInclusion(spanEnd, entities) || checkIntersection(spanStart, spanEnd, entities)) {
+                        continue;
+                    }
+                    if (entities == null) {
+                        entities = new ArrayList<>();
+                    }
+                    TLRPC.MessageEntity entity;
+                    if (span.isBold()) {
+                        entity = new TLRPC.TL_messageEntityBold();
+                    } else {
+                        entity = new TLRPC.TL_messageEntityItalic();
+                    }
+                    entity.offset = spanStart;
+                    entity.length = spanEnd - spanStart;
+                    entities.add(entity);
+                }
+            }
+
+            URLSpanUserMention spansMentions[] = spannable.getSpans(0, message[0].length(), URLSpanUserMention.class);
+            if (spansMentions != null && spansMentions.length > 0) {
+                if (entities == null) {
+                    entities = new ArrayList<>();
+                }
+                for (int b = 0; b < spansMentions.length; b++) {
                     TLRPC.TL_inputMessageEntityMentionName entity = new TLRPC.TL_inputMessageEntityMentionName();
-                    entity.user_id = MessagesController.getInputUser(Utilities.parseInt(spans[b].getURL()));
+                    entity.user_id = MessagesController.getInputUser(Utilities.parseInt(spansMentions[b].getURL()));
                     if (entity.user_id != null) {
-                        entity.offset = spannable.getSpanStart(spans[b]);
-                        entity.length = Math.min(spannable.getSpanEnd(spans[b]), message[0].length()) - entity.offset;
+                        entity.offset = spannable.getSpanStart(spansMentions[b]);
+                        entity.length = Math.min(spannable.getSpanEnd(spansMentions[b]), message[0].length()) - entity.offset;
                         if (message[0].charAt(entity.offset + entity.length - 1) == ' ') {
                             entity.length--;
                         }
@@ -551,6 +625,54 @@ public class MessagesQuery {
                 }
             }
         }
+
+        for (int c = 0; c < 2; c++) {
+            lastIndex = 0;
+            start = -1;
+            String checkString = c == 0 ? bold : italic;
+            char checkChar = c == 0 ? '*' : '_';
+            while ((index = TextUtils.indexOf(message[0], checkString, lastIndex)) != -1) {
+                if (start == -1) {
+                    char prevChar = index == 0 ? ' ' : message[0].charAt(index - 1);
+                    if (!checkInclusion(index, entities) && (prevChar == ' ' || prevChar == '\n')) {
+                        start = index;
+                    }
+                    lastIndex = index + 2;
+                } else {
+                    for (int a = index + 2; a < message[0].length(); a++) {
+                        if (message[0].charAt(a) == checkChar) {
+                            index++;
+                        } else {
+                            break;
+                        }
+                    }
+                    lastIndex = index + 2;
+                    if (checkInclusion(index, entities) || checkIntersection(start, index, entities)) {
+                        start = -1;
+                        continue;
+                    }
+                    if (start + 2 != index) {
+                        if (entities == null) {
+                            entities = new ArrayList<>();
+                        }
+                        message[0] = TextUtils.concat(TextUtils.substring(message[0], 0, start), TextUtils.substring(message[0], start + 2, index), TextUtils.substring(message[0], index + 2, message[0].length()));
+                        TLRPC.MessageEntity entity;
+                        if (c == 0) {
+                            entity = new TLRPC.TL_messageEntityBold();
+                        } else {
+                            entity = new TLRPC.TL_messageEntityItalic();
+                        }
+                        entity.offset = start;
+                        entity.length = index - start - 2;
+                        removeOffsetAfter(entity.offset + entity.length, 4, entities);
+                        entities.add(entity);
+                        lastIndex -= 4;
+                    }
+                    start = -1;
+                }
+            }
+        }
+
         return entities;
     }
 }

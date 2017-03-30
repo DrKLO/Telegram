@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2016.
+ * Copyright Nikolai Kudashov, 2013-2017.
  */
 
 package org.telegram.ui.Components;
@@ -70,7 +70,7 @@ public class StaticLayoutEx {
             sConstructorArgs = new Object[signature.length];
             initialized = true;
         } catch (Throwable e) {
-            FileLog.e("tmessages", e);
+            FileLog.e(e);
         }
     }
 
@@ -97,7 +97,7 @@ public class StaticLayoutEx {
                 sConstructorArgs[12] = maxLines;
                 return sConstructor.newInstance(sConstructorArgs);
             } catch (Exception e) {
-                FileLog.e("tmessages", e);
+                FileLog.e(e);
             }
         }*/
         try {
@@ -105,7 +105,20 @@ public class StaticLayoutEx {
                 CharSequence text = TextUtils.ellipsize(source, paint, ellipsisWidth, TextUtils.TruncateAt.END);
                 return new StaticLayout(text, 0, text.length(), paint, outerWidth, align, spacingMult, spacingAdd, includePad);
             } else {
-                StaticLayout layout = new StaticLayout(source, paint, outerWidth, align, spacingMult, spacingAdd, includePad);
+                StaticLayout layout;
+                if (Build.VERSION.SDK_INT >= 23) {
+                    StaticLayout.Builder builder = StaticLayout.Builder.obtain(source, 0, source.length(), paint, outerWidth)
+                            .setAlignment(align)
+                            .setLineSpacing(spacingAdd, spacingMult)
+                            .setIncludePad(includePad)
+                            .setEllipsize(null)
+                            .setEllipsizedWidth(ellipsisWidth)
+                            .setBreakStrategy(Layout.BREAK_STRATEGY_HIGH_QUALITY)
+                            .setHyphenationFrequency(Layout.HYPHENATION_FREQUENCY_NORMAL);
+                    layout = builder.build();
+                } else {
+                    layout = new StaticLayout(source, paint, outerWidth, align, spacingMult, spacingAdd, includePad);
+                }
                 if (layout.getLineCount() <= maxLines) {
                     return layout;
                 } else {
@@ -122,7 +135,7 @@ public class StaticLayoutEx {
                 }
             }
         } catch (Exception e) {
-            FileLog.e("tmessages", e);
+            FileLog.e(e);
         }
         return null;
     }

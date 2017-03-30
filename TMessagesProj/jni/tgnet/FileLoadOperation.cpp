@@ -374,7 +374,7 @@ void FileLoadOperation::startDownloadRequest() {
         request->limit = currentDownloadChunkSize;
         nextDownloadOffset += currentDownloadChunkSize;
 
-        requestInfo->requestToken = ConnectionsManager::getInstance().sendRequest(request, [&, requestInfo](TLObject *response, TL_error *error) {
+        requestInfo->requestToken = ConnectionsManager::getInstance().sendRequest(request, [&, requestInfo](TLObject *response, TL_error *error, int32_t connectionType) {
             requestInfo->requestToken = 0;
             if (response != nullptr) {
                 TL_upload_file *res = (TL_upload_file *) response;

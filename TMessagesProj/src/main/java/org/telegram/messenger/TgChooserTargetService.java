@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2016.
+ * Copyright Nikolai Kudashov, 2013-2017.
  */
 
 package org.telegram.messenger;
@@ -104,7 +104,7 @@ public class TgChooserTargetService extends ChooserTargetService {
                         MessagesStorage.getInstance().getUsersInternal(TextUtils.join(",", usersToLoad), users);
                     }
                 } catch (Exception e) {
-                    FileLog.e("tmessages", e);
+                    FileLog.e(e);
                 }
                 for (int a = 0; a < dialogs.size(); a++) {
                     Bundle extras = new Bundle();
@@ -153,7 +153,7 @@ public class TgChooserTargetService extends ChooserTargetService {
         try {
             semaphore.acquire();
         } catch (Exception e) {
-            FileLog.e("tmessages", e);
+            FileLog.e(e);
         }
         return targets;
     }
@@ -176,7 +176,7 @@ public class TgChooserTargetService extends ChooserTargetService {
                 return Icon.createWithBitmap(result);
             }
         } catch (Throwable e) {
-            FileLog.e("tmessages", e);
+            FileLog.e(e);
         }
         return null;
     }

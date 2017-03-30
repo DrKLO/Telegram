@@ -108,6 +108,64 @@ include $(BUILD_STATIC_LIBRARY)
 
 include $(CLEAR_VARS)
 
+LOCAL_MODULE    := WebRtcAec
+
+LOCAL_SRC_FILES := ./libtgvoip/external/libWebRtcAec_android_$(TARGET_ARCH_ABI).a
+
+include $(PREBUILT_STATIC_LIBRARY)
+
+include $(CLEAR_VARS)
+
+LOCAL_MODULE := voip
+LOCAL_CPPFLAGS := -Wall -std=c++11 -DANDROID -finline-functions -ffast-math -Os -fno-strict-aliasing -O3
+LOCAL_CFLAGS := -O3 -DUSE_KISS_FFT -fexceptions
+
+ifeq ($(TARGET_ARCH_ABI),armeabi-v7a)
+#    LOCAL_CPPFLAGS += -mfloat-abi=softfp -mfpu=neon
+#    LOCAL_CFLAGS += -mfloat-abi=softfp -mfpu=neon -DFLOATING_POINT
+#	LOCAL_ARM_NEON := true
+else
+	LOCAL_CFLAGS += -DFIXED_POINT
+    ifeq ($(TARGET_ARCH_ABI),armeabi)
+#		LOCAL_CPPFLAGS += -mfloat-abi=softfp -mfpu=neon
+#        LOCAL_CFLAGS += -mfloat-abi=softfp -mfpu=neon
+    else
+        ifeq ($(TARGET_ARCH_ABI),x86)
+
+        endif
+    endif
+endif
+
+MY_DIR := libtgvoip
+
+LOCAL_C_INCLUDES := jni/opus/include jni/boringssl/include/
+
+LOCAL_SRC_FILES := \
+./libtgvoip/logging.cpp \
+./libtgvoip/VoIPController.cpp \
+./libtgvoip/BufferInputStream.cpp \
+./libtgvoip/BufferOutputStream.cpp \
+./libtgvoip/BlockingQueue.cpp \
+./libtgvoip/audio/AudioInput.cpp \
+./libtgvoip/os/android/AudioInputOpenSLES.cpp \
+./libtgvoip/MediaStreamItf.cpp \
+./libtgvoip/audio/AudioOutput.cpp \
+./libtgvoip/OpusEncoder.cpp \
+./libtgvoip/os/android/AudioOutputOpenSLES.cpp \
+./libtgvoip/JitterBuffer.cpp \
+./libtgvoip/OpusDecoder.cpp \
+./libtgvoip/BufferPool.cpp \
+./libtgvoip/os/android/OpenSLEngineWrapper.cpp \
+./libtgvoip/os/android/AudioInputAndroid.cpp \
+./libtgvoip/os/android/AudioOutputAndroid.cpp \
+./libtgvoip/EchoCanceller.cpp \
+./libtgvoip/CongestionControl.cpp \
+./libtgvoip/VoIPServerConfig.cpp
+
+include $(BUILD_STATIC_LIBRARY)
+
+include $(CLEAR_VARS)
+
 LOCAL_CPPFLAGS := -Wall -std=c++11 -DANDROID -frtti -DHAVE_PTHREAD -finline-functions -ffast-math -O0
 LOCAL_C_INCLUDES += ./jni/boringssl/include/
 LOCAL_ARM_MODE := arm
@@ -237,13 +295,13 @@ include $(BUILD_STATIC_LIBRARY)
 include $(CLEAR_VARS)
 LOCAL_PRELINK_MODULE := false
 
-LOCAL_MODULE 	:= tmessages.24
+LOCAL_MODULE 	:= tmessages.26
 LOCAL_CFLAGS 	:= -w -std=c11 -Os -DNULL=0 -DSOCKLEN_T=socklen_t -DLOCALE_NOT_USED -D_LARGEFILE_SOURCE=1 -D_FILE_OFFSET_BITS=64
 LOCAL_CFLAGS 	+= -Drestrict='' -D__EMX__ -DOPUS_BUILD -DFIXED_POINT -DUSE_ALLOCA -DHAVE_LRINT -DHAVE_LRINTF -fno-math-errno
 LOCAL_CFLAGS 	+= -DANDROID_NDK -DDISABLE_IMPORTGL -fno-strict-aliasing -fprefetch-loop-arrays -DAVOID_TABLES -DANDROID_TILE_BASED_DECODE -DANDROID_ARMV6_IDCT -ffast-math -D__STDC_CONSTANT_MACROS
 LOCAL_CPPFLAGS 	:= -DBSD=1 -ffast-math -Os -funroll-loops -std=c++11
-LOCAL_LDLIBS 	:= -ljnigraphics -llog -lz -latomic
-LOCAL_STATIC_LIBRARIES := webp sqlite tgnet breakpad avformat avcodec avutil
+LOCAL_LDLIBS 	:= -ljnigraphics -llog -lz -latomic -lOpenSLES
+LOCAL_STATIC_LIBRARIES := webp sqlite tgnet breakpad avformat avcodec avutil voip WebRtcAec
 
 LOCAL_SRC_FILES     := \
 ./opus/src/opus.c \
@@ -261,6 +319,14 @@ ifeq ($(TARGET_ARCH_ABI),armeabi-v7a)
     LOCAL_ARM_MODE := arm
     LOCAL_CPPFLAGS += -DLIBYUV_NEON
     LOCAL_CFLAGS += -DLIBYUV_NEON
+    LOCAL_CFLAGS += -DOPUS_HAVE_RTCD -DOPUS_ARM_ASM
+    LOCAL_SRC_FILES += \
+#    ./opus/celt/arm/celt_neon_intr.c \
+#    ./opus/silk/arm/NSQ_neon.c \
+    ./opus/silk/arm/arm_silk_map.c
+
+#    LOCAL_SRC_FILES += ./opus/celt/arm/celt_pitch_xcorr_arm-gnu.S
+
 else
     ifeq ($(TARGET_ARCH_ABI),armeabi)
 	LOCAL_ARM_MODE  := arm
@@ -270,8 +336,25 @@ else
 	    LOCAL_CFLAGS += -Dx86fix
  	    LOCAL_CPPFLAGS += -Dx86fix
 	    LOCAL_ARM_MODE  := arm
-	    LOCAL_SRC_FILE += \
-	    ./libyuv/source/row_x86.asm
+#	    LOCAL_SRC_FILES += \
+#	    ./libyuv/source/row_x86.asm
+
+#	    LOCAL_SRC_FILES += \
+#	    ./opus/celt/x86/celt_lpc_sse.c \
+#		./opus/celt/x86/pitch_sse.c \
+#		./opus/celt/x86/pitch_sse2.c \
+#		./opus/celt/x86/pitch_sse4_1.c \
+#		./opus/celt/x86/vq_sse2.c \
+#		./opus/celt/x86/x86_celt_map.c \
+#		./opus/celt/x86/x86cpu.c \
+#		./opus/silk/fixed/x86/burg_modified_FIX_sse.c \
+#		./opus/silk/fixed/x86/vector_ops_FIX_sse.c \
+#		./opus/silk/x86/NSQ_del_dec_sse.c \
+#		./opus/silk/x86/NSQ_sse.c \
+#		./opus/silk/x86/VAD_sse.c \
+#		./opus/silk/x86/VQ_WMat_sse.c \
+#		./opus/silk/x86/x86_silk_map.c
+
         endif
     endif
 endif
@@ -352,7 +435,8 @@ LOCAL_SRC_FILES     += \
 ./opus/silk/stereo_decode_pred.c \
 ./opus/silk/stereo_encode_pred.c \
 ./opus/silk/stereo_find_predictor.c \
-./opus/silk/stereo_quant_pred.c
+./opus/silk/stereo_quant_pred.c \
+./opus/silk/LPC_fit.c
 
 LOCAL_SRC_FILES     += \
 ./opus/silk/fixed/LTP_analysis_filter_FIX.c \
@@ -364,12 +448,10 @@ LOCAL_SRC_FILES     += \
 ./opus/silk/fixed/find_pitch_lags_FIX.c \
 ./opus/silk/fixed/find_pred_coefs_FIX.c \
 ./opus/silk/fixed/noise_shape_analysis_FIX.c \
-./opus/silk/fixed/prefilter_FIX.c \
 ./opus/silk/fixed/process_gains_FIX.c \
 ./opus/silk/fixed/regularize_correlations_FIX.c \
 ./opus/silk/fixed/residual_energy16_FIX.c \
 ./opus/silk/fixed/residual_energy_FIX.c \
-./opus/silk/fixed/solve_LS_FIX.c \
 ./opus/silk/fixed/warped_autocorrelation_FIX.c \
 ./opus/silk/fixed/apply_sine_window_FIX.c \
 ./opus/silk/fixed/autocorr_FIX.c \
@@ -483,7 +565,8 @@ LOCAL_SRC_FILES     += \
 ./gifvideo.cpp \
 ./SqliteWrapper.cpp \
 ./TgNetWrapper.cpp \
-./NativeLoader.cpp
+./NativeLoader.cpp \
+./libtgvoip/client/android/tg_voip_jni.cpp
 
 include $(BUILD_SHARED_LIBRARY)
 

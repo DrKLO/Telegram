@@ -3,14 +3,18 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2016.
+ * Copyright Nikolai Kudashov, 2013-2017.
  */
 
 package org.telegram.ui.Cells;
 
+import android.animation.Animator;
+import android.animation.ObjectAnimator;
 import android.content.Context;
 import android.graphics.Canvas;
-import android.graphics.Paint;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffColorFilter;
+import android.support.annotation.ColorInt;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -20,27 +24,23 @@ import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
+import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.LayoutHelper;
+
+import java.util.ArrayList;
 
 public class TextSettingsCell extends FrameLayout {
 
     private TextView textView;
     private TextView valueTextView;
     private ImageView valueImageView;
-    private static Paint paint;
     private boolean needDivider;
 
     public TextSettingsCell(Context context) {
         super(context);
 
-        if (paint == null) {
-            paint = new Paint();
-            paint.setColor(0xffd9d9d9);
-            paint.setStrokeWidth(1);
-        }
-
         textView = new TextView(context);
-        textView.setTextColor(0xff212121);
+        textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         textView.setLines(1);
         textView.setMaxLines(1);
@@ -50,7 +50,7 @@ public class TextSettingsCell extends FrameLayout {
         addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, 17, 0, 17, 0));
 
         valueTextView = new TextView(context);
-        valueTextView.setTextColor(0xff2f8cc9);
+        valueTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteValueText));
         valueTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         valueTextView.setLines(1);
         valueTextView.setMaxLines(1);
@@ -62,6 +62,7 @@ public class TextSettingsCell extends FrameLayout {
         valueImageView = new ImageView(context);
         valueImageView.setScaleType(ImageView.ScaleType.CENTER);
         valueImageView.setVisibility(INVISIBLE);
+        valueImageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteGrayIcon), PorterDuff.Mode.MULTIPLY));
         addView(valueImageView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.CENTER_VERTICAL, 17, 0, 17, 0));
     }
 
@@ -81,6 +82,14 @@ public class TextSettingsCell extends FrameLayout {
             width = availableWidth;
         }
         textView.measure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(getMeasuredHeight(), MeasureSpec.EXACTLY));
+    }
+
+    public TextView getTextView() {
+        return textView;
+    }
+
+    public TextView getValueTextView() {
+        return valueTextView;
     }
 
     public void setTextColor(int color) {
@@ -126,10 +135,31 @@ public class TextSettingsCell extends FrameLayout {
         setWillNotDraw(!divider);
     }
 
+    public void setEnabled(boolean value, ArrayList<Animator> animators) {
+        setEnabled(value);
+        if (animators != null) {
+            animators.add(ObjectAnimator.ofFloat(textView, "alpha", value ? 1.0f : 0.5f));
+            if (valueTextView.getVisibility() == VISIBLE) {
+                animators.add(ObjectAnimator.ofFloat(valueTextView, "alpha", value ? 1.0f : 0.5f));
+            }
+            if (valueImageView.getVisibility() == VISIBLE) {
+                animators.add(ObjectAnimator.ofFloat(valueImageView, "alpha", value ? 1.0f : 0.5f));
+            }
+        } else {
+            textView.setAlpha(value ? 1.0f : 0.5f);
+            if (valueTextView.getVisibility() == VISIBLE) {
+                valueTextView.setAlpha(value ? 1.0f : 0.5f);
+            }
+            if (valueImageView.getVisibility() == VISIBLE) {
+                valueImageView.setAlpha(value ? 1.0f : 0.5f);
+            }
+        }
+    }
+
     @Override
     protected void onDraw(Canvas canvas) {
         if (needDivider) {
-            canvas.drawLine(getPaddingLeft(), getHeight() - 1, getWidth() - getPaddingRight(), getHeight() - 1, paint);
+            canvas.drawLine(getPaddingLeft(), getHeight() - 1, getWidth() - getPaddingRight(), getHeight() - 1, Theme.dividerPaint);
         }
     }
 }

@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2016.
+ * Copyright Nikolai Kudashov, 2013-2017.
  */
 
 package org.telegram.ui.Cells;
@@ -30,7 +30,6 @@ import android.widget.TextView;
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.UserObject;
-import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
 import org.telegram.tgnet.TLRPC;
@@ -49,25 +48,28 @@ public class DrawerProfileCell extends FrameLayout {
     private Rect srcRect = new Rect();
     private Rect destRect = new Rect();
     private Paint paint = new Paint();
-    private int currentColor;
+    private Integer currentColor;
+    private Drawable cloudDrawable;
+    private int lastCloudColor;
 
     private class CloudView extends View {
 
-        private Drawable cloudDrawable;
         private Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
         public CloudView(Context context) {
             super(context);
-
-            cloudDrawable = getResources().getDrawable(R.drawable.cloud);
         }
 
         @Override
         protected void onDraw(Canvas canvas) {
-            if (ApplicationLoader.isCustomTheme() && ApplicationLoader.getCachedWallpaper() != null) {
-                paint.setColor(ApplicationLoader.getServiceMessageColor());
+            if (Theme.isCustomTheme() && Theme.getCachedWallpaper() != null) {
+                paint.setColor(Theme.getServiceMessageColor());
             } else {
-                paint.setColor(0xff427ba9);
+                paint.setColor(Theme.getColor(Theme.key_chats_menuCloudBackgroundCats));
+            }
+            int newColor = Theme.getColor(Theme.key_chats_menuCloud);
+            if (lastCloudColor != newColor) {
+                cloudDrawable.setColorFilter(new PorterDuffColorFilter(lastCloudColor = Theme.getColor(Theme.key_chats_menuCloud), PorterDuff.Mode.MULTIPLY));
             }
             canvas.drawCircle(getMeasuredWidth() / 2.0f, getMeasuredHeight() / 2.0f, AndroidUtilities.dp(34) / 2.0f, paint);
             int l = (getMeasuredWidth() - AndroidUtilities.dp(33)) / 2;
@@ -79,7 +81,9 @@ public class DrawerProfileCell extends FrameLayout {
 
     public DrawerProfileCell(Context context) {
         super(context);
-        setBackgroundColor(Theme.ACTION_BAR_PROFILE_COLOR);
+
+        cloudDrawable = context.getResources().getDrawable(R.drawable.cloud);
+        cloudDrawable.setColorFilter(new PorterDuffColorFilter(lastCloudColor = Theme.getColor(Theme.key_chats_menuCloud), PorterDuff.Mode.MULTIPLY));
 
         shadowView = new ImageView(context);
         shadowView.setVisibility(INVISIBLE);
@@ -92,7 +96,6 @@ public class DrawerProfileCell extends FrameLayout {
         addView(avatarImageView, LayoutHelper.createFrame(64, 64, Gravity.LEFT | Gravity.BOTTOM, 16, 0, 0, 67));
 
         nameTextView = new TextView(context);
-        nameTextView.setTextColor(0xffffffff);
         nameTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
         nameTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         nameTextView.setLines(1);
@@ -103,7 +106,6 @@ public class DrawerProfileCell extends FrameLayout {
         addView(nameTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.BOTTOM, 16, 0, 76, 28));
 
         phoneTextView = new TextView(context);
-        phoneTextView.setTextColor(0xffc2e5ff);
         phoneTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
         phoneTextView.setLines(1);
         phoneTextView.setMaxLines(1);
@@ -118,28 +120,33 @@ public class DrawerProfileCell extends FrameLayout {
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         if (Build.VERSION.SDK_INT >= 21) {
-            super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(148) + AndroidUtilities.statusBarHeight, MeasureSpec.EXACTLY));
+            super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(148) + AndroidUtilities.statusBarHeight, MeasureSpec.EXACTLY));
         } else {
             try {
-                super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(148), MeasureSpec.EXACTLY));
+                super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(148), MeasureSpec.EXACTLY));
             } catch (Exception e) {
                 setMeasuredDimension(MeasureSpec.getSize(widthMeasureSpec), AndroidUtilities.dp(148));
-                FileLog.e("tmessages", e);
+                FileLog.e(e);
             }
         }
     }
 
     @Override
     protected void onDraw(Canvas canvas) {
-        Drawable backgroundDrawable = ApplicationLoader.getCachedWallpaper();
-        int color = ApplicationLoader.getServiceMessageColor();
-        if (currentColor != color) {
-            currentColor = color;
-            shadowView.getDrawable().setColorFilter(new PorterDuffColorFilter(color | 0xff000000, PorterDuff.Mode.MULTIPLY));
+        Drawable backgroundDrawable = Theme.getCachedWallpaper();
+        int color;
+        if (Theme.hasThemeKey(Theme.key_chats_menuTopShadow)) {
+            color = Theme.getColor(Theme.key_chats_menuTopShadow);
+        } else {
+            color = Theme.getServiceMessageColor() | 0xff000000;
         }
-
-        if (ApplicationLoader.isCustomTheme() && backgroundDrawable != null) {
-            phoneTextView.setTextColor(0xffffffff);
+        if (currentColor == null || currentColor != color) {
+            currentColor = color;
+            shadowView.getDrawable().setColorFilter(new PorterDuffColorFilter(color, PorterDuff.Mode.MULTIPLY));
+        }
+        nameTextView.setTextColor(Theme.getColor(Theme.key_chats_menuName));
+        if (Theme.isCustomTheme() && backgroundDrawable != null) {
+            phoneTextView.setTextColor(Theme.getColor(Theme.key_chats_menuPhone));
             shadowView.setVisibility(VISIBLE);
             if (backgroundDrawable instanceof ColorDrawable) {
                 backgroundDrawable.setBounds(0, 0, getMeasuredWidth(), getMeasuredHeight());
@@ -155,11 +162,15 @@ public class DrawerProfileCell extends FrameLayout {
                 int y = (bitmap.getHeight() - height) / 2;
                 srcRect.set(x, y, x + width, y + height);
                 destRect.set(0, 0, getMeasuredWidth(), getMeasuredHeight());
-                canvas.drawBitmap(bitmap, srcRect, destRect, paint);
+                try {
+                    canvas.drawBitmap(bitmap, srcRect, destRect, paint);
+                } catch (Throwable e) {
+                    FileLog.e(e);
+                }
             }
         } else {
             shadowView.setVisibility(INVISIBLE);
-            phoneTextView.setTextColor(0xffc2e5ff);
+            phoneTextView.setTextColor(Theme.getColor(Theme.key_chats_menuPhoneCats));
             super.onDraw(canvas);
         }
     }
@@ -175,7 +186,7 @@ public class DrawerProfileCell extends FrameLayout {
         nameTextView.setText(UserObject.getUserName(user));
         phoneTextView.setText(PhoneFormat.getInstance().format("+" + user.phone));
         AvatarDrawable avatarDrawable = new AvatarDrawable(user);
-        avatarDrawable.setColor(Theme.ACTION_BAR_MAIN_AVATAR_COLOR);
+        avatarDrawable.setColor(Theme.getColor(Theme.key_avatar_backgroundInProfileBlue));
         avatarImageView.setImage(photo, "50_50", avatarDrawable);
     }
 

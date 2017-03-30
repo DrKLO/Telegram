@@ -3,12 +3,11 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2016.
+ * Copyright Nikolai Kudashov, 2013-2017.
  */
 
 package org.telegram.ui.Components;
 
-import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.util.TypedValue;
@@ -24,7 +23,9 @@ import org.telegram.messenger.query.StickersQuery;
 import org.telegram.messenger.support.widget.LinearLayoutManager;
 import org.telegram.messenger.support.widget.RecyclerView;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.ArchivedStickerSetCell;
 import org.telegram.ui.StickersActivity;
 
@@ -59,7 +60,7 @@ public class StickersArchiveAlert extends AlertDialog.Builder {
         setView(container);
 
         TextView textView = new TextView(context);
-        textView.setTextColor(0xff212121);
+        textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         textView.setPadding(AndroidUtilities.dp(23), AndroidUtilities.dp(10), AndroidUtilities.dp(23), 0);
         if (set.set.masks) {
@@ -94,7 +95,7 @@ public class StickersArchiveAlert extends AlertDialog.Builder {
         }
     }
 
-    private class ListAdapter extends RecyclerView.Adapter {
+    private class ListAdapter extends RecyclerListView.SelectionAdapter {
 
         Context context;
 
@@ -107,23 +108,21 @@ public class StickersArchiveAlert extends AlertDialog.Builder {
             return stickerSets.size();
         }
 
-        private class Holder extends RecyclerView.ViewHolder {
-
-            public Holder(View itemView) {
-                super(itemView);
-            }
+        @Override
+        public boolean isEnabled(RecyclerView.ViewHolder holder) {
+            return false;
         }
 
         @Override
         public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
             View view = new ArchivedStickerSetCell(context, false);
             view.setLayoutParams(new RecyclerView.LayoutParams(RecyclerView.LayoutParams.MATCH_PARENT, AndroidUtilities.dp(82)));
-            return new Holder(view);
+            return new RecyclerListView.Holder(view);
         }
 
         @Override
         public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
-            ((ArchivedStickerSetCell) holder.itemView).setStickersSet(stickerSets.get(position), position != stickerSets.size() - 1, false);
+            ((ArchivedStickerSetCell) holder.itemView).setStickersSet(stickerSets.get(position), position != stickerSets.size() - 1);
         }
     }
 }

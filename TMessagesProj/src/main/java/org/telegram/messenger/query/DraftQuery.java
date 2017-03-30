@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2016.
+ * Copyright Nikolai Kudashov, 2013-2017.
  */
 
 package org.telegram.messenger.query;
@@ -175,7 +175,7 @@ public class DraftQuery {
                 draft.serializeToStream(serializedData);
                 editor.putString("" + did, Utilities.bytesToHex(serializedData.toByteArray()));
             } catch (Exception e) {
-                FileLog.e("tmessages", e);
+                FileLog.e(e);
             }
         }
         if (replyToMessage == null) {
@@ -258,7 +258,7 @@ public class DraftQuery {
                                     saveDraftReplyMessage(did, message);
                                 }
                             } catch (Exception e) {
-                                FileLog.e("tmessages", e);
+                                FileLog.e(e);
                             }
                         }
                     });

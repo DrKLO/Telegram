@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2016.
+ * Copyright Nikolai Kudashov, 2013-2017.
  */
 
 package org.telegram.ui.Components;
@@ -42,7 +42,7 @@ public class PickerBottomLayoutViewer extends FrameLayout {
         cancelButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         cancelButton.setTextColor(isDarkTheme ? 0xffffffff : 0xff19a7e8);
         cancelButton.setGravity(Gravity.CENTER);
-        cancelButton.setBackgroundDrawable(Theme.createBarSelectorDrawable(isDarkTheme ? Theme.ACTION_BAR_PICKER_SELECTOR_COLOR : Theme.ACTION_BAR_AUDIO_SELECTOR_COLOR, false));
+        cancelButton.setBackgroundDrawable(Theme.createSelectorDrawable(isDarkTheme ? Theme.ACTION_BAR_PICKER_SELECTOR_COLOR : Theme.ACTION_BAR_AUDIO_SELECTOR_COLOR, 0));
         cancelButton.setPadding(AndroidUtilities.dp(20), 0, AndroidUtilities.dp(20), 0);
         cancelButton.setText(LocaleController.getString("Cancel", R.string.Cancel).toUpperCase());
         cancelButton.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
@@ -52,7 +52,7 @@ public class PickerBottomLayoutViewer extends FrameLayout {
         doneButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         doneButton.setTextColor(isDarkTheme ? 0xffffffff : 0xff19a7e8);
         doneButton.setGravity(Gravity.CENTER);
-        doneButton.setBackgroundDrawable(Theme.createBarSelectorDrawable(isDarkTheme ? Theme.ACTION_BAR_PICKER_SELECTOR_COLOR : Theme.ACTION_BAR_AUDIO_SELECTOR_COLOR, false));
+        doneButton.setBackgroundDrawable(Theme.createSelectorDrawable(isDarkTheme ? Theme.ACTION_BAR_PICKER_SELECTOR_COLOR : Theme.ACTION_BAR_AUDIO_SELECTOR_COLOR, 0));
         doneButton.setPadding(AndroidUtilities.dp(20), 0, AndroidUtilities.dp(20), 0);
         doneButton.setText(LocaleController.getString("Send", R.string.Send).toUpperCase());
         doneButton.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));

@@ -3,26 +3,22 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2016.
+ * Copyright Nikolai Kudashov, 2013-2017.
  */
 
 package org.telegram.ui;
 
 import android.app.Activity;
 import android.app.AlarmManager;
-import android.app.AlertDialog;
 import android.app.PendingIntent;
-import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.AdapterView;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
-import android.widget.ListView;
 
 import org.telegram.SQLite.SQLiteCursor;
 import org.telegram.SQLite.SQLiteDatabase;
@@ -38,16 +34,21 @@ import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.query.BotQuery;
+import org.telegram.messenger.support.widget.LinearLayoutManager;
+import org.telegram.messenger.support.widget.RecyclerView;
 import org.telegram.tgnet.NativeByteBuffer;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
+import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
-import org.telegram.ui.Adapters.BaseFragmentAdapter;
+import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Cells.CheckBoxCell;
 import org.telegram.ui.Cells.TextInfoPrivacyCell;
 import org.telegram.ui.Cells.TextSettingsCell;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.RecyclerListView;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -55,6 +56,7 @@ import java.util.ArrayList;
 public class CacheControlActivity extends BaseFragment {
 
     private ListAdapter listAdapter;
+    private RecyclerListView listView;
 
     private int databaseRow;
     private int databaseInfoRow;
@@ -139,28 +141,6 @@ public class CacheControlActivity extends BaseFragment {
         canceled = true;
     }
 
-    /*private long getDirectorySize2(File dir) {
-        long size = 0;
-        if (dir.isDirectory()) {
-            File[] array = dir.listFiles();
-            if (array != null) {
-                for (int a = 0; a < array.length; a++) {
-                    File file = array[a];
-                    if (file.isDirectory()) {
-                        size += getDirectorySize2(file);
-                    } else {
-                        size += file.length();
-                        FileLog.e("tmessages", "" + file + " size = " + file.length());
-                    }
-                }
-            }
-        } else if (dir.isFile()) {
-            FileLog.e("tmessages", "" + dir + " size = " + dir.length());
-            size += dir.length();
-        }
-        return size;
-    }*/
-
     private long getDirectorySize(File dir, int documentsMusicType) {
         if (dir == null || canceled) {
             return 0;
@@ -193,7 +173,7 @@ public class CacheControlActivity extends BaseFragment {
                     }
                 }
             } catch (Throwable e) {
-                FileLog.e("tmessages", e);
+                FileLog.e(e);
             }
         } else if (dir.isFile()) {
             size += dir.length();
@@ -202,7 +182,7 @@ public class CacheControlActivity extends BaseFragment {
     }
 
     private void cleanupFolders() {
-        final ProgressDialog progressDialog = new ProgressDialog(getParentActivity());
+        final AlertDialog progressDialog = new AlertDialog(getParentActivity(), 1);
         progressDialog.setMessage(LocaleController.getString("Loading", R.string.Loading));
         progressDialog.setCanceledOnTouchOutside(false);
         progressDialog.setCancelable(false);
@@ -260,7 +240,7 @@ public class CacheControlActivity extends BaseFragment {
                                 }
                             }
                         } catch (Throwable e) {
-                            FileLog.e("tmessages", e);
+                            FileLog.e(e);
                         }
                     }
                     if (type == FileLoader.MEDIA_DIR_CACHE) {
@@ -295,7 +275,7 @@ public class CacheControlActivity extends BaseFragment {
                         try {
                             progressDialog.dismiss();
                         } catch (Exception e) {
-                            FileLog.e("tmessages", e);
+                            FileLog.e(e);
                         }
                     }
                 });
@@ -307,7 +287,7 @@ public class CacheControlActivity extends BaseFragment {
     public View createView(Context context) {
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBar.setAllowOverlayTitle(true);
-        actionBar.setTitle(LocaleController.getString("CacheSettings", R.string.CacheSettings));
+        actionBar.setTitle(LocaleController.getString("StorageUsage", R.string.StorageUsage));
         actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
             public void onItemClick(int id) {
@@ -321,22 +301,20 @@ public class CacheControlActivity extends BaseFragment {
 
         fragmentView = new FrameLayout(context);
         FrameLayout frameLayout = (FrameLayout) fragmentView;
-        frameLayout.setBackgroundColor(0xfff0f0f0);
+        frameLayout.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray));
 
-        ListView listView = new ListView(context);
-        listView.setDivider(null);
-        listView.setDividerHeight(0);
+        listView = new RecyclerListView(context);
         listView.setVerticalScrollBarEnabled(false);
-        listView.setDrawSelectorOnTop(true);
+        listView.setLayoutManager(new LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false));
         frameLayout.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
         listView.setAdapter(listAdapter);
-        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+        listView.setOnItemClickListener(new RecyclerListView.OnItemClickListener() {
             @Override
-            public void onItemClick(final AdapterView<?> adapterView, View view, final int i, long l) {
+            public void onItemClick(View view, int position) {
                 if (getParentActivity() == null) {
                     return;
                 }
-                if (i == keepMediaRow) {
+                if (position == keepMediaRow) {
                     BottomSheet.Builder builder = new BottomSheet.Builder(getParentActivity());
                     builder.setItems(new CharSequence[]{LocaleController.formatPluralString("Weeks", 1), LocaleController.formatPluralString("Months", 1), LocaleController.getString("KeepMediaForever", R.string.KeepMediaForever)}, new DialogInterface.OnClickListener() {
                         @Override
@@ -356,7 +334,7 @@ public class CacheControlActivity extends BaseFragment {
                         }
                     });
                     showDialog(builder.create());
-                } else if (i == databaseRow) {
+                } else if (position == databaseRow) {
                     AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                     builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
                     builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
@@ -364,7 +342,7 @@ public class CacheControlActivity extends BaseFragment {
                     builder.setPositiveButton(LocaleController.getString("CacheClear", R.string.CacheClear), new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialogInterface, int i) {
-                            final ProgressDialog progressDialog = new ProgressDialog(getParentActivity());
+                            final AlertDialog progressDialog = new AlertDialog(getParentActivity(), 1);
                             progressDialog.setMessage(LocaleController.getString("Loading", R.string.Loading));
                             progressDialog.setCanceledOnTouchOutside(false);
                             progressDialog.setCancelable(false);
@@ -421,7 +399,7 @@ public class CacheControlActivity extends BaseFragment {
                                                         }
                                                     }
                                                 } catch (Exception e) {
-                                                    FileLog.e("tmessages", e);
+                                                    FileLog.e(e);
                                                 }
                                                 cursor2.dispose();
 
@@ -443,7 +421,7 @@ public class CacheControlActivity extends BaseFragment {
                                         database.commitTransaction();
                                         database.executeFast("VACUUM").stepThis().dispose();
                                     } catch (Exception e) {
-                                        FileLog.e("tmessages", e);
+                                        FileLog.e(e);
                                     } finally {
                                         AndroidUtilities.runOnUIThread(new Runnable() {
                                             @Override
@@ -451,7 +429,7 @@ public class CacheControlActivity extends BaseFragment {
                                                 try {
                                                     progressDialog.dismiss();
                                                 } catch (Exception e) {
-                                                    FileLog.e("tmessages", e);
+                                                    FileLog.e(e);
                                                 }
                                                 if (listAdapter != null) {
                                                     File file = new File(ApplicationLoader.getFilesDirFixed(), "cache4.db");
@@ -466,7 +444,7 @@ public class CacheControlActivity extends BaseFragment {
                         }
                     });
                     showDialog(builder.create());
-                } else if (i == cacheRow) {
+                } else if (position == cacheRow) {
                     if (totalSize <= 0 || getParentActivity() == null) {
                         return;
                     }
@@ -499,11 +477,12 @@ public class CacheControlActivity extends BaseFragment {
                         }
                         if (size > 0) {
                             clear[a] = true;
-                            CheckBoxCell checkBoxCell = new CheckBoxCell(getParentActivity());
+                            CheckBoxCell checkBoxCell = new CheckBoxCell(getParentActivity(), true);
                             checkBoxCell.setTag(a);
-                            checkBoxCell.setBackgroundResource(R.drawable.list_selector);
+                            checkBoxCell.setBackgroundDrawable(Theme.getSelectorDrawable(false));
                             linearLayout.addView(checkBoxCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48));
                             checkBoxCell.setText(name, AndroidUtilities.formatFileSize(size), true, true);
+                            checkBoxCell.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
                             checkBoxCell.setOnClickListener(new View.OnClickListener() {
                                 @Override
                                 public void onClick(View v) {
@@ -518,9 +497,9 @@ public class CacheControlActivity extends BaseFragment {
                         }
                     }
                     BottomSheet.BottomSheetCell cell = new BottomSheet.BottomSheetCell(getParentActivity(), 1);
-                    cell.setBackgroundResource(R.drawable.list_selector);
+                    cell.setBackgroundDrawable(Theme.getSelectorDrawable(false));
                     cell.setTextAndIcon(LocaleController.getString("ClearMediaCache", R.string.ClearMediaCache).toUpperCase(), 0);
-                    cell.setTextColor(0xffcd5a5a);
+                    cell.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteRedText));
                     cell.setOnClickListener(new View.OnClickListener() {
                         @Override
                         public void onClick(View v) {
@@ -529,7 +508,7 @@ public class CacheControlActivity extends BaseFragment {
                                     visibleDialog.dismiss();
                                 }
                             } catch (Exception e) {
-                                FileLog.e("tmessages", e);
+                                FileLog.e(e);
                             }
                             cleanupFolders();
                         }
@@ -552,7 +531,8 @@ public class CacheControlActivity extends BaseFragment {
         }
     }
 
-    private class ListAdapter extends BaseFragmentAdapter {
+    private class ListAdapter extends RecyclerListView.SelectionAdapter {
+
         private Context mContext;
 
         public ListAdapter(Context context) {
@@ -560,101 +540,103 @@ public class CacheControlActivity extends BaseFragment {
         }
 
         @Override
-        public boolean areAllItemsEnabled() {
-            return false;
+        public boolean isEnabled(RecyclerView.ViewHolder holder) {
+            int position = holder.getAdapterPosition();
+            return position == databaseRow || position == cacheRow && totalSize > 0 || position == keepMediaRow;
         }
 
         @Override
-        public boolean isEnabled(int i) {
-            return i == databaseRow || i == cacheRow && totalSize > 0 || i == keepMediaRow;
-        }
-
-        @Override
-        public int getCount() {
+        public int getItemCount() {
             return rowCount;
         }
 
         @Override
-        public Object getItem(int i) {
-            return null;
-        }
-
-        @Override
-        public long getItemId(int i) {
-            return i;
-        }
-
-        @Override
-        public boolean hasStableIds() {
-            return false;
-        }
-
-        @Override
-        public View getView(int i, View view, ViewGroup viewGroup) {
-            int type = getItemViewType(i);
-            if (type == 0) {
-                if (view == null) {
+        public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+            View view;
+            switch (viewType) {
+                case 0:
                     view = new TextSettingsCell(mContext);
-                    view.setBackgroundColor(0xffffffff);
-                }
-                TextSettingsCell textCell = (TextSettingsCell) view;
-                if (i == databaseRow) {
-                    textCell.setTextAndValue(LocaleController.getString("LocalDatabase", R.string.LocalDatabase), AndroidUtilities.formatFileSize(databaseSize), false);
-                } else if (i == cacheRow) {
-                    if (calculating) {
-                        textCell.setTextAndValue(LocaleController.getString("ClearMediaCache", R.string.ClearMediaCache), LocaleController.getString("CalculatingSize", R.string.CalculatingSize), false);
-                    } else {
-                        textCell.setTextAndValue(LocaleController.getString("ClearMediaCache", R.string.ClearMediaCache), totalSize == 0 ? LocaleController.getString("CacheEmpty", R.string.CacheEmpty) : AndroidUtilities.formatFileSize(totalSize), false);
-                    }
-                } else if (i == keepMediaRow) {
-                    SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
-                    int keepMedia = preferences.getInt("keep_media", 2);
-                    String value;
-                    if (keepMedia == 0) {
-                        value = LocaleController.formatPluralString("Weeks", 1);
-                    } else if (keepMedia == 1) {
-                        value = LocaleController.formatPluralString("Months", 1);
-                    } else {
-                        value = LocaleController.getString("KeepMediaForever", R.string.KeepMediaForever);
-                    }
-                    textCell.setTextAndValue(LocaleController.getString("KeepMedia", R.string.KeepMedia), value, false);
-                }
-            } else if (type == 1) {
-                if (view == null) {
+                    view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+                    break;
+                case 1:
+                default:
                     view = new TextInfoPrivacyCell(mContext);
-                }
-                if (i == databaseInfoRow) {
-                    ((TextInfoPrivacyCell) view).setText(LocaleController.getString("LocalDatabaseInfo", R.string.LocalDatabaseInfo));
-                    view.setBackgroundResource(R.drawable.greydivider_bottom);
-                } else if (i == cacheInfoRow) {
-                    ((TextInfoPrivacyCell) view).setText("");
-                    view.setBackgroundResource(R.drawable.greydivider);
-                } else if (i == keepMediaInfoRow) {
-                    ((TextInfoPrivacyCell) view).setText(AndroidUtilities.replaceTags(LocaleController.getString("KeepMediaInfo", R.string.KeepMediaInfo)));
-                    view.setBackgroundResource(R.drawable.greydivider);
-                }
+                    break;
             }
-            return view;
+            return new RecyclerListView.Holder(view);
+        }
+
+        @Override
+        public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
+            switch (holder.getItemViewType()) {
+                case 0:
+                    TextSettingsCell textCell = (TextSettingsCell) holder.itemView;
+                    if (position == databaseRow) {
+                        textCell.setTextAndValue(LocaleController.getString("LocalDatabase", R.string.LocalDatabase), AndroidUtilities.formatFileSize(databaseSize), false);
+                    } else if (position == cacheRow) {
+                        if (calculating) {
+                            textCell.setTextAndValue(LocaleController.getString("ClearMediaCache", R.string.ClearMediaCache), LocaleController.getString("CalculatingSize", R.string.CalculatingSize), false);
+                        } else {
+                            textCell.setTextAndValue(LocaleController.getString("ClearMediaCache", R.string.ClearMediaCache), totalSize == 0 ? LocaleController.getString("CacheEmpty", R.string.CacheEmpty) : AndroidUtilities.formatFileSize(totalSize), false);
+                        }
+                    } else if (position == keepMediaRow) {
+                        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+                        int keepMedia = preferences.getInt("keep_media", 2);
+                        String value;
+                        if (keepMedia == 0) {
+                            value = LocaleController.formatPluralString("Weeks", 1);
+                        } else if (keepMedia == 1) {
+                            value = LocaleController.formatPluralString("Months", 1);
+                        } else {
+                            value = LocaleController.getString("KeepMediaForever", R.string.KeepMediaForever);
+                        }
+                        textCell.setTextAndValue(LocaleController.getString("KeepMedia", R.string.KeepMedia), value, false);
+                    }
+                    break;
+                case 1:
+                    TextInfoPrivacyCell privacyCell = (TextInfoPrivacyCell) holder.itemView;
+                    if (position == databaseInfoRow) {
+                        privacyCell.setText(LocaleController.getString("LocalDatabaseInfo", R.string.LocalDatabaseInfo));
+                        privacyCell.setBackgroundDrawable(Theme.getThemedDrawable(mContext, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
+                    } else if (position == cacheInfoRow) {
+                        privacyCell.setText("");
+                        privacyCell.setBackgroundDrawable(Theme.getThemedDrawable(mContext, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
+                    } else if (position == keepMediaInfoRow) {
+                        privacyCell.setText(AndroidUtilities.replaceTags(LocaleController.getString("KeepMediaInfo", R.string.KeepMediaInfo)));
+                        privacyCell.setBackgroundDrawable(Theme.getThemedDrawable(mContext, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
+                    }
+                    break;
+            }
         }
 
         @Override
         public int getItemViewType(int i) {
-            if (i == databaseRow || i == cacheRow || i == keepMediaRow) {
-                return 0;
-            } else if (i == databaseInfoRow || i == cacheInfoRow || i == keepMediaInfoRow) {
+            if (i == databaseInfoRow || i == cacheInfoRow || i == keepMediaInfoRow) {
                 return 1;
             }
             return 0;
         }
+    }
 
-        @Override
-        public int getViewTypeCount() {
-            return 2;
-        }
+    @Override
+    public ThemeDescription[] getThemeDescriptions() {
+        return new ThemeDescription[]{
+                new ThemeDescription(listView, ThemeDescription.FLAG_CELLBACKGROUNDCOLOR, new Class[]{TextSettingsCell.class}, null, null, null, Theme.key_windowBackgroundWhite),
+                new ThemeDescription(fragmentView, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundGray),
 
-        @Override
-        public boolean isEmpty() {
-            return false;
-        }
+                new ThemeDescription(actionBar, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_actionBarDefault),
+                new ThemeDescription(listView, ThemeDescription.FLAG_LISTGLOWCOLOR, null, null, null, null, Theme.key_actionBarDefault),
+                new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_ITEMSCOLOR, null, null, null, null, Theme.key_actionBarDefaultIcon),
+                new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_TITLECOLOR, null, null, null, null, Theme.key_actionBarDefaultTitle),
+                new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SELECTORCOLOR, null, null, null, null, Theme.key_actionBarDefaultSelector),
+
+                new ThemeDescription(listView, ThemeDescription.FLAG_SELECTOR, null, null, null, null, Theme.key_listSelector),
+
+                new ThemeDescription(listView, 0, new Class[]{TextSettingsCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText),
+                new ThemeDescription(listView, 0, new Class[]{TextSettingsCell.class}, new String[]{"valueTextView"}, null, null, null, Theme.key_windowBackgroundWhiteValueText),
+
+                new ThemeDescription(listView, ThemeDescription.FLAG_BACKGROUNDFILTER, new Class[]{TextInfoPrivacyCell.class}, null, null, null, Theme.key_windowBackgroundGrayShadow),
+                new ThemeDescription(listView, 0, new Class[]{TextInfoPrivacyCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText4),
+        };
     }
 }

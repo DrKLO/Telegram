@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2016.
+ * Copyright Nikolai Kudashov, 2013-2017.
  */
 
 package org.telegram.ui.Components;
@@ -22,7 +22,7 @@ public class SlideView extends LinearLayout {
         return "";
     }
 
-    public void setParams(Bundle params) {
+    public void setParams(Bundle params, boolean restore) {
 
     }
 

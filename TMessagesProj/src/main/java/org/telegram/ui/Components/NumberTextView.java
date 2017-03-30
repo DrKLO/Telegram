@@ -3,12 +3,13 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2016.
+ * Copyright Nikolai Kudashov, 2013-2017.
  */
 
 package org.telegram.ui.Components;
 
 import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
 import android.animation.ObjectAnimator;
 import android.content.Context;
 import android.graphics.Canvas;
@@ -20,7 +21,6 @@ import android.text.TextPaint;
 import android.view.View;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.AnimatorListenerAdapterProxy;
 
 import java.util.ArrayList;
 import java.util.Locale;
@@ -80,7 +80,7 @@ public class NumberTextView extends View {
         if (animated && !oldLetters.isEmpty()) {
             animator = ObjectAnimator.ofFloat(this, "progress", forwardAnimation ? -1 : 1, 0);
             animator.setDuration(150);
-            animator.addListener(new AnimatorListenerAdapterProxy() {
+            animator.addListener(new AnimatorListenerAdapter() {
                 @Override
                 public void onAnimationEnd(Animator animation) {
                     animator = null;

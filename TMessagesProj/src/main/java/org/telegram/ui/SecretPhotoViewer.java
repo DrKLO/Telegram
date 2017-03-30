@@ -3,11 +3,12 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2016.
+ * Copyright Nikolai Kudashov, 2013-2017.
  */
 
 package org.telegram.ui;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
 import android.graphics.Bitmap;
@@ -144,6 +145,7 @@ public class SecretPhotoViewer implements NotificationCenter.NotificationCenterD
 
     private MessageObject currentMessageObject = null;
 
+    @SuppressLint("StaticFieldLeak")
     private static volatile SecretPhotoViewer Instance = null;
     public static SecretPhotoViewer getInstance() {
         SecretPhotoViewer localInstance = Instance;
@@ -274,7 +276,7 @@ public class SecretPhotoViewer implements NotificationCenter.NotificationCenterD
             try {
                 bitmap = BitmapFactory.decodeFile(file.getAbsolutePath(), options);
             } catch (Throwable e) {
-                FileLog.e("tmessages", e);
+                FileLog.e(e);
             }
             if (bitmap != null) {
                 drawable = new BitmapDrawable(bitmap);
@@ -297,7 +299,7 @@ public class SecretPhotoViewer implements NotificationCenter.NotificationCenterD
                 wm.removeView(windowView);
             }
         } catch (Exception e) {
-            FileLog.e("tmessages", e);
+            FileLog.e(e);
         }
 
         WindowManager wm = (WindowManager) parentActivity.getSystemService(Context.WINDOW_SERVICE);
@@ -331,7 +333,7 @@ public class SecretPhotoViewer implements NotificationCenter.NotificationCenterD
                 wm.removeView(windowView);
             }
         } catch (Exception e) {
-            FileLog.e("tmessages", e);
+            FileLog.e(e);
         }
     }
 
@@ -350,7 +352,7 @@ public class SecretPhotoViewer implements NotificationCenter.NotificationCenterD
             }
             windowView = null;
         } catch (Exception e) {
-            FileLog.e("tmessages", e);
+            FileLog.e(e);
         }
         Instance = null;
     }

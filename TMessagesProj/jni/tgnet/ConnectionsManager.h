@@ -43,6 +43,7 @@ public:
 
     static ConnectionsManager &getInstance();
     int64_t getCurrentTimeMillis();
+    int64_t getCurrentTimeMonotonicMillis();
     int32_t getCurrentTime();
     int32_t getTimeDifference();
     int32_t sendRequest(TLObject *object, onCompleteFunc onComplete, onQuickAckFunc onQuickAck, uint32_t flags, uint32_t datacenterId, ConnectionType connetionType, bool immediate);
@@ -58,11 +59,13 @@ public:
     void switchBackend();
     void resumeNetwork(bool partial);
     void pauseNetwork();
-    void setNetworkAvailable(bool value);
+    void setNetworkAvailable(bool value, int32_t type);
     void setUseIpv6(bool value);
-    void init(uint32_t version, int32_t layer, int32_t apiId, std::string deviceModel, std::string systemVersion, std::string appVersion, std::string langCode, std::string configPath, std::string logPath, int32_t userId, bool isPaused, bool enablePushConnection);
+    void init(uint32_t version, int32_t layer, int32_t apiId, std::string deviceModel, std::string systemVersion, std::string appVersion, std::string langCode, std::string configPath, std::string logPath, int32_t userId, bool isPaused, bool enablePushConnection, bool hasNetwork, int32_t networkType);
     void updateDcSettings(uint32_t datacenterId);
     void setPushConnectionEnabled(bool value);
+    void setMtProtoVersion(int version);
+    int32_t getMtProtoVersion();
 
 #ifdef ANDROID
     void sendRequest(TLObject *object, onCompleteFunc onComplete, onQuickAckFunc onQuickAck, uint32_t flags, uint32_t datacenterId, ConnectionType connetionType, bool immediate, int32_t requestToken, jobject ptr1, jobject ptr2);
@@ -133,7 +136,7 @@ private:
     bool updatingDcSettings = false;
     int32_t updatingDcStartTime = 0;
     int32_t lastDcUpdateTime = 0;
-    int64_t lastPingTime = getCurrentTimeMillis();
+    int64_t lastPingTime = getCurrentTimeMonotonicMillis();
     bool networkPaused = false;
     int32_t nextSleepTimeout = CONNECTION_BACKGROUND_KEEP_TIME;
     int64_t lastPauseTime = 0;
@@ -149,6 +152,7 @@ private:
     std::queue<std::function<void()>> pendingTasks;
     struct epoll_event *epollEvents;
     timespec timeSpec;
+    timespec timeSpecMonotonic;
     int32_t timeDifference = 0;
     int64_t lastOutgoingMessageId = 0;
     bool networkAvailable = true;
@@ -164,6 +168,7 @@ private:
     std::vector<uint32_t> requestingSaltsForDc;
     int32_t lastPingId = 0;
 
+    int32_t currentNetworkType = NETWORK_TYPE_WIFI;
     uint32_t currentVersion = 1;
     int32_t currentLayer = 34;
     int32_t currentApiId = 6;
@@ -176,6 +181,7 @@ private:
     int32_t currentUserId = 0;
     bool registeredForInternalPush = false;
     bool pushConnectionEnabled = true;
+    int32_t mtProtoVersion = 2;
 
     ConnectiosManagerDelegate *delegate;
 

@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2016.
+ * Copyright Nikolai Kudashov, 2013-2017.
  */
 
 package org.telegram.messenger;
@@ -51,6 +51,7 @@ public class NotificationCenter {
     public static final int replaceMessagesObjects = totalEvents++;
     public static final int didSetPasscode = totalEvents++;
     public static final int didSetTwoStepPassword = totalEvents++;
+    public static final int didRemovedTwoStepPassword = totalEvents++;
     public static final int screenStateChanged = totalEvents++;
     public static final int didLoadedReplyMessages = totalEvents++;
     public static final int didLoadedPinnedMessage = totalEvents++;
@@ -79,6 +80,8 @@ public class NotificationCenter {
     public static final int cameraInitied = totalEvents++;
     public static final int needReloadArchivedStickers = totalEvents++;
     public static final int didSetNewWallpapper = totalEvents++;
+    public static final int archivedStickersCountDidLoaded = totalEvents++;
+    public static final int paymentFinished = totalEvents++;
 
     public static final int httpFileDidLoaded = totalEvents++;
     public static final int httpFileDidFailedLoad = totalEvents++;
@@ -115,6 +118,10 @@ public class NotificationCenter {
     public static final int audioDidSent = totalEvents++;
     public static final int audioDidStarted = totalEvents++;
     public static final int audioRouteChanged = totalEvents++;
+
+    public static final int didStartedCall = totalEvents++;
+    public static final int didEndedCall = totalEvents++;
+    public static final int closeInCallActivity = totalEvents++;
 
     private SparseArray<ArrayList<Object>> observers = new SparseArray<>();
     private SparseArray<ArrayList<Object>> removeAfterBroadcast = new SparseArray<>();
@@ -197,7 +204,7 @@ public class NotificationCenter {
             DelayedPost delayedPost = new DelayedPost(id, args);
             delayedPosts.add(delayedPost);
             if (BuildVars.DEBUG_VERSION) {
-                FileLog.e("tmessages", "delay post notification " + id + " with args count = " + args.length);
+                FileLog.e("delay post notification " + id + " with args count = " + args.length);
             }
             return;
         }

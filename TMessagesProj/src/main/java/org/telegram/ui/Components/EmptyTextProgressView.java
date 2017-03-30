@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2016.
+ * Copyright Nikolai Kudashov, 2013-2017.
  */
 
 package org.telegram.ui.Components;
@@ -14,30 +14,30 @@ import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.FrameLayout;
-import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
+import org.telegram.ui.ActionBar.Theme;
 
 public class EmptyTextProgressView extends FrameLayout {
 
     private TextView textView;
-    private ProgressBar progressBar;
+    private RadialProgressView progressBar;
     private boolean inLayout;
     private boolean showAtCenter;
 
     public EmptyTextProgressView(Context context) {
         super(context);
 
-        progressBar = new ProgressBar(context);
+        progressBar = new RadialProgressView(context);
         progressBar.setVisibility(INVISIBLE);
         addView(progressBar, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
 
         textView = new TextView(context);
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
-        textView.setTextColor(0xff808080);
+        textView.setTextColor(Theme.getColor(Theme.key_emptyListPlaceholder));
         textView.setGravity(Gravity.CENTER);
         textView.setVisibility(INVISIBLE);
         textView.setPadding(AndroidUtilities.dp(20), 0, AndroidUtilities.dp(20), 0);
@@ -64,6 +64,14 @@ public class EmptyTextProgressView extends FrameLayout {
 
     public void setText(String text) {
         textView.setText(text);
+    }
+
+    public void setTextColor(int color) {
+        textView.setTextColor(color);
+    }
+
+    public void setProgressBarColor(int color) {
+        progressBar.setProgressColor(color);
     }
 
     public void setTextSize(int size) {

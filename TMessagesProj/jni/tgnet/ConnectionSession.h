@@ -32,6 +32,7 @@ public:
 private:
     int64_t sessionId;
     uint32_t nextSeqNo = 0;
+    int64_t minProcessedMessageId = 0;
 
     std::vector<int64_t> processedMessageIds;
     std::vector<int64_t> messagesIdsForConfirmation;

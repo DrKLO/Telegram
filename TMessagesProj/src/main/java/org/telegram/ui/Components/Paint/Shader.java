@@ -22,14 +22,14 @@ public class Shader {
 
         CompilationResult vResult = compileShader(GLES20.GL_VERTEX_SHADER, vertexShader);
         if (vResult.status == GLES20.GL_FALSE) {
-            FileLog.e("tmessages", "Vertex shader compilation failed");
+            FileLog.e("Vertex shader compilation failed");
             destroyShader(vResult.shader, 0, program);
             return;
         }
 
         CompilationResult fResult = compileShader(GLES20.GL_FRAGMENT_SHADER, fragmentShader);
         if (fResult.status == GLES20.GL_FALSE) {
-            FileLog.e("tmessages", "Fragment shader compilation failed");
+            FileLog.e("Fragment shader compilation failed");
             destroyShader(vResult.shader, fResult.shader, program);
             return;
         }
@@ -88,7 +88,7 @@ public class Shader {
         int[] compileStatus = new int[1];
         GLES20.glGetShaderiv(shader, GLES20.GL_COMPILE_STATUS, compileStatus, 0);
         if (compileStatus[0] == GLES20.GL_FALSE) {
-            FileLog.e("tmessages", GLES20.glGetShaderInfoLog(shader));
+            FileLog.e(GLES20.glGetShaderInfoLog(shader));
         }
 
         return new CompilationResult(shader, compileStatus[0]);
@@ -100,7 +100,7 @@ public class Shader {
         int[] linkStatus = new int[1];
         GLES20.glGetProgramiv(program, GLES20.GL_LINK_STATUS, linkStatus, 0);
         if (linkStatus[0] == GLES20.GL_FALSE) {
-            FileLog.e("tmessages", GLES20.glGetProgramInfoLog(program));
+            FileLog.e(GLES20.glGetProgramInfoLog(program));
         }
 
         return linkStatus[0];

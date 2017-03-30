@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2016.
+ * Copyright Nikolai Kudashov, 2013-2017.
  */
 
 package org.telegram.messenger;
@@ -41,7 +41,7 @@ public class Utilities {
             sUrandomIn.close();
             random.setSeed(buffer);
         } catch (Exception e) {
-            FileLog.e("tmessages", e);
+            FileLog.e(e);
         }
     }
 
@@ -70,7 +70,7 @@ public class Utilities {
                 val = Integer.parseInt(num);
             }
         } catch (Exception e) {
-            FileLog.e("tmessages", e);
+            FileLog.e(e);
         }
         return val;
     }
@@ -87,7 +87,7 @@ public class Utilities {
                 val = Long.parseLong(num);
             }
         } catch (Exception e) {
-            FileLog.e("tmessages", e);
+            FileLog.e(e);
         }
         return val;
     }
@@ -199,7 +199,7 @@ public class Utilities {
             md.update(convertme, offset, len);
             return md.digest();
         } catch (Exception e) {
-            FileLog.e("tmessages", e);
+            FileLog.e(e);
         }
         return new byte[20];
     }
@@ -214,7 +214,7 @@ public class Utilities {
             md.update(convertme);
             return md.digest();
         } catch (Exception e) {
-            FileLog.e("tmessages", e);
+            FileLog.e(e);
         } finally {
             convertme.limit(oldl);
             convertme.position(oldp);
@@ -236,7 +236,7 @@ public class Utilities {
             md.update(convertme, offset, len);
             return md.digest();
         } catch (Exception e) {
-            FileLog.e("tmessages", e);
+            FileLog.e(e);
         }
         return null;
     }
@@ -259,7 +259,7 @@ public class Utilities {
             }
             return sb.toString();
         } catch (java.security.NoSuchAlgorithmException e) {
-            FileLog.e("tmessages", e);
+            FileLog.e(e);
         }
         return null;
     }

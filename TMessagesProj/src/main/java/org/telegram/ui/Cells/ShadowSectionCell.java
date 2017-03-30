@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2016.
+ * Copyright Nikolai Kudashov, 2013-2017.
  */
 
 package org.telegram.ui.Cells;
@@ -13,6 +13,7 @@ import android.view.View;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.R;
+import org.telegram.ui.ActionBar.Theme;
 
 public class ShadowSectionCell extends View {
 
@@ -20,7 +21,7 @@ public class ShadowSectionCell extends View {
 
     public ShadowSectionCell(Context context) {
         super(context);
-        setBackgroundResource(R.drawable.greydivider);
+        setBackgroundDrawable(Theme.getThemedDrawable(context, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
     }
 
     public void setSize(int value) {

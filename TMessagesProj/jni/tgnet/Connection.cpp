@@ -259,7 +259,7 @@ void Connection::connect() {
     lastPacketLength = 0;
     wasConnected = false;
     hasSomeDataSinceLastConnect = false;
-    openConnection(hostAddress, hostPort, ipv6);
+    openConnection(hostAddress, hostPort, ipv6, ConnectionsManager::getInstance().currentNetworkType);
     if (connectionType == ConnectionTypePush) {
         if (isTryingNextPort) {
             setTimeout(20);

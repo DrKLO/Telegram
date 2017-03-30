@@ -3,12 +3,13 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2016.
+ * Copyright Nikolai Kudashov, 2013-2017.
  */
 
 package org.telegram.ui.Cells;
 
 import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.content.Context;
@@ -16,7 +17,6 @@ import android.view.Gravity;
 import android.widget.FrameLayout;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.AnimatorListenerAdapterProxy;
 import org.telegram.messenger.R;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.CheckBox;
@@ -43,7 +43,7 @@ public class PhotoPickerPhotoCell extends FrameLayout {
         checkBox.setSize(30);
         checkBox.setCheckOffset(AndroidUtilities.dp(1));
         checkBox.setDrawBackground(true);
-        checkBox.setColor(0xff3ccaef);
+        checkBox.setColor(0xff3ccaef, 0xffffffff);
         addView(checkBox, LayoutHelper.createFrame(30, 30, Gravity.RIGHT | Gravity.TOP, 0, 4, 4, 0));
     }
 
@@ -66,7 +66,7 @@ public class PhotoPickerPhotoCell extends FrameLayout {
             animator.playTogether(ObjectAnimator.ofFloat(photoImage, "scaleX", checked ? 0.85f : 1.0f),
                     ObjectAnimator.ofFloat(photoImage, "scaleY", checked ? 0.85f : 1.0f));
             animator.setDuration(200);
-            animator.addListener(new AnimatorListenerAdapterProxy() {
+            animator.addListener(new AnimatorListenerAdapter() {
                 @Override
                 public void onAnimationEnd(Animator animation) {
                     if (animator != null && animator.equals(animation)) {

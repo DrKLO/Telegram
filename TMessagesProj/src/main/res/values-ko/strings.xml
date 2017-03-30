@@ -41,7 +41,56 @@
     <string name="FirstName">이름(필수)</string>
     <string name="LastName">성(선택)</string>
     <string name="CancelRegistration">가입 취소</string>
+    <!--payments view-->
+    <string name="PaymentSuccessfullyPaid">%3$s에 대한 %1$s 금액을 %2$s 에게 성공적으로 전송하였습니다.</string>
+    <string name="PaymentSuccessfullyPaidNoItem">%1$s 금액을 %2$s 에게 성공적으로 전송하였습니다.</string>
+    <string name="PaymentCheckout">체크아웃</string>
+    <string name="PaymentShippingMethod">배송방법</string>
+    <string name="PaymentNoShippingMethod">죄송합니다. 이 주소로 배송이 가능하지 않습니다.</string>
+    <string name="PaymentShippingInfo">배송정보</string>
+    <string name="PaymentShippingAddress">배송주소</string>
+    <string name="PaymentShippingAddress1Placeholder">주소 1 (Street)</string>
+    <string name="PaymentShippingAddress2Placeholder">주소 2 (Street)</string>
+    <string name="PaymentShippingCityPlaceholder">시</string>
+    <string name="PaymentShippingStatePlaceholder">주</string>
+    <string name="PaymentShippingCountry">국가</string>
+    <string name="PaymentShippingZipPlaceholder">우편번호</string>
+    <string name="PaymentShippingReceiver">수신자</string>
+    <string name="PaymentShippingName">이름</string>
+    <string name="PaymentShippingPhoneNumber">전화번호</string>
+    <string name="PaymentShippingEmailPlaceholder">이메일</string>
+    <string name="PaymentShippingSave">배송정보 저장</string>
+    <string name="PaymentShippingSaveInfo">향후 사용을 위하여 배송정보를 저장 할 수 있습니다.</string>
+    <string name="PaymentCardInfo">결제정보</string>
+    <string name="PaymentCardTitle">결제카드</string>
+    <string name="PaymentCardNumber">카드번호</string>
+    <string name="PaymentCardCvv">보안코드 (CVV)</string>
+    <string name="PaymentCardExpireDate">MM/YY</string>
+    <string name="PaymentBillingAddress">결제주소</string>
+    <string name="PaymentCardNameTitle">카드소유자</string>
+    <string name="PaymentCardName">성</string>
+    <string name="PaymentCardSavePaymentInformation">결제정보 저장</string>
+    <string name="PaymentCardSavePaymentInformationInfoLine1">향후 사용을 위하여 결제정보를 저장 할 수 있습니다.</string>
+    <string name="PaymentCardSavePaymentInformationInfoLine2">이 기능을 사용하시려면 2단계 인증 비밀번호를 사용해야합니다.</string>
+    <string name="PaymentTransactionReview">거래내역 확인</string>
+    <string name="PaymentTransactionMessage">%3$s에 대한 %1$s 금액을 %2$s 봇에게 전송하시겠습니까?</string>
+    <string name="PaymentTransactionTotal">전체</string>
+    <string name="PaymentInvoice">인보이스</string>
+    <string name="PaymentTestInvoice">테스트 인보이스</string>
+    <string name="PaymentCheckoutPay">%1$s 결제</string>
+    <string name="PaymentCheckoutMethod">결제방법</string>
+    <string name="PaymentCheckoutName">이름</string>
+    <string name="PaymentCheckoutPhoneNumber">전화번호</string>
+    <string name="PaymentCheckoutEmail">연락주소</string>
+    <string name="PaymentCheckoutShippingMethod">배송방법</string>
+    <string name="PaymentReceipt">영수증</string>
+    <string name="PaymentConfirmationNewCard">다른 카드를 선택해주세요</string>
+    <string name="PaymentConfirmationMessage">%1$s 카드정보가 파일로 있습니다. 이 카드로 결제하시려면 2단계 비밀번호를 입력해주세요</string>
+    <string name="PaymentPrecheckoutFailed">죄송합니다, 결제가 봇에 의하여 거절되었습니다.</string>
+    <string name="PaymentFailed">죄송합니다, 결제가 거절되었습니다.</string>
+    <string name="PaymentConnectionFailed">결제 서버로 연결을 할 수 없습니다. 인터넷 연결을 확인해주시고 다시 시도해주세요.</string>
     <!--chats view-->
+    <string name="NewConversationShortcut">새로운 대화</string>
     <string name="Settings">설정</string>
     <string name="Contacts">주소록</string>
     <string name="NewGroup">새 그룹</string>
@@ -80,6 +129,16 @@
     <string name="LinkPreview">링크 미리복</string>
     <string name="Draft">임시저장</string>
     <string name="HistoryCleared">내역이 초기화 됨</string>
+    <string name="ArticleByAuthor">%1$s 이내</string>
+    <string name="ArticleDateByAuthor">%1$s by %2$s</string>
+    <string name="PreviewFeedback">미리보기에 대한 의견 남기기</string>
+    <string name="SendStickerPreview">스티커 전송</string>
+    <string name="ViewPackPreview">팩 보기</string>
+    <string name="PinToTop">맨 위로 고정</string>
+    <string name="UnpinFromTop">맨 위 고정 해제</string>
+    <string name="Bold">굵게</string>
+    <string name="Italic">기울림</string>
+    <string name="Regular">일반</string>
     <!--channels-->
     <string name="GroupType">그룹 종류</string>
     <string name="ChannelType">채널 종류</string>
@@ -267,11 +326,14 @@
     <string name="IsRecordingAudio">%1$s님이 음성메시지를 녹음중입니다...</string>
     <string name="IsSendingAudio">%1$s님이 음성파일을 전송중입니다...</string>
     <string name="IsSendingPhoto">%1$s님이 사진 보내는 중...</string>
+    <string name="InstantView">즉시 보기</string>
+    <string name="IsSendingGame">%1$s님이 게임을 플레이중입니다.</string>
     <string name="IsSendingVideo">%1$s님이 동영상 보내는 중...</string>
     <string name="IsSendingFile">%1$s님이 파일 보내는 중...</string>
     <string name="RecordingAudio">음성메시지를 녹음 중입니다..</string>
     <string name="SendingAudio">음성파일 전송 중..</string>
     <string name="SendingPhoto">사진 전송 중..</string>
+    <string name="SendingGame">게임 플레이중...</string>
     <string name="SendingVideoStatus">동영상 전송 중..</string>
     <string name="SendingFile">파일 전송 중...</string>
     <string name="GotAQuestion">텔레그램에 관해\n궁금한 사항이 있나요?</string>
@@ -307,6 +369,7 @@
     <string name="SaveToMusic">음악으로 저장</string>
     <string name="ShareFile">공유</string>
     <string name="ApplyLocalizationFile">언어 파일 적용</string>
+    <string name="ApplyThemeFile">테마 파일 적용</string>
     <string name="UnsupportedAttachment">지원하지 않는 형식입니다</string>
     <string name="SetTimer">자동삭제 타이머 설정</string>
     <string name="ServiceNotifications">서비스 알림</string>
@@ -325,6 +388,8 @@
     <string name="ReportSpamAlertChannel">이 채널을 스팸신고 하시겠습니까?</string>
     <string name="NobodyLikesSpam1">죄송합니다, 서로 연락처가 추가된 경우에만 메시지 전송이 가능합니다.</string>
     <string name="NobodyLikesSpam2">죄송합니다, 서로 연락처가 추가된 경우에만 그룹에 구성원을 추가 할 수 있습니다.</string>
+    <string name="NobodyLikesSpam3">오늘 연락처가 없는 분들과 너무 많은 연락을 하셨습니다. 내일 다시 시도해주세요. 오늘은 메시지가 오는 분들하고만 대화가 가능합니다.</string>
+    <string name="NobodyLikesSpam4">오늘 연락처가 없는 분들과 너무 많은 연락을 하셨습니다. 내일 다시 시도해주세요. 그룹에 추가하시려면 다른 분이 초대해주셔야합니다.</string>
     <string name="NobodyLikesSpamUrl">https://telegram.org/faq#can-39t-send-messages-to-non-contacts</string>
     <string name="MoreInfo">더 보기</string>
     <string name="ShareSendTo">다음에게 보내기..</string>
@@ -358,6 +423,10 @@
     <string name="ChatYourSelfDescription3">모든 기기에서 이 대화를 공유</string>
     <string name="ChatYourSelfDescription4">빠른검색을 위하여 검색사용</string>
     <string name="ChatYourSelfTitle">클라우드 저장소</string>
+    <string name="JumpToDate">날자로 이동</string>
+    <string name="DeleteForUser">%1$s 에게 삭제</string>
+    <string name="DeleteForAll">모두에게 삭제</string>
+    <string name="TextCopied">클립보드로 텍스트가 복하되었습니다.</string>
     <!--notification-->
     <string name="MessageLifetimeChanged">%1$s님이 자동삭제를 %2$s 후로 설정했습니다</string>
     <string name="MessageLifetimeChangedOutgoing">자동삭제를 %1$s 후로 설정했습니다</string>
@@ -451,11 +520,12 @@
     <string name="ALongTimeAgo">마지막으로 접속한 지 오래됨</string>
     <string name="NewMessageTitle">새 메시지</string>
     <!--group create view-->
-    <string name="SendMessageTo">메시지 보내기...</string>
+    <string name="SendMessageTo">초대하기..</string>
     <string name="SoftUserLimitAlert">이 그룹 생성을 완료하시고 슈퍼그룹으로 전환하시면 더 많은 구성원을 추가 할 수 있습니다.</string>
     <string name="EnterGroupNamePlaceholder">그룹 이름 입력</string>
     <string name="GroupName">그룹 이름</string>
-    <string name="MembersCount">대화상대 %1$d/%2$d</string>
+    <string name="MembersCount">%2$d 중 %1$d  선택됨</string>
+    <string name="MembersCountZero">최대 %1$s</string>
     <string name="JoinToGroup">\'%1$s\' 채널에 참여하시겠습니까?</string>
     <string name="JoinToGroupErrorFull">죄송합니다, 그룹방의 인원이 최대치입니다.</string>
     <string name="JoinToGroupErrorNotExist">죄송합니다, 채팅방이 더이상 존재하지 않습니다.</string>
@@ -507,12 +577,16 @@
     <string name="PhoneOther">기타</string>
     <string name="PhoneMain">주</string>
     <string name="StartEncryptedChat">비밀대화 시작</string>
+    <string name="GroupsInCommon">공통 그룹</string>
+    <string name="GroupsInCommonTitle">공통 그룹</string>
+    <string name="NoGroupsInCommon">아직 공통 그룹이 없습니다</string>
     <string name="CreateEncryptedChatError">오류가 발생했습니다.</string>
     <string name="EncryptionKey">암호화 키</string>
     <string name="MessageLifetime">자동삭제 타이머</string>
     <string name="ShortMessageLifetimeForever">해제</string>
     <string name="EncryptionKeyDescription">이 이미지와 텍스트는 <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>.<![CDATA[<br><br>]]> 님과의 현재 비밀대화에 대한 비밀키에서 파생된 것입니다. 이 이미지와 텍스트가 <![CDATA[<b>]]>%2$s\'s<![CDATA[</b>]]>  님의 휴대전화와 동일하다면 단말기간(end-to-end)의 암호화가 정상적으로 진행되고 있음을 보장합니다.<![CDATA[<br><br>]]> 자세한 사항은 telegram.org를 참고해 주세요.</string>
     <string name="EncryptionKeyLink">https://telegram.org/faq#secret-chats</string>
+    <string name="TapToEmojify">탭을 하여 이모티콘화</string>
     <string name="NumberUnknown">알 수 없음</string>
     <string name="Info">정보</string>
     <string name="Phone">전화번호</string>
@@ -525,6 +599,7 @@
     <string name="UsernameInvalidLong">아이디는 최대 32자까지만 가능합니다.</string>
     <string name="UsernameInvalidStartNumber">아이디는 숫자로 시작할 수 없습니다.</string>
     <string name="UsernameHelp">텔레그램 아이디를 설정할 수 있습니다. 아이디를 설정하면 회원님의 전화번호를 몰라도 아이디로 회원님을 찾아 대화를 나눌 수 있습니다.<![CDATA[<br><br>]]>아이디는 영문, 밑줄, 숫자로 (<![CDATA[<b>]]>a~z<![CDATA[</b>]]>, <![CDATA[<b>]]>_<![CDATA[</b>]]>, <![CDATA[<b>]]>0~9<![CDATA[</b>]]>) <![CDATA[<b>]]>다섯 글자<![CDATA[</b>]]> 이상으로 설정해 주세요.</string>
+    <string name="UsernameHelpLink">이 링크는 다음 상대와 텔레그램 대화를 열게 됩니다:\n%1$s</string>
     <string name="UsernameChecking">아이디 확인 중...</string>
     <string name="UsernameAvailable">%1$s: 사용 가능합니다.</string>
     <string name="UsernameEmpty">없음</string>
@@ -561,6 +636,20 @@
     <string name="ArchivedStickersAlertInfo">오래된 스티커중 일부가 보관되어집니다. 스티커 설정에서 다시 재설정이 가능합니다.</string>
     <string name="ArchivedMasksAlertTitle">보관된 마스크</string>
     <string name="ArchivedMasksAlertInfo">오래된 마스크중 일부가 보관되어집니다. 마스크 설정에서 다시 재설정이 가능합니다.</string>
+    <!--theme view-->
+    <string name="Theme">테마</string>
+    <string name="DeleteThemeAlert">이 테마를 삭제하시겠습니까?</string>
+    <string name="IncorrectTheme">올바르지 않은 테마 파일</string>
+    <string name="EnterThemeName">테마명을 입력하세요</string>
+    <string name="CloseEditor">에디터 닫기</string>
+    <string name="SaveTheme">테마 저장</string>
+    <string name="NewTheme">새로운 테마</string>
+    <string name="ApplyTheme">적용</string>
+    <string name="ThemePreview">테마 미리보기</string>
+    <string name="SelectColor">색상 선택</string>
+    <string name="CreateNewTheme">새로운 테마 생성</string>
+    <string name="CreateNewThemeHelp">팔레트 아이콘을 클릭하여 화면 구성 리스트를 볼 수 있으며 - 편집을 할 수 있습니다.</string>
+    <string name="CreateNewThemeInfo">앱내에 색상을 변경하여 원하는 테마를 생성할 수 있습니다. 여기에서 언제든지 기존 텔레그램 테마로 복원이 가능합니다.</string>
     <!--settings view-->
     <string name="ResetNotificationsText">모든 알림 설정이 초기화되었습니다</string>
     <string name="TextSize">채팅 글자 크기</string>
@@ -583,6 +672,27 @@
     <string name="ResetAllNotifications">모든 알림 설정 초기화</string>
     <string name="UndoAllCustom">연락처와 그룹에 대한 모든 알림 설정을 처음 상태로 되돌립니다.</string>
     <string name="NotificationsAndSounds">알림 및 소리</string>
+    <string name="CustomNotifications">개별 알림</string>
+    <string name="ProfilePopupNotification">알림 팝업</string>
+    <string name="ProfilePopupNotificationInfo">이 연락처로 부터 수신되는 메시지는 텔레그램 미사용 중일시 화면에 뜨게 됩니다.</string>
+    <string name="NotificationsLed">LED</string>
+    <string name="NotificationsLedColor">색깔</string>
+    <string name="ColorBlue">파란색</string>
+    <string name="ColorRed">빨간색</string>
+    <string name="ColorYellow">노란색</string>
+    <string name="ColorGreen">초록색</string>
+    <string name="ColorCyan">청록색</string>
+    <string name="ColorWhite">하얀색</string>
+    <string name="ColorPink">핑크색</string>
+    <string name="ColorViolet">보라색</string>
+    <string name="ColorOrange">주황색</string>
+    <string name="NotificationsLedInfo">LED는 일부 기기에서 새로운 메시지가 수신될때 반짝입니는 빛입니다</string>
+    <string name="PriorityInfo">우선수위가 높은 알림은 휴대폰 기기가 무음이더라도 알림이 작동합니다.</string>
+    <string name="General">일반</string>
+    <string name="NotificationsOn">켜기</string>
+    <string name="NotificationsOff">끄기</string>
+    <string name="NotificationsTurnOn">켜기</string>
+    <string name="NotificationsTurnOff">끄기</string>
     <string name="BlockedUsers">차단 목록</string>
     <string name="LogOut">로그아웃</string>
     <string name="NoSound">알림음 없음</string>
@@ -597,7 +707,7 @@
     <string name="ContactJoined">친구의 텔레그램 가입 알림</string>
     <string name="PinnedMessages">고정된 메시지</string>
     <string name="Language">언어</string>
-    <string name="AskAQuestionInfo">텔레그램에 관한 질문은 자원봉사자들이 답변해 드립니다. 신속한 답변을 위해 노력하지만 답변이 다소 늦을 수 있습니다.<![CDATA[<br><br>]]>일반적인 문제와 <![CDATA[<a href=\"https://telegram.org/faq/ko#g\">해결방법</a>]]>에 대해서는 \'<![CDATA[<a href=\"https://telegram.org/faq/ko#a\">자주 묻는 질문</a>]]>\'을 확인해 보세요.</string>
+    <string name="AskAQuestionInfo">텔레그램에 관한 질문은 자원봉사자들이 답변해 드립니다. 신속한 답변을 위해 노력하지만 답변이 다소 늦을 수 있습니다.<![CDATA[<br><br>]]>일반적인 문제와 <![CDATA[<a href="https://telegram.org/faq/ko#g">해결방법</a>]]>에 대해서는 \'<![CDATA[<a href="https://telegram.org/faq/ko#a">자주 묻는 질문</a>]]>\'을 확인해 보세요.</string>
     <string name="AskButton">질문하기</string>
     <string name="TelegramFaq">자주 묻는 질문</string>
     <string name="TelegramFaqUrl">https://telegram.org/faq/ko</string>
@@ -624,8 +734,6 @@
     <string name="BadgeNumber">앱 아이콘에 알림 개수 표시</string>
     <string name="Short">짧게</string>
     <string name="Long">길게</string>
-    <string name="SystemDefault">시스템 기본값</string>
-    <string name="SettingsDefault">설정 기본값</string>
     <string name="AutomaticMediaDownload">사진/동영상 자동 다운로드</string>
     <string name="WhenUsingMobileData">모바일 데이터를 사용 중일 때</string>
     <string name="WhenConnectedOnWiFi">Wi-Fi에 연결 중일 때</string>
@@ -635,7 +743,11 @@
     <string name="RaiseToSpeak">기기를 들어 말하기</string>
     <string name="SaveToGallerySettings">앨범에 자동 저장</string>
     <string name="EditName">이름 편집</string>
+    <string name="NotificationsCustomize">개인화</string>
+    <string name="NotificationsCustom">개별</string>
+    <string name="NotificationsEnableCustom">개별 알림 활성화</string>
     <string name="NotificationsPriority">우선순위</string>
+    <string name="NotificationsPrioritySettings">설정과 동일</string>
     <string name="NotificationsPriorityDefault">기본</string>
     <string name="NotificationsPriorityLow">낮음</string>
     <string name="NotificationsPriorityHigh">높음</string>
@@ -651,29 +763,32 @@
     <string name="NotificationsOther">기타</string>
     <string name="NotificationsDisabled">비활성화됨</string>
     <string name="VibrationDisabled">비활성화됨</string>
+    <string name="PopupEnabled">활성화</string>
+    <string name="PopupDisabled">비활성화</string>
     <string name="LedDisabled">비활성화됨</string>
     <string name="RepeatDisabled">끔</string>
     <string name="InChatSound">채팅중 소리 설정</string>
     <string name="SoundDefault">기본값</string>
     <string name="VibrationDefault">기본값</string>
     <string name="SmartNotifications">스마트 알림</string>
+    <string name="SmartNotificationsInfo">%1$d / %2$s</string>
     <string name="SmartNotificationsDisabled">비활성화됨</string>
-    <string name="SmartNotificationsInfo">최대 %1$s번, %2$s번 이내 알림</string>
-    <string name="SmartNotificationsSoundAtMost">알림 최대치</string>
-    <string name="SmartNotificationsTimes">번</string>
-    <string name="SmartNotificationsWithin">이내</string>
-    <string name="SmartNotificationsMinutes">분</string>
+    <string name="SmartNotificationsAlert">소리 알림 간격</string>
+    <string name="SmartNotificationsDetail">%2$s 이내 %1$s </string>
     <string name="SecretWebPage">링크 프리뷰</string>
     <string name="SecretChat">비밀대화</string>
     <string name="ChromeCustomTabs">크롬 커스텀 탭</string>
     <string name="ChromeCustomTabsInfo">앱내에서 외부 링크 열기</string>
     <string name="DirectShare">직접 공유</string>
     <string name="DirectShareInfo">공유 메뉴에서 최근 대화 보기</string>
-    <string name="Emoji">Emoji</string>
-    <string name="EmojiBigSize">Draw single big emoji</string>
-    <string name="EmojiUseDefault">Use system default emoji</string>
+    <string name="Emoji">이모티콘</string>
+    <string name="EmojiBigSize">한개의 큰 이모티콘 그리기</string>
+    <string name="EmojiUseDefault">기본 시스템 이모티콘 사용</string>
+    <string name="TelegramVersion">텔레그램 안드로이드 %1$s</string>
+    <string name="DebugMenu">디버그 메뉴</string>
+    <string name="DebugMenuImportContacts">연락처 가져오기</string>
+    <string name="DebugMenuReloadContacts">연락처 재동기화</string>
     <!--cache view-->
-    <string name="CacheSettings">캐시 설정</string>
     <string name="LocalDatabase">로컬 데이터베이스</string>
     <string name="LocalDatabaseClear">캐시된 텍스트 메시지를 삭제하시겠습니까?</string>
     <string name="LocalDatabaseInfo">압축된 데이터베이스 및 캐시에 저장된 메시지를 로컬 데이터베이스에서 삭제하면 내부 저장공간이 증가합니다. 데이터베이스는 Telegram이 작동하는데 어느정도 필요함으로 완전히 삭제가 되지는 않습니다.\n\n이 작업은 완료되기까지 몇분정도 소요가 될 수 있습니다.</string>
@@ -685,6 +800,7 @@
     <string name="LocalAudioCache">음성 메시지</string>
     <string name="LocalVideoCache">동영상</string>
     <string name="LocalMusicCache">음악</string>
+    <string name="LocalGifCache">GIF파일</string>
     <string name="LocalCache">다른 파일</string>
     <string name="CacheEmpty">없음</string>
     <string name="KeepMedia">미디어 저장</string>
@@ -722,6 +838,8 @@
     <string name="FingerprintInfo">지문인식 후 진행해주세요</string>
     <string name="FingerprintHelp">터치 센서</string>
     <string name="FingerprintNotRecognized">지문인식이 실패하였습니다. 다시 시도해주세요.</string>
+    <string name="ScreenCapture">화면 캡춰 허용</string>
+    <string name="ScreenCaptureInfo">활성화시 앱내에서 화면 캡춰가 가능합니다. 다만, 화면전환시 잠금코드가 활성화 되어져 있더라도 대화내용이 뜰 수 있습니다.\n\n적용이 안될시, 앱 재시작이 필요할 수도 있습니다.</string>
     <!--media view-->
     <string name="DocumentsTitle">공유한 파일</string>
     <string name="SharedMediaTitle">공유된 미디어</string>
@@ -798,6 +916,7 @@
     <string name="AddCaption">설명 추가...</string>
     <string name="PhotoCaption">사진 설명</string>
     <string name="VideoCaption">동영상 설명</string>
+    <string name="GifCaption">GIF 설명</string>
     <string name="Caption">설명</string>
     <string name="PaintDraw">그리기</string>
     <string name="PaintStickers">스티커</string>
@@ -807,6 +926,9 @@
     <string name="PaintDuplicate">복제</string>
     <string name="PaintOutlined">아웃라인</string>
     <string name="PaintRegular">레귤러</string>
+    <string name="CropReset">초기화</string>
+    <string name="CropOriginal">원본</string>
+    <string name="CropSquare">정사각형</string>
     <!--password view-->
     <string name="TwoStepVerification">2단계 인증</string>
     <string name="SetAdditionalPassword">개별 비밀번호 설정</string>
@@ -857,6 +979,27 @@
     <string name="PasswordReset">비밀번호 비활성화</string>
     <string name="EnabledPasswordText">2단계 인증을 활성화 하였습니다.\n설정된 개별 비밀번호를 사용하여 텔레그램 계정에 로그인 할 수 있습니다.</string>
     <string name="PendingEmailText">복구 이메일 %1$s 이 아직 활성화 되지 않았으며 미승인 상태입니다.</string>
+    <!--data settings-->
+    <string name="DataSettings">데이터 및 저장소</string>
+    <string name="DataUsage">디스크 및 네트워크 사용량</string>
+    <string name="StorageUsage">저장소 사용량</string>
+    <string name="MobileUsage">모바일 데이터 사용량</string>
+    <string name="RoamingUsage">로밍 데이터 사용량</string>
+    <string name="WiFiUsage">WIFI 데이터 사용량</string>
+    <string name="MessagesDataUsage">메시지 및 기타 데이터</string>
+    <string name="CountSent">보냄</string>
+    <string name="CountReceived">받음</string>
+    <string name="BytesSent">보낸 바이트</string>
+    <string name="BytesReceived">받은 바이트</string>
+    <string name="FilesDataUsage">파일</string>
+    <string name="CallsDataUsage">전화</string>
+    <string name="OutgoingCalls">발신 전화</string>
+    <string name="IncomingCalls">수신 전화</string>
+    <string name="CallsTotalTime">전체 시간</string>
+    <string name="TotalDataUsage">전체</string>
+    <string name="ResetStatistics">통계 초기화</string>
+    <string name="NetworkUsageSince">%1$s 부터 사용된 네트워크</string>
+    <string name="ResetStatisticsAlert">사용량 통계를 초기화 하시겠습니까?</string>
     <!--privacy settings-->
     <string name="PrivacySettings">개인정보 및 보안</string>
     <string name="PrivacyTitle">개인정보</string>
@@ -872,7 +1015,7 @@
     <string name="SecurityTitle">보안</string>
     <string name="DeleteAccountTitle">회원 탈퇴</string>
     <string name="DeleteAccountIfAwayFor">자동 회원 탈퇴</string>
-    <string name="DeleteAccountHelp">이 기간 동안 최소 한 번 이상 로그인을 하지 않으면 자동으로 모든 메시지와 대화상대를 삭제하고 텔레그램을 탈퇴합니다.</string>
+    <string name="DeleteAccountHelp">이 기간 동안 최소 한 번 이상 로그인을 하지 않으면 자동으로 모든 메시지, 연락처와 대화상대를 삭제하고 텔레그램을 탈퇴합니다.</string>
     <string name="DeleteAccountNowConfirmation">텔레그램을 탈퇴할까요?</string>
     <string name="LastSeenHelp">누가 마지막 접속 시간을 볼 수 있는지 변경</string>
     <string name="LastSeenTitle">마지막 접속 시간을 누구에게 공개할까요?</string>
@@ -904,7 +1047,7 @@
     <!--edit video view-->
     <string name="EditVideo">동영상 편집</string>
     <string name="SendingVideo">동영상 보내는 중...</string>
-    <string name="SendingGif">gif 전송 중...</string>
+    <string name="SendingGif">GIF 전송중...</string>
     <!--bot-->
     <string name="Bot">봇</string>
     <string name="BotShare">공유</string>
@@ -941,6 +1084,8 @@
     <string name="Set">설정</string>
     <string name="OK">확인</string>
     <string name="Crop">자르기</string>
+    <string name="Yes">네</string>
+    <string name="No">아니오</string>
     <!--messages-->
     <string name="ActionInviteYou">초대링크를 타고 그룹에 참여하였습니다.</string>
     <string name="ActionInviteUser">초대링크를 타고 그룹에 un1님이 참여하였습니다.</string>
@@ -987,6 +1132,7 @@
     <string name="FloodWait">너무 많이 시도하셨습니다. 나중에 다시 시도하세요</string>
     <string name="FloodWaitTime">너무 많이 시도하셨습니다. %1$s 초 후에 다시 시도하세요.</string>
     <string name="InvalidCode">올바른 코드를 입력해 주세요</string>
+    <string name="PhoneNumberFlood">죄송합니다, 최근에 계정 재가입을 너무 많이 시도하였습니다. 몇일 후에 다시 시도해주세요.</string>
     <string name="InvalidFirstName">올바른 이름을 입력해 주세요</string>
     <string name="InvalidLastName">올바른 성을 입력해 주세요</string>
     <string name="Loading">불러오는 중...</string>
@@ -1038,16 +1184,20 @@
     <string name="EditMessageError">죄송합니다, 메시지 수정을 할 수 없습니다.</string>
     <string name="AllowReadSms">텔레그램이 SMS를 수신 할 수 있도록 설정해주셔야 자동으로 코드 입력이 가능합니다.</string>
     <string name="AllowReadCall">텔레그램이 전화를 수신 할 수 있도록 설정해주셔야 자동으로 코드 입력이 가능합니다.</string>
+    <string name="AllowFillNumber">텔레그램이 SMS 및 전화를 수신 할 수 있도록 설정해주셔야 자동으로 코드 입력이 가능합니다.</string>
     <string name="AllowReadCallAndSms">텔레그램이 SMS 및 전화를 수신 할 수 있도록 설정해주셔야 자동으로 코드 입력이 가능합니다.</string>
     <string name="UserRestricted">죄송합니다, 이 작업이 제한되었습니다.</string>
+    <string name="YouBlockedUser">죄송합니다,  그룹에 이 이용자나 봇을 차단하였기 대문에 추가를 할 수 없습니다. 초대하시렴녀 차단해제를 부탁드립니다.</string>
     <string name="JoinGroup">그룹방 입장</string>
     <!--permissions-->
     <string name="PermissionContacts">Telegram은 여러 기기에서 친구와 메시지를 주고받을 수 있도록 회원님의 연락처 접근이 필요합니다.</string>
     <string name="PermissionStorage">Telegram은 사진, 비디오, 음악 및 다양한 미디어를 공유 및 저장하기 위하여 스토리지 접근이 필요합니다.</string>
     <string name="PermissionNoAudio">Telegram이 음성 메시지를 보내기 위하여 마이크에 대한 접근이 필요합니다.</string>
+    <string name="PermissionNoAudioVideo">Telegram이 비디오 녹화를 위하여 마이크에 대한 접근이 필요합니다.</string>
     <string name="PermissionNoCamera">Telegram이 사진 및 비디오 촬영을 하기 위하여 카메라 접근 권한을 필요로 합니다.</string>
     <string name="PermissionNoLocation">Telegram이 위치를 친구분들과 공유하기 위해 위치에 대한 접근 권한을 필요로 합니다.</string>
     <string name="PermissionNoLocationPosition">텔레그램이 위치에 대한 권한이 필요합니다.</string>
+    <string name="PermissionDrawAboveOtherApps">Telegram이 화면속화면 기능을 위하여 화면위 그리기에 대한 접근이 필요합니다.</string>
     <string name="PermissionOpenSettings">설정</string>
     <!--Intro view-->
     <string name="Page1Title">텔레그램</string>
@@ -1065,6 +1215,66 @@
     <string name="Page6Message"><![CDATA[<b>텔레그램</b>]]>은 다른 기기에서도<![CDATA[<br/>]]>동시에 사용할 수 있습니다.</string>
     <string name="Page7Message"><![CDATA[<b>텔레그램</b>]]>은 메시지를 강력하게 암호화하며<![CDATA[<br/>]]>자동으로 삭제되게 할 수 있습니다.</string>
     <string name="StartMessaging">시작하기</string>
+    <!--VoIP-->
+    <string name="AccountSettings">계정설정</string>
+    <string name="VoipUseLessData">전화에 적은 데이터 사용</string>
+    <string name="VoipIncoming">수신 전화</string>
+    <string name="VoipConnecting">연결 중</string>
+    <string name="VoipExchangingKeys">암호화 키 교환 중</string>
+    <string name="VoipWaiting">대기 중</string>
+    <string name="VoipRequesting">요청 중</string>
+    <string name="VoipHangingUp">전화 끊는 중</string>
+    <string name="VoipCallEnded">전화 종료</string>
+    <string name="VoipFailed">연결 실패</string>
+    <string name="VoipRinging">전화 거는 중</string>
+    <string name="VoipBusy">통화 중</string>
+    <string name="VoipInCallBranding">텔레그램 전화</string>
+    <string name="VoipOutgoingCall">진행중인 텔레그램 전화</string>
+    <string name="VoipEndCall">전화 종료</string>
+    <string name="VoipOngoingAlertTitle">다른 전화가 진행중입니다</string>
+    <string name="VoipOngoingAlert">현재 <![CDATA[<b>%1$s</b>]]>와 통화중입니다.  전화를 끊고 <![CDATA[<b>%2$s</b>]]>와 새로운 통화를 하시겠습니까?</string>
+    <string name="VoipNotificationSettings">음성 전화</string>
+    <string name="VoipSettingsRingtone">통화음</string>
+    <string name="VoipRingtoneInfo">텔레그램으로 전화 수신시 이 연락처에 대한 개별 통화음을 설정할 수 있습니다.</string>
+    <string name="Calls">전화</string>
+    <string name="WhoCanCallMe">나에게 전화가 가능한 사람은?</string>
+    <string name="WhoCanCallMeInfo">전화차단 설정이 가능합니다.</string>
+    <string name="CustomCallInfo">이 사용자들은 위의 설정과 무관하게 전화가 되거나 안될 수 있습니다.</string>
+    <string name="UseLessDataNever">거부</string>
+    <string name="UseLessDataOnMobile">모바일 데이터로만 가능</string>
+    <string name="UseLessDataAlways">항상</string>
+    <string name="VoipAnswerCall">받기</string>
+    <string name="VoipDeclineCall">거절</string>
+    <string name="VoipOffline">현재 오프라인입니다. 인터넷에 접속하여 전화를 시도해주세요</string>
+    <string name="VoipOfflineAirplane">현재 비행기 모드가 활성화 되어져 있습니다. 모드를 끄시거나 WIFI를 연결하여 전화를 시도해주세요</string>
+    <string name="VoipOfflineTitle">오프라인</string>
+    <string name="VoipOfflineAirplaneTitle">비행기 모드</string>
+    <string name="VoipOfflineOpenSettings">설정</string>
+    <string name="CallMessageOutgoing">발신 전화</string>
+    <string name="CallMessageIncoming">수신 전화</string>
+    <string name="CallMessageIncomingMissed">부재중 전화</string>
+    <string name="CallMessageOutgoingMissed">취소된 전화</string>
+    <string name="CallMessageIncomingDeclined">거절한 전화</string>
+    <string name="CallMessageWithDuration">%1$s (%2$s)</string>
+    <string name="CallEncryptionKeyDescription">이 이미지와 텍스트는 <![CDATA[<b>]]>%1$s<![CDATA[</b>]]>.<![CDATA[<br><br>]]> 님과의 현재 전화를 위하여 파생된 것입니다. 이 이미지와 텍스트가 <![CDATA[<b>]]>%2$s\'s<![CDATA[</b>]]> 님의 휴대전화와 동일하다면 단말기간(end-to-end)의 암호화가 정상적으로 진행되고 있음을 보장합니다.</string>
+    <string name="NoCallLog">아직 전화 내역이 없습니다.</string>
+    <string name="VoipPeerIncompatible"><![CDATA[<b>]]>%1$s<![CDATA[</b>]]>의 앱은 현재 호환되지 않은 프로토콜을 사용중입니다. 앱 업데이트가 필요합니다.</string>
+    <string name="VoipPeerOutdated"><![CDATA[<b>]]>%1$s<![CDATA[</b>]]>은 현재 전화기능을 지원하고 있지 않습니다. 앱 업데이트 후에 전화가 가능합니다.</string>
+    <string name="VoipRateCallAlert">텔레그램 전화의 품질을 평가해주세요.</string>
+    <string name="VoipFeedbackAlert">전화서비스 품질개선을 위하여 피드백을 남겨주시겠나요?</string>
+    <string name="VoipNeedMicPermission">Telegram이전화를 걸기 위하여 마이크에 대한 접근이 필요합니다.</string>
+    <string name="VoipFeedbackCommentHint">코멘트 추가</string>
+    <string name="CallBack">전화 회신</string>
+    <string name="CallAgain">다시 전화걸기</string>
+    <string name="DefaultRingtone">기본값</string>
+    <string name="ConfirmDeleteCallLog">이 통화내역을 삭제하시겠습니까?</string>
+    <string name="CallViaTelegram">텔레그램 전화</string>
+    <string name="VoipAudioRoutingEarpiece">이어폰</string>
+    <string name="VoipAudioRoutingSpeaker">스피커</string>
+    <string name="VoipAudioRoutingBluetooth">블루투스</string>
+    <string name="ReturnToCall">전화로 이동</string>
+    <string name="CallNotAvailable">죄송합니다, <![CDATA[<b>]]>%1$s<![CDATA[</b>]]> 님은 수신거부 상태입니다.</string>
+    <string name="CallEmojiKeyTooltip">%1$s님과 이모티콘이 일치한다면, 이 통화는 100%% 안전합니다</string>
     <!--plural-->
     <string name="Online_zero">온라인 %1$d명</string>
     <string name="Online_one">온라인 %1$d명</string>
@@ -1284,6 +1494,8 @@
     <string name="AndOther_many">및 %1$d 개</string>
     <string name="AndOther_other">및 %1$d 개</string>
     <!--date formatters-->
+    <string name="formatterStats12H">MMM dd yyyy, h:mm a</string>
+    <string name="formatterStats24H">MMM dd yyyy, HH:mm</string>
     <string name="formatterMonthYear">MMMM yyyy</string>
     <string name="formatterMonth">M\'월\' d\'일\'</string>
     <string name="formatterYear">yyyy.MM.dd.</string>

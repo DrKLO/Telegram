@@ -273,6 +273,5 @@ jint Java_org_telegram_ui_Components_AnimatedFileDrawable_getVideoFrame(JNIEnv *
             return 1;
         }
     }
-    return 0;
 }
 }

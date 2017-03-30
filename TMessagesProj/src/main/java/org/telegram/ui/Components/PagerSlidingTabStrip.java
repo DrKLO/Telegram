@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2016.
+ * Copyright Nikolai Kudashov, 2013-2017.
  */
 
 package org.telegram.ui.Components;
@@ -12,6 +12,7 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Paint.Style;
+import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.support.v4.view.ViewPager;
 import android.support.v4.view.ViewPager.OnPageChangeListener;
@@ -27,7 +28,7 @@ import org.telegram.messenger.AndroidUtilities;
 public class PagerSlidingTabStrip extends HorizontalScrollView {
 
     public interface IconTabProvider {
-        int getPageIconResId(int position);
+        Drawable getPageIconDrawable(int position);
         void customOnDraw(Canvas canvas, int position);
     }
 
@@ -95,7 +96,7 @@ public class PagerSlidingTabStrip extends HorizontalScrollView {
         tabCount = pager.getAdapter().getCount();
         for (int i = 0; i < tabCount; i++) {
             if (pager.getAdapter() instanceof IconTabProvider) {
-                addIconTab(i, ((IconTabProvider) pager.getAdapter()).getPageIconResId(i));
+                addIconTab(i, ((IconTabProvider) pager.getAdapter()).getPageIconDrawable(i));
             }
         }
         updateTabStyles();
@@ -113,7 +114,7 @@ public class PagerSlidingTabStrip extends HorizontalScrollView {
         });
     }
 
-    private void addIconTab(final int position, int resId) {
+    private void addIconTab(final int position, Drawable drawable) {
         ImageView tab = new ImageView(getContext()) {
             @Override
             protected void onDraw(Canvas canvas) {
@@ -124,7 +125,7 @@ public class PagerSlidingTabStrip extends HorizontalScrollView {
             }
         };
         tab.setFocusable(true);
-        tab.setImageResource(resId);
+        tab.setImageDrawable(drawable);
         tab.setScaleType(ImageView.ScaleType.CENTER);
         tab.setOnClickListener(new OnClickListener() {
             @Override

@@ -3,7 +3,7 @@
  * It is licensed under GNU GPL v. 2 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  *
- * Copyright Nikolai Kudashov, 2013-2016.
+ * Copyright Nikolai Kudashov, 2013-2017.
  */
 
 package org.telegram.ui;
@@ -12,7 +12,6 @@ import android.animation.Animator;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.annotation.SuppressLint;
-import android.app.AlertDialog;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -24,31 +23,35 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
-import android.widget.AbsListView;
-import android.widget.AdapterView;
-import android.widget.ListView;
-import android.widget.TextView;
+import android.widget.FrameLayout;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
+import org.telegram.messenger.support.widget.LinearLayoutManager;
+import org.telegram.messenger.support.widget.RecyclerView;
+import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BackDrawable;
 import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Adapters.BaseFragmentAdapter;
+import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.ui.Cells.GraySectionCell;
 import org.telegram.ui.Cells.SharedDocumentCell;
+import org.telegram.ui.Components.EmptyTextProgressView;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.NumberTextView;
+import org.telegram.ui.Components.RecyclerListView;
 
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -61,10 +64,11 @@ public class DocumentSelectActivity extends BaseFragment {
         void startDocumentSelectActivity();
     }
 
-    private ListView listView;
+    private RecyclerListView listView;
     private ListAdapter listAdapter;
     private NumberTextView selectedMessagesCountTextView;
-    private TextView emptyView;
+    private EmptyTextProgressView emptyView;
+    private LinearLayoutManager layoutManager;
 
     private File currentDir;
     private ArrayList<ListItem> items = new ArrayList<>();
@@ -75,6 +79,7 @@ public class DocumentSelectActivity extends BaseFragment {
     private HashMap<String, ListItem> selectedFiles = new HashMap<>();
     private ArrayList<View> actionModeViews = new ArrayList<>();
     private boolean scrolling;
+    private ArrayList<ListItem> recentItems = new ArrayList<>();
 
     private final static int done = 3;
 
@@ -85,6 +90,7 @@ public class DocumentSelectActivity extends BaseFragment {
         String ext = "";
         String thumb;
         File file;
+        long date;
     }
 
     private class HistoryEntry {
@@ -105,7 +111,7 @@ public class DocumentSelectActivity extends BaseFragment {
                             listFiles(currentDir);
                         }
                     } catch (Exception e) {
-                        FileLog.e("tmessages", e);
+                        FileLog.e(e);
                     }
                 }
             };
@@ -118,13 +124,19 @@ public class DocumentSelectActivity extends BaseFragment {
     };
 
     @Override
+    public boolean onFragmentCreate() {
+        loadRecentFiles();
+        return super.onFragmentCreate();
+    }
+
+    @Override
     public void onFragmentDestroy() {
         try {
             if (receiverRegistered) {
                 ApplicationLoader.applicationContext.unregisterReceiver(receiver);
             }
         } catch (Exception e) {
-            FileLog.e("tmessages", e);
+            FileLog.e(e);
         }
         super.onFragmentDestroy();
     }
@@ -157,7 +169,13 @@ public class DocumentSelectActivity extends BaseFragment {
                     if (actionBar.isActionModeShowed()) {
                         selectedFiles.clear();
                         actionBar.hideActionMode();
-                        listView.invalidateViews();
+                        int count = listView.getChildCount();
+                        for (int a = 0; a < count; a++) {
+                            View child = listView.getChildAt(a);
+                            if (child instanceof SharedDocumentCell) {
+                                ((SharedDocumentCell) child).setChecked(false, true);
+                            }
+                        }
                     } else {
                         finishFragment();
                     }
@@ -166,6 +184,9 @@ public class DocumentSelectActivity extends BaseFragment {
                         ArrayList<String> files = new ArrayList<>();
                         files.addAll(selectedFiles.keySet());
                         delegate.didSelectFiles(DocumentSelectActivity.this, files);
+                        for (ListItem item : selectedFiles.values()) {
+                            item.date = System.currentTimeMillis();
+                        }
                     }
                 }
             }
@@ -178,7 +199,7 @@ public class DocumentSelectActivity extends BaseFragment {
         selectedMessagesCountTextView = new NumberTextView(actionMode.getContext());
         selectedMessagesCountTextView.setTextSize(18);
         selectedMessagesCountTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
-        selectedMessagesCountTextView.setTextColor(0xff737373);
+        selectedMessagesCountTextView.setTextColor(Theme.getColor(Theme.key_actionBarActionModeDefaultIcon));
         selectedMessagesCountTextView.setOnTouchListener(new View.OnTouchListener() {
             @Override
             public boolean onTouch(View v, MotionEvent event) {
@@ -187,40 +208,38 @@ public class DocumentSelectActivity extends BaseFragment {
         });
         actionMode.addView(selectedMessagesCountTextView, LayoutHelper.createLinear(0, LayoutHelper.MATCH_PARENT, 1.0f, 65, 0, 0, 0));
 
-        actionModeViews.add(actionMode.addItem(done, R.drawable.ic_ab_done_gray, Theme.ACTION_BAR_MODE_SELECTOR_COLOR, null, AndroidUtilities.dp(54)));
+        actionModeViews.add(actionMode.addItemWithWidth(done, R.drawable.ic_ab_done, AndroidUtilities.dp(54)));
 
-        fragmentView = getParentActivity().getLayoutInflater().inflate(R.layout.document_select_layout, null, false);
-        listAdapter = new ListAdapter(context);
-        emptyView = (TextView) fragmentView.findViewById(R.id.searchEmptyView);
-        emptyView.setOnTouchListener(new View.OnTouchListener() {
-            @Override
-            public boolean onTouch(View v, MotionEvent event) {
-                return true;
-            }
-        });
-        listView = (ListView) fragmentView.findViewById(R.id.listView);
+        fragmentView = new FrameLayout(context);
+        FrameLayout frameLayout = (FrameLayout) fragmentView;
+
+        emptyView = new EmptyTextProgressView(context);
+        emptyView.showTextView();
+        frameLayout.addView(emptyView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+
+        listView = new RecyclerListView(context);
+        listView.setVerticalScrollBarEnabled(false);
+        listView.setLayoutManager(layoutManager = new LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false));
         listView.setEmptyView(emptyView);
-        listView.setAdapter(listAdapter);
-
-        listView.setOnScrollListener(new AbsListView.OnScrollListener() {
+        listView.setAdapter(listAdapter = new ListAdapter(context));
+        frameLayout.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+        listView.setOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
-            public void onScrollStateChanged(AbsListView view, int scrollState) {
-                scrolling = scrollState != SCROLL_STATE_IDLE;
-            }
-
-            @Override
-            public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
-
+            public void onScrollStateChanged(RecyclerView recyclerView, int newState) {
+                scrolling = newState != RecyclerView.SCROLL_STATE_IDLE;
             }
         });
 
-        listView.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
+        listView.setOnItemLongClickListener(new RecyclerListView.OnItemLongClickListener() {
             @Override
-            public boolean onItemLongClick(AdapterView<?> parent, View view, int i, long id) {
-                if (actionBar.isActionModeShowed() || i < 0 || i >= items.size()) {
+            public boolean onItemClick(View view, int position) {
+                if (actionBar.isActionModeShowed()) {
                     return false;
                 }
-                ListItem item = items.get(i);
+                ListItem item = listAdapter.getItem(position);
+                if (item == null) {
+                    return false;
+                }
                 File file = item.file;
                 if (file != null && !file.isDirectory()) {
                     if (!file.canRead()) {
@@ -258,13 +277,13 @@ public class DocumentSelectActivity extends BaseFragment {
             }
         });
 
-        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+        listView.setOnItemClickListener(new RecyclerListView.OnItemClickListener() {
             @Override
-            public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
-                if (i < 0 || i >= items.size()) {
+            public void onItemClick(View view, int position) {
+                ListItem item = listAdapter.getItem(position);
+                if (item == null) {
                     return;
                 }
-                ListItem item = items.get(i);
                 File file = item.file;
                 if (file == null) {
                     if (item.icon == R.drawable.ic_storage_gallery) {
@@ -280,12 +299,15 @@ public class DocumentSelectActivity extends BaseFragment {
                         } else {
                             listRoots();
                         }
-                        listView.setSelectionFromTop(he.scrollItem, he.scrollOffset);
+                        layoutManager.scrollToPositionWithOffset(he.scrollItem, he.scrollOffset);
                     }
                 } else if (file.isDirectory()) {
                     HistoryEntry he = new HistoryEntry();
-                    he.scrollItem = listView.getFirstVisiblePosition();
-                    he.scrollOffset = listView.getChildAt(0).getTop();
+                    he.scrollItem = layoutManager.findLastVisibleItemPosition();
+                    View topView = layoutManager.findViewByPosition(he.scrollItem);
+                    if (topView != null) {
+                        he.scrollOffset = topView.getTop();
+                    }
                     he.dir = currentDir;
                     he.title = actionBar.getTitle();
                     history.add(he);
@@ -294,7 +316,6 @@ public class DocumentSelectActivity extends BaseFragment {
                         return;
                     }
                     actionBar.setTitle(item.title);
-                    listView.setSelection(0);
                 } else {
                     if (!file.canRead()) {
                         showErrorBox(LocaleController.getString("AccessError", R.string.AccessError));
@@ -338,6 +359,46 @@ public class DocumentSelectActivity extends BaseFragment {
         listRoots();
 
         return fragmentView;
+    }
+
+    public void loadRecentFiles() {
+        try {
+            File[] files = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).listFiles();
+            for (int a = 0; a < files.length; a++) {
+                File file = files[a];
+                if (file.isDirectory()) {
+                    continue;
+                }
+                ListItem item = new ListItem();
+                item.title = file.getName();
+                item.file = file;
+                String fname = file.getName();
+                String[] sp = fname.split("\\.");
+                item.ext = sp.length > 1 ? sp[sp.length - 1] : "?";
+                item.subtitle = AndroidUtilities.formatFileSize(file.length());
+                fname = fname.toLowerCase();
+                if (fname.endsWith(".jpg") || fname.endsWith(".png") || fname.endsWith(".gif") || fname.endsWith(".jpeg")) {
+                    item.thumb = file.getAbsolutePath();
+                }
+                recentItems.add(item);
+            }
+            Collections.sort(recentItems, new Comparator<ListItem>() {
+                @Override
+                public int compare(ListItem o1, ListItem o2) {
+                    long lm = o1.file.lastModified();
+                    long rm = o2.file.lastModified();
+                    if (lm == rm) {
+                        return 0;
+                    } else if (lm > rm) {
+                        return -1;
+                    } else {
+                        return 1;
+                    }
+                }
+            });
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
     }
 
     @Override
@@ -386,7 +447,7 @@ public class DocumentSelectActivity extends BaseFragment {
             } else {
                 listRoots();
             }
-            listView.setSelectionFromTop(he.scrollItem, he.scrollOffset);
+            layoutManager.scrollToPositionWithOffset(he.scrollItem, he.scrollOffset);
             return false;
         }
         return super.onBackPressed();
@@ -533,7 +594,7 @@ public class DocumentSelectActivity extends BaseFragment {
             String line;
             while ((line = bufferedReader.readLine()) != null) {
                 if (line.contains("vfat") || line.contains("/mnt")) {
-                    FileLog.e("tmessages", line);
+                    FileLog.e(line);
                     StringTokenizer tokens = new StringTokenizer(line, " ");
                     String unused = tokens.nextToken();
                     String path = tokens.nextToken();
@@ -564,20 +625,20 @@ public class DocumentSelectActivity extends BaseFragment {
                                 item.file = new File(path);
                                 items.add(item);
                             } catch (Exception e) {
-                                FileLog.e("tmessages", e);
+                                FileLog.e(e);
                             }
                         }
                     }
                 }
             }
         } catch (Exception e) {
-            FileLog.e("tmessages", e);
+            FileLog.e(e);
         } finally {
             if (bufferedReader != null) {
                 try {
                     bufferedReader.close();
                 } catch (Exception e) {
-                    FileLog.e("tmessages", e);
+                    FileLog.e(e);
                 }
             }
         }
@@ -599,7 +660,7 @@ public class DocumentSelectActivity extends BaseFragment {
                 items.add(fs);
             }
         } catch (Exception e) {
-            FileLog.e("tmessages", e);
+            FileLog.e(e);
         }
 
         fs = new ListItem();
@@ -624,12 +685,13 @@ public class DocumentSelectActivity extends BaseFragment {
             }
             return LocaleController.formatString("FreeOfTotal", R.string.FreeOfTotal, AndroidUtilities.formatFileSize(free), AndroidUtilities.formatFileSize(total));
         } catch (Exception e) {
-            FileLog.e("tmessages", e);
+            FileLog.e(e);
         }
         return path;
     }
 
-    private class ListAdapter extends BaseFragmentAdapter {
+    private class ListAdapter extends RecyclerListView.SelectionAdapter {
+
         private Context mContext;
 
         public ListAdapter(Context context) {
@@ -637,47 +699,104 @@ public class DocumentSelectActivity extends BaseFragment {
         }
 
         @Override
-        public int getCount() {
-            return items.size();
+        public boolean isEnabled(RecyclerView.ViewHolder holder) {
+            return holder.getItemViewType() != 0;
         }
 
         @Override
-        public Object getItem(int position) {
-            return items.get(position);
+        public int getItemCount() {
+            int count = items.size();
+            if (history.isEmpty() && !recentItems.isEmpty()) {
+                count += recentItems.size() + 1;
+            }
+            return count;
+        }
+
+        public ListItem getItem(int position) {
+            if (position < items.size()) {
+                return items.get(position);
+            } else if (history.isEmpty() && !recentItems.isEmpty() && position != items.size()) {
+                position -= items.size() + 1;
+                if (position < recentItems.size()) {
+                    return recentItems.get(position);
+                }
+            }
+            return null;
         }
 
         @Override
-        public long getItemId(int position) {
-            return 0;
-        }
-
-        public int getViewTypeCount() {
-            return 2;
-        }
-
-        public int getItemViewType(int pos) {
-            return items.get(pos).subtitle.length() > 0 ? 0 : 1;
+        public int getItemViewType(int position) {
+            return getItem(position) != null ? 1 : 0;
         }
 
         @Override
-        public View getView(int position, View convertView, ViewGroup parent) {
-            if (convertView == null) {
-                convertView = new SharedDocumentCell(mContext);
+        public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+            View view;
+            switch (viewType) {
+                case 0:
+                    view = new GraySectionCell(mContext);
+                    ((GraySectionCell) view).setText(LocaleController.getString("Recent", R.string.Recent).toUpperCase());
+                    break;
+                case 1:
+                default:
+                    view = new SharedDocumentCell(mContext);
+                    break;
             }
-            SharedDocumentCell textDetailCell = (SharedDocumentCell) convertView;
-            ListItem item = items.get(position);
-            if (item.icon != 0) {
-                ((SharedDocumentCell) convertView).setTextAndValueAndTypeAndThumb(item.title, item.subtitle, null, null, item.icon);
-            } else {
-                String type = item.ext.toUpperCase().substring(0, Math.min(item.ext.length(), 4));
-                ((SharedDocumentCell) convertView).setTextAndValueAndTypeAndThumb(item.title, item.subtitle, type, item.thumb, 0);
-            }
-            if (item.file != null && actionBar.isActionModeShowed()) {
-                textDetailCell.setChecked(selectedFiles.containsKey(item.file.toString()), !scrolling);
-            } else {
-                textDetailCell.setChecked(false, !scrolling);
-            }
-            return convertView;
+            return new RecyclerListView.Holder(view);
         }
+
+        @Override
+        public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
+            if (holder.getItemViewType() == 1) {
+                ListItem item = getItem(position);
+                SharedDocumentCell documentCell = (SharedDocumentCell) holder.itemView;
+                if (item.icon != 0) {
+                    documentCell.setTextAndValueAndTypeAndThumb(item.title, item.subtitle, null, null, item.icon);
+                } else {
+                    String type = item.ext.toUpperCase().substring(0, Math.min(item.ext.length(), 4));
+                    documentCell.setTextAndValueAndTypeAndThumb(item.title, item.subtitle, type, item.thumb, 0);
+                }
+                if (item.file != null && actionBar.isActionModeShowed()) {
+                    documentCell.setChecked(selectedFiles.containsKey(item.file.toString()), !scrolling);
+                } else {
+                    documentCell.setChecked(false, !scrolling);
+                }
+            }
+        }
+    }
+
+    @Override
+    public ThemeDescription[] getThemeDescriptions() {
+        return new ThemeDescription[]{
+                new ThemeDescription(fragmentView, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundWhite),
+
+                new ThemeDescription(actionBar, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_actionBarDefault),
+                new ThemeDescription(listView, ThemeDescription.FLAG_LISTGLOWCOLOR, null, null, null, null, Theme.key_actionBarDefault),
+                new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_ITEMSCOLOR, null, null, null, null, Theme.key_actionBarDefaultIcon),
+                new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_TITLECOLOR, null, null, null, null, Theme.key_actionBarDefaultTitle),
+                new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SELECTORCOLOR, null, null, null, null, Theme.key_actionBarDefaultSelector),
+
+                new ThemeDescription(listView, ThemeDescription.FLAG_SELECTOR, null, null, null, null, Theme.key_listSelector),
+
+                new ThemeDescription(emptyView, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_emptyListPlaceholder),
+
+                new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_AM_ITEMSCOLOR, null, null, null, null, Theme.key_actionBarActionModeDefaultIcon),
+                new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_AM_BACKGROUND, null, null, null, null, Theme.key_actionBarActionModeDefault),
+                new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_AM_TOPBACKGROUND, null, null, null, null, Theme.key_actionBarActionModeDefaultTop),
+                new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_AM_SELECTORCOLOR, null, null, null, null, Theme.key_actionBarActionModeDefaultSelector),
+
+                new ThemeDescription(selectedMessagesCountTextView, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_actionBarActionModeDefaultIcon),
+
+                new ThemeDescription(listView, 0, new Class[]{GraySectionCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText2),
+                new ThemeDescription(listView, ThemeDescription.FLAG_CELLBACKGROUNDCOLOR, new Class[]{GraySectionCell.class}, null, null, null, Theme.key_graySection),
+
+                new ThemeDescription(listView, ThemeDescription.FLAG_TEXTCOLOR, new Class[]{SharedDocumentCell.class}, new String[]{"nameTextView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText),
+                new ThemeDescription(listView, ThemeDescription.FLAG_TEXTCOLOR, new Class[]{SharedDocumentCell.class}, new String[]{"dateTextView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText3),
+                new ThemeDescription(listView, ThemeDescription.FLAG_CHECKBOX, new Class[]{SharedDocumentCell.class}, new String[]{"checkBox"}, null, null, null, Theme.key_checkbox),
+                new ThemeDescription(listView, ThemeDescription.FLAG_CHECKBOXCHECK, new Class[]{SharedDocumentCell.class}, new String[]{"checkBox"}, null, null, null, Theme.key_checkboxCheck),
+                new ThemeDescription(listView, ThemeDescription.FLAG_IMAGECOLOR, new Class[]{SharedDocumentCell.class}, new String[]{"thumbImageView"}, null, null, null, Theme.key_files_folderIcon),
+                new ThemeDescription(listView, ThemeDescription.FLAG_IMAGECOLOR | ThemeDescription.FLAG_BACKGROUNDFILTER, new Class[]{SharedDocumentCell.class}, new String[]{"thumbImageView"}, null, null, null, Theme.key_files_folderIconBackground),
+                new ThemeDescription(listView, ThemeDescription.FLAG_TEXTCOLOR, new Class[]{SharedDocumentCell.class}, new String[]{"extTextView"}, null, null, null, Theme.key_files_iconText),
+        };
     }
 }
