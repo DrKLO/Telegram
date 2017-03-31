@@ -1,0 +1,351 @@
+<!--Translated by Orgad Shaneh <orgads@gmail.com>-->
+<resources>
+    <string name="AppName">טלגרם</string>
+
+    <!--signin view-->
+    <string name="YourPhone">הטלפון שלך</string>
+    <string name="StartText">אנא אשר את קוד המדינה שלך\nוהזן את מספר הטלפון שלך.</string>
+    <string name="ChooseCountry">בחר ארץ</string>
+    <string name="WrongCountry">קוד מדינה שגוי</string>
+
+    <!--code enter view-->
+    <string name="YourCode">הקוד שלך</string>
+    <string name="SentSmsCode">שלחנו מסרון עם קוד הפעלה לטלפון שלך</string>
+    <string name="CallText">אנחנו נתקשר אליך בעוד</string>
+    <string name="Calling">מתקשרים אליך ...</string>
+    <string name="Code">קוד</string>
+    <string name="WrongNumber">טעות במספר?</string>
+
+    <!--signup view-->
+    <string name="YourName">השם שלך</string>
+    <string name="RegisterText">הגדר את השם הפרטי ושם המשפחה שלך</string>
+    <!--<string name="RegisterText">Set up your name and picture</string>-->
+    <string name="FirstName">שם פרטי (חובה)</string>
+    <string name="LastName">שם משפחה (לא חובה)</string>
+    <string name="CancelRegistration">ביטול רישום</string>
+
+    <!--chats view-->
+    <string name="Chats">שיחות</string>
+    <string name="Search">חיפוש</string>
+    <string name="NewMessages">הודעות חדשות</string>
+    <string name="Settings">הגדרות</string>
+    <string name="Contacts">אנשי קשר</string>
+    <string name="NewGroup">קבוצה חדשה</string>
+    <string name="Yesterday">אתמול</string>
+    <string name="NoResult">אין תוצאות</string>
+    <string name="NoChats">אין שיחות עדיין ...</string>
+    <string name="NoChatsHelp">התחל הודעות על ידי לחיצה על כפתור\nחבר בפינה הימנית העליונה\nאו עבור לאנשי קשר.</string>
+    <string name="WaitingForNetwork">ממתין לרשת ...</string>
+    <string name="Connecting">מתחבר...</string>
+    <string name="Updating">מעדכן...</string>
+    <string name="NewSecretChat">שיחה חשאית חדשה</string>
+    <string name="AwaitingEncryption">מחכה ש־%s יתחבר...</string>
+    <string name="EncryptionRejected">שיחה חשאית בוטלה</string>
+    <string name="EncryptionProcessing">מחליף מפתחות הצפנה...</string>
+    <string name="EncryptedChatStartedOutgoing">%s הצטרף לשיחה החשאית שלך.</string>
+    <string name="EncryptedChatStartedIncoming">הצטרפת לשיחה החשאית.</string>
+    <string name="ClearHistory">נקה היסטוריה</string>
+    <string name="DeleteChat">מחק וצא</string>
+    <string name="HiddenName">שם מוסתר</string>
+    <string name="SelectChat">בחר שיחה</string>
+
+    <!--documents view-->
+    <string name="SelectFile">בחר קובץ</string>
+    <string name="FreeOfTotal">פנוי %1$s מתוך %2$s</string>
+    <string name="UnknownError">שגיאה לא ידועה</string>
+    <string name="AccessError">שגיאת גישה</string>
+    <string name="NoFiles">אין קבצים עדיין...</string>
+    <string name="FileUploadLimit">קובץ לא יכול להיות גדול מ־%1$s</string>
+    <string name="NotMounted">אחסון לא מעוגן</string>
+    <string name="UsbActive">העברה מ־USB פעילה</string>
+    <string name="InternalStorage">אחסון פנימי</string>
+    <string name="ExternalStorage">אחסון חיצוני</string>
+    <string name="SystemRoot">שורש של מערכת</string>
+    <string name="SdCard">כרטיס זכרון</string>
+
+    <!--chat view-->
+    <string name="Invisible">בלתי נראה</string>
+    <string name="Typing">מקליד/ה...</string>
+    <string name="Attach">צרף</string>
+    <string name="IsTyping">מקליד/ה...</string>
+    <string name="AreTyping">מקלידים...</string>
+    <string name="AndMoreTyping">ועוד %d אנשים</string>
+    <string name="GotAQuestion">יש לך שאלה\nאודות טלגרם?</string>
+    <string name="ChatTakePhoto">צלם תמונה</string>
+    <string name="ChatGallery">גלריה</string>
+    <string name="ChatLocation">מיקום</string>
+    <string name="ChatVideo">וידאו</string>
+    <string name="ChatDocument">מסמך</string>
+    <string name="NoMessages">אין כאן הודעות עדיין...</string>
+    <string name="ViewPhoto">הצג תמונה</string>
+    <string name="ViewLocation">הצג מיקום</string>
+    <string name="ViewVideo">נגן וידאו</string>
+    <string name="ForwardedMessage">הודעה שהועברה</string>
+    <string name="From">מאת</string>
+    <string name="NoRecent">אין אחרונים</string>
+    <string name="Members">חברים</string>
+    <string name="Message">הודעה</string>
+    <string name="TypeMessage">הקלד/י הודעה</string>
+    <string name="DOWNLOAD">הורד</string>
+    <string name="Selected">נבחרים:</string>
+    <string name="ShareMyContactInfo">שתף/י את פרטי אנשי הקשר שלי</string>
+    <string name="AddToContacts">הוסף/י לאנשי קשר</string>
+    <string name="EncryptedPlaceholderTitleIncoming">%s הזמין/ה אותך להצטרף לשיחה חשאית.</string>
+    <string name="EncryptedPlaceholderTitleOutgoing">הזמנת את %s להצטרף לשיחה חשאית.</string>
+    <string name="EncryptedDescriptionTitle">שיחות חשאיות:</string>
+    <string name="EncryptedDescription1">השתמש בהצפנה מקצה לקצה</string>
+    <string name="EncryptedDescription2">אל תשאיר עקבות בשרתים שלנו</string>
+    <string name="EncryptedDescription3">קבע שעון להשמדה עצמית</string>
+    <string name="EncryptedDescription4">אל תאפשר העברה</string>
+    <string name="OneNewMessage">%1$d הודעה חדשה</string>
+    <string name="FewNewMessages">%1$d הודעות חדשות</string>
+    <string name="YouWereKicked">הוסרת מקבוצה זו</string>
+    <string name="YouLeft">עזבת את קבוצה זו</string>
+    <string name="DeleteThisGroup">מחק/י קבוצה זו</string>
+    <string name="SlideToCancel">החלק/י לבטל</string>
+
+    <!--notification-->
+    <string name="EncryptedChatRequested">זומנה שיחה חשאית</string>
+    <string name="EncryptedChatAccepted">שיחה חשאית התחילה</string>
+    <string name="MessageLifetimeChanged">%1$s קבע/ה את שעון ההשמדה העצמית ל־%2$s</string>
+    <string name="MessageLifetimeChangedOutgoing">קבעת את שעון ההשמדה העצמית ל־%1$s</string>
+    <string name="MessageLifetimeRemoved">%1$s ביטל/ה את שעון ההשמדה העצמית</string>
+    <string name="MessageLifetimeYouRemoved">ביטלת את שעון ההשמדה העצמית</string>
+    <string name="MessageLifetime2s">2 שניות</string>
+    <string name="MessageLifetime5s">5 שניות</string>
+    <string name="MessageLifetime1m">דקה אחת</string>
+    <string name="MessageLifetime1h">שעה אחת</string>
+    <string name="MessageLifetime1d">יום אחד</string>
+    <string name="MessageLifetime1w">שבוע אחד</string>
+    <string name="YouHaveNewMessage">יש לך הודעה חדשה</string>
+    <string name="NotificationMessageText">%1$s: %2$s</string>
+    <string name="NotificationMessageNoText">%1$s שלח/ה לך הודעה</string>
+    <string name="NotificationMessagePhoto">%1$s שלח/ה לך תמונה</string>
+    <string name="NotificationMessageVideo">%1$s שלח/ה לך סרטון</string>
+    <string name="NotificationMessageContact">%1$s שיתף/ה איתך איש/ת קשר</string>
+    <string name="NotificationMessageMap">%1$s שלח/ה לך מיקום</string>
+    <string name="NotificationMessageDocument">%1$s שלח/ה לך מסמך</string>
+    <string name="NotificationMessageAudio">%1$s שלח/ה לך שמע</string>
+    <string name="NotificationMessageGroupText">%1$s @ %2$s: %3$s</string>
+    <string name="NotificationMessageGroupNoText">%1$s שלח/ה מסר לקבוצה %2$s</string>
+    <string name="NotificationMessageGroupPhoto">%1$s שלח/ה תמונה לקבוצה %2$s</string>
+    <string name="NotificationMessageGroupVideo">%1$s שלח/ה סרטון לקבוצה %2$s</string>
+    <string name="NotificationMessageGroupContact">%1$s שיתף/ה איש/ת קשר עם הקבוצה %2$s</string>
+    <string name="NotificationMessageGroupMap">%1$s שלח/ה מיקום לקבוצה %2$s</string>
+    <string name="NotificationMessageGroupDocument">%1$s שלח/ה מסמך לקבוצה %2$s</string>
+    <string name="NotificationMessageGroupAudio">%1$s שלח/ה שמע לקבוצה %2$s</string>
+    <string name="NotificationInvitedToGroup">%1$s הזמין/ה אותך לקבוצה %2$s</string>
+    <string name="NotificationEditedGroupName">%1$s ערך/ה את שמה של הקבוצה %2$s</string>
+    <string name="NotificationEditedGroupPhoto">%1$s ערך/ה את התמונה של הקבוצה %2$s</string>
+    <string name="NotificationGroupAddMember">%1$s הזמין/ה את %3$s לקבוצה %2$s</string>
+    <string name="NotificationGroupKickMember">%1$s הסיר/ה את %3$s מהקבוצה %2$s</string>
+    <string name="NotificationGroupKickYou">%1$s הסיר/ה אותך מהקבוצה %2$s</string>
+    <string name="NotificationGroupLeftMember">%1$s עזב/ה את הקבוצה %2$s</string>
+    <string name="NotificationContactJoined">%1$s הצטרף/ה לטלגרם!</string>
+    <string name="NotificationUnrecognizedDevice">%1$s,\nזיהינו התחברות לחשבון שלך מהתקן חדש בתאריך %2$s\n\nהתקן: %3$s\nמיקום: %4$s\n\nאם זה לא את/ה, באפשרותך ללכת להגדרות - נתק/י את כל החיבורים\n\nתודה,\nצוות טלגרם</string>
+    <string name="NotificationContactNewPhoto">%1$s עדכן/ה את תמונת הפרופיל</string>
+
+    <!--contacts view-->
+    <string name="SelectContact">בחר איש/ת קשר</string>
+    <string name="NoContacts">אין אנשי קשר עדיין</string>
+    <string name="InviteText">היי, בואו נעבור לטלגרם: http://telegram.org/dl2</string>
+    <string name="TodayAt">היום בשעה</string>
+    <string name="YesterdayAt">אתמול בשעה</string>
+    <string name="OtherAt">בשעה</string>
+    <string name="Online">מחובר/ת</string>
+    <string name="Offline">מנותק/ת</string>
+    <string name="LastSeen">נראה בפעם האחרונה</string>
+    <string name="LastSeenDate">נראה בפעם האחרונה</string>
+    <string name="InviteFriends">הזמן חברים</string>
+
+    <!--group create view-->
+    <string name="SendMessageTo">שלח הודעה ל...</string>
+    <string name="EnterGroupNamePlaceholder">הכנס שם לקבוצה</string>
+    <string name="MEMBER">חבר</string>
+    <string name="GroupName">שם קבוצה</string>
+    <string name="MEMBERS">חברים</string>
+    <string name="AllContacts">כל אנשי הקשר</string>
+
+    <!--group info view-->
+    <string name="EnterGroupNameTitle">הכנס שם לקבוצה</string>
+    <string name="SharedMedia">מדיה משותפת</string>
+    <string name="GroupInfo">פרטי קבוצה</string>
+    <string name="SHAREDMEDIA">מדיה משותפת</string>
+    <string name="SETTINGS">הגדרות</string>
+    <string name="AddMember">הוסף/י חבר</string>
+    <string name="DeleteAndExit">מחק ופרוש מהקבוצה</string>
+    <string name="Notifications">התראות</string>
+    <string name="KickFromGroup">הסר/י מהקבוצה</string>
+
+    <!--contact info view-->
+    <string name="ShareContact">שתף</string>
+    <string name="AddContact">הוסף</string>
+    <string name="BlockContact">חסום</string>
+    <string name="EditContact">ערוך</string>
+    <string name="DeleteContact">מחק</string>
+    <string name="PhoneHome">בית</string>
+    <string name="PhoneMobile">נייד</string>
+    <string name="PhoneWork">עבודה</string>
+    <string name="PhoneOther">אחר</string>
+    <string name="PhoneMain">ראשי</string>
+    <string name="ContactInfo">פרטי איש/ת קשר</string>
+    <string name="PHONE">טלפון</string>
+    <string name="StartEncryptedChat">התחל שיחה חשאית</string>
+    <string name="CreateEncryptedChatError">אירעה שגיאה.</string>
+    <string name="CreateEncryptedChatOutdatedError">אין אפשרות ליצור שיחה חשאית עם %1$s\n\n%2$s משתמש/ת בגרסה ישנה יותר של טלגרם וצריך/ה לעדכן קודם.</string>
+    <string name="SecretTitle">שיחה חשאית</string>
+    <string name="EncryptionKey">מפתח הצפנה</string>
+    <string name="MessageLifetime">שעון השמדה עצמית</string>
+    <string name="ShortMessageLifetimeForever">כבוי</string>
+    <string name="ShortMessageLifetime2s">2 שניות</string>
+    <string name="ShortMessageLifetime5s">5 שניות</string>
+    <string name="ShortMessageLifetime1m">דקה אחת</string>
+    <string name="ShortMessageLifetime1h">שעה אחת</string>
+    <string name="ShortMessageLifetime1d">יום אחד</string>
+    <string name="ShortMessageLifetime1w">שבוע אחד</string>
+    <string name="EncryptionKeyDescription">תמונה זו היא הדמיה של מפתח ההצפנה לשיחה החשאית הזו עם &lt;! [CDATA &lt;b&gt;%1$s&lt;/b&gt;.&lt;br&gt;&lt;br&gt;אם תמונה זו נראית אותו הדבר בטלפון של &lt;b&gt;%2$s&lt;/b&gt;, השיחה ביניכם היא 200%% מאובטחת.&lt;br&gt;&lt;br&gt;מידע נוסף באתר telegram.org</string>
+
+    <!--settings view-->
+    <string name="ResetNotificationsText">איפוס כל הגדרות ההתראות לברירת מחדל</string>
+    <string name="TextSize">גודל טקסט הודעות</string>
+    <string name="AskAQuestion">שאל/י שאלה</string>
+    <string name="EnableAnimations">אפשר אנימציות</string>
+    <string name="Unblock">בטל חסימה</string>
+    <string name="UnblockText">הקש על משתמש והחזק כדי לבטל את החסימה.</string>
+    <string name="NoBlocked">אין משתמשים חסומים עדיין</string>
+    <string name="YourPhoneNumber">מספר הטלפון שלך</string>
+    <string name="MessageNotifications">התראות על הודעות</string>
+    <string name="Alert">התרעה</string>
+    <string name="MessagePreview">תצוגה מקדימה של הודעה</string>
+    <string name="GroupNotifications">התראות קבוצה</string>
+    <string name="Sound">צליל</string>
+    <string name="InAppNotifications">התראות בתוך היישום</string>
+    <string name="InAppSounds">צלילים בתוך היישום</string>
+    <string name="InAppVibrate">רטט בתוך היישום</string>
+    <string name="Vibrate">רטט</string>
+    <string name="InAppPreview">תצוגה מקדימה בתוך היישום</string>
+    <string name="Reset">איפוס</string>
+    <string name="ResetAllNotifications">אפס/י את כל ההתראות</string>
+    <string name="UndoAllCustom">בטל/י את כל הגדרות ההתראות המותאמות אישית עבור כל אנשי הקשר והקבוצות שלך</string>
+    <string name="NotificationsAndSounds">התראות וצלילים</string>
+    <string name="BlockedUsers">משתמשים חסומים</string>
+    <string name="SaveIncomingPhotos">שמור/י תמונות נכנסות</string>
+    <string name="LogOut">התנתק</string>
+    <string name="YourFirstNameAndLastName">השם הפרטי ושם המשפחה שלך</string>
+    <string name="NoSound">אין קול</string>
+    <string name="Default">ברירת מחדל</string>
+    <string name="Support">תמיכה</string>
+    <string name="ChatBackground">רקע שיחה</string>
+    <string name="MessagesSettings">הודעות</string>
+    <string name="SendByEnter">אנטר לשליחה</string>
+    <string name="TerminateAllSessions">נתק/י את כל החיבורים האחרים</string>
+    <string name="AutomaticPhotoDownload">הורדת תמונות אוטומטית</string>
+    <string name="AutomaticPhotoDownloadGroups">קבוצות</string>
+    <string name="AutomaticPhotoDownloadPrivateChats">שיחות פרטיות</string>
+    <string name="Events">אירועים</string>
+    <string name="ContactJoined">איש/ת קשר הצטרף לטלגרם</string>
+
+    <!--media view-->
+    <string name="NoMedia">אין מדיה משותפת עדיין</string>
+    <string name="CancelDownload">בטל/י הורדה</string>
+
+    <!--map view-->
+    <string name="MyLocation">המיקום שלי</string>
+    <string name="Map">מפה</string>
+    <string name="Satellite">לווין</string>
+    <string name="Hybrid">בן כלאיים</string>
+    <string name="MetersAway">מ' מכאן</string>
+    <string name="KMetersAway">ק\"מ מכאן</string>
+    <string name="SendLocation">שלח מיקום</string>
+    <string name="ShareLocation">שתף מיקום</string>
+
+    <!--photo gallery view-->
+    <string name="ShowAllMedia">הצג את כל המדיה</string>
+    <string name="SaveToGallery">שמור לגלריה</string>
+    <string name="Of">של</string>
+    <string name="Gallery">גלריה</string>
+
+    <!--button titles-->
+    <string name="Next">הבא</string>
+    <string name="Back">הקודם</string>
+    <string name="Done">סיים</string>
+    <string name="Open">פתח</string>
+    <string name="Cancel">בטל</string>
+    <string name="Add">הוסף</string>
+    <string name="Edit">ערוך</string>
+    <string name="Send">שלח</string>
+    <string name="Call">התקשר</string>
+    <string name="Copy">העתק</string>
+    <string name="Delete">מחק</string>
+    <string name="Forward">העבר</string>
+    <string name="Retry">נסה שוב</string>
+    <string name="FromCamera">ממצלמה</string>
+    <string name="FromGalley">מהגלריה</string>
+    <string name="DeletePhoto">מחק תמונה</string>
+    <string name="OpenPhoto">פתח תמונה</string>
+    <string name="Set">קבע</string>
+    <string name="OK">אשר</string>
+
+    <!--messages-->
+    <string name="ActionKickUser">un1 הסיר/ה את un2</string>
+    <string name="ActionLeftUser">un1 עזב/ה את הקבוצה</string>
+    <string name="ActionAddUser">un1 הוסיף/ה את un2</string>
+    <string name="ActionRemovedPhoto">un1 הסיר/ה את התמונה הקבוצתית</string>
+    <string name="ActionChangedPhoto">un1 שינה את התמונה הקבוצתית</string>
+    <string name="ActionChangedTitle">un1 שינה את שם הקבוצה לun2</string>
+    <string name="ActionCreateGroup">un1 יצר/ה את הקבוצה</string>
+    <string name="ActionYouKickUser">הסרת un2</string>
+    <string name="ActionYouLeftUser">אתה עזב את הקבוצה</string>
+    <string name="ActionYouAddUser">הוספת un2</string>
+    <string name="ActionYouRemovedPhoto">הסיר את התמונה הקבוצתית</string>
+    <string name="ActionYouChangedPhoto">שינה את התמונה הקבוצתית</string>
+    <string name="ActionYouChangedTitle">שינית את שם הקבוצה לun2</string>
+    <string name="ActionYouCreateGroup">יצרת את הקבוצה</string>
+    <string name="ActionKickUserYou">un1 הסיר אותך</string>
+    <string name="ActionAddUserYou">un1 הוסיף אותך</string>
+    <string name="UnsuppotedMedia">הודעה זו אינה נתמכת בגרסה זו של טלגרם.</string>
+    <string name="AttachPhoto">תמונה</string>
+    <string name="AttachVideo">סרטון</string>
+    <string name="AttachLocation">מיקום</string>
+    <string name="AttachContact">איש/ת קשר</string>
+    <string name="AttachDocument">מסמך</string>
+    <string name="AttachAudio">אודיו</string>
+    <string name="FromYou">את/ה</string>
+
+    <!--Alert messages-->
+    <string name="InvalidPhoneNumber">מספר טלפון לא תקין</string>
+    <string name="CodeExpired">הקוד פג, אנא התחבר/י שוב</string>
+    <string name="FloodWait">ניסיונות רבים מדי, אנא נסה/י שוב מאוחר יותר</string>
+    <string name="InvalidCode">קוד לא תקין</string>
+    <string name="InvalidFirstName">שם פרטי לא תקין</string>
+    <string name="InvalidLastName">שם משפחה לא תקין</string>
+    <string name="Loading">טוען...</string>
+    <string name="NoPlayerInstalled">אין לך נגן וידאו, יש להתקין אחד כדי להמשיך</string>
+    <string name="NoHandleAppInstalled">אין לך כל יישום שיכול להתמודד עם סוג קובץ %1$s, יש להתקין אחד כדי להמשיך</string>
+    <string name="InviteUser">למשתמש זה אין טלגרם עדיין, לשלוח הזמנה?</string>
+    <string name="AreYouSure">את/ה בטוח/ה?</string>
+    <string name="AddContactQ">להוסיף איש/ת קשר?</string>
+    <string name="AddToTheGroup">להוסיף את %1$s לקבוצה?</string>
+    <string name="ForwardMessagesTo">להעביר הודעות ל־%1$s?</string>
+    <string name="DeleteChatQuestion">למחוק שיחה זו?</string>
+
+    <!--Intro view-->
+    <string name="Page1Title">טלגרם</string>
+    <string name="Page2Title">מהיר</string>
+    <string name="Page3Title">חינם</string>
+    <string name="Page4Title">מאובטח</string>
+    <string name="Page5Title">עוצמתי</string>
+    <string name="Page6Title">מבוסס ענן</string>
+    <string name="Page7Title">פרטי</string>
+    <string name="Page1Message">ברוכים הבאים לעידן של מסרים מהירים ומאובטחים</string>
+    <string name="Page2Message">&lt;! [CDATA [&lt;b&gt;טלגרם&lt;/b&gt; מעביר הודעות מהר יותר מאשר&lt;br/&gt;כל יישום אחר</string>
+    <string name="Page3Message">&lt;! CDATA [[&lt;b&gt;טלגרם&lt;/b&gt; הוא חופשי לנצח. אין פרסומות&lt;br/&gt;אין דמי מנוי</string>
+    <string name="Page4Message">&lt;! [CDATA [&lt;b&gt;טלגרם&lt;/b&gt;מגן על ההודעות שלך&lt;br/&gt;מפני התקפות האקרים</string>
+    <string name="Page5Message">&lt;! [CDATA [ב&lt;b&gt;טלגרם&lt;/b&gt; אין מגבלות על הגודל של&lt;br/&gt;המדיה והשיחות שלך</string>
+    <string name="Page6Message">&lt;! [CDATA [&lt;b&gt;טלגרם&lt;/b&gt; מאפשר לך לגשת להודעות שלך&lt;br/&gt;ממספר התקנים</string>
+    <string name="Page7Message">&lt;! [CDATA [ההודעות ב&lt;b&gt;טלגרם&lt;/b&gt;מוצפנות בחוזקה&lt;br/&gt;וניתנות להשמדה עצמית</string>
+    <string name="StartMessaging">התחל להתכתב</string>
+
+    <!--Don't change this! Not for localization!-->
+    <string name="CacheTag">CACHE_TAG</string>
+</resources>
