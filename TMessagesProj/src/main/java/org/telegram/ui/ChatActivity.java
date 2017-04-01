@@ -359,8 +359,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     private String currentPicturePath;
 
     protected TLRPC.ChatFull info = null;
-
-    private HashMap<Integer, TLRPC.BotInfo> botInfo = new HashMap<>();
+    private SparseArray<TLRPC.BotInfo> botInfo = new SparseArray<>();
     private String botUser;
     private long inlineReturn;
     private MessageObject botButtons;
@@ -4859,10 +4858,11 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         }
         boolean hasHelp = false;
         boolean hasSettings = false;
-        if (!botInfo.isEmpty()) {
-            for (HashMap.Entry<Integer, TLRPC.BotInfo> entry : botInfo.entrySet()) {
-                TLRPC.BotInfo info = entry.getValue();
-                for (int a = 0; a < info.commands.size(); a++) {
+        int size = botInfo.size();
+        if (size != 0) {
+            for (int i = 0;i < size; i++ ) {
+                TLRPC.BotInfo info = botInfo.get(i);
+                for (int a = 0, commandsCount = info.commands.size(); a < commandsCount; a++) {
                     TLRPC.TL_botCommand command = info.commands.get(a);
                     if (command.command.toLowerCase().equals("help")) {
                         hasHelp = true;
@@ -9489,7 +9489,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
             if (position == botInfoRow) {
                 BotHelpCell helpView = (BotHelpCell) holder.itemView;
-                helpView.setText(!botInfo.isEmpty() ? botInfo.get(currentUser.id).description : null);
+                helpView.setText(botInfo.size() != 0 ? botInfo.get(currentUser.id).description : null);
             } else if (position == loadingDownRow || position == loadingUpRow) {
                 ChatLoadingCell loadingCell = (ChatLoadingCell) holder.itemView;
                 loadingCell.setProgressVisible(loadsCount > 1);
