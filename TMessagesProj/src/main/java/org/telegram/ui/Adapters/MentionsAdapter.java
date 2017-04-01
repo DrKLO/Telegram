@@ -17,6 +17,7 @@ import android.content.pm.PackageManager;
 import android.location.Location;
 import android.os.Build;
 import android.text.TextUtils;
+import android.util.SparseArray;
 import android.view.View;
 import android.view.ViewGroup;
 
@@ -68,7 +69,7 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter {
     private TLRPC.TL_inlineBotSwitchPM searchResultBotContextSwitch;
     private HashMap<String, TLRPC.BotInlineResult> searchResultBotContextById;
     private MentionsAdapterDelegate delegate;
-    private HashMap<Integer, TLRPC.BotInfo> botInfo;
+    private SparseArray<TLRPC.BotInfo> botInfo;
     private int resultStartPosition;
     private boolean allowNewMentions = true;
     private int resultLength;
@@ -180,7 +181,7 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter {
         needBotContext = value;
     }
 
-    public void setBotInfo(HashMap<Integer, TLRPC.BotInfo> info) {
+    public void setBotInfo(SparseArray<TLRPC.BotInfo> info) {
         botInfo = info;
     }
 
@@ -726,14 +727,15 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter {
             ArrayList<String> newResultHelp = new ArrayList<>();
             ArrayList<TLRPC.User> newResultUsers = new ArrayList<>();
             String command = result.toString().toLowerCase();
-            for (HashMap.Entry<Integer, TLRPC.BotInfo> entry : botInfo.entrySet()) {
-                TLRPC.BotInfo botInfo = entry.getValue();
-                for (int a = 0; a < botInfo.commands.size(); a++) {
-                    TLRPC.TL_botCommand botCommand = botInfo.commands.get(a);
+
+            for (int i = 0, size = botInfo.size(); i < size; i ++) {
+                TLRPC.BotInfo info = botInfo.get(i);
+                for (int a = 0, commandsCount = info.commands.size(); a < commandsCount; a++) {
+                    TLRPC.TL_botCommand botCommand = info.commands.get(a);
                     if (botCommand != null && botCommand.command != null && botCommand.command.startsWith(command)) {
                         newResult.add("/" + botCommand.command);
                         newResultHelp.add(botCommand.description);
-                        newResultUsers.add(MessagesController.getInstance().getUser(botInfo.user_id));
+                        newResultUsers.add(MessagesController.getInstance().getUser(info.user_id));
                     }
                 }
             }
